@@ -7,9 +7,9 @@ import '@testing-library/jest-dom'
 
 // Mock the CodeServerIDE component for now
 const MockCodeServerIDE = ({ workspaceId, authToken, onReady }: {
-  workspaceId: string
-  authToken: string
-  onReady?: (iframe: HTMLIFrameElement) => void
+  workspaceId: string;
+  authToken: string;
+  onReady?: (iframe: HTMLIFrameElement) => void;
 }) => {
   const handleLoad = () => {
     const iframe = document.createElement('iframe')

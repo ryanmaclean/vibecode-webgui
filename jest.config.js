@@ -12,7 +12,7 @@ const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
 
   // Module name mapping for absolute imports
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@/components/(.*)$': '<rootDir>/src/components/$1',
     '^@/lib/(.*)$': '<rootDir>/src/lib/$1',
@@ -91,13 +91,11 @@ const customJestConfig = {
       displayName: 'integration',
       testMatch: ['<rootDir>/tests/integration/**/*.test.{js,ts}'],
       testEnvironment: 'node',
-      testTimeout: 30000,
     },
     {
       displayName: 'k8s',
       testMatch: ['<rootDir>/tests/k8s/**/*.test.{js,ts}'],
       testEnvironment: 'node',
-      testTimeout: 60000,
     },
   ],
 }
