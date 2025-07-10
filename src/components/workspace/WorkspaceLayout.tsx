@@ -7,6 +7,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import CodeServerIDE from '@/components/ide/CodeServerIDE'
+import CodeAssistant from '@/components/ai/CodeAssistant'
 import { useAuth } from '@/hooks/useAuth'
 
 interface WorkspaceLayoutProps {
@@ -23,6 +24,7 @@ export default function WorkspaceLayout({
   const { user } = useAuth()
   const [sidebarWidth, setSidebarWidth] = useState(280)
   const [isResizing, setIsResizing] = useState<'sidebar' | null>(null)
+  const [showAIAssistant, setShowAIAssistant] = useState(false)
   const layoutRef = useRef<HTMLDivElement>(null)
 
   const handleMouseDown = useCallback((type: 'sidebar') => {
@@ -73,6 +75,20 @@ export default function WorkspaceLayout({
         </div>
         
         <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setShowAIAssistant(!showAIAssistant)}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+              showAIAssistant 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+            title="Toggle AI Assistant"
+          >
+            <svg className="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            AI Assistant
+          </button>
           <span className="text-gray-300 text-sm">Welcome, {user?.name}</span>
           <div className="h-6 w-6 bg-green-500 rounded-full flex items-center justify-center">
             <div className="h-2 w-2 bg-white rounded-full"></div>
@@ -158,6 +174,13 @@ export default function WorkspaceLayout({
           />
         </div>
       </div>
+
+      {/* AI Assistant */}
+      <CodeAssistant
+        workspaceId={workspaceId}
+        visible={showAIAssistant}
+        onToggle={() => setShowAIAssistant(false)}
+      />
     </div>
   )
 }
