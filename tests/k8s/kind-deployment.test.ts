@@ -7,8 +7,8 @@
  * Staff Engineer Implementation - Kubernetes deployment validation
  */
 
-import { describe, test, expect, beforeAll, afterAll } from '@jest/globals'
-import { execSync } from 'child_process'
+const { describe, test, expect, beforeAll, afterAll } = require('@jest/globals')
+const { execSync } = require('child_process')
 
 describe('KIND Deployment Tests', () => {
   const NAMESPACE = 'vibecode'
@@ -37,7 +37,7 @@ describe('KIND Deployment Tests', () => {
       
       const node = nodes.items[0]
       expect(node.metadata.name).toContain('vibecode-test')
-      const readyCondition = node.status.conditions.find((c: any) => c.type === 'Ready')
+      const readyCondition = node.status.conditions.find(function(c) { return c.type === 'Ready' })
       expect(readyCondition && readyCondition.status).toBe('True')
     })
 
@@ -45,12 +45,12 @@ describe('KIND Deployment Tests', () => {
       const output = execSync('kubectl get pods -n kube-system -o json', { encoding: 'utf8' })
       const pods = JSON.parse(output)
       
-      const systemPods = pods.items.map((pod: any) => pod.metadata.name)
+      const systemPods = pods.items.map(function(pod) { return pod.metadata.name })
       
       // Check for essential system components
-      expect(systemPods.some((name: string) => name.includes('coredns'))).toBe(true)
-      expect(systemPods.some((name: string) => name.includes('kindnet'))).toBe(true)
-      expect(systemPods.some((name: string) => name.includes('kube-proxy'))).toBe(true)
+      expect(systemPods.some(function(name) { return name.includes('coredns') })).toBe(true)
+      expect(systemPods.some(function(name) { return name.includes('kindnet') })).toBe(true)
+      expect(systemPods.some(function(name) { return name.includes('kube-proxy') })).toBe(true)
     })
   })
 
@@ -67,7 +67,7 @@ describe('KIND Deployment Tests', () => {
       const output = execSync(`kubectl get configmaps -n ${NAMESPACE} -o json`, { encoding: 'utf8' })
       const configMaps = JSON.parse(output)
       
-      const configMapNames = configMaps.items.map((cm: any) => cm.metadata.name)
+      const configMapNames = configMaps.items.map(function(cm) { return cm.metadata.name })
       expect(configMapNames).toContain('postgres-config')
       expect(configMapNames).toContain('postgres-init-sql')
     })
@@ -107,16 +107,16 @@ describe('KIND Deployment Tests', () => {
       const output = execSync(`kubectl get services -n ${NAMESPACE} -o json`, { encoding: 'utf8' })
       const services = JSON.parse(output)
       
-      const serviceNames = services.items.map((svc: any) => svc.metadata.name)
+      const serviceNames = services.items.map(function(svc) { return svc.metadata.name })
       expect(serviceNames).toContain('postgres-service')
       expect(serviceNames).toContain('redis-service')
       
       // Check service configurations
-      const postgresService = services.items.find((svc: any) => svc.metadata.name === 'postgres-service')
+      const postgresService = services.items.find(function(svc) { return svc.metadata.name === 'postgres-service' })
       expect(postgresService.spec.ports[0].port).toBe(5432)
       expect(postgresService.spec.ports[0].nodePort).toBe(30001)
       
-      const redisService = services.items.find((svc: any) => svc.metadata.name === 'redis-service')
+      const redisService = services.items.find(function(svc) { return svc.metadata.name === 'redis-service' })
       expect(redisService.spec.ports[0].port).toBe(6379)
       expect(redisService.spec.ports[0].nodePort).toBe(30002)
     })
@@ -135,8 +135,8 @@ describe('KIND Deployment Tests', () => {
           
           if (pods.items.length > 0) {
             const pod = pods.items[0]
-            const readyCondition = pod.status.conditions?.find((c: any) => c.type === 'Ready')
-            ready = readyCondition?.status === 'True'
+            const readyCondition = pod.status.conditions && pod.status.conditions.find(function(c) { return c.type === 'Ready' })
+            ready = readyCondition && readyCondition.status === 'True'
           }
         } catch (error) {
           // Pod may not exist yet
@@ -164,8 +164,8 @@ describe('KIND Deployment Tests', () => {
           
           if (pods.items.length > 0) {
             const pod = pods.items[0]
-            const readyCondition = pod.status.conditions?.find((c: any) => c.type === 'Ready')
-            ready = readyCondition?.status === 'True'
+            const readyCondition = pod.status.conditions && pod.status.conditions.find(function(c) { return c.type === 'Ready' })
+            ready = readyCondition && readyCondition.status === 'True'
           }
         } catch (error) {
           // Pod may not exist yet
@@ -257,11 +257,11 @@ describe('KIND Deployment Tests', () => {
         const pod = pods.items[0]
         const volumeMounts = pod.spec.containers[0].volumeMounts
         
-        const pgDataMount = volumeMounts.find((vm: any) => vm.mountPath === '/var/lib/postgresql/data')
+        const pgDataMount = volumeMounts.find(function(vm) { return vm.mountPath === '/var/lib/postgresql/data' })
         expect(pgDataMount).toBeTruthy()
         expect(pgDataMount.name).toBe('postgres-storage')
         
-        const initMount = volumeMounts.find((vm: any) => vm.mountPath === '/docker-entrypoint-initdb.d')
+        const initMount = volumeMounts.find(function(vm) { return vm.mountPath === '/docker-entrypoint-initdb.d' })
         expect(initMount).toBeTruthy()
         expect(initMount.name).toBe('init-db')
       }
@@ -273,7 +273,7 @@ describe('KIND Deployment Tests', () => {
       const servicesOutput = execSync(`kubectl get services -n ${NAMESPACE} -o json`, { encoding: 'utf8' })
       const services = JSON.parse(servicesOutput)
       
-      services.items.forEach((service: any) => {
+      services.items.forEach(function(service) {
         expect(service.spec.selector).toBeDefined()
         
         if (service.metadata.name === 'postgres-service') {
@@ -288,7 +288,7 @@ describe('KIND Deployment Tests', () => {
       const servicesOutput = execSync(`kubectl get services -n ${NAMESPACE} -o json`, { encoding: 'utf8' })
       const services = JSON.parse(servicesOutput)
       
-      services.items.forEach((service: any) => {
+      services.items.forEach(function(service) {
         expect(service.spec.type).toBe('NodePort')
         expect(service.spec.ports[0].nodePort).toBeGreaterThan(30000)
         expect(service.spec.ports[0].nodePort).toBeLessThan(32768)
@@ -345,8 +345,8 @@ describe('KIND Deployment Tests', () => {
           const envVars = container.env
           
           const requiredEnvVars = ['POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD']
-          requiredEnvVars.forEach(envVar => {
-            const env = envVars.find((e: any) => e.name === envVar)
+          requiredEnvVars.forEach(function(envVar) {
+            const env = envVars.find(function(e) { return e.name === envVar })
             expect(env).toBeDefined()
             expect(env.valueFrom.configMapKeyRef).toBeDefined()
           })

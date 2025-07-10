@@ -7,8 +7,8 @@
  * Staff Engineer Implementation - End-to-end Kubernetes validation
  */
 
-import { describe, test, expect, beforeAll } from '@jest/globals'
-import { execSync } from 'child_process'
+const { describe, test, expect, beforeAll } = require('@jest/globals')
+const { execSync } = require('child_process')
 
 describe('KIND Integration Tests', () => {
   const NAMESPACE = 'vibecode'
@@ -238,14 +238,16 @@ describe('KIND Integration Tests', () => {
       const podsOutput = execSync(`kubectl get pods -n ${NAMESPACE} -o json`, { encoding: 'utf8' })
       const pods = JSON.parse(podsOutput)
       
-      pods.items.forEach((pod: any) => {
-        const readyCondition = pod.status.conditions?.find((c: any) => c.type === 'Ready')
-        expect(readyCondition?.status).toBe('True')
+      pods.items.forEach(function(pod) {
+        const readyCondition = pod.status.conditions && pod.status.conditions.find(function(c) { return c.type === 'Ready' })
+        expect(readyCondition && readyCondition.status).toBe('True')
         
         // Check that containers are ready
-        pod.status.containerStatuses?.forEach((status: any) => {
-          expect(status.ready).toBe(true)
-        })
+        if (pod.status.containerStatuses) {
+          pod.status.containerStatuses.forEach(function(status) {
+            expect(status.ready).toBe(true)
+          })
+        }
       })
     })
 
@@ -253,10 +255,12 @@ describe('KIND Integration Tests', () => {
       const podsOutput = execSync(`kubectl get pods -n ${NAMESPACE} -o json`, { encoding: 'utf8' })
       const pods = JSON.parse(podsOutput)
       
-      pods.items.forEach((pod: any) => {
-        pod.status.containerStatuses?.forEach((status: any) => {
-          expect(status.restartCount).toBeLessThan(3) // Allow some restarts during startup
-        })
+      pods.items.forEach(function(pod) {
+        if (pod.status.containerStatuses) {
+          pod.status.containerStatuses.forEach(function(status) {
+            expect(status.restartCount).toBeLessThan(3) // Allow some restarts during startup
+          })
+        }
       })
     })
 
@@ -356,12 +360,12 @@ describe('KIND Integration Tests', () => {
 })
 
 // Helper functions
-async function getPodName(appLabel: string, namespace: string): Promise<string> {
+async function getPodName(appLabel, namespace) {
   const output = execSync(`kubectl get pods -n ${namespace} -l app=${appLabel} -o jsonpath='{.items[0].metadata.name}'`, { encoding: 'utf8' })
   return output.trim()
 }
 
-async function waitForPodsReady(appLabels: string[], namespace: string, timeoutMs: number): Promise<void> {
+async function waitForPodsReady(appLabels, namespace, timeoutMs) {
   const startTime = Date.now()
   
   while (Date.now() - startTime < timeoutMs) {
@@ -378,8 +382,8 @@ async function waitForPodsReady(appLabels: string[], namespace: string, timeoutM
         }
         
         for (const pod of pods.items) {
-          const readyCondition = pod.status.conditions?.find((c: any) => c.type === 'Ready')
-          if (readyCondition?.status !== 'True') {
+          const readyCondition = pod.status.conditions && pod.status.conditions.find(function(c) { return c.type === 'Ready' })
+          if (!readyCondition || readyCondition.status !== 'True') {
             allReady = false
             break
           }
@@ -402,7 +406,7 @@ async function waitForPodsReady(appLabels: string[], namespace: string, timeoutM
   throw new Error(`Pods not ready within ${timeoutMs}ms timeout`)
 }
 
-async function waitForDeploymentReady(deploymentName: string, namespace: string, timeoutMs: number): Promise<void> {
+async function waitForDeploymentReady(deploymentName, namespace, timeoutMs) {
   const startTime = Date.now()
   
   while (Date.now() - startTime < timeoutMs) {
