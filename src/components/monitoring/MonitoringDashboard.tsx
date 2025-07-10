@@ -6,7 +6,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useAuth } from '@/hooks/useAuth'
+import { useSession } from 'next-auth/react'
 import { monitoring } from '@/lib/monitoring'
 
 interface SystemMetrics {
@@ -40,14 +40,15 @@ interface AlertItem {
 }
 
 export default function MonitoringDashboard() {
-  const { user } = useAuth()
+  const { data: session } = useSession()
+  const user = session?.user
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null)
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [selectedTab, setSelectedTab] = useState<'overview' | 'metrics' | 'logs' | 'alerts' | 'security'>('overview')
   const [isLiveMode, setIsLiveMode] = useState(true)
   const [timeRange, setTimeRange] = useState('1h')
-  const metricsInterval = useRef<NodeJS.Timeout>()
+  const metricsInterval = useRef<NodeJS.Timeout | null>(null)
 
   // Fetch real-time metrics
   useEffect(() => {

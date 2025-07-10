@@ -72,6 +72,24 @@
     - Rate limiting and DoS protection
     - Kubernetes security contexts and RBAC
 
+  - **Production Tests** (`tests/production/`)
+    - **Performance Testing** (`monitoring-production.test.ts`)
+      - Load testing (1000+ concurrent requests)
+      - Response time validation (avg <200ms, p95 <500ms)
+      - Memory leak detection during extended operations
+      - Rate limiting enforcement validation
+    
+    - **Health Check Testing** (`monitoring-health.test.ts`)
+      - Component health validation (Datadog, DB, Redis)
+      - Health endpoint performance (<1s response)
+      - Security access controls for health data
+    
+    - **Chaos Engineering** (`monitoring-production.test.ts`)
+      - Partial Datadog service degradation handling
+      - Database connection failure resilience
+      - Complete monitoring system failure scenarios
+      - Service recovery and graceful degradation
+
 ## In Progress Tasks 🚧
 
 ### Modern Package Integration

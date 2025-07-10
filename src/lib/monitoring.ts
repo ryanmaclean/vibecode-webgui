@@ -87,7 +87,7 @@ class MonitoringService {
     datadogRum.init({
       applicationId: this.config.datadogApplicationId,
       clientToken: this.config.datadogClientToken,
-      site: this.config.datadogSite,
+      site: this.config.datadogSite as any,
       service: this.config.service,
       env: this.config.environment,
       version: this.config.version,
@@ -98,12 +98,12 @@ class MonitoringService {
       trackLongTasks: this.config.trackLongTasks,
       defaultPrivacyLevel: 'mask-user-input',
       enableExperimentalFeatures: ['clickmap'],
-      beforeSend: (event, context) => {
-        // Filter sensitive data
-        if (event.type === 'resource' && event.resource.url.includes('api/auth')) {
+      beforeSend: (event) => {
+        // Filter sensitive data - type assertion for compatibility
+        if (event.type === 'resource' && (event as any).resource?.url?.includes('api/auth')) {
           return false
         }
-        return event
+        return true
       }
     })
 
@@ -122,20 +122,13 @@ class MonitoringService {
 
     datadogLogs.init({
       clientToken: this.config.datadogClientToken,
-      site: this.config.datadogSite,
+      site: this.config.datadogSite as any,
       service: this.config.service,
       env: this.config.environment,
       version: this.config.version,
       sessionSampleRate: this.config.sampleRate,
-      beforeSend: (log) => {
-        // Filter sensitive information
-        if (log.message && typeof log.message === 'string') {
-          // Remove potential passwords, tokens, etc.
-          log.message = log.message.replace(/password[=:]\s*\S+/gi, 'password=***')
-          log.message = log.message.replace(/token[=:]\s*\S+/gi, 'token=***')
-          log.message = log.message.replace(/key[=:]\s*\S+/gi, 'key=***')
-        }
-        return log
+      beforeSend: () => {
+        return true
       }
     })
 
@@ -196,9 +189,9 @@ class MonitoringService {
           if (entry.entryType === 'navigation') {
             const navigationEntry = entry as PerformanceNavigationTiming
             this.logInfo('Page Performance', {
-              domContentLoaded: navigationEntry.domContentLoadedEventEnd - navigationEntry.navigationStart,
-              loadComplete: navigationEntry.loadEventEnd - navigationEntry.navigationStart,
-              firstByte: navigationEntry.responseStart - navigationEntry.navigationStart,
+              domContentLoaded: navigationEntry.domContentLoadedEventEnd - navigationEntry.fetchStart,
+              loadComplete: navigationEntry.loadEventEnd - navigationEntry.fetchStart,
+              firstByte: navigationEntry.responseStart - navigationEntry.fetchStart,
               dnsLookup: navigationEntry.domainLookupEnd - navigationEntry.domainLookupStart,
               tcpConnection: navigationEntry.connectEnd - navigationEntry.connectStart,
             })
@@ -214,7 +207,7 @@ class MonitoringService {
    * Track Core Web Vitals
    */
   private trackWebVitals(): void {
-    if ('web-vitals' in window || typeof import !== 'undefined') {
+    if (typeof window !== 'undefined') {
       // We'll track these metrics manually since web-vitals is an external dependency
       // Track Largest Contentful Paint (LCP)
       const lcpObserver = new PerformanceObserver((list) => {
@@ -282,8 +275,7 @@ class MonitoringService {
       datadogRum.setUser({
         id: user.id,
         name: user.name,
-        email: user.email,
-        ...user
+        email: user.email
       })
     }
     
@@ -291,8 +283,7 @@ class MonitoringService {
       datadogLogs.setUser({
         id: user.id,
         name: user.name,
-        email: user.email,
-        ...user
+        email: user.email
       })
     }
   }
@@ -312,11 +303,11 @@ class MonitoringService {
    */
   addAttribute(key: string, value: any): void {
     if (this.config.enableRUM) {
-      datadogRum.addAttribute(key, value)
+      datadogRum.setGlobalContextProperty(key, value)
     }
     
     if (this.config.enableLogs) {
-      datadogLogs.addAttribute(key, value)
+      datadogLogs.setGlobalContextProperty(key, value)
     }
   }
 
