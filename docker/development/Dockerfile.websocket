@@ -13,7 +13,7 @@ RUN addgroup -g 1001 -S nodejs && \
 
 # Copy package files for server
 COPY server/package*.json ./
-RUN npm ci && npm cache clean --force
+RUN npm install && npm cache clean --force
 
 # Copy server source
 COPY --chown=wsuser:nodejs server/ ./

@@ -13,7 +13,9 @@ const nextConfig = {
     return [
       {
         source: '/api/code-server/:path*',
-        destination: 'http://localhost:8080/:path*',
+        destination: process.env.NODE_ENV === 'development' && process.env.DOCKER === 'true'
+          ? 'http://code-server:8080/:path*'
+          : 'http://localhost:8080/:path*',
       },
     ];
   },

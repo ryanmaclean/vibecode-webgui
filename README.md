@@ -491,6 +491,350 @@ Automatic security validation on every commit:
 - Vulnerability scanning with npm audit
 - Code quality with ESLint/TypeScript
 - No secrets in code validation
+- Docker container testing and health checks
+
+## 🐳 Docker & Container Deployment
+
+VibeCode WebGUI is fully containerized with production-ready Docker configurations supporting both development and production environments.
+
+### Docker Stack Architecture
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Next.js Web  │    │   WebSocket      │    │  Code-Server    │
+│   (Port 3000)  │◄───┤   Server         │◄───┤  IDE            │
+│                 │    │   (Port 3001)    │    │  (Port 8080)    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                        │                        │
+         ▼                        ▼                        ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   PostgreSQL    │    │      Redis       │    │   Vector        │
+│   (Port 5432)  │    │   (Port 6379)    │    │   Log Pipeline  │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+### Quick Start with Docker
+
+**Prerequisites:**
+- Docker Desktop installed and running
+- 8GB+ RAM recommended
+- 10GB+ free disk space
+
+**1. Clone and Start Services:**
+```bash
+# Start the complete stack
+docker-compose up -d
+
+# Check service status
+docker-compose ps
+
+# View logs
+docker-compose logs -f web
+```
+
+**2. Verify Services:**
+```bash
+# Test database connection
+docker exec vibecode-webgui-postgres-1 psql -U vibecode -d vibecode_dev -c "SELECT version();"
+
+# Test Redis
+docker exec vibecode-webgui-redis-1 redis-cli ping
+
+# Test Datadog integration
+npm run test:datadog:real
+```
+
+**3. Access Services:**
+- **Web Application**: http://localhost:3000
+- **WebSocket Server**: http://localhost:3001
+- **PostgreSQL**: localhost:5432 (username: vibecode, password: vibecode123)
+- **Redis**: localhost:6379
+
+### Docker Services
+
+#### Web Application (`web`)
+- **Image**: Custom Next.js build with development tools
+- **Features**: Feature flags, AI integration, monitoring
+- **Health Check**: Automatic endpoint monitoring
+- **Security**: Non-root user, environment isolation
+
+#### PostgreSQL Database (`postgres`)
+- **Image**: `postgres:16-alpine` (Official)
+- **Configuration**: Optimized for development with full schema
+- **Data Persistence**: Named volume `postgres-data`
+- **Initialization**: Automatic schema setup with 7 tables
+
+#### Redis Cache (`redis`)
+- **Image**: `redis:7-alpine` (Official)
+- **Configuration**: Optimized for sessions and caching
+- **Memory Management**: 512MB limit with LRU eviction
+- **Persistence**: AOF enabled for data durability
+
+#### WebSocket Server (`websocket`)
+- **Purpose**: Real-time collaboration and live updates
+- **Features**: Socket.io, terminal sessions, file watching
+- **Health Check**: Built-in endpoint monitoring
+
+#### Code-Server IDE (`code-server`)
+- **Image**: `codercom/code-server:4.101.2` (Official)
+- **Features**: Full VS Code in browser with extensions
+- **Security**: Container isolation, Docker-in-Docker support
+- **Development Tools**: Node.js, TypeScript, debugging support
+
+### Environment Configuration
+
+**Development Environment (`.env.docker`):**
+```bash
+# Application
+NEXTAUTH_URL=http://localhost:3000
+NODE_ENV=development
+DOCKER=true
+
+# Database (Docker service names)
+DATABASE_URL=postgresql://vibecode:vibecode123@postgres:5432/vibecode_dev
+REDIS_URL=redis://redis:6379
+
+# Monitoring
+DD_API_KEY=your-datadog-api-key
+ENABLE_DATADOG_INTEGRATION_TESTS=true
+```
+
+### Docker Commands
+
+**Development:**
+```bash
+# Start all services
+docker-compose up -d
+
+# Start specific services only
+docker-compose up -d postgres redis
+
+# Rebuild and start
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f [service-name]
+
+# Execute commands in containers
+docker-compose exec web npm test
+docker-compose exec postgres psql -U vibecode -d vibecode_dev
+
+# Stop services
+docker-compose down
+
+# Clean up everything (data will be lost)
+docker-compose down --volumes --remove-orphans
+```
+
+**Production Builds:**
+```bash
+# Build production images
+docker build -t vibecode-webgui:latest .
+
+# Multi-stage production build
+docker build --target runner -t vibecode-webgui:prod .
+```
+
+### Container Security
+
+**Security Features:**
+- ✅ **Non-root Users**: All containers run as non-privileged users
+- ✅ **Health Checks**: Automatic container health monitoring
+- ✅ **Network Isolation**: Custom bridge network with service discovery
+- ✅ **Resource Limits**: CPU and memory constraints
+- ✅ **Official Images**: PostgreSQL, Redis, Node.js from official repositories
+- ✅ **Security Scanning**: Automated vulnerability detection
+
+**Security Configurations:**
+```yaml
+# Example security options in docker-compose.yml
+security_opt:
+  - no-new-privileges:true
+cap_drop:
+  - ALL
+cap_add:
+  - CHOWN
+  - SETUID
+  - SETGID
+```
+
+### Performance & Resources
+
+**Resource Usage (Typical):**
+- **Web App**: ~500MB RAM, 0.3 CPU
+- **PostgreSQL**: ~50MB RAM, 0.1 CPU
+- **Redis**: ~25MB RAM, 0.0 CPU
+- **WebSocket**: ~50MB RAM, 0.1 CPU
+- **Total**: ~625MB RAM, 0.5 CPU
+
+**Optimization Features:**
+- Multi-stage Docker builds for smaller images
+- Alpine Linux base images
+- Dependency caching and layer optimization
+- Health-based container orchestration
+
+## 🚀 Fly.io Production Deployment
+
+VibeCode WebGUI is optimized for deployment on Fly.io with automatic scaling, global distribution, and managed PostgreSQL.
+
+### Fly.io Setup
+
+**1. Install Fly.io CLI:**
+```bash
+# macOS/Linux
+curl -L https://fly.io/install.sh | sh
+
+# Windows
+iwr https://fly.io/install.ps1 -useb | iex
+```
+
+**2. Login and Initialize:**
+```bash
+# Login to Fly.io
+flyctl auth login
+
+# Create application
+flyctl apps create vibecode-webgui
+```
+
+**3. Configure Database:**
+```bash
+# Create managed PostgreSQL
+flyctl postgres create --name vibecode-db --region ord
+
+# Attach database to app
+flyctl postgres attach --app vibecode-webgui vibecode-db
+```
+
+**4. Set Production Secrets:**
+```bash
+flyctl secrets set \
+  NEXTAUTH_SECRET=$(openssl rand -base64 32) \
+  DD_API_KEY="your-real-datadog-key" \
+  OPENAI_API_KEY="your-openai-key" \
+  GITHUB_ID="your-github-oauth-id" \
+  GITHUB_SECRET="your-github-oauth-secret"
+```
+
+**5. Deploy:**
+```bash
+# Deploy application
+flyctl deploy
+
+# Check deployment status
+flyctl status
+
+# View logs
+flyctl logs
+```
+
+### Fly.io Configuration (`fly.toml`)
+
+**Application Settings:**
+```toml
+app = "vibecode-webgui"
+primary_region = "ord"
+kill_signal = "SIGINT"
+kill_timeout = "5s"
+
+[experimental]
+  auto_rollback = true
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+```
+
+**Health Checks:**
+```toml
+[[http_service.checks]]
+  interval = "10s"
+  timeout = "2s"
+  grace_period = "5s"
+  method = "GET"
+  path = "/api/monitoring/health"
+  protocol = "http"
+```
+
+**Scaling Configuration:**
+```toml
+[deploy]
+  strategy = "bluegreen"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
+  processes = ["app"]
+```
+
+### Production Features
+
+**Fly.io Platform Benefits:**
+- 🌍 **Global Edge Network**: 35+ regions worldwide
+- ⚡ **Auto-scaling**: Scale to zero, scale on demand
+- 🔒 **Managed SSL/TLS**: Automatic certificate management
+- 📊 **Built-in Monitoring**: Metrics, logs, and alerting
+- 🗄️ **Managed PostgreSQL**: Automated backups and failover
+- 🚀 **Blue-Green Deployments**: Zero-downtime releases
+- 🔄 **Health Checks**: Automatic restart on failure
+
+**Production Optimizations:**
+- Multi-region deployment for low latency
+- Automatic request routing to nearest region
+- Container optimization for fast cold starts
+- Database connection pooling and optimization
+
+### Deployment Commands
+
+**Development Workflow:**
+```bash
+# Local development
+npm run dev
+
+# Test in Docker
+docker-compose up -d
+
+# Deploy to staging
+flyctl deploy --app vibecode-webgui-staging
+
+# Deploy to production
+flyctl deploy --app vibecode-webgui
+```
+
+**Monitoring & Debugging:**
+```bash
+# View application status
+flyctl status
+
+# Check resource usage
+flyctl dashboard
+
+# Access logs
+flyctl logs --app vibecode-webgui
+
+# SSH into container
+flyctl ssh console
+
+# Database operations
+flyctl postgres connect --app vibecode-db
+```
+
+### Cost Optimization
+
+**Resource Management:**
+- Auto-stop machines when idle (scale to zero)
+- Shared CPU instances for cost efficiency
+- Volume storage optimization
+- Request-based scaling
+
+**Estimated Monthly Costs:**
+- **Shared CPU (1x)**: ~$5-15/month
+- **PostgreSQL (Basic)**: ~$15-30/month
+- **Total**: ~$20-45/month for low-medium traffic
 
 ## 📦 Deployment
 
