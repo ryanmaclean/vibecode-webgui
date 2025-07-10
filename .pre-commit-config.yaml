@@ -1,0 +1,55 @@
+# Pre-commit hooks for security and license compliance
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      - id: detect-private-key
+
+  # Security scanning with Snyk
+  - repo: https://github.com/snyk/snyk
+    rev: v1.1267.0
+    hooks:
+      - id: snyk-test
+        args: ['--severity-threshold=high']
+        stages: [commit]
+
+  # License scanning
+  - repo: local
+    hooks:
+      - id: license-check
+        name: License Compatibility Check
+        entry: ./scripts/check-licenses.sh
+        language: script
+        files: ^package\.json$
+        stages: [commit]
+
+      - id: vulnerability-scan
+        name: Vulnerability Scan
+        entry: ./scripts/vulnerability-scan.sh
+        language: script
+        files: ^package\.json$
+        stages: [commit]
+
+  # Code quality
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v8.57.0
+    hooks:
+      - id: eslint
+        files: \.(js|jsx|ts|tsx)$
+        types: [file]
+        additional_dependencies:
+          - eslint@8.57.0
+          - eslint-config-next@15.3.5
+
+  # TypeScript checking
+  - repo: https://github.com/pre-commit/mirrors-typescript
+    rev: v5.3.3
+    hooks:
+      - id: typescript
+        files: \.(ts|tsx)$
