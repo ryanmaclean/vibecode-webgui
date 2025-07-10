@@ -157,7 +157,7 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
         })
       } catch (error) {
         // Should handle timeout gracefully
-        expect(error.name).toBe('AbortError')
+        expect((error as any).name).toBe('AbortError')
       } finally {
         clearTimeout(timeoutId)
       }
@@ -192,7 +192,7 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
         
       } catch (error) {
         // Some failures acceptable under extreme load
-        console.warn('Some requests failed under memory pressure:', error.message)
+        console.warn('Some requests failed under memory pressure:', (error as any).message)
       }
     }, 15000)
 
