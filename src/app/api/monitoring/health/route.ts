@@ -232,8 +232,28 @@ async function checkDatabaseHealth(): Promise<ComponentHealth> {
   const startTime = Date.now()
   
   try {
-    // For demonstration - replace with actual database health check
+    // CRITICAL: Replace fake implementation with real database health check
+    if (!process.env.DATABASE_URL) {
+      throw new Error('Database URL not configured')
+    }
+
+    // Import pg here to avoid issues if database is not available
+    const { Client } = require('pg')
+    const client = new Client({
+      connectionString: process.env.DATABASE_URL,
+      connectionTimeoutMillis: 5000,
+    })
+
+    await client.connect()
+    const result = await client.query('SELECT 1 as health_check')
+    const connectionCount = await client.query('SELECT count(*) FROM pg_stat_activity WHERE state = \'active\'')
+    await client.end()
+
     const responseTime = Date.now() - startTime
+    
+    if (result.rows[0].health_check !== 1) {
+      throw new Error('Database health check query failed')
+    }
     
     return {
       status: 'healthy',
@@ -241,7 +261,7 @@ async function checkDatabaseHealth(): Promise<ComponentHealth> {
       lastCheck: new Date().toISOString(),
       details: {
         connectionPool: 'active',
-        activeConnections: 5
+        activeConnections: parseInt(connectionCount.rows[0].count)
       }
     }
     
@@ -259,16 +279,43 @@ async function checkRedisHealth(): Promise<ComponentHealth> {
   const startTime = Date.now()
   
   try {
-    // For demonstration - replace with actual Redis health check
+    // CRITICAL: Replace fake implementation with real Redis health check
+    if (!process.env.REDIS_URL) {
+      throw new Error('Redis URL not configured')
+    }
+
+    // Import redis client here
+    const redis = require('redis')
+    const client = redis.createClient({
+      url: process.env.REDIS_URL,
+      socket: {
+        connectTimeout: 5000
+      }
+    })
+
+    await client.connect()
+    const pingResult = await client.ping()
+    const info = await client.info('memory')
+    const connectedClients = await client.info('clients')
+    await client.quit()
+
     const responseTime = Date.now() - startTime
+    
+    if (pingResult !== 'PONG') {
+      throw new Error(`Redis ping failed: ${pingResult}`)
+    }
+    
+    // Parse memory usage from Redis INFO command
+    const memoryMatch = info.match(/used_memory_human:(\w+)/)
+    const clientsMatch = connectedClients.match(/connected_clients:(\d+)/)
     
     return {
       status: 'healthy',
       responseTime,
       lastCheck: new Date().toISOString(),
       details: {
-        memory: 'optimal',
-        connections: 3
+        memory: memoryMatch ? memoryMatch[1] : 'unknown',
+        connections: clientsMatch ? parseInt(clientsMatch[1]) : 0
       }
     }
     
