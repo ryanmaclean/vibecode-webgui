@@ -2,8 +2,6 @@
  * Unit tests for authentication utilities
  */
 
-import { describe, it, expect } from '@jest/globals'
-
 describe('Authentication', () => {
   it('should validate email format', () => {
     const validEmail = 'test@example.com'

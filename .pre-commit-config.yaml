@@ -36,6 +36,13 @@ repos:
         files: ^package\.json$
         stages: [commit]
 
+      - id: test-suite
+        name: Run Test Suite
+        entry: npm run test:unit
+        language: system
+        files: \.(js|jsx|ts|tsx)$
+        stages: [commit]
+
   # Code quality
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v8.57.0
