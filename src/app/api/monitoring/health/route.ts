@@ -132,8 +132,73 @@ async function checkDatadogHealth(): Promise<ComponentHealth> {
       }
     }
     
-    // For production, you could make an actual API call to Datadog
-    // Here we're doing a basic configuration check
+    // Validate API key format (should be 32 character hex string)
+    const apiKey = process.env.DD_API_KEY as string
+    const isValidApiKeyFormat = /^[a-f0-9]{32}$/.test(apiKey)
+    
+    if (!isValidApiKeyFormat) {
+      return {
+        status: 'degraded',
+        responseTime: Date.now() - startTime,
+        lastCheck: new Date().toISOString(),
+        details: { 
+          error: 'Invalid Datadog API key format',
+          site: process.env.DD_SITE 
+        }
+      }
+    }
+    
+    // For real integration testing, make actual API call to Datadog validate endpoint
+    if (process.env.ENABLE_DATADOG_INTEGRATION_TESTS === 'true') {
+      try {
+        const response = await fetch('https://api.datadoghq.com/api/v1/validate', {
+          method: 'GET',
+          headers: {
+            'DD-API-KEY': apiKey
+          },
+          timeout: 5000
+        })
+        
+        if (response.ok) {
+          const validation = await response.json()
+          return {
+            status: 'healthy',
+            responseTime: Date.now() - startTime,
+            lastCheck: new Date().toISOString(),
+            details: {
+              site: process.env.DD_SITE,
+              configured: true,
+              apiKeyValid: validation.valid,
+              integrationTested: true
+            }
+          }
+        } else {
+          return {
+            status: 'degraded',
+            responseTime: Date.now() - startTime,
+            lastCheck: new Date().toISOString(),
+            details: {
+              error: `API validation failed: ${response.status}`,
+              site: process.env.DD_SITE,
+              integrationTested: true
+            }
+          }
+        }
+      } catch (apiError) {
+        return {
+          status: 'degraded',
+          responseTime: Date.now() - startTime,
+          lastCheck: new Date().toISOString(),
+          details: {
+            error: `API call failed: ${(apiError as Error).message}`,
+            site: process.env.DD_SITE,
+            integrationTested: true
+          }
+        }
+      }
+    }
+    
+    // Basic configuration validation without API call
     const responseTime = Date.now() - startTime
     
     return {
@@ -142,7 +207,9 @@ async function checkDatadogHealth(): Promise<ComponentHealth> {
       lastCheck: new Date().toISOString(),
       details: {
         site: process.env.DD_SITE,
-        configured: true
+        configured: true,
+        apiKeyFormat: 'valid',
+        integrationTested: false
       }
     }
     

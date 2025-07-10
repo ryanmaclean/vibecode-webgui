@@ -23,16 +23,16 @@ interface MonitoringConfig {
   trackLongTasks: boolean
 }
 
-// Default configuration
+// Default configuration with proper environment variable mapping
 const defaultConfig: MonitoringConfig = {
-  datadogApplicationId: process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID || '',
-  datadogClientToken: process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN || '',
-  datadogSite: process.env.NEXT_PUBLIC_DATADOG_SITE || 'datadoghq.com',
-  environment: process.env.NODE_ENV || 'development',
-  version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
-  service: 'vibecode-webgui',
-  enableRUM: true,
-  enableLogs: true,
+  datadogApplicationId: process.env.NEXT_PUBLIC_DD_RUM_APPLICATION_ID || 'test-app-id',
+  datadogClientToken: process.env.NEXT_PUBLIC_DD_RUM_CLIENT_TOKEN || 'test-client-token',
+  datadogSite: process.env.NEXT_PUBLIC_DD_SITE || 'datadoghq.com',
+  environment: process.env.DD_ENV || process.env.NODE_ENV || 'development',
+  version: process.env.DD_VERSION || '1.0.0',
+  service: process.env.DD_SERVICE || 'vibecode-webgui',
+  enableRUM: typeof window !== 'undefined' && !!process.env.NEXT_PUBLIC_DD_RUM_CLIENT_TOKEN,
+  enableLogs: typeof window !== 'undefined' && !!process.env.NEXT_PUBLIC_DD_RUM_CLIENT_TOKEN,
   enableTracing: true,
   sampleRate: 100,
   trackInteractions: true,
