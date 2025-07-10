@@ -13,7 +13,8 @@ An AI-powered web-based development platform that combines the best features of 
 - 🔄 **Real-time Collaboration**: Multi-user editing with cursor tracking and presence
 - 🐳 **Container-Native**: Docker and Kubernetes deployment ready
 - 🔐 **Enterprise Security**: Zero GPL/LGPL dependencies, comprehensive scanning
-- 📊 **Comprehensive Monitoring**: Datadog RUM/APM/Logs, Vector, KubeHound security analysis
+- 📊 **Comprehensive Monitoring**: Datadog RUM/APM/Logs, Vector log aggregation, KubeHound security analysis
+- 🧪 **A/B Testing & Feature Flags**: Eppo-inspired experimentation platform with statistical analysis
 - ⚡ **High Performance**: WebGL-accelerated terminal, optimized file watching
 - 🌐 **Multi-Provider Deployment**: Netlify, Vercel, GitHub Pages, AWS, GCP, Azure
 
@@ -244,8 +245,9 @@ VibeCode includes comprehensive monitoring and observability features powered by
 
 ### Monitoring Stack Components
 
-**Vector Log Aggregation**:
-- High-performance log collection and shipping to Datadog
+**Vector by Datadog**:
+- High-performance observability data pipeline (acquired by Datadog in 2021)
+- Vendor-agnostic log collection, transformation, and routing
 - Kubernetes logs, application logs, and system metrics aggregation
 - Data enrichment and filtering before sending to Datadog
 - Configuration: `infrastructure/monitoring/vector.yaml`
@@ -345,10 +347,106 @@ kubectl get pods -n security
 **Infrastructure Monitoring**:
 - Kubernetes cluster health and resource utilization
 - Container performance and resource consumption
-- Network traffic analysis and security monitoring
-- Storage and persistent volume monitoring
+
+## 🧪 Feature Flags & A/B Testing
+
+VibeCode includes a comprehensive experimentation platform inspired by Datadog's Eppo acquisition (2025). The system provides feature flagging, A/B testing, and statistical analysis capabilities.
+
+### Eppo-Inspired Features
+
+**Feature Flag Engine** (`src/lib/feature-flags.ts`):
+- Statistical experimentation with significance testing
+- Advanced targeting rules and user segmentation
+- Real-time flag evaluation and allocation tracking
+- Custom metrics tracking and conversion analysis
+- Datadog integration for experiment monitoring
+
+**Key Capabilities**:
+- 🎯 **Targeted Rollouts**: Rule-based targeting with custom attributes
+- 📊 **Statistical Analysis**: Confidence intervals, p-values, and lift calculations
+- 🔄 **Real-time Evaluation**: Client and server-side flag evaluation
+- 📈 **Conversion Tracking**: Business metrics and event tracking
+- 🧮 **A/B Testing**: Multi-variant experiments with statistical significance
+
+### Using Feature Flags
+
+**React Hook Usage**:
+```typescript
+import { useFeatureFlag, ABTest } from '@/lib/experiment-client'
+
+// Basic feature flag
+const { isEnabled, variant, trackMetric } = useFeatureFlag('ai_assistant_v2')
+
+// A/B testing component
+<ABTest 
+  flagKey="editor_theme_dark_plus"
+  variants={{
+    control: <StandardEditor />,
+    dark_plus: <EnhancedDarkEditor />
+  }}
+  onVariantShown={(variant) => console.log('Showing:', variant)}
+/>
+```
+
+**Server-side Evaluation**:
+```typescript
+import { featureFlagEngine } from '@/lib/feature-flags'
+
+const result = await featureFlagEngine.evaluateFlag('ai_assistant_v2', {
+  userId: 'user123',
+  customAttributes: { plan: 'pro' }
+})
+```
+
+**Experiment Tracking**:
+```typescript
+// Track conversions
+await ExperimentTracker.trackConversion('ai_assistant_v2')
+
+// Track custom metrics
+await ExperimentTracker.trackEvent('ai_assistant_v2', 'code_completion', 1)
+```
+
+### Experimentation API
+
+**Evaluate Flags**:
+```bash
+POST /api/experiments
+{
+  "action": "evaluate",
+  "flagKey": "ai_assistant_v2",
+  "context": { "workspaceId": "ws123" }
+}
+```
+
+**Track Metrics**:
+```bash
+POST /api/experiments
+{
+  "action": "track",
+  "flagKey": "ai_assistant_v2",
+  "metricName": "conversion",
+  "value": 1
+}
+```
+
+**Get Results** (Admin):
+```bash
+GET /api/experiments?flagKey=ai_assistant_v2&action=results
+```
+
+### Statistical Analysis
+
+The platform provides comprehensive experiment analysis:
+- **Conversion Rates**: Variant performance comparison
+- **Statistical Significance**: P-values and confidence intervals
+- **Lift Calculations**: Percentage improvement over control
+- **Sample Size**: Required sample sizes for statistical power
+- **Confidence Intervals**: 95% confidence bounds for metrics
 
 **Security Monitoring**:
+- Network traffic analysis and security monitoring
+- Storage and persistent volume monitoring
 - Runtime security analysis with KubeHound
 - Container escape detection and prevention
 - Kubernetes RBAC analysis and privilege escalation detection
