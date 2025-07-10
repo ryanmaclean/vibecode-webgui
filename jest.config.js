@@ -97,6 +97,11 @@ const customJestConfig = {
       testMatch: ['<rootDir>/tests/k8s/**/*.test.{js,ts}'],
       testEnvironment: 'node',
     },
+    {
+      displayName: 'docker',
+      testMatch: ['<rootDir>/tests/docker/**/*.test.{js,ts}'],
+      testEnvironment: 'node',
+    },
   ],
 }
 

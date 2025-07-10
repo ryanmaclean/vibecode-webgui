@@ -151,13 +151,18 @@ async function checkDatadogHealth(): Promise<ComponentHealth> {
     // For real integration testing, make actual API call to Datadog validate endpoint
     if (process.env.ENABLE_DATADOG_INTEGRATION_TESTS === 'true') {
       try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 5000)
+        
         const response = await fetch('https://api.datadoghq.com/api/v1/validate', {
           method: 'GET',
           headers: {
             'DD-API-KEY': apiKey
           },
-          timeout: 5000
+          signal: controller.signal
         })
+        
+        clearTimeout(timeoutId)
         
         if (response.ok) {
           const validation = await response.json()

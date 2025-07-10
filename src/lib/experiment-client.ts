@@ -296,7 +296,8 @@ export function ABTest({
   }
 
   const selectedVariant = variant in variants ? variant : defaultVariant
-  return variants[selectedVariant] || variants[defaultVariant] || null
+  const result = variants[selectedVariant] || variants[defaultVariant]
+  return result ?? React.createElement('div', null, 'Variant not found')
 }
 
 /**

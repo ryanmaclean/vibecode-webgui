@@ -83,10 +83,16 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        // For development - replace with actual user validation
+        // Development-only credential check (disabled in production)
+        const isDevelopment = process.env.NODE_ENV === 'development'
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@vibecode.dev'
+        const adminPassword = process.env.ADMIN_PASSWORD
+        
         if (
-          credentials.email === 'admin@vibecode.dev' &&
-          credentials.password === 'admin123'
+          isDevelopment &&
+          adminPassword &&
+          credentials.email === adminEmail &&
+          credentials.password === adminPassword
         ) {
           return {
             id: '1',

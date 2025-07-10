@@ -1,0 +1,256 @@
+# VibeCode WebGUI - SLI/SLO Definitions
+# Staff Engineer Implementation | Datadog | July 2025
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vibecode-sli-slo-config
+  namespace: monitoring
+data:
+  sli-slo.json: |
+    {
+      "service": "vibecode-webgui",
+      "version": "1.0.0",
+      "slis": {
+        "availability": {
+          "name": "API Availability",
+          "description": "Percentage of successful API requests",
+          "metric": "success_rate",
+          "query": "sum:http.request.success{service:vibecode-webgui} / sum:http.request.total{service:vibecode-webgui}",
+          "threshold": {
+            "critical": 0.995,
+            "warning": 0.998
+          }
+        },
+        "latency": {
+          "name": "API Response Time",
+          "description": "95th percentile response time for API requests",
+          "metric": "response_time_p95",
+          "query": "p95:http.request.duration{service:vibecode-webgui}",
+          "threshold": {
+            "critical": 500,
+            "warning": 300
+          },
+          "unit": "ms"
+        },
+        "error_rate": {
+          "name": "Error Rate",
+          "description": "Percentage of requests resulting in 5xx errors",
+          "metric": "error_rate",
+          "query": "sum:http.request.errors{service:vibecode-webgui,status_code:5*} / sum:http.request.total{service:vibecode-webgui}",
+          "threshold": {
+            "critical": 0.005,
+            "warning": 0.001
+          }
+        },
+        "data_freshness": {
+          "name": "Data Pipeline Freshness",
+          "description": "Maximum age of processed data in analytics pipeline",
+          "metric": "data_lag",
+          "query": "max:data.pipeline.lag{service:vibecode-webgui}",
+          "threshold": {
+            "critical": 300,
+            "warning": 180
+          },
+          "unit": "seconds"
+        },
+        "ai_model_performance": {
+          "name": "AI Model Accuracy",
+          "description": "Code suggestion acceptance rate",
+          "metric": "ai_accuracy",
+          "query": "sum:ai.suggestions.accepted{service:vibecode-webgui} / sum:ai.suggestions.total{service:vibecode-webgui}",
+          "threshold": {
+            "critical": 0.7,
+            "warning": 0.8
+          }
+        }
+      },
+      "slos": {
+        "availability_slo": {
+          "name": "Monthly Availability SLO",
+          "description": "99.9% availability over 30-day rolling window",
+          "target": 0.999,
+          "time_window": "30d",
+          "sli": "availability",
+          "error_budget": {
+            "monthly_downtime": "43.2m",
+            "burn_rate_alerts": {
+              "fast": {
+                "multiplier": 14.4,
+                "window": "1h"
+              },
+              "slow": {
+                "multiplier": 6,
+                "window": "6h"
+              }
+            }
+          }
+        },
+        "latency_slo": {
+          "name": "Monthly Latency SLO",
+          "description": "95% of requests under 300ms over 30-day rolling window",
+          "target": 0.95,
+          "time_window": "30d",
+          "sli": "latency",
+          "error_budget": {
+            "monthly_violations": "5%",
+            "burn_rate_alerts": {
+              "fast": {
+                "multiplier": 14.4,
+                "window": "1h"
+              },
+              "slow": {
+                "multiplier": 6,
+                "window": "6h"
+              }
+            }
+          }
+        },
+        "error_rate_slo": {
+          "name": "Monthly Error Rate SLO",
+          "description": "Less than 0.1% error rate over 30-day rolling window",
+          "target": 0.999,
+          "time_window": "30d",
+          "sli": "error_rate",
+          "error_budget": {
+            "monthly_errors": "0.1%",
+            "burn_rate_alerts": {
+              "fast": {
+                "multiplier": 14.4,
+                "window": "1h"
+              },
+              "slow": {
+                "multiplier": 6,
+                "window": "6h"
+              }
+            }
+          }
+        },
+        "data_freshness_slo": {
+          "name": "Data Freshness SLO",
+          "description": "95% of data processed within 3 minutes",
+          "target": 0.95,
+          "time_window": "24h",
+          "sli": "data_freshness",
+          "error_budget": {
+            "daily_violations": "5%"
+          }
+        }
+      }
+    }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datadog-alerts-config
+  namespace: monitoring
+data:
+  alert-rules.yaml: |
+    # Critical Alerts
+    - name: "High Error Rate"
+      type: "metric alert"
+      query: "avg(last_5m):sum:http.request.errors{service:vibecode-webgui} / sum:http.request.total{service:vibecode-webgui} > 0.01"
+      message: |
+        @slack-alerts @pagerduty-critical
+        Error rate is above 1% for VibeCode WebGUI
+        Runbook: https://wiki.vibecode.dev/runbooks/high-error-rate
+      tags:
+        - "team:platform"
+        - "service:vibecode-webgui"
+        - "severity:critical"
+      options:
+        thresholds:
+          critical: 0.01
+          warning: 0.005
+        notify_no_data: true
+        no_data_timeframe: 10
+
+    - name: "API Latency P95 High"
+      type: "metric alert"  
+      query: "avg(last_5m):p95:http.request.duration{service:vibecode-webgui} > 500"
+      message: |
+        @slack-alerts @pagerduty-warning
+        API response time P95 is above 500ms for VibeCode WebGUI
+        Runbook: https://wiki.vibecode.dev/runbooks/high-latency
+      tags:
+        - "team:platform"
+        - "service:vibecode-webgui"
+        - "severity:warning"
+      options:
+        thresholds:
+          critical: 500
+          warning: 300
+
+    - name: "Service Availability Low"
+      type: "service check"
+      query: '"http.can_connect".over("service:vibecode-webgui").by("*").last(2).count_by_status()'
+      message: |
+        @slack-alerts @pagerduty-critical
+        VibeCode WebGUI service is not responding to health checks
+        Runbook: https://wiki.vibecode.dev/runbooks/service-down
+      tags:
+        - "team:platform" 
+        - "service:vibecode-webgui"
+        - "severity:critical"
+
+    - name: "Memory Usage High"
+      type: "metric alert"
+      query: "avg(last_10m):avg:system.mem.pct_usable{service:vibecode-webgui} < 0.1"
+      message: |
+        @slack-alerts @pagerduty-warning
+        Memory usage is above 90% for VibeCode WebGUI containers
+        Runbook: https://wiki.vibecode.dev/runbooks/high-memory
+      tags:
+        - "team:platform"
+        - "service:vibecode-webgui"
+        - "severity:warning"
+
+    - name: "Database Connection Pool Exhausted"
+      type: "metric alert"
+      query: "avg(last_5m):avg:postgres.connections.active{service:vibecode-webgui} / avg:postgres.connections.max{service:vibecode-webgui} > 0.9"
+      message: |
+        @slack-alerts @pagerduty-critical
+        Database connection pool is near capacity for VibeCode WebGUI
+        Runbook: https://wiki.vibecode.dev/runbooks/db-connections
+      tags:
+        - "team:platform"
+        - "service:vibecode-webgui"
+        - "severity:critical"
+
+    - name: "AI Model Performance Degraded"
+      type: "metric alert"
+      query: "avg(last_30m):sum:ai.suggestions.accepted{service:vibecode-webgui} / sum:ai.suggestions.total{service:vibecode-webgui} < 0.7"
+      message: |
+        @slack-alerts
+        AI model performance has degraded below 70% acceptance rate
+        Runbook: https://wiki.vibecode.dev/runbooks/ai-model-performance
+      tags:
+        - "team:ai"
+        - "service:vibecode-webgui"
+        - "severity:warning"
+
+    # Data Observability Alerts (Metaplane-style)
+    - name: "Data Pipeline Lag High"
+      type: "metric alert"
+      query: "avg(last_10m):max:data.pipeline.lag{service:vibecode-webgui} > 300"
+      message: |
+        @slack-data-eng @pagerduty-warning
+        Data pipeline processing lag is above 5 minutes
+        Runbook: https://wiki.vibecode.dev/runbooks/data-lag
+      tags:
+        - "team:data"
+        - "service:vibecode-webgui"
+        - "severity:warning"
+
+    - name: "Data Quality Check Failed"
+      type: "metric alert"
+      query: "sum(last_15m):sum:data.quality.failures{service:vibecode-webgui} > 0"
+      message: |
+        @slack-data-eng @pagerduty-critical
+        Data quality checks are failing for user analytics pipeline
+        Runbook: https://wiki.vibecode.dev/runbooks/data-quality
+      tags:
+        - "team:data"
+        - "service:vibecode-webgui"
+        - "severity:critical"
