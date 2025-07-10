@@ -22,11 +22,10 @@ export default function WorkspaceLayout({
 }: WorkspaceLayoutProps) {
   const { user } = useAuth()
   const [sidebarWidth, setSidebarWidth] = useState(280)
-  const [terminalHeight, setTerminalHeight] = useState(200)
-  const [isResizing, setIsResizing] = useState<'sidebar' | 'terminal' | null>(null)
+  const [isResizing, setIsResizing] = useState<'sidebar' | null>(null)
   const layoutRef = useRef<HTMLDivElement>(null)
 
-  const handleMouseDown = useCallback((type: 'sidebar' | 'terminal') => {
+  const handleMouseDown = useCallback((type: 'sidebar') => {
     setIsResizing(type)
   }, [])
 
@@ -38,9 +37,6 @@ export default function WorkspaceLayout({
     if (isResizing === 'sidebar') {
       const newWidth = Math.max(200, Math.min(600, e.clientX - rect.left))
       setSidebarWidth(newWidth)
-    } else if (isResizing === 'terminal') {
-      const newHeight = Math.max(150, Math.min(400, rect.bottom - e.clientY))
-      setTerminalHeight(newHeight)
     }
   }, [isResizing])
 
@@ -139,56 +135,27 @@ export default function WorkspaceLayout({
           onMouseDown={() => handleMouseDown('sidebar')}
         />
 
-        {/* Main Editor Area */}
-        <div className="flex-1 flex flex-col">
-          {/* Code-server IDE */}
-          <div className="flex-1">
-            <CodeServerIDE
-              workspaceId={workspaceId}
-              className="h-full"
-              onReady={(iframe) => {
-                console.log('Code-server IDE ready:', iframe)
-              }}
-              onError={(error) => {
-                console.error('Code-server IDE error:', error)
-              }}
-            />
-          </div>
-
-          {/* Terminal Resize Handle */}
-          <div
-            className="h-1 bg-gray-700 hover:bg-gray-600 cursor-row-resize transition-colors"
-            onMouseDown={() => handleMouseDown('terminal')}
+        {/* Main Editor Area - Code-server with built-in terminal */}
+        <div className="flex-1">
+          <CodeServerIDE
+            workspaceId={workspaceId}
+            className="h-full"
+            onReady={(iframe) => {
+              console.log('Code-server IDE ready with built-in terminal:', iframe)
+              
+              // Send message to code-server to show terminal by default
+              try {
+                iframe.contentWindow?.postMessage({
+                  type: 'workbench.action.terminal.toggleTerminal'
+                }, '*')
+              } catch (error) {
+                console.log('Could not auto-open terminal:', error)
+              }
+            }}
+            onError={(error) => {
+              console.error('Code-server IDE error:', error)
+            }}
           />
-
-          {/* Terminal Panel */}
-          <div 
-            className="bg-gray-900 border-t border-gray-700"
-            style={{ height: terminalHeight }}
-          >
-            {/* Terminal Header */}
-            <div className="h-8 bg-gray-800 border-b border-gray-700 flex items-center px-3">
-              <span className="text-gray-300 text-sm font-medium">Terminal</span>
-              <div className="flex-1" />
-              <button className="text-gray-400 hover:text-white text-xs">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </button>
-            </div>
-            
-            {/* Terminal Content Placeholder */}
-            <div className="p-3 text-green-400 font-mono text-sm">
-              <div>$ npm run dev</div>
-              <div className="text-gray-400">Starting development server...</div>
-              <div className="text-gray-400">Local: http://localhost:3000</div>
-              <div className="text-gray-400">Ready in 1.2s</div>
-              <div className="flex items-center">
-                <span>$ </span>
-                <div className="w-2 h-5 bg-green-400 ml-1 animate-pulse"></div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
