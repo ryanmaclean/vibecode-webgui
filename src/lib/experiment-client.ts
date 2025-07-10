@@ -6,7 +6,7 @@
 
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 
 interface ExperimentResult {
@@ -251,14 +251,14 @@ export function withFeatureFlag<T extends object>(
       const { isEnabled, isLoading, ...flagProps } = useFeatureFlag(flagKey, options)
 
       if (isLoading) {
-        return <div>Loading...</div>
+        return React.createElement('div', null, 'Loading...')
       }
 
       if (!isEnabled) {
-        return <>{props.fallback || null}</>
+        return props.fallback || null
       }
 
-      return <Component {...props} {...flagProps} />
+      return React.createElement(Component, { ...props, ...flagProps })
     }
   }
 }
@@ -280,7 +280,7 @@ export function ABTest({
   defaultVariant = 'control',
   context,
   onVariantShown
-}: ABTestProps): JSX.Element {
+}: ABTestProps): React.ReactElement {
   const { variant, isLoading, trackMetric } = useFeatureFlag(flagKey, { context })
 
   useEffect(() => {
@@ -292,11 +292,11 @@ export function ABTest({
   }, [variant, isLoading, onVariantShown, trackMetric])
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return React.createElement('div', null, 'Loading...')
   }
 
   const selectedVariant = variant in variants ? variant : defaultVariant
-  return <>{variants[selectedVariant] || variants[defaultVariant] || null}</>
+  return variants[selectedVariant] || variants[defaultVariant] || null
 }
 
 /**
