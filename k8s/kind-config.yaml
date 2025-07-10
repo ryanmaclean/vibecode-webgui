@@ -1,0 +1,58 @@
+# KIND cluster configuration for VibeCode WebGUI testing
+# Provides a multi-node cluster with ingress support for realistic testing
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: vibecode-test
+
+# Configure nodes
+nodes:
+  # Control plane
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      # Expose port 80 for ingress
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      # Expose port 443 for ingress
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
+      # Expose port 3000 for VibeCode WebGUI
+      - containerPort: 3000
+        hostPort: 3000
+        protocol: TCP
+      # Expose port 5432 for PostgreSQL
+      - containerPort: 5432
+        hostPort: 5432
+        protocol: TCP
+      # Expose port 6379 for Redis
+      - containerPort: 6379
+        hostPort: 6379
+        protocol: TCP
+
+  # Worker nodes for realistic multi-node testing
+  - role: worker
+    labels:
+      node-type: application
+  - role: worker
+    labels:
+      node-type: database
+
+# Configure networking
+networking:
+  # Disable default CNI to install our own
+  disableDefaultCNI: false
+  # Use different subnet to avoid conflicts
+  podSubnet: "10.244.0.0/16"
+  serviceSubnet: "10.96.0.0/16"
+
+# Enable feature gates for testing
+featureGates:
+  "EphemeralContainers": true

@@ -1,0 +1,205 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-sql
+  namespace: vibecode
+data:
+  init.sql: |
+    -- Initialize VibeCode WebGUI database schema
+    -- This script sets up the core tables for the AI-powered development platform
+
+    -- Enable UUID extension
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+    -- Users table for authentication and user management
+    CREATE TABLE users (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        avatar_url TEXT,
+        provider VARCHAR(50) DEFAULT 'email',
+        provider_id VARCHAR(255),
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        
+        -- Audit fields
+        last_login_at TIMESTAMPTZ,
+        login_count INTEGER DEFAULT 0,
+        is_active BOOLEAN DEFAULT true,
+        
+        -- Constraints
+        CONSTRAINT users_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+    );
+
+    -- Projects table for code projects and workspaces
+    CREATE TABLE projects (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        
+        -- Project configuration
+        visibility VARCHAR(20) DEFAULT 'private' CHECK (visibility IN ('public', 'private', 'internal')),
+        template VARCHAR(100),
+        language VARCHAR(50),
+        framework VARCHAR(100),
+        
+        -- Timestamps
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        last_accessed_at TIMESTAMPTZ DEFAULT NOW(),
+        
+        -- Metadata
+        star_count INTEGER DEFAULT 0,
+        fork_count INTEGER DEFAULT 0,
+        is_archived BOOLEAN DEFAULT false
+    );
+
+    -- Files table for project file management
+    CREATE TABLE files (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        path VARCHAR(1000) NOT NULL,
+        content TEXT,
+        size_bytes INTEGER DEFAULT 0,
+        mime_type VARCHAR(100),
+        
+        -- Version control
+        version INTEGER DEFAULT 1,
+        checksum VARCHAR(64),
+        
+        -- Timestamps
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        
+        -- Constraints
+        UNIQUE(project_id, path)
+    );
+
+    -- Sessions table for user sessions
+    CREATE TABLE sessions (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash VARCHAR(255) NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        last_used_at TIMESTAMPTZ DEFAULT NOW(),
+        ip_address INET,
+        user_agent TEXT
+    );
+
+    -- Feature flags table for A/B testing and feature management
+    CREATE TABLE feature_flags (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        key VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        enabled BOOLEAN DEFAULT false,
+        rollout_percentage INTEGER DEFAULT 0 CHECK (rollout_percentage >= 0 AND rollout_percentage <= 100),
+        user_targeting JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    -- AI interactions table for tracking AI assistant usage
+    CREATE TABLE ai_interactions (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
+        
+        -- Interaction data
+        prompt TEXT NOT NULL,
+        response TEXT,
+        model VARCHAR(100),
+        tokens_used INTEGER DEFAULT 0,
+        cost_cents INTEGER DEFAULT 0,
+        
+        -- Context
+        context_type VARCHAR(50), -- 'code_completion', 'chat', 'debug', etc.
+        file_path VARCHAR(1000),
+        
+        -- Timestamps
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        completed_at TIMESTAMPTZ,
+        
+        -- Quality metrics
+        rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+        feedback TEXT
+    );
+
+    -- Deployments table for tracking project deployments
+    CREATE TABLE deployments (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        
+        -- Deployment info
+        environment VARCHAR(50) NOT NULL, -- 'development', 'staging', 'production'
+        status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'running', 'success', 'failed'
+        url TEXT,
+        
+        -- Version info
+        commit_hash VARCHAR(40),
+        branch VARCHAR(255) DEFAULT 'main',
+        
+        -- Timestamps
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        started_at TIMESTAMPTZ,
+        completed_at TIMESTAMPTZ,
+        
+        -- Logs and metadata
+        build_logs TEXT,
+        error_message TEXT,
+        metadata JSONB
+    );
+
+    -- Collaborators table for project sharing
+    CREATE TABLE collaborators (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        role VARCHAR(50) DEFAULT 'viewer' CHECK (role IN ('owner', 'editor', 'viewer')),
+        
+        -- Permissions
+        can_read BOOLEAN DEFAULT true,
+        can_write BOOLEAN DEFAULT false,
+        can_deploy BOOLEAN DEFAULT false,
+        
+        -- Timestamps
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        
+        -- Constraints
+        UNIQUE(project_id, user_id)
+    );
+
+    -- Create indexes for performance
+    CREATE INDEX idx_users_email ON users(email);
+    CREATE INDEX idx_users_provider ON users(provider, provider_id);
+    CREATE INDEX idx_projects_owner ON projects(owner_id);
+    CREATE INDEX idx_projects_updated ON projects(updated_at DESC);
+    CREATE INDEX idx_files_project ON files(project_id);
+    CREATE INDEX idx_files_path ON files(project_id, path);
+    CREATE INDEX idx_sessions_user ON sessions(user_id);
+    CREATE INDEX idx_sessions_token ON sessions(token_hash);
+    CREATE INDEX idx_feature_flags_key ON feature_flags(key);
+    CREATE INDEX idx_ai_interactions_user ON ai_interactions(user_id);
+    CREATE INDEX idx_ai_interactions_project ON ai_interactions(project_id);
+    CREATE INDEX idx_deployments_project ON deployments(project_id);
+    CREATE INDEX idx_deployments_status ON deployments(status);
+    CREATE INDEX idx_collaborators_project ON collaborators(project_id);
+    CREATE INDEX idx_collaborators_user ON collaborators(user_id);
+
+    -- Insert some test data for KIND testing
+    INSERT INTO users (email, name, provider, provider_id) VALUES
+    ('admin@vibecode.dev', 'Admin User', 'email', 'admin@vibecode.dev'),
+    ('test@vibecode.dev', 'Test User', 'email', 'test@vibecode.dev');
+
+    INSERT INTO feature_flags (key, name, description, enabled, rollout_percentage) VALUES
+    ('kind_testing', 'KIND Testing Flag', 'Feature flag for Kubernetes testing', true, 100),
+    ('monitoring_enhanced', 'Enhanced Monitoring', 'Advanced monitoring features', true, 50);
+
+    -- Create test project
+    INSERT INTO projects (name, description, owner_id, language, framework) 
+    SELECT 'KIND Test Project', 'Test project for Kubernetes deployment', id, 'TypeScript', 'Next.js'
+    FROM users WHERE email = 'admin@vibecode.dev';

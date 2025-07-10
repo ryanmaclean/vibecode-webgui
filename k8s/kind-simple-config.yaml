@@ -1,0 +1,20 @@
+# Simplified KIND cluster configuration for faster setup
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: vibecode-test
+
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      # Expose port 3000 for VibeCode WebGUI
+      - containerPort: 30000
+        hostPort: 3000
+        protocol: TCP
+      # Expose port 5432 for PostgreSQL
+      - containerPort: 30001
+        hostPort: 5432
+        protocol: TCP
+      # Expose port 6379 for Redis
+      - containerPort: 30002
+        hostPort: 6379
+        protocol: TCP
