@@ -93,6 +93,21 @@ const customJestConfig = {
       testEnvironment: 'node',
     },
     {
+      displayName: 'validation',
+      testMatch: ['<rootDir>/tests/validation/**/*.test.{js,ts}'],
+      testEnvironment: 'node',
+    },
+    {
+      displayName: 'performance',
+      testMatch: ['<rootDir>/tests/performance/**/*.test.{js,ts}'],
+      testEnvironment: 'node',
+    },
+    {
+      displayName: 'chaos',
+      testMatch: ['<rootDir>/tests/chaos/**/*.test.{js,ts}'],
+      testEnvironment: 'node',
+    },
+    {
       displayName: 'k8s',
       testMatch: ['<rootDir>/tests/k8s/**/*.test.{js,ts}'],
       testEnvironment: 'node',
@@ -100,6 +115,16 @@ const customJestConfig = {
     {
       displayName: 'docker',
       testMatch: ['<rootDir>/tests/docker/**/*.test.{js,ts}'],
+      testEnvironment: 'node',
+    },
+    {
+      displayName: 'security',
+      testMatch: ['<rootDir>/tests/security/**/*.test.{js,ts}'],
+      testEnvironment: 'node',
+    },
+    {
+      displayName: 'monitoring',
+      testMatch: ['<rootDir>/tests/monitoring/**/*.test.{js,ts}'],
       testEnvironment: 'node',
     },
   ],
