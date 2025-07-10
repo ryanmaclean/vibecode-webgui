@@ -9,10 +9,11 @@ An AI-powered web-based development platform that combines the best features of 
 ## ✨ Features
 
 - 🚀 **Full VS Code Experience**: Complete IDE powered by code-server 4.101.2
-- 🤖 **AI-Powered Development**: Claude Code SDK integration for intelligent assistance
+- 🤖 **AI-Powered Development**: Vercel AI SDK integration for intelligent assistance
 - 🔄 **Real-time Collaboration**: Multi-user editing with cursor tracking and presence
 - 🐳 **Container-Native**: Docker and Kubernetes deployment ready
 - 🔐 **Enterprise Security**: Zero GPL/LGPL dependencies, comprehensive scanning
+- 📊 **Comprehensive Monitoring**: Datadog RUM/APM/Logs, Vector, KubeHound security analysis
 - ⚡ **High Performance**: WebGL-accelerated terminal, optimized file watching
 - 🌐 **Multi-Provider Deployment**: Netlify, Vercel, GitHub Pages, AWS, GCP, Azure
 
@@ -175,6 +176,16 @@ npm run test:k8s          # Test KIND deployment
 npm run test:k8s:load     # Load testing on K8s
 ```
 
+**Monitoring Tests**:
+```bash
+npm run test:monitoring           # All monitoring tests
+npm run test:monitoring:unit      # Unit tests for monitoring functions
+npm run test:monitoring:integration # API integration tests
+npm run test:monitoring:e2e       # E2E dashboard tests
+npm run test:monitoring:k8s       # Kubernetes deployment tests
+npm run test:monitoring:security  # Security compliance tests
+```
+
 **Security Tests**:
 ```bash
 npm run test:security     # Security scanning
@@ -207,6 +218,138 @@ npm run security:scan      # Full security audit
 npm run security:licenses  # License compliance check
 npm run security:deps      # Dependency vulnerability scan
 ```
+
+## 📊 Monitoring & Observability
+
+VibeCode includes comprehensive monitoring and observability features powered by Datadog and open-source tools.
+
+### Datadog Integration
+
+**Datadog SDKs Used**:
+- `@datadog/browser-rum` - Real User Monitoring (RUM) for frontend performance tracking
+- `@datadog/browser-logs` - Browser log collection and analysis
+- `dd-trace` - Application Performance Monitoring (APM) for Node.js backend
+- Datadog Agent 7 - Infrastructure monitoring, logs collection, and system metrics
+
+**Key Features**:
+- 📈 **Real User Monitoring (RUM)**: Track Core Web Vitals, page loads, user interactions
+- 🔍 **Application Performance Monitoring (APM)**: Distributed tracing, service maps, performance insights
+- 📝 **Log Management**: Structured logging with automatic correlation between logs, traces, and metrics
+- 🖥️ **Infrastructure Monitoring**: System metrics, container monitoring, Kubernetes cluster visibility
+- 🛡️ **Security Monitoring**: Runtime security analysis, compliance monitoring
+
+### Monitoring Stack Components
+
+**Vector Log Aggregation**:
+- High-performance log collection and shipping to Datadog
+- Kubernetes logs, application logs, and system metrics aggregation
+- Data enrichment and filtering before sending to Datadog
+- Configuration: `infrastructure/monitoring/vector.yaml`
+
+**KubeHound Security Analysis**:
+- Kubernetes attack path analysis and security posture assessment
+- MITRE ATT&CK technique detection for container environments
+- Privilege escalation path identification
+- Integration with Datadog for security alerting
+- Configuration: `infrastructure/monitoring/kubehound-config.yaml`
+
+**Additional Open Source Tools**:
+- **Winston** & **Pino**: Structured logging libraries for application logs
+- **Kubernetes DaemonSets**: For Datadog Agent and Vector deployment
+- **Prometheus Integration**: Metrics scraping and monitoring (via ServiceMonitor)
+
+### Monitoring Dashboard
+
+Access the comprehensive monitoring dashboard at `/monitoring` (admin-only):
+
+- **System Metrics**: CPU, memory, disk usage, network I/O
+- **Application Metrics**: Response times, error rates, active users
+- **Security Alerts**: KubeHound findings, security policy violations
+- **Real-time Updates**: Live metrics with 30-second refresh intervals
+- **Log Streaming**: Real-time log analysis and filtering
+
+### Environment Setup
+
+**Required Environment Variables**:
+```bash
+# Datadog configuration
+DD_API_KEY=your-datadog-api-key
+DD_SITE=datadoghq.com
+DD_ENV=production
+DD_SERVICE=vibecode-webgui
+DD_VERSION=1.0.0
+
+# Application monitoring
+DD_APM_ENABLED=true
+DD_LOGS_ENABLED=true
+DD_RUM_APPLICATION_ID=your-rum-app-id
+DD_RUM_CLIENT_TOKEN=your-rum-client-token
+```
+
+**Kubernetes Secrets**:
+```bash
+# Create Datadog secret for Kubernetes
+kubectl create secret generic datadog-secret \
+  --from-literal=api-key="your-datadog-api-key" \
+  --namespace=datadog
+```
+
+### Monitoring Deployment
+
+**Local Development**:
+```bash
+# Start monitoring stack with Docker Compose
+docker-compose -f docker-compose.monitoring.yml up -d
+
+# Access monitoring dashboard
+open http://localhost:3000/monitoring
+```
+
+**Kubernetes Deployment**:
+```bash
+# Deploy Datadog Agent
+kubectl apply -f infrastructure/monitoring/datadog-agent.yaml
+
+# Deploy Vector log aggregation
+kubectl apply -f infrastructure/monitoring/vector-deployment.yaml
+
+# Deploy KubeHound security analysis
+kubectl apply -f infrastructure/monitoring/kubehound-config.yaml
+
+# Verify deployment
+kubectl get pods -n datadog
+kubectl get pods -n monitoring
+kubectl get pods -n security
+```
+
+### Monitoring Features
+
+**Frontend Monitoring** (`src/lib/monitoring.ts`):
+- Page performance tracking with Core Web Vitals
+- Error tracking and user session recording
+- Custom business metrics and events
+- Workspace-specific analytics
+- User journey analysis
+
+**Backend Monitoring** (`src/lib/server-monitoring.ts`):
+- Distributed tracing across microservices
+- Database query performance monitoring
+- API endpoint response time tracking
+- Error aggregation and alerting
+- Custom application metrics
+
+**Infrastructure Monitoring**:
+- Kubernetes cluster health and resource utilization
+- Container performance and resource consumption
+- Network traffic analysis and security monitoring
+- Storage and persistent volume monitoring
+
+**Security Monitoring**:
+- Runtime security analysis with KubeHound
+- Container escape detection and prevention
+- Kubernetes RBAC analysis and privilege escalation detection
+- Network security policy enforcement monitoring
+- Compliance reporting and audit trails
 
 ### Pre-commit Hooks
 Automatic security validation on every commit:
@@ -262,9 +405,10 @@ DD_API_KEY=your-datadog-api-key
 - **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
 - **Backend**: Node.js, Express, Socket.IO, PostgreSQL, Redis
 - **IDE**: code-server 4.101.2, xterm.js 5.5.0
-- **AI**: Claude Code SDK, OpenAI integration
+- **AI**: Vercel AI SDK, Claude Code integration
 - **Infrastructure**: Docker, Kubernetes, KIND
-- **Security**: Datadog SCA/SAST, pre-commit hooks
+- **Monitoring**: Datadog RUM/APM/Logs, Vector, KubeHound, Winston, Pino
+- **Security**: Datadog SCA/SAST, pre-commit hooks, runtime security
 
 ### Development Scripts
 ```bash
@@ -307,13 +451,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [x] Core infrastructure with Docker/Kubernetes
 - [x] Security scanning and license compliance
+- [x] Comprehensive monitoring with Datadog integration
+- [x] AI-powered code assistance with Vercel AI SDK
 - [ ] JWT authentication with OAuth
 - [ ] Code-server integration with iframe pattern
 - [ ] High-performance terminal with WebGL
 - [ ] Claude Code VS Code extension
 - [ ] Real-time collaboration features
 - [ ] Multi-provider deployment system
-- [ ] Performance monitoring and analytics
 
 ---
 

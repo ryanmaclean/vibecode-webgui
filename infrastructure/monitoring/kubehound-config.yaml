@@ -1,0 +1,329 @@
+# KubeHound configuration for Kubernetes attack path analysis
+# KubeHound is a Kubernetes attack graph tool from Datadog
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubehound-config
+  namespace: security
+data:
+  config.yaml: |
+    # KubeHound configuration for VibeCode cluster security analysis
+    
+    # Kubernetes cluster configuration
+    cluster:
+      name: "vibecode-cluster"
+      endpoint: "https://kubernetes.default.svc"
+      
+    # MongoDB configuration for attack graph storage
+    mongodb:
+      url: "mongodb://kubehound-mongo:27017"
+      database: "kubehound"
+      
+    # Neo4j configuration for graph database
+    neo4j:
+      url: "bolt://kubehound-neo4j:7687"
+      database: "neo4j"
+      username: "neo4j"
+      password: "password"
+      
+    # Data collection configuration
+    collector:
+      # Kubernetes API polling interval
+      refresh_interval: "5m"
+      
+      # Resource types to collect
+      resources:
+        - "pods"
+        - "services"
+        - "deployments"
+        - "replicasets"
+        - "daemonsets"
+        - "statefulsets"
+        - "configmaps"
+        - "secrets"
+        - "serviceaccounts"
+        - "roles"
+        - "rolebindings"
+        - "clusterroles"
+        - "clusterrolebindings"
+        - "networkpolicies"
+        - "persistentvolumes"
+        - "persistentvolumeclaims"
+        - "ingresses"
+        - "nodes"
+        - "namespaces"
+        
+      # Namespace filtering
+      namespaces:
+        include:
+          - "vibecode-webgui"
+          - "monitoring"
+          - "datadog"
+          - "security"
+        exclude:
+          - "kube-system"
+          - "kube-public"
+          - "kube-node-lease"
+          
+    # Attack path analysis configuration
+    analysis:
+      # Enable specific attack techniques
+      techniques:
+        # MITRE ATT&CK for Kubernetes techniques
+        - "T1610"  # Deploy Container
+        - "T1611"  # Escape to Host
+        - "T1613"  # Container and Resource Discovery
+        - "T1614"  # System Location Discovery
+        - "T1615"  # Group Policy Discovery
+        - "T1619"  # Cloud Instance Metadata API
+        - "T1620"  # Reflective Code Loading
+        
+      # Privilege escalation paths
+      privilege_escalation:
+        enabled: true
+        techniques:
+          - "privileged_containers"
+          - "host_pid_namespace"
+          - "host_network_namespace"
+          - "host_filesystem_access"
+          - "sensitive_volume_mounts"
+          - "privileged_service_accounts"
+          - "cluster_admin_bindings"
+          
+      # Lateral movement analysis
+      lateral_movement:
+        enabled: true
+        techniques:
+          - "service_account_token_access"
+          - "network_access_analysis"
+          - "shared_volume_access"
+          - "inter_pod_communication"
+          
+      # Data access analysis
+      data_access:
+        enabled: true
+        techniques:
+          - "secret_access"
+          - "configmap_access"
+          - "persistent_volume_access"
+          - "host_filesystem_access"
+          
+    # Security policies and rules
+    policies:
+      # Pod Security Standards
+      pod_security:
+        enabled: true
+        standards:
+          - "restricted"
+          - "baseline"
+          - "privileged"
+          
+      # Network security policies
+      network_security:
+        enabled: true
+        default_deny: true
+        
+      # RBAC analysis
+      rbac:
+        enabled: true
+        dangerous_permissions:
+          - "create pods"
+          - "get secrets"
+          - "create clusterrolebindings"
+          - "impersonate users"
+          - "create serviceaccounts"
+          
+    # Alerting configuration
+    alerting:
+      enabled: true
+      
+      # Datadog integration
+      datadog:
+        enabled: true
+        api_key_secret: "datadog-secret"
+        api_key_key: "api-key"
+        site: "datadoghq.com"
+        
+      # Alert rules
+      rules:
+        - name: "critical_privilege_escalation"
+          severity: "critical"
+          condition: "attack_path.techniques contains 'T1610' and attack_path.risk_score > 8"
+          description: "Critical privilege escalation path detected"
+          
+        - name: "cluster_admin_access"
+          severity: "high" 
+          condition: "rbac.cluster_admin_bindings.count > 0"
+          description: "Cluster admin access detected"
+          
+        - name: "privileged_container"
+          severity: "high"
+          condition: "pod.security_context.privileged == true"
+          description: "Privileged container detected"
+          
+        - name: "host_network_access"
+          severity: "medium"
+          condition: "pod.spec.host_network == true"
+          description: "Container with host network access"
+          
+        - name: "sensitive_volume_mount"
+          severity: "medium"
+          condition: "volume_mount.path in ['/var/run/docker.sock', '/proc', '/sys']"
+          description: "Sensitive host path mounted in container"
+          
+    # Reporting configuration
+    reporting:
+      enabled: true
+      
+      # Report formats
+      formats:
+        - "json"
+        - "html"
+        - "sarif"
+        
+      # Report destinations
+      destinations:
+        # Local file system
+        - type: "file"
+          path: "/reports"
+          
+        # Datadog logs
+        - type: "datadog"
+          api_key_secret: "datadog-secret"
+          source: "kubehound"
+          service: "vibecode-security"
+          
+    # Logging configuration
+    logging:
+      level: "info"
+      format: "json"
+      
+      # Log to Datadog
+      datadog:
+        enabled: true
+        api_key_secret: "datadog-secret"
+        source: "kubehound"
+        service: "kubehound"
+
+---
+# KubeHound Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubehound
+  namespace: security
+  labels:
+    app: kubehound
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubehound
+  template:
+    metadata:
+      labels:
+        app: kubehound
+    spec:
+      serviceAccountName: kubehound
+      containers:
+      - name: kubehound
+        image: datadoghq/kubehound:latest
+        imagePullPolicy: Always
+        
+        env:
+          - name: KH_CONFIG_FILE
+            value: "/etc/kubehound/config.yaml"
+          - name: DD_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: datadog-secret
+                key: api-key
+                
+        volumeMounts:
+          - name: config
+            mountPath: /etc/kubehound/
+            readOnly: true
+          - name: reports
+            mountPath: /reports
+            
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+            
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          
+      volumes:
+        - name: config
+          configMap:
+            name: kubehound-config
+        - name: reports
+          emptyDir: {}
+
+---
+# ServiceAccount for KubeHound
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubehound
+  namespace: security
+
+---
+# ClusterRole for KubeHound (read-only access to cluster resources)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubehound
+rules:
+  - apiGroups: [""]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["extensions"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["policy"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+
+---
+# ClusterRoleBinding for KubeHound
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubehound
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubehound
+subjects:
+  - kind: ServiceAccount
+    name: kubehound
+    namespace: security

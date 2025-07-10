@@ -1,0 +1,254 @@
+# Vector deployment for log aggregation in Kubernetes
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: vector
+  namespace: monitoring
+  labels:
+    app: vector
+    component: log-aggregator
+spec:
+  selector:
+    matchLabels:
+      app: vector
+  template:
+    metadata:
+      labels:
+        app: vector
+        component: log-aggregator
+    spec:
+      serviceAccountName: vector
+      containers:
+      - name: vector
+        image: timberio/vector:0.39.0-alpine
+        imagePullPolicy: IfNotPresent
+        args:
+          - --config-dir
+          - /etc/vector/
+        env:
+          - name: VECTOR_SELF_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: VECTOR_SELF_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: VECTOR_SELF_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: DD_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: datadog-secret
+                key: api-key
+          - name: DD_SITE
+            value: "datadoghq.com"
+          - name: ENVIRONMENT
+            value: "production"
+          - name: APP_VERSION
+            value: "1.0.0"
+          - name: CLUSTER_NAME
+            value: "vibecode-cluster"
+          - name: LOG_LEVEL
+            value: "info"
+        
+        ports:
+          - containerPort: 8686
+            name: api
+            protocol: TCP
+          - containerPort: 9598
+            name: prometheus
+            protocol: TCP
+        
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        
+        volumeMounts:
+          # Vector configuration
+          - name: config
+            mountPath: /etc/vector/
+            readOnly: true
+          
+          # Vector data directory
+          - name: data
+            mountPath: /var/lib/vector/
+          
+          # Host log directories
+          - name: var-log
+            mountPath: /var/log/
+            readOnly: true
+          
+          # Container logs
+          - name: var-lib-docker-containers
+            mountPath: /var/lib/docker/containers/
+            readOnly: true
+          
+          # Application logs
+          - name: app-logs
+            mountPath: /app/logs/
+            readOnly: true
+          
+          # Kubernetes pod logs
+          - name: pod-logs
+            mountPath: /var/log/pods/
+            readOnly: true
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8686
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8686
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+
+      volumes:
+        # Vector configuration from ConfigMap
+        - name: config
+          configMap:
+            name: vector-config
+        
+        # Persistent data directory
+        - name: data
+          hostPath:
+            path: /var/lib/vector/
+            type: DirectoryOrCreate
+        
+        # Host system logs
+        - name: var-log
+          hostPath:
+            path: /var/log/
+        
+        # Docker container logs
+        - name: var-lib-docker-containers
+          hostPath:
+            path: /var/lib/docker/containers/
+        
+        # Application logs volume
+        - name: app-logs
+          hostPath:
+            path: /var/log/vibecode/
+            type: DirectoryOrCreate
+        
+        # Kubernetes pod logs
+        - name: pod-logs
+          hostPath:
+            path: /var/log/pods/
+
+      tolerations:
+        # Allow running on all nodes
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
+        - operator: Exists
+          effect: PreferNoSchedule
+
+      terminationGracePeriodSeconds: 60
+
+---
+# ServiceAccount for Vector
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vector
+  namespace: monitoring
+
+---
+# ClusterRole for Vector to access Kubernetes API
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vector
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "namespaces", "nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch"]
+
+---
+# ClusterRoleBinding for Vector
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vector
+subjects:
+  - kind: ServiceAccount
+    name: vector
+    namespace: monitoring
+
+---
+# ConfigMap for Vector configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vector-config
+  namespace: monitoring
+data:
+  vector.yaml: |
+    # Vector configuration will be mounted from the vector.yaml file
+    # This is a placeholder - the actual config is in vector.yaml
+
+---
+# Service for Vector API and metrics
+apiVersion: v1
+kind: Service
+metadata:
+  name: vector
+  namespace: monitoring
+  labels:
+    app: vector
+spec:
+  ports:
+    - name: api
+      port: 8686
+      targetPort: 8686
+      protocol: TCP
+    - name: prometheus
+      port: 9598
+      targetPort: 9598
+      protocol: TCP
+  selector:
+    app: vector
+  type: ClusterIP
+
+---
+# ServiceMonitor for Prometheus scraping (if using Prometheus Operator)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vector
+  namespace: monitoring
+  labels:
+    app: vector
+spec:
+  selector:
+    matchLabels:
+      app: vector
+  endpoints:
+    - port: prometheus
+      interval: 30s
+      path: /metrics
