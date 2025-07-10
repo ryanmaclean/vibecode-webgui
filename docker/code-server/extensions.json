@@ -1,0 +1,17 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-typescript-next",
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "ms-vscode.theme-github",
+    "ms-vscode.vscode-eslint",
+    "formulahendry.auto-rename-tag",
+    "christian-kohler.path-intellisense",
+    "ms-vscode.vscode-css-peek",
+    "bradlc.vscode-tailwindcss",
+    "ms-vscode.sublime-keybindings"
+  ]
+}
