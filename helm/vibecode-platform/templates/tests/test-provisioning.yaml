@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "vibecode-platform.fullname" . }}-test-provisioning"
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: test
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  serviceAccountName: {{ include "vibecode-platform.serviceAccountName" . }}
+  containers:
+  - name: test-provisioning
+    image: bitnami/kubectl:latest
+    command: ['sh', '-c']
+    args:
+    - |
+      set -e
+      echo "Testing VibeCode Platform provisioning capabilities..."
+      
+      # Test RBAC permissions
+      echo "Testing RBAC permissions..."
+      kubectl auth can-i get pods --namespace={{ .Values.global.namespace }}
+      kubectl auth can-i create deployments --namespace={{ .Values.global.namespace }}
+      kubectl auth can-i create services --namespace={{ .Values.global.namespace }}
+      kubectl auth can-i create persistentvolumeclaims --namespace={{ .Values.global.namespace }}
+      echo "✓ RBAC permissions verified"
+      
+      # Test ConfigMap access
+      echo "Testing ConfigMap access..."
+      kubectl get configmap {{ include "vibecode-platform.configMapName" . }} --namespace={{ .Values.global.namespace }}
+      echo "✓ ConfigMap accessible"
+      
+      # Test Secret access
+      echo "Testing Secret access..."
+      kubectl get secret {{ include "vibecode-platform.secretName" . }} --namespace={{ .Values.global.namespace }}
+      echo "✓ Secret accessible"
+      
+      # Test ServiceAccount
+      echo "Testing ServiceAccount..."
+      kubectl get serviceaccount {{ include "vibecode-platform.serviceAccountName" . }} --namespace={{ .Values.global.namespace }}
+      echo "✓ ServiceAccount exists"
+      
+      {{- if .Values.security.rbac.enabled }}
+      # Test RBAC resources
+      echo "Testing RBAC resources..."
+      kubectl get role {{ include "vibecode-platform.rbacName" . }}-workspace --namespace={{ .Values.global.namespace }}
+      kubectl get rolebinding {{ include "vibecode-platform.rbacName" . }}-workspace --namespace={{ .Values.global.namespace }}
+      echo "✓ RBAC resources exist"
+      {{- end }}
+      
+      {{- if .Values.codeServer.persistence.enabled }}
+      # Test storage class
+      echo "Testing storage class..."
+      kubectl get storageclass {{ .Values.codeServer.persistence.storageClass }}
+      echo "✓ Storage class exists"
+      {{- end }}
+      
+      # Test that we can create a test PVC
+      echo "Testing PVC creation..."
+      cat <<EOF | kubectl apply -f -
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: test-pvc-$RANDOM
+        namespace: {{ .Values.global.namespace }}
+        labels:
+          app.kubernetes.io/name: {{ include "vibecode-platform.name" . }}
+          app.kubernetes.io/component: test
+      spec:
+        accessModes:
+          - {{ .Values.codeServer.persistence.accessMode }}
+        resources:
+          requests:
+            storage: 1Gi
+        {{- if .Values.codeServer.persistence.storageClass }}
+        storageClassName: {{ .Values.codeServer.persistence.storageClass }}
+        {{- end }}
+      EOF
+      echo "✓ PVC creation successful"
+      
+      # Cleanup test PVC
+      kubectl delete pvc -l app.kubernetes.io/component=test --namespace={{ .Values.global.namespace }}
+      echo "✓ Test PVC cleaned up"
+      
+      {{- if .Values.security.networkPolicies.enabled }}
+      # Test network policies
+      echo "Testing network policies..."
+      kubectl get networkpolicy --namespace={{ .Values.global.namespace }}
+      echo "✓ Network policies configured"
+      {{- end }}
+      
+      echo "✅ All provisioning tests passed!"
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false

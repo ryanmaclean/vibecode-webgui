@@ -1,0 +1,65 @@
+{{/*
+This template creates per-user ingress for code-server instances
+It should be used with Helm template functions to generate ingress for each user
+*/}}
+{{- define "vibecode-platform.ingress" }}
+{{- $userId := .userId | required "userId is required for ingress" }}
+{{- $root := .root }}
+{{- if $root.Values.codeServer.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "vibecode-platform.codeServerName" . }}
+  namespace: {{ $root.Values.global.namespace }}
+  labels:
+    {{- include "vibecode-platform.codeServerLabels" . | nindent 4 }}
+    app.kubernetes.io/component: ingress
+  annotations:
+    vibecode.dev/user-id: {{ $userId | quote }}
+    {{- with $root.Values.codeServer.ingress.annotations }}
+    {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | replace "{USER_ID}" $userId | quote }}
+    {{- end }}
+    {{- end }}
+spec:
+  {{- if $root.Values.codeServer.ingress.className }}
+  ingressClassName: {{ $root.Values.codeServer.ingress.className }}
+  {{- end }}
+  {{- if $root.Values.codeServer.ingress.tls }}
+  tls:
+    {{- range $root.Values.codeServer.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | replace "{USER_ID}" $userId | quote }}
+        {{- end }}
+      secretName: {{ .secretName | replace "{USER_ID}" $userId | quote }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range $root.Values.codeServer.ingress.hosts }}
+    - host: {{ .host | replace "{USER_ID}" $userId | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            {{- if .pathType }}
+            pathType: {{ .pathType }}
+            {{- end }}
+            backend:
+              service:
+                name: {{ include "vibecode-platform.codeServerName" $ }}
+                port:
+                  number: {{ $root.Values.codeServer.service.port }}
+          {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}
+
+{{/*
+Example usage - this would typically be called from a job or external controller
+For demonstration, here's how you would create an ingress for a specific user:
+*/}}
+{{- if .Values.examples.createSampleUser }}
+{{- $context := dict "userId" "sample-user" "root" . }}
+{{ include "vibecode-platform.ingress" $context }}
+{{- end }}

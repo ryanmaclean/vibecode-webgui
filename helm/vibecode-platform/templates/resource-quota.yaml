@@ -1,0 +1,119 @@
+{{/*
+This template creates resource quotas for user workspaces
+*/}}
+{{- define "vibecode-platform.resourceQuota" }}
+{{- $userId := .userId | required "userId is required for resource quota" }}
+{{- $root := .root }}
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ include "vibecode-platform.resourceQuotaName" . }}
+  namespace: {{ $root.Values.global.namespace }}
+  labels:
+    {{- include "vibecode-platform.codeServerLabels" . | nindent 4 }}
+    app.kubernetes.io/component: resource-quota
+  annotations:
+    vibecode.dev/user-id: {{ $userId | quote }}
+spec:
+  hard:
+    # CPU and Memory limits
+    requests.cpu: {{ $root.Values.codeServer.resources.requests.cpu | quote }}
+    requests.memory: {{ $root.Values.codeServer.resources.requests.memory | quote }}
+    limits.cpu: {{ $root.Values.codeServer.resources.limits.cpu | quote }}
+    limits.memory: {{ $root.Values.codeServer.resources.limits.memory | quote }}
+    
+    # Storage limits
+    requests.storage: {{ $root.Values.userManagement.workspace.maxSize | quote }}
+    persistentvolumeclaims: "3"
+    
+    # Pod limits
+    pods: "5"
+    services: "2"
+    secrets: "5"
+    configmaps: "5"
+    
+    # Network limits
+    services.nodeports: "0"
+    services.loadbalancers: "0"
+  scopeSelector:
+    matchExpressions:
+    - operator: In
+      scopeName: PriorityClass
+      values: ["high-priority", "medium-priority", "low-priority"]
+{{- end }}
+
+{{/*
+Global resource quota for the platform namespace
+*/}}
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ include "vibecode-platform.fullname" . }}-global
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: resource-quota
+spec:
+  hard:
+    # Global limits for the entire platform
+    requests.cpu: "50"
+    requests.memory: 100Gi
+    limits.cpu: "200"
+    limits.memory: 400Gi
+    
+    # Storage limits
+    requests.storage: 1Ti
+    persistentvolumeclaims: "100"
+    
+    # Object limits
+    pods: "200"
+    services: "100"
+    secrets: "200"
+    configmaps: "100"
+    
+    # Security limits
+    count/deployments.apps: "100"
+    count/replicasets.apps: "200"
+    count/ingresses.networking.k8s.io: "100"
+---
+{{/*
+Priority classes for workload prioritization
+*/}}
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+value: 1000
+globalDefault: false
+description: "High priority for critical user workspaces"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: medium-priority
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+value: 500
+globalDefault: true
+description: "Medium priority for standard user workspaces"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: low-priority
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+value: 100
+globalDefault: false
+description: "Low priority for trial or temporary workspaces"
+
+{{/*
+Example usage - this would typically be called from a job or external controller
+For demonstration, here's how you would create a resource quota for a specific user:
+*/}}
+{{- if .Values.examples.createSampleUser }}
+{{- $context := dict "userId" "sample-user" "root" . }}
+{{ include "vibecode-platform.resourceQuota" $context }}
+{{- end }}

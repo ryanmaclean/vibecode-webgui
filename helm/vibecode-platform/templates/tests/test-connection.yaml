@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "vibecode-platform.fullname" . }}-test-connection"
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: test
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+  - name: test-connection
+    image: busybox:1.36
+    command: ['sh', '-c']
+    args:
+    - |
+      set -e
+      echo "Testing VibeCode Platform connectivity..."
+      
+      # Test that the namespace exists and is accessible
+      echo "✓ Running in namespace: {{ .Values.global.namespace }}"
+      
+      # Test DNS resolution
+      nslookup kubernetes.default.svc.cluster.local
+      echo "✓ DNS resolution working"
+      
+      # Test that we can access Kubernetes API
+      wget --spider --timeout=30 https://kubernetes.default.svc.cluster.local/api/v1/namespaces/{{ .Values.global.namespace }}
+      echo "✓ Kubernetes API accessible"
+      
+      {{- if .Values.examples.createSampleUser }}
+      # Test sample user service if it exists
+      if nslookup code-server-sample-user.{{ .Values.global.namespace }}.svc.cluster.local; then
+        echo "✓ Sample user service DNS resolution working"
+        
+        # Try to connect to sample user code-server (if running)
+        wget --spider --timeout=10 http://code-server-sample-user.{{ .Values.global.namespace }}.svc.cluster.local:{{ .Values.codeServer.service.port }}/healthz || echo "⚠ Sample user service not ready (this is expected if user hasn't been provisioned)"
+      else
+        echo "ℹ Sample user service not found (this is expected if examples.createSampleUser is false)"
+      fi
+      {{- end }}
+      
+      echo "✅ All connectivity tests passed!"
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false

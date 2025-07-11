@@ -1,0 +1,21 @@
+apiVersion: v2
+name: vibecode-platform
+description: A Helm chart for VibeCode platform with per-user code-server deployments
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+home: https://github.com/vibecode/vibecode-platform
+icon: https://raw.githubusercontent.com/vibecode/vibecode-platform/main/docs/logo.png
+sources:
+  - https://github.com/vibecode/vibecode-platform
+maintainers:
+  - name: VibeCode Team
+    email: team@vibecode.dev
+keywords:
+  - development
+  - code-server
+  - vscode
+  - kubernetes
+  - ai
+annotations:
+  category: Development

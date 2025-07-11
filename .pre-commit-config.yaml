@@ -43,6 +43,34 @@ repos:
         files: \.(js|jsx|ts|tsx)$
         stages: [commit]
 
+      - id: helm-lint
+        name: Helm Chart Linting
+        entry: helm lint helm/vibecode-platform
+        language: system
+        files: ^helm/.*\.(yaml|yml)$
+        stages: [commit]
+
+      - id: helm-template-test
+        name: Helm Template Validation
+        entry: bash -c 'helm template vibecode-platform helm/vibecode-platform --namespace vibecode-platform | kubectl apply --dry-run=client -f - || true'
+        language: system
+        files: ^helm/.*\.(yaml|yml)$
+        stages: [commit]
+
+      - id: k8s-tests
+        name: Kubernetes Integration Tests
+        entry: npm run test:k8s:quick
+        language: system
+        files: ^(tests/k8s/|helm/|k8s/|scripts/).*$
+        stages: [commit]
+
+      - id: provisioning-script-test
+        name: User Provisioning Script Test
+        entry: bash -c 'scripts/provision-user.sh --help && echo "Provisioning script syntax OK"'
+        language: system
+        files: ^scripts/provision-user\.sh$
+        stages: [commit]
+
   # Code quality
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v8.57.0

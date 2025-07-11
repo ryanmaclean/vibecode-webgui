@@ -1,20 +1,33 @@
-# Simplified KIND cluster configuration for faster setup
+# Simple KIND Cluster Configuration for VibeCode Platform
+# Single control plane with worker nodes
+
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
-name: vibecode-test
+name: vibecode-cluster
 
 nodes:
-  - role: control-plane
-    extraPortMappings:
-      # Expose port 3000 for VibeCode WebGUI
-      - containerPort: 30000
-        hostPort: 3000
-        protocol: TCP
-      # Expose port 5432 for PostgreSQL
-      - containerPort: 30001
-        hostPort: 5432
-        protocol: TCP
-      # Expose port 6379 for Redis
-      - containerPort: 30002
-        hostPort: 6379
-        protocol: TCP
+# Control plane node with ingress support
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP
+
+# Worker node for code-server workloads
+- role: worker
+  labels:
+    tier: "code-server"
+
+# Worker node for monitoring and infrastructure  
+- role: worker
+  labels:
+    tier: "monitoring"

@@ -1,0 +1,154 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "vibecode-platform.fullname" . }}-metrics
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "{{ .Values.monitoring.prometheus.port }}"
+    prometheus.io/path: "{{ .Values.monitoring.prometheus.path }}"
+spec:
+  type: ClusterIP
+  ports:
+  - port: {{ .Values.monitoring.prometheus.port }}
+    targetPort: {{ .Values.monitoring.prometheus.port }}
+    protocol: TCP
+    name: metrics
+  selector:
+    {{- include "vibecode-platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+---
+{{- if .Values.monitoring.prometheus.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "vibecode-platform.fullname" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+spec:
+  selector:
+    matchLabels:
+      {{- include "vibecode-platform.selectorLabels" . | nindent 6 }}
+  endpoints:
+  - port: metrics
+    path: {{ .Values.monitoring.prometheus.path }}
+    interval: {{ .Values.monitoring.resources.interval }}
+---
+# ServiceMonitor for user code-server instances
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "vibecode-platform.fullname" . }}-code-server
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+spec:
+  selector:
+    matchLabels:
+      {{- include "vibecode-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: code-server
+  endpoints:
+  - port: metrics
+    path: {{ .Values.monitoring.prometheus.path }}
+    interval: {{ .Values.monitoring.resources.interval }}
+{{- end }}
+---
+{{- if .Values.monitoring.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "vibecode-platform.fullname" . }}-grafana-dashboard
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: monitoring
+    grafana_dashboard: "1"
+data:
+  vibecode-platform.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "VibeCode Platform",
+        "tags": ["vibecode", "code-server", "kubernetes"],
+        "style": "dark",
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Active Users",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "count(up{job=\"vibecode-platform-code-server\"})",
+                "refId": "A"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {
+                  "mode": "thresholds"
+                },
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": null},
+                    {"color": "yellow", "value": 50},
+                    {"color": "red", "value": 100}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "CPU Usage",
+            "type": "timeseries",
+            "targets": [
+              {
+                "expr": "avg(rate(container_cpu_usage_seconds_total{namespace=\"{{ .Values.global.namespace }}\"}[5m]))",
+                "refId": "A"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "Memory Usage",
+            "type": "timeseries",
+            "targets": [
+              {
+                "expr": "avg(container_memory_usage_bytes{namespace=\"{{ .Values.global.namespace }}\"})",
+                "refId": "A"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+          },
+          {
+            "id": 4,
+            "title": "Storage Usage",
+            "type": "timeseries",
+            "targets": [
+              {
+                "expr": "sum(kubelet_volume_stats_used_bytes{namespace=\"{{ .Values.global.namespace }}\"})",
+                "refId": "A"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }
+{{- end }}
+{{- end }}

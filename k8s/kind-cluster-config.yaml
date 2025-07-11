@@ -1,0 +1,112 @@
+# KIND Cluster Configuration for VibeCode Platform
+# Multi-node cluster with ingress support and port mappings
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: vibecode-cluster
+
+# Networking configuration
+networking:
+  # Disable default CNI to install a custom one (if needed)
+  disableDefaultCNI: false
+  # Configure pod and service subnets
+  podSubnet: "10.244.0.0/16"
+  serviceSubnet: "10.96.0.0/12"
+  # Set API server address and port
+  apiServerAddress: "0.0.0.0"
+  apiServerPort: 6443
+
+# Node configuration
+nodes:
+# Control plane node with ingress support
+- role: control-plane
+  image: kindest/node:v1.31.0
+  labels:
+    node-role.kubernetes.io/control-plane: ""
+    ingress-ready: "true"
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+        system-reserved: "cpu=500m,memory=1Gi"
+        kube-reserved: "cpu=500m,memory=1Gi"
+        eviction-hard: "memory.available<500Mi,nodefs.available<10%"
+  - |
+    kind: ClusterConfiguration
+    controllerManager:
+      extraArgs:
+        bind-address: "0.0.0.0"
+    scheduler:
+      extraArgs:
+        bind-address: "0.0.0.0"
+    etcd:
+      local:
+        extraArgs:
+          listen-metrics-urls: "http://0.0.0.0:2381"
+  # Port mappings for ingress controller
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 80
+    protocol: TCP
+    listenAddress: "0.0.0.0"
+  - containerPort: 443
+    hostPort: 443
+    protocol: TCP
+    listenAddress: "0.0.0.0"
+  - containerPort: 8080
+    hostPort: 8080
+    protocol: TCP
+    listenAddress: "0.0.0.0"
+# Worker node dedicated to code-server workloads
+- role: worker
+  image: kindest/node:v1.31.0
+  labels:
+    node-role.kubernetes.io/worker: ""
+    tier: "code-server"
+    workload-type: "development"
+  kubeadmConfigPatches:
+  - |
+    kind: JoinConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "tier=code-server,workload-type=development"
+        system-reserved: "cpu=500m,memory=1Gi"
+        kube-reserved: "cpu=500m,memory=1Gi"
+        eviction-hard: "memory.available<1Gi,nodefs.available<10%"
+        max-pods: "110"
+
+# Worker node for monitoring and infrastructure
+- role: worker
+  image: kindest/node:v1.31.0
+  labels:
+    node-role.kubernetes.io/worker: ""
+    tier: "monitoring"
+    workload-type: "infrastructure"
+  kubeadmConfigPatches:
+  - |
+    kind: JoinConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "tier=monitoring,workload-type=infrastructure"
+        system-reserved: "cpu=200m,memory=512Mi"
+        kube-reserved: "cpu=200m,memory=512Mi"
+        eviction-hard: "memory.available<512Mi,nodefs.available<5%"
+
+# Containerd configuration for better performance
+containerdConfigPatches:
+- |-
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5000"]
+    endpoint = ["http://localhost:5000"]
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+    endpoint = ["https://registry-1.docker.io"]
+  [plugins."io.containerd.grpc.v1.cri"]
+    sandbox_image = "registry.k8s.io/pause:3.9"
+    max_container_log_line_size = 16384
+
+# Feature gates for advanced Kubernetes features
+featureGates:
+  "DiskPressureEvictionOptimization": true
+  "PodReadyToStartContainersCondition": true
+  "InTreePluginUnification": true

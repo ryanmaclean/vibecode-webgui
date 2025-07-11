@@ -1,0 +1,73 @@
+# Terraform Variables Example for Datadog Synthetics
+# 
+# Copy this file to terraform.tfvars and configure for your environment
+# Staff Engineer Implementation - Production configuration template
+
+# Datadog Authentication
+datadog_api_key = "your_datadog_api_key_here"
+datadog_app_key = "your_datadog_app_key_here"
+
+# RUM Configuration (optional)
+datadog_rum_application_id = "your-rum-app-id-uuid"
+datadog_rum_client_token   = "your_rum_client_token"
+
+# Application Configuration
+app_base_url = "https://vibecode.dev"
+environment  = "prod"
+
+# Notification Configuration
+notification_channels = [
+  "@slack-vibecode-alerts",
+  "@pagerduty-critical", 
+  "@email-platform-team@vibecode.dev"
+]
+
+# Monitoring Locations
+monitoring_locations = [
+  "aws:us-east-1",
+  "aws:us-west-2",
+  "aws:eu-west-1", 
+  "aws:ap-southeast-1"
+]
+
+# Test Intervals (in seconds)
+test_intervals = {
+  health_check    = 60    # 1 minute - critical health checks
+  security        = 300   # 5 minutes - security scans
+  performance     = 180   # 3 minutes - performance monitoring
+  user_flow       = 900   # 15 minutes - user journey tests
+  rate_limiting   = 3600  # 1 hour - rate limiting validation
+}
+
+# Performance Thresholds (in milliseconds)
+performance_thresholds = {
+  api_response_time_ms     = 200   # API calls should be under 200ms
+  health_check_response_ms = 1000  # Health checks under 1s
+  dashboard_load_time_ms   = 3000  # Dashboard loads under 3s
+  database_connection_ms   = 2000  # DB connections under 2s
+}
+
+# Security Test Configuration
+security_test_config = {
+  enable_rate_limiting_tests = true
+  enable_header_tests       = true
+  enable_auth_tests         = true
+  enable_injection_tests    = true
+}
+
+# Alerting Configuration
+alerting_config = {
+  renotify_interval_minutes = 120
+  escalation_message       = "ESCALATION: Critical VibeCode service issue persists. @pagerduty-critical @management"
+  recovery_message         = "RECOVERY: VibeCode service has recovered. All systems operational."
+}
+
+# Common Tags
+tags = {
+  project     = "vibecode"
+  owner       = "platform-team"
+  terraform   = "true"
+  environment = "prod"
+  cost_center = "engineering"
+  compliance  = "sox-gdpr"
+}

@@ -1,0 +1,276 @@
+{{/*
+User provisioner job template for creating user workspaces
+This job can be triggered to create a new user workspace
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "vibecode-platform.fullname" . }}-provisioner-scripts
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: user-provisioner
+data:
+  provision-user.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    
+    USER_ID="${USER_ID:-}"
+    if [ -z "$USER_ID" ]; then
+      echo "ERROR: USER_ID environment variable is required"
+      exit 1
+    fi
+    
+    echo "Provisioning workspace for user: $USER_ID"
+    
+    # Validate user ID format (alphanumeric and hyphens only)
+    if ! [[ "$USER_ID" =~ ^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$ ]] || [ ${#USER_ID} -lt 3 ] || [ ${#USER_ID} -gt 63 ]; then
+      echo "ERROR: USER_ID must be 3-63 characters, alphanumeric with hyphens, starting and ending with alphanumeric"
+      exit 1
+    fi
+    
+    # Check if user workspace already exists
+    if kubectl get deployment "code-server-$USER_ID" -n {{ .Values.global.namespace }} >/dev/null 2>&1; then
+      echo "INFO: Workspace for user $USER_ID already exists"
+      exit 0
+    fi
+    
+    echo "Creating resources for user: $USER_ID"
+    
+    # Generate password for the user
+    USER_PASSWORD=$(openssl rand -base64 32)
+    
+    # Create user-specific secret
+    kubectl create secret generic "code-server-$USER_ID-config" \
+      --namespace={{ .Values.global.namespace }} \
+      --from-literal=password="$USER_PASSWORD" \
+      --dry-run=client -o yaml | kubectl apply -f -
+    
+    # Label the secret
+    kubectl label secret "code-server-$USER_ID-config" \
+      --namespace={{ .Values.global.namespace }} \
+      app.kubernetes.io/name={{ include "vibecode-platform.name" . }} \
+      app.kubernetes.io/instance={{ .Release.Name }} \
+      app.kubernetes.io/component=code-server \
+      vibecode.dev/user-id="$USER_ID" \
+      --overwrite
+    
+    # Create PVC using Helm template (this would be replaced with actual template rendering)
+    cat <<EOF | kubectl apply -f -
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: workspace-$USER_ID
+      namespace: {{ .Values.global.namespace }}
+      labels:
+        app.kubernetes.io/name: {{ include "vibecode-platform.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: code-server
+        vibecode.dev/user-id: $USER_ID
+    spec:
+      accessModes:
+        - {{ .Values.codeServer.persistence.accessMode }}
+      resources:
+        requests:
+          storage: {{ .Values.codeServer.persistence.size }}
+      {{- if .Values.codeServer.persistence.storageClass }}
+      storageClassName: {{ .Values.codeServer.persistence.storageClass }}
+      {{- end }}
+    EOF
+    
+    # Create Deployment
+    cat <<EOF | kubectl apply -f -
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: code-server-$USER_ID
+      namespace: {{ .Values.global.namespace }}
+      labels:
+        app.kubernetes.io/name: {{ include "vibecode-platform.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: code-server
+        vibecode.dev/user-id: $USER_ID
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: {{ include "vibecode-platform.name" . }}
+          app.kubernetes.io/instance: {{ .Release.Name }}
+          app.kubernetes.io/component: code-server
+          vibecode.dev/user-id: $USER_ID
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: {{ include "vibecode-platform.name" . }}
+            app.kubernetes.io/instance: {{ .Release.Name }}
+            app.kubernetes.io/component: code-server
+            vibecode.dev/user-id: $USER_ID
+        spec:
+          securityContext:
+            {{- toYaml .Values.codeServer.podSecurityContext | nindent 12 }}
+          containers:
+          - name: code-server
+            image: {{ .Values.codeServer.image.repository }}:{{ .Values.codeServer.image.tag }}
+            imagePullPolicy: {{ .Values.codeServer.image.pullPolicy }}
+            ports:
+            - name: http
+              containerPort: {{ .Values.codeServer.service.targetPort }}
+              protocol: TCP
+            env:
+            - name: USER_ID
+              value: $USER_ID
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: code-server-$USER_ID-config
+                  key: password
+            securityContext:
+              {{- toYaml .Values.codeServer.securityContext | nindent 14 }}
+            resources:
+              {{- toYaml .Values.codeServer.resources | nindent 14 }}
+            volumeMounts:
+            - name: workspace
+              mountPath: /home/coder
+          volumes:
+          - name: workspace
+            persistentVolumeClaim:
+              claimName: workspace-$USER_ID
+    EOF
+    
+    # Create Service
+    cat <<EOF | kubectl apply -f -
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: code-server-$USER_ID
+      namespace: {{ .Values.global.namespace }}
+      labels:
+        app.kubernetes.io/name: {{ include "vibecode-platform.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: code-server
+        vibecode.dev/user-id: $USER_ID
+    spec:
+      type: {{ .Values.codeServer.service.type }}
+      ports:
+      - port: {{ .Values.codeServer.service.port }}
+        targetPort: {{ .Values.codeServer.service.targetPort }}
+        protocol: TCP
+        name: http
+      selector:
+        app.kubernetes.io/name: {{ include "vibecode-platform.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: code-server
+        vibecode.dev/user-id: $USER_ID
+    EOF
+    
+    {{- if .Values.codeServer.ingress.enabled }}
+    # Create Ingress
+    cat <<EOF | kubectl apply -f -
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: code-server-$USER_ID
+      namespace: {{ .Values.global.namespace }}
+      labels:
+        app.kubernetes.io/name: {{ include "vibecode-platform.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: code-server
+        vibecode.dev/user-id: $USER_ID
+      annotations:
+        {{- range $key, $value := .Values.codeServer.ingress.annotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      {{- if .Values.codeServer.ingress.className }}
+      ingressClassName: {{ .Values.codeServer.ingress.className }}
+      {{- end }}
+      rules:
+      - host: $USER_ID.vibecode.local
+        http:
+          paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: code-server-$USER_ID
+                port:
+                  number: {{ .Values.codeServer.service.port }}
+      {{- if .Values.codeServer.ingress.tls }}
+      tls:
+      - hosts:
+        - $USER_ID.vibecode.local
+        secretName: $USER_ID-tls
+      {{- end }}
+    EOF
+    {{- end }}
+    
+    echo "Successfully provisioned workspace for user: $USER_ID"
+    echo "Access URL: http://$USER_ID.vibecode.local"
+    echo "Password: $USER_PASSWORD"
+  
+  cleanup-user.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    
+    USER_ID="${USER_ID:-}"
+    if [ -z "$USER_ID" ]; then
+      echo "ERROR: USER_ID environment variable is required"
+      exit 1
+    fi
+    
+    echo "Cleaning up workspace for user: $USER_ID"
+    
+    # Delete resources in order
+    kubectl delete ingress "code-server-$USER_ID" -n {{ .Values.global.namespace }} --ignore-not-found=true
+    kubectl delete service "code-server-$USER_ID" -n {{ .Values.global.namespace }} --ignore-not-found=true
+    kubectl delete deployment "code-server-$USER_ID" -n {{ .Values.global.namespace }} --ignore-not-found=true
+    kubectl delete secret "code-server-$USER_ID-config" -n {{ .Values.global.namespace }} --ignore-not-found=true
+    
+    # Optionally delete PVC (be careful with this!)
+    if [ "${DELETE_STORAGE:-false}" = "true" ]; then
+      kubectl delete pvc "workspace-$USER_ID" -n {{ .Values.global.namespace }} --ignore-not-found=true
+      echo "WARNING: Storage for user $USER_ID has been deleted!"
+    else
+      echo "INFO: Storage for user $USER_ID preserved (set DELETE_STORAGE=true to remove)"
+    fi
+    
+    echo "Successfully cleaned up workspace for user: $USER_ID"
+---
+{{/*
+Example provisioner job - this shows how to create a user workspace
+*/}}
+{{- if .Values.examples.createProvisionerJob }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "vibecode-platform.fullname" . }}-provision-sample-user
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: user-provisioner
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "vibecode-platform.labels" . | nindent 8 }}
+        app.kubernetes.io/component: user-provisioner
+    spec:
+      serviceAccountName: {{ include "vibecode-platform.serviceAccountName" . }}
+      restartPolicy: OnFailure
+      containers:
+      - name: provisioner
+        image: bitnami/kubectl:latest
+        command: ["/bin/bash"]
+        args: ["/scripts/provision-user.sh"]
+        env:
+        - name: USER_ID
+          value: "sample-user"
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+      volumes:
+      - name: scripts
+        configMap:
+          name: {{ include "vibecode-platform.fullname" . }}-provisioner-scripts
+          defaultMode: 0755
+{{- end }}

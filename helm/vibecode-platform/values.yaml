@@ -1,0 +1,260 @@
+# Default values for vibecode-platform
+# This is a YAML-formatted file.
+
+# Global configuration
+global:
+  namespace: vibecode-platform
+  storageClass: vibecode-local-storage
+  imagePullPolicy: IfNotPresent
+  
+# Code-server configuration
+codeServer:
+  # Image configuration
+  image:
+    repository: codercom/code-server
+    tag: "4.22.1"
+    pullPolicy: IfNotPresent
+    
+  # Default resource limits for code-server instances
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"
+      
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
+    allowPrivilegeEscalation: false
+    
+  # Pod security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+      
+  # Environment variables
+  env:
+    - name: PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: code-server-config
+          key: password
+    - name: SHELL
+      value: "/bin/bash"
+    - name: DOCKER_HOST
+      value: "tcp://localhost:2375"
+      
+  # Persistent storage configuration
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: vibecode-local-storage
+    accessMode: ReadWriteOnce
+    
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 8080
+    targetPort: 8080
+    
+  # Ingress configuration per user
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+      nginx.ingress.kubernetes.io/websocket-services: "code-server-{USER_ID}"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    hosts:
+      - host: "{USER_ID}.vibecode.local"
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: "{USER_ID}-tls"
+        hosts:
+          - "{USER_ID}.vibecode.local"
+
+# User management
+userManagement:
+  # Default user configuration
+  defaultUser:
+    shell: "/bin/bash"
+    homeDir: "/home/coder"
+    
+  # Workspace configuration
+  workspace:
+    defaultSize: 10Gi
+    maxSize: 50Gi
+    storageClass: vibecode-local-storage
+    
+# AI Integration
+aiIntegration:
+  # OpenRouter configuration
+  openRouter:
+    enabled: true
+    apiUrl: "https://openrouter.ai/api/v1"
+    secretName: "openrouter-api-key"
+    
+  # Model Context Protocol (MCP)
+  mcp:
+    enabled: true
+    serverPort: 3001
+    
+  # Artificial Analysis
+  artificialAnalysis:
+    enabled: true
+    apiUrl: "https://api.artificialanalysis.ai"
+    secretName: "artificial-analysis-api-key"
+
+# Monitoring and observability
+monitoring:
+  enabled: true
+  
+  # Prometheus metrics
+  prometheus:
+    enabled: true
+    port: 9090
+    path: /metrics
+    
+  # Grafana dashboards
+  grafana:
+    enabled: true
+    
+  # Resource monitoring
+  resources:
+    enabled: true
+    interval: 30s
+
+# Security configuration
+security:
+  # Pod Security Standards
+  podSecurityStandards:
+    enforce: restricted
+    audit: restricted
+    warn: restricted
+    
+  # Network policies
+  networkPolicies:
+    enabled: true
+    
+  # RBAC
+  rbac:
+    enabled: true
+    
+  # Pod security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
+    allowPrivilegeEscalation: false
+
+# Ingress controller configuration
+ingress:
+  enabled: true
+  className: nginx
+  controller:
+    hostNetwork: true
+    hostPort:
+      enabled: true
+    metrics:
+      enabled: true
+    
+# Cert-manager configuration
+certManager:
+  enabled: true
+  issuer:
+    name: letsencrypt-prod
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@vibecode.dev
+
+# Storage configuration
+storage:
+  # Default storage class
+  defaultClass: vibecode-local-storage
+  
+  # Persistent volume configurations
+  persistentVolumes:
+    - name: user-workspaces
+      size: 100Gi
+      accessMode: ReadWriteMany
+      reclaimPolicy: Retain
+      
+# Auto-scaling configuration
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Service account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: vibecode-platform
+
+# Node selector and tolerations
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Additional labels and annotations
+labels: {}
+annotations: {}
+
+# Examples configuration (for demonstration)
+examples:
+  createSampleUser: false
+  createProvisionerJob: false
+
+# Environment-specific overrides
+environments:
+  development:
+    codeServer:
+      resources:
+        requests:
+          cpu: "250m"
+          memory: "512Mi"
+        limits:
+          cpu: "1000m"
+          memory: "2Gi"
+    monitoring:
+      enabled: false
+      
+  production:
+    codeServer:
+      resources:
+        requests:
+          cpu: "1000m"
+          memory: "2Gi"
+        limits:
+          cpu: "4000m"
+          memory: "8Gi"
+    monitoring:
+      enabled: true
+    security:
+      podSecurityStandards:
+        enforce: restricted
