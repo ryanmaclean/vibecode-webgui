@@ -37,10 +37,11 @@ This comprehensive guide outlines a **simplified, powerful architecture** using 
 - **Purpose**: Templatized deployment of code-server instances
 - **Benefits**: Configuration management, versioning, rollbacks
 
-**Traffic Management: NGINX Ingress + cert-manager**
+**Traffic Management: NGINX Ingress + cert-manager + Authelia**
 - **NGINX Ingress**: Advanced routing, WebSocket support, SSL termination
 - **cert-manager**: Automatic Let's Encrypt certificates, TLS management
-- **Benefits**: Production-ready traffic handling, automatic HTTPS
+- **Authelia**: 2FA/SSO authentication server with advanced user management
+- **Benefits**: Production-ready traffic handling, automatic HTTPS, enterprise-grade authentication
 
 ### Deployment Architecture
 
@@ -80,7 +81,7 @@ spec:
           - --bind-addr
           - 0.0.0.0:8080
           - --auth
-          - none  # Authentication handled by ingress
+          - none  # Authentication handled by Authelia via ingress
           - /workspace
         env:
         - name: WORKSPACE_ID
@@ -154,6 +155,7 @@ charts/
 │   └── charts/
 │       ├── nginx-ingress/
 │       ├── cert-manager/
+│       ├── authelia/
 │       └── prometheus/
 ```
 
@@ -196,6 +198,35 @@ ingress:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/auth-url: "http://authelia.authelia.svc.cluster.local/api/verify"
+    nginx.ingress.kubernetes.io/auth-signin: "https://auth.vibecode.dev"
+    nginx.ingress.kubernetes.io/auth-response-headers: "Remote-User,Remote-Name,Remote-Email,Remote-Groups"
+
+authelia:
+  enabled: true
+  domain: vibecode.dev
+  session:
+    name: authelia_session
+    domain: vibecode.dev
+    expiration: 1h
+    inactivity: 5m
+  authentication_backend:
+    file:
+      enabled: true
+    ldap:
+      enabled: false
+  access_control:
+    default_policy: deny
+    rules:
+      - domain: "*.vibecode.dev"
+        policy: two_factor
+        subject: ["group:users"]
+  notifier:
+    smtp:
+      enabled: true
+      host: smtp.gmail.com
+      port: 587
+      username: notifications@vibecode.dev
   
 monitoring:
   enabled: true
@@ -237,6 +268,371 @@ kubectl annotate ingress "code-server-${USER_ID}" \
   -n vibecode-platform
 
 echo "Workspace provisioned: https://${USER_ID}.${DOMAIN}"
+```
+
+## Authelia Authentication & Authorization
+
+**Enterprise-Grade Authentication Server**
+```yaml
+# Authelia configuration for VibeCode platform
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authelia-config
+  namespace: authelia
+data:
+  configuration.yml: |
+    # Server configuration
+    server:
+      host: 0.0.0.0
+      port: 9091
+      
+    # Logging configuration
+    log:
+      level: info
+      format: text
+      
+    # JWT secret for session tokens
+    jwt_secret: "your-jwt-secret-here"
+    
+    # Default redirection URL
+    default_redirection_url: https://vibecode.dev
+    
+    # Time-based One-Time Password configuration
+    totp:
+      issuer: VibeCode
+      algorithm: sha1
+      digits: 6
+      period: 30
+      skew: 1
+      secret_size: 32
+    
+    # WebAuthn configuration for hardware keys
+    webauthn:
+      timeout: 60s
+      display_name: VibeCode
+      attestation_conveyance_preference: indirect
+      user_verification: preferred
+    
+    # Duo Push notification configuration
+    duo_api:
+      hostname: api-xxxxxxxx.duosecurity.com
+      integration_key: XXXXXXXXXXXXXXXX
+      secret_key: your-duo-secret-key
+    
+    # Authentication backend
+    authentication_backend:
+      password_reset:
+        disable: false
+      refresh_interval: 5m
+      
+      # File-based user database for development
+      file:
+        path: /config/users_database.yml
+        password:
+          algorithm: argon2id
+          iterations: 1
+          salt_length: 16
+          parallelism: 8
+          memory: 64
+          
+      # LDAP configuration for enterprise
+      ldap:
+        implementation: custom
+        url: ldap://openldap.openldap.svc.cluster.local:389
+        timeout: 5s
+        start_tls: false
+        base_dn: dc=vibecode,dc=dev
+        username_attribute: uid
+        additional_users_dn: ou=users
+        users_filter: (&({username_attribute}={input})(objectClass=person))
+        additional_groups_dn: ou=groups
+        groups_filter: (&(member={dn})(objectClass=groupOfNames))
+        group_name_attribute: cn
+        mail_attribute: mail
+        display_name_attribute: displayName
+        user: cn=admin,dc=vibecode,dc=dev
+        password: admin-password
+        
+    # Access control configuration
+    access_control:
+      default_policy: deny
+      networks:
+        - name: internal
+          networks:
+            - 10.0.0.0/8
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+      rules:
+        # Allow access to Authelia itself
+        - domain: auth.vibecode.dev
+          policy: bypass
+          
+        # Admin access - requires admin group
+        - domain: admin.vibecode.dev
+          policy: two_factor
+          subject: ["group:admins"]
+          
+        # User workspaces - requires user group with 2FA
+        - domain: "*.vibecode.dev"
+          policy: two_factor
+          subject: ["group:users", "group:developers"]
+          
+        # Public documentation
+        - domain: docs.vibecode.dev
+          policy: bypass
+          
+        # API endpoints - require API access group
+        - domain: api.vibecode.dev
+          policy: one_factor
+          subject: ["group:api-users"]
+          resources:
+            - "^/api/.*$"
+    
+    # Session configuration
+    session:
+      name: authelia_session
+      domain: vibecode.dev
+      same_site: lax
+      secret: your-session-secret
+      expiration: 1h
+      inactivity: 5m
+      remember_me_duration: 1M
+      
+    # Redis session storage
+    redis:
+      host: redis.authelia.svc.cluster.local
+      port: 6379
+      username: ""
+      password: ""
+      database_index: 0
+      maximum_active_connections: 8
+      minimum_idle_connections: 0
+      
+    # Regulation (rate limiting)
+    regulation:
+      max_retries: 3
+      find_time: 10m
+      ban_time: 12h
+      
+    # Storage configuration
+    storage:
+      encryption_key: your-storage-encryption-key
+      postgres:
+        host: postgres.authelia.svc.cluster.local
+        port: 5432
+        database: authelia
+        schema: public
+        username: authelia
+        password: authelia-db-password
+        timeout: 5s
+        
+    # Notification configuration
+    notifier:
+      disable_startup_check: false
+      smtp:
+        host: smtp.gmail.com
+        port: 587
+        timeout: 5s
+        username: notifications@vibecode.dev
+        password: smtp-app-password
+        identifier: vibecode.dev
+        sender: VibeCode <noreply@vibecode.dev>
+        subject: "[VibeCode] {title}"
+        startup_check_address: test@vibecode.dev
+        disable_require_tls: false
+        disable_html_emails: false
+        tls:
+          server_name: smtp.gmail.com
+          skip_verify: false
+          minimum_version: TLS1.2
+---
+# Users database for file-based authentication
+apiVersion: v1
+kind: Secret
+metadata:
+  name: authelia-users
+  namespace: authelia
+type: Opaque
+stringData:
+  users_database.yml: |
+    users:
+      admin:
+        disabled: false
+        displayname: "Admin User"
+        password: "$argon2id$v=19$m=65536,t=3,p=4$hashedpassword"
+        email: admin@vibecode.dev
+        groups:
+          - admins
+          - users
+          
+      developer:
+        disabled: false
+        displayname: "Developer"
+        password: "$argon2id$v=19$m=65536,t=3,p=4$hashedpassword"
+        email: dev@vibecode.dev
+        groups:
+          - users
+          - developers
+          
+      user:
+        disabled: false
+        displayname: "Regular User"
+        password: "$argon2id$v=19$m=65536,t=3,p=4$hashedpassword"
+        email: user@vibecode.dev
+        groups:
+          - users
+```
+
+**Authelia Deployment with Helm**
+```bash
+#!/bin/bash
+# Deploy Authelia to the VibeCode platform
+
+# Add Authelia Helm repository
+helm repo add authelia https://charts.authelia.com
+helm repo update
+
+# Install Authelia with custom configuration
+helm upgrade --install authelia authelia/authelia \
+  --namespace authelia \
+  --create-namespace \
+  --values - <<EOF
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+  hosts:
+    - host: auth.vibecode.dev
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: authelia-tls
+      hosts:
+        - auth.vibecode.dev
+
+configMap:
+  enabled: true
+  key: configuration.yml
+  existingConfigMap: authelia-config
+
+secret:
+  enabled: true
+  existingSecret: authelia-users
+
+persistence:
+  enabled: true
+  storageClass: fast-ssd
+  size: 1Gi
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
+
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "postgres-password"
+    username: "authelia"
+    password: "authelia-db-password"
+    database: "authelia"
+  primary:
+    persistence:
+      enabled: true
+      size: 2Gi
+EOF
+
+# Configure NGINX ingress annotations for protected services
+kubectl patch ingress code-server-workspaces \
+  --namespace vibecode-platform \
+  --type merge \
+  --patch '{
+    "metadata": {
+      "annotations": {
+        "nginx.ingress.kubernetes.io/auth-url": "http://authelia.authelia.svc.cluster.local:9091/api/verify",
+        "nginx.ingress.kubernetes.io/auth-signin": "https://auth.vibecode.dev",
+        "nginx.ingress.kubernetes.io/auth-response-headers": "Remote-User,Remote-Name,Remote-Email,Remote-Groups",
+        "nginx.ingress.kubernetes.io/auth-snippet": "proxy_set_header X-Forwarded-Method $request_method;"
+      }
+    }
+  }'
+
+echo "Authelia deployed successfully!"
+echo "Access authentication portal: https://auth.vibecode.dev"
+echo "Protected workspaces will redirect to Authelia for authentication"
+```
+
+**Advanced Multi-Factor Authentication Setup**
+```yaml
+# Advanced 2FA configuration for VibeCode workspaces
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authelia-advanced-config
+  namespace: authelia
+data:
+  advanced-auth.yml: |
+    # Hardware key configuration
+    webauthn:
+      timeout: 60s
+      display_name: VibeCode Development Platform
+      attestation_conveyance_preference: indirect
+      user_verification: preferred
+      
+    # Mobile push notifications via Duo
+    duo_api:
+      hostname: api-xxxxxxxx.duosecurity.com
+      integration_key: XXXXXXXXXXXXXXXX
+      secret_key: your-duo-secret-key
+      enable_self_enrollment: true
+      
+    # Risk-based authentication
+    access_control:
+      rules:
+        # High-security admin workspaces
+        - domain: admin-*.vibecode.dev
+          policy: two_factor
+          subject: ["group:admins"]
+          methods: ["GET", "POST"]
+          networks: ["internal"]
+          
+        # Developer workspaces with conditional access
+        - domain: dev-*.vibecode.dev
+          policy: one_factor
+          subject: ["group:developers"]
+          networks: ["internal"]
+          
+        - domain: dev-*.vibecode.dev
+          policy: two_factor
+          subject: ["group:developers"]
+          networks: ["!internal"]  # External access requires 2FA
+          
+        # Temporary/guest access
+        - domain: temp-*.vibecode.dev
+          policy: one_factor
+          subject: ["group:guests"]
+          
+        # API access with token-based auth
+        - domain: api.vibecode.dev
+          policy: bypass  # Handled by API gateway
+          resources:
+            - "^/api/v1/.*$"
 ```
 
 ## Claude Code AI Integration
@@ -679,11 +1075,12 @@ server {
 3. **Basic User Provisioning**: Automated workspace creation scripts
 4. **Ingress + TLS**: NGINX ingress with cert-manager for HTTPS
 
-### Phase 2: Platform Management (Weeks 3-4)  
-1. **Web Management UI**: Simple React dashboard for cluster management
-2. **User Authentication**: OAuth integration with workspace routing
-3. **Monitoring Stack**: Prometheus + Grafana for resource monitoring
-4. **Backup/Restore**: Persistent volume backup strategies
+### Phase 2: Authentication & Platform Management (Weeks 3-4)  
+1. **Authelia Integration**: Enterprise 2FA/SSO authentication server deployment
+2. **User Authentication**: LDAP, OAuth, and multi-factor authentication setup
+3. **Web Management UI**: Simple React dashboard for cluster management
+4. **Monitoring Stack**: Prometheus + Grafana for resource monitoring
+5. **Backup/Restore**: Persistent volume backup strategies
 
 ### Phase 3: AI Integration (Weeks 5-6)
 1. **Claude Code Extension**: VS Code extension deployment in custom images
@@ -712,6 +1109,7 @@ server {
 - ✅ **HELM**: Declarative application management (Apache 2.0)
 - ✅ **NGINX**: Enterprise-grade traffic routing (Apache 2.0)
 - ✅ **cert-manager**: Automatic TLS certificate management (Apache 2.0)
+- ✅ **AUTHELIA**: Enterprise 2FA/SSO authentication server (Apache 2.0)
 
 **Focuses on High-Value Differentiation:**
 - 🎯 **Infrastructure as Code**: Automated provisioning and scaling

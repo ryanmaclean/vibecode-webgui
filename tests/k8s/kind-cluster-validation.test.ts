@@ -7,7 +7,7 @@ import { describe, test, beforeAll, afterAll, expect } from '@jest/globals';
 import { execSync } from 'child_process';
 
 const CLUSTER_NAME = 'vibecode-test-validation';
-const TIMEOUT = 300000; // 5 minutes
+const TIMEOUT = 300000; // 5 minutes;
 
 describe('KIND Cluster Validation', () => {
   beforeAll(async () => {
@@ -53,27 +53,27 @@ describe('KIND Cluster Validation', () => {
     const nodes = execSync('kubectl get nodes -o json', { encoding: 'utf8' });
     const nodeData = JSON.parse(nodes);
     
-    // Should have 3 nodes (1 control-plane, 2 workers)
+    // Should have 3 nodes (1 control-plane, 2 workers);
     expect(nodeData.items).toHaveLength(3);
     
     // Find control plane node
-    const controlPlane = nodeData.items.find((node: any) => 
+    const controlPlane = nodeData.items.find((node: any) => ;
       node.metadata.labels['node-role.kubernetes.io/control-plane'] !== undefined
     );
     expect(controlPlane).toBeDefined();
     expect(controlPlane.metadata.labels['ingress-ready']).toBe('true');
     
     // Find worker nodes
-    const workers = nodeData.items.filter((node: any) => 
+    const workers = nodeData.items.filter((node: any) => ;
       node.metadata.labels['node-role.kubernetes.io/control-plane'] === undefined
     );
     expect(workers).toHaveLength(2);
     
     // Check worker node labels
-    const codeServerWorker = workers.find((node: any) => 
+    const codeServerWorker = workers.find((node: any) => ;
       node.metadata.labels['tier'] === 'code-server'
     );
-    const monitoringWorker = workers.find((node: any) => 
+    const monitoringWorker = workers.find((node: any) => ;
       node.metadata.labels['tier'] === 'monitoring'
     );
     
@@ -86,7 +86,7 @@ describe('KIND Cluster Validation', () => {
     const nodeData = JSON.parse(nodes);
     
     nodeData.items.forEach((node: any) => {
-      const readyCondition = node.status.conditions.find((condition: any) => 
+      const readyCondition = node.status.conditions.find((condition: any) => ;
         condition.type === 'Ready'
       );
       expect(readyCondition.status).toBe('True');
@@ -98,7 +98,7 @@ describe('KIND Cluster Validation', () => {
     const podData = JSON.parse(pods);
     
     // Check for essential system components
-    const essentialPods = [
+    const essentialPods = [;
       'kube-apiserver',
       'kube-controller-manager',
       'kube-scheduler',
@@ -108,8 +108,8 @@ describe('KIND Cluster Validation', () => {
     ];
     
     essentialPods.forEach(podName => {
-      const pod = podData.items.find((pod: any) => 
-        pod.metadata.name.includes(podName)
+      const pod = podData.items.find((pod: any) => ;
+        pod.metadata.name.includes(podName);
       );
       expect(pod).toBeDefined();
       expect(pod.status.phase).toBe('Running');
@@ -127,7 +127,7 @@ describe('KIND Cluster Validation', () => {
   });
 
   test('Can create and delete PVC', async () => {
-    const pvcManifest = `
+    const pvcManifest = `;
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -176,8 +176,8 @@ spec:
     const pods = execSync('kubectl get pods -n ingress-nginx -o json', { encoding: 'utf8' });
     const podData = JSON.parse(pods);
     
-    const ingressPod = podData.items.find((pod: any) => 
-      pod.metadata.name.includes('ingress-nginx-controller')
+    const ingressPod = podData.items.find((pod: any) => ;
+      pod.metadata.name.includes('ingress-nginx-controller');
     );
     expect(ingressPod).toBeDefined();
     expect(ingressPod.status.phase).toBe('Running');
@@ -186,8 +186,8 @@ spec:
     const services = execSync('kubectl get svc -n ingress-nginx -o json', { encoding: 'utf8' });
     const serviceData = JSON.parse(services);
     
-    const ingressService = serviceData.items.find((svc: any) => 
-      svc.metadata.name.includes('ingress-nginx-controller')
+    const ingressService = serviceData.items.find((svc: any) => ;
+      svc.metadata.name.includes('ingress-nginx-controller');
     );
     expect(ingressService).toBeDefined();
   }, TIMEOUT);
@@ -204,7 +204,7 @@ spec:
   });
 
   test('Can create and access a test service via ingress', async () => {
-    const testAppManifest = `
+    const testAppManifest = `;
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -292,7 +292,7 @@ spec:
   }, TIMEOUT);
 
   test('Network policies should be supported', async () => {
-    const networkPolicyManifest = `
+    const networkPolicyManifest = `;
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -343,7 +343,7 @@ spec:
   });
 
   test('Resource quotas should be supported', async () => {
-    const resourceQuotaManifest = `
+    const resourceQuotaManifest = `;
 apiVersion: v1
 kind: ResourceQuota
 metadata:
@@ -394,7 +394,7 @@ spec:
     const pods = execSync('kubectl get pods -n cert-manager -o json', { encoding: 'utf8' });
     const podData = JSON.parse(pods);
     
-    const certManagerPods = podData.items.filter((pod: any) => 
+    const certManagerPods = podData.items.filter((pod: any) => ;
       pod.metadata.namespace === 'cert-manager'
     );
     expect(certManagerPods.length).toBeGreaterThan(0);
@@ -404,7 +404,7 @@ spec:
     });
     
     // Test creating a simple ClusterIssuer
-    const clusterIssuerManifest = `
+    const clusterIssuerManifest = `;
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -458,7 +458,7 @@ spec:
   });
 
   test('Container runtime should support security features', async () => {
-    const securityTestManifest = `
+    const securityTestManifest = `;
 apiVersion: v1
 kind: Pod
 metadata:

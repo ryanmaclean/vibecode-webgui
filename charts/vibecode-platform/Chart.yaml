@@ -1,0 +1,9 @@
+apiVersion: v2
+name: vibecode-platform
+description: Cloud-native development platform with code-server and AI integration
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+maintainers:
+  - name: VibeCode Team
+    email: platform@vibecode.dev

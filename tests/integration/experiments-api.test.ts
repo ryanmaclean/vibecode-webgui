@@ -10,23 +10,23 @@ import { POST, GET } from '@/app/api/experiments/route'
 
 // Mock next-auth
 jest.mock('next-auth', () => ({
-  getServerSession: jest.fn()
-}))
+  getServerSession: jest.fn();
+}));
 
 // Mock the auth options
 jest.mock('@/lib/auth', () => ({
   authOptions: {}
-}))
+}));
 
 // Mock the monitoring
 jest.mock('@/lib/server-monitoring', () => ({
   appLogger: {
     logBusiness: jest.fn(),
-    logSecurity: jest.fn()
+    logSecurity: jest.fn();
   }
-}))
+}));
 
-const { getServerSession } = require('next-auth')
+const { getServerSession } = require('next-auth');
 
 describe('Experiments API', () => {
   const mockUser = {
@@ -42,12 +42,12 @@ describe('Experiments API', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
-  })
+    jest.clearAllMocks();
+  });
 
   describe('POST /api/experiments', () => {
     test('should require authentication', async () => {
-      getServerSession.mockResolvedValue(null)
+      getServerSession.mockResolvedValue(null);
 
       const { req, res } = createMocks({
         method: 'POST',
@@ -55,15 +55,15 @@ describe('Experiments API', () => {
           action: 'evaluate',
           flagKey: 'test_flag'
         }
-      })
+      });
 
-      await POST(req as any)
+      await POST(req as any);
       
-      expect(res._getStatusCode()).toBe(401)
-    })
+      expect(res._getStatusCode()).toBe(401);
+    });
 
     test('should evaluate feature flag successfully', async () => {
-      getServerSession.mockResolvedValue({ user: mockUser })
+      getServerSession.mockResolvedValue({ user: mockUser });
 
       const { req } = createMocks({
         method: 'POST',
@@ -80,20 +80,20 @@ describe('Experiments API', () => {
             defaultValue: false
           }
         }
-      })
+      });
 
-      const response = await POST(req as any)
-      const responseData = await response.json()
+      const response = await POST(req as any);
+      const responseData = await response.json();
 
-      expect(response.status).toBe(200)
-      expect(responseData.success).toBe(true)
-      expect(responseData.result).toBeDefined()
-      expect(responseData.result.flagKey).toBe('ai_assistant_v2')
-      expect(['control', 'enhanced']).toContain(responseData.result.variant)
-    })
+      expect(response.status).toBe(200);
+      expect(responseData.success).toBe(true);
+      expect(responseData.result).toBeDefined();
+      expect(responseData.result.flagKey).toBe('ai_assistant_v2');
+      expect(['control', 'enhanced']).toContain(responseData.result.variant);
+    });
 
     test('should track metrics successfully', async () => {
-      getServerSession.mockResolvedValue({ user: mockUser })
+      getServerSession.mockResolvedValue({ user: mockUser });
 
       const { req } = createMocks({
         method: 'POST',
@@ -110,18 +110,18 @@ describe('Experiments API', () => {
             workspaceId: 'workspace123'
           }
         }
-      })
+      });
 
-      const response = await POST(req as any)
-      const responseData = await response.json()
+      const response = await POST(req as any);
+      const responseData = await response.json();
 
-      expect(response.status).toBe(200)
-      expect(responseData.success).toBe(true)
-      expect(responseData.message).toBe('Metric tracked successfully')
-    })
+      expect(response.status).toBe(200);
+      expect(responseData.success).toBe(true);
+      expect(responseData.message).toBe('Metric tracked successfully');
+    });
 
     test('should evaluate multiple flags', async () => {
-      getServerSession.mockResolvedValue({ user: mockUser })
+      getServerSession.mockResolvedValue({ user: mockUser });
 
       const { req } = createMocks({
         method: 'POST',
@@ -135,22 +135,22 @@ describe('Experiments API', () => {
             { key: 'editor_theme_dark_plus', defaultValue: false }
           ]
         }
-      })
+      });
 
-      const response = await POST(req as any)
-      const responseData = await response.json()
+      const response = await POST(req as any);
+      const responseData = await response.json();
 
-      expect(response.status).toBe(200)
-      expect(responseData.success).toBe(true)
-      expect(responseData.results).toHaveLength(2)
+      expect(response.status).toBe(200);
+      expect(responseData.success).toBe(true);
+      expect(responseData.results).toHaveLength(2);
       
-      const flagKeys = responseData.results.map((r: any) => r.flagKey)
-      expect(flagKeys).toContain('ai_assistant_v2')
-      expect(flagKeys).toContain('editor_theme_dark_plus')
-    })
+      const flagKeys = responseData.results.map((r: any) => r.flagKey);
+      expect(flagKeys).toContain('ai_assistant_v2');
+      expect(flagKeys).toContain('editor_theme_dark_plus');
+    });
 
     test('should return 400 for missing flagKey on evaluate', async () => {
-      getServerSession.mockResolvedValue({ user: mockUser })
+      getServerSession.mockResolvedValue({ user: mockUser });
 
       const { req } = createMocks({
         method: 'POST',
@@ -158,17 +158,17 @@ describe('Experiments API', () => {
           action: 'evaluate'
           // missing flagKey
         }
-      })
+      });
 
-      const response = await POST(req as any)
-      const responseData = await response.json()
+      const response = await POST(req as any);
+      const responseData = await response.json();
 
-      expect(response.status).toBe(400)
-      expect(responseData.error).toBe('flagKey is required for evaluation')
-    })
+      expect(response.status).toBe(400);
+      expect(responseData.error).toBe('flagKey is required for evaluation');
+    });
 
     test('should return 400 for missing parameters on track', async () => {
-      getServerSession.mockResolvedValue({ user: mockUser })
+      getServerSession.mockResolvedValue({ user: mockUser });
 
       const { req } = createMocks({
         method: 'POST',
@@ -177,36 +177,36 @@ describe('Experiments API', () => {
           flagKey: 'test_flag'
           // missing metricName and value
         }
-      })
+      });
 
-      const response = await POST(req as any)
-      const responseData = await response.json()
+      const response = await POST(req as any);
+      const responseData = await response.json();
 
-      expect(response.status).toBe(400)
-      expect(responseData.error).toBe('flagKey, metricName, and value are required for tracking')
-    })
+      expect(response.status).toBe(400);
+      expect(responseData.error).toBe('flagKey, metricName, and value are required for tracking');
+    });
 
     test('should return 400 for invalid action', async () => {
-      getServerSession.mockResolvedValue({ user: mockUser })
+      getServerSession.mockResolvedValue({ user: mockUser });
 
       const { req } = createMocks({
         method: 'POST',
         body: {
           action: 'invalid_action'
         }
-      })
+      });
 
-      const response = await POST(req as any)
-      const responseData = await response.json()
+      const response = await POST(req as any);
+      const responseData = await response.json();
 
-      expect(response.status).toBe(400)
-      expect(responseData.error).toBe('Invalid action')
-    })
-  })
+      expect(response.status).toBe(400);
+      expect(responseData.error).toBe('Invalid action');
+    });
+  });
 
   describe('GET /api/experiments', () => {
     test('should require admin access for experiment results', async () => {
-      getServerSession.mockResolvedValue({ user: mockUser })
+      getServerSession.mockResolvedValue({ user: mockUser });
 
       const { req } = createMocks({
         method: 'GET',
@@ -214,108 +214,108 @@ describe('Experiments API', () => {
           flagKey: 'test_flag',
           action: 'results'
         }
-      })
+      });
 
-      const response = await GET(req as any)
-      const responseData = await response.json()
+      const response = await GET(req as any);
+      const responseData = await response.json();
 
-      expect(response.status).toBe(403)
-      expect(responseData.error).toBe('Admin access required')
-    })
+      expect(response.status).toBe(403);
+      expect(responseData.error).toBe('Admin access required');
+    });
 
     test('should return experiment results for admin users', async () => {
-      getServerSession.mockResolvedValue({ user: mockAdminUser })
+      getServerSession.mockResolvedValue({ user: mockAdminUser });
 
       const { req } = createMocks({
         method: 'GET',
         url: '/api/experiments?flagKey=ai_assistant_v2&action=results'
-      })
+      });
 
-      const response = await GET(req as any)
-      const responseData = await response.json()
+      const response = await GET(req as any);
+      const responseData = await response.json();
 
-      expect(response.status).toBe(200)
-      expect(responseData.success).toBe(true)
-      expect(responseData.flag).toBeDefined()
-      expect(responseData.metrics).toBeDefined()
-      expect(responseData.statisticalSignificance).toBeDefined()
-    })
+      expect(response.status).toBe(200);
+      expect(responseData.success).toBe(true);
+      expect(responseData.flag).toBeDefined();
+      expect(responseData.metrics).toBeDefined();
+      expect(responseData.statisticalSignificance).toBeDefined();
+    });
 
     test('should return flag list for admin users', async () => {
-      getServerSession.mockResolvedValue({ user: mockAdminUser })
+      getServerSession.mockResolvedValue({ user: mockAdminUser });
 
       const { req } = createMocks({
         method: 'GET',
         url: '/api/experiments?action=list'
-      })
+      });
 
-      const response = await GET(req as any)
-      const responseData = await response.json()
+      const response = await GET(req as any);
+      const responseData = await response.json();
 
-      expect(response.status).toBe(200)
-      expect(responseData.success).toBe(true)
-      expect(responseData.flags).toBeDefined()
-      expect(Array.isArray(responseData.flags)).toBe(true)
-      expect(responseData.flags.length).toBeGreaterThan(0)
-    })
+      expect(response.status).toBe(200);
+      expect(responseData.success).toBe(true);
+      expect(responseData.flags).toBeDefined();
+      expect(Array.isArray(responseData.flags)).toBe(true);
+      expect(responseData.flags.length).toBeGreaterThan(0);
+    });
 
     test('should return 400 for missing flagKey in results action', async () => {
-      getServerSession.mockResolvedValue({ user: mockAdminUser })
+      getServerSession.mockResolvedValue({ user: mockAdminUser });
 
       const { req } = createMocks({
         method: 'GET',
         url: '/api/experiments?action=results'
-      })
+      });
 
-      const response = await GET(req as any)
-      const responseData = await response.json()
+      const response = await GET(req as any);
+      const responseData = await response.json();
 
-      expect(response.status).toBe(400)
-      expect(responseData.error).toBe('flagKey parameter is required')
-    })
+      expect(response.status).toBe(400);
+      expect(responseData.error).toBe('flagKey parameter is required');
+    });
 
     test('should return 400 for invalid action', async () => {
-      getServerSession.mockResolvedValue({ user: mockAdminUser })
+      getServerSession.mockResolvedValue({ user: mockAdminUser });
 
       const { req } = createMocks({
         method: 'GET',
         url: '/api/experiments?action=invalid'
-      })
+      });
 
-      const response = await GET(req as any)
-      const responseData = await response.json()
+      const response = await GET(req as any);
+      const responseData = await response.json();
 
-      expect(response.status).toBe(400)
-      expect(responseData.error).toBe('Invalid action')
-    })
-  })
+      expect(response.status).toBe(400);
+      expect(responseData.error).toBe('Invalid action');
+    });
+  });
 
   describe('Error Handling', () => {
     test('should handle server errors gracefully', async () => {
-      getServerSession.mockResolvedValue({ user: mockUser })
+      getServerSession.mockResolvedValue({ user: mockUser });
 
       // Mock to throw an error
-      const originalConsoleError = console.error
-      console.error = jest.fn()
+      const originalConsoleError = console.error;
+      console.error = jest.fn();
 
       const { req } = createMocks({
         method: 'POST',
         body: null // This should cause an error
-      })
+      });
 
-      const response = await POST(req as any)
-      const responseData = await response.json()
+      const response = await POST(req as any);
+      const responseData = await response.json();
 
-      expect(response.status).toBe(500)
-      expect(responseData.error).toBe('Internal server error')
+      expect(response.status).toBe(500);
+      expect(responseData.error).toBe('Internal server error');
 
       console.error = originalConsoleError
-    })
-  })
+    });
+  });
 
   describe('Context Building', () => {
     test('should build experiment context correctly from request', async () => {
-      getServerSession.mockResolvedValue({ user: mockUser })
+      getServerSession.mockResolvedValue({ user: mockUser });
 
       const { req } = createMocks({
         method: 'POST',
@@ -335,16 +335,16 @@ describe('Experiments API', () => {
             }
           }
         }
-      })
+      });
 
-      const response = await POST(req as any)
-      const responseData = await response.json()
+      const response = await POST(req as any);
+      const responseData = await response.json();
 
-      expect(response.status).toBe(200)
-      expect(responseData.success).toBe(true)
+      expect(response.status).toBe(200);
+      expect(responseData.success).toBe(true);
 
       // The context should be built correctly (we can't directly test it,
-      // but we know it worked if the evaluation succeeded)
-    })
-  })
-})
+      // but we know it worked if the evaluation succeeded);
+    });
+  });
+});

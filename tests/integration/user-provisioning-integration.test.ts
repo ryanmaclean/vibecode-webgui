@@ -11,7 +11,7 @@ const CLUSTER_NAME = 'vibecode-provisioning-test';
 const NAMESPACE = 'vibecode-platform';
 const HELM_RELEASE = 'vibecode-platform';
 const CHART_PATH = 'helm/vibecode-platform';
-const TIMEOUT = 600000; // 10 minutes
+const TIMEOUT = 600000; // 10 minutes;
 
 describe('User Provisioning Integration Tests', () => {
   beforeAll(async () => {
@@ -53,7 +53,7 @@ describe('User Provisioning Integration Tests', () => {
     // Install Helm chart
     execSync(`helm install ${HELM_RELEASE} ${CHART_PATH} --namespace ${NAMESPACE} --wait --timeout=300s`, {
       stdio: 'inherit',
-      cwd: process.cwd()
+      cwd: process.cwd();
     });
   }, TIMEOUT);
 
@@ -242,7 +242,7 @@ describe('User Provisioning Integration Tests', () => {
       expect(ingress2Data.spec.rules[0].host).toBe(`${user2}.vibecode.local`);
       
       // 4. Network connectivity test - users should not be able to access each other directly
-      const networkTestPod = `
+      const networkTestPod = `;
 apiVersion: v1
 kind: Pod
 metadata:
@@ -267,7 +267,7 @@ spec:
       });
       
       // Test that users can access their own services but not each other's
-      // (This would require proper network policies to be fully tested)
+      // (This would require proper network policies to be fully tested);
       
     } finally {
       // Cleanup users and test pod
@@ -454,7 +454,7 @@ spec:
   });
 
   test('Invalid user IDs should be rejected', () => {
-    const invalidUserIds = [
+    const invalidUserIds = [;
       '', // empty
       'a', // too short
       'ab', // too short

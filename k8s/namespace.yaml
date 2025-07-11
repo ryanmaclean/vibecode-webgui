@@ -1,7 +1,39 @@
+# VibeCode Platform Namespaces
+# Organize resources by function for better security and management
+
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: vibecode
+  name: vibecode-platform
   labels:
-    name: vibecode
-    environment: test
+    name: vibecode-platform
+    tier: application
+    security: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vibecode-auth
+  labels:
+    name: vibecode-auth
+    tier: security
+    security: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vibecode-monitoring
+  labels:
+    name: vibecode-monitoring
+    tier: observability
+    security: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vibecode-storage
+  labels:
+    name: vibecode-storage
+    tier: persistence
+    security: restricted
+EOF < /dev/null

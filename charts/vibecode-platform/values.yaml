@@ -1,0 +1,54 @@
+# VibeCode Platform Configuration
+# Default values for vibecode-platform
+
+global:
+  domain: vibecode.dev
+  storageClass: standard
+
+# Code-Server Configuration
+codeServer:
+  enabled: true
+  image:
+    repository: codercom/code-server
+    tag: "4.101.2"
+    pullPolicy: IfNotPresent
+  
+  # Resource limits per workspace
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  
+  # Persistent storage configuration
+  persistence:
+    enabled: true
+    workspace:
+      storageClass: ""
+      size: 10Gi
+    extensions:
+      storageClass: ""
+      size: 2Gi
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "code-server"
+
+# User configuration (set via --set user.id=xxx)
+user:
+  id: ""
+  email: ""

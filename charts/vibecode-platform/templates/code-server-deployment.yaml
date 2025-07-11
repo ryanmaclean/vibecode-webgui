@@ -1,0 +1,75 @@
+# Code-Server Deployment Template
+{{- if .Values.codeServer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-server-{{ .Values.user.id | default "default" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: code-server
+    user: {{ .Values.user.id | default "default" }}
+    tier: workspace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: code-server
+      user: {{ .Values.user.id | default "default" }}
+  template:
+    metadata:
+      labels:
+        app: code-server
+        user: {{ .Values.user.id | default "default" }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: code-server
+        image: "{{ .Values.codeServer.image.repository }}:{{ .Values.codeServer.image.tag }}"
+        imagePullPolicy: {{ .Values.codeServer.image.pullPolicy }}
+        args:
+          - --bind-addr
+          - 0.0.0.0:8080
+          - --auth
+          - none
+          - /workspace
+        env:
+        - name: WORKSPACE_ID
+          value: {{ .Values.user.id | default "default" }}
+        - name: USER
+          value: coder
+        - name: HOME
+          value: /workspace
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          {{- toYaml .Values.codeServer.resources | nindent 10 }}
+        volumeMounts:
+        - name: workspace-storage
+          mountPath: /workspace
+        - name: extensions-storage
+          mountPath: /home/coder/.local/share/code-server
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: workspace-storage
+        persistentVolumeClaim:
+          claimName: workspace-{{ .Values.user.id | default "default" }}
+      - name: extensions-storage
+        persistentVolumeClaim:
+          claimName: extensions-{{ .Values.user.id | default "default" }}
+{{- end }}

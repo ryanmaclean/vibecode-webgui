@@ -1,37 +1,45 @@
-# VibeCode WebGUI
+# VibeCode: Cloud-Native Development Platform
 
-An AI-powered web-based development platform that combines the best features of Lovable, Bolt, and Replit. Built with enterprise-grade security, real-time collaboration, and cloud-native architecture.
+**Infrastructure-First Approach** using **code-server** + **KIND** for enterprise-grade development environments. Built with **Kubernetes-native** architecture, **Authelia** 2FA/SSO authentication, and **AI integration** via CodeCursor-inspired VS Code extensions.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security Scan](https://github.com/vibecode/webgui/workflows/Security%20Scan/badge.svg)](https://github.com/vibecode/webgui/actions)
 [![Docker Build](https://img.shields.io/docker/build/vibecode/webgui)](https://hub.docker.com/r/vibecode/webgui)
 
-## ✨ Features
+## ✨ Key Features
 
-- 🚀 **Full VS Code Experience**: Complete IDE powered by code-server 4.101.2
-- 🤖 **AI-Powered Development**: Vercel AI SDK integration for intelligent assistance
-- 🔄 **Real-time Collaboration**: Multi-user editing with cursor tracking and presence
-- 🐳 **Container-Native**: Docker and Kubernetes deployment ready
-- 🔐 **Enterprise Security**: Zero GPL/LGPL dependencies, comprehensive scanning
-- 📊 **Comprehensive Monitoring**: Datadog RUM/APM/Logs, Vector log aggregation, KubeHound security analysis
-- 🧪 **A/B Testing & Feature Flags**: Eppo-inspired experimentation platform with statistical analysis
-- 🔍 **AI-Powered Data Observability**: Metaplane integration for data quality monitoring and anomaly detection
-- ⚡ **High Performance**: WebGL-accelerated terminal, optimized file watching
-- 🌐 **Multi-Provider Deployment**: Netlify, Vercel, GitHub Pages, AWS, GCP, Azure
+- 🚀 **Complete VS Code Experience**: Full IDE via code-server 4.101.2 (MIT licensed)
+- 🔐 **Enterprise 2FA/SSO**: Authelia authentication with hardware keys, TOTP, Duo push
+- 🎯 **Infrastructure-First**: KIND (Kubernetes in Docker) orchestration eliminates 60-80% custom development
+- 🤖 **AI Integration**: CodeCursor-inspired VS Code extension with OpenRouter multi-provider support
+- 🌐 **Production-Ready**: NGINX Ingress, cert-manager, Helm charts, persistent storage
+- 📊 **Comprehensive Monitoring**: Datadog, Prometheus, Vector, OpenTelemetry integration
+- 🔄 **Per-User Workspaces**: Isolated environments with dedicated persistent volumes
+- ⚡ **Auto-Scaling**: Kubernetes HPA, resource limits, efficient resource utilization
+- 🛡️ **Security Hardened**: Pod Security Standards, NetworkPolicies, RBAC, non-root containers
+- 🎨 **Zero Custom UI**: Leverages battle-tested VS Code interface
 
-## 🏗️ Architecture
+## 🏗️ Infrastructure-First Architecture
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Next.js App  │    │   Code-Server    │    │  WebSocket      │
-│   (Port 3000)  │◄───┤   (Port 8080)    │◄───┤  Server         │
-│                 │    │                  │    │  (Port 3001)    │
+│   KIND Cluster  │    │     Authelia     │    │   AI Gateway    │
+│   (4 nodes)     │◄───┤   2FA/SSO Auth   │◄───┤  OpenRouter     │
+│                 │    │   (Port 9091)    │    │  Multi-Provider │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
          │                        │                        │
          ▼                        ▼                        ▼
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   PostgreSQL    │    │      Redis       │    │   File System   │
-│   (Port 5432)  │    │   (Port 6379)    │    │   Watching      │
+│  Code-Server    │    │ NGINX Ingress    │    │   Helm Charts   │
+│  Per-User Pods  │    │  + cert-manager  │    │   Templates     │
+│  (Port 8080)    │    │  (TLS/SSL)       │    │   Deployment    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                        │                        │
+         ▼                        ▼                        ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│  Persistent     │    │   Monitoring     │    │   User Mgmt     │
+│  Volumes        │    │   Datadog Stack  │    │   Provisioning  │
+│  (Workspaces)   │    │   (Observability)│    │   Scripts       │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
 

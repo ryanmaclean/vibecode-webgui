@@ -1,0 +1,142 @@
+# Demo Code-Server Deployment for VibeCode Platform
+# This demonstrates the basic pattern for user workspaces
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-server-demo
+  namespace: vibecode-platform
+  labels:
+    app: code-server
+    user: demo
+    tier: workspace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: code-server
+      user: demo
+  template:
+    metadata:
+      labels:
+        app: code-server
+        user: demo
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: code-server
+        image: codercom/code-server:4.101.2
+        args:
+          - --bind-addr
+          - 0.0.0.0:8080
+          - --auth
+          - none
+          - /workspace
+        env:
+        - name: WORKSPACE_ID
+          value: demo
+        - name: USER
+          value: coder
+        - name: HOME
+          value: /workspace
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: workspace-storage
+          mountPath: /workspace
+        - name: extensions-storage
+          mountPath: /home/coder/.local/share/code-server
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: workspace-storage
+        persistentVolumeClaim:
+          claimName: workspace-demo
+      - name: extensions-storage
+        persistentVolumeClaim:
+          claimName: extensions-demo
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: workspace-demo
+  namespace: vibecode-platform
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: extensions-demo
+  namespace: vibecode-platform
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-server-demo
+  namespace: vibecode-platform
+spec:
+  selector:
+    app: code-server
+    user: demo
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: code-server-demo
+  namespace: vibecode-platform
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "code-server-demo"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: demo.localhost
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: code-server-demo
+            port:
+              number: 8080
+EOF < /dev/null

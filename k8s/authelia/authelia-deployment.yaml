@@ -1,0 +1,117 @@
+# Authelia Deployment for VibeCode Platform
+# Enterprise authentication server with 2FA/SSO capabilities
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authelia
+  namespace: vibecode-auth
+  labels:
+    app: authelia
+    component: authentication
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authelia
+  template:
+    metadata:
+      labels:
+        app: authelia
+        component: authentication
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: authelia
+        image: authelia/authelia:4.38.10
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 9091
+          name: http
+        env: []
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /config/configuration.yml
+          subPath: configuration.yml
+          readOnly: true
+        - name: users
+          mountPath: /config/users_database.yml
+          subPath: users_database.yml
+          readOnly: true
+        - name: notification
+          mountPath: /config
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 9091
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 9091
+          initialDelaySeconds: 5
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: authelia-config
+      - name: users
+        secret:
+          secretName: authelia-users
+      - name: notification
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authelia
+  namespace: vibecode-auth
+  labels:
+    app: authelia
+    component: authentication
+spec:
+  type: ClusterIP
+  selector:
+    app: authelia
+  ports:
+  - port: 9091
+    targetPort: 9091
+    name: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: authelia
+  namespace: vibecode-auth
+  labels:
+    app: authelia
+    component: authentication
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: auth.localhost
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: authelia
+            port:
+              number: 9091

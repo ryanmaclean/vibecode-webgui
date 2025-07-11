@@ -12,7 +12,7 @@ const CLUSTER_NAME = 'vibecode-test';
 const NAMESPACE = 'vibecode-platform';
 const HELM_RELEASE = 'vibecode-platform';
 const CHART_PATH = 'helm/vibecode-platform';
-const TIMEOUT = 300000; // 5 minutes
+const TIMEOUT = 300000; // 5 minutes;
 
 describe('VibeCode Platform Helm Chart Deployment', () => {
   beforeAll(async () => {
@@ -37,7 +37,7 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
       stdio: 'inherit'
     });
     
-    // Install NGINX Ingress Controller (required for Helm chart)
+    // Install NGINX Ingress Controller (required for Helm chart);
     execSync(`kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml`, {
       stdio: 'inherit'
     });
@@ -69,7 +69,7 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
   test('Helm chart should lint successfully', () => {
     const result = execSync(`helm lint ${CHART_PATH}`, { 
       encoding: 'utf8',
-      cwd: process.cwd()
+      cwd: process.cwd();
     });
     
     expect(result).toContain('1 chart(s) linted, 0 chart(s) failed');
@@ -78,7 +78,7 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
   test('Helm chart should template successfully', () => {
     const result = execSync(`helm template ${HELM_RELEASE} ${CHART_PATH} --namespace ${NAMESPACE}`, {
       encoding: 'utf8',
-      cwd: process.cwd()
+      cwd: process.cwd();
     });
     
     // Should contain expected Kubernetes resources
@@ -93,7 +93,7 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
     // Install the Helm chart
     execSync(`helm install ${HELM_RELEASE} ${CHART_PATH} --namespace ${NAMESPACE} --wait --timeout=300s`, {
       stdio: 'inherit',
-      cwd: process.cwd()
+      cwd: process.cwd();
     });
     
     // Verify installation
@@ -154,7 +154,7 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
     const quotaList = JSON.parse(quotas);
     expect(quotaList.items.length).toBeGreaterThan(0);
     
-    const globalQuota = quotaList.items.find((item: any) => 
+    const globalQuota = quotaList.items.find((item: any) => ;
       item.metadata.name === `${HELM_RELEASE}-global`
     );
     expect(globalQuota).toBeDefined();
@@ -334,7 +334,7 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
 
   test('Chart upgrade should work', async () => {
     // Modify values and upgrade
-    const upgradeValues = `
+    const upgradeValues = `;
 monitoring:
   enabled: false
 security:
@@ -348,7 +348,7 @@ security:
       // Upgrade the chart
       execSync(`helm upgrade ${HELM_RELEASE} ${CHART_PATH} --namespace ${NAMESPACE} --values /tmp/upgrade-values.yaml --wait --timeout=300s`, {
         stdio: 'inherit',
-        cwd: process.cwd()
+        cwd: process.cwd();
       });
       
       // Verify upgrade
@@ -359,7 +359,7 @@ security:
       expect(result).toContain(HELM_RELEASE);
       expect(result).toContain('deployed');
       
-      // Verify monitoring is disabled (no ServiceMonitor should exist)
+      // Verify monitoring is disabled (no ServiceMonitor should exist);
       try {
         execSync(`kubectl get servicemonitor ${HELM_RELEASE} --namespace ${NAMESPACE}`, { stdio: 'pipe' });
         // If we get here, ServiceMonitor exists when it shouldn't
