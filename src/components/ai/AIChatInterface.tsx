@@ -2,12 +2,14 @@
 // Inspired by Claude, ChatGPT, and Lovable.dev interfaces
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare } from 'lucide-react'
+import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare, Wand2, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import PromptTemplates from './PromptTemplates'
+import PromptEnhancer from './PromptEnhancer'
 
 interface Message {
   id: string
@@ -41,6 +43,8 @@ export default function AIChatInterface({
   const [selectedModel, setSelectedModel] = useState('anthropic/claude-3-sonnet')
   const [contextFiles, setContextFiles] = useState<string[]>(initialContext)
   const [showSettings, setShowSettings] = useState(false)
+  const [showPromptTemplates, setShowPromptTemplates] = useState(false)
+  const [showPromptEnhancer, setShowPromptEnhancer] = useState(false)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -211,6 +215,20 @@ export default function AIChatInterface({
     }).format(date)
   }
 
+  const handlePromptTemplate = (prompt: string) => {
+    setInput(prompt)
+    setShowPromptTemplates(false)
+    // Focus the textarea after selecting template
+    setTimeout(() => textareaRef.current?.focus(), 100)
+  }
+
+  const handleEnhancedPrompt = (prompt: string) => {
+    setInput(prompt)
+    setShowPromptEnhancer(false)
+    // Focus the textarea after enhancement
+    setTimeout(() => textareaRef.current?.focus(), 100)
+  }
+
   const currentModel = availableModels.find(m => m.id === selectedModel)
 
   return (
@@ -241,6 +259,22 @@ export default function AIChatInterface({
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => setShowPromptTemplates(!showPromptTemplates)}
+              title="Prompt Templates"
+            >
+              <FileText className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowPromptEnhancer(!showPromptEnhancer)}
+              title="Enhance Prompt"
+            >
+              <Wand2 className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setShowSettings(!showSettings)}
             >
               <Settings className="w-4 h-4" />
@@ -263,6 +297,27 @@ export default function AIChatInterface({
                 </option>
               ))}
             </select>
+          </div>
+        )}
+
+        {/* Prompt Templates Panel */}
+        {showPromptTemplates && (
+          <div className="mt-4 max-h-96 overflow-y-auto">
+            <PromptTemplates 
+              onSelectTemplate={handlePromptTemplate}
+              className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
+            />
+          </div>
+        )}
+
+        {/* Prompt Enhancer Panel */}
+        {showPromptEnhancer && input.trim() && (
+          <div className="mt-4 max-h-96 overflow-y-auto">
+            <PromptEnhancer 
+              originalPrompt={input}
+              onEnhancedPrompt={handleEnhancedPrompt}
+              className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
+            />
           </div>
         )}
       </div>
