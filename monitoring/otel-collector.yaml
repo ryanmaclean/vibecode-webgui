@@ -1,0 +1,265 @@
+# OpenTelemetry Collector Configuration for VibeCode Platform
+# Comprehensive telemetry data collection and processing
+
+receivers:
+  # OTLP receiver for traces, metrics, and logs
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  # Prometheus receiver for scraping metrics
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'vibecode-app'
+          scrape_interval: 30s
+          static_configs:
+            - targets: ['vibecode-app:3000']
+          metrics_path: /api/metrics
+        - job_name: 'otel-collector'
+          scrape_interval: 30s
+          static_configs:
+            - targets: ['localhost:8888']
+
+  # Jaeger receiver for traces
+  jaeger:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:14250
+      thrift_http:
+        endpoint: 0.0.0.0:14268
+      thrift_compact:
+        endpoint: 0.0.0.0:6831
+
+  # Zipkin receiver for traces
+  zipkin:
+    endpoint: 0.0.0.0:9411
+
+  # Host metrics receiver
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      disk:
+      filesystem:
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+      load:
+      memory:
+        metrics:
+          system.memory.utilization:
+            enabled: true
+      network:
+      paging:
+      processes:
+
+  # Docker stats receiver
+  docker_stats:
+    endpoint: unix:///var/run/docker.sock
+    collection_interval: 30s
+    timeout: 20s
+
+  # Kubernetes receiver for cluster metrics
+  k8s_cluster:
+    auth_type: serviceAccount
+    collection_interval: 30s
+    node_conditions_to_report: [Ready, MemoryPressure, DiskPressure, PIDPressure]
+    allocatable_types_to_report: [cpu, memory, storage]
+
+processors:
+  # Batch processor for efficiency
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+
+  # Memory limiter to prevent OOM
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  # Resource processor to add standard attributes
+  resource:
+    attributes:
+      - key: service.name
+        value: vibecode-platform
+        action: upsert
+      - key: service.version
+        from_attribute: app.version
+        action: insert
+      - key: deployment.environment
+        value: production
+        action: upsert
+      - key: k8s.cluster.name
+        value: vibecode-cluster
+        action: upsert
+
+  # Attributes processor for enrichment
+  attributes:
+    actions:
+      - key: environment
+        value: production
+        action: upsert
+      - key: team
+        value: platform
+        action: upsert
+      - key: region
+        value: us-west-2
+        action: upsert
+
+  # Probabilistic sampling for traces
+  probabilistic_sampler:
+    sampling_percentage: 1.0  # 1% sampling
+    hash_seed: 22
+
+  # Span processor for trace enhancement
+  span:
+    name:
+      to_attributes:
+        rules:
+          - ^\/api\/(?P<api_version>v\d+)\/(?P<endpoint>.*)$
+      from_attributes: [http.route, http.method]
+
+  # Metrics filter to reduce cardinality
+  filter/metrics:
+    metrics:
+      exclude:
+        match_type: regexp
+        metric_names:
+          - ".*_bucket"  # Exclude histogram buckets to reduce cardinality
+          - ".*_sum"
+          - ".*_count"
+
+  # Transform processor for custom logic
+  transform:
+    log_statements:
+      - context: log
+        statements:
+          - set(attributes["log.source"], "vibecode-platform")
+          - set(attributes["log.environment"], "production")
+    metric_statements:
+      - context: metric
+        statements:
+          - set(attributes["metric.source"], "vibecode-platform")
+    trace_statements:
+      - context: span
+        statements:
+          - set(attributes["trace.source"], "vibecode-platform")
+
+exporters:
+  # Datadog exporter
+  datadog:
+    api:
+      key: ${DATADOG_API_KEY}
+      site: datadoghq.com
+    metrics:
+      resource_attributes_as_tags: true
+      instrumentation_library_metadata_as_tags: true
+    traces:
+      resource_attributes_as_tags: true
+      span_name_as_resource_name: true
+    hostname: vibecode-collector
+
+  # Jaeger exporter for traces
+  jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+
+  # Prometheus exporter for metrics
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: vibecode
+    const_labels:
+      environment: production
+      service: vibecode-platform
+
+  # OTLP exporter for vendor-neutral export
+  otlp:
+    endpoint: https://api.honeycomb.io:443
+    headers:
+      "x-honeycomb-team": ${HONEYCOMB_API_KEY}
+
+  # Logging exporter for debugging
+  logging:
+    loglevel: info
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+  # File exporter for backup
+  file:
+    path: /tmp/otel-data.json
+
+  # Kafka exporter for streaming
+  kafka:
+    brokers: [kafka:9092]
+    topic: otel-telemetry
+    protocol_version: 2.6.0
+    encoding: otlp_proto
+
+extensions:
+  # Health check extension
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+  # Performance profiler
+  pprof:
+    endpoint: 0.0.0.0:1777
+
+  # Memory ballast for stable memory usage
+  memory_ballast:
+    size_mib: 165
+
+  # File storage for buffering
+  file_storage:
+    directory: /tmp/otel-storage
+    timeout: 10s
+
+service:
+  extensions: [health_check, pprof, memory_ballast, file_storage]
+  
+  pipelines:
+    # Traces pipeline
+    traces:
+      receivers: [otlp, jaeger, zipkin]
+      processors: [memory_limiter, resource, attributes, probabilistic_sampler, span, batch]
+      exporters: [datadog, jaeger, logging]
+
+    # Metrics pipeline
+    metrics:
+      receivers: [otlp, prometheus, hostmetrics, docker_stats, k8s_cluster]
+      processors: [memory_limiter, resource, attributes, filter/metrics, batch]
+      exporters: [datadog, prometheus, logging]
+
+    # Logs pipeline
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, attributes, transform, batch]
+      exporters: [datadog, logging, file]
+
+  # Telemetry configuration for the collector itself
+  telemetry:
+    logs:
+      level: "info"
+      development: false
+      sampling:
+        initial: 5
+        thereafter: 200
+      output_paths: ["stdout"]
+      error_output_paths: ["stderr"]
+    metrics:
+      level: detailed
+      address: 0.0.0.0:8888
+      
+    # Resource configuration
+    resource:
+      service.name: otel-collector
+      service.version: 0.89.0

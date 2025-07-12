@@ -1,0 +1,285 @@
+# AlertManager Configuration for VibeCode Platform
+# Production-ready alert routing and notification management
+
+global:
+  # Global SMTP configuration
+  smtp_smarthost: 'smtp.sendgrid.net:587'
+  smtp_from: 'alerts@vibecode.dev'
+  smtp_auth_username: 'apikey'
+  smtp_auth_password: '${SENDGRID_API_KEY}'
+  smtp_require_tls: true
+
+  # Slack webhook URL
+  slack_api_url: '${SLACK_WEBHOOK_URL}'
+
+  # PagerDuty integration
+  pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+
+# Template files for customizing notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Route configuration
+route:
+  group_by: ['alertname', 'severity', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'default-receiver'
+  
+  routes:
+    # Critical alerts - Immediate notification via PagerDuty and Slack
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 30m
+      routes:
+        # Application down - Highest priority
+        - match:
+            alertname: ApplicationDown
+          receiver: 'application-down'
+          group_wait: 0s
+          repeat_interval: 15m
+        
+        # Database issues
+        - match:
+            component: database
+          receiver: 'database-alerts'
+          group_wait: 30s
+
+    # Warning alerts - Slack notifications during business hours
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 2m
+      group_interval: 10m
+      repeat_interval: 2h
+      active_time_intervals:
+        - business-hours
+
+    # Security alerts - Always notify security team
+    - match:
+        team: security
+      receiver: 'security-alerts'
+      group_wait: 1m
+      repeat_interval: 1h
+
+    # Business metrics - Product team notifications
+    - match:
+        team: product
+      receiver: 'product-alerts'
+      group_wait: 5m
+      repeat_interval: 6h
+      active_time_intervals:
+        - business-hours
+
+    # Infrastructure alerts
+    - match:
+        component: infrastructure
+      receiver: 'infrastructure-alerts'
+      group_wait: 2m
+      repeat_interval: 4h
+
+# Time intervals for alert scheduling
+time_intervals:
+  - name: business-hours
+    time_intervals:
+      - times:
+          - start_time: '09:00'
+            end_time: '17:00'
+        weekdays: ['monday:friday']
+        location: 'America/Los_Angeles'
+
+# Inhibition rules to reduce noise
+inhibit_rules:
+  # Inhibit all other alerts when application is down
+  - source_match:
+      alertname: ApplicationDown
+    target_match_re:
+      alertname: '.*'
+    equal: ['service', 'instance']
+
+  # Inhibit warning alerts when critical alerts are firing
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal: ['service', 'component']
+
+  # Database connection issues inhibit high memory alerts
+  - source_match:
+      component: database
+      severity: critical
+    target_match:
+      alertname: HighMemoryUsage
+    equal: ['instance']
+
+# Alert receivers configuration
+receivers:
+  # Default receiver
+  - name: 'default-receiver'
+    email_configs:
+      - to: 'platform-team@vibecode.dev'
+        subject: '[VibeCode] Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Severity: {{ .Labels.severity }}
+          Service: {{ .Labels.service }}
+          {{ end }}
+
+  # Critical alerts - Multiple channels
+  - name: 'critical-alerts'
+    pagerduty_configs:
+      - routing_key: '${PAGERDUTY_INTEGRATION_KEY}'
+        description: '{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.summary }}'
+        severity: 'critical'
+        client: 'VibeCode Monitoring'
+        client_url: 'https://grafana.vibecode.dev'
+        details:
+          alert_count: '{{ len .Alerts }}'
+          service: '{{ .CommonLabels.service }}'
+          component: '{{ .CommonLabels.component }}'
+          runbook: '{{ .CommonAnnotations.runbook_url }}'
+    
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#platform-alerts'
+        color: 'danger'
+        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Service:* {{ .Labels.service }}
+          *Component:* {{ .Labels.component }}
+          *Runbook:* {{ .Annotations.runbook_url }}
+          {{ end }}
+        actions:
+          - type: button
+            text: 'View Dashboard'
+            url: '{{ .CommonAnnotations.dashboard }}'
+          - type: button
+            text: 'View Runbook'
+            url: '{{ .CommonAnnotations.runbook_url }}'
+
+  # Application down - Highest priority
+  - name: 'application-down'
+    pagerduty_configs:
+      - routing_key: '${PAGERDUTY_INTEGRATION_KEY}'
+        description: 'VibeCode Application is DOWN - IMMEDIATE ACTION REQUIRED'
+        severity: 'critical'
+        client: 'VibeCode Monitoring'
+        escalation_policy: 'Platform Escalation'
+    
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#incidents'
+        color: 'danger'
+        title: '🔥 APPLICATION DOWN - IMMEDIATE ACTION REQUIRED'
+        text: |
+          @channel VibeCode WebGUI application is completely down!
+          
+          {{ range .Alerts }}
+          *Service:* {{ .Labels.service }}
+          *Instance:* {{ .Labels.instance }}
+          *Duration:* {{ .Annotations.duration }}
+          {{ end }}
+          
+          Please check:
+          1. Application logs
+          2. Database connectivity  
+          3. Infrastructure status
+          4. Recent deployments
+        actions:
+          - type: button
+            text: 'Emergency Runbook'
+            url: 'https://docs.vibecode.dev/runbooks/application-down'
+          - type: button
+            text: 'Grafana Dashboard'
+            url: 'https://grafana.vibecode.dev/d/app-overview'
+
+  # Database alerts
+  - name: 'database-alerts'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#platform-alerts'
+        color: 'warning'
+        title: '🗃️ Database Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Database:* {{ .Labels.database }}
+          {{ end }}
+
+  # Warning alerts
+  - name: 'warning-alerts'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#platform-alerts'
+        color: 'warning'
+        title: '⚠️ Warning: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Service:* {{ .Labels.service }}
+          {{ end }}
+
+  # Security alerts
+  - name: 'security-alerts'
+    email_configs:
+      - to: 'security-team@vibecode.dev'
+        subject: '[SECURITY] {{ .GroupLabels.alertname }}'
+        body: |
+          SECURITY ALERT DETECTED
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Service: {{ .Labels.service }}
+          Time: {{ .StartsAt }}
+          {{ end }}
+    
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#security-alerts'
+        color: 'danger'
+        title: '🔒 Security Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Service:* {{ .Labels.service }}
+          {{ end }}
+
+  # Product team alerts
+  - name: 'product-alerts'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#product-metrics'
+        color: 'warning'
+        title: '📊 Product Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+
+  # Infrastructure alerts
+  - name: 'infrastructure-alerts'
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#infrastructure'
+        color: 'warning'
+        title: '🏗️ Infrastructure Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Instance:* {{ .Labels.instance }}
+          {{ end }}

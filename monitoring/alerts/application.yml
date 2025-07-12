@@ -1,0 +1,225 @@
+# Application-specific alerting rules for VibeCode Platform
+# Production-ready alerts with proper severity levels
+
+groups:
+  - name: vibecode.application
+    rules:
+      # High Priority Alerts (P1 - Immediate Response)
+      - alert: ApplicationDown
+        expr: up{job="vibecode-webgui"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          priority: P1
+          team: platform
+          component: application
+        annotations:
+          summary: "VibeCode application is down"
+          description: "VibeCode WebGUI application has been down for more than 1 minute"
+          runbook_url: "https://docs.vibecode.dev/runbooks/application-down"
+          dashboard: "https://grafana.vibecode.dev/d/app-overview"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{job="vibecode-webgui",status=~"5.."}[5m]) / rate(http_requests_total{job="vibecode-webgui"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          priority: P1
+          team: platform
+          component: application
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+          runbook_url: "https://docs.vibecode.dev/runbooks/high-error-rate"
+
+      - alert: APIResponseTimeSlow
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="vibecode-webgui"}[5m])) > 2
+        for: 3m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: api
+        annotations:
+          summary: "API response time is slow"
+          description: "95th percentile response time is {{ $value }}s for the last 5 minutes"
+          runbook_url: "https://docs.vibecode.dev/runbooks/slow-api"
+
+      # Database Alerts
+      - alert: DatabaseConnectionsHigh
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 2m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: database
+        annotations:
+          summary: "Database connection usage is high"
+          description: "Database connections are at {{ $value | humanizePercentage }} of maximum capacity"
+          runbook_url: "https://docs.vibecode.dev/runbooks/database-connections"
+
+      - alert: DatabaseDown
+        expr: up{job="postgres-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          priority: P1
+          team: platform
+          component: database
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL database has been unreachable for more than 1 minute"
+          runbook_url: "https://docs.vibecode.dev/runbooks/database-down"
+
+      # Redis Alerts
+      - alert: RedisDown
+        expr: up{job="redis-exporter"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: cache
+        annotations:
+          summary: "Redis cache is down"
+          description: "Redis cache has been unreachable for more than 1 minute"
+          runbook_url: "https://docs.vibecode.dev/runbooks/redis-down"
+
+      - alert: RedisMemoryUsageHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: cache
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Redis memory usage is {{ $value | humanizePercentage }} of maximum capacity"
+          runbook_url: "https://docs.vibecode.dev/runbooks/redis-memory"
+
+      # AI Service Alerts
+      - alert: OpenRouterAPIFailure
+        expr: increase(openrouter_api_errors_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: ai-service
+        annotations:
+          summary: "OpenRouter API experiencing failures"
+          description: "{{ $value }} OpenRouter API errors in the last 5 minutes"
+          runbook_url: "https://docs.vibecode.dev/runbooks/ai-service-failure"
+
+      - alert: AIResponseTimeSlow
+        expr: histogram_quantile(0.95, rate(ai_request_duration_seconds_bucket[5m])) > 30
+        for: 3m
+        labels:
+          severity: warning
+          priority: P3
+          team: platform
+          component: ai-service
+        annotations:
+          summary: "AI response time is slow"
+          description: "95th percentile AI response time is {{ $value }}s"
+          runbook_url: "https://docs.vibecode.dev/runbooks/slow-ai-response"
+
+      # Resource Alerts
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 3m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: infrastructure
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+          runbook_url: "https://docs.vibecode.dev/runbooks/high-memory"
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+          priority: P2
+          team: platform
+          component: infrastructure
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}"
+          runbook_url: "https://docs.vibecode.dev/runbooks/high-cpu"
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 1m
+        labels:
+          severity: critical
+          priority: P1
+          team: platform
+          component: infrastructure
+        annotations:
+          summary: "Disk space is low"
+          description: "Disk space is {{ $value | humanizePercentage }} remaining on {{ $labels.instance }}"
+          runbook_url: "https://docs.vibecode.dev/runbooks/disk-space-low"
+
+  - name: vibecode.security
+    rules:
+      # Security Alerts
+      - alert: SuspiciousLoginActivity
+        expr: increase(auth_login_failures_total[10m]) > 50
+        for: 1m
+        labels:
+          severity: warning
+          priority: P2
+          team: security
+          component: authentication
+        annotations:
+          summary: "Suspicious login activity detected"
+          description: "{{ $value }} failed login attempts in the last 10 minutes"
+          runbook_url: "https://docs.vibecode.dev/runbooks/suspicious-login"
+
+      - alert: RateLimitExceeded
+        expr: increase(rate_limit_exceeded_total[5m]) > 100
+        for: 2m
+        labels:
+          severity: warning
+          priority: P3
+          team: platform
+          component: api
+        annotations:
+          summary: "Rate limit exceeded frequently"
+          description: "Rate limit exceeded {{ $value }} times in the last 5 minutes"
+          runbook_url: "https://docs.vibecode.dev/runbooks/rate-limit"
+
+  - name: vibecode.business
+    rules:
+      # Business Metrics
+      - alert: LowActiveUsers
+        expr: vibecode_active_users_total < 10
+        for: 10m
+        labels:
+          severity: info
+          priority: P4
+          team: product
+          component: metrics
+        annotations:
+          summary: "Low active user count"
+          description: "Only {{ $value }} active users in the system"
+          runbook_url: "https://docs.vibecode.dev/runbooks/low-users"
+
+      - alert: ProjectCreationDown
+        expr: increase(vibecode_projects_created_total[1h]) == 0
+        for: 1h
+        labels:
+          severity: warning
+          priority: P3
+          team: product
+          component: projects
+        annotations:
+          summary: "No projects created in the last hour"
+          description: "Project creation functionality may be impaired"
+          runbook_url: "https://docs.vibecode.dev/runbooks/project-creation"

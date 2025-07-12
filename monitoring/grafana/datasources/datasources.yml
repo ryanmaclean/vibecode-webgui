@@ -1,0 +1,109 @@
+# Grafana Data Sources Configuration for VibeCode Platform
+
+apiVersion: 1
+
+datasources:
+  # Prometheus - Primary metrics source
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      httpMethod: POST
+      manageAlerts: true
+      prometheusType: Prometheus
+      prometheusVersion: 2.48.0
+      cacheLevel: 'High'
+      disableRecordingRules: false
+      incrementalQueryOverlapWindow: 10m
+      queryTimeout: 60s
+      timeInterval: 15s
+    editable: false
+
+  # Loki - Log aggregation
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      maxLines: 1000
+      timeout: 60s
+      derivedFields:
+        - datasourceUid: jaeger-uid
+          matcherRegex: "trace_id=(\\w+)"
+          name: TraceID
+          url: "$${__value.raw}"
+    editable: false
+
+  # Jaeger - Distributed tracing
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    uid: jaeger-uid
+    jsonData:
+      tracesToLogs:
+        datasourceUid: loki-uid
+        tags: ['job', 'instance', 'pod', 'namespace']
+        mappedTags: [
+          { key: 'service.name', value: 'service' },
+          { key: 'service.namespace', value: 'namespace' }
+        ]
+        mapTagNamesEnabled: true
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+      tracesToMetrics:
+        datasourceUid: prometheus-uid
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+        tags: [
+          { key: 'service.name', value: 'service' },
+          { key: 'operation', value: 'operation' }
+        ]
+        queries:
+          - name: 'Sample query'
+            query: 'rate(traces_spanmetrics_latency_bucket{$$__tags}[5m])'
+      nodeGraph:
+        enabled: true
+    editable: false
+
+  # Elasticsearch - Full-text log search
+  - name: Elasticsearch
+    type: elasticsearch
+    access: proxy
+    url: http://elasticsearch:9200
+    database: "vibecode-logs-*"
+    jsonData:
+      interval: Daily
+      timeField: "@timestamp"
+      esVersion: "8.11.0"
+      logMessageField: message
+      logLevelField: level
+      maxConcurrentShardRequests: 5
+      includeFrozen: false
+    editable: false
+
+  # InfluxDB - Time series metrics
+  - name: InfluxDB
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    database: vibecode_metrics
+    user: ${INFLUXDB_USER}
+    secureJsonData:
+      password: ${INFLUXDB_PASSWORD}
+    jsonData:
+      timeInterval: "15s"
+      httpMode: GET
+      httpHeaderName1: "Authorization"
+    secureJsonFields:
+      httpHeaderValue1: true
+    editable: false
+
+  # TestData - For testing dashboards
+  - name: TestData
+    type: testdata
+    access: proxy
+    isDefault: false
+    editable: false

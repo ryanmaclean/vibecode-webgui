@@ -1,0 +1,184 @@
+# Prometheus Recording Rules for VibeCode Platform
+# Pre-computed metrics for efficient queries and alerting
+
+groups:
+  - name: vibecode.application.rules
+    interval: 30s
+    rules:
+      # HTTP Request Rate
+      - record: vibecode:http_requests:rate5m
+        expr: rate(http_requests_total{job="vibecode-webgui"}[5m])
+        labels:
+          service: vibecode-webgui
+
+      # HTTP Error Rate
+      - record: vibecode:http_errors:rate5m
+        expr: rate(http_requests_total{job="vibecode-webgui",status=~"5.."}[5m])
+        labels:
+          service: vibecode-webgui
+
+      # HTTP Error Percentage
+      - record: vibecode:http_error_percentage:rate5m
+        expr: |
+          (
+            vibecode:http_errors:rate5m /
+            vibecode:http_requests:rate5m
+          ) * 100
+        labels:
+          service: vibecode-webgui
+
+      # API Response Time P95
+      - record: vibecode:api_duration_seconds:p95
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="vibecode-webgui"}[5m]))
+        labels:
+          service: vibecode-webgui
+
+      # API Response Time P99
+      - record: vibecode:api_duration_seconds:p99
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job="vibecode-webgui"}[5m]))
+        labels:
+          service: vibecode-webgui
+
+      # Active Users (approximate)
+      - record: vibecode:active_users:count
+        expr: increase(auth_login_success_total[1h])
+        labels:
+          service: vibecode-webgui
+
+  - name: vibecode.database.rules
+    interval: 30s
+    rules:
+      # Database Connection Usage
+      - record: vibecode:database_connections:percentage
+        expr: |
+          (
+            pg_stat_database_numbackends /
+            pg_settings_max_connections
+          ) * 100
+
+      # Query Rate
+      - record: vibecode:database_queries:rate5m
+        expr: rate(pg_stat_database_xact_commit[5m]) + rate(pg_stat_database_xact_rollback[5m])
+
+      # Database Size Growth
+      - record: vibecode:database_size:growth_rate
+        expr: rate(pg_database_size_bytes[1h])
+
+  - name: vibecode.redis.rules
+    interval: 30s
+    rules:
+      # Redis Memory Usage Percentage
+      - record: vibecode:redis_memory:percentage
+        expr: |
+          (
+            redis_memory_used_bytes /
+            redis_memory_max_bytes
+          ) * 100
+
+      # Redis Hit Rate
+      - record: vibecode:redis_hit_rate:percentage
+        expr: |
+          (
+            rate(redis_keyspace_hits_total[5m]) /
+            (rate(redis_keyspace_hits_total[5m]) + rate(redis_keyspace_misses_total[5m]))
+          ) * 100
+
+  - name: vibecode.infrastructure.rules
+    interval: 30s
+    rules:
+      # CPU Usage Percentage
+      - record: vibecode:cpu_usage:percentage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+
+      # Memory Usage Percentage  
+      - record: vibecode:memory_usage:percentage
+        expr: |
+          (
+            (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) /
+            node_memory_MemTotal_bytes
+          ) * 100
+
+      # Disk Usage Percentage
+      - record: vibecode:disk_usage:percentage
+        expr: |
+          (
+            (node_filesystem_size_bytes{mountpoint="/"} - node_filesystem_avail_bytes{mountpoint="/"}) /
+            node_filesystem_size_bytes{mountpoint="/"}
+          ) * 100
+
+      # Network I/O Rate
+      - record: vibecode:network_receive:rate5m
+        expr: rate(node_network_receive_bytes_total[5m])
+
+      - record: vibecode:network_transmit:rate5m
+        expr: rate(node_network_transmit_bytes_total[5m])
+
+  - name: vibecode.ai.rules
+    interval: 30s
+    rules:
+      # AI Request Rate
+      - record: vibecode:ai_requests:rate5m
+        expr: rate(ai_requests_total[5m])
+
+      # AI Request Duration P95
+      - record: vibecode:ai_duration_seconds:p95
+        expr: histogram_quantile(0.95, rate(ai_request_duration_seconds_bucket[5m]))
+
+      # AI Error Rate
+      - record: vibecode:ai_errors:rate5m
+        expr: rate(ai_errors_total[5m])
+
+      # AI Success Rate
+      - record: vibecode:ai_success_rate:percentage
+        expr: |
+          (
+            (rate(ai_requests_total[5m]) - rate(ai_errors_total[5m])) /
+            rate(ai_requests_total[5m])
+          ) * 100
+
+  - name: vibecode.business.rules
+    interval: 60s
+    rules:
+      # Project Creation Rate
+      - record: vibecode:projects_created:rate1h
+        expr: rate(vibecode_projects_created_total[1h])
+
+      # Template Usage
+      - record: vibecode:template_usage:rate1h
+        expr: rate(vibecode_template_used_total[1h]) by (template_name)
+
+      # User Engagement Score
+      - record: vibecode:user_engagement:score
+        expr: |
+          (
+            vibecode:projects_created:rate1h * 10 +
+            vibecode:ai_requests:rate5m * 1 +
+            vibecode:active_users:count * 5
+          ) / 16
+
+  - name: vibecode.sli.rules
+    interval: 30s
+    rules:
+      # Availability SLI (uptime)
+      - record: vibecode:availability:sli
+        expr: up{job="vibecode-webgui"}
+
+      # Latency SLI (requests under 500ms)
+      - record: vibecode:latency:sli
+        expr: |
+          (
+            histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="vibecode-webgui"}[5m])) < 0.5
+          )
+
+      # Error Rate SLI (error rate under 1%)
+      - record: vibecode:error_rate:sli
+        expr: vibecode:http_error_percentage:rate5m < 1
+
+      # Overall SLI Score
+      - record: vibecode:overall:sli
+        expr: |
+          (
+            vibecode:availability:sli +
+            vibecode:latency:sli +
+            vibecode:error_rate:sli
+          ) / 3

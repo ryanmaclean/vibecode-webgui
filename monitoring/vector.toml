@@ -1,0 +1,272 @@
+# Vector Configuration for VibeCode Platform
+# High-performance observability data pipeline
+
+# Global configuration
+[sources.application_logs]
+type = "file"
+include = [
+  "/var/log/vibecode/*.log",
+  "/app/logs/*.log",
+  "/var/log/containers/*.log"
+]
+encoding.codec = "json"
+fingerprinting.strategy = "device_and_inode"
+
+[sources.nginx_logs]
+type = "file"
+include = ["/var/log/nginx/*.log"]
+encoding.codec = "json"
+
+[sources.postgres_logs]
+type = "file"
+include = ["/var/log/postgresql/*.log"]
+encoding.codec = "json"
+
+[sources.kubernetes_logs]
+type = "kubernetes_logs"
+annotation_fields.container_image = "kubernetes.container_image"
+annotation_fields.container_name = "kubernetes.container_name"
+annotation_fields.pod_name = "kubernetes.pod_name"
+annotation_fields.pod_namespace = "kubernetes.pod_namespace"
+annotation_fields.pod_node_name = "kubernetes.pod_node_name"
+annotation_fields.pod_uid = "kubernetes.pod_uid"
+
+# Metrics sources
+[sources.host_metrics]
+type = "host_metrics"
+collectors = [
+  "cpu",
+  "memory", 
+  "disk",
+  "network",
+  "filesystem"
+]
+
+[sources.internal_metrics]
+type = "internal_metrics"
+
+# Prometheus metrics scraping
+[sources.prometheus_scrape]
+type = "prometheus_scrape"
+endpoints = [
+  "http://vibecode-app:3000/api/metrics",
+  "http://postgres-exporter:9187/metrics",
+  "http://redis-exporter:9121/metrics",
+  "http://node-exporter:9100/metrics"
+]
+scrape_interval_secs = 30
+
+# OpenTelemetry receiver
+[sources.opentelemetry]
+type = "opentelemetry"
+address = "0.0.0.0:4317"
+mode = "server"
+
+# Transform application logs
+[transforms.parse_application_logs]
+type = "remap"
+inputs = ["application_logs"]
+source = '''
+# Parse JSON logs and add metadata
+if exists(.message) {
+  .parsed = parse_json!(.message)
+}
+
+# Extract log level
+if exists(.parsed.level) {
+  .level = .parsed.level
+} else if exists(.parsed.severity) {
+  .level = .parsed.severity
+} else {
+  .level = "info"
+}
+
+# Extract timestamp
+if exists(.parsed.timestamp) {
+  .timestamp = parse_timestamp!(.parsed.timestamp, format: "%Y-%m-%dT%H:%M:%S%.fZ")
+} else if exists(.parsed["@timestamp"]) {
+  .timestamp = parse_timestamp!(.parsed["@timestamp"], format: "%Y-%m-%dT%H:%M:%S%.fZ")
+}
+
+# Add service metadata
+.service = "vibecode-webgui"
+.environment = get_env_var!("ENVIRONMENT")
+.version = get_env_var("APP_VERSION") ?? "unknown"
+
+# Extract user context if available
+if exists(.parsed.user_id) {
+  .user_id = .parsed.user_id
+}
+
+if exists(.parsed.session_id) {
+  .session_id = .parsed.session_id
+}
+
+# Extract request context
+if exists(.parsed.request_id) {
+  .request_id = .parsed.request_id
+}
+
+if exists(.parsed.trace_id) {
+  .trace_id = .parsed.trace_id
+}
+
+# Clean up
+del(.parsed)
+'''
+
+# Transform metrics for normalization
+[transforms.normalize_metrics]
+type = "remap"
+inputs = ["host_metrics", "internal_metrics", "prometheus_scrape"]
+source = '''
+# Add standard tags
+.tags.service = "vibecode-platform"
+.tags.environment = get_env_var!("ENVIRONMENT")
+.tags.cluster = "vibecode-production"
+
+# Normalize metric names
+if starts_with(.name, "node_") {
+  .tags.exporter = "node"
+} else if starts_with(.name, "postgres_") {
+  .tags.exporter = "postgres"
+} else if starts_with(.name, "redis_") {
+  .tags.exporter = "redis"
+} else if starts_with(.name, "vibecode_") {
+  .tags.exporter = "application"
+}
+'''
+
+# Security log filtering
+[transforms.security_filter]
+type = "filter"
+inputs = ["parse_application_logs"]
+condition = '''
+.level == "error" || 
+.level == "warn" ||
+contains(string!(.message), "authentication") ||
+contains(string!(.message), "authorization") ||
+contains(string!(.message), "security") ||
+contains(string!(.message), "failed") ||
+contains(string!(.message), "blocked")
+'''
+
+# Performance log filtering
+[transforms.performance_filter]
+type = "filter"
+inputs = ["parse_application_logs"]
+condition = '''
+exists(.parsed.response_time) ||
+exists(.parsed.duration) ||
+contains(string!(.message), "slow") ||
+contains(string!(.message), "timeout")
+'''
+
+# Error aggregation
+[transforms.error_aggregation]
+type = "reduce"
+inputs = ["parse_application_logs"]
+group_by = ["service", "level", "message"]
+merge_strategies.count = "sum"
+window_secs = 60
+
+# Sampling for high-volume logs
+[transforms.sample_debug_logs]
+type = "sample"
+inputs = ["parse_application_logs"]
+rate = 10
+key_field = "message"
+condition = '.level == "debug"'
+
+# Sinks - Multiple destinations for observability
+
+# Send to Datadog
+[sinks.datadog_logs]
+type = "datadog_logs"
+inputs = ["parse_application_logs", "security_filter"]
+default_api_key = "${DATADOG_API_KEY}"
+site = "datadoghq.com"
+compression = "gzip"
+
+[sinks.datadog_metrics]
+type = "datadog_metrics"
+inputs = ["normalize_metrics"]
+default_api_key = "${DATADOG_API_KEY}"
+site = "datadoghq.com"
+
+# Send to Prometheus
+[sinks.prometheus_remote_write]
+type = "prometheus_remote_write"
+inputs = ["normalize_metrics"]
+endpoint = "http://prometheus:9090/api/v1/write"
+healthcheck.enabled = true
+
+# Send to Elasticsearch for search
+[sinks.elasticsearch]
+type = "elasticsearch"
+inputs = ["parse_application_logs"]
+endpoints = ["http://elasticsearch:9200"]
+index = "vibecode-logs-%Y.%m.%d"
+doc_type = "_doc"
+compression = "gzip"
+bulk.index = "vibecode-logs"
+bulk.action = "index"
+
+# Send to Loki for log aggregation
+[sinks.loki]
+type = "loki"
+inputs = ["parse_application_logs"]
+endpoint = "http://loki:3100"
+labels.service = "{{ service }}"
+labels.level = "{{ level }}"
+labels.environment = "{{ environment }}"
+encoding.codec = "json"
+out_of_order_action = "accept"
+
+# Send to S3 for long-term storage
+[sinks.s3_archive]
+type = "aws_s3"
+inputs = ["parse_application_logs"]
+bucket = "vibecode-logs-archive"
+key_prefix = "logs/%Y/%m/%d/"
+region = "us-west-2"
+compression = "gzip"
+encoding.codec = "ndjson"
+batch.max_bytes = 10485760  # 10MB
+batch.timeout_secs = 300
+
+# Send performance metrics to InfluxDB
+[sinks.influxdb]
+type = "influxdb_metrics"
+inputs = ["normalize_metrics"]
+endpoint = "http://influxdb:8086"
+database = "vibecode_metrics"
+namespace = "vibecode"
+tags = ["service", "environment", "cluster"]
+
+# Console output for debugging
+[sinks.console]
+type = "console"
+inputs = ["error_aggregation"]
+encoding.codec = "json"
+
+# Send traces to Jaeger
+[sinks.jaeger]
+type = "jaeger"
+inputs = ["opentelemetry"]
+endpoint = "http://jaeger:14268/api/traces"
+
+# Health check endpoint
+[api]
+enabled = true
+address = "0.0.0.0:8686"
+playground = true
+
+# Vector's internal telemetry
+[sources.vector_metrics]
+type = "internal_metrics"
+
+[sinks.vector_telemetry]
+type = "prometheus_exporter"
+inputs = ["vector_metrics"]
+address = "0.0.0.0:9598"
