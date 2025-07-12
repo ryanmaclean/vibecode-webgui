@@ -488,7 +488,7 @@ describe('OptimizedFileWatcher', () => {
     });
 
     it('should optimize duplicate events', () => {
-      const events = [;
+      const events = [
         { type: 'add', path: '/test/file.ts', timestamp: 1000 },
         { type: 'change', path: '/test/file.ts', timestamp: 1001 },
         { type: 'change', path: '/test/file.ts', timestamp: 1002 }
@@ -501,7 +501,7 @@ describe('OptimizedFileWatcher', () => {
     });
 
     it('should handle delete events correctly', () => {
-      const events = [;
+      const events = [
         { type: 'add', path: '/test/file.ts', timestamp: 1000 },
         { type: 'change', path: '/test/file.ts', timestamp: 1001 },
         { type: 'unlink', path: '/test/file.ts', timestamp: 1002 }
@@ -515,7 +515,7 @@ describe('OptimizedFileWatcher', () => {
 
   describe('Event Filtering', () => {
     it('should ignore system files', () => {
-      const systemFiles = [;
+      const systemFiles = [
         '/test/watch/.DS_Store',
         '/test/watch/Thumbs.db',
         '/test/watch/file.tmp',
@@ -529,7 +529,7 @@ describe('OptimizedFileWatcher', () => {
     });
 
     it('should watch valid source files', () => {
-      const validFiles = [;
+      const validFiles = [
         '/test/watch/src/index.ts',
         '/test/watch/components/Button.tsx',
         '/test/watch/styles/main.css',

@@ -21,8 +21,8 @@ jest.mock('yjs', () => ({
     }),
     getMap: jest.fn().mockReturnValue({
       get: jest.fn(),
-      set: jest.fn();
-    });
+      set: jest.fn()
+    })
   }));
 }));
 
@@ -33,16 +33,16 @@ jest.mock('y-websocket', () => ({
       getLocalState: jest.fn().mockReturnValue({}),
       getStates: jest.fn().mockReturnValue(new Map()),
       on: jest.fn(),
-      off: jest.fn();
+      off: jest.fn()
     },
     on: jest.fn(),
-    destroy: jest.fn();
+    destroy: jest.fn()
   }));
 }));
 
 jest.mock('y-indexeddb', () => ({
   IndexeddbPersistence: jest.fn().mockImplementation(() => ({
-    destroy: jest.fn();
+    destroy: jest.fn()
   }));
 }));
 
@@ -89,7 +89,7 @@ describe('CollaborationManager', () => {
     test('should track active users in session', async () => {
       collaborationManager.setCurrentUser(mockUser);
       
-      const session = await collaborationManager.joinSession(;
+      const session = await collaborationManager.joinSession(
         'doc123',
         'project123',
         'test.js'
@@ -107,7 +107,7 @@ describe('CollaborationManager', () => {
     });
 
     test('should create new collaboration session', async () => {
-      const session = await collaborationManager.joinSession(;
+      const session = await collaborationManager.joinSession(
         'doc123',
         'project123',
         'test.js'
@@ -121,13 +121,13 @@ describe('CollaborationManager', () => {
     });
 
     test('should return existing session when joining same document', async () => {
-      const session1 = await collaborationManager.joinSession(;
+      const session1 = await collaborationManager.joinSession(
         'doc123',
         'project123',
         'test.js'
       );
       
-      const session2 = await collaborationManager.joinSession(;
+      const session2 = await collaborationManager.joinSession(
         'doc123',
         'project123',
         'test.js'
@@ -139,12 +139,12 @@ describe('CollaborationManager', () => {
     test('should throw error when joining without setting current user', async () => {
       const manager = new CollaborationManager();
       
-      await expect(manager.joinSession('doc123', 'project123', 'test.js'));
+      await expect(manager.joinSession('doc123', 'project123', 'test.js'))
         .rejects.toThrow('Current user must be set before joining a session');
     });
 
     test('should leave session and cleanup resources', async () => {
-      const session = await collaborationManager.joinSession(;
+      const session = await collaborationManager.joinSession(
         'doc123',
         'project123',
         'test.js'
@@ -262,7 +262,7 @@ describe('CollaborationManager', () => {
     test('should handle multiple users in same session', async () => {
       // First user
       collaborationManager.setCurrentUser(mockUser);
-      const session = await collaborationManager.joinSession(;
+      const session = await collaborationManager.joinSession(
         'doc123',
         'project123',
         'test.js'
@@ -296,7 +296,7 @@ describe('CollaborationManager', () => {
       const errorCallback = jest.fn();
       
       collaborationManager.setCurrentUser(mockUser);
-      const session = await collaborationManager.joinSession(;
+      const session = await collaborationManager.joinSession(
         'doc123',
         'project123',
         'test.js'

@@ -11,7 +11,7 @@ const { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach, jest
 
 // Mock next-auth for testing
 jest.mock('next-auth', () => ({
-  getServerSession: jest.fn();
+  getServerSession: jest.fn()
 }));
 
 // Mock Claude CLI integration
@@ -25,11 +25,11 @@ const mockClaudeCliInstance = {
   generateTests: jest.fn(),
   startInteractiveSession: jest.fn(),
   sendToSession: jest.fn(),
-  closeSession: jest.fn();
+  closeSession: jest.fn()
 }
 
 jest.mock('../../src/lib/claude-cli-integration', () => ({
-  getClaudeCliInstance: jest.fn(() => mockClaudeCliInstance);
+  getClaudeCliInstance: jest.fn(() => mockClaudeCliInstance)
 }));
 
 // Import after mocking
@@ -89,8 +89,8 @@ describe('Claude API Integration Tests', () => {
           message: 'How do I create a function in JavaScript?',
           workspaceId: 'test-workspace-123',
           contextFiles: ['index.js']
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();
@@ -115,8 +115,8 @@ describe('Claude API Integration Tests', () => {
         json: jest.fn().mockResolvedValue({
           message: 'test message',
           workspaceId: 'test-workspace'
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();
@@ -131,8 +131,8 @@ describe('Claude API Integration Tests', () => {
       mockRequest = {
         json: jest.fn().mockResolvedValue({
           // Missing message and workspaceId
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();
@@ -154,8 +154,8 @@ describe('Claude API Integration Tests', () => {
         json: jest.fn().mockResolvedValue({
           message: 'test message',
           workspaceId: 'test-workspace'
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();
@@ -176,8 +176,8 @@ describe('Claude API Integration Tests', () => {
           workspaceId: 'test-workspace-123',
           filePath: 'utils.js',
           language: 'javascript'
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();
@@ -200,8 +200,8 @@ describe('Claude API Integration Tests', () => {
         json: jest.fn().mockResolvedValue({
           workspaceId: 'test-workspace'
           // Missing prompt
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();
@@ -214,15 +214,15 @@ describe('Claude API Integration Tests', () => {
       const { POST } = require('../../src/app/api/claude/generate/route');
 
       mockClaudeCliInstance.generateCode.mockRejectedValue(
-        new Error('Generation timeout');
+        new Error('Generation timeout')
       );
 
       mockRequest = {
         json: jest.fn().mockResolvedValue({
           prompt: 'test prompt',
           workspaceId: 'test-workspace'
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();
@@ -243,8 +243,8 @@ describe('Claude API Integration Tests', () => {
           language: 'javascript',
           workspaceId: 'test-workspace-123',
           analysisType: 'analyze'
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();
@@ -273,8 +273,8 @@ describe('Claude API Integration Tests', () => {
             code: 'test code',
             workspaceId: 'test-workspace',
             analysisType
-          });
-        }
+          })
+        };
 
         const response = await POST(mockRequest);
         const responseData = await response.json();
@@ -308,8 +308,8 @@ describe('Claude API Integration Tests', () => {
           code: 'test code',
           workspaceId: 'test-workspace',
           analysisType: 'invalid-type'
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();
@@ -329,8 +329,8 @@ describe('Claude API Integration Tests', () => {
         json: jest.fn().mockResolvedValue({
           action: 'start',
           workspaceId: 'test-workspace-123'
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();
@@ -353,8 +353,8 @@ describe('Claude API Integration Tests', () => {
           workspaceId: 'test-workspace',
           sessionId: 'session-123',
           message: 'Hello Claude'
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();
@@ -378,8 +378,8 @@ describe('Claude API Integration Tests', () => {
           action: 'close',
           workspaceId: 'test-workspace',
           sessionId: 'session-123'
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();
@@ -413,8 +413,8 @@ describe('Claude API Integration Tests', () => {
         json: jest.fn().mockResolvedValue({
           action: 'invalid-action',
           workspaceId: 'test-workspace'
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();
@@ -427,15 +427,15 @@ describe('Claude API Integration Tests', () => {
       const { POST } = require('../../src/app/api/claude/session/route');
 
       mockClaudeCliInstance.startInteractiveSession.mockRejectedValue(
-        new Error('Session start failed');
+        new Error('Session start failed')
       );
 
       mockRequest = {
         json: jest.fn().mockResolvedValue({
           action: 'start',
           workspaceId: 'test-workspace'
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();
@@ -448,7 +448,7 @@ describe('Claude API Integration Tests', () => {
 
   describe('CORS and Options Handling', () => {
     test('should handle OPTIONS requests for all endpoints', async () => {
-      const endpoints = [;
+      const endpoints = [
         'chat/route',
         'generate/route',
         'analyze/route',
@@ -493,10 +493,10 @@ describe('Claude API Integration Tests', () => {
         json: jest.fn().mockResolvedValue({
           prompt: 'test',
           workspaceId: 'test'
-        });
-      }
+        })
+      };
 
-      // Should not fail due to missing env var (handled by CLI integration);
+      // Should not fail due to missing env var (handled by CLI integration)
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
 
@@ -513,8 +513,8 @@ describe('Claude API Integration Tests', () => {
         json: jest.fn().mockResolvedValue({
           code: largeCode,
           workspaceId: 'test-workspace'
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -538,8 +538,8 @@ describe('Claude API Integration Tests', () => {
         json: jest.fn().mockResolvedValue({
           message: 'test',
           workspaceId: 'test'
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();
@@ -558,8 +558,8 @@ describe('Claude API Integration Tests', () => {
         json: jest.fn().mockResolvedValue({
           message: 'test'
           // Missing workspaceId
-        });
-      }
+        })
+      };
 
       const response = await POST(mockRequest);
       const responseData = await response.json();

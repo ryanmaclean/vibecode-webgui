@@ -53,7 +53,7 @@ describe('User Provisioning Integration Tests', () => {
     // Install Helm chart
     execSync(`helm install ${HELM_RELEASE} ${CHART_PATH} --namespace ${NAMESPACE} --wait --timeout=300s`, {
       stdio: 'inherit',
-      cwd: process.cwd();
+      cwd: process.cwd()
     });
   }, TIMEOUT);
 

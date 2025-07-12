@@ -29,7 +29,7 @@ const mockChildProcess = {
 
 jest.mock('child_process', () => ({
   spawn: mockSpawn
-});
+}));
 
 // Mock fs for file operations
 jest.mock('fs', () => ({

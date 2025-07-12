@@ -205,7 +205,7 @@ describe('FeatureFlagEngine', () => {
       });
 
       // Simulate some experiment data
-      const contexts = [;
+      const contexts = [
         { userId: 'user1' },
         { userId: 'user2' },
         { userId: 'user3' },

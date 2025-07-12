@@ -37,7 +37,7 @@ global.indexedDB = {
       });
     }
   }),
-  deleteDatabase: jest.fn();
+  deleteDatabase: jest.fn()
 }
 
 const { CollaborationManager, CollaborationUser } = require('../../src/lib/collaboration');

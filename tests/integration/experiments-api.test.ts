@@ -10,7 +10,7 @@ import { POST, GET } from '@/app/api/experiments/route'
 
 // Mock next-auth
 jest.mock('next-auth', () => ({
-  getServerSession: jest.fn();
+  getServerSession: jest.fn()
 }));
 
 // Mock the auth options
@@ -22,7 +22,7 @@ jest.mock('@/lib/auth', () => ({
 jest.mock('@/lib/server-monitoring', () => ({
   appLogger: {
     logBusiness: jest.fn(),
-    logSecurity: jest.fn();
+    logSecurity: jest.fn()
   }
 }));
 

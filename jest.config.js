@@ -61,13 +61,6 @@ const customJestConfig = {
     'node_modules/(?!(.*\\.mjs$|@testing-library|@playwright))',
   ],
 
-  // Global variables
-  globals: {
-    'ts-jest': {
-      tsconfig: 'tsconfig.json',
-    },
-  },
-
   // Module file extensions
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 

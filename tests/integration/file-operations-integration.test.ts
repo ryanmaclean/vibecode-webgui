@@ -105,19 +105,19 @@ describe('File Operations Integration Tests', () => {
 
       // 3. Initialize lazy loading for the file
       // Mock the file analysis API since we're in a test environment
-      global.fetch = jest.fn();
+      global.fetch = jest.fn()
         .mockImplementationOnce(() => Promise.resolve({
           ok: true,
           json: () => Promise.resolve({
             filePath,
             totalLines: fileContent.split('\n').length,
             totalSize: fileContent.length,
-            lineBreaks: fileContent.split('').map((char, index) => char === '\n' ? index : -1).filter(i => i !== -1);
-          });
-        }));
+            lineBreaks: fileContent.split('').map((char, index) => char === '\n' ? index : -1).filter(i => i !== -1)
+          })
+        }))
         .mockImplementation(() => Promise.resolve({
           ok: true,
-          text: () => Promise.resolve(fileContent.split('\n').slice(0, 50).join('\n'));
+          text: () => Promise.resolve(fileContent.split('\n').slice(0, 50).join('\n'))
         }));
 
       await lazyLoader.initializeFile(filePath);
@@ -175,7 +175,7 @@ describe('File Operations Integration Tests', () => {
       expect(metadata.size).toBe(largeContent.length);
 
       // Initialize lazy loading
-      global.fetch = jest.fn();
+      global.fetch = jest.fn()
         .mockImplementationOnce(() => Promise.resolve({
           ok: true,
           json: () => Promise.resolve({
@@ -183,8 +183,8 @@ describe('File Operations Integration Tests', () => {
             totalLines: 10000,
             totalSize: largeContent.length,
             lineBreaks: []
-          });
-        }));
+          })
+        }))
         .mockImplementation((url) => {
           // Extract start and end from URL params
           const urlObj = new URL(url, 'http://localhost');
@@ -194,7 +194,7 @@ describe('File Operations Integration Tests', () => {
           const lines = largeContent.split('\n').slice(start, end + 1);
           return Promise.resolve({
             ok: true,
-            text: () => Promise.resolve(lines.join('\n'));
+            text: () => Promise.resolve(lines.join('\n'))
           });
         });
 
@@ -311,13 +311,13 @@ describe('File Operations Integration Tests', () => {
         readyState: 1, // OPEN
         send: jest.fn(),
         close: jest.fn(),
-        ping: jest.fn();
+        ping: jest.fn()
       });
 
       global.WebSocket = jest.fn().mockImplementation(() => {
         setTimeout(() => mockWebSocket.emit('open'), 10);
-        return mockWebSocket
-      }) as any
+        return mockWebSocket;
+      }) as any;
 
       const connection = await connectionPool.getConnection('ws://localhost:8080/notifications');
       
@@ -465,15 +465,15 @@ describe('File Operations Integration Tests', () => {
           readyState: 3, // CLOSED
           send: jest.fn(),
           close: jest.fn(),
-          ping: jest.fn();
+          ping: jest.fn()
         });
         
         setTimeout(() => {
           mockSocket.emit('error', new Error('Connection failed'));
         }, 10);
         
-        return mockSocket
-      }) as any
+        return mockSocket;
+      }) as any;
 
       // Attempt connection
       try {
@@ -525,7 +525,7 @@ describe('File Operations Integration Tests', () => {
 
       try {
         // Mock file analysis
-        global.fetch = jest.fn();
+        global.fetch = jest.fn()
           .mockImplementationOnce(() => Promise.resolve({
             ok: true,
             json: () => Promise.resolve({
@@ -533,11 +533,11 @@ describe('File Operations Integration Tests', () => {
               totalLines: 5000,
               totalSize: content.length,
               lineBreaks: []
-            });
-          }));
+            })
+          }))
           .mockImplementation(() => Promise.resolve({
             ok: true,
-            text: () => Promise.resolve('line content\n'.repeat(100));
+            text: () => Promise.resolve('line content\n'.repeat(100))
           }));
 
         await memoryLazyLoader.initializeFile(filePath);

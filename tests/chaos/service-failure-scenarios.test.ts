@@ -180,7 +180,7 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
       const concurrentRequests = 100;
       
       const promises = Array.from({ length: concurrentRequests }, () =>
-        fetch(METRICS_ENDPOINT);
+        fetch(METRICS_ENDPOINT)
       );
 
       try {
@@ -188,7 +188,7 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
         
         // Should not crash under memory pressure
         const successRate = responses.filter(r => r.ok).length / responses.length;
-        expect(successRate).toBeGreaterThan(0.8) // At least 80% success rate
+        expect(successRate).toBeGreaterThan(0.8); // At least 80% success rate
         
       } catch (error) {
         // Some failures acceptable under extreme load
@@ -199,7 +199,7 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
     test('should handle CPU intensive operations', async () => {
       // Test multiple CPU-intensive metric calculations
       const rapidRequests = Array.from({ length: 20 }, () =>
-        fetch(METRICS_ENDPOINT);
+        fetch(METRICS_ENDPOINT)
       );
 
       const startTime = Date.now();
@@ -207,10 +207,10 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
       const duration = Date.now() - startTime;
 
       // Should complete in reasonable time even under CPU load
-      expect(duration).toBeLessThan(10000) // Under 10 seconds
+      expect(duration).toBeLessThan(10000); // Under 10 seconds
       
       const successCount = responses.filter(r => r.ok).length;
-      expect(successCount).toBeGreaterThan(15) // At least 75% success rate
+      expect(successCount).toBeGreaterThan(15); // At least 75% success rate
     }, 15000);
   });
 
@@ -253,19 +253,19 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
   describe('Cascading Failure Prevention', () => {
     test('should prevent cascading failures across services', async () => {
       // Test that failure in one area doesn't crash everything
-      const endpoints = [;
+      const endpoints = [
         HEALTH_ENDPOINT,
         METRICS_ENDPOINT,
         'http://localhost:3000/api/nonexistent'
-      ]
+      ];
 
-      const results = await Promise.allSettled(;
-        endpoints.map(endpoint => fetch(endpoint));
+      const results = await Promise.allSettled(
+        endpoints.map(endpoint => fetch(endpoint))
       );
 
       // Should have a mix of success and controlled failures
       const fulfilled = results.filter(r => r.status === 'fulfilled').length;
-      expect(fulfilled).toBeGreaterThan(0) // Some should succeed
+      expect(fulfilled).toBeGreaterThan(0); // Some should succeed
 
       // Failed requests should not cause unhandled errors
       results.forEach(result => {
@@ -280,7 +280,7 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
       
       // Generate load on metrics endpoint
       const metricsLoad = Array.from({ length: 50 }, () =>
-        fetch(METRICS_ENDPOINT);
+        fetch(METRICS_ENDPOINT)
       );
 
       // Test health endpoint during metrics load
