@@ -1,0 +1,174 @@
+# Production Docker Compose configuration
+# For self-hosted deployments with all services
+
+version: '3.8'
+
+services:
+  # Main VibeCode application
+  vibecode-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    container_name: vibecode-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://vibecode:vibecode@postgres:5432/vibecode}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/uploads
+      - rag-data:/app/rag-index
+      - conversations:/app/conversations
+    networks:
+      - vibecode-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    container_name: vibecode-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=vibecode
+      - POSTGRES_USER=vibecode
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-vibecode123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - vibecode-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vibecode -d vibecode"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: vibecode-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - vibecode-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+  # NGINX reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: vibecode-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - uploads:/var/www/uploads:ro
+    depends_on:
+      - vibecode-app
+    networks:
+      - vibecode-network
+
+  # Code Server instances (for VS Code integration)
+  code-server:
+    image: codercom/code-server:latest
+    container_name: vibecode-code-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PASSWORD=${CODE_SERVER_PASSWORD:-vibecode123}
+    volumes:
+      - code-projects:/home/coder/projects
+      - code-config:/home/coder/.config
+    networks:
+      - vibecode-network
+    command: >
+      --bind-addr 0.0.0.0:8080
+      --auth password
+      --disable-telemetry
+      --disable-update-check
+
+  # Optional: Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: vibecode-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - vibecode-network
+    profiles:
+      - monitoring
+
+  # Optional: Grafana for dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: vibecode-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - vibecode-network
+    profiles:
+      - monitoring
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  uploads:
+    driver: local
+  rag-data:
+    driver: local
+  conversations:
+    driver: local
+  code-projects:
+    driver: local
+  code-config:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  vibecode-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

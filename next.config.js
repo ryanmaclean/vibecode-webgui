@@ -1,10 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
-  experimental: {
-    appDir: true,
-  },
   // Disable Next.js image optimization to avoid Sharp/LGPL dependencies
   images: {
     unoptimized: true,
