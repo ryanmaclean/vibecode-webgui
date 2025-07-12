@@ -21,12 +21,13 @@ metadata:
   namespace: vibecode
 type: Opaque
 data:
-  # Base64 encoded secrets (these are test values for KIND)
-  NEXTAUTH_SECRET: dGVzdC1zZWNyZXQtZm9yLWtpbmQtdGVzdGluZw== # test-secret-for-kind-testing
-  DD_API_KEY: dGVzdC1kYXRhZG9nLWFwaS1rZXk= # test-datadog-api-key
-  DD_APP_KEY: dGVzdC1kYXRhZG9nLWFwcC1rZXk= # test-datadog-app-key
-  NEXT_PUBLIC_DD_RUM_APPLICATION_ID: dGVzdC1ydW0tYXBwLWlk # test-rum-app-id
-  NEXT_PUBLIC_DD_RUM_CLIENT_TOKEN: dGVzdC1ydW0tY2xpZW50LXRva2Vu # test-rum-client-token
+  # SECURITY: Secrets now sourced from separate script or Kubernetes secrets
+  # DO NOT commit actual secrets - use environment variables or secret management
+  NEXTAUTH_SECRET: REPLACE_WITH_BASE64_ENCODED_NEXTAUTH_SECRET
+  DD_API_KEY: REPLACE_WITH_BASE64_ENCODED_DATADOG_API_KEY
+  DD_APP_KEY: REPLACE_WITH_BASE64_ENCODED_DATADOG_APP_KEY
+  NEXT_PUBLIC_DD_RUM_APPLICATION_ID: REPLACE_WITH_BASE64_ENCODED_RUM_APP_ID
+  NEXT_PUBLIC_DD_RUM_CLIENT_TOKEN: REPLACE_WITH_BASE64_ENCODED_RUM_CLIENT_TOKEN
 ---
 apiVersion: apps/v1
 kind: Deployment

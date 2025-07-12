@@ -43,6 +43,7 @@ repos:
         files: \.(js|jsx|ts|tsx)$
         stages: [commit]
 
+
       - id: helm-lint
         name: Helm Chart Linting
         entry: helm lint helm/vibecode-platform

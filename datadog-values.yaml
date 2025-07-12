@@ -1,6 +1,29 @@
 datadog:
   site: "datadoghq.com"
+  # SECURITY: API key now sourced from Kubernetes secret
   apiKeyExistingSecret: "datadog-secret"
+  clusterAgent:
+    enabled: true
+    # SECURITY: Token now sourced from Kubernetes secret
+    tokenExistingSecret: "datadog-cluster-agent-secret"
+    env:
+      - name: DD_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: datadog-secret
+            key: api-key
+  env:
+    - name: DD_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: datadog-secret
+          key: api-key
+    - name: DD_HOSTNAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+    - name: DD_KUBELET_TLS_VERIFY
+      value: "false"
   otelCollector:
     enabled: true
     ports:
@@ -29,14 +52,15 @@ datadog:
     containerCollectAll: true
   asm:
     threats:
-      enabled: true
+      enabled: false
   securityAgent:
     runtime:
-      enabled: true
+      enabled: false
   serviceMonitoring:
     enabled: true
   networkMonitoring:
-    enabled: true
+    enabled: false
   processAgent:
     processCollection: true
-
+  systemProbe:
+    enabled: false

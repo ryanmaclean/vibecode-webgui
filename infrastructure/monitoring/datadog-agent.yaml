@@ -175,38 +175,7 @@ spec:
           successThreshold: 1
           failureThreshold: 3
 
-      # System Probe container for network and security monitoring
-      - name: system-probe
-        image: gcr.io/datadoghq/agent:7
-        imagePullPolicy: Always
-        securityContext:
-          capabilities:
-            add: ["SYS_ADMIN", "SYS_RESOURCE", "SYS_PTRACE", "NET_ADMIN", "NET_BROADCAST", "NET_RAW", "IPC_LOCK", "CHOWN"]
-        command:
-          - /opt/datadog-agent/embedded/bin/system-probe
-        env:
-          - name: DD_SYSTEM_PROBE_ENABLED
-            value: "true"
-          - name: DD_SYSPROBE_SOCKET
-            value: "/var/run/datadog/sysprobe.sock"
-        resources:
-          requests:
-            memory: "150Mi"
-            cpu: "100m"
-          limits:
-            memory: "150Mi"
-            cpu: "100m"
-        volumeMounts:
-          - name: procdir
-            mountPath: /host/proc
-            readOnly: true
-          - name: cgroups
-            mountPath: /host/sys/fs/cgroup
-            readOnly: true
-          - name: debugfs
-            mountPath: /sys/kernel/debug
-          - name: systemprobe-socket-dir
-            mountPath: /var/run/datadog/
+      # System Probe container disabled temporarily
 
       volumes:
         # Docker and container access

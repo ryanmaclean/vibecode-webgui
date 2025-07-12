@@ -9,7 +9,7 @@ services:
       - NODE_ENV=development
       - REDIS_HOST=redis
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - JWT_SECRET=${JWT_SECRET:-vibecode-jwt-secret-change-in-production}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - redis
     volumes:

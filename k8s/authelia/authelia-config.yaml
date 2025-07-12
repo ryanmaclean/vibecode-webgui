@@ -20,7 +20,7 @@ data:
     # Identity validation configuration
     identity_validation:
       reset_password:
-        jwt_secret: "vibecode-jwt-secret-change-in-production"
+        jwt_secret: "REPLACE_WITH_SECURE_JWT_SECRET"
     
     # Time-based One-Time Password configuration
     totp:
@@ -97,7 +97,7 @@ data:
           same_site: lax
           authelia_url: "https://auth.localhost:8090"
           default_redirection_url: "https://auth.localhost:8090"
-      secret: "vibecode-session-secret-change-in-production"
+      secret: "REPLACE_WITH_SECURE_SESSION_SECRET"
       expiration: 1h
       inactivity: 5m
       remember_me: 1M
@@ -125,7 +125,7 @@ data:
         database: authelia
         schema: public
         username: authelia
-        password: "authelia-db-password"
+        password: "REPLACE_WITH_SECURE_DB_PASSWORD"
         timeout: 5s
         
     # Notification configuration

@@ -167,7 +167,7 @@ metadata:
   namespace: $NAMESPACE
 type: Opaque
 stringData:
-  NEXTAUTH_SECRET: "dev-secret-key-change-in-production"
+  NEXTAUTH_SECRET: "REPLACE_WITH_SECURE_NEXTAUTH_SECRET"
   DATABASE_URL: "postgresql://vibecode:vibecode123@postgres-service:5432/vibecode_dev"
   REDIS_URL: "redis://redis-service:6379"
   CLAUDE_API_KEY: "placeholder-key"

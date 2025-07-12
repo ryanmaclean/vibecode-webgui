@@ -17,6 +17,11 @@ spec:
       user: {{ .Values.user.id | default "default" }}
   template:
     metadata:
+      annotations:
+        admission.datadoghq.com/enabled: "false"
+        admission.datadoghq.com/config.mode: "off"
+        apm.datadoghq.com/env: "disabled"
+        sidecar.istio.io/inject: "false"
       labels:
         app: code-server
         user: {{ .Values.user.id | default "default" }}

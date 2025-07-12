@@ -1,0 +1,21 @@
+# Service for Code-Server
+{{- if .Values.codeServer.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-server-{{ .Values.user.id | default "default" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: code-server
+    user: {{ .Values.user.id | default "default" }}
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: code-server
+    user: {{ .Values.user.id | default "default" }}
+{{- end }}
