@@ -14,7 +14,7 @@ jest.mock('@datadog/browser-rum', () => ({
     addError: jest.fn(),
     addTiming: jest.fn(),
   },
-});
+})
 
 jest.mock('@datadog/browser-logs', () => ({
   datadogLogs: {
@@ -25,7 +25,7 @@ jest.mock('@datadog/browser-logs', () => ({
       error: jest.fn(),
     },
   },
-});
+})
 
 import { monitoring } from '../../src/lib/monitoring'
 import { datadogRum } from '@datadog/browser-rum'
@@ -39,8 +39,7 @@ describe('Monitoring Library', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
-  });
+    jest.restoreAllMocks()})
 
   describe('Browser Environment', () => {
     beforeEach(() => {
@@ -56,11 +55,10 @@ describe('Monitoring Library', () => {
           },
         },
         writable: true,
-      });
-    });
+      })})
 
     test('should initialize Datadog RUM and Logs', () => {
-      monitoring.init();
+      monitoring.init()
 
       expect(datadogRum.init).toHaveBeenCalledWith({
         applicationId: process.env.NEXT_PUBLIC_DD_RUM_APPLICATION_ID || 'test-app-id',
@@ -75,7 +73,7 @@ describe('Monitoring Library', () => {
         trackResources: true,
         trackLongTasks: true,
         defaultPrivacyLevel: 'mask-user-input',
-      });
+      })
 
       expect(datadogLogs.init).toHaveBeenCalledWith({
         clientToken: process.env.NEXT_PUBLIC_DD_RUM_CLIENT_TOKEN || 'test-client-token',
@@ -85,65 +83,57 @@ describe('Monitoring Library', () => {
         version: '1.0.0',
         forwardErrorsToLogs: true,
         sessionSampleRate: 100,
-      });
-    });
+      })})
 
     test('should track page view', () => {
-      monitoring.trackPageView('/test-page', { userId: 'user123' });
+      monitoring.trackPageView('/test-page', { userId: 'user123' })
 
       expect(datadogRum.addAction).toHaveBeenCalledWith('page_view', {
         page: '/test-page',
         userId: 'user123',
-      });
-    });
+      })})
 
     test('should track custom event', () => {
-      const eventData = { action: 'click', element: 'button' };
-      monitoring.trackEvent('user_interaction', eventData);
+      const eventData = { action: 'click', element: 'button' }
+      monitoring.trackEvent('user_interaction', eventData)
 
-      expect(datadogRum.addAction).toHaveBeenCalledWith('user_interaction', eventData);
-    });
+      expect(datadogRum.addAction).toHaveBeenCalledWith('user_interaction', eventData)})
 
     test('should log info messages', () => {
-      monitoring.logInfo('Test info message', { key: 'value' });
+      monitoring.logInfo('Test info message', { key: 'value' })
 
-      expect(datadogLogs.logger.info).toHaveBeenCalledWith('Test info message', { key: 'value' });
-    });
+      expect(datadogLogs.logger.info).toHaveBeenCalledWith('Test info message', { key: 'value' })})
 
     test('should log warning messages', () => {
-      monitoring.logWarning('Test warning', { level: 'warning' });
+      monitoring.logWarning('Test warning', { level: 'warning' })
 
-      expect(datadogLogs.logger.warn).toHaveBeenCalledWith('Test warning', { level: 'warning' });
-    });
+      expect(datadogLogs.logger.warn).toHaveBeenCalledWith('Test warning', { level: 'warning' })})
 
     test('should log error messages', () => {
-      const error = new Error('Test error');
-      monitoring.logError('Error occurred', { error });
+      const error = new Error('Test error')
+      monitoring.logError('Error occurred', { error })
 
-      expect(datadogLogs.logger.error).toHaveBeenCalledWith('Error occurred', { error });
-      expect(datadogRum.addError).toHaveBeenCalledWith(error, { message: 'Error occurred', error });
-    });
+      expect(datadogLogs.logger.error).toHaveBeenCalledWith('Error occurred', { error })
+      expect(datadogRum.addError).toHaveBeenCalledWith(error, { message: 'Error occurred', error })})
 
     test('should track performance metrics', () => {
-      monitoring.trackPerformance('api_call', 150, { endpoint: '/api/test' });
+      monitoring.trackPerformance('api_call', 150, { endpoint: '/api/test' })
 
-      expect(datadogRum.addTiming).toHaveBeenCalledWith('api_call', 150);
+      expect(datadogRum.addTiming).toHaveBeenCalledWith('api_call', 150)
       expect(datadogRum.addAction).toHaveBeenCalledWith('performance_metric', {
         metric: 'api_call',
         duration: 150,
         endpoint: '/api/test',
-      });
-    });
+      })})
 
     test('should track workspace events', () => {
-      monitoring.trackWorkspaceEvent('file_opened', 'workspace123', { fileName: 'test.js' });
+      monitoring.trackWorkspaceEvent('file_opened', 'workspace123', { fileName: 'test.js' })
 
       expect(datadogRum.addAction).toHaveBeenCalledWith('workspace_event', {
         event: 'file_opened',
         workspaceId: 'workspace123',
         fileName: 'test.js',
-      });
-    });
+      })})
 
     test('should track Core Web Vitals', () => {
       const mockObserver = {
@@ -163,25 +153,20 @@ describe('Monitoring Library', () => {
                 hadRecentInput: false,
               },
             ],
-          });
-        }, 0);
+          })}, 0);
         return mockObserver
       });
 
       monitoring.trackCoreWebVitals();
 
-      expect(global.PerformanceObserver).toHaveBeenCalled();
-    });
-  });
+      expect(global.PerformanceObserver).toHaveBeenCalled()})})
 
   describe('Server Environment', () => {
     test('should handle server environment gracefully', () => {
       // No window object in server environment
-      expect(() => monitoring.init()).not.toThrow();
-      expect(() => monitoring.trackPageView('/test')).not.toThrow();
-      expect(() => monitoring.trackEvent('test', {})).not.toThrow();
-    });
-  });
+      expect(() => monitoring.init()).not.toThrow()
+      expect(() => monitoring.trackPageView('/test')).not.toThrow()
+      expect(() => monitoring.trackEvent('test', {})).not.toThrow()})})
 
   describe('Error Handling', () => {
     beforeEach(() => {
@@ -191,37 +176,31 @@ describe('Monitoring Library', () => {
           navigator: { userAgent: 'test-agent' },
         },
         writable: true,
-      });
-    });
+      })})
 
     test('should handle Datadog initialization errors', () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
       
       // Mock Datadog init to throw
-      ;(datadogRum.init as jest.Mock).mockImplementation(() => {
-        throw new Error('Init failed');
-      });
+      (datadogRum.init as jest.Mock).mockImplementation(() => {
+        throw new Error('Init failed')});
 
-      expect(() => monitoring.init()).not.toThrow();
+      expect(() => monitoring.init()).not.toThrow()
       expect(consoleSpy).toHaveBeenCalledWith('Failed to initialize monitoring:', expect.any(Error));
 
-      consoleSpy.mockRestore();
-    });
+      consoleSpy.mockRestore()})
 
     test('should handle tracking errors gracefully', () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
       
       // Mock addAction to throw
-      ;(datadogRum.addAction as jest.Mock).mockImplementation(() => {
-        throw new Error('Tracking failed');
-      });
+      (datadogRum.addAction as jest.Mock).mockImplementation(() => {
+        throw new Error('Tracking failed')})
 
       expect(() => monitoring.trackEvent('test', {})).not.toThrow();
       expect(consoleSpy).toHaveBeenCalled();
 
-      consoleSpy.mockRestore();
-    });
-  });
+      consoleSpy.mockRestore()})})
 
   describe('Data Sanitization', () => {
     beforeEach(() => {
@@ -231,8 +210,7 @@ describe('Monitoring Library', () => {
           navigator: { userAgent: 'test-agent' },
         },
         writable: true,
-      });
-    });
+      })})
 
     test('should sanitize sensitive data', () => {
       const sensitiveData = {
@@ -241,15 +219,11 @@ describe('Monitoring Library', () => {
         apiKey: 'api-key-value',
         normalField: 'safe-value',
       }
-
-      monitoring.trackEvent('login_attempt', sensitiveData);
+      monitoring.trackEvent('login_attempt', sensitiveData)
 
       expect(datadogRum.addAction).toHaveBeenCalledWith('login_attempt', {
         password: '[REDACTED]',
         token: '[REDACTED]',
         apiKey: '[REDACTED]',
         normalField: 'safe-value',
-      });
-    });
-  });
-});
+      })})})});

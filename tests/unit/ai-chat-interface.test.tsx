@@ -17,8 +17,8 @@ const mockFileReader = {
   result: null,
   onload: null,
   onerror: null
-}
-global.FileReader = jest.fn(() => mockFileReader) as any;
+};
+global.FileReader = jest.fn(() => mockFileReader) as any
 
 describe('AIChatInterface', () => {
   const defaultProps = {
@@ -27,7 +27,6 @@ describe('AIChatInterface', () => {
     onFileUpload: jest.fn(),
     className: 'test-class'
   }
-
   beforeEach(() => {
     jest.clearAllMocks()
     
@@ -147,7 +146,6 @@ describe('AIChatInterface', () => {
           })
           .mockResolvedValueOnce({ done: true, value: undefined })
       }
-      
       mockResponse.body = { getReader: () => mockReader } as any
       mockFetch.mockResolvedValueOnce(mockResponse)
 

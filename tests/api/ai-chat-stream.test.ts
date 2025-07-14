@@ -13,7 +13,6 @@ const mockOpenAI = {
     }
   }
 }
-
 jest.mock('openai', () => ({
   OpenAI: jest.fn(() => mockOpenAI)
 }))
@@ -51,7 +50,6 @@ describe('/api/ai/chat/stream', () => {
           }
         }
       }
-
       mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
 
       const request = new NextRequest('http://localhost:3000/api/ai/chat/stream', {
@@ -145,7 +143,6 @@ describe('/api/ai/chat/stream', () => {
           yield { choices: [{ delta: { content: 'Response' } }] }
         }
       }
-
       mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
 
       const request = new NextRequest('http://localhost:3000/api/ai/chat/stream', {
@@ -178,7 +175,6 @@ describe('/api/ai/chat/stream', () => {
           yield { choices: [{ delta: { content: 'Response' } }] }
         }
       }
-
       mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
 
       const previousMessages = [
@@ -217,7 +213,6 @@ describe('/api/ai/chat/stream', () => {
           yield { choices: [{ delta: { content: 'Response' } }] }
         }
       }
-
       mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
 
       // Create 10 previous messages
@@ -307,11 +302,10 @@ describe('/api/ai/chat/stream', () => {
       const mockStream = {
         async *[Symbol.asyncIterator]() {
           yield { choices: [{ delta: { content: 'Hello' } }] }
-          yield { choices: [{ delta: { content: ' world' } }] }
+          yield { choices: [{ delta: { content: ' world' } }] };
           yield { choices: [{ delta: {} }] } // Empty delta
         }
       }
-
       mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
 
       const request = new NextRequest('http://localhost:3000/api/ai/chat/stream', {

@@ -25,11 +25,11 @@ const mockChildProcess = {
   },
   on: jest.fn(),
   kill: jest.fn()
-};
+}
 
 jest.mock('child_process', () => ({
   spawn: mockSpawn
-}));
+}))
 
 // Mock fs for file operations
 jest.mock('fs', () => ({
@@ -37,26 +37,22 @@ jest.mock('fs', () => ({
   writeFileSync: jest.fn(),
   existsSync: jest.fn(),
   mkdirSync: jest.fn()
-});
+})
 
 // Mock os for system info
 jest.mock('os', () => ({
   platform: jest.fn(),
   tmpdir: jest.fn(),
   homedir: jest.fn()
-});
+})
 
 describe('Claude CLI Integration', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockSpawn.mockReturnValue(mockChildProcess);
-  });
+    mockSpawn.mockReturnValue(mockChildProcess)})
 
   test('should initialize CLI integration', () => {
-    expect(true).toBe(true);
-  });
+    expect(true).toBe(true)})
 
   test('should handle CLI commands', () => {
-    expect(mockSpawn).toBeDefined();
-  });
-});
+    expect(mockSpawn).toBeDefined()})});

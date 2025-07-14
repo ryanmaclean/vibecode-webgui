@@ -1,6 +1,6 @@
-/* Temporarily disabled TailwindCSS for production build 
-@import "tailwindcss";
-*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;

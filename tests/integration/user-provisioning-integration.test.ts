@@ -3,15 +3,15 @@
  * Tests the complete user provisioning workflow including Helm chart and scripts
  */
 
-import { describe, test, beforeAll, afterAll, expect } from '@jest/globals';
-import { execSync } from 'child_process';
-import * as fs from 'fs';
+import { describe, test, beforeAll, afterAll, expect } from '@jest/globals'
+import { execSync } from 'child_process'
+import * as fs from 'fs'
 
-const CLUSTER_NAME = 'vibecode-provisioning-test';
-const NAMESPACE = 'vibecode-platform';
-const HELM_RELEASE = 'vibecode-platform';
+const CLUSTER_NAME = 'vibecode-provisioning-test'
+const NAMESPACE = 'vibecode-platform'
+const HELM_RELEASE = 'vibecode-platform'
 const CHART_PATH = 'helm/vibecode-platform';
-const TIMEOUT = 600000; // 10 minutes;
+const TIMEOUT = 600000; // 10 minutes
 
 describe('User Provisioning Integration Tests', () => {
   beforeAll(async () => {
@@ -20,15 +20,13 @@ describe('User Provisioning Integration Tests', () => {
     // Create KIND cluster
     try {
       execSync(`kind get clusters | grep -q "^${CLUSTER_NAME}$"`, { stdio: 'pipe' });
-      console.log(`Cluster ${CLUSTER_NAME} already exists, using it`);
-    } catch {
+      console.log(`Cluster ${CLUSTER_NAME} already exists, using it`)} catch {
       execSync(`kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-simple-config.yaml`, {
         stdio: 'inherit'
-      });
-    }
+      })}
     
     // Set kubectl context
-    execSync(`kubectl config use-context kind-${CLUSTER_NAME}`, { stdio: 'inherit' });
+    execSync(`kubectl config use-context kind-${CLUSTER_NAME}`, { stdio: 'inherit' })
     
     // Wait for cluster to be ready
     execSync('kubectl wait --for=condition=Ready nodes --all --timeout=120s', {
@@ -54,21 +52,17 @@ describe('User Provisioning Integration Tests', () => {
     execSync(`helm install ${HELM_RELEASE} ${CHART_PATH} --namespace ${NAMESPACE} --wait --timeout=300s`, {
       stdio: 'inherit',
       cwd: process.cwd()
-    });
-  }, TIMEOUT);
+    })}, TIMEOUT)
 
   afterAll(async () => {
     // Cleanup: Delete the test cluster
     try {
       if (process.env.KEEP_CLUSTER !== 'true') {
-        execSync(`kind delete cluster --name ${CLUSTER_NAME}`, { stdio: 'inherit' });
-      } else {
-        console.log('Keeping cluster for debugging (KEEP_CLUSTER=true)');
-      }
+        execSync(`kind delete cluster --name ${CLUSTER_NAME}`, { stdio: 'inherit' })} else {
+        console.log('Keeping cluster for debugging (KEEP_CLUSTER=true)')}
     } catch (error) {
-      console.error('Failed to cleanup cluster:', error);
-    }
-  }, 120000);
+      console.error('Failed to cleanup cluster:', error)}
+  }, 120000)
 
   test('Provisioning script should create complete user workspace', async () => {
     const userId = 'integration-test-user';
@@ -82,11 +76,11 @@ describe('User Provisioning Integration Tests', () => {
           HELM_RELEASE: HELM_RELEASE,
           CHART_PATH: CHART_PATH
         }
-      });
+      })
       
       // Verify output contains expected information
       expect(output).toContain('Successfully provisioned workspace');
-      expect(output).toContain(`user: ${userId}`);
+      expect(output).toContain(`user: ${userId}`)
       expect(output).toContain(`http://${userId}.vibecode.local`);
       expect(output).toContain('Password:');
       
@@ -128,31 +122,29 @@ describe('User Provisioning Integration Tests', () => {
       });
       const secretData = JSON.parse(secret);
       expect(secretData.metadata.name).toBe(`code-server-${userId}-config`);
-      expect(secretData.data.password).toBeDefined();
+      expect(secretData.data.password).toBeDefined()
       
       // 5. Ingress
       const ingress = execSync(`kubectl get ingress code-server-${userId} --namespace ${NAMESPACE} -o json`, {
         encoding: 'utf8'
       });
       const ingressData = JSON.parse(ingress);
-      expect(ingressData.metadata.name).toBe(`code-server-${userId}`);
-      expect(ingressData.spec.rules[0].host).toBe(`${userId}.vibecode.local`);
+      expect(ingressData.metadata.name).toBe(`code-server-${userId}`)
+      expect(ingressData.spec.rules[0].host).toBe(`${userId}.vibecode.local`)
       
       // 6. Pod should be running
       const pods = execSync(`kubectl get pods -l vibecode.dev/user-id=${userId} --namespace ${NAMESPACE} -o json`, {
         encoding: 'utf8'
       });
       const podData = JSON.parse(pods);
-      expect(podData.items.length).toBe(1);
+      expect(podData.items.length).toBe(1)
       expect(podData.items[0].status.phase).toBe('Running');
       
       // 7. Verify security context is applied
       const podSpec = podData.items[0].spec;
       expect(podSpec.securityContext.runAsNonRoot).toBe(true);
       expect(podSpec.securityContext.runAsUser).toBe(1000);
-      expect(podSpec.containers[0].securityContext.allowPrivilegeEscalation).toBe(false);
-      
-    } finally {
+      expect(podSpec.containers[0].securityContext.allowPrivilegeEscalation).toBe(false)} finally {
       // Cleanup user
       try {
         execSync(`scripts/provision-user.sh delete ${userId} --delete-storage --namespace ${NAMESPACE}`, {
@@ -161,15 +153,13 @@ describe('User Provisioning Integration Tests', () => {
             ...process.env,
             HELM_RELEASE: HELM_RELEASE
           }
-        });
-      } catch (error) {
-        console.error('Failed to cleanup user:', error);
-      }
+        })} catch (error) {
+        console.error('Failed to cleanup user:', error)}
     }
-  }, TIMEOUT);
+  }, TIMEOUT)
 
   test('Multiple users should be isolated from each other', async () => {
-    const user1 = 'isolation-test-user-1';
+    const user1 = 'isolation-test-user-1'
     const user2 = 'isolation-test-user-2';
     
     try {
@@ -212,9 +202,9 @@ describe('User Provisioning Integration Tests', () => {
       
       const pvc1Data = JSON.parse(pvc1);
       const pvc2Data = JSON.parse(pvc2);
-      expect(pvc1Data.metadata.name).toBe(`workspace-${user1}`);
+      expect(pvc1Data.metadata.name).toBe(`workspace-${user1}`)
       expect(pvc2Data.metadata.name).toBe(`workspace-${user2}`);
-      expect(pvc1Data.spec.volumeName).not.toBe(pvc2Data.spec.volumeName);
+      expect(pvc1Data.spec.volumeName).not.toBe(pvc2Data.spec.volumeName)
       
       // 2. Different secrets
       const secret1 = execSync(`kubectl get secret code-server-${user1}-config --namespace ${NAMESPACE} -o json`, {
@@ -238,8 +228,8 @@ describe('User Provisioning Integration Tests', () => {
       
       const ingress1Data = JSON.parse(ingress1);
       const ingress2Data = JSON.parse(ingress2);
-      expect(ingress1Data.spec.rules[0].host).toBe(`${user1}.vibecode.local`);
-      expect(ingress2Data.spec.rules[0].host).toBe(`${user2}.vibecode.local`);
+      expect(ingress1Data.spec.rules[0].host).toBe(`${user1}.vibecode.local`)
+      expect(ingress2Data.spec.rules[0].host).toBe(`${user2}.vibecode.local`)
       
       // 4. Network connectivity test - users should not be able to access each other directly
       const networkTestPod = `;
@@ -247,7 +237,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: network-test-pod
-  namespace: ${NAMESPACE}
+  namespace: ${NAMESPACE};
   labels:
     vibecode.dev/user-id: network-tester
 spec:
@@ -260,16 +250,14 @@ spec:
       execSync('kubectl apply -f -', {
         input: networkTestPod,
         stdio: 'inherit'
-      });
+      })
       
       execSync('kubectl wait --for=condition=Ready pod/network-test-pod --namespace ${NAMESPACE} --timeout=60s', {
         stdio: 'inherit'
-      });
+      })
       
       // Test that users can access their own services but not each other's
-      // (This would require proper network policies to be fully tested);
-      
-    } finally {
+      // (This would require proper network policies to be fully tested)} finally {
       // Cleanup users and test pod
       try {
         execSync(`scripts/provision-user.sh delete ${user1} --delete-storage --namespace ${NAMESPACE}`, {
@@ -282,12 +270,10 @@ spec:
         });
         execSync(`kubectl delete pod network-test-pod --namespace ${NAMESPACE} --ignore-not-found=true`, {
           stdio: 'inherit'
-        });
-      } catch (error) {
-        console.error('Failed to cleanup test resources:', error);
-      }
+        })} catch (error) {
+        console.error('Failed to cleanup test resources:', error)}
     }
-  }, TIMEOUT);
+  }, TIMEOUT)
 
   test('User deletion should clean up all resources', async () => {
     const userId = 'deletion-test-user';
@@ -309,16 +295,13 @@ spec:
     
     // Verify resources exist
     expect(() => {
-      execSync(`kubectl get deployment code-server-${userId} --namespace ${NAMESPACE}`, { stdio: 'pipe' });
-    }).not.toThrow();
+      execSync(`kubectl get deployment code-server-${userId} --namespace ${NAMESPACE}`, { stdio: 'pipe' })}).not.toThrow();
     
     expect(() => {
-      execSync(`kubectl get service code-server-${userId} --namespace ${NAMESPACE}`, { stdio: 'pipe' });
-    }).not.toThrow();
+      execSync(`kubectl get service code-server-${userId} --namespace ${NAMESPACE}`, { stdio: 'pipe' })}).not.toThrow();
     
     expect(() => {
-      execSync(`kubectl get pvc workspace-${userId} --namespace ${NAMESPACE}`, { stdio: 'pipe' });
-    }).not.toThrow();
+      execSync(`kubectl get pvc workspace-${userId} --namespace ${NAMESPACE}`, { stdio: 'pipe' })}).not.toThrow();
     
     // Delete user with storage
     execSync(`scripts/provision-user.sh delete ${userId} --delete-storage --namespace ${NAMESPACE}`, {
@@ -331,25 +314,19 @@ spec:
     
     // Verify all resources are deleted
     expect(() => {
-      execSync(`kubectl get deployment code-server-${userId} --namespace ${NAMESPACE}`, { stdio: 'pipe' });
-    }).toThrow();
+      execSync(`kubectl get deployment code-server-${userId} --namespace ${NAMESPACE}`, { stdio: 'pipe' })}).toThrow();
     
     expect(() => {
-      execSync(`kubectl get service code-server-${userId} --namespace ${NAMESPACE}`, { stdio: 'pipe' });
-    }).toThrow();
+      execSync(`kubectl get service code-server-${userId} --namespace ${NAMESPACE}`, { stdio: 'pipe' })}).toThrow();
     
     expect(() => {
-      execSync(`kubectl get ingress code-server-${userId} --namespace ${NAMESPACE}`, { stdio: 'pipe' });
-    }).toThrow();
+      execSync(`kubectl get ingress code-server-${userId} --namespace ${NAMESPACE}`, { stdio: 'pipe' })}).toThrow();
     
     expect(() => {
-      execSync(`kubectl get secret code-server-${userId}-config --namespace ${NAMESPACE}`, { stdio: 'pipe' });
-    }).toThrow();
+      execSync(`kubectl get secret code-server-${userId}-config --namespace ${NAMESPACE}`, { stdio: 'pipe' })}).toThrow();
     
     expect(() => {
-      execSync(`kubectl get pvc workspace-${userId} --namespace ${NAMESPACE}`, { stdio: 'pipe' });
-    }).toThrow();
-  });
+      execSync(`kubectl get pvc workspace-${userId} --namespace ${NAMESPACE}`, { stdio: 'pipe' })}).toThrow()})
 
   test('User listing should show active users', async () => {
     const users = ['list-test-user-1', 'list-test-user-2', 'list-test-user-3'];
@@ -364,15 +341,13 @@ spec:
             HELM_RELEASE: HELM_RELEASE,
             CHART_PATH: CHART_PATH
           }
-        });
-      }
+        })}
       
       // Wait for all deployments
       for (const user of users) {
         execSync(`kubectl wait --for=condition=Available deployment/code-server-${user} --namespace ${NAMESPACE} --timeout=300s`, {
           stdio: 'inherit'
-        });
-      }
+        })}
       
       // List users
       const output = execSync(`scripts/provision-user.sh list --namespace ${NAMESPACE}`, {
@@ -385,22 +360,17 @@ spec:
       
       // Verify all users are listed
       users.forEach(user => {
-        expect(output).toContain(user);
-      });
+        expect(output).toContain(user)})
       
-      expect(output).toContain('Active user workspaces');
-      
-    } finally {
+      expect(output).toContain('Active user workspaces')} finally {
       // Cleanup all test users
       for (const user of users) {
         try {
           execSync(`scripts/provision-user.sh delete ${user} --delete-storage --namespace ${NAMESPACE}`, {
             stdio: 'inherit',
             env: { ...process.env, HELM_RELEASE: HELM_RELEASE }
-          });
-        } catch (error) {
-          console.error(`Failed to cleanup user ${user}:`, error);
-        }
+          })} catch (error) {
+          console.error(`Failed to cleanup user ${user}:`, error)}
       }
     }
   }, TIMEOUT);
@@ -431,30 +401,26 @@ spec:
           ...process.env,
           HELM_RELEASE: HELM_RELEASE
         }
-      });
+      })
       
       // Verify status output contains expected information
-      expect(output).toContain('Deployment status:');
-      expect(output).toContain('Pod status:');
-      expect(output).toContain('Service status:');
+      expect(output).toContain('Deployment status:')
+      expect(output).toContain('Pod status:')
+      expect(output).toContain('Service status:')
       expect(output).toContain('Ingress status:');
-      expect(output).toContain(`code-server-${userId}`);
-      
-    } finally {
+      expect(output).toContain(`code-server-${userId}`)} finally {
       // Cleanup
       try {
         execSync(`scripts/provision-user.sh delete ${userId} --delete-storage --namespace ${NAMESPACE}`, {
           stdio: 'inherit',
           env: { ...process.env, HELM_RELEASE: HELM_RELEASE }
-        });
-      } catch (error) {
-        console.error('Failed to cleanup user:', error);
-      }
+        })} catch (error) {
+        console.error('Failed to cleanup user:', error)}
     }
-  });
+  })
 
   test('Invalid user IDs should be rejected', () => {
-    const invalidUserIds = [;
+    const invalidUserIds = [
       '', // empty
       'a', // too short
       'ab', // too short
@@ -477,10 +443,7 @@ spec:
             HELM_RELEASE: HELM_RELEASE,
             CHART_PATH: CHART_PATH
           }
-        });
-      }).toThrow();
-    });
-  });
+        })}).toThrow()})})
 
   test('Duplicate user creation should be prevented', async () => {
     const userId = 'duplicate-test-user';
@@ -510,25 +473,20 @@ spec:
             HELM_RELEASE: HELM_RELEASE,
             CHART_PATH: CHART_PATH
           }
-        });
-      }).toThrow();
-      
-    } finally {
+        })}).toThrow()} finally {
       // Cleanup
       try {
         execSync(`scripts/provision-user.sh delete ${userId} --delete-storage --namespace ${NAMESPACE}`, {
           stdio: 'inherit',
           env: { ...process.env, HELM_RELEASE: HELM_RELEASE }
-        });
-      } catch (error) {
-        console.error('Failed to cleanup user:', error);
-      }
+        })} catch (error) {
+        console.error('Failed to cleanup user:', error)}
     }
-  });
+  })
 
   test('Script should handle missing kubectl/helm gracefully', () => {
     // Test with PATH that doesn't include kubectl
-    const originalPath = process.env.PATH;
+    const originalPath = process.env.PATH
     
     try {
       // Set PATH to exclude kubectl
@@ -541,12 +499,7 @@ spec:
         execSync(`scripts/provision-user.sh create test-user --namespace ${NAMESPACE}`, {
           stdio: 'pipe',
           env: modifiedEnv
-        });
-      }).toThrow();
-      
-    } finally {
+        })}).toThrow()} finally {
       // Restore original PATH
-      process.env.PATH = originalPath;
-    }
-  });
-});
+      process.env.PATH = originalPath}
+  })});

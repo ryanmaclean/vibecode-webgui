@@ -7,8 +7,8 @@ import { NextAuthOptions } from 'next-auth'
 import GithubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { PrismaAdapter } from '@next-auth/prisma-adapter'
-import { prisma } from './prisma'
+// import { PrismaAdapter } from '@next-auth/prisma-adapter'
+// import { prisma } from './prisma'
 
 declare module 'next-auth' {
   interface Session {
@@ -42,7 +42,7 @@ declare module 'next-auth/jwt' {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  // adapter: PrismaAdapter(prisma), // Disabled for file-based development
   providers: [
     GithubProvider({
       clientId: process.env.GITHUB_ID!,

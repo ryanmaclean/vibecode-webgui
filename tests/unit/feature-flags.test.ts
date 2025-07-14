@@ -18,19 +18,17 @@ jest.mock('@/lib/server-monitoring', () => ({
     logBusiness: jest.fn(),
     logPerformance: jest.fn()
   }
-}));
+}))
 
 describe('FeatureFlagEngine', () => {
-  let engine: FeatureFlagEngine;
+  let engine: FeatureFlagEngine
   const mockContext: ExperimentContext = {
     userId: 'user123',
     workspaceId: 'workspace456',
     customAttributes: { plan: 'pro' }
-  }
-
+  };
   beforeEach(() => {
-    engine = new FeatureFlagEngine();
-  });
+    engine = new FeatureFlagEngine()})
 
   describe('Flag Creation', () => {
     test('should create a feature flag successfully', async () => {
@@ -50,18 +48,15 @@ describe('FeatureFlagEngine', () => {
         },
         metrics: ['conversion', 'engagement'],
         createdBy: 'test_user'
-      }
-
-      await engine.createFlag(flag);
+      };
+      await engine.createFlag(flag)
       
       // Test that flag can be evaluated
-      const result = await engine.evaluateFlag('test_flag', mockContext);
+      const result = await engine.evaluateFlag('test_flag', mockContext)
       
-      expect(result.flagKey).toBe('test_flag');
+      expect(result.flagKey).toBe('test_flag')
       expect(['control', 'treatment']).toContain(result.variant);
-      expect(result.isExperiment).toBe(true);
-    });
-  });
+      expect(result.isExperiment).toBe(true)})})
 
   describe('Flag Evaluation', () => {
     test('should return control for disabled flag', async () => {
@@ -76,20 +71,18 @@ describe('FeatureFlagEngine', () => {
         targeting: { rules: [], defaultVariant: 'control', rolloutPercentage: 100 },
         metrics: [],
         createdBy: 'test'
-      });
+      })
 
-      const result = await engine.evaluateFlag('disabled_flag', mockContext);
+      const result = await engine.evaluateFlag('disabled_flag', mockContext)
       
       expect(result.variant).toBe('control');
-      expect(result.isExperiment).toBe(false);
-    });
+      expect(result.isExperiment).toBe(false)})
 
     test('should return control for non-existent flag', async () => {
-      const result = await engine.evaluateFlag('non_existent_flag', mockContext);
+      const result = await engine.evaluateFlag('non_existent_flag', mockContext)
       
       expect(result.variant).toBe('control');
-      expect(result.isExperiment).toBe(false);
-    });
+      expect(result.isExperiment).toBe(false)})
 
     test('should maintain consistent allocation for same user', async () => {
       await engine.createFlag({
@@ -104,15 +97,13 @@ describe('FeatureFlagEngine', () => {
         targeting: { rules: [], defaultVariant: 'control', rolloutPercentage: 100 },
         metrics: [],
         createdBy: 'test'
-      });
+      })
 
-      const result1 = await engine.evaluateFlag('consistency_test', mockContext);
+      const result1 = await engine.evaluateFlag('consistency_test', mockContext)
       const result2 = await engine.evaluateFlag('consistency_test', mockContext);
       
       expect(result1.variant).toBe(result2.variant);
-      expect(result1.allocationKey).toBe(result2.allocationKey);
-    });
-  });
+      expect(result1.allocationKey).toBe(result2.allocationKey)})})
 
   describe('Targeting Rules', () => {
     beforeEach(async () => {
@@ -139,29 +130,23 @@ describe('FeatureFlagEngine', () => {
         },
         metrics: [],
         createdBy: 'test'
-      });
-    });
+      })})
 
     test('should apply targeting rule for pro users', async () => {
       const proContext: ExperimentContext = {
         userId: 'user123',
         customAttributes: { plan: 'pro' }
       }
-
-      const result = await engine.evaluateFlag('targeting_test', proContext);
-      expect(result.variant).toBe('treatment');
-    });
+      const result = await engine.evaluateFlag('targeting_test', proContext)
+      expect(result.variant).toBe('treatment')})
 
     test('should use random allocation for non-matching users', async () => {
       const basicContext: ExperimentContext = {
         userId: 'user456',
         customAttributes: { plan: 'basic' }
       }
-
-      const result = await engine.evaluateFlag('targeting_test', basicContext);
-      expect(['control', 'treatment']).toContain(result.variant);
-    });
-  });
+      const result = await engine.evaluateFlag('targeting_test', basicContext)
+      expect(['control', 'treatment']).toContain(result.variant)})})
 
   describe('Metric Tracking', () => {
     test('should track metrics successfully', async () => {
@@ -176,17 +161,14 @@ describe('FeatureFlagEngine', () => {
         targeting: { rules: [], defaultVariant: 'control', rolloutPercentage: 100 },
         metrics: ['conversion'],
         createdBy: 'test'
-      });
+      })
 
       // First evaluate to allocate user
-      await engine.evaluateFlag('metric_test', mockContext);
+      await engine.evaluateFlag('metric_test', mockContext)
 
       // Then track metrics
       await expect(
-        engine.trackMetric('metric_test', 'conversion', 1, mockContext);
-      ).resolves.toBeUndefined();
-    });
-  });
+        engine.trackMetric('metric_test', 'conversion', 1, mockContext)).resolves.toBeUndefined()})})
 
   describe('Experiment Results', () => {
     test('should return experiment results with statistics', async () => {
@@ -202,7 +184,7 @@ describe('FeatureFlagEngine', () => {
         targeting: { rules: [], defaultVariant: 'control', rolloutPercentage: 100 },
         metrics: ['conversion'],
         createdBy: 'test'
-      });
+      })
 
       // Simulate some experiment data
       const contexts = [
@@ -214,26 +196,21 @@ describe('FeatureFlagEngine', () => {
 
       // Evaluate flags for multiple users
       for (const context of contexts) {
-        await engine.evaluateFlag('results_test', context);
-        await engine.trackMetric('results_test', 'conversion', Math.random() > 0.5 ? 1 : 0, context);
-      }
-
+        await engine.evaluateFlag('results_test', context)
+        await engine.trackMetric('results_test', 'conversion', Math.random() > 0.5 ? 1 : 0, context)}
       const results = await engine.getExperimentResults('results_test');
       
-      expect(results.flag).toBeTruthy();
+      expect(results.flag).toBeTruthy()
       expect(results.flag?.key).toBe('results_test');
       expect(results.metrics).toBeDefined();
-      expect(results.statisticalSignificance).toBeDefined();
-    });
+      expect(results.statisticalSignificance).toBeDefined()})
 
     test('should return null for non-existent flag results', async () => {
       const results = await engine.getExperimentResults('non_existent_flag');
       
       expect(results.flag).toBeNull();
       expect(results.metrics).toEqual({});
-      expect(results.statisticalSignificance).toEqual({});
-    });
-  });
+      expect(results.statisticalSignificance).toEqual({})})})
 
   describe('Statistical Calculations', () => {
     test('should calculate conversion rates correctly', async () => {
@@ -251,7 +228,7 @@ describe('FeatureFlagEngine', () => {
       });
 
       // Simulate specific conversion data
-      const testContexts = [;
+      const testContexts = [
         { userId: 'user1' },
         { userId: 'user2' },
         { userId: 'user3' },
@@ -260,19 +237,16 @@ describe('FeatureFlagEngine', () => {
       ]
 
       // 3 out of 5 users convert (60% conversion rate);
-      for (let i = 0; i < testContexts.length; i++) {
+      for (let i = 0; i < testContexts.length i++) {
         await engine.evaluateFlag('stats_test', testContexts[i]);
-        const conversionValue = i < 3 ? 1 : 0 // First 3 convert;
-        await engine.trackMetric('stats_test', 'conversion', conversionValue, testContexts[i]);
-      }
-
-      const results = await engine.getExperimentResults('stats_test');
+        const conversionValue = i < 3 ? 1 : 0 // First 3 convert
+        await engine.trackMetric('stats_test', 'conversion', conversionValue, testContexts[i])}
+      const results = await engine.getExperimentResults('stats_test')
       const controlMetrics = results.metrics['control'];
       
       expect(controlMetrics.totalSamples).toBe(5);
       expect(controlMetrics.conversionRate).toBe(0.6) // 3/5 = 60%
-    });
-  });
+    })})
 
   describe('Hash Consistency', () => {
     test('should produce consistent hash for same input', async () => {
@@ -288,19 +262,15 @@ describe('FeatureFlagEngine', () => {
         targeting: { rules: [], defaultVariant: 'control', rolloutPercentage: 100 },
         metrics: [],
         createdBy: 'test'
-      });
+      })
 
       const sameUserContext = { userId: 'consistent_user' };
       
-      const results = await Promise.all([;
+      const results = await Promise.all([
         engine.evaluateFlag('hash_test', sameUserContext),
         engine.evaluateFlag('hash_test', sameUserContext),
-        engine.evaluateFlag('hash_test', sameUserContext);
-      ]);
+        engine.evaluateFlag('hash_test', sameUserContext)]);
 
       // All evaluations should return the same variant
       const variants = results.map(r => r.variant);
-      expect(new Set(variants).size).toBe(1);
-    });
-  });
-});
+      expect(new Set(variants).size).toBe(1)})})});

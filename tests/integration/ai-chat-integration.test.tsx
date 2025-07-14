@@ -12,7 +12,7 @@ import { POST as uploadHandler } from '@/app/api/ai/upload/route'
 
 // Mock fetch globally
 const mockFetch = jest.fn()
-global.fetch = mockFetch as any;
+global.fetch = mockFetch as any
 
 // Mock file system operations
 jest.mock('fs/promises', () => ({
@@ -33,7 +33,6 @@ const mockOpenAI = {
     }
   }
 }
-
 jest.mock('openai', () => ({
   OpenAI: jest.fn(() => mockOpenAI)
 }))
@@ -97,8 +96,7 @@ describe('AI Chat Integration', () => {
             value: new TextEncoder().encode('data: {"done": true}\n\n') 
           })
           .mockResolvedValueOnce({ done: true, value: undefined })
-      }
-      
+      };
       mockResponse.body = { getReader: () => mockReader } as any
       mockFetch.mockResolvedValueOnce(mockResponse)
 
@@ -217,7 +215,7 @@ describe('AI Chat Integration', () => {
       render(
         <VSCodeIntegration 
           workspaceId="test-workspace"
-          codeServerUrl={mockCodeServerUrl}
+          codeServerUrl={mockCodeServerUrl};
           isEmbedded={false}
         />
       )
@@ -372,7 +370,6 @@ describe('AI Chat Integration', () => {
             )
           )
       }
-      
       const mockResponse = new Response('', {
         headers: { 'Content-Type': 'text/event-stream' }
       })
