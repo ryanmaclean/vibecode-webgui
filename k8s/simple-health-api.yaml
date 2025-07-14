@@ -1,0 +1,73 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vibecode-health-api
+  namespace: vibecode-test
+  labels:
+    app: vibecode-health-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vibecode-health-api
+  template:
+    metadata:
+      labels:
+        app: vibecode-health-api
+        tags.datadoghq.com/env: "kind-test"
+        tags.datadoghq.com/service: "vibecode-health-api"
+        tags.datadoghq.com/version: "1.0.0"
+    spec:
+      containers:
+      - name: health-api
+        image: node:18-alpine
+        command: ["/bin/sh"]
+        args: ["-c", "cat > /tmp/server.js << 'EOF'\nconst http = require('http');\nconst url = require('url');\n\nconst server = http.createServer((req, res) => {\n  const parsedUrl = url.parse(req.url, true);\n  \n  res.setHeader('Access-Control-Allow-Origin', '*');\n  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');\n  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');\n  \n  if (req.method === 'OPTIONS') {\n    res.writeHead(200);\n    res.end();\n    return;\n  }\n  \n  if (parsedUrl.pathname === '/api/health') {\n    const healthCheck = {\n      status: 'healthy',\n      timestamp: new Date().toISOString(),\n      uptime: process.uptime(),\n      version: '1.0.0',\n      environment: process.env.NODE_ENV || 'kind-test',\n      cluster: 'vibecode-cluster',\n      namespace: 'vibecode-test',\n      pod: process.env.HOSTNAME,\n      checks: {\n        memory: {\n          status: 'healthy',\n          details: {\n            used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB',\n            total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + 'MB'\n          }\n        },\n        environment: {\n          status: 'healthy',\n          details: {\n            datadog_configured: !!process.env.DATADOG_API_KEY,\n            node_env: process.env.NODE_ENV\n          }\n        }\n      }\n    };\n    \n    res.writeHead(200, { 'Content-Type': 'application/json' });\n    res.end(JSON.stringify(healthCheck, null, 2));\n  } else {\n    res.writeHead(404, { 'Content-Type': 'application/json' });\n    res.end(JSON.stringify({ error: 'Not Found' }));\n  }\n});\n\nconst PORT = process.env.PORT || 3000;\nserver.listen(PORT, '0.0.0.0', () => {\n  console.log('Health API server running on port ' + PORT);\n});\nEOF\n\nnode /tmp/server.js"]
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: "kind-test"
+        - name: PORT
+          value: "3000"
+        - name: DATADOG_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: health-check-secrets
+              key: DATADOG_API_KEY
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vibecode-health-api
+  namespace: vibecode-test
+  labels:
+    app: vibecode-health-api
+spec:
+  selector:
+    app: vibecode-health-api
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+  type: ClusterIP

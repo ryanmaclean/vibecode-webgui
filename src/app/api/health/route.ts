@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { monitoring } from '@/lib/monitoring'
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
@@ -19,15 +20,23 @@ export async function GET(request: NextRequest) {
       checks: {
         memory: checkMemoryUsage(),
         disk: await checkDiskSpace(),
-        database: await checkDatabase(),
-        redis: await checkRedis(),
-        ai: await checkAIService()
+        database: await monitoring.checkDatabase(),
+        redis: await monitoring.checkRedis(),
+        ai: await monitoring.checkAIService()
       }
     }
 
     // Calculate response time
     const responseTime = Date.now() - startTime
     healthChecks.responseTime = `${responseTime}ms`
+
+    // Submit health check metrics to Datadog
+    await monitoring.trackMetrics()
+    await monitoring.submitEvent(
+      'Health Check Completed',
+      `Application health check completed with status: ${healthChecks.status}`,
+      ['source:health-check', `env:${process.env.NODE_ENV}`]
+    )
 
     // Determine overall health status
     const hasFailures = Object.values(healthChecks.checks).some(check => check.status !== 'healthy')
@@ -94,98 +103,6 @@ async function checkDiskSpace() {
   }
 }
 
-async function checkDatabase() {
-  try {
-    // Check database connection if configured
-    const databaseUrl = process.env.DATABASE_URL
-    
-    if (!databaseUrl) {
-      return {
-        status: 'healthy',
-        details: 'Database not configured (using file storage)'
-      }
-    }
-
-    // For now, just check if the URL is valid
-    const url = new URL(databaseUrl)
-    
-    return {
-      status: 'healthy',
-      details: {
-        host: url.hostname,
-        database: url.pathname.substring(1),
-        ssl: url.protocol === 'postgres:'
-      }
-    }
-  } catch (error) {
-    return {
-      status: 'error',
-      error: 'Database connection failed'
-    }
-  }
-}
-
-async function checkRedis() {
-  try {
-    // Check Redis connection if configured
-    const redisUrl = process.env.REDIS_URL
-    
-    if (!redisUrl) {
-      return {
-        status: 'healthy',
-        details: 'Redis not configured (using memory storage)'
-      }
-    }
-
-    // For now, just check if the URL is valid
-    const url = new URL(redisUrl)
-    
-    return {
-      status: 'healthy',
-      details: {
-        host: url.hostname,
-        port: url.port || '6379'
-      }
-    }
-  } catch (error) {
-    return {
-      status: 'error',
-      error: 'Redis connection failed'
-    }
-  }
-}
-
-async function checkAIService() {
-  try {
-    // Check AI service configuration
-    const openRouterKey = process.env.OPENROUTER_API_KEY
-    
-    if (!openRouterKey) {
-      return {
-        status: 'warning',
-        details: 'OpenRouter API key not configured'
-      }
-    }
-
-    // Validate API key format
-    if (openRouterKey.startsWith('sk-or-') || openRouterKey.length > 20) {
-      return {
-        status: 'healthy',
-        details: 'OpenRouter API key configured'
-      }
-    }
-
-    return {
-      status: 'warning',
-      details: 'OpenRouter API key format invalid'
-    }
-  } catch (error) {
-    return {
-      status: 'error',
-      error: 'Failed to check AI service'
-    }
-  }
-}
 
 // Handle CORS for health checks
 export async function OPTIONS() {

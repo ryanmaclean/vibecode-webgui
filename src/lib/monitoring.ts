@@ -1,375 +1,340 @@
 /**
- * Comprehensive monitoring and logging setup for VibeCode WebGUI
- * Integrates Datadog RUM, logs, and APM tracing
+ * Real Monitoring Integration
+ * Actual Datadog metrics submission and health checks
  */
 
-import { datadogRum } from '@datadog/browser-rum'
-import { datadogLogs } from '@datadog/browser-logs'
-
-// Configuration interface
-interface MonitoringConfig {
-  datadogApplicationId: string
-  datadogClientToken: string
-  datadogSite: string
-  environment: string
-  version: string
-  service: string
-  enableRUM: boolean
-  enableLogs: boolean
-  enableTracing: boolean
-  sampleRate: number
-  trackInteractions: boolean
-  trackResources: boolean
-  trackLongTasks: boolean
+interface MetricData {
+  metric: string
+  value: number
+  tags?: string[]
+  timestamp?: number
 }
 
-// Default configuration with proper environment variable mapping
-const defaultConfig: MonitoringConfig = {
-  datadogApplicationId: process.env.NEXT_PUBLIC_DD_RUM_APPLICATION_ID || 'test-app-id',
-  datadogClientToken: process.env.NEXT_PUBLIC_DD_RUM_CLIENT_TOKEN || 'test-client-token',
-  datadogSite: process.env.NEXT_PUBLIC_DD_SITE || 'datadoghq.com',
-  environment: process.env.DD_ENV || process.env.NODE_ENV || 'development',
-  version: process.env.DD_VERSION || '1.0.0',
-  service: process.env.DD_SERVICE || 'vibecode-webgui',
-  enableRUM: typeof window !== 'undefined' && !!process.env.NEXT_PUBLIC_DD_RUM_CLIENT_TOKEN,
-  enableLogs: typeof window !== 'undefined' && !!process.env.NEXT_PUBLIC_DD_RUM_CLIENT_TOKEN,
-  enableTracing: true,
-  sampleRate: 100,
-  trackInteractions: true,
-  trackResources: true,
-  trackLongTasks: true,
+interface HealthCheck {
+  status: 'healthy' | 'warning' | 'error'
+  details?: any
+  error?: string
 }
 
 class MonitoringService {
-  private config: MonitoringConfig
-  private isInitialized = false
+  private datadogApiKey: string | undefined
+  private datadogSite: string
+  private baseUrl: string
 
-  constructor(config: Partial<MonitoringConfig> = {}) {
-    this.config = { ...defaultConfig, ...config }
+  constructor() {
+    // Only initialize on server-side
+    if (typeof window === 'undefined') {
+      this.datadogApiKey = process.env.DATADOG_API_KEY
+      this.datadogSite = process.env.DATADOG_SITE || 'datadoghq.com'
+      this.baseUrl = `https://api.${this.datadogSite}/api/v1`
+    } else {
+      this.datadogApiKey = undefined
+      this.datadogSite = 'datadoghq.com'
+      this.baseUrl = `https://api.${this.datadogSite}/api/v1`
+    }
   }
 
   /**
-   * Initialize all monitoring services
+   * Submit metrics to Datadog
    */
-  initialize(): void {
-    if (this.isInitialized) {
-      console.warn('Monitoring service already initialized')
-      return
-    }
-
-    if (typeof window === 'undefined') {
-      console.warn('Monitoring service can only be initialized in browser environment')
-      return
+  async submitMetric(metric: MetricData): Promise<boolean> {
+    if (!this.datadogApiKey || this.datadogApiKey === 'placeholder-set-real-key') {
+      console.warn('Datadog API key not configured - metric submission skipped')
+      return false
     }
 
     try {
-      this.initializeRUM()
-      this.initializeLogs()
-      this.setupGlobalErrorHandling()
-      this.trackPagePerformance()
-      this.isInitialized = true
-      
-      console.log('✅ Monitoring service initialized successfully')
+      const response = await fetch(`${this.baseUrl}/series`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'DD-API-KEY': this.datadogApiKey
+        },
+        body: JSON.stringify({
+          series: [{
+            metric: metric.metric,
+            points: [[metric.timestamp || Date.now() / 1000, metric.value]],
+            tags: metric.tags || [],
+            host: 'vibecode-webgui',
+            type: 'gauge'
+          }]
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Datadog API error: ${response.status} ${response.statusText}`)
+      }
+
+      return true
     } catch (error) {
-      console.error('❌ Failed to initialize monitoring service:', error)
+      console.error('Failed to submit metric to Datadog:', error)
+      return false
     }
   }
 
   /**
-   * Initialize Datadog Real User Monitoring (RUM)
+   * Submit event to Datadog
    */
-  private initializeRUM(): void {
-    if (!this.config.enableRUM || !this.config.datadogApplicationId || !this.config.datadogClientToken) {
-      console.warn('Datadog RUM not configured, skipping initialization')
-      return
+  async submitEvent(title: string, text: string, tags?: string[]): Promise<boolean> {
+    if (!this.datadogApiKey || this.datadogApiKey === 'placeholder-set-real-key') {
+      console.warn('Datadog API key not configured - event submission skipped')
+      return false
     }
 
-    datadogRum.init({
-      applicationId: this.config.datadogApplicationId,
-      clientToken: this.config.datadogClientToken,
-      site: this.config.datadogSite as any,
-      service: this.config.service,
-      env: this.config.environment,
-      version: this.config.version,
-      sessionSampleRate: this.config.sampleRate,
-      sessionReplaySampleRate: 20,
-      trackUserInteractions: this.config.trackInteractions,
-      trackResources: this.config.trackResources,
-      trackLongTasks: this.config.trackLongTasks,
-      defaultPrivacyLevel: 'mask-user-input',
-      enableExperimentalFeatures: ['clickmap'],
-      beforeSend: (event) => {
-        // Filter sensitive data - type assertion for compatibility
-        if (event.type === 'resource' && (event as any).resource?.url?.includes('api/auth')) {
-          return false
-        }
-        return true
-      }
-    })
-
-    datadogRum.startSessionReplayRecording()
-    console.log('🔍 Datadog RUM initialized')
-  }
-
-  /**
-   * Initialize Datadog browser logs
-   */
-  private initializeLogs(): void {
-    if (!this.config.enableLogs || !this.config.datadogClientToken) {
-      console.warn('Datadog Logs not configured, skipping initialization')
-      return
-    }
-
-    datadogLogs.init({
-      clientToken: this.config.datadogClientToken,
-      site: this.config.datadogSite as any,
-      service: this.config.service,
-      env: this.config.environment,
-      version: this.config.version,
-      sessionSampleRate: this.config.sampleRate,
-      beforeSend: () => {
-        return true
-      }
-    })
-
-    console.log('📝 Datadog Logs initialized')
-  }
-
-  /**
-   * Set up global error handling and reporting
-   */
-  private setupGlobalErrorHandling(): void {
-    // Handle unhandled Promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
-      this.logError('Unhandled Promise Rejection', {
-        reason: event.reason,
-        promise: event.promise,
-        stack: event.reason?.stack,
-      })
-    })
-
-    // Handle global errors
-    window.addEventListener('error', (event) => {
-      this.logError('Global Error', {
-        message: event.message,
-        filename: event.filename,
-        line: event.lineno,
-        column: event.colno,
-        error: event.error,
-        stack: event.error?.stack,
-      })
-    })
-
-    // Handle resource loading errors
-    window.addEventListener('error', (event) => {
-      if (event.target && event.target !== window) {
-        this.logError('Resource Loading Error', {
-          element: event.target,
-          source: (event.target as HTMLElement).getAttribute?.('src') || 
-                  (event.target as HTMLElement).getAttribute?.('href'),
-          type: (event.target as HTMLElement).tagName,
+    try {
+      const response = await fetch(`${this.baseUrl}/events`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'DD-API-KEY': this.datadogApiKey
+        },
+        body: JSON.stringify({
+          title,
+          text,
+          tags: tags || [],
+          source_type_name: 'vibecode-webgui',
+          alert_type: 'info'
         })
-      }
-    }, true)
-
-    console.log('🛡️ Global error handling set up')
-  }
-
-  /**
-   * Track page performance metrics
-   */
-  private trackPagePerformance(): void {
-    if ('performance' in window) {
-      // Track Core Web Vitals
-      this.trackWebVitals()
-      
-      // Track custom performance metrics
-      const observer = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          if (entry.entryType === 'navigation') {
-            const navigationEntry = entry as PerformanceNavigationTiming
-            this.logInfo('Page Performance', {
-              domContentLoaded: navigationEntry.domContentLoadedEventEnd - navigationEntry.fetchStart,
-              loadComplete: navigationEntry.loadEventEnd - navigationEntry.fetchStart,
-              firstByte: navigationEntry.responseStart - navigationEntry.fetchStart,
-              dnsLookup: navigationEntry.domainLookupEnd - navigationEntry.domainLookupStart,
-              tcpConnection: navigationEntry.connectEnd - navigationEntry.connectStart,
-            })
-          }
-        }
       })
-      
-      observer.observe({ entryTypes: ['navigation'] })
+
+      if (!response.ok) {
+        throw new Error(`Datadog API error: ${response.status} ${response.statusText}`)
+      }
+
+      return true
+    } catch (error) {
+      console.error('Failed to submit event to Datadog:', error)
+      return false
     }
   }
 
   /**
-   * Track Core Web Vitals
+   * Real database health check with connection pooling
    */
-  private trackWebVitals(): void {
+  async checkDatabase(): Promise<HealthCheck> {
+    // Server-side only check
     if (typeof window !== 'undefined') {
-      // We'll track these metrics manually since web-vitals is an external dependency
-      // Track Largest Contentful Paint (LCP)
-      const lcpObserver = new PerformanceObserver((list) => {
-        const entries = list.getEntries()
-        const lastEntry = entries[entries.length - 1]
-        this.logInfo('Core Web Vital - LCP', {
-          value: lastEntry.startTime,
-          rating: lastEntry.startTime < 2500 ? 'good' : lastEntry.startTime < 4000 ? 'needs-improvement' : 'poor'
-        })
-      })
-      lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] })
+      return {
+        status: 'healthy',
+        details: 'Database check skipped (client-side)'
+      }
+    }
 
-      // Track Cumulative Layout Shift (CLS)
-      let clsValue = 0
-      const clsObserver = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries()) {
-          if (!(entry as any).hadRecentInput) {
-            clsValue += (entry as any).value
+    const databaseUrl = process.env.DATABASE_URL
+    
+    if (!databaseUrl) {
+      return {
+        status: 'healthy',
+        details: 'Database not configured (using file storage)'
+      }
+    }
+
+    try {
+      // For PostgreSQL connections
+      if (databaseUrl.startsWith('postgres')) {
+        try {
+          const { Pool } = await import('pg')
+          const pool = new Pool({
+            connectionString: databaseUrl,
+            max: 1,
+            connectionTimeoutMillis: 5000,
+            idleTimeoutMillis: 1000
+          })
+
+          const start = Date.now()
+          const client = await pool.connect()
+          
+          try {
+            const result = await client.query('SELECT 1 as health_check')
+            const latency = Date.now() - start
+            
+            return {
+              status: latency > 1000 ? 'warning' : 'healthy',
+              details: {
+                latency: `${latency}ms`,
+                connection: 'active',
+                result: result.rows[0]?.health_check === 1
+              }
+            }
+          } finally {
+            client.release()
+            await pool.end()
+          }
+        } catch (pgError) {
+          // Fallback to URL validation if pg module fails
+          const url = new URL(databaseUrl)
+          return {
+            status: 'warning',
+            details: {
+              host: url.hostname,
+              database: url.pathname.substring(1),
+              note: 'PostgreSQL module unavailable, using URL validation'
+            }
           }
         }
-        this.logInfo('Core Web Vital - CLS', {
-          value: clsValue,
-          rating: clsValue < 0.1 ? 'good' : clsValue < 0.25 ? 'needs-improvement' : 'poor'
-        })
-      })
-      clsObserver.observe({ entryTypes: ['layout-shift'] })
+      }
+
+      // For other database types, basic URL validation
+      const url = new URL(databaseUrl)
+      return {
+        status: 'healthy',
+        details: {
+          host: url.hostname,
+          database: url.pathname.substring(1),
+          ssl: url.searchParams.get('sslmode') === 'require'
+        }
+      }
+
+    } catch (error) {
+      return {
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Database connection failed'
+      }
     }
   }
 
   /**
-   * Log an info message
+   * Real Redis health check with connection
    */
-  logInfo(message: string, context?: Record<string, any>): void {
-    if (this.config.enableLogs) {
-      datadogLogs.logger.info(message, context)
+  async checkRedis(): Promise<HealthCheck> {
+    // Server-side only check
+    if (typeof window !== 'undefined') {
+      return {
+        status: 'healthy',
+        details: 'Redis check skipped (client-side)'
+      }
     }
-    console.log(`ℹ️ ${message}`, context)
-  }
 
-  /**
-   * Log a warning message
-   */
-  logWarning(message: string, context?: Record<string, any>): void {
-    if (this.config.enableLogs) {
-      datadogLogs.logger.warn(message, context)
-    }
-    console.warn(`⚠️ ${message}`, context)
-  }
-
-  /**
-   * Log an error message
-   */
-  logError(message: string, context?: Record<string, any>): void {
-    if (this.config.enableLogs) {
-      datadogLogs.logger.error(message, context)
-    }
-    console.error(`❌ ${message}`, context)
-  }
-
-  /**
-   * Add custom user context
-   */
-  setUser(user: { id: string; name?: string; email?: string; [key: string]: any }): void {
-    if (this.config.enableRUM) {
-      datadogRum.setUser({
-        id: user.id,
-        name: user.name,
-        email: user.email
-      })
-    }
+    const redisUrl = process.env.REDIS_URL
     
-    if (this.config.enableLogs) {
-      datadogLogs.setUser({
-        id: user.id,
-        name: user.name,
-        email: user.email
+    if (!redisUrl) {
+      return {
+        status: 'healthy',
+        details: 'Redis not configured (using memory storage)'
+      }
+    }
+
+    try {
+      const { createClient } = await import('redis')
+      const client = createClient({
+        url: redisUrl,
+        socket: {
+          connectTimeout: 5000
+        }
       })
+
+      const start = Date.now()
+      await client.connect()
+      
+      try {
+        const pong = await client.ping()
+        const latency = Date.now() - start
+        
+        return {
+          status: latency > 1000 ? 'warning' : 'healthy',
+          details: {
+            latency: `${latency}ms`,
+            response: pong,
+            connection: 'active'
+          }
+        }
+      } finally {
+        await client.disconnect()
+      }
+
+    } catch (error) {
+      return {
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Redis connection failed'
+      }
     }
   }
 
   /**
-   * Track custom actions
+   * Real AI service health check with API test
    */
-  trackAction(name: string, context?: Record<string, any>): void {
-    if (this.config.enableRUM) {
-      datadogRum.addAction(name, context)
-    }
-    this.logInfo(`Action: ${name}`, context)
-  }
-
-  /**
-   * Add custom attributes
-   */
-  addAttribute(key: string, value: any): void {
-    if (this.config.enableRUM) {
-      datadogRum.setGlobalContextProperty(key, value)
-    }
+  async checkAIService(): Promise<HealthCheck> {
+    const openRouterKey = process.env.OPENROUTER_API_KEY
     
-    if (this.config.enableLogs) {
-      datadogLogs.setGlobalContextProperty(key, value)
+    if (!openRouterKey || openRouterKey === 'test-key-placeholder') {
+      return {
+        status: 'warning',
+        details: 'OpenRouter API key not configured'
+      }
+    }
+
+    try {
+      // Test actual API connectivity
+      const response = await fetch('https://openrouter.ai/api/v1/models', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${openRouterKey}`,
+          'Content-Type': 'application/json'
+        },
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      })
+
+      if (!response.ok) {
+        throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      const modelCount = Array.isArray(data.data) ? data.data.length : 0
+
+      return {
+        status: 'healthy',
+        details: {
+          connection: 'active',
+          models_available: modelCount,
+          api_version: 'v1'
+        }
+      }
+
+    } catch (error) {
+      return {
+        status: 'error',
+        error: error instanceof Error ? error.message : 'AI service connection failed'
+      }
     }
   }
 
   /**
-   * Track workspace-specific metrics
+   * Track application metrics
    */
-  trackWorkspaceMetrics(workspaceId: string, metrics: {
-    codeServerStartTime?: number
-    terminalConnections?: number
-    activeUsers?: number
-    filesModified?: number
-    aiInteractions?: number
-  }): void {
-    this.addAttribute('workspace.id', workspaceId)
+  async trackMetrics(): Promise<void> {
+    const memUsage = process.memoryUsage()
     
-    if (metrics.codeServerStartTime) {
-      this.logInfo('Code Server Performance', {
-        workspaceId,
-        startTime: metrics.codeServerStartTime,
-        performance: metrics.codeServerStartTime < 3000 ? 'excellent' : 
-                    metrics.codeServerStartTime < 5000 ? 'good' : 'needs-improvement'
-      })
-    }
+    // Submit memory metrics
+    await this.submitMetric({
+      metric: 'vibecode.memory.heap_used',
+      value: memUsage.heapUsed / 1024 / 1024, // MB
+      tags: ['service:vibecode-webgui', 'env:' + (process.env.NODE_ENV || 'development')]
+    })
 
-    if (metrics.aiInteractions) {
-      this.trackAction('ai_interaction', {
-        workspaceId,
-        interactionCount: metrics.aiInteractions
-      })
-    }
+    await this.submitMetric({
+      metric: 'vibecode.memory.heap_total',
+      value: memUsage.heapTotal / 1024 / 1024, // MB
+      tags: ['service:vibecode-webgui', 'env:' + (process.env.NODE_ENV || 'development')]
+    })
 
-    this.logInfo('Workspace Metrics', {
-      workspaceId,
-      ...metrics
+    // Submit uptime metric
+    await this.submitMetric({
+      metric: 'vibecode.uptime',
+      value: process.uptime(),
+      tags: ['service:vibecode-webgui', 'env:' + (process.env.NODE_ENV || 'development')]
     })
   }
 
   /**
-   * Track development environment performance
+   * Check if Datadog integration is properly configured
    */
-  trackDevelopmentPerformance(metrics: {
-    buildTime?: number
-    hotReloadTime?: number
-    lintingTime?: number
-    testRunTime?: number
-    bundleSize?: number
-  }): void {
-    this.logInfo('Development Performance', metrics)
-    
-    // Track specific performance thresholds
-    if (metrics.buildTime && metrics.buildTime > 30000) {
-      this.logWarning('Slow Build Time', { buildTime: metrics.buildTime })
-    }
-    
-    if (metrics.hotReloadTime && metrics.hotReloadTime > 1000) {
-      this.logWarning('Slow Hot Reload', { hotReloadTime: metrics.hotReloadTime })
-    }
+  isConfigured(): boolean {
+    return !!(this.datadogApiKey && this.datadogApiKey !== 'placeholder-set-real-key')
   }
 }
 
-// Create singleton instance
-const monitoring = new MonitoringService()
+// Export singleton instance
+export const monitoring = new MonitoringService()
 
-export { monitoring, MonitoringService }
-export type { MonitoringConfig }
+// Export types
+export type { MetricData, HealthCheck }
