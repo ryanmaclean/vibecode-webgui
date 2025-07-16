@@ -1,0 +1,5 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run comprehensive pre-commit tests
+./scripts/pre-commit-tests.sh

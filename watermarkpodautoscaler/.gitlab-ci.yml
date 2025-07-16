@@ -1,0 +1,159 @@
+---
+image: registry.ddbuild.io/images/mirror/golang:1.22
+variables:
+  PROJECTNAME: "watermarkpodautoscaler"
+  TARGET_TAG: v$CI_PIPELINE_ID-$CI_COMMIT_SHORT_SHA
+  BUILD_DOCKER_REGISTRY: "registry.ddbuild.io/ci"
+  JOB_DOCKER_IMAGE: "registry.ddbuild.io/ci-containers-project:v50051243-ace27e7-v1.22"
+  DOCKER_REGISTRY_LOGIN_SSM_KEY: docker_hub_login
+  DOCKER_REGISTRY_PWD_SSM_KEY: docker_hub_pwd
+  DOCKER_REGISTRY_URL: docker.io
+  FIPS_ENABLED: false
+
+stages:
+  - build
+  - test
+  - image
+  - release
+
+before_script:
+  - make install-tools
+
+build:
+  stage: build
+  tags: ["arch:amd64"]
+  variables:
+    KUBERNETES_MEMORY_REQUEST: 16Gi
+    KUBERNETES_MEMORY_LIMIT: 16Gi
+    KUBERNETES_CPU_REQUEST: 4
+    KUBERNETES_CPU_LIMIT: 4
+    GOMEMLIMIT: 15GiB
+    GOMAXPROCS: 4
+  script:
+    - make build
+
+tests:
+  stage: test
+  tags: ["arch:amd64"]
+  variables:
+    KUBERNETES_MEMORY_REQUEST: 16Gi
+    KUBERNETES_MEMORY_LIMIT: 16Gi
+    KUBERNETES_CPU_REQUEST: 4
+    KUBERNETES_CPU_LIMIT: 4
+    GOMEMLIMIT: 15GiB
+    GOMAXPROCS: 4
+  script:
+    - make test
+
+generate_code:
+  stage: test
+  tags: ["arch:amd64"]
+  script:
+    - make generate
+    - git diff --exit-code
+
+check-golang-version:
+  stage: test
+  tags: ["arch:amd64"]
+  script:
+    - make update-golang
+    - git diff --exit-code
+
+build_image:
+  stage: image
+  tags:
+    - "arch:amd64"
+  image: $JOB_DOCKER_IMAGE
+  variables:
+    TARGET_IMAGE: $BUILD_DOCKER_REGISTRY/$PROJECTNAME:v${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}
+    RELEASE_IMAGE: $BUILD_DOCKER_REGISTRY/$PROJECTNAME:$CI_COMMIT_TAG
+  script:
+    - IMG=$TARGET_IMAGE FIPS_ENABLED=$FIPS_ENABLED make docker-buildx-ci
+
+build_image_fips:
+  extends: build_image
+  variables:
+    TARGET_IMAGE: $BUILD_DOCKER_REGISTRY/$PROJECTNAME:v${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}-fips
+    RELEASE_IMAGE: $BUILD_DOCKER_REGISTRY/$PROJECTNAME:$CI_COMMIT_TAG-fips
+    FIPS_ENABLED: "true"
+
+publish_public_main:
+  stage: release
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: on_success
+    - when: never
+  trigger:
+    project: DataDog/public-images
+    branch: main
+    strategy: depend
+  variables:
+    IMG_SOURCES: $BUILD_DOCKER_REGISTRY/$PROJECTNAME:v${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}
+    IMG_DESTINATIONS: $PROJECTNAME:main
+    IMG_SIGNING: "false"
+
+publish_public_tag:
+  stage: release
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: manual
+    - when: never
+  trigger:
+    project: DataDog/public-images
+    branch: main
+    strategy: depend
+  variables:
+    IMG_SOURCES: $BUILD_DOCKER_REGISTRY/$PROJECTNAME:$CI_COMMIT_TAG
+    IMG_DESTINATIONS: $PROJECTNAME:$CI_COMMIT_TAG
+    IMG_SIGNING: "false"
+
+publish_public_latest:
+  stage: release
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: manual
+    - when: never
+  trigger:
+    project: DataDog/public-images
+    branch: main
+    strategy: depend
+  variables:
+    IMG_SOURCES: $BUILD_DOCKER_REGISTRY/$PROJECTNAME:$CI_COMMIT_TAG
+    IMG_DESTINATIONS: $PROJECTNAME:latest
+    IMG_SIGNING: "false"
+
+trigger_internal_image:
+  stage: release
+  rules:
+    - if: $CI_COMMIT_TAG
+    - when: never
+  trigger:
+    project: DataDog/images
+    branch: master
+    strategy: depend
+  variables:
+    IMAGE_VERSION: tmpl-v3
+    IMAGE_NAME: $PROJECTNAME
+    RELEASE_TAG: ${CI_COMMIT_REF_SLUG}
+    BUILD_TAG: ${CI_COMMIT_REF_SLUG}
+    TMPL_SRC_IMAGE: v${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}
+    RELEASE_STAGING: "true"
+    RELEASE_PROD: "true"
+
+trigger_internal_image_fips:
+  stage: release
+  rules:
+    - if: $CI_COMMIT_TAG
+    - when: never
+  trigger:
+    project: DataDog/images
+    branch: master
+    strategy: depend
+  variables:
+    IMAGE_VERSION: tmpl-v3-fips
+    IMAGE_NAME: $PROJECTNAME
+    RELEASE_TAG: ${CI_COMMIT_REF_SLUG}-fips
+    BUILD_TAG: ${CI_COMMIT_REF_SLUG}-fips
+    TMPL_SRC_IMAGE: v${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}-fips
+    RELEASE_STAGING: "true"
+    RELEASE_PROD: "true"

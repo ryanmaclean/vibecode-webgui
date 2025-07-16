@@ -82,13 +82,14 @@ metadata:
     app: authelia
     component: authentication
 spec:
-  type: ClusterIP
   selector:
     app: authelia
   ports:
   - port: 9091
     targetPort: 9091
+    nodePort: 30091
     name: http
+  type: NodePort
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

@@ -41,8 +41,8 @@ spec:
           - name: DD_API_KEY
             valueFrom:
               secretKeyRef:
-                name: datadog-secret
-                key: api-key
+                name: vector-secrets
+                key: DD_API_KEY
           - name: DD_SITE
             value: "datadoghq.com"
           - name: ENVIRONMENT
@@ -209,8 +209,119 @@ metadata:
   namespace: monitoring
 data:
   vector.yaml: |
-    # Vector configuration will be mounted from the vector.yaml file
-    # This is a placeholder - the actual config is in vector.yaml
+    api:
+      enabled: true
+      address: "0.0.0.0:8686"
+      playground: true
+
+    sources:
+      kubernetes_logs:
+        type: "kubernetes_logs"
+        annotation_fields:
+          container_image: "kubernetes.container_image"
+          container_name: "kubernetes.container_name"
+          pod_name: "kubernetes.pod_name"
+          pod_namespace: "kubernetes.pod_namespace"
+          pod_uid: "kubernetes.pod_uid"
+      
+      host_metrics:
+        type: "host_metrics"
+        collectors:
+          - "cpu"
+          - "disk"
+          - "filesystem"
+          - "load"
+          - "host"
+          - "memory"
+          - "network"
+        scrape_interval_secs: 30
+        namespace: "vibecode.host"
+
+    transforms:
+      parse_k8s_logs:
+        type: "json_parser" 
+        inputs: ["kubernetes_logs"]
+        field: "message"
+        drop_invalid: false
+
+      enrich_logs:
+        type: "remap"
+        inputs: ["parse_k8s_logs"]
+        source: |
+          .service = "vibecode-webgui"
+          .environment = get_env_var("ENVIRONMENT") ?? "production"
+          .version = get_env_var("APP_VERSION") ?? "1.0.0"
+          .cluster = get_env_var("CLUSTER_NAME") ?? "vibecode-cluster"
+          
+          if exists(.level) {
+            .level = downcase(string!(.level))
+          } else if exists(.severity) {
+            .level = downcase(string!(.severity))
+          } else {
+            .level = "info"
+          }
+          
+          if exists(.message) {
+            .message = replace(string!(.message), r'password[=:]\s*\S+', "password=***")
+            .message = replace(string!(.message), r'token[=:]\s*\S+', "token=***")
+            .message = replace(string!(.message), r'key[=:]\s*\S+', "key=***")
+          }
+
+      enrich_metrics:
+        type: "remap"
+        inputs: ["host_metrics"]
+        source: |
+          .service = "vibecode-webgui"
+          .environment = get_env_var("ENVIRONMENT") ?? "production"
+          .cluster = get_env_var("CLUSTER_NAME") ?? "vibecode-cluster"
+          .host = get_hostname!()
+
+      filter_logs:
+        type: "filter"
+        inputs: ["enrich_logs"]
+        condition: |
+          !includes(string!(.message), "health-check") &&
+          !includes(string!(.message), "favicon.ico")
+
+    sinks:
+      datadog_logs:
+        type: "datadog_logs"
+        inputs: ["filter_logs"]
+        default_api_key: "${DD_API_KEY}"
+        site: "${DD_SITE:-datadoghq.com}"
+        compression: "gzip"
+        batch:
+          max_events: 1000
+          timeout_secs: 5
+        request:
+          retry_attempts: 3
+          retry_initial_backoff_secs: 1
+          retry_max_duration_secs: 60
+          timeout_secs: 30
+        acknowledgements:
+          enabled: true
+
+      datadog_metrics:
+        type: "datadog_metrics"
+        inputs: ["enrich_metrics"]
+        default_api_key: "${DD_API_KEY}"
+        site: "${DD_SITE:-datadoghq.com}"
+        batch:
+          max_events: 1000
+          timeout_secs: 10
+        request:
+          retry_attempts: 3
+          retry_initial_backoff_secs: 1
+          retry_max_duration_secs: 60
+
+    health_checks:
+      enabled: true
+      require_healthy: false
+
+    global:
+      data_dir: "/var/lib/vector"
+      log_level: "info"
+      timezone: "UTC"
 
 ---
 # Service for Vector API and metrics

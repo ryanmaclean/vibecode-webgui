@@ -1,0 +1,42 @@
+---
+# Self-signed ClusterIssuer for local development
+# Use for KIND cluster testing
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+  labels:
+    app: cert-manager
+    component: cluster-issuer
+spec:
+  selfSigned: {}
+---
+# Root CA Certificate for self-signed certificates
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: selfsigned-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: VibeCode Self-Signed CA
+  secretName: selfsigned-ca-secret
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+# CA ClusterIssuer using our root CA
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: ca-issuer
+  labels:
+    app: cert-manager
+    component: cluster-issuer
+spec:
+  ca:
+    secretName: selfsigned-ca-secret

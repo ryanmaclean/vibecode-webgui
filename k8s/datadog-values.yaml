@@ -1,0 +1,66 @@
+# Datadog Helm Chart Values for Kubernetes Autoscaling
+datadog:
+  apiKeyExistingSecret: "datadog-secret"
+  appKey: ""  # Add your app key here if available
+  site: "datadoghq.com"
+  clusterName: "vibecode-kind-test"
+  
+  # Enable Kubernetes Autoscaling (GA 2025)
+  autoscaling:
+    workload:
+      enabled: true
+      
+  # Enhanced Kubernetes Events
+  kubernetesEvents:
+    unbundleEvents: true
+    
+  # Core monitoring features
+  logs:
+    enabled: true
+    containerCollectAll: true
+  apm:
+    enabled: true
+  processAgent:
+    enabled: true
+    
+  # Network monitoring
+  networkMonitoring:
+    enabled: true
+    
+  # Security Agent
+  securityAgent:
+    runtime:
+      enabled: true
+      
+  # System Probe features  
+  systemProbe:
+    enableTCPQueueLength: true
+    enableOOMKill: true
+
+# Cluster Agent Configuration
+clusterAgent:
+  enabled: true
+  
+  # Enable custom metrics for autoscaling
+  metricsProvider:
+    enabled: true
+    useDatadogMetrics: true
+    
+  # Additional RBAC for DatadogMetric CRD
+  rbac:
+    create: true
+    
+  # Autoscaling configuration
+  autoscaling:
+    workload:
+      enabled: true
+
+# Node Agent Configuration  
+agents:
+  enabled: true
+  image:
+    tag: "7.66.1"  # Required version for autoscaling
+    
+# Target Allocator for advanced metrics
+targetAllocator:
+  enabled: false

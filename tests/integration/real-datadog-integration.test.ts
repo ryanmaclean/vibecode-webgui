@@ -7,7 +7,7 @@
  * Staff Engineer Implementation - Fixing AI-generated false positives
  */
 
-import { describe, test, expect, beforeAll } from '@jest/globals'
+const { describe, test, expect, beforeAll } = require('@jest/globals');
 
 // Skip these tests if not in CI/staging environment
 const shouldRunRealTests = process.env.ENABLE_REAL_DATADOG_TESTS === 'true' && process.env.DD_API_KEY;
@@ -15,16 +15,18 @@ const shouldRunRealTests = process.env.ENABLE_REAL_DATADOG_TESTS === 'true' && p
 const conditionalDescribe = shouldRunRealTests ? describe : describe.skip
 
 conditionalDescribe('Real Datadog Integration Tests (NO MOCKING)', () => {
-  const apiKey = process.env.DD_API_KEY!
+  const apiKey = process.env.DD_API_KEY;
   const datadogSite = process.env.DD_SITE || 'datadoghq.com';
-  const baseUrl = `https://api.${datadogSite}`
+  const baseUrl = `https://api.${datadogSite}`;
 
   beforeAll(() => {
     if (!apiKey) {
-      throw new Error('DD_API_KEY must be set for real integration tests')}
+      throw new Error('DD_API_KEY must be set for real integration tests');
+    }
     if (apiKey.includes('test') || apiKey.includes('fake') || apiKey.includes('mock')) {
-      throw new Error('DD_API_KEY appears to be a test/fake key - use real API key')}
-  })
+      throw new Error('DD_API_KEY appears to be a test/fake key - use real API key');
+    }
+  });
 
   test('should validate API key with real Datadog endpoint', async () => {
     const response = await fetch(`${baseUrl}/api/v1/validate`, {
@@ -33,13 +35,14 @@ conditionalDescribe('Real Datadog Integration Tests (NO MOCKING)', () => {
         'DD-API-KEY': apiKey,
         'Content-Type': 'application/json'
       }
-    });
+    });;
 
     expect(response.ok).toBe(true);
     
     const data = await response.json()
     expect(data).toHaveProperty('valid');
-    expect(data.valid).toBe(true)}, 10000)
+    expect(data.valid).toBe(true);
+  }, 10000);;
 
   test('should successfully send metrics to Datadog', async () => {
     const now = Math.floor(Date.now() / 1000)
@@ -58,13 +61,13 @@ conditionalDescribe('Real Datadog Integration Tests (NO MOCKING)', () => {
         'DD-API-KEY': apiKey,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(testMetrics)});
+      body: JSON.stringify(testMetrics)});;
 
     expect(response.ok).toBe(true);
     
     const data = await response.json()
     expect(data).toHaveProperty('status')
-    expect(data.status).toBe('ok')}, 10000)
+    expect(data.status).toBe('ok')}, 10000);
 
   test('should successfully send logs to Datadog', async () => {
     const testLog = {
@@ -79,10 +82,10 @@ conditionalDescribe('Real Datadog Integration Tests (NO MOCKING)', () => {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(testLog)});
+      body: JSON.stringify(testLog)});;
 
     // Logs endpoint returns 200 for successful ingestion
-    expect(response.ok).toBe(true)}, 10000)
+    expect(response.ok).toBe(true)}, 10000);
 
   test('should validate RUM application configuration', async () => {
     // Test that our RUM application ID exists
@@ -96,11 +99,11 @@ conditionalDescribe('Real Datadog Integration Tests (NO MOCKING)', () => {
           'DD-APPLICATION-KEY': process.env.DD_APP_KEY || '',
           'Content-Type': 'application/json'
         }
-      })
+      });
 
       // If we get 403, it might be permissions, but 404 means app doesn't exist
       expect(response.status).not.toBe(404)}
-  }, 10000);
+  }, 10000);;
 
   test('should verify health check endpoint integrates with real services', async () => {
     // Make actual request to our health endpoint
@@ -122,7 +125,7 @@ conditionalDescribe('Real Datadog Integration Tests (NO MOCKING)', () => {
           expect(typeof healthData.checks.datadog.lastChecked).toBe('number')}
       }
     }
-  }, 15000)
+  }, 15000);
 
   test('should fail appropriately with invalid API key', async () => {
     const invalidKey = 'invalid-key-12345';
@@ -133,14 +136,14 @@ conditionalDescribe('Real Datadog Integration Tests (NO MOCKING)', () => {
         'DD-API-KEY': invalidKey,
         'Content-Type': 'application/json'
       }
-    });
+    });;
 
     // Should get 403 Forbidden for invalid API key
     expect(response.status).toBe(403);
     
     const data = await response.json()
     expect(data).toHaveProperty('valid');
-    expect(data.valid).toBe(false)}, 10000)
+    expect(data.valid).toBe(false)}, 10000);
 
   test('should verify metrics have realistic values', async () => {
     // Test our metrics endpoint for realistic data
@@ -169,7 +172,7 @@ conditionalDescribe('Real Datadog Integration Tests (NO MOCKING)', () => {
           expect(metricsData.system.network.out).toBeGreaterThanOrEqual(0)}
       }
     }
-  }, 10000)});
+  }, 10000);});;
 
 // Test with real database connection (no mocking)
 conditionalDescribe('Real Database Integration Tests', () => {
@@ -182,7 +185,7 @@ conditionalDescribe('Real Database Integration Tests', () => {
     const client = new Client({
       connectionString: process.env.DATABASE_URL,
       connectionTimeoutMillis: 5000,
-    });
+    });;
 
     try {
       await client.connect()
@@ -190,7 +193,7 @@ conditionalDescribe('Real Database Integration Tests', () => {
       expect(result.rows).toHaveLength(1)
       expect(result.rows[0].version).toContain('PostgreSQL')} finally {
       await client.end()}
-  }, 10000)
+  }, 10000);
 
   test('should connect to real Redis instance', async () => {
     if (!process.env.REDIS_URL) {
@@ -203,7 +206,7 @@ conditionalDescribe('Real Database Integration Tests', () => {
       socket: {
         connectTimeout: 5000
       }
-    });
+    });;
 
     try {
       await client.connect();
@@ -216,7 +219,7 @@ conditionalDescribe('Real Database Integration Tests', () => {
       expect(value).toBe('success')
       await client.del('test:integration')} finally {
       await client.quit()}
-  }, 10000)})
+  }, 10000);});
 
 // Test to verify our tests are not over-mocked
 describe('Test Quality Validation', () => {
@@ -237,7 +240,7 @@ describe('Test Quality Validation', () => {
     
     // Should not mock Datadog
     expect(testFileContent).not.toContain("jest.mock('@datadog")
-    expect(testFileContent).not.toContain("jest.mock('dd-trace')")});
+    expect(testFileContent).not.toContain("jest.mock('dd-trace')")});;
 
   test('should use real environment variables, not hardcoded values', () => {
     // Verify we're not using fake/hardcoded values that make tests pass falsely
@@ -252,4 +255,4 @@ describe('Test Quality Validation', () => {
     dangerousValues.forEach(dangerousValue => {
       if (process.env.DD_API_KEY?.includes(dangerousValue)) {
         throw new Error(`Environment variable contains test/fake value: ${dangerousValue}`)}
-    })})});
+    });});});;

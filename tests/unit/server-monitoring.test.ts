@@ -16,39 +16,45 @@ jest.mock('dd-trace', () => ({
 }));
 
 // Mock winston
-const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-}
-jest.mock('winston', () => ({
-  createLogger: jest.fn(() => mockLogger),
+jest.mock('winston', () => {
+  const mockLogger = {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  };
+  return {
+    createLogger: jest.fn(() => mockLogger),
   format: {
-    combine: jest.fn(),
-    timestamp: jest.fn(),
-    errors: jest.fn(),
-    json: jest.fn(),
-    printf: jest.fn(),
+    combine: jest.fn(() => jest.fn()),
+    timestamp: jest.fn(() => jest.fn()),
+    errors: jest.fn(() => jest.fn()),
+    json: jest.fn(() => jest.fn()),
+    printf: jest.fn(() => jest.fn()),
+    colorize: jest.fn(() => jest.fn()),
+    simple: jest.fn(() => jest.fn()),
   },
   transports: {
     Console: jest.fn(),
     File: jest.fn(),
   },
-}))
+  };
+});
 
 import tracer from 'dd-trace'
 import { ApplicationLogger, MetricsCollector, getHealthCheck } from '../../src/lib/server-monitoring'
 
 describe('Server Monitoring', () => {
   beforeEach(() => {
-    jest.clearAllMocks()})
+    jest.clearAllMocks()
+  })
 
   describe('ApplicationLogger', () => {
     let logger: ApplicationLogger;
 
     beforeEach(() => {
-      logger = new ApplicationLogger()})
+      logger = new ApplicationLogger()
+    })
 
     test('should log auth events', () => {
       logger.logAuth('user_login', 'user123', { ip: '127.0.0.1' })
@@ -201,16 +207,19 @@ describe('Server Monitoring', () => {
       const metrics = metricsCollector.getMetrics();
       expect(Object.keys(metrics.responseTimes)).toHaveLength(0);
       expect(Object.keys(metrics.errors)).toHaveLength(0);
-      expect(Object.keys(metrics.requestCounts)).toHaveLength(0)})
+      expect(Object.keys(metrics.requestCounts)).toHaveLength(0)
+    })
 
     test('should limit stored metrics to prevent memory leaks', () => {
       // Add more than 1000 response times to test limit
-      for (let i = 0; i < 1200 i++) {
-        metricsCollector.recordResponseTime('/api/test', i)};
+      for (let i = 0; i < 1200; i++) {
+        metricsCollector.recordResponseTime('/api/test', i)
+      }
       const metrics = metricsCollector.getMetrics()
       expect(metrics.responseTimes['/api/test']).toHaveLength(1000)
       expect(metrics.responseTimes['/api/test'][0]).toBe(200) // Should start from index 200
-    })})
+    })
+  })
 
   describe('Health Check', () => {
     test('should return health status', async () => {
@@ -221,7 +230,8 @@ describe('Server Monitoring', () => {
       expect(health).toHaveProperty('uptime')
       expect(health).toHaveProperty('memory')
       expect(health).toHaveProperty('cpu')
-      expect(health.status).toBe('healthy')})
+      expect(health.status).toBe('healthy')
+    })
 
     test('should include memory information', async () => {
       const health = await getHealthCheck()

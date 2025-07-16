@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals
 import AIChatInterface from '@/components/ai/AIChatInterface'
 
 // Mock fetch for API calls
-const mockFetch = jest.fn()
+const mockFetch = jest.fn();
 global.fetch = mockFetch as any;
 
 // Mock file reader for file uploads

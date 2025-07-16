@@ -1,4 +1,16 @@
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: vibecode
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -21,10 +33,20 @@ spec:
         image: redis:7-alpine
         ports:
         - containerPort: 6379
+          name: redis
         command:
           - redis-server
-          - --save 60 1
-          - --loglevel warning
+          - --save 900 1
+          - --save 300 10
+          - --save 60 10000
+          - --loglevel notice
+          - --maxmemory 256mb
+          - --maxmemory-policy allkeys-lru
+          - --appendonly yes
+          - --appendfsync everysec
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
         readinessProbe:
           exec:
             command:
@@ -32,20 +54,26 @@ spec:
               - ping
           initialDelaySeconds: 5
           periodSeconds: 5
+          timeoutSeconds: 3
         livenessProbe:
           exec:
             command:
               - redis-cli
               - ping
-          initialDelaySeconds: 10
+          initialDelaySeconds: 30
           periodSeconds: 10
+          timeoutSeconds: 5
         resources:
           requests:
-            memory: "64Mi"
+            memory: "128Mi"
             cpu: "100m"
           limits:
-            memory: "128Mi"
+            memory: "256Mi"
             cpu: "200m"
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -58,5 +86,5 @@ spec:
   ports:
     - port: 6379
       targetPort: 6379
-      nodePort: 30002
-  type: NodePort
+      name: redis
+  type: ClusterIP
