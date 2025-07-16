@@ -131,6 +131,42 @@ kubectl get svc -n vibecode
 - **Health Check**: `kubectl port-forward -n vibecode svc/vibecode-service 3000:3000`
 - **PostgreSQL**: localhost:30001 (External access)
 - **Datadog Integration**: Real metrics flowing to live dashboard
+
+#### ✅ VERIFIED WORKING FUNCTIONALITY (2025-07-16)
+
+**Core AI Workflow**:
+```bash
+# Test health endpoint (all services operational)
+kubectl run test-pod --image=curlimages/curl:latest --restart=Never -- \
+  curl -s http://vibecode-service.vibecode.svc.cluster.local:3000/api/health
+
+# Test AI endpoint (OpenRouter + Claude-3.5-Sonnet)
+kubectl run test-ai --image=curlimages/curl:latest --restart=Never -- \
+  curl -s -X POST http://vibecode-service.vibecode.svc.cluster.local:3000/api/ai/chat/stream \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Write a simple function","model":"anthropic/claude-3.5-sonnet","context":{"workspaceId":"test-123","files":[],"previousMessages":[]}}'
+```
+
+**Health Check Response**:
+```json
+{
+  "status": "healthy",
+  "checks": {
+    "database": {"status": "healthy", "latency": "5ms"},
+    "redis": {"status": "healthy", "latency": "1ms"},
+    "ai": {"status": "healthy", "models_available": 318}
+  }
+}
+```
+
+**Data Flow**:
+1. **User Input** → AI Chat Interface
+2. **Authentication** → NextAuth with PostgreSQL sessions
+3. **Rate Limiting** → Redis-based protection (60 req/min)
+4. **AI Processing** → OpenRouter API (318 models available)
+5. **Streaming Response** → Real-time Claude-3.5-Sonnet
+6. **Metrics** → Datadog monitoring (API key: configured)
+7. **Storage** → PostgreSQL for persistence
 sudo mv ./kind /usr/local/bin/kind
 ```
 

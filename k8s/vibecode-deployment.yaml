@@ -127,6 +127,11 @@ spec:
             secretKeyRef:
               name: vibecode-secrets
               key: DD_API_KEY
+        - name: DATADOG_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vibecode-secrets
+              key: DD_API_KEY
         - name: DD_APP_KEY
           valueFrom:
             secretKeyRef:
