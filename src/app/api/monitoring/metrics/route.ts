@@ -1,12 +1,14 @@
 /**
  * Monitoring metrics API endpoint
- * Provides real-time system metrics for the monitoring dashboard
+ * Provides real-time system metrics from Datadog for the monitoring dashboard
+ * Updated for 2025 with modern Datadog API integration
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { getHealthCheck } from '@/lib/server-monitoring'
+import { client, v1 } from '@datadog/datadog-api-client'
 import os from 'os'
 
 interface SystemMetrics {
@@ -22,15 +24,33 @@ interface SystemMetrics {
   uptime: number
 }
 
-// Simple in-memory metrics store (replace with Redis in production)
-const metricsStore = {
-  responseTimes: [] as number[],
-  errorCount: 0,
-  requestCount: 0,
-  activeUsers: new Set<string>(),
-  activeWorkspaces: new Set<string>(),
-  networkStats: { in: 0, out: 0 },
-  lastUpdate: Date.now(),
+// Datadog API client configuration
+const createDatadogConfig = () => {
+  const configuration = client.createConfiguration()
+  configuration.setServerVariables({
+    site: process.env.DATADOG_SITE || 'datadoghq.com',
+  })
+  return configuration
+}
+
+// Initialize Datadog metrics API client
+const getMetricsApi = () => {
+  if (!process.env.DATADOG_API_KEY) {
+    return null
+  }
+  return new v1.MetricsApi(createDatadogConfig())
+}
+
+// Helper function to get current timestamp in seconds
+const getCurrentTimestamp = () => Math.floor(Date.now() / 1000)
+
+// Helper function to get time range for queries
+const getTimeRange = (minutes: number = 5) => {
+  const now = getCurrentTimestamp()
+  return {
+    from: now - (minutes * 60),
+    to: now,
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -41,38 +61,54 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get system metrics
-    const cpuUsage = await getCPUUsage()
-    const memoryUsage = getMemoryUsage()
-    const diskUsage = getDiskUsage()
-    const uptime = process.uptime()
-
-    // Calculate application metrics
-    const avgResponseTime = metricsStore.responseTimes.length > 0
-      ? metricsStore.responseTimes.reduce((a, b) => a + b, 0) / metricsStore.responseTimes.length
-      : 0
-
-    const errorRate = metricsStore.requestCount > 0
-      ? (metricsStore.errorCount / metricsStore.requestCount) * 100
-      : 0
-
-    // Get network I/O (simplified - in production, use proper system monitoring)
-    const networkIO = getNetworkIO()
-
-    const metrics: SystemMetrics = {
-      cpu: cpuUsage,
-      memory: memoryUsage,
-      diskUsage: diskUsage,
-      networkIO,
-      activeUsers: metricsStore.activeUsers.size,
-      activeWorkspaces: metricsStore.activeWorkspaces.size,
-      totalSessions: metricsStore.requestCount,
-      avgResponseTime: Math.round(avgResponseTime),
-      errorRate: Number(errorRate.toFixed(2)),
-      uptime: Math.round(uptime),
+    // Skip Datadog API calls if not configured
+    if (!process.env.DATADOG_API_KEY) {
+      console.warn('Datadog API key not configured, using local metrics')
+      return NextResponse.json(await getLocalMetrics())
     }
 
-    return NextResponse.json(metrics)
+    // Get real-time metrics from Datadog
+    const timeRange = getTimeRange(5) // Last 5 minutes
+    
+    try {
+      // Query Datadog for system metrics
+      const queries = await Promise.allSettled([
+        queryDatadogMetric('system.cpu.usage', timeRange),
+        queryDatadogMetric('system.memory.usage', timeRange),
+        queryDatadogMetric('system.disk.usage', timeRange),
+        queryDatadogMetric('vibecode.response_time', timeRange),
+        queryDatadogMetric('vibecode.error_rate', timeRange),
+        queryDatadogMetric('vibecode.active_users', timeRange),
+        queryDatadogMetric('vibecode.active_workspaces', timeRange),
+        queryDatadogMetric('vibecode.uptime', timeRange),
+        queryDatadogMetric('system.net.bytes_rcvd', timeRange),
+        queryDatadogMetric('system.net.bytes_sent', timeRange),
+      ])
+
+      // Process results and extract values
+      const [cpu, memory, disk, responseTime, errorRate, activeUsers, activeWorkspaces, uptime, netIn, netOut] = queries
+      
+      const metrics: SystemMetrics = {
+        cpu: extractMetricValue(cpu) || await getCPUUsage(),
+        memory: extractMetricValue(memory) || getMemoryUsage(),
+        diskUsage: extractMetricValue(disk) || getDiskUsage(),
+        networkIO: {
+          in: extractMetricValue(netIn) || 0,
+          out: extractMetricValue(netOut) || 0,
+        },
+        activeUsers: extractMetricValue(activeUsers) || 0,
+        activeWorkspaces: extractMetricValue(activeWorkspaces) || 0,
+        totalSessions: 0, // Will be populated from logs query
+        avgResponseTime: Math.round(extractMetricValue(responseTime) || 0),
+        errorRate: Number((extractMetricValue(errorRate) || 0).toFixed(2)),
+        uptime: Math.round(extractMetricValue(uptime) || process.uptime()),
+      }
+
+      return NextResponse.json(metrics)
+    } catch (datadogError) {
+      console.error('Datadog API error, falling back to local metrics:', datadogError)
+      return NextResponse.json(await getLocalMetrics())
+    }
   } catch (error) {
     console.error('Metrics API error:', error)
     return NextResponse.json(
@@ -91,42 +127,113 @@ export async function POST(request: NextRequest) {
 
     const { type, data } = await request.json()
 
-    switch (type) {
-      case 'response_time':
-        metricsStore.responseTimes.push(data.duration)
-        // Keep only last 100 response times
-        if (metricsStore.responseTimes.length > 100) {
-          metricsStore.responseTimes = metricsStore.responseTimes.slice(-100)
-        }
-        break
-
-      case 'error':
-        metricsStore.errorCount++
-        break
-
-      case 'request':
-        metricsStore.requestCount++
-        break
-
-      case 'user_activity':
-        if (data.userId) {
-          metricsStore.activeUsers.add(data.userId)
-        }
-        if (data.workspaceId) {
-          metricsStore.activeWorkspaces.add(data.workspaceId)
-        }
-        break
-
-      case 'network_io':
-        metricsStore.networkStats.in += data.bytesIn || 0
-        metricsStore.networkStats.out += data.bytesOut || 0
-        break
-
-      default:
-        return NextResponse.json({ error: 'Unknown metric type' }, { status: 400 })
+    // Submit metrics directly to Datadog instead of storing locally
+    const metricsApi = getMetricsApi()
+    if (!metricsApi) {
+      console.warn('Datadog not configured, metrics submission skipped')
+      return NextResponse.json({ success: true })
     }
 
-    return NextResponse.json({ success: true })
+    try {
+      const timestamp = Math.floor(Date.now() / 1000)
+      const tags = [`service:vibecode-webgui`, `env:${process.env.NODE_ENV || 'development'}`]
+
+      switch (type) {
+        case 'response_time':
+          await metricsApi.submitMetrics({
+            body: {
+              series: [{
+                metric: 'vibecode.response_time',
+                points: [[timestamp, data.duration]],
+                tags,
+              }]
+            }
+          })
+          break
+
+        case 'error':
+          await metricsApi.submitMetrics({
+            body: {
+              series: [{
+                metric: 'vibecode.error_count',
+                points: [[timestamp, 1]],
+                tags,
+              }]
+            }
+          })
+          break
+
+        case 'request':
+          await metricsApi.submitMetrics({
+            body: {
+              series: [{
+                metric: 'vibecode.request_count',
+                points: [[timestamp, 1]],
+                tags,
+              }]
+            }
+          })
+          break
+
+        case 'user_activity':
+          if (data.userId) {
+            await metricsApi.submitMetrics({
+              body: {
+                series: [{
+                  metric: 'vibecode.active_users',
+                  points: [[timestamp, 1]],
+                  tags: [...tags, `user:${data.userId}`],
+                }]
+              }
+            })
+          }
+          if (data.workspaceId) {
+            await metricsApi.submitMetrics({
+              body: {
+                series: [{
+                  metric: 'vibecode.active_workspaces',
+                  points: [[timestamp, 1]],
+                  tags: [...tags, `workspace:${data.workspaceId}`],
+                }]
+              }
+            })
+          }
+          break
+
+        case 'network_io':
+          if (data.bytesIn) {
+            await metricsApi.submitMetrics({
+              body: {
+                series: [{
+                  metric: 'vibecode.network.bytes_in',
+                  points: [[timestamp, data.bytesIn]],
+                  tags,
+                }]
+              }
+            })
+          }
+          if (data.bytesOut) {
+            await metricsApi.submitMetrics({
+              body: {
+                series: [{
+                  metric: 'vibecode.network.bytes_out',
+                  points: [[timestamp, data.bytesOut]],
+                  tags,
+                }]
+              }
+            })
+          }
+          break
+
+        default:
+          return NextResponse.json({ error: 'Unknown metric type' }, { status: 400 })
+      }
+
+      return NextResponse.json({ success: true })
+    } catch (datadogError) {
+      console.error('Failed to submit metrics to Datadog:', datadogError)
+      return NextResponse.json({ success: false, error: 'Datadog submission failed' }, { status: 500 })
+    }
   } catch (error) {
     console.error('Metrics update error:', error)
     return NextResponse.json(
@@ -189,46 +296,72 @@ function getDiskUsage(): number {
 }
 
 function getNetworkIO(): { in: number; out: number } {
-  // Simplified network I/O calculation
-  // In production, use proper network monitoring tools
-  const now = Date.now()
-  const timeDiff = (now - metricsStore.lastUpdate) / 1000 // seconds
-
-  const result = {
-    in: metricsStore.networkStats.in / timeDiff,
-    out: metricsStore.networkStats.out / timeDiff,
+  // Simplified network I/O calculation - fallback only
+  // In production, metrics come from Datadog
+  return {
+    in: 0,
+    out: 0,
   }
-
-  // Reset counters
-  metricsStore.networkStats = { in: 0, out: 0 }
-  metricsStore.lastUpdate = now
-
-  return result
 }
 
-// Clean up old data periodically
-// CRITICAL: Remove fake random cleanup logic
-// TODO: Implement real session tracking with database or Redis
-setInterval(() => {
-  // WARNING: This is still a simplified in-memory implementation
-  // In production, use Redis or database for session tracking
-  
-  // For now, clean up if we have too many entries (memory management)
-  const maxUsers = 1000
-  const maxWorkspaces = 100
-  
-  if (metricsStore.activeUsers.size > maxUsers) {
-    // Remove oldest entries (FIFO) instead of random
-    const users = Array.from(metricsStore.activeUsers)
-    const usersToRemove = users.slice(0, users.length - maxUsers)
-    usersToRemove.forEach(user => metricsStore.activeUsers.delete(user))
-    console.warn(`Cleaned up ${usersToRemove.length} old user sessions (memory limit)`)
-  }
+// Helper functions for Datadog integration
 
-  if (metricsStore.activeWorkspaces.size > maxWorkspaces) {
-    const workspaces = Array.from(metricsStore.activeWorkspaces)
-    const workspacesToRemove = workspaces.slice(0, workspaces.length - maxWorkspaces)
-    workspacesToRemove.forEach(ws => metricsStore.activeWorkspaces.delete(ws))
-    console.warn(`Cleaned up ${workspacesToRemove.length} old workspace sessions (memory limit)`)
+async function queryDatadogMetric(metric: string, timeRange: { from: number; to: number }) {
+  try {
+    const metricsApi = getMetricsApi()
+    if (!metricsApi) {
+      return null
+    }
+    
+    const response = await metricsApi.queryMetrics({
+      from: timeRange.from,
+      to: timeRange.to,
+      query: `avg:${metric}{service:vibecode-webgui}`,
+    })
+    return response
+  } catch (error) {
+    console.error(`Failed to query metric ${metric}:`, error)
+    return null
   }
-}, 300000) // Every 5 minutes (less frequent)
+}
+
+function extractMetricValue(queryResult: any): number | null {
+  if (!queryResult || queryResult.status !== 'fulfilled') {
+    return null
+  }
+  
+  const result = queryResult.value
+  if (!result?.series || result.series.length === 0) {
+    return null
+  }
+  
+  const series = result.series[0]
+  if (!series.pointlist || series.pointlist.length === 0) {
+    return null
+  }
+  
+  // Get the most recent value
+  const lastPoint = series.pointlist[series.pointlist.length - 1]
+  return lastPoint[1] // [timestamp, value]
+}
+
+async function getLocalMetrics(): Promise<SystemMetrics> {
+  // Fallback to local metrics when Datadog is not available
+  const cpuUsage = await getCPUUsage()
+  const memoryUsage = getMemoryUsage()
+  const diskUsage = getDiskUsage()
+  const uptime = process.uptime()
+
+  return {
+    cpu: cpuUsage,
+    memory: memoryUsage,
+    diskUsage: diskUsage,
+    networkIO: { in: 0, out: 0 },
+    activeUsers: 0,
+    activeWorkspaces: 0,
+    totalSessions: 0,
+    avgResponseTime: 0,
+    errorRate: 0,
+    uptime: Math.round(uptime),
+  }
+}
