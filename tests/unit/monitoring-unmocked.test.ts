@@ -4,7 +4,7 @@
  * Focus on real integrations and error handling
  */
 
-const { describe, test, expect, beforeEach, afterEach } = require('@jest/globals');
+import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 
 // Only mock fetch for controlled testing - allow real monitoring modules
 global.fetch = jest.fn();
@@ -34,16 +34,16 @@ describe('Monitoring Library (Minimal Mocking)', () => {
     delete global.window;
   });
 
-  test('should handle monitoring initialization without throwing', () => {
+  test('should handle monitoring initialization without throwing', async () => {
     // Test that monitoring can be imported and initialized
-    expect(() => {
-      const { monitoring } = require('../../src/lib/monitoring');
+    await expect(async () => {
+      const { monitoring } = await import('../../src/lib/monitoring');
       monitoring.init();
     }).not.toThrow();
   });
 
-  test('should track page load metrics with realistic values', () => {
-    const { monitoring } = require('../../src/lib/monitoring');
+  test('should track page load metrics with realistic values', async () => {
+    const { monitoring } = await import('../../src/lib/monitoring');
     
     const startTime = Date.now() - 500; // 500ms ago
     const path = '/test-page';
@@ -58,8 +58,8 @@ describe('Monitoring Library (Minimal Mocking)', () => {
     expect(loadTime).toBeLessThan(10000); // Should be under 10 seconds
   });
 
-  test('should track user actions with proper data validation', () => {
-    const { monitoring } = require('../../src/lib/monitoring');
+  test('should track user actions with proper data validation', async () => {
+    const { monitoring } = await import('../../src/lib/monitoring');
     
     const action = 'button_click';
     const properties = {
@@ -82,8 +82,8 @@ describe('Monitoring Library (Minimal Mocking)', () => {
     }).not.toThrow();
   });
 
-  test('should track errors with proper stack trace handling', () => {
-    const { monitoring } = require('../../src/lib/monitoring');
+  test('should track errors with proper stack trace handling', async () => {
+    const { monitoring } = await import('../../src/lib/monitoring');
     
     const testError = new Error('Test error for monitoring');
     const context = {
@@ -107,7 +107,7 @@ describe('Monitoring Library (Minimal Mocking)', () => {
   });
 
   test('should handle network failures gracefully', async () => {
-    const { monitoring } = require('../../src/lib/monitoring');
+    const { monitoring } = await import('../../src/lib/monitoring');
     
     // Mock fetch to simulate network failure
     fetch.mockRejectedValue(new Error('Network error'));
@@ -121,8 +121,8 @@ describe('Monitoring Library (Minimal Mocking)', () => {
     // Should not crash the application when network fails
   });
 
-  test('should validate metric data types and ranges', () => {
-    const { monitoring } = require('../../src/lib/monitoring');
+  test('should validate metric data types and ranges', async () => {
+    const { monitoring } = await import('../../src/lib/monitoring');
     
     // Test with various data types
     const validProperties = {
@@ -154,7 +154,7 @@ describe('Monitoring Library (Minimal Mocking)', () => {
   });
 
   test('should handle concurrent monitoring calls', async () => {
-    const { monitoring } = require('../../src/lib/monitoring');
+    const { monitoring } = await import('../../src/lib/monitoring');
     
     // Simulate concurrent calls that might happen in real usage
     const promises = Array.from({ length: 10 }, (_, i) => 
@@ -169,8 +169,8 @@ describe('Monitoring Library (Minimal Mocking)', () => {
     await expect(Promise.all(promises)).resolves.toBeDefined();
   });
 
-  test('should preserve error details for debugging', () => {
-    const { monitoring } = require('../../src/lib/monitoring');
+  test('should preserve error details for debugging', async () => {
+    const { monitoring } = await import('../../src/lib/monitoring');
     
     const complexError = new Error('Complex error with details');
     complexError.code = 'E_COMPLEX';
@@ -190,8 +190,8 @@ describe('Monitoring Library (Minimal Mocking)', () => {
     }).not.toThrow();
   });
 
-  test('should handle monitoring in different environments', () => {
-    const { monitoring } = require('../../src/lib/monitoring');
+  test('should handle monitoring in different environments', async () => {
+    const { monitoring } = await import('../../src/lib/monitoring');
     
     // Test with different NODE_ENV values
     const originalEnv = process.env.NODE_ENV;
@@ -240,9 +240,9 @@ describe('Real Integration Validation', () => {
     });
   });
 
-  test('should avoid over-mocking anti-pattern', () => {
+  test('should avoid over-mocking anti-pattern', async () => {
     // Read this test file to validate it doesn't over-mock
-    const fs = require('fs');
+    const fs = await import('fs');
     const testFileContent = fs.readFileSync(__filename, 'utf8');
     
     // Count mocking usage
