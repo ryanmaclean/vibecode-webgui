@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Pre-commit Test Script
 # Comprehensive validation before git commit
 # Staff Engineer Implementation - Ensures production readiness
 
-set -e
+set -euox
 
 echo "🚀 Running Pre-Commit Tests..."
 
