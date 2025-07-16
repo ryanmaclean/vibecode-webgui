@@ -120,6 +120,11 @@ const customJestConfig = {
       testMatch: ['<rootDir>/tests/monitoring/**/*.test.{js,ts}'],
       testEnvironment: 'node',
     },
+    {
+      displayName: 'complete',
+      testMatch: ['<rootDir>/tests/complete/**/*.test.{js,ts}'],
+      testEnvironment: 'node',
+    },
   ],
 }
 

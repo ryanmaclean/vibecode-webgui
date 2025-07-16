@@ -1,0 +1,134 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vector-config
+  namespace: monitoring
+data:
+  vector.yaml: |
+    api:
+      enabled: true
+      address: "0.0.0.0:8686"
+
+    sources:
+      kubernetes_logs:
+        type: "kubernetes_logs"
+
+    transforms:
+      enrich_logs:
+        type: "remap"
+        inputs: ["kubernetes_logs"]
+        source: |
+          .service = "vibecode-webgui"
+          .environment = "production"
+          .cluster = "vibecode-cluster"
+
+    sinks:
+      datadog_logs:
+        type: "datadog_logs"
+        inputs: ["enrich_logs"]
+        default_api_key: "${DD_API_KEY}"
+        site: "datadoghq.com"
+
+    data_dir: "/var/lib/vector"
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: vector
+  namespace: monitoring
+  labels:
+    app: vector
+spec:
+  selector:
+    matchLabels:
+      app: vector
+  template:
+    metadata:
+      labels:
+        app: vector
+    spec:
+      serviceAccountName: vector
+      containers:
+      - name: vector
+        image: timberio/vector:0.39.0-alpine
+        args:
+          - --config-dir
+          - /etc/vector/
+        env:
+          - name: VECTOR_SELF_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: DD_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: vector-secrets
+                key: DD_API_KEY
+        ports:
+          - containerPort: 8686
+            name: api
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        volumeMounts:
+          - name: config
+            mountPath: /etc/vector/
+            readOnly: true
+          - name: data
+            mountPath: /var/lib/vector/
+          - name: var-log
+            mountPath: /var/log/
+            readOnly: true
+          - name: pod-logs
+            mountPath: /var/log/pods/
+            readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: vector-config
+        - name: data
+          hostPath:
+            path: /var/lib/vector/
+            type: DirectoryOrCreate
+        - name: var-log
+          hostPath:
+            path: /var/log/
+        - name: pod-logs
+          hostPath:
+            path: /var/log/pods/
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vector
+  namespace: monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vector
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "namespaces", "nodes"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vector
+subjects:
+  - kind: ServiceAccount
+    name: vector
+    namespace: monitoring

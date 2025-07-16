@@ -10,7 +10,7 @@ data:
   configuration.yml: |
     # Server configuration
     server:
-      address: "tcp://0.0.0.0:9091/"
+      address: "tcp://0.0.0.0:9091"
       
     # Logging configuration
     log:
@@ -93,10 +93,10 @@ data:
     session:
       name: authelia_session
       cookies:
-        - domain: localhost
+        - domain: ".localhost"
           same_site: lax
-          authelia_url: "https://auth.localhost:8090"
-          default_redirection_url: "https://auth.localhost:8090"
+          authelia_url: "http://auth.localhost:30091"
+          default_redirection_url: "http://localhost:30000"
       secret: "REPLACE_WITH_SECURE_SESSION_SECRET"
       expiration: 1h
       inactivity: 5m
@@ -104,7 +104,7 @@ data:
       
       # Redis session storage
       redis:
-        host: redis.vibecode-storage.svc.cluster.local
+        host: redis-service.vibecode.svc.cluster.local
         port: 6379
         database_index: 0
         maximum_active_connections: 8
@@ -120,12 +120,12 @@ data:
     storage:
       encryption_key: "vibecode-storage-encryption-key-change-in-production"
       postgres:
-        host: postgres.vibecode-storage.svc.cluster.local
+        host: postgres-service.vibecode.svc.cluster.local
         port: 5432
-        database: authelia
+        database: vibecode
         schema: public
-        username: authelia
-        password: "REPLACE_WITH_SECURE_DB_PASSWORD"
+        username: vibecode
+        password: "vibecode_password"
         timeout: 5s
         
     # Notification configuration

@@ -1,0 +1,73 @@
+---
+# Datadog Watermark Pod Autoscaler for CPU-based scaling
+apiVersion: datadoghq.com/v1alpha1
+kind: WatermarkPodAutoscaler
+metadata:
+  name: vibecode-cpu-wpa
+  namespace: vibecode
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: vibecode-webgui
+  minReplicas: 2
+  maxReplicas: 10
+  tolerance: "10m"
+  readinessDelaySeconds: 30
+  convergeTowardsWatermark: "highwatermark"
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      highWatermark: "70"    # Scale up when CPU > 70%
+      lowWatermark: "30"     # Scale down when CPU < 30%
+---
+# Datadog Watermark Pod Autoscaler for memory-based scaling  
+apiVersion: datadoghq.com/v1alpha1
+kind: WatermarkPodAutoscaler
+metadata:
+  name: vibecode-memory-wpa
+  namespace: vibecode
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: vibecode-webgui
+  minReplicas: 1
+  maxReplicas: 6
+  tolerance: "20m"
+  readinessDelaySeconds: 45
+  convergeTowardsWatermark: "highwatermark"
+  metrics:
+  - type: Resource
+    resource:
+      name: memory
+      highWatermark: "80"    # Scale up when memory > 80%
+      lowWatermark: "40"     # Scale down when memory < 40%
+---
+# Datadog Watermark Pod Autoscaler for external Datadog metrics
+apiVersion: datadoghq.com/v1alpha1
+kind: WatermarkPodAutoscaler
+metadata:
+  name: vibecode-datadog-metrics-wpa
+  namespace: vibecode
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: vibecode-webgui
+  minReplicas: 1
+  maxReplicas: 8
+  tolerance: "15m"
+  readinessDelaySeconds: 30
+  convergeTowardsWatermark: "lowwatermark"
+  metrics:
+  - type: External
+    external:
+      metricName: vibecode.api.response_time
+      highWatermark: "250"   # Scale up when response time > 250ms
+      lowWatermark: "100"    # Scale down when response time < 100ms
+      metricSelector:
+        matchLabels:
+          service: vibecode-webgui
+          env: production

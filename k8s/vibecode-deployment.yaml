@@ -23,11 +23,12 @@ type: Opaque
 data:
   # SECURITY: Secrets now sourced from separate script or Kubernetes secrets
   # DO NOT commit actual secrets - use environment variables or secret management
-  NEXTAUTH_SECRET: REPLACE_WITH_BASE64_ENCODED_NEXTAUTH_SECRET
-  DD_API_KEY: REPLACE_WITH_BASE64_ENCODED_DATADOG_API_KEY
-  DD_APP_KEY: REPLACE_WITH_BASE64_ENCODED_DATADOG_APP_KEY
-  NEXT_PUBLIC_DD_RUM_APPLICATION_ID: REPLACE_WITH_BASE64_ENCODED_RUM_APP_ID
-  NEXT_PUBLIC_DD_RUM_CLIENT_TOKEN: REPLACE_WITH_BASE64_ENCODED_RUM_CLIENT_TOKEN
+  NEXTAUTH_SECRET: bmV4dGF1dGgtc2VjcmV0LTE3NTI2ODI1MDU=
+  DD_API_KEY: NDEwZWU2M2ZlOGY0Yjg4YTgyNjQ4OTgxNmI2ZmJkOTU=
+  DD_APP_KEY: ""
+  NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID: dmlibVRlc3Q=
+  NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN: cGxhY2Vob2xkZXI=
+  OPENROUTER_API_KEY: c2stb3ItdjEtOGI4NzM0MmQ4YWM5YWFhNGU5Mjc1ZDIyYjliMjQxYjRjYjA0OTgxYTk1YzdhZWViYzliNzM5MTA2ZTAwNWM4MQ==
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -71,7 +72,8 @@ spec:
             echo "Redis is ready!"
       containers:
       - name: vibecode-webgui
-        image: node:20-alpine
+        image: vibecode-webgui:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 3000
         env:
@@ -130,39 +132,33 @@ spec:
             secretKeyRef:
               name: vibecode-secrets
               key: DD_APP_KEY
-        - name: NEXT_PUBLIC_DD_RUM_APPLICATION_ID
+        - name: NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID
           valueFrom:
             secretKeyRef:
               name: vibecode-secrets
-              key: NEXT_PUBLIC_DD_RUM_APPLICATION_ID
-        - name: NEXT_PUBLIC_DD_RUM_CLIENT_TOKEN
+              key: NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID
+        - name: NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN
           valueFrom:
             secretKeyRef:
               name: vibecode-secrets
-              key: NEXT_PUBLIC_DD_RUM_CLIENT_TOKEN
-        command:
-          - sh
-          - -c
-          - |
-            # Install dependencies and run the application
-            npm install -g npm@latest
-            npm ci --only=production
-            npm run build
-            npm start
-        workingDir: /app
-        volumeMounts:
-        - name: app-source
-          mountPath: /app
+              key: NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN
+        - name: NEXT_PUBLIC_DATADOG_SITE
+          value: "datadoghq.com"
+        - name: OPENROUTER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vibecode-secrets
+              key: OPENROUTER_API_KEY
         readinessProbe:
           httpGet:
-            path: /api/monitoring/health
+            path: /api/health
             port: 3000
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
         livenessProbe:
           httpGet:
-            path: /api/monitoring/health
+            path: /api/health
             port: 3000
           initialDelaySeconds: 60
           periodSeconds: 30
@@ -174,11 +170,6 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "500m"
-      volumes:
-      - name: app-source
-        hostPath:
-          path: /Users/ryan.maclean/vibecode-webgui
-          type: Directory
 ---
 apiVersion: v1
 kind: Service

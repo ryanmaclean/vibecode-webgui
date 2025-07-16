@@ -14,7 +14,7 @@ jest.mock('@datadog/browser-rum', () => ({
     addError: jest.fn(),
     addTiming: jest.fn(),
   },
-})
+});
 
 jest.mock('@datadog/browser-logs', () => ({
   datadogLogs: {

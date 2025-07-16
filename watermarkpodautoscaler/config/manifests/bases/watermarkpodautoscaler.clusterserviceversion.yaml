@@ -1,0 +1,80 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "datadoghq.com/v1alpha1",
+          "kind": "WatermarkPodAutoscaler",
+          "metadata": {
+            "name": "example-watermarkpodautoscaler"
+          },
+          "spec": {
+            "maxReplicas": 3,
+            "metrics": [
+              {
+                "external": {
+                  "highWatermark": "12000",
+                  "lowWatermark": "8000",
+                  "metricName": "sinus",
+                  "metricSelector": {
+                    "matchLabels": {
+                      "foo": "bar"
+                    }
+                  }
+                },
+                "type": "External"
+              }
+            ],
+            "minReplicas": 1,
+            "readinessDelay": 10,
+            "scaleTargetRef": {
+              "apiVersion": "apps/v1",
+              "kind": "Deployment",
+              "name": "alpine"
+            },
+            "tolerance": 0.01
+          }
+        }
+      ]
+    capabilities: Basic Install
+    operators.operatorframework.io/builder: operator-sdk-v1.23.0
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
+  name: watermarkpodautoscaler.v0.6.0-rc.1
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions: {}
+  description: Custom controller that extends the Horizontal Pod Autoscaler
+  displayName: watermarkpodautoscaler
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: []
+    strategy: deployment
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - Datadog
+  - Autoscaling
+  - Monitoring
+  links:
+  - name: Watermarkpodautoscaler
+    url: https://watermarkpodautoscaler.domain
+  maintainers:
+  - email: support@datadoghq.com
+    name: Datadog Inc.
+  maturity: alpha
+  provider:
+    name: Datadog
+  version: 0.6.0-rc.1

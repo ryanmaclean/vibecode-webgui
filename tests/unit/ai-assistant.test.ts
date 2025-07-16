@@ -13,7 +13,8 @@ describe('AI Assistant', () => {
 
     expect(codeContext.fileName).toBe('test.ts')
     expect(codeContext.language).toBe('typescript')
-    expect(codeContext.selectedCode).toContain('function hello')})
+    expect(codeContext.selectedCode).toContain('function hello')
+  })
 
   it('should validate quick action prompts', () => {
     const selectedCode = 'const x = 42';
@@ -24,7 +25,8 @@ describe('AI Assistant', () => {
     
     expect(explainPrompt).toContain('Please explain this javascript')
     expect(optimizePrompt).toContain('How can I optimize this javascript')
-    expect(explainPrompt).toContain('const x = 42;')})
+    expect(explainPrompt).toContain('const x = 42')
+  })
 
   it('should format messages correctly', () => {
     const messages = [
