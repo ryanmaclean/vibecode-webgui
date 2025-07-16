@@ -34,24 +34,24 @@ describe('SecureFileSystemOperations', () => {
   describe('File Path Validation', () => {
     it('should validate safe file paths', () => {
       const safePath = '/test/workspace/src/index.ts';
-      expect((fileOps as any).validateFilePath(safePath)).toBe(true)})
+      expect((fileOps as any).validateFilePath(safePath)).toBe(true);
 
     it('should reject path traversal attempts', () => {
       const maliciousPath = '/test/workspace/../../../etc/passwd';
-      expect((fileOps as any).validateFilePath(maliciousPath)).toBe(false)})
+      expect((fileOps as any).validateFilePath(maliciousPath)).toBe(false);
 
     it('should reject paths outside workspace', () => {
       const outsidePath = '/other/workspace/file.ts';
-      expect((fileOps as any).validateFilePath(outsidePath)).toBe(false)})
+      expect((fileOps as any).validateFilePath(outsidePath)).toBe(false);
 
     it('should reject blocked file extensions', () => {
       const blockedPath = '/test/workspace/malware.exe';
-      expect((fileOps as any).validateFilePath(blockedPath)).toBe(false)})
+      expect((fileOps as any).validateFilePath(blockedPath)).toBe(false);
 
     it('should handle null and undefined paths', () => {
       expect((fileOps as any).validateFilePath(null)).toBe(false);
       expect((fileOps as any).validateFilePath(undefined)).toBe(false)
-      expect((fileOps as any).validateFilePath('')).toBe(false)})})
+      expect((fileOps as any).validateFilePath('')).toBe(false);
 
   describe('File CRUD Operations', () => {
     const validFilePath = '/test/workspace/src/test.ts'
@@ -259,7 +259,7 @@ describe('LazyFileLoader', () => {
 
   describe('Chunk Loading', () => {
     beforeEach(async () => {
-      global.fetch = jest.fn();
+      global.fetch = jest.fn()
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
@@ -267,7 +267,8 @@ describe('LazyFileLoader', () => {
             totalLines: 1000,
             totalSize: 50000,
             lineBreaks: []
-          })})
+          })
+        })
         .mockResolvedValue({
           ok: true,
           text: async () => 'line1\nline2\nline3\n'.repeat(33) // ~100 lines

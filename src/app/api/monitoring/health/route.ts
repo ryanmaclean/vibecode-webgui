@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions)
     
     // Allow public health check for basic status
-    const isPublicEndpoint = request.nextUrl.pathname.includes('/public')
+    const isPublicEndpoint = request.nextUrl.searchParams.get('public') === 'true'
     const isAuthenticated = !!session?.user
     const isAdmin = session?.user?.role === 'admin'
     
