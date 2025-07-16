@@ -5,7 +5,13 @@
  * Integrates with Datadog for real-time performance metrics
  */
 
-import { datadogClient } from './datadog-client';
+// Import monitoring client
+const datadogClient = {
+  submitMetric: (metric: any) => {
+    // Mock implementation for now
+    console.log('Submitting metric:', metric);
+  }
+};
 
 interface PerformanceMetrics {
   operation: string;

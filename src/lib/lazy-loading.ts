@@ -383,7 +383,7 @@ export class LazyFileLoader extends EventEmitter {
       const chunk = this.chunks.get(chunkId)
       if (!chunk) return
       
-      let content = chunk.content
+      const content = chunk.content
       if (chunk.compressed) {
         // Decompress content (placeholder)
         // content = this.decompressContent(chunk.content)

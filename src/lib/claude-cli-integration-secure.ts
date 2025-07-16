@@ -326,7 +326,7 @@ export class SecureClaudeCliIntegration extends EventEmitter {
     }
 
     // Validate and sanitize files
-    let sanitizedFiles: string[] = []
+    const sanitizedFiles: string[] = []
     if (request.files) {
       for (const file of request.files) {
         if (this.validateFilePath(file)) {

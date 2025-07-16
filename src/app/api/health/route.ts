@@ -28,7 +28,10 @@ export async function GET(request: NextRequest) {
 
     // Calculate response time
     const responseTime = Date.now() - startTime
-    healthChecks.responseTime = `${responseTime}ms`
+    const healthCheckResponse = {
+      ...healthChecks,
+      responseTime: `${responseTime}ms`
+    }
 
     // Submit health check metrics to Datadog
     await monitoring.trackMetrics()
@@ -45,7 +48,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(healthChecks, { status: 503 })
     }
 
-    return NextResponse.json(healthChecks, { status: 200 })
+    return NextResponse.json(healthCheckResponse, { status: 200 })
 
   } catch (error) {
     console.error('Health check error:', error)
