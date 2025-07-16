@@ -19,15 +19,17 @@ jest.mock('fs')
 jest.mock('path')
 
 describe('SecureFileSystemOperations', () => {
-  let fileOps: SecureFileSystemOperations
-  const mockWorkspacePath = '/test/workspace'
+  let fileOps: SecureFileSystemOperations;
+  const mockWorkspacePath = '/test/workspace';
   const mockUserId = 'user123';
 
   beforeEach(() => {
-    fileOps = new SecureFileSystemOperations(mockWorkspacePath, mockUserId)});
+    fileOps = new SecureFileSystemOperations(mockWorkspacePath, mockUserId);
+  });
 
   afterEach(async () => {
-    await fileOps.destroy()})
+    await fileOps.destroy();
+  });
 
   describe('File Path Validation', () => {
     it('should validate safe file paths', () => {

@@ -18,7 +18,7 @@ const mockFileReader = {
   onload: null,
   onerror: null
 };
-global.FileReader = jest.fn(() => mockFileReader) as any
+global.FileReader = jest.fn(() => mockFileReader) as any;
 
 describe('AIChatInterface', () => {
   const defaultProps = {
@@ -26,7 +26,7 @@ describe('AIChatInterface', () => {
     initialContext: ['file1.ts', 'file2.js'],
     onFileUpload: jest.fn(),
     className: 'test-class'
-  }
+  };
   beforeEach(() => {
     jest.clearAllMocks()
     

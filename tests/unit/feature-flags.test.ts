@@ -21,7 +21,7 @@ jest.mock('@/lib/server-monitoring', () => ({
 }))
 
 describe('FeatureFlagEngine', () => {
-  let engine: FeatureFlagEngine
+  let engine: FeatureFlagEngine;
   const mockContext: ExperimentContext = {
     userId: 'user123',
     workspaceId: 'workspace456',

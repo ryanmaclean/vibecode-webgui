@@ -583,7 +583,7 @@ export default function CollaborativeEditingSessions({
                 </div>
 
                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Share this link with others to invite them to collaborate on "{selectedSession.sessionName}".
+                  Share this link with others to invite them to collaborate on &quot;{selectedSession.sessionName}&quot;.
                 </div>
               </div>
 

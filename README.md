@@ -13,8 +13,8 @@
 - 🎯 **Infrastructure-First**: KIND (Kubernetes in Docker) orchestration eliminates 60-80% custom development
 - 🤖 **AI Integration**: CodeCursor-inspired VS Code extension with OpenRouter multi-provider support (127 models)
 - 🌐 **Production-Ready**: NGINX Ingress, cert-manager, Helm charts, persistent storage
-- 📊 **Comprehensive Monitoring**: Datadog, Prometheus, Vector, OpenTelemetry integration
-- 🖥️ **React Management Dashboard**: Complete cluster administration interface with real-time monitoring
+- 📊 **Real-Time Monitoring**: Datadog API integration with live metrics, logs, and alerts dashboard
+- 🖥️ **React Management Dashboard**: Complete cluster administration interface with real-time Datadog metrics
 - 🔄 **Per-User Workspaces**: Isolated environments with dedicated persistent volumes
 - ⚡ **AI-Powered Auto-Scaling**: Datadog WPA + DatadogPodAutoscaler with intelligent resource optimization
 - 🛡️ **Security Hardened**: Pod Security Standards, NetworkPolicies, RBAC, non-root containers
@@ -39,8 +39,8 @@
          ▼                        ▼                        ▼
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │  Persistent     │    │   Monitoring     │    │  VS Code Ext    │
-│  Volumes        │    │   Datadog Stack  │    │  AI Integration │
-│  (Workspaces)   │    │   (Observability)│    │  (CodeCursor)   │
+│  Volumes        │    │   Datadog API    │    │  AI Integration │
+│  (Workspaces)   │    │   (Live Metrics) │    │  (CodeCursor)   │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
 
@@ -403,8 +403,9 @@ SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
 3. **Rate Limiting** → Redis-based protection (60 req/min)
 4. **AI Processing** → OpenRouter API (318 models available)
 5. **Streaming Response** → Real-time Claude-3.5-Sonnet output
-6. **Metrics Collection** → Datadog monitoring (latency, errors, usage)
+6. **Metrics Collection** → Real-time Datadog API integration (latency, errors, usage)  
 7. **Data Persistence** → PostgreSQL storage (users, workspaces, sessions)
+8. **Live Dashboard** → Admin monitoring interface with real Datadog metrics
 
 ### 🧪 Testing Commands
 
@@ -428,6 +429,26 @@ kubectl logs test-ai
 # Cleanup
 kubectl delete pod test-health test-ai
 ```
+
+### 📊 Monitoring Dashboard
+
+**Access real-time metrics dashboard:**
+
+```bash
+# Port-forward to access monitoring dashboard
+kubectl port-forward -n vibecode svc/vibecode-service 3000:3000
+
+# Visit monitoring dashboard (admin access required)
+open http://localhost:3000/monitoring
+```
+
+**Dashboard Features:**
+- **Live Metrics**: Real-time CPU, memory, disk usage from Datadog API
+- **System Logs**: Structured logs with filtering and search
+- **Active Alerts**: Monitor status and alert management
+- **Performance Tracking**: Response times, error rates, active users
+- **Auto-refresh**: 30-second intervals for real-time updates
+- **Admin Controls**: Secure access with role-based permissions
 
 ### 📊 Performance Metrics
 
@@ -458,7 +479,7 @@ kubectl delete pod test-health test-ai
 - **KIND Cluster**: 2-node production setup
 - **PostgreSQL**: Persistent storage with backups
 - **Redis**: High-performance caching layer
-- **Datadog Agent**: Real-time monitoring and alerting
+- **Datadog Integration**: Real-time API monitoring with live metrics dashboard
 - **OpenRouter**: 318 AI models available
 - **Auto-scaling**: Datadog WPA + DatadogPodAutoscaler
 - **Load Balancing**: Kubernetes service mesh

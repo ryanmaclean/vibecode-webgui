@@ -59,24 +59,63 @@ const io = socketIo(server, {
   transports: ['websocket', 'polling']
 });
 
-// Authentication middleware for Socket.IO
+// Authentication middleware for Socket.IO with role verification
 io.use(async (socket, next) => {
   try {
-    const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
+    const token = socket.handshake.auth.token || 
+                 socket.handshake.headers.authorization?.replace('Bearer ', '');
     
     if (!token) {
+      console.error('No authentication token provided');
       return next(new Error('Authentication token required'));
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    socket.userId = decoded.sub || decoded.id;
-    socket.userEmail = decoded.email;
+    
+    // Verify required claims
+    if (!decoded.sub && !decoded.id) {
+      console.error('Token missing required subject claim');
+      return next(new Error('Invalid token: missing subject'));
+    }
+
+    // Attach user information to socket
+    socket.user = {
+      id: decoded.sub || decoded.id,
+      email: decoded.email,
+      role: decoded.role || 'user', // Default to 'user' role if not specified
+      name: decoded.name
+    };
+
+    // Log successful authentication
+    console.log(`User authenticated: ${socket.user.email} (${socket.user.id})`);
     
     next();
   } catch (err) {
-    next(new Error('Invalid authentication token'));
+    console.error('Authentication error:', err.message);
+    if (err.name === 'TokenExpiredError') {
+      return next(new Error('Token expired'));
+    } else if (err.name === 'JsonWebTokenError') {
+      return next(new Error('Invalid token'));
+    }
+    next(new Error('Authentication failed'));
   }
 });
+
+// Role-based access control middleware
+const requireRole = (role) => {
+  return (socket, next) => {
+    if (!socket.user) {
+      return next(new Error('Authentication required'));
+    }
+    
+    if (socket.user.role !== role) {
+      console.warn(`Access denied for user ${socket.user.id} (role: ${socket.user.role}) to ${role}-only resource`);
+      return next(new Error('Insufficient permissions'));
+    }
+    
+    next();
+  };
+};
 
 // Store active terminals and file watchers
 const terminals = new Map();

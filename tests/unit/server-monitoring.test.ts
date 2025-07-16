@@ -53,11 +53,11 @@ describe('Server Monitoring', () => {
     let logger: ApplicationLogger;
 
     beforeEach(() => {
-      logger = new ApplicationLogger()
-    })
+      logger = new ApplicationLogger();
+    });
 
     test('should log auth events', () => {
-      logger.logAuth('user_login', 'user123', { ip: '127.0.0.1' })
+      logger.logAuth('user_login', 'user123', { ip: '127.0.0.1' });
 
       expect(mockLogger.info).toHaveBeenCalledWith('Auth event: user_login', {
         category: 'auth',
@@ -65,10 +65,11 @@ describe('Server Monitoring', () => {
         userId: 'user123',
         ip: '127.0.0.1',
         timestamp: expect.any(String),
-      })})
+      });
+    });
 
     test('should log workspace events', () => {
-      logger.logWorkspace('file_created', 'workspace123', 'user123', { fileName: 'test.js' })
+      logger.logWorkspace('file_created', 'workspace123', 'user123', { fileName: 'test.js' });
 
       expect(mockLogger.info).toHaveBeenCalledWith('Workspace event: file_created', {
         category: 'workspace',
@@ -77,10 +78,11 @@ describe('Server Monitoring', () => {
         userId: 'user123',
         fileName: 'test.js',
         timestamp: expect.any(String),
-      })})
+      });
+    });
 
     test('should log AI events', () => {
-      logger.logAI('code_completion', 'user123', { model: 'claude-3', tokens: 150 })
+      logger.logAI('code_completion', 'user123', { model: 'claude-3', tokens: 150 });
 
       expect(mockLogger.info).toHaveBeenCalledWith('AI event: code_completion', {
         category: 'ai',
@@ -89,7 +91,8 @@ describe('Server Monitoring', () => {
         model: 'claude-3',
         tokens: 150,
         timestamp: expect.any(String),
-      })})
+      });
+    });
 
     test('should log security events', () => {
       logger.logSecurity('unauthorized_access', 'user123', { resource: '/admin', action: 'blocked' })

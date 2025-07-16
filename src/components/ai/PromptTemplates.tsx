@@ -327,7 +327,7 @@ export default function PromptTemplates({ onSelectTemplate, className = '' }: Pr
       {filteredTemplates.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
           <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>No templates found matching "{searchTerm}"</p>
+          <p>No templates found matching &quot;{searchTerm}&quot;</p>
           <p className="text-sm">Try a different search term or browse by category</p>
         </div>
       )}
