@@ -142,33 +142,38 @@ describe('CollaborationManager', () => {
 
       // Verify session cleanup
       expect(session.provider?.destroy).toHaveBeenCalled();
-      expect(session.persistence?.destroy).toHaveBeenCalled()})})
+      expect(session.persistence?.destroy).toHaveBeenCalled();
+    });
+  });
 
   describe('Document Operations', () => {
     let session: any;
 
     beforeEach(async () => {
-      collaborationManager.setCurrentUser(mockUser)
+      collaborationManager.setCurrentUser(mockUser);
       session = await collaborationManager.joinSession(
         'doc123',
         'project123',
         'test.js'
-      )})
+      );
+    });
 
     test('should get text content from document', () => {
       const yText = collaborationManager.getText(session);
       expect(yText).toBeDefined();
-      expect(yText.toString).toBeDefined()})
+      expect(yText.toString).toBeDefined();
+    });
 
     test('should get shared map for metadata', () => {
       const yMap = collaborationManager.getMap(session);
       expect(yMap).toBeDefined();
       expect(yMap.get).toBeDefined();
-      expect(yMap.set).toBeDefined()})
+      expect(yMap.set).toBeDefined();
+    });
 
     test('should update cursor position', () => {
       const mockAwareness = session.provider.awareness;
-      collaborationManager.updateCursor(session, 5, 10)
+      collaborationManager.updateCursor(session, 5, 10);
 
       expect(mockAwareness.setLocalStateField).toHaveBeenCalledWith(
         'user',

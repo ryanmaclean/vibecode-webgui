@@ -575,7 +575,7 @@ export default function WorkspaceSharing({
             Workspace Sharing
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage members and teams for "{workspaceName}"
+            Manage members and teams for &quot;{workspaceName}&quot;
           </p>
         </div>
 

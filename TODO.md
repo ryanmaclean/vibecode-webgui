@@ -1,8 +1,122 @@
+# Staff Engineer Digest: VibeCode TODO.md
+
+## High-Level Project Synthesis & Priorities
+
+### 1. Immediate Blockers & Risks
+- **Authentication/Authorization Failures:** Numerous `401/403` errors indicate systemic issues with session handling, environment variables, or API permissions. This is a critical path blocker for user access and feature validation.
+- **Test Suite Instability:** Persistent Jest syntax errors (missing semicolons, parsing failures) and health check endpoint mismatches undermine CI reliability and mask regressions.
+- **Environment Consistency:** Environment variables for OAuth, Datadog, and dev login are split across multiple secrets. Any misalignment or missing value breaks both local and cluster deployments.
+
+### 2. Production Readiness
+- **Kubernetes/Infra:** KIND cluster is robust, with Datadog, PostgreSQL, Redis, and Vector operational. Health checks and monitoring are in place, but probe/test endpoint mismatches remain.
+- **Security:** Secrets are well-managed, but the presence of dev credentials and `--auth none` in demo deployments is a risk if not tightly scoped to non-prod.
+- **Observability:** Datadog RUM/logs initialize, but repeated 401/403s may mean incomplete telemetry or noisy monitoring.
+
+### 3. Testing & Automation
+- **Pre-commit Hooks:** These are catching syntax issues, but errors are not being resolved promptly. This creates tech debt and slows developer velocity.
+- **Test Coverage:** There’s a strong focus on unit, integration, and e2e tests, but test failures need to be actionable and prioritized.
+
+### 4. Developer Experience
+- **Quick Commands & Documentation:** The file provides excellent quick-start and troubleshooting commands, which is a best practice for onboarding and incident response.
+
+---
+
+## Top Priorities & Recommendations
+
+### 🔴 Critical Path
+1. **Resolve Authentication Issues:**
+   - Systematically check all env vars for OAuth, Datadog, and session handling in both local and k8s contexts.
+   - Use the dev credentials to verify the login flow; if successful, trace what changes post-authentication (cookies, tokens, API responses).
+   - Instrument backend logs to correlate frontend 401/403s with backend errors.
+2. **Fix Test Suite Failures:**
+   - Batch-fix all missing semicolons and syntax errors in test files.
+   - Align health check endpoints between deployment probes and test expectations.
+3. **Consolidate and Document Environment Configuration:**
+   - Create a single source of truth for all required environment variables (matrix for local, dev, prod).
+   - Automate validation of env var presence at app startup.
+
+### 🟡 Short-Term
+- **Reduce Console Noise:** Silence expected 401/403s during unauthenticated states to avoid alert fatigue.
+- **Review Security Posture:** Ensure dev credentials and open demo workspaces are not accessible in production or exposed clusters.
+
+### 🟢 Medium/Long-Term
+- **Automate Lint/Test Enforcement:** Block merges on unresolved pre-commit/test failures.
+- **Enhance Observability:** Ensure Datadog RUM/logs are not just initializing, but also successfully reporting data (no silent failures).
+- **Continuous Documentation:** Keep quick commands and troubleshooting sections updated as the stack evolves.
+
+---
+
+## Summary Table: Actionable TODOs
+
+| Priority | Task                                             | Owner/Notes           |
+|----------|--------------------------------------------------|-----------------------|
+| 🔴       | Resolve all 401/403 errors                       | Auth/Infra            |
+| 🔴       | Fix Jest/test syntax errors & health checks      | All devs              |
+| 🔴       | Audit and document all required env vars         | Staff/DevOps          |
+| 🟡       | Silence expected console errors (dev only)       | Frontend              |
+| 🟡       | Lock down dev/demo credentials in prod           | DevOps/Security       |
+| 🟢       | Enforce pre-commit/test pass in CI               | DevOps                |
+| 🟢       | Validate Datadog telemetry end-to-end            | Observability         |
+
+---
+
 # VibeCode WebGUI - TODO List
 
 ## 🚀 PRODUCTION STATUS: FULLY OPERATIONAL (July 16, 2025)
 
-**INFRASTRUCTURE ACHIEVEMENT**: Complete platform with operational KIND cluster and real Datadog integration
+---
+
+## ⚠️ Outstanding Errors & Warnings (Pre-commit/Test)
+
+- **Jest Syntax Errors (Missing Semicolons):**
+  - `tests/unit/file-operations.test.ts: Missing semicolon. (22:13)`
+  - `tests/unit/feature-flags.test.ts: Missing semicolon. (24:12)`
+  - `tests/unit/collaboration.test.ts: Missing semicolon. (148:15)`
+  - `tests/unit/ai-chat-interface.test.tsx: Missing semicolon. (12:24)`
+- **Jest Unexpected Token/Parsing Errors:**
+  - `tests/unit/claude-cli-integration.test.ts: Unexpected token, expected "," (43:0)`
+- **Jest Test Suite Failures:**
+  - Jest failed to parse files due to non-standard JavaScript/TypeScript syntax. See:
+    - https://jestjs.io/docs/configuration
+    - https://jestjs.io/docs/code-transformation
+- **Production Readiness Test Failure:**
+  - Health check endpoint test expects `/api/health`, but deployment uses `/`. Update probes or test expectations for alignment.
+- **General Recommendations:**
+  - Ensure Babel/Jest config supports TypeScript and any custom syntax used.
+  - Review and fix all syntax errors and missing semicolons in test files.
+  - Align health check endpoints with production readiness test expectations.
+  - Review Jest transform and `transformIgnorePatterns` if using ES modules or advanced TypeScript features.
+
+---
+
+## ⚠️ Console Errors: 401/403 (Unauthorized/Forbidden)
+
+- **Observed in browser console:**
+  - Repeated `403 (Forbidden)` and some `401 (Unauthorized)` errors when accessing resources.
+  - Example log lines:
+    - `Failed to load resource: the server responded with a status of 403 ()`
+    - `Failed to load resource: the server responded with a status of 401 (Unauthorized)`
+
+### Possible Causes
+- Frontend is trying to access protected API endpoints before authentication.
+- Missing or invalid API keys/tokens (Datadog, OAuth, etc).
+- Misconfigured access policies, CORS, or cookie/session issues.
+- Datadog RUM/Logs scripts attempting to send data to endpoints requiring credentials.
+
+### Troubleshooting/Action Items
+- [ ] **Check Network Tab:** Identify which endpoints are returning 401/403 and why.
+- [ ] **Verify Environment Variables:** Ensure all OAuth, Datadog, and auth env vars are present and correct in Kubernetes secrets and local `.env`.
+- [ ] **Session/Cookie Issues:** Confirm cookies are being set and sent with requests; check for CORS or domain issues if using multiple localhost ports.
+- [ ] **Datadog Config:** Verify RUM/Logs client tokens are valid and have correct permissions.
+- [ ] **Test Dev Credentials:** Log in with `admin@vibecode.dev` / `admin123` and see if errors persist after authentication.
+- [ ] **Backend Logs:** Review backend/Next.js API logs for details on denied requests.
+- [ ] **If errors persist after login:** Identify failing endpoints, capture request URLs and response bodies, and analyze further.
+
+---
+
+**INFRASTRUCTURE ACHIEVEMENT**: Complete platform with operational KIND cluster and real Datadog API integration
+
+**LATEST UPDATE (July 16, 2025)**: Monitoring dashboard now uses real Datadog API instead of mock data - all metrics sourced from live production monitoring system
 
 ### 📊 Current Infrastructure State (All Systems Operational)
 ```bash
@@ -135,6 +249,14 @@ docker system df
   - Datadog Agent DaemonSet for Kubernetes (`infrastructure/monitoring/datadog-agent.yaml`)
   - Vector log aggregation pipeline (`infrastructure/monitoring/vector.yaml`)
   - KubeHound security analysis (`infrastructure/monitoring/kubehound-config.yaml`)
+
+- [x] **Real-Time Monitoring Dashboard** (`src/components/monitoring/MonitoringDashboard.tsx`)
+  - **UPDATED (July 16, 2025)**: Now uses real Datadog API instead of mock data
+  - Live metrics from Datadog API with @datadog/datadog-api-client
+  - Real-time logs API endpoint with structured filtering
+  - Live alerts from Datadog monitors integration
+  - Admin-only access with role-based permissions
+  - Auto-refresh every 30 seconds with graceful fallback
 
 ### AI-Powered Autoscaling Implementation ✅
 - [x] **Datadog Watermark Pod Autoscaler (WPA)** (`k8s/vibecode-wpa.yaml`)
@@ -911,7 +1033,7 @@ docker system df
 - [ ] **Security Audit** - Penetration testing and compliance validation
 - [ ] **Operational Runbooks** - Documentation and team training
 
-### ✅ Recently Completed Infrastructure Deployment (July 15, 2025)
+### ✅ Recently Completed Infrastructure Deployment (July 16, 2025)
 - [x] **✅ PostgreSQL Database** - Deployed with persistent storage and schema initialization
 - [x] **✅ Redis Cache** - Operational with persistence and proper configuration  
 - [x] **✅ Vector Logging** - 3 operational agents shipping logs to Datadog
@@ -920,6 +1042,8 @@ docker system df
 - [x] **✅ VibeCode Application** - Docker image built with proper resource limits
 - [x] **✅ Real API Integration** - Datadog monitoring with actual metric submission
 - [x] **✅ Kubernetes Secrets** - Secure API key management operational
+- [x] **✅ Monitoring Dashboard** - Real Datadog API integration replacing mock data
+- [x] **✅ Modern Git Practices** - Updated configuration to eliminate 2025 warnings
 
 ### 🔄 Remaining Production Tasks
 

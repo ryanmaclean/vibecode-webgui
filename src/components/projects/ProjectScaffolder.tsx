@@ -386,7 +386,7 @@ export function ProjectScaffolder({
                 <Code className="w-12 h-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Ready to Generate</h3>
                 <p className="text-gray-600 text-center mb-4">
-                  Configure your project settings and click "Generate Project" to create your files.
+                  Configure your project settings and click &quot;Generate Project&quot; to create your files.
                 </p>
                 <Badge variant="outline" className="flex items-center gap-1">
                   <Play className="w-3 h-3" />
