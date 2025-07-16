@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Web Authentication</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; }
+        input { padding: 8px; width: 300px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; background: #0066cc; color: white; border: none; cursor: pointer; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9; }
+        .credentials { margin-top: 20px; padding: 10px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>VibeCode Authentication Test</h1>
+    
+    <div class="credentials">
+        <h3>Test Credentials:</h3>
+        <ul>
+            <li>admin@vibecode.dev / admin123</li>
+            <li>developer@vibecode.dev / dev123</li>
+            <li>frontend@vibecode.dev / frontend123</li>
+            <li>lead@vibecode.dev / lead123</li>
+        </ul>
+    </div>
+
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="developer@vibecode.dev" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" value="dev123" required>
+        </div>
+        <button type="submit">Sign In</button>
+    </form>
+
+    <div id="result" class="result" style="display: none;"></div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = 'Testing authentication...';
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                // Get CSRF token
+                const csrfResponse = await fetch('/api/auth/csrf');
+                const csrfData = await csrfResponse.json();
+                
+                resultDiv.innerHTML += '<br>CSRF Token: ' + csrfData.csrfToken.substring(0, 20) + '...';
+                
+                // Try to sign in
+                const signInResponse = await fetch('/api/auth/signin/credentials', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        email: email,
+                        password: password,
+                        csrfToken: csrfData.csrfToken,
+                        callbackUrl: 'http://localhost:3000',
+                        json: 'true'
+                    })
+                });
+                
+                const signInResult = await signInResponse.text();
+                resultDiv.innerHTML += '<br>Sign In Response: ' + signInResult;
+                
+                // Check session
+                const sessionResponse = await fetch('/api/auth/session');
+                const sessionData = await sessionResponse.json();
+                
+                if (sessionData.user) {
+                    resultDiv.innerHTML += '<br><strong>SUCCESS!</strong> Logged in as: ' + sessionData.user.name;
+                    resultDiv.innerHTML += '<br>Email: ' + sessionData.user.email;
+                    resultDiv.innerHTML += '<br>Role: ' + sessionData.user.role;
+                } else {
+                    resultDiv.innerHTML += '<br><strong>FAILED:</strong> No session found';
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML += '<br><strong>ERROR:</strong> ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>

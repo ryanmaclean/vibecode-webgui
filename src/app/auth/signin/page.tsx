@@ -4,7 +4,7 @@
  */
 
 import { Metadata } from 'next'
-import SignInForm from '@/components/auth/SignInForm'
+import SimpleSignInForm from '@/components/auth/SimpleSignInForm'
 
 export const metadata: Metadata = {
   title: 'Sign In - VibeCode WebGUI',
@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 }
 
 export default function SignInPage() {
-  return <SignInForm />
+  return <SimpleSignInForm />
 }

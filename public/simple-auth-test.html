@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Auth Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; }
+        input { padding: 8px; width: 300px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; background: #0066cc; color: white; border: none; cursor: pointer; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9; }
+        .credentials { margin-top: 20px; padding: 10px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>Simple NextAuth Test</h1>
+    
+    <div class="credentials">
+        <h3>Test Credentials:</h3>
+        <p>Email: developer@vibecode.dev</p>
+        <p>Password: dev123</p>
+    </div>
+
+    <form action="/api/auth/signin/credentials" method="POST">
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="developer@vibecode.dev" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" value="dev123" required>
+        </div>
+        <input type="hidden" name="callbackUrl" value="http://localhost:3000">
+        <input type="hidden" name="csrfToken" id="csrfToken" value="">
+        <button type="submit">Sign In</button>
+    </form>
+
+    <div>
+        <h3>Session Check:</h3>
+        <button onclick="checkSession()">Check Current Session</button>
+        <div id="sessionResult"></div>
+    </div>
+
+    <script>
+        // Get CSRF token on page load
+        async function loadCSRFToken() {
+            try {
+                const response = await fetch('/api/auth/csrf');
+                const data = await response.json();
+                document.getElementById('csrfToken').value = data.csrfToken;
+                console.log('CSRF Token loaded:', data.csrfToken.substring(0, 20) + '...');
+            } catch (error) {
+                console.error('Error loading CSRF token:', error);
+            }
+        }
+
+        async function checkSession() {
+            try {
+                const response = await fetch('/api/auth/session');
+                const data = await response.json();
+                document.getElementById('sessionResult').innerHTML = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('sessionResult').innerHTML = 'Error: ' + error.message;
+            }
+        }
+
+        // Load CSRF token when page loads
+        loadCSRFToken();
+    </script>
+</body>
+</html>
