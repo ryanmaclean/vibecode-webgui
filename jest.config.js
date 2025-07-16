@@ -61,6 +61,21 @@ const customJestConfig = {
     'node_modules/(?!(.*\\.mjs$|@testing-library|@playwright))',
   ],
 
+  // Transform configuration for TypeScript
+  transform: {
+    '^.+\\.(ts|tsx)$': ['babel-jest', {
+      presets: [
+        ['@babel/preset-env', { targets: { node: 'current' } }],
+        ['@babel/preset-typescript', { 
+          allowNamespaces: true,
+          allowDeclareFields: true
+        }],
+        '@babel/preset-react'
+      ]
+    }],
+    '^.+\\.(js|jsx)$': 'babel-jest'
+  },
+
   // Module file extensions
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 
