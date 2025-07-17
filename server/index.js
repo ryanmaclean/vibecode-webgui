@@ -34,12 +34,32 @@ app.use(cors({
 app.use(express.json());
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
+app.get('/health', async (req, res) => {
+  try {
+    // Check Redis connection
+    const redisPing = await redis.ping();
+    if (redisPing !== 'PONG') {
+      throw new Error('Redis ping failed');
+    }
+
+    res.json({ 
+      status: 'healthy',
+      dependencies: {
+        redis: 'ok'
+      },
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(503).json({
+      status: 'unhealthy',
+      dependencies: {
+        redis: error.message
+      },
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Initialize Redis client

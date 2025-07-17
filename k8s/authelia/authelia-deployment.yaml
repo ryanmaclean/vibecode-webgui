@@ -20,6 +20,7 @@ spec:
         app: authelia
         component: authentication
     spec:
+      enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -106,7 +107,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: auth.localhost
+  - host: authelia.vibecode.dev
     http:
       paths:
       - path: /

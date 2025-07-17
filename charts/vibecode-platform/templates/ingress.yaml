@@ -9,6 +9,11 @@ metadata:
     app: code-server
     user: {{ .Values.user.id | default "default" }}
   annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/websocket-services: "code-server-{{ .Values.user.id | default "default" }}"
+    nginx.ingress.kubernetes.io/proxy-pass-params: "/ /;
+                                                      proxy_set_header Upgrade $http_upgrade;
+                                                      proxy_set_header Connection \"upgrade\";"
     {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}

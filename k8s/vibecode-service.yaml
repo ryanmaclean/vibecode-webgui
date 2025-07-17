@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vibecode-webgui
+  namespace: vibecode-platform
+spec:
+  selector:
+    app: vibecode-webgui
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000

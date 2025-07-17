@@ -12,7 +12,7 @@ COPY package.json .npmrc ./
 COPY package-lock.json* ./
 
 # Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci && npm cache clean --force
 
 # Stage 2: Builder
 FROM node:18-alpine AS builder

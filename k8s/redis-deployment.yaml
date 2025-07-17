@@ -3,7 +3,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: redis-pvc
-  namespace: vibecode
+  namespace: vibecode-platform
 spec:
   accessModes:
     - ReadWriteOnce
@@ -15,7 +15,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis
-  namespace: vibecode
+  namespace: vibecode-platform
   labels:
     app: redis
 spec:
@@ -79,7 +79,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: redis-service
-  namespace: vibecode
+  namespace: vibecode-platform
 spec:
   selector:
     app: redis

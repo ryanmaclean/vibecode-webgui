@@ -3,7 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: vector-config
-  namespace: monitoring
+  namespace: vibecode-monitoring
 data:
   vector.yaml: |
     api:
@@ -36,7 +36,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: vector
-  namespace: monitoring
+  namespace: vibecode-monitoring
   labels:
     app: vector
 spec:
@@ -109,7 +109,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: vector
-  namespace: monitoring
+  namespace: vibecode-monitoring
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -131,4 +131,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: vector
-    namespace: monitoring
+    namespace: vibecode-monitoring
