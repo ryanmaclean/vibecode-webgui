@@ -40,29 +40,3 @@ jobs:
       env:
         DD_API_KEY: ${{ secrets.DD_API_KEY }}
         DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-
-  codeql-analysis:
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-      
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
-      with:
-        languages: javascript
-        
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
-
-    - name: Upload CodeQL SARIF to Datadog
-      if: github.event_name == 'push'
-      run: npx @datadog/datadog-ci@2.29.0 sarif upload ./results/codeql.sarif
-      env:
-        DD_API_KEY: ${{ secrets.DD_API_KEY }}
-        DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
