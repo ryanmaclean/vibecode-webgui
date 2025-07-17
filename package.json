@@ -30,6 +30,7 @@
     "test:monitoring:security": "jest --testPathPattern=tests/security/monitoring-security\\.test\\.(ts|js)$",
     "test:complete": "jest --testPathPattern=tests/complete",
     "test:pre-commit": "./scripts/pre-commit-tests.sh",
+    "sbom:generate": "cyclonedx-bom -o sbom.json",
     "test:monitoring:production": "jest --testPathPattern=tests/production/.*monitoring.*\\.test\\.(ts|js)$",
     "test:monitoring:health": "jest --testPathPattern=tests/production/monitoring-health\\.test\\.(ts|js)$",
     "test:monitoring:chaos": "jest --testPathPattern=tests/production/monitoring-production\\.test\\.(ts|js)$ --testNamePattern=\"Chaos Engineering\"",
@@ -144,6 +145,8 @@
     "sharp": false
   },
   "devDependencies": {
+    "@datadog/datadog-ci": "^2.29.0",
+    "@cyclonedx/bom": "^3.11.0",
     "@babel/preset-env": "7.28.0",
     "@babel/preset-react": "7.27.1",
     "@babel/preset-typescript": "7.27.1",
