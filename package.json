@@ -146,7 +146,6 @@
   },
   "devDependencies": {
     "@datadog/datadog-ci": "^2.29.0",
-    "@cyclonedx/bom": "3.11.0",
     "@babel/preset-env": "7.28.0",
     "@babel/preset-react": "7.27.1",
     "@babel/preset-typescript": "7.27.1",
