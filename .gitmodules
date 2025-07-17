@@ -1,0 +1,3 @@
+[submodule "watermarkpodautoscaler"]
+	path = watermarkpodautoscaler
+	url = https://github.com/DataDog/watermarkpodautoscaler.git
