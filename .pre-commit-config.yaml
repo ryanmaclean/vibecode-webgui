@@ -11,14 +11,6 @@ repos:
       - id: check-added-large-files
       - id: detect-private-key
 
-  # Security scanning with Snyk
-  - repo: https://github.com/snyk/snyk
-    rev: v1.1267.0
-    hooks:
-      - id: snyk-test
-        args: ['--severity-threshold=high']
-        stages: [commit]
-
   # License scanning
   - repo: local
     hooks:

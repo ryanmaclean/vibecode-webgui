@@ -17,7 +17,9 @@
 - 🖥️ **React Management Dashboard**: Complete cluster administration interface with real-time Datadog metrics
 - 🔄 **Per-User Workspaces**: Isolated environments with dedicated persistent volumes
 - ⚡ **AI-Powered Auto-Scaling**: Datadog WPA + DatadogPodAutoscaler with intelligent resource optimization
-- 🛡️ **Security Hardened**: Pod Security Standards, NetworkPolicies, RBAC, non-root containers
+- 🛡️ **Security**: Integrated security scanning with Datadog SAST (Static Application Security Testing) and SCA (Software Composition Analysis). Scans are run automatically on every push to the `main` branch.
+
+    **Note:** To run the security scans, you will need to add your Datadog API and App keys as secrets to your GitHub repository. The required secrets are `DD_API_KEY` and `DD_APP_KEY`.
 - 🎨 **Modern UI/UX**: React + TypeScript + Tailwind CSS dashboard with VS Code integration
 
 ## 🚀 Local Development Setup
