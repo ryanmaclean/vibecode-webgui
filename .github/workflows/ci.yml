@@ -17,7 +17,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '22'
         cache: 'npm'
     
     - name: Install dependencies
@@ -42,6 +42,13 @@ jobs:
       run: |
         npm install -g license-checker
         ./scripts/check-licenses.sh
+
+    - name: Datadog SAST Scan
+      if: github.event_name == 'push'
+      run: npx @datadog/datadog-ci@2.29.0 sast scan
+      env:
+        DD_API_KEY: ${{ secrets.DD_API_KEY }}
+        DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
 
     - name: Generate SBOM for SCA
       run: npx @cyclonedx/cyclonedx-npm --output-file sbom.json
