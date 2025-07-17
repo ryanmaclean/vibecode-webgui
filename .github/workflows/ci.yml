@@ -28,7 +28,6 @@ jobs:
       with:
         languages: js
         api_key: ${{secrets.DD_API_KEY}}
-        dd_app_key: ${{secrets.DD_APP_KEY}}
         site: datadoghq.com
 
     - name: Run tests
