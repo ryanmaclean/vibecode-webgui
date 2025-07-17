@@ -25,32 +25,24 @@ jobs:
     - name: Run npm audit
       run: npm audit --audit-level=high
       
-    - name: Install Snyk CLI
-      run: npm install -g snyk
-      
-    - name: Run Snyk security scan
-      run: snyk test --severity-threshold=high
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        
     - name: Run license check
       run: |
         npm install -g license-checker
         ./scripts/check-licenses.sh
-        
+
+    - name: Install Datadog CI
+      run: npm install -g @datadog/datadog-ci
+
     - name: Datadog SAST Scan
       if: github.event_name == 'push'
-      run: |
-        npm install -g @datadog/datadog-ci
-        datadog-ci sast scan --config .datadog-ci.json
+      run: datadog-ci sast scan
       env:
         DD_API_KEY: ${{ secrets.DD_API_KEY }}
         DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-        
+
     - name: Datadog SCA Scan
       if: github.event_name == 'push'
-      run: |
-        datadog-ci sca scan --config .datadog-ci.json
+      run: datadog-ci sca scan
       env:
         DD_API_KEY: ${{ secrets.DD_API_KEY }}
         DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
