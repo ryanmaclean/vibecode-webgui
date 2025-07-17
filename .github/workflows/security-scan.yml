@@ -35,14 +35,14 @@ jobs:
 
     - name: Datadog SAST Scan
       if: github.event_name == 'push'
-      run: datadog-ci sast scan
+      run: datadog-ci sast scan --config .datadog-ci.json
       env:
         DD_API_KEY: ${{ secrets.DD_API_KEY }}
         DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
 
     - name: Datadog SCA Scan
       if: github.event_name == 'push'
-      run: datadog-ci sca scan
+      run: datadog-ci sca scan --config .datadog-ci.json
       env:
         DD_API_KEY: ${{ secrets.DD_API_KEY }}
         DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
