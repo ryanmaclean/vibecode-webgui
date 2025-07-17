@@ -27,7 +27,7 @@ nodes:
   labels:
     tier: "code-server"
 
-# Worker node for monitoring and infrastructure  
+# Worker node for monitoring and infrastructure
 - role: worker
   labels:
     tier: "monitoring"

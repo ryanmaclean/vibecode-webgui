@@ -91,7 +91,7 @@ export const performanceLogger = {
             ...meta
         });
     },
-    
+
     logError: (operation: string, startTime: number, error: any, meta?: any) => {
         const duration = Date.now() - startTime;
         logger.error(`AI operation failed`, {

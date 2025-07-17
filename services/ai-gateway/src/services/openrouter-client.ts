@@ -142,15 +142,15 @@ export class OpenRouterClient {
 
     public async getModels(): Promise<AIModel[]> {
         const startTime = Date.now();
-        
+
         try {
             const response: AxiosResponse<{ data: AIModel[] }> = await this.client.get('/models');
             this.models = response.data.data;
-            
+
             performanceLogger.logRequest('get_models', startTime, {
                 modelCount: this.models.length
             });
-            
+
             return this.models;
         } catch (error) {
             performanceLogger.logError('get_models', startTime, error);
@@ -164,7 +164,7 @@ export class OpenRouterClient {
     ): Promise<ChatCompletionResponse> {
         const startTime = Date.now();
         const model = request.model;
-        
+
         try {
             // Add user ID to request if provided
             const requestData = {
@@ -178,10 +178,10 @@ export class OpenRouterClient {
             );
 
             const result = response.data;
-            
+
             // Update performance metrics
             this.updatePerformanceMetrics(model, Date.now() - startTime, true);
-            
+
             performanceLogger.logRequest('chat_completion', startTime, {
                 model,
                 userId,
@@ -189,7 +189,7 @@ export class OpenRouterClient {
                 completionTokens: result.usage.completion_tokens,
                 totalTokens: result.usage.total_tokens
             });
-            
+
             return result;
         } catch (error) {
             this.updatePerformanceMetrics(model, Date.now() - startTime, false);
@@ -205,7 +205,7 @@ export class OpenRouterClient {
     ): Promise<void> {
         const startTime = Date.now();
         const model = request.model;
-        
+
         try {
             const requestData = {
                 ...request,
@@ -219,14 +219,14 @@ export class OpenRouterClient {
 
             return new Promise((resolve, reject) => {
                 let totalTokens = 0;
-                
+
                 response.data.on('data', (chunk: Buffer) => {
                     const lines = chunk.toString().split('\n');
-                    
+
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
                             const data = line.slice(6);
-                            
+
                             if (data === '[DONE]') {
                                 this.updatePerformanceMetrics(model, Date.now() - startTime, true);
                                 performanceLogger.logRequest('stream_chat_completion', startTime, {
@@ -237,11 +237,11 @@ export class OpenRouterClient {
                                 resolve();
                                 return;
                             }
-                            
+
                             try {
                                 const parsed: StreamingChunk = JSON.parse(data);
                                 onChunk(parsed);
-                                
+
                                 // Estimate token count (rough approximation)
                                 const content = parsed.choices[0]?.delta?.content;
                                 if (content) {
@@ -302,23 +302,23 @@ export class OpenRouterClient {
 
         const promptCost = (promptTokens / 1000) * modelInfo.pricing.prompt;
         const completionCost = (completionTokens / 1000) * modelInfo.pricing.completion;
-        
+
         return promptCost + completionCost;
     }
 
     private updatePerformanceMetrics(model: string, latency: number, success: boolean): void {
         const existing = this.performanceMetrics.get(model);
-        
+
         if (existing) {
             existing.totalRequests++;
             existing.averageLatency = (existing.averageLatency * (existing.totalRequests - 1) + latency) / existing.totalRequests;
-            
+
             if (success) {
                 existing.successRate = ((existing.successRate * (existing.totalRequests - 1)) + 1) / existing.totalRequests;
             } else {
                 existing.successRate = (existing.successRate * (existing.totalRequests - 1)) / existing.totalRequests;
             }
-            
+
             existing.errorRate = 1 - existing.successRate;
             existing.lastUpdated = new Date();
         } else {
@@ -337,7 +337,7 @@ export class OpenRouterClient {
         if (error.response) {
             const status = error.response.status;
             const data = error.response.data;
-            
+
             switch (status) {
                 case 400:
                     return new Error(`Bad Request: ${data?.error?.message || 'Invalid request parameters'}`);

@@ -8,7 +8,7 @@ import { monitoring } from '@/lib/monitoring'
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
-  
+
   try {
     // Basic health checks
     const healthChecks = {
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Health check error:', error)
-    
+
     return NextResponse.json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
@@ -90,7 +90,7 @@ async function checkDiskSpace() {
     // Basic disk space check (platform-specific)
     const fs = await import('fs/promises')
     const stats = await fs.stat(process.cwd())
-    
+
     return {
       status: 'healthy',
       details: {

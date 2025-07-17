@@ -1,5 +1,5 @@
 # Datadog Synthetics Tests for VibeCode WebGUI
-# 
+#
 # Comprehensive synthetic monitoring for production readiness validation
 # Tests API endpoints, security, performance, and integration health
 #
@@ -63,7 +63,7 @@ resource "datadog_synthetics_test" "api_health_check" {
 
   options_list {
     tick_every = 60 # Check every minute
-    
+
     retry {
       count    = 2
       interval = 30
@@ -77,7 +77,7 @@ resource "datadog_synthetics_test" "api_health_check" {
   request_definition {
     method = "GET"
     url    = "${var.app_base_url}/api/health"
-    
+
     headers = {
       "User-Agent" = "Datadog Synthetics"
       "Accept"     = "application/json"
@@ -122,7 +122,7 @@ resource "datadog_synthetics_test" "auth_api_test" {
 
   options_list {
     tick_every = 300 # Check every 5 minutes
-    
+
     retry {
       count    = 2
       interval = 60
@@ -132,7 +132,7 @@ resource "datadog_synthetics_test" "auth_api_test" {
   request_definition {
     method = "GET"
     url    = "${var.app_base_url}/api/auth/session"
-    
+
     headers = {
       "User-Agent" = "Datadog Synthetics"
     }
@@ -168,7 +168,7 @@ resource "datadog_synthetics_test" "claude_api_security_test" {
   request_definition {
     method = "POST"
     url    = "${var.app_base_url}/api/claude/chat"
-    
+
     headers = {
       "Content-Type" = "application/json"
       "User-Agent"   = "Datadog Synthetics Security Test"
@@ -205,7 +205,7 @@ resource "datadog_synthetics_test" "database_connection_test" {
 
   options_list {
     tick_every = 300 # Check every 5 minutes
-    
+
     retry {
       count    = 3
       interval = 60
@@ -215,7 +215,7 @@ resource "datadog_synthetics_test" "database_connection_test" {
   request_definition {
     method = "GET"
     url    = "${var.app_base_url}/api/health/database"
-    
+
     headers = {
       "User-Agent" = "Datadog Synthetics"
     }
@@ -251,7 +251,7 @@ resource "datadog_synthetics_test" "critical_user_flow" {
 
   options_list {
     tick_every = 900 # Check every 15 minutes
-    
+
     retry {
       count    = 1
       interval = 300
@@ -325,7 +325,7 @@ resource "datadog_synthetics_test" "performance_monitoring" {
   request_definition {
     method = "GET"
     url    = "${var.app_base_url}/api/monitoring/metrics"
-    
+
     headers = {
       "User-Agent" = "Datadog Synthetics Performance"
     }
@@ -361,7 +361,7 @@ resource "datadog_synthetics_test" "security_headers_test" {
   request_definition {
     method = "GET"
     url    = "${var.app_base_url}/"
-    
+
     headers = {
       "User-Agent" = "Datadog Security Scanner"
     }
@@ -425,7 +425,7 @@ resource "datadog_synthetics_test" "rate_limiting_test" {
   # Multiple rapid requests to test rate limiting
   api_step {
     name = "Rapid Request 1"
-    
+
     request_definition {
       method = "POST"
       url    = "${var.app_base_url}/api/claude/chat"
@@ -448,7 +448,7 @@ resource "datadog_synthetics_test" "rate_limiting_test" {
   # After rapid requests, should get rate limited
   api_step {
     name = "Rate Limited Request"
-    
+
     request_definition {
       method = "POST"
       url    = "${var.app_base_url}/api/claude/chat"
@@ -486,7 +486,7 @@ resource "datadog_synthetics_test" "monitoring_dashboard_test" {
   request_definition {
     method = "GET"
     url    = "${var.app_base_url}/monitoring"
-    
+
     headers = {
       "User-Agent" = "Datadog Synthetics"
     }

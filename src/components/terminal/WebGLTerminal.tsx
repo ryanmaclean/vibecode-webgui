@@ -1,9 +1,9 @@
 /**
  * WebGL Accelerated Terminal Component
- * 
+ *
  * High-performance terminal with WebGL acceleration for VibeCode platform
  * Implements advanced rendering optimizations for large outputs and smooth scrolling
- * 
+ *
  * Staff Engineer Implementation - Enterprise-grade terminal performance
  */
 
@@ -167,7 +167,7 @@ export default function WebGLTerminal({
       lineHeight: 1.2,
       letterSpacing: 0,
       theme: terminalTheme,
-      
+
       // Performance optimizations
       scrollback: maxScrollback,
       allowTransparency: false,
@@ -175,20 +175,20 @@ export default function WebGLTerminal({
       altClickMovesCursor: true,
       rightClickSelectsWord: true,
       macOptionIsMeta: true,
-      
+
       // WebGL optimizations
       rendererType: enableWebGL ? 'webgl' : 'canvas',
       allowProposedApi: true,
-      
+
       // Scrolling optimizations
       fastScrollModifier: 'alt',
       fastScrollSensitivity: 5,
       scrollSensitivity: 3,
-      
+
       // Memory management
       screenReaderMode: false,
       tabStopWidth: 4,
-      
+
       // Advanced features
       logLevel: process.env.NODE_ENV === 'development' ? 'debug' : 'warn'
     }
@@ -229,7 +229,7 @@ export default function WebGLTerminal({
       if (enableWebGL && rendererType === 'webgl') {
         addons.current.webgl = new WebglAddon()
         terminal.current.loadAddon(addons.current.webgl)
-        
+
         // Performance monitoring for WebGL
         addons.current.webgl.onContextLoss(() => {
           console.warn('WebGL context lost, falling back to canvas renderer')
@@ -243,7 +243,7 @@ export default function WebGLTerminal({
           const websocket = new WebSocket(websocketUrl)
           addons.current.attach = new AttachAddon(websocket)
           terminal.current.loadAddon(addons.current.attach)
-          
+
           websocket.onopen = () => setIsConnected(true)
           websocket.onclose = () => setIsConnected(false)
           websocket.onerror = (error) => {
@@ -293,7 +293,7 @@ export default function WebGLTerminal({
     const startPerformanceMonitoring = () => {
       const monitor = performanceMonitor.current
       const now = performance.now()
-      
+
       if (monitor.lastTime === 0) {
         monitor.lastTime = now
         return
@@ -304,8 +304,8 @@ export default function WebGLTerminal({
 
       if (deltaTime >= 1000) { // Update every second
         const fps = Math.round((monitor.frameCount * 1000) / deltaTime)
-        const avgRenderTime = monitor.renderTimes.length > 0 
-          ? monitor.renderTimes.reduce((a, b) => a + b, 0) / monitor.renderTimes.length 
+        const avgRenderTime = monitor.renderTimes.length > 0
+          ? monitor.renderTimes.reduce((a, b) => a + b, 0) / monitor.renderTimes.length
           : 0
 
         setPerformance({
@@ -329,12 +329,12 @@ export default function WebGLTerminal({
     // Render event for performance tracking
     terminal.current.onRender((event) => {
       const renderStart = performance.now()
-      
+
       // Track render performance
       requestAnimationFrame(() => {
         const renderTime = performance.now() - renderStart
         performanceMonitor.current.renderTimes.push(renderTime)
-        
+
         // Keep only last 60 render times
         if (performanceMonitor.current.renderTimes.length > 60) {
           performanceMonitor.current.renderTimes = performanceMonitor.current.renderTimes.slice(-60)
@@ -435,10 +435,10 @@ export default function WebGLTerminal({
   return (
     <div className={`relative w-full h-full ${className}`}>
       {/* Terminal container */}
-      <div 
-        ref={terminalRef} 
+      <div
+        ref={terminalRef}
         className="w-full h-full focus:outline-none"
-        style={{ 
+        style={{
           fontFamily,
           fontSize: `${fontSize}px`
         }}
@@ -460,7 +460,7 @@ export default function WebGLTerminal({
       {websocketUrl && (
         <div className="absolute top-2 right-2">
           <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs ${
-            isConnected 
+            isConnected
               ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300'
               : 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300'
           }`}>

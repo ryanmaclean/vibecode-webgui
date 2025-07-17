@@ -24,13 +24,13 @@ log_test() {
     local status=$1
     local message=$2
     local color=$GREEN
-    
+
     if [ "$status" = "FAIL" ]; then
         color=$RED
     elif [ "$status" = "WARN" ]; then
         color=$YELLOW
     fi
-    
+
     echo -e "${color}[$status]${NC} $message" | tee -a $TEST_RESULTS_FILE
 }
 
@@ -66,15 +66,15 @@ echo "-------------------------------" | tee -a $TEST_RESULTS_FILE
 
 if docker info &> /dev/null; then
     log_test "PASS" "Docker daemon is responsive"
-    
+
     # Check Docker disk space
     docker_space=$(docker system df --format "table {{.Size}}" | tail -n +2 | head -n1)
     log_test "INFO" "Docker disk usage: $docker_space"
-    
+
     # Check running containers
     container_count=$(docker ps | wc -l)
     log_test "INFO" "Running containers: $((container_count - 1))"
-    
+
 else
     log_test "FAIL" "Docker daemon is not responsive"
     exit 1
@@ -114,30 +114,30 @@ EOF
 echo "Creating test cluster..." | tee -a $TEST_RESULTS_FILE
 if kind create cluster --name test-minimal --config /tmp/test-cluster-config.yaml --wait 300s; then
     log_test "PASS" "Successfully created test KIND cluster"
-    
+
     # Test cluster connectivity
     if kubectl cluster-info --context kind-test-minimal &> /dev/null; then
         log_test "PASS" "Cluster API server is responsive"
-        
+
         # Test node readiness
         if kubectl wait --for=condition=Ready nodes --all --timeout=300s --context kind-test-minimal; then
             log_test "PASS" "All nodes are ready"
-            
+
             # Get cluster info
             node_count=$(kubectl get nodes --context kind-test-minimal --no-headers | wc -l)
             log_test "INFO" "Cluster has $node_count node(s)"
-            
+
             # Test basic pod deployment
             echo "Testing basic pod deployment..." | tee -a $TEST_RESULTS_FILE
             kubectl run test-pod --image=nginx:alpine --context kind-test-minimal
-            
+
             if kubectl wait --for=condition=Ready pod/test-pod --timeout=300s --context kind-test-minimal; then
                 log_test "PASS" "Basic pod deployment successful"
-                
+
                 # Test pod networking
                 pod_ip=$(kubectl get pod test-pod -o jsonpath='{.status.podIP}' --context kind-test-minimal)
                 log_test "INFO" "Pod IP: $pod_ip"
-                
+
                 # Cleanup test pod
                 kubectl delete pod test-pod --context kind-test-minimal &> /dev/null
                 log_test "INFO" "Cleaned up test pod"
@@ -150,12 +150,12 @@ if kind create cluster --name test-minimal --config /tmp/test-cluster-config.yam
     else
         log_test "FAIL" "Cluster API server is not responsive"
     fi
-    
+
     # Cleanup test cluster
     echo "Cleaning up test cluster..." | tee -a $TEST_RESULTS_FILE
     kind delete cluster --name test-minimal &> /dev/null
     log_test "INFO" "Test cluster cleaned up"
-    
+
 else
     log_test "FAIL" "Failed to create test KIND cluster"
 fi
@@ -168,7 +168,7 @@ echo "-------------------------------------------" | tee -a $TEST_RESULTS_FILE
 # Check if production cluster config exists
 if [ -f "k8s/kind-simple-config.yaml" ]; then
     log_test "PASS" "Production cluster config found"
-    
+
     # Validate config syntax
     if kind create cluster --name validate-config --config k8s/kind-simple-config.yaml --dry-run 2>/dev/null; then
         log_test "PASS" "Production cluster config is valid"
@@ -191,7 +191,7 @@ if [ -d "k8s" ]; then
     for manifest in k8s/*.yaml; do
         if [ -f "$manifest" ]; then
             manifest_count=$((manifest_count + 1))
-            
+
             # Validate manifest syntax
             if kubectl apply --dry-run=client -f "$manifest" &> /dev/null; then
                 valid_manifests=$((valid_manifests + 1))
@@ -201,7 +201,7 @@ if [ -d "k8s" ]; then
             fi
         fi
     done
-    
+
     log_test "INFO" "Validated $valid_manifests/$manifest_count manifests"
 else
     log_test "FAIL" "k8s directory not found"

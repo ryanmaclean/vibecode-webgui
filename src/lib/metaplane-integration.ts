@@ -1,7 +1,7 @@
 /**
  * Metaplane Data Observability Integration
  * Datadog Acquisition (April 2025) - AI-Powered Data Quality Monitoring
- * 
+ *
  * Staff Engineer Implementation | July 2025
  */
 
@@ -76,7 +76,7 @@ export class MetaplaneDataObservability {
    */
   registerPipeline(pipeline: DataPipelineConfig): void {
     this.pipelines.set(pipeline.name, pipeline)
-    
+
     // Send pipeline registration to Datadog
     datadogLogs.logger.info('Data pipeline registered', {
       pipeline: pipeline.name,
@@ -351,7 +351,7 @@ export class MetaplaneDataObservability {
 
   private calculateFreshness(data: any[]): number {
     if (data.length === 0) return Infinity
-    
+
     // Assume data has a timestamp field
     const timestampField = 'created_at' || 'updated_at' || 'timestamp'
     const timestamps = data
@@ -367,7 +367,7 @@ export class MetaplaneDataObservability {
 
   private calculateSchemaVersion(data: any[]): string {
     if (data.length === 0) return 'empty'
-    
+
     const schema = Object.keys(data[0]).sort().join(',')
     return Buffer.from(schema).toString('base64').substring(0, 8)
   }

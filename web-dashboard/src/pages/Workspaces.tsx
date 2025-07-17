@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreVertical, 
-  Play, 
-  Square, 
-  Trash2, 
+import {
+  Plus,
+  Search,
+  Filter,
+  MoreVertical,
+  Play,
+  Square,
+  Trash2,
   ExternalLink,
   Cpu,
   HardDrive,
@@ -113,8 +113,8 @@ export function Workspaces() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredWorkspaces?.map((workspace) => (
-            <WorkspaceCard 
-              key={workspace.id} 
+            <WorkspaceCard
+              key={workspace.id}
               workspace={workspace}
               onDelete={() => deleteWorkspaceMutation.mutate(workspace.id)}
             />
@@ -131,8 +131,8 @@ export function Workspaces() {
           </div>
           <h3 className="mt-2 text-sm font-medium text-gray-900">No workspaces found</h3>
           <p className="mt-1 text-sm text-gray-500">
-            {searchTerm || statusFilter !== 'all' 
-              ? 'Try adjusting your search or filter criteria.' 
+            {searchTerm || statusFilter !== 'all'
+              ? 'Try adjusting your search or filter criteria.'
               : 'Get started by creating a new workspace.'
             }
           </p>
@@ -142,12 +142,12 @@ export function Workspaces() {
   )
 }
 
-function WorkspaceCard({ 
-  workspace, 
-  onDelete 
-}: { 
+function WorkspaceCard({
+  workspace,
+  onDelete
+}: {
   workspace: Workspace
-  onDelete: () => void 
+  onDelete: () => void
 }) {
   const [showActions, setShowActions] = useState(false)
 
@@ -194,7 +194,7 @@ function WorkspaceCard({
                       Start
                     </button>
                   )}
-                  <a 
+                  <a
                     href={workspace.url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -203,7 +203,7 @@ function WorkspaceCard({
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Open
                   </a>
-                  <button 
+                  <button
                     onClick={onDelete}
                     className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50"
                   >

@@ -11,7 +11,7 @@ type SessionUser = {
 
 export async function requireAuth(request: Request): Promise<{ session: { user: SessionUser } } | NextResponse> {
   const session = await getServerSession(authOptions)
-  
+
   if (!session?.user) {
     return NextResponse.json(
       { error: 'Authentication required' },
@@ -24,7 +24,7 @@ export async function requireAuth(request: Request): Promise<{ session: { user: 
 
 export async function requireRole(role: string, request: Request): Promise<{ session: { user: SessionUser } } | NextResponse> {
   const authResult = await requireAuth(request)
-  
+
   if (authResult instanceof NextResponse) {
     return authResult
   }

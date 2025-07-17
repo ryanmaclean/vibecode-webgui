@@ -13,7 +13,7 @@ const envPath = path.join(__dirname, '../.env.local');
 if (fs.existsSync(envPath)) {
   const envFile = fs.readFileSync(envPath, 'utf8');
   const envLines = envFile.split('\n').filter(line => line.trim() && !line.startsWith('#'));
-  
+
   envLines.forEach(line => {
     const [key, ...valueParts] = line.split('=');
     if (key && valueParts.length > 0) {
@@ -68,7 +68,7 @@ let hasWarnings = false;
 // Check required variables
 Object.entries(requiredVars).forEach(([category, vars]) => {
   console.log(`📋 ${category.toUpperCase()} Variables:`);
-  
+
   vars.forEach(varName => {
     const value = process.env[varName];
     if (!value) {
@@ -81,14 +81,14 @@ Object.entries(requiredVars).forEach(([category, vars]) => {
       console.log(`  ✅ ${varName}: CONFIGURED`);
     }
   });
-  
+
   console.log('');
 });
 
 // Check development variables
 if (process.env.NODE_ENV === 'development') {
   console.log('🔧 DEVELOPMENT Variables:');
-  
+
   devVars.forEach(varName => {
     const value = process.env[varName];
     if (!value) {
@@ -98,7 +98,7 @@ if (process.env.NODE_ENV === 'development') {
       console.log(`  ✅ ${varName}: CONFIGURED`);
     }
   });
-  
+
   console.log('');
 }
 

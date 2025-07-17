@@ -140,15 +140,15 @@ docker exec -it vibecode-webgui-web-1 /bin/sh
 SELECT count(*) FROM pg_stat_activity WHERE state = 'active';
 
 -- Long running queries
-SELECT pid, now() - pg_stat_activity.query_start AS duration, query 
-FROM pg_stat_activity 
+SELECT pid, now() - pg_stat_activity.query_start AS duration, query
+FROM pg_stat_activity
 WHERE (now() - pg_stat_activity.query_start) > interval '5 minutes';
 
 -- Database size
 SELECT pg_size_pretty(pg_database_size('vibecode_dev'));
 
 -- Kill long-running query
-SELECT pg_terminate_backend(pid) FROM pg_stat_activity 
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity
 WHERE (now() - pg_stat_activity.query_start) > interval '10 minutes';
 ```
 
@@ -158,7 +158,7 @@ WHERE (now() - pg_stat_activity.query_start) > interval '10 minutes';
 # Main application health
 curl -s http://localhost:3000/api/monitoring/health | jq
 
-# WebSocket server health  
+# WebSocket server health
 curl -s http://localhost:3001/health | jq
 
 # Database connectivity
@@ -175,7 +175,7 @@ curl -s http://localhost:3000/api/monitoring/health | jq '.checks.datadog'
 
 ### Primary Dashboards
 - [Service Overview](https://app.datadoghq.com/dashboard/vibecode-overview)
-- [Infrastructure Metrics](https://app.datadoghq.com/dashboard/vibecode-infrastructure)  
+- [Infrastructure Metrics](https://app.datadoghq.com/dashboard/vibecode-infrastructure)
 - [Application Performance](https://app.datadoghq.com/dashboard/vibecode-apm)
 - [Error Tracking](https://app.datadoghq.com/dashboard/vibecode-errors)
 - [Data Observability](https://app.datadoghq.com/dashboard/vibecode-data)
@@ -202,7 +202,7 @@ curl -s http://localhost:3000/api/monitoring/health | jq '.checks.datadog'
 
 ### Emergency Contacts
 - **Security Team**: security@vibecode.dev
-- **Legal Team**: legal@vibecode.dev  
+- **Legal Team**: legal@vibecode.dev
 - **External Security**: security-incident@datadog.com
 
 ## 📞 Emergency Procedures

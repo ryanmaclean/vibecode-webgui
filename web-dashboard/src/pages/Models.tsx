@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
-  RefreshCw, 
-  Search, 
-  Filter, 
-  TrendingUp, 
-  DollarSign, 
-  Clock, 
-  CheckCircle, 
+import {
+  RefreshCw,
+  Search,
+  Filter,
+  TrendingUp,
+  DollarSign,
+  Clock,
+  CheckCircle,
   AlertCircle,
   Bot,
   Zap
@@ -64,7 +64,7 @@ export function Models() {
             Available AI models and their performance metrics.
           </p>
         </div>
-        <button 
+        <button
           onClick={() => refreshModelsMutation.mutate()}
           disabled={refreshModelsMutation.isPending}
           className="btn-primary"

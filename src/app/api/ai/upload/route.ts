@@ -48,11 +48,11 @@ function getRAGIndexPath(workspaceId: string) {
 async function ensureDirectories(workspaceId: string) {
   const uploadsDir = getUploadsDir(workspaceId)
   const ragDir = path.dirname(getRAGIndexPath(workspaceId))
-  
+
   if (!existsSync(uploadsDir)) {
     await mkdir(uploadsDir, { recursive: true })
   }
-  
+
   if (!existsSync(ragDir)) {
     await mkdir(ragDir, { recursive: true })
   }
@@ -85,7 +85,7 @@ function detectLanguage(filename: string): string {
     '.md': 'markdown',
     '.txt': 'text'
   }
-  
+
   return languageMap[ext] || 'text'
 }
 
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
     }
 
     await ensureDirectories(workspaceId)
-    
+
     const uploadedFiles: UploadedFile[] = []
     const ragIndexes: RAGIndex[] = []
 
@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
     if (ragIndexes.length > 0) {
       try {
         const ragIndexPath = getRAGIndexPath(workspaceId)
-        
+
         // Load existing index or create new one
         let existingIndex: RAGIndex[] = []
         if (existsSync(ragIndexPath)) {
@@ -263,9 +263,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Upload error:', error)
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to upload files',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -298,7 +298,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Failed to list files:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to list files',
         details: error instanceof Error ? error.message : 'Unknown error'
       },

@@ -1,9 +1,9 @@
 /**
  * Rate Limiting Utility
- * 
+ *
  * Production-ready rate limiting for API endpoints
  * Implements sliding window rate limiting with Redis support
- * 
+ *
  * Staff Engineer Implementation - Enterprise-grade rate limiting
  */
 
@@ -180,8 +180,8 @@ export class RedisRateLimiter {
   }
 
   async checkLimit(
-    key: string, 
-    max: number, 
+    key: string,
+    max: number,
     windowMs: number
   ): Promise<RateLimitResult> {
     const now = Date.now()
@@ -193,7 +193,7 @@ export class RedisRateLimiter {
       const pipeline = this.redis.pipeline()
       pipeline.incr(redisKey)
       pipeline.expire(redisKey, Math.ceil(windowMs / 1000))
-      
+
       const results = await pipeline.exec()
       const count = results[0][1]
 
@@ -210,7 +210,7 @@ export class RedisRateLimiter {
 
     } catch (error) {
       console.error('Redis rate limiting error:', error)
-      
+
       // Fallback to allowing request if Redis fails
       return {
         success: true,

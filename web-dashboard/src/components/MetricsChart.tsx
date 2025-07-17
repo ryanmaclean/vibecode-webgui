@@ -1,10 +1,10 @@
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   AreaChart,
   Area
@@ -24,10 +24,10 @@ interface MetricsChartProps {
   metrics?: ('requests' | 'tokens' | 'cost')[]
 }
 
-export function MetricsChart({ 
-  data, 
-  type = 'area', 
-  metrics = ['requests', 'tokens', 'cost'] 
+export function MetricsChart({
+  data,
+  type = 'area',
+  metrics = ['requests', 'tokens', 'cost']
 }: MetricsChartProps) {
   const chartData = data.map(item => ({
     ...item,
@@ -63,18 +63,18 @@ export function MetricsChart({
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-            <XAxis 
-              dataKey="formattedDate" 
+            <XAxis
+              dataKey="formattedDate"
               tick={{ fontSize: 12 }}
               tickLine={false}
               axisLine={false}
             />
-            <YAxis 
+            <YAxis
               tick={{ fontSize: 12 }}
               tickLine={false}
               axisLine={false}
             />
-            <Tooltip 
+            <Tooltip
               formatter={formatTooltipValue}
               contentStyle={{
                 backgroundColor: 'white',
@@ -106,18 +106,18 @@ export function MetricsChart({
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-          <XAxis 
-            dataKey="formattedDate" 
+          <XAxis
+            dataKey="formattedDate"
             tick={{ fontSize: 12 }}
             tickLine={false}
             axisLine={false}
           />
-          <YAxis 
+          <YAxis
             tick={{ fontSize: 12 }}
             tickLine={false}
             axisLine={false}
           />
-          <Tooltip 
+          <Tooltip
             formatter={formatTooltipValue}
             contentStyle={{
               backgroundColor: 'white',

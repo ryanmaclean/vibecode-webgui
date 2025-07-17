@@ -26,13 +26,13 @@ describe('Monitoring Security Tests', () => {
           sanitizeData: (data: any) => {
             const sensitiveFields = ['password', 'token', 'apiKey', 'secret', 'authorization'];
             const sanitized = { ...data }
-            
+
             for (const field of sensitiveFields) {
               if (sanitized[field]) {
                 sanitized[field] = '[REDACTED]'
               }
             }
-            
+
             return sanitized
           }
         }
@@ -86,7 +86,7 @@ describe('Monitoring Security Tests', () => {
       expect(sanitized.user.id).toBe('user123');
       expect(sanitized.user.profile.name).toBe('Test User');
       expect(sanitized.config.database.host).toBe('localhost');
-      
+
       // Sensitive fields should be redacted
       expect(sanitized.user.password).toBe('[REDACTED]');
       expect(sanitized.user.profile.apiKey).toBe('[REDACTED]');
@@ -98,7 +98,7 @@ describe('Monitoring Security Tests', () => {
     test('should validate admin access for monitoring endpoints', async () => {
       // Mock next-auth session
       const mockGetServerSession = jest.fn();
-      
+
       jest.doMock('next-auth', () => ({
         getServerSession: mockGetServerSession
       }));
@@ -110,7 +110,7 @@ describe('Monitoring Security Tests', () => {
 
       const { GET } = require('../../../src/app/api/monitoring/metrics/route');
       const request = new Request('http://localhost/api/monitoring/metrics');
-      
+
       const response = await GET(request);
       expect(response.status).toBe(200);
 
@@ -124,14 +124,14 @@ describe('Monitoring Security Tests', () => {
 
       // Test no session
       mockGetServerSession.mockResolvedValue(null);
-      
+
       const response3 = await GET(request);
       expect(response3.status).toBe(401);
     });
 
     test('should validate user authentication for metric submission', async () => {
       const mockGetServerSession = jest.fn();
-      
+
       jest.doMock('next-auth', () => ({
         getServerSession: mockGetServerSession
       }));
@@ -148,13 +148,13 @@ describe('Monitoring Security Tests', () => {
         body: JSON.stringify({ type: 'response_time', data: { duration: 150 } }),
         headers: { 'Content-Type': 'application/json' }
       });
-      
+
       const response = await POST(request);
       expect(response.status).toBe(200);
 
       // Test unauthenticated user cannot submit metrics
       mockGetServerSession.mockResolvedValue(null);
-      
+
       const response2 = await POST(request);
       expect(response2.status).toBe(401);
     });
@@ -256,7 +256,7 @@ describe('Monitoring Security Tests', () => {
 
       const maliciousMessage = '<script>alert("XSS")</script>';
       const sanitized = sanitizeLogMessage(maliciousMessage);
-      
+
       expect(sanitized).not.toContain('<script>');
       expect(sanitized).toBe('&lt;script&gt;alert(&quot;XSS&quot;)&lt;&#x2F;script&gt;');
     });
@@ -272,10 +272,10 @@ describe('Monitoring Security Tests', () => {
         checkRate(userId: string): boolean {
           const now = Date.now();
           const requests = this.requests.get(userId) || [];
-          
+
           // Remove old requests outside the window
           const validRequests = requests.filter(time => now - time < this.windowMs);
-          
+
           if (validRequests.length >= this.limit) {
             return false // Rate limit exceeded
           }
@@ -406,7 +406,7 @@ describe('Monitoring Security Tests', () => {
   describe('Audit Logging', () => {
     test('should log security-relevant events', () => {
       const auditLog: any[] = [];
-      
+
       const mockAuditLogger = {
         logSecurityEvent: (event: string, userId: string, details: any) => {
           auditLog.push({

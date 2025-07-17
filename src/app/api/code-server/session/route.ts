@@ -38,7 +38,7 @@ async function startCodeServerContainer(workspaceId: string): Promise<{
 }> {
   // For development, simulate container creation
   // In production, this would interact with Docker/Kubernetes API
-  
+
   const containerId = `code-server-${workspaceId}-${Date.now()}`
   const port = 8080 + Math.floor(Math.random() * 1000) // Random port for demo
   const url = `http://localhost:${port}`
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newSession)
   } catch (error) {
     console.error('Code-server session creation error:', error)
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Invalid request data', details: error.errors },

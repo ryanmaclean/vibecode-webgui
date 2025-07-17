@@ -73,13 +73,13 @@ export default function WorkspaceLayout({
           <span className="text-gray-400 text-sm">•</span>
           <span className="text-gray-400 text-sm">{workspaceId}</span>
         </div>
-        
+
         <div className="flex items-center space-x-3">
           <button
             onClick={() => setShowAIAssistant(!showAIAssistant)}
             className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-              showAIAssistant 
-                ? 'bg-blue-600 text-white' 
+              showAIAssistant
+                ? 'bg-blue-600 text-white'
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
             title="Toggle AI Assistant"
@@ -99,7 +99,7 @@ export default function WorkspaceLayout({
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <div 
+        <div
           className="bg-gray-800 border-r border-gray-700 flex flex-col"
           style={{ width: sidebarWidth }}
         >
@@ -107,7 +107,7 @@ export default function WorkspaceLayout({
           <div className="h-10 bg-gray-750 border-b border-gray-700 flex items-center px-3">
             <span className="text-gray-300 text-sm font-medium">Explorer</span>
           </div>
-          
+
           {/* File Tree Placeholder */}
           <div className="flex-1 p-3 text-gray-400 text-sm">
             <div className="space-y-2">
@@ -158,7 +158,7 @@ export default function WorkspaceLayout({
             className="h-full"
             onReady={(iframe) => {
               console.log('Code-server IDE ready with built-in terminal:', iframe)
-              
+
               // Send message to code-server to show terminal by default
               try {
                 iframe.contentWindow?.postMessage({

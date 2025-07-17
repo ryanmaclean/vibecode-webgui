@@ -66,7 +66,7 @@ const customJestConfig = {
     '^.+\\.(ts|tsx)$': ['babel-jest', {
       presets: [
         ['@babel/preset-env', { targets: { node: 'current' } }],
-        ['@babel/preset-typescript', { 
+        ['@babel/preset-typescript', {
           allowNamespaces: true,
           allowDeclareFields: true
         }],

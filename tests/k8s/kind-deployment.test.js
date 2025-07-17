@@ -13,14 +13,14 @@ describe('KIND Deployment Tests', () => {
 
   beforeAll(async () => {
     console.log('Setting up KIND cluster for testing...')
-    
+
     try {
       // Create KIND cluster if it doesn't exist
       await execAsync(`kind get clusters | grep ${CLUSTER_NAME} || kind create cluster --name ${CLUSTER_NAME}`)
-      
+
       // Set kubectl context
       await execAsync(`kubectl config use-context kind-${CLUSTER_NAME}`)
-      
+
       console.log('KIND cluster ready for testing')
     } catch (error) {
       console.error('Failed to set up KIND cluster:', error)
@@ -30,11 +30,11 @@ describe('KIND Deployment Tests', () => {
 
   afterAll(async () => {
     console.log('Cleaning up test cluster...')
-    
+
     try {
       // Clean up namespace
       await execAsync(`kubectl delete namespace ${NAMESPACE} --ignore-not-found=true`)
-      
+
       // Optionally delete the cluster (comment out to keep for debugging)
       // await execAsync(`kind delete cluster --name ${CLUSTER_NAME}`)
     } catch (error) {
@@ -57,7 +57,7 @@ describe('KIND Deployment Tests', () => {
   describe('Namespace Creation', () => {
     it('should create namespace successfully', async () => {
       await execAsync(`kubectl apply -f infrastructure/kubernetes/namespace.yaml`)
-      
+
       const { stdout } = await execAsync(`kubectl get namespace ${NAMESPACE}`)
       expect(stdout).toContain(NAMESPACE)
     })
@@ -76,7 +76,7 @@ describe('KIND Deployment Tests', () => {
   describe('Storage Resources', () => {
     it('should create persistent volume claims', async () => {
       await execAsync(`kubectl apply -f infrastructure/kubernetes/storage.yaml`)
-      
+
       const { stdout } = await execAsync(`kubectl get pvc -n ${NAMESPACE}`)
       expect(stdout).toContain('workspace-pvc')
       expect(stdout).toContain('config-pvc')
@@ -87,7 +87,7 @@ describe('KIND Deployment Tests', () => {
     it('should have PVCs bound', async () => {
       // Wait for PVCs to be bound
       await execAsync(`kubectl wait --for=condition=Bound pvc --all -n ${NAMESPACE} --timeout=60s`)
-      
+
       const { stdout } = await execAsync(`kubectl get pvc -n ${NAMESPACE}`)
       expect(stdout).toContain('Bound')
     }, 70000)
@@ -124,10 +124,10 @@ describe('KIND Deployment Tests', () => {
 
     it('should deploy code-server successfully', async () => {
       await execAsync(`kubectl apply -f infrastructure/kubernetes/code-server-deployment.yaml`)
-      
+
       // Wait for deployment to be available
       await execAsync(`kubectl wait --for=condition=available deployment/code-server -n ${NAMESPACE} --timeout=120s`)
-      
+
       const { stdout } = await execAsync(`kubectl get deployment code-server -n ${NAMESPACE}`)
       expect(stdout).toContain('3/3')
     }, timeout)
@@ -141,7 +141,7 @@ describe('KIND Deployment Tests', () => {
     it('should have healthy pods', async () => {
       const { stdout } = await execAsync(`kubectl get pods -n ${NAMESPACE} -l app=code-server`)
       expect(stdout).toContain('Running')
-      
+
       // Check if all replicas are ready
       const lines = stdout.split('\n').filter(line => line.includes('code-server'))
       lines.forEach(line => {
@@ -152,7 +152,7 @@ describe('KIND Deployment Tests', () => {
     it('should pass health checks', async () => {
       // Get pod names
       const { stdout: podList } = await execAsync(`kubectl get pods -n ${NAMESPACE} -l app=code-server -o jsonpath='{.items[0].metadata.name}'`)
-      
+
       if (podList) {
         // Check readiness probe
         const { stdout: podStatus } = await execAsync(`kubectl get pod ${podList} -n ${NAMESPACE} -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'`)
@@ -196,7 +196,7 @@ describe('KIND Deployment Tests', () => {
     it('should have RBAC rules applied', async () => {
       const { stdout: role } = await execAsync(`kubectl get role code-server-role -n ${NAMESPACE}`)
       expect(role).toContain('code-server-role')
-      
+
       const { stdout: binding } = await execAsync(`kubectl get rolebinding code-server-rolebinding -n ${NAMESPACE}`)
       expect(binding).toContain('code-server-rolebinding')
     })
@@ -207,14 +207,14 @@ describe('KIND Deployment Tests', () => {
       // Scale up
       await execAsync(`kubectl scale deployment code-server --replicas=5 -n ${NAMESPACE}`)
       await execAsync(`kubectl wait --for=condition=available deployment/code-server -n ${NAMESPACE} --timeout=60s`)
-      
+
       let { stdout } = await execAsync(`kubectl get deployment code-server -n ${NAMESPACE}`)
       expect(stdout).toContain('5/5')
-      
+
       // Scale back down
       await execAsync(`kubectl scale deployment code-server --replicas=3 -n ${NAMESPACE}`)
       await execAsync(`kubectl wait --for=condition=available deployment/code-server -n ${NAMESPACE} --timeout=60s`)
-      
+
       ({ stdout } = await execAsync(`kubectl get deployment code-server -n ${NAMESPACE}`))
       expect(stdout).toContain('3/3')
     }, timeout)
@@ -229,7 +229,7 @@ describe('KIND Deployment Tests', () => {
     it('should have service discovery working', async () => {
       // Test service resolution from within cluster
       const { stdout: podName } = await execAsync(`kubectl get pods -n ${NAMESPACE} -l app=code-server -o jsonpath='{.items[0].metadata.name}'`)
-      
+
       if (podName) {
         const { stdout } = await execAsync(`kubectl exec ${podName} -n ${NAMESPACE} -- nslookup code-server-service`)
         expect(stdout).toContain('code-server-service')

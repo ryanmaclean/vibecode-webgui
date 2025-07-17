@@ -36,7 +36,7 @@ annotation_fields.pod_uid = "kubernetes.pod_uid"
 type = "host_metrics"
 collectors = [
   "cpu",
-  "memory", 
+  "memory",
   "disk",
   "network",
   "filesystem"
@@ -142,7 +142,7 @@ if starts_with(.name, "node_") {
 type = "filter"
 inputs = ["parse_application_logs"]
 condition = '''
-.level == "error" || 
+.level == "error" ||
 .level == "warn" ||
 contains(string!(.message), "authentication") ||
 contains(string!(.message), "authorization") ||

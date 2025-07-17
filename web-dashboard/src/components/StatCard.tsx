@@ -10,14 +10,14 @@ interface StatCardProps {
   color?: 'blue' | 'green' | 'purple' | 'orange' | 'red'
 }
 
-export function StatCard({ 
-  title, 
-  value, 
-  change, 
-  trend, 
-  subtitle, 
-  icon: Icon, 
-  color = 'blue' 
+export function StatCard({
+  title,
+  value,
+  change,
+  trend,
+  subtitle,
+  icon: Icon,
+  color = 'blue'
 }: StatCardProps) {
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600',
@@ -45,8 +45,8 @@ export function StatCard({
             {change && (
               <div className={`ml-2 flex items-center text-sm ${trend ? trendClasses[trend] : 'text-gray-500'}`}>
                 {trend && (
-                  trend === 'up' ? 
-                    <TrendingUp className="h-4 w-4 mr-1" /> : 
+                  trend === 'up' ?
+                    <TrendingUp className="h-4 w-4 mr-1" /> :
                     <TrendingDown className="h-4 w-4 mr-1" />
                 )}
                 {change}

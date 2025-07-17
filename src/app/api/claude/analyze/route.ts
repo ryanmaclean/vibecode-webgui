@@ -1,9 +1,9 @@
 /**
  * Claude Code Analyze API Route
- * 
+ *
  * API endpoint for Claude Code CLI code analysis
  * Handles terminal-based Claude Code analysis commands
- * 
+ *
  * Staff Engineer Implementation - Production-ready Claude CLI API
  */
 
@@ -92,9 +92,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Claude analyze API error:', error)
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error'
       },

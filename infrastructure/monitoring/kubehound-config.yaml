@@ -9,29 +9,29 @@ metadata:
 data:
   config.yaml: |
     # KubeHound configuration for VibeCode cluster security analysis
-    
+
     # Kubernetes cluster configuration
     cluster:
       name: "vibecode-cluster"
       endpoint: "https://kubernetes.default.svc"
-      
+
     # MongoDB configuration for attack graph storage
     mongodb:
       url: "mongodb://kubehound-mongo:27017"
       database: "kubehound"
-      
+
     # Neo4j configuration for graph database
     neo4j:
       url: "bolt://kubehound-neo4j:7687"
       database: "neo4j"
       username: "neo4j"
       password: "password"
-      
+
     # Data collection configuration
     collector:
       # Kubernetes API polling interval
       refresh_interval: "5m"
-      
+
       # Resource types to collect
       resources:
         - "pods"
@@ -53,7 +53,7 @@ data:
         - "ingresses"
         - "nodes"
         - "namespaces"
-        
+
       # Namespace filtering
       namespaces:
         include:
@@ -65,7 +65,7 @@ data:
           - "kube-system"
           - "kube-public"
           - "kube-node-lease"
-          
+
     # Attack path analysis configuration
     analysis:
       # Enable specific attack techniques
@@ -78,7 +78,7 @@ data:
         - "T1615"  # Group Policy Discovery
         - "T1619"  # Cloud Instance Metadata API
         - "T1620"  # Reflective Code Loading
-        
+
       # Privilege escalation paths
       privilege_escalation:
         enabled: true
@@ -90,7 +90,7 @@ data:
           - "sensitive_volume_mounts"
           - "privileged_service_accounts"
           - "cluster_admin_bindings"
-          
+
       # Lateral movement analysis
       lateral_movement:
         enabled: true
@@ -99,7 +99,7 @@ data:
           - "network_access_analysis"
           - "shared_volume_access"
           - "inter_pod_communication"
-          
+
       # Data access analysis
       data_access:
         enabled: true
@@ -108,7 +108,7 @@ data:
           - "configmap_access"
           - "persistent_volume_access"
           - "host_filesystem_access"
-          
+
     # Security policies and rules
     policies:
       # Pod Security Standards
@@ -118,12 +118,12 @@ data:
           - "restricted"
           - "baseline"
           - "privileged"
-          
+
       # Network security policies
       network_security:
         enabled: true
         default_deny: true
-        
+
       # RBAC analysis
       rbac:
         enabled: true
@@ -133,72 +133,72 @@ data:
           - "create clusterrolebindings"
           - "impersonate users"
           - "create serviceaccounts"
-          
+
     # Alerting configuration
     alerting:
       enabled: true
-      
+
       # Datadog integration
       datadog:
         enabled: true
         api_key_secret: "datadog-secret"
         api_key_key: "api-key"
         site: "datadoghq.com"
-        
+
       # Alert rules
       rules:
         - name: "critical_privilege_escalation"
           severity: "critical"
           condition: "attack_path.techniques contains 'T1610' and attack_path.risk_score > 8"
           description: "Critical privilege escalation path detected"
-          
+
         - name: "cluster_admin_access"
-          severity: "high" 
+          severity: "high"
           condition: "rbac.cluster_admin_bindings.count > 0"
           description: "Cluster admin access detected"
-          
+
         - name: "privileged_container"
           severity: "high"
           condition: "pod.security_context.privileged == true"
           description: "Privileged container detected"
-          
+
         - name: "host_network_access"
           severity: "medium"
           condition: "pod.spec.host_network == true"
           description: "Container with host network access"
-          
+
         - name: "sensitive_volume_mount"
           severity: "medium"
           condition: "volume_mount.path in ['/var/run/docker.sock', '/proc', '/sys']"
           description: "Sensitive host path mounted in container"
-          
+
     # Reporting configuration
     reporting:
       enabled: true
-      
+
       # Report formats
       formats:
         - "json"
         - "html"
         - "sarif"
-        
+
       # Report destinations
       destinations:
         # Local file system
         - type: "file"
           path: "/reports"
-          
+
         # Datadog logs
         - type: "datadog"
           api_key_secret: "datadog-secret"
           source: "kubehound"
           service: "vibecode-security"
-          
+
     # Logging configuration
     logging:
       level: "info"
       format: "json"
-      
+
       # Log to Datadog
       datadog:
         enabled: true
@@ -230,7 +230,7 @@ spec:
       - name: kubehound
         image: datadoghq/kubehound:latest
         imagePullPolicy: Always
-        
+
         env:
           - name: KH_CONFIG_FILE
             value: "/etc/kubehound/config.yaml"
@@ -239,14 +239,14 @@ spec:
               secretKeyRef:
                 name: datadog-secret
                 key: api-key
-                
+
         volumeMounts:
           - name: config
             mountPath: /etc/kubehound/
             readOnly: true
           - name: reports
             mountPath: /reports
-            
+
         resources:
           requests:
             memory: "256Mi"
@@ -254,21 +254,21 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "200m"
-            
+
         livenessProbe:
           httpGet:
             path: /health
             port: 8080
           initialDelaySeconds: 30
           periodSeconds: 30
-          
+
         readinessProbe:
           httpGet:
             path: /ready
             port: 8080
           initialDelaySeconds: 10
           periodSeconds: 10
-          
+
       volumes:
         - name: config
           configMap:

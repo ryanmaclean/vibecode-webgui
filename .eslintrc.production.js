@@ -12,7 +12,7 @@ module.exports = [
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/no-require-imports': 'off',
       'react-hooks/exhaustive-deps': 'warn',
-      
+
       // Keep critical rules only
       'no-console': 'error',
       'no-debugger': 'error',

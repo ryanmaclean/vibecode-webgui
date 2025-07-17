@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
 
     // Get real-time metrics from Datadog
     const timeRange = getTimeRange(5) // Last 5 minutes
-    
+
     try {
       // Query Datadog for system metrics
       const queries = await Promise.allSettled([
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
 
       // Process results and extract values
       const [cpu, memory, disk, responseTime, errorRate, activeUsers, activeWorkspaces, uptime, netIn, netOut] = queries
-      
+
       const metrics: SystemMetrics = {
         cpu: extractMetricValue(cpu) || await getCPUUsage(),
         memory: extractMetricValue(memory) || getMemoryUsage(),
@@ -312,7 +312,7 @@ async function queryDatadogMetric(metric: string, timeRange: { from: number; to:
     if (!metricsApi) {
       return null
     }
-    
+
     const response = await metricsApi.queryMetrics({
       from: timeRange.from,
       to: timeRange.to,
@@ -329,17 +329,17 @@ function extractMetricValue(queryResult: any): number | null {
   if (!queryResult || queryResult.status !== 'fulfilled') {
     return null
   }
-  
+
   const result = queryResult.value
   if (!result?.series || result.series.length === 0) {
     return null
   }
-  
+
   const series = result.series[0]
   if (!series.pointlist || series.pointlist.length === 0) {
     return null
   }
-  
+
   // Get the most recent value
   const lastPoint = series.pointlist[series.pointlist.length - 1]
   return lastPoint[1] // [timestamp, value]

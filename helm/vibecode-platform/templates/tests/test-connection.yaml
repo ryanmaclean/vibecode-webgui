@@ -20,30 +20,30 @@ spec:
     - |
       set -e
       echo "Testing VibeCode Platform connectivity..."
-      
+
       # Test that the namespace exists and is accessible
       echo "✓ Running in namespace: {{ .Values.global.namespace }}"
-      
+
       # Test DNS resolution
       nslookup kubernetes.default.svc.cluster.local
       echo "✓ DNS resolution working"
-      
+
       # Test that we can access Kubernetes API
       wget --spider --timeout=30 https://kubernetes.default.svc.cluster.local/api/v1/namespaces/{{ .Values.global.namespace }}
       echo "✓ Kubernetes API accessible"
-      
+
       {{- if .Values.examples.createSampleUser }}
       # Test sample user service if it exists
       if nslookup code-server-sample-user.{{ .Values.global.namespace }}.svc.cluster.local; then
         echo "✓ Sample user service DNS resolution working"
-        
+
         # Try to connect to sample user code-server (if running)
         wget --spider --timeout=10 http://code-server-sample-user.{{ .Values.global.namespace }}.svc.cluster.local:{{ .Values.codeServer.service.port }}/healthz || echo "⚠ Sample user service not ready (this is expected if user hasn't been provisioned)"
       else
         echo "ℹ Sample user service not found (this is expected if examples.createSampleUser is false)"
       fi
       {{- end }}
-      
+
       echo "✅ All connectivity tests passed!"
   securityContext:
     runAsNonRoot: true

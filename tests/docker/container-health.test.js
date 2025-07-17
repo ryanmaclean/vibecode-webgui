@@ -15,11 +15,11 @@ describe('Container Health Tests', () => {
       try {
         const { stdout } = await execAsync('docker-compose ps --format json')
         const containers = stdout.split('\n').filter(line => line.trim()).map(line => JSON.parse(line))
-        
+
         containers.forEach(container => {
           expect(container).toHaveProperty('Name')
           expect(container).toHaveProperty('State')
-          
+
           // Container should be running or in a transitional state
           expect(['running', 'restarting', 'starting']).toContain(container.State.toLowerCase())
         })
@@ -43,7 +43,7 @@ describe('Container Health Tests', () => {
       for (const check of healthChecks) {
         try {
           const { stdout, stderr } = await execAsync(check.command)
-          
+
           if (check.name === 'PostgreSQL') {
             expect(stdout).toContain('accepting connections')
           } else if (check.name === 'Redis') {
@@ -61,10 +61,10 @@ describe('Container Health Tests', () => {
       try {
         const { stdout } = await execAsync('docker stats --no-stream --format "{{.Container}},{{.CPUPerc}},{{.MemUsage}}"')
         const lines = stdout.trim().split('\n')
-        
+
         lines.forEach(line => {
           const [container, cpu, memory] = line.split(',')
-          
+
           expect(container).toBeTruthy()
           expect(cpu).toMatch(/\d+\.\d+%/)
           expect(memory).toMatch(/\d+(\.\d+)?\w+\s*\/\s*\d+(\.\d+)?\w+/)
@@ -78,11 +78,11 @@ describe('Container Health Tests', () => {
       try {
         const { stdout } = await execAsync('docker stats --no-stream --format "{{.Container}},{{.MemPerc}}"')
         const lines = stdout.trim().split('\n')
-        
+
         lines.forEach(line => {
           const [container, memPerc] = line.split(',')
           const memoryPercentage = parseFloat(memPerc.replace('%', ''))
-          
+
           // Memory usage should be reasonable (less than 80% for development)
           expect(memoryPercentage).toBeLessThan(80)
         })
@@ -95,14 +95,14 @@ describe('Container Health Tests', () => {
   describe('Container Logs and Debugging', () => {
     test('should be able to access container logs', async () => {
       const services = ['postgres', 'redis', 'web', 'websocket']
-      
+
       for (const service of services) {
         try {
           const { stdout, stderr } = await execAsync(`docker-compose logs --tail=5 ${service}`)
-          
+
           // Should have either logs or no errors
           expect(stderr).not.toContain('ERROR')
-          
+
           // If container is running, should have some logs
           if (stdout.length > 0) {
             expect(stdout).toContain(service)
@@ -116,7 +116,7 @@ describe('Container Health Tests', () => {
     test('should not have critical errors in logs', async () => {
       try {
         const { stdout } = await execAsync('docker-compose logs --tail=20')
-        
+
         // Check for critical error patterns
         const criticalErrors = [
           /FATAL/i,
@@ -125,7 +125,7 @@ describe('Container Health Tests', () => {
           /ERROR.*database.*connection/i,
           /ERROR.*redis.*connection/i
         ]
-        
+
         criticalErrors.forEach(errorPattern => {
           expect(stdout).not.toMatch(errorPattern)
         })
@@ -140,10 +140,10 @@ describe('Container Health Tests', () => {
       try {
         // Test Redis restart (safest to test)
         await execAsync('docker-compose restart redis')
-        
+
         // Wait for restart
         await new Promise(resolve => setTimeout(resolve, 5000))
-        
+
         // Verify Redis is back up
         const { stdout } = await execAsync('docker exec vibecode-webgui-redis-1 redis-cli ping')
         expect(stdout.trim()).toBe('PONG')
@@ -156,15 +156,15 @@ describe('Container Health Tests', () => {
       try {
         // Set a test value in Redis
         await execAsync('docker exec vibecode-webgui-redis-1 redis-cli set test_key "test_value"')
-        
+
         // Restart Redis
         await execAsync('docker-compose restart redis')
         await new Promise(resolve => setTimeout(resolve, 5000))
-        
+
         // Check if value persists
         const { stdout } = await execAsync('docker exec vibecode-webgui-redis-1 redis-cli get test_key')
         expect(stdout.trim()).toBe('"test_value"')
-        
+
         // Clean up
         await execAsync('docker exec vibecode-webgui-redis-1 redis-cli del test_key')
       } catch (error) {
@@ -180,7 +180,7 @@ describe('Container Health Tests', () => {
         const { stdout } = await execAsync(
           'docker-compose exec -T web nslookup postgres || echo "DNS resolution test"'
         )
-        
+
         // Should either resolve successfully or show DNS test message
         expect(stdout).toMatch(/(postgres|DNS resolution test)/)
       } catch (error) {
@@ -204,14 +204,14 @@ describe('Performance and Load Tests', () => {
     test('should handle basic database operations efficiently', async () => {
       try {
         const startTime = Date.now()
-        
+
         // Perform a simple query
         await execAsync(
           'docker exec vibecode-webgui-postgres-1 psql -U vibecode -d vibecode_dev -c "SELECT COUNT(*) FROM users;"'
         )
-        
+
         const duration = Date.now() - startTime
-        
+
         // Query should complete in reasonable time (under 1 second)
         expect(duration).toBeLessThan(1000)
       } catch (error) {
@@ -221,14 +221,14 @@ describe('Performance and Load Tests', () => {
 
     test('should handle concurrent connections', async () => {
       try {
-        const queries = Array(5).fill().map((_, i) => 
+        const queries = Array(5).fill().map((_, i) =>
           execAsync(
             `docker exec vibecode-webgui-postgres-1 psql -U vibecode -d vibecode_dev -c "SELECT ${i} as query_id;"`
           )
         )
-        
+
         const results = await Promise.all(queries)
-        
+
         // All queries should succeed
         results.forEach((result, i) => {
           expect(result.stdout).toContain(`${i}`)
@@ -243,16 +243,16 @@ describe('Performance and Load Tests', () => {
     test('should handle Redis operations efficiently', async () => {
       try {
         const startTime = Date.now()
-        
+
         // Set and get operations
         await execAsync('docker exec vibecode-webgui-redis-1 redis-cli set perf_test "performance_value"')
         const { stdout } = await execAsync('docker exec vibecode-webgui-redis-1 redis-cli get perf_test')
-        
+
         const duration = Date.now() - startTime
-        
+
         expect(stdout.trim()).toBe('"performance_value"')
         expect(duration).toBeLessThan(500) // Should be very fast
-        
+
         // Clean up
         await execAsync('docker exec vibecode-webgui-redis-1 redis-cli del perf_test')
       } catch (error) {
@@ -265,11 +265,11 @@ describe('Performance and Load Tests', () => {
     test('should start containers in reasonable time', async () => {
       try {
         const startTime = Date.now()
-        
+
         // Stop and start a lightweight service
         await execAsync('docker-compose stop redis')
         await execAsync('docker-compose start redis')
-        
+
         // Wait for health check
         let attempts = 0
         while (attempts < 10) {
@@ -281,9 +281,9 @@ describe('Performance and Load Tests', () => {
             attempts++
           }
         }
-        
+
         const duration = Date.now() - startTime
-        
+
         // Should start within 30 seconds
         expect(duration).toBeLessThan(30000)
         expect(attempts).toBeLessThan(10)

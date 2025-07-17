@@ -1,9 +1,9 @@
 /**
  * Claude Code Generate API Route
- * 
+ *
  * API endpoint for Claude Code CLI code generation
  * Handles terminal-based Claude Code generation commands
- * 
+ *
  * Staff Engineer Implementation - Production-ready Claude CLI API
  */
 
@@ -63,9 +63,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Claude generate API error:', error)
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error'
       },

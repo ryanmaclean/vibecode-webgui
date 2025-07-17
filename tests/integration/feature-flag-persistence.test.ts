@@ -1,9 +1,9 @@
 /**
  * Feature Flag Persistence Tests
- * 
+ *
  * Tests real database storage for feature flags, not in-memory storage
  * Validates persistent feature flag state across application restarts
- * 
+ *
  * Staff Engineer Implementation - Production feature flag validation
  */
 
@@ -34,9 +34,9 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
   describe('Feature Flag Schema', () => {
     test('should have feature_flags table in database', async () => {
       const result = await client.query(`;
-        SELECT table_name 
-        FROM information_schema.tables 
-        WHERE table_schema = 'public' 
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
         AND table_name = 'feature_flags'
       `);
 
@@ -46,8 +46,8 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
     test('should have proper feature flag columns', async () => {
       const result = await client.query(`;
         SELECT column_name, data_type, is_nullable
-        FROM information_schema.columns 
-        WHERE table_schema = 'public' 
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
         AND table_name = 'feature_flags'
         ORDER BY ordinal_position
       `);
@@ -80,12 +80,12 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
       `);
 
       expect(result.rows.length).toBeGreaterThan(0)
-      
+
       // Check specific unique constraint on key column
       const keyConstraint = await client.query(`;
         SELECT kcu.column_name
         FROM information_schema.key_column_usage kcu
-        JOIN information_schema.table_constraints tc 
+        JOIN information_schema.table_constraints tc
           ON kcu.constraint_name = tc.constraint_name
         WHERE tc.table_schema = 'public'
         AND tc.table_name = 'feature_flags'
@@ -100,10 +100,10 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
 
     test('should create feature flag with real persistence', async () => {
       const flagKey = `test-flag-${Date.now()}`
-      
+
       const result = await client.query(`;
         INSERT INTO feature_flags (
-          id, key, name, description, enabled, rollout_percentage, 
+          id, key, name, description, enabled, rollout_percentage,
           user_targeting, created_at, updated_at
         );
         VALUES (
@@ -120,7 +120,7 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].key).toBe(flagKey);
       expect(result.rows[0].enabled).toBe(true);
-      
+
       testFlagId = result.rows[0].id
     })
 
@@ -133,7 +133,7 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
 
       expect(result.rows).toHaveLength(1);
       const flag = result.rows[0];
-      
+
       expect(flag.key).toContain('test-flag-')
       expect(flag.name).toBe('Test Feature Flag');
       expect(flag.enabled).toBe(true);
@@ -162,7 +162,7 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
 
     test('should enforce unique key constraint', async () => {
       const duplicateKey = `duplicate-${Date.now()}`
-      
+
       // First insert should succeed
       await client.query(`
         INSERT INTO feature_flags (
@@ -192,7 +192,7 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
   describe('API Integration with Real Database', () => {
     test('should persist feature flags through API calls', async () => {
       const flagKey = `api-test-${Date.now()}`
-      
+
       // Create flag via API
       const createResponse = await fetch('http://localhost:3000/api/experiments', {
         method: 'POST',
@@ -227,7 +227,7 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
 
     test('should handle feature flag evaluation with database lookup', async () => {
       const evalKey = `eval-test-${Date.now()}`
-      
+
       // Create flag in database
       await client.query(`
         INSERT INTO feature_flags (
@@ -238,10 +238,10 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
 
       // Test evaluation via API
       const evalResponse = await fetch(`http://localhost:3000/api/experiments?action=evaluate&key=${evalKey}&userId=test-user`);
-      
+
       if (evalResponse.ok) {
         const evalData = await evalResponse.json();
-        
+
         // Should return enabled state from database
         expect(evalData).toHaveProperty('enabled')
         expect(evalData.enabled).toBe(true)}
@@ -252,7 +252,7 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
   describe('Performance and Concurrency', () => {
     test('should handle concurrent feature flag operations', async () => {
       const baseKey = `concurrent-${Date.now()}`
-      
+
       // Create multiple flags concurrently
       const promises = Array.from({ length: 10 }, (_, i) =>
         client.query(`
@@ -264,7 +264,7 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
         `, [`${baseKey}-${i}`, `Concurrent Flag ${i}`, i % 2 === 0]));
 
       const results = await Promise.all(promises);
-      
+
       // All inserts should succeed
       results.forEach(result => {
         expect(result.rows).toHaveLength(1);
@@ -288,12 +288,12 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
     test('should efficiently query feature flags with indexes', async () => {
       // Test that key queries use index
       const result = await client.query(`;
-        EXPLAIN (ANALYZE, BUFFERS) 
+        EXPLAIN (ANALYZE, BUFFERS)
         SELECT * FROM feature_flags WHERE key = 'nonexistent-flag'
       `);
 
       const queryPlan = result.rows.map((row: any) => row['QUERY PLAN']).join('\n')
-      
+
       // Should use index scan on key, not sequential scan
       expect(queryPlan).toContain('Index')
       expect(queryPlan).not.toContain('Seq Scan on feature_flags')})})
@@ -301,7 +301,7 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
   describe('Data Integrity', () => {
     test('should maintain audit trail with timestamps', async () => {
       const auditKey = `audit-${Date.now()}`
-      
+
       // Create flag
       const createResult = await client.query(`;
         INSERT INTO feature_flags (
@@ -340,7 +340,7 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
 
     test('should validate JSON structure in user_targeting', async () => {
       const jsonKey = `json-${Date.now()}`
-      
+
       // Valid JSON should succeed
       await client.query(`
         INSERT INTO feature_flags (
@@ -381,7 +381,7 @@ describe('Feature Flag Anti-Fake Implementation Tests', () => {
       const response = await fetch('http://localhost:3000/api/experiments?action=list');
       if (response.ok) {
         const data = await response.json();
-        
+
         if (Array.isArray(data.flags) && data.flags.length > 0) {
           // Check if all flags have realistic IDs (UUIDs, not sequential numbers)
           const hasRealisticIds = data.flags.every((flag: any) => {
@@ -389,21 +389,21 @@ describe('Feature Flag Anti-Fake Implementation Tests', () => {
               flag.id.length >= 32 || // UUID without dashes
               (flag.id.includes('-') && flag.id.length >= 36) // UUID with dashes
             )});
-          
+
           expect(hasRealisticIds).toBe(true);
-          
+
           // Flags should have realistic created_at timestamps, not hardcoded dates
           const hasRealisticTimestamps = data.flags.every((flag: any) => {
             if (flag.created_at) {
               const createdDate = new Date(flag.created_at);
               const now = new Date();
               const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate();
-              
+
               return createdDate >= oneYearAgo && createdDate <= now
             };
             return true // OK if no timestamp field
           })
-          
+
           expect(hasRealisticTimestamps).toBe(true)}
       }
     } catch (error) {
@@ -415,7 +415,7 @@ describe('Feature Flag Anti-Fake Implementation Tests', () => {
     // Test that feature flag evaluation returns different results for different keys
     const testKeys = [`test-${Date.now()}-1`, `test-${Date.now()}-2`]
     const responses: any[] = []
-    
+
     try {
       for (const key of testKeys) {
         const response = await fetch(`http://localhost:3000/api/experiments?action=evaluate&key=${key}&userId=test`);

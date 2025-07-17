@@ -1,9 +1,9 @@
 /**
  * Secure Claude Code CLI Integration
- * 
+ *
  * Security-hardened terminal-based integration with Claude Code CLI
  * Addresses critical vulnerabilities identified in security review
- * 
+ *
  * Staff Engineer Implementation - Production-ready secure CLI integration
  */
 
@@ -66,7 +66,7 @@ export class SecureClaudeCliIntegration extends EventEmitter {
     super()
     this.config = this.validateAndSanitizeConfig(config)
     this.sessionId = this.generateSecureSessionId()
-    
+
     // Set up cleanup on process exit
     process.on('exit', () => this.cleanup())
     process.on('SIGINT', () => this.cleanup())
@@ -81,7 +81,7 @@ export class SecureClaudeCliIntegration extends EventEmitter {
     if (!config.userId || typeof config.userId !== 'string') {
       throw new Error('Valid userId is required')
     }
-    
+
     if (!config.sessionId || typeof config.sessionId !== 'string') {
       throw new Error('Valid sessionId is required')
     }
@@ -124,14 +124,14 @@ export class SecureClaudeCliIntegration extends EventEmitter {
    */
   private isBlockedPath(filePath: string): boolean {
     const normalized = path.normalize(filePath)
-    
+
     // Check for path traversal
     if (normalized.includes('..') || normalized.startsWith('/')) {
       return true
     }
 
     // Check against blocked paths
-    return BLOCKED_PATHS.some(blocked => 
+    return BLOCKED_PATHS.some(blocked =>
       normalized.startsWith(blocked) || normalized.includes(blocked)
     )
   }
@@ -177,7 +177,7 @@ export class SecureClaudeCliIntegration extends EventEmitter {
     return args.map(arg => {
       // Remove dangerous characters
       const sanitized = arg.replace(/[;&|`$()[\]{}\\'"<>]/g, '')
-      
+
       // Limit length
       return sanitized.substring(0, 1000)
     })
@@ -221,10 +221,10 @@ export class SecureClaudeCliIntegration extends EventEmitter {
   private checkRateLimit(userId: string): boolean {
     const now = Date.now()
     const userRequests = this.rateLimiter.get(userId) || []
-    
+
     // Remove requests older than 1 minute
     const recentRequests = userRequests.filter(time => now - time < 60000)
-    
+
     // Check if user has exceeded rate limit (max 20 requests per minute)
     if (recentRequests.length >= 20) {
       return false
@@ -233,7 +233,7 @@ export class SecureClaudeCliIntegration extends EventEmitter {
     // Add current request
     recentRequests.push(now)
     this.rateLimiter.set(userId, recentRequests)
-    
+
     return true
   }
 
@@ -249,7 +249,7 @@ export class SecureClaudeCliIntegration extends EventEmitter {
    */
   async executeCommand(request: SecureClaudeCliRequest): Promise<SecureClaudeCliResponse> {
     const startTime = Date.now()
-    
+
     try {
       // Rate limiting check
       if (!this.checkRateLimit(this.config.userId)) {
@@ -285,9 +285,9 @@ export class SecureClaudeCliIntegration extends EventEmitter {
       // Build and execute command
       const command = await this.buildSecureCommand(sanitizedRequest)
       const result = await this.runSecureCliCommand(command, sanitizedRequest.input)
-      
+
       const responseTime = Date.now() - startTime
-      
+
       return {
         success: true,
         output: this.sanitizeOutput(result.stdout),
@@ -427,7 +427,7 @@ export class SecureClaudeCliIntegration extends EventEmitter {
   private async runSecureCliCommand(command: string[], input: string): Promise<{ stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
       this.processCount++
-      
+
       const process = spawn(command[0], command.slice(1), {
         cwd: this.config.workingDirectory,
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -474,7 +474,7 @@ export class SecureClaudeCliIntegration extends EventEmitter {
       process.on('close', (code) => {
         this.processCount--
         if (killed) return
-        
+
         if (code === 0) {
           resolve({ stdout, stderr })
         } else {
@@ -538,27 +538,27 @@ export class SecureClaudeCliIntegration extends EventEmitter {
     const extension = this.getSecureFileExtension(language)
     const randomName = crypto.randomBytes(16).toString('hex')
     const tempFileName = `claude_${randomName}.${extension}`
-    
+
     // Create secure temp directory
     const tempDir = path.join(this.config.workingDirectory, '.claude_temp')
     await fs.mkdir(tempDir, { recursive: true, mode: 0o750 })
-    
+
     const tempFilePath = path.join(tempDir, tempFileName)
-    
+
     // Validate content size
     if (content.length > MAX_FILE_SIZE) {
       throw new Error('File content exceeds maximum size limit')
     }
 
     // Write with secure permissions
-    await fs.writeFile(tempFilePath, content, { 
+    await fs.writeFile(tempFilePath, content, {
       encoding: 'utf-8',
       mode: 0o640 // Read/write for user, read for group
     })
 
     // Track for cleanup
     this.tempFileCleanup.add(tempFilePath)
-    
+
     return tempFilePath
   }
 
@@ -578,7 +578,7 @@ export class SecureClaudeCliIntegration extends EventEmitter {
     }
 
     const ext = extensions[language || ''] || 'txt'
-    
+
     // Ensure extension is allowed
     return ALLOWED_FILE_EXTENSIONS.includes(`.${ext}`) ? ext : 'txt'
   }

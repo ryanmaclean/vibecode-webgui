@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
+import {
   Settings as SettingsIcon,
   Save,
   RefreshCw,
@@ -105,7 +105,7 @@ export function Settings() {
             Configure platform settings and preferences.
           </p>
         </div>
-        <button 
+        <button
           onClick={() => updateSettingsMutation.mutate(settings)}
           disabled={updateSettingsMutation.isPending || !settings}
           className="btn-primary"
@@ -272,7 +272,7 @@ function AuthenticationSettings({ settings }: { settings: any }) {
             </div>
             <button className="text-sm text-green-700 hover:text-green-800">View Status</button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="label">Session Timeout (hours)</label>
@@ -428,7 +428,7 @@ function AISettings({ settings }: { settings: any }) {
             </div>
             <button className="text-sm text-green-700 hover:text-green-800">Test Connection</button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="label">API Key</label>
@@ -560,7 +560,7 @@ function MonitoringSettings({ settings }: { settings: any }) {
             </div>
             <button className="text-sm text-blue-700 hover:text-blue-800">Test Connection</button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="label">Datadog API Key</label>

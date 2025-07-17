@@ -51,7 +51,7 @@ frontend:
   max_outstanding_per_tenant: 256
   compress_responses: true
 
-# Query frontend configuration  
+# Query frontend configuration
 query_frontend:
   max_outstanding_per_tenant: 256
 

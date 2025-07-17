@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
       if (!monitorsApi) {
         return NextResponse.json({ alerts: [] })
       }
-      
+
       const monitorsResponse = await monitorsApi.listMonitors({
         tags: 'service:vibecode-webgui',
         monitorTags: 'vibecode',

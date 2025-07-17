@@ -11,17 +11,17 @@ data:
     # Server configuration
     server:
       address: "tcp://0.0.0.0:9091"
-      
+
     # Logging configuration
     log:
       level: info
       format: text
-      
+
     # Identity validation configuration
     identity_validation:
       reset_password:
         jwt_secret: "REPLACE_WITH_SECURE_JWT_SECRET"
-    
+
     # Time-based One-Time Password configuration
     totp:
       issuer: VibeCode
@@ -30,20 +30,20 @@ data:
       period: 30
       skew: 1
       secret_size: 32
-    
+
     # WebAuthn configuration for hardware keys
     webauthn:
       timeout: 60s
       display_name: VibeCode Development Platform
       attestation_conveyance_preference: indirect
       user_verification: preferred
-      
+
     # Authentication backend
     authentication_backend:
       password_reset:
         disable: false
       refresh_interval: 5m
-      
+
       # File-based user database for development
       file:
         path: /config/users_database.yml
@@ -53,7 +53,7 @@ data:
           salt_length: 16
           parallelism: 8
           memory: 64
-          
+
     # Access control configuration
     access_control:
       default_policy: deny
@@ -72,18 +72,18 @@ data:
         - domain: "*.vibecode.dev"
           policy: two_factor
           subject: ["group:users", "group:developers"]
-          
+
         # Public documentation
         - domain: docs.localhost
           policy: bypass
-          
+
         # API endpoints - require API access group
         - domain: api.localhost
           policy: one_factor
           subject: ["group:api-users"]
           resources:
             - "^/api/.*$"
-    
+
     # Session configuration
     session:
       secret: "REPLACE_WITH_SECURE_SESSION_SECRET"
@@ -96,7 +96,7 @@ data:
           authelia_url: https://authelia.vibecode.dev
           default_redirection_url: https://vibecode.dev
           same_site: 'lax'
-      
+
       # Redis session storage
       redis:
         host: redis-service.vibecode-platform.svc.cluster.local
@@ -104,13 +104,13 @@ data:
         database_index: 0
         maximum_active_connections: 8
         minimum_idle_connections: 0
-      
+
     # Regulation (rate limiting)
     regulation:
       max_retries: 3
       find_time: 10m
       ban_time: 12h
-      
+
     # Storage configuration
     storage:
       encryption_key: "vibecode-storage-encryption-key-change-in-production"
@@ -121,7 +121,7 @@ data:
         username: vibecode
         password: "vibecode_password"
         timeout: 5s
-        
+
     # Notification configuration
     notifier:
       disable_startup_check: true
@@ -146,7 +146,7 @@ stringData:
         groups:
           - admins
           - users
-          
+
       developer:
         disabled: false
         displayname: "Developer"
@@ -155,7 +155,7 @@ stringData:
         groups:
           - users
           - developers
-          
+
       user:
         disabled: false
         displayname: "Regular User"

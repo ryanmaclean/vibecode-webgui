@@ -8,10 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Search, Clock, Star, Code, Zap, Download, ExternalLink } from 'lucide-react'
-import { 
-  PROJECT_TEMPLATES, 
-  ProjectTemplate, 
-  TEMPLATE_CATEGORIES, 
+import {
+  PROJECT_TEMPLATES,
+  ProjectTemplate,
+  TEMPLATE_CATEGORIES,
   TEMPLATE_LANGUAGES,
   TEMPLATE_FRAMEWORKS,
   getTemplatesByCategory,
@@ -203,7 +203,7 @@ export function ProjectTemplates({ onTemplateSelect, onCreateProject }: ProjectT
             <p className="text-gray-600 mb-4">
               Selected template: <strong>{selectedTemplate.name}</strong>
             </p>
-            
+
             <div className="flex gap-4 items-end">
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-2">Project Name</label>
@@ -213,7 +213,7 @@ export function ProjectTemplates({ onTemplateSelect, onCreateProject }: ProjectT
                   onChange={(e) => setProjectName(e.target.value)}
                 />
               </div>
-              <Button 
+              <Button
                 onClick={handleCreateProject}
                 disabled={!projectName.trim()}
                 className="flex items-center gap-2"
@@ -263,7 +263,7 @@ interface TemplateCardProps {
 
 function TemplateCard({ template, onSelect, isSelected }: TemplateCardProps) {
   return (
-    <Card 
+    <Card
       className={`cursor-pointer transition-all hover:shadow-lg ${
         isSelected ? 'ring-2 ring-blue-500' : ''
       }`}

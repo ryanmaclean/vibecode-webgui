@@ -6,10 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ProjectTemplates } from '@/components/projects/ProjectTemplates'
 import { ProjectScaffolder } from '@/components/projects/ProjectScaffolder'
-import { 
-  FolderPlus, 
-  Sparkles, 
-  Download, 
+import {
+  FolderPlus,
+  Sparkles,
+  Download,
   ExternalLink,
   Rocket,
   Code,
@@ -37,7 +37,7 @@ export default function ProjectsPage() {
     // Create a download bundle
     const projectFiles = projectData.files
     const zipContent = createProjectZip(projectFiles, projectData.name)
-    
+
     // Trigger download
     const blob = new Blob([zipContent], { type: 'application/zip' })
     const url = URL.createObjectURL(blob)
@@ -164,7 +164,7 @@ export default function ProjectsPage() {
                   </Card>
                 </div>
 
-                <ProjectTemplates 
+                <ProjectTemplates
                   onTemplateSelect={handleTemplateSelect}
                   onCreateProject={handleCreateProject}
                 />
@@ -172,14 +172,14 @@ export default function ProjectsPage() {
             ) : (
               <div className="max-w-4xl mx-auto">
                 <div className="mb-6">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => setSelectedTemplate(null)}
                     className="mb-4"
                   >
                     ← Back to Templates
                   </Button>
-                  
+
                   <Card>
                     <CardHeader>
                       <CardTitle>{selectedTemplate.name}</CardTitle>
@@ -215,7 +215,7 @@ export default function ProjectsPage() {
 
                       <div className="mt-6 pt-6 border-t">
                         <div className="flex gap-4">
-                          <Button 
+                          <Button
                             onClick={() => {
                               setProjectName(selectedTemplate.name.toLowerCase().replace(/\s+/g, '-'))
                               setActiveTab('scaffolder')
@@ -225,7 +225,7 @@ export default function ProjectsPage() {
                             <Sparkles className="w-4 h-4" />
                             Start Building
                           </Button>
-                          
+
                           <Button variant="outline" className="flex items-center gap-2">
                             <ExternalLink className="w-4 h-4" />
                             View Demo
@@ -241,7 +241,7 @@ export default function ProjectsPage() {
 
           <TabsContent value="scaffolder">
             {selectedTemplate && (
-              <ProjectScaffolder 
+              <ProjectScaffolder
                 template={selectedTemplate}
                 projectName={projectName || selectedTemplate.name.toLowerCase().replace(/\s+/g, '-')}
                 onDownload={handleDownloadProject}
@@ -279,10 +279,10 @@ function createProjectZip(files: any[], projectName: string): string {
   // In a real implementation, you'd use a library like JSZip
   // For now, return a simple text representation
   let zipContent = `# ${projectName} Project Files\n\n`
-  
+
   files.forEach(file => {
     zipContent += `## ${file.path}\n\`\`\`\n${file.content}\n\`\`\`\n\n`
   })
-  
+
   return zipContent
 }

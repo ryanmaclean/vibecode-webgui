@@ -85,29 +85,29 @@ validate_email() {
 # Check prerequisites
 check_prerequisites() {
     log_info "Checking prerequisites..."
-    
+
     # Check if kubectl is available
     if ! command -v kubectl &> /dev/null; then
         log_error "kubectl is not installed or not in PATH"
         return 1
     fi
-    
+
     # Check if helm is available
     if ! command -v helm &> /dev/null; then
         log_error "helm is not installed or not in PATH"
         return 1
     fi
-    
+
     # Check if KIND cluster exists
     if ! kubectl cluster-info --context "kind-$CLUSTER_NAME" &> /dev/null; then
         log_error "KIND cluster '$CLUSTER_NAME' is not running"
         log_error "Please start the cluster with: kind create cluster --name $CLUSTER_NAME"
         return 1
     fi
-    
+
     # Set kubectl context
     kubectl config use-context "kind-$CLUSTER_NAME" &> /dev/null
-    
+
     log_info "Prerequisites check passed"
 }
 
@@ -126,11 +126,11 @@ deploy_workspace() {
     local storage="$5"
     local group="$6"
     local dry_run="$7"
-    
+
     local release_name="code-server-$user_id"
-    
+
     log_info "Deploying workspace for user '$user_id'..."
-    
+
     # Helm command
     local helm_cmd="helm upgrade --install $release_name $CHARTS_DIR/vibecode-platform"
     helm_cmd+=" --namespace $NAMESPACE"
@@ -142,17 +142,17 @@ deploy_workspace() {
     helm_cmd+=" --set codeServer.resources.limits.memory=$memory"
     helm_cmd+=" --set codeServer.persistence.workspace.size=$storage"
     helm_cmd+=" --wait --timeout 300s"
-    
+
     if [[ "$dry_run" == "true" ]]; then
         log_info "Dry run mode - would execute:"
         echo "$helm_cmd --dry-run"
         helm_cmd+=" --dry-run"
     fi
-    
+
     # Execute helm deployment
     if eval "$helm_cmd"; then
         log_info "Workspace deployed successfully"
-        
+
         if [[ "$dry_run" != "true" ]]; then
             show_connection_info "$user_id"
         fi
@@ -165,7 +165,7 @@ deploy_workspace() {
 # Show connection information
 show_connection_info() {
     local user_id="$1"
-    
+
     log_info "Workspace connection information:"
     echo ""
     echo "  User ID: $user_id"
@@ -194,7 +194,7 @@ main() {
     local storage="10Gi"
     local group="users"
     local dry_run="false"
-    
+
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -249,27 +249,27 @@ main() {
                 ;;
         esac
     done
-    
+
     # Validate required arguments
     if [[ -z "$user_id" || -z "$user_email" ]]; then
         log_error "Missing required arguments"
         show_help
         exit 1
     fi
-    
+
     # Validate inputs
     validate_user_id "$user_id"
     validate_email "$user_email"
-    
+
     # Check prerequisites
     check_prerequisites
-    
+
     # Ensure namespace exists
     ensure_namespace
-    
+
     # Deploy workspace
     deploy_workspace "$user_id" "$user_email" "$cpu" "$memory" "$storage" "$group" "$dry_run"
-    
+
     log_info "Workspace provisioning completed!"
 }
 

@@ -1,9 +1,9 @@
 /**
  * Collaboration WebSocket Server
- * 
+ *
  * Handles real-time synchronization for collaborative editing
  * Integrates with existing Socket.IO infrastructure
- * 
+ *
  * Staff Engineer Implementation - Production-ready collaboration server
  */
 
@@ -137,13 +137,13 @@ export class CollaborationServer {
     let doc = this.documents.get(documentId)
     if (!doc) {
       const ydoc = new Y.Doc()
-      
+
       // Set up persistence
       const persistence = new LeveldbPersistence(
         `${this.persistenceDir}/${documentId}`,
         ydoc
       )
-      
+
       doc = {
         id: documentId,
         projectId,
@@ -153,9 +153,9 @@ export class CollaborationServer {
         users: new Set(),
         lastActivity: new Date()
       }
-      
+
       this.documents.set(documentId, doc)
-      
+
       // Load persisted content
       await persistence.whenSynced
     }
@@ -199,7 +199,7 @@ export class CollaborationServer {
       id: uid,
       // Add user info lookup if available
     }))
-    
+
     socket.emit('collab:users', {
       documentId,
       users: currentUsers
@@ -404,11 +404,11 @@ export class CollaborationServer {
    */
   async destroy(): Promise<void> {
     await this.saveAllDocuments()
-    
+
     for (const doc of this.documents.values()) {
       doc.persistence?.destroy()
     }
-    
+
     this.documents.clear()
     this.userSessions.clear()
   }

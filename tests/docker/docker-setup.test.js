@@ -22,7 +22,7 @@ describe('Docker Setup Tests', () => {
   describe('Docker Compose Configuration', () => {
     test('should have valid docker-compose.yml', async () => {
       const { stdout, stderr } = await execAsync('docker-compose config')
-      
+
       expect(stderr).toBe('')
       expect(stdout).toContain('services:')
       expect(stdout).toContain('postgres:')
@@ -117,7 +117,7 @@ describe('Docker Setup Tests', () => {
   describe('Docker Images and Security', () => {
     test('should use official base images', async () => {
       const { stdout } = await execAsync('docker-compose config')
-      
+
       // Check for official images
       expect(stdout).toContain('postgres:16-alpine')
       expect(stdout).toContain('redis:7-alpine')
@@ -126,7 +126,7 @@ describe('Docker Setup Tests', () => {
 
     test('should have security configurations', async () => {
       const { stdout } = await execAsync('docker-compose config')
-      
+
       // Check for security options
       expect(stdout).toContain('no-new-privileges')
       expect(stdout).toContain('cap_drop')
@@ -135,7 +135,7 @@ describe('Docker Setup Tests', () => {
 
     test('should have resource limits', async () => {
       const { stdout } = await execAsync('docker-compose config')
-      
+
       // Check for deploy resource limits
       expect(stdout).toContain('resources')
       expect(stdout).toContain('limits')
@@ -146,7 +146,7 @@ describe('Docker Setup Tests', () => {
   describe('Environment and Configuration', () => {
     test('should load environment variables correctly', async () => {
       const { stdout } = await execAsync('docker-compose config')
-      
+
       // Should reference .env.docker file
       expect(stdout).toContain('env_file')
       expect(stdout).toContain('.env.docker')
@@ -154,7 +154,7 @@ describe('Docker Setup Tests', () => {
 
     test('should have proper port mappings', async () => {
       const { stdout } = await execAsync('docker-compose config')
-      
+
       // Check for correct port mappings
       expect(stdout).toContain('3000:3000') // Web app
       expect(stdout).toContain('3001:3001') // WebSocket
@@ -172,7 +172,7 @@ describe('Container Integration Tests', () => {
         const { stdout } = await execAsync(
           'docker exec vibecode-webgui-postgres-1 psql -U vibecode -d vibecode_dev -c "\\dt"'
         )
-        
+
         // Check for all required tables
         expect(stdout).toContain('users')
         expect(stdout).toContain('projects')
@@ -191,7 +191,7 @@ describe('Container Integration Tests', () => {
         const { stdout } = await execAsync(
           'docker exec vibecode-webgui-postgres-1 psql -U vibecode -d vibecode_dev -c "\\di"'
         )
-        
+
         // Check for key indexes
         expect(stdout).toContain('idx_users_email')
         expect(stdout).toContain('idx_projects_owner')
@@ -218,7 +218,7 @@ describe('Container Integration Tests', () => {
         const { stdout } = await execAsync(
           'docker-compose exec -T web ping -c 1 postgres || echo "Service not running"'
         )
-        
+
         // Either ping succeeds or service is not running (both acceptable)
         expect(stdout).toMatch(/(1 packets transmitted|Service not running)/)
       } catch (error) {
@@ -231,12 +231,12 @@ describe('Container Integration Tests', () => {
 describe('Production Readiness Tests', () => {
   test('should have Dockerfile optimized for production', async () => {
     const { stdout } = await execAsync('cat Dockerfile')
-    
+
     // Check for multi-stage build
     expect(stdout).toContain('FROM node:18-alpine AS deps')
     expect(stdout).toContain('FROM node:18-alpine AS builder')
     expect(stdout).toContain('FROM node:18-alpine AS runner')
-    
+
     // Check for security features
     expect(stdout).toContain('adduser --system')
     expect(stdout).toContain('USER nextjs')
@@ -257,7 +257,7 @@ describe('Production Readiness Tests', () => {
 
   test('should have fly.toml for deployment', async () => {
     const { stdout } = await execAsync('cat fly.toml')
-    
+
     expect(stdout).toContain('app = "vibecode-webgui"')
     expect(stdout).toContain('[http_service]')
     expect(stdout).toContain('internal_port = 3000')

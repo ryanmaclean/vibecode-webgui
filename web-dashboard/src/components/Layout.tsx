@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { 
-  Home, 
-  Server, 
-  Bot, 
-  Users, 
-  BarChart3, 
-  Settings, 
-  Menu, 
+import {
+  Home,
+  Server,
+  Bot,
+  Users,
+  BarChart3,
+  Settings,
+  Menu,
   X,
   Activity,
   Shield

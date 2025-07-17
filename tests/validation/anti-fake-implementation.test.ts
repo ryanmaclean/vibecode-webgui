@@ -1,6 +1,6 @@
 /**
  * Anti-Fake Implementation Validation Tests
- * 
+ *
  * These tests specifically check for and fail on AI-generated fake implementations
  * Staff Engineer Quality Assurance - No False Positives Allowed
  */
@@ -11,7 +11,7 @@ import * as path from 'path'
 
 describe('Anti-Fake Implementation Validation', () => {
   const srcDir = path.join(process.cwd(), 'src');
-  
+
   test('should not have Math.random() in monitoring code', () => {
     const monitoringFiles = [
       'src/app/api/monitoring/health/route.ts',
@@ -23,10 +23,10 @@ describe('Anti-Fake Implementation Validation', () => {
     monitoringFiles.forEach(filePath => {
       if (fs.existsSync(filePath)) {
         const content = fs.readFileSync(filePath, 'utf8');
-        
+
         // Check for suspicious Math.random usage
         const randomMatches = content.match(/Math\.random\(\)/g) || [];
-        
+
         // Allow maximum 1 Math.random for legitimate randomization (like request IDs)
         if (randomMatches.length > 1) {
           const lines = content.split('\n');
@@ -46,14 +46,14 @@ describe('Anti-Fake Implementation Validation', () => {
     criticalFiles.forEach(filePath => {
       if (fs.existsSync(filePath)) {
         const content = fs.readFileSync(filePath, 'utf8');
-        
+
         const suspiciousPatterns = [
           /for demonstration/i,
           /placeholder.*implement/i,
           /mock data/i,
           /hardcoded.*replace/i
         ];
-        
+
         suspiciousPatterns.forEach(pattern => {
           if (pattern.test(content)) {
             const lines = content.split('\n');
@@ -72,13 +72,13 @@ describe('Anti-Fake Implementation Validation', () => {
     } catch (importError) {
       // Module import issues are OK for this test
     }
-    
+
     // If we can access the health check, verify it doesn't return hardcoded responses
     try {
       const response = await fetch('http://localhost:3000/api/monitoring/health');
       if (response.ok) {
         const data = await response.json();
-        
+
         // Check that response contains real data, not fake
         if (data.checks?.database) {
           // Should not have hardcoded connection counts
@@ -86,7 +86,7 @@ describe('Anti-Fake Implementation Validation', () => {
             throw new Error('Database health check returns hardcoded activeConnections: 5');
           }
         }
-        
+
         if (data.checks?.redis) {
           // Should not have hardcoded memory values
           if (data.checks.redis.details?.memoryUsage === '45MB') {
@@ -114,18 +114,18 @@ describe('Anti-Fake Implementation Validation', () => {
     testFiles.forEach(filePath => {
       if (fs.existsSync(filePath)) {
         const content = fs.readFileSync(filePath, 'utf8');
-        
+
         // Count mock usage
         const mockCount = (content.match(/jest\.mock/g) || []).length;
         const mockFnCount = (content.match(/jest\.fn/g) || []).length;
-        
+
         // If tests have excessive mocking, they're probably not testing real functionality
         if (mockCount > 5) {
           throw new Error(`Test file ${filePath} has excessive mocking (${mockCount} jest.mock calls). Consider integration tests.`);
         }
-        
+
         // Check for complete module mocking of critical dependencies
-        if (content.includes("jest.mock('@datadog/browser-rum')") && 
+        if (content.includes("jest.mock('@datadog/browser-rum')") &&
             content.includes("jest.mock('@datadog/browser-logs')") &&
             content.includes("jest.mock('dd-trace')")) {
           throw new Error(`Test file ${filePath} mocks all Datadog modules - no real integration validation`);
@@ -139,7 +139,7 @@ describe('Anti-Fake Implementation Validation', () => {
       const response = await fetch('http://localhost:3000/api/monitoring/metrics');
       if (response.ok) {
         const data = await response.json();
-        
+
         // Test multiple times to ensure values change (not hardcoded);
         const responses = [];
         for (let i = 0; i < 3; i++) {
@@ -149,7 +149,7 @@ describe('Anti-Fake Implementation Validation', () => {
             responses.push(await nextResponse.json());
           }
         }
-        
+
         // CPU usage should vary (real system) or be consistent (real monitoring);
         // But should NOT be random values between 10-40 every time
         if (responses.length >= 2) {
@@ -160,7 +160,7 @@ describe('Anti-Fake Implementation Validation', () => {
             const allVeryDifferent = cpuValues.every((cpu, i) => ;
               i === 0 || Math.abs(cpu - cpuValues[i-1]) > 5
             );
-            
+
             if (allInRange && allVeryDifferent) {
               throw new Error(`CPU values appear to be fake random data: ${cpuValues.join(', ')}`);
             }
@@ -191,7 +191,7 @@ describe('Anti-Fake Implementation Validation', () => {
       if (tableNames.length > 0) {
         // Check if any of these tables are referenced in the code
         let tablesUsed = 0
-        
+
         codeFiles.forEach(filePath => {
           if (fs.existsSync(filePath)) {
             const content = fs.readFileSync(filePath, 'utf8');
@@ -217,7 +217,7 @@ describe('Anti-Fake Implementation Validation', () => {
       const flagsResponse = await fetch('http://localhost:3000/api/experiments?action=list');
       if (flagsResponse.ok) {
         const flagsData = await flagsResponse.json();
-        
+
         // Check if flags are hardcoded or come from real storage
         if (Array.isArray(flagsData.flags)) {
           // Check for suspicious hardcoded flag names
@@ -226,11 +226,11 @@ describe('Anti-Fake Implementation Validation', () => {
             'editor_theme_dark_plus',
             'test_flag'
           ]
-          
+
           const hardcodedFlags = flagsData.flags.filter((flag: any) => ;
             suspiciousFlagNames.includes(flag.key);
           );
-          
+
           if (hardcodedFlags.length === flagsData.flags.length) {
             throw new Error('All feature flags appear to be hardcoded test data');
           }
@@ -246,10 +246,10 @@ describe('Anti-Fake Implementation Validation', () => {
 
   test('should validate Metaplane integration is not purely cosmetic', () => {
     const metaplaneFile = 'src/lib/metaplane-integration.ts';
-    
+
     if (fs.existsSync(metaplaneFile)) {
       const content = fs.readFileSync(metaplaneFile, 'utf8');
-      
+
       // Check for signs of cosmetic implementation
       const suspiciousPatterns = [;
         /process\.env\.METAPLANE_AI_ENDPOINT.*undefined/,
@@ -257,7 +257,7 @@ describe('Anti-Fake Implementation Validation', () => {
         /fake.*data/i,
         /Math\.random.*anomaly/i
       ]
-      
+
       suspiciousPatterns.forEach(pattern => {
         if (pattern.test(content)) {
           const lines = content.split('\n');
@@ -265,9 +265,9 @@ describe('Anti-Fake Implementation Validation', () => {
           console.warn(`Warning: Metaplane integration may be cosmetic:\n${matchingLines.join('\n')}`);
         }
       });
-      
+
       // Check if it's trying to send data to undefined endpoints
-      if (content.includes('process.env.METAPLANE_AI_ENDPOINT') && 
+      if (content.includes('process.env.METAPLANE_AI_ENDPOINT') &&
           !process.env.METAPLANE_AI_ENDPOINT) {
         console.warn('Warning: Metaplane integration endpoint not configured');
       }
@@ -286,7 +286,7 @@ describe('Code Quality Validation', () => {
       if (fs.existsSync(filePath)) {
         const content = fs.readFileSync(filePath, 'utf8');
         const todoMatches = content.match(/TODO:/g) || [];
-        
+
         if (todoMatches.length > 2) {
           const lines = content.split('\n');
           const todoLines = lines.filter(line => line.includes('TODO:');
@@ -298,22 +298,22 @@ describe('Code Quality Validation', () => {
 
   test('should have proper error handling instead of always returning success', () => {
     const healthFile = 'src/app/api/monitoring/health/route.ts';
-    
+
     if (fs.existsSync(healthFile)) {
       const content = fs.readFileSync(healthFile, 'utf8');
-      
+
       // Should have try/catch blocks
       const tryCount = (content.match(/try\s*{/g) || []).length;
       const catchCount = (content.match(/catch\s*\(/g) || []).length;
-      
+
       if (tryCount === 0 || catchCount === 0) {
         throw new Error('Health check endpoint lacks proper error handling');
       }
-      
+
       // Should not always return status: 'healthy'
       const healthyMatches = content.match(/status:\s*['"]healthy['"]/g) || [];
       const unhealthyMatches = content.match(/status:\s*['"]unhealthy['"]/g) || [];
-      
+
       if (healthyMatches.length > 0 && unhealthyMatches.length === 0) {
         console.warn('Warning: Health check may never return unhealthy status');
       }

@@ -39,11 +39,11 @@ describe('/api/ai/upload', () => {
   describe('POST - File Upload', () => {
     it('successfully uploads and processes files', async () => {
       const { writeFile, mkdir } = await import('fs/promises')
-      
+
       // Mock file content
       const fileContent = 'console.log("Hello world");'
       const mockFile = new File([fileContent], 'test.js', { type: 'application/javascript' })
-      
+
       // Create FormData
       const formData = new FormData()
       formData.append('workspaceId', 'test-workspace')
@@ -139,7 +139,7 @@ describe('/api/ai/upload', () => {
     it('creates RAG chunks for text content', async () => {
       const longContent = Array(2000).fill('word').join(' ') // Create content longer than chunk size
       const mockFile = new File([longContent], 'large.txt', { type: 'text/plain' })
-      
+
       const formData = new FormData()
       formData.append('workspaceId', 'test-workspace')
       formData.append('files', mockFile)
@@ -161,7 +161,7 @@ describe('/api/ai/upload', () => {
         new File(['file 2 content'], 'file2.py'),
         new File(['file 3 content'], 'file3.md')
       ]
-      
+
       const formData = new FormData()
       formData.append('workspaceId', 'test-workspace')
       files.forEach(file => formData.append('files', file))
@@ -192,13 +192,13 @@ describe('/api/ai/upload', () => {
       })
 
       const response = await POST(request)
-      
+
       expect(response.status).toBe(200)
     })
 
     it('creates proper directory structure', async () => {
       const { mkdir } = await import('fs/promises')
-      
+
       const formData = new FormData()
       formData.append('workspaceId', 'test-workspace')
       formData.append('files', new File(['test'], 'test.txt'))
@@ -220,7 +220,7 @@ describe('/api/ai/upload', () => {
     it('handles filesystem errors gracefully', async () => {
       const { writeFile } = await import('fs/promises')
       jest.mocked(writeFile).mockRejectedValue(new Error('Disk full'))
-      
+
       const formData = new FormData()
       formData.append('workspaceId', 'test-workspace')
       formData.append('files', new File(['test'], 'test.txt'))
@@ -267,13 +267,13 @@ describe('/api/ai/upload', () => {
       const content1 = 'same content'
       const content2 = 'same content'
       const content3 = 'different content'
-      
+
       const files = [
         new File([content1], 'file1.txt'),
         new File([content2], 'file2.txt'),
         new File([content3], 'file3.txt')
       ]
-      
+
       const formData = new FormData()
       formData.append('workspaceId', 'test-workspace')
       files.forEach(file => formData.append('files', file))
@@ -293,7 +293,7 @@ describe('/api/ai/upload', () => {
     it('counts lines correctly', async () => {
       const multiLineContent = 'line 1\nline 2\nline 3\nline 4'
       const mockFile = new File([multiLineContent], 'multi.txt')
-      
+
       const formData = new FormData()
       formData.append('workspaceId', 'test-workspace')
       formData.append('files', mockFile)
@@ -313,7 +313,7 @@ describe('/api/ai/upload', () => {
       // Create a binary-like file
       const binaryContent = new Uint8Array([0, 1, 2, 3, 255, 254, 253])
       const mockFile = new File([binaryContent], 'binary.bin')
-      
+
       const formData = new FormData()
       formData.append('workspaceId', 'test-workspace')
       formData.append('files', mockFile)
@@ -324,7 +324,7 @@ describe('/api/ai/upload', () => {
       })
 
       const response = await POST(request)
-      
+
       // Should not crash, even if binary content causes issues
       expect(response.status).toBe(200)
     })
@@ -334,7 +334,7 @@ describe('/api/ai/upload', () => {
     it('creates chunks with proper metadata', async () => {
       const content = 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5'
       const mockFile = new File([content], 'test.txt')
-      
+
       const formData = new FormData()
       formData.append('workspaceId', 'test-workspace')
       formData.append('files', mockFile)
@@ -352,7 +352,7 @@ describe('/api/ai/upload', () => {
 
     it('handles existing RAG index', async () => {
       const { readFile, writeFile } = await import('fs/promises')
-      
+
       // Mock existing RAG index
       const existingIndex = [
         {
@@ -360,10 +360,10 @@ describe('/api/ai/upload', () => {
           chunks: [{ id: 'chunk-1', content: 'existing content' }]
         }
       ]
-      
+
       jest.mocked(existsSync).mockReturnValue(true)
       jest.mocked(readFile).mockResolvedValue(JSON.stringify(existingIndex))
-      
+
       const formData = new FormData()
       formData.append('workspaceId', 'test-workspace')
       formData.append('files', new File(['new content'], 'new.txt'))

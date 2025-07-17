@@ -35,7 +35,7 @@ CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_workspaces_user_id ON workspaces(user_id);
 
 -- Insert test data
-INSERT INTO users (email, name) VALUES 
+INSERT INTO users (email, name) VALUES
     ('admin@vibecode.dev', 'Admin User'),
     ('test@vibecode.dev', 'Test User')
 ON CONFLICT (email) DO NOTHING;

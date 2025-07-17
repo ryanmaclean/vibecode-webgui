@@ -51,11 +51,11 @@ async function validateApiKey() {
 
     const req = https.request(options, (res) => {
       let data = ''
-      
+
       res.on('data', (chunk) => {
         data += chunk
       })
-      
+
       res.on('end', () => {
         try {
           const result = JSON.parse(data)
@@ -104,7 +104,7 @@ async function sendTestMetric() {
     }
 
     const postData = JSON.stringify(metric)
-    
+
     const options = {
       hostname: `api.${DD_SITE}`,
       port: 443,
@@ -119,11 +119,11 @@ async function sendTestMetric() {
 
     const req = https.request(options, (res) => {
       let data = ''
-      
+
       res.on('data', (chunk) => {
         data += chunk
       })
-      
+
       res.on('end', () => {
         try {
           const result = JSON.parse(data)
@@ -170,7 +170,7 @@ async function sendTestEvent() {
     }
 
     const postData = JSON.stringify(event)
-    
+
     const options = {
       hostname: `api.${DD_SITE}`,
       port: 443,
@@ -185,11 +185,11 @@ async function sendTestEvent() {
 
     const req = https.request(options, (res) => {
       let data = ''
-      
+
       res.on('data', (chunk) => {
         data += chunk
       })
-      
+
       res.on('end', () => {
         try {
           const result = JSON.parse(data)
@@ -274,7 +274,7 @@ async function runTests() {
   console.log('   📈 Metric: vibecode.test.integration')
   console.log('   📅 Event: "VibeCode Monitoring Integration Test"')
   console.log('   🏷️  Tags: test:integration, service:vibecode-webgui')
-  
+
   return true
 }
 

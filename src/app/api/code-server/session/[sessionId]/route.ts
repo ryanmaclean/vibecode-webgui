@@ -88,7 +88,7 @@ export async function DELETE(
 
     // Mark session as stopped
     codeServerSession.status = 'stopped'
-    
+
     // Remove from active sessions after a short delay
     setTimeout(() => {
       activeSessions.delete(sessionId)
@@ -126,7 +126,7 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    
+
     // Update session properties
     if (body.status && ['starting', 'ready', 'error', 'stopped'].includes(body.status)) {
       codeServerSession.status = body.status

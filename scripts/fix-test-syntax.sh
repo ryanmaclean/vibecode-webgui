@@ -15,27 +15,27 @@ echo "$TEST_FILES"
 for file in $TEST_FILES; do
   if [[ -f "$file" ]]; then
     echo "🔍 Checking $file..."
-    
+
     # Check for compilation errors
     if \! npx tsc --noEmit "$file" 2>/dev/null; then
       echo "❌ TypeScript errors in $file"
-      
+
       # Common fixes
       # 1. Add missing semicolons after variable declarations
       sed -i '' 's/const \([^=]*=[^;]*\)$/const \1;/g' "$file"
       sed -i '' 's/let \([^=]*=[^;]*\)$/let \1;/g' "$file"
       sed -i '' 's/var \([^=]*=[^;]*\)$/var \1;/g' "$file"
-      
+
       # 2. Fix object literal syntax
       sed -i '' 's/,\s*}/}/g' "$file"
       sed -i '' 's/,\s*]/]/g' "$file"
-      
+
       # 3. Fix import statements
       sed -i '' 's/import \([^;]*\)$/import \1;/g' "$file"
-      
+
       # 4. Fix export statements
       sed -i '' 's/export \([^;]*\)$/export \1;/g' "$file"
-      
+
       echo "✅ Applied common fixes to $file"
     else
       echo "✅ $file is valid"
@@ -49,7 +49,7 @@ if npx tsc --noEmit; then
 else
   echo "❌ TypeScript compilation issues remain"
   echo "📝 Running detailed check..."
-  
+
   # Show specific errors
   for file in $TEST_FILES; do
     if [[ -f "$file" ]]; then

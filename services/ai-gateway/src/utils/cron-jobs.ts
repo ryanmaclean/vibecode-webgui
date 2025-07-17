@@ -61,10 +61,10 @@ async function cleanupCache(): Promise<void> {
         // Get all cache keys
         const cacheKeys = await redisService.keys('cache:*');
         let expiredCount = 0;
-        
+
         for (const key of cacheKeys) {
             const ttl = await redisService.ttl(key);
-            
+
             // If TTL is -1, the key exists but has no expiration
             // If TTL is -2, the key doesn't exist
             // If TTL is 0 or negative, it's expired
@@ -76,7 +76,7 @@ async function cleanupCache(): Promise<void> {
                 expiredCount++;
             }
         }
-        
+
         logger.info('Cache cleanup completed', {
             totalKeys: cacheKeys.length,
             expiredKeys: expiredCount
@@ -92,10 +92,10 @@ async function generateDailyReport(): Promise<void> {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const dateStr = yesterday.toISOString().split('T')[0];
-        
+
         // Get global usage for yesterday
         const globalUsage = await redisService.hGetAll(`usage:global:${dateStr}`);
-        
+
         if (globalUsage && Object.keys(globalUsage).length > 0) {
             const report = {
                 date: dateStr,
@@ -104,14 +104,14 @@ async function generateDailyReport(): Promise<void> {
                 totalCost: parseFloat(globalUsage.cost || '0'),
                 generatedAt: new Date().toISOString()
             };
-            
+
             // Store the daily report
             await redisService.set(
                 `report:daily:${dateStr}`,
                 JSON.stringify(report),
                 30 * 24 * 60 * 60 // Keep for 30 days
             );
-            
+
             logger.info('Daily report generated', report);
         } else {
             logger.info('No usage data found for yesterday', { date: dateStr });
@@ -126,37 +126,37 @@ async function cleanupOldUsageData(): Promise<void> {
     try {
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - 30); // Keep last 30 days
-        
+
         // Get all usage keys
         const usageKeys = await redisService.keys('usage:*');
         let deletedCount = 0;
-        
+
         for (const key of usageKeys) {
             // Extract date from key (format: usage:type:identifier:YYYY-MM-DD)
             const parts = key.split(':');
             if (parts.length >= 4) {
                 const dateStr = parts[parts.length - 1];
                 const keyDate = new Date(dateStr);
-                
+
                 if (!isNaN(keyDate.getTime()) && keyDate < cutoffDate) {
                     await redisService.del(key);
                     deletedCount++;
                 }
             }
         }
-        
+
         // Also cleanup old reports
         const reportKeys = await redisService.keys('report:daily:*');
         for (const key of reportKeys) {
             const dateStr = key.split(':')[2];
             const keyDate = new Date(dateStr);
-            
+
             if (!isNaN(keyDate.getTime()) && keyDate < cutoffDate) {
                 await redisService.del(key);
                 deletedCount++;
             }
         }
-        
+
         logger.info('Old usage data cleanup completed', {
             cutoffDate: cutoffDate.toISOString(),
             deletedKeys: deletedCount

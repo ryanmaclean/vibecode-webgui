@@ -50,10 +50,10 @@ describe('FeatureFlagEngine', () => {
         createdBy: 'test_user'
       };
       await engine.createFlag(flag)
-      
+
       // Test that flag can be evaluated
       const result = await engine.evaluateFlag('test_flag', mockContext)
-      
+
       expect(result.flagKey).toBe('test_flag')
       expect(['control', 'treatment']).toContain(result.variant);
       expect(result.isExperiment).toBe(true)})})
@@ -74,13 +74,13 @@ describe('FeatureFlagEngine', () => {
       })
 
       const result = await engine.evaluateFlag('disabled_flag', mockContext)
-      
+
       expect(result.variant).toBe('control');
       expect(result.isExperiment).toBe(false)})
 
     test('should return control for non-existent flag', async () => {
       const result = await engine.evaluateFlag('non_existent_flag', mockContext)
-      
+
       expect(result.variant).toBe('control');
       expect(result.isExperiment).toBe(false)})
 
@@ -101,7 +101,7 @@ describe('FeatureFlagEngine', () => {
 
       const result1 = await engine.evaluateFlag('consistency_test', mockContext)
       const result2 = await engine.evaluateFlag('consistency_test', mockContext);
-      
+
       expect(result1.variant).toBe(result2.variant);
       expect(result1.allocationKey).toBe(result2.allocationKey)})})
 
@@ -199,7 +199,7 @@ describe('FeatureFlagEngine', () => {
         await engine.evaluateFlag('results_test', context)
         await engine.trackMetric('results_test', 'conversion', Math.random() > 0.5 ? 1 : 0, context)}
       const results = await engine.getExperimentResults('results_test');
-      
+
       expect(results.flag).toBeTruthy()
       expect(results.flag?.key).toBe('results_test');
       expect(results.metrics).toBeDefined();
@@ -207,7 +207,7 @@ describe('FeatureFlagEngine', () => {
 
     test('should return null for non-existent flag results', async () => {
       const results = await engine.getExperimentResults('non_existent_flag');
-      
+
       expect(results.flag).toBeNull();
       expect(results.metrics).toEqual({});
       expect(results.statisticalSignificance).toEqual({})})})
@@ -243,7 +243,7 @@ describe('FeatureFlagEngine', () => {
         await engine.trackMetric('stats_test', 'conversion', conversionValue, testContexts[i])}
       const results = await engine.getExperimentResults('stats_test')
       const controlMetrics = results.metrics['control'];
-      
+
       expect(controlMetrics.totalSamples).toBe(5);
       expect(controlMetrics.conversionRate).toBe(0.6) // 3/5 = 60%
     })})
@@ -265,7 +265,7 @@ describe('FeatureFlagEngine', () => {
       })
 
       const sameUserContext = { userId: 'consistent_user' };
-      
+
       const results = await Promise.all([
         engine.evaluateFlag('hash_test', sameUserContext),
         engine.evaluateFlag('hash_test', sameUserContext),

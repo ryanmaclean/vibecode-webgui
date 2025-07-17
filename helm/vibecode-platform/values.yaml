@@ -6,7 +6,7 @@ global:
   namespace: vibecode-platform
   storageClass: vibecode-local-storage
   imagePullPolicy: IfNotPresent
-  
+
 # Code-server configuration
 codeServer:
   # Image configuration
@@ -14,7 +14,7 @@ codeServer:
     repository: codercom/code-server
     tag: "4.22.1"
     pullPolicy: IfNotPresent
-    
+
   # Default resource limits for code-server instances
   resources:
     requests:
@@ -23,7 +23,7 @@ codeServer:
     limits:
       cpu: "2000m"
       memory: "4Gi"
-      
+
   # Security context
   securityContext:
     runAsNonRoot: true
@@ -35,7 +35,7 @@ codeServer:
         - ALL
     readOnlyRootFilesystem: false
     allowPrivilegeEscalation: false
-    
+
   # Pod security context
   podSecurityContext:
     runAsNonRoot: true
@@ -44,7 +44,7 @@ codeServer:
     fsGroup: 1000
     seccompProfile:
       type: RuntimeDefault
-      
+
   # Environment variables
   env:
     - name: PASSWORD
@@ -56,20 +56,20 @@ codeServer:
       value: "/bin/bash"
     - name: DOCKER_HOST
       value: "tcp://localhost:2375"
-      
+
   # Persistent storage configuration
   persistence:
     enabled: true
     size: 10Gi
     storageClass: vibecode-local-storage
     accessMode: ReadWriteOnce
-    
+
   # Service configuration
   service:
     type: ClusterIP
     port: 8080
     targetPort: 8080
-    
+
   # Ingress configuration per user
   ingress:
     enabled: true
@@ -98,13 +98,13 @@ userManagement:
   defaultUser:
     shell: "/bin/bash"
     homeDir: "/home/coder"
-    
+
   # Workspace configuration
   workspace:
     defaultSize: 10Gi
     maxSize: 50Gi
     storageClass: vibecode-local-storage
-    
+
 # AI Integration
 aiIntegration:
   # OpenRouter configuration
@@ -112,12 +112,12 @@ aiIntegration:
     enabled: true
     apiUrl: "https://openrouter.ai/api/v1"
     secretName: "openrouter-api-key"
-    
+
   # Model Context Protocol (MCP)
   mcp:
     enabled: true
     serverPort: 3001
-    
+
   # Artificial Analysis
   artificialAnalysis:
     enabled: true
@@ -127,17 +127,17 @@ aiIntegration:
 # Monitoring and observability
 monitoring:
   enabled: true
-  
+
   # Prometheus metrics
   prometheus:
     enabled: true
     port: 9090
     path: /metrics
-    
+
   # Grafana dashboards
   grafana:
     enabled: true
-    
+
   # Resource monitoring
   resources:
     enabled: true
@@ -150,15 +150,15 @@ security:
     enforce: restricted
     audit: restricted
     warn: restricted
-    
+
   # Network policies
   networkPolicies:
     enabled: true
-    
+
   # RBAC
   rbac:
     enabled: true
-    
+
   # Pod security context
   securityContext:
     runAsNonRoot: true
@@ -181,7 +181,7 @@ ingress:
       enabled: true
     metrics:
       enabled: true
-    
+
 # Cert-manager configuration
 certManager:
   enabled: true
@@ -194,14 +194,14 @@ certManager:
 storage:
   # Default storage class
   defaultClass: vibecode-local-storage
-  
+
   # Persistent volume configurations
   persistentVolumes:
     - name: user-workspaces
       size: 100Gi
       accessMode: ReadWriteMany
       reclaimPolicy: Retain
-      
+
 # Auto-scaling configuration
 autoscaling:
   enabled: false
@@ -243,7 +243,7 @@ environments:
           memory: "2Gi"
     monitoring:
       enabled: false
-      
+
   production:
     codeServer:
       resources:

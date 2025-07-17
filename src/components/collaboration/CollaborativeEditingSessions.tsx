@@ -1,9 +1,9 @@
 /**
  * Collaborative Editing Sessions Component
- * 
+ *
  * Advanced session management for multi-user collaborative editing
  * with conflict resolution, session persistence, and real-time synchronization
- * 
+ *
  * Staff Engineer Implementation - Enterprise-grade collaborative sessions
  */
 
@@ -11,14 +11,14 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Users, 
-  Share, 
-  Lock, 
-  Unlock, 
-  Clock, 
-  Settings, 
-  Copy, 
+import {
+  Users,
+  Share,
+  Lock,
+  Unlock,
+  Clock,
+  Settings,
+  Copy,
   ExternalLink,
   AlertTriangle,
   CheckCircle,
@@ -158,7 +158,7 @@ export default function CollaborativeEditingSessions({
    */
   const copyInviteLink = useCallback(async () => {
     if (!inviteLink) return
-    
+
     try {
       await navigator.clipboard.writeText(inviteLink)
       // TODO: Show success toast
@@ -174,7 +174,7 @@ export default function CollaborativeEditingSessions({
   const getSessionStats = useCallback((session: CollaborativeSession) => {
     const activeParticipants = session.participants.filter(p => p.isOnline).length
     const totalEdits = session.participants.reduce((sum, p) => sum + p.statistics.editsCount, 0)
-    const avgTimeSpent = session.participants.length > 0 
+    const avgTimeSpent = session.participants.length > 0
       ? session.participants.reduce((sum, p) => sum + p.statistics.timeSpent, 0) / session.participants.length
       : 0
 
@@ -231,8 +231,8 @@ export default function CollaborativeEditingSessions({
         key={session.sessionId}
         layout
         className={`p-4 rounded-lg border-2 transition-all ${
-          isCurrentSession 
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+          isCurrentSession
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
             : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
         }`}
       >
@@ -246,7 +246,7 @@ export default function CollaborativeEditingSessions({
               {session.documentName}
             </p>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {/* Status indicator */}
             <div className={`w-2 h-2 rounded-full ${
@@ -254,7 +254,7 @@ export default function CollaborativeEditingSessions({
               session.status === 'paused' ? 'bg-yellow-500' :
               'bg-red-500'
             }`} />
-            
+
             {/* Role badge */}
             {userRole && (
               <span className={`px-2 py-1 text-xs font-medium rounded-full ${

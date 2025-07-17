@@ -61,17 +61,17 @@ export function useAuth() {
 
       return { success: true }
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Login failed' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Login failed'
       }
     }
   }, [])
 
   const loginWithOAuth = useCallback(async (provider: OAuthProvider['id']) => {
     try {
-      await signIn(provider, { 
-        callbackUrl: '/' 
+      await signIn(provider, {
+        callbackUrl: '/'
       })
     } catch (error) {
       console.error(`OAuth login failed for ${provider}:`, error)
@@ -80,9 +80,9 @@ export function useAuth() {
 
   const logout = useCallback(async () => {
     try {
-      await signOut({ 
+      await signOut({
         callbackUrl: '/auth/signin',
-        redirect: true 
+        redirect: true
       })
     } catch (error) {
       console.error('Logout failed:', error)
@@ -103,7 +103,7 @@ export function useAuth() {
 
     const pathname = window.location.pathname
     const isAuthPage = pathname.startsWith('/auth/')
-    
+
     if (!session && !isAuthPage) {
       // Not authenticated and not on auth page - redirect to login
       redirectToLogin()

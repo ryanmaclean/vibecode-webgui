@@ -1,9 +1,9 @@
 /**
  * AI Chat Panel Component
- * 
+ *
  * Claude Code AI-powered chat interface integrated with web-based IDE
  * Based on claude-prompt.md webview integration patterns
- * 
+ *
  * Staff Engineer Implementation - Production-ready AI assistance
  */
 
@@ -38,11 +38,11 @@ interface AIChatPanelProps {
   onActionRequest?: (action: string, target: string) => void
 }
 
-export default function AIChatPanel({ 
+export default function AIChatPanel({
   className = '',
   codeContext,
   onCodeInsert,
-  onActionRequest 
+  onActionRequest
 }: AIChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
@@ -225,14 +225,14 @@ function MessageComponent({ message, onCodeInsert, onActionClick }: MessageCompo
             {message.timestamp.toLocaleTimeString()}
           </span>
         </div>
-        
+
         <div className={`p-3 rounded-lg ${
           message.role === 'user'
             ? 'bg-blue-600 text-white'
             : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white'
         }`}>
           <div className="whitespace-pre-wrap text-sm">{message.content}</div>
-          
+
           {/* Code blocks */}
           {message.codeBlocks && message.codeBlocks.length > 0 && (
             <div className="mt-3 space-y-2">
@@ -259,7 +259,7 @@ function MessageComponent({ message, onCodeInsert, onActionClick }: MessageCompo
               ))}
             </div>
           )}
-          
+
           {/* Action buttons */}
           {message.actions && message.actions.length > 0 && (
             <div className="mt-3 space-y-1">

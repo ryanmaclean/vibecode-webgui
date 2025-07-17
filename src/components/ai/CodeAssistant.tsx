@@ -77,10 +77,10 @@ Feel free to share your code or ask any development questions!`,
 
   const handleQuickAction = (action: string) => {
     let prompt = ''
-    
+
     switch (action) {
       case 'explain':
-        prompt = codeContext.selectedCode 
+        prompt = codeContext.selectedCode
           ? `Please explain this ${codeContext.language || 'code'}:\n\n\`\`\`${codeContext.language || ''}\n${codeContext.selectedCode}\n\`\`\``
           : 'Please explain the current code file'
         break
@@ -105,7 +105,7 @@ Feel free to share your code or ask any development questions!`,
 
     // Update input value and submit
     handleInputChange({ target: { value: prompt } } as React.ChangeEvent<HTMLInputElement>)
-    
+
     // Use a timeout to ensure the input value is updated before submission
     setTimeout(() => {
       const form = document.querySelector('form')
@@ -133,7 +133,7 @@ Feel free to share your code or ask any development questions!`,
             <span className="text-xs text-gray-500">• {codeContext.fileName}</span>
           )}
         </div>
-        
+
         <div className="flex items-center space-x-1">
           <button
             onClick={() => setIsMinimized(!isMinimized)}
@@ -213,7 +213,7 @@ Feel free to share your code or ask any development questions!`,
                 </div>
               </div>
             ))}
-            
+
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-gray-100 text-gray-900 p-3 rounded-lg text-sm">
@@ -224,7 +224,7 @@ Feel free to share your code or ask any development questions!`,
                 </div>
               </div>
             )}
-            
+
             {error && (
               <div className="flex justify-start">
                 <div className="bg-red-50 text-red-800 p-3 rounded-lg text-sm border border-red-200">
@@ -233,7 +233,7 @@ Feel free to share your code or ask any development questions!`,
                 </div>
               </div>
             )}
-            
+
             <div ref={messagesEndRef} />
           </div>
 

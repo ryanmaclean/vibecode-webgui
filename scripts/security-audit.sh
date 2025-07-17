@@ -45,7 +45,7 @@ while IFS= read -r -d '' file; do
     if grep -q "REPLACE_WITH_" "$file" 2>/dev/null; then
         continue # These are template files with proper placeholders
     fi
-    
+
     if grep -i -E "(password|secret|token|key).*[:=].*[\"'][^\"'REPLACE_WITH_]{10,}" "$file" 2>/dev/null | grep -v -E "(REPLACE_WITH_|template|example)" >/dev/null; then
         echo -e "${YELLOW}⚠️  Potential hardcoded credential in: $file${NC}"
         WARNINGS_FOUND=$((WARNINGS_FOUND + 1))

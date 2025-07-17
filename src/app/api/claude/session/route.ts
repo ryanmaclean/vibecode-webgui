@@ -1,9 +1,9 @@
 /**
  * Claude Code Session API Route
- * 
+ *
  * API endpoint for managing Claude Code CLI interactive sessions
  * Handles terminal-based Claude Code session management
- * 
+ *
  * Staff Engineer Implementation - Production-ready Claude CLI API
  */
 
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         try {
           const newSessionId = await claudeCli.startInteractiveSession()
           activeSessions.set(`${session.user.id}-${workspaceId}`, newSessionId)
-          
+
           return NextResponse.json({
             success: true,
             sessionId: newSessionId,
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
 
         try {
           await claudeCli.sendToSession(sessionId, message)
-          
+
           return NextResponse.json({
             success: true,
             message: 'Message sent to Claude session'
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
         try {
           await claudeCli.closeSession(sessionId)
           activeSessions.delete(`${session.user.id}-${workspaceId}`)
-          
+
           return NextResponse.json({
             success: true,
             message: 'Claude session closed'
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       case 'status':
         const userSessionKey = `${session.user.id}-${workspaceId}`
         const activeSessionId = activeSessions.get(userSessionKey)
-        
+
         return NextResponse.json({
           success: true,
           hasActiveSession: !!activeSessionId,
@@ -128,9 +128,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Claude session API error:', error)
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -173,9 +173,9 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Claude session status API error:', error)
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error'
       },

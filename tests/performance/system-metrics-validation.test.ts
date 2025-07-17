@@ -1,9 +1,9 @@
 /**
  * System Metrics Performance Validation Tests
- * 
+ *
  * Tests that our system metrics are real and perform well under load
  * Validates against fake/random data patterns
- * 
+ *
  * Staff Engineer Implementation - Production performance validation
  */
 
@@ -16,7 +16,7 @@ describe('System Metrics Performance Validation', () => {
   describe('Real Metrics Validation', () => {
     test('should return consistent CPU measurements over time', async () => {
       const measurements = [];
-      
+
       // Take 5 measurements with small delays
       for (let i = 0; i < 5; i++) {
         const response = await fetch(METRICS_ENDPOINT);
@@ -26,7 +26,7 @@ describe('System Metrics Performance Validation', () => {
             measurements.push(data.system.cpu);
           }
         }
-        
+
         // Small delay between measurements
         await new Promise(resolve => setTimeout(resolve, 200));
       }
@@ -41,7 +41,7 @@ describe('System Metrics Performance Validation', () => {
         // Check for suspicious patterns that indicate fake data
         // Real CPU doesn't change drastically every 200ms
         const maxVariation = Math.max(...measurements) - Math.min(...measurements);
-        
+
         // If variation is consistently > 50%, likely fake random data
         if (maxVariation > 50) {
           const allInRange = measurements.every(cpu => cpu >= 10 && cpu <= 40);
@@ -56,7 +56,7 @@ describe('System Metrics Performance Validation', () => {
 
     test('should return realistic disk usage that doesn\'t change rapidly', async () => {
       const measurements = [];
-      
+
       // Take multiple measurements
       for (let i = 0; i < 3; i++) {
         const response = await fetch(METRICS_ENDPOINT);
@@ -86,20 +86,20 @@ describe('System Metrics Performance Validation', () => {
 
     test('should return real memory usage from system', async () => {
       const response = await fetch(METRICS_ENDPOINT);
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         if (data.system?.memory !== undefined) {
           expect(data.system.memory).toBeGreaterThanOrEqual(0);
           expect(data.system.memory).toBeLessThanOrEqual(100);
-          
+
           // Memory usage should be somewhat realistic for a Node.js app
           // (Not 0% and not 99% unless there's actually an issue);
           if (data.system.memory === 0) {
             console.warn('Memory usage is 0% - may indicate measurement issue');
           }
-          
+
           console.log(`Memory usage: ${data.system.memory}%`);
         }
       }
@@ -109,7 +109,7 @@ describe('System Metrics Performance Validation', () => {
       // Get initial network stats
       const initial = await fetch(METRICS_ENDPOINT);
       const initialData = await initial.json();
-      
+
       // Make several requests to generate network traffic
       await Promise.all([
         fetch(HEALTH_ENDPOINT),
@@ -126,7 +126,7 @@ describe('System Metrics Performance Validation', () => {
         // Network stats should be non-negative
         expect(updatedData.system.network.in).toBeGreaterThanOrEqual(0);
         expect(updatedData.system.network.out).toBeGreaterThanOrEqual(0);
-        
+
         console.log(`Network I/O: ${updatedData.system.network.in} in, ${updatedData.system.network.out} out`);
       }
     });
@@ -136,7 +136,7 @@ describe('System Metrics Performance Validation', () => {
     test('should handle concurrent metric requests efficiently', async () => {
       const startTime = Date.now();
       const concurrentRequests = 20;
-      
+
       const promises = Array.from({ length: concurrentRequests }, () =>
         fetch(METRICS_ENDPOINT)
       );
@@ -169,7 +169,7 @@ describe('System Metrics Performance Validation', () => {
       // Make many requests to test for memory leaks
       for (let i = 0; i < iterations; i++) {
         await fetch(METRICS_ENDPOINT);
-        
+
         // Small delay to allow processing
         if (i % 10 === 0) {
           await new Promise(resolve => setTimeout(resolve, 100));
@@ -188,10 +188,10 @@ describe('System Metrics Performance Validation', () => {
 
       if (memoryBefore !== undefined && memoryAfter !== undefined) {
         const memoryIncrease = memoryAfter - memoryBefore;
-        
+
         // Memory should not increase significantly (< 20% increase);
         expect(memoryIncrease).toBeLessThan(20);
-        
+
         console.log(`Memory before: ${memoryBefore}%, after: ${memoryAfter}%, increase: ${memoryIncrease}%`);
       }
     }, 15000);
@@ -210,7 +210,7 @@ describe('System Metrics Performance Validation', () => {
         const data = await response.json();
         expect(data).toHaveProperty('status');
         expect(data).toHaveProperty('timestamp');
-        
+
         console.log(`Health check completed in ${duration}ms`);
       }
     });
@@ -229,17 +229,17 @@ describe('System Metrics Performance Validation', () => {
     test('should validate database health check performance', async () => {
       const startTime = Date.now();
       const response = await fetch(HEALTH_ENDPOINT);
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         if (data.checks?.database) {
           const dbResponseTime = data.checks.database.responseTime;
-          
+
           if (dbResponseTime !== undefined) {
             // Database health check should complete quickly
             expect(dbResponseTime).toBeLessThan(2000) // Under 2 seconds
-            
+
             console.log(`Database health check: ${dbResponseTime}ms`);
           }
         }
@@ -250,16 +250,16 @@ describe('System Metrics Performance Validation', () => {
   describe('Resource Usage Monitoring', () => {
     test('should track active users realistically', async () => {
       const response = await fetch(METRICS_ENDPOINT);
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         if (data.users?.activeUsers !== undefined) {
           expect(data.users.activeUsers).toBeGreaterThanOrEqual(0);
-          
+
           // Should not have thousands of active users in test environment
           expect(data.users.activeUsers).toBeLessThan(10000);
-          
+
           console.log(`Active users: ${data.users.activeUsers}`);
         }
       }
@@ -267,13 +267,13 @@ describe('System Metrics Performance Validation', () => {
 
     test('should track workspace usage appropriately', async () => {
       const response = await fetch(METRICS_ENDPOINT);
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         if (data.users?.activeWorkspaces !== undefined) {
           expect(data.users.activeWorkspaces).toBeGreaterThanOrEqual(0);
-          
+
           console.log(`Active workspaces: ${data.users.activeWorkspaces}`);
         }
       }
@@ -285,12 +285,12 @@ describe('System Metrics Performance Validation', () => {
       const duration = 10000 // 10 seconds;
       const requestInterval = 100 // Every 100ms;
       const startTime = Date.now();
-      
+
       const results: number[] = [];
-      
+
       while (Date.now() - startTime < duration) {
         const requestStart = Date.now();
-        
+
         try {
           const response = await fetch(METRICS_ENDPOINT);
           if (response.ok) {
@@ -300,18 +300,18 @@ describe('System Metrics Performance Validation', () => {
         } catch (error) {
           console.warn('Request failed during stress test:', error);
         }
-        
+
         await new Promise(resolve => setTimeout(resolve, requestInterval));
       }
 
       if (results.length > 0) {
         const avgResponseTime = results.reduce((a, b) => a + b, 0) / results.length;
         const maxResponseTime = Math.max(...results);
-        
+
         // Average response time should be reasonable
         expect(avgResponseTime).toBeLessThan(500) // Under 500ms average
         expect(maxResponseTime).toBeLessThan(2000) // Max under 2 seconds
-        
+
         console.log(`Stress test: ${results.length} requests, avg: ${avgResponseTime.toFixed(1)}ms, max: ${maxResponseTime}ms`);
       }
     }, 15000);

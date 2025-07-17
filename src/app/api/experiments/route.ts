@@ -13,7 +13,7 @@ import { appLogger } from '@/lib/server-monitoring'
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       workspaceId: context?.workspaceId,
       userAgent: request.headers.get('user-agent') || undefined,
-      ipAddress: request.headers.get('x-forwarded-for') || 
-                 request.headers.get('x-real-ip') || 
+      ipAddress: request.headers.get('x-forwarded-for') ||
+                 request.headers.get('x-real-ip') ||
                  'unknown',
       customAttributes: context?.customAttributes
     }
@@ -61,8 +61,8 @@ export async function POST(request: NextRequest) {
 
       case 'track':
         if (!flagKey || !metricName || value === undefined) {
-          return NextResponse.json({ 
-            error: 'flagKey, metricName, and value are required for tracking' 
+          return NextResponse.json({
+            error: 'flagKey, metricName, and value are required for tracking'
           }, { status: 400 })
         }
 
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session?.user || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }

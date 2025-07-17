@@ -25,8 +25,8 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://vibecode.yourdomain.com'] 
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://vibecode.yourdomain.com']
     : ['http://localhost:3000'],
   credentials: true
 }));
@@ -42,7 +42,7 @@ app.get('/health', async (req, res) => {
       throw new Error('Redis ping failed');
     }
 
-    res.json({ 
+    res.json({
       status: 'healthy',
       dependencies: {
         redis: 'ok'
@@ -70,8 +70,8 @@ redis.connect();
 // Initialize Socket.IO
 const io = socketIo(server, {
   cors: {
-    origin: process.env.NODE_ENV === 'production' 
-      ? ['https://vibecode.yourdomain.com'] 
+    origin: process.env.NODE_ENV === 'production'
+      ? ['https://vibecode.yourdomain.com']
       : ['http://localhost:3000'],
     methods: ['GET', 'POST'],
     credentials: true
@@ -82,16 +82,16 @@ const io = socketIo(server, {
 // Authentication middleware for Socket.IO with role verification
 io.use(async (socket, next) => {
   try {
-    const token = socket.handshake.auth.token || 
+    const token = socket.handshake.auth.token ||
                  socket.handshake.headers.authorization?.replace('Bearer ', '');
-    
+
     if (!token) {
       console.error('No authentication token provided');
       return next(new Error('Authentication token required'));
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    
+
     // Verify required claims
     if (!decoded.sub && !decoded.id) {
       console.error('Token missing required subject claim');
@@ -108,7 +108,7 @@ io.use(async (socket, next) => {
 
     // Log successful authentication
     console.log(`User authenticated: ${socket.user.email} (${socket.user.id})`);
-    
+
     next();
   } catch (err) {
     console.error('Authentication error:', err.message);
@@ -127,12 +127,12 @@ const requireRole = (role) => {
     if (!socket.user) {
       return next(new Error('Authentication required'));
     }
-    
+
     if (socket.user.role !== role) {
       console.warn(`Access denied for user ${socket.user.id} (role: ${socket.user.role}) to ${role}-only resource`);
       return next(new Error('Insufficient permissions'));
     }
-    
+
     next();
   };
 };
@@ -150,7 +150,7 @@ io.on('connection', (socket) => {
     try {
       socket.join(`project:${projectId}`);
       socket.currentProject = projectId;
-      
+
       // Store user presence in Redis
       await redis.setEx(`presence:${projectId}:${socket.userId}`, 300, JSON.stringify({
         userId: socket.userId,
@@ -176,7 +176,7 @@ io.on('connection', (socket) => {
   socket.on('create-terminal', (data) => {
     try {
       const { projectId, terminalId } = data;
-      
+
       if (!projectId || !terminalId) {
         return socket.emit('error', { message: 'Project ID and Terminal ID required' });
       }
@@ -217,7 +217,7 @@ io.on('connection', (socket) => {
     try {
       const { terminalId, input } = data;
       const terminal = terminals.get(terminalId);
-      
+
       if (terminal) {
         terminal.write(input);
       } else {
@@ -233,7 +233,7 @@ io.on('connection', (socket) => {
     try {
       const { terminalId, cols, rows } = data;
       const terminal = terminals.get(terminalId);
-      
+
       if (terminal) {
         terminal.resize(cols, rows);
       }
@@ -247,7 +247,7 @@ io.on('connection', (socket) => {
     try {
       const { projectId, path } = data;
       const watchKey = `${projectId}:${path}`;
-      
+
       if (fileWatchers.has(watchKey)) {
         return; // Already watching this path
       }
@@ -325,7 +325,7 @@ io.on('connection', (socket) => {
       // Remove user presence
       if (socket.currentProject) {
         await redis.del(`presence:${socket.currentProject}:${socket.userId}`);
-        
+
         // Notify other users
         socket.to(`project:${socket.currentProject}`).emit('user-left', {
           userId: socket.userId,
@@ -341,20 +341,20 @@ io.on('connection', (socket) => {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, shutting down gracefully');
-  
+
   // Close all terminals
   for (const terminal of terminals.values()) {
     terminal.destroy();
   }
-  
+
   // Close file watchers
   for (const watcher of fileWatchers.values()) {
     await watcher.close();
   }
-  
+
   // Close Redis connection
   await redis.quit();
-  
+
   // Close server
   server.close(() => {
     console.log('Server closed');

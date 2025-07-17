@@ -1,6 +1,6 @@
 /**
  * Comprehensive Unit Tests for File Operations
- * 
+ *
  * Tests for secure file system operations, real-time synchronization,
  * lazy loading, file watching optimization, and WebSocket connection pooling
  */
@@ -59,7 +59,7 @@ describe('SecureFileSystemOperations', () => {
 
     it('should create file with valid content', async () => {
       const metadata = await fileOps.createFile(validFilePath, fileContent);
-      
+
       expect(metadata).toMatchObject({
         path: validFilePath,
         size: expect.any(Number),
@@ -70,38 +70,38 @@ describe('SecureFileSystemOperations', () => {
     it('should read existing file', async () => {
       // First create a file
       await fileOps.createFile(validFilePath, fileContent);
-      
+
       const content = await fileOps.readFile(validFilePath);
       expect(content).toBe(fileContent)})
 
     it('should update file content', async () => {
       const newContent = 'console.log("Updated content");';
-      
+
       // Create initial file
       await fileOps.createFile(validFilePath, fileContent);
-      
+
       // Update content
       const metadata = await fileOps.updateFile(validFilePath, newContent);
-      
+
       expect(metadata.size).toBe(newContent.length);
       expect(metadata.modified).toBeGreaterThan(metadata.created)})
 
     it('should delete file', async () => {
       // Create file first
       await fileOps.createFile(validFilePath, fileContent);
-      
+
       // Delete file
       await fileOps.deleteFile(validFilePath);
-      
+
       // Verify file is deleted
       await expect(fileOps.readFile(validFilePath)).rejects.toThrow()})
 
     it('should handle large files', async () => {
       const largeContent = 'A'.repeat(1024 * 1024); // 1MB content;
-      
+
       const metadata = await fileOps.createFile(validFilePath, largeContent);
       expect(metadata.size).toBe(largeContent.length);
-      
+
       const readContent = await fileOps.readFile(validFilePath);
       expect(readContent).toBe(largeContent)})})
 
@@ -113,14 +113,14 @@ describe('SecureFileSystemOperations', () => {
     it('should detect file conflicts', async () => {
       // Create initial file
       const metadata1 = await fileOps.createFile(filePath, originalContent)
-      
+
       // Simulate external modification
       const conflictingMetadata = {
         ...metadata1,
         modified: Date.now() + 1000,
         checksum: 'different-checksum'
       };
-      
+
       const conflict = await fileOps.checkForConflicts(filePath, conflictingMetadata);
       expect(conflict.hasConflict).toBe(true)
       expect(conflict.conflictType).toBe('content')})
@@ -128,14 +128,14 @@ describe('SecureFileSystemOperations', () => {
     it('should resolve conflicts with user choice strategy', async () => {
       // Create file and simulate conflict
       await fileOps.createFile(filePath, originalContent)
-      
+
       const resolution = await fileOps.resolveConflict(filePath, modifiedContent, 'user-choice')
       expect(resolution.strategy).toBe('user-choice');
       expect(resolution.resolvedContent).toBe(modifiedContent)})
 
     it('should create backup on conflict resolution', async () => {
       await fileOps.createFile(filePath, originalContent)
-      
+
       const resolution = await fileOps.resolveConflict(filePath, modifiedContent, 'backup');
       expect(resolution.backupPath).toBeDefined()
       expect(resolution.backupPath).toContain('.backup')})
@@ -164,14 +164,14 @@ describe('SecureFileSystemOperations', () => {
 
     it('should prevent multiple exclusive locks', async () => {
       await fileOps.acquireLock(filePath, 'exclusive')
-      
+
       await expect(
         fileOps.acquireLock(filePath, 'exclusive', 'other-user')).rejects.toThrow('File is locked')})
 
     it('should release locks', async () => {
       const lock = await fileOps.acquireLock(filePath, 'exclusive');
       await fileOps.releaseLock(filePath, lock.lockId)
-      
+
       // Should be able to acquire lock again
       const newLock = await fileOps.acquireLock(filePath, 'exclusive');
       expect(newLock.lockId).toBeDefined()})
@@ -179,10 +179,10 @@ describe('SecureFileSystemOperations', () => {
     it('should handle lock timeouts', async () => {
       const shortTimeout = 100 // 100ms
       await fileOps.acquireLock(filePath, 'exclusive', mockUserId, shortTimeout);
-      
+
       // Wait for timeout
       await new Promise(resolve => setTimeout(resolve, 150))
-      
+
       // Should be able to acquire lock after timeout
       const newLock = await fileOps.acquireLock(filePath, 'exclusive');
       expect(newLock.lockId).toBeDefined()})})
@@ -190,7 +190,7 @@ describe('SecureFileSystemOperations', () => {
   describe('Error Handling', () => {
     it('should handle invalid file operations', async () => {
       const invalidPath = '/invalid/../path'
-      
+
       await expect(fileOps.createFile(invalidPath, 'content')).rejects.toThrow('Invalid file path')
       await expect(fileOps.readFile(invalidPath)).rejects.toThrow('Invalid file path')
       await expect(fileOps.updateFile(invalidPath, 'content')).rejects.toThrow('Invalid file path')
@@ -208,7 +208,7 @@ describe('SecureFileSystemOperations', () => {
     it('should validate file size limits', async () => {
       const filePath = '/test/workspace/large-file.ts'
       const oversizedContent = 'A'.repeat(11 * 1024 * 1024) // > 10MB
-      
+
       await expect(
         fileOps.createFile(filePath, oversizedContent)).rejects.toThrow('File size exceeds limit')})})})
 
@@ -350,22 +350,22 @@ describe('LazyFileLoader', () => {
 
     it('should support regex search', async () => {
       const results = await lazyLoader.searchInFile('function\\s+\\w+', { ;
-        regex: true, 
-        maxResults: 5 
+        regex: true,
+        maxResults: 5
       });
       expect(results.length).toBeGreaterThan(0);
       expect(results[0].match).toBeInstanceOf(RegExp)})
 
     it('should support case-sensitive search', async () => {
       const caseSensitive = await lazyLoader.searchInFile('FUNCTION', { ;
-        caseSensitive: true, 
-        maxResults: 5 
+        caseSensitive: true,
+        maxResults: 5
       })
       const caseInsensitive = await lazyLoader.searchInFile('FUNCTION', { ;
-        caseSensitive: false, 
-        maxResults: 5 
+        caseSensitive: false,
+        maxResults: 5
       });
-      
+
       expect(caseSensitive.length).toBeLessThanOrEqual(caseInsensitive.length)})})})
 
 describe('OptimizedFileWatcher', () => {
@@ -399,12 +399,12 @@ describe('OptimizedFileWatcher', () => {
   describe('Event Batching', () => {
     it('should batch file events', (done) => {
       let batchCount = 0
-      
+
       fileWatcher.on('batch', (batch) => {
         expect(batch.events).toBeInstanceOf(Array);
         expect(batch.batchId).toBeDefined();
         batchCount++
-        
+
         if (batchCount === 1) {
           done()}
       })
@@ -414,7 +414,7 @@ describe('OptimizedFileWatcher', () => {
         type: 'change' as const,
         path: '/test/watch/file.ts',
         timestamp: Date.now()}
-      
+
       ;(fileWatcher as any).addToBatch(event)})
 
     it('should optimize duplicate events', () => {
@@ -483,7 +483,7 @@ describe('OptimizedFileWatcher', () => {
 
     it('should update statistics on batch processing', () => {
       const initialStats = fileWatcher.getStats()
-      
+
       // Simulate batch processing
       const batch = {
         events: [
@@ -492,9 +492,9 @@ describe('OptimizedFileWatcher', () => {
         timestamp: Date.now(),
         batchId: 'test-batch'
       }
-      
+
       ;(fileWatcher as any).updateStats(batch);
-      
+
       const updatedStats = fileWatcher.getStats();
       expect(updatedStats.batchesProcessed).toBe(initialStats.batchesProcessed + 1)})})})
 
@@ -540,7 +540,7 @@ describe('WebSocketConnectionPool', () => {
 
       const connection1 = await connectionPool.getConnection(mockWebSocketUrl);
       const connection2 = await connectionPool.getConnection(mockWebSocketUrl);
-      
+
       // Should reuse the same connection
       expect(connection1.id).toBe(connection2.id)})
 
@@ -558,7 +558,7 @@ describe('WebSocketConnectionPool', () => {
       for (let i = 0; i < 5; i++) {
         connections.push(await connectionPool.getConnection(`ws://host${i}:8080`))};
       expect(connections).toHaveLength(5);
-      
+
       // Additional connection should be queued or rejected
       const status = connectionPool.getStatus();
       expect(status.totalConnections).toBe(5)})});
@@ -593,9 +593,9 @@ describe('WebSocketConnectionPool', () => {
     it('should track message statistics', async () => {
       const message = 'test message';
       const initialMetrics = connectionPool.getMetrics();
-      
+
       await connectionPool.sendMessage(mockConnection.id, message);
-      
+
       const updatedMetrics = connectionPool.getMetrics();
       expect(updatedMetrics.totalMessages).toBe(initialMetrics.totalMessages + 1);
       expect(updatedMetrics.totalBytes).toBeGreaterThan(initialMetrics.totalBytes)})})
@@ -654,7 +654,7 @@ describe('WebSocketConnectionPool', () => {
 
       const connection = await connectionPool.getConnection(mockWebSocketUrl)
       connectionPool.releaseConnection(connection.id, 'test-subscriber')
-      
+
       // Should mark connection as idle
       expect(connection.state).toBe('idle')})
 
@@ -671,7 +671,7 @@ describe('WebSocketConnectionPool', () => {
 
       await connectionPool.getConnection(mockWebSocketUrl);
       await connectionPool.destroy();
-      
+
       expect(mockWebSocket.close).toHaveBeenCalled()})})})
 
 describe('Integration Tests', () => {
@@ -679,15 +679,15 @@ describe('Integration Tests', () => {
     it('should integrate file operations with lazy loading', async () => {
       const fileOps = new SecureFileSystemOperations('/test/workspace', 'user123');
       const lazyLoader = new LazyFileLoader({ chunkSize: 100 })
-      
+
       try {
         // Mock large file content
         const largeContent = 'line content\n'.repeat(1000)
         const filePath = '/test/workspace/large-file.txt';
-        
+
         // Create file through secure operations
         await fileOps.createFile(filePath, largeContent);
-        
+
         // Initialize lazy loading
         global.fetch = jest.fn();
           .mockResolvedValueOnce({
@@ -703,7 +703,7 @@ describe('Integration Tests', () => {
             text: async () => 'line content\n'.repeat(100)});
 
         await lazyLoader.initializeFile(filePath);
-        
+
         // Test lazy loading of file chunks
         const lines = await lazyLoader.getLineRange(0, 50);
         expect(lines).toHaveLength(51)} finally {
@@ -717,29 +717,29 @@ describe('Integration Tests', () => {
         watchPath: '/test/workspace',
         batchDelay: 50
       });
-      
+
       const connectionPool = new WebSocketConnectionPool();
-      
+
       try {
         // Start file watcher
         await fileWatcher.start();
-        
+
         // Track events
         const fileEvents: any[] = []
         fileWatcher.on('file-change', (event) => {
           fileEvents.push(event)})
-        
+
         // Simulate file change
         const changeEvent = {
           type: 'change' as const,
           path: '/test/workspace/file.ts',
           timestamp: Date.now()}
-        
+
         ;(fileWatcher as any).addToBatch(changeEvent);
-        
+
         // Wait for event processing
         await new Promise(resolve => setTimeout(resolve, 100));
-        
+
         expect(fileEvents.length).toBeGreaterThan(0)
         expect(fileEvents[0].type).toBe('change')} finally {
         await fileWatcher.destroy();

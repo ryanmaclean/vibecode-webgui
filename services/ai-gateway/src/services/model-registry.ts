@@ -47,17 +47,17 @@ export class ModelRegistry {
             logger.info('Refreshing model registry');
             this.models = await this.openRouterClient.getModels();
             this.lastUpdate = new Date();
-            
+
             // Cache models in Redis
             await this.cacheModels();
-            
-            logger.info('Model registry refreshed', { 
+
+            logger.info('Model registry refreshed', {
                 modelCount: this.models.length,
                 lastUpdate: this.lastUpdate
             });
         } catch (error) {
             logger.error('Failed to refresh models', { error });
-            
+
             // Try to load from cache if refresh fails
             await this.loadFromCache();
         }
@@ -84,7 +84,7 @@ export class ModelRegistry {
 
     public getBestModelForTask(criteria: ModelSelectionCriteria): ModelRecommendation | null {
         const candidates = this.filterModelsByCriteria(criteria);
-        
+
         if (candidates.length === 0) {
             logger.warn('No models found matching criteria', { criteria });
             return null;
@@ -109,7 +109,7 @@ export class ModelRegistry {
         });
 
         const best = scoredCandidates[0];
-        logger.info('Model recommendation generated', { 
+        logger.info('Model recommendation generated', {
             recommendation: best,
             criteria,
             candidateCount: candidates.length
@@ -120,7 +120,7 @@ export class ModelRegistry {
 
     public getModelRecommendations(criteria: ModelSelectionCriteria, limit: number = 3): ModelRecommendation[] {
         const candidates = this.filterModelsByCriteria(criteria);
-        
+
         const scoredCandidates = candidates.map(model => {
             const score = this.calculateModelScore(model, criteria);
             return {
@@ -153,7 +153,7 @@ export class ModelRegistry {
 
     public async isModelHealthy(modelId: string): Promise<boolean> {
         const metrics = this.openRouterClient.getPerformanceMetrics(modelId);
-        
+
         if (!metrics) {
             // If no metrics, assume healthy (model hasn't been used yet)
             return true;
@@ -198,7 +198,7 @@ export class ModelRegistry {
 
             // Filter by preferred providers
             if (criteria.preferredProviders && criteria.preferredProviders.length > 0) {
-                if (!criteria.preferredProviders.some(provider => 
+                if (!criteria.preferredProviders.some(provider =>
                     model.provider.toLowerCase().includes(provider.toLowerCase())
                 )) {
                     return false;
@@ -228,7 +228,7 @@ export class ModelRegistry {
         performanceScore: number;
     } {
         const metrics = this.openRouterClient.getPerformanceMetrics(model.id);
-        
+
         // Performance score based on success rate and latency
         let performanceScore = 0.8; // Default score for models without metrics
         if (metrics) {
@@ -244,7 +244,7 @@ export class ModelRegistry {
 
         // Confidence based on context length and features
         let confidence = 0.5;
-        
+
         // Boost confidence for larger context windows
         if (model.context_length >= 128000) confidence += 0.3;
         else if (model.context_length >= 32000) confidence += 0.2;
@@ -253,7 +253,7 @@ export class ModelRegistry {
         // Task-specific scoring
         switch (criteria.task) {
             case 'code':
-                if (model.name.toLowerCase().includes('code') || 
+                if (model.name.toLowerCase().includes('code') ||
                     model.id.includes('code') ||
                     model.provider === 'anthropic') {
                     confidence += 0.2;
@@ -273,7 +273,7 @@ export class ModelRegistry {
 
         // Ensure scores are between 0 and 1
         confidence = Math.min(1, Math.max(0, confidence));
-        
+
         return {
             confidence,
             costEfficiency,
@@ -283,7 +283,7 @@ export class ModelRegistry {
 
     private generateRecommendationReason(model: AIModel, criteria: ModelSelectionCriteria): string {
         const reasons: string[] = [];
-        
+
         const avgCost = (model.pricing.prompt + model.pricing.completion) / 2;
         const metrics = this.openRouterClient.getPerformanceMetrics(model.id);
 
@@ -357,13 +357,13 @@ export class ModelRegistry {
                 lastUpdate: this.lastUpdate,
                 version: '1.0.0'
             };
-            
+
             await this.redisService.set(
-                cacheKey, 
-                JSON.stringify(cacheData), 
+                cacheKey,
+                JSON.stringify(cacheData),
                 this.updateInterval / 1000
             );
-            
+
             logger.debug('Models cached in Redis', { modelCount: this.models.length });
         } catch (error) {
             logger.error('Failed to cache models', { error });
@@ -374,13 +374,13 @@ export class ModelRegistry {
         try {
             const cacheKey = 'models:registry';
             const cached = await this.redisService.get(cacheKey);
-            
+
             if (cached) {
                 const cacheData = JSON.parse(cached);
                 this.models = cacheData.models || [];
                 this.lastUpdate = cacheData.lastUpdate ? new Date(cacheData.lastUpdate) : null;
-                
-                logger.info('Models loaded from cache', { 
+
+                logger.info('Models loaded from cache', {
                     modelCount: this.models.length,
                     lastUpdate: this.lastUpdate
                 });

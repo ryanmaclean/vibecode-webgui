@@ -16,13 +16,13 @@ export default function AuthTestPage() {
 
   const testAdminLogin = async () => {
     setTestResult('Testing admin login...')
-    
+
     try {
       const result = await loginWithCredentials({
         email: 'admin@vibecode.dev',
         password: 'admin123'
       })
-      
+
       if (result.success) {
         setTestResult('✅ Admin login successful!')
       } else {
@@ -56,7 +56,7 @@ export default function AuthTestPage() {
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">Authentication Test Page</h1>
-          
+
           {/* Session Status */}
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Session Status</h2>
@@ -85,7 +85,7 @@ export default function AuthTestPage() {
               >
                 Test Admin Login
               </button>
-              
+
               <button
                 onClick={testLogout}
                 disabled={!session}
@@ -94,7 +94,7 @@ export default function AuthTestPage() {
                 Test Logout
               </button>
             </div>
-            
+
             {testResult && (
               <div className="bg-gray-100 rounded-lg p-4">
                 <p className="font-mono text-sm">{testResult}</p>
@@ -111,7 +111,7 @@ export default function AuthTestPage() {
                   <div className="font-semibold text-blue-600">Admin Users:</div>
                   <div className="font-mono">admin@vibecode.dev / admin123</div>
                   <div className="font-mono">lead@vibecode.dev / lead123</div>
-                  
+
                   <div className="font-semibold text-green-600 mt-4">Developers:</div>
                   <div className="font-mono">developer@vibecode.dev / dev123</div>
                   <div className="font-mono">frontend@vibecode.dev / frontend123</div>
@@ -154,9 +154,9 @@ export default function AuthTestPage() {
             <h2 className="text-xl font-semibold mb-4">API Health Check</h2>
             <div className="bg-gray-100 rounded-lg p-4">
               <p className="text-sm">
-                <a 
-                  href="/api/health/simple" 
-                  target="_blank" 
+                <a
+                  href="/api/health/simple"
+                  target="_blank"
                   className="text-blue-600 hover:text-blue-800 underline"
                 >
                   Test API Health Endpoint
@@ -167,7 +167,7 @@ export default function AuthTestPage() {
 
           {/* Go to Sign In */}
           <div>
-            <a 
+            <a
               href="/auth/signin"
               className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 inline-block"
             >

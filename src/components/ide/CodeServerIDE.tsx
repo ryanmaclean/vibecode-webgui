@@ -96,11 +96,11 @@ export default function CodeServerIDE({
     try {
       // Configure iframe security and communication
       iframe.style.opacity = '1'
-      
+
       // Set up message handling for VS Code extension communication
       const handleMessage = (event: MessageEvent) => {
         if (event.origin !== new URL(session.url).origin) return
-        
+
         // Handle VS Code messages
         if (event.data.type === 'vscode-ready') {
           onReady?.(iframe)
@@ -108,7 +108,7 @@ export default function CodeServerIDE({
       }
 
       window.addEventListener('message', handleMessage)
-      
+
       return () => {
         window.removeEventListener('message', handleMessage)
       }
@@ -203,12 +203,12 @@ export default function CodeServerIDE({
           </div>
         </div>
       )}
-      
+
       <iframe
         ref={iframeRef}
         src={session.url}
         className="w-full h-full border-0"
-        style={{ 
+        style={{
           opacity: session.status === 'ready' ? 1 : 0,
           transition: 'opacity 0.3s ease-in-out'
         }}
@@ -234,7 +234,7 @@ export default function CodeServerIDE({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
         </button>
-        
+
         <button
           onClick={stopCodeServerSession}
           className="p-1 bg-red-600 hover:bg-red-700 rounded text-white text-xs opacity-80 hover:opacity-100 transition-opacity"

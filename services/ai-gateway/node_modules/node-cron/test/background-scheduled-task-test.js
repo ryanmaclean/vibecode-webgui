@@ -34,7 +34,7 @@ describe('BackgroundScheduledTask', () => {
         task.start();
         assert.isNotNull(task.pid());
     });
-    
+
     it('should stop a task', () => {
         let task = new BackgroundScheduledTask('* * * * * *', './test/assets/dummy-task.js', {
             scheduled: true

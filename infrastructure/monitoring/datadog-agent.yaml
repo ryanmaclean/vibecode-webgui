@@ -45,7 +45,7 @@ spec:
             value: "vibecode-webgui"
           - name: DD_VERSION
             value: "1.0.0"
-          
+
           # Kubernetes and container monitoring
           - name: KUBERNETES
             value: "true"
@@ -61,7 +61,7 @@ spec:
             value: "true"
           - name: DD_LEADER_LEASE_DURATION
             value: "60"
-          
+
           # APM and tracing
           - name: DD_APM_ENABLED
             value: "true"
@@ -71,7 +71,7 @@ spec:
             value: "8126"
           - name: DD_APM_RECEIVER_SOCKET
             value: "/var/run/datadog/apm.socket"
-          
+
           # Logs collection
           - name: DD_LOGS_ENABLED
             value: "true"
@@ -81,29 +81,29 @@ spec:
             value: "true"
           - name: DD_LOGS_CONFIG_AUTO_MULTI_LINE_DETECTION
             value: "true"
-          
+
           # Process monitoring
           - name: DD_PROCESS_AGENT_ENABLED
             value: "true"
           - name: DD_SYSTEM_PROBE_ENABLED
             value: "true"
-          
+
           # Network monitoring
           - name: DD_SYSTEM_PROBE_NETWORK_ENABLED
             value: "true"
-          
+
           # Security monitoring
           - name: DD_RUNTIME_SECURITY_CONFIG_ENABLED
             value: "true"
           - name: DD_COMPLIANCE_CONFIG_ENABLED
             value: "true"
-          
+
           # Custom metrics
           - name: DD_DOGSTATSD_NON_LOCAL_TRAFFIC
             value: "true"
           - name: DD_DOGSTATSD_SOCKET
             value: "/var/run/datadog/dsd.socket"
-          
+
           # Performance tuning
           - name: DD_ENABLE_METADATA_COLLECTION
             value: "true"
@@ -111,7 +111,7 @@ spec:
             value: "true"
           - name: DD_DOGSTATSD_PORT
             value: "8125"
-          
+
           # Health checks
           - name: DD_HEALTH_PORT
             value: "5555"
@@ -129,7 +129,7 @@ spec:
           - name: dockersocket
             mountPath: /var/run/docker.sock
             readOnly: true
-          
+
           # System directories for system monitoring
           - name: procdir
             mountPath: /host/proc
@@ -139,19 +139,19 @@ spec:
             readOnly: true
           - name: systemprobe-socket-dir
             mountPath: /var/run/datadog/
-          
+
           # Kubernetes state
           - name: passwd
             mountPath: /etc/passwd
             readOnly: true
-          
+
           # Logs collection
           - name: pointerdir
             mountPath: /opt/datadog-agent/run
           - name: logpodpath
             mountPath: /var/log/pods
             readOnly: true
-          - name: logcontainerpath  
+          - name: logcontainerpath
             mountPath: /var/lib/docker/containers
             readOnly: true
 
@@ -193,12 +193,12 @@ spec:
             path: /sys/kernel/debug
         - name: systemprobe-socket-dir
           emptyDir: {}
-        
+
         # System files
         - name: passwd
           hostPath:
             path: /etc/passwd
-        
+
         # Logs
         - name: pointerdir
           hostPath:

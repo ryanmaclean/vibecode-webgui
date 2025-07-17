@@ -47,7 +47,7 @@ function ErrorContent() {
             {errorMessage}
           </p>
         </div>
-        
+
         <div className="mt-8 text-center">
           <Link
             href="/auth/signin"

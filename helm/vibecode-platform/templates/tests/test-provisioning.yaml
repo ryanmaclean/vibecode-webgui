@@ -21,7 +21,7 @@ spec:
     - |
       set -e
       echo "Testing VibeCode Platform provisioning capabilities..."
-      
+
       # Test RBAC permissions
       echo "Testing RBAC permissions..."
       kubectl auth can-i get pods --namespace={{ .Values.global.namespace }}
@@ -29,22 +29,22 @@ spec:
       kubectl auth can-i create services --namespace={{ .Values.global.namespace }}
       kubectl auth can-i create persistentvolumeclaims --namespace={{ .Values.global.namespace }}
       echo "✓ RBAC permissions verified"
-      
+
       # Test ConfigMap access
       echo "Testing ConfigMap access..."
       kubectl get configmap {{ include "vibecode-platform.configMapName" . }} --namespace={{ .Values.global.namespace }}
       echo "✓ ConfigMap accessible"
-      
+
       # Test Secret access
       echo "Testing Secret access..."
       kubectl get secret {{ include "vibecode-platform.secretName" . }} --namespace={{ .Values.global.namespace }}
       echo "✓ Secret accessible"
-      
+
       # Test ServiceAccount
       echo "Testing ServiceAccount..."
       kubectl get serviceaccount {{ include "vibecode-platform.serviceAccountName" . }} --namespace={{ .Values.global.namespace }}
       echo "✓ ServiceAccount exists"
-      
+
       {{- if .Values.security.rbac.enabled }}
       # Test RBAC resources
       echo "Testing RBAC resources..."
@@ -52,14 +52,14 @@ spec:
       kubectl get rolebinding {{ include "vibecode-platform.rbacName" . }}-workspace --namespace={{ .Values.global.namespace }}
       echo "✓ RBAC resources exist"
       {{- end }}
-      
+
       {{- if .Values.codeServer.persistence.enabled }}
       # Test storage class
       echo "Testing storage class..."
       kubectl get storageclass {{ .Values.codeServer.persistence.storageClass }}
       echo "✓ Storage class exists"
       {{- end }}
-      
+
       # Test that we can create a test PVC
       echo "Testing PVC creation..."
       cat <<EOF | kubectl apply -f -
@@ -82,18 +82,18 @@ spec:
         {{- end }}
       EOF
       echo "✓ PVC creation successful"
-      
+
       # Cleanup test PVC
       kubectl delete pvc -l app.kubernetes.io/component=test --namespace={{ .Values.global.namespace }}
       echo "✓ Test PVC cleaned up"
-      
+
       {{- if .Values.security.networkPolicies.enabled }}
       # Test network policies
       echo "Testing network policies..."
       kubectl get networkpolicy --namespace={{ .Values.global.namespace }}
       echo "✓ Network policies configured"
       {{- end }}
-      
+
       echo "✅ All provisioning tests passed!"
   securityContext:
     runAsNonRoot: true

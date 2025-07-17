@@ -14,12 +14,12 @@ CREATE TABLE users (
     google_id VARCHAR(100) UNIQUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    
+
     -- Audit fields
     last_login_at TIMESTAMPTZ,
     login_count INTEGER DEFAULT 0,
     is_active BOOLEAN DEFAULT true,
-    
+
     -- Constraints
     CONSTRAINT users_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
 );
@@ -30,23 +30,23 @@ CREATE TABLE projects (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    
+
     -- Project configuration
     visibility VARCHAR(20) DEFAULT 'private' CHECK (visibility IN ('public', 'private', 'internal')),
     template VARCHAR(100),
     language VARCHAR(50),
     framework VARCHAR(100),
-    
+
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     last_accessed_at TIMESTAMPTZ DEFAULT NOW(),
-    
+
     -- Metadata
     star_count INTEGER DEFAULT 0,
     fork_count INTEGER DEFAULT 0,
     is_archived BOOLEAN DEFAULT false,
-    
+
     -- Constraints
     CONSTRAINT projects_name_length CHECK (length(name) >= 1 AND length(name) <= 255)
 );
@@ -57,26 +57,26 @@ CREATE TABLE files (
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     path TEXT NOT NULL,
     content TEXT,
-    
+
     -- File metadata
     language VARCHAR(50),
     size_bytes INTEGER DEFAULT 0,
     mime_type VARCHAR(100),
     encoding VARCHAR(20) DEFAULT 'utf-8',
-    
+
     -- Version control
     version INTEGER DEFAULT 1,
     hash VARCHAR(64),
     parent_hash VARCHAR(64),
-    
+
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    
+
     -- Collaboration
     created_by UUID REFERENCES users(id),
     updated_by UUID REFERENCES users(id),
-    
+
     -- Constraints
     UNIQUE(project_id, path),
     CONSTRAINT files_path_format CHECK (path ~ '^[^/].*[^/]$' OR path = ''),
@@ -88,26 +88,26 @@ CREATE TABLE collaborators (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    
+
     -- Permission levels
     role VARCHAR(20) DEFAULT 'viewer' CHECK (role IN ('owner', 'editor', 'viewer')),
     permissions JSONB DEFAULT '{"read": true, "write": false, "admin": false}',
-    
+
     -- Collaboration settings
     can_invite BOOLEAN DEFAULT false,
     can_delete BOOLEAN DEFAULT false,
     can_deploy BOOLEAN DEFAULT false,
-    
+
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW(),
     invited_at TIMESTAMPTZ,
     accepted_at TIMESTAMPTZ,
-    
+
     -- Invitation metadata
     invited_by UUID REFERENCES users(id),
     invitation_token VARCHAR(100),
     invitation_expires_at TIMESTAMPTZ,
-    
+
     -- Constraints
     UNIQUE(project_id, user_id)
 );
@@ -117,25 +117,25 @@ CREATE TABLE sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    
+
     -- Session metadata
     container_id VARCHAR(100),
     code_server_url TEXT,
     websocket_url TEXT,
-    
+
     -- Session state
     status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'terminated')),
     last_activity_at TIMESTAMPTZ DEFAULT NOW(),
-    
+
     -- Resource usage
     cpu_usage DECIMAL(5,2) DEFAULT 0.0,
     memory_usage DECIMAL(5,2) DEFAULT 0.0,
     storage_usage BIGINT DEFAULT 0,
-    
+
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW(),
     terminated_at TIMESTAMPTZ,
-    
+
     -- Constraints
     CONSTRAINT sessions_user_project_unique UNIQUE(user_id, project_id),
     CONSTRAINT sessions_usage_valid CHECK (cpu_usage >= 0 AND memory_usage >= 0 AND storage_usage >= 0)
@@ -147,30 +147,30 @@ CREATE TABLE ai_interactions (
     project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     session_id UUID REFERENCES sessions(id) ON DELETE SET NULL,
-    
+
     -- Interaction data
     prompt TEXT NOT NULL,
     response TEXT,
     context JSONB DEFAULT '{}',
-    
+
     -- AI metadata
     model VARCHAR(50) DEFAULT 'claude-3-sonnet',
     provider VARCHAR(20) DEFAULT 'anthropic',
     tokens_used INTEGER DEFAULT 0,
     cost_cents INTEGER DEFAULT 0,
-    
+
     -- Interaction type and status
     interaction_type VARCHAR(50) DEFAULT 'chat' CHECK (interaction_type IN ('chat', 'code_generation', 'debugging', 'explanation', 'refactoring')),
     status VARCHAR(20) DEFAULT 'completed' CHECK (status IN ('pending', 'completed', 'failed', 'cancelled')),
-    
+
     -- Performance metrics
     response_time_ms INTEGER,
     quality_rating INTEGER CHECK (quality_rating BETWEEN 1 AND 5),
-    
+
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW(),
     completed_at TIMESTAMPTZ,
-    
+
     -- Constraints
     CONSTRAINT ai_interactions_prompt_length CHECK (length(prompt) >= 1),
     CONSTRAINT ai_interactions_tokens_positive CHECK (tokens_used >= 0),
@@ -182,30 +182,30 @@ CREATE TABLE deployments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id),
-    
+
     -- Deployment metadata
     environment VARCHAR(20) DEFAULT 'development' CHECK (environment IN ('development', 'staging', 'production')),
     provider VARCHAR(50) NOT NULL CHECK (provider IN ('netlify', 'vercel', 'github-pages', 'aws', 'gcp', 'azure')),
-    
+
     -- Deployment details
     url TEXT,
     build_logs TEXT,
     deployment_config JSONB DEFAULT '{}',
-    
+
     -- Status and results
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'building', 'deployed', 'failed', 'cancelled')),
     error_message TEXT,
     build_time_seconds INTEGER,
-    
+
     -- Version control
     commit_hash VARCHAR(40),
     branch VARCHAR(100) DEFAULT 'main',
-    
+
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW(),
     started_at TIMESTAMPTZ,
     completed_at TIMESTAMPTZ,
-    
+
     -- Constraints
     CONSTRAINT deployments_build_time_positive CHECK (build_time_seconds >= 0),
     CONSTRAINT deployments_url_format CHECK (url IS NULL OR url ~* '^https?://.*')
@@ -266,7 +266,7 @@ CREATE TRIGGER update_files_updated_at BEFORE UPDATE ON files
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Insert initial data
-INSERT INTO users (email, name, avatar_url) VALUES 
+INSERT INTO users (email, name, avatar_url) VALUES
 ('admin@vibecode.dev', 'VibeCode Admin', 'https://github.com/identicons/admin.png');
 
 -- Grant permissions (if needed for specific roles)

@@ -14,7 +14,7 @@
 </head>
 <body>
     <h1>VibeCode Authentication Test</h1>
-    
+
     <div class="credentials">
         <h3>Test Credentials:</h3>
         <ul>
@@ -42,21 +42,21 @@
     <script>
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const resultDiv = document.getElementById('result');
             resultDiv.style.display = 'block';
             resultDiv.innerHTML = 'Testing authentication...';
-            
+
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            
+
             try {
                 // Get CSRF token
                 const csrfResponse = await fetch('/api/auth/csrf');
                 const csrfData = await csrfResponse.json();
-                
+
                 resultDiv.innerHTML += '<br>CSRF Token: ' + csrfData.csrfToken.substring(0, 20) + '...';
-                
+
                 // Try to sign in
                 const signInResponse = await fetch('/api/auth/signin/credentials', {
                     method: 'POST',
@@ -71,14 +71,14 @@
                         json: 'true'
                     })
                 });
-                
+
                 const signInResult = await signInResponse.text();
                 resultDiv.innerHTML += '<br>Sign In Response: ' + signInResult;
-                
+
                 // Check session
                 const sessionResponse = await fetch('/api/auth/session');
                 const sessionData = await sessionResponse.json();
-                
+
                 if (sessionData.user) {
                     resultDiv.innerHTML += '<br><strong>SUCCESS!</strong> Logged in as: ' + sessionData.user.name;
                     resultDiv.innerHTML += '<br>Email: ' + sessionData.user.email;
@@ -86,7 +86,7 @@
                 } else {
                     resultDiv.innerHTML += '<br><strong>FAILED:</strong> No session found';
                 }
-                
+
             } catch (error) {
                 resultDiv.innerHTML += '<br><strong>ERROR:</strong> ' + error.message;
             }

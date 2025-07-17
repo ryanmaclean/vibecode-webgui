@@ -25,14 +25,14 @@ fi
 if ! kubectl cluster-info &> /dev/null; then
     echo -e "${YELLOW}⚠️  No Kubernetes cluster detected${NC}"
     echo "Creating KIND cluster for development..."
-    
+
     # Check if kind is available
     if ! command -v kind &> /dev/null; then
         echo -e "${RED}❌ KIND is not installed${NC}"
         echo "Please install KIND: https://kind.sigs.k8s.io/docs/user/quick-start/#installation"
         exit 1
     fi
-    
+
     # Create KIND cluster
     kind create cluster --name vibecode-dev --config k8s/kind-config.yaml
     echo -e "${GREEN}✅ KIND cluster created${NC}"
@@ -55,7 +55,7 @@ prompt_for_secret() {
     local var_name=$1
     local prompt_text=$2
     local current_value="${!var_name}"
-    
+
     if [[ -z "$current_value" ]]; then
         echo -e "${YELLOW}Please enter $prompt_text:${NC}"
         read -s input_value

@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { 
-  Activity, 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
-  Cpu, 
-  Database, 
-  HardDrive, 
-  Network, 
-  RefreshCw, 
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Cpu,
+  Database,
+  HardDrive,
+  Network,
+  RefreshCw,
   Server,
   Zap,
   TrendingUp,
@@ -126,11 +126,11 @@ export function Monitoring() {
           <h3 className="text-lg font-medium text-gray-900 mb-4">Active Alerts</h3>
           <div className="space-y-3">
             {activeAlerts.slice(0, 5).map((alert) => (
-              <div 
+              <div
                 key={alert.id}
                 className={`flex items-center justify-between p-3 rounded-lg border ${
-                  alert.severity === 'critical' 
-                    ? 'border-red-200 bg-red-50' 
+                  alert.severity === 'critical'
+                    ? 'border-red-200 bg-red-50'
                     : 'border-yellow-200 bg-yellow-50'
                 }`}
               >
@@ -172,28 +172,28 @@ export function Monitoring() {
               ))
             ) : (
               <>
-                <ResourceBar 
+                <ResourceBar
                   label="CPU Usage"
                   value={systemMetrics?.cpu.used || 0}
                   total={systemMetrics?.cpu.total || 100}
                   icon={Cpu}
                   color="blue"
                 />
-                <ResourceBar 
+                <ResourceBar
                   label="Memory Usage"
                   value={systemMetrics?.memory.used || 0}
                   total={systemMetrics?.memory.total || 100}
                   icon={Database}
                   color="green"
                 />
-                <ResourceBar 
+                <ResourceBar
                   label="Storage Usage"
                   value={systemMetrics?.storage.used || 0}
                   total={systemMetrics?.storage.total || 100}
                   icon={HardDrive}
                   color="purple"
                 />
-                <ResourceBar 
+                <ResourceBar
                   label="Network I/O"
                   value={systemMetrics?.network.inbound || 0}
                   total={1000}
@@ -255,8 +255,8 @@ export function Monitoring() {
           {loadingPerformance ? (
             <div className="h-80 bg-gray-100 rounded animate-pulse"></div>
           ) : performance?.responseTime ? (
-            <MetricsChart 
-              data={performance.responseTime} 
+            <MetricsChart
+              data={performance.responseTime}
               type="line"
               metrics={['requests']}
             />
@@ -271,16 +271,16 @@ export function Monitoring() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900">Error Rates</h3>
             <div className="text-sm text-gray-500">
-              {timeRange === '1h' ? 'Last Hour' : 
-               timeRange === '24h' ? 'Last 24 Hours' : 
+              {timeRange === '1h' ? 'Last Hour' :
+               timeRange === '24h' ? 'Last 24 Hours' :
                timeRange === '7d' ? 'Last 7 Days' : 'Last 30 Days'}
             </div>
           </div>
           {loadingPerformance ? (
             <div className="h-80 bg-gray-100 rounded animate-pulse"></div>
           ) : performance?.errorRate ? (
-            <MetricsChart 
-              data={performance.errorRate} 
+            <MetricsChart
+              data={performance.errorRate}
               type="area"
               metrics={['requests']}
             />
@@ -325,13 +325,13 @@ export function Monitoring() {
   )
 }
 
-function ResourceBar({ 
-  label, 
-  value, 
-  total, 
-  icon: Icon, 
-  color, 
-  unit = '%' 
+function ResourceBar({
+  label,
+  value,
+  total,
+  icon: Icon,
+  color,
+  unit = '%'
 }: {
   label: string
   value: number
@@ -363,7 +363,7 @@ function ResourceBar({
         </div>
       </div>
       <div className="w-full bg-gray-200 rounded-full h-2">
-        <div 
+        <div
           className={`h-2 rounded-full transition-all duration-300 ${colorClasses[color]}`}
           style={{ width: `${percentage}%` }}
         />
@@ -390,9 +390,9 @@ function EventIcon({ type }: { type: string }) {
     error: { icon: AlertCircle, color: 'text-red-500' },
     success: { icon: CheckCircle, color: 'text-green-500' }
   }
-  
+
   const config = iconMap[type] || iconMap.info
   const IconComponent = config.icon
-  
+
   return <IconComponent className={`h-4 w-4 ${config.color}`} />
 }

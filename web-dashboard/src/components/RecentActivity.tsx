@@ -1,10 +1,10 @@
 import { formatDistanceToNow } from 'date-fns'
-import { 
-  Server, 
-  Bot, 
-  Users, 
-  Settings, 
-  AlertCircle, 
+import {
+  Server,
+  Bot,
+  Users,
+  Settings,
+  AlertCircle,
   CheckCircle,
   Clock
 } from 'lucide-react'
@@ -84,16 +84,16 @@ export function RecentActivity() {
           View all
         </button>
       </div>
-      
+
       <div className="flow-root">
         <ul className="-mb-8">
           {recentActivities.map((activity, index) => (
             <li key={activity.id}>
               <div className="relative pb-8">
                 {index !== recentActivities.length - 1 && (
-                  <span 
-                    className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" 
-                    aria-hidden="true" 
+                  <span
+                    className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200"
+                    aria-hidden="true"
                   />
                 )}
                 <div className="relative flex space-x-3">
@@ -125,12 +125,12 @@ export function RecentActivity() {
   )
 }
 
-function ActivityIcon({ 
-  type, 
-  status 
-}: { 
+function ActivityIcon({
+  type,
+  status
+}: {
   type: Activity['type']
-  status?: Activity['status'] 
+  status?: Activity['status']
 }) {
   const getIconAndColor = () => {
     if (status === 'error') {

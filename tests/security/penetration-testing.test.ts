@@ -1,9 +1,9 @@
 /**
  * Security Penetration Tests
- * 
+ *
  * Tests for common security vulnerabilities and attack vectors
  * Validates defensive security measures are in place
- * 
+ *
  * Staff Engineer Implementation - Production security validation
  */
 
@@ -29,10 +29,10 @@ describe('Security Penetration Testing', () => {
 
       for (const payload of sqlInjectionPayloads) {
         const response = await fetch(`${BASE_URL}/api/experiments?action=evaluate&key=${encodeURIComponent(payload)}&userId=test`);
-        
+
         if (response.ok) {
           const data = await response.json();
-          
+
           // Should not return database structure or error details
           const responseText = JSON.stringify(data).toLowerCase();
           expect(responseText).not.toContain('table');
@@ -41,7 +41,7 @@ describe('Security Penetration Testing', () => {
           expect(responseText).not.toContain('database');
           expect(responseText).not.toContain('syntax error');
         }
-        
+
         // Should not return 500 errors (indicates unhandled SQL injection);
         expect(response.status).not.toBe(500);
       }
@@ -58,10 +58,10 @@ describe('Security Penetration Testing', () => {
 
       for (const payload of nosqlPayloads) {
         const response = await fetch(`${BASE_URL}/api/experiments?action=evaluate&userId=${encodeURIComponent(payload)}`);
-        
+
         // Should handle malicious JSON gracefully
         expect(response.status).not.toBe(500);
-        
+
         if (response.ok) {
           const data = await response.json();
           // Should not expose internal data structures
@@ -83,11 +83,11 @@ describe('Security Penetration Testing', () => {
 
       for (const payload of xssPayloads) {
         const response = await fetch(`${BASE_URL}/api/experiments?action=evaluate&key=${encodeURIComponent(payload)}`);
-        
+
         if (response.ok) {
           const data = await response.json();
           const responseText = JSON.stringify(data);
-          
+
           // Response should not contain unescaped script tags or javascript
           expect(responseText).not.toContain('<script>');
           expect(responseText).not.toContain('javascript:');
@@ -100,12 +100,12 @@ describe('Security Penetration Testing', () => {
     test('should validate input length limits', async () => {
       // Test with extremely long input to check for buffer overflow/DoS
       const longPayload = 'A'.repeat(10000);
-      
+
       const response = await fetch(`${BASE_URL}/api/experiments?action=evaluate&key=${encodeURIComponent(longPayload)}`);
-      
+
       // Should handle gracefully, not crash
       expect(response.status).toBeLessThan(500);
-      
+
       // Should complete in reasonable time (not hang);
       // This is implicitly tested by Jest timeout
     });
@@ -128,7 +128,7 @@ describe('Security Penetration Testing', () => {
 
         // Should not return 500 errors for missing auth
         expect(response.status).not.toBe(500);
-        
+
         // If auth is required, should return appropriate status
         if (!response.ok) {
           expect([401, 403, 422]).toContain(response.status);
@@ -161,7 +161,7 @@ describe('Security Penetration Testing', () => {
           const data = await response.json();
           console.warn('Potential auth bypass with token:', token);
         }
-        
+
         expect(response.status).not.toBe(500) // Should handle gracefully
       }
     });
@@ -222,7 +222,7 @@ describe('Security Penetration Testing', () => {
 
     test('should prevent MIME type sniffing', async () => {
       const response = await fetch(`${BASE_URL}/api/monitoring/metrics`);
-      
+
       // X-Content-Type-Options should be nosniff
       const contentTypeOptions = response.headers.get('x-content-type-options');
       if (contentTypeOptions) {
@@ -238,7 +238,7 @@ describe('Security Penetration Testing', () => {
 
       if (response.headers.has('access-control-allow-origin')) {
         const corsOrigin = response.headers.get('access-control-allow-origin');
-        
+
         // Should not be wildcard (*) in production
         if (process.env.NODE_ENV === 'production') {
           expect(corsOrigin).not.toBe('*');
@@ -265,7 +265,7 @@ describe('Security Penetration Testing', () => {
 
         if (!response.ok) {
           const errorText = await response.text();
-          
+
           // Should not expose sensitive information
           expect(errorText.toLowerCase()).not.toContain('password');
           expect(errorText.toLowerCase()).not.toContain('secret');
@@ -279,17 +279,17 @@ describe('Security Penetration Testing', () => {
 
     test('should not expose system information', async () => {
       const response = await fetch(`${BASE_URL}/api/monitoring/health`);
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         // Should not expose detailed system information
         expect(data).not.toHaveProperty('hostname');
         expect(data).not.toHaveProperty('pid');
         expect(data).not.toHaveProperty('environment');
         expect(data).not.toHaveProperty('secrets');
         expect(data).not.toHaveProperty('config');
-        
+
         // If version info is present, it should be minimal
         if (data.version) {
           expect(typeof data.version).toBe('string');
@@ -310,10 +310,10 @@ describe('Security Penetration Testing', () => {
 
       for (const param of debugParams) {
         const response = await fetch(`${BASE_URL}/api/monitoring/health${param}`);
-        
+
         if (response.ok) {
           const data = await response.json();
-          
+
           // Should not expose debug information
           expect(data).not.toHaveProperty('debug');
           expect(data).not.toHaveProperty('trace');
@@ -335,7 +335,7 @@ describe('Security Penetration Testing', () => {
       }
 
       const responses = await Promise.all(promises);
-      
+
       // Count different response types
       const successCount = responses.filter(r => r.status === 200).length;
       const rateLimitedCount = responses.filter(r => r.status === 429).length;
@@ -348,7 +348,7 @@ describe('Security Penetration Testing', () => {
       if (rateLimitedCount > 0) {
         console.log(`Rate limiting detected: ${rateLimitedCount} requests limited`);
       }
-      
+
       console.log(`Rapid requests: ${successCount} success, ${rateLimitedCount} rate limited, ${errorCount} errors`);
     }, 10000);
 
@@ -374,7 +374,7 @@ describe('Security Penetration Testing', () => {
 
       // Should reject or handle large payloads gracefully
       expect(response.status).not.toBe(500);
-      
+
       if (!response.ok) {
         expect([400, 413, 422]).toContain(response.status) // Bad Request, Payload Too Large, or Unprocessable Entity
       }
@@ -385,13 +385,13 @@ describe('Security Penetration Testing', () => {
     test('should validate HTTP methods', async () => {
       // Test unsupported methods
       const unsupportedMethods = ['TRACE', 'CONNECT', 'PATCH'];
-      
+
       for (const method of unsupportedMethods) {
         try {
           const response = await fetch(`${BASE_URL}/api/monitoring/health`, {
             method: method as any
           });
-          
+
           // Should return 405 Method Not Allowed or similar
           if (!response.ok) {
             expect([405, 501]).toContain(response.status);
@@ -453,11 +453,11 @@ describe('Security Penetration Testing', () => {
   describe('Session & Cookie Security', () => {
     test('should have secure cookie attributes', async () => {
       const response = await fetch(`${BASE_URL}/api/monitoring/health`);
-      
+
       const setCookieHeaders = response.headers.get('set-cookie');
       if (setCookieHeaders) {
         const cookies = setCookieHeaders.split(',');
-        
+
         cookies.forEach(cookie => {
           if (cookie.toLowerCase().includes('session') || cookie.toLowerCase().includes('auth')) {
             // Session/auth cookies should be secure

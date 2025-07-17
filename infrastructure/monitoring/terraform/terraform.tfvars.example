@@ -1,5 +1,5 @@
 # Terraform Variables Example for Datadog Synthetics
-# 
+#
 # Copy this file to terraform.tfvars and configure for your environment
 # Staff Engineer Implementation - Production configuration template
 
@@ -18,7 +18,7 @@ environment  = "prod"
 # Notification Configuration
 notification_channels = [
   "@slack-vibecode-alerts",
-  "@pagerduty-critical", 
+  "@pagerduty-critical",
   "@email-platform-team@vibecode.dev"
 ]
 
@@ -26,7 +26,7 @@ notification_channels = [
 monitoring_locations = [
   "aws:us-east-1",
   "aws:us-west-2",
-  "aws:eu-west-1", 
+  "aws:eu-west-1",
   "aws:ap-southeast-1"
 ]
 

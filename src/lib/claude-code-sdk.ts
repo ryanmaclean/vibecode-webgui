@@ -1,9 +1,9 @@
 /**
  * Claude Code SDK Integration
- * 
+ *
  * AI-powered development assistance integrated with code-server
  * Based on claude-prompt.md guidance for web-based IDE integration
- * 
+ *
  * Staff Engineer Implementation - Production-ready AI code assistance
  */
 
@@ -95,11 +95,11 @@ export class ClaudeCodeSDK {
       apiKey: config.apiKey || process.env.ANTHROPIC_API_KEY,
       baseURL: config.baseURL
     })
-    
+
     this.defaultModel = config.model || 'claude-3-5-sonnet-20241022'
     this.maxTokens = config.maxTokens || 4096
     this.temperature = config.temperature || 0.1
-    
+
     this.baseSystemPrompt = `You are Claude Code, an AI assistant specialized in software development. You help developers write, debug, optimize, and understand code across multiple programming languages.
 
 Key capabilities:
@@ -166,7 +166,7 @@ Please provide:
 
       // Parse the response to extract code and explanation
       const { code, explanation } = this.parseCodeResponse(content.text)
-      
+
       return {
         code,
         explanation,
@@ -279,31 +279,31 @@ ${request.code}
    */
   private buildContextPrompt(context: CodeContext): string {
     let prompt = `Language: ${context.language}\n`
-    
+
     if (context.filePath) {
       prompt += `File: ${context.filePath}\n`
     }
-    
+
     if (context.selectedText) {
       prompt += `Selected Code:\n\`\`\`${context.language}\n${context.selectedText}\n\`\`\`\n`
     }
-    
+
     if (context.fullText && context.fullText !== context.selectedText) {
       prompt += `Full File Content:\n\`\`\`${context.language}\n${context.fullText}\n\`\`\`\n`
     }
-    
+
     if (context.projectStructure?.length) {
       prompt += `Project Structure:\n${context.projectStructure.join('\n')}\n`
     }
-    
+
     if (context.recentChanges?.length) {
       prompt += `Recent Changes:\n${context.recentChanges.join('\n')}\n`
     }
-    
+
     if (context.cursorPosition) {
       prompt += `Cursor Position: Line ${context.cursorPosition.line}, Column ${context.cursorPosition.column}\n`
     }
-    
+
     return prompt
   }
 
@@ -315,22 +315,22 @@ ${request.code}
     const codeBlockRegex = /```[\w]*\n([\s\S]*?)```/g
     const codeBlocks = []
     let match
-    
+
     while ((match = codeBlockRegex.exec(response)) !== null) {
       codeBlocks.push(match[1].trim())
     }
-    
+
     // Use the largest code block as the main code
-    const code = codeBlocks.length > 0 
+    const code = codeBlocks.length > 0
       ? codeBlocks.reduce((a, b) => a.length > b.length ? a : b)
       : ''
-    
+
     // Extract explanation (text outside code blocks)
     const explanation = response
       .replace(/```[\s\S]*?```/g, '')
       .replace(/\n\s*\n/g, '\n')
       .trim()
-    
+
     return { code, explanation }
   }
 
@@ -341,20 +341,20 @@ ${request.code}
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g
     const codeBlocks: Array<{ language: string; code: string }> = []
     let match
-    
+
     while ((match = codeBlockRegex.exec(response)) !== null) {
       codeBlocks.push({
         language: match[1] || 'text',
         code: match[2].trim()
       })
     }
-    
+
     // Extract main message (text outside code blocks)
     const message = response
       .replace(/```[\s\S]*?```/g, '[CODE_BLOCK]')
       .replace(/\[CODE_BLOCK\]\s*\[CODE_BLOCK\]/g, '[CODE_BLOCK]')
       .trim()
-    
+
     return {
       message,
       codeBlocks: codeBlocks.length > 0 ? codeBlocks : undefined
@@ -372,7 +372,7 @@ ${request.code}
       severity: 'error' | 'warning' | 'info'
       message: string
     }> = []
-    
+
     let match
     while ((match = issueRegex.exec(response)) !== null) {
       issues.push({
@@ -381,15 +381,15 @@ ${request.code}
         message: match[3].trim()
       })
     }
-    
+
     // Extract improvements (lines starting with bullet points or numbers)
     const improvementRegex = /(?:^|\n)[•\-\*]?\s*(?:\d+\.?\s*)?([^:\n]+(?:improvement|optimize|refactor|enhance)[^:\n]*)/gim
     const improvements: string[] = []
-    
+
     while ((match = improvementRegex.exec(response)) !== null) {
       improvements.push(match[1].trim())
     }
-    
+
     return {
       analysis: response,
       issues: issues.length > 0 ? issues : undefined,
@@ -402,21 +402,21 @@ ${request.code}
    */
   private calculateConfidence(response: string): number {
     let confidence = 0.5 // Base confidence
-    
+
     // Higher confidence for responses with code blocks
     if (response.includes('```')) confidence += 0.2
-    
+
     // Higher confidence for detailed explanations
     if (response.length > 500) confidence += 0.1
-    
+
     // Higher confidence for structured responses
     if (response.includes('1.') || response.includes('- ')) confidence += 0.1
-    
+
     // Lower confidence for uncertain language
     if (response.includes('might') || response.includes('could') || response.includes('possibly')) {
       confidence -= 0.1
     }
-    
+
     return Math.max(0, Math.min(1, confidence))
   }
 
@@ -427,11 +427,11 @@ ${request.code}
     const suggestionRegex = /(?:consider|suggest|recommend|try)[:\s]+([^.\n]+)/gi
     const suggestions: string[] = []
     let match
-    
+
     while ((match = suggestionRegex.exec(response)) !== null) {
       suggestions.push(match[1].trim())
     }
-    
+
     return suggestions.slice(0, 3) // Limit to top 3 suggestions
   }
 }

@@ -1,9 +1,9 @@
 /**
  * Secure File System Operations
- * 
+ *
  * Production-ready file system operations with security, real-time sync, and conflict resolution
  * Implements secure file watching, CRUD operations, and real-time synchronization
- * 
+ *
  * Staff Engineer Implementation - Enterprise-grade file operations
  */
 
@@ -121,7 +121,7 @@ export class SecureFileSystemOperations extends EventEmitter {
    */
   private isBlockedPath(filePath: string): boolean {
     const normalized = path.normalize(filePath)
-    
+
     // Check for path traversal
     if (normalized.includes('..') || normalized.startsWith('/etc') || normalized.startsWith('/usr')) {
       return true
@@ -223,9 +223,9 @@ export class SecureFileSystemOperations extends EventEmitter {
       }
 
       const fullPath = path.resolve(this.config.workingDirectory, filePath)
-      
+
       let metadata: FileMetadata | null = null
-      
+
       if (eventType !== 'deleted') {
         try {
           const stats = await fs.stat(fullPath)
@@ -254,7 +254,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       // Create operation record
       const operation: FileOperation = {
         id: crypto.randomUUID(),
-        type: eventType === 'created' ? 'create' : 
+        type: eventType === 'created' ? 'create' :
               eventType === 'changed' ? 'update' : 'delete',
         path: filePath,
         timestamp: new Date(),
@@ -302,15 +302,15 @@ export class SecureFileSystemOperations extends EventEmitter {
    */
   private async detectConflict(filePath: string, newMetadata: FileMetadata): Promise<any> {
     const cachedMetadata = this.fileMetadataCache.get(filePath)
-    
+
     if (!cachedMetadata) {
       return null
     }
 
     // Check if file was modified externally
-    if (cachedMetadata.checksum !== newMetadata.checksum && 
+    if (cachedMetadata.checksum !== newMetadata.checksum &&
         cachedMetadata.lastModified < newMetadata.lastModified) {
-      
+
       return {
         localChecksum: cachedMetadata.checksum,
         remoteChecksum: newMetadata.checksum,
@@ -341,7 +341,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       }
 
       const fullPath = path.resolve(this.config.workingDirectory, filePath)
-      
+
       // Check if file already exists
       try {
         await fs.access(fullPath)
@@ -358,7 +358,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       this.syncInProgress.add(filePath)
       try {
         await fs.writeFile(fullPath, content, { encoding: 'utf-8', mode: 0o644 })
-        
+
         const stats = await fs.stat(fullPath)
         const checksum = this.calculateChecksum(content)
 
@@ -401,7 +401,7 @@ export class SecureFileSystemOperations extends EventEmitter {
     }
 
     const fullPath = path.resolve(this.config.workingDirectory, filePath)
-    
+
     try {
       const [content, stats] = await Promise.all([
         fs.readFile(fullPath, 'utf-8'),
@@ -451,7 +451,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       }
 
       const fullPath = path.resolve(this.config.workingDirectory, filePath)
-      
+
       // Check if file is locked
       const lock = this.fileLocks.get(filePath)
       if (lock && lock.userId !== this.config.userId) {
@@ -467,7 +467,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       this.syncInProgress.add(filePath)
       try {
         await fs.writeFile(fullPath, content, { encoding: 'utf-8' })
-        
+
         const stats = await fs.stat(fullPath)
         const checksum = this.calculateChecksum(content)
 
@@ -511,7 +511,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       }
 
       const fullPath = path.resolve(this.config.workingDirectory, filePath)
-      
+
       // Check if file is locked
       const lock = this.fileLocks.get(filePath)
       if (lock && lock.userId !== this.config.userId) {
@@ -521,7 +521,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       this.syncInProgress.add(filePath)
       try {
         await fs.unlink(fullPath)
-        
+
         // Clean up metadata and locks
         this.fileMetadataCache.delete(filePath)
         this.fileLocks.delete(filePath)
@@ -552,14 +552,14 @@ export class SecureFileSystemOperations extends EventEmitter {
     }
 
     const fullPath = path.resolve(this.config.workingDirectory, directoryPath)
-    
+
     try {
       const entries = await fs.readdir(fullPath, { withFileTypes: true })
       const files: FileMetadata[] = []
 
       for (const entry of entries) {
         const entryPath = path.join(directoryPath, entry.name)
-        
+
         if (!this.validateFilePath(entryPath)) {
           continue
         }
@@ -661,11 +661,11 @@ const workspaceInstances = new Map<string, SecureFileSystemOperations>()
 
 export function getFileSystemInstance(config: FileSystemConfig): SecureFileSystemOperations {
   const key = `${config.workspaceId}-${config.userId}`
-  
+
   if (!workspaceInstances.has(key)) {
     const instance = new SecureFileSystemOperations(config)
     workspaceInstances.set(key, instance)
-    
+
     // Auto-cleanup on inactivity (1 hour)
     setTimeout(() => {
       workspaceInstances.delete(key)
@@ -679,11 +679,11 @@ export function getFileSystemInstance(config: FileSystemConfig): SecureFileSyste
 export function destroyFileSystemInstance(workspaceId: string, userId: string): Promise<void> {
   const key = `${workspaceId}-${userId}`
   const instance = workspaceInstances.get(key)
-  
+
   if (instance) {
     workspaceInstances.delete(key)
     return instance.destroy()
   }
-  
+
   return Promise.resolve()
 }

@@ -1,9 +1,9 @@
 /**
  * Collaboration Hook
- * 
+ *
  * React hook for managing collaborative editing sessions
  * Provides state management and event handling for real-time editing
- * 
+ *
  * Staff Engineer Implementation - Production-ready collaboration hook
  */
 
@@ -32,22 +32,22 @@ export interface UseCollaborationReturn {
   isConnected: boolean
   isLoading: boolean
   error: string | null
-  
+
   // User management
   activeUsers: CollaborationUser[]
   userCount: number
-  
+
   // Content management
   content: string
   hasUnsavedChanges: boolean
-  
+
   // Actions
   joinSession: () => Promise<void>
   leaveSession: () => Promise<void>
   saveContent: () => Promise<void>
   getContent: () => string
   setContent: (content: string) => void
-  
+
   // Statistics
   stats: {
     documentSize: number
@@ -118,7 +118,7 @@ export const useCollaboration = (options: UseCollaborationOptions): UseCollabora
         const newContent = yText.toString()
         setContentState(newContent)
         onContentChange?.(newContent)
-        
+
         // Check for unsaved changes
         const hasChanges = newContent !== lastSavedContentRef.current
         setHasUnsavedChanges(hasChanges)
@@ -204,7 +204,7 @@ export const useCollaboration = (options: UseCollaborationOptions): UseCollabora
 
       // Leave session
       await collaborationManager.leaveSession(documentId)
-      
+
       // Clear timers
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current)
@@ -233,7 +233,7 @@ export const useCollaboration = (options: UseCollaborationOptions): UseCollabora
 
     try {
       const currentContent = collaborationManager.getText(session).toString()
-      
+
       // Update metadata
       const metadata = collaborationManager.getMap(session)
       metadata.set('lastSaved', Date.now())

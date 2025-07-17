@@ -1,9 +1,9 @@
 /**
  * Real-time Collaborative Editing Infrastructure
- * 
+ *
  * Implements Yjs CRDT for conflict-free collaborative editing
  * with WebSocket synchronization and persistence
- * 
+ *
  * Staff Engineer Implementation - Production-ready collaborative editing
  */
 
@@ -66,7 +66,7 @@ export class CollaborationManager {
 
     // Create Yjs document
     const doc = new Y.Doc()
-    
+
     // Set up WebSocket provider for real-time sync
     const wsProvider = new WebsocketProvider(
       this.wsUrl,
@@ -182,17 +182,17 @@ export class CollaborationManager {
    */
   static generateUserColor(userId: string): string {
     const colors = [
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', 
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
       '#FECA57', '#FF9FF3', '#54A0FF', '#5F27CD',
       '#00D2D3', '#FF9F43', '#EE5A6F', '#8ED1FC'
     ]
-    
+
     // Generate consistent color based on user ID
     let hash = 0
     for (let i = 0; i < userId.length; i++) {
       hash = userId.charCodeAt(i) + ((hash << 5) - hash)
     }
-    
+
     return colors[Math.abs(hash) % colors.length]
   }
 
@@ -202,7 +202,7 @@ export class CollaborationManager {
   resolveConflicts(session: CollaborationSession): void {
     // Yjs automatically handles conflict resolution through CRDT
     // This method can be extended for custom conflict resolution logic
-    
+
     const metadata = this.getMap(session)
     const conflictCount = metadata.get('conflicts') || 0
     metadata.set('conflicts', conflictCount + 1)
@@ -220,7 +220,7 @@ export class CollaborationManager {
   } {
     const metadata = this.getMap(session)
     const textContent = this.getText(session)
-    
+
     return {
       userCount: session.users.size,
       documentSize: textContent.length,
