@@ -23,8 +23,17 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
+    - name: Configure Datadog Test Optimization
+      uses: datadog/test-visibility-github-action@v2
+      with:
+        languages: js
+        api_key: ${{secrets.DD_API_KEY}}
+        site: datadoghq.com
+
     - name: Run tests
       run: npm test
+      env:
+        NODE_OPTIONS: -r ${{env.DD_TRACE_PACKAGE}}
 
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
@@ -34,6 +43,27 @@ jobs:
 
     - name: Run Playwright tests
       run: npm run test:e2e
+      env:
+        NODE_OPTIONS: -r ${{env.DD_TRACE_PACKAGE}}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Main App Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.production
+        push: false
+        tags: vibecode/webgui:ci-latest
+
+    - name: Build WPA Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./watermarkpodautoscaler
+        file: ./watermarkpodautoscaler/Dockerfile
+        push: false
+        tags: vibecode/wpa:ci-latest
 
     - name: Attest Build Provenance
       uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0

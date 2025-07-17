@@ -36,4 +36,3 @@ metadata:
     name: vibecode-storage
     tier: persistence
     security: restricted
-EOF < /dev/null

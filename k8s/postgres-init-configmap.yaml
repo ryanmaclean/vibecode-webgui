@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: postgres-init-sql
-  namespace: vibecode
+  namespace: vibecode-platform
 data:
   init.sql: |
     -- Initialize VibeCode WebGUI database schema

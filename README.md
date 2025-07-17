@@ -2,21 +2,20 @@
 
 **Infrastructure-First Approach** using **code-server** + **KIND** for enterprise-grade development environments. Built with **Kubernetes-native** architecture, **Authelia** 2FA/SSO authentication, and **AI integration** via CodeCursor-inspired VS Code extensions.
 
+[![Build Status](https://github.com/vibecode/webgui/actions/workflows/ci.yml/badge.svg)](https://github.com/vibecode/webgui/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Security Scan](https://github.com/vibecode/webgui/workflows/Security%20Scan/badge.svg)](https://github.com/vibecode/webgui/actions)
-[![Docker Build](https://img.shields.io/docker/build/vibecode/webgui)](https://hub.docker.com/r/vibecode/webgui)
 
 ## ✨ Key Features
 
 - 🚀 **Complete VS Code Experience**: Full IDE via code-server 4.101.2 (MIT licensed)
-- 🔐 **Enterprise 2FA/SSO**: Authelia authentication with hardware keys, TOTP, Duo push
-- 🎯 **Infrastructure-First**: KIND (Kubernetes in Docker) orchestration eliminates 60-80% custom development
-- 🤖 **AI Integration**: CodeCursor-inspired VS Code extension with OpenRouter multi-provider support (127 models)
-- 🌐 **Production-Ready**: NGINX Ingress, cert-manager, Helm charts, persistent storage
-- 📊 **Real-Time Monitoring**: Datadog API integration with live metrics, logs, and alerts dashboard
-- 🖥️ **React Management Dashboard**: Complete cluster administration interface with real-time Datadog metrics
-- 🔄 **Per-User Workspaces**: Isolated environments with dedicated persistent volumes
-- ⚡ **AI-Powered Auto-Scaling**: Datadog WPA + DatadogPodAutoscaler with intelligent resource optimization
+- 🔐 **Enterprise 2FA/SSO**: Fully configured Authelia authentication with hardware keys, TOTP, and Duo push, protecting all ingress resources.
+- 🎯 **Infrastructure-First**: KIND (Kubernetes in Docker) orchestration eliminates 60-80% custom development.
+- 🤖 **AI Integration**: CodeCursor-inspired VS Code extension with OpenRouter multi-provider support (127 models).
+- 🌐 **Production-Ready**: NGINX Ingress, cert-manager, Helm charts, persistent storage.
+- 📊 **Real-Time Monitoring & Test Visibility**: Datadog integration with live metrics, logs, alerts, and Test Optimization for CI/CD pipelines.
+- 🖥️ **React Management Dashboard**: Complete cluster administration interface with real-time Datadog metrics.
+- 🔄 **Per-User Workspaces**: Isolated environments with dedicated persistent volumes.
+- ⚡ **AI-Powered Auto-Scaling**: Datadog WPA + DatadogPodAutoscaler with intelligent resource optimization.
 - 🛡️ **Security**: Integrated security scanning with Datadog SAST (Static Application Security Testing) and SCA (Software Composition Analysis). Scans are run automatically on every push to the `main` branch.
 
     **Note:** To run the security scans, you will need to add your Datadog API and App keys as secrets to your GitHub repository. The required secrets are `DD_API_KEY` and `DD_APP_KEY`.
@@ -100,7 +99,7 @@ Follow these steps to set up a local development environment using KIND.
 
 **Required Tools:**
 - **Docker Desktop** (for container management)
-- **Node.js 18+** (for local development)
+- **Node.js 22+** (for local development)
 - **kubectl** (for Kubernetes management)
 - **KIND** (for local Kubernetes testing)
 - **Helm** (for Datadog monitoring)
@@ -138,8 +137,8 @@ curl https://get.helm.sh/helm-v3.12.0-linux-amd64.tar.gz | tar -xzf -
 sudo mv linux-amd64/helm /usr/local/bin/helm
 
 # Install Node.js
-curl -fsSL https://nodejs.org/dist/v18.17.0/node-v18.17.0-linux-x64.tar.xz | tar -xJf -
-sudo mv node-v18.17.0-linux-x64 /opt/node
+curl -fsSL https://nodejs.org/dist/v22.16.0/node-v22.16.0-linux-x64.tar.xz | tar -xJf -
+sudo mv node-v22.16.0-linux-x64 /opt/node
 sudo ln -s /opt/node/bin/node /usr/local/bin/node
 sudo ln -s /opt/node/bin/npm /usr/local/bin/npm
 ```
@@ -623,6 +622,7 @@ curl -H "Authorization: Bearer YOUR_KEY" https://openrouter.ai/api/v1/models
 
 - **Issues**: [GitHub Issues](https://github.com/vibecode/webgui/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/vibecode/webgui/discussions)
+- **Architecture Guide**: See [claude-prompt.md](claude-prompt.md) for a detailed technical overview of the project architecture and standards.
 - **Documentation**: [Full Documentation](https://docs.vibecode.dev)
 - **Community**: [Discord Server](https://discord.gg/vibecode)
 

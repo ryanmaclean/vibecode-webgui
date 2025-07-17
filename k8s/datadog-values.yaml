@@ -4,6 +4,12 @@ datadog:
   appKey: ""  # Add your app key here if available
   site: "datadoghq.com"
   clusterName: "vibecode-kind-test"
+
+  env:
+    - name: DD_HOSTNAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
   
   # Enable Kubernetes Autoscaling (GA 2025)
   autoscaling:
