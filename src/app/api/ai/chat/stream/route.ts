@@ -4,15 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { OpenAI } from 'openai'
 
-// OpenRouter configuration
-const openrouter = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY,
-  defaultHeaders: {
-    "HTTP-Referer": process.env.NEXTAUTH_URL || "http://localhost:3000",
-    "X-Title": "VibeCode Platform",
-  }
-})
+
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
@@ -64,6 +56,16 @@ function formatPreviousMessages(messages: any[]): ChatMessage[] {
 
 export async function POST(request: NextRequest) {
   try {
+    // OpenRouter configuration
+    const openrouter = new OpenAI({
+      baseURL: "https://openrouter.ai/api/v1",
+      apiKey: process.env.OPENROUTER_API_KEY,
+      defaultHeaders: {
+        "HTTP-Referer": process.env.NEXTAUTH_URL || "http://localhost:3000",
+        "X-Title": "VibeCode Platform",
+      }
+    })
+
     const body: ChatRequest = await request.json()
     const { message, model, context } = body
 
