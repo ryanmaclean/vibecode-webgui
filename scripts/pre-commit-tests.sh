@@ -47,27 +47,12 @@ tsc --project tsconfig.precommit.json || {
     exit 1
 }
 
-# Run unit tests - non-blocking for production deployment
-echo "🧪 Running unit tests..."
-npm run test:unit || {
-    echo "⚠️  Unit tests have failures - continuing with production deployment"
-}
-
-# Run complete test suite
-echo "🏗️ Running complete test suite..."
-npm test tests/complete/ || {
-    echo "❌ Complete tests failed"
+# Run all Jest tests
+echo "🧪 Running all Jest tests..."
+npm test || {
+    echo "❌ Jest tests failed. Aborting commit."
     exit 1
 }
-
-# Run integration tests if environment is configured
-if [[ -n "$ENABLE_REAL_INTEGRATION_TESTS" ]]; then
-    echo "🔗 Running integration tests..."
-    ENABLE_REAL_DATADOG_TESTS=true DD_API_KEY="${DD_API_KEY}" npm test tests/integration/ || {
-        echo "❌ Integration tests failed"
-        exit 1
-    }
-fi
 
 # Check if KIND cluster exists and is healthy
 if kind get clusters | grep -q "vibecode-test"; then
