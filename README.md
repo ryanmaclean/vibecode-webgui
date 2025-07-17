@@ -20,6 +20,54 @@
 - 🛡️ **Security Hardened**: Pod Security Standards, NetworkPolicies, RBAC, non-root containers
 - 🎨 **Modern UI/UX**: React + TypeScript + Tailwind CSS dashboard with VS Code integration
 
+## 🚀 Local Development Setup
+
+Follow these steps to set up a local development environment using KIND.
+
+### Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
+- [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
+
+### Installation
+
+1.  **Install `kubectl`:**
+
+    ```bash
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    chmod +x ./kubectl
+    mkdir -p ~/.local/bin
+    mv ./kubectl ~/.local/bin/kubectl
+    # Ensure ~/.local/bin is in your PATH
+    export PATH=$HOME/.local/bin:$PATH
+    ```
+
+2.  **Install `kind`:**
+
+    ```bash
+    curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
+    chmod +x ./kind
+    mv ./kind ~/.local/bin/kind
+    ```
+
+3.  **Create the KIND cluster:**
+
+    Use the provided `kind-config.yaml` to create a cluster named `vibecode-test`.
+
+    ```bash
+    kind create cluster --name vibecode-test --config kind-config.yaml
+    ```
+
+4.  **Verify the cluster:**
+
+    Check that the cluster is running and the nodes are ready.
+
+    ```bash
+    kubectl cluster-info --context kind-vibecode-test
+    kubectl get nodes -o wide
+    ```
+
 ## 🏗️ Infrastructure-First Architecture
 
 ```
