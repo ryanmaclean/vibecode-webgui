@@ -16,7 +16,7 @@ export default function SimpleAuthTestPage() {
       password: 'dev123',
       redirect: false,
     })
-    
+
     if (result?.error) {
       alert('Login failed: ' + result.error)
     } else if (result?.ok) {
@@ -36,7 +36,7 @@ export default function SimpleAuthTestPage() {
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-8">Simple Authentication Test</h1>
-          
+
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-4">Session Status</h2>
             <div className="bg-gray-100 rounded-lg p-4">
@@ -63,7 +63,7 @@ export default function SimpleAuthTestPage() {
               >
                 Test Login (developer@vibecode.dev)
               </button>
-              
+
               <button
                 onClick={testLogout}
                 disabled={!session}
@@ -103,13 +103,13 @@ export default function SimpleAuthTestPage() {
           <div>
             <h2 className="text-xl font-semibold mb-4">Links</h2>
             <div className="flex gap-4">
-              <a 
+              <a
                 href="/auth/signin"
                 className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
               >
                 Go to Sign In Page
               </a>
-              <a 
+              <a
                 href="/api/auth/session"
                 target="_blank"
                 className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700"

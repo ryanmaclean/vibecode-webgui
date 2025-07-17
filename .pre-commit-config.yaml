@@ -1,7 +1,7 @@
 # Pre-commit hooks for security and license compliance
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -19,21 +19,21 @@ repos:
         entry: ./scripts/check-licenses.sh
         language: script
         files: ^package\.json$
-        stages: [commit]
+        stages: [pre-commit]
 
       - id: vulnerability-scan
         name: Vulnerability Scan
         entry: ./scripts/vulnerability-scan.sh
         language: script
         files: ^package\.json$
-        stages: [commit]
+        stages: [pre-commit]
 
       - id: test-suite
         name: Run Test Suite
         entry: npm test
         language: system
         files: \.(js|jsx|ts|tsx)$
-        stages: [commit]
+        stages: [pre-commit]
 
 
       - id: helm-lint
@@ -41,43 +41,39 @@ repos:
         entry: helm lint helm/vibecode-platform
         language: system
         files: ^helm/.*\.(yaml|yml)$
-        stages: [commit]
+        stages: [pre-commit]
 
       - id: helm-template-test
         name: Helm Template Validation
         entry: bash -c 'helm template vibecode-platform helm/vibecode-platform --namespace vibecode-platform | kubectl apply --dry-run=client -f - || true'
         language: system
         files: ^helm/.*\.(yaml|yml)$
-        stages: [commit]
+        stages: [pre-commit]
 
       - id: k8s-tests
         name: Kubernetes Integration Tests
         entry: npm run test:k8s:quick
         language: system
         files: ^(tests/k8s/|helm/|k8s/|scripts/).*$
-        stages: [commit]
+        stages: [pre-commit]
 
       - id: provisioning-script-test
         name: User Provisioning Script Test
         entry: bash -c 'scripts/provision-user.sh --help && echo "Provisioning script syntax OK"'
         language: system
         files: ^scripts/provision-user\.sh$
-        stages: [commit]
+        stages: [pre-commit]
 
-  # Code quality
-  - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v8.57.0
-    hooks:
-      - id: eslint
-        files: \.(js|jsx|ts|tsx)$
-        types: [file]
-        additional_dependencies:
-          - eslint@8.57.0
-          - eslint-config-next@15.3.5
-
-  # TypeScript checking
-  - repo: https://github.com/pre-commit/mirrors-typescript
-    rev: v5.3.3
-    hooks:
-      - id: typescript
+      - id: typescript-check
+        name: TypeScript Type Check
+        entry: npx tsc --noEmit
+        language: node
         files: \.(ts|tsx)$
+        stages: [pre-commit]
+
+      - id: eslint
+        name: ESLint
+        entry: npx eslint --fix
+        language: node
+        types: [file]
+        files: \.(js|jsx|ts|tsx)$

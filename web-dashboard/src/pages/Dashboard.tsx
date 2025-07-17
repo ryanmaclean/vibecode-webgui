@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { 
-  Server, 
-  Bot, 
-  Users, 
+import {
+  Server,
+  Bot,
+  Users,
   Activity,
   TrendingUp,
   AlertCircle,
@@ -104,21 +104,21 @@ export function Dashboard() {
           <div className="space-y-3">
             {aiStatus && (
               <>
-                <ServiceStatus 
-                  name="AI Gateway" 
+                <ServiceStatus
+                  name="AI Gateway"
                   status={aiStatus.status === 'operational' ? 'healthy' : 'unhealthy'}
                   uptime={`${Math.floor(aiStatus.metrics.uptime / 3600)}h ${Math.floor((aiStatus.metrics.uptime % 3600) / 60)}m`}
                 />
-                <ServiceStatus 
-                  name="Redis" 
+                <ServiceStatus
+                  name="Redis"
                   status={aiStatus.services.redis === 'connected' ? 'healthy' : 'unhealthy'}
                 />
-                <ServiceStatus 
-                  name="OpenRouter" 
+                <ServiceStatus
+                  name="OpenRouter"
                   status={aiStatus.services.openrouter === 'connected' ? 'healthy' : 'unhealthy'}
                 />
-                <ServiceStatus 
-                  name="Model Registry" 
+                <ServiceStatus
+                  name="Model Registry"
                   status={aiStatus.services.modelRegistry === 'loaded' ? 'healthy' : 'unhealthy'}
                   info={`${aiStatus.metrics.modelCount} models loaded`}
                 />
@@ -131,18 +131,18 @@ export function Dashboard() {
           <h3 className="text-lg font-medium text-gray-900 mb-4">Cluster Resources</h3>
           {clusterMetrics && (
             <div className="space-y-4">
-              <ResourceBar 
-                label="CPU Usage" 
+              <ResourceBar
+                label="CPU Usage"
                 percentage={clusterMetrics.resources.cpuUsage}
                 color="blue"
               />
-              <ResourceBar 
-                label="Memory Usage" 
+              <ResourceBar
+                label="Memory Usage"
                 percentage={clusterMetrics.resources.memoryUsage}
                 color="green"
               />
-              <ResourceBar 
-                label="Storage Usage" 
+              <ResourceBar
+                label="Storage Usage"
                 percentage={clusterMetrics.resources.storageUsage}
                 color="purple"
               />
@@ -168,16 +168,16 @@ export function Dashboard() {
   )
 }
 
-function ServiceStatus({ 
-  name, 
-  status, 
-  uptime, 
-  info 
-}: { 
+function ServiceStatus({
+  name,
+  status,
+  uptime,
+  info
+}: {
   name: string
   status: 'healthy' | 'unhealthy' | 'warning'
   uptime?: string
-  info?: string 
+  info?: string
 }) {
   const statusConfig = {
     healthy: { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-50' },
@@ -208,11 +208,11 @@ function ServiceStatus({
   )
 }
 
-function ResourceBar({ 
-  label, 
-  percentage, 
-  color = 'blue' 
-}: { 
+function ResourceBar({
+  label,
+  percentage,
+  color = 'blue'
+}: {
   label: string
   percentage: number
   color?: 'blue' | 'green' | 'purple' | 'red'
@@ -231,7 +231,7 @@ function ResourceBar({
         <span>{percentage}%</span>
       </div>
       <div className="w-full bg-gray-200 rounded-full h-2">
-        <div 
+        <div
           className={`h-2 rounded-full transition-all duration-300 ${colorClasses[color]}`}
           style={{ width: `${Math.min(percentage, 100)}%` }}
         />

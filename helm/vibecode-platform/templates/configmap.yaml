@@ -15,24 +15,24 @@ data:
     disable-update-check: true
     disable-file-downloads: false
     disable-folder-downloads: false
-    
+
   # User setup script
   user-setup.sh: |
     #!/bin/bash
     set -euo pipefail
-    
+
     # Create user home directory if it doesn't exist
     if [ ! -d "/home/coder" ]; then
       mkdir -p /home/coder
       chown -R coder:coder /home/coder
     fi
-    
+
     # Set up default workspace directory
     if [ ! -d "/home/coder/workspace" ]; then
       mkdir -p /home/coder/workspace
       chown -R coder:coder /home/coder/workspace
     fi
-    
+
     # Initialize git configuration if not present
     if [ ! -f "/home/coder/.gitconfig" ]; then
       cat > /home/coder/.gitconfig << EOF
@@ -46,15 +46,15 @@ data:
     EOF
       chown coder:coder /home/coder/.gitconfig
     fi
-    
+
     # Install common code-server extensions
     if [ ! -d "/home/coder/.local/share/code-server/extensions" ]; then
       mkdir -p /home/coder/.local/share/code-server/extensions
       chown -R coder:coder /home/coder/.local/share/code-server
     fi
-    
+
     echo "User setup completed for ${USER_ID:-unknown}"
-  
+
   # AI integration configuration
   ai-config.json: |
     {
@@ -82,7 +82,7 @@ data:
         "apiUrl": "{{ .Values.aiIntegration.artificialAnalysis.apiUrl }}"
       }
     }
-  
+
   # Monitoring configuration
   monitoring-config.yaml: |
     monitoring:
@@ -96,7 +96,7 @@ data:
       resources:
         enabled: {{ .Values.monitoring.resources.enabled }}
         interval: "{{ .Values.monitoring.resources.interval }}"
-  
+
   # Security policies
   security-policy.yaml: |
     security:

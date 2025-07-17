@@ -34,15 +34,15 @@ export class AIController {
             // Check if model is healthy
             const isHealthy = await this.modelRegistry.isModelHealthy(requestData.model);
             if (!isHealthy) {
-                logger.warn('Using unhealthy model, attempting fallback', { 
+                logger.warn('Using unhealthy model, attempting fallback', {
                     model: requestData.model,
                     userId
                 });
-                
+
                 const fallbackModel = this.modelRegistry.getFallbackModel(requestData.model);
                 if (fallbackModel && fallbackModel !== requestData.model) {
                     requestData.model = fallbackModel;
-                    logger.info('Switched to fallback model', { 
+                    logger.info('Switched to fallback model', {
                         originalModel: req.body.model,
                         fallbackModel,
                         userId
@@ -55,14 +55,14 @@ export class AIController {
             if (!requestData.stream) {
                 cacheKey = this.generateCacheKey(requestData, userId);
                 const cachedResponse = await this.redisService.getCachedResponse(cacheKey);
-                
+
                 if (cachedResponse) {
-                    logger.info('Serving cached response', { 
+                    logger.info('Serving cached response', {
                         cacheKey: cacheKey.substring(0, 16) + '...',
                         userId,
                         model: requestData.model
                     });
-                    
+
                     res.json(cachedResponse);
                     return;
                 }
@@ -140,7 +140,7 @@ export class AIController {
                 requestData,
                 (chunk) => {
                     res.write(`data: ${JSON.stringify(chunk)}\n\n`);
-                    
+
                     // Estimate tokens and accumulate content
                     const content = chunk.choices[0]?.delta?.content;
                     if (content) {
@@ -182,7 +182,7 @@ export class AIController {
                 model: requestData.model,
                 userId
             });
-            
+
             if (!res.headersSent) {
                 res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
             } else {
@@ -247,14 +247,14 @@ export class AIController {
 
     public async getModel(req: AuthenticatedRequest, res: Response): Promise<void> {
         const { modelId } = req.params;
-        
+
         const model = this.modelRegistry.getModel(modelId);
         if (!model) {
             throw new NotFoundError(`Model '${modelId}' not found`);
         }
 
         const metrics = this.openRouterClient.getPerformanceMetrics(modelId);
-        
+
         res.json({
             ...model,
             performance: metrics ? {
@@ -274,7 +274,7 @@ export class AIController {
 
         try {
             const recommendations = this.modelRegistry.getModelRecommendations(criteria, limit);
-            
+
             res.json({
                 recommendations,
                 criteria,
@@ -288,7 +288,7 @@ export class AIController {
 
     public async getModelMetrics(req: AuthenticatedRequest, res: Response): Promise<void> {
         const { modelId } = req.params;
-        
+
         const metrics = this.openRouterClient.getPerformanceMetrics(modelId);
         if (!metrics) {
             throw new NotFoundError(`No metrics found for model '${modelId}'`);
@@ -299,10 +299,10 @@ export class AIController {
 
     public async getUsageStatistics(req: AuthenticatedRequest, res: Response): Promise<void> {
         const { start_date, end_date, user_id, model, groupby } = req.query;
-        
+
         // Implementation would depend on your specific analytics requirements
         // This is a placeholder that shows the structure
-        
+
         res.json({
             message: 'Usage statistics endpoint - implementation needed',
             query: { start_date, end_date, user_id, model, groupby }
@@ -311,10 +311,10 @@ export class AIController {
 
     public async getCostAnalysis(req: AuthenticatedRequest, res: Response): Promise<void> {
         const { start_date, end_date, user_id, breakdown } = req.query;
-        
+
         // Implementation would depend on your specific analytics requirements
         // This is a placeholder that shows the structure
-        
+
         res.json({
             message: 'Cost analysis endpoint - implementation needed',
             query: { start_date, end_date, user_id, breakdown }
@@ -357,12 +357,12 @@ export class AIController {
         try {
             await this.modelRegistry.refreshModels();
             const modelCount = this.modelRegistry.getModels().length;
-            
-            logger.info('Models refreshed manually', { 
+
+            logger.info('Models refreshed manually', {
                 userId: req.user?.id,
                 modelCount
             });
-            
+
             res.json({
                 success: true,
                 message: 'Models refreshed successfully',
@@ -377,10 +377,10 @@ export class AIController {
 
     public async clearCache(req: AuthenticatedRequest, res: Response): Promise<void> {
         const { pattern } = req.query;
-        
+
         try {
             let clearedKeys = 0;
-            
+
             if (pattern) {
                 const keys = await this.redisService.keys(pattern as string);
                 for (const key of keys) {
@@ -395,13 +395,13 @@ export class AIController {
                     clearedKeys++;
                 }
             }
-            
-            logger.info('Cache cleared', { 
+
+            logger.info('Cache cleared', {
                 userId: req.user?.id,
                 pattern: pattern || 'all',
                 clearedKeys
             });
-            
+
             res.json({
                 success: true,
                 message: 'Cache cleared successfully',
@@ -428,11 +428,11 @@ export class AIController {
             stop: request.stop,
             userId: userId
         };
-        
+
         const hash = crypto.createHash('sha256')
             .update(JSON.stringify(keyData))
             .digest('hex');
-            
+
         return `cache:completion:${hash}`;
     }
 }

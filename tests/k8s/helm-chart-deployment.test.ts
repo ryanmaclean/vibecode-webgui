@@ -17,7 +17,7 @@ const TIMEOUT = 300000; // 5 minutes;
 describe('VibeCode Platform Helm Chart Deployment', () => {
   beforeAll(async () => {
     console.log('Setting up KIND cluster for Helm chart testing...');
-    
+
     // Check if cluster already exists
     try {
       execSync(`kind get clusters | grep -q "^${CLUSTER_NAME}$"`, { stdio: 'pipe' });
@@ -28,25 +28,25 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
         stdio: 'inherit'
       });
     }
-    
+
     // Set kubectl context
     execSync(`kubectl config use-context kind-${CLUSTER_NAME}`, { stdio: 'inherit' });
-    
+
     // Wait for cluster to be ready
     execSync('kubectl wait --for=condition=Ready nodes --all --timeout=120s', {
       stdio: 'inherit'
     });
-    
+
     // Install NGINX Ingress Controller (required for Helm chart);
     execSync(`kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml`, {
       stdio: 'inherit'
     });
-    
+
     // Wait for ingress controller to be ready
     execSync(`kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s`, {
       stdio: 'inherit'
     });
-    
+
     // Create namespace
     execSync(`kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -`, {
       stdio: 'inherit'
@@ -67,11 +67,11 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
   }, 60000);
 
   test('Helm chart should lint successfully', () => {
-    const result = execSync(`helm lint ${CHART_PATH}`, { 
+    const result = execSync(`helm lint ${CHART_PATH}`, {
       encoding: 'utf8',
       cwd: process.cwd();
     });
-    
+
     expect(result).toContain('1 chart(s) linted, 0 chart(s) failed');
   });
 
@@ -80,7 +80,7 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
       encoding: 'utf8',
       cwd: process.cwd();
     });
-    
+
     // Should contain expected Kubernetes resources
     expect(result).toContain('kind: ServiceAccount');
     expect(result).toContain('kind: ConfigMap');
@@ -95,12 +95,12 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
       stdio: 'inherit',
       cwd: process.cwd();
     });
-    
+
     // Verify installation
     const result = execSync(`helm list --namespace ${NAMESPACE}`, {
       encoding: 'utf8'
     });
-    
+
     expect(result).toContain(HELM_RELEASE);
     expect(result).toContain('deployed');
   }, TIMEOUT);
@@ -136,10 +136,10 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
     const policies = execSync(`kubectl get networkpolicy --namespace ${NAMESPACE} -o json`, {
       encoding: 'utf8'
     });
-    
+
     const policyList = JSON.parse(policies);
     const policyNames = policyList.items.map((item: any) => item.metadata.name);
-    
+
     expect(policyNames).toContain(`${HELM_RELEASE}-default-deny`);
     expect(policyNames).toContain(`${HELM_RELEASE}-allow-dns`);
     expect(policyNames).toContain(`${HELM_RELEASE}-allow-ingress`);
@@ -150,10 +150,10 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
     const quotas = execSync(`kubectl get resourcequota --namespace ${NAMESPACE} -o json`, {
       encoding: 'utf8'
     });
-    
+
     const quotaList = JSON.parse(quotas);
     expect(quotaList.items.length).toBeGreaterThan(0);
-    
+
     const globalQuota = quotaList.items.find((item: any) => ;
       item.metadata.name === `${HELM_RELEASE}-global`
     );
@@ -166,10 +166,10 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
     const priorities = execSync(`kubectl get priorityclass -o json`, {
       encoding: 'utf8'
     });
-    
+
     const priorityList = JSON.parse(priorities);
     const priorityNames = priorityList.items.map((item: any) => item.metadata.name);
-    
+
     expect(priorityNames).toContain('high-priority');
     expect(priorityNames).toContain('medium-priority');
     expect(priorityNames).toContain('low-priority');
@@ -180,13 +180,13 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
     const result = execSync(`helm test ${HELM_RELEASE} --namespace ${NAMESPACE} --timeout=300s`, {
       encoding: 'utf8'
     });
-    
+
     expect(result).toContain('Phase: Succeeded');
   }, TIMEOUT);
 
   test('User provisioning script should work', async () => {
     const testUserId = 'test-user-helm';
-    
+
     try {
       // Create test user using our provisioning script
       execSync(`scripts/provision-user.sh create ${testUserId} --namespace ${NAMESPACE}`, {
@@ -197,35 +197,35 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
           CHART_PATH: CHART_PATH
         }
       });
-      
+
       // Wait for deployment to be ready
       execSync(`kubectl wait --for=condition=Available deployment/code-server-${testUserId} --namespace ${NAMESPACE} --timeout=300s`, {
         stdio: 'inherit'
       });
-      
+
       // Verify resources exist
       const deployment = execSync(`kubectl get deployment code-server-${testUserId} --namespace ${NAMESPACE} -o json`, {
         encoding: 'utf8'
       });
       expect(JSON.parse(deployment).metadata.name).toBe(`code-server-${testUserId}`);
-      
+
       const service = execSync(`kubectl get service code-server-${testUserId} --namespace ${NAMESPACE} -o json`, {
         encoding: 'utf8'
       });
       expect(JSON.parse(service).metadata.name).toBe(`code-server-${testUserId}`);
-      
+
       const pvc = execSync(`kubectl get pvc workspace-${testUserId} --namespace ${NAMESPACE} -o json`, {
         encoding: 'utf8'
       });
       expect(JSON.parse(pvc).metadata.name).toBe(`workspace-${testUserId}`);
-      
+
       // Verify ingress
       const ingress = execSync(`kubectl get ingress code-server-${testUserId} --namespace ${NAMESPACE} -o json`, {
         encoding: 'utf8'
       });
       const ingressData = JSON.parse(ingress);
       expect(ingressData.spec.rules[0].host).toBe(`${testUserId}.vibecode.local`);
-      
+
     } finally {
       // Cleanup test user
       try {
@@ -245,7 +245,7 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
   test('Multiple users should be isolated', async () => {
     const user1 = 'test-user-1';
     const user2 = 'test-user-2';
-    
+
     try {
       // Create two test users
       execSync(`scripts/provision-user.sh create ${user1} --namespace ${NAMESPACE}`, {
@@ -256,7 +256,7 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
           CHART_PATH: CHART_PATH
         }
       });
-      
+
       execSync(`scripts/provision-user.sh create ${user2} --namespace ${NAMESPACE}`, {
         stdio: 'inherit',
         env: {
@@ -265,16 +265,16 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
           CHART_PATH: CHART_PATH
         }
       });
-      
+
       // Wait for deployments to be ready
       execSync(`kubectl wait --for=condition=Available deployment/code-server-${user1} --namespace ${NAMESPACE} --timeout=300s`, {
         stdio: 'inherit'
       });
-      
+
       execSync(`kubectl wait --for=condition=Available deployment/code-server-${user2} --namespace ${NAMESPACE} --timeout=300s`, {
         stdio: 'inherit'
       });
-      
+
       // Verify users have separate resources
       const user1Deployment = execSync(`kubectl get deployment code-server-${user1} --namespace ${NAMESPACE} -o json`, {
         encoding: 'utf8'
@@ -282,14 +282,14 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
       const user2Deployment = execSync(`kubectl get deployment code-server-${user2} --namespace ${NAMESPACE} -o json`, {
         encoding: 'utf8'
       });
-      
+
       const user1Data = JSON.parse(user1Deployment);
       const user2Data = JSON.parse(user2Deployment);
-      
+
       // Verify they have different user labels
       expect(user1Data.metadata.labels['vibecode.dev/user-id']).toBe(user1);
       expect(user2Data.metadata.labels['vibecode.dev/user-id']).toBe(user2);
-      
+
       // Verify they have separate PVCs
       const user1Pvc = execSync(`kubectl get pvc workspace-${user1} --namespace ${NAMESPACE} -o json`, {
         encoding: 'utf8'
@@ -297,10 +297,10 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
       const user2Pvc = execSync(`kubectl get pvc workspace-${user2} --namespace ${NAMESPACE} -o json`, {
         encoding: 'utf8'
       });
-      
+
       expect(JSON.parse(user1Pvc).metadata.name).toBe(`workspace-${user1}`);
       expect(JSON.parse(user2Pvc).metadata.name).toBe(`workspace-${user2}`);
-      
+
       // Verify they have different ingress hosts
       const user1Ingress = execSync(`kubectl get ingress code-server-${user1} --namespace ${NAMESPACE} -o json`, {
         encoding: 'utf8'
@@ -308,13 +308,13 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
       const user2Ingress = execSync(`kubectl get ingress code-server-${user2} --namespace ${NAMESPACE} -o json`, {
         encoding: 'utf8'
       });
-      
+
       const user1IngressData = JSON.parse(user1Ingress);
       const user2IngressData = JSON.parse(user2Ingress);
-      
+
       expect(user1IngressData.spec.rules[0].host).toBe(`${user1}.vibecode.local`);
       expect(user2IngressData.spec.rules[0].host).toBe(`${user2}.vibecode.local`);
-      
+
     } finally {
       // Cleanup test users
       try {
@@ -341,24 +341,24 @@ security:
   networkPolicies:
     enabled: false
 `;
-    
+
     fs.writeFileSync('/tmp/upgrade-values.yaml', upgradeValues);
-    
+
     try {
       // Upgrade the chart
       execSync(`helm upgrade ${HELM_RELEASE} ${CHART_PATH} --namespace ${NAMESPACE} --values /tmp/upgrade-values.yaml --wait --timeout=300s`, {
         stdio: 'inherit',
         cwd: process.cwd();
       });
-      
+
       // Verify upgrade
       const result = execSync(`helm list --namespace ${NAMESPACE}`, {
         encoding: 'utf8'
       });
-      
+
       expect(result).toContain(HELM_RELEASE);
       expect(result).toContain('deployed');
-      
+
       // Verify monitoring is disabled (no ServiceMonitor should exist);
       try {
         execSync(`kubectl get servicemonitor ${HELM_RELEASE} --namespace ${NAMESPACE}`, { stdio: 'pipe' });
@@ -368,7 +368,7 @@ security:
         // This is expected - ServiceMonitor shouldn't exist
         expect(true).toBe(true);
       }
-      
+
     } finally {
       fs.unlinkSync('/tmp/upgrade-values.yaml');
     }
@@ -379,14 +379,14 @@ security:
     execSync(`helm uninstall ${HELM_RELEASE} --namespace ${NAMESPACE} --wait --timeout=300s`, {
       stdio: 'inherit'
     });
-    
+
     // Verify resources are removed
     const result = execSync(`helm list --namespace ${NAMESPACE}`, {
       encoding: 'utf8'
     });
-    
+
     expect(result).not.toContain(HELM_RELEASE);
-    
+
     // Verify core resources are gone
     try {
       execSync(`kubectl get serviceaccount ${HELM_RELEASE} --namespace ${NAMESPACE}`, { stdio: 'pipe' });

@@ -55,7 +55,7 @@ describe('Experiments API', () => {
       });
 
       await POST(req as any);
-      
+
       expect(res._getStatusCode()).toBe(401)})
 
     test('should evaluate feature flag successfully', async () => {
@@ -137,7 +137,7 @@ describe('Experiments API', () => {
       expect(response.status).toBe(200);
       expect(responseData.success).toBe(true);
       expect(responseData.results).toHaveLength(2);
-      
+
       const flagKeys = responseData.results.map((r: any) => r.flagKey)
       expect(flagKeys).toContain('ai_assistant_v2')
       expect(flagKeys).toContain('editor_theme_dark_plus')})

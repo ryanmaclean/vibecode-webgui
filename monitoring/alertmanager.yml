@@ -26,7 +26,7 @@ route:
   group_interval: 5m
   repeat_interval: 4h
   receiver: 'default-receiver'
-  
+
   routes:
     # Critical alerts - Immediate notification via PagerDuty and Slack
     - match:
@@ -42,7 +42,7 @@ route:
           receiver: 'application-down'
           group_wait: 0s
           repeat_interval: 15m
-        
+
         # Database issues
         - match:
             component: database
@@ -144,7 +144,7 @@ receivers:
           service: '{{ .CommonLabels.service }}'
           component: '{{ .CommonLabels.component }}'
           runbook: '{{ .CommonAnnotations.runbook_url }}'
-    
+
     slack_configs:
       - api_url: '${SLACK_WEBHOOK_URL}'
         channel: '#platform-alerts'
@@ -174,7 +174,7 @@ receivers:
         severity: 'critical'
         client: 'VibeCode Monitoring'
         escalation_policy: 'Platform Escalation'
-    
+
     slack_configs:
       - api_url: '${SLACK_WEBHOOK_URL}'
         channel: '#incidents'
@@ -182,16 +182,16 @@ receivers:
         title: '🔥 APPLICATION DOWN - IMMEDIATE ACTION REQUIRED'
         text: |
           @channel VibeCode WebGUI application is completely down!
-          
+
           {{ range .Alerts }}
           *Service:* {{ .Labels.service }}
           *Instance:* {{ .Labels.instance }}
           *Duration:* {{ .Annotations.duration }}
           {{ end }}
-          
+
           Please check:
           1. Application logs
-          2. Database connectivity  
+          2. Database connectivity
           3. Infrastructure status
           4. Recent deployments
         actions:
@@ -237,14 +237,14 @@ receivers:
         subject: '[SECURITY] {{ .GroupLabels.alertname }}'
         body: |
           SECURITY ALERT DETECTED
-          
+
           {{ range .Alerts }}
           Alert: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
           Service: {{ .Labels.service }}
           Time: {{ .StartsAt }}
           {{ end }}
-    
+
     slack_configs:
       - api_url: '${SLACK_WEBHOOK_URL}'
         channel: '#security-alerts'

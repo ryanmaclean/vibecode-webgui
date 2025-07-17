@@ -17,7 +17,7 @@ resource "datadog_synthetics_test" "input_validation_security" {
 
   options_list {
     tick_every = var.test_intervals.security
-    
+
     retry {
       count    = 1
       interval = 60
@@ -31,7 +31,7 @@ resource "datadog_synthetics_test" "input_validation_security" {
   # Test SQL Injection attempts
   api_step {
     name = "SQL Injection Test"
-    
+
     request_definition {
       method = "POST"
       url    = "${var.app_base_url}/api/claude/chat"
@@ -62,7 +62,7 @@ resource "datadog_synthetics_test" "input_validation_security" {
   # Test Command Injection attempts
   api_step {
     name = "Command Injection Test"
-    
+
     request_definition {
       method = "POST"
       url    = "${var.app_base_url}/api/claude/generate"
@@ -92,7 +92,7 @@ resource "datadog_synthetics_test" "input_validation_security" {
   # Test Path Traversal attempts
   api_step {
     name = "Path Traversal Test"
-    
+
     request_definition {
       method = "POST"
       url    = "${var.app_base_url}/api/claude/analyze"
@@ -131,7 +131,7 @@ resource "datadog_synthetics_test" "auth_bypass_security" {
   # Test direct API access without authentication
   api_step {
     name = "Unauthenticated API Access Test"
-    
+
     request_definition {
       method = "GET"
       url    = "${var.app_base_url}/api/monitoring/metrics"
@@ -150,7 +150,7 @@ resource "datadog_synthetics_test" "auth_bypass_security" {
   # Test session manipulation
   api_step {
     name = "Session Manipulation Test"
-    
+
     request_definition {
       method = "POST"
       url    = "${var.app_base_url}/api/claude/session"
@@ -174,7 +174,7 @@ resource "datadog_synthetics_test" "auth_bypass_security" {
   # Test JWT manipulation
   api_step {
     name = "JWT Manipulation Test"
-    
+
     request_definition {
       method = "GET"
       url    = "${var.app_base_url}/api/auth/session"
@@ -208,7 +208,7 @@ resource "datadog_synthetics_test" "xss_content_security" {
   # Test XSS payload injection
   api_step {
     name = "XSS Payload Test"
-    
+
     request_definition {
       method = "POST"
       url    = "${var.app_base_url}/api/claude/chat"
@@ -237,7 +237,7 @@ resource "datadog_synthetics_test" "xss_content_security" {
   # Test Content Security Policy
   api_step {
     name = "Content Security Policy Test"
-    
+
     request_definition {
       method = "GET"
       url    = "${var.app_base_url}/"
@@ -279,7 +279,7 @@ resource "datadog_synthetics_test" "file_upload_security" {
   # Test malicious file upload attempts
   api_step {
     name = "Malicious File Upload Test"
-    
+
     request_definition {
       method = "POST"
       url    = "${var.app_base_url}/api/claude/analyze"
@@ -303,7 +303,7 @@ resource "datadog_synthetics_test" "file_upload_security" {
   # Test oversized payload
   api_step {
     name = "Oversized Payload Test"
-    
+
     request_definition {
       method = "POST"
       url    = "${var.app_base_url}/api/claude/generate"
@@ -347,7 +347,7 @@ resource "datadog_synthetics_test" "rate_limiting_security" {
   # Rapid fire requests to test rate limiting
   api_step {
     name = "Rapid Request 1"
-    
+
     request_definition {
       method = "POST"
       url    = "${var.app_base_url}/api/claude/chat"
@@ -370,7 +370,7 @@ resource "datadog_synthetics_test" "rate_limiting_security" {
 
   api_step {
     name = "Rapid Request 2"
-    
+
     request_definition {
       method = "POST"
       url    = "${var.app_base_url}/api/claude/chat"
@@ -394,7 +394,7 @@ resource "datadog_synthetics_test" "rate_limiting_security" {
   # After rapid requests, should see rate limiting
   api_step {
     name = "Rate Limited Request"
-    
+
     request_definition {
       method = "POST"
       url    = "${var.app_base_url}/api/claude/chat"
@@ -433,7 +433,7 @@ resource "datadog_synthetics_test" "information_disclosure_security" {
   # Test error message information disclosure
   api_step {
     name = "Error Message Disclosure Test"
-    
+
     request_definition {
       method = "POST"
       url    = "${var.app_base_url}/api/claude/invalid-endpoint"
@@ -465,7 +465,7 @@ resource "datadog_synthetics_test" "information_disclosure_security" {
   # Test debug information disclosure
   api_step {
     name = "Debug Information Test"
-    
+
     request_definition {
       method = "GET"
       url    = "${var.app_base_url}/api/debug"
@@ -484,7 +484,7 @@ resource "datadog_synthetics_test" "information_disclosure_security" {
   # Test server version disclosure
   api_step {
     name = "Server Version Disclosure Test"
-    
+
     request_definition {
       method = "HEAD"
       url    = "${var.app_base_url}/"

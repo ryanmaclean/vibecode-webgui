@@ -9,12 +9,12 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Code, 
-  MessageSquare, 
-  FileText, 
-  Bug, 
-  Lightbulb, 
+import {
+  Code,
+  MessageSquare,
+  FileText,
+  Bug,
+  Lightbulb,
   Search,
   Wand2,
   Copy,
@@ -134,13 +134,13 @@ export default function PromptTemplates({ onSelectTemplate, className = '' }: Pr
   const [searchTerm, setSearchTerm] = useState('')
 
   const categories = Object.keys(PROMPT_TEMPLATES)
-  
+
   // Get all templates for search
   const allTemplates = Object.values(PROMPT_TEMPLATES).flat()
-  
+
   // Filter templates based on search
-  const filteredTemplates = searchTerm 
-    ? allTemplates.filter(template => 
+  const filteredTemplates = searchTerm
+    ? allTemplates.filter(template =>
         template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         template.description.toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -157,19 +157,19 @@ export default function PromptTemplates({ onSelectTemplate, className = '' }: Pr
   }
 
   const handleVariableChange = (varName: string, value: string) => {
-    setVariables(prev => prev.map(v => 
+    setVariables(prev => prev.map(v =>
       v.name === varName ? { ...v, value } : v
     ))
   }
 
   const generatePrompt = () => {
     if (!selectedTemplate) return ''
-    
+
     let prompt = selectedTemplate.template
     variables.forEach(variable => {
       prompt = prompt.replace(new RegExp(`{${variable.name}}`, 'g'), variable.value)
     })
-    
+
     return prompt
   }
 
@@ -229,8 +229,8 @@ export default function PromptTemplates({ onSelectTemplate, className = '' }: Pr
         {filteredTemplates.map(template => {
           const IconComponent = template.icon
           return (
-            <Card 
-              key={template.id} 
+            <Card
+              key={template.id}
               className="cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => handleTemplateSelect(template)}
             >
@@ -305,13 +305,13 @@ export default function PromptTemplates({ onSelectTemplate, className = '' }: Pr
 
               {/* Actions */}
               <div className="flex justify-end space-x-2 pt-4 border-t">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setSelectedTemplate(null)}
                 >
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   onClick={handleUseTemplate}
                   disabled={variables.some(v => !v.value.trim())}
                 >

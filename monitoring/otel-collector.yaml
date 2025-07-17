@@ -225,7 +225,7 @@ extensions:
 
 service:
   extensions: [health_check, pprof, memory_ballast, file_storage]
-  
+
   pipelines:
     # Traces pipeline
     traces:
@@ -258,7 +258,7 @@ service:
     metrics:
       level: detailed
       address: 0.0.0.0:8888
-      
+
     # Resource configuration
     resource:
       service.name: otel-collector

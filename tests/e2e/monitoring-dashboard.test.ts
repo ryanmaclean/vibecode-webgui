@@ -10,7 +10,7 @@ test.describe('Monitoring Dashboard E2E', () => {
 
   test.beforeEach(async ({ browser }) => {
     page = await browser.newPage();
-    
+
     // Mock authentication to simulate admin user
     await page.addInitScript(() => {
       // Mock next-auth session
@@ -336,7 +336,7 @@ test.describe('Monitoring Dashboard E2E', () => {
 
   test('should refresh metrics automatically in live mode', async () => {
     let requestCount = 0
-    
+
     await page.route('/api/monitoring/metrics', async (route) => {
       requestCount++
       await route.fulfill({

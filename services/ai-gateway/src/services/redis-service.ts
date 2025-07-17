@@ -7,7 +7,7 @@ export class RedisService {
     private isConnected: boolean = false;
 
     constructor() {
-        const redisUrl = config.redis.password 
+        const redisUrl = config.redis.password
             ? `redis://:${config.redis.password}@${config.redis.host}:${config.redis.port}/${config.redis.db}`
             : `redis://${config.redis.host}:${config.redis.port}/${config.redis.db}`;
 

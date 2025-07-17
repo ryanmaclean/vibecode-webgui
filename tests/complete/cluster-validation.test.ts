@@ -1,6 +1,6 @@
 /**
  * COMPLETE Test Suite: Cluster Validation
- * 
+ *
  * Staff Engineer Implementation - Validates actual infrastructure
  * Tests run on git commit to ensure deployment integrity
  */
@@ -26,7 +26,7 @@ describe('KIND Cluster Validation (Complete)', () => {
       return;
     }
 
-    const result = execSync('kubectl cluster-info --context kind-vibecode-test', { 
+    const result = execSync('kubectl cluster-info --context kind-vibecode-test', {
       encoding: 'utf8',
       stdio: 'pipe'
     });
@@ -38,7 +38,7 @@ describe('KIND Cluster Validation (Complete)', () => {
   test('should have all required namespaces', async () => {
     if (!clusterExists) return;
 
-    const result = execSync('kubectl get namespaces -o name', { 
+    const result = execSync('kubectl get namespaces -o name', {
       encoding: 'utf8',
       stdio: 'pipe'
     });
@@ -50,7 +50,7 @@ describe('KIND Cluster Validation (Complete)', () => {
   test('should have operational database pods', async () => {
     if (!clusterExists) return;
 
-    const result = execSync('kubectl get pods -n vibecode -o wide', { 
+    const result = execSync('kubectl get pods -n vibecode -o wide', {
       encoding: 'utf8',
       stdio: 'pipe'
     });
@@ -63,7 +63,7 @@ describe('KIND Cluster Validation (Complete)', () => {
   test('should have accessible services', async () => {
     if (!clusterExists) return;
 
-    const result = execSync('kubectl get svc -n vibecode', { 
+    const result = execSync('kubectl get svc -n vibecode', {
       encoding: 'utf8',
       stdio: 'pipe'
     });
@@ -77,7 +77,7 @@ describe('KIND Cluster Validation (Complete)', () => {
     if (!clusterExists) return;
 
     try {
-      const result = execSync('kubectl get pods -n datadog', { 
+      const result = execSync('kubectl get pods -n datadog', {
         encoding: 'utf8',
         stdio: 'pipe'
       });
@@ -104,7 +104,7 @@ describe('Application Health Validation (Complete)', () => {
   test('should have healthy application pods', async () => {
     if (!clusterExists) return;
 
-    const result = execSync('kubectl get pods -n vibecode -l app=vibecode-webgui', { 
+    const result = execSync('kubectl get pods -n vibecode -l app=vibecode-webgui', {
       encoding: 'utf8',
       stdio: 'pipe'
     });
@@ -119,7 +119,7 @@ describe('Application Health Validation (Complete)', () => {
   test('should have persistent storage', async () => {
     if (!clusterExists) return;
 
-    const result = execSync('kubectl get pvc -n vibecode', { 
+    const result = execSync('kubectl get pvc -n vibecode', {
       encoding: 'utf8',
       stdio: 'pipe'
     });
@@ -131,7 +131,7 @@ describe('Application Health Validation (Complete)', () => {
 
   test('should have Docker images available', async () => {
     try {
-      const result = execSync('docker images | grep vibecode-webgui', { 
+      const result = execSync('docker images | grep vibecode-webgui', {
         encoding: 'utf8',
         stdio: 'pipe'
       });
@@ -166,7 +166,7 @@ describe('Integration Test Quality (Complete)', () => {
     const fs = require('fs');
     const path = require('path');
     const envPath = path.join(process.cwd(), '.env.local');
-    
+
     if (fs.existsSync(envPath)) {
       const envContent = fs.readFileSync(envPath, 'utf8');
       expect(envContent).toContain('DATADOG_API_KEY');

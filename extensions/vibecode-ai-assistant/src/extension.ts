@@ -10,13 +10,13 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Initialize OpenRouter client
     const openRouterClient = new OpenRouterClient();
-    
+
     // Initialize AI Assistant Manager
     const aiAssistantManager = new AIAssistantManager(openRouterClient);
-    
+
     // Initialize Code Generator
     const codeGenerator = new CodeGenerator(openRouterClient);
-    
+
     // Initialize Project Generator
     const projectGenerator = new ProjectGenerator(openRouterClient);
 
@@ -32,31 +32,31 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('vibecode.generateCode', async () => {
             await codeGenerator.generateCode();
         }),
-        
+
         vscode.commands.registerCommand('vibecode.explainCode', async () => {
             await aiAssistantManager.explainCode();
         }),
-        
+
         vscode.commands.registerCommand('vibecode.optimizeCode', async () => {
             await aiAssistantManager.optimizeCode();
         }),
-        
+
         vscode.commands.registerCommand('vibecode.fixCode', async () => {
             await aiAssistantManager.fixCode();
         }),
-        
+
         vscode.commands.registerCommand('vibecode.generateTests', async () => {
             await codeGenerator.generateTests();
         }),
-        
+
         vscode.commands.registerCommand('vibecode.generateProject', async () => {
             await projectGenerator.generateProject();
         }),
-        
+
         vscode.commands.registerCommand('vibecode.chatWithCode', async () => {
             await chatProvider.focusChat();
         }),
-        
+
         vscode.commands.registerCommand('vibecode.selectAIModel', async () => {
             await aiAssistantManager.selectAIModel();
         })

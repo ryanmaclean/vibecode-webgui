@@ -195,7 +195,7 @@ describe('Monitoring Infrastructure Deployment', () => {
     test('should verify services can communicate', async () => {
       // Test Vector to Datadog Agent communication
       const vectorPod = await execAsync('kubectl get pods -l app=vector -n monitoring -o jsonpath="{.items[0].metadata.name}"');
-      
+
       // Test if Vector can reach Datadog service (this would normally send logs);
       try {
         await execAsync(`kubectl exec ${vectorPod.stdout.trim()} -n monitoring -- curl -f http://datadog-agent.datadog.svc.cluster.local:8125 || true`);
@@ -208,7 +208,7 @@ describe('Monitoring Infrastructure Deployment', () => {
     test('should verify monitoring endpoints are accessible', async () => {
       // Port forward Vector API endpoint temporarily
       const portForward = exec('kubectl port-forward -n monitoring service/vector 18686:8686');
-      
+
       // Wait a moment for port forwarding to establish
       await new Promise(resolve => setTimeout(resolve, 2000));
 

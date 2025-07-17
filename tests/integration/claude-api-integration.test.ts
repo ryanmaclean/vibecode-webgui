@@ -1,9 +1,9 @@
 /**
  * Claude API Integration Tests
- * 
+ *
  * Integration tests for Claude Code API endpoints
  * Tests real API functionality with mocked CLI integration
- * 
+ *
  * Staff Engineer Implementation - Production-ready API testing
  */
 

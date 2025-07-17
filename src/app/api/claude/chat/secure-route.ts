@@ -1,9 +1,9 @@
 /**
  * Secure Claude Code Chat API Route
- * 
+ *
  * Security-hardened API endpoint using the secure CLI integration
  * Implements proper input validation, authentication, and rate limiting
- * 
+ *
  * Staff Engineer Implementation - Production-ready secure Claude API
  */
 
@@ -29,11 +29,11 @@ export async function POST(request: NextRequest) {
     const rateLimitResult = await rateLimiter(request)
     if (!rateLimitResult.success) {
       return NextResponse.json(
-        { 
+        {
           error: 'Rate limit exceeded',
-          retryAfter: rateLimitResult.retryAfter 
+          retryAfter: rateLimitResult.retryAfter
         },
-        { 
+        {
           status: 429,
           headers: {
             'Retry-After': rateLimitResult.retryAfter?.toString() || '60'
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     if (validationErrors.length > 0) {
       return NextResponse.json(
-        { 
+        {
           error: 'Validation failed',
           details: validationErrors
         },
@@ -126,10 +126,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Secure Claude chat API error:', error)
-    
+
     // Don't expose internal errors
     return NextResponse.json(
-      { 
+      {
         error: 'Service temporarily unavailable',
         code: 'INTERNAL_ERROR'
       },
@@ -203,7 +203,7 @@ function validateChatRequest(params: any): string[] {
 function validateAndSanitizeFiles(files: string[]): string[] {
   const allowedExtensions = ['.js', '.ts', '.jsx', '.tsx', '.json', '.md', '.txt', '.css', '.html']
   const blockedPaths = ['..', '/etc', '/usr', '/var', 'node_modules', '.git']
-  
+
   return files
     .filter(file => {
       // Basic validation

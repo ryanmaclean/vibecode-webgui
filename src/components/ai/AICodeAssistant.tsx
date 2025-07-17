@@ -1,23 +1,23 @@
 /**
  * AI Code Assistant Component
- * 
+ *
  * Comprehensive AI-powered development assistance with code-server integration
  * Based on claude-prompt.md webview patterns for VS Code extension compatibility
- * 
+ *
  * Staff Engineer Implementation - Production-ready AI code assistance
  */
 
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { 
-  Bot, 
-  Code, 
-  FileSearch, 
-  Zap, 
-  Bug, 
-  TestTube, 
-  FileText, 
+import {
+  Bot,
+  Code,
+  FileSearch,
+  Zap,
+  Bug,
+  TestTube,
+  FileText,
   Sparkles,
   ChevronDown,
   ChevronRight,
@@ -26,12 +26,12 @@ import {
   AlertTriangle
 } from 'lucide-react'
 import { claudeCodeSDK } from '@/lib/claude-code-sdk'
-import type { 
-  GenerateCodeRequest, 
-  GenerateCodeResponse, 
-  CodeAnalysisRequest, 
+import type {
+  GenerateCodeRequest,
+  GenerateCodeResponse,
+  CodeAnalysisRequest,
   CodeAnalysisResponse,
-  CodeContext 
+  CodeContext
 } from '@/lib/claude-code-sdk'
 
 interface AICodeAssistantProps {
@@ -77,7 +77,7 @@ export default function AICodeAssistant({
     setMode(newMode)
     setResult(null)
     setError(null)
-    
+
     // Set default prompts based on mode
     const defaultPrompts = {
       generate: 'Write a function that...',
@@ -87,7 +87,7 @@ export default function AICodeAssistant({
       test: 'Generate comprehensive test cases for this code',
       explain: 'Explain how this code works and what it does'
     }
-    
+
     if (!selectedText) {
       setPrompt(defaultPrompts[newMode])
     }
@@ -126,7 +126,7 @@ export default function AICodeAssistant({
         const request: CodeAnalysisRequest = {
           code: selectedText || codeContext?.fullText || '',
           language: context.language,
-          analysisType: mode === 'analyze' ? 'review' : 
+          analysisType: mode === 'analyze' ? 'review' :
                        mode === 'optimize' ? 'optimize' :
                        mode === 'debug' ? 'debug' :
                        mode === 'test' ? 'test' : 'explain'
@@ -263,7 +263,7 @@ export default function AICodeAssistant({
         )}
 
         {result && mode === 'generate' && (
-          <GenerateCodeResult 
+          <GenerateCodeResult
             result={result as GenerateCodeResponse}
             expandedSections={expandedSections}
             copiedItems={copiedItems}
@@ -273,7 +273,7 @@ export default function AICodeAssistant({
         )}
 
         {result && mode !== 'generate' && (
-          <AnalysisResult 
+          <AnalysisResult
             result={result as CodeAnalysisResponse}
             expandedSections={expandedSections}
             copiedItems={copiedItems}
@@ -301,12 +301,12 @@ interface GenerateCodeResultProps {
   onCopy: (text: string, id: string) => void
 }
 
-function GenerateCodeResult({ 
-  result, 
-  expandedSections, 
-  copiedItems, 
-  onToggleSection, 
-  onCopy 
+function GenerateCodeResult({
+  result,
+  expandedSections,
+  copiedItems,
+  onToggleSection,
+  onCopy
 }: GenerateCodeResultProps) {
   return (
     <div className="space-y-4">
@@ -325,7 +325,7 @@ function GenerateCodeResult({
           </div>
           {expandedSections.has('code') ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </button>
-        
+
         {expandedSections.has('code') && (
           <div className="border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between p-2 bg-gray-800 text-white">
@@ -358,7 +358,7 @@ function GenerateCodeResult({
             </div>
             {expandedSections.has('explanation') ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           </button>
-          
+
           {expandedSections.has('explanation') && (
             <div className="p-3 border-t border-gray-200 dark:border-gray-700">
               <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -384,7 +384,7 @@ function GenerateCodeResult({
             </div>
             {expandedSections.has('suggestions') ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           </button>
-          
+
           {expandedSections.has('suggestions') && (
             <div className="p-3 border-t border-gray-200 dark:border-gray-700">
               <ul className="space-y-2">
@@ -411,12 +411,12 @@ interface AnalysisResultProps {
   onCopy: (text: string, id: string) => void
 }
 
-function AnalysisResult({ 
-  result, 
-  expandedSections, 
-  copiedItems, 
-  onToggleSection, 
-  onCopy 
+function AnalysisResult({
+  result,
+  expandedSections,
+  copiedItems,
+  onToggleSection,
+  onCopy
 }: AnalysisResultProps) {
   return (
     <div className="space-y-4">
@@ -432,7 +432,7 @@ function AnalysisResult({
           </div>
           {expandedSections.has('analysis') ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </button>
-        
+
         {expandedSections.has('analysis') && (
           <div className="p-3 border-t border-gray-200 dark:border-gray-700">
             <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -460,7 +460,7 @@ function AnalysisResult({
             </div>
             {expandedSections.has('issues') ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           </button>
-          
+
           {expandedSections.has('issues') && (
             <div className="p-3 border-t border-gray-200 dark:border-gray-700 space-y-3">
               {result.issues.map((issue, index) => (
@@ -505,7 +505,7 @@ function AnalysisResult({
             </div>
             {expandedSections.has('improvements') ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           </button>
-          
+
           {expandedSections.has('improvements') && (
             <div className="p-3 border-t border-gray-200 dark:border-gray-700">
               <ul className="space-y-2">
@@ -534,7 +534,7 @@ function AnalysisResult({
             </div>
             {expandedSections.has('tests') ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           </button>
-          
+
           {expandedSections.has('tests') && (
             <div className="p-3 border-t border-gray-200 dark:border-gray-700">
               <ul className="space-y-2">

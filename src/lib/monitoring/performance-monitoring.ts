@@ -1,6 +1,6 @@
 /**
  * Performance Monitoring Module
- * 
+ *
  * Provides comprehensive performance tracking for the VibeCode platform
  * Integrates with Datadog for real-time performance metrics
  */

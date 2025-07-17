@@ -1,26 +1,26 @@
 /**
  * Code Server Integration Component
- * 
+ *
  * Bridges AI assistance with code-server iframe communication
  * Based on claude-prompt.md VS Code extension patterns for webview integration
- * 
+ *
  * Staff Engineer Implementation - Production-ready AI/IDE integration
  */
 
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { 
-  Panel, 
-  PanelGroup, 
+import {
+  Panel,
+  PanelGroup,
   PanelResizeHandle,
-  ImperativePanelHandle 
+  ImperativePanelHandle
 } from 'react-resizable-panels'
-import { 
-  Bot, 
-  MessageSquare, 
-  Code2, 
-  Settings, 
+import {
+  Bot,
+  MessageSquare,
+  Code2,
+  Settings,
   X,
   Maximize2,
   Minimize2
@@ -274,7 +274,7 @@ export default function CodeServerIntegration({
               {activePanel && (
                 <>
                   <div className="w-px h-6 bg-gray-200 dark:bg-gray-600" />
-                  
+
                   <button
                     onClick={toggleMaximize}
                     className="p-2 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -312,8 +312,8 @@ export default function CodeServerIntegration({
         {activePanel && (
           <>
             <PanelResizeHandle className="w-1 bg-gray-200 dark:bg-gray-700 hover:bg-blue-500 dark:hover:bg-blue-600 transition-colors" />
-            
-            <Panel 
+
+            <Panel
               ref={panelRef}
               defaultSize={panelSize}
               minSize={25}
@@ -364,7 +364,7 @@ export default function CodeServerIntegration({
             <span>📍 Ln {codeServerState.cursorPosition.line}, Col {codeServerState.cursorPosition.column}</span>
           )}
         </div>
-        
+
         <div className="flex items-center space-x-2">
           {activePanel && (
             <div className="flex items-center space-x-1">

@@ -90,7 +90,7 @@ groups:
       - record: vibecode:cpu_usage:percentage
         expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
 
-      # Memory Usage Percentage  
+      # Memory Usage Percentage
       - record: vibecode:memory_usage:percentage
         expr: |
           (

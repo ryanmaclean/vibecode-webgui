@@ -9,11 +9,11 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Cloud, 
-  Zap, 
-  ExternalLink, 
-  Copy, 
+import {
+  Cloud,
+  Zap,
+  ExternalLink,
+  Copy,
   Check,
   AlertCircle,
   Globe,
@@ -134,7 +134,7 @@ export default function OneClickDeploy({ className = '' }: OneClickDeployProps) 
         complexity: platform.complexity
       })
     }
-    
+
     // Open deployment URL in new tab
     window.open(platform.deployUrl, '_blank')
   }
@@ -143,7 +143,7 @@ export default function OneClickDeploy({ className = '' }: OneClickDeployProps) 
     const template = Object.entries(ENV_TEMPLATES[envType])
       .map(([key, value]) => `${key}=${value}`)
       .join('\n')
-    
+
     navigator.clipboard.writeText(template)
     setCopiedEnv(envType)
     setTimeout(() => setCopiedEnv(null), 2000)
@@ -187,7 +187,7 @@ Complexity: ${platform.complexity}
           <h2 className="text-2xl font-bold">One-Click Deployment</h2>
         </div>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Deploy your VibeCode platform instantly to popular cloud providers. 
+          Deploy your VibeCode platform instantly to popular cloud providers.
           Choose your preferred platform and get started in minutes.
         </p>
       </div>
@@ -245,7 +245,7 @@ Complexity: ${platform.complexity}
                     .join('\n')}
                 </pre>
               </div>
-              
+
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium">Production</h4>
@@ -275,8 +275,8 @@ Complexity: ${platform.complexity}
       {/* Platform Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {DEPLOYMENT_PLATFORMS.map((platform) => (
-          <Card 
-            key={platform.id} 
+          <Card
+            key={platform.id}
             className={`cursor-pointer transition-all hover:shadow-lg ${
               selectedPlatform === platform.id ? 'ring-2 ring-blue-500' : ''
             }`}
@@ -291,7 +291,7 @@ Complexity: ${platform.complexity}
                   <div>
                     <CardTitle className="text-lg">{platform.name}</CardTitle>
                     <div className="flex items-center space-x-2 mt-1">
-                      <Badge 
+                      <Badge
                         variant={platform.complexity === 'Easy' ? 'default' : 'secondary'}
                         className="text-xs"
                       >
@@ -328,8 +328,8 @@ Complexity: ${platform.complexity}
               </div>
 
               {/* Deploy Button */}
-              <Button 
-                className="w-full" 
+              <Button
+                className="w-full"
                 onClick={(e) => {
                   e.stopPropagation()
                   handleDeploy(platform)
@@ -393,7 +393,7 @@ Complexity: ${platform.complexity}
                         ))}
                       </ul>
                     </div>
-                    
+
                     <div>
                       <h5 className="font-medium text-sm mb-1 text-orange-600">Considerations</h5>
                       <ul className="text-xs space-y-1">
@@ -435,7 +435,7 @@ Complexity: ${platform.complexity}
                 <li>• <strong>Database URL:</strong> Some platforms provide this automatically</li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="font-medium mb-2">Recommended Setup</h4>
               <ul className="text-sm space-y-1">

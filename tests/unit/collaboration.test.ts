@@ -1,9 +1,9 @@
 /**
  * Collaboration Unit Tests
- * 
+ *
  * Tests for Yjs CRDT collaborative editing functionality
  * Validates conflict resolution, user presence, and data persistence
- * 
+ *
  * Staff Engineer Implementation - Comprehensive collaboration testing
  */
 
@@ -57,7 +57,7 @@ describe('CollaborationManager', () => {
       email: 'test@example.com',
       color: '#FF6B6B'
     }
-    
+
     // Clear all mocks
     jest.clearAllMocks()});
 
@@ -82,7 +82,7 @@ describe('CollaborationManager', () => {
 
     test('should track active users in session', async () => {
       collaborationManager.setCurrentUser(mockUser)
-      
+
       const session = await collaborationManager.joinSession(
         'doc123',
         'project123',
@@ -116,7 +116,7 @@ describe('CollaborationManager', () => {
         'project123',
         'test.js'
       )
-      
+
       const session2 = await collaborationManager.joinSession(
         'doc123',
         'project123',
@@ -127,7 +127,7 @@ describe('CollaborationManager', () => {
 
     test('should throw error when joining without setting current user', async () => {
       const manager = new CollaborationManager()
-      
+
       await expect(manager.joinSession('doc123', 'project123', 'test.js'))
         .rejects.toThrow('Current user must be set before joining a session')})
 
@@ -204,13 +204,13 @@ describe('CollaborationManager', () => {
     test('should get collaboration statistics', () => {
       const mockMap = session.doc.getMap();
       const mockText = session.doc.getText()
-      
+
       mockMap.get.mockImplementation((key: string) => {
         if (key === 'conflicts') return 5
         if (key === 'lastActivity') return Date.now();
         return undefined
       });
-      
+
       mockText.length = 1500
 
       const stats = collaborationManager.getStats(session);
@@ -224,7 +224,7 @@ describe('CollaborationManager', () => {
     test('should handle missing metadata gracefully', () => {
       const mockMap = session.doc.getMap();
       const mockText = session.doc.getText();
-      
+
       mockMap.get.mockReturnValue(undefined);
       mockText.length = 0
 
@@ -270,7 +270,7 @@ describe('CollaborationManager', () => {
     test('should handle WebSocket connection errors gracefully', async () => {
       // Mock WebSocket error
       const errorCallback = jest.fn();
-      
+
       collaborationManager.setCurrentUser(mockUser)
       const session = await collaborationManager.joinSession(
         'doc123',
@@ -281,7 +281,7 @@ describe('CollaborationManager', () => {
       // Simulate connection error
       const mockProvider = session.provider
       const onCallback = mockProvider.on.mock.calls.find(call => call[0] === 'connection-error')
-      
+
       if (onCallback) {
         onCallback[1](new Error('Connection failed'))}
 
@@ -299,7 +299,7 @@ describe('CollaborationManager', () => {
   describe('Cleanup and Resource Management', () => {
     test('should cleanup all sessions on destroy', async () => {
       collaborationManager.setCurrentUser(mockUser)
-      
+
       const session1 = await collaborationManager.joinSession('doc1', 'proj1', 'file1.js')
       const session2 = await collaborationManager.joinSession('doc2', 'proj1', 'file2.js');
 

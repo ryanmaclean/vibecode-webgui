@@ -9,11 +9,11 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Wand2, 
-  ArrowRight, 
-  Check, 
-  X, 
+import {
+  Wand2,
+  ArrowRight,
+  Check,
+  X,
   Lightbulb,
   Target,
   Brain,
@@ -35,7 +35,7 @@ const ENHANCEMENT_RULES = {
         pattern: /\b(help|do|make|create|fix)\b/i,
         suggestion: 'Specify exactly what kind of help, creation, or fixing you need.',
         enhance: (prompt: string) => prompt.replace(
-          /\b(help|do|make|create|fix)\b/gi, 
+          /\b(help|do|make|create|fix)\b/gi,
           (match) => `${match} specifically`
         )
       }
@@ -98,10 +98,10 @@ interface PromptEnhancerProps {
   className?: string
 }
 
-export default function PromptEnhancer({ 
-  originalPrompt, 
-  onEnhancedPrompt, 
-  className = '' 
+export default function PromptEnhancer({
+  originalPrompt,
+  onEnhancedPrompt,
+  className = ''
 }: PromptEnhancerProps) {
   const [enhancements, setEnhancements] = useState<Enhancement[]>([])
   const [enhancedPrompt, setEnhancedPrompt] = useState('')
@@ -109,12 +109,12 @@ export default function PromptEnhancer({
 
   const analyzePrompt = async () => {
     setIsAnalyzing(true)
-    
+
     // Simulate analysis delay
     await new Promise(resolve => setTimeout(resolve, 1000))
-    
+
     const foundEnhancements: Enhancement[] = []
-    
+
     // Check against all enhancement rules
     Object.entries(ENHANCEMENT_RULES).forEach(([category, ruleGroup]) => {
       ruleGroup.rules.forEach(rule => {
@@ -127,7 +127,7 @@ export default function PromptEnhancer({
         }
       })
     })
-    
+
     setEnhancements(foundEnhancements)
     setIsAnalyzing(false)
   }
@@ -136,7 +136,7 @@ export default function PromptEnhancer({
     const newEnhancements = [...enhancements]
     newEnhancements[index].applied = !newEnhancements[index].applied
     setEnhancements(newEnhancements)
-    
+
     // Generate enhanced prompt
     let enhanced = originalPrompt
     newEnhancements.forEach(enhancement => {
@@ -144,19 +144,19 @@ export default function PromptEnhancer({
         enhanced = enhancement.rule.enhance(enhanced)
       }
     })
-    
+
     setEnhancedPrompt(enhanced)
   }
 
   const applyAllEnhancements = () => {
     const newEnhancements = enhancements.map(e => ({ ...e, applied: true }))
     setEnhancements(newEnhancements)
-    
+
     let enhanced = originalPrompt
     newEnhancements.forEach(enhancement => {
       enhanced = enhancement.rule.enhance(enhanced)
     })
-    
+
     setEnhancedPrompt(enhanced)
   }
 
@@ -217,14 +217,14 @@ export default function PromptEnhancer({
                   Apply All
                 </Button>
               </div>
-              
+
               <div className="space-y-3">
                 {enhancements.map((enhancement, index) => {
                   const categoryData = ENHANCEMENT_RULES[enhancement.category as keyof typeof ENHANCEMENT_RULES]
                   const IconComponent = categoryData.icon
-                  
+
                   return (
-                    <div 
+                    <div
                       key={index}
                       className={`border rounded-lg p-3 transition-all ${
                         enhancement.applied ? 'border-green-500 bg-green-50' : 'border-gray-200'
@@ -242,7 +242,7 @@ export default function PromptEnhancer({
                             {enhancement.rule.suggestion}
                           </p>
                         </div>
-                        
+
                         <Button
                           size="sm"
                           variant={enhancement.applied ? "default" : "outline"}
@@ -275,7 +275,7 @@ export default function PromptEnhancer({
                   {enhancedPrompt}
                 </pre>
               </div>
-              
+
               <div className="flex justify-end mt-3">
                 <Button onClick={useEnhancedPrompt}>
                   Use Enhanced Prompt

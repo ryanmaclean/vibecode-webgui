@@ -57,12 +57,12 @@ router.get('/detailed', async (_req: Request, res: Response) => {
     }
 
     // Overall status
-    const allHealthy = Object.values(checks).every(check => 
+    const allHealthy = Object.values(checks).every(check =>
         check.status === 'healthy' || check.status === 'warning'
     );
 
     const statusCode = allHealthy ? 200 : 503;
-    
+
     res.status(statusCode).json({
         status: allHealthy ? 'healthy' : 'unhealthy',
         service: 'vibecode-ai-gateway',
@@ -80,7 +80,7 @@ router.get('/ready', async (_req: Request, res: Response) => {
     try {
         const redisReady = redisService.isReady();
         const modelsLoaded = modelRegistry.getModels().length > 0;
-        
+
         if (redisReady && modelsLoaded) {
             res.json({
                 status: 'ready',

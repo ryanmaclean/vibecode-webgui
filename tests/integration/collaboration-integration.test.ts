@@ -1,9 +1,9 @@
 /**
  * Collaboration Integration Tests
- * 
+ *
  * End-to-end tests for collaborative editing functionality
  * Tests real-time synchronization, conflict resolution, and persistence
- * 
+ *
  * Staff Engineer Implementation - Production-ready collaboration testing
  */
 
@@ -84,7 +84,7 @@ describe('Collaboration Integration Tests', () => {
 
       expect(session1.documentId).toBe('doc123')
       expect(session2.documentId).toBe('doc123')
-      
+
       // Verify users are tracked
       expect(session1.users.has('user1')).toBe(true)
       expect(session2.users.has('user2')).toBe(true)})
@@ -102,7 +102,7 @@ describe('Collaboration Integration Tests', () => {
 
       // Simulate sync (in real scenario this would happen via WebSocket);
       const text2 = manager2.getText(session2);
-      
+
       // Both should have the same document ID
       expect(session1.documentId).toBe(session2.documentId)})
 
@@ -160,7 +160,7 @@ describe('Collaboration Integration Tests', () => {
       manager1.resolveConflicts(session);
 
       const metadata = manager1.getMap(session);
-      
+
       // Verify conflict tracking
       expect(metadata.set).toBeDefined()})})
 
@@ -189,7 +189,7 @@ describe('Collaboration Integration Tests', () => {
 
     test('should restore session after reconnection', async () => {
       manager1.setCurrentUser(user1)
-      
+
       // Initial session
       const session1 = await manager1.joinSession('doc123', 'project1', 'main.js');
       const text1 = manager1.getText(session1)
@@ -223,13 +223,13 @@ describe('Collaboration Integration Tests', () => {
 
       // Add second user (simulate);
       session.users.set(user2.id, user2);
-      
+
       const updatedUsers = manager1.getActiveUsers(session);
       expect(updatedUsers.length).toBe(initialCount + 1);
 
       // Remove user
       session.users.delete(user2.id);
-      
+
       const finalUsers = manager1.getActiveUsers(session);
       expect(finalUsers.length).toBe(initialCount)})
 
@@ -249,7 +249,7 @@ describe('Collaboration Integration Tests', () => {
       const session = await manager1.joinSession('doc123', 'project1', 'large-file.js');
 
       const text = manager1.getText(session)
-      
+
       // Insert large content
       const largeContent = 'console.log("line");\n'.repeat(1000);
       text.insert(0, largeContent);
@@ -263,7 +263,7 @@ describe('Collaboration Integration Tests', () => {
       const session = await manager1.joinSession('doc123', 'project1', 'main.js');
 
       const text = manager1.getText(session);
-      
+
       // Perform multiple operations rapidly
       for (let i = 0; i < 10; i++) {
         text.insert(i * 10, `// Comment ${i}\n`)}
@@ -275,14 +275,14 @@ describe('Collaboration Integration Tests', () => {
   describe('Error Handling and Recovery', () => {
     test('should handle WebSocket connection failures gracefully', async () => {
       manager1.setCurrentUser(user1)
-      
+
       // This should not throw even if WebSocket fails
       await expect(
         manager1.joinSession('doc123', 'project1', 'main.js')).resolves.toBeDefined()})
 
     test('should handle invalid document IDs', async () => {
       manager1.setCurrentUser(user1)
-      
+
       // Should handle edge cases gracefully
       await expect(
         manager1.joinSession('', 'project1', 'main.js')).resolves.toBeDefined()})
@@ -303,12 +303,12 @@ describe('Collaboration Integration Tests', () => {
       // Test would verify compatibility across different browser environments
       manager1.setCurrentUser(user1)
       const session = await manager1.joinSession('doc123', 'project1', 'main.js');
-      
+
       expect(session.provider).toBeDefined()})
 
     test('should handle different IndexedDB implementations', async () => {
       // Test would verify persistence across different browsers
       manager1.setCurrentUser(user1)
       const session = await manager1.joinSession('doc123', 'project1', 'main.js');
-      
+
       expect(session.persistence).toBeDefined()})})});

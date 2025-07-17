@@ -76,7 +76,7 @@ class FeatureFlagEngine {
 
   constructor() {
     this.initializeDefaultFlags()
-    
+
     appLogger.logBusiness('feature_flag_engine_initialized', {
       feature: 'experimentation',
       metadata: { totalFlags: this.flags.size }
@@ -87,21 +87,21 @@ class FeatureFlagEngine {
    * Evaluate a feature flag for a given context
    */
   async evaluateFlag(
-    flagKey: string, 
+    flagKey: string,
     context: ExperimentContext,
     defaultValue: boolean = false
   ): Promise<ExperimentResult> {
     const startTime = Date.now()
-    
+
     try {
       const flag = this.flags.get(flagKey)
-      
+
       if (!flag || !flag.enabled) {
         appLogger.logBusiness('flag_evaluation_disabled', {
           feature: 'feature_flags',
           metadata: { flagKey, enabled: flag?.enabled ?? false }
         })
-        
+
         return {
           flagKey,
           variant: 'control',
@@ -114,7 +114,7 @@ class FeatureFlagEngine {
       if (userAllocations?.has(flagKey)) {
         const variant = userAllocations.get(flagKey)!
         const flagVariant = flag.variants.find(v => v.key === variant)
-        
+
         return {
           flagKey,
           variant,
@@ -128,15 +128,15 @@ class FeatureFlagEngine {
       const targetedVariant = this.evaluateTargeting(flag, context)
       if (targetedVariant) {
         this.setUserAllocation(context.userId, flagKey, targetedVariant)
-        
+
         const flagVariant = flag.variants.find(v => v.key === targetedVariant)
-        
+
         appLogger.logBusiness('flag_evaluation_targeted', {
           feature: 'feature_flags',
           userId: context.userId,
           metadata: { flagKey, variant: targetedVariant, targeted: true }
         })
-        
+
         return {
           flagKey,
           variant: targetedVariant,
@@ -149,15 +149,15 @@ class FeatureFlagEngine {
       // Random allocation based on variant weights
       const allocatedVariant = this.allocateRandomVariant(flag, context)
       this.setUserAllocation(context.userId, flagKey, allocatedVariant)
-      
+
       const flagVariant = flag.variants.find(v => v.key === allocatedVariant)
-      
+
       appLogger.logBusiness('flag_evaluation_allocated', {
         feature: 'feature_flags',
         userId: context.userId,
         metadata: { flagKey, variant: allocatedVariant, randomAllocation: true }
       })
-      
+
       return {
         flagKey,
         variant: allocatedVariant,
@@ -165,14 +165,14 @@ class FeatureFlagEngine {
         isExperiment: true,
         allocationKey: this.getAllocationKey(context.userId, flagKey)
       }
-      
+
     } catch (error) {
       logger.error('Feature flag evaluation failed', {
         flagKey,
         userId: context.userId,
         error: (error as Error).message
       })
-      
+
       return {
         flagKey,
         variant: 'control',
@@ -200,7 +200,7 @@ class FeatureFlagEngine {
     try {
       const userAllocations = this.allocations.get(context.userId)
       const variant = userAllocations?.get(flagKey) || 'control'
-      
+
       const metric: ExperimentMetric = {
         name: metricName,
         value,
@@ -209,9 +209,9 @@ class FeatureFlagEngine {
         variant,
         flagKey
       }
-      
+
       this.metrics.push(metric)
-      
+
       // Log to Datadog for analysis
       appLogger.logBusiness('experiment_metric_tracked', {
         feature: 'experimentation',
@@ -224,7 +224,7 @@ class FeatureFlagEngine {
           allocationKey: this.getAllocationKey(context.userId, flagKey)
         }
       })
-      
+
       // Send to Datadog as custom metric
       logger.info('Experiment metric tracked', {
         category: 'experimentation',
@@ -234,7 +234,7 @@ class FeatureFlagEngine {
         variant,
         userId: context.userId
       })
-      
+
     } catch (error) {
       logger.error('Failed to track experiment metric', {
         flagKey,
@@ -256,9 +256,9 @@ class FeatureFlagEngine {
       createdAt: now,
       updatedAt: now
     }
-    
+
     this.flags.set(flag.key, fullFlag)
-    
+
     appLogger.logBusiness('feature_flag_created', {
       feature: 'feature_flags',
       metadata: {
@@ -267,7 +267,7 @@ class FeatureFlagEngine {
         targetingRules: flag.targeting.rules.length
       }
     })
-    
+
     logger.info('Feature flag created', {
       category: 'feature_flags',
       flagKey: flag.key,
@@ -295,11 +295,11 @@ class FeatureFlagEngine {
 
     const flagMetrics = this.metrics.filter(m => m.flagKey === flagKey)
     const variantMetrics: Record<string, VariantMetrics> = {}
-    
+
     // Aggregate metrics by variant
     for (const variant of flag.variants) {
       const variantData = flagMetrics.filter(m => m.variant === variant.key)
-      
+
       variantMetrics[variant.key] = {
         totalSamples: variantData.length,
         conversionRate: this.calculateConversionRate(variantData),
@@ -308,11 +308,11 @@ class FeatureFlagEngine {
         confidenceInterval: this.calculateConfidenceInterval(variantData)
       }
     }
-    
+
     // Calculate statistical significance between variants
     const statisticalSignificance: Record<string, StatisticalResult> = {}
     const controlVariant = flag.variants[0]?.key
-    
+
     if (controlVariant) {
       for (const variant of flag.variants.slice(1)) {
         statisticalSignificance[variant.key] = this.calculateStatisticalSignificance(
@@ -321,7 +321,7 @@ class FeatureFlagEngine {
         )
       }
     }
-    
+
     return {
       flag,
       metrics: variantMetrics,
@@ -340,7 +340,7 @@ class FeatureFlagEngine {
 
   private evaluateRule(rule: TargetingRule, context: ExperimentContext): boolean {
     const attributeValue = this.getAttributeValue(rule.attribute, context)
-    
+
     switch (rule.operator) {
       case 'equals':
         return attributeValue === rule.value
@@ -379,7 +379,7 @@ class FeatureFlagEngine {
     const hash = this.hashString(context.userId + flag.key)
     const normalizedHash = hash / 2147483647 // Normalize to 0-1
     const threshold = normalizedHash * totalWeight
-    
+
     let cumulativeWeight = 0
     for (const variant of flag.variants) {
       cumulativeWeight += variant.weight
@@ -387,7 +387,7 @@ class FeatureFlagEngine {
         return variant.key
       }
     }
-    
+
     return flag.variants[0]?.key || 'control'
   }
 
@@ -448,7 +448,7 @@ class FeatureFlagEngine {
     const p2 = treatment.conversionRate
     const n1 = control.totalSamples
     const n2 = treatment.totalSamples
-    
+
     if (n1 === 0 || n2 === 0) {
       return {
         pValue: 1,
@@ -457,16 +457,16 @@ class FeatureFlagEngine {
         liftPercentage: 0
       }
     }
-    
+
     const pooledRate = (p1 * n1 + p2 * n2) / (n1 + n2)
     const standardError = Math.sqrt(pooledRate * (1 - pooledRate) * (1/n1 + 1/n2))
     const zScore = Math.abs((p2 - p1) / standardError)
-    
+
     // Approximate p-value calculation
     const pValue = 2 * (1 - this.normalCDF(Math.abs(zScore)))
     const isSignificant = pValue < 0.05
     const liftPercentage = p1 > 0 ? ((p2 - p1) / p1) * 100 : 0
-    
+
     return {
       pValue,
       isSignificant,
@@ -488,13 +488,13 @@ class FeatureFlagEngine {
     const a4 = -1.453152027
     const a5 =  1.061405429
     const p  =  0.3275911
-    
+
     const sign = x >= 0 ? 1 : -1
     x = Math.abs(x)
-    
+
     const t = 1.0 / (1.0 + p * x)
     const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x)
-    
+
     return sign * y
   }
 

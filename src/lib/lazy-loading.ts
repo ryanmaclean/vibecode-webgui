@@ -1,9 +1,9 @@
 /**
  * Lazy Loading for Large Files
- * 
+ *
  * High-performance lazy loading system for large files with virtual scrolling
  * Implements efficient memory management and smooth user experience
- * 
+ *
  * Staff Engineer Implementation - Enterprise-grade lazy loading
  */
 
@@ -61,7 +61,7 @@ export class LazyFileLoader extends EventEmitter {
 
   constructor(config: Partial<LazyLoadConfig> = {}) {
     super()
-    
+
     this.config = {
       chunkSize: config.chunkSize || 1000, // Lines per chunk
       preloadChunks: config.preloadChunks || 3,
@@ -84,17 +84,17 @@ export class LazyFileLoader extends EventEmitter {
       // Get file metadata
       const metadata = await this.analyzeFile(filePath)
       this.fileMetadata = metadata
-      
+
       // Preload initial chunks
       await this.preloadInitialChunks()
-      
+
       this.emit('file-initialized', {
         filePath,
         totalLines: metadata.totalLines,
         totalSize: metadata.totalSize,
         chunksRequired: Math.ceil(metadata.totalLines / this.config.chunkSize)
       })
-      
+
     } catch (error) {
       this.emit('error', error)
       throw error
@@ -111,19 +111,19 @@ export class LazyFileLoader extends EventEmitter {
 
     const { visibleStartLine, visibleEndLine } = virtualState
     const requiredChunks = this.calculateRequiredChunks(visibleStartLine, visibleEndLine)
-    
+
     // Load required chunks
     await this.ensureChunksLoaded(requiredChunks, 'high')
-    
+
     // Prefetch adjacent chunks
     this.prefetchAdjacentChunks(requiredChunks)
-    
+
     // Extract lines from chunks
     const lines = this.extractLines(visibleStartLine, visibleEndLine)
-    
+
     // Update access patterns
     this.updateAccessPattern(requiredChunks)
-    
+
     return lines
   }
 
@@ -137,7 +137,7 @@ export class LazyFileLoader extends EventEmitter {
 
     const requiredChunks = this.calculateRequiredChunks(startLine, endLine)
     await this.ensureChunksLoaded(requiredChunks, 'normal')
-    
+
     return this.extractLines(startLine, endLine)
   }
 
@@ -145,7 +145,7 @@ export class LazyFileLoader extends EventEmitter {
    * Search within file with lazy loading
    */
   async searchInFile(
-    query: string, 
+    query: string,
     options: {
       caseSensitive?: boolean
       wholeWord?: boolean
@@ -159,7 +159,7 @@ export class LazyFileLoader extends EventEmitter {
 
     const results: Array<{ line: number; content: string; match: RegExp | null }> = []
     const maxResults = options.maxResults || 1000
-    
+
     // Create search pattern
     let searchPattern: RegExp
     if (options.regex) {
@@ -172,19 +172,19 @@ export class LazyFileLoader extends EventEmitter {
 
     // Search through chunks progressively
     const totalChunks = Math.ceil(this.fileMetadata.totalLines / this.config.chunkSize)
-    
+
     for (let chunkIndex = 0; chunkIndex < totalChunks && results.length < maxResults; chunkIndex++) {
       const startLine = chunkIndex * this.config.chunkSize
       const endLine = Math.min(startLine + this.config.chunkSize, this.fileMetadata.totalLines)
-      
+
       try {
         // Load chunk with low priority for search
         const chunkId = this.getChunkId(chunkIndex)
         await this.ensureChunksLoaded([chunkId], 'low')
-        
+
         const chunk = this.chunks.get(chunkId)
         if (!chunk) continue
-        
+
         const lines = chunk.content.split('\n')
         lines.forEach((line, index) => {
           const lineNumber = startLine + index
@@ -197,14 +197,14 @@ export class LazyFileLoader extends EventEmitter {
             })
           }
         })
-        
+
         // Emit progress
         this.emit('search-progress', {
           processed: chunkIndex + 1,
           total: totalChunks,
           results: results.length
         })
-        
+
       } catch (error) {
         console.warn(`Failed to search in chunk ${chunkIndex}:`, error)
       }
@@ -228,7 +228,7 @@ export class LazyFileLoader extends EventEmitter {
     if (!response.ok) {
       throw new Error(`Failed to analyze file: ${response.statusText}`)
     }
-    
+
     return response.json()
   }
 
@@ -238,12 +238,12 @@ export class LazyFileLoader extends EventEmitter {
   private calculateRequiredChunks(startLine: number, endLine: number): string[] {
     const startChunk = Math.floor(startLine / this.config.chunkSize)
     const endChunk = Math.floor(endLine / this.config.chunkSize)
-    
+
     const chunks: string[] = []
     for (let i = startChunk; i <= endChunk; i++) {
       chunks.push(this.getChunkId(i))
     }
-    
+
     return chunks
   }
 
@@ -251,16 +251,16 @@ export class LazyFileLoader extends EventEmitter {
    * Ensure chunks are loaded
    */
   private async ensureChunksLoaded(chunkIds: string[], priority: 'low' | 'normal' | 'high'): Promise<void> {
-    const missingChunks = chunkIds.filter(id => 
+    const missingChunks = chunkIds.filter(id =>
       !this.chunks.has(id) && !this.loadingChunks.has(id)
     )
-    
+
     if (missingChunks.length === 0) return
-    
-    const loadPromises = missingChunks.map(chunkId => 
+
+    const loadPromises = missingChunks.map(chunkId =>
       this.loadChunk(chunkId, priority)
     )
-    
+
     await Promise.all(loadPromises)
   }
 
@@ -285,15 +285,15 @@ export class LazyFileLoader extends EventEmitter {
       const chunkIndex = parseInt(chunkId.split('_')[1])
       const startLine = chunkIndex * this.config.chunkSize
       const endLine = Math.min(startLine + this.config.chunkSize, this.fileMetadata!.totalLines)
-      
+
       // Load chunk data
       const response = await fetch(`/api/files/chunk?path=${encodeURIComponent(this.fileMetadata!.filePath)}&start=${startLine}&end=${endLine}`)
       if (!response.ok) {
         throw new Error(`Failed to load chunk: ${response.statusText}`)
       }
-      
+
       const content = await response.text()
-      
+
       const chunk: FileChunk = {
         id: chunkId,
         startLine,
@@ -313,16 +313,16 @@ export class LazyFileLoader extends EventEmitter {
 
       // Cache management
       this.manageCache(chunk)
-      
+
       this.chunks.set(chunkId, chunk)
       this.loadingChunks.delete(chunkId)
-      
+
       // Resolve queued requests
       this.resolveQueuedRequests(chunkId, chunk)
-      
+
       this.emit('chunk-loaded', chunk)
       return chunk
-      
+
     } catch (error) {
       this.loadingChunks.delete(chunkId)
       this.rejectQueuedRequests(chunkId, error as Error)
@@ -337,19 +337,19 @@ export class LazyFileLoader extends EventEmitter {
     if (!this.fileMetadata) return
 
     const prefetchChunks = new Set<string>()
-    
+
     currentChunks.forEach(chunkId => {
       const chunkIndex = parseInt(chunkId.split('_')[1])
-      
+
       // Prefetch chunks before and after
       for (let i = 1; i <= this.config.prefetchDistance; i++) {
         const prevChunk = chunkIndex - i
         const nextChunk = chunkIndex + i
-        
+
         if (prevChunk >= 0) {
           prefetchChunks.add(this.getChunkId(prevChunk))
         }
-        
+
         const totalChunks = Math.ceil(this.fileMetadata.totalLines / this.config.chunkSize)
         if (nextChunk < totalChunks) {
           prefetchChunks.add(this.getChunkId(nextChunk))
@@ -358,7 +358,7 @@ export class LazyFileLoader extends EventEmitter {
     })
 
     // Load prefetch chunks with low priority
-    const missingPrefetchChunks = Array.from(prefetchChunks).filter(id => 
+    const missingPrefetchChunks = Array.from(prefetchChunks).filter(id =>
       !this.chunks.has(id) && !this.loadingChunks.has(id)
     )
 
@@ -378,20 +378,20 @@ export class LazyFileLoader extends EventEmitter {
   private extractLines(startLine: number, endLine: number): string[] {
     const lines: string[] = []
     const requiredChunks = this.calculateRequiredChunks(startLine, endLine)
-    
+
     requiredChunks.forEach(chunkId => {
       const chunk = this.chunks.get(chunkId)
       if (!chunk) return
-      
+
       const content = chunk.content
       if (chunk.compressed) {
         // Decompress content (placeholder)
         // content = this.decompressContent(chunk.content)
       }
-      
+
       const chunkLines = content.split('\n')
       const chunkStartLine = chunk.startLine
-      
+
       chunkLines.forEach((line, index) => {
         const lineNumber = chunkStartLine + index
         if (lineNumber >= startLine && lineNumber <= endLine) {
@@ -437,7 +437,7 @@ export class LazyFileLoader extends EventEmitter {
         chunk.accessCount++
         chunk.loadedAt = Date.now() // Update last access time
       }
-      
+
       // Update global access pattern
       const count = this.accessPattern.get(chunkId) || 0
       this.accessPattern.set(chunkId, count + 1)
@@ -470,7 +470,7 @@ export class LazyFileLoader extends EventEmitter {
    */
   private resolveQueuedRequests(chunkId: string, chunk: FileChunk): void {
     const remainingQueue: LoadRequest[] = []
-    
+
     this.loadQueue.forEach(request => {
       if (request.chunkId === chunkId) {
         request.resolve(chunk)
@@ -478,7 +478,7 @@ export class LazyFileLoader extends EventEmitter {
         remainingQueue.push(request)
       }
     })
-    
+
     this.loadQueue = remainingQueue
   }
 
@@ -487,7 +487,7 @@ export class LazyFileLoader extends EventEmitter {
    */
   private rejectQueuedRequests(chunkId: string, error: Error): void {
     const remainingQueue: LoadRequest[] = []
-    
+
     this.loadQueue.forEach(request => {
       if (request.chunkId === chunkId) {
         request.reject(error)
@@ -495,7 +495,7 @@ export class LazyFileLoader extends EventEmitter {
         remainingQueue.push(request)
       }
     })
-    
+
     this.loadQueue = remainingQueue
   }
 
@@ -518,17 +518,17 @@ export class LazyFileLoader extends EventEmitter {
   getCacheStats() {
     const totalSize = Array.from(this.chunks.values())
       .reduce((sum, chunk) => sum + chunk.size, 0)
-    
+
     const accessCounts = Array.from(this.chunks.values())
       .map(chunk => chunk.accessCount)
-    
+
     return {
       cachedChunks: this.chunks.size,
       maxCachedChunks: this.config.maxCachedChunks,
       totalCacheSize: totalSize,
       averageChunkSize: this.chunks.size > 0 ? totalSize / this.chunks.size : 0,
-      averageAccessCount: accessCounts.length > 0 
-        ? accessCounts.reduce((sum, count) => sum + count, 0) / accessCounts.length 
+      averageAccessCount: accessCounts.length > 0
+        ? accessCounts.reduce((sum, count) => sum + count, 0) / accessCounts.length
         : 0,
       loadingChunks: this.loadingChunks.size,
       queuedRequests: this.loadQueue.length
@@ -546,7 +546,7 @@ export class LazyFileLoader extends EventEmitter {
       request.reject(new Error('Cache cleared'))
     })
     this.loadQueue = []
-    
+
     this.emit('cache-cleared')
   }
 
@@ -555,12 +555,12 @@ export class LazyFileLoader extends EventEmitter {
    */
   destroy(): void {
     this.clearCache()
-    
+
     if (this.compressionWorker) {
       this.compressionWorker.terminate()
       this.compressionWorker = null
     }
-    
+
     this.removeAllListeners()
   }
 }
@@ -582,7 +582,7 @@ export class VirtualFileScroller extends EventEmitter {
     super()
     this.containerElement = containerElement
     this.lazyLoader = lazyLoader
-    
+
     this.virtualState = {
       visibleStartLine: 0,
       visibleEndLine: 0,
@@ -601,7 +601,7 @@ export class VirtualFileScroller extends EventEmitter {
   async initialize(totalLines: number): Promise<void> {
     this.virtualState.totalLines = totalLines
     this.virtualState.containerHeight = this.containerElement.clientHeight
-    
+
     this.updateVisibleRange()
     await this.loadVisibleContent()
   }
@@ -612,12 +612,12 @@ export class VirtualFileScroller extends EventEmitter {
   private setupScrollHandler(): void {
     this.containerElement.addEventListener('scroll', () => {
       this.virtualState.scrollTop = this.containerElement.scrollTop
-      
+
       // Debounce scroll updates
       if (this.scrollTimeout) {
         clearTimeout(this.scrollTimeout)
       }
-      
+
       this.scrollTimeout = setTimeout(async () => {
         this.updateVisibleRange()
         await this.loadVisibleContent()
@@ -630,7 +630,7 @@ export class VirtualFileScroller extends EventEmitter {
    */
   private updateVisibleRange(): void {
     const { scrollTop, containerHeight, lineHeight, totalLines } = this.virtualState
-    
+
     this.virtualState.visibleStartLine = Math.floor(scrollTop / lineHeight)
     this.virtualState.visibleEndLine = Math.min(
       this.virtualState.visibleStartLine + Math.ceil(containerHeight / lineHeight),

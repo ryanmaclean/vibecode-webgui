@@ -61,13 +61,13 @@ if kind get clusters | grep -q "vibecode-test"; then
         echo "❌ KIND cluster is not healthy"
         exit 1
     }
-    
+
     # Check critical pods
     kubectl get pods -n vibecode --no-headers | grep -E "(postgres|redis)" | grep -v "Running" && {
         echo "❌ Critical pods are not running"
         exit 1
     } || true
-    
+
     echo "✅ KIND cluster is healthy"
 else
     echo "⚠️  KIND cluster not found - skipping cluster validation"

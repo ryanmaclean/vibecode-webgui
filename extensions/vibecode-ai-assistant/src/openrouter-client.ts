@@ -126,7 +126,7 @@ export class OpenRouterClient {
             return response.data;
         } catch (error: any) {
             console.error('Chat completion failed:', error);
-            
+
             if (error.response?.status === 401) {
                 throw new Error('Invalid API key. Please check your OpenRouter API key in settings.');
             } else if (error.response?.status === 402) {
@@ -163,11 +163,11 @@ export class OpenRouterClient {
             });
 
             let fullResponse = '';
-            
+
             return new Promise((resolve, reject) => {
                 response.data.on('data', (chunk: Buffer) => {
                     const lines = chunk.toString().split('\n');
-                    
+
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
                             const data = line.slice(6);
@@ -175,11 +175,11 @@ export class OpenRouterClient {
                                 resolve(fullResponse);
                                 return;
                             }
-                            
+
                             try {
                                 const parsed: StreamingResponse = JSON.parse(data);
                                 const content = parsed.choices[0]?.delta?.content;
-                                
+
                                 if (content) {
                                     fullResponse += content;
                                     onChunk?.(content);
@@ -210,10 +210,10 @@ export class OpenRouterClient {
         context?: string,
         language?: string
     ): Promise<string> {
-        const systemPrompt = `You are a skilled software developer. Generate high-quality, clean, and well-documented code based on the user's request. 
+        const systemPrompt = `You are a skilled software developer. Generate high-quality, clean, and well-documented code based on the user's request.
         ${language ? `The code should be in ${language}.` : ''}
         ${context ? `Context: ${context}` : ''}
-        
+
         Rules:
         - Write clean, readable code
         - Include appropriate comments
@@ -231,7 +231,7 @@ export class OpenRouterClient {
     }
 
     public async explainCode(code: string): Promise<string> {
-        const systemPrompt = `You are a code expert. Explain the provided code in clear, understandable terms. 
+        const systemPrompt = `You are a code expert. Explain the provided code in clear, understandable terms.
         Include:
         - What the code does
         - How it works
@@ -255,7 +255,7 @@ export class OpenRouterClient {
         - Best practices
         - Security considerations
         - Memory efficiency
-        
+
         Provide the optimized code with explanations of changes made.`;
 
         const messages: ChatMessage[] = [
@@ -270,7 +270,7 @@ export class OpenRouterClient {
     public async fixCode(code: string, error?: string): Promise<string> {
         const systemPrompt = `You are a debugging expert. Fix the issues in the provided code.
         ${error ? `Error message: ${error}` : ''}
-        
+
         Provide:
         - The corrected code
         - Explanation of what was wrong
@@ -288,7 +288,7 @@ export class OpenRouterClient {
     public async generateTests(code: string, framework?: string): Promise<string> {
         const systemPrompt = `You are a test automation expert. Generate comprehensive tests for the provided code.
         ${framework ? `Use ${framework} testing framework.` : ''}
-        
+
         Include:
         - Unit tests for all functions
         - Edge case testing

@@ -34,33 +34,33 @@ log_error() {
 # Check prerequisites
 check_prerequisites() {
     log_info "Checking prerequisites..."
-    
+
     # Check if kubectl is available
     if ! command -v kubectl &> /dev/null; then
         log_error "kubectl is not installed or not in PATH"
         exit 1
     fi
-    
+
     # Check if KIND cluster exists
     if ! kubectl cluster-info --context "kind-$CLUSTER_NAME" &> /dev/null; then
         log_error "KIND cluster '$CLUSTER_NAME' is not running"
         log_error "Please start the cluster first"
         exit 1
     fi
-    
+
     # Set kubectl context
     kubectl config use-context "kind-$CLUSTER_NAME" &> /dev/null
-    
+
     log_info "Prerequisites check passed"
 }
 
 # Deploy required databases
 deploy_databases() {
     log_info "Deploying PostgreSQL and Redis for Authelia..."
-    
+
     # Create storage namespace
     kubectl create namespace "$STORAGE_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-    
+
     # Deploy PostgreSQL
     kubectl apply -f - << EOF
 apiVersion: apps/v1
@@ -130,7 +130,7 @@ spec:
     targetPort: 5432
     name: postgres
 EOF
-    
+
     # Deploy Redis
     kubectl apply -f - << EOF
 apiVersion: apps/v1
@@ -189,28 +189,28 @@ spec:
     targetPort: 6379
     name: redis
 EOF
-    
+
     log_info "Waiting for databases to be ready..."
     kubectl wait --for=condition=available --timeout=300s deployment/postgres -n "$STORAGE_NAMESPACE"
     kubectl wait --for=condition=available --timeout=300s deployment/redis -n "$STORAGE_NAMESPACE"
-    
+
     log_info "Databases deployed successfully"
 }
 
 # Deploy Authelia
 deploy_authelia() {
     log_info "Deploying Authelia authentication server..."
-    
+
     # Create auth namespace
     kubectl create namespace "$AUTH_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-    
+
     # Deploy Authelia configuration and deployment
     kubectl apply -f "$K8S_DIR/authelia/authelia-config.yaml"
     kubectl apply -f "$K8S_DIR/authelia/authelia-deployment.yaml"
-    
+
     log_info "Waiting for Authelia to be ready..."
     kubectl wait --for=condition=available --timeout=300s deployment/authelia -n "$AUTH_NAMESPACE"
-    
+
     log_info "Authelia deployed successfully"
 }
 
@@ -218,20 +218,20 @@ deploy_authelia() {
 show_status() {
     log_info "Deployment Status:"
     echo ""
-    
+
     echo "Storage Namespace ($STORAGE_NAMESPACE):"
     kubectl get pods -n "$STORAGE_NAMESPACE" -o wide
     echo ""
-    
+
     echo "Authentication Namespace ($AUTH_NAMESPACE):"
     kubectl get pods -n "$AUTH_NAMESPACE" -o wide
     echo ""
-    
+
     echo "Services:"
     kubectl get svc -n "$STORAGE_NAMESPACE"
     kubectl get svc -n "$AUTH_NAMESPACE"
     echo ""
-    
+
     echo "Ingress:"
     kubectl get ingress -n "$AUTH_NAMESPACE"
     echo ""
@@ -264,22 +264,22 @@ show_connection_info() {
 # Main function
 main() {
     log_info "Starting Authelia deployment for VibeCode..."
-    
+
     # Check prerequisites
     check_prerequisites
-    
+
     # Deploy databases
     deploy_databases
-    
+
     # Deploy Authelia
     deploy_authelia
-    
+
     # Show deployment status
     show_status
-    
+
     # Show connection information
     show_connection_info
-    
+
     log_info "Authelia deployment completed successfully!"
     log_info "The authentication server is now ready to protect your workspaces."
 }

@@ -10,7 +10,7 @@ export interface APIError extends Error {
 export class ValidationError extends Error {
     statusCode = 400;
     code = 'VALIDATION_ERROR';
-    
+
     constructor(message: string, public details?: any) {
         super(message);
         this.name = 'ValidationError';
@@ -20,7 +20,7 @@ export class ValidationError extends Error {
 export class AuthenticationError extends Error {
     statusCode = 401;
     code = 'AUTHENTICATION_ERROR';
-    
+
     constructor(message: string = 'Authentication required') {
         super(message);
         this.name = 'AuthenticationError';
@@ -30,7 +30,7 @@ export class AuthenticationError extends Error {
 export class AuthorizationError extends Error {
     statusCode = 403;
     code = 'AUTHORIZATION_ERROR';
-    
+
     constructor(message: string = 'Insufficient permissions') {
         super(message);
         this.name = 'AuthorizationError';
@@ -40,7 +40,7 @@ export class AuthorizationError extends Error {
 export class NotFoundError extends Error {
     statusCode = 404;
     code = 'NOT_FOUND';
-    
+
     constructor(message: string = 'Resource not found') {
         super(message);
         this.name = 'NotFoundError';
@@ -50,7 +50,7 @@ export class NotFoundError extends Error {
 export class RateLimitError extends Error {
     statusCode = 429;
     code = 'RATE_LIMIT_EXCEEDED';
-    
+
     constructor(message: string = 'Rate limit exceeded') {
         super(message);
         this.name = 'RateLimitError';
@@ -60,7 +60,7 @@ export class RateLimitError extends Error {
 export class ExternalServiceError extends Error {
     statusCode = 502;
     code = 'EXTERNAL_SERVICE_ERROR';
-    
+
     constructor(message: string, public service?: string) {
         super(message);
         this.name = 'ExternalServiceError';
@@ -70,7 +70,7 @@ export class ExternalServiceError extends Error {
 export class ServiceUnavailableError extends Error {
     statusCode = 503;
     code = 'SERVICE_UNAVAILABLE';
-    
+
     constructor(message: string = 'Service temporarily unavailable') {
         super(message);
         this.name = 'ServiceUnavailableError';
@@ -164,7 +164,7 @@ export const setupGlobalErrorHandlers = (): void => {
             stack: error.stack,
             pid: process.pid
         });
-        
+
         // Give time for logs to flush
         setTimeout(() => {
             process.exit(1);
@@ -178,7 +178,7 @@ export const setupGlobalErrorHandlers = (): void => {
             promise: promise.toString(),
             pid: process.pid
         });
-        
+
         // Give time for logs to flush
         setTimeout(() => {
             process.exit(1);

@@ -121,7 +121,7 @@ class MonitoringService {
     }
 
     const databaseUrl = process.env.DATABASE_URL
-    
+
     if (!databaseUrl) {
       return {
         status: 'healthy',
@@ -143,11 +143,11 @@ class MonitoringService {
 
           const start = Date.now()
           const client = await pool.connect()
-          
+
           try {
             const result = await client.query('SELECT 1 as health_check')
             const latency = Date.now() - start
-            
+
             return {
               status: latency > 1000 ? 'warning' : 'healthy',
               details: {
@@ -206,7 +206,7 @@ class MonitoringService {
     }
 
     const redisUrl = process.env.REDIS_URL
-    
+
     if (!redisUrl) {
       return {
         status: 'healthy',
@@ -225,11 +225,11 @@ class MonitoringService {
 
       const start = Date.now()
       await client.connect()
-      
+
       try {
         const pong = await client.ping()
         const latency = Date.now() - start
-        
+
         return {
           status: latency > 1000 ? 'warning' : 'healthy',
           details: {
@@ -255,7 +255,7 @@ class MonitoringService {
    */
   async checkAIService(): Promise<HealthCheck> {
     const openRouterKey = process.env.OPENROUTER_API_KEY
-    
+
     if (!openRouterKey || openRouterKey === 'test-key-placeholder') {
       return {
         status: 'warning',
@@ -303,7 +303,7 @@ class MonitoringService {
    */
   async trackMetrics(): Promise<void> {
     const memUsage = process.memoryUsage()
-    
+
     // Submit memory metrics
     await this.submitMetric({
       metric: 'vibecode.memory.heap_used',

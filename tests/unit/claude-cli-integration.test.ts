@@ -1,9 +1,9 @@
 /**
  * Claude CLI Integration Unit Tests
- * 
+ *
  * Unit tests for Claude Code CLI integration functionality
  * Tests terminal-based Claude Code command execution and session management
- * 
+ *
  * Staff Engineer Implementation - Production-ready CLI testing
  */
 

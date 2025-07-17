@@ -32,28 +32,28 @@ export class CodeGenerator {
 
         try {
             await this.validateApiKey();
-            
+
             // Get current file context
             const document = editor.document;
             const language = document.languageId;
             const currentPosition = editor.selection.active;
             const contextLines = this.getContextLines(document, currentPosition);
-            
+
             await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
                 title: "Generating code...",
                 cancellable: false
             }, async (progress) => {
                 progress.report({ increment: 0 });
-                
+
                 const generatedCode = await this.openRouterClient.generateCode(
                     prompt,
                     contextLines,
                     language
                 );
-                
+
                 progress.report({ increment: 100 });
-                
+
                 // Show generated code and offer to insert it
                 const action = await vscode.window.showInformationMessage(
                     'Code generated successfully. Would you like to insert it?',
@@ -62,7 +62,7 @@ export class CodeGenerator {
                     'Show in New Document',
                     'Cancel'
                 );
-                
+
                 if (action === 'Insert at Cursor') {
                     await editor.edit(editBuilder => {
                         editBuilder.insert(currentPosition, generatedCode);
@@ -94,7 +94,7 @@ export class CodeGenerator {
 
         const selection = editor.selection;
         let codeToTest: string;
-        
+
         if (!selection.isEmpty) {
             codeToTest = editor.document.getText(selection);
         } else {
@@ -128,33 +128,33 @@ export class CodeGenerator {
 
         try {
             await this.validateApiKey();
-            
+
             await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
                 title: "Generating tests...",
                 cancellable: false
             }, async (progress) => {
                 progress.report({ increment: 0 });
-                
+
                 const tests = await this.openRouterClient.generateTests(
                     codeToTest,
                     testFramework === 'Auto-detect' ? undefined : testFramework
                 );
-                
+
                 progress.report({ increment: 100 });
-                
+
                 // Create a new test file
                 const originalFileName = editor.document.fileName;
                 const testFileName = this.generateTestFileName(originalFileName);
                 const testLanguage = this.getTestLanguage(editor.document.languageId);
-                
+
                 const doc = await vscode.workspace.openTextDocument({
                     content: tests,
                     language: testLanguage
                 });
-                
+
                 await vscode.window.showTextDocument(doc, vscode.ViewColumn.Beside);
-                
+
                 // Offer to save the test file
                 const saveAction = await vscode.window.showInformationMessage(
                     `Test file generated. Save as ${testFileName}?`,
@@ -162,7 +162,7 @@ export class CodeGenerator {
                     'Save As...',
                     'Don\'t Save'
                 );
-                
+
                 if (saveAction === 'Save' || saveAction === 'Save As...') {
                     const saveAs = saveAction === 'Save As...';
                     await vscode.commands.executeCommand('workbench.action.files.save', { saveAs });
@@ -176,13 +176,13 @@ export class CodeGenerator {
     private getContextLines(document: vscode.TextDocument, position: vscode.Position): string {
         const startLine = Math.max(0, position.line - 10);
         const endLine = Math.min(document.lineCount - 1, position.line + 10);
-        
+
         let context = '';
         for (let i = startLine; i <= endLine; i++) {
             const line = document.lineAt(i);
             context += line.text + '\n';
         }
-        
+
         return context;
     }
 
@@ -191,7 +191,7 @@ export class CodeGenerator {
         const ext = path.extname(originalFileName);
         const baseName = path.basename(originalFileName, ext);
         const dir = path.dirname(originalFileName);
-        
+
         // Common test file naming patterns
         const testPatterns = [
             `${baseName}.test${ext}`,
@@ -199,7 +199,7 @@ export class CodeGenerator {
             `${baseName}_test${ext}`,
             `test_${baseName}${ext}`
         ];
-        
+
         // Return the first pattern (most common)
         return path.join(dir, testPatterns[0]);
     }
@@ -217,23 +217,23 @@ export class CodeGenerator {
             'cpp': 'cpp',
             'c': 'c'
         };
-        
+
         return languageMap[originalLanguage] || originalLanguage;
     }
 
     private async validateApiKey(): Promise<void> {
         const apiKey = vscode.workspace.getConfiguration('vibecode').get<string>('openRouterApiKey');
-        
+
         if (!apiKey) {
             const action = await vscode.window.showErrorMessage(
                 'OpenRouter API key is required. Please set it in settings.',
                 'Open Settings'
             );
-            
+
             if (action === 'Open Settings') {
                 vscode.commands.executeCommand('workbench.action.openSettings', 'vibecode.openRouterApiKey');
             }
-            
+
             throw new Error('API key not configured');
         }
     }

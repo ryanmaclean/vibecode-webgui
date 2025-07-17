@@ -5,7 +5,7 @@
 
 terraform {
   required_version = ">= 1.0"
-  
+
   required_providers {
     datadog = {
       source  = "DataDog/datadog"
@@ -18,7 +18,7 @@ terraform {
     bucket = "vibecode-terraform-state"
     key    = "monitoring/datadog-synthetics/terraform.tfstate"
     region = "us-east-1"
-    
+
     # Enable state locking
     dynamodb_table = "vibecode-terraform-locks"
     encrypt        = true
@@ -54,13 +54,13 @@ locals {
 
   # Security test locations (cost optimized)
   security_locations = slice(var.monitoring_locations, 0, min(2, length(var.monitoring_locations)))
-  
+
   # Performance test locations (global coverage)
   performance_locations = var.monitoring_locations
-  
+
   # Computed notification message
   notification_message = join(" ", var.notification_channels)
-  
+
   # Common tags merged with environment
   common_tags = merge(var.tags, {
     environment = var.environment
@@ -72,7 +72,7 @@ locals {
 # Main synthetics configuration module
 module "datadog_synthetics" {
   source = "./modules/synthetics"
-  
+
   # Pass all variables to the module
   app_base_url              = var.app_base_url
   environment              = var.environment
@@ -83,7 +83,7 @@ module "datadog_synthetics" {
   security_test_config    = var.security_test_config
   alerting_config         = var.alerting_config
   common_tags             = local.common_tags
-  
+
   # RUM configuration
   datadog_rum_application_id = var.datadog_rum_application_id
   datadog_rum_client_token   = var.datadog_rum_client_token
@@ -92,7 +92,7 @@ module "datadog_synthetics" {
 # Security-specific synthetics module
 module "security_synthetics" {
   source = "./modules/security"
-  
+
   app_base_url           = var.app_base_url
   environment           = var.environment
   security_locations    = local.security_locations
@@ -105,7 +105,7 @@ module "security_synthetics" {
 # Performance monitoring module
 module "performance_synthetics" {
   source = "./modules/performance"
-  
+
   app_base_url            = var.app_base_url
   environment            = var.environment
   performance_locations  = local.performance_locations
@@ -120,7 +120,7 @@ resource "datadog_dashboard" "synthetics_overview" {
   description   = "Overview of all synthetic tests for VibeCode platform"
   layout_type   = "ordered"
   is_read_only  = false
-  
+
   tags = local.common_tags
 
   widget {
@@ -128,12 +128,12 @@ resource "datadog_dashboard" "synthetics_overview" {
       title       = "API Health Check Status"
       title_size  = "16"
       title_align = "left"
-      
+
       request {
         q          = "avg:synthetics.test.runs{test_name:*health_check*,env:${var.environment}}"
         aggregator = "avg"
       }
-      
+
       autoscale   = true
       precision   = 0
       text_align  = "center"
@@ -145,7 +145,7 @@ resource "datadog_dashboard" "synthetics_overview" {
       title       = "Synthetic Test Response Times"
       title_size  = "16"
       title_align = "left"
-      
+
       request {
         q           = "avg:synthetics.http.response.time{env:${var.environment}} by {test_name}"
         display_type = "line"
@@ -155,7 +155,7 @@ resource "datadog_dashboard" "synthetics_overview" {
           line_width = "normal"
         }
       }
-      
+
       yaxis {
         label       = "Response Time (ms)"
         scale       = "linear"
@@ -170,15 +170,15 @@ resource "datadog_dashboard" "synthetics_overview" {
       title       = "Synthetic Test Success Rate by Location"
       title_size  = "16"
       title_align = "left"
-      
+
       request {
         q = "avg:synthetics.test.runs{env:${var.environment}} by {location,test_name}"
-        
+
         style {
           palette = "green_to_red"
         }
       }
-      
+
       yaxis {
         label = "Tests"
         scale = "linear"
@@ -191,7 +191,7 @@ resource "datadog_dashboard" "synthetics_overview" {
       title       = "Security Test Alerts"
       title_size  = "16"
       title_align = "left"
-      
+
       alert_id = module.security_synthetics.alert_ids[0] # Reference first security alert
       viz_type = "timeseries"
     }
@@ -215,7 +215,7 @@ resource "datadog_service_level_objective" "api_availability" {
   name        = "VibeCode API Availability - ${var.environment}"
   type        = "monitor"
   description = "99.9% availability for VibeCode API endpoints"
-  
+
   tags = local.common_tags
 
   monitor_ids = [
@@ -230,7 +230,7 @@ resource "datadog_service_level_objective" "api_availability" {
   }
 
   thresholds {
-    timeframe = "30d" 
+    timeframe = "30d"
     target    = 99.9
     warning   = 99.5
   }
@@ -241,7 +241,7 @@ resource "datadog_service_level_objective" "api_performance" {
   name        = "VibeCode API Performance - ${var.environment}"
   type        = "metric"
   description = "95% of API requests should complete under 200ms"
-  
+
   tags = local.common_tags
 
   query {

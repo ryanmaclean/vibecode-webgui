@@ -1,9 +1,9 @@
 /**
  * WebSocket Connection Pooling
- * 
+ *
  * High-performance WebSocket connection management with pooling and load balancing
  * Implements connection reuse, health monitoring, and automatic failover
- * 
+ *
  * Staff Engineer Implementation - Enterprise-grade WebSocket infrastructure
  */
 
@@ -68,7 +68,7 @@ export class WebSocketConnectionPool extends EventEmitter {
 
   constructor(config: Partial<ConnectionPoolConfig> = {}) {
     super()
-    
+
     this.config = {
       maxConnections: config.maxConnections || 100,
       maxConnectionsPerHost: config.maxConnectionsPerHost || 10,
@@ -165,7 +165,7 @@ export class WebSocketConnectionPool extends EventEmitter {
 
     return new Promise((resolve, reject) => {
       const startTime = Date.now()
-      
+
       try {
         connection.socket.send(data, (error) => {
           if (error) {
@@ -179,7 +179,7 @@ export class WebSocketConnectionPool extends EventEmitter {
           connection.messageCount++
           connection.bytesSent += messageSize
           connection.latency = Date.now() - startTime
-          
+
           this.metrics.totalMessages++
           this.metrics.totalBytes += messageSize
           this.updateAverageLatency(connection.latency)
@@ -227,7 +227,7 @@ export class WebSocketConnectionPool extends EventEmitter {
   private findAvailableConnection(url: string): PooledConnection | null {
     const host = this.extractHost(url)
     const hostConnections = this.connectionsByHost.get(host)
-    
+
     if (!hostConnections) return null
 
     // Find best available connection
@@ -238,7 +238,7 @@ export class WebSocketConnectionPool extends EventEmitter {
       const connection = this.connections.get(connectionId)
       if (!connection) continue
 
-      if (connection.url === url && 
+      if (connection.url === url &&
           (connection.state === 'idle' || connection.state === 'connected') &&
           connection.healthScore > bestScore) {
         bestConnection = connection
@@ -292,14 +292,14 @@ export class WebSocketConnectionPool extends EventEmitter {
           clearTimeout(timeout)
           connection.state = 'connected'
           connection.reconnectAttempts = 0
-          
+
           // Add to tracking
           this.connections.set(connectionId, connection)
           this.addToHostTracking(host, connectionId)
-          
+
           this.metrics.totalConnections++
           this.updateMetrics()
-          
+
           this.emit('connection-created', connection)
           resolve(connection)
         })
@@ -344,7 +344,7 @@ export class WebSocketConnectionPool extends EventEmitter {
 
     const host = this.extractHost(url)
     const hostConnections = this.connectionsByHost.get(host)
-    
+
     if (hostConnections && hostConnections.size >= this.config.maxConnectionsPerHost) {
       return false
     }
@@ -378,7 +378,7 @@ export class WebSocketConnectionPool extends EventEmitter {
 
     for (let i = 0; i < this.pendingRequests.length; i++) {
       const request = this.pendingRequests[i]
-      
+
       // Check for timeout
       if (Date.now() - request.timeout > this.config.connectionTimeout) {
         request.reject(new Error('Request timeout'))
@@ -416,7 +416,7 @@ export class WebSocketConnectionPool extends EventEmitter {
   private handleConnectionError(connection: PooledConnection, error: Error): void {
     connection.state = 'failed'
     connection.healthScore = Math.max(connection.healthScore - 10, 0)
-    
+
     this.metrics.failedConnections++
     this.emit('connection-error', { connection, error })
 
@@ -456,19 +456,19 @@ export class WebSocketConnectionPool extends EventEmitter {
     connection.reconnectAttempts++
 
     const delay = this.config.reconnectDelay * Math.pow(2, connection.reconnectAttempts - 1)
-    
+
     setTimeout(async () => {
       try {
         const newConnection = await this.createConnection(connection.url, 'reconnect')
-        
+
         // Transfer subscribers
         connection.subscribers.forEach(subscriberId => {
           newConnection.subscribers.add(subscriberId)
         })
-        
+
         // Remove old connection
         this.removeConnection(connection.id)
-        
+
         this.emit('connection-reconnected', newConnection)
       } catch (error) {
         this.handleConnectionError(connection, error as Error)
@@ -490,7 +490,7 @@ export class WebSocketConnectionPool extends EventEmitter {
 
     // Remove from tracking
     this.connections.delete(connectionId)
-    
+
     const host = this.extractHost(connection.url)
     const hostConnections = this.connectionsByHost.get(host)
     if (hostConnections) {
@@ -531,7 +531,7 @@ export class WebSocketConnectionPool extends EventEmitter {
 
       this.connections.forEach(connection => {
         // Remove idle connections that haven't been used
-        if (connection.state === 'idle' && 
+        if (connection.state === 'idle' &&
             connection.subscribers.size === 0 &&
             now - connection.lastUsed > idleTimeout) {
           this.removeConnection(connection.id)
@@ -684,7 +684,7 @@ export const globalWebSocketPool = new WebSocketConnectionPool({
  * Utility function to get pooled connection
  */
 export async function getPooledWebSocket(
-  url: string, 
+  url: string,
   priority: 'low' | 'normal' | 'high' = 'normal'
 ): Promise<PooledConnection> {
   return globalWebSocketPool.getConnection(url, priority)

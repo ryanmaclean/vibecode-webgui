@@ -42,21 +42,21 @@ export default function VSCodeIntegration({
 
       try {
         const message: CodeServerMessage = event.data
-        
+
         switch (message.type) {
           case 'file-change':
             setCurrentFile(message.data.fileName || '')
             updateContext(message.data.fileName)
             break
-            
+
           case 'selection-change':
             setSelectedText(message.data.selectedText || '')
             break
-            
+
           case 'context-update':
             setCurrentContext(message.data.files || [])
             break
-            
+
           case 'error':
             console.error('Code-server error:', message.data)
             break
@@ -92,7 +92,7 @@ export default function VSCodeIntegration({
     try {
       const formData = new FormData()
       formData.append('workspaceId', workspaceId)
-      
+
       Array.from(files).forEach(file => {
         formData.append('files', file)
       })
@@ -106,7 +106,7 @@ export default function VSCodeIntegration({
         const result = await response.json()
         const uploadedFileNames = result.files.map((f: any) => f.name)
         setCurrentContext(prev => [...prev, ...uploadedFileNames])
-        
+
         // Notify user of successful upload
         console.log(`Uploaded ${result.filesUploaded} files for AI context`)
       }
@@ -175,14 +175,14 @@ export default function VSCodeIntegration({
                     </Button>
                   </div>
                 </div>
-                
+
                 {currentFile && (
                   <div className="text-xs text-gray-500 mt-1">
                     📁 {currentFile}
                   </div>
                 )}
               </CardHeader>
-              
+
               {!isMinimized && (
                 <CardContent className="flex-1 p-0">
                   <VSCodeAIChat />

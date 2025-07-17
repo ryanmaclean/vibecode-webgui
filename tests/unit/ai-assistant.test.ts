@@ -19,10 +19,10 @@ describe('AI Assistant', () => {
   it('should validate quick action prompts', () => {
     const selectedCode = 'const x = 42';
     const language = 'javascript';
-    
+
     const explainPrompt = `Please explain this ${language}:\n\n\`\`\`${language}\n${selectedCode}\n\`\`\``
     const optimizePrompt = `How can I optimize this ${language}?\n\n\`\`\`${language}\n${selectedCode}\n\`\`\``;
-    
+
     expect(explainPrompt).toContain('Please explain this javascript')
     expect(optimizePrompt).toContain('How can I optimize this javascript')
     expect(explainPrompt).toContain('const x = 42')

@@ -45,7 +45,7 @@ describe('Monitoring API Integration', () => {
       const response = await GET(request);
 
       expect(response.status).toBe(200);
-      
+
       const data = await response.json()
       expect(data).toHaveProperty('cpu')
       expect(data).toHaveProperty('memory')
@@ -68,7 +68,7 @@ describe('Monitoring API Integration', () => {
       const response = await GET(request);
 
       expect(response.status).toBe(401);
-      
+
       const data = await response.json()
       expect(data).toEqual({ error: 'Unauthorized' })})
 
@@ -80,7 +80,7 @@ describe('Monitoring API Integration', () => {
       const response = await GET(request);
 
       expect(response.status).toBe(401);
-      
+
       const data = await response.json()
       expect(data).toEqual({ error: 'Unauthorized' })})
 
@@ -102,7 +102,7 @@ describe('Monitoring API Integration', () => {
       const response = await GET(request);
 
       expect(response.status).toBe(500);
-      
+
       const data = await response.json()
       expect(data).toEqual({ error: 'Failed to fetch metrics' });
 
@@ -130,7 +130,7 @@ describe('Monitoring API Integration', () => {
       const response = await POST(request);
 
       expect(response.status).toBe(200);
-      
+
       const data = await response.json();
       expect(data).toEqual({ success: true })})
 
@@ -153,7 +153,7 @@ describe('Monitoring API Integration', () => {
       const response = await POST(request);
 
       expect(response.status).toBe(200);
-      
+
       const data = await response.json();
       expect(data).toEqual({ success: true })})
 
@@ -176,7 +176,7 @@ describe('Monitoring API Integration', () => {
       const response = await POST(request);
 
       expect(response.status).toBe(200);
-      
+
       const data = await response.json();
       expect(data).toEqual({ success: true })})
 
@@ -199,7 +199,7 @@ describe('Monitoring API Integration', () => {
       const response = await POST(request);
 
       expect(response.status).toBe(200);
-      
+
       const data = await response.json();
       expect(data).toEqual({ success: true })})
 
@@ -222,7 +222,7 @@ describe('Monitoring API Integration', () => {
       const response = await POST(request);
 
       expect(response.status).toBe(400);
-      
+
       const data = await response.json()
       expect(data).toEqual({ error: 'Unknown metric type' })})
 
@@ -243,7 +243,7 @@ describe('Monitoring API Integration', () => {
       const response = await POST(request);
 
       expect(response.status).toBe(401);
-      
+
       const data = await response.json()
       expect(data).toEqual({ error: 'Unauthorized' })})
 
@@ -265,7 +265,7 @@ describe('Monitoring API Integration', () => {
       const response = await POST(request);
 
       expect(response.status).toBe(500);
-      
+
       const data = await response.json()
       expect(data).toEqual({ error: 'Failed to update metrics' });
 
@@ -299,9 +299,9 @@ describe('Monitoring API Integration', () => {
 
       const getRequest = new NextRequest('http://localhost:3000/api/monitoring/metrics');
       const getResponse = await GET(getRequest);
-      
+
       expect(getResponse.status).toBe(200);
-      
+
       // The response time calculation should work even with the limit
       const data = await getResponse.json()
       expect(typeof data.avgResponseTime).toBe('number');

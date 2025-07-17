@@ -21,17 +21,17 @@ spec:
     requests.memory: {{ $root.Values.codeServer.resources.requests.memory | quote }}
     limits.cpu: {{ $root.Values.codeServer.resources.limits.cpu | quote }}
     limits.memory: {{ $root.Values.codeServer.resources.limits.memory | quote }}
-    
+
     # Storage limits
     requests.storage: {{ $root.Values.userManagement.workspace.maxSize | quote }}
     persistentvolumeclaims: "3"
-    
+
     # Pod limits
     pods: "5"
     services: "2"
     secrets: "5"
     configmaps: "5"
-    
+
     # Network limits
     services.nodeports: "0"
     services.loadbalancers: "0"
@@ -60,17 +60,17 @@ spec:
     requests.memory: 100Gi
     limits.cpu: "200"
     limits.memory: 400Gi
-    
+
     # Storage limits
     requests.storage: 1Ti
     persistentvolumeclaims: "100"
-    
+
     # Object limits
     pods: "200"
     services: "100"
     secrets: "200"
     configmaps: "100"
-    
+
     # Security limits
     count/deployments.apps: "100"
     count/replicasets.apps: "200"

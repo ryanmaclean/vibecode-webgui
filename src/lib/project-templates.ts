@@ -126,7 +126,7 @@ export default function HomePage() {
           </nav>
         </div>
       </header>
-      
+
       <main className="container mx-auto px-4 py-16">
         <div className="text-center">
           <h2 className="text-5xl font-bold mb-6">
@@ -144,7 +144,7 @@ export default function HomePage() {
             </Button>
           </div>
         </div>
-        
+
         <div className="grid md:grid-cols-3 gap-8 mt-16">
           <Card className="p-6">
             <h3 className="text-xl font-semibold mb-3">Lightning Fast</h3>
@@ -298,7 +298,7 @@ const StyledButton = styled.button<ButtonProps>\`
       default: return '12px 24px'
     }
   }};
-  
+
   background-color: \${props => {
     switch (props.variant) {
       case 'secondary': return '#6b7280'
@@ -306,19 +306,19 @@ const StyledButton = styled.button<ButtonProps>\`
       default: return '#3b82f6'
     }
   }};
-  
+
   color: \${props => props.variant === 'outline' ? '#3b82f6' : 'white'};
   border: \${props => props.variant === 'outline' ? '2px solid #3b82f6' : 'none'};
   border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  
+
   &:hover:not(:disabled) {
     opacity: 0.9;
     transform: translateY(-1px);
   }
-  
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -660,7 +660,7 @@ export const TEMPLATE_FRAMEWORKS = [
 ]
 
 export function getTemplatesByCategory(category: string): ProjectTemplate[] {
-  return Object.values(PROJECT_TEMPLATES).filter(template => 
+  return Object.values(PROJECT_TEMPLATES).filter(template =>
     template.category === category
   )
 }

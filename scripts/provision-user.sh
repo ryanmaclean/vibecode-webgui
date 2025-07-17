@@ -41,18 +41,18 @@ command_exists() {
 # Validate user ID
 validate_user_id() {
     local user_id="$1"
-    
+
     if [ -z "$user_id" ]; then
         log_error "User ID is required"
         return 1
     fi
-    
+
     # Check format: alphanumeric and hyphens only, 3-63 chars
     if ! [[ "$user_id" =~ ^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$ ]] || [ ${#user_id} -lt 3 ] || [ ${#user_id} -gt 63 ]; then
         log_error "User ID must be 3-63 characters, alphanumeric with hyphens, starting and ending with alphanumeric"
         return 1
     fi
-    
+
     return 0
 }
 
@@ -71,15 +71,15 @@ generate_password() {
 create_user_workspace() {
     local user_id="$1"
     local password="$2"
-    
+
     log_info "Creating workspace for user: $user_id"
-    
+
     # Create user-specific secret
     kubectl create secret generic "code-server-$user_id-config" \
         --namespace="$NAMESPACE" \
         --from-literal=password="$password" \
         --dry-run=client -o yaml | kubectl apply -f -
-    
+
     # Label the secret
     kubectl label secret "code-server-$user_id-config" \
         --namespace="$NAMESPACE" \
@@ -88,19 +88,19 @@ create_user_workspace() {
         app.kubernetes.io/component=code-server \
         vibecode.dev/user-id="$user_id" \
         --overwrite
-    
+
     # Create temporary values file for this user
     local temp_values=$(mktemp)
     cat > "$temp_values" <<EOF
 examples:
   createSampleUser: true
-  
+
 # Override for this specific user
 userOverride:
   userId: "$user_id"
   password: "$password"
 EOF
-    
+
     # Generate manifests using Helm template
     local temp_manifests=$(mktemp)
     helm template "$HELM_RELEASE" "$CHART_PATH" \
@@ -108,15 +108,15 @@ EOF
         --values "$temp_values" \
         --set "examples.createSampleUser=true" \
         --namespace "$NAMESPACE" > "$temp_manifests"
-    
+
     # Filter and customize manifests for this user
     local user_manifests=$(mktemp)
-    
+
     # Extract only the user-specific resources and replace sample-user with actual user ID
     sed "s/sample-user/$user_id/g" "$temp_manifests" | \
     grep -A 1000 "name: code-server-$user_id" | \
     grep -B 1000 "^---$" > "$user_manifests" || true
-    
+
     # Apply the manifests
     if [ -s "$user_manifests" ]; then
         kubectl apply -f "$user_manifests"
@@ -124,7 +124,7 @@ EOF
         log_warning "No user-specific manifests generated, creating manually..."
         create_user_resources_manually "$user_id" "$password"
     fi
-    
+
     # Cleanup temp files
     rm -f "$temp_values" "$temp_manifests" "$user_manifests"
 }
@@ -133,11 +133,11 @@ EOF
 create_user_resources_manually() {
     local user_id="$1"
     local password="$2"
-    
+
     # Get values from the Helm chart
     local storage_size=$(helm template "$HELM_RELEASE" "$CHART_PATH" --show-only templates/configmap.yaml | grep -o "10Gi" | head -1 || echo "10Gi")
     local storage_class=$(helm template "$HELM_RELEASE" "$CHART_PATH" --show-only templates/configmap.yaml | grep -o "vibecode-local-storage" | head -1 || echo "vibecode-local-storage")
-    
+
     # Create PVC
     kubectl apply -f - <<EOF
 apiVersion: v1
@@ -158,7 +158,7 @@ spec:
       storage: $storage_size
   storageClassName: $storage_class
 EOF
-    
+
     # Create Deployment
     kubectl apply -f - <<EOF
 apiVersion: apps/v1
@@ -232,7 +232,7 @@ spec:
         persistentVolumeClaim:
           claimName: workspace-$user_id
 EOF
-    
+
     # Create Service
     kubectl apply -f - <<EOF
 apiVersion: v1
@@ -258,7 +258,7 @@ spec:
     app.kubernetes.io/component: code-server
     vibecode.dev/user-id: $user_id
 EOF
-    
+
     # Create Ingress
     kubectl apply -f - <<EOF
 apiVersion: networking.k8s.io/v1
@@ -295,20 +295,20 @@ wait_for_workspace() {
     local user_id="$1"
     local timeout=300  # 5 minutes
     local counter=0
-    
+
     log_info "Waiting for workspace to be ready..."
-    
+
     while [ $counter -lt $timeout ]; do
         if kubectl get deployment "code-server-$user_id" -n "$NAMESPACE" -o jsonpath='{.status.readyReplicas}' | grep -q "1"; then
             log_success "Workspace is ready"
             return 0
         fi
-        
+
         sleep 5
         counter=$((counter + 5))
         echo -n "."
     done
-    
+
     log_error "Workspace failed to become ready within ${timeout} seconds"
     return 1
 }
@@ -317,7 +317,7 @@ wait_for_workspace() {
 display_connection_info() {
     local user_id="$1"
     local password="$2"
-    
+
     echo ""
     log_success "User workspace created successfully!"
     echo ""
@@ -334,15 +334,15 @@ display_connection_info() {
 cleanup_user() {
     local user_id="$1"
     local delete_storage="${2:-false}"
-    
+
     log_info "Cleaning up workspace for user: $user_id"
-    
+
     # Delete resources in order
     kubectl delete ingress "code-server-$user_id" -n "$NAMESPACE" --ignore-not-found=true
     kubectl delete service "code-server-$user_id" -n "$NAMESPACE" --ignore-not-found=true
     kubectl delete deployment "code-server-$user_id" -n "$NAMESPACE" --ignore-not-found=true
     kubectl delete secret "code-server-$user_id-config" -n "$NAMESPACE" --ignore-not-found=true
-    
+
     # Optionally delete PVC
     if [ "$delete_storage" = "true" ]; then
         kubectl delete pvc "workspace-$user_id" -n "$NAMESPACE" --ignore-not-found=true
@@ -350,7 +350,7 @@ cleanup_user() {
     else
         log_info "Storage for user $user_id preserved (use --delete-storage to remove)"
     fi
-    
+
     log_success "Successfully cleaned up workspace for user: $user_id"
 }
 
@@ -358,7 +358,7 @@ cleanup_user() {
 list_users() {
     log_info "Active user workspaces in namespace: $NAMESPACE"
     echo ""
-    
+
     kubectl get deployments -n "$NAMESPACE" -l app.kubernetes.io/component=code-server -o custom-columns="USER ID:.metadata.labels.vibecode\.dev/user-id,STATUS:.status.conditions[?(@.type=='Available')].status,READY:.status.readyReplicas,AGE:.metadata.creationTimestamp" --no-headers | while read line; do
         if [ -n "$line" ]; then
             echo "$line"
@@ -448,53 +448,53 @@ case "$COMMAND" in
             usage
             exit 1
         fi
-        
+
         if ! validate_user_id "$USER_ID"; then
             exit 1
         fi
-        
+
         if user_exists "$USER_ID"; then
             log_error "User workspace for '$USER_ID' already exists"
             exit 1
         fi
-        
+
         PASSWORD=$(generate_password)
         create_user_workspace "$USER_ID" "$PASSWORD"
         wait_for_workspace "$USER_ID"
         display_connection_info "$USER_ID" "$PASSWORD"
         ;;
-        
+
     delete)
         if [ -z "$USER_ID" ]; then
             log_error "User ID is required for delete command"
             usage
             exit 1
         fi
-        
+
         if ! user_exists "$USER_ID"; then
             log_error "User workspace for '$USER_ID' does not exist"
             exit 1
         fi
-        
+
         cleanup_user "$USER_ID" "$DELETE_STORAGE"
         ;;
-        
+
     list)
         list_users
         ;;
-        
+
     status)
         if [ -z "$USER_ID" ]; then
             log_error "User ID is required for status command"
             usage
             exit 1
         fi
-        
+
         if ! user_exists "$USER_ID"; then
             log_error "User workspace for '$USER_ID' does not exist"
             exit 1
         fi
-        
+
         echo "Deployment status:"
         kubectl get deployment "code-server-$USER_ID" -n "$NAMESPACE"
         echo ""
@@ -507,13 +507,13 @@ case "$COMMAND" in
         echo "Ingress status:"
         kubectl get ingress "code-server-$USER_ID" -n "$NAMESPACE"
         ;;
-        
+
     "")
         log_error "Command is required"
         usage
         exit 1
         ;;
-        
+
     *)
         log_error "Unknown command: $COMMAND"
         usage

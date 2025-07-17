@@ -180,7 +180,7 @@ describe('Monitoring Library', () => {
 
     test('should handle Datadog initialization errors', () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      
+
       // Mock Datadog init to throw
       (datadogRum.init as jest.Mock).mockImplementation(() => {
         throw new Error('Init failed')});
@@ -192,7 +192,7 @@ describe('Monitoring Library', () => {
 
     test('should handle tracking errors gracefully', () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      
+
       // Mock addAction to throw
       (datadogRum.addAction as jest.Mock).mockImplementation(() => {
         throw new Error('Tracking failed')})

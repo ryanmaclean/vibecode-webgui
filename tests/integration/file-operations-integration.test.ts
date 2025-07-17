@@ -1,6 +1,6 @@
 /**
  * Integration Tests for File Operations
- * 
+ *
  * Tests real-world scenarios combining file operations, lazy loading,
  * file watching, and WebSocket connection pooling
  */
@@ -95,7 +95,7 @@ describe('File Operations Integration Tests', () => {
       const watchEvents: any[] = []
       fileWatcher.on('file-change', (event) => {
         watchEvents.push(event)});
-      
+
       await fileWatcher.start()
 
       // 3. Initialize lazy loading for the file
@@ -150,15 +150,15 @@ describe('File Operations Integration Tests', () => {
 
       // 8. Delete file and verify cleanup
       await fileOps.deleteFile(filePath)
-      
+
       await expect(fileOps.readFile(filePath)).rejects.toThrow()}, 10000) // Extended timeout for integration test
 
     it('should handle large file operations with chunked loading', async () => {
       const largeFileName = 'large-integration-test.txt';
       const largeFilePath = path.join(testWorkspacePath, largeFileName);
-      
+
       // Generate large content (10,000 lines);
-      const largeContent = Array.from({ length: 10000 }, (_, i) => 
+      const largeContent = Array.from({ length: 10000 }, (_, i) =>
         `Line ${i + 1}: This is a test line with some content that makes the file larger.`
       ).join('\n');
 
@@ -182,7 +182,7 @@ describe('File Operations Integration Tests', () => {
           const urlObj = new URL(url, 'http://localhost')
           const start = parseInt(urlObj.searchParams.get('start') || '0')
           const end = parseInt(urlObj.searchParams.get('end') || '50')
-          
+
           const lines = largeContent.split('\n').slice(start, end + 1)
           return Promise.resolve({
             ok: true,
@@ -193,14 +193,14 @@ describe('File Operations Integration Tests', () => {
 
       // Test lazy loading performance
       const start = Date.now();
-      
+
       // Load different chunks
       const chunk1 = await lazyLoader.getLineRange(0, 100);
       const chunk2 = await lazyLoader.getLineRange(5000, 5100);
       const chunk3 = await lazyLoader.getLineRange(9900, 9999);
-      
+
       const loadTime = Date.now() - start;
-      
+
       expect(chunk1).toHaveLength(101);
       expect(chunk2).toHaveLength(101);
       expect(chunk3).toHaveLength(100) // Last chunk might be smaller
@@ -215,7 +215,7 @@ describe('File Operations Integration Tests', () => {
       const searchStart = Date.now()
       const searchResults = await lazyLoader.searchInFile('Line 5000:', { maxResults: 1 });
       const searchTime = Date.now() - searchStart;
-      
+
       expect(searchResults).toHaveLength(1)
       expect(searchResults[0].content).toContain('Line 5000:');
       expect(searchTime).toBeLessThan(2000) // Reasonable search time
@@ -251,14 +251,14 @@ describe('File Operations Integration Tests', () => {
 
         // User 2 can now acquire lock
         const user2Lock = await user2Ops.acquireLock(filePath, 'exclusive')
-        
+
         // User 2 makes conflicting changes
         const user2Content = initialContent + '\n## User 2 Changes\n\nDifferent content from user 2.\n';
-        
+
         // This should create a conflict since file was modified by user 1
         const currentMetadata = await user2Ops.getFileMetadata(filePath);
-        const user1Metadata = { 
-          ...currentMetadata, 
+        const user1Metadata = {
+          ...currentMetadata,
           modified: currentMetadata.modified - 1000,
           checksum: 'different-checksum'
         };
@@ -277,7 +277,7 @@ describe('File Operations Integration Tests', () => {
     it('should coordinate file watching with WebSocket notifications', async () => {
       const notificationFile = 'notification-test.js';
       const filePath = path.join(testWorkspacePath, notificationFile);
-      
+
       // Track all events
       const fileEvents: any[] = [];
       const connectionEvents: any[] = []
@@ -302,7 +302,7 @@ describe('File Operations Integration Tests', () => {
         return mockWebSocket}) as any
 
       const connection = await connectionPool.getConnection('ws://localhost:8080/notifications')
-      
+
       // Subscribe to connection events
       connectionPool.subscribeToConnection(connection.id, 'test-subscriber', {
         onMessage: (data) => {
@@ -332,7 +332,7 @@ describe('File Operations Integration Tests', () => {
 
       // Verify file watcher detected the change
       expect(fileEvents.length).toBeGreaterThan(0);
-      
+
       // Verify connection received notification
       expect(connectionEvents.length).toBeGreaterThan(0)
       expect(connectionEvents[0].type).toBe('file-change');
@@ -341,19 +341,19 @@ describe('File Operations Integration Tests', () => {
       // Test performance metrics
       const watcherStats = fileWatcher.getStats();
       expect(watcherStats.totalEvents).toBeGreaterThan(0);
-      
+
       const connectionMetrics = connectionPool.getMetrics();
       expect(connectionMetrics.totalMessages).toBeGreaterThan(0)})})
 
   describe('Workspace Management Integration', () => {
     it('should manage multiple workspace watchers', async () => {
       const workspaceManager = new WorkspaceWatcherManager()
-      
+
       try {
         // Create multiple workspace directories
         const workspace1Path = path.join(testWorkspacePath, 'workspace1')
         const workspace2Path = path.join(testWorkspacePath, 'workspace2');
-        
+
         await fs.mkdir(workspace1Path, { recursive: true });
         await fs.mkdir(workspace2Path, { recursive: true })
 
@@ -437,10 +437,10 @@ describe('File Operations Integration Tests', () => {
           close: jest.fn(),
           ping: jest.fn()
         })
-        
+
         setTimeout(() => {
           mockSocket.emit('error', new Error('Connection failed'))}, 10);
-        
+
         return mockSocket}) as any
 
       // Attempt connection
@@ -453,7 +453,7 @@ describe('File Operations Integration Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 50));
 
       expect(connectionErrors.length).toBeGreaterThan(0);
-      
+
       // Pool should still be functional for other connections
       const metrics = connectionPool.getMetrics();
       expect(metrics.failedConnections).toBeGreaterThan(0)})
@@ -475,7 +475,7 @@ describe('File Operations Integration Tests', () => {
     it('should manage memory usage effectively', async () => {
       const performanceFile = 'performance-test.txt';
       const filePath = path.join(testWorkspacePath, performanceFile)
-      
+
       // Create moderately large file
       const content = 'line content\n'.repeat(5000) // 5000 lines;
       await fileOps.createFile(filePath, content);

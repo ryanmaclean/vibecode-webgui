@@ -90,7 +90,7 @@ export async function GET(
   } catch (error) {
     console.error('Failed to load conversation:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to load conversation',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -153,8 +153,8 @@ export async function POST(
     const conversationPath = getConversationPath(workspaceId)
     await writeFile(conversationPath, JSON.stringify(conversation, null, 2))
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       messagesCount: body.messages.length,
       lastUpdated: conversation.lastUpdated
     })
@@ -162,7 +162,7 @@ export async function POST(
   } catch (error) {
     console.error('Failed to save conversation:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to save conversation',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -194,15 +194,15 @@ export async function DELETE(
       await unlink(conversationPath)
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Conversation cleared' 
+    return NextResponse.json({
+      success: true,
+      message: 'Conversation cleared'
     })
 
   } catch (error) {
     console.error('Failed to clear conversation:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to clear conversation',
         details: error instanceof Error ? error.message : 'Unknown error'
       },

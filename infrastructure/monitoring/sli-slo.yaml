@@ -167,7 +167,7 @@ data:
         no_data_timeframe: 10
 
     - name: "API Latency P95 High"
-      type: "metric alert"  
+      type: "metric alert"
       query: "avg(last_5m):p95:http.request.duration{service:vibecode-webgui} > 500"
       message: |
         @slack-alerts @pagerduty-warning
@@ -190,7 +190,7 @@ data:
         VibeCode WebGUI service is not responding to health checks
         Runbook: https://wiki.vibecode.dev/runbooks/service-down
       tags:
-        - "team:platform" 
+        - "team:platform"
         - "service:vibecode-webgui"
         - "severity:critical"
 
