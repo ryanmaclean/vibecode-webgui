@@ -18,9 +18,10 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
+        cache: 'npm'
     
     - name: Install dependencies
-      run: npm install
+      run: npm ci
     
     - name: Run npm audit
       run: npm audit --audit-level=high
@@ -31,7 +32,7 @@ jobs:
         ./scripts/check-licenses.sh
 
     - name: Generate SBOM for SCA
-      run: npx @cyclonedx/bom@3.11.0 --output-file sbom.json --output-format json
+      run: npx @cyclonedx/cyclonedx-npm --output-file sbom.json
 
     - name: Datadog SCA Scan
       if: github.event_name == 'push'
