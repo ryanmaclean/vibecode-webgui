@@ -28,6 +28,7 @@ This file contains Claude-specific configurations and recommendations for the Vi
 - **FIXED**: Real PostgreSQL connection pooling with latency testing ✅
 - **FIXED**: Real Redis client connectivity with ping verification ✅
 - **FIXED**: Real OpenRouter API validation with model count ✅
+- **VERIFIED**: Automated integration tests confirm service health via API endpoint ✅
 
 #### Environment Configuration: **NOW PROPER** ✅
 - **PREVIOUS**: DATADOG_API_KEY missing from .env.local
