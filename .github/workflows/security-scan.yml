@@ -31,7 +31,7 @@ jobs:
         ./scripts/check-licenses.sh
 
     - name: Generate SBOM for SCA
-      run: npx @cyclonedx/bom@3.11.0 --output sbom.json
+      run: npx @cyclonedx/bom@3.11.0 --output-file sbom.json --output-format json
 
     - name: Datadog SCA Scan
       if: github.event_name == 'push'
