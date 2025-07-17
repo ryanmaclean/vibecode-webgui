@@ -1,9 +1,9 @@
 /**
  * Collaborative Code Editor Component
- * 
+ *
  * Integrates CodeMirror 6 with Yjs CRDT for real-time collaborative editing
  * Supports syntax highlighting, user presence, and conflict resolution
- * 
+ *
  * Staff Engineer Implementation - Production-ready collaborative code editor
  */
 
@@ -19,11 +19,11 @@ import { css } from '@codemirror/lang-css'
 import { yCollab } from 'y-codemirror.next'
 import * as Y from 'yjs'
 
-import { 
-  CollaborationManager, 
-  CollaborationSession, 
+import {
+  CollaborationManager,
+  CollaborationSession,
   CollaborationUser,
-  collaborationManager 
+  collaborationManager
 } from '@/lib/collaboration'
 
 interface CollaborativeEditorProps {
@@ -62,7 +62,7 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const sessionRef = useRef<CollaborationSession | null>(null)
-  
+
   const [users, setUsers] = useState<UserPresenceIndicator[]>([])
   const [isConnected, setIsConnected] = useState(false)
   const [connectionError, setConnectionError] = useState<string | null>(null)
@@ -90,27 +90,27 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
   const initializeCollaboration = useCallback(async () => {
     try {
       setConnectionError(null)
-      
+
       // Set current user in collaboration manager
       collaborationManager.setCurrentUser(currentUser)
-      
+
       // Join collaboration session
       const session = await collaborationManager.joinSession(
         documentId,
         projectId,
         filePath
       )
-      
+
       sessionRef.current = session
-      
+
       // Get or create text content
       const yText = collaborationManager.getText(session)
-      
+
       // Initialize content if empty
       if (yText.length === 0 && initialContent) {
         yText.insert(0, initialContent)
       }
-      
+
       // Create CodeMirror extensions
       const extensions: Extension[] = [
         basicSetup,
@@ -132,13 +132,13 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
           if (update.docChanged) {
             const content = update.state.doc.toString()
             onContentChange?.(content)
-            
+
             // Update metadata
             const metadata = collaborationManager.getMap(session)
             metadata.set('lastActivity', Date.now())
             metadata.set('lastEditBy', currentUser.id)
           }
-          
+
           // Update cursor position
           if (update.selectionSet) {
             const cursor = update.state.selection.main.head
@@ -151,18 +151,18 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
           }
         })
       ]
-      
+
       // Add read-only extension if needed
       if (readOnly) {
         extensions.push(EditorState.readOnly.of(true))
       }
-      
+
       // Create editor state
       const state = EditorState.create({
         doc: yText.toString(),
         extensions
       })
-      
+
       // Create editor view
       if (editorRef.current) {
         viewRef.current = new EditorView({
@@ -170,7 +170,7 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
           parent: editorRef.current
         })
       }
-      
+
       // Set up connection status monitoring
       if (session.provider) {
         session.provider.on('status', ({ status }: { status: string }) => {
@@ -181,12 +181,12 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
             setConnectionError(null)
           }
         })
-        
+
         session.provider.on('connection-error', (error: Error) => {
           setConnectionError(`Connection error: ${error.message}`)
         })
       }
-      
+
       // Monitor user presence
       const updateUserPresence = () => {
         if (session.provider?.awareness) {
@@ -196,19 +196,19 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
             isActive: user.id !== currentUser.id, // Current user is always active
             lastSeen: new Date()
           }))
-          
+
           setUsers(userIndicators)
         }
       }
-      
+
       // Set up user presence monitoring
       if (session.provider?.awareness) {
         session.provider.awareness.on('change', updateUserPresence)
         updateUserPresence()
       }
-      
+
       setIsConnected(true)
-      
+
     } catch (error) {
       console.error('Failed to initialize collaboration:', error)
       setConnectionError(`Failed to connect: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -223,7 +223,7 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
       viewRef.current.destroy()
       viewRef.current = null
     }
-    
+
     if (sessionRef.current) {
       await collaborationManager.leaveSession(documentId)
       sessionRef.current = null
@@ -237,19 +237,19 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
     if (!sessionRef.current?.provider?.awareness) return
 
     const awareness = sessionRef.current.provider.awareness
-    
+
     const handleAwarenessChange = () => {
       const currentUsers = collaborationManager.getActiveUsers(sessionRef.current!)
       const previousUserIds = new Set(users.map(u => u.user.id))
       const currentUserIds = new Set(currentUsers.map(u => u.id))
-      
+
       // Detect new users
       currentUsers.forEach(user => {
         if (!previousUserIds.has(user.id) && user.id !== currentUser.id) {
           onUserJoin?.(user)
         }
       })
-      
+
       // Detect users who left
       users.forEach(({ user }) => {
         if (!currentUserIds.has(user.id) && user.id !== currentUser.id) {
@@ -257,9 +257,9 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
         }
       })
     }
-    
+
     awareness.on('change', handleAwarenessChange)
-    
+
     return () => {
       awareness.off('change', handleAwarenessChange)
     }
@@ -310,7 +310,7 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
             <span className="text-red-600 text-xs">({connectionError})</span>
           )}
         </div>
-        
+
         {/* Active Users */}
         <div className="flex items-center gap-1">
           {users.length > 0 && (
@@ -330,10 +330,10 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
           ))}
         </div>
       </div>
-      
+
       {/* Editor Container */}
-      <div 
-        ref={editorRef} 
+      <div
+        ref={editorRef}
         className="flex-1 overflow-hidden"
         style={{ height: 'calc(100% - 41px)' }}
       />

@@ -151,10 +151,10 @@ sudo ln -s /opt/node/bin/npm /usr/local/bin/npm
    ```bash
    git clone https://github.com/vibecode/webgui.git
    cd vibecode-webgui
-   
+
    # Install dependencies
    npm install
-   
+
    # Setup environment variables
    cp .env.example .env.local
    ```
@@ -164,15 +164,15 @@ sudo ln -s /opt/node/bin/npm /usr/local/bin/npm
    # Required API keys
    OPENROUTER_API_KEY=sk-or-v1-your-openrouter-key
    DATADOG_API_KEY=your-datadog-api-key
-   
+
    # Database URLs (using Docker)
    DATABASE_URL=postgresql://vibecode:vibecode_password@localhost:5432/vibecode
    REDIS_URL=redis://localhost:6379
-   
+
    # Auth configuration
    NEXTAUTH_URL=http://localhost:3000
    NEXTAUTH_SECRET=your-nextauth-secret
-   
+
    # Datadog RUM (optional for development)
    NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID=your-app-id
    NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN=your-client-token
@@ -182,7 +182,7 @@ sudo ln -s /opt/node/bin/npm /usr/local/bin/npm
    ```bash
    # Start databases
    docker-compose up -d postgres redis
-   
+
    # Start development server
    npm run dev
    ```
@@ -452,7 +452,7 @@ SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
 3. **Rate Limiting** → Redis-based protection (60 req/min)
 4. **AI Processing** → OpenRouter API (318 models available)
 5. **Streaming Response** → Real-time Claude-3.5-Sonnet output
-6. **Metrics Collection** → Real-time Datadog API integration (latency, errors, usage)  
+6. **Metrics Collection** → Real-time Datadog API integration (latency, errors, usage)
 7. **Data Persistence** → PostgreSQL storage (users, workspaces, sessions)
 8. **Live Dashboard** → Admin monitoring interface with real Datadog metrics
 
@@ -617,6 +617,49 @@ kubectl get secret vibecode-secrets -n vibecode -o yaml | grep OPENROUTER_API_KE
 # Test OpenRouter directly
 curl -H "Authorization: Bearer YOUR_KEY" https://openrouter.ai/api/v1/models
 ```
+
+### Kubernetes Debugging
+
+This section outlines the standard procedure for debugging Kubernetes resources within the VibeCode environment. The following steps were used to diagnose and resolve an issue with a pod.
+
+1.  **Get Pod Name**: Identify the full name of the pod that is experiencing issues.
+
+    ```bash
+    kubectl get pods -n vibecode
+    ```
+
+2.  **Check Pod Logs**: Retrieve the logs from the pod to check for any error messages.
+
+    ```bash
+    kubectl logs <pod-name> -n vibecode
+    ```
+
+3.  **Describe Pod**: If the logs do not provide a clear answer, describe the pod to get more details about its state and events.
+
+    ```bash
+    kubectl describe pod <pod-name> -n vibecode
+    ```
+
+4.  **Check Service**: Verify that the service is correctly configured and targeting the pod.
+
+    ```bash
+    kubectl get svc -n vibecode
+    kubectl describe svc <service-name> -n vibecode
+    ```
+
+5.  **Check Ingress**: Ensure the ingress resource is correctly routing traffic to the service.
+
+    ```bash
+    kubectl get ingress -n vibecode
+    kubectl describe ingress <ingress-name> -n vibecode
+    ```
+
+6.  **Test Connectivity**: Use `curl` to test the service endpoint directly from within the cluster.
+
+    ```bash
+    kubectl run curl -i --rm --tty --image=curlimages/curl -- sh
+    curl http://<service-name>.<namespace>.svc.cluster.local
+    ```
 
 ### Support
 

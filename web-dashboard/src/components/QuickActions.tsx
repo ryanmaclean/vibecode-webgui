@@ -91,7 +91,7 @@ export function QuickActions() {
 
       {/* Create Workspace Modal */}
       {isCreatingWorkspace && (
-        <CreateWorkspaceModal 
+        <CreateWorkspaceModal
           onClose={() => setIsCreatingWorkspace(false)}
         />
       )}
@@ -195,8 +195,8 @@ function CreateWorkspaceModal({ onClose }: { onClose: () => void }) {
               <button type="button" onClick={onClose} className="btn-secondary flex-1">
                 Cancel
               </button>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={createWorkspaceMutation.isPending}
                 className="btn-primary flex-1"
               >

@@ -73,7 +73,7 @@ describe('/api/ai/chat/stream', () => {
       expect(response.status).toBe(200)
       expect(response.headers.get('Content-Type')).toBe('text/event-stream')
       expect(response.headers.get('Cache-Control')).toBe('no-cache')
-      
+
       expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith({
         model: 'anthropic/claude-3-sonnet',
         messages: expect.arrayContaining([
@@ -287,7 +287,7 @@ describe('/api/ai/chat/stream', () => {
   describe('CORS handling', () => {
     it('handles OPTIONS request for CORS', async () => {
       const { OPTIONS } = await import('@/app/api/ai/chat/stream/route')
-      
+
       const response = await OPTIONS()
 
       expect(response.status).toBe(200)
@@ -321,7 +321,7 @@ describe('/api/ai/chat/stream', () => {
       })
 
       const response = await POST(request)
-      
+
       expect(response.headers.get('Content-Type')).toBe('text/event-stream')
       expect(response.headers.get('Cache-Control')).toBe('no-cache')
       expect(response.headers.get('Connection')).toBe('keep-alive')

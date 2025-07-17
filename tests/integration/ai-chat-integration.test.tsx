@@ -4,15 +4,14 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { NextRequest } from 'next/server'
+
 import AIChatInterface from '@/components/ai/AIChatInterface'
 import VSCodeIntegration from '@/components/ai/VSCodeIntegration'
-import { POST as streamHandler } from '@/app/api/ai/chat/stream/route'
-import { POST as uploadHandler } from '@/app/api/ai/upload/route'
+
 
 // Mock fetch globally
 const mockFetch = jest.fn()
-global.fetch = mockFetch as any
+global.fetch = mockFetch as jest.Mock
 
 // Mock file system operations
 jest.mock('fs/promises', () => ({
@@ -40,11 +39,11 @@ jest.mock('openai', () => ({
 describe('AI Chat Integration', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    
+
     // Mock environment variables
     process.env.OPENROUTER_API_KEY = 'test-api-key'
     process.env.NEXTAUTH_URL = 'http://localhost:3000'
-    
+
     // Default fetch mock for conversation history
     mockFetch.mockResolvedValue({
       ok: true,
@@ -58,8 +57,7 @@ describe('AI Chat Integration', () => {
 
   describe('Complete Chat Workflow', () => {
     it('handles full conversation flow with file upload', async () => {
-      const user = userEvent.setup()
-      
+
       // Mock successful file upload
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -80,30 +78,30 @@ describe('AI Chat Integration', () => {
           headers: { 'Content-Type': 'text/event-stream' }
         }
       )
-      
+
       const mockReader = {
         read: jest.fn()
-          .mockResolvedValueOnce({ 
-            done: false, 
-            value: new TextEncoder().encode('data: {"content": "I can see you uploaded test.js."}\n\n') 
+          .mockResolvedValueOnce({
+            done: false,
+            value: new TextEncoder().encode('data: {"content": "I can see you uploaded test.js."}\n\n')
           })
-          .mockResolvedValueOnce({ 
-            done: false, 
-            value: new TextEncoder().encode('data: {"content": " Let me analyze it."}\n\n') 
+          .mockResolvedValueOnce({
+            done: false,
+            value: new TextEncoder().encode('data: {"content": " Let me analyze it."}\n\n')
           })
-          .mockResolvedValueOnce({ 
-            done: false, 
-            value: new TextEncoder().encode('data: {"done": true}\n\n') 
+          .mockResolvedValueOnce({
+            done: false,
+            value: new TextEncoder().encode('data: {"done": true}\n\n')
           })
           .mockResolvedValueOnce({ done: true, value: undefined })
       };
-      mockResponse.body = { getReader: () => mockReader } as any
+      mockResponse.body = { getReader: () => mockReader } as unknown as ReadableStream<Uint8Array>
       mockFetch.mockResolvedValueOnce(mockResponse)
 
       const mockOnFileUpload = jest.fn()
-      
+
       render(
-        <AIChatInterface 
+        <AIChatInterface
           workspaceId="test-workspace"
           onFileUpload={mockOnFileUpload}
         />
@@ -112,19 +110,19 @@ describe('AI Chat Integration', () => {
       // 1. Upload a file
       const file = new File(['console.log("test")'], 'test.js', { type: 'application/javascript' })
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
-      
+
       Object.defineProperty(fileInput, 'files', {
         value: [file],
         writable: false,
       })
-      
+
       fireEvent.change(fileInput)
       expect(mockOnFileUpload).toHaveBeenCalledWith([file])
 
       // 2. Send a message asking about the uploaded file
       const textarea = screen.getByPlaceholderText('Ask anything... (Shift+Enter for new line)')
       await user.type(textarea, 'Analyze the uploaded JavaScript file')
-      
+
       const sendButton = screen.getByRole('button', { name: /send/i })
       await user.click(sendButton)
 
@@ -151,7 +149,7 @@ describe('AI Chat Integration', () => {
 
     it('persists conversation history across sessions', async () => {
       const user = userEvent.setup()
-      
+
       // Mock conversation history with previous messages
       const existingMessages = [
         {
@@ -192,7 +190,7 @@ describe('AI Chat Integration', () => {
 
     it('switches between AI models seamlessly', async () => {
       const user = userEvent.setup()
-      
+
       render(<AIChatInterface workspaceId="test-workspace" />)
 
       // Open settings
@@ -211,11 +209,11 @@ describe('AI Chat Integration', () => {
   describe('VS Code Integration Workflow', () => {
     it('communicates between VS Code and AI chat', async () => {
       const mockCodeServerUrl = 'http://localhost:8080'
-      
+
       render(
-        <VSCodeIntegration 
+        <VSCodeIntegration
           workspaceId="test-workspace"
-          codeServerUrl={mockCodeServerUrl};
+          codeServerUrl={mockCodeServerUrl}
           isEmbedded={false}
         />
       )
@@ -240,7 +238,7 @@ describe('AI Chat Integration', () => {
 
     it('handles floating vs side-by-side modes', async () => {
       const { rerender } = render(
-        <VSCodeIntegration 
+        <VSCodeIntegration
           workspaceId="test-workspace"
           isEmbedded={true}
         />
@@ -251,7 +249,7 @@ describe('AI Chat Integration', () => {
 
       // Switch to side-by-side mode
       rerender(
-        <VSCodeIntegration 
+        <VSCodeIntegration
           workspaceId="test-workspace"
           isEmbedded={false}
         />
@@ -265,15 +263,15 @@ describe('AI Chat Integration', () => {
   describe('Error Handling and Edge Cases', () => {
     it('handles API errors gracefully', async () => {
       const user = userEvent.setup()
-      
+
       // Mock API error
       mockFetch.mockRejectedValueOnce(new Error('Network error'))
-      
+
       render(<AIChatInterface workspaceId="test-workspace" />)
 
       const textarea = screen.getByPlaceholderText('Ask anything... (Shift+Enter for new line)')
       await user.type(textarea, 'Test message')
-      
+
       const sendButton = screen.getByRole('button', { name: /send/i })
       await user.click(sendButton)
 
@@ -285,7 +283,7 @@ describe('AI Chat Integration', () => {
 
     it('handles large file uploads', async () => {
       const user = userEvent.setup()
-      
+
       // Mock successful upload of large file
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -298,9 +296,9 @@ describe('AI Chat Integration', () => {
       })
 
       const mockOnFileUpload = jest.fn()
-      
+
       render(
-        <AIChatInterface 
+        <AIChatInterface
           workspaceId="test-workspace"
           onFileUpload={mockOnFileUpload}
         />
@@ -309,21 +307,21 @@ describe('AI Chat Integration', () => {
       // Create large file
       const largeContent = 'x'.repeat(1024 * 1024) // 1MB file
       const largeFile = new File([largeContent], 'large.js', { type: 'application/javascript' })
-      
+
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
       Object.defineProperty(fileInput, 'files', {
         value: [largeFile],
         writable: false,
       })
-      
+
       fireEvent.change(fileInput)
-      
+
       expect(mockOnFileUpload).toHaveBeenCalledWith([largeFile])
     })
 
     it('handles concurrent message sending', async () => {
       const user = userEvent.setup()
-      
+
       render(<AIChatInterface workspaceId="test-workspace" />)
 
       const textarea = screen.getByPlaceholderText('Ask anything... (Shift+Enter for new line)')
@@ -332,9 +330,9 @@ describe('AI Chat Integration', () => {
       // Try to send multiple messages quickly
       await user.type(textarea, 'First message')
       await user.click(sendButton)
-      
+
       await user.type(textarea, 'Second message')
-      
+
       // Send button should be disabled while first message is processing
       expect(sendButton).toBeDisabled()
     })
@@ -343,9 +341,9 @@ describe('AI Chat Integration', () => {
   describe('Performance and Responsiveness', () => {
     it('handles many context files efficiently', async () => {
       const manyFiles = Array.from({ length: 100 }, (_, i) => `file${i}.js`)
-      
+
       render(
-        <AIChatInterface 
+        <AIChatInterface
           workspaceId="test-workspace"
           initialContext={manyFiles}
         />
@@ -356,13 +354,11 @@ describe('AI Chat Integration', () => {
     })
 
     it('maintains responsive UI during streaming', async () => {
-      const user = userEvent.setup()
-      
       // Mock slow streaming response
       const mockReader = {
         read: jest.fn()
-          .mockImplementation(() => 
-            new Promise(resolve => 
+          .mockImplementation(() =>
+            new Promise(resolve =>
               setTimeout(() => resolve({
                 done: false,
                 value: new TextEncoder().encode('data: {"content": "slow"}\n\n')
@@ -373,17 +369,17 @@ describe('AI Chat Integration', () => {
       const mockResponse = new Response('', {
         headers: { 'Content-Type': 'text/event-stream' }
       })
-      mockResponse.body = { getReader: () => mockReader } as any
-      
+      mockResponse.body = { getReader: () => mockReader } as unknown as ReadableStream<Uint8Array>
+
       mockFetch.mockResolvedValueOnce(mockResponse)
 
       render(<AIChatInterface workspaceId="test-workspace" />)
 
       const textarea = screen.getByPlaceholderText('Ask anything... (Shift+Enter for new line)')
-      await user.type(textarea, 'Test message')
-      
+      await userEvent.type(textarea, 'Test message')
+
       const sendButton = screen.getByRole('button', { name: /send/i })
-      await user.click(sendButton)
+      await userEvent.click(sendButton)
 
       // UI should remain responsive
       expect(screen.getByText('AI is thinking...')).toBeInTheDocument()
@@ -393,16 +389,16 @@ describe('AI Chat Integration', () => {
   describe('Accessibility', () => {
     it('supports keyboard navigation throughout', async () => {
       const user = userEvent.setup()
-      
+
       render(<AIChatInterface workspaceId="test-workspace" />)
 
       // Tab through interactive elements
       await user.tab()
       expect(screen.getByRole('textbox')).toHaveFocus()
-      
+
       await user.tab()
       expect(screen.getByRole('button', { name: /upload/i })).toHaveFocus()
-      
+
       await user.tab()
       expect(screen.getByRole('button', { name: /send/i })).toHaveFocus()
     })
@@ -412,7 +408,7 @@ describe('AI Chat Integration', () => {
 
       const textarea = screen.getByRole('textbox')
       expect(textarea).toHaveAttribute('placeholder', expect.stringContaining('Ask anything'))
-      
+
       const uploadButton = screen.getByRole('button', { name: /upload/i })
       expect(uploadButton).toBeInTheDocument()
     })

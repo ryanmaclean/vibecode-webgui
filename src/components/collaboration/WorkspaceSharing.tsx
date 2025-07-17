@@ -1,9 +1,9 @@
 /**
  * Workspace Sharing Component
- * 
+ *
  * Advanced workspace sharing and collaboration management
  * with granular permissions, team management, and secure access controls
- * 
+ *
  * Staff Engineer Implementation - Enterprise-grade workspace collaboration
  */
 
@@ -11,13 +11,13 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Share2, 
-  Users, 
-  Shield, 
-  Globe, 
-  Lock, 
-  UserPlus, 
+import {
+  Share2,
+  Users,
+  Shield,
+  Globe,
+  Lock,
+  UserPlus,
   UserMinus,
   Settings,
   Copy,
@@ -178,7 +178,7 @@ export default function WorkspaceSharing({
    */
   const copyShareLink = useCallback(async () => {
     if (!shareLink) return
-    
+
     try {
       await navigator.clipboard.writeText(shareLink)
       // TODO: Show success toast
@@ -203,7 +203,7 @@ export default function WorkspaceSharing({
     const activeMembers = members.filter(m => m.status === 'active').length
     const pendingMembers = members.filter(m => m.status === 'pending').length
     const totalCollaborationTime = members.reduce((sum, m) => sum + m.statistics.collaborationTime, 0)
-    
+
     return {
       total: members.length,
       active: activeMembers,
@@ -218,7 +218,7 @@ export default function WorkspaceSharing({
   const formatDuration = useCallback((ms: number) => {
     const hours = Math.floor(ms / (1000 * 60 * 60))
     const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60))
-    
+
     if (hours > 0) return `${hours}h ${minutes}m`
     return `${minutes}m`
   }, [])
@@ -232,7 +232,7 @@ export default function WorkspaceSharing({
     const days = Math.floor(diff / (1000 * 60 * 60 * 24))
     const hours = Math.floor(diff / (1000 * 60 * 60))
     const minutes = Math.floor(diff / (1000 * 60))
-    
+
     if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`
     if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`
     if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
@@ -245,7 +245,7 @@ export default function WorkspaceSharing({
   const renderMemberItem = useCallback((member: WorkspaceMember) => {
     const isCurrentUser = member.userId === currentUserId
     const isOwner = member.role === 'owner'
-    
+
     return (
       <motion.div
         key={member.userId}
@@ -257,8 +257,8 @@ export default function WorkspaceSharing({
           <div className="relative">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
               {member.userAvatar ? (
-                <img 
-                  src={member.userAvatar} 
+                <img
+                  src={member.userAvatar}
                   alt={member.userName}
                   className="w-full h-full rounded-full object-cover"
                 />
@@ -266,14 +266,14 @@ export default function WorkspaceSharing({
                 member.userName.charAt(0).toUpperCase()
               )}
             </div>
-            
+
             {/* Status indicator */}
             <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
               member.status === 'active' ? 'bg-green-500' :
               member.status === 'pending' ? 'bg-yellow-500' :
               'bg-red-500'
             }`} />
-            
+
             {/* Owner crown */}
             {isOwner && (
               <div className="absolute -top-1 -right-1">
@@ -357,7 +357,7 @@ export default function WorkspaceSharing({
    */
   const renderTeamItem = useCallback((team: WorkspaceTeam) => {
     const teamMembers = members.filter(m => team.members.includes(m.userId))
-    
+
     return (
       <motion.div
         key={team.teamId}
@@ -373,7 +373,7 @@ export default function WorkspaceSharing({
               {team.description}
             </p>
           </div>
-          
+
           {canManageWorkspace && (
             <div className="flex items-center gap-2">
               <button
@@ -406,7 +406,7 @@ export default function WorkspaceSharing({
               {teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''}
             </span>
           </div>
-          
+
           <div className="flex -space-x-2">
             {teamMembers.slice(0, 3).map(member => (
               <div
@@ -415,8 +415,8 @@ export default function WorkspaceSharing({
                 title={member.userName}
               >
                 {member.userAvatar ? (
-                  <img 
-                    src={member.userAvatar} 
+                  <img
+                    src={member.userAvatar}
                     alt={member.userName}
                     className="w-full h-full rounded-full object-cover"
                   />
@@ -502,7 +502,7 @@ export default function WorkspaceSharing({
                     <div className="text-sm text-blue-600 dark:text-blue-400 mb-3">
                       Anyone with the link can join this workspace
                     </div>
-                    
+
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -586,7 +586,7 @@ export default function WorkspaceSharing({
               Public
             </div>
           )}
-          
+
           {canManageWorkspace && (
             <button
               onClick={() => setShowInviteModal(true)}
@@ -721,7 +721,7 @@ export default function WorkspaceSharing({
                 Create Team
               </button>
             )}
-            
+
             {teams.length > 0 ? (
               teams.map(team => renderTeamItem(team))
             ) : (

@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  MoreVertical, 
-  Shield, 
-  ShieldCheck, 
-  User, 
-  Mail, 
-  Calendar, 
+import {
+  Plus,
+  Search,
+  Filter,
+  MoreVertical,
+  Shield,
+  ShieldCheck,
+  User,
+  Mail,
+  Calendar,
   Clock,
   CheckCircle,
   XCircle,
@@ -79,7 +79,7 @@ export function Users() {
             Manage user accounts and permissions across the platform.
           </p>
         </div>
-        <button 
+        <button
           onClick={() => setShowCreateModal(true)}
           className="btn-primary"
         >
@@ -210,8 +210,8 @@ export function Users() {
                 ))
               ) : (
                 filteredUsers?.map((user) => (
-                  <UserRow 
-                    key={user.id} 
+                  <UserRow
+                    key={user.id}
                     user={user}
                     onDelete={() => deleteUserMutation.mutate(user.id)}
                   />
@@ -243,12 +243,12 @@ export function Users() {
   )
 }
 
-function UserRow({ 
-  user, 
-  onDelete 
-}: { 
+function UserRow({
+  user,
+  onDelete
+}: {
   user: User
-  onDelete: () => void 
+  onDelete: () => void
 }) {
   const [showActions, setShowActions] = useState(false)
   const statusConfig = {
@@ -328,7 +328,7 @@ function UserRow({
                   <Key className="h-4 w-4 mr-2" />
                   Reset Password
                 </button>
-                <button 
+                <button
                   onClick={onDelete}
                   className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50"
                 >
@@ -431,8 +431,8 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
               <button type="button" onClick={onClose} className="btn-secondary flex-1">
                 Cancel
               </button>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={createUserMutation.isPending}
                 className="btn-primary flex-1"
               >

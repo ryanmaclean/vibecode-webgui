@@ -1,9 +1,9 @@
 /**
  * Claude Code CLI Integration
- * 
+ *
  * Terminal-based integration with Claude Code CLI for code-server
  * Claude Code runs as a CLI tool in the terminal, not as a webview extension
- * 
+ *
  * Staff Engineer Implementation - Production-ready CLI integration
  */
 
@@ -56,16 +56,16 @@ export class ClaudeCliIntegration extends EventEmitter {
    */
   async executeCommand(request: ClaudeCliRequest): Promise<ClaudeCliResponse> {
     const startTime = Date.now()
-    
+
     try {
       // Build CLI command
       const command = await this.buildClaudeCommand(request)
-      
+
       // Execute command
       const result = await this.runCliCommand(command, request.input)
-      
+
       const responseTime = Date.now() - startTime
-      
+
       return {
         success: true,
         output: result.stdout,
@@ -197,7 +197,7 @@ export class ClaudeCliIntegration extends EventEmitter {
    */
   async explainCode(code: string, language?: string): Promise<ClaudeCliResponse> {
     const tempFile = await this.createTempFile(code, language)
-    
+
     try {
       const request: ClaudeCliRequest = {
         command: 'explain',
@@ -217,7 +217,7 @@ export class ClaudeCliIntegration extends EventEmitter {
    */
   async analyzeCode(code: string, language?: string): Promise<ClaudeCliResponse> {
     const tempFile = await this.createTempFile(code, language)
-    
+
     try {
       const request: ClaudeCliRequest = {
         command: 'analyze',
@@ -237,9 +237,9 @@ export class ClaudeCliIntegration extends EventEmitter {
    */
   async debugCode(code: string, errorMessage?: string): Promise<ClaudeCliResponse> {
     const tempFile = await this.createTempFile(code)
-    
+
     try {
-      const input = errorMessage 
+      const input = errorMessage
         ? `Debug this code. Error: ${errorMessage}`
         : 'Debug this code and find potential issues'
 
@@ -260,7 +260,7 @@ export class ClaudeCliIntegration extends EventEmitter {
    */
   async generateTests(code: string, language?: string): Promise<ClaudeCliResponse> {
     const tempFile = await this.createTempFile(code, language)
-    
+
     try {
       const request: ClaudeCliRequest = {
         command: 'test',
@@ -280,7 +280,7 @@ export class ClaudeCliIntegration extends EventEmitter {
    */
   async optimizeCode(code: string, language?: string): Promise<ClaudeCliResponse> {
     const tempFile = await this.createTempFile(code, language)
-    
+
     try {
       const request: ClaudeCliRequest = {
         command: 'optimize',
@@ -501,7 +501,7 @@ export class ClaudeCliIntegration extends EventEmitter {
    */
   async destroy(): Promise<void> {
     // Close all active sessions
-    const sessionPromises = Array.from(this.activeProcesses.keys()).map(sessionId => 
+    const sessionPromises = Array.from(this.activeProcesses.keys()).map(sessionId =>
       this.closeSession(sessionId)
     )
 

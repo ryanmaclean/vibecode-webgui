@@ -29,7 +29,7 @@ const nextConfig = {
       net: false,
       tls: false,
     };
-    
+
     // Exclude server-only packages from client bundle
     if (!isServer) {
       config.resolve.alias = {
@@ -38,7 +38,7 @@ const nextConfig = {
         'redis': false,
       };
     }
-    
+
     return config;
   },
 };

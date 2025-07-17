@@ -1,9 +1,9 @@
 /**
  * User Presence Indicators Component
- * 
+ *
  * Advanced real-time user presence system with activity tracking,
  * cursor positions, typing indicators, and user status management
- * 
+ *
  * Staff Engineer Implementation - Enterprise-grade presence management
  */
 
@@ -230,13 +230,13 @@ export default function UserPresenceIndicators({
     return (
       <div className="relative">
         {/* Avatar */}
-        <div 
+        <div
           className={`${sizeClasses[size]} rounded-full flex items-center justify-center text-white font-medium text-xs relative overflow-hidden`}
           style={{ backgroundColor: user.userColor }}
         >
           {user.userAvatar ? (
-            <img 
-              src={user.userAvatar} 
+            <img
+              src={user.userAvatar}
               alt={user.userName}
               className="w-full h-full object-cover"
             />
@@ -325,7 +325,7 @@ export default function UserPresenceIndicators({
                 onClick={() => onUserClick?.(user)}
               >
                 {renderUserAvatar(user)}
-                
+
                 {/* Tooltip */}
                 <AnimatePresence>
                   {hoveredUser === user.userId && renderUserTooltip(user)}
@@ -393,7 +393,7 @@ export default function UserPresenceIndicators({
               <div className="w-1 h-1 bg-blue-500 rounded-full" />
             </motion.div>
             <span>
-              {typingUsers.length === 1 
+              {typingUsers.length === 1
                 ? `${typingUsers[0].userName} is typing...`
                 : `${typingUsers.length} people are typing...`
               }

@@ -28,18 +28,18 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
                     role: 'api',
                     permissions: ['ai:access']
                 };
-                
-                logger.debug('API key authentication successful', { 
-                    apiKey: apiKey.substring(0, 8) + '...' 
+
+                logger.debug('API key authentication successful', {
+                    apiKey: apiKey.substring(0, 8) + '...'
                 });
-                
+
                 return next();
             } else {
-                logger.warn('Invalid API key provided', { 
+                logger.warn('Invalid API key provided', {
                     apiKey: apiKey.substring(0, 8) + '...',
                     ip: req.ip
                 });
-                
+
                 res.status(401).json({
                     error: 'Invalid API key',
                     code: 'INVALID_API_KEY',
@@ -52,7 +52,7 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
         // Check for JWT authentication
         if (authHeader && authHeader.startsWith('Bearer ')) {
             const token = authHeader.substring(7);
-            
+
             try {
                 const decoded = jwt.verify(token, config.auth.jwtSecret) as any;
                 req.user = {
@@ -61,19 +61,19 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
                     role: decoded.role || 'user',
                     permissions: decoded.permissions || ['ai:access']
                 };
-                
-                logger.debug('JWT authentication successful', { 
+
+                logger.debug('JWT authentication successful', {
                     userId: req.user.id,
                     username: req.user.username
                 });
-                
+
                 return next();
             } catch (jwtError) {
-                logger.warn('Invalid JWT token', { 
+                logger.warn('Invalid JWT token', {
                     error: jwtError instanceof Error ? jwtError.message : 'Unknown JWT error',
                     ip: req.ip
                 });
-                
+
                 res.status(401).json({
                     error: 'Invalid or expired token',
                     code: 'INVALID_TOKEN',
@@ -84,12 +84,12 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
         }
 
         // No valid authentication provided
-        logger.warn('No authentication provided', { 
+        logger.warn('No authentication provided', {
             ip: req.ip,
             userAgent: req.get('User-Agent'),
             path: req.path
         });
-        
+
         res.status(401).json({
             error: 'Authentication required',
             code: 'AUTHENTICATION_REQUIRED',
@@ -125,7 +125,7 @@ export const requirePermission = (permission: string) => {
                 requiredPermission: permission,
                 userPermissions: req.user.permissions
             });
-            
+
             res.status(403).json({
                 error: 'Insufficient permissions',
                 code: 'INSUFFICIENT_PERMISSIONS',
@@ -156,7 +156,7 @@ export const requireRole = (role: string) => {
                 requiredRole: role,
                 userRole: req.user.role
             });
-            
+
             res.status(403).json({
                 error: 'Insufficient role',
                 code: 'INSUFFICIENT_ROLE',
@@ -173,28 +173,28 @@ export const requireRole = (role: string) => {
 
 function validateApiKey(apiKey: string): boolean {
     if (!apiKey) return false;
-    
+
     // Check against configured API keys
     if (config.auth.apiKeys.length > 0) {
         return config.auth.apiKeys.includes(apiKey);
     }
-    
+
     // If no API keys configured, accept any key for development
     if (config.environment === 'development') {
         return apiKey.length >= 32; // Minimum length check
     }
-    
+
     return false;
 }
 
 export const generateApiKey = (): string => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = 'vbai_'; // VibeCode AI prefix
-    
+
     for (let i = 0; i < 48; i++) {
         result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    
+
     return result;
 };
 

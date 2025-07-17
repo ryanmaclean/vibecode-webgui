@@ -12,17 +12,17 @@ data:
     server:
       host: 0.0.0.0
       port: 9091
-      
+
     # Logging configuration
     log:
       level: info
       format: text
-      
+
     # Identity validation configuration
     identity_validation:
       reset_password:
         jwt_secret: "REPLACE_WITH_SECURE_JWT_SECRET"
-    
+
     # Time-based One-Time Password configuration
     totp:
       issuer: VibeCode
@@ -31,20 +31,20 @@ data:
       period: 30
       skew: 1
       secret_size: 32
-    
+
     # WebAuthn configuration for hardware keys
     webauthn:
       timeout: 60s
       display_name: VibeCode Development Platform
       attestation_conveyance_preference: indirect
       user_verification: preferred
-      
+
     # Authentication backend
     authentication_backend:
       password_reset:
         disable: false
       refresh_interval: 5m
-      
+
       # File-based user database for development
       file:
         path: /config/users_database.yml
@@ -54,7 +54,7 @@ data:
           salt_length: 16
           parallelism: 8
           memory: 64
-          
+
     # Access control configuration
     access_control:
       default_policy: deny
@@ -68,12 +68,12 @@ data:
         # Allow access to Authelia itself
         - domain: auth.localhost
           policy: bypass
-          
+
         # User workspaces - requires user group with 2FA
         - domain: "*.localhost"
           policy: two_factor
           subject: ["group:users", "group:developers"]
-    
+
     # Session configuration
     session:
       name: authelia_session
@@ -85,19 +85,19 @@ data:
         - domain: auth.localhost
           same_site: lax
           authelia_url: "https://auth.localhost:8090"
-      
+
     # Regulation (rate limiting)
     regulation:
       max_retries: 3
       find_time: 10m
       ban_time: 12h
-      
+
     # Storage configuration - use local storage for simplicity
     storage:
       encryption_key: "vibecode-storage-encryption-key-change-in-production"
       local:
         path: /config/db.sqlite3
-        
+
     # Notification configuration
     notifier:
       disable_startup_check: true
@@ -122,7 +122,7 @@ stringData:
         groups:
           - admins
           - users
-          
+
       developer:
         disabled: false
         displayname: "Developer"
@@ -131,7 +131,7 @@ stringData:
         groups:
           - users
           - developers
-          
+
       user:
         disabled: false
         displayname: "Regular User"

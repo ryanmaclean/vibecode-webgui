@@ -174,10 +174,10 @@ class OpenRouterClient {
         }
     }
     async generateCode(prompt, context, language) {
-        const systemPrompt = `You are a skilled software developer. Generate high-quality, clean, and well-documented code based on the user's request. 
+        const systemPrompt = `You are a skilled software developer. Generate high-quality, clean, and well-documented code based on the user's request.
         ${language ? `The code should be in ${language}.` : ''}
         ${context ? `Context: ${context}` : ''}
-        
+
         Rules:
         - Write clean, readable code
         - Include appropriate comments
@@ -192,7 +192,7 @@ class OpenRouterClient {
         return response.choices[0].message.content;
     }
     async explainCode(code) {
-        const systemPrompt = `You are a code expert. Explain the provided code in clear, understandable terms. 
+        const systemPrompt = `You are a code expert. Explain the provided code in clear, understandable terms.
         Include:
         - What the code does
         - How it works
@@ -213,7 +213,7 @@ class OpenRouterClient {
         - Best practices
         - Security considerations
         - Memory efficiency
-        
+
         Provide the optimized code with explanations of changes made.`;
         const messages = [
             { role: 'system', content: systemPrompt },
@@ -225,7 +225,7 @@ class OpenRouterClient {
     async fixCode(code, error) {
         const systemPrompt = `You are a debugging expert. Fix the issues in the provided code.
         ${error ? `Error message: ${error}` : ''}
-        
+
         Provide:
         - The corrected code
         - Explanation of what was wrong
@@ -240,7 +240,7 @@ class OpenRouterClient {
     async generateTests(code, framework) {
         const systemPrompt = `You are a test automation expert. Generate comprehensive tests for the provided code.
         ${framework ? `Use ${framework} testing framework.` : ''}
-        
+
         Include:
         - Unit tests for all functions
         - Edge case testing

@@ -22,7 +22,7 @@ spec:
       highWatermark: "70"    # Scale up when CPU > 70%
       lowWatermark: "30"     # Scale down when CPU < 30%
 ---
-# Datadog Watermark Pod Autoscaler for memory-based scaling  
+# Datadog Watermark Pod Autoscaler for memory-based scaling
 apiVersion: datadoghq.com/v1alpha1
 kind: WatermarkPodAutoscaler
 metadata:

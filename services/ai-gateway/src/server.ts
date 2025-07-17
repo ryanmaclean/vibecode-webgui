@@ -78,7 +78,7 @@ class AIGatewayServer {
         this.app.use((req, _res, next) => {
             const requestId = req.headers['x-request-id'] || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             (req as any).requestId = requestId as string;
-            
+
             logger.info('Incoming request', {
                 requestId,
                 method: req.method,
@@ -86,7 +86,7 @@ class AIGatewayServer {
                 userAgent: req.get('User-Agent'),
                 ip: req.ip
             });
-            
+
             next();
         });
     }
@@ -166,11 +166,11 @@ class AIGatewayServer {
 
     private async shutdown(signal: string): Promise<void> {
         logger.info(`Received ${signal}, shutting down gracefully`);
-        
+
         try {
             await this.redisService.disconnect();
             logger.info('Redis disconnected');
-            
+
             process.exit(0);
         } catch (error) {
             logger.error('Error during shutdown', { error });

@@ -23,7 +23,7 @@ nodes:
   - containerPort: 80
     hostPort: 80
     protocol: TCP
-  # HTTPS Ingress  
+  # HTTPS Ingress
   - containerPort: 443
     hostPort: 443
     protocol: TCP
@@ -51,7 +51,7 @@ nodes:
 # Worker nodes for better testing
 - role: worker
   image: kindest/node:v1.29.0
-  
+
 - role: worker
   image: kindest/node:v1.29.0
 

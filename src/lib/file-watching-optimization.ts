@@ -1,9 +1,9 @@
 /**
  * File Watching Optimization
- * 
+ *
  * High-performance file watching with intelligent batching and filtering
  * Optimizes file system monitoring for large codebases and rapid changes
- * 
+ *
  * Staff Engineer Implementation - Enterprise-grade file watching performance
  */
 
@@ -60,7 +60,7 @@ export class OptimizedFileWatcher extends EventEmitter {
 
   constructor(config: OptimizedWatcherConfig) {
     super()
-    
+
     this.config = {
       watchPath: config.watchPath,
       ignored: config.ignored || this.getDefaultIgnorePatterns(),
@@ -148,22 +148,22 @@ export class OptimizedFileWatcher extends EventEmitter {
       ignoreInitial: true,
       followSymlinks: this.config.followSymlinks,
       depth: this.config.depth,
-      
+
       // Performance optimizations
       usePolling: this.config.enablePolling,
       interval: this.config.pollingInterval,
       binaryInterval: this.config.pollingInterval * 2,
-      
+
       // Stability optimizations
       awaitWriteFinish: {
         stabilityThreshold: this.config.batchDelay,
         pollInterval: Math.max(this.config.batchDelay / 4, 25)
       },
-      
+
       // File system optimizations
       atomic: true,
       ignorePermissionErrors: true,
-      
+
       // Advanced options for large directories
       alwaysStat: this.config.enableStats,
       disableGlobbing: true
@@ -196,13 +196,13 @@ export class OptimizedFileWatcher extends EventEmitter {
    * Handle file system events with optimizations
    */
   private handleFileEvent(
-    type: FileChangeEvent['type'], 
-    filePath: string, 
+    type: FileChangeEvent['type'],
+    filePath: string,
     stats?: any
   ): void {
     // Normalize path
     const normalizedPath = path.normalize(filePath)
-    
+
     // Apply additional filtering
     if (this.shouldIgnoreEvent(normalizedPath, type)) {
       this.stats.filteredEvents++
@@ -226,7 +226,7 @@ export class OptimizedFileWatcher extends EventEmitter {
    */
   private applyThrottling(filePath: string, event: FileChangeEvent): void {
     const eventKey = `${filePath}-${event.type}`
-    
+
     // Check for duplicate recent events
     if (this.recentEvents.has(eventKey)) {
       return
@@ -307,7 +307,7 @@ export class OptimizedFileWatcher extends EventEmitter {
   private optimizeBatch(events: FileChangeEvent[]): FileChangeEvent[] {
     // Group events by file path
     const eventsByPath = new Map<string, FileChangeEvent[]>()
-    
+
     events.forEach(event => {
       const pathEvents = eventsByPath.get(event.path) || []
       pathEvents.push(event)
@@ -328,7 +328,7 @@ export class OptimizedFileWatcher extends EventEmitter {
 
       // Apply optimization rules
       const lastEvent = fileEvents[fileEvents.length - 1]
-      
+
       // If file ends up deleted, only keep the delete event
       if (lastEvent.type === 'unlink' || lastEvent.type === 'unlinkDir') {
         optimizedEvents.push(lastEvent)
@@ -352,7 +352,7 @@ export class OptimizedFileWatcher extends EventEmitter {
       '.tmp', '.temp', '.swp', '.swo', '.log', '.lock',
       '.DS_Store', 'Thumbs.db', '.git', '.svn'
     ]
-    
+
     if (ignoredExtensions.some(ignored => filePath.includes(ignored))) {
       return true
     }
@@ -383,7 +383,7 @@ export class OptimizedFileWatcher extends EventEmitter {
   private updateStats(batch: BatchedChanges): void {
     this.stats.batchesProcessed++
     this.stats.lastBatchTime = batch.timestamp
-    
+
     // Calculate average batch size
     this.stats.averageBatchSize = Math.round(
       this.stats.totalEvents / this.stats.batchesProcessed
@@ -415,19 +415,19 @@ export class OptimizedFileWatcher extends EventEmitter {
       '**/dist/**',
       '**/build/**',
       '**/out/**',
-      
+
       // Version control
       '**/.git/**',
       '**/.svn/**',
       '**/.hg/**',
-      
+
       // IDE and editor files
       '**/.vscode/**',
       '**/.idea/**',
       '**/*.swp',
       '**/*.swo',
       '**/*~',
-      
+
       // System files
       '**/.DS_Store',
       '**/Thumbs.db',
@@ -435,12 +435,12 @@ export class OptimizedFileWatcher extends EventEmitter {
       '**/*.temp',
       '**/*.log',
       '**/*.lock',
-      
+
       // Cache directories
       '**/.cache/**',
       '**/coverage/**',
       '**/.nyc_output/**',
-      
+
       // Environment files
       '**/.env.local',
       '**/.env.production',
@@ -476,7 +476,7 @@ export class OptimizedFileWatcher extends EventEmitter {
    */
   updateConfig(newConfig: Partial<OptimizedWatcherConfig>): void {
     this.config = { ...this.config, ...newConfig }
-    
+
     // Recreate batch processor with new delay
     if (newConfig.batchDelay) {
       this.batchProcessor = debounce(
@@ -577,11 +577,11 @@ export class WorkspaceWatcherManager {
    */
   getGlobalStats() {
     const individualStats = Array.from(this.watchers.values()).map(w => w.getStats())
-    
+
     return {
       ...this.globalStats,
       workspaces: individualStats,
-      averageEventsPerWorkspace: this.globalStats.totalWorkspaces > 0 
+      averageEventsPerWorkspace: this.globalStats.totalWorkspaces > 0
         ? Math.round(this.globalStats.totalEvents / this.globalStats.totalWorkspaces)
         : 0
     }

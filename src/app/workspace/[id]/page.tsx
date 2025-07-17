@@ -11,13 +11,13 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  Code, 
-  MessageSquare, 
-  Upload, 
-  Settings, 
-  Play, 
-  GitBranch, 
+import {
+  Code,
+  MessageSquare,
+  Upload,
+  Settings,
+  Play,
+  GitBranch,
   Terminal,
   Folders,
   Bot,
@@ -45,7 +45,7 @@ interface WorkspaceInfo {
 export default function WorkspacePage() {
   const params = useParams()
   const workspaceId = params.id as string
-  
+
   const [workspace, setWorkspace] = useState<WorkspaceInfo | null>(null)
   const [activeTab, setActiveTab] = useState('integrated') // Start with AI+Code view
   const [isLoading, setIsLoading] = useState(true)
@@ -146,22 +146,22 @@ export default function WorkspacePage() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
           <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             <TabsList className="h-12 w-full justify-start rounded-none bg-transparent p-0">
-              <TabsTrigger 
-                value="integrated" 
+              <TabsTrigger
+                value="integrated"
                 className="flex items-center space-x-2 h-12 px-6 data-[state=active]:bg-blue-50 dark:data-[state=active]:bg-blue-900/20 data-[state=active]:text-blue-600"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>Vibe Code (AI + Editor)</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="ai" 
+              <TabsTrigger
+                value="ai"
                 className="flex items-center space-x-2 h-12 px-6 data-[state=active]:bg-gray-50 dark:data-[state=active]:bg-gray-700"
               >
                 <Bot className="w-4 h-4" />
                 <span>AI Chat</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="code" 
+              <TabsTrigger
+                value="code"
                 className="flex items-center space-x-2 h-12 px-6 data-[state=active]:bg-gray-50 dark:data-[state=active]:bg-gray-700"
               >
                 <Code className="w-4 h-4" />

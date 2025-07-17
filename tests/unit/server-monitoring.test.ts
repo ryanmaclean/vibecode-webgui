@@ -269,7 +269,7 @@ describe('Server Monitoring', () => {
   describe('Error Handling', () => {
     test('should handle logger errors gracefully', () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
-      
+
       // Mock winston logger to throw
       mockLogger.info.mockImplementation(() => {
         throw new Error('Logger failed')});

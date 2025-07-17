@@ -12,7 +12,7 @@ codeServer:
     repository: codercom/code-server
     tag: "4.101.2"
     pullPolicy: IfNotPresent
-  
+
   # Resource limits per workspace
   resources:
     requests:
@@ -21,7 +21,7 @@ codeServer:
     limits:
       memory: "2Gi"
       cpu: "1000m"
-  
+
   # Persistent storage configuration
   persistence:
     enabled: true
@@ -31,7 +31,7 @@ codeServer:
     extensions:
       storageClass: ""
       size: 2Gi
-  
+
   # Security context
   securityContext:
     runAsNonRoot: true

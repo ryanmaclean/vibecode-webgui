@@ -8,7 +8,7 @@ describe('WebSocket Server Integration', () => {
   beforeAll((done) => {
     const httpServer = http.createServer();
     ioServer = new Server(httpServer);
-    
+
     ioServer.on('connection', (socket) => {
       socket.on('terminal-input', (data) => {
         // Add proper null/undefined check
@@ -19,7 +19,7 @@ describe('WebSocket Server Integration', () => {
       });
 
       socket.on('cursor-position', (data) => {
-        if (!data || typeof data !== 'object' || 
+        if (!data || typeof data !== 'object' ||
             typeof data.x !== 'number' || typeof data.y !== 'number') {
           return socket.emit('error', { message: 'Invalid cursor position' });
         }
@@ -49,7 +49,7 @@ describe('WebSocket Server Integration', () => {
         expect(error.message).toBe('Invalid input format');
         done();
       });
-      
+
       // Send malformed data
       clientSocket.emit('terminal-input', null);
     });
@@ -59,7 +59,7 @@ describe('WebSocket Server Integration', () => {
         expect(error.message).toBe('Invalid cursor position');
         done();
       });
-      
+
       // Send invalid cursor position
       clientSocket.emit('cursor-position', { x: 'invalid', y: 'data' });
     });

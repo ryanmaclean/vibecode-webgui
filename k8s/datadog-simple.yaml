@@ -3,12 +3,12 @@ datadog:
   apiKeyExistingSecret: "datadog-secret"
   site: "datadoghq.com"
   clusterName: "vibecode-kind-test"
-  
+
   # Disable complex features that are failing
   autoscaling:
     workload:
       enabled: false
-      
+
   # Basic monitoring only
   logs:
     enabled: true
@@ -17,7 +17,7 @@ datadog:
     portEnabled: true
   processAgent:
     enabled: true
-    
+
   # Simplified security
   securityAgent:
     runtime:
@@ -28,8 +28,8 @@ clusterAgent:
   enabled: true
   metricsProvider:
     enabled: false
-    
-# Node Agent - basic configuration  
+
+# Node Agent - basic configuration
 agents:
   enabled: true
   useHostNetwork: true

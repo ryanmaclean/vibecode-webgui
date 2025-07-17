@@ -97,7 +97,7 @@ export const authOptions: NextAuthOptions = {
           password: credentials?.password ? 'PROVIDED' : 'MISSING',
           env: process.env.NODE_ENV
         })
-        
+
         // Simple hardcoded test
         if (credentials?.email === 'developer@vibecode.dev' && credentials?.password === 'dev123') {
           console.log('✅ HARDCODED TEST PASSED')
@@ -108,7 +108,7 @@ export const authOptions: NextAuthOptions = {
             role: 'user',
           }
         }
-        
+
         console.log('❌ HARDCODED TEST FAILED')
         return null
       },
@@ -129,14 +129,14 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      console.log('🔑 JWT callback:', { 
-        hasUser: !!user, 
+      console.log('🔑 JWT callback:', {
+        hasUser: !!user,
         hasToken: !!token,
         provider: account?.provider,
         tokenId: token?.id,
         userId: user?.id
       })
-      
+
       if (user) {
         token.id = user.id
         token.role = user.role
@@ -151,13 +151,13 @@ export const authOptions: NextAuthOptions = {
       return token
     },
     async session({ session, token }) {
-      console.log('📋 Session callback:', { 
+      console.log('📋 Session callback:', {
         hasSession: !!session,
         hasToken: !!token,
         tokenId: token?.id,
         sessionUserId: session?.user?.id
       })
-      
+
       if (token) {
         session.user.id = token.id
         session.user.role = token.role

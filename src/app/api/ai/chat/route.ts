@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Build system prompt with code context
-    const systemPrompt = `You are an expert AI coding assistant for VibeCode WebGUI, a web-based development platform. 
+    const systemPrompt = `You are an expert AI coding assistant for VibeCode WebGUI, a web-based development platform.
 
 Your role is to help developers with:
 - Code explanations and debugging
@@ -68,9 +68,9 @@ Remember: You're working within a web-based VS Code environment, so suggestions 
     // For development, provide a mock response if no OpenAI key
     if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'demo-key') {
       // Return a streaming mock response
-      const mockResponse = `I'm a demo AI assistant for your VibeCode workspace! 
+      const mockResponse = `I'm a demo AI assistant for your VibeCode workspace!
 
-${codeContext?.selectedCode ? 
+${codeContext?.selectedCode ?
   `I can see you've selected some ${codeContext.language || 'code'}. Here's what I notice:
 
 \`\`\`${codeContext.language || ''}
@@ -95,7 +95,7 @@ This looks like ${codeContext.language || 'code'} that ${getDemoInsight(codeCont
           start(controller) {
             const words = mockResponse.split(' ')
             let index = 0
-            
+
             const sendNextWord = () => {
               if (index < words.length) {
                 const chunk = words[index] + ' '
@@ -107,7 +107,7 @@ This looks like ${codeContext.language || 'code'} that ${getDemoInsight(codeCont
                 controller.close()
               }
             }
-            
+
             sendNextWord()
           }
         }),
@@ -139,9 +139,9 @@ This looks like ${codeContext.language || 'code'} that ${getDemoInsight(codeCont
 // Helper function to provide demo insights
 function getDemoInsight(code?: string): string {
   if (!code) return 'appears to be well-structured'
-  
+
   const lowerCode = code.toLowerCase()
-  
+
   if (lowerCode.includes('function')) {
     return 'defines a function that could benefit from TypeScript typing'
   } else if (lowerCode.includes('const') || lowerCode.includes('let')) {

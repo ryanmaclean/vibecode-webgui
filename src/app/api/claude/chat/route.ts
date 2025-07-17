@@ -1,9 +1,9 @@
 /**
  * Claude Code Chat API Route
- * 
+ *
  * API endpoint for Claude Code CLI chat integration
  * Handles terminal-based Claude Code commands through web interface
- * 
+ *
  * Staff Engineer Implementation - Production-ready Claude CLI API
  */
 
@@ -64,9 +64,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Claude chat API error:', error)
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error'
       },

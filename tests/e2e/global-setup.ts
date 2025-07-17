@@ -6,17 +6,17 @@ import { chromium, FullConfig } from '@playwright/test'
 
 async function globalSetup(config: FullConfig) {
   const { baseURL } = config.projects[0].use
-  
+
   console.log('🚀 Starting E2E test setup...')
-  
+
   // Launch browser for setup
   const browser = await chromium.launch()
   const page = await browser.newPage()
-  
+
   try {
     // Wait for the development server to be ready
     console.log(`⏳ Waiting for server at ${baseURL}`)
-    
+
     let retries = 30
     while (retries > 0) {
       try {
@@ -33,15 +33,15 @@ async function globalSetup(config: FullConfig) {
         await page.waitForTimeout(2000)
       }
     }
-    
+
     // Set up test data if needed
     console.log('📝 Setting up test data...')
-    
+
     // You can add authentication setup here
     // For example, create test users, set up test projects, etc.
-    
+
     console.log('✅ E2E test setup completed')
-    
+
   } catch (error) {
     console.error('❌ E2E test setup failed:', error)
     throw error

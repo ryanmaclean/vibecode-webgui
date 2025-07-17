@@ -11,13 +11,18 @@ interface ChatMessage {
   content: string
 }
 
+interface RawMessage {
+  type: 'user' | 'assistant';
+  content: string;
+}
+
 interface ChatRequest {
   message: string
   model: string
   context: {
     workspaceId: string
     files: string[]
-    previousMessages: any[]
+    previousMessages: RawMessage[]
   }
 }
 
@@ -27,7 +32,7 @@ async function buildWorkspaceContext(workspaceId: string, files: string[]) {
     // Get file contents for context (limit to recent/relevant files)
     const contextFiles = files.slice(0, 5) // Limit context to prevent token overflow
     let contextContent = ''
-    
+
     for (const file of contextFiles) {
       try {
         // In a real implementation, this would read from the workspace
@@ -38,7 +43,7 @@ async function buildWorkspaceContext(workspaceId: string, files: string[]) {
         console.error(`Failed to read file ${file}:`, error)
       }
     }
-    
+
     return contextContent
   } catch (error) {
     console.error('Failed to build workspace context:', error)
@@ -47,7 +52,7 @@ async function buildWorkspaceContext(workspaceId: string, files: string[]) {
 }
 
 // Helper to convert previous messages to OpenAI format
-function formatPreviousMessages(messages: any[]): ChatMessage[] {
+function formatPreviousMessages(messages: RawMessage[]): ChatMessage[] {
   return messages.slice(-6).map(msg => ({  // Last 6 messages for context
     role: msg.type === 'user' ? 'user' : 'assistant',
     content: msg.content
@@ -93,7 +98,7 @@ export async function POST(request: NextRequest) {
     const systemPrompt = `You are an expert AI coding assistant integrated into the VibeCode development platform. You help developers with:
 
 1. Code generation, debugging, and optimization
-2. Architecture and design decisions  
+2. Architecture and design decisions
 3. Best practices and modern development patterns
 4. Framework-specific guidance (React, Next.js, Node.js, Python, etc.)
 5. DevOps and deployment strategies
@@ -138,18 +143,18 @@ Guidelines:
         try {
           for await (const chunk of stream) {
             const content = chunk.choices[0]?.delta?.content || ''
-            
+
             if (content) {
-              const data = JSON.stringify({ 
+              const data = JSON.stringify({
                 content,
                 model,
                 timestamp: new Date().toISOString()
               })
-              
+
               controller.enqueue(encoder.encode(`data: ${data}\n\n`))
             }
           }
-          
+
           // Send completion signal
           controller.enqueue(encoder.encode(`data: {"done": true}\n\n`))
           controller.close()
@@ -173,9 +178,9 @@ Guidelines:
 
   } catch (error) {
     console.error('Chat API error:', error)
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to process chat request',
         details: error instanceof Error ? error.message : 'Unknown error'
       },

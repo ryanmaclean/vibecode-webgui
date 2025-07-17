@@ -32,35 +32,35 @@ interface HealthStatus {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     // Allow public health check for basic status
     const isPublicEndpoint = request.nextUrl.searchParams.get('public') === 'true'
     const isAuthenticated = !!session?.user
     const isAdmin = session?.user?.role === 'admin'
-    
+
     // Basic health check
     const startTime = Date.now()
     const uptime = process.uptime()
-    
+
     // Component health checks
     const components: Record<string, ComponentHealth> = {}
-    
+
     // Check Datadog connectivity
     components.datadog = await checkDatadogHealth()
-    
+
     // Check database connectivity
     components.database = await checkDatabaseHealth()
-    
+
     // Check Redis connectivity
     components.redis = await checkRedisHealth()
-    
+
     // Check metrics API health
     components.metrics_api = await checkMetricsAPIHealth()
-    
+
     // Determine overall health status
     const componentStatuses = Object.values(components).map(c => c.status)
     const overallStatus = determineOverallStatus(componentStatuses)
-    
+
     const baseHealth = {
       status: overallStatus,
       timestamp: new Date().toISOString(),
@@ -68,17 +68,17 @@ export async function GET(request: NextRequest) {
       version: process.env.APP_VERSION || '1.0.0',
       environment: process.env.NODE_ENV || 'development'
     }
-    
+
     // Public endpoint - return minimal info
     if (isPublicEndpoint) {
       return NextResponse.json(baseHealth)
     }
-    
+
     // Require authentication for detailed health info
     if (!isAuthenticated) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
-    
+
     // Admin users get full health details
     if (isAdmin) {
       const fullHealth: HealthStatus = {
@@ -86,10 +86,10 @@ export async function GET(request: NextRequest) {
         components,
         metrics: await getMonitoringMetrics()
       }
-      
+
       return NextResponse.json(fullHealth)
     }
-    
+
     // Regular users get limited details
     const limitedHealth = {
       ...baseHealth,
@@ -100,12 +100,12 @@ export async function GET(request: NextRequest) {
         ])
       )
     }
-    
+
     return NextResponse.json(limitedHealth)
-    
+
   } catch (error) {
     console.error('Health check error:', error)
-    
+
     return NextResponse.json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
@@ -117,12 +117,12 @@ export async function GET(request: NextRequest) {
 
 async function checkDatadogHealth(): Promise<ComponentHealth> {
   const startTime = Date.now()
-  
+
   try {
     // Check if Datadog configuration is present
     const hasApiKey = !!process.env.DD_API_KEY
     const hasConfig = hasApiKey && !!process.env.DD_SITE
-    
+
     if (!hasConfig) {
       return {
         status: 'unhealthy',
@@ -131,29 +131,29 @@ async function checkDatadogHealth(): Promise<ComponentHealth> {
         details: { error: 'Missing Datadog configuration' }
       }
     }
-    
+
     // Validate API key format (should be 32 character hex string)
     const apiKey = process.env.DD_API_KEY as string
     const isValidApiKeyFormat = /^[a-f0-9]{32}$/.test(apiKey)
-    
+
     if (!isValidApiKeyFormat) {
       return {
         status: 'degraded',
         responseTime: Date.now() - startTime,
         lastCheck: new Date().toISOString(),
-        details: { 
+        details: {
           error: 'Invalid Datadog API key format',
-          site: process.env.DD_SITE 
+          site: process.env.DD_SITE
         }
       }
     }
-    
+
     // For real integration testing, make actual API call to Datadog validate endpoint
     if (process.env.ENABLE_DATADOG_INTEGRATION_TESTS === 'true') {
       try {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 5000)
-        
+
         const response = await fetch('https://api.datadoghq.com/api/v1/validate', {
           method: 'GET',
           headers: {
@@ -161,9 +161,9 @@ async function checkDatadogHealth(): Promise<ComponentHealth> {
           },
           signal: controller.signal
         })
-        
+
         clearTimeout(timeoutId)
-        
+
         if (response.ok) {
           const validation = await response.json()
           return {
@@ -202,10 +202,10 @@ async function checkDatadogHealth(): Promise<ComponentHealth> {
         }
       }
     }
-    
+
     // Basic configuration validation without API call
     const responseTime = Date.now() - startTime
-    
+
     return {
       status: 'healthy',
       responseTime,
@@ -217,7 +217,7 @@ async function checkDatadogHealth(): Promise<ComponentHealth> {
         integrationTested: false
       }
     }
-    
+
   } catch (error) {
     return {
       status: 'unhealthy',
@@ -230,7 +230,7 @@ async function checkDatadogHealth(): Promise<ComponentHealth> {
 
 async function checkDatabaseHealth(): Promise<ComponentHealth> {
   const startTime = Date.now()
-  
+
   try {
     // CRITICAL: Replace fake implementation with real database health check
     if (!process.env.DATABASE_URL) {
@@ -250,11 +250,11 @@ async function checkDatabaseHealth(): Promise<ComponentHealth> {
     await client.end()
 
     const responseTime = Date.now() - startTime
-    
+
     if (result.rows[0].health_check !== 1) {
       throw new Error('Database health check query failed')
     }
-    
+
     return {
       status: 'healthy',
       responseTime,
@@ -264,7 +264,7 @@ async function checkDatabaseHealth(): Promise<ComponentHealth> {
         activeConnections: parseInt(connectionCount.rows[0].count)
       }
     }
-    
+
   } catch (error) {
     return {
       status: 'unhealthy',
@@ -277,7 +277,7 @@ async function checkDatabaseHealth(): Promise<ComponentHealth> {
 
 async function checkRedisHealth(): Promise<ComponentHealth> {
   const startTime = Date.now()
-  
+
   try {
     // CRITICAL: Replace fake implementation with real Redis health check
     if (!process.env.REDIS_URL) {
@@ -300,15 +300,15 @@ async function checkRedisHealth(): Promise<ComponentHealth> {
     await client.quit()
 
     const responseTime = Date.now() - startTime
-    
+
     if (pingResult !== 'PONG') {
       throw new Error(`Redis ping failed: ${pingResult}`)
     }
-    
+
     // Parse memory usage from Redis INFO command
     const memoryMatch = info.match(/used_memory_human:(\w+)/)
     const clientsMatch = connectedClients.match(/connected_clients:(\d+)/)
-    
+
     return {
       status: 'healthy',
       responseTime,
@@ -318,7 +318,7 @@ async function checkRedisHealth(): Promise<ComponentHealth> {
         connections: clientsMatch ? parseInt(clientsMatch[1]) : 0
       }
     }
-    
+
   } catch (error) {
     return {
       status: 'unhealthy',
@@ -331,11 +331,11 @@ async function checkRedisHealth(): Promise<ComponentHealth> {
 
 async function checkMetricsAPIHealth(): Promise<ComponentHealth> {
   const startTime = Date.now()
-  
+
   try {
     // Test internal metrics API
     const responseTime = Date.now() - startTime
-    
+
     return {
       status: 'healthy',
       responseTime,
@@ -345,7 +345,7 @@ async function checkMetricsAPIHealth(): Promise<ComponentHealth> {
         lastMetricReceived: new Date().toISOString()
       }
     }
-    
+
   } catch (error) {
     return {
       status: 'unhealthy',
@@ -369,14 +369,14 @@ async function getMonitoringMetrics() {
 function determineOverallStatus(componentStatuses: string[]): 'healthy' | 'unhealthy' | 'degraded' {
   const unhealthyCount = componentStatuses.filter(s => s === 'unhealthy').length
   const degradedCount = componentStatuses.filter(s => s === 'degraded').length
-  
+
   if (unhealthyCount > 0) {
     return 'unhealthy'
   }
-  
+
   if (degradedCount > 0) {
     return 'degraded'
   }
-  
+
   return 'healthy'
 }

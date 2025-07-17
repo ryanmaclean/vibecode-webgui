@@ -1,9 +1,9 @@
 /**
  * User Presence Component
- * 
+ *
  * Displays active collaborators and their status in real-time
  * Shows user avatars, cursor positions, and activity indicators
- * 
+ *
  * Staff Engineer Implementation - Production-ready user presence UI
  */
 
@@ -85,13 +85,13 @@ export const UserPresence: React.FC<UserPresenceProps> = ({
     const now = new Date()
     const diff = now.getTime() - date.getTime()
     const minutes = Math.floor(diff / 60000)
-    
+
     if (minutes < 1) return 'now'
     if (minutes < 60) return `${minutes}m ago`
-    
+
     const hours = Math.floor(minutes / 60)
     if (hours < 24) return `${hours}h ago`
-    
+
     const days = Math.floor(hours / 24)
     return `${days}d ago`
   }
@@ -148,12 +148,12 @@ export const UserPresence: React.FC<UserPresenceProps> = ({
                 title={`${getDisplayName(user)} (${user.email})`}
               >
                 {getUserInitials(user)}
-                
+
                 {/* Activity Indicator */}
                 {isActive && (
                   <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-white" />
                 )}
-                
+
                 {/* Typing Indicator */}
                 {isTyping && (
                   <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border border-white animate-bounce" />

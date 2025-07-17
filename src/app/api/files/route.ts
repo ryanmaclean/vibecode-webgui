@@ -1,9 +1,9 @@
 /**
  * Secure File Operations API Routes
- * 
+ *
  * Production-ready file CRUD operations with security, real-time sync, and conflict resolution
  * Implements secure file management for the VibeCode platform
- * 
+ *
  * Staff Engineer Implementation - Enterprise-grade file API
  */
 
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
           })
         } catch (error) {
           return NextResponse.json(
-            { 
+            {
               error: error instanceof Error ? error.message : 'Failed to read file',
               code: 'READ_ERROR'
             },
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
           })
         } catch (error) {
           return NextResponse.json(
-            { 
+            {
               error: error instanceof Error ? error.message : 'Failed to list files',
               code: 'LIST_ERROR'
             },
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('File API GET error:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         code: 'INTERNAL_ERROR'
       },
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
           }, { status: 201 })
         } catch (error) {
           return NextResponse.json(
-            { 
+            {
               error: error instanceof Error ? error.message : 'Failed to create file',
               code: 'CREATE_ERROR'
             },
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
           })
         } catch (error) {
           return NextResponse.json(
-            { 
+            {
               error: error instanceof Error ? error.message : 'Failed to lock file',
               code: 'LOCK_ERROR'
             },
@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
           })
         } catch (error) {
           return NextResponse.json(
-            { 
+            {
               error: error instanceof Error ? error.message : 'Failed to unlock file',
               code: 'UNLOCK_ERROR'
             },
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('File API POST error:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         code: 'INTERNAL_ERROR'
       },
@@ -308,7 +308,7 @@ export async function PUT(request: NextRequest) {
     } catch (error) {
       if (error instanceof Error && error.message.includes('Version conflict')) {
         return NextResponse.json(
-          { 
+          {
             error: error.message,
             code: 'VERSION_CONFLICT'
           },
@@ -317,7 +317,7 @@ export async function PUT(request: NextRequest) {
       }
 
       return NextResponse.json(
-        { 
+        {
           error: error instanceof Error ? error.message : 'Failed to update file',
           code: 'UPDATE_ERROR'
         },
@@ -328,7 +328,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error('File API PUT error:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         code: 'INTERNAL_ERROR'
       },
@@ -386,7 +386,7 @@ export async function DELETE(request: NextRequest) {
       })
     } catch (error) {
       return NextResponse.json(
-        { 
+        {
           error: error instanceof Error ? error.message : 'Failed to delete file',
           code: 'DELETE_ERROR'
         },
@@ -397,7 +397,7 @@ export async function DELETE(request: NextRequest) {
   } catch (error) {
     console.error('File API DELETE error:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         code: 'INTERNAL_ERROR'
       },
@@ -423,7 +423,7 @@ export async function OPTIONS(request: NextRequest) {
 async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<boolean> {
   // TODO: Implement proper workspace access validation
   // This should check database for user permissions to workspace
-  
+
   // For now, basic validation
   if (!userId || !workspaceId) {
     return false

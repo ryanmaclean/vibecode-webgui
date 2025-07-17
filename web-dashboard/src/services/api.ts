@@ -1,10 +1,10 @@
 import axios from 'axios'
-import type { 
-  AIModel, 
-  SystemStatus, 
-  Usage, 
-  Workspace, 
-  User, 
+import type {
+  AIModel,
+  SystemStatus,
+  Usage,
+  Workspace,
+  User,
   ClusterMetrics,
   ModelRecommendation,
   ModelSelectionCriteria,
@@ -24,13 +24,13 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('auth_token')
   const apiKey = localStorage.getItem('api_key')
-  
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   } else if (apiKey) {
     config.headers['X-API-Key'] = apiKey
   }
-  
+
   return config
 })
 
@@ -242,7 +242,7 @@ export const k8sApi = {
       lastAccessed: new Date().toISOString(),
       namespace: 'default'
     }
-    
+
     return { success: true, workspace }
   },
 

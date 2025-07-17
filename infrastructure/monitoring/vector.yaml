@@ -25,7 +25,7 @@ sources:
       pod_name: "kubernetes.pod_name"
       pod_namespace: "kubernetes.pod_namespace"
       pod_uid: "kubernetes.pod_uid"
-    
+
   # Application logs from files
   app_logs:
     type: "file"
@@ -82,7 +82,7 @@ transforms:
 
   # Parse Kubernetes logs
   parse_k8s_logs:
-    type: "json_parser" 
+    type: "json_parser"
     inputs: ["kubernetes_logs"]
     field: "message"
     drop_invalid: false
@@ -96,7 +96,7 @@ transforms:
       .environment = get_env_var("ENVIRONMENT") ?? "production"
       .version = get_env_var("APP_VERSION") ?? "1.0.0"
       .cluster = get_env_var("CLUSTER_NAME") ?? "vibecode-cluster"
-      
+
       # Extract and normalize log levels
       if exists(.level) {
         .level = downcase(string!(.level))
@@ -105,17 +105,17 @@ transforms:
       } else {
         .level = "info"
       }
-      
+
       # Add workspace context if available
       if exists(.workspaceId) {
         .workspace_id = .workspaceId
       }
-      
-      # Add user context if available  
+
+      # Add user context if available
       if exists(.userId) {
         .user_id = .userId
       }
-      
+
       # Sanitize sensitive data
       if exists(.message) {
         .message = replace(string!(.message), r'password[=:]\s*\S+', "password=***")
@@ -207,9 +207,9 @@ health_checks:
 global:
   # Data directory for Vector's state
   data_dir: "/var/lib/vector"
-  
+
   # Log level for Vector itself
   log_level: "info"
-  
+
   # Timezone
   timezone: "UTC"

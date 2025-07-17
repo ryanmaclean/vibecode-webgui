@@ -1,5 +1,5 @@
 # Terraform Variables for Datadog Synthetics
-# 
+#
 # Configuration variables for Datadog monitoring infrastructure
 # Staff Engineer Implementation - Production-ready configuration
 
@@ -79,7 +79,7 @@ variable "monitoring_locations" {
   type        = list(string)
   default     = [
     "aws:us-east-1",
-    "aws:us-west-2", 
+    "aws:us-west-2",
     "aws:eu-west-1",
     "aws:ap-southeast-1"
   ]
@@ -101,7 +101,7 @@ variable "test_intervals" {
   default = {
     health_check    = 60    # 1 minute
     security        = 300   # 5 minutes
-    performance     = 180   # 3 minutes  
+    performance     = 180   # 3 minutes
     user_flow       = 900   # 15 minutes
     rate_limiting   = 3600  # 1 hour
   }
@@ -188,12 +188,12 @@ locals {
   common_tags = merge(var.tags, {
     environment = var.environment
   })
-  
+
   notification_message = join(" ", var.notification_channels)
-  
+
   # Security-specific locations (fewer for cost optimization)
   security_locations = slice(var.monitoring_locations, 0, 2)
-  
+
   # Performance test locations (all regions for global coverage)
   performance_locations = var.monitoring_locations
 }

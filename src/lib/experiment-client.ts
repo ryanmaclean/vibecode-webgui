@@ -33,7 +33,7 @@ interface UseFeatureFlagOptions {
  * React hook for feature flag evaluation
  */
 export function useFeatureFlag(
-  flagKey: string, 
+  flagKey: string,
   options: UseFeatureFlagOptions = {}
 ): {
   isEnabled: boolean
@@ -51,7 +51,7 @@ export function useFeatureFlag(
 
     try {
       setIsLoading(true)
-      
+
       const response = await fetch('/api/experiments', {
         method: 'POST',
         headers: {
@@ -143,7 +143,7 @@ export function useFeatureFlags(
 
     try {
       setIsLoading(true)
-      
+
       const response = await fetch('/api/experiments', {
         method: 'POST',
         headers: {
@@ -159,11 +159,11 @@ export function useFeatureFlags(
       if (response.ok) {
         const data = await response.json()
         const flagResults: Record<string, ExperimentResult> = {}
-        
+
         data.results.forEach((result: ExperimentResult) => {
           flagResults[result.flagKey] = result
         })
-        
+
         setResults(flagResults)
       } else {
         // Fallback to defaults
@@ -221,7 +221,7 @@ export function useFeatureFlags(
   }, [evaluateFlags])
 
   const formattedFlags: Record<string, { isEnabled: boolean; variant: string; payload?: Record<string, any> }> = {}
-  
+
   Object.entries(results).forEach(([flagKey, result]) => {
     formattedFlags[flagKey] = {
       isEnabled: result.variant !== 'control',
@@ -331,9 +331,9 @@ export const ExperimentTracker = {
    * Track a custom event with value
    */
   async trackEvent(
-    flagKey: string, 
-    eventName: string, 
-    value: number = 1, 
+    flagKey: string,
+    eventName: string,
+    value: number = 1,
     context?: ExperimentContext
   ): Promise<void> {
     try {
@@ -359,7 +359,7 @@ export const ExperimentTracker = {
    * Track user engagement (time spent, clicks, etc.)
    */
   async trackEngagement(
-    flagKey: string, 
+    flagKey: string,
     engagementData: {
       duration?: number
       clicks?: number
@@ -369,7 +369,7 @@ export const ExperimentTracker = {
     context?: ExperimentContext
   ): Promise<void> {
     const metrics = Object.entries(engagementData).filter(([_, value]) => value !== undefined)
-    
+
     await Promise.all(
       metrics.map(([metricName, value]) =>
         this.trackEvent(flagKey, `engagement_${metricName}`, value as number, context)

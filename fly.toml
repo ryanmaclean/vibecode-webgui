@@ -66,7 +66,7 @@ kill_timeout = "5s"
 [[processes]]
   app = "web"
   source = "."
-  
+
 [[processes]]
   app = "code-server"
   source = "./docker/code-server"
@@ -83,7 +83,7 @@ kill_timeout = "5s"
 [mounts]
   source = "data"
   destination = "/data"
-  
+
 # Environment-specific machines
 [[vm]]
   cpu_kind = "shared"

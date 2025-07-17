@@ -21,12 +21,12 @@ data:
         provider_id VARCHAR(255),
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
-        
+
         -- Audit fields
         last_login_at TIMESTAMPTZ,
         login_count INTEGER DEFAULT 0,
         is_active BOOLEAN DEFAULT true,
-        
+
         -- Constraints
         CONSTRAINT users_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
     );
@@ -37,18 +37,18 @@ data:
         name VARCHAR(255) NOT NULL,
         description TEXT,
         owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        
+
         -- Project configuration
         visibility VARCHAR(20) DEFAULT 'private' CHECK (visibility IN ('public', 'private', 'internal')),
         template VARCHAR(100),
         language VARCHAR(50),
         framework VARCHAR(100),
-        
+
         -- Timestamps
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         last_accessed_at TIMESTAMPTZ DEFAULT NOW(),
-        
+
         -- Metadata
         star_count INTEGER DEFAULT 0,
         fork_count INTEGER DEFAULT 0,
@@ -63,15 +63,15 @@ data:
         content TEXT,
         size_bytes INTEGER DEFAULT 0,
         mime_type VARCHAR(100),
-        
+
         -- Version control
         version INTEGER DEFAULT 1,
         checksum VARCHAR(64),
-        
+
         -- Timestamps
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
-        
+
         -- Constraints
         UNIQUE(project_id, path)
     );
@@ -106,22 +106,22 @@ data:
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
-        
+
         -- Interaction data
         prompt TEXT NOT NULL,
         response TEXT,
         model VARCHAR(100),
         tokens_used INTEGER DEFAULT 0,
         cost_cents INTEGER DEFAULT 0,
-        
+
         -- Context
         context_type VARCHAR(50), -- 'code_completion', 'chat', 'debug', etc.
         file_path VARCHAR(1000),
-        
+
         -- Timestamps
         created_at TIMESTAMPTZ DEFAULT NOW(),
         completed_at TIMESTAMPTZ,
-        
+
         -- Quality metrics
         rating INTEGER CHECK (rating >= 1 AND rating <= 5),
         feedback TEXT
@@ -132,21 +132,21 @@ data:
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        
+
         -- Deployment info
         environment VARCHAR(50) NOT NULL, -- 'development', 'staging', 'production'
         status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'running', 'success', 'failed'
         url TEXT,
-        
+
         -- Version info
         commit_hash VARCHAR(40),
         branch VARCHAR(255) DEFAULT 'main',
-        
+
         -- Timestamps
         created_at TIMESTAMPTZ DEFAULT NOW(),
         started_at TIMESTAMPTZ,
         completed_at TIMESTAMPTZ,
-        
+
         -- Logs and metadata
         build_logs TEXT,
         error_message TEXT,
@@ -159,16 +159,16 @@ data:
         project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         role VARCHAR(50) DEFAULT 'viewer' CHECK (role IN ('owner', 'editor', 'viewer')),
-        
+
         -- Permissions
         can_read BOOLEAN DEFAULT true,
         can_write BOOLEAN DEFAULT false,
         can_deploy BOOLEAN DEFAULT false,
-        
+
         -- Timestamps
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
-        
+
         -- Constraints
         UNIQUE(project_id, user_id)
     );
@@ -200,6 +200,6 @@ data:
     ('monitoring_enhanced', 'Enhanced Monitoring', 'Advanced monitoring features', true, 50);
 
     -- Create test project
-    INSERT INTO projects (name, description, owner_id, language, framework) 
+    INSERT INTO projects (name, description, owner_id, language, framework)
     SELECT 'KIND Test Project', 'Test project for Kubernetes deployment', id, 'TypeScript', 'Next.js'
     FROM users WHERE email = 'admin@vibecode.dev';

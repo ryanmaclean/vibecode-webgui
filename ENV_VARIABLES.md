@@ -208,6 +208,6 @@ if (missingVars.length > 0) {
 
 ---
 
-**Last Updated**: July 16, 2025  
-**Next Review**: After production deployment  
+**Last Updated**: July 16, 2025
+**Next Review**: After production deployment
 **Owner**: Platform Team

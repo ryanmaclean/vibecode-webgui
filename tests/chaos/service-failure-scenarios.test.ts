@@ -1,9 +1,9 @@
 /**
  * Chaos Engineering Tests - Service Failure Scenarios
- * 
+ *
  * Tests how the system behaves when dependencies fail
  * Validates graceful degradation and error handling
- * 
+ *
  * Staff Engineer Implementation - Production resilience validation
  */
 
@@ -17,19 +17,19 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
     test('should handle database connection timeout gracefully', async () => {
       // Test with invalid database URL to simulate connection failure
       const originalDbUrl = process.env.DATABASE_URL;
-      
+
       // Temporarily set invalid DB URL to test error handling
       process.env.DATABASE_URL = 'postgresql://invalid:invalid@nonexistent:5432/nonexistent'
-      
+
       try {
         const response = await fetch(HEALTH_ENDPOINT);
-        
+
         if (response.ok) {
           const data = await response.json();
-          
+
           // System should still respond but database check should fail
           expect(data).toHaveProperty('status');
-          
+
           if (data.checks?.database) {
             expect(data.checks.database.status).toBe('unhealthy');
             expect(data.checks.database).toHaveProperty('error');
@@ -44,12 +44,12 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
     test('should continue serving metrics when database is down', async () => {
       // Metrics endpoint should work even if database is unavailable
       const response = await fetch(METRICS_ENDPOINT);
-      
+
       // Should still return system metrics (CPU, memory, disk);
       if (response.ok) {
         const data = await response.json();
         expect(data).toHaveProperty('system');
-        
+
         // System metrics should be available regardless of database
         if (data.system) {
           expect(data.system).toHaveProperty('cpu');
@@ -65,7 +65,7 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
       );
 
       const responses = await Promise.all(rapidRequests);
-      
+
       // Should not crash the server, even with multiple failures
       responses.forEach(response => {
         expect(response.status).toBeLessThan(500); // No 5xx errors from circuit breaker
@@ -78,13 +78,13 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
       // Test with invalid Redis URL
       const originalRedisUrl = process.env.REDIS_URL;
       process.env.REDIS_URL = 'redis://nonexistent:6379';
-      
+
       try {
         const response = await fetch(HEALTH_ENDPOINT);
-        
+
         if (response.ok) {
           const data = await response.json();
-          
+
           if (data.checks?.redis) {
             expect(data.checks.redis.status).toBe('unhealthy');
             expect(data.checks.redis).toHaveProperty('error');
@@ -98,7 +98,7 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
     test('should degrade gracefully without session storage', async () => {
       // Application should still function without Redis
       const metricsResponse = await fetch(METRICS_ENDPOINT);
-      
+
       // Should still return basic metrics
       if (metricsResponse.ok) {
         const data = await metricsResponse.json();
@@ -112,16 +112,16 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
       // Test with invalid Datadog API key
       const originalApiKey = process.env.DD_API_KEY;
       process.env.DD_API_KEY = 'invalid-key-12345'
-      
+
       try {
         const response = await fetch(HEALTH_ENDPOINT);
-        
+
         if (response.ok) {
           const data = await response.json();
-          
+
           // Should still return health status
           expect(data).toHaveProperty('status');
-          
+
           if (data.checks?.datadog) {
             expect(data.checks.datadog.status).toBe('unhealthy');
           }
@@ -134,10 +134,10 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
     test('should continue without monitoring when external services fail', async () => {
       // Core functionality should work even if monitoring fails
       const response = await fetch(METRICS_ENDPOINT);
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         // Should still provide local system metrics
         expect(data).toHaveProperty('system');
         expect(data.timestamp).toBeTruthy();
@@ -150,7 +150,7 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
       // Test with very short timeout to simulate slow network
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 100) // Very short timeout;
-      
+
       try {
         await fetch(HEALTH_ENDPOINT, {
           signal: controller.signal
@@ -178,18 +178,18 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
     test('should handle memory pressure gracefully', async () => {
       // Create memory pressure by making many concurrent requests
       const concurrentRequests = 100;
-      
+
       const promises = Array.from({ length: concurrentRequests }, () =>
         fetch(METRICS_ENDPOINT)
       );
 
       try {
         const responses = await Promise.all(promises);
-        
+
         // Should not crash under memory pressure
         const successRate = responses.filter(r => r.ok).length / responses.length;
         expect(successRate).toBeGreaterThan(0.8); // At least 80% success rate
-        
+
       } catch (error) {
         // Some failures acceptable under extreme load
         console.warn('Some requests failed under memory pressure:', (error as any).message);
@@ -208,7 +208,7 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
 
       // Should complete in reasonable time even under CPU load
       expect(duration).toBeLessThan(10000); // Under 10 seconds
-      
+
       const successCount = responses.filter(r => r.ok).length;
       expect(successCount).toBeGreaterThan(15); // At least 75% success rate
     }, 15000);
@@ -229,7 +229,7 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
         } catch (error) {
           lastError = error
         }
-        
+
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
@@ -245,7 +245,7 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
       // At least one endpoint should be responsive
       const healthOk = healthResponse.ok;
       const metricsOk = metricsResponse.ok;
-      
+
       expect(healthOk || metricsOk).toBe(true);
     });
   });
@@ -277,7 +277,7 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
 
     test('should implement bulkhead pattern for resource isolation', async () => {
       // Test that high load on one endpoint doesn't affect others
-      
+
       // Generate load on metrics endpoint
       const metricsLoad = Array.from({ length: 50 }, () =>
         fetch(METRICS_ENDPOINT)
@@ -285,10 +285,10 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
 
       // Test health endpoint during metrics load
       const healthDuringLoad = await fetch(HEALTH_ENDPOINT);
-      
+
       // Health endpoint should still be responsive
       expect(healthDuringLoad.ok).toBe(true);
-      
+
       // Wait for metrics load to complete
       await Promise.all(metricsLoad);
     }, 15000);
@@ -298,14 +298,14 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
     test('should continue alerting when primary monitoring fails', async () => {
       // Test that health checks work even if advanced monitoring fails
       const response = await fetch(HEALTH_ENDPOINT);
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         // Should have basic health information
         expect(data).toHaveProperty('status');
         expect(data).toHaveProperty('timestamp');
-        
+
         // Should provide some level of system monitoring
         expect(data.uptime).toBeGreaterThan(0);
       }
@@ -314,13 +314,13 @@ describe('Chaos Engineering - Service Failure Scenarios', () => {
     test('should degrade monitoring gracefully', async () => {
       // Test that system provides basic metrics even if enhanced monitoring fails
       const response = await fetch(METRICS_ENDPOINT);
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         // Should have at least basic system information
         expect(data).toHaveProperty('timestamp');
-        
+
         // Should provide some form of health indication
         const hasMetrics = !!(data.system || data.users || data.performance);
         expect(hasMetrics).toBe(true);

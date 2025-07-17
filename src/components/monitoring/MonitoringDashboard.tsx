@@ -58,7 +58,7 @@ export default function MonitoringDashboard() {
         if (response.ok) {
           const data = await response.json()
           setMetrics(data)
-          
+
           // Track critical metrics
           if (data.errorRate > 5) {
             monitoring.logWarning('High error rate detected', { errorRate: data.errorRate })
@@ -130,7 +130,7 @@ export default function MonitoringDashboard() {
     const days = Math.floor(seconds / 86400)
     const hours = Math.floor((seconds % 86400) / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)
-    
+
     if (days > 0) return `${days}d ${hours}h ${minutes}m`
     if (hours > 0) return `${hours}h ${minutes}m`
     return `${minutes}m`
@@ -176,7 +176,7 @@ export default function MonitoringDashboard() {
                 {isLiveMode ? 'Live' : 'Paused'}
               </span>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <select
                 value={timeRange}
@@ -188,12 +188,12 @@ export default function MonitoringDashboard() {
                 <option value="7d">Last 7 Days</option>
                 <option value="30d">Last 30 Days</option>
               </select>
-              
+
               <button
                 onClick={() => setIsLiveMode(!isLiveMode)}
                 className={`px-3 py-1 rounded-md text-sm font-medium ${
-                  isLiveMode 
-                    ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                  isLiveMode
+                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
                     : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                 }`}
               >
@@ -244,19 +244,19 @@ export default function MonitoringDashboard() {
                     {metrics.cpu.toFixed(1)}%
                   </p>
                 </div>
-                
+
                 <div className="bg-white p-4 rounded-lg shadow">
                   <h3 className="text-sm font-medium text-gray-900">Memory Usage</h3>
                   <p className={`text-2xl font-bold ${getStatusColor(metrics.memory, { good: 80, warning: 90 })}`} data-testid="memory-metric">
                     {metrics.memory.toFixed(1)}%
                   </p>
                 </div>
-                
+
                 <div className="bg-white p-4 rounded-lg shadow">
                   <h3 className="text-sm font-medium text-gray-900">Active Users</h3>
                   <p className="text-2xl font-bold text-blue-600" data-testid="users-metric">{metrics.activeUsers}</p>
                 </div>
-                
+
                 <div className="bg-white p-4 rounded-lg shadow">
                   <h3 className="text-sm font-medium text-gray-900">Error Rate</h3>
                   <p className={`text-2xl font-bold ${getStatusColor(metrics.errorRate, { good: 1, warning: 5 })}`} data-testid="error-rate-metric">

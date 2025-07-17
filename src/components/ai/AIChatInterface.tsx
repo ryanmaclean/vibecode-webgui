@@ -45,7 +45,7 @@ export default function AIChatInterface({
   const [showSettings, setShowSettings] = useState(false)
   const [showPromptTemplates, setShowPromptTemplates] = useState(false)
   const [showPromptEnhancer, setShowPromptEnhancer] = useState(false)
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -149,10 +149,10 @@ export default function AIChatInterface({
               const data = JSON.parse(line.slice(6))
               if (data.content) {
                 accumulatedContent += data.content
-                
+
                 // Update the assistant message with streaming content
-                setMessages(prev => prev.map(msg => 
-                  msg.id === assistantMessage.id 
+                setMessages(prev => prev.map(msg =>
+                  msg.id === assistantMessage.id
                     ? { ...msg, content: accumulatedContent }
                     : msg
                 ))
@@ -169,8 +169,8 @@ export default function AIChatInterface({
 
     } catch (error) {
       console.error('Chat error:', error)
-      setMessages(prev => prev.map(msg => 
-        msg.id === assistantMessage.id 
+      setMessages(prev => prev.map(msg =>
+        msg.id === assistantMessage.id
           ? { ...msg, content: 'Sorry, I encountered an error. Please try again.' }
           : msg
       ))
@@ -249,7 +249,7 @@ export default function AIChatInterface({
               </p>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             {contextFiles.length > 0 && (
               <Badge variant="secondary" className="text-xs">
@@ -303,7 +303,7 @@ export default function AIChatInterface({
         {/* Prompt Templates Panel */}
         {showPromptTemplates && (
           <div className="mt-4 max-h-96 overflow-y-auto">
-            <PromptTemplates 
+            <PromptTemplates
               onSelectTemplate={handlePromptTemplate}
               className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
             />
@@ -313,7 +313,7 @@ export default function AIChatInterface({
         {/* Prompt Enhancer Panel */}
         {showPromptEnhancer && input.trim() && (
           <div className="mt-4 max-h-96 overflow-y-auto">
-            <PromptEnhancer 
+            <PromptEnhancer
               originalPrompt={input}
               onEnhancedPrompt={handleEnhancedPrompt}
               className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
@@ -351,11 +351,11 @@ export default function AIChatInterface({
                   </div>
                 </div>
               )}
-              
+
               <div className={`max-w-[80%] ${message.type === 'user' ? 'order-1' : ''}`}>
                 <Card className={`${
-                  message.type === 'user' 
-                    ? 'bg-blue-600 text-white' 
+                  message.type === 'user'
+                    ? 'bg-blue-600 text-white'
                     : 'bg-gray-50 dark:bg-gray-800'
                 }`}>
                   <CardContent className="p-3">
@@ -381,7 +381,7 @@ export default function AIChatInterface({
               )}
             </div>
           ))}
-          
+
           {isStreaming && (
             <div className="flex items-center space-x-2 text-gray-500">
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
@@ -408,7 +408,7 @@ export default function AIChatInterface({
               disabled={isStreaming}
             />
           </div>
-          
+
           <div className="flex space-x-1">
             <input
               ref={fileInputRef}
@@ -418,7 +418,7 @@ export default function AIChatInterface({
               className="hidden"
               accept=".txt,.md,.js,.ts,.jsx,.tsx,.py,.java,.cpp,.c,.html,.css,.json,.xml,.yml,.yaml"
             />
-            
+
             <Button
               variant="outline"
               size="sm"
@@ -427,7 +427,7 @@ export default function AIChatInterface({
             >
               <Upload className="w-4 h-4" />
             </Button>
-            
+
             <Button
               onClick={handleSendMessage}
               disabled={!input.trim() || isStreaming}
@@ -437,7 +437,7 @@ export default function AIChatInterface({
             </Button>
           </div>
         </div>
-        
+
         {contextFiles.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
             {contextFiles.slice(0, 3).map((file, index) => (

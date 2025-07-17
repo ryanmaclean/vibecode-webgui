@@ -12,7 +12,7 @@ const TIMEOUT = 300000; // 5 minutes;
 describe('KIND Cluster Validation', () => {
   beforeAll(async () => {
     console.log('Setting up KIND cluster for validation testing...');
-    
+
     // Check if cluster already exists
     try {
       execSync(`kind get clusters | grep -q "^${CLUSTER_NAME}$"`, { stdio: 'pipe' });
@@ -21,15 +21,15 @@ describe('KIND Cluster Validation', () => {
     } catch {
       // Cluster doesn't exist, continue
     }
-    
+
     // Create fresh cluster
     execSync(`kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-simple-config.yaml`, {
       stdio: 'inherit'
     });
-    
+
     // Set kubectl context
     execSync(`kubectl config use-context kind-${CLUSTER_NAME}`, { stdio: 'inherit' });
-    
+
     // Wait for cluster to be ready
     execSync('kubectl wait --for=condition=Ready nodes --all --timeout=120s', {
       stdio: 'inherit'
@@ -52,31 +52,31 @@ describe('KIND Cluster Validation', () => {
   test('Cluster should have correct node configuration', () => {
     const nodes = execSync('kubectl get nodes -o json', { encoding: 'utf8' });
     const nodeData = JSON.parse(nodes);
-    
+
     // Should have 3 nodes (1 control-plane, 2 workers);
     expect(nodeData.items).toHaveLength(3);
-    
+
     // Find control plane node
-    const controlPlane = nodeData.items.find((node: any) => ;
+    const controlPlane = nodeData.items.find((node: any) =>
       node.metadata.labels['node-role.kubernetes.io/control-plane'] !== undefined
     );
     expect(controlPlane).toBeDefined();
     expect(controlPlane.metadata.labels['ingress-ready']).toBe('true');
-    
+
     // Find worker nodes
-    const workers = nodeData.items.filter((node: any) => ;
+    const workers = nodeData.items.filter((node: any) =>
       node.metadata.labels['node-role.kubernetes.io/control-plane'] === undefined
     );
     expect(workers).toHaveLength(2);
-    
+
     // Check worker node labels
-    const codeServerWorker = workers.find((node: any) => ;
+    const codeServerWorker = workers.find((node: any) =>
       node.metadata.labels['tier'] === 'code-server'
     );
     const monitoringWorker = workers.find((node: any) => ;
       node.metadata.labels['tier'] === 'monitoring'
     );
-    
+
     expect(codeServerWorker).toBeDefined();
     expect(monitoringWorker).toBeDefined();
   });
@@ -84,7 +84,7 @@ describe('KIND Cluster Validation', () => {
   test('All nodes should be ready', () => {
     const nodes = execSync('kubectl get nodes -o json', { encoding: 'utf8' });
     const nodeData = JSON.parse(nodes);
-    
+
     nodeData.items.forEach((node: any) => {
       const readyCondition = node.status.conditions.find((condition: any) => ;
         condition.type === 'Ready'
@@ -96,7 +96,7 @@ describe('KIND Cluster Validation', () => {
   test('Kubernetes system pods should be running', () => {
     const pods = execSync('kubectl get pods -n kube-system -o json', { encoding: 'utf8' });
     const podData = JSON.parse(pods);
-    
+
     // Check for essential system components
     const essentialPods = [;
       'kube-apiserver',
@@ -106,7 +106,7 @@ describe('KIND Cluster Validation', () => {
       'kube-proxy',
       'kindnet'
     ];
-    
+
     essentialPods.forEach(podName => {
       const pod = podData.items.find((pod: any) => ;
         pod.metadata.name.includes(podName);
@@ -119,7 +119,7 @@ describe('KIND Cluster Validation', () => {
   test('Default storage class should be available', () => {
     const storageClasses = execSync('kubectl get storageclass -o json', { encoding: 'utf8' });
     const scData = JSON.parse(storageClasses);
-    
+
     // Should have standard storage class
     const standardSC = scData.items.find((sc: any) => sc.metadata.name === 'standard');
     expect(standardSC).toBeDefined();
@@ -140,23 +140,23 @@ spec:
     requests:
       storage: 1Gi
 `;
-    
+
     // Create PVC
     execSync('kubectl apply -f -', {
       input: pvcManifest,
       stdio: 'inherit'
     });
-    
+
     // Wait for PVC to be bound
     execSync('kubectl wait --for=condition=Bound pvc/test-pvc --timeout=60s', {
       stdio: 'inherit'
     });
-    
+
     // Verify PVC status
     const pvc = execSync('kubectl get pvc test-pvc -o json', { encoding: 'utf8' });
     const pvcData = JSON.parse(pvc);
     expect(pvcData.status.phase).toBe('Bound');
-    
+
     // Cleanup
     execSync('kubectl delete pvc test-pvc', { stdio: 'inherit' });
   });
@@ -166,26 +166,26 @@ spec:
     execSync(`kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml`, {
       stdio: 'inherit'
     });
-    
+
     // Wait for ingress controller to be ready
     execSync(`kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s`, {
       stdio: 'inherit'
     });
-    
+
     // Verify ingress controller is running
     const pods = execSync('kubectl get pods -n ingress-nginx -o json', { encoding: 'utf8' });
     const podData = JSON.parse(pods);
-    
+
     const ingressPod = podData.items.find((pod: any) => ;
       pod.metadata.name.includes('ingress-nginx-controller');
     );
     expect(ingressPod).toBeDefined();
     expect(ingressPod.status.phase).toBe('Running');
-    
+
     // Verify service is created
     const services = execSync('kubectl get svc -n ingress-nginx -o json', { encoding: 'utf8' });
     const serviceData = JSON.parse(services);
-    
+
     const ingressService = serviceData.items.find((svc: any) => ;
       svc.metadata.name.includes('ingress-nginx-controller');
     );
@@ -196,7 +196,7 @@ spec:
     // Get cluster info to check port mappings
     const clusterInfo = execSync(`kind get clusters`, { encoding: 'utf8' });
     expect(clusterInfo).toContain(CLUSTER_NAME);
-    
+
     // Test if we can access the cluster API
     const clusterApiInfo = execSync('kubectl cluster-info', { encoding: 'utf8' });
     expect(clusterApiInfo).toContain('Kubernetes control plane');
@@ -260,29 +260,29 @@ spec:
             port:
               number: 80
 `;
-    
+
     try {
       // Deploy test application
       execSync('kubectl apply -f -', {
         input: testAppManifest,
         stdio: 'inherit'
       });
-      
+
       // Wait for deployment to be ready
       execSync('kubectl wait --for=condition=Available deployment/test-app --timeout=120s', {
         stdio: 'inherit'
       });
-      
+
       // Verify ingress is created
       const ingress = execSync('kubectl get ingress test-app-ingress -o json', { encoding: 'utf8' });
       const ingressData = JSON.parse(ingress);
       expect(ingressData.spec.rules[0].host).toBe('test.local');
-      
+
       // Test connectivity within cluster
       execSync(`kubectl run test-pod --image=curlimages/curl --rm -it --restart=Never -- curl -s http://test-app-service.default.svc.cluster.local`, {
         stdio: 'inherit'
       });
-      
+
     } finally {
       // Cleanup test resources
       execSync('kubectl delete deployment test-app --ignore-not-found=true', { stdio: 'inherit' });
@@ -321,21 +321,21 @@ spec:
     - protocol: UDP
       port: 53
 `;
-    
+
     try {
       // Create network policy
       execSync('kubectl apply -f -', {
         input: networkPolicyManifest,
         stdio: 'inherit'
       });
-      
+
       // Verify network policy is created
       const np = execSync('kubectl get networkpolicy test-network-policy -o json', { encoding: 'utf8' });
       const npData = JSON.parse(np);
       expect(npData.metadata.name).toBe('test-network-policy');
       expect(npData.spec.policyTypes).toContain('Ingress');
       expect(npData.spec.policyTypes).toContain('Egress');
-      
+
     } finally {
       // Cleanup
       execSync('kubectl delete networkpolicy test-network-policy --ignore-not-found=true', { stdio: 'inherit' });
@@ -358,21 +358,21 @@ spec:
     persistentvolumeclaims: "10"
     pods: "20"
 `;
-    
+
     try {
       // Create resource quota
       execSync('kubectl apply -f -', {
         input: resourceQuotaManifest,
         stdio: 'inherit'
       });
-      
+
       // Verify resource quota is created
       const rq = execSync('kubectl get resourcequota test-resource-quota -o json', { encoding: 'utf8' });
       const rqData = JSON.parse(rq);
       expect(rqData.metadata.name).toBe('test-resource-quota');
       expect(rqData.spec.hard).toHaveProperty('requests.cpu');
       expect(rqData.spec.hard).toHaveProperty('requests.memory');
-      
+
     } finally {
       // Cleanup
       execSync('kubectl delete resourcequota test-resource-quota --ignore-not-found=true', { stdio: 'inherit' });
@@ -384,25 +384,25 @@ spec:
     execSync(`kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml`, {
       stdio: 'inherit'
     });
-    
+
     // Wait for cert-manager to be ready
     execSync(`kubectl wait --namespace cert-manager --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s`, {
       stdio: 'inherit'
     });
-    
+
     // Verify cert-manager pods are running
     const pods = execSync('kubectl get pods -n cert-manager -o json', { encoding: 'utf8' });
     const podData = JSON.parse(pods);
-    
+
     const certManagerPods = podData.items.filter((pod: any) => ;
       pod.metadata.namespace === 'cert-manager'
     );
     expect(certManagerPods.length).toBeGreaterThan(0);
-    
+
     certManagerPods.forEach((pod: any) => {
       expect(pod.status.phase).toBe('Running');
     });
-    
+
     // Test creating a simple ClusterIssuer
     const clusterIssuerManifest = `;
 apiVersion: cert-manager.io/v1
@@ -412,18 +412,18 @@ metadata:
 spec:
   selfSigned: {}
 `;
-    
+
     try {
       execSync('kubectl apply -f -', {
         input: clusterIssuerManifest,
         stdio: 'inherit'
       });
-      
+
       // Verify ClusterIssuer is created
       const issuer = execSync('kubectl get clusterissuer test-selfsigned-issuer -o json', { encoding: 'utf8' });
       const issuerData = JSON.parse(issuer);
       expect(issuerData.metadata.name).toBe('test-selfsigned-issuer');
-      
+
     } finally {
       // Cleanup
       execSync('kubectl delete clusterissuer test-selfsigned-issuer --ignore-not-found=true', { stdio: 'inherit' });
@@ -432,23 +432,23 @@ spec:
 
   test('Cluster should handle multiple namespaces', () => {
     const testNamespaces = ['test-ns-1', 'test-ns-2', 'test-ns-3'];
-    
+
     try {
       // Create multiple namespaces
       testNamespaces.forEach(ns => {
         execSync(`kubectl create namespace ${ns}`, { stdio: 'inherit' });
       });
-      
+
       // Verify namespaces exist
       const namespaces = execSync('kubectl get namespaces -o json', { encoding: 'utf8' });
       const nsData = JSON.parse(namespaces);
-      
+
       testNamespaces.forEach(testNs => {
         const ns = nsData.items.find((ns: any) => ns.metadata.name === testNs);
         expect(ns).toBeDefined();
         expect(ns.status.phase).toBe('Active');
       });
-      
+
     } finally {
       // Cleanup
       testNamespaces.forEach(ns => {
@@ -490,31 +490,31 @@ spec:
   - name: tmp
     emptyDir: {}
 `;
-    
+
     try {
       // Create security test pod
       execSync('kubectl apply -f -', {
         input: securityTestManifest,
         stdio: 'inherit'
       });
-      
+
       // Wait for pod to be ready
       execSync('kubectl wait --for=condition=Ready pod/security-test-pod --timeout=60s', {
         stdio: 'inherit'
       });
-      
+
       // Verify pod is running with security constraints
       const pod = execSync('kubectl get pod security-test-pod -o json', { encoding: 'utf8' });
       const podData = JSON.parse(pod);
-      
+
       expect(podData.status.phase).toBe('Running');
       expect(podData.spec.securityContext.runAsNonRoot).toBe(true);
       expect(podData.spec.securityContext.runAsUser).toBe(1000);
-      
+
       const container = podData.spec.containers[0];
       expect(container.securityContext.allowPrivilegeEscalation).toBe(false);
       expect(container.securityContext.readOnlyRootFilesystem).toBe(true);
-      
+
     } finally {
       // Cleanup
       execSync('kubectl delete pod security-test-pod --ignore-not-found=true', { stdio: 'inherit' });

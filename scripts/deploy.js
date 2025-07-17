@@ -102,7 +102,7 @@ async function main() {
 
   log('\n🎉 Deployment completed successfully!', 'green')
   log(`📖 View deployment docs: ${platforms[platform].docs}`, 'blue')
-  
+
   rl.close()
 }
 
@@ -148,7 +148,7 @@ async function checkPrerequisites() {
 
 async function selectPlatform() {
   log('\n🎯 Select deployment platform:', 'yellow')
-  
+
   const platformKeys = Object.keys(platforms)
   platformKeys.forEach((key, index) => {
     const platform = platforms[key]
@@ -212,7 +212,7 @@ async function setupEnvironment(platform) {
   if (missingVars.length > 0) {
     log('\n❌ Missing required environment variables:', 'red')
     missingVars.forEach(varName => log(`  - ${varName}`))
-    
+
     const setup = await question('\nWould you like to set them up now? (y/n): ')
     if (setup.toLowerCase() === 'y') {
       await promptForEnvironmentVariables(envPath, existingEnv)

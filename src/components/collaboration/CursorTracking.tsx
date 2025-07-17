@@ -1,9 +1,9 @@
 /**
  * Cursor Tracking and Selection Sharing Component
- * 
+ *
  * Advanced real-time cursor position tracking and selection sharing
  * with smooth animations and collaborative editing features
- * 
+ *
  * Staff Engineer Implementation - Enterprise-grade cursor collaboration
  */
 
@@ -84,7 +84,7 @@ export default function CursorTracking({
     try {
       const pos = editorView.state.doc.line(position.line + 1).from + position.column
       const coords = editorView.coordsAtPos(pos)
-      
+
       if (!coords) return null
 
       return {
@@ -145,7 +145,7 @@ export default function CursorTracking({
     try {
       const state = editorView.state
       const selection = state.selection.main
-      
+
       // Main cursor position
       const mainLine = state.doc.lineAt(selection.head)
       const position: CursorPosition = {
@@ -159,7 +159,7 @@ export default function CursorTracking({
       if (!selection.empty) {
         const startLine = state.doc.lineAt(selection.from)
         const endLine = state.doc.lineAt(selection.to)
-        
+
         selectionRange = {
           start: {
             line: startLine.number - 1,
@@ -190,7 +190,7 @@ export default function CursorTracking({
     if (now - lastUpdateRef.current < POSITION_UPDATE_THROTTLE) return
 
     lastUpdateRef.current = now
-    
+
     const current = getCurrentPosition()
     if (!current || !awareness) return
 
@@ -208,7 +208,7 @@ export default function CursorTracking({
     if (updateTimeoutRef.current) {
       clearTimeout(updateTimeoutRef.current)
     }
-    
+
     updateTimeoutRef.current = setTimeout(() => {
       const currentState = awareness.getLocalState()
       if (currentState?.cursor) {
@@ -297,7 +297,7 @@ export default function CursorTracking({
       if (update.selectionSet || update.docChanged) {
         updatePosition()
       }
-      
+
       if (update.docChanged) {
         handleTyping()
       }
@@ -329,7 +329,7 @@ export default function CursorTracking({
       <motion.div
         key={cursor.userId}
         initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ 
+        animate={{
           opacity: cursor.isVisible ? 1 : 0,
           scale: 1,
           x: screenPos.x,
@@ -342,10 +342,10 @@ export default function CursorTracking({
       >
         {/* Cursor line */}
         <motion.div
-          animate={{ 
-            opacity: cursor.metadata?.isTyping ? [1, 0.3, 1] : 1 
+          animate={{
+            opacity: cursor.metadata?.isTyping ? [1, 0.3, 1] : 1
           }}
-          transition={{ 
+          transition={{
             duration: cursor.metadata?.isTyping ? 0.5 : 0,
             repeat: cursor.metadata?.isTyping ? Infinity : 0
           }}
@@ -360,7 +360,7 @@ export default function CursorTracking({
             animate={{ opacity: 1, y: 0 }}
             className="absolute top-0 left-2 whitespace-nowrap"
           >
-            <div 
+            <div
               className="px-2 py-1 rounded text-white text-xs font-medium shadow-lg flex items-center gap-1"
               style={{ backgroundColor: cursor.userColor }}
             >
@@ -374,7 +374,7 @@ export default function CursorTracking({
               )}
             </div>
             {/* Arrow */}
-            <div 
+            <div
               className="w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent"
               style={{ borderTopColor: cursor.userColor }}
             />
@@ -392,13 +392,13 @@ export default function CursorTracking({
 
     const startPos = getScreenPosition(cursor.selection.start)
     const endPos = getScreenPosition(cursor.selection.end)
-    
+
     if (!startPos || !endPos) return null
 
     // Simple single-line selection for now
     // TODO: Handle multi-line selections
     const isMultiLine = cursor.selection.start.line !== cursor.selection.end.line
-    
+
     if (isMultiLine) {
       // For multi-line selections, we'd need to render multiple rectangles
       return null
@@ -413,14 +413,14 @@ export default function CursorTracking({
       <motion.div
         key={`${cursor.userId}-selection`}
         initial={{ opacity: 0 }}
-        animate={{ 
+        animate={{
           opacity: 0.3,
           x: left,
           y: startPos.y
         }}
         exit={{ opacity: 0 }}
         className="absolute pointer-events-none z-40 rounded-sm"
-        style={{ 
+        style={{
           backgroundColor: cursor.userColor,
           width: width + 'px',
           height: height + 'px',
@@ -434,7 +434,7 @@ export default function CursorTracking({
    * Get visible cursors
    */
   const visibleCursors = useMemo(() => {
-    return Array.from(cursors.values()).filter(cursor => 
+    return Array.from(cursors.values()).filter(cursor =>
       cursor.isVisible && cursor.metadata?.viewportVisible
     )
   }, [cursors])
@@ -444,7 +444,7 @@ export default function CursorTracking({
       <AnimatePresence>
         {/* Render selections first (behind cursors) */}
         {visibleCursors.map(cursor => renderSelection(cursor))}
-        
+
         {/* Render cursors */}
         {visibleCursors.map(cursor => renderCursor(cursor))}
       </AnimatePresence>

@@ -62,7 +62,7 @@ const logger = createLogger({
         })
       )
     }),
-    
+
     // File transport for persistent logging
     new transports.File({
       filename: 'logs/error.log',
@@ -71,7 +71,7 @@ const logger = createLogger({
       maxFiles: 5,
       tailable: true
     }),
-    
+
     new transports.File({
       filename: 'logs/combined.log',
       maxsize: 100 * 1024 * 1024, // 100MB
@@ -100,7 +100,7 @@ class MetricsCollector {
     const current = this.metrics.get(key) || { count: 0 }
     current.count += 1
     this.metrics.set(key, current)
-    
+
     logger.info('Metric incremented', {
       metric: metricName,
       count: current.count,
@@ -116,7 +116,7 @@ class MetricsCollector {
     const current = this.metrics.get(key) || { count: 0 }
     current.lastValue = value
     this.metrics.set(key, current)
-    
+
     logger.info('Gauge metric set', {
       metric: metricName,
       value,
@@ -134,7 +134,7 @@ class MetricsCollector {
     current.sum = (current.sum || 0) + value
     current.lastValue = value
     this.metrics.set(key, current)
-    
+
     logger.info('Histogram metric recorded', {
       metric: metricName,
       value,
@@ -186,7 +186,7 @@ class ApplicationLogger {
       category: 'auth',
       ...context
     })
-    
+
     if (context.success === false) {
       metrics.increment('auth.failure', { event, provider: context.provider || 'unknown' })
     } else {
@@ -211,14 +211,14 @@ class ApplicationLogger {
       category: 'workspace',
       ...context
     })
-    
+
     if (context.duration) {
       metrics.histogram('workspace.operation.duration', context.duration, {
         event,
         action: context.action || 'unknown'
       })
     }
-    
+
     metrics.increment('workspace.events', { event, action: context.action || 'unknown' })
   }
 
@@ -239,21 +239,21 @@ class ApplicationLogger {
       category: 'ai',
       ...context
     })
-    
+
     if (context.responseTime) {
       metrics.histogram('ai.response_time', context.responseTime, {
         model: context.model || 'unknown'
       })
     }
-    
+
     if (context.tokensUsed) {
       metrics.histogram('ai.tokens_used', context.tokensUsed, {
         model: context.model || 'unknown'
       })
     }
-    
-    metrics.increment('ai.interactions', { 
-      event, 
+
+    metrics.increment('ai.interactions', {
+      event,
       model: context.model || 'unknown',
       hasContext: context.codeContext ? 'true' : 'false'
     })
@@ -276,7 +276,7 @@ class ApplicationLogger {
       category: 'performance',
       ...context
     })
-    
+
     if (context.responseTime) {
       metrics.histogram('http.response_time', context.responseTime, {
         endpoint: context.endpoint || 'unknown',
@@ -284,15 +284,15 @@ class ApplicationLogger {
         status: context.statusCode?.toString() || 'unknown'
       })
     }
-    
+
     if (context.memoryUsage) {
       metrics.gauge('system.memory_usage', context.memoryUsage)
     }
-    
+
     if (context.cpuUsage) {
       metrics.gauge('system.cpu_usage', context.cpuUsage)
     }
-    
+
     if (context.activeConnections) {
       metrics.gauge('system.active_connections', context.activeConnections)
     }
@@ -309,16 +309,16 @@ class ApplicationLogger {
     details?: Record<string, any>
     blocked?: boolean
   }): void {
-    const level = context.severity === 'critical' ? 'error' : 
+    const level = context.severity === 'critical' ? 'error' :
                   context.severity === 'high' ? 'warn' : 'info'
-    
+
     logger.log(level, `Security: ${event}`, {
       category: 'security',
       ...context
     })
-    
-    metrics.increment('security.events', { 
-      event, 
+
+    metrics.increment('security.events', {
+      event,
       severity: context.severity,
       blocked: context.blocked ? 'true' : 'false'
     })
@@ -338,12 +338,12 @@ class ApplicationLogger {
       category: 'business',
       ...context
     })
-    
-    metrics.increment('business.events', { 
-      event, 
+
+    metrics.increment('business.events', {
+      event,
       feature: context.feature || 'unknown'
     })
-    
+
     if (context.value) {
       metrics.histogram('business.value', context.value, {
         event,
@@ -359,11 +359,11 @@ const appLogger = new ApplicationLogger()
 function performanceMiddleware() {
   return (req: any, res: any, next: any) => {
     const startTime = Date.now()
-    
+
     res.on('finish', () => {
       const responseTime = Date.now() - startTime
       const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024 // MB
-      
+
       appLogger.logPerformance({
         endpoint: req.path,
         method: req.method,
@@ -371,7 +371,7 @@ function performanceMiddleware() {
         responseTime,
         memoryUsage
       })
-      
+
       // Log slow requests
       if (responseTime > 1000) {
         logger.warn('Slow request detected', {
@@ -383,7 +383,7 @@ function performanceMiddleware() {
         })
       }
     })
-    
+
     next()
   }
 }

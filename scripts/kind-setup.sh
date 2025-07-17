@@ -38,13 +38,13 @@ log_error() {
 # Check prerequisites
 check_prerequisites() {
     log_info "Checking prerequisites..."
-    
+
     # Check if Docker is running
     if ! docker info >/dev/null 2>&1; then
         log_error "Docker is not running. Please start Docker Desktop."
         exit 1
     fi
-    
+
     # Check if KIND is installed
     if ! command -v kind &> /dev/null; then
         log_error "KIND is not installed. Please install KIND first."
@@ -52,91 +52,91 @@ check_prerequisites() {
         echo "Linux: curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64"
         exit 1
     fi
-    
+
     # Check if kubectl is installed
     if ! command -v kubectl &> /dev/null; then
         log_error "kubectl is not installed. Please install kubectl first."
         exit 1
     fi
-    
+
     log_success "All prerequisites are met"
 }
 
 # Create KIND cluster
 create_cluster() {
     log_info "Creating KIND cluster: $CLUSTER_NAME"
-    
+
     # Delete existing cluster if it exists
     if kind get clusters | grep -q "^$CLUSTER_NAME$"; then
         log_warning "Cluster $CLUSTER_NAME already exists. Deleting..."
         kind delete cluster --name "$CLUSTER_NAME"
     fi
-    
+
     # Create new cluster
     kind create cluster --name "$CLUSTER_NAME" --config="$PROJECT_ROOT/infrastructure/kind/cluster-config.yaml"
-    
+
     # Wait for cluster to be ready
     log_info "Waiting for cluster to be ready..."
     kubectl wait --for=condition=Ready nodes --all --timeout=300s
-    
+
     log_success "KIND cluster created successfully"
 }
 
 # Install NGINX Ingress Controller
 install_ingress() {
     log_info "Installing NGINX Ingress Controller..."
-    
+
     kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
-    
+
     # Wait for ingress controller to be ready
     log_info "Waiting for ingress controller to be ready..."
     kubectl wait --namespace ingress-nginx \
         --for=condition=ready pod \
         --selector=app.kubernetes.io/component=controller \
         --timeout=300s
-    
+
     log_success "NGINX Ingress Controller installed"
 }
 
 # Build and load Docker images
 build_and_load_images() {
     log_info "Building Docker images..."
-    
+
     cd "$PROJECT_ROOT"
-    
+
     # Build main application image
     log_info "Building main application image..."
     docker build -t vibecode/webgui:latest .
-    
+
     # Build code-server image
     log_info "Building code-server image..."
     docker build -t vibecode/code-server:latest ./docker/code-server
-    
+
     # Build WebSocket server image
     log_info "Building WebSocket server image..."
     docker build -t vibecode/websocket:latest -f ./docker/development/Dockerfile.websocket .
-    
+
     # Load images into KIND cluster
     log_info "Loading images into KIND cluster..."
     kind load docker-image vibecode/webgui:latest --name "$CLUSTER_NAME"
     kind load docker-image vibecode/code-server:latest --name "$CLUSTER_NAME"
     kind load docker-image vibecode/websocket:latest --name "$CLUSTER_NAME"
-    
+
     log_success "Docker images built and loaded"
 }
 
 # Deploy application to Kubernetes
 deploy_application() {
     log_info "Deploying application to Kubernetes..."
-    
+
     cd "$PROJECT_ROOT"
-    
+
     # Create namespace
     kubectl apply -f infrastructure/kubernetes/namespace.yaml
-    
+
     # Create storage
     kubectl apply -f infrastructure/kubernetes/storage.yaml
-    
+
     # Create secrets (with development values)
     log_info "Creating secrets with development values..."
     cat <<EOF | kubectl apply -f -
@@ -174,7 +174,7 @@ stringData:
   GITHUB_ID: "placeholder-id"
   GITHUB_SECRET: "placeholder-secret"
 EOF
-    
+
     # Deploy PostgreSQL
     log_info "Deploying PostgreSQL..."
     cat <<EOF | kubectl apply -f -
@@ -241,7 +241,7 @@ spec:
     app: postgres
   type: NodePort
 EOF
-    
+
     # Deploy Redis
     log_info "Deploying Redis..."
     cat <<EOF | kubectl apply -f -
@@ -287,44 +287,44 @@ spec:
     app: redis
   type: NodePort
 EOF
-    
+
     # Create ConfigMap for PostgreSQL init script
     kubectl create configmap postgres-init \
         --from-file="$PROJECT_ROOT/infrastructure/postgres/init.sql" \
         --namespace="$NAMESPACE" \
         --dry-run=client -o yaml | kubectl apply -f -
-    
+
     # Deploy code-server
     kubectl apply -f infrastructure/kubernetes/code-server-deployment.yaml
-    
+
     log_success "Application deployed to Kubernetes"
 }
 
 # Wait for deployments to be ready
 wait_for_deployments() {
     log_info "Waiting for deployments to be ready..."
-    
+
     kubectl wait --for=condition=available deployment/postgres -n "$NAMESPACE" --timeout=300s
     kubectl wait --for=condition=available deployment/redis -n "$NAMESPACE" --timeout=300s
     kubectl wait --for=condition=available deployment/code-server -n "$NAMESPACE" --timeout=300s
-    
+
     log_success "All deployments are ready"
 }
 
 # Set up port forwarding
 setup_port_forwarding() {
     log_info "Setting up port forwarding..."
-    
+
     # Kill any existing port-forward processes
     pkill -f "kubectl.*port-forward" || true
-    
+
     # Start port forwarding in background
     nohup kubectl port-forward -n "$NAMESPACE" service/code-server-service 8080:8080 > /tmp/code-server-port-forward.log 2>&1 &
     nohup kubectl port-forward -n "$NAMESPACE" service/postgres-service 5432:5432 > /tmp/postgres-port-forward.log 2>&1 &
     nohup kubectl port-forward -n "$NAMESPACE" service/redis-service 6379:6379 > /tmp/redis-port-forward.log 2>&1 &
-    
+
     sleep 3
-    
+
     log_success "Port forwarding set up"
 }
 

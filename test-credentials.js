@@ -14,16 +14,16 @@ const testCredentials = [
 async function testCredential(email, password, name) {
   try {
     console.log(`\n🧪 Testing: ${name} (${email})`)
-    
+
     // First, get the CSRF token
     const csrfResponse = await fetch('http://localhost:3000/api/auth/csrf')
     const csrfData = await csrfResponse.json()
-    
+
     if (!csrfData.csrfToken) {
       console.log('❌ Failed to get CSRF token')
       return false
     }
-    
+
     // Test the credential
     const response = await fetch('http://localhost:3000/api/auth/callback/credentials', {
       method: 'POST',
@@ -38,9 +38,9 @@ async function testCredential(email, password, name) {
         json: 'true'
       })
     })
-    
+
     const result = await response.text()
-    
+
     if (response.ok && !result.includes('error')) {
       console.log('✅ Authentication successful')
       return true
@@ -57,22 +57,22 @@ async function testCredential(email, password, name) {
 async function main() {
   console.log('🔐 Testing Development Credentials')
   console.log('='.repeat(40))
-  
+
   let successCount = 0
-  
+
   for (const cred of testCredentials) {
     const success = await testCredential(cred.email, cred.password, cred.name)
     if (success) successCount++
-    
+
     // Small delay between tests
     await new Promise(resolve => setTimeout(resolve, 1000))
   }
-  
+
   console.log('\n📊 Results:')
   console.log('='.repeat(40))
   console.log(`✅ Successful: ${successCount}/${testCredentials.length}`)
   console.log(`❌ Failed: ${testCredentials.length - successCount}/${testCredentials.length}`)
-  
+
   if (successCount === testCredentials.length) {
     console.log('\n🎉 All development credentials are working!')
   } else {

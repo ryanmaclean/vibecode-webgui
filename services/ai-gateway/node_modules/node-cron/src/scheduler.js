@@ -22,7 +22,7 @@ class Scheduler extends EventEmitter{
             const elapsedTime = process.hrtime(lastCheck);
             const elapsedMs = (elapsedTime[0] * 1e9 + elapsedTime[1]) / 1e6;
             const missedExecutions = Math.floor(elapsedMs / 1000);
-            
+
             for(let i = missedExecutions; i >= 0; i--){
                 const date = new Date(new Date().getTime() - i * 1000);
                 let date_tmp = this.timeMatcher.apply(date);

@@ -1,9 +1,9 @@
 /**
  * REAL OpenRouter Integration Tests
- * 
+ *
  * Tests actual OpenRouter API connectivity and AI model functionality
  * NO MOCKING - Real API calls to verify integration works
- * 
+ *
  * Staff Engineer Implementation - Replacing over-mocked AI tests
  */
 
@@ -17,7 +17,7 @@ const conditionalDescribe = shouldRunRealTests ? describe : describe.skip
 conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
   const apiKey = process.env.OPENROUTER_API_KEY;
   const baseUrl = 'https://openrouter.ai/api/v1'
-  
+
   beforeAll(() => {
     if (!apiKey) {
       throw new Error('OPENROUTER_API_KEY must be set for real integration tests')
@@ -37,7 +37,7 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
     });
 
     expect(response.ok).toBe(true)
-    
+
     const data = await response.json()
     expect(data).toHaveProperty('data')
     expect(data.data).toHaveProperty('label')
@@ -54,12 +54,12 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
     });
 
     expect(response.ok).toBe(true)
-    
+
     const data = await response.json()
     expect(data).toHaveProperty('data')
     expect(Array.isArray(data.data)).toBe(true)
     expect(data.data.length).toBeGreaterThan(100) // Should have 127+ models
-    
+
     // Verify we have key models available
     const modelIds = data.data.map((model) => model.id)
     expect(modelIds).toContain('anthropic/claude-3.5-sonnet')
@@ -92,19 +92,19 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
     });
 
     expect(response.ok).toBe(true)
-    
+
     const data = await response.json()
     expect(data).toHaveProperty('choices')
     expect(data.choices).toHaveLength(1)
     expect(data.choices[0]).toHaveProperty('message')
     expect(data.choices[0].message).toHaveProperty('content')
-    
+
     const generatedCode = data.choices[0].message.content
     expect(generatedCode).toContain('function')
     expect(generatedCode).toContain('number')
     expect(typeof generatedCode).toBe('string')
     expect(generatedCode.length).toBeGreaterThan(10)
-    
+
     // Verify usage tracking
     expect(data).toHaveProperty('usage')
     expect(data.usage).toHaveProperty('prompt_tokens')
@@ -137,11 +137,11 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
     });
 
     expect(response.ok).toBe(true)
-    
+
     const data = await response.json()
     expect(data.choices[0].message.content).toContain('hook')
     expect(data.choices[0].message.content.length).toBeGreaterThan(20)
-    
+
     // Should have realistic usage numbers
     expect(data.usage.total_tokens).toBeGreaterThan(0)
     expect(data.usage.total_tokens).toBeLessThan(200)
@@ -167,16 +167,16 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
     )
 
     const responses = await Promise.allSettled(promises)
-    
+
     // At least some requests should succeed
     const succeeded = responses.filter(r => r.status === 'fulfilled' && (r.value as Response).ok)
     expect(succeeded.length).toBeGreaterThan(0)
-    
+
     // Check for appropriate rate limit responses
-    const rateLimited = responses.filter(r => 
+    const rateLimited = responses.filter(r =>
       r.status === 'fulfilled' && (r.value as Response).status === 429
     )
-    
+
     if (rateLimited.length > 0) {
       console.log(`Rate limited ${rateLimited.length} out of ${promises.length} requests`)
     }
@@ -199,14 +199,14 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
 
     if (response.ok) {
       const data = await response.json()
-      
+
       // Should have real response structure
       expect(data).toHaveProperty('success')
       if (data.success) {
         expect(data).toHaveProperty('response')
         expect(data.response).toHaveProperty('content')
         expect(data.response.content).toContain('TypeScript')
-        
+
         // Should have usage metadata from real API
         expect(data).toHaveProperty('usage')
         expect(data.usage).toHaveProperty('total_tokens')
@@ -220,7 +220,7 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
 
   test('should verify model switching capability', async () => {
     const models = ['anthropic/claude-3.5-sonnet', 'openai/gpt-4', 'google/gemini-pro']
-    
+
     for (const model of models) {
       const response = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
@@ -240,14 +240,14 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
       if (response.ok) {
         const data = await response.json()
         expect(data.choices[0].message.content.toLowerCase()).toContain('ok')
-        
+
         // Verify model is reported correctly
         expect(data).toHaveProperty('model')
         expect(data.model).toContain(model.split('/')[1]) // Should contain base model name
       } else {
         console.log(`Model ${model} not available or insufficient credits`)
       }
-      
+
       // Small delay between requests
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
@@ -271,7 +271,7 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
 
     expect(response.ok).toBe(false)
     expect(response.status).toBe(422) // Unprocessable Entity for invalid model
-    
+
     const errorData = await response.json()
     expect(errorData).toHaveProperty('error')
     expect(errorData.error).toHaveProperty('message')
@@ -296,27 +296,27 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
 
     expect(response.ok).toBe(true)
     expect(response.headers.get('content-type')).toContain('text/plain')
-    
+
     // For streaming, we get server-sent events
     const chunks: string[] = []
     const reader = response.body?.getReader()
-    
+
     if (reader) {
       let chunk = await reader.read()
       let attempts = 0
-      
+
       while (!chunk.done && attempts < 10) {
         const text = new TextDecoder().decode(chunk.value)
         chunks.push(text)
         chunk = await reader.read()
         attempts++
       }
-      
+
       reader.releaseLock()
-      
+
       // Should have received multiple chunks
       expect(chunks.length).toBeGreaterThan(1)
-      
+
       // Chunks should contain SSE format
       const combinedText = chunks.join('')
       expect(combinedText).toContain('data:')
@@ -330,15 +330,15 @@ describe('OpenRouter Test Quality Validation', () => {
   test('should not have extensive mocking in critical AI integration tests', () => {
     const fs = require('fs')
     const testFileContent = fs.readFileSync(__filename, 'utf8')
-    
+
     // Count mock usage
     const mockCount = (testFileContent.match(/jest\.mock/g) || []).length
     const mockFnCount = (testFileContent.match(/jest\.fn/g) || []).length
-    
+
     // Integration tests should have NO mocking for external APIs
     expect(mockCount).toBe(0)
     expect(mockFnCount).toBe(0)
-    
+
     // Should not mock OpenRouter or AI services
     expect(testFileContent).not.toContain("jest.mock('openrouter")
     expect(testFileContent).not.toContain("jest.mock('@anthropic")
@@ -376,10 +376,10 @@ describe('OpenRouter Test Quality Validation', () => {
 
     if (response.ok) {
       const data = await response.json()
-      
+
       // Real OpenRouter should have 100+ models
       expect(data.data.length).toBeGreaterThan(100)
-      
+
       // Should have realistic pricing information
       const modelWithPricing = data.data.find((model) => model.pricing)
       if (modelWithPricing) {

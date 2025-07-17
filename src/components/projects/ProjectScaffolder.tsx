@@ -10,11 +10,11 @@ import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { 
-  Wand2, 
-  Download, 
-  Copy, 
-  CheckCircle, 
+import {
+  Wand2,
+  Download,
+  Copy,
+  CheckCircle,
   AlertCircle,
   FileText,
   Folder,
@@ -48,11 +48,11 @@ interface ProjectData {
   readmeContent: string
 }
 
-export function ProjectScaffolder({ 
-  template, 
-  projectName, 
-  onGenerate, 
-  onDownload 
+export function ProjectScaffolder({
+  template,
+  projectName,
+  onGenerate,
+  onDownload
 }: ProjectScaffolderProps) {
   const [generatedFiles, setGeneratedFiles] = useState<GeneratedFile[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
@@ -83,7 +83,7 @@ export function ProjectScaffolder({
     setGenerationProgress(12)
     for (const fileTemplate of template.fileStructure) {
       let content = fileTemplate.content
-      
+
       // Replace template variables
       if (fileTemplate.isTemplate && fileTemplate.variables) {
         for (const variable of fileTemplate.variables) {
@@ -122,7 +122,7 @@ export function ProjectScaffolder({
     setGenerationProgress(37)
     let envContent = '# Environment Variables\n'
     envContent += `# ${template.name} Configuration\n\n`
-    
+
     if (template.envVars) {
       for (const envVar of template.envVars) {
         envContent += `# ${envVar.description}\n`
@@ -179,7 +179,7 @@ export function ProjectScaffolder({
 
     setGeneratedFiles(files)
     onGenerate?.(files)
-    
+
     setTimeout(() => {
       setIsGenerating(false)
     }, 500)
@@ -232,7 +232,7 @@ export function ProjectScaffolder({
                     }))}
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="description">Description</Label>
                   <Textarea
@@ -262,7 +262,7 @@ export function ProjectScaffolder({
               {/* Feature Toggles */}
               <div className="space-y-3 pt-4 border-t">
                 <Label className="text-sm font-medium">Features</Label>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="docker" className="text-sm">Docker Support</Label>
@@ -314,7 +314,7 @@ export function ProjectScaffolder({
                 </div>
               </div>
 
-              <Button 
+              <Button
                 onClick={generateProjectFiles}
                 disabled={isGenerating}
                 className="w-full"
@@ -371,8 +371,8 @@ export function ProjectScaffolder({
                   </TabsContent>
 
                   <TabsContent value="summary" className="mt-4">
-                    <ProjectSummary 
-                      template={template} 
+                    <ProjectSummary
+                      template={template}
                       projectName={projectName}
                       config={projectConfig}
                     />
@@ -554,13 +554,13 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-    
+
     - name: Install dependencies
       run: npm ci
-    
+
     - name: Run tests
       run: npm test
-    
+
     - name: Build
       run: npm run build
 
@@ -658,14 +658,14 @@ function FilePreview({ files }: { files: GeneratedFile[] }) {
   )
 }
 
-function ProjectSummary({ 
-  template, 
-  projectName, 
-  config 
-}: { 
+function ProjectSummary({
+  template,
+  projectName,
+  config
+}: {
   template: ProjectTemplate
   projectName: string
-  config: any 
+  config: any
 }) {
   return (
     <div className="space-y-4">

@@ -1,9 +1,9 @@
 /**
  * Real Database Integration Tests
- * 
+ *
  * Tests actual database operations with real schema validation
  * NO MOCKING - Real PostgreSQL operations
- * 
+ *
  * Staff Engineer Implementation - Production readiness validation
  */
 
@@ -35,7 +35,7 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
     test('should have all required tables from init.sql', async () => {
       const expectedTables = [
         'users',
-        'projects', 
+        'projects',
         'files',
         'sessions',
         'ai_interactions',
@@ -44,14 +44,14 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
       ]
 
       const result = await client.query(`;
-        SELECT table_name 
-        FROM information_schema.tables 
-        WHERE table_schema = 'public' 
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
         AND table_type = 'BASE TABLE'
       `);
 
       const existingTables = result.rows.map((row: any) => row.table_name);
-      
+
       expectedTables.forEach(tableName => {
         expect(existingTables).toContain(tableName)})});
 
@@ -63,13 +63,13 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
       ]
 
       const result = await client.query(`;
-        SELECT indexname 
-        FROM pg_indexes 
+        SELECT indexname
+        FROM pg_indexes
         WHERE schemaname = 'public'
       `);
 
       const existingIndexes = result.rows.map((row: any) => row.indexname);
-      
+
       expectedIndexes.forEach(indexName => {
         expect(existingIndexes).toContain(indexName)})});
 
@@ -91,12 +91,12 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
 
       // Should have foreign keys for data integrity
       expect(result.rows.length).toBeGreaterThan(0);
-      
+
       // Verify specific relationships
-      const foreignKeys = result.rows.map((row: any) => 
+      const foreignKeys = result.rows.map((row: any) =>
         `${row.table_name}.${row.column_name} -> ${row.foreign_table_name}.${row.foreign_column_name}`
       );
-      
+
       expect(foreignKeys).toContain('projects.owner_id -> users.id')
       expect(foreignKeys).toContain('files.project_id -> projects.id')})})
 
@@ -106,7 +106,7 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
 
     test('should insert user with real validation', async () => {
       const userEmail = `test-${Date.now()}@vibecode.dev`
-      
+
       const result = await client.query(`;
         INSERT INTO users (email, name, avatar_url, provider, provider_id, created_at, updated_at);
         VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
@@ -116,13 +116,13 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].email).toBe(userEmail);
       expect(result.rows[0].id).toBeTruthy();
-      
+
       testUserId = result.rows[0].id
     })
 
     test('should create project with owner relationship', async () => {
       const projectName = `test-project-${Date.now()}`
-      
+
       const result = await client.query(`;
         INSERT INTO projects (name, description, owner_id, created_at, updated_at);
         VALUES ($1, $2, $3, NOW(), NOW())
@@ -132,14 +132,14 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].name).toBe(projectName);
       expect(result.rows[0].owner_id).toBe(testUserId);
-      
+
       testProjectId = result.rows[0].id
     })
 
     test('should enforce foreign key constraints', async () => {
       // Try to create project with non-existent user
       const invalidUserId = '00000000-0000-0000-0000-000000000000';
-      
+
       await expect(
         client.query(`
           INSERT INTO projects (name, description, owner_id, created_at, updated_at);
@@ -147,7 +147,7 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
         `, ['Invalid Project', 'Should fail', invalidUserId])).rejects.toThrow(/foreign key constraint/)})
 
     test('should handle concurrent inserts properly', async () => {
-      const promises = Array.from({ length: 5 }, (_, i) => 
+      const promises = Array.from({ length: 5 }, (_, i) =>
         client.query(`
           INSERT INTO users (email, name, provider, provider_id, created_at, updated_at);
           VALUES ($1, $2, $3, $4, NOW(), NOW())
@@ -155,7 +155,7 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
         `, [`concurrent-${i}-${Date.now()}@test.com`, `User ${i}`, 'test', `test-${i}`]));
 
       const results = await Promise.all(promises);
-      
+
       // All inserts should succeed
       results.forEach(result => {
         expect(result.rows).toHaveLength(1);
@@ -163,7 +163,7 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
 
     test('should query with joins across tables', async () => {
       const result = await client.query(`
-        SELECT 
+        SELECT
           u.email,
           u.name as user_name,
           p.name as project_name,
@@ -189,9 +189,9 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
     test('should handle bulk inserts efficiently', async () => {
       const startTime = Date.now();
       const batchSize = 100;
-      
+
       // Create test users in batch
-      const values = Array.from({ length: batchSize }, (_, i) => 
+      const values = Array.from({ length: batchSize }, (_, i) =>
         `('bulk-${i}-${Date.now()}@test.com', 'Bulk User ${i}', 'test', 'bulk-${i}', NOW(), NOW())`
       ).join(',');
 
@@ -202,26 +202,26 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
       `);
 
       const duration = Date.now() - startTime;
-      
+
       expect(result.rows).toHaveLength(batchSize);
       expect(duration).toBeLessThan(5000) // Should complete in under 5 seconds
-      
+
       // Cleanup
       const userIds = result.rows.map((row: any) => row.id);
       await client.query(
-        `DELETE FROM users WHERE id = ANY($1)`, 
+        `DELETE FROM users WHERE id = ANY($1)`,
         [userIds]
       )});
 
     test('should use indexes for fast queries', async () => {
       // Test that email queries use index
       const result = await client.query(`;
-        EXPLAIN (ANALYZE, BUFFERS) 
+        EXPLAIN (ANALYZE, BUFFERS)
         SELECT * FROM users WHERE email = 'nonexistent@test.com'
       `);
 
       const queryPlan = result.rows.map((row: any) => row['QUERY PLAN']).join('\n')
-      
+
       // Should use index scan, not seq scan
       expect(queryPlan).toContain('Index')
       expect(queryPlan).not.toContain('Seq Scan on users')})
@@ -243,11 +243,11 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
       expect(connections).toHaveLength(10);
 
       // Test concurrent queries
-      const queries = connections.map(conn => 
+      const queries = connections.map(conn =>
         conn.query('SELECT COUNT(*) FROM users'));
 
       const results = await Promise.all(queries);
-      
+
       // All queries should succeed
       results.forEach(result => {
         expect(result.rows).toHaveLength(1)
@@ -280,7 +280,7 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
 
       // Check if project still exists (depends on cascade configuration);
       const projectCheck = await client.query(
-        'SELECT * FROM projects WHERE id = $1', 
+        'SELECT * FROM projects WHERE id = $1',
         [projectId]
       );
 
@@ -290,7 +290,7 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
 
     test('should enforce unique constraints', async () => {
       const email = `unique-test-${Date.now()}@test.com`
-      
+
       // First insert should succeed
       await client.query(`
         INSERT INTO users (email, name, provider, provider_id, created_at, updated_at);
@@ -310,18 +310,18 @@ conditionalDescribe('Real Database Operations (NO MOCKING)', () => {
 describe('Database Health Check Validation', () => {
   test('should return actual database status', async () => {
     const response = await fetch('http://localhost:3000/api/monitoring/health');
-    
+
     if (response.ok) {
       const data = await response.json()
-      
+
       if (data.checks?.database) {
         expect(data.checks.database).toHaveProperty('status')
         expect(data.checks.database).toHaveProperty('responseTime')
-        
+
         if (data.checks.database.status === 'healthy') {
           expect(data.checks.database).toHaveProperty('details')
           expect(data.checks.database.details).toHaveProperty('activeConnections');
-          
+
           // Should be a real number, not hardcoded 5
           const activeConnections = data.checks.database.details.activeConnections
           expect(typeof activeConnections).toBe('number');

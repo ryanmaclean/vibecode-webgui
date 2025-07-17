@@ -29,7 +29,7 @@ export class ProjectGenerator {
     public async generateProject(): Promise<void> {
         try {
             await this.validateApiKey();
-            
+
             // Check if workspace is empty
             const workspaceFolders = vscode.workspace.workspaceFolders;
             if (!workspaceFolders || workspaceFolders.length === 0) {
@@ -37,7 +37,7 @@ export class ProjectGenerator {
                     'No workspace folder found. Please open a folder first.',
                     'Open Folder'
                 );
-                
+
                 if (action === 'Open Folder') {
                     vscode.commands.executeCommand('workbench.action.files.openFolder');
                 }
@@ -46,7 +46,7 @@ export class ProjectGenerator {
 
             const workspaceFolder = workspaceFolders[0];
             const folderPath = workspaceFolder.uri.fsPath;
-            
+
             // Check if folder is not empty
             const files = await this.listDirectoryContents(folderPath);
             if (files.length > 0) {
@@ -55,7 +55,7 @@ export class ProjectGenerator {
                     'Proceed',
                     'Cancel'
                 );
-                
+
                 if (proceed !== 'Proceed') {
                     return;
                 }
@@ -103,30 +103,30 @@ export class ProjectGenerator {
                 cancellable: true
             }, async (progress, token) => {
                 progress.report({ increment: 0, message: 'Analyzing requirements...' });
-                
+
                 const projectTemplate = await this.generateProjectTemplate(
                     projectDescription,
                     projectType,
                     token
                 );
-                
+
                 if (token.isCancellationRequested) {
                     return;
                 }
 
                 progress.report({ increment: 50, message: 'Creating files...' });
-                
+
                 await this.createProjectFiles(projectTemplate, folderPath, progress);
-                
+
                 progress.report({ increment: 100, message: 'Project generated successfully!' });
-                
+
                 // Show completion message
                 const viewProject = await vscode.window.showInformationMessage(
                     `Project "${projectTemplate.name}" generated successfully!`,
                     'View Files',
                     'Open README'
                 );
-                
+
                 if (viewProject === 'View Files') {
                     vscode.commands.executeCommand('workbench.view.explorer');
                 } else if (viewProject === 'Open README') {
@@ -190,7 +190,7 @@ Generate between 5-15 files depending on project complexity.`;
             // Extract JSON from response (handle markdown code blocks)
             const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/```\n([\s\S]*?)\n```/);
             const jsonContent = jsonMatch ? jsonMatch[1] : content;
-            
+
             const projectTemplate: ProjectTemplate = JSON.parse(jsonContent);
             return projectTemplate;
         } catch (error) {
@@ -220,9 +220,9 @@ Generate between 5-15 files depending on project complexity.`;
 
             completedFiles++;
             const increment = (completedFiles / totalFiles) * 50; // 50% of remaining progress
-            progress.report({ 
-                increment, 
-                message: `Created ${file.path}` 
+            progress.report({
+                increment,
+                message: `Created ${file.path}`
             });
 
             // Small delay to show progress
@@ -241,17 +241,17 @@ Generate between 5-15 files depending on project complexity.`;
 
     private async validateApiKey(): Promise<void> {
         const apiKey = vscode.workspace.getConfiguration('vibecode').get<string>('openRouterApiKey');
-        
+
         if (!apiKey) {
             const action = await vscode.window.showErrorMessage(
                 'OpenRouter API key is required. Please set it in settings.',
                 'Open Settings'
             );
-            
+
             if (action === 'Open Settings') {
                 vscode.commands.executeCommand('workbench.action.openSettings', 'vibecode.openRouterApiKey');
             }
-            
+
             throw new Error('API key not configured');
         }
     }

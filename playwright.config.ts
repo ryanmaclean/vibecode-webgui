@@ -7,43 +7,43 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   // Test directory
   testDir: './tests/e2e',
-  
+
   // Run tests in files in parallel
   fullyParallel: true,
-  
+
   // Fail the build on CI if you accidentally left test.only in the source code
   forbidOnly: !!process.env.CI,
-  
+
   // Retry on CI only
   retries: process.env.CI ? 2 : 0,
-  
+
   // Opt out of parallel tests on CI
   workers: process.env.CI ? 1 : undefined,
-  
+
   // Reporter to use
   reporter: [
     ['html'],
     ['json', { outputFile: 'playwright-report/results.json' }],
     ['junit', { outputFile: 'playwright-report/results.xml' }],
   ],
-  
+
   // Shared settings for all the projects below
   use: {
     // Base URL to use in actions like `await page.goto('/')`
     baseURL: 'http://localhost:3000',
-    
+
     // Collect trace when retrying the failed test
     trace: 'on-first-retry',
-    
+
     // Capture screenshot after each test failure
     screenshot: 'only-on-failure',
-    
+
     // Record video on test failure
     video: 'retain-on-failure',
-    
+
     // Global timeout for each action
     actionTimeout: 15000,
-    
+
     // Global timeout for navigation
     navigationTimeout: 30000,
   },
@@ -62,7 +62,7 @@ export default defineConfig({
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
     },
-    
+
     // Test against mobile viewports
     {
       name: 'Mobile Chrome',
@@ -72,7 +72,7 @@ export default defineConfig({
       name: 'Mobile Safari',
       use: { ...devices['iPhone 12'] },
     },
-    
+
     // Test against branded browsers
     {
       name: 'Microsoft Edge',
@@ -107,7 +107,7 @@ export default defineConfig({
 
   // Test timeout
   timeout: 60000,
-  
+
   // Expect timeout
   expect: {
     timeout: 10000,
@@ -115,7 +115,7 @@ export default defineConfig({
 
   // Output directory for test artifacts
   outputDir: 'test-results/',
-  
+
   // Maximum time for the entire test run
   globalTimeout: 600000,
 });
