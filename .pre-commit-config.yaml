@@ -38,7 +38,7 @@ repos:
 
       - id: test-suite
         name: Run Test Suite
-        entry: npm run test:unit
+        entry: npm test
         language: system
         files: \.(js|jsx|ts|tsx)$
         stages: [commit]
