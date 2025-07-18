@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VibeCode Authentication GUI Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .credential-test {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .credential-info {
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 10px;
+        }
+        .test-button {
+            background-color: #2563eb;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background-color: #1d4ed8;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+        .error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .info {
+            background-color: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #3b82f6;
+        }
+        .instructions {
+            background-color: #fef3c7;
+            color: #92400e;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .main-link {
+            display: inline-block;
+            background-color: #059669;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .main-link:hover {
+            background-color: #047857;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 VibeCode Authentication GUI Test</h1>
+        
+        <div class="instructions">
+            <strong>Testing Instructions:</strong><br>
+            1. Click "Open Sign-In Page" to access the live GUI<br>
+            2. Test each credential set by clicking the "Test" buttons below<br>
+            3. Each test will open a new tab with the credentials pre-filled<br>
+            4. Click "Sign in" on the actual webpage to verify authentication<br>
+            5. Check if you're redirected to the dashboard successfully
+        </div>
+
+        <div style="text-align: center; margin: 20px 0;">
+            <a href="http://localhost:3000/auth/signin" target="_blank" class="main-link">
+                🌐 Open Sign-In Page (Main)
+            </a>
+        </div>
+
+        <h2>Test All 10 Credentials</h2>
+
+        <div class="credential-test">
+            <div class="credential-info">1. Admin Account</div>
+            <div><strong>Email:</strong> admin@vibecode.dev</div>
+            <div><strong>Password:</strong> admin123</div>
+            <div><strong>Role:</strong> Admin</div>
+            <button class="test-button" onclick="testCredential('admin@vibecode.dev', 'admin123', 'Admin')">Test Admin Login</button>
+            <div id="result-admin" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="credential-test">
+            <div class="credential-info">2. Lead Account</div>
+            <div><strong>Email:</strong> lead@vibecode.dev</div>
+            <div><strong>Password:</strong> lead123</div>
+            <div><strong>Role:</strong> Admin</div>
+            <button class="test-button" onclick="testCredential('lead@vibecode.dev', 'lead123', 'Lead')">Test Lead Login</button>
+            <div id="result-lead" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="credential-test">
+            <div class="credential-info">3. Developer Account</div>
+            <div><strong>Email:</strong> developer@vibecode.dev</div>
+            <div><strong>Password:</strong> dev123</div>
+            <div><strong>Role:</strong> User</div>
+            <button class="test-button" onclick="testCredential('developer@vibecode.dev', 'dev123', 'Developer')">Test Developer Login</button>
+            <div id="result-developer" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="credential-test">
+            <div class="credential-info">4. Frontend Account</div>
+            <div><strong>Email:</strong> frontend@vibecode.dev</div>
+            <div><strong>Password:</strong> frontend123</div>
+            <div><strong>Role:</strong> User</div>
+            <button class="test-button" onclick="testCredential('frontend@vibecode.dev', 'frontend123', 'Frontend')">Test Frontend Login</button>
+            <div id="result-frontend" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="credential-test">
+            <div class="credential-info">5. Backend Account</div>
+            <div><strong>Email:</strong> backend@vibecode.dev</div>
+            <div><strong>Password:</strong> backend123</div>
+            <div><strong>Role:</strong> User</div>
+            <button class="test-button" onclick="testCredential('backend@vibecode.dev', 'backend123', 'Backend')">Test Backend Login</button>
+            <div id="result-backend" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="credential-test">
+            <div class="credential-info">6. Fullstack Account</div>
+            <div><strong>Email:</strong> fullstack@vibecode.dev</div>
+            <div><strong>Password:</strong> fullstack123</div>
+            <div><strong>Role:</strong> User</div>
+            <button class="test-button" onclick="testCredential('fullstack@vibecode.dev', 'fullstack123', 'Fullstack')">Test Fullstack Login</button>
+            <div id="result-fullstack" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="credential-test">
+            <div class="credential-info">7. Designer Account</div>
+            <div><strong>Email:</strong> designer@vibecode.dev</div>
+            <div><strong>Password:</strong> design123</div>
+            <div><strong>Role:</strong> User</div>
+            <button class="test-button" onclick="testCredential('designer@vibecode.dev', 'design123', 'Designer')">Test Designer Login</button>
+            <div id="result-designer" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="credential-test">
+            <div class="credential-info">8. Tester Account</div>
+            <div><strong>Email:</strong> tester@vibecode.dev</div>
+            <div><strong>Password:</strong> test123</div>
+            <div><strong>Role:</strong> User</div>
+            <button class="test-button" onclick="testCredential('tester@vibecode.dev', 'test123', 'Tester')">Test Tester Login</button>
+            <div id="result-tester" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="credential-test">
+            <div class="credential-info">9. DevOps Account</div>
+            <div><strong>Email:</strong> devops@vibecode.dev</div>
+            <div><strong>Password:</strong> devops123</div>
+            <div><strong>Role:</strong> User</div>
+            <button class="test-button" onclick="testCredential('devops@vibecode.dev', 'devops123', 'DevOps')">Test DevOps Login</button>
+            <div id="result-devops" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="credential-test">
+            <div class="credential-info">10. Intern Account</div>
+            <div><strong>Email:</strong> intern@vibecode.dev</div>
+            <div><strong>Password:</strong> intern123</div>
+            <div><strong>Role:</strong> User</div>
+            <button class="test-button" onclick="testCredential('intern@vibecode.dev', 'intern123', 'Intern')">Test Intern Login</button>
+            <div id="result-intern" class="result" style="display:none;"></div>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <button class="test-button" onclick="testAllCredentials()" style="background-color: #059669; font-size: 16px; padding: 15px 30px;">
+                🧪 Test All Credentials (Opens 10 Tabs)
+            </button>
+        </div>
+
+        <div class="instructions">
+            <strong>What to Look For:</strong><br>
+            ✅ <strong>Success:</strong> Page redirects to dashboard after clicking "Sign in"<br>
+            ❌ <strong>Failure:</strong> Error message appears or login doesn't work<br>
+            ℹ️ <strong>Note:</strong> Each test opens a new tab with credentials pre-filled for manual verification
+        </div>
+    </div>
+
+    <script>
+        function testCredential(email, password, role) {
+            const resultId = 'result-' + role.toLowerCase();
+            const resultElement = document.getElementById(resultId);
+            
+            // Show testing status
+            resultElement.style.display = 'block';
+            resultElement.className = 'result info';
+            resultElement.innerHTML = `🔄 Testing ${role} credentials... (New tab opened)`;
+            
+            // Create a form and submit it in a new tab
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'http://localhost:3000/api/auth/signin/credentials';
+            form.target = '_blank';
+            
+            // Add form fields
+            const fields = [
+                { name: 'email', value: email },
+                { name: 'password', value: password },
+                { name: 'callbackUrl', value: 'http://localhost:3000/dashboard' }
+            ];
+            
+            fields.forEach(field => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = field.name;
+                input.value = field.value;
+                form.appendChild(input);
+            });
+            
+            // Get CSRF token first
+            fetch('http://localhost:3000/api/auth/csrf')
+                .then(response => response.json())
+                .then(data => {
+                    const csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrfToken';
+                    csrfInput.value = data.csrfToken;
+                    form.appendChild(csrfInput);
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                    document.body.removeChild(form);
+                    
+                    // Update result
+                    resultElement.className = 'result info';
+                    resultElement.innerHTML = `📝 ${role} test initiated. Check the new tab for results.<br>
+                        <strong>Email:</strong> ${email}<br>
+                        <strong>Expected:</strong> Should redirect to dashboard on successful login`;
+                })
+                .catch(error => {
+                    resultElement.className = 'result error';
+                    resultElement.innerHTML = `❌ Error getting CSRF token: ${error.message}`;
+                });
+        }
+        
+        function testAllCredentials() {
+            const credentials = [
+                { email: 'admin@vibecode.dev', password: 'admin123', role: 'Admin' },
+                { email: 'lead@vibecode.dev', password: 'lead123', role: 'Lead' },
+                { email: 'developer@vibecode.dev', password: 'dev123', role: 'Developer' },
+                { email: 'frontend@vibecode.dev', password: 'frontend123', role: 'Frontend' },
+                { email: 'backend@vibecode.dev', password: 'backend123', role: 'Backend' },
+                { email: 'fullstack@vibecode.dev', password: 'fullstack123', role: 'Fullstack' },
+                { email: 'designer@vibecode.dev', password: 'design123', role: 'Designer' },
+                { email: 'tester@vibecode.dev', password: 'test123', role: 'Tester' },
+                { email: 'devops@vibecode.dev', password: 'devops123', role: 'DevOps' },
+                { email: 'intern@vibecode.dev', password: 'intern123', role: 'Intern' }
+            ];
+            
+            credentials.forEach((cred, index) => {
+                setTimeout(() => {
+                    testCredential(cred.email, cred.password, cred.role);
+                }, index * 500); // Stagger the tests by 500ms each
+            });
+        }
+        
+        // Check if the server is running
+        fetch('http://localhost:3000/api/health/simple')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    console.log('✅ VibeCode server is running and healthy');
+                }
+            })
+            .catch(error => {
+                console.error('❌ VibeCode server may not be running:', error);
+                alert('⚠️ Warning: VibeCode server may not be running on localhost:3000. Please start the server first.');
+            });
+    </script>
+</body>
+</html>

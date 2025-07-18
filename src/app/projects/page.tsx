@@ -6,22 +6,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ProjectTemplates } from '@/components/projects/ProjectTemplates'
 import { ProjectScaffolder } from '@/components/projects/ProjectScaffolder'
+import { AIProjectGenerator } from '@/components/projects/AIProjectGenerator'
 import {
   FolderPlus,
   Sparkles,
-  Download,
   ExternalLink,
   Rocket,
   Code,
   Zap,
-  Shield
+  Shield,
+  Bot
 } from 'lucide-react'
 import { ProjectTemplate } from '@/lib/project-templates'
+import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 
 export default function ProjectsPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null)
   const [projectName, setProjectName] = useState('')
-  const [activeTab, setActiveTab] = useState('templates')
+  const [activeTab, setActiveTab] = useState('ai-generator')
+  const router = useRouter()
+  const { data: session } = useSession()
 
   const handleTemplateSelect = (template: ProjectTemplate) => {
     setSelectedTemplate(template)
@@ -33,7 +38,52 @@ export default function ProjectsPage() {
     setActiveTab('scaffolder')
   }
 
-  const handleDownloadProject = (projectData: any) => {
+  const handleCreateWorkspace = async (projectData: { files: unknown[]; name: string }) => {
+    try {
+      if (!session?.user) {
+        alert('Please sign in to create workspaces')
+        return
+      }
+
+      // Create code-server session
+      const sessionResponse = await fetch('/api/code-server/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          workspaceId: `template-${Date.now()}`,
+          userId: session.user.id
+        })
+      })
+
+      if (!sessionResponse.ok) {
+        throw new Error('Failed to create workspace')
+      }
+
+      const sessionData = await sessionResponse.json()
+
+      // Seed workspace with generated files
+      await fetch('/api/files/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          workspaceId: sessionData.workspaceId,
+          files: projectData.files
+        })
+      })
+
+      // Redirect to workspace
+      router.push(`/workspace/${sessionData.workspaceId}`)
+    } catch (error) {
+      console.error('Failed to create workspace:', error)
+      alert('Failed to create workspace. Please try again.')
+    }
+  }
+
+  const handleDownloadProject = (projectData: { files: unknown[]; name: string }) => {
     // Create a download bundle
     const projectFiles = projectData.files
     const zipContent = createProjectZip(projectFiles, projectData.name)
@@ -51,16 +101,16 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="border-b bg-white/50 backdrop-blur-sm">
+      <div className="border-b bg-white">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="text-4xl font-bold mb-3">
+            <h1 className="text-4xl font-bold mb-3 text-gray-900">
               AI-Powered Project Builder
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Create production-ready projects in minutes with our intelligent templates and scaffolding system.
+            <p className="text-xl text-gray-700 max-w-3xl mx-auto">
+              Create production-ready projects in minutes with AI generation or choose from our intelligent templates.
             </p>
           </div>
 
@@ -70,7 +120,7 @@ export default function ProjectsPage() {
               <CardContent className="flex items-center justify-center p-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">15+</div>
-                  <div className="text-sm text-gray-600">Templates</div>
+                  <div className="text-sm text-gray-700">Templates</div>
                 </div>
               </CardContent>
             </Card>
@@ -78,7 +128,7 @@ export default function ProjectsPage() {
               <CardContent className="flex items-center justify-center p-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">10+</div>
-                  <div className="text-sm text-gray-600">Languages</div>
+                  <div className="text-sm text-gray-700">Languages</div>
                 </div>
               </CardContent>
             </Card>
@@ -86,7 +136,7 @@ export default function ProjectsPage() {
               <CardContent className="flex items-center justify-center p-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-purple-600">5min</div>
-                  <div className="text-sm text-gray-600">Setup Time</div>
+                  <div className="text-sm text-gray-700">Setup Time</div>
                 </div>
               </CardContent>
             </Card>
@@ -94,7 +144,7 @@ export default function ProjectsPage() {
               <CardContent className="flex items-center justify-center p-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-orange-600">100%</div>
-                  <div className="text-sm text-gray-600">Production Ready</div>
+                  <div className="text-sm text-gray-700">Production Ready</div>
                 </div>
               </CardContent>
             </Card>
@@ -105,16 +155,24 @@ export default function ProjectsPage() {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="ai-generator" className="flex items-center gap-2">
+              <Bot className="w-4 h-4" />
+              AI Generator
+            </TabsTrigger>
             <TabsTrigger value="templates" className="flex items-center gap-2">
               <FolderPlus className="w-4 h-4" />
-              Browse Templates
+              Templates
             </TabsTrigger>
             <TabsTrigger value="scaffolder" className="flex items-center gap-2" disabled={!selectedTemplate}>
               <Sparkles className="w-4 h-4" />
-              AI Scaffolder
+              Customize
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="ai-generator">
+            <AIProjectGenerator className="mb-8" />
+          </TabsContent>
 
           <TabsContent value="templates">
             {!selectedTemplate ? (
@@ -129,7 +187,7 @@ export default function ProjectsPage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-gray-600">
+                      <p className="text-gray-700">
                         Get from idea to running code in minutes with our pre-configured templates and automated setup.
                       </p>
                     </CardContent>
@@ -143,7 +201,7 @@ export default function ProjectsPage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-gray-600">
+                      <p className="text-gray-700">
                         Every template follows industry best practices with proper structure, security, and performance optimizations.
                       </p>
                     </CardContent>
@@ -157,7 +215,7 @@ export default function ProjectsPage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-gray-600">
+                      <p className="text-gray-700">
                         Intelligent code generation and customization powered by advanced AI to match your specific needs.
                       </p>
                     </CardContent>
@@ -244,6 +302,7 @@ export default function ProjectsPage() {
               <ProjectScaffolder
                 template={selectedTemplate}
                 projectName={projectName || selectedTemplate.name.toLowerCase().replace(/\s+/g, '-')}
+                onGenerate={handleCreateWorkspace}
                 onDownload={handleDownloadProject}
               />
             )}
@@ -275,13 +334,14 @@ export default function ProjectsPage() {
 }
 
 // Helper function to create project zip (simplified version)
-function createProjectZip(files: any[], projectName: string): string {
+function createProjectZip(files: unknown[], projectName: string): string {
   // In a real implementation, you'd use a library like JSZip
   // For now, return a simple text representation
   let zipContent = `# ${projectName} Project Files\n\n`
 
   files.forEach(file => {
-    zipContent += `## ${file.path}\n\`\`\`\n${file.content}\n\`\`\`\n\n`
+    const typedFile = file as { path?: string; content?: string }
+    zipContent += `## ${typedFile.path || 'unknown'}\n\`\`\`\n${typedFile.content || ''}\n\`\`\`\n\n`
   })
 
   return zipContent

@@ -155,7 +155,7 @@ export default function Home() {
             {/* Quick Start Card */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center mb-4">
-                <div className="h-8 w-8 bg-green-600 rounded-lg flex items-center justify-center">
+                <div className="h-8 w-8 bg-green-700 rounded-lg flex items-center justify-center">
                   <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
@@ -165,7 +165,7 @@ export default function Home() {
               <p className="text-gray-600 mb-4">Create a new development environment with AI assistance</p>
               <Link
                 href="/workspace/demo-workspace"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
               >
                 Start Coding
               </Link>

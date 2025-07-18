@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { monitoring } from '@/lib/monitoring'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   const startTime = Date.now()
 
   try {
@@ -77,7 +77,7 @@ function checkMemoryUsage() {
         percentage: `${Math.round(memoryPercentage)}%`
       }
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       status: 'error',
       error: 'Failed to check memory usage'
@@ -89,7 +89,7 @@ async function checkDiskSpace() {
   try {
     // Basic disk space check (platform-specific)
     const fs = await import('fs/promises')
-    const stats = await fs.stat(process.cwd())
+    const _stats = await fs.stat(process.cwd())
 
     return {
       status: 'healthy',
@@ -98,7 +98,7 @@ async function checkDiskSpace() {
         writable: true
       }
     }
-  } catch (error) {
+  } catch (_error) {
     return {
       status: 'error',
       error: 'Failed to check disk space'

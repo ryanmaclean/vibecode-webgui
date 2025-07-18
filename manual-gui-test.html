@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual GUI Authentication Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .instructions {
+            background-color: #e0f2fe;
+            color: #0277bd;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            border-left: 4px solid #0277bd;
+        }
+        .credential-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .credential-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .credential-card h3 {
+            margin-top: 0;
+            color: #2563eb;
+        }
+        .credential-info {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .main-button {
+            display: block;
+            width: 100%;
+            background-color: #059669;
+            color: white;
+            padding: 20px;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .main-button:hover {
+            background-color: #047857;
+        }
+        .status-indicator {
+            text-align: center;
+            font-size: 16px;
+            margin: 20px 0;
+        }
+        .status-success {
+            color: #059669;
+            font-weight: bold;
+        }
+        .status-error {
+            color: #dc2626;
+            font-weight: bold;
+        }
+        .test-results {
+            background-color: #f0f9ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Manual GUI Authentication Test</h1>
+        
+        <div class="instructions">
+            <h3>📋 Testing Steps:</h3>
+            <ol>
+                <li><strong>Click the "Open VibeCode Sign-In Page" button below</strong></li>
+                <li><strong>Choose any credential set from the list below</strong></li>
+                <li><strong>Enter the email and password on the sign-in page</strong></li>
+                <li><strong>Click "Sign in" and verify you're redirected to the dashboard</strong></li>
+                <li><strong>Try multiple credentials to confirm they all work</strong></li>
+            </ol>
+        </div>
+
+        <div class="status-indicator">
+            <span id="server-status">⏳ Checking server status...</span>
+        </div>
+
+        <a href="http://localhost:3000/auth/signin" target="_blank" class="main-button">
+            🌐 Open VibeCode Sign-In Page
+        </a>
+
+        <h2>Available Test Credentials</h2>
+        <div class="credential-grid">
+            <div class="credential-card">
+                <h3>🔑 Admin Account</h3>
+                <div class="credential-info">
+                    Email: admin@vibecode.dev<br>
+                    Password: admin123<br>
+                    Role: Admin
+                </div>
+            </div>
+
+            <div class="credential-card">
+                <h3>🔑 Lead Account</h3>
+                <div class="credential-info">
+                    Email: lead@vibecode.dev<br>
+                    Password: lead123<br>
+                    Role: Admin
+                </div>
+            </div>
+
+            <div class="credential-card">
+                <h3>🔑 Developer Account</h3>
+                <div class="credential-info">
+                    Email: developer@vibecode.dev<br>
+                    Password: dev123<br>
+                    Role: User
+                </div>
+            </div>
+
+            <div class="credential-card">
+                <h3>🔑 Frontend Account</h3>
+                <div class="credential-info">
+                    Email: frontend@vibecode.dev<br>
+                    Password: frontend123<br>
+                    Role: User
+                </div>
+            </div>
+
+            <div class="credential-card">
+                <h3>🔑 Backend Account</h3>
+                <div class="credential-info">
+                    Email: backend@vibecode.dev<br>
+                    Password: backend123<br>
+                    Role: User
+                </div>
+            </div>
+
+            <div class="credential-card">
+                <h3>🔑 Fullstack Account</h3>
+                <div class="credential-info">
+                    Email: fullstack@vibecode.dev<br>
+                    Password: fullstack123<br>
+                    Role: User
+                </div>
+            </div>
+
+            <div class="credential-card">
+                <h3>🔑 Designer Account</h3>
+                <div class="credential-info">
+                    Email: designer@vibecode.dev<br>
+                    Password: design123<br>
+                    Role: User
+                </div>
+            </div>
+
+            <div class="credential-card">
+                <h3>🔑 Tester Account</h3>
+                <div class="credential-info">
+                    Email: tester@vibecode.dev<br>
+                    Password: test123<br>
+                    Role: User
+                </div>
+            </div>
+
+            <div class="credential-card">
+                <h3>🔑 DevOps Account</h3>
+                <div class="credential-info">
+                    Email: devops@vibecode.dev<br>
+                    Password: devops123<br>
+                    Role: User
+                </div>
+            </div>
+
+            <div class="credential-card">
+                <h3>🔑 Intern Account</h3>
+                <div class="credential-info">
+                    Email: intern@vibecode.dev<br>
+                    Password: intern123<br>
+                    Role: User
+                </div>
+            </div>
+        </div>
+
+        <div class="test-results">
+            <h3>✅ Expected Results:</h3>
+            <ul>
+                <li><strong>Successful Login:</strong> Page redirects to dashboard or home page</li>
+                <li><strong>User Session:</strong> You can see user information in the top navigation</li>
+                <li><strong>Access Control:</strong> Admin users may have additional menu options</li>
+                <li><strong>Persistent Session:</strong> Refreshing the page maintains your login state</li>
+            </ul>
+        </div>
+
+        <div class="instructions">
+            <h3>🔍 Troubleshooting:</h3>
+            <p><strong>If login fails:</strong></p>
+            <ul>
+                <li>Check that the VibeCode server is running on localhost:3000</li>
+                <li>Verify the email and password are typed correctly</li>
+                <li>Try refreshing the sign-in page and trying again</li>
+                <li>Check browser developer tools console for any errors</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Check server status
+        fetch('http://localhost:3000/api/health/simple')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    document.getElementById('server-status').innerHTML = 
+                        '<span class="status-success">✅ Server is running and healthy</span>';
+                } else {
+                    document.getElementById('server-status').innerHTML = 
+                        '<span class="status-error">⚠️ Server responded but status is not OK</span>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('server-status').innerHTML = 
+                    '<span class="status-error">❌ Server is not accessible. Please start the VibeCode server.</span>';
+            });
+
+        // Check if authentication providers are available
+        fetch('http://localhost:3000/api/auth/providers')
+            .then(response => response.json())
+            .then(data => {
+                if (data.credentials) {
+                    console.log('✅ Credentials provider is available');
+                } else {
+                    console.warn('⚠️ Credentials provider not found');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Unable to check auth providers:', error);
+            });
+    </script>
+</body>
+</html>

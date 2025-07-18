@@ -41,18 +41,20 @@ declare module 'next-auth/jwt' {
   }
 }
 
+// NextAuth configuration is properly loaded
+
 export const authOptions: NextAuthOptions = {
   // adapter: PrismaAdapter(prisma), // Disabled for file-based development
   secret: process.env.NEXTAUTH_SECRET,
   cookies: {
     sessionToken: {
-      name: `__Secure-next-auth.session-token`,
+      name: `next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined
+        secure: false, // Set to false for localhost development
+        domain: undefined // Remove domain for localhost
       }
     }
   },
@@ -92,24 +94,105 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        console.log('🔐 AUTHORIZE FUNCTION CALLED!', {
-          email: credentials?.email,
-          password: credentials?.password ? 'PROVIDED' : 'MISSING',
-          env: process.env.NODE_ENV
-        })
+        if (!credentials?.email || !credentials?.password) {
+          return null
+        }
 
-        // Simple hardcoded test
-        if (credentials?.email === 'developer@vibecode.dev' && credentials?.password === 'dev123') {
-          console.log('✅ HARDCODED TEST PASSED')
-          return {
+        // Development-only credential check (disabled in production)
+        const isDevelopment = process.env.NODE_ENV === 'development'
+        
+        if (!isDevelopment) {
+          return null
+        }
+
+        // Development test users - all 10 accounts
+        const testUsers = [
+          {
             id: '1',
+            email: 'admin@vibecode.dev',
+            password: 'admin123',
+            name: 'VibeCode Admin',
+            role: 'admin',
+          },
+          {
+            id: '2',
             email: 'developer@vibecode.dev',
-            name: 'Test Developer',
+            password: 'dev123',
+            name: 'Sarah Johnson',
             role: 'user',
+          },
+          {
+            id: '3',
+            email: 'frontend@vibecode.dev',
+            password: 'frontend123',
+            name: 'Michael Chen',
+            role: 'user',
+          },
+          {
+            id: '4',
+            email: 'backend@vibecode.dev',
+            password: 'backend123',
+            name: 'Emily Rodriguez',
+            role: 'user',
+          },
+          {
+            id: '5',
+            email: 'fullstack@vibecode.dev',
+            password: 'fullstack123',
+            name: 'David Kim',
+            role: 'user',
+          },
+          {
+            id: '6',
+            email: 'designer@vibecode.dev',
+            password: 'design123',
+            name: 'Jessica Taylor',
+            role: 'user',
+          },
+          {
+            id: '7',
+            email: 'tester@vibecode.dev',
+            password: 'test123',
+            name: 'Robert Wilson',
+            role: 'user',
+          },
+          {
+            id: '8',
+            email: 'devops@vibecode.dev',
+            password: 'devops123',
+            name: 'Amanda Garcia',
+            role: 'user',
+          },
+          {
+            id: '9',
+            email: 'intern@vibecode.dev',
+            password: 'intern123',
+            name: 'James Martinez',
+            role: 'user',
+          },
+          {
+            id: '10',
+            email: 'lead@vibecode.dev',
+            password: 'lead123',
+            name: 'Lisa Thompson',
+            role: 'admin',
+          },
+        ]
+
+        // Find matching user
+        const user = testUsers.find(u => 
+          u.email === credentials.email && u.password === credentials.password
+        )
+
+        if (user) {
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
           }
         }
 
-        console.log('❌ HARDCODED TEST FAILED')
         return null
       },
     }),
@@ -129,43 +212,30 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      console.log('🔑 JWT callback:', {
-        hasUser: !!user,
-        hasToken: !!token,
-        provider: account?.provider,
-        tokenId: token?.id,
-        userId: user?.id
-      })
-
       if (user) {
         token.id = user.id
         token.role = user.role
+        token.email = user.email
+        token.name = user.name
         if (account?.provider === 'github') {
           token.githubId = user.githubId
         }
         if (account?.provider === 'google') {
           token.googleId = user.googleId
         }
-        console.log('✅ JWT token updated with user:', { id: token.id, role: token.role })
       }
       return token
     },
     async session({ session, token }) {
-      console.log('📋 Session callback:', {
-        hasSession: !!session,
-        hasToken: !!token,
-        tokenId: token?.id,
-        sessionUserId: session?.user?.id
-      })
-
       if (token) {
         session.user.id = token.id
         session.user.role = token.role
-        console.log('✅ Session updated with token:', { id: session.user.id, role: session.user.role })
+        session.user.email = token.email
+        session.user.name = token.name
       }
       return session
     },
-    async signIn({ user, account, profile, email, credentials }) {
+    async signIn({ user: _user, account: _account, profile: _profile, email: _email, credentials: _credentials }) {
       // Allow sign in for all providers
       return true
     },

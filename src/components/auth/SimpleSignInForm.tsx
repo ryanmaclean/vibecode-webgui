@@ -39,7 +39,7 @@ export default function SimpleSignInForm() {
           setError('Authentication failed - no session created')
         }
       }
-    } catch (err) {
+    } catch (_err) {
       setError('An unexpected error occurred')
     } finally {
       setIsSubmitting(false)

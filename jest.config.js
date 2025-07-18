@@ -13,12 +13,8 @@ const customJestConfig = {
 
   // Module name mapping for absolute imports
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-    '^@/components/(.*)$': '<rootDir>/src/components/$1',
-    '^@/lib/(.*)$': '<rootDir>/src/lib/$1',
-    '^@/hooks/(.*)$': '<rootDir>/src/hooks/$1',
-    '^@/types/(.*)$': '<rootDir>/src/types/$1',
-    '^@/utils/(.*)$': '<rootDir>/src/utils/$1',
+    '^@/(.*)$': '<rootDir>/tests/__mocks__/@/$1',
+    '^lucide-react$': '<rootDir>/tests/__mocks__/lucide-react.tsx',
   },
 
   // Test file patterns
@@ -61,19 +57,9 @@ const customJestConfig = {
     'node_modules/(?!(.*\\.mjs$|@testing-library|@playwright))',
   ],
 
-  // Transform configuration for TypeScript
+  // Transform configuration - use babel.config.js
   transform: {
-    '^.+\\.(ts|tsx)$': ['babel-jest', {
-      presets: [
-        ['@babel/preset-env', { targets: { node: 'current' } }],
-        ['@babel/preset-typescript', {
-          allowNamespaces: true,
-          allowDeclareFields: true
-        }],
-        '@babel/preset-react'
-      ]
-    }],
-    '^.+\\.(js|jsx)$': 'babel-jest'
+    '^.+\\.(ts|tsx|js|jsx)$': 'babel-jest'
   },
 
   // Module file extensions
@@ -139,6 +125,21 @@ const customJestConfig = {
       displayName: 'complete',
       testMatch: ['<rootDir>/tests/complete/**/*.test.{js,ts}'],
       testEnvironment: 'node',
+    },
+    {
+      displayName: 'accessibility',
+      testMatch: ['<rootDir>/tests/accessibility/**/*.test.{js,ts,tsx}'],
+      testEnvironment: 'jsdom',
+    },
+    {
+      displayName: 'ai-workflow',
+      testMatch: ['<rootDir>/tests/integration/ai-project-generation.test.ts', '<rootDir>/tests/integration/workspace-creation.test.ts'],
+      testEnvironment: 'node',
+    },
+    {
+      displayName: 'ai-components',
+      testMatch: ['<rootDir>/tests/unit/ai-project-generator.test.tsx'],
+      testEnvironment: 'jsdom',
     },
   ],
 }

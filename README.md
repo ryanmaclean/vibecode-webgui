@@ -10,7 +10,7 @@
 - 🚀 **Complete VS Code Experience**: Full IDE via code-server 4.101.2 (MIT licensed)
 - 🔐 **Enterprise 2FA/SSO**: Fully configured Authelia authentication with hardware keys, TOTP, and Duo push, protecting all ingress resources.
 - 🎯 **Infrastructure-First**: KIND (Kubernetes in Docker) orchestration eliminates 60-80% custom development.
-- 🤖 **AI Integration**: CodeCursor-inspired VS Code extension with OpenRouter multi-provider support (127 models).
+- 🤖 **AI Project Generation**: Complete Lovable/Replit/Bolt.diy-inspired workflow with OpenRouter multi-provider support (127 models). Natural language → live code-server workspace in seconds.
 - 🌐 **Production-Ready**: NGINX Ingress, cert-manager, Helm charts, persistent storage.
 - 📊 **Real-Time Monitoring & Test Visibility**: Datadog integration with live metrics, logs, alerts, and Test Optimization for CI/CD pipelines.
 - 🖥️ **React Management Dashboard**: Complete cluster administration interface with real-time Datadog metrics.
@@ -20,6 +20,8 @@
 
     **Note:** To run the security scans, you will need to add your Datadog API and App keys as secrets to your GitHub repository. The required secrets are `DD_API_KEY` and `DD_APP_KEY`.
 - 🎨 **Modern UI/UX**: React + TypeScript + Tailwind CSS dashboard with VS Code integration
+- ♿ **Accessibility Compliance**: WCAG 2.1 AA compliant with comprehensive accessibility testing, automated contrast validation, and jest-axe integration
+- 🔧 **Development Tools**: ESLint accessibility linting, pre-commit hooks, and comprehensive test coverage
 
 ## 🚀 Local Development Setup
 
@@ -399,9 +401,41 @@ resources:
 }
 ```
 
-#### AI Integration Test (OpenRouter + Claude-3.5-Sonnet)
+#### AI Project Generation (Lovable/Replit/Bolt.diy Workflow)
 ```bash
-# Test AI endpoint with streaming response
+# Test AI project generation with direct workspace creation
+curl -X POST http://localhost:3000/api/ai/generate-project \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Create a React todo app with authentication and database",
+    "projectName": "my-todo-app",
+    "language": "typescript",
+    "framework": "react",
+    "features": ["Authentication", "Database", "Testing"]
+  }'
+
+# Response: Complete project structure + live workspace
+# {
+#   "success": true,
+#   "workspaceId": "ai-project-abc123",
+#   "workspaceUrl": "/workspace/ai-project-abc123",
+#   "projectStructure": {
+#     "name": "my-todo-app",
+#     "description": "A React todo app with authentication and database",
+#     "files": [
+#       { "path": "src/App.tsx", "content": "...", "type": "file" },
+#       { "path": "src/components/TodoList.tsx", "content": "...", "type": "file" },
+#       { "path": "package.json", "content": "...", "type": "file" }
+#     ],
+#     "dependencies": { "react": "^18.0.0", "typescript": "^5.0.0" },
+#     "scripts": { "dev": "vite", "build": "tsc && vite build" }
+#   }
+# }
+```
+
+#### AI Chat Integration (OpenRouter + Claude-3.5-Sonnet)
+```bash
+# Test AI chat endpoint with streaming response
 curl -X POST http://localhost:3000/api/ai/chat/stream \
   -H "Content-Type: application/json" \
   -d '{
@@ -445,8 +479,19 @@ SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
 
 ### 🔄 Verified Data Flow
 
-**Complete user journey working end-to-end:**
+**Complete user journeys working end-to-end:**
 
+#### AI Project Generation (Lovable/Replit/Bolt.diy)
+1. **Natural Language Input** → AI Project Generator Interface (React)
+2. **Authentication** → NextAuth + PostgreSQL sessions
+3. **AI Processing** → OpenRouter API → Claude-3.5-Sonnet
+4. **Project Structure** → Complete file tree with content generation
+5. **Workspace Creation** → Automatic code-server session provisioning
+6. **File Seeding** → Generated files sync to workspace
+7. **Live Workspace** → User redirected to running code-server environment
+8. **Metrics Collection** → Real-time Datadog API integration (generation time, success rate)
+
+#### AI Chat Integration
 1. **User Input** → AI Chat Interface (React)
 2. **Authentication** → NextAuth + PostgreSQL sessions
 3. **Rate Limiting** → Redis-based protection (60 req/min)
@@ -470,6 +515,12 @@ kubectl run test-ai --image=curlimages/curl:latest --restart=Never -- \
   curl -s -X POST http://vibecode-service.vibecode.svc.cluster.local:3000/api/ai/chat/stream \
   -H "Content-Type: application/json" \
   -d '{"message":"Hello","model":"anthropic/claude-3.5-sonnet","context":{"workspaceId":"test","files":[],"previousMessages":[]}}'
+
+# Test accessibility compliance (WCAG 2.1 AA)
+npm run test tests/accessibility/contrast.test.js
+
+# Run accessibility linting
+npm run lint -- --ext .tsx,.ts src/ | grep -i accessibility
 
 # Check logs
 kubectl logs test-health
@@ -498,6 +549,7 @@ open http://localhost:3000/monitoring
 - **Performance Tracking**: Response times, error rates, active users
 - **Auto-refresh**: 30-second intervals for real-time updates
 - **Admin Controls**: Secure access with role-based permissions
+- **Accessibility**: WCAG 2.1 AA compliant interface with automated testing
 
 ### 📊 Performance Metrics
 
@@ -520,6 +572,8 @@ open http://localhost:3000/monitoring
 - **Network Security**: Pod-to-pod communication secured
 - **Input Validation**: Request validation on all endpoints
 - **Error Handling**: Graceful degradation without data exposure
+- **Accessibility Security**: WCAG 2.1 AA compliance with automated testing and contrast validation
+- **Development Security**: ESLint accessibility linting prevents accessibility regressions
 
 ### 🏗️ Infrastructure Status
 
@@ -683,6 +737,7 @@ This section outlines the standard procedure for debugging Kubernetes resources 
 - **Enterprise security** with authentication, rate limiting, and secrets management
 - **Complete data persistence** with PostgreSQL and Redis
 - **Real-time collaboration** ready for VS Code integration
+- **Accessibility-first UI** with WCAG 2.1 AA compliance and automated testing
 
 **Next steps:**
 1. **Customize your setup** with your own API keys and domain

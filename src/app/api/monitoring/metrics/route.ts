@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { getHealthCheck } from '@/lib/server-monitoring'
+// import { getHealthCheck } from '@/lib/server-monitoring' // Not used in this file
 import { client, v1 } from '@datadog/datadog-api-client'
 import os from 'os'
 
@@ -53,7 +53,7 @@ const getTimeRange = (minutes: number = 5) => {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Verify admin access
     const session = await getServerSession(authOptions)
@@ -276,6 +276,7 @@ function getDiskUsage(): number {
   try {
     // CRITICAL: Replace fake implementation with real disk usage
     if (process.platform !== 'win32') {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { execSync } = require('child_process')
       const dfOutput = execSync('df / | tail -1', { encoding: 'utf8' })
       const parts = dfOutput.trim().split(/\s+/)
@@ -285,8 +286,9 @@ function getDiskUsage(): number {
       return (used / total) * 100
     } else {
       // Windows: Use PowerShell to get disk usage
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { execSync } = require('child_process')
-      const psOutput = execSync('powershell "Get-WmiObject -Class Win32_LogicalDisk -Filter \\"DriveType=3\\" | Select-Object Size,FreeSpace"', { encoding: 'utf8' })
+      const _psOutput = execSync('powershell "Get-WmiObject -Class Win32_LogicalDisk -Filter \\"DriveType=3\\" | Select-Object Size,FreeSpace"', { encoding: 'utf8' })
       // Parse PowerShell output for disk usage
       return 15.0 // Simplified for Windows
     }
@@ -295,7 +297,7 @@ function getDiskUsage(): number {
   }
 }
 
-function getNetworkIO(): { in: number; out: number } {
+function _getNetworkIO(): { in: number; out: number } {
   // Simplified network I/O calculation - fallback only
   // In production, metrics come from Datadog
   return {
@@ -325,12 +327,13 @@ async function queryDatadogMetric(metric: string, timeRange: { from: number; to:
   }
 }
 
-function extractMetricValue(queryResult: any): number | null {
-  if (!queryResult || queryResult.status !== 'fulfilled') {
+function extractMetricValue(queryResult: unknown): number | null {
+  const typedResult = queryResult as { status?: string; value?: unknown }
+  if (!typedResult || typedResult.status !== 'fulfilled') {
     return null
   }
 
-  const result = queryResult.value
+  const result = typedResult.value as { series?: Array<{ pointlist?: Array<[number, number]> }> }
   if (!result?.series || result.series.length === 0) {
     return null
   }

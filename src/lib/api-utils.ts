@@ -9,7 +9,7 @@ type SessionUser = {
   role: string
 }
 
-export async function requireAuth(request: Request): Promise<{ session: { user: SessionUser } } | NextResponse> {
+export async function requireAuth(_request: Request): Promise<{ session: { user: SessionUser } } | NextResponse> {
   const session = await getServerSession(authOptions)
 
   if (!session?.user) {

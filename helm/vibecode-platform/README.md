@@ -7,6 +7,8 @@ A comprehensive Helm chart for deploying the VibeCode platform with per-user cod
 This Helm chart deploys a multi-tenant code-server platform that provides:
 
 - **Per-user code-server instances** with isolated workspaces
+- **AI Project Generation** with OpenRouter/Claude-3.5-Sonnet integration (Lovable/Replit/Bolt.diy workflow)
+- **Live workspace provisioning** from natural language project descriptions
 - **AI integration** with OpenRouter, MCP, and Artificial Analysis
 - **Security hardening** with Pod Security Standards, Network Policies, and RBAC
 - **Resource management** with quotas and limits

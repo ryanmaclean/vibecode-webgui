@@ -16,10 +16,6 @@ import {
   MessageSquare,
   Upload,
   Settings,
-  Play,
-  GitBranch,
-  Terminal,
-  Folders,
   Bot,
   Sparkles
 } from 'lucide-react'
