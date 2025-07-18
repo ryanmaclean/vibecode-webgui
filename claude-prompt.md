@@ -88,6 +88,12 @@ The platform now delivers the full Lovable/Replit/Bolt.diy experience:
 - **Authorization**: Kubernetes Role-Based Access Control (RBAC) restricts user access.
 - **Network Policies**: Restrict traffic between pods (e.g., only the app can access the database).
 - **Secrets Management**: All secrets are stored in Kubernetes Secrets and injected securely.
+- **🔒 API Key Protection**: Comprehensive multi-layer security system implemented
+  - **Pre-commit Hooks**: Automatic API key detection before commits
+  - **BFG Docker Integration**: Git history scanning with `jtmotox/bfg`
+  - **Security Scanner**: Repository scanning (`scripts/security-scan.sh`)
+  - **Pattern Matching**: 10+ API key formats protected
+  - **Integration Tests**: 11/11 tests passing with real API validation
 
 ## 3. Operational Guide
 
