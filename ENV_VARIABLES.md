@@ -55,7 +55,7 @@ REDIS_URL=redis://prod-redis-host:6379
 ### Required for All Environments
 ```bash
 # OpenRouter API for AI Models
-OPENROUTER_API_KEY=OPENROUTER_API_KEY_REMOVED
+OPENROUTER_API_KEY=sk-or-v1-your-openrouter-api-key
 
 # Claude API (Primary AI Model)
 ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key
