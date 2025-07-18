@@ -51,6 +51,18 @@ The script will:
 ```bash
 # AI Service Configuration
 OPENROUTER_API_KEY=sk-or-your-api-key-here
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key
+
+# AI Project Generation Settings
+AI_PROJECT_GENERATION_ENABLED=true
+AI_MAX_TOKENS=4000
+AI_TEMPERATURE=0.7
+CLAUDE_MODEL=claude-3-5-sonnet-20241022
+
+# Code-Server Integration
+CODE_SERVER_BASE_URL=http://localhost:8080
+CODE_SERVER_PASSWORD=your-code-server-password
+WORKSPACE_BASE_PATH=/workspaces
 
 # Authentication
 NEXTAUTH_SECRET=your-secure-random-string-here
@@ -70,6 +82,12 @@ REDIS_URL=redis://host:6379
 2. Sign up for an account
 3. Create a new API key
 4. Copy the key (starts with `sk-or-`)
+
+#### Anthropic API Key (For Claude AI)
+1. Visit [Anthropic Console](https://console.anthropic.com/keys)
+2. Sign up for an account
+3. Create a new API key
+4. Copy the key (starts with `sk-ant-`)
 
 #### NextAuth Secret
 Generate a secure random string:
@@ -133,6 +151,7 @@ Services included:
 - Redis Cache (port 6379)
 - NGINX Reverse Proxy (ports 80/443)
 - Code Server for VS Code (port 8080)
+- AI Gateway Service (port 3001)
 - Prometheus + Grafana (ports 9090/3001) - optional
 
 ## ☸️ Kubernetes Deployment
@@ -205,6 +224,9 @@ sudo systemctl reload nginx
 All deployments include health check endpoints:
 
 - **Health Check:** `GET /api/health`
+- **AI Project Generation:** `POST /api/ai/generate-project`
+- **Code-Server Sessions:** `POST /api/code-server/session`
+- **File Sync:** `POST /api/files/sync`
 - **Metrics:** Available in Docker/K8s deployments
 
 Example health check response:
@@ -217,7 +239,10 @@ Example health check response:
   "checks": {
     "memory": { "status": "healthy" },
     "database": { "status": "healthy" },
-    "ai": { "status": "healthy" }
+    "ai": { "status": "healthy" },
+    "codeServer": { "status": "healthy" },
+    "openrouter": { "status": "healthy" },
+    "anthropic": { "status": "healthy" }
   }
 }
 ```
@@ -230,6 +255,12 @@ Example health check response:
 - Ensure `OPENROUTER_API_KEY` is set correctly
 - Check the key format (should start with `sk-or-`)
 - Verify the key is active on OpenRouter dashboard
+
+#### "Anthropic API key not configured"
+- Ensure `ANTHROPIC_API_KEY` is set correctly
+- Check the key format (should start with `sk-ant-`)
+- Verify the key is active on Anthropic Console
+- Ensure you have sufficient Claude API credits
 
 #### "NextAuth configuration error"
 - Set `NEXTAUTH_SECRET` to a secure random string
@@ -245,6 +276,12 @@ Example health check response:
 - Verify `DATABASE_URL` format: `postgresql://user:pass@host:port/db`
 - Ensure database server is accessible
 - Check firewall rules and security groups
+
+#### AI project generation not working
+- Verify both `OPENROUTER_API_KEY` and `ANTHROPIC_API_KEY` are set
+- Check `AI_PROJECT_GENERATION_ENABLED=true` is set
+- Ensure `CODE_SERVER_BASE_URL` points to running code-server instance
+- Verify workspace directory permissions for `WORKSPACE_BASE_PATH`
 
 ### Performance Optimization
 

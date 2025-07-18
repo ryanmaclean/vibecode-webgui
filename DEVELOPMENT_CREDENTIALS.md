@@ -51,6 +51,8 @@ Use `admin@vibecode.dev / admin123` or `lead@vibecode.dev / lead123` to test:
 ### Standard User Testing
 Use any of the other accounts to test:
 - Standard user workflows
+- AI project generation features
+- Code-server workspace creation
 - Limited monitoring access
 - Basic development features
 - Collaboration tools
@@ -81,11 +83,29 @@ curl -X POST http://localhost:3000/api/auth/signin \
     "email": "developer@vibecode.dev",
     "password": "dev123"
   }'
+
+# Test AI project generation (requires authentication)
+curl -X POST http://localhost:3000/api/ai/generate-project \
+  -H "Content-Type: application/json" \
+  -H "Cookie: next-auth.session-token=<session-token>" \
+  -d '{
+    "prompt": "Create a React todo app with TypeScript",
+    "projectName": "test-todo-app"
+  }'
+
+# Test code-server session creation
+curl -X POST http://localhost:3000/api/code-server/session \
+  -H "Content-Type: application/json" \
+  -H "Cookie: next-auth.session-token=<session-token>" \
+  -d '{
+    "workspaceId": "test-workspace-123",
+    "userId": "developer@vibecode.dev"
+  }'
 ```
 
 ---
 
-**Last Updated**: July 16, 2025
+**Last Updated**: July 18, 2025
 **Environment**: Development Only
 **Status**: Active for local development
 **Next Step**: Deploy platform and configure OAuth providers

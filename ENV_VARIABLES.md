@@ -50,12 +50,34 @@ DATABASE_URL=postgresql://username:password@prod-db-host:5432/vibecode_prod
 REDIS_URL=redis://prod-redis-host:6379
 ```
 
-## 🤖 AI Integration
+## 🤖 AI Integration & Project Generation
 
 ### Required for All Environments
 ```bash
 # OpenRouter API for AI Models
 OPENROUTER_API_KEY=OPENROUTER_API_KEY_REMOVED
+
+# Claude API (Primary AI Model)
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key
+CLAUDE_MODEL=claude-3-5-sonnet-20241022
+
+# AI Project Generation Settings
+AI_PROJECT_GENERATION_ENABLED=true
+AI_MAX_TOKENS=4000
+AI_TEMPERATURE=0.7
+AI_MODEL_TIMEOUT=60000
+
+# Code-Server Integration
+CODE_SERVER_BASE_URL=http://localhost:8080
+CODE_SERVER_PASSWORD=your-code-server-password
+WORKSPACE_BASE_PATH=/workspaces
+```
+
+### Artificial Analysis Integration (Optional)
+```bash
+# AI Model Performance Analytics
+ARTIFICIAL_ANALYSIS_API_KEY=your-artificial-analysis-key
+AI_PERFORMANCE_MONITORING=true
 ```
 
 ## 📊 Monitoring & Observability
@@ -113,8 +135,11 @@ data:
   GOOGLE_CLIENT_SECRET: <base64-encoded-google-secret>
   DATADOG_API_KEY: <base64-encoded-datadog-key>
   OPENROUTER_API_KEY: <base64-encoded-openrouter-key>
+  ANTHROPIC_API_KEY: <base64-encoded-anthropic-key>
   DATABASE_URL: <base64-encoded-database-url>
   REDIS_URL: <base64-encoded-redis-url>
+  CODE_SERVER_PASSWORD: <base64-encoded-codeserver-password>
+  ARTIFICIAL_ANALYSIS_API_KEY: <base64-encoded-artificial-analysis-key>
 ```
 
 ## 📋 Environment Variable Checklist
@@ -123,9 +148,12 @@ data:
 - [ ] NEXTAUTH_URL
 - [ ] NEXTAUTH_SECRET
 - [ ] OPENROUTER_API_KEY
+- [ ] ANTHROPIC_API_KEY
 - [ ] DATABASE_URL
 - [ ] REDIS_URL
 - [ ] DATADOG_API_KEY
+- [ ] CODE_SERVER_BASE_URL
+- [ ] WORKSPACE_BASE_PATH
 - [ ] ADMIN_EMAIL (dev only)
 - [ ] ADMIN_PASSWORD (dev only)
 
@@ -161,16 +189,31 @@ const requiredEnvVars = [
   'NEXTAUTH_URL',
   'NEXTAUTH_SECRET',
   'OPENROUTER_API_KEY',
+  'ANTHROPIC_API_KEY',
   'DATABASE_URL',
   'REDIS_URL',
   'DATADOG_API_KEY',
+  'CODE_SERVER_BASE_URL',
+  'WORKSPACE_BASE_PATH',
 ];
 
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingVars.length > 0) {
   console.error('Missing required environment variables:', missingVars);
+  console.error('Please check ENV_VARIABLES.md for setup instructions');
   process.exit(1);
+}
+
+// Validate AI project generation is properly configured
+if (process.env.AI_PROJECT_GENERATION_ENABLED === 'true') {
+  const aiRequiredVars = ['OPENROUTER_API_KEY', 'ANTHROPIC_API_KEY', 'CODE_SERVER_BASE_URL'];
+  const missingAiVars = aiRequiredVars.filter(varName => !process.env[varName]);
+  
+  if (missingAiVars.length > 0) {
+    console.error('AI Project Generation enabled but missing variables:', missingAiVars);
+    process.exit(1);
+  }
 }
 ```
 
@@ -208,6 +251,6 @@ if (missingVars.length > 0) {
 
 ---
 
-**Last Updated**: July 16, 2025
+**Last Updated**: July 18, 2025
 **Next Review**: After production deployment
 **Owner**: Platform Team
