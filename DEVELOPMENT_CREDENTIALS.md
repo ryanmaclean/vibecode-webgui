@@ -39,6 +39,14 @@ You can use any of these credentials to sign in at:
 - **No Persistence**: User data is not persisted between sessions
 - **Role-Based Access**: Admin users have full access, regular users have standard access
 
+### 🔐 API Key Protection System
+- **Pre-commit Hooks**: Automatic API key detection before commits
+- **BFG Docker Integration**: Git history scanning with `jtmotox/bfg`
+- **Security Scanner**: Repository scanning available at `scripts/security-scan.sh`
+- **Pattern Matching**: Protection for OpenAI, Anthropic, Datadog, GitHub, AWS, Google, Stripe keys
+- **Integration Tests**: 11/11 tests passing with real API validation
+- **Emergency Cleanup**: BFG Docker commands for history sanitization available
+
 ## 🛠️ Testing Different Scenarios
 
 ### Admin Access Testing

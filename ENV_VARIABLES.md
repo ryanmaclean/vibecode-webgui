@@ -180,6 +180,46 @@ data:
 6. **Use Kubernetes secrets for cluster deployments**
 7. **Validate all required variables at startup**
 
+## 🔒 API Key Protection System
+
+VibeCode implements comprehensive API key protection to prevent accidental exposure:
+
+### Multi-Layer Security
+- **Pre-commit Hooks**: Automatic API key detection before commits
+- **BFG Docker Integration**: Git history scanning with `jtmotox/bfg`
+- **Security Scanner**: Comprehensive repository scanning (`scripts/security-scan.sh`)
+- **Pattern Matching**: Detection of 10+ API key formats (OpenAI, Anthropic, Datadog, GitHub, etc.)
+
+### Protected Key Patterns
+- ✅ OpenAI/OpenRouter: `sk-*` patterns
+- ✅ Anthropic: `sk-ant-*` patterns
+- ✅ Datadog: 32-character hex keys
+- ✅ GitHub: `ghp_*`, `gho_*`, `ghu_*` patterns
+- ✅ AWS: `AKIA*` access keys
+- ✅ Google: `ya29.*` OAuth tokens
+
+### Emergency Cleanup
+```bash
+# If API keys are accidentally committed
+./scripts/security-scan.sh
+
+# BFG cleanup (if needed)
+docker run --rm -v "$(pwd):/workspace" -w /workspace jtmotox/bfg \
+  --replace-text patterns.txt .git
+```
+
+### Validation Commands
+```bash
+# Run security scan
+./scripts/security-scan.sh
+
+# Check pre-commit hooks
+./scripts/pre-commit-tests.sh
+
+# Validate API keys work
+ENABLE_REAL_DATADOG_TESTS=true npm test -- tests/integration/real-datadog-integration.test.ts
+```
+
 ## 🔧 Environment Validation
 
 Add this to your startup script to validate required variables:
