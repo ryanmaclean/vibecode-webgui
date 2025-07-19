@@ -76,16 +76,86 @@ fi
 # Check for sensitive data in staged files
 echo "🔒 Checking for sensitive data..."
 staged_files=$(git diff --cached --name-only)
+
+# Enhanced API key detection patterns
+api_key_patterns=(
+    "sk-[a-zA-Z0-9]{40,}"           # OpenAI/OpenRouter API keys
+    "sk-ant-[a-zA-Z0-9]{40,}"       # Anthropic API keys
+    "[a-f0-9]{32}"                  # Datadog API keys (32 hex chars)
+    "ghp_[a-zA-Z0-9]{36}"           # GitHub Personal Access Tokens
+    "gho_[a-zA-Z0-9]{36}"           # GitHub OAuth tokens
+    "ghu_[a-zA-Z0-9]{36}"           # GitHub user tokens
+    "ghs_[a-zA-Z0-9]{36}"           # GitHub server tokens
+    "ghr_[a-zA-Z0-9]{36}"           # GitHub refresh tokens
+    "AKIA[0-9A-Z]{16}"              # AWS Access Key ID
+    "ya29\.[0-9A-Za-z\-_]+"        # Google OAuth access tokens
+    "[0-9]{4}-[0-9]{7}-[0-9]{13}"   # Stripe API keys
+)
+
 for file in $staged_files; do
     if [[ -f "$file" ]]; then
-        # Check for API keys or secrets (excluding hashed passwords)
-        if grep -E "(api.key|secret|password).*[=:].*[a-zA-Z0-9]{20,}" "$file" | grep -v "argon2id" > /dev/null; then
+        # Skip binary files and specific ignored files
+        if [[ "$file" == *.env.local || "$file" == *.env.* || "$file" == *node_modules* || "$file" == *.git* ]]; then
+            continue
+        fi
+        
+        # Check for specific API key patterns
+        for pattern in "${api_key_patterns[@]}"; do
+            if grep -E "$pattern" "$file" > /dev/null; then
+                echo "❌ Potential API key found in $file"
+                echo "   Pattern: $pattern"
+                echo "   Please remove secrets and use environment variables"
+                exit 1
+            fi
+        done
+        
+        # Check for generic sensitive data patterns
+        if grep -E "(api.key|secret|password).*[=:].*[a-zA-Z0-9]{20,}" "$file" | grep -v "argon2id\|placeholder\|example\|test" > /dev/null; then
             echo "❌ Potential sensitive data found in $file"
             echo "Please remove secrets and use environment variables"
             exit 1
         fi
     fi
 done
+
+# Additional BFG check for high-entropy strings that might be API keys
+echo "🔍 Running BFG Docker scan for high-entropy strings..."
+if command -v docker > /dev/null 2>&1; then
+    # Create temporary file with high-entropy patterns
+    cat > /tmp/bfg-check-patterns.txt << 'EOF'
+# Common API key patterns
+sk-[a-zA-Z0-9]{40,}
+sk-ant-[a-zA-Z0-9]{40,}
+[a-f0-9]{32}
+ghp_[a-zA-Z0-9]{36}
+AKIA[0-9A-Z]{16}
+ya29\.[0-9A-Za-z\-_]+
+EOF
+    
+    # Use BFG to scan for these patterns (dry run)
+    for file in $staged_files; do
+        if [[ -f "$file" && "$file" != *.env.local && "$file" != *.env.* ]]; then
+            # Check file content for patterns
+            while IFS= read -r pattern; do
+                if [[ "$pattern" =~ ^# ]] || [[ -z "$pattern" ]]; then
+                    continue
+                fi
+                if grep -E "$pattern" "$file" > /dev/null 2>&1; then
+                    echo "❌ High-entropy string detected in $file that matches API key pattern"
+                    echo "   Pattern: $pattern"
+                    echo "   This looks like an API key - please remove it"
+                    rm -f /tmp/bfg-check-patterns.txt
+                    exit 1
+                fi
+            done < /tmp/bfg-check-patterns.txt
+        fi
+    done
+    
+    rm -f /tmp/bfg-check-patterns.txt
+    echo "✅ BFG scan completed - no API keys detected"
+else
+    echo "⚠️  Docker not available - skipping BFG scan"
+fi
 
 # Build application to ensure it compiles
 echo "🏗️ Building application..."

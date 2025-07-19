@@ -48,26 +48,63 @@ export default function WorkspacePage() {
 
   // Load workspace data
   useEffect(() => {
-    const mockWorkspace: WorkspaceInfo = {
-      id: workspaceId,
-      name: `VibeCode ${workspaceId}`,
-      status: 'running',
-      url: `http://localhost:8080`, // Use local code-server for now
-      lastActive: new Date().toISOString(),
-      resources: {
-        cpu: '50%',
-        memory: '1.2GB',
-        storage: '8.5GB'
-      },
-      gitRepo: 'https://github.com/user/my-project',
-      branch: 'main',
-      language: 'TypeScript'
+    const loadWorkspace = async () => {
+      try {
+        // Try to get real workspace info from the session API
+        const response = await fetch(`/api/code-server/session?workspaceId=${workspaceId}`)
+        
+        if (response.ok) {
+          const data = await response.json()
+          const session = data.sessions?.[0]
+          
+          if (session) {
+            const realWorkspace: WorkspaceInfo = {
+              id: workspaceId,
+              name: `VibeCode ${workspaceId}`,
+              status: session.status === 'ready' ? 'running' : 'starting',
+              url: session.url || `http://localhost:8083`, // Use session URL or fallback to current port
+              lastActive: session.lastActivity,
+              resources: {
+                cpu: '50%',
+                memory: '1.2GB',
+                storage: '8.5GB'
+              },
+              gitRepo: undefined,
+              branch: 'main',
+              language: 'TypeScript'
+            }
+            setWorkspace(realWorkspace)
+          } else {
+            throw new Error('Workspace not found')
+          }
+        } else {
+          throw new Error('Failed to load workspace')
+        }
+      } catch (error) {
+        console.error('Error loading workspace:', error)
+        // Fallback to mock data
+        const mockWorkspace: WorkspaceInfo = {
+          id: workspaceId,
+          name: `VibeCode ${workspaceId}`,
+          status: 'running',
+          url: `http://localhost:8083`, // Use port forwarded URL
+          lastActive: new Date().toISOString(),
+          resources: {
+            cpu: '50%',
+            memory: '1.2GB',
+            storage: '8.5GB'
+          },
+          gitRepo: undefined,
+          branch: 'main',
+          language: 'TypeScript'
+        }
+        setWorkspace(mockWorkspace)
+      }
+      
+      setIsLoading(false)
     }
 
-    setTimeout(() => {
-      setWorkspace(mockWorkspace)
-      setIsLoading(false)
-    }, 1000)
+    loadWorkspace()
   }, [workspaceId])
 
   if (isLoading) {
@@ -93,9 +130,9 @@ export default function WorkspacePage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-screen flex flex-col bg-gray-900">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="bg-gray-800 border-b border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
@@ -103,10 +140,10 @@ export default function WorkspacePage() {
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                <h1 className="text-xl font-semibold text-white">
                   {workspace.name}
                 </h1>
-                <div className="flex items-center space-x-3 text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex items-center space-x-3 text-sm text-gray-400">
                   <Badge variant={workspace.status === 'running' ? 'default' : 'secondary'}>
                     {workspace.status}
                   </Badge>
@@ -126,7 +163,7 @@ export default function WorkspacePage() {
           </div>
 
           <div className="flex items-center space-x-3">
-            <div className="text-right text-sm text-gray-500 dark:text-gray-400">
+            <div className="text-right text-sm text-gray-400">
               <div>CPU: {workspace.resources.cpu}</div>
               <div>Memory: {workspace.resources.memory}</div>
             </div>
@@ -140,25 +177,25 @@ export default function WorkspacePage() {
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className="border-b border-gray-700 bg-gray-800">
             <TabsList className="h-12 w-full justify-start rounded-none bg-transparent p-0">
               <TabsTrigger
                 value="integrated"
-                className="flex items-center space-x-2 h-12 px-6 data-[state=active]:bg-blue-50 dark:data-[state=active]:bg-blue-900/20 data-[state=active]:text-blue-600"
+                className="flex items-center space-x-2 h-12 px-6 data-[state=active]:bg-blue-900/20 data-[state=active]:text-blue-400 text-gray-300 hover:text-white"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>Vibe Code (AI + Editor)</span>
               </TabsTrigger>
               <TabsTrigger
                 value="ai"
-                className="flex items-center space-x-2 h-12 px-6 data-[state=active]:bg-gray-50 dark:data-[state=active]:bg-gray-700"
+                className="flex items-center space-x-2 h-12 px-6 data-[state=active]:bg-gray-700 text-gray-300 hover:text-white"
               >
                 <Bot className="w-4 h-4" />
                 <span>AI Chat</span>
               </TabsTrigger>
               <TabsTrigger
                 value="code"
-                className="flex items-center space-x-2 h-12 px-6 data-[state=active]:bg-gray-50 dark:data-[state=active]:bg-gray-700"
+                className="flex items-center space-x-2 h-12 px-6 data-[state=active]:bg-gray-700 text-gray-300 hover:text-white"
               >
                 <Code className="w-4 h-4" />
                 <span>Code Only</span>
@@ -172,7 +209,7 @@ export default function WorkspacePage() {
               <VSCodeIntegration
                 workspaceId={workspaceId}
                 codeServerUrl={workspace.url}
-                isEmbedded={false}
+                isEmbedded={true}
                 className="h-full"
               />
             </TabsContent>

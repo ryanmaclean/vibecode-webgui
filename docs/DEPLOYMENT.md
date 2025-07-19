@@ -46,6 +46,29 @@ The script will:
 
 ## 📋 Environment Variables
 
+### ⚠️ Updated Requirements (2025-07-19)
+
+The platform now requires additional environment variables for the new features:
+
+### Essential Variables
+```bash
+# Database (NOW REQUIRED - was optional before)
+DATABASE_URL=postgresql://user:pass@host:port/db  # Required for Prisma
+REDIS_URL=redis://host:port
+
+# AI Integration (REQUIRED)
+OPENROUTER_API_KEY=sk-or-v1-your-key  # Required for AI features
+
+# Authentication (REQUIRED)
+NEXTAUTH_URL=https://your-domain.com
+NEXTAUTH_SECRET=your-32-char-secret
+
+# Datadog Monitoring (RECOMMENDED)
+DD_API_KEY=your-datadog-api-key
+DD_LLMOBS_ENABLED=1                    # NEW: LLM observability
+DD_DATABASE_MONITORING_ENABLED=true   # NEW: Database monitoring
+```
+
 ### Required Variables
 
 ```bash

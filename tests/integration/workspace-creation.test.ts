@@ -29,7 +29,7 @@ describe('Workspace Creation Integration', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    ;(getServerSession as jest.Mock).mockResolvedValue(mockSession)
+    ;(getServerSession as any).mockResolvedValue(mockSession)
   })
 
   afterEach(() => {
@@ -98,7 +98,7 @@ describe('Workspace Creation Integration', () => {
     })
 
     it('should require authentication', async () => {
-      ;(getServerSession as jest.Mock).mockResolvedValue(null)
+      ;(getServerSession as any).mockResolvedValue(null)
 
       const request = new NextRequest('http://localhost:3000/api/code-server/session', {
         method: 'POST',
@@ -305,7 +305,7 @@ describe('Workspace Creation Integration', () => {
     })
 
     it('should require authentication for file sync', async () => {
-      ;(getServerSession as jest.Mock).mockResolvedValue(null)
+      ;(getServerSession as any).mockResolvedValue(null)
 
       const request = new NextRequest('http://localhost:3000/api/files/sync', {
         method: 'POST',

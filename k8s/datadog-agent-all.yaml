@@ -1,0 +1,49 @@
+apiVersion: datadoghq.com/v2alpha1
+kind: DatadogAgent
+metadata:
+  name: datadog
+  namespace: default
+spec:
+  global:
+    clusterName: vibecode-cluster
+    credentials:
+      apiSecret:
+        secretName: datadog-secret
+        keyName: api-key
+      appSecret:
+        secretName: datadog-secret
+        keyName: app-key
+    site: datadoghq.com
+    tags:
+      - env:development
+      - platform:vibecode
+      - cluster:kind
+  features:
+    logCollection:
+      enabled: true
+    liveProcessCollection:
+      enabled: true
+    liveContainerCollection:
+      enabled: true
+    apm:
+      enabled: true
+    npm:
+      enabled: false
+    dogstatsd:
+      unixDomainSocketConfig:
+        enabled: true
+    eventCollection:
+      collectKubernetesEvents: true
+    orchestratorExplorer:
+      enabled: true
+    kubeStateMetricsCore:
+      enabled: true
+    prometheusScrape:
+      enabled: true
+  override:
+    nodeAgent:
+      env:
+        - name: DD_HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
