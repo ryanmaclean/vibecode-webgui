@@ -1,0 +1,73 @@
+{
+  "title": "VibeCode - LLM Observability",
+  "description": "Dashboard for monitoring the performance and health of AI/LLM services.",
+  "layout_type": "ordered",
+  "widgets": [
+    {
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.ai.request.duration.ms{*} by {model}",
+            "display_type": "line"
+          }
+        ],
+        "title": "Average Request Latency by Model"
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai.token.usage.total{*} by {type}",
+            "display_type": "bars"
+          }
+        ],
+        "title": "Token Usage (Prompt vs. Completion)"
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai.request.errors.count{*}.as_count() / sum:vibecode.ai.request.count{*}.as_count() * 100",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 5,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">",
+                "value": 2,
+                "palette": "white_on_yellow"
+              }
+            ]
+          }
+        ],
+        "title": "Overall Error Rate (%)"
+      }
+    },
+    {
+      "definition": {
+        "type": "log_stream",
+        "requests": [
+          {
+            "query": {
+              "query_string": "source:vibecode-webgui service:ai-gateway",
+              "indexes": []
+            },
+            "columns": [
+              {"field": "timestamp", "width": "auto"},
+              {"field": "message", "width": "auto"}
+            ]
+          }
+        ],
+        "title": "AI Gateway Logs"
+      }
+    }
+  ]
+}

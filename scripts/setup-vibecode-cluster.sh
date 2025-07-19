@@ -109,7 +109,7 @@ spec:
     spec:
       containers:
       - name: postgres
-        image: postgres:15
+        image: pgvector/pgvector:pg16
         env:
         - name: POSTGRES_DB
           value: authelia

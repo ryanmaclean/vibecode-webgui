@@ -1,113 +1,64 @@
-# VibeCode: Production-Ready Cloud-Native Development Platform
+# VibeCode AI: System Prompt & Engineering Guide
 
-**Last Updated**: 2025-07-18
+**Last Updated**: 2025-07-19
 **Owner**: Platform Team
 
-## ✅ STATUS: FULLY OPERATIONAL
+## 1. Core Philosophy & Assumptions (2025 Staff Engineer Perspective)
 
-**INFRASTRUCTURE ACHIEVEMENT**: Complete KIND cluster deployment with real Datadog monitoring, security hardening, and AI-powered autoscaling.
+Our goal is to create a world-class, AI-native development experience. This requires moving beyond simple prompt-and-response and embracing a more sophisticated, structured, and reliable approach to AI integration. My daily reading of Hacker News, tech blogs, and research papers informs these principles.
 
-**INTEGRATION ACHIEVEMENT**: Complete Lovable/Replit/Bolt.diy workflow implemented with AI project generation → live code-server workspaces.
+- **Assumption 1: Models are Fleeting, Architecture is Foundational.** We're currently using `Claude-3.5-Sonnet` via OpenRouter, which is a strong choice for its reasoning and coding capabilities. However, the SOTA model changes quarterly. Our architecture must be model-agnostic, relying on standardized interfaces (like OpenRouter) and structured data (JSON) rather than being tightly coupled to one model's quirks.
 
-## 1. Executive Summary
+- **Assumption 2: Structured I/O is Non-Negotiable.** The era of parsing unstructured markdown from LLMs is over. For reliable, production systems, we must enforce structured outputs. All prompts for project generation MUST require the model to respond in a specific JSON format that our backend can parse and validate directly.
 
-This document outlines the production-deployed architecture for VibeCode, a cloud-native development platform. The system leverages a suite of battle-tested, open-source technologies to provide a scalable, secure, and observable development environment, minimizing custom overhead and accelerating feature delivery.
+- **Assumption 3: Prompting is a Software Engineering Discipline.** We will treat our prompts like code. They will be version-controlled, reviewed, and updated as we learn more about what works. This document is the canonical source for our core system prompt.
 
-**Key Architecture Decision: Infrastructure-First Approach**
-- **code-server provides**: Complete VS Code experience, extensions, terminal, and Git integration.
-- **KIND provides**: Container orchestration, isolation, scaling, and persistent storage.
-- **Focus shifts to**: User provisioning, workspace management, security, and AI integration.
+- **Assumption 4: Tool Use is the Future.** While our current flow is monolithic (prompt -> full project), the next iteration will involve the AI calling tools (APIs) to perform sub-tasks, like fetching templates, validating dependencies, or scaffolding components. Our prompting style must evolve to support this.
 
-## ✅ LOVABLE/REPLIT/BOLT.DIY INTEGRATION COMPLETE (2025-07-18)
+## 2. The VibeCode AI System Prompt
 
-### Implemented: Complete AI Project Generation Workflow
-The platform now delivers the full Lovable/Replit/Bolt.diy experience:
+This is the **canonical system prompt** to be used in the `<system>` block for all project generation requests. It sets the persona, context, constraints, and output format.
 
-**What's Implemented:**
-1. **AI Project Generation**: `/api/ai/generate-project` endpoint with OpenRouter/Claude-3.5-Sonnet
-2. **Live Workspace Creation**: Automatic code-server session provisioning with file seeding
-3. **Seamless Integration**: Natural language → Complete project → Live code-server workspace
-4. **Real-time Development**: Projects open directly in code-server, no ZIP downloads
+```xml
+<system>
+As an expert cloud-native software architect and senior full-stack developer, your role is to help users create production-ready applications on the VibeCode platform. You are a meticulous planner and a world-class coder, capable of turning a high-level idea into a complete, well-structured, and runnable project.
 
-**Current Operational State:**
-- ✅ Projects page with AI-first workflow
-- ✅ Code-server infrastructure (k8s deployments)
-- ✅ AI chat interface
-- ✅ **Complete bridge**: AI prompt → Project generation → Workspace → Code-server
-- ✅ **Seamless flow**: Natural language → Live development environment
+**Core Directives:**
+1.  **Think Step-by-Step:** Before generating code, always use a `<thinking>` block to outline your plan. Detail the technology stack, file structure, key components, and any clarifying assumptions. This plan is for internal review and will not be shown to the user.
+2.  **Adhere to the VibeCode Standard:** All generated projects must follow VibeCode's development standards: secure, scalable, observable, and maintainable. This includes generating appropriate configuration for Docker, Kubernetes (if applicable), and a `README.md` with setup instructions.
+3.  **Produce Complete, Runnable Projects:** The user expects a complete project, not just snippets. Ensure all necessary files, dependencies (`package.json`, `requirements.txt`, etc.), and boilerplate are included.
+4.  **Strictly Adhere to JSON Output:** Your final output MUST be a single JSON object containing a list of file objects. Do not include any text or explanation outside of the JSON structure. Each file object must have two keys: `path` (the full file path, e.g., `src/index.js`) and `content` (the complete file content as a string).
 
-**Implemented Flow (Lovable/Replit/Bolt.diy):**
-1. User describes project in AI Project Generator
-2. AI generates complete project structure and code via OpenRouter/Claude-3.5-Sonnet
-3. System automatically creates code-server workspace
-4. Generated files are seeded into workspace
-5. User is redirected to live code-server environment
-6. User can continue development with AI assistance
+**Example of Final Output Structure:**
 
-**Technical Components:**
-- **Frontend**: AIProjectGenerator component with full UI workflow
-- **Backend**: `/api/ai/generate-project` with OpenRouter integration
-- **Workspace Management**: Code-server session creation and file sync
-- **Project Scaffolder**: Enhanced with "Open in Editor" as primary action
-- **Test Coverage**: Comprehensive integration, unit, and e2e tests
+```json
+{
+  "files": [
+    {
+      "path": "package.json",
+      "content": "{\"name\": \"my-react-app\", \"version\": \"0.1.0\", ...}"
+    },
+    {
+      "path": "src/App.js",
+      "content": "import React from 'react'; ..."
+    }
+  ]
+}
+```
 
-**Success Metrics:**
-- **Time to MVP**: 8 weeks (projected) vs. 24+ weeks for a custom build.
-- **Team Size**: 2-3 infrastructure engineers instead of 8-10 full-stack developers.
-- **Feature Parity**: 100% VS Code compatibility from day one.
+Your expertise and adherence to these rules are critical for providing a seamless and powerful user experience. Do not deviate.
+</system>
+```
 
-## 2. Technical Deep Dive
+## 3. Prompting Best Practices
 
-**Project Status Summary:** The primary goal is to enhance and maintain the Kubernetes-based VibeCode platform. Recent work involved stabilizing the entire authentication stack by fixing the Authelia configuration, resolving complex NGINX ingress routing issues, and correcting misconfigured application environment variables to establish a fully functional and secure authentication flow. The CI/CD pipeline has also been updated with Datadog Test Visibility.
+- **Use XML Tags:** Claude models are specifically trained to pay attention to XML tags. All user prompts should be wrapped in `<user>` tags, and examples of good interactions should be provided in `<example>` blocks containing both `<user>` and `<assistant>` turns.
 
-### Core Infrastructure: KIND + code-server
-- **KIND Cluster**: Runs a complete Kubernetes environment locally inside Docker containers.
-- **Ingress Controller**: Manages external access to services, with corrected timeout settings to ensure WebSocket stability.
-- **code-server**: A dedicated VS Code instance for each developer.
-- **Persistent Volumes**: Ensures user data is saved across sessions, and extensions are saved across sessions.
+- **Few-Shot Prompting:** For complex or nuanced requests, provide 1-2 examples of a high-quality request and the corresponding perfect JSON output. This dramatically improves reliability.
 
-### Missing Integration Layer
-**CRITICAL**: The infrastructure exists but the integration layer is missing:
-- **Workspace API**: No API to create workspaces from templates
-- **Project Seeding**: No way to populate code-server with generated project
-- **AI → Editor Bridge**: AI generates code but doesn't push to code-server
-- **Template → Workspace**: Templates don't automatically create workspaces
+- **Pre-computation and Context Injection:** The backend should pre-process the user's request to inject relevant context into the prompt. For example, if a user wants to use a VibeCode template, the backend should fetch the template's file list and inject it into the prompt as context for the AI.
 
-### Monitoring and Observability: Datadog Integration
-- **Datadog Agent**: Deployed as a DaemonSet to run on every node.
-- **Auto-discovery**: The agent uses Kubernetes annotations to automatically monitor services.
-- **APM & RUM**: The application is fully instrumented with Datadog APM (backend) and RUM (frontend) libraries to trace requests and user sessions.
-- **Log Collection**: All container logs are forwarded to Datadog for analysis.
-
-### AI-Powered Autoscaling
-- **Water-Pod-Autoscaler (WPA)**: A Kubernetes operator that provides intelligent, multi-metric autoscaling using custom metrics from Datadog (e.g., `active_user_sessions`).
-- **DatadogPodAutoscaler**: A cutting-edge alternative for direct, query-based scaling from Datadog metrics.
-
-### Security
-- **Authentication**: Authelia provides Two-Factor Authentication (2FA).
-- **Authorization**: Kubernetes Role-Based Access Control (RBAC) restricts user access.
-- **Network Policies**: Restrict traffic between pods (e.g., only the app can access the database).
-- **Secrets Management**: All secrets are stored in Kubernetes Secrets and injected securely.
-- **🔒 API Key Protection**: Comprehensive multi-layer security system implemented
-  - **Pre-commit Hooks**: Automatic API key detection before commits
-  - **BFG Docker Integration**: Git history scanning with `jtmotox/bfg`
-  - **Security Scanner**: Repository scanning (`scripts/security-scan.sh`)
-  - **Pattern Matching**: 10+ API key formats protected
-  - **Integration Tests**: 11/11 tests passing with real API validation
-
-## 3. Operational Guide
-
-### Deployment Checklist
-1.  **Local Development**: Use KIND cluster with the full monitoring stack.
-2.  **Testing**: Run the complete test suite (`npm test`), including E2E and integration tests.
-3.  **Staging**: Deploy to a staging environment with a real Datadog integration.
-4.  **Production**: Use a blue-green deployment strategy, validating with monitoring.
-
-### Alert Configuration
-- **P1**: Service completely down (customer impact).
-- **P2**: Performance degradation (potential customer impact).
-- **P3**: Warning thresholds (investigate during business hours).
-- **P4**: Informational (for trend analysis).
+- **Iterative Refinement:** The AI chat within a workspace should use the existing file structure as context, allowing for iterative refinement rather than starting from scratch each time.
 
 ## 4. ✅ COMPLETED: Lovable/Replit/Bolt.diy Flow Implementation
 

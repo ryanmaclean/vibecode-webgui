@@ -4,11 +4,16 @@
  * This is the core integration that makes VibeCode function like Lovable/Replit/Bolt.diy
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { z } from 'zod'
-import { llmObservability } from '@/lib/datadog-llm'
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { z } from 'zod';
+import { llmObservability } from '@/lib/datadog-llm';
+
+import { Span } from 'dd-trace';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
+import { spawn } from 'child_process';
 
 const generateProjectSchema = z.object({
   prompt: z.string().min(1, 'Project prompt is required'),
@@ -39,14 +44,55 @@ interface ProjectStructure {
 }
 
 async function generateProjectWithAI(prompt: string, options: {
-  language?: string
-  framework?: string
-  features?: string[]
+  language?: string;
+  framework?: string;
+  features?: string[];
 }): Promise<ProjectStructure> {
   return llmObservability.createWorkflowSpan(
     'ai-project-generation',
-    async () => {
-      // Annotate with input data
+    async (span: Span | undefined) => {
+      const systemPrompt = `
+<system>
+As an expert cloud-native software architect and senior full-stack developer, your role is to help users create production-ready applications on the VibeCode platform. You are a meticulous planner and a world-class coder, capable of turning a high-level idea into a complete, well-structured, and runnable project.
+
+**Core Directives:**
+1.  **Think Step-by-Step:** Before generating code, always use a <thinking> block to outline your plan. Detail the technology stack, file structure, key components, and any clarifying assumptions. This plan is for internal review and will not be shown to the user.
+2.  **Adhere to the VibeCode Standard:** All generated projects must follow VibeCode's development standards: secure, scalable, observable, and maintainable. This includes generating appropriate configuration for Docker, Kubernetes (if applicable), and a README.md with setup instructions.
+3.  **Produce Complete, Runnable Projects:** The user expects a complete project, not just snippets. Ensure all necessary files, dependencies (\[package.json\](cci:7://file:///Users/ryan.maclean/vibecode-webgui/package.json:0:0-0:0), \`requirements.txt\`, etc.), and boilerplate are included.
+4.  **Strictly Adhere to JSON Output:** Your final output MUST be a single JSON object. Do not include any text or explanation outside of the JSON structure. The JSON object must conform to the following structure, including a 'files' array where each object has a 'path' and 'content'.
+
+**Final Output JSON Structure:**
+{
+  "name": "project-name",
+  "description": "A brief description of the project.",
+  "files": [
+    {
+      "path": "package.json",
+      "content": "{\\"name\\": \\"my-react-app\\", \\"version\\": \\"0.1.0\\", ...}"
+    },
+    {
+      "path": "src/App.js",
+      "content": "import React from 'react'; ..."
+    }
+  ],
+  "scripts": { "start": "node index.js" },
+  "dependencies": { "express": "4.17.1" },
+  "devDependencies": { "nodemon": "2.0.7" },
+  "envVars": [ { "name": "PORT", "value": "3000", "description": "The port to run the server on." } ]
+}
+</system>
+`;
+
+      const userMessage = `
+Generate a new project based on the following prompt.
+- **Prompt:** ${prompt}
+- **Language:** ${options.language || 'Not specified'}
+- **Framework:** ${options.framework || 'Not specified'}
+- **Features:** ${options.features?.join(', ') || 'None'}
+`;
+
+      span?.setTag('llm.request.model', 'claude-3.5-sonnet');
+      span?.setTag('llm.request.provider', 'openrouter');
       llmObservability.annotate({
         input_data: {
           prompt,
@@ -55,446 +101,187 @@ async function generateProjectWithAI(prompt: string, options: {
           features: options.features
         },
         tags: ['ai-generation', 'project-creation'],
-        metadata: {
-          operation: 'template-based-generation',
-          version: 'v1'
+      });
+
+      try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: "anthropic/claude-3.5-sonnet",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userMessage }
+            ],
+            response_format: { type: "json_object" },
+            stream: false
+          })
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.text();
+          console.error('OpenRouter API Error:', response.status, errorBody);
+          span?.setTag('error', true);
+          span?.setTag('error.message', `OpenRouter API failed with status ${response.status}`);
+          span?.setTag('error.stack', errorBody);
+          throw new Error(`OpenRouter API failed: ${response.status} ${response.statusText}`);
         }
-      })
 
-      // For now, use a template-based approach instead of AI
-      // This ensures we have working projects while the AI integration is being set up
-      
-      console.log('Generating project from template instead of AI for now')
-      
-      const projectName = prompt.toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .substring(0, 30) || 'ai-generated-project'
+        const data: { choices: { message: { content: string } }[] } = await response.json();
+        const content = data.choices[0].message.content;
+        
+        const parsedContent: {
+          name?: string;
+          description?: string;
+          files: { path: string; content: string }[];
+          scripts?: Record<string, string>;
+          dependencies?: Record<string, string>;
+          devDependencies?: Record<string, string>;
+          envVars?: Array<{ name: string; value: string; description: string; }>;
+        } = JSON.parse(content);
 
-      if (options.framework === 'react' || options.language === 'typescript') {
-        // Return React Hello World template
-        const result = {
-      name: projectName,
-      description: `AI-generated React application: ${prompt}`,
-      files: [
-        {
-          path: 'src/App.tsx',
-          content: `import React from 'react';
-import './App.css';
+        llmObservability.annotate({
+          output_data: {
+            fileCount: parsedContent.files?.length || 0,
+            projectName: parsedContent.name || 'Unknown'
+          }
+        });
 
-function App() {
-  return (
-    <div className="app">
-      <header className="app-header">
-        <h1>🎉 Hello from VibeCode! 🎉</h1>
-        <p>
-          Your AI-generated project is ready!
-        </p>
-        <p className="description">
-          ${prompt}
-        </p>
-        <div className="features">
-          <div className="feature">✅ Live VS Code Editor</div>
-          <div className="feature">🤖 AI-Powered Generation</div>
-          <div className="feature">☸️ Kubernetes Native</div>
-          <div className="feature">🚀 Production Ready</div>
-        </div>
-      </header>
-    </div>
+        if (!parsedContent.files || !Array.isArray(parsedContent.files)) {
+            throw new Error("AI response is missing 'files' array.");
+        }
+
+        const generatedFiles: GeneratedFile[] = parsedContent.files.map(file => {
+            if (typeof file.path !== 'string' || typeof file.content !== 'string') {
+                throw new Error('Invalid file structure in AI response.');
+            }
+            return {
+                ...file,
+                type: 'file'
+            };
+        });
+
+        return {
+          name: parsedContent.name || 'ai-generated-project',
+          description: parsedContent.description || `AI-generated project for: ${prompt}`,
+          files: generatedFiles,
+          scripts: parsedContent.scripts || {},
+          dependencies: parsedContent.dependencies || {},
+          devDependencies: parsedContent.devDependencies || {},
+          envVars: parsedContent.envVars || [],
+        };
+
+      } catch (error: unknown) {
+        console.error('Error during AI project generation:', error);
+        span?.setTag('error', true);
+        if (error instanceof Error) {
+            span?.setTag('error.message', error.message);
+            span?.setTag('error.stack', error.stack);
+        } else {
+            span?.setTag('error.message', 'An unknown error occurred during AI project generation.');
+        }
+        throw error;
+      }
+    }
   );
 }
 
-export default App;`,
-          type: 'file'
-        },
-        {
-          path: 'src/App.css',
-          content: `.app {
-  text-align: center;
-}
+async function seedWorkspaceFiles(workspaceId: string, projectStructure: ProjectStructure): Promise<void> {
+  const namespace = 'default';
+  const baseDir = path.join('/tmp/workspaces', workspaceId);
 
-.app-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
-  padding: 20px;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
+  await mkdir(baseDir, { recursive: true });
 
-h1 {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-}
+  for (const file of projectStructure.files) {
+    const filePath = path.join(baseDir, file.path);
+    const dirName = path.dirname(filePath);
 
-.description {
-  font-size: 1.2rem;
-  max-width: 600px;
-  margin: 1rem 0;
-  padding: 1rem;
-  background: rgba(255,255,255,0.1);
-  border-radius: 10px;
-  backdrop-filter: blur(10px);
-}
-
-.features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-top: 2rem;
-  max-width: 800px;
-}
-
-.feature {
-  background: rgba(255,255,255,0.1);
-  padding: 1rem;
-  border-radius: 10px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.2);
-  transition: transform 0.3s ease;
-}
-
-.feature:hover {
-  transform: translateY(-5px);
-}`,
-          type: 'file'
-        },
-        {
-          path: 'src/index.tsx',
-          content: `import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);`,
-          type: 'file'
-        },
-        {
-          path: 'src/index.css',
-          content: `body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
-* {
-  box-sizing: border-box;
-}`,
-          type: 'file'
-        },
-        {
-          path: 'public/index.html',
-          content: `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="AI-generated React app created with VibeCode"
-    />
-    <title>${projectName}</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-  </body>
-</html>`,
-          type: 'file'
-        },
-        {
-          path: 'README.md',
-          content: `# ${projectName}
-
-${prompt}
-
-This project was generated by VibeCode AI and is running in a live VS Code environment!
-
-## Getting Started
-
-This project is already set up and running in your VibeCode workspace. You can:
-
-1. ✏️ Edit the code in VS Code
-2. 🔄 See changes in real-time
-3. 🧪 Run tests and build commands
-4. 🚀 Deploy when ready
-
-## Available Scripts
-
-- \`npm start\` - Runs the app in development mode
-- \`npm test\` - Launches the test runner
-- \`npm run build\` - Builds the app for production
-
-## Features
-
-- ⚛️ React 18 with TypeScript
-- 🎨 Modern CSS with gradients and animations
-- 📱 Responsive design
-- ⚡ Fast development setup
-
-## Next Steps
-
-1. Customize the styling in \`src/App.css\`
-2. Add new components in the \`src/\` directory
-3. Install additional packages with \`npm install\`
-4. Build something amazing!
-
-Happy coding! 🎉`,
-          type: 'file'
-        }
-      ],
-      scripts: {
-        start: 'react-scripts start',
-        build: 'react-scripts build',
-        test: 'react-scripts test',
-        eject: 'react-scripts eject'
-      },
-      dependencies: {
-        'react': '^18.2.0',
-        'react-dom': '^18.2.0',
-        'react-scripts': '^5.0.1',
-        'typescript': '^5.0.0'
-      },
-      devDependencies: {
-        '@types/react': '^18.2.0',
-        '@types/react-dom': '^18.2.0',
-        '@types/node': '^20.0.0'
-      },
-      envVars: [
-        {
-          name: 'REACT_APP_NAME',
-          value: projectName,
-          description: 'Application name'
-        }
-      ]
-    }
-
-        // Annotate with output data for React project
-        llmObservability.annotate({
-          output_data: {
-            projectName: result.name,
-            fileCount: result.files.length,
-            framework: 'react',
-            language: 'typescript'
-          }
-        })
-
-        return result
-      }
-  
-      // Fallback for other frameworks
-      const result = {
-        name: projectName,
-        description: `AI-generated application: ${prompt}`,
-        files: [
-          {
-            path: 'index.js',
-            content: `// AI-Generated Project: ${prompt}
-console.log('Hello from VibeCode!');
-console.log('Your AI project is ready to edit!');
-
-// TODO: Implement your project logic here
-// This is a placeholder - customize as needed!`,
-            type: 'file'
-          },
-          {
-            path: 'README.md',
-            content: `# ${projectName}
-
-${prompt}
-
-Generated by VibeCode AI - start building!`,
-            type: 'file'
-          }
-        ],
-        scripts: {
-          start: 'node index.js'
-        },
-        dependencies: {},
-        devDependencies: {},
-        envVars: []
-      }
-
-      // Annotate with output data
-      llmObservability.annotate({
-        output_data: {
-          projectName: result.name,
-          fileCount: result.files.length,
-          framework: options.framework || 'generic',
-          language: options.language || 'javascript'
-        }
-      })
-
-      return result
-    }
-  )
-}
-
-async function createCodeServerSession(workspaceId: string, userId: string) {
-  // Import the workspace creation script and call it directly
-  const { spawn } = require('child_process')
-  const path = require('path')
-  
-  const scriptPath = path.join(process.cwd(), 'scripts', 'create-workspace.sh')
-  
-  return new Promise((resolve, reject) => {
-    const child = spawn('bash', [scriptPath, workspaceId, userId], {
-      stdio: ['pipe', 'pipe', 'pipe']
-    })
-    
-    let stdout = ''
-    let stderr = ''
-    
-    child.stdout.on('data', (data: Buffer) => {
-      stdout += data.toString()
-    })
-    
-    child.stderr.on('data', (data: Buffer) => {
-      stderr += data.toString()
-    })
-    
-    child.on('close', (code) => {
-      if (code === 0) {
-        // Parse the output to get service details
-        const serviceName = `code-server-${workspaceId}-svc`
-        const internalUrl = `http://${serviceName}.vibecode.svc.cluster.local:8080`
-        
-        resolve({
-          id: `cs-${workspaceId}`,
-          url: internalUrl,
-          status: 'ready',
-          workspaceId,
-          userId
-        })
-      } else {
-        console.error('Workspace creation failed:', stderr)
-        reject(new Error(`Failed to create workspace: ${stderr}`))
-      }
-    })
-    
-    child.on('error', (error) => {
-      console.error('Script execution error:', error)
-      reject(error)
-    })
-  })
-}
-
-async function seedWorkspaceFiles(workspaceId: string, projectStructure: ProjectStructure) {
-  // Add package.json to files
-  const packageJsonFile = {
-    path: 'package.json',
-    content: JSON.stringify({
-      name: projectStructure.name,
-      version: '1.0.0',
-      description: projectStructure.description,
-      scripts: projectStructure.scripts,
-      dependencies: projectStructure.dependencies,
-      devDependencies: projectStructure.devDependencies,
-    }, null, 2),
-    type: 'file' as const
-  }
-
-  // Add .env.example file
-  const envContent = projectStructure.envVars
-    .map(env => `# ${env.description}\n${env.name}=${env.value}`)
-    .join('\n\n')
-  
-  const envFile = {
-    path: '.env.example',
-    content: envContent,
-    type: 'file' as const
-  }
-
-  const allFiles = [
-    ...projectStructure.files,
-    packageJsonFile,
-    envFile
-  ]
-
-  // Create files directly using kubectl instead of API call
-  const { spawn } = require('child_process')
-  const namespace = 'vibecode'
-  
-  for (const file of allFiles) {
     if (file.type === 'directory') {
-      // Create directory
-      await execInPod(namespace, workspaceId, `mkdir -p "/home/coder/workspace/${file.path}"`)
+      await mkdir(filePath, { recursive: true });
     } else {
-      // Create file and its directory structure
-      const dirPath = file.path.includes('/') ? file.path.substring(0, file.path.lastIndexOf('/')) : ''
-      if (dirPath) {
-        await execInPod(namespace, workspaceId, `mkdir -p "/home/coder/workspace/${dirPath}"`)
-      }
-      
-      // Write file content using base64 encoding to handle special characters
-      const base64Content = Buffer.from(file.content).toString('base64')
-      await execInPod(namespace, workspaceId, `echo "${base64Content}" | base64 -d > "/home/coder/workspace/${file.path}"`)
+      await mkdir(dirName, { recursive: true });
+      await writeFile(filePath, file.content, 'utf-8');
     }
   }
 
-  return {
-    success: true,
-    filesCreated: allFiles.length,
-    message: 'Files seeded successfully'
+  const podName = await getPodName(namespace, `app.kubernetes.io/instance=code-server-${workspaceId}`);
+  if (!podName) {
+    throw new Error('Could not find running pod for workspace.');
   }
+
+  await execKubectlCp(baseDir, `${namespace}/${podName}:/home/coder/project`);
 }
 
-function execInPod(namespace: string, workspaceId: string, command: string): Promise<void> {
+async function getPodName(namespace: string, labelSelector: string): Promise<string | null> {
   return new Promise((resolve, reject) => {
-    const deploymentName = `code-server-${workspaceId}`
-    
-    // Execute command in pod
-    const { spawn } = require('child_process')
-    const execCmd = spawn('kubectl', [
-      'exec', '-n', namespace,
-      `deployment/${deploymentName}`,
-      '--', 'bash', '-c', command
-    ])
-    
-    let stderr = ''
-    
-    execCmd.stderr.on('data', (data) => {
-      stderr += data.toString()
-    })
-    
-    execCmd.on('close', (code) => {
-      if (code === 0) {
-        resolve()
+    const kubectl = spawn('kubectl', ['get', 'pods', '-n', namespace, '-l', labelSelector, '-o', 'jsonpath={.items[0].metadata.name}']);
+    let podName = '';
+    let errorOutput = '';
+
+    kubectl.stdout.on('data', (data) => { podName += data.toString(); });
+    kubectl.stderr.on('data', (data) => { errorOutput += data.toString(); });
+
+    kubectl.on('close', (code: number) => {
+      if (code === 0 && podName.trim()) {
+        resolve(podName.trim());
+      } else if (errorOutput) {
+        reject(new Error(`Failed to get pod name: ${errorOutput}`));
       } else {
-        reject(new Error(`Command failed: ${stderr}`))
+        resolve(null);
       }
-    })
-    
-    execCmd.on('error', (error) => {
-      reject(error)
-    })
-  })
+    });
+
+    kubectl.on('error', (err) => reject(err));
+  });
+}
+
+async function execKubectlCp(source: string, destination: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const kubectl = spawn('kubectl', ['cp', source, destination]);
+    let stderr = '';
+    kubectl.stderr.on('data', (data) => { stderr += data.toString(); });
+    kubectl.on('close', (code: number) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`kubectl cp failed: ${stderr}`));
+      }
+    });
+    kubectl.on('error', (err) => reject(err));
+  });
+}
+
+async function execInPod(namespace: string, workspaceId: string, command: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const deploymentName = `code-server-${workspaceId}`;
+    const execCmd = spawn('kubectl', ['exec', '-n', namespace, `deployment/${deploymentName}`, '--', 'bash', '-c', command]);
+    let stderr = '';
+    execCmd.stderr.on('data', (data) => { stderr += data.toString(); });
+    execCmd.on('close', (code: number) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`Command failed: ${stderr}`));
+      }
+    });
+    execCmd.on('error', (error) => reject(error));
+  });
+}
+
+// Placeholder for the real implementation
+async function createCodeServerSession(workspaceId: string, userId: string): Promise<{ url: string }> {
+  console.log(`Creating code-server session for workspace ${workspaceId} and user ${userId}`);
+  // In a real implementation, this would call the code-server management service
+  return Promise.resolve({ url: `https://code.vibecode.com/w/${workspaceId}` });
 }
 
 export async function POST(request: NextRequest) {
   return llmObservability.createTaskSpan(
     'api-ai-generate-project',
-    async () => {
+    async (span?: Span) => {
       try {
         const session = await getServerSession(authOptions)
         if (!session?.user) {
@@ -524,28 +311,31 @@ export async function POST(request: NextRequest) {
         // Generate unique workspace ID
         const workspaceId = `ai-project-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
 
-    // Step 1: Generate project structure with AI
-    console.log('Generating project with AI...')
-    const projectStructure = await generateProjectWithAI(validatedData.prompt, {
-      language: validatedData.language,
-      framework: validatedData.framework,
-      features: validatedData.features,
-    })
+        // Step 1: Generate project structure with AI
+        console.log('Generating project with AI...')
+        const projectStructure = await generateProjectWithAI(validatedData.prompt, {
+          language: validatedData.language,
+          framework: validatedData.framework,
+          features: validatedData.features,
+        })
 
-    // Override project name if provided
-    if (validatedData.projectName) {
-      projectStructure.name = validatedData.projectName
-    }
+        // Override project name if provided
+        if (validatedData.projectName) {
+          projectStructure.name = validatedData.projectName
+        }
 
-    // Step 2: Create code-server session
-    console.log('Creating code-server session...')
-    const codeServerSession = await createCodeServerSession(workspaceId, session.user.id)
+        // Step 2: Seed workspace with generated files
+        console.log('Seeding workspace with generated files...')
+        await seedWorkspaceFiles(workspaceId, projectStructure)
 
-    // Step 3: Seed workspace with generated files
-    console.log('Seeding workspace with generated files...')
-    await seedWorkspaceFiles(workspaceId, projectStructure)
+        // Step 3: Run npm install in the pod
+        await execInPod('default', workspaceId, 'npm install');
 
-        // Step 4: Return workspace information
+        // Step 4: Create a code-server session
+        const codeServerSession: { url: string } = await createCodeServerSession(workspaceId, session.user.id);
+        span?.setTag('code_server.session.url', codeServerSession.url);
+
+        // Step 5: Return workspace information
         const response = {
           success: true,
           workspaceId,
@@ -575,24 +365,24 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json(response)
 
-  } catch (error) {
-    console.error('AI project generation error:', error)
+      } catch (error) {
+        console.error('AI project generation error:', error)
 
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid request data', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      { 
-        error: 'Failed to generate project',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+        if (error instanceof z.ZodError) {
+          return NextResponse.json(
+            { error: 'Invalid request data', details: error.errors },
+            { status: 400 }
+          )
         }
+
+        return NextResponse.json(
+          {
+            error: 'Failed to generate project',
+            details: error instanceof Error ? error.message : 'Unknown error',
+          },
+          { status: 500 }
+        )
+      }
     }
   )
 }

@@ -47,3 +47,12 @@ spec:
       enabled: true
     liveProcessCollection:
       enabled: true
+    orchestratorExplorer:
+      enabled: true  # Required for Pod collection with Agent >=7.33.0
+  override:
+    clusterAgent:
+      image:
+        tag: "1.24.0"  # Ensure cluster agent version >=1.18.0
+    nodeAgent:
+      image:
+        tag: "7.66.1"  # Ensure node agent version >=7.33.0

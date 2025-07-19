@@ -87,7 +87,7 @@ spec:
         fsGroup: 999
       containers:
       - name: postgres
-        image: postgres:15-alpine
+        image: pgvector/pgvector:pg16
         env:
         - name: POSTGRES_DB
           value: authelia

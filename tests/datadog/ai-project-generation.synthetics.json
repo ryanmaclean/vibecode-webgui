@@ -1,0 +1,55 @@
+{
+  "config": {
+    "assertions": [
+      {
+        "operator": "is",
+        "target": 200,
+        "type": "statusCode"
+      },
+      {
+        "operator": "lessThan",
+        "target": 30000,
+        "type": "responseTime"
+      },
+      {
+        "operator": "validatesJSONPath",
+        "target": {
+          "jsonPath": "$.workspaceId",
+          "operator": "isPresent"
+        },
+        "type": "body"
+      }
+    ],
+    "request": {
+      "method": "POST",
+      "url": "http://localhost:3000/api/ai/generate-project",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cookie": "next-auth.session-token={{ VIBECODE_SESSION_TOKEN }}"
+      },
+      "body": "{\"prompt\": \"Create a simple React app with a single button\", \"projectName\": \"datadog-test-project\"}",
+      "timeout": 60000
+    },
+    "variables": {}
+  },
+  "locations": [
+    "aws:us-east-1"
+  ],
+  "message": "## AI Project Generation API Test\n\nThis test validates the `/api/ai/generate-project` endpoint, ensuring it can successfully generate a new AI project within the performance target of 30 seconds.",
+  "name": "[VibeCode] AI Project Generation",
+  "options": {
+    "device_ids": [
+      "laptop_large"
+    ],
+    "min_failure_duration": 0,
+    "min_location_failed": 1,
+    "tick_every": 3600
+  },
+  "public_id": "vib-ecd-aig",
+  "tags": [
+    "service:vibecode",
+    "team:platform",
+    "critical-path"
+  ],
+  "type": "api"
+}

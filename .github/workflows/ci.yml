@@ -24,6 +24,8 @@ jobs:
       run: npm ci
 
     - name: Configure Datadog Test Optimization
+      # NOTE: Secrets are configured in the GitHub repository settings, not in this file.
+      # The 'Context access might be invalid' warnings are expected if secrets are not set locally.
       uses: datadog/test-visibility-github-action@v2
       with:
         languages: js
@@ -75,6 +77,17 @@ jobs:
     - name: Build application
       run: npm run build
 
+    - name: Validate Helm Chart for Monitoring
+      run: |
+        curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+        chmod 700 get_helm.sh
+        ./get_helm.sh
+        helm repo add datadog https://helm.datadoghq.com
+        helm dependency update helm/vibecode-platform
+        helm lint helm/vibecode-platform
+        helm template vibecode-platform helm/vibecode-platform --namespace vibecode-platform > rendered-chart.yaml
+        grep -q "kind: DatadogAgent" rendered-chart.yaml
+
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
 
@@ -96,21 +109,33 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Build Main App Docker image
+    - name: Log in to GitHub Container Registry
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and push Main App Docker image
       uses: docker/build-push-action@v5
       with:
         context: .
         file: ./Dockerfile.production
-        push: false
-        tags: vibecode/webgui:ci-latest
+        push: ${{'{{'}} github.ref == 'refs/heads/main' && github.event_name == 'push' {{'}}'}}
+        tags: |
+          ghcr.io/${{'{{'}} github.repository {{'}}'}}/webgui:latest
+          ghcr.io/${{'{{'}} github.repository {{'}}'}}/webgui:${{'{{'}} github.sha {{'}}'}}
 
-    - name: Build WPA Docker image
+    - name: Build and push WPA Docker image
       uses: docker/build-push-action@v5
       with:
         context: ./watermarkpodautoscaler
         file: ./watermarkpodautoscaler/Dockerfile
-        push: false
-        tags: vibecode/wpa:ci-latest
+        push: ${{'{{'}} github.ref == 'refs/heads/main' && github.event_name == 'push' {{'}}'}}
+        tags: |
+          ghcr.io/${{'{{'}} github.repository {{'}}'}}/wpa:latest
+          ghcr.io/${{'{{'}} github.repository {{'}}'}}/wpa:${{'{{'}} github.sha {{'}}'}}
 
     - name: Attest Build Provenance
       uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
@@ -139,3 +164,20 @@ jobs:
       env:
         DD_API_KEY: ${{ secrets.DD_API_KEY }}
         DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+
+    - name: Push Datadog Dashboards
+      if: github.ref == 'refs/heads/main'
+      run: datadog-ci dashboards push --dashboard-glob monitoring/datadog/dashboards/*.json
+      env:
+        DD_SITE: datadoghq.com
+        DD_API_KEY: ${{ secrets.DD_API_KEY }}
+        DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+
+    - name: Run Datadog Synthetic Tests
+      if: github.ref == 'refs/heads/main'
+      run: datadog-ci synthetics run-tests --public-id vib-ecd-aig-perf --failOnCriticalErrors
+      env:
+        DD_SITE: datadoghq.com
+        DD_API_KEY: ${{ secrets.DD_API_KEY }}
+        DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+        VIBECODE_SESSION_TOKEN: ${{ secrets.VIBECODE_SESSION_TOKEN }}

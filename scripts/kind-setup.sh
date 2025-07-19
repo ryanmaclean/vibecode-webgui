@@ -195,7 +195,7 @@ spec:
     spec:
       containers:
       - name: postgres
-        image: postgres:16-alpine
+        image: pgvector/pgvector:pg16
         env:
         - name: POSTGRES_DB
           valueFrom:
