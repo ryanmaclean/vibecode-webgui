@@ -1,8 +1,12 @@
-// Streaming AI Chat API - OpenRouter integration with multi-model support
-// Powers the AIChatInterface with real-time streaming responses
+// Streaming AI Chat API - OpenRouter integration with multi-model support and RAG
+// Powers the AIChatInterface with real-time streaming responses and vector search context
 
 import { NextRequest, NextResponse } from 'next/server'
 import { OpenAI } from 'openai'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { vectorStore } from '@/lib/vector-store'
+import { prisma } from '@/lib/prisma'
 
 
 
@@ -26,7 +30,38 @@ interface ChatRequest {
   }
 }
 
-// Helper to build context from workspace files
+// Helper to build RAG context from workspace using vector search
+async function buildRAGContext(workspaceId: string, userQuery: string, userId: string) {
+  try {
+    // Get workspace from database
+    const workspace = await prisma.workspace.findFirst({
+      where: {
+        workspace_id: workspaceId,
+        user_id: parseInt(userId)
+      }
+    })
+
+    if (!workspace) {
+      console.log(`No workspace found for ID: ${workspaceId}`)
+      return ''
+    }
+
+    // Use vector search to find relevant context
+    const ragContext = await vectorStore.getContext(userQuery, workspace.id, 3000)
+    
+    if (ragContext) {
+      console.log(`Found RAG context for query: "${userQuery.substring(0, 50)}..."`)
+      return `\n=== RELEVANT CODE CONTEXT ===\n${ragContext}\n=== END CONTEXT ===\n`
+    }
+
+    return ''
+  } catch (error) {
+    console.error('Failed to build RAG context:', error)
+    return ''
+  }
+}
+
+// Helper to build basic workspace context (fallback)
 async function buildWorkspaceContext(workspaceId: string, files: string[]) {
   try {
     // Get file contents for context (limit to recent/relevant files)
@@ -61,6 +96,15 @@ function formatPreviousMessages(messages: RawMessage[]): ChatMessage[] {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     // OpenRouter configuration
     const openrouter = new OpenAI({
       baseURL: "https://openrouter.ai/api/v1",
@@ -90,8 +134,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Build enhanced context
-    const workspaceContext = await buildWorkspaceContext(context.workspaceId, context.files)
+    // Build enhanced context with RAG
+    let enhancedContext = ''
+    
+    // Try RAG context first (vector search)
+    if (context.workspaceId) {
+      const ragContext = await buildRAGContext(context.workspaceId, message, session.user.id)
+      if (ragContext) {
+        enhancedContext = ragContext
+      } else {
+        // Fallback to basic workspace context
+        enhancedContext = await buildWorkspaceContext(context.workspaceId, context.files)
+      }
+    }
+    
     const previousMessages = formatPreviousMessages(context.previousMessages || [])
 
     // Build system prompt with context
@@ -106,15 +162,18 @@ export async function POST(request: NextRequest) {
 Current workspace context:
 - Workspace ID: ${context.workspaceId}
 - Files in context: ${context.files.length > 0 ? context.files.join(', ') : 'None'}
+- Vector search enabled: ${enhancedContext.includes('RELEVANT CODE CONTEXT') ? 'Yes (RAG active)' : 'Basic mode'}
 
-${workspaceContext ? `\nWorkspace files:\n${workspaceContext}` : ''}
+${enhancedContext ? `\nRelevant code context from vector search:\n${enhancedContext}` : ''}
 
 Guidelines:
-- Provide practical, production-ready code
+- Use the provided context to give specific, relevant answers
+- Reference specific files and line numbers when available in context
+- Provide practical, production-ready code that builds on existing codebase
 - Explain your reasoning and trade-offs
 - Ask clarifying questions when needed
 - Focus on security and performance best practices
-- Use modern JavaScript/TypeScript patterns
+- Use modern JavaScript/TypeScript patterns consistent with the codebase
 - Be concise but comprehensive`
 
     // Prepare messages for OpenAI API
