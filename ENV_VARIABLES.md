@@ -28,11 +28,14 @@ GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
 
 ### Required for All Environments
 ```bash
-# PostgreSQL Database
+# PostgreSQL Database with pgvector support
 DATABASE_URL=postgresql://username:password@host:port/database
 
 # Redis Cache
 REDIS_URL=redis://host:port
+
+# Database Monitoring
+DD_DATABASE_MONITORING_ENABLED=true
 ```
 
 ### Examples by Environment
@@ -48,6 +51,18 @@ REDIS_URL=redis://redis-service:6379
 # Production
 DATABASE_URL=postgresql://username:password@prod-db-host:5432/vibecode_prod
 REDIS_URL=redis://prod-redis-host:6379
+```
+
+### 🎯 Vector Database Requirements
+The platform now uses **pgvector** for semantic search capabilities:
+
+```bash
+# Ensure PostgreSQL has pgvector extension installed
+# Run after database setup:
+# CREATE EXTENSION IF NOT EXISTS vector;
+
+# Vector embeddings are generated using OpenAI models via OpenRouter
+# Requires OPENROUTER_API_KEY for embedding generation
 ```
 
 ## 🤖 AI Integration & Project Generation
@@ -87,7 +102,19 @@ AI_PERFORMANCE_MONITORING=true
 # Backend Monitoring
 DATADOG_API_KEY=your-datadog-api-key
 DD_API_KEY=your-datadog-api-key  # Alternative format
+DD_APP_KEY=your-datadog-app-key
 DATADOG_SITE=datadoghq.com
+DD_SITE=datadoghq.com
+
+# LLM Observability (NEW)
+DD_LLMOBS_ENABLED=1
+DD_LLMOBS_AGENTLESS_ENABLED=1
+DD_LLMOBS_ML_APP=vibecode-ai
+DD_SERVICE=vibecode-webgui
+DD_ENV=production
+
+# Database Monitoring (NEW)
+DD_DATABASE_MONITORING_ENABLED=true
 
 # Frontend RUM Monitoring (Public variables)
 NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID=your-app-id

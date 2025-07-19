@@ -5,6 +5,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
+import { prisma } from '@/lib/prisma'
+import { vectorStore } from '@/lib/vector-store'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 interface UploadedFile {
   id: string
@@ -143,6 +147,15 @@ function generateChecksum(content: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const formData = await request.formData()
     const files = formData.getAll('files') as File[]
     const workspaceId = formData.get('workspaceId') as string
@@ -161,10 +174,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Find workspace and verify ownership
+    const workspace = await prisma.workspace.findFirst({
+      where: {
+        workspace_id: workspaceId,
+        user_id: parseInt(session.user.id)
+      }
+    })
+
+    if (!workspace) {
+      return NextResponse.json(
+        { error: 'Workspace not found or access denied' },
+        { status: 404 }
+      )
+    }
+
     await ensureDirectories(workspaceId)
 
     const uploadedFiles: UploadedFile[] = []
-    const ragIndexes: RAGIndex[] = []
+    const totalRagChunks = []
 
     for (const file of files) {
       try {
@@ -184,7 +212,23 @@ export async function POST(request: NextRequest) {
         const filePath = path.join(getUploadsDir(workspaceId), fileName)
         await writeFile(filePath, buffer)
 
-        // Create uploaded file record
+        // Create file record in database
+        const dbFile = await prisma.file.create({
+          data: {
+            name: file.name,
+            path: filePath,
+            content: content.length < 10000 ? content : undefined, // Only store small files in DB
+            size: file.size,
+            mime_type: file.type,
+            language,
+            lines,
+            checksum,
+            user_id: parseInt(session.user.id),
+            workspace_id: workspace.id
+          }
+        })
+
+        // Create uploaded file response
         const uploadedFile: UploadedFile = {
           id: fileId,
           name: file.name,
@@ -202,49 +246,18 @@ export async function POST(request: NextRequest) {
 
         uploadedFiles.push(uploadedFile)
 
-        // Create RAG index for text files
+        // Create vector embeddings for text files
         if (content && content.length > 0) {
           const chunks = chunkText(content)
-          const ragIndex: RAGIndex = {
-            fileId,
-            chunks: chunks.map((chunk, index) => ({
-              id: `${fileId}-chunk-${index}`,
-              content: chunk.content,
-              metadata: {
-                startLine: chunk.startLine,
-                endLine: chunk.endLine,
-                tokens: chunk.tokens
-              }
-            }))
-          }
-
-          ragIndexes.push(ragIndex)
+          
+          // Store chunks in vector store
+          await vectorStore.storeChunks(dbFile.id, chunks)
+          totalRagChunks.push(...chunks)
         }
 
       } catch (error) {
         console.error(`Failed to process file ${file.name}:`, error)
         // Continue with other files
-      }
-    }
-
-    // Save RAG indexes
-    if (ragIndexes.length > 0) {
-      try {
-        const ragIndexPath = getRAGIndexPath(workspaceId)
-
-        // Load existing index or create new one
-        let existingIndex: RAGIndex[] = []
-        if (existsSync(ragIndexPath)) {
-          const { readFile } = await import('fs/promises')
-          const existingData = await readFile(ragIndexPath, 'utf-8')
-          existingIndex = JSON.parse(existingData)
-        }
-
-        // Merge with new indexes
-        const updatedIndex = [...existingIndex, ...ragIndexes]
-        await writeFile(ragIndexPath, JSON.stringify(updatedIndex, null, 2))
-      } catch (error) {
-        console.error('Failed to save RAG index:', error)
       }
     }
 
@@ -258,7 +271,11 @@ export async function POST(request: NextRequest) {
         language: f.metadata.language,
         lines: f.metadata.lines
       })),
-      ragChunks: ragIndexes.reduce((total, index) => total + index.chunks.length, 0)
+      ragChunks: totalRagChunks.length,
+      vectorStore: {
+        chunksProcessed: totalRagChunks.length,
+        embeddingsGenerated: totalRagChunks.length
+      }
     })
 
   } catch (error) {

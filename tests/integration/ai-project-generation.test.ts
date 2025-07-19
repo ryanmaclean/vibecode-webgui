@@ -81,7 +81,7 @@ describe('AI Project Generation Integration', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    ;(getServerSession as jest.Mock).mockResolvedValue(mockSession)
+    ;(getServerSession as any).mockResolvedValue(mockSession)
     
     // Mock environment variables
     process.env.OPENROUTER_API_KEY = 'test-key'
@@ -211,7 +211,7 @@ describe('AI Project Generation Integration', () => {
     })
 
     it('should require authentication', async () => {
-      ;(getServerSession as jest.Mock).mockResolvedValue(null)
+      ;(getServerSession as any).mockResolvedValue(null)
 
       const request = new NextRequest('http://localhost:3000/api/ai/generate-project', {
         method: 'POST',

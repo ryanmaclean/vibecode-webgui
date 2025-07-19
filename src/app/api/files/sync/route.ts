@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { WebSocketServer, WebSocket } from 'ws'
 import { getFileSystemInstance } from '@/lib/file-system-operations'
 import type { FileSystemConfig, FileSyncEvent } from '@/lib/file-system-operations'
@@ -25,7 +26,7 @@ const workspaceConnections = new Map<string, Set<WebSocket>>()
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -71,10 +72,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(_request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -82,8 +83,28 @@ export async function POST(_request: NextRequest) {
       )
     }
 
-    // This endpoint could be used to initiate a sync process manually
-    // For now, it returns a success message
+    const body = await request.json()
+    const { workspaceId, files } = body
+
+    if (!workspaceId) {
+      return NextResponse.json(
+        { error: 'Workspace ID required' },
+        { status: 400 }
+      )
+    }
+
+    if (files && Array.isArray(files) && files.length > 0) {
+      // Create files in the workspace
+      await createFilesInWorkspace(workspaceId, files)
+      
+      return NextResponse.json({
+        success: true,
+        workspaceId,
+        filesCreated: files.length,
+        message: 'Files synchronized successfully'
+      })
+    }
+
     return NextResponse.json({ success: true, message: 'Sync initiated' })
 
   } catch (error) {
@@ -93,6 +114,59 @@ export async function POST(_request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+async function createFilesInWorkspace(workspaceId: string, files: Array<{path: string, content: string, type: string}>) {
+  const { spawn } = require('child_process')
+  const namespace = 'vibecode'
+  
+  for (const file of files) {
+    if (file.type === 'directory') {
+      // Create directory
+      await execInPod(namespace, workspaceId, `mkdir -p "/home/coder/workspace/${file.path}"`)
+    } else {
+      // Create file and its directory structure
+      const dirPath = file.path.includes('/') ? file.path.substring(0, file.path.lastIndexOf('/')) : ''
+      if (dirPath) {
+        await execInPod(namespace, workspaceId, `mkdir -p "/home/coder/workspace/${dirPath}"`)
+      }
+      
+      // Write file content using base64 encoding to handle special characters
+      const base64Content = Buffer.from(file.content).toString('base64')
+      await execInPod(namespace, workspaceId, `echo "${base64Content}" | base64 -d > "/home/coder/workspace/${file.path}"`)
+    }
+  }
+}
+
+function execInPod(namespace: string, workspaceId: string, command: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const deploymentName = `code-server-${workspaceId}`
+    
+    // Execute command in pod
+    const execCmd = spawn('kubectl', [
+      'exec', '-n', namespace,
+      `deployment/${deploymentName}`,
+      '--', 'bash', '-c', command
+    ])
+    
+    let stderr = ''
+    
+    execCmd.stderr.on('data', (data) => {
+      stderr += data.toString()
+    })
+    
+    execCmd.on('close', (code) => {
+      if (code === 0) {
+        resolve()
+      } else {
+        reject(new Error(`Command failed: ${stderr}`))
+      }
+    })
+    
+    execCmd.on('error', (error) => {
+      reject(error)
+    })
+  })
 }
 
 // Extend the global object to hold the WebSocket server

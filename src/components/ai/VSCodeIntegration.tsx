@@ -144,93 +144,23 @@ export default function VSCodeIntegration({
     />
   )
 
-  if (isEmbedded) {
-    // Embedded mode - floating panel over code-server
-    return (
-      <>
-        {/* Floating AI Chat Panel */}
-        {isVisible && (
-          <div className={`fixed right-4 top-4 bottom-4 w-96 z-50 ${className}`}>
-            <Card className="h-full shadow-2xl border-2">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center space-x-2">
-                    <Bot className="w-5 h-5 text-blue-600" />
-                    <span>AI Assistant</span>
-                  </CardTitle>
-                  <div className="flex space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsMinimized(!isMinimized)}
-                    >
-                      {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsVisible(false)}
-                    >
-                      ×
-                    </Button>
-                  </div>
-                </div>
-
-                {currentFile && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    📁 {currentFile}
-                  </div>
-                )}
-              </CardHeader>
-
-              {!isMinimized && (
-                <CardContent className="flex-1 p-0">
-                  <VSCodeAIChat />
-                </CardContent>
-              )}
-            </Card>
-          </div>
-        )}
-
-        {/* Toggle Button */}
-        {!isVisible && (
-          <Button
-            onClick={() => setIsVisible(true)}
-            className="fixed bottom-6 right-6 z-50 rounded-full w-14 h-14 shadow-lg"
-            size="lg"
-          >
-            <MessageSquare className="w-6 h-6" />
-          </Button>
-        )}
-
-        {/* Code-server iframe */}
-        <iframe
-          ref={iframeRef}
-          src={codeServerUrl}
-          className="w-full h-full border-0"
-          title="VS Code"
-          allow="clipboard-read; clipboard-write"
-        />
-      </>
-    )
-  }
-
-  // Standalone mode - side-by-side with code-server
+  // For workspace tab integration, always show side-by-side
   return (
-    <div className={`flex h-full ${className}`}>
+    <div className={`flex h-full bg-gray-900 ${className}`}>
       {/* Code-server panel */}
       <div className="flex-1">
         <iframe
           ref={iframeRef}
           src={codeServerUrl}
-          className="w-full h-full border-0"
+          className="w-full h-full border-0 bg-gray-900"
           title="VS Code"
           allow="clipboard-read; clipboard-write"
+          style={{ backgroundColor: '#0d1117' }}
         />
       </div>
 
       {/* AI Chat panel */}
-      <div className="w-96 border-l border-gray-200 dark:border-gray-700">
+      <div className="w-96 border-l border-gray-700 bg-gray-800">
         <VSCodeAIChat />
       </div>
     </div>
