@@ -3,9 +3,10 @@
  * Integrates Datadog APM tracing, Winston logging, and custom metrics
  */
 
-import tracer from 'dd-trace'
-import winston from 'winston'
-import { createLogger, format, transports } from 'winston'
+
+
+import { createLogger, format, transports } from 'winston';
+import tracer from '@/instrument';
 
 // Initialize Datadog tracer (should be done before importing other modules)
 if (process.env.DD_API_KEY) {

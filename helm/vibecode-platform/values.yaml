@@ -128,6 +128,69 @@ aiIntegration:
 monitoring:
   enabled: true
 
+  # Datadog Operator configuration
+  datadogOperator:
+    enabled: true # Master switch for the Datadog Operator dependency
+    # Datadog Agent configuration
+    agent:
+      # Reference existing secrets for API and App keys
+      # This assumes you have a secret named 'datadog-secret' with keys 'api-key' and 'app-key'
+      apiKeyExistingSecret:
+        name: "datadog-secret"
+        key: "api-key"
+      appKeyExistingSecret:
+        name: "datadog-secret"
+        key: "app-key"
+
+      # Enable Log Collection
+      logs:
+        enabled: true
+        containerCollectAll: true
+
+      # Enable APM (Application Performance Monitoring)
+      apm:
+        enabled: true
+
+      # Enable Process Monitoring
+      process:
+        enabled: true
+
+      # Enable DogStatsD for custom metrics
+      dogstatsd:
+        useSocketVolume: true # Use a shared socket for better performance
+
+      # Define the PostgreSQL service endpoint for the agent
+      # This is required for Database Monitoring (DBM) to connect to the database
+      providers:
+        kube_services:
+          - name: postgres
+            ad_identifiers:
+              - postgres
+
+      # Add custom checks configuration
+      confd:
+        # PostgreSQL check
+        postgres.yaml: |-
+          ad_identifiers:
+            - postgres
+          init_config:
+          instances:
+            - host: postgres
+              port: 5432
+              username: vibecode
+              password:
+                value:
+                  secret_key_ref:
+                    key: postgres-password
+                    name: postgres-secret
+              dbm: true
+              relation_metrics:
+                enabled: true
+              collect_activity_metrics:
+                enabled: true
+              collect_wal_metrics:
+                enabled: true
+
   # Prometheus metrics
   prometheus:
     enabled: true

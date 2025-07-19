@@ -8,19 +8,28 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { monitoring } from '@/lib/monitoring'
+import dynamic from 'next/dynamic';
+
+// Dynamically import the NetworkDiagnostics component with no SSR
+const NetworkDiagnostics = dynamic(
+  () => import('@/components/NetworkDiagnostics/NetworkDiagnostics').then(mod => mod.default),
+  { ssr: false }
+);
 
 interface SystemMetrics {
-  cpu: number
-  memory: number
-  diskUsage: number
-  networkIO: { in: number; out: number }
-  activeUsers: number
-  activeWorkspaces: number
-  totalSessions: number
-  avgResponseTime: number
-  errorRate: number
-  uptime: number
+  cpu: number;
+  memory: number;
+  diskUsage: number;
+  networkIO: { in: number; out: number };
+  activeUsers: number;
+  activeWorkspaces: number;
+  totalSessions: number;
+  avgResponseTime: number;
+  errorRate: number;
+  uptime: number;
 }
+
+type TabType = 'overview' | 'metrics' | 'logs' | 'alerts' | 'security' | 'network';
 
 interface LogEntry {
   timestamp: string
@@ -40,12 +49,13 @@ interface AlertItem {
 }
 
 export default function MonitoringDashboard() {
-  const { data: session } = useSession()
-  const user = session?.user
-  const [metrics, setMetrics] = useState<SystemMetrics | null>(null)
-  const [logs, setLogs] = useState<LogEntry[]>([])
-  const [alerts, setAlerts] = useState<AlertItem[]>([])
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'metrics' | 'logs' | 'alerts' | 'security'>('overview')
+  const { data: session } = useSession();
+  const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState<TabType>('overview');
   const [isLiveMode, setIsLiveMode] = useState(true)
   const [timeRange, setTimeRange] = useState('1h')
   const metricsInterval = useRef<NodeJS.Timeout | null>(null)
@@ -152,7 +162,16 @@ export default function MonitoringDashboard() {
     }
   }
 
-  if (!user || user.role !== 'admin') {
+  const navTabs = [
+    { id: 'overview' as TabType, label: 'Overview' },
+    { id: 'metrics' as TabType, label: 'Metrics' },
+    { id: 'logs' as TabType, label: 'Logs' },
+    { id: 'alerts' as TabType, label: 'Alerts' },
+    { id: 'security' as TabType, label: 'Security' },
+    { id: 'network' as TabType, label: 'Network' },
+  ];
+
+  if (!session || session.user.role !== 'admin') {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
@@ -207,27 +226,20 @@ export default function MonitoringDashboard() {
       {/* Navigation Tabs */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8">
-            {[
-              { id: 'overview', label: 'Overview' },
-              { id: 'metrics', label: 'Metrics' },
-              { id: 'logs', label: 'Logs' },
-              { id: 'alerts', label: `Alerts (${alerts.filter(a => !a.resolved).length})` },
-              { id: 'security', label: 'Security' },
-            ].map((tab) => (
+          <div className="flex space-x-2 mb-6 overflow-x-auto pb-2">
+            {navTabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setSelectedTab(tab.id as any)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  selectedTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                className={`px-4 py-2 rounded-md ${
+                  selectedTab === tab.id ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
                 }`}
+                onClick={() => setSelectedTab(tab.id)}
+                aria-label={`View ${tab.label}`}
               >
                 {tab.label}
               </button>
             ))}
-          </nav>
+          </div>
         </div>
       </div>
 

@@ -1,0 +1,92 @@
+{{- if .Values.postgresql.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "vibecode-platform.fullname" . }}-postgres-init
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+data:
+  init.sql: |
+    -- Initialize VibeCode WebGUI database schema
+    -- This script sets up the core tables for the AI-powered development platform
+
+    -- Enable UUID and pgvector extensions
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    CREATE EXTENSION IF NOT EXISTS "vector";
+
+    -- Users table for authentication and user management
+    CREATE TABLE users (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        avatar_url TEXT,
+        provider VARCHAR(50) DEFAULT 'email',
+        provider_id VARCHAR(255),
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        last_login_at TIMESTAMPTZ,
+        login_count INTEGER DEFAULT 0,
+        is_active BOOLEAN DEFAULT true,
+        CONSTRAINT users_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+    );
+
+    -- Projects table for code projects and workspaces
+    CREATE TABLE projects (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        visibility VARCHAR(20) DEFAULT 'private' CHECK (visibility IN ('public', 'private', 'internal')),
+        template VARCHAR(100),
+        language VARCHAR(50),
+        framework VARCHAR(100),
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        last_accessed_at TIMESTAMPTZ DEFAULT NOW(),
+        star_count INTEGER DEFAULT 0,
+        fork_count INTEGER DEFAULT 0,
+        is_archived BOOLEAN DEFAULT false
+    );
+
+    -- Files table for project file management
+    CREATE TABLE files (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        path VARCHAR(1000) NOT NULL,
+        content TEXT,
+        size_bytes INTEGER DEFAULT 0,
+        mime_type VARCHAR(100),
+        version INTEGER DEFAULT 1,
+        checksum VARCHAR(64),
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(project_id, path)
+    );
+
+    -- Sessions table for user sessions
+    CREATE TABLE sessions (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash VARCHAR(255) NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        last_used_at TIMESTAMPTZ DEFAULT NOW(),
+        ip_address INET,
+        user_agent TEXT
+    );
+
+    -- Feature flags table for A/B testing and feature management
+    CREATE TABLE feature_flags (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        key VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        enabled BOOLEAN DEFAULT false,
+        rollout_percentage INTEGER DEFAULT 0 CHECK (rollout_percentage >= 0 AND rollout_percentage <= 100),
+        user_targeting JSONB,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+{{- end }}

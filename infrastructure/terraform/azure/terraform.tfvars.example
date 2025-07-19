@@ -1,0 +1,147 @@
+# Azure VibeCode Infrastructure Configuration
+# Copy this file to terraform.tfvars and update with your values
+
+# Project Configuration
+project_name = "vibecode"
+environment  = "prod"  # dev, staging, prod
+azure_region = "East US 2"
+
+# Additional tags for all resources
+additional_tags = {
+  Owner       = "DevOps Team"
+  CostCenter  = "Engineering"
+  Application = "VibeCode WebGUI"
+}
+
+# AKS Configuration
+aks_kubernetes_version    = "1.28"
+aks_system_node_vm_size   = "Standard_D4s_v3"
+aks_system_node_count     = 2
+aks_user_node_vm_size     = "Standard_D8s_v3"
+aks_user_node_count       = 3
+aks_user_node_min_count   = 1
+aks_user_node_max_count   = 10
+
+# PostgreSQL Configuration
+postgresql_sku_name                        = "GP_Standard_D4s_v3"
+postgresql_storage_mb                      = 65536  # 64GB
+postgresql_backup_retention_days           = 35
+postgresql_geo_redundant_backup_enabled    = true
+postgresql_high_availability_enabled       = true
+postgresql_version                         = "16"
+postgresql_admin_username                  = "vibecodeusr"
+
+# Azure AI Services Configuration
+azure_openai_sku_name = "S0"
+
+# Custom AI model deployments
+azure_openai_deployments = [
+  {
+    name          = "gpt-4-turbo"
+    model_name    = "gpt-4"
+    model_version = "turbo-2024-04-09"
+    scale_type    = "Standard"
+    capacity      = 30
+  },
+  {
+    name          = "gpt-35-turbo"
+    model_name    = "gpt-35-turbo"
+    model_version = "0613"
+    scale_type    = "Standard"
+    capacity      = 120
+  },
+  {
+    name          = "text-embedding-ada-002"
+    model_name    = "text-embedding-ada-002"
+    model_version = "2"
+    scale_type    = "Standard"
+    capacity      = 120
+  }
+]
+
+cognitive_services_sku = "S0"
+
+# Monitoring Configuration
+log_analytics_retention_days = 30
+
+# REQUIRED: Set these via environment variables or update here
+# datadog_api_key = "your-datadog-api-key"
+# datadog_app_key = "your-datadog-app-key"
+
+# Application Configuration (optional - fallback keys)
+# openai_api_key = "your-openai-api-key"  # Fallback for non-Azure models
+# github_client_id = "your-github-oauth-client-id"
+# github_client_secret = "your-github-oauth-client-secret"
+# google_client_id = "your-google-oauth-client-id"
+# google_client_secret = "your-google-oauth-client-secret"
+
+# Container Registry Configuration
+acr_sku           = "Premium"  # Basic, Standard, Premium
+acr_admin_enabled = false      # Use managed identity instead
+
+# Security Configuration
+enable_network_policy  = true
+enable_private_cluster = false  # Set to true for production
+authorized_ip_ranges   = []     # Add your IP ranges for API server access
+
+# DNS Configuration (optional)
+# dns_zone_name = "vibecode.com"
+# domain_name   = "app.vibecode.com"
+
+# Backup Configuration
+enable_backup           = true
+backup_retention_days   = 30
+
+# Redis/Key-Value Store Configuration
+# Choose: azure_cache_redis, azure_managed_redis, valkey, or all
+redis_deployment_type = "azure_cache_redis"
+
+# Azure Cache for Redis Configuration (Traditional)
+azure_cache_redis_config = {
+  sku_name             = "Premium"
+  family               = "P"
+  capacity             = 1
+  enable_non_ssl_port  = false
+  minimum_tls_version  = "1.2"
+  redis_version        = "6"
+  zones                = ["1", "2", "3"]
+  redis_configuration = {
+    enable_authentication         = true
+    maxmemory_reserved           = 50
+    maxmemory_delta              = 50
+    maxmemory_policy             = "allkeys-lru"
+    rdb_backup_enabled           = true
+    rdb_backup_frequency         = 60
+    rdb_backup_max_snapshot_count = 5
+  }
+}
+
+# Azure Managed Redis Configuration (New Service - Preview)
+azure_managed_redis_config = {
+  sku_name           = "Balanced"
+  capacity_gb        = 12
+  zones              = ["1", "2", "3"]
+  high_availability  = true
+  clustering_enabled = true
+  data_persistence   = true
+  backup_frequency   = "Daily"
+  modules = [
+    "RediSearch",
+    "RedisJSON", 
+    "RedisTimeSeries",
+    "RedisBloom"
+  ]
+}
+
+# Valkey Configuration (Open Source Redis Fork on AKS)
+valkey_config = {
+  cluster_size       = 3
+  replica_count      = 1
+  memory_limit       = "4Gi"
+  cpu_limit          = "2"
+  storage_size       = "10Gi"
+  storage_class      = "managed-premium"
+  enable_persistence = true
+  enable_monitoring  = true
+  namespace          = "valkey"
+} 

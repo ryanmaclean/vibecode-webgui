@@ -503,7 +503,7 @@ services:
       - redis
 
   db:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: ${packageJson.name}
       POSTGRES_USER: postgres

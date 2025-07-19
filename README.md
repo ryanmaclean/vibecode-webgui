@@ -4,13 +4,32 @@
 
 [![Build Status](https://github.com/vibecode/webgui/actions/workflows/ci.yml/badge.svg)](https://github.com/vibecode/webgui/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fvibecode%2Fvibecode-webgui%2Fmain%2Finfrastructure%2Farm%2Fazuredeploy.json)
+
+## 🌟 **New: Enterprise Azure Deployment**
+
+Deploy VibeCode to **Azure** with enterprise features in one click:
+
+- ✅ **Azure Kubernetes Service (AKS)** with auto-scaling
+- ✅ **Azure Database for PostgreSQL** with pgvector extension  
+- ✅ **Azure AI Services** (OpenAI, Computer Vision, Language) as OpenRouter alternative
+- ✅ **Datadog Database Monitoring** with full observability
+- ✅ **Enterprise security** with managed identities and Key Vault
+- ✅ **Production-ready** with high availability and disaster recovery
+
+**Deployment Options:**
+- 🎯 **One-Click Deploy**: [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fvibecode%2Fvibecode-webgui%2Fmain%2Finfrastructure%2Farm%2Fazuredeploy.json)
+- 🔧 **Terraform/OpenTofu**: See [`infrastructure/terraform/azure/`](./infrastructure/terraform/azure/)
+- 📋 **ARM Templates**: See [`infrastructure/arm/`](./infrastructure/arm/)
+
+**Monthly Cost**: ~$1,570 (with auto-scaling and cost optimization) | **Setup Time**: 15-20 minutes
 
 ## ✨ Key Features
 
 - 🚀 **Complete VS Code Experience**: Full IDE via code-server 4.101.2 (MIT licensed)
 - 🔐 **Enterprise 2FA/SSO**: Fully configured Authelia authentication with hardware keys, TOTP, and Duo push, protecting all ingress resources.
 - 🎯 **Infrastructure-First**: KIND (Kubernetes in Docker) orchestration eliminates 60-80% custom development.
-- 🤖 **AI Project Generation**: Complete Lovable/Replit/Bolt.diy-inspired workflow with OpenRouter multi-provider support (318 models). Natural language → live code-server workspace in seconds.
+- 🤖 **AI Project Generation**: Complete Lovable/Replit/Bolt.diy-inspired workflow. The system uses **Claude-3.5-Sonnet** via OpenRouter to turn natural language prompts into a complete project structure, delivered as a strictly-validated JSON object.
 - 🌐 **Production-Ready**: NGINX Ingress, cert-manager, Helm charts, persistent storage.
 - 📊 **Real-Time Monitoring & Test Visibility**: Datadog integration with live metrics, logs, alerts, and Test Optimization for CI/CD pipelines.
 - 🖥️ **React Management Dashboard**: Complete cluster administration interface with real-time Datadog metrics.
@@ -350,6 +369,276 @@ kubectl get svc -n ingress-nginx ingress-nginx-controller
 # vibecode.yourdomain.com -> EXTERNAL_IP
 # auth.yourdomain.com -> EXTERNAL_IP
 ```
+
+---
+
+## 🌟 **Enterprise Azure Deployment**
+
+Deploy VibeCode to Microsoft Azure with full enterprise features including Azure AI Services as an OpenRouter alternative, PostgreSQL with pgvector, and comprehensive monitoring.
+
+### 🎯 **What You Get**
+
+✅ **Azure Kubernetes Service (AKS)** with auto-scaling and multiple node pools  
+✅ **Azure Database for PostgreSQL Flexible Server** with pgvector extension  
+✅ **Azure AI Services** (OpenAI GPT-4, Computer Vision, Language) as OpenRouter replacement  
+✅ **Datadog Database Monitoring** with full observability and compliance  
+✅ **Azure Container Registry** with security scanning and managed identity  
+✅ **Azure Key Vault** for centralized secrets management  
+✅ **Enterprise security** with managed identities and private networking  
+✅ **High availability** with geo-redundant backups and disaster recovery  
+
+### 🚀 **Deployment Options**
+
+#### Option 1: One-Click ARM Template Deployment
+
+The fastest way to get started - deploys complete infrastructure in 15-20 minutes:
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fvibecode%2Fvibecode-webgui%2Fmain%2Finfrastructure%2Farm%2Fazuredeploy.json)
+
+**Required inputs:**
+- PostgreSQL administrator password
+- Datadog API and App keys
+- Azure subscription and resource group
+
+**What gets created:**
+- Complete AKS cluster with 2 system + 3 user nodes
+- PostgreSQL Flexible Server with pgvector extension
+- Azure OpenAI with GPT-4 Turbo, GPT-3.5 Turbo, and text-embedding-ada-002
+- Computer Vision and Language Services
+- Container Registry, Key Vault, Log Analytics, and VNet
+
+#### Option 2: Terraform/OpenTofu Infrastructure as Code
+
+For full control and customization:
+
+```bash
+# Clone and configure
+git clone https://github.com/vibecode/vibecode-webgui.git
+cd vibecode-webgui/infrastructure/terraform/azure
+
+# Copy and edit configuration
+cp terraform.tfvars.example terraform.tfvars
+# Edit with your values (Datadog keys, project name, etc.)
+
+# Deploy with Terraform
+terraform init
+terraform plan
+terraform apply
+
+# Or deploy with OpenTofu (open-source alternative)
+tofu init && tofu plan && tofu apply
+```
+
+### 🧠 **Azure AI Services as OpenRouter Alternative**
+
+The deployment includes a comprehensive Azure AI client that provides OpenRouter-compatible APIs:
+
+#### **Available Models After Deployment**
+```typescript
+// OpenRouter-compatible interface using Azure AI
+import { getAzureAIClient } from '@/lib/azure-ai-client';
+
+const aiClient = getAzureAIClient();
+
+// Chat completions (same API as OpenRouter)
+const response = await aiClient.createChatCompletion({
+  messages: [{ role: 'user', content: 'Help me debug this React component' }],
+  model: 'gpt-4-turbo'  // Azure OpenAI GPT-4 Turbo
+});
+
+// Vector embeddings for RAG
+const embeddings = await aiClient.createEmbedding({
+  input: 'Code documentation content',
+  model: 'text-embedding-ada-002'  // Azure OpenAI embeddings
+});
+
+// Extended Azure capabilities
+const imageAnalysis = await aiClient.analyzeImage(codeScreenshotUrl, [
+  'Description', 'Tags', 'Objects'
+]);
+
+const sentiment = await aiClient.analyzeSentiment(codeComments);
+```
+
+#### **Deployed AI Models**
+- **GPT-4 Turbo**: Complex reasoning and code generation (30 TPM capacity)
+- **GPT-3.5 Turbo**: Fast responses and simple tasks (120 TPM capacity)  
+- **text-embedding-ada-002**: Vector embeddings for semantic search (120 TPM capacity)
+- **Computer Vision**: Image analysis for code screenshots and diagrams
+- **Language Service**: Text analytics, sentiment analysis, and key phrase extraction
+
+### 🐘 **PostgreSQL with pgvector**
+
+Automatically configured per [Azure's official documentation](https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/how-to-use-pgvector):
+
+#### **Automatic Setup**
+- ✅ **pgvector extension** enabled during deployment
+- ✅ **Performance parameters** optimized for vector operations:
+  ```sql
+  shared_preload_libraries = 'vector'
+  max_wal_size = '2GB'
+  work_mem = '256MB'
+  maintenance_work_mem = '512MB'
+  ```
+- ✅ **High Availability** with zone-redundant configuration
+- ✅ **Automated backups** with 35-day retention
+- ✅ **Private networking** integrated with AKS VNet
+
+#### **Ready for Vector Search**
+```sql
+-- Vector extension automatically available
+CREATE TABLE code_embeddings (
+  id SERIAL PRIMARY KEY,
+  file_path TEXT,
+  content TEXT,
+  embedding vector(1536)  -- Ready for OpenAI embeddings
+);
+
+-- Optimized similarity search
+SELECT file_path, content 
+FROM code_embeddings 
+ORDER BY embedding <-> '[0.1, 0.2, ...]'::vector 
+LIMIT 10;
+```
+
+### 🚀 **Enterprise Redis & Key-Value Store Options**
+
+VibeCode provides **three enterprise-grade Redis options** to meet different performance, cost, and licensing requirements:
+
+#### **1. Azure Cache for Redis (Recommended)**
+Microsoft's traditional managed Redis service with enterprise features:
+
+- ✅ **Fully managed** with automatic patching and updates
+- ✅ **High availability** with zone redundancy and geo-replication  
+- ✅ **Multiple tiers**: Basic, Standard, Premium with up to 1.2TB memory
+- ✅ **Enterprise security** with VNet integration and private endpoints
+- ✅ **Backup & recovery** with automated RDB snapshots
+
+```hcl
+# Configure in terraform.tfvars
+redis_deployment_type = "azure_cache_redis"
+azure_cache_redis_config = {
+  sku_name    = "Premium"
+  capacity    = 1
+  zones       = ["1", "2", "3"]
+}
+```
+
+#### **2. Azure Managed Redis (Preview)**
+Microsoft's **next-generation Redis service** with latest innovations:
+
+- ✅ **Redis Enterprise 7.4+** with advanced modules (RediSearch, RedisJSON, RedisTimeSeries, RedisBloom)
+- ✅ **99.999% availability** with active geo-replication
+- ✅ **Vector search** capabilities for AI/ML workloads
+- ✅ **Flash storage** options for cost-effective large datasets
+
+#### **3. Valkey (Open Source)**
+The **community-driven Redis fork** by [Linux Foundation](https://github.com/valkey-io/valkey):
+
+- ✅ **100% open source** under BSD license, no licensing restrictions
+- ✅ **Redis compatible** with enhanced performance and multi-threading
+- ✅ **Cost effective** running on your AKS infrastructure
+- ✅ **Community backed** by AWS, Google Cloud, and Oracle
+
+```hcl
+# Deploy all three for testing/migration
+redis_deployment_type = "all"
+```
+
+**Use Cases:**
+- **Session Management**: User authentication and workspace state
+- **API Caching**: Reduce database load and improve response times  
+- **Real-time Features**: Pub/sub for collaborative coding sessions
+- **Vector Search**: AI code analysis with Azure Managed Redis modules
+- **Cost Control**: Valkey for budget-conscious deployments
+
+**Integration Ready:**
+```typescript
+// Universal Redis client (auto-detects service type)
+import { getRedisClient } from '@/lib/redis-client';
+
+const redis = getRedisClient();
+await redis.setex(`session:${sessionId}`, 3600, JSON.stringify(sessionData));
+await redis.publish(`workspace:${workspaceId}`, JSON.stringify(update));
+```
+
+### 📊 **Datadog Database Monitoring**
+
+Automatically configured with enterprise-grade monitoring:
+
+#### **Compliance Features** ✅
+- **Datadog Agent**: 7.66.1 (meets >=7.33.0 requirement)
+- **Cluster Agent**: 1.24.0 (meets >=1.18.0 requirement)  
+- **orchestratorExplorer**: Enabled for Pod collection
+- **Database Monitoring**: Dedicated PostgreSQL user with proper permissions
+
+#### **Monitoring Capabilities**
+- **Query Performance**: Slow query detection and optimization recommendations
+- **Connection Analysis**: Pool monitoring and session tracking
+- **Lock Detection**: Deadlock analysis and resolution guidance
+- **Index Recommendations**: Automatic suggestions for vector query optimization
+- **Resource Utilization**: Real-time CPU, memory, and storage monitoring
+
+### 💰 **Cost & Scaling**
+
+#### **Monthly Costs (East US 2)**
+| Component | Configuration | Cost |
+|-----------|---------------|------|
+| **AKS Cluster** | 2x D4s_v3 + 3x D8s_v3 auto-scaling | ~$800 |
+| **PostgreSQL** | GP_Standard_D4s_v3 + HA + 64GB | ~$350 |
+| **Azure AI** | GPT-4 + GPT-3.5 + embeddings + vision | ~$300* |
+| **Other Services** | ACR, Key Vault, networking, monitoring | ~$120 |
+| **Total** |  | **~$1,570/month** |
+
+*AI costs vary based on usage*
+
+#### **Auto-Scaling Features**
+- **AKS nodes**: 1-10 nodes based on demand
+- **Pod autoscaling**: 3-20 pods based on CPU/memory
+- **Cost optimization**: Automatic scale-down during low usage
+- **Spot instances**: Available for non-critical workloads
+
+### 🔒 **Enterprise Security**
+
+#### **Network Security**
+- **Private VNet** with dedicated subnets for AKS and database
+- **Network Security Groups** with minimal required access
+- **Private DNS zones** for secure service communication
+- **Azure CNI** networking with Calico network policies
+
+#### **Identity & Access Management**
+- **Managed Identity** for all service-to-service authentication
+- **Workload Identity** for Kubernetes pod authentication
+- **Azure RBAC** integration with fine-grained permissions
+- **Key Vault** integration with automatic secret rotation
+
+#### **Data Protection**
+- **Encryption at rest** for all data stores
+- **TLS encryption** for all data in transit
+- **Private endpoints** for database access
+- **Geo-redundant backups** for disaster recovery
+
+### 📚 **Comprehensive Documentation**
+
+- **[ARM Templates Guide](./infrastructure/arm/README.md)**: One-click deployment instructions
+- **[Terraform Guide](./infrastructure/terraform/azure/README.md)**: Infrastructure as Code setup
+- **[Azure AI Client](./src/lib/azure-ai-client.ts)**: OpenRouter-compatible API library
+- **[Architecture Summary](./AZURE_INFRASTRUCTURE_SUMMARY.md)**: Complete technical overview
+
+### 🎉 **Success Metrics**
+
+After deployment, you'll have:
+- ✅ **Enterprise-ready** development platform on Azure
+- ✅ **OpenRouter alternative** using Azure AI Services  
+- ✅ **Vector search** capabilities with pgvector
+- ✅ **Full observability** with Datadog Database Monitoring
+- ✅ **Production security** with managed identities and private networking
+- ✅ **Auto-scaling** infrastructure that adapts to demand
+- ✅ **Cost optimization** with intelligent resource management
+
+**Ready to deploy to Azure?** Choose your preferred option above and get started! 🚀
+
+---
 
 ### 🔧 Configuration Options
 
