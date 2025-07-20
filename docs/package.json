@@ -1,0 +1,19 @@
+{
+  "name": "vibecode-docs",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.28.4",
+    "astro": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5"
+  }
+}
