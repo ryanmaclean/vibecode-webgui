@@ -377,6 +377,7 @@ export const AIChatInterface = ({
               onChange={handleFileUpload}
               className="hidden"
               accept=".txt,.md,.js,.ts,.jsx,.tsx,.py,.java,.cpp,.c,.html,.css,.json,.xml,.yml,.yaml"
+              data-testid="file-upload-input"
             />
 
             <Button

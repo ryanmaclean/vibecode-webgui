@@ -5,7 +5,6 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals'
-import '@testing-library/jest-dom'
 import { AIChatInterface } from '@/components/ai/AIChatInterface'
 
 // Mock fetch for API calls
@@ -20,6 +19,9 @@ const mockFileReader = {
   onerror: null
 };
 global.FileReader = jest.fn(() => mockFileReader) as any;
+
+// Mock URL.createObjectURL for file previews
+global.URL.createObjectURL = jest.fn((file: Blob) => `blob:${(file as File).name}`);
 
 describe('AIChatInterface', () => {
   const defaultProps = {
@@ -310,6 +312,25 @@ describe('AIChatInterface', () => {
       })
     })
   })
+
+    describe('File Upload', () => {
+    it('allows a user to select a file and displays it in the input area', async () => {
+      const user = userEvent.setup();
+      render(<AIChatInterface {...defaultProps} />);
+
+      const file = new File(['hello'], 'hello.png', { type: 'image/png' });
+      const uploadButton = screen.getByLabelText('Upload files');
+
+      // The upload button is visually hidden, but accessible. We need to target the underlying input.
+      const fileInput = screen.getByTestId('file-upload-input') as HTMLInputElement;
+
+      await user.upload(fileInput, file);
+
+      await waitFor(() => {
+        expect(screen.getByText('hello.png')).toBeInTheDocument();
+      });
+    });
+  });
 
   describe('Responsive Design', () => {
     it('adapts to different screen sizes', async () => {
