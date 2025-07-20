@@ -2,51 +2,31 @@
 
 This guide covers all deployment options for the VibeCode platform, from one-click cloud deployments to self-hosted Kubernetes clusters.
 
-## 🚀 Quick Deployment Options
+## 🚀 Automated CI/CD Deployment (Recommended)
 
-### Option 1: One-Click Cloud Deployment (Recommended)
+> **The primary and recommended deployment method for VibeCode.**
 
-> **Fastest way to get started - No technical expertise required**
+The VibeCode platform is configured with a robust CI/CD pipeline using GitHub Actions. This pipeline automatically builds, tests, and deploys the application to your production Kubernetes cluster on every push to the `main` branch.
 
-#### Deploy to Vercel (2-3 minutes)
+### How It Works
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyour-repo%2Fvibecode-webgui&env=OPENROUTER_API_KEY,NEXTAUTH_SECRET&envDescription=API%20keys%20required%20for%20AI%20chat%20functionality)
+1.  **Push to `main`**: Any code merged into the `main` branch triggers the deployment workflow.
+2.  **Build & Test**: The workflow builds the Docker image, runs all tests (unit, integration, and security scans), and ensures the application is stable.
+3.  **Deploy to Kubernetes**: Upon a successful build, the workflow automatically deploys the new version to your Kubernetes cluster using Helm.
 
-1. Click the deploy button above
-2. Connect your GitHub account
-3. Add environment variables (see below)
-4. Deploy!
+### Prerequisites
 
-#### Deploy to Netlify (3-5 minutes)
+To use the automated deployment, you must have the following secrets configured in your GitHub repository's settings:
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/your-repo/vibecode-webgui)
+- `DD_API_KEY`: Your Datadog API key for monitoring and security scans.
+- `DD_APP_KEY`: Your Datadog application key.
+- `KUBE_CONFIG_DATA`: Your Kubernetes configuration file, base64 encoded.
 
-#### Deploy to Railway (5-7 minutes)
+### Manual Trigger
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Fyour-repo%2Fvibecode-webgui)
+You can also manually trigger the deployment workflow from the "Actions" tab in your GitHub repository.
 
-### Option 2: Automated CLI Deployment
-
-Use our deployment script for guided setup:
-
-```bash
-# Clone the repository
-git clone https://github.com/your-repo/vibecode-webgui.git
-cd vibecode-webgui
-
-# Install dependencies
-npm install
-
-# Run deployment script
-node scripts/deploy.js
-```
-
-The script will:
-
-- Check prerequisites
-- Help you choose a platform
-- Set up environment variables
-- Deploy automatically
+## 📋 Environment Variables
 
 ## 📋 Environment Variables
 
