@@ -8,12 +8,7 @@ global:
     cluster: 'vibecode-platform'
     environment: 'production'
 
-# Alertmanager configuration
-alerting:
-  alertmanagers:
-    - static_configs:
-        - targets:
-          - alertmanager:9093
+
 
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'
 rule_files:
@@ -32,7 +27,7 @@ scrape_configs:
   # VibeCode WebGUI Application
   - job_name: 'vibecode-webgui'
     static_configs:
-      - targets: ['vibecode-app:3000']
+      - targets: ['vibecode-app.vibecode-webgui.svc.cluster.local:3000']
     scrape_interval: 15s
     metrics_path: /api/metrics
     scrape_timeout: 10s
@@ -43,7 +38,7 @@ scrape_configs:
       - source_labels: [__param_target]
         target_label: instance
       - target_label: __address__
-        replacement: vibecode-app:3000
+        replacement: vibecode-app.vibecode-webgui.svc.cluster.local:3000
 
   # Node Exporter (System Metrics)
   - job_name: 'node-exporter'
@@ -171,18 +166,4 @@ scrape_configs:
     scrape_interval: 30s
     metrics_path: /metrics
 
-# Remote write configuration for long-term storage
-remote_write:
-  - url: "http://cortex:9009/api/prom/push"
-    queue_config:
-      max_samples_per_send: 10000
-      max_shards: 200
-      capacity: 20000
-    metadata_config:
-      send: true
-      send_interval: 30s
 
-# Remote read configuration
-remote_read:
-  - url: "http://cortex:9009/api/prom/read"
-    read_recent: true
