@@ -67,9 +67,9 @@
 
 ## 📝 Backlog & Future Ideas
 
-- 🔵 **Performance Testing:**
-    -   Once the new monitoring is stable in the production environment, begin performance testing to identify bottlenecks.
-    -   Use Datadog to monitor application performance under load and define SLOs.
+- [🟡] **Performance Tuning & Optimization**:
+    -   Set up an initial Datadog synthetic test to monitor the application's health endpoint.
+    -   Next, create more comprehensive tests to simulate user journeys and measure performance under load.
 
 - [✅] **Pre-commit Hook Enforcement:**
     -   Address any remaining linting or syntax issues flagged by pre-commit hooks to improve code quality and developer velocity.
