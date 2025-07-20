@@ -71,9 +71,9 @@
 
 ## 📝 Backlog & Future Ideas
 
-- [🟡] **Performance Tuning & Optimization**:
-    -   Set up an initial Datadog synthetic test to monitor the application's health endpoint.
-    -   Next, create more comprehensive tests to simulate user journeys and measure performance under load.
+- [✅] **Integrate Synthetic Tests into CI Pipelines**:
+    -   Created a GitHub Actions workflow to run the critical user journey synthetic test on-demand.
+    -   Created more comprehensive tests to simulate user journeys and measure performance under load.
 
 - [✅] **Pre-commit Hook Enforcement:**
     -   Address any remaining linting or syntax issues flagged by pre-commit hooks to improve code quality and developer velocity.
