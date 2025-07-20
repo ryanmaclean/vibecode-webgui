@@ -86,7 +86,7 @@ export class VectorSearch {
               // Stringify objects for storage
               try {
                 metadata[key] = JSON.stringify(value);
-              } catch (_) {
+              } catch {
                 // If JSON.stringify fails, use String() as fallback
                 console.warn(`Could not stringify metadata value for key ${key}`, value);
                 metadata[key] = String(value);
@@ -250,7 +250,10 @@ export class VectorSearch {
     }
   }
 
-  async createCollection(name: string, metadata: Record<string, any> = {}) {
+  async createCollection(
+    name: string, 
+    metadata: Record<string, string | number | boolean | null> = {}
+  ): Promise<boolean> {
     try {
       await this.chroma.createCollection({
         name,
