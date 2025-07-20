@@ -142,3 +142,12 @@
 5. **Open Source**: Transparent, customizable, and community-driven development
 
 **Next Phase:** Focus on performance optimization, user onboarding, and scaling preparation.
+
+### 🚀 Future Initiatives
+
+- [ ] **Hugging Face Integration - BYOK (Bring Your Own Key)**:
+    -   Implement a secure way for users to add their personal Hugging Face API keys to use their own private models and resources.
+
+- [ ] **Integrated Gradio Space Editor**:
+    -   Develop a CodePen-like experience within the VibeCode editor to allow users to seamlessly create, edit, and embed Gradio applications.
+    -   This should include managing dependencies (`requirements.txt`) and the main application file (`app.py`).
