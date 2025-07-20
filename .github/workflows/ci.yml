@@ -104,7 +104,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build Docker images
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: .
         file: ./Dockerfile.production
@@ -114,7 +114,7 @@ jobs:
           ghcr.io/${{'{{'}} github.repository {{'}}'}}:{{'{{'}} github.sha {{'}}'}}
 
     - name: Build and push code-server image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: .
         file: ./docker/code-server/Dockerfile
@@ -124,7 +124,7 @@ jobs:
           ghcr.io/${{'{{'}} github.repository {{'}}'}}/code-server:${{'{{'}} github.sha {{'}}'}}
 
     - name: Build and push watermark-pod-autoscaler image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: .
         file: ./watermarkpodautoscaler/Dockerfile
