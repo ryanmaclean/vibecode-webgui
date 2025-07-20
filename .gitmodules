@@ -1,3 +1,6 @@
 [submodule "watermarkpodautoscaler"]
 	path = watermarkpodautoscaler
 	url = https://github.com/DataDog/watermarkpodautoscaler.git
+[submodule "external/magic-code-gen"]
+	path = external/magic-code-gen
+	url = https://github.com/ryanmaclean/magic-code-gen.git
