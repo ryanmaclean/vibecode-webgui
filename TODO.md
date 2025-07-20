@@ -49,8 +49,8 @@
 **Status**: 📝 Planning
 **Priority**: P2
 
-- [ ] **Update Deployment Guides:**
-    -   Reflect the new automated deployment process in the documentation.
+- [✅] **Update Deployment Guides:**
+    -   Reflected the new automated deployment process in the documentation.
 - [✅] **Onboarding & Contribution Guide**:
     -   Created `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` to guide new developers.
 
