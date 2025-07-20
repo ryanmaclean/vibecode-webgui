@@ -5,7 +5,19 @@
     "ms-vscode.vscode-json",
     "ms-vscode.vscode-eslint",
     "ms-vscode.vscode-css-languagefeatures",
-    "ms-vscode.vscode-html-languagefeatures",
+    "ms-vscode.vscode-html-languagefeatures"
+  ],
+  "unwantedRecommendations": [
+    "ms-python.python",
+    "ms-vscode.cpptools",
+    "ms-vscode.powershell",
+    "ms-azuretools.vscode-docker",
+    "ms-vscode-remote.remote-containers",
+    "ms-vscode-remote.remote-ssh",
+    "ms-vscode-remote.remote-wsl",
+    "github.copilot",
+    "github.copilot-chat",
+    "ms-kubernetes-tools.vscode-kubernetes-tools",
     "editorconfig.editorconfig",
     "christian-kohler.path-intellisense",
     "formulahendry.auto-rename-tag",
@@ -19,17 +31,5 @@
     "pkief.material-icon-theme",
     "coenraads.bracket-pair-colorizer-2",
     "shan.code-settings-sync"
-  ],
-  "unwantedRecommendations": [
-    "ms-python.python",
-    "ms-vscode.cpptools",
-    "ms-vscode.powershell",
-    "ms-azuretools.vscode-docker",
-    "ms-vscode-remote.remote-containers",
-    "ms-vscode-remote.remote-ssh",
-    "ms-vscode-remote.remote-wsl",
-    "github.copilot",
-    "github.copilot-chat",
-    "ms-kubernetes-tools.vscode-kubernetes-tools"
   ]
 }

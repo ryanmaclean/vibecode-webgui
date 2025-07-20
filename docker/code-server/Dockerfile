@@ -46,33 +46,12 @@ RUN mkdir -p /home/coder/.local/share/code-server/User/ \
 # Copy VibeCode extensions
 COPY --chown=coder:coder extensions/vibecode-ai-assistant /home/coder/.vscode/extensions/vibecode-ai-assistant
 
-# Phase 1: Core Microsoft Language Support Extensions (MIT Licensed)
+# Official Microsoft Extensions Only (MIT Licensed)
 RUN code-server --install-extension ms-vscode.vscode-typescript-next \
     && code-server --install-extension ms-vscode.vscode-json \
     && code-server --install-extension ms-vscode.vscode-eslint \
     && code-server --install-extension ms-vscode.vscode-css-languagefeatures \
     && code-server --install-extension ms-vscode.vscode-html-languagefeatures
-
-# Phase 2: Essential Development Tools (MIT/BSD Licensed)
-RUN code-server --install-extension editorconfig.editorconfig \
-    && code-server --install-extension christian-kohler.path-intellisense \
-    && code-server --install-extension formulahendry.auto-rename-tag \
-    && code-server --install-extension eamodio.gitlens \
-    && code-server --install-extension aaron-bond.better-comments
-
-# Phase 3: Popular Web Development Extensions (MIT/BSD Licensed)
-RUN code-server --install-extension bradlc.vscode-tailwindcss \
-    && code-server --install-extension esbenp.prettier-vscode \
-    && code-server --install-extension redhat.vscode-yaml \
-    && code-server --install-extension mikestead.dotenv
-
-# Phase 4: UI and Theme Extensions (MIT Licensed)
-RUN code-server --install-extension github.github-vscode-theme \
-    && code-server --install-extension pkief.material-icon-theme
-
-# Phase 5: Additional Productivity Extensions (MIT Licensed)
-RUN code-server --install-extension coenraads.bracket-pair-colorizer-2 \
-    && code-server --install-extension shan.code-settings-sync
 
 # Configure VS Code settings
 COPY --chown=coder:coder docker/code-server/settings.json /home/coder/.local/share/code-server/User/settings.json
