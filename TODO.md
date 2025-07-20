@@ -60,8 +60,10 @@
 
 - [ ] **Address Dependabot Alerts:**
     -   Investigate and resolve the low-severity vulnerability flagged by Dependabot.
-- [ ] **Secret Scanning:**
-    -   Implement a secret scanning solution to prevent accidental credential exposure.
+- [✅] **Implement Rate Limiting:**
+    -   Implemented rate limiting to prevent abuse and denial-of-service attacks.
+- [✅] **Secret Scanning:**
+    -   Implemented a secret scanning solution using TruffleHog to prevent accidental credential exposure.
 
 ---
 
