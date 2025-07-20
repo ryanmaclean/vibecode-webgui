@@ -63,6 +63,37 @@ export default defineConfig({
       customCss: [
         './src/styles/custom.css',
       ],
+      head: [
+        {
+          tag: 'script',
+          attrs: {
+            src: 'https://www.datadoghq-browser-agent.com/us5/v5/datadog-rum.js',
+            type: 'text/javascript',
+          },
+        },
+        {
+          tag: 'script',
+          content: `
+            if (import.meta.env.PROD && import.meta.env.PUBLIC_DATADOG_CLIENT_TOKEN) {
+              window.DD_RUM.init({
+                clientToken: import.meta.env.PUBLIC_DATADOG_CLIENT_TOKEN,
+                applicationId: import.meta.env.PUBLIC_DATADOG_APP_ID || 'vibecode-docs-rum',
+                site: 'datadoghq.com',
+                service: 'vibecode-docs',
+                env: 'production',
+                version: '1.0.0', // Replace with a dynamic version if needed
+                sessionSampleRate: 100,
+                sessionReplaySampleRate: 20,
+                trackUserInteractions: true,
+                trackResources: true,
+                trackLongTasks: true,
+                defaultPrivacyLevel: 'mask-user-input',
+              });
+              window.DD_RUM.startSessionReplayRecording();
+            }
+          `,
+        },
+      ],
     }),
   ],
 });

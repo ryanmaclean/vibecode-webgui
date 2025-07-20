@@ -16,10 +16,13 @@ burn-train = { version = "0.18.0" }
 burn-dataset = { version = "0.18.0" }
 serde = { version = "1.0", features = ["derive"] }
 
-# Utilities
+# CLI and utilities
+clap = { version = "4.0", features = ["derive"] }
+anyhow = "1.0"
 indicatif = "0.17"
 log = "0.4"
 env_logger = "0.11"
+fastrand = "2.0"
 
 [features]
 default = ["burn-ndarray"]

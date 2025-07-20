@@ -1,0 +1,69 @@
+[package]
+name = "burn-phi-local-llm"
+version = "0.1.0"
+edition = "2021"
+description = "Local LLM inference using Microsoft Phi models with Burn framework"
+license = "MIT"
+keywords = ["burn", "phi", "llm", "local", "ai"]
+
+[dependencies]
+# Burn framework
+burn = { version = "0.18.0", features = ["default"] }
+burn-ndarray = { version = "0.18.0" }
+burn-candle-core = { version = "0.18.0", optional = true }
+
+# Model loading and ONNX support
+burn-import = { version = "0.18.0" }
+ort = { version = "2.0", optional = true } # ONNX Runtime
+candle-core = { version = "0.8", optional = true }
+candle-nn = { version = "0.8", optional = true }
+candle-transformers = { version = "0.8", optional = true }
+hf-hub = { version = "0.3", optional = true }
+
+# Tokenization
+tokenizers = { version = "0.20", default-features = false, features = ["onig"] }
+
+# Async and HTTP
+tokio = { version = "1.0", features = ["full"] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
+futures = "0.3"
+
+# Serialization and data
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bincode = "1.3"
+
+# CLI and utilities
+clap = { version = "4.0", features = ["derive"] }
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+indicatif = "0.17"
+
+# Performance
+rayon = "1.8"
+memmap2 = "0.9"
+
+[features]
+default = ["burn-ndarray"]
+cuda = ["burn/cuda-jit"]
+metal = ["burn/metal"]
+wgpu = ["burn/wgpu"]
+onnx = ["ort"]
+candle = ["candle-core", "candle-nn", "candle-transformers", "hf-hub", "burn-candle-core"]
+
+[[bin]]
+name = "download-phi"
+path = "src/bin/download_phi.rs"
+
+[[bin]]
+name = "benchmark-phi"
+path = "src/bin/benchmark.rs"
+
+[[bin]]
+name = "chat-phi"
+path = "src/bin/chat.rs"
+
+[[bin]]
+name = "code-assistant"
+path = "src/bin/code_assistant.rs"

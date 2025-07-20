@@ -1,47 +1,53 @@
-'use client'
+/* eslint-disable no-console */
+'use client';
 
-import { useEffect } from 'react'
-import { datadogRum } from '@datadog/browser-rum'
+import { datadogRum } from '@datadog/browser-rum';
+import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 
+// This component initializes Datadog RUM for client-side monitoring.
 const DatadogRUM = () => {
+  const pathname = usePathname();
+
   useEffect(() => {
-    // Prevent re-initialization and run only in the browser
-    if (typeof window === 'undefined' || (window as any).DD_RUM) {
-      return
+    // Check if RUM is already initialized to prevent re-initialization on navigation.
+    if (datadogRum.getInternalContext()?.application_id) {
+      return;
     }
 
-    const applicationId = process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID
-    const clientToken = process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN
-    const site = process.env.NEXT_PUBLIC_DATADOG_SITE || 'datadoghq.com'
-    const service = 'vibecode-webgui-frontend'
-    const env = process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.NODE_ENV
-    const version = process.env.NEXT_PUBLIC_APP_VERSION || '0.1.0'
-
-    // Only initialize in production or if explicitly enabled
-    if (clientToken && applicationId && env === 'production') {
+    // Only initialize in production environment and if the client token is available.
+    if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN) {
+      console.log('Initializing Datadog RUM...');
       datadogRum.init({
-        applicationId,
-        clientToken,
-        site,
-        service,
-        env,
-        version,
+        applicationId: process.env.NEXT_PUBLIC_DATADOG_APP_ID || 'vibecode-rum',
+        clientToken: process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN,
+        site: 'datadoghq.com',
+        service: process.env.NEXT_PUBLIC_DATADOG_SERVICE || 'vibecode-webgui',
+        env: 'production',
+        version: process.env.NEXT_PUBLIC_DATADOG_VERSION || process.env.npm_package_version,
         sessionSampleRate: 100,
         sessionReplaySampleRate: 20,
         trackUserInteractions: true,
         trackResources: true,
         trackLongTasks: true,
         defaultPrivacyLevel: 'mask-user-input',
-      })
+      });
 
-      datadogRum.startSessionReplayRecording()
-
-      // Set a global flag to indicate initialization
-      ;(window as any).DD_RUM = true
+      datadogRum.startSessionReplayRecording();
+      console.log('Datadog RUM initialized.');
     }
-  }, [])
+  }, []);
 
-  return null // This component does not render anything
-}
+  // This effect tracks route changes as RUM views.
+  useEffect(() => {
+    if (pathname) {
+      datadogRum.startView({
+        name: pathname,
+      });
+    }
+  }, [pathname]);
 
-export default DatadogRUM
+  return null;
+};
+
+export default DatadogRUM;
