@@ -71,19 +71,12 @@ validate_environment() {
     
     local env_file="$MONITORING_DIR/.env"
     echo "DATADOG_API_KEY=$DATADOG_API_KEY" > "$env_file"
-    log "Environment validation completed ✅"
+    log "Environment validation passed ✅"
 }
 
-# Function to deploy with Docker Compose
-deploy_docker_compose() {
-    log "Deploying Prometheus and supporting exporters via Docker Compose..."
-    # Explicitly list services to avoid starting any removed components
-    docker-compose -f "$MONITORING_DIR/docker-compose.yml" up -d prometheus node-exporter postgres-exporter redis-exporter
-    log "Docker Compose deployment completed ✅"
-}
-
-# Function to deploy to Kubernetes
+# Function to deploy with Kubernetes
 deploy_kubernetes() {
+    log "Deploying to Kubernetes..."
     log "Ensuring Kubernetes namespace '$NAMESPACE' exists..."
     kubectl get ns "$NAMESPACE" &>/dev/null || kubectl create namespace "$NAMESPACE"
 
@@ -98,25 +91,37 @@ deploy_kubernetes() {
         --values "$MONITORING_DIR/prometheus-helm-values.yml" \
         --set alertmanager.enabled=false \
         --set grafana.enabled=false \
-        --set pushgateway.enabled=false
+        --set pushgateway.enabled=false \
+        --atomic \
+        --wait
 
-    log "Deploying Datadog Agent..."
+    log "Deploying Datadog agent with log collection enabled..."
     helm upgrade --install datadog-agent datadog/datadog \
         --namespace "$NAMESPACE" \
         --set datadog.apiKey="$DATADOG_API_KEY" \
         --set datadog.site='datadoghq.com' \
+        --set datadog.logs.enabled=true \
+        --set datadog.logs.containerCollectAll=true \
         --set clusterAgent.enabled=true \
         --set clusterAgent.metrics.enabled=true \
+        --set metrics-server.enabled=true \
+        --atomic \
         --wait
 
     log "Kubernetes deployment completed ✅"
 }
 
+# Function to deploy with Docker Compose
+deploy_docker_compose() {
+    log "Deploying with Docker Compose..."
+    docker-compose -f "$MONITORING_DIR/docker-compose.yml" up -d --remove-orphans
+    log "Docker Compose deployment completed ✅"
+}
+
 # Function to display access info
 display_access_info() {
     echo
-    log "Monitoring Stack Access Information:"
-    echo "-----------------------------------"
+    log "--- Access Information ---"
     info "Prometheus: http://localhost:9090"
     info "Datadog:    https://app.datadoghq.com/"
     echo "-----------------------------------"
