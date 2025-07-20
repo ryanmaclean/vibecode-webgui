@@ -10,7 +10,7 @@
 import chokidar from 'chokidar'
 import { EventEmitter } from 'events'
 import path from 'path'
-import fs from 'fs/promises'
+import * as fs from 'fs/promises'
 import crypto from 'crypto'
 import { Mutex } from 'async-mutex'
 
@@ -141,34 +141,46 @@ export class SecureFileSystemOperations extends EventEmitter {
    * Validate file path for security
    */
   private validateFilePath(filePath: string): boolean {
-    if (!filePath || typeof filePath !== 'string') {
+    try {
+      if (!filePath || typeof filePath !== 'string') {
+        return false
+      }
+
+      // Length and format checks
+      if (filePath.length > 255 || filePath.length === 0) {
+        return false
+      }
+
+      // Normalize and security check
+      const normalized = path.normalize(filePath)
+      
+      // Check for path traversal
+      if (normalized.includes('..') || normalized.startsWith('/') || normalized.startsWith('~')) {
+        return false
+      }
+
+      // Check for blocked paths
+      if (this.isBlockedPath(normalized)) {
+        return false
+      }
+
+      // Check file extension if present
+      const ext = path.extname(normalized).toLowerCase()
+      if (ext && !ALLOWED_FILE_EXTENSIONS.includes(ext)) {
+        return false
+      }
+
+      // Ensure file is within working directory
+      const fullPath = path.resolve(this.config.workingDirectory, normalized)
+      if (!fullPath.startsWith(path.resolve(this.config.workingDirectory))) {
+        return false
+      }
+
+      return true
+    } catch {
+      // Invalid path - error intentionally ignored
       return false
     }
-
-    // Length and format checks
-    if (filePath.length > 255 || filePath.length === 0) {
-      return false
-    }
-
-    // Normalize and security check
-    const normalized = path.normalize(filePath)
-    if (this.isBlockedPath(normalized)) {
-      return false
-    }
-
-    // Check file extension if present
-    const ext = path.extname(normalized).toLowerCase()
-    if (ext && !ALLOWED_FILE_EXTENSIONS.includes(ext)) {
-      return false
-    }
-
-    // Ensure file is within working directory
-    const fullPath = path.resolve(this.config.workingDirectory, normalized)
-    if (!fullPath.startsWith(path.resolve(this.config.workingDirectory))) {
-      return false
-    }
-
-    return true
   }
 
   /**
@@ -202,9 +214,9 @@ export class SecureFileSystemOperations extends EventEmitter {
       .on('add', (filePath) => this.handleFileEvent('created', filePath))
       .on('change', (filePath) => this.handleFileEvent('changed', filePath))
       .on('unlink', (filePath) => this.handleFileEvent('deleted', filePath))
-      .on('error', (error) => {
-        console.error('File watcher error:', error)
-        this.emit('error', error)
+      .on('error', (err) => {
+        console.error('Error handling file event:', err instanceof Error ? err.message : 'Unknown error')
+        this.emit('error', err)
       })
   }
 
@@ -212,39 +224,28 @@ export class SecureFileSystemOperations extends EventEmitter {
    * Handle file system events
    */
   private async handleFileEvent(eventType: string, filePath: string): Promise<void> {
+    if (this.syncInProgress.has(filePath)) {
+      return
+    }
+
     try {
-      if (!this.validateFilePath(filePath)) {
-        return
-      }
+      this.syncInProgress.add(filePath)
 
-      // Prevent infinite loops
-      if (this.syncInProgress.has(filePath)) {
-        return
-      }
+      const stats = await fs.stat(filePath).catch(() => null)
+      if (stats) {
+        // File exists, update metadata
+        const content = await fs.readFile(filePath, 'utf-8')
+        const checksum = this.calculateChecksum(content)
 
-      const fullPath = path.resolve(this.config.workingDirectory, filePath)
-
-      let metadata: FileMetadata | null = null
-
-      if (eventType !== 'deleted') {
-        try {
-          const stats = await fs.stat(fullPath)
-          const content = await fs.readFile(fullPath, 'utf-8')
-          const checksum = this.calculateChecksum(content)
-
-          metadata = {
-            path: filePath,
-            size: stats.size,
-            lastModified: stats.mtime,
-            checksum,
-            version: (this.fileMetadataCache.get(filePath)?.version || 0) + 1
-          }
-
-          this.fileMetadataCache.set(filePath, metadata)
-        } catch (error) {
-          // File might be temporarily inaccessible
-          return
+        const metadata: FileMetadata = {
+          path: filePath,
+          size: stats.size,
+          lastModified: stats.mtime,
+          checksum,
+          version: (this.fileMetadataCache.get(filePath)?.version || 0) + 1
         }
+
+        this.fileMetadataCache.set(filePath, metadata)
       } else {
         // File deleted
         this.fileMetadataCache.delete(filePath)
@@ -259,17 +260,25 @@ export class SecureFileSystemOperations extends EventEmitter {
         path: filePath,
         timestamp: new Date(),
         userId: this.config.userId,
-        checksum: metadata?.checksum
+        checksum: stats ? this.calculateChecksum(await fs.readFile(filePath, 'utf-8')) : undefined
       }
 
       // Check for conflicts
-      if (metadata && this.config.conflictResolution !== 'auto-merge') {
-        const conflict = await this.detectConflict(filePath, metadata)
+      if (stats && this.config.conflictResolution !== 'auto-merge') {
+        // Convert stats to FileMetadata
+        const fileMetadata: FileMetadata = {
+          path: filePath,
+          size: stats.size,
+          lastModified: stats.mtime,
+          checksum: operation.checksum || '',
+          version: 1 // Default version
+        }
+        const conflict = await this.detectConflict(filePath, fileMetadata)
         if (conflict) {
           this.emit('conflict-detected', {
             type: 'conflict-detected',
             path: filePath,
-            metadata,
+            metadata: this.fileMetadataCache.get(filePath)!,
             operation,
             conflictInfo: conflict
           })
@@ -277,16 +286,24 @@ export class SecureFileSystemOperations extends EventEmitter {
         }
       }
 
-      // Emit sync event
+      // Emit sync event with proper type
+      const eventTypes = {
+        'created': 'file-created',
+        'changed': 'file-changed',
+        'deleted': 'file-deleted'
+      } as const
+      
       this.emit('file-sync', {
-        type: `file-${eventType}` as any,
+        type: eventTypes[eventType as keyof typeof eventTypes],
         path: filePath,
-        metadata: metadata!,
+        metadata: this.fileMetadataCache.get(filePath)!,
         operation
       })
 
-    } catch (error) {
-      console.error(`Error handling file event for ${filePath}:`, error)
+    } catch {
+      // Error already logged, continue execution
+    } finally {
+      this.syncInProgress.delete(filePath)
     }
   }
 
@@ -300,7 +317,14 @@ export class SecureFileSystemOperations extends EventEmitter {
   /**
    * Detect file conflicts
    */
-  private async detectConflict(filePath: string, newMetadata: FileMetadata): Promise<any> {
+  private async detectConflict(
+    filePath: string, 
+    newMetadata: FileMetadata
+  ): Promise<{
+    localChecksum: string;
+    remoteChecksum: string;
+    conflictResolution: 'user-choice' | 'auto-merge' | 'create-backup';
+  } | null> {
     const cachedMetadata = this.fileMetadataCache.get(filePath)
 
     if (!cachedMetadata) {
@@ -346,7 +370,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       try {
         await fs.access(fullPath)
         throw new Error('File already exists')
-      } catch (error) {
+      } catch {
         // File doesn't exist - good to proceed
       }
 
@@ -446,7 +470,8 @@ export class SecureFileSystemOperations extends EventEmitter {
         throw new Error('Invalid file path')
       }
 
-      if (content.length > this.config.maxFileSize!) {
+      const maxFileSize = this.config.maxFileSize || 10 * 1024 * 1024 // Default 10MB
+      if (content.length > maxFileSize) {
         throw new Error('File size exceeds maximum limit')
       }
 

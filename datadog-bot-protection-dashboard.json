@@ -1,0 +1,282 @@
+{
+  "title": "VibeCode User Activity & Security Geomaps",
+  "description": "Monitor user logins, bot detection, and security events with geographic visualization for VibeCode AI application",
+  "widgets": [
+    {
+      "id": "user-login-geomap",
+      "definition": {
+        "type": "geomap",
+        "requests": [
+          {
+            "q": "sum:logs{service:vibecode-webgui,source:auth-api,event.type:login_success} by {@network.client.ip}.rollup(count)",
+            "style": {
+              "palette": "green_to_orange"
+            }
+          }
+        ],
+        "title": "User Logins by Geographic Location",
+        "title_size": "16",
+        "title_align": "left",
+        "view": {
+          "focus": "WORLD"
+        }
+      }
+    },
+    {
+      "id": "bot-traffic-geomap",
+      "definition": {
+        "type": "geomap", 
+        "requests": [
+          {
+            "q": "sum:logs{service:vibecode-webgui,source:bot-protection-middleware,event.type:bot_detected} by {@network.client.ip}.rollup(count)",
+            "style": {
+              "palette": "red_to_yellow"
+            }
+          }
+        ],
+        "title": "Bot Traffic by Geographic Location",
+        "title_size": "16",
+        "title_align": "left",
+        "view": {
+          "focus": "WORLD"
+        }
+      }
+    },
+    {
+      "id": "page-visits-geomap",
+      "definition": {
+        "type": "geomap",
+        "requests": [
+          {
+            "q": "sum:logs{service:vibecode-webgui,source:bot-protection-middleware,event.type:user_access} by {@network.client.ip}.rollup(count)",
+            "style": {
+              "palette": "blue_to_purple"
+            }
+          }
+        ],
+        "title": "Legitimate User Page Visits by Location",
+        "title_size": "16", 
+        "title_align": "left",
+        "view": {
+          "focus": "WORLD"
+        }
+      }
+    },
+    {
+      "id": "security-overview",
+      "definition": {
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:logs{service:vibecode-webgui,event.type:bot_detected}.rollup(count)",
+            "aggregator": "sum"
+          }
+        ],
+        "title": "Bots Detected (24h)",
+        "title_size": "16",
+        "title_align": "left",
+        "autoscale": true,
+        "precision": 0
+      }
+    },
+    {
+      "id": "user-login-stats",
+      "definition": {
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:logs{service:vibecode-webgui,event.type:login_success}.rollup(count)",
+            "aggregator": "sum"
+          }
+        ],
+        "title": "Successful Logins (24h)",
+        "title_size": "16",
+        "title_align": "left",
+        "autoscale": true,
+        "precision": 0
+      }
+    },
+    {
+      "id": "geographic-user-distribution",
+      "definition": {
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(sum:logs{service:vibecode-webgui,event.type:login_success} by {@geo.country_name}.rollup(count), 10, 'sum', 'desc')"
+          }
+        ],
+        "title": "Top Countries by User Logins",
+        "title_size": "16",
+        "title_align": "left"
+      }
+    },
+    {
+      "id": "security-events-timeline",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:logs{service:vibecode-webgui,event.type:bot_detected}.rollup(count, 300)",
+            "display_type": "bars",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:logs{service:vibecode-webgui,event.type:bot_detected}.rollup(count, 300)",
+                "alias_name": "Bots Detected"
+              }
+            ]
+          },
+          {
+            "q": "sum:logs{service:vibecode-webgui,event.type:rate_limited}.rollup(count, 300)", 
+            "display_type": "bars",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid", 
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:logs{service:vibecode-webgui,event.type:rate_limited}.rollup(count, 300)",
+                "alias_name": "Rate Limited"
+              }
+            ]
+          },
+          {
+            "q": "sum:logs{service:vibecode-webgui,event.type:user_access}.rollup(count, 300)",
+            "display_type": "line",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:logs{service:vibecode-webgui,event.type:user_access}.rollup(count, 300)",
+                "alias_name": "User Access"
+              }
+            ]
+          }
+        ],
+        "title": "Security & User Activity Timeline",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value", "sum"]
+      }
+    },
+    {
+      "id": "device-and-browser-analytics",
+      "definition": {
+        "type": "sunburst",
+        "requests": [
+          {
+            "q": "sum:logs{service:vibecode-webgui,event.type:user_access} by {@user_agent.device.name,@user_agent.os.name,@user_agent.browser.name}.rollup(count)"
+          }
+        ],
+        "title": "User Device & Browser Distribution",
+        "title_size": "16",
+        "title_align": "left"
+      }
+    },
+    {
+      "id": "ai-endpoint-usage-by-location",
+      "definition": {
+        "type": "geomap",
+        "requests": [
+          {
+            "q": "sum:logs{service:vibecode-webgui,@http.url_details.path:/api/ai/*} by {@network.client.ip}.rollup(count)",
+            "style": {
+              "palette": "purple_to_yellow"
+            }
+          }
+        ],
+        "title": "AI API Usage by Geographic Location",
+        "title_size": "16",
+        "title_align": "left",
+        "view": {
+          "focus": "WORLD"
+        }
+      }
+    },
+    {
+      "id": "voice-api-geographic-usage",
+      "definition": {
+        "type": "geomap",
+        "requests": [
+          {
+            "q": "sum:logs{service:vibecode-webgui,@http.url_details.path:*voice*} by {@network.client.ip}.rollup(count)",
+            "style": {
+              "palette": "cool"
+            }
+          }
+        ],
+        "title": "Voice API Usage by Location",
+        "title_size": "16",
+        "title_align": "left",
+        "view": {
+          "focus": "WORLD"
+        }
+      }
+    },
+    {
+      "id": "login-failure-geomap",
+      "definition": {
+        "type": "geomap",
+        "requests": [
+          {
+            "q": "sum:logs{service:vibecode-webgui,event.type:login_failure} by {@network.client.ip}.rollup(count)",
+            "style": {
+              "palette": "red"
+            }
+          }
+        ],
+        "title": "Failed Login Attempts by Location",
+        "title_size": "16",
+        "title_align": "left",
+        "view": {
+          "focus": "WORLD"
+        }
+      }
+    },
+    {
+      "id": "real-time-activity-table",
+      "definition": {
+        "type": "log_stream",
+        "query": "service:vibecode-webgui (event.type:login_success OR event.type:user_access OR event.type:bot_detected)",
+        "columns": ["@timestamp", "@network.client.ip", "@geo.country_name", "@geo.city_name", "event.type", "@http.url_details.path"],
+        "title": "Real-time User Activity Stream",
+        "title_size": "16",
+        "title_align": "left",
+        "show_date_column": true,
+        "show_message_column": true,
+        "message_display": "expanded-md"
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "env",
+      "default": "*",
+      "prefix": "env"
+    },
+    {
+      "name": "service", 
+      "default": "vibecode-webgui",
+      "prefix": "service"
+    },
+    {
+      "name": "country",
+      "default": "*",
+      "prefix": "@geo.country_name"
+    }
+  ],
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "notify_list": [],
+  "reflow_type": "fixed"
+} 
