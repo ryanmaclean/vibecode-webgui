@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datadog-dbm-config
+  namespace: vibecode
+  labels:
+    app.kubernetes.io/name: datadog
+    app.kubernetes.io/instance: datadog
+    app.kubernetes.io/component: database-monitoring
+data:
+  # PostgreSQL DBM configuration
+  postgres.d/conf.yaml: |
+    init_config:
+      min_collection_interval: 15
+      use_global_custom_queries: true
+    
+    instances:
+      - dbm: true
+        host: postgres.vibecode.svc.cluster.local
+        port: 5432
+        username: datadog
+        dbname: vibecode
+        ssl: false
+        tags:
+          - env:production
+          - service:vibecode-webgui
+          - application:vibecode-platform
+          - version:1.0.0
+          - team:platform
+          - tier:database
+        
+        # Connection pooling metrics
+        collect_connection_pool_metrics: true
+        
+        # Query metrics configuration
+        query_metrics:
+          enabled: true
+          run_sync: true
+          interval: 300
+        
+        # Query samples configuration
+        query_samples:
+          enabled: true
+          explain_function: 'pg_hint_plan.sql_hints'
+          explain_parameterized_queries: true
+          
+        # Query activity configuration
+        query_activity:
+          enabled: true
+          collection_interval: 10
+          
+        # Collection settings
+        relations:
+          - relation_regex: .*
+        
+        # Custom metrics queries
+        custom_queries:
+          - query: >
+              SELECT
+                t.schemaname::text AS schema,
+                t.tablename::text AS table,
+                c.reltuples::bigint AS rows,
+                pg_total_relation_size(format('%I.%I', t.schemaname, t.tablename)) AS total_size_bytes,
+                pg_indexes_size(format('%I.%I', t.schemaname, t.tablename)) AS index_size_bytes,
+                pg_total_relation_size(format('%I.%I', t.schemaname, t.tablename)) - pg_indexes_size(format('%I.%I', t.schemaname, t.tablename)) AS table_size_bytes
+              FROM
+                pg_tables t
+                JOIN pg_class c ON t.tablename = c.relname
+              WHERE
+                t.schemaname NOT IN ('pg_catalog', 'information_schema')
+            metrics:
+              - schema: postgres.table.schema
+                type: tag
+              - table: postgres.table.name
+                type: tag
+              - rows: postgres.table.rows
+                type: gauge
+              - total_size_bytes: postgres.table.total_size_bytes
+                type: gauge
+              - index_size_bytes: postgres.table.index_size_bytes
+                type: gauge
+              - table_size_bytes: postgres.table.table_size_bytes
+                type: gauge

@@ -4,13 +4,13 @@
  * This is the core integration that makes VibeCode function like Lovable/Replit/Bolt.diy
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { z } from 'zod';
 import { llmObservability } from '@/lib/datadog-llm';
 
-import { Span } from 'dd-trace';
+import type { Span } from 'dd-trace';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { spawn } from 'child_process';
@@ -43,11 +43,17 @@ interface ProjectStructure {
   }>
 }
 
-async function generateProjectWithAI(prompt: string, options: {
+interface GenerateProjectOptions {
   language?: string;
   framework?: string;
   features?: string[];
-}): Promise<ProjectStructure> {
+  onProgress?: (progress: number, message: string) => void;
+}
+
+async function generateProjectWithAI(
+  prompt: string, 
+  options: GenerateProjectOptions = {}
+): Promise<ProjectStructure> {
   return llmObservability.createWorkflowSpan(
     'ai-project-generation',
     async (span: Span | undefined) => {
@@ -104,6 +110,9 @@ Generate a new project based on the following prompt.
       });
 
       try {
+        // Report starting generation
+        options.onProgress?.(0, 'Starting project generation...');
+        
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -130,8 +139,12 @@ Generate a new project based on the following prompt.
           throw new Error(`OpenRouter API failed: ${response.status} ${response.statusText}`);
         }
 
+        options.onProgress?.(25, 'Generating project structure...');
+        
         const data: { choices: { message: { content: string } }[] } = await response.json();
         const content = data.choices[0].message.content;
+        
+        options.onProgress?.(50, 'Processing generated files...');
         
         const parsedContent: {
           name?: string;
@@ -164,7 +177,7 @@ Generate a new project based on the following prompt.
             };
         });
 
-        return {
+        const result = {
           name: parsedContent.name || 'ai-generated-project',
           description: parsedContent.description || `AI-generated project for: ${prompt}`,
           files: generatedFiles,
@@ -173,6 +186,9 @@ Generate a new project based on the following prompt.
           devDependencies: parsedContent.devDependencies || {},
           envVars: parsedContent.envVars || [],
         };
+        
+        options.onProgress?.(75, 'Finalizing project structure...');
+        return result;
 
       } catch (error: unknown) {
         console.error('Error during AI project generation:', error);
@@ -278,111 +294,198 @@ async function createCodeServerSession(workspaceId: string, userId: string): Pro
   return Promise.resolve({ url: `https://code.vibecode.com/w/${workspaceId}` });
 }
 
+// Helper function to create a streaming response
+interface ProgressData {
+  [key: string]: unknown;
+  message: string;
+  progress?: number;
+}
+
+function createStreamingResponse() {
+  const stream = new TransformStream();
+  const writer = stream.writable.getWriter();
+  
+  const sendProgress = (status: string, data: ProgressData) => {
+    writer.write(JSON.stringify({ status, ...data }) + '\n');
+  };
+
+  return {
+    stream: stream.readable,
+    sendProgress,
+    close: () => writer.close(),
+  };
+}
+
 export async function POST(request: NextRequest) {
-  return llmObservability.createTaskSpan(
-    'api-ai-generate-project',
-    async (span?: Span) => {
-      try {
-        const session = await getServerSession(authOptions)
-        if (!session?.user) {
-          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // Create a streaming response
+  const { stream, sendProgress, close } = createStreamingResponse();
+  
+  // Start processing in the background
+  (async () => {
+    try {
+      const session = await getServerSession(authOptions);
+      if (!session?.user) {
+        sendProgress('error', { 
+          message: 'Unauthorized: Please sign in to generate projects',
+          error: 'Unauthorized',
+          progress: 0
+        });
+        return close();
+      }
+
+      const body = await request.json();
+      const validatedData = generateProjectSchema.parse(body);
+      
+      // Generate unique workspace ID
+      const workspaceId = `ai-project-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+      
+      // Send initial progress
+      sendProgress('initializing', { 
+        message: 'Starting project generation...',
+        workspaceId,
+        timestamp: new Date().toISOString()
+      });
+
+      // Track timing for performance metrics
+      const startTime = Date.now();
+      
+      // Step 1: Generate project structure with AI
+      sendProgress('generating', { 
+        message: 'Generating project structure...',
+        progress: 20
+      });
+      
+      const projectStructure = await generateProjectWithAI(validatedData.prompt, {
+        language: validatedData.language,
+        framework: validatedData.framework,
+        features: validatedData.features,
+        onProgress: (progress: number, message: string) => {
+          sendProgress('generating', { 
+            message,
+            progress: 20 + Math.floor(progress * 0.6) // 20-80% for generation
+          });
         }
+      });
 
-        const body = await request.json()
-        const validatedData = generateProjectSchema.parse(body)
+      // Override project name if provided
+      if (validatedData.projectName) {
+        projectStructure.name = validatedData.projectName;
+      }
 
-        // Annotate with request data
-        llmObservability.annotate({
-          input_data: {
-            prompt: validatedData.prompt,
-            language: validatedData.language,
-            framework: validatedData.framework,
-            projectName: validatedData.projectName,
-            userId: session.user.id
-          },
-          tags: ['api-request', 'project-generation'],
-          metadata: {
-            endpoint: '/api/ai/generate-project',
-            method: 'POST',
-            user: session.user.id
-          }
-        })
+      // Step 2: Seed workspace with generated files
+      sendProgress('seeding', { 
+        message: 'Creating workspace files...',
+        progress: 80
+      });
+      
+      await seedWorkspaceFiles(workspaceId, projectStructure);
 
-        // Generate unique workspace ID
-        const workspaceId = `ai-project-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`
+      // Step 3: Install dependencies (stream output)
+      sendProgress('installing', { 
+        message: 'Installing dependencies...',
+        progress: 85
+      });
+      
+      await execInPod('default', workspaceId, 'npm install');
 
-        // Step 1: Generate project structure with AI
-        console.log('Generating project with AI...')
-        const projectStructure = await generateProjectWithAI(validatedData.prompt, {
+      // Step 4: Create a code-server session
+      sendProgress('finalizing', { 
+        message: 'Preparing your development environment...',
+        progress: 95
+      });
+      
+      const codeServerSession = await createCodeServerSession(workspaceId, session.user.id);
+
+      // Calculate generation time
+      const generationTime = Date.now() - startTime;
+      
+      // Send completion event
+      sendProgress('completed', {
+        message: 'Project generated successfully!',
+        progress: 100,
+        workspaceId,
+        projectName: projectStructure.name,
+        generationTime,
+        codeServerUrl: codeServerSession.url,
+        projectStructure: {
+          name: projectStructure.name,
+          description: projectStructure.description,
+          fileCount: projectStructure.files.length,
           language: validatedData.language,
           framework: validatedData.framework,
-          features: validatedData.features,
-        })
-
-        // Override project name if provided
-        if (validatedData.projectName) {
-          projectStructure.name = validatedData.projectName
         }
-
-        // Step 2: Seed workspace with generated files
-        console.log('Seeding workspace with generated files...')
-        await seedWorkspaceFiles(workspaceId, projectStructure)
-
-        // Step 3: Run npm install in the pod
-        await execInPod('default', workspaceId, 'npm install');
-
-        // Step 4: Create a code-server session
-        const codeServerSession: { url: string } = await createCodeServerSession(workspaceId, session.user.id);
-        span?.setTag('code_server.session.url', codeServerSession.url);
-
-        // Step 5: Return workspace information
-        const response = {
+      });
+      
+      // Log successful generation
+      llmObservability.annotate({
+        input_data: {
+          prompt: validatedData.prompt,
+          language: validatedData.language,
+          framework: validatedData.framework,
+          projectName: validatedData.projectName,
+          userId: session.user.id
+        },
+        output_data: {
           success: true,
           workspaceId,
-          workspaceUrl: `/workspace/${workspaceId}`,
-          codeServerUrl: codeServerSession.url,
-          projectStructure: {
-            name: projectStructure.name,
-            description: projectStructure.description,
-            fileCount: projectStructure.files.length,
-            language: validatedData.language,
-            framework: validatedData.framework,
-          },
-          message: 'Project generated successfully! Opening in code-server...'
+          projectName: projectStructure.name,
+          fileCount: projectStructure.files.length,
+          generationTime,
+          language: validatedData.language,
+          framework: validatedData.framework
+        },
+        tags: ['api-request', 'project-generation', 'success'],
+        metadata: {
+          endpoint: '/api/ai/generate-project',
+          method: 'POST',
+          user: session.user.id,
+          generationTime: `${generationTime}ms`
         }
-
-        // Annotate with output data
-        llmObservability.annotate({
-          output_data: {
-            success: true,
-            workspaceId,
-            projectName: projectStructure.name,
-            fileCount: projectStructure.files.length,
-            language: validatedData.language,
-            framework: validatedData.framework
-          }
-        })
-
-        return NextResponse.json(response)
-
-      } catch (error) {
-        console.error('AI project generation error:', error)
-
-        if (error instanceof z.ZodError) {
-          return NextResponse.json(
-            { error: 'Invalid request data', details: error.errors },
-            { status: 400 }
-          )
-        }
-
-        return NextResponse.json(
-          {
-            error: 'Failed to generate project',
-            details: error instanceof Error ? error.message : 'Unknown error',
-          },
-          { status: 500 }
-        )
-      }
+      });
+      
+    } catch (error) {
+      console.error('AI project generation error:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorDetails = error instanceof z.ZodError ? error.errors : undefined;
+      
+      sendProgress('error', {
+        error: 'Failed to generate project',
+        message: errorMessage,
+        details: errorDetails,
+        recoveryOptions: [
+          { label: 'Try Again', action: 'retry' },
+          { label: 'Modify Prompt', action: 'modify' },
+          { label: 'Contact Support', action: 'support' }
+        ]
+      });
+      
+      // Log the error
+      llmObservability.annotate({
+        input_data: { error: true },
+        output_data: { error: errorMessage },
+        metadata: {
+          endpoint: '/api/ai/generate-project',
+          method: 'POST',
+          error_type: error?.constructor?.name || 'UnknownError',
+          error_details: errorDetails
+        },
+        tags: ['api-request', 'project-generation', 'error']
+      });
+      
+    } finally {
+      // Close the stream
+      close();
     }
-  )
+  })();
+  
+  // Return the streaming response
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Content-Type-Options': 'nosniff',
+    },
+  });
 }

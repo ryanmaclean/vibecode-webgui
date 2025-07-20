@@ -4,9 +4,20 @@
  */
 
 import { PrismaClient } from '@prisma/client'
+import tracer from 'dd-trace'
+import { metrics } from './server-monitoring'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
+}
+
+// Add DBM tags to the database URL
+const dbUrl = new URL(process.env.DATABASE_URL || '');
+if (!dbUrl.searchParams.has('application_name')) {
+  dbUrl.searchParams.set('application_name', 'vibecode-webgui');
+}
+if (!dbUrl.searchParams.has('options')) {
+  dbUrl.searchParams.set('options', `-c datadog.tags=env:${process.env.NODE_ENV},service:vibecode-webgui,version:1.0.0`);
 }
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
@@ -15,26 +26,70 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient({
     : ['error'],
   datasources: {
     db: {
-      url: process.env.DATABASE_URL,
+      url: dbUrl.toString(),
     },
   },
 })
 
 // Middleware for Datadog monitoring
 prisma.$use(async (params, next) => {
-  const before = Date.now()
+  const startTime = Date.now()
+  const span = tracer?.startSpan?.('prisma.query', {
+    service: 'vibecode-webgui',
+    resource: `${params.model}.${params.action}`,
+    type: 'sql',
+    tags: {
+      'env': process.env.NODE_ENV || 'development',
+      'service': 'vibecode-webgui',
+      'version': '1.0.0',
+      'db.system': 'postgresql',
+      'db.operation': params.action,
+      'db.table': params.model || 'unknown',
+      'span.kind': 'client',
+    }
+  })
   
   try {
     const result = await next(params)
-    const after = Date.now()
+    const duration = Date.now() - startTime
     
-    // Log query metrics for Datadog
-    console.log(`Database Query: ${params.model}.${params.action} took ${after - before}ms`)
+    // Record metrics for Datadog
+    metrics.histogram('db.query.duration', duration, {
+      service: 'vibecode-webgui',
+      operation: params.action,
+      model: params.model || 'unknown',
+      status: 'success'
+    })
+    
+    metrics.increment('db.query.count', {
+      service: 'vibecode-webgui',
+      operation: params.action,
+      model: params.model || 'unknown',
+      status: 'success'
+    })
+    
+    if (span) {
+      span.setTag('db.rows_affected', result?.count)
+      span.finish()
+    }
     
     return result
   } catch (error) {
-    const after = Date.now()
-    console.error(`Database Error: ${params.model}.${params.action} failed after ${after - before}ms`, error)
+    // Record error metrics
+    metrics.increment('db.query.error', {
+      service: 'vibecode-webgui',
+      operation: params.action,
+      model: params.model || 'unknown',
+      error: error?.name || 'unknown_error'
+    })
+    
+    if (span) {
+      span.setTag('error', true)
+      span.setTag('error.msg', error?.message)
+      span.setTag('error.type', error?.name || 'DatabaseError')
+      span.finish()
+    }
+    
     throw error
   }
 })
@@ -89,7 +144,7 @@ export async function logAIRequest(data: {
   cost?: number
   duration_ms?: number
   status: string
-  response?: any
+  response?: unknown
   error?: string
 }) {
   return prisma.aIRequest.create({
