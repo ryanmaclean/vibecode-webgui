@@ -17,6 +17,7 @@ import { DocumentationSources } from './documentation/sources';
 import { aiAnalytics } from './analytics';
 import { VectorStoreRetriever } from 'langchain/vectorstores/base';
 import { Document } from 'langchain/document';
+import { validateAIQuery, validatePrompt, aiRateLimiter, AISecurityLogger } from '../security/input-validator';
 
 interface AIConfig {
   openAIApiKey?: string;
@@ -31,6 +32,75 @@ export class AIIntegration {
   public readonly prompts: PromptManager;
   public readonly docs: DocumentationSources;
   private readonly config: AIConfig;
+
+  /**
+   * Secure AI query method with input validation and rate limiting
+   */
+  async secureQuery(rawInput: unknown, userId: string = 'anonymous'): Promise<any> {
+    try {
+      // Rate limiting check
+      if (!aiRateLimiter.checkRateLimit(userId)) {
+        const remaining = aiRateLimiter.getRemainingQueries(userId);
+        AISecurityLogger.logSuspiciousActivity(userId, 'RATE_LIMIT_EXCEEDED', { remaining });
+        throw new Error('Rate limit exceeded. Please try again later.');
+      }
+
+      // Input validation and sanitization
+      const validatedInput = validateAIQuery(rawInput);
+      
+      // Perform the actual AI query with validated input
+      const results = await this.search.semanticSearch(validatedInput.query, 'documentation');
+      
+      if (this.config.enableAnalytics) {
+        aiAnalytics.logEvent('secure_ai_query', {
+          userId,
+          queryLength: validatedInput.query.length,
+          resultsCount: results.length
+        });
+      }
+
+      return results;
+    } catch (error) {
+      AISecurityLogger.logValidationFailure(
+        userId,
+        typeof rawInput === 'object' ? JSON.stringify(rawInput) : String(rawInput),
+        error instanceof Error ? error.message : 'Unknown validation error'
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Secure prompt processing with validation
+   */
+  async securePromptProcessing(rawPrompt: unknown, userId: string = 'anonymous'): Promise<any> {
+    try {
+      const validatedPrompt = validatePrompt(rawPrompt);
+      
+      // Process the validated prompt
+      const processedPrompt = await this.prompts.processPrompt(
+        validatedPrompt.content,
+        validatedPrompt.variables
+      );
+
+      if (this.config.enableAnalytics) {
+        aiAnalytics.logEvent('secure_prompt_processing', {
+          userId,
+          promptLength: validatedPrompt.content.length,
+          variableCount: Object.keys(validatedPrompt.variables || {}).length
+        });
+      }
+
+      return processedPrompt;
+    } catch (error) {
+      AISecurityLogger.logValidationFailure(
+        userId,
+        typeof rawPrompt === 'object' ? JSON.stringify(rawPrompt) : String(rawPrompt),
+        error instanceof Error ? error.message : 'Unknown validation error'
+      );
+      throw error;
+    }
+  }
 
   private constructor(config: AIConfig = {}) {
     this.config = {
