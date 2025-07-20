@@ -26,7 +26,7 @@ const conditionalDescribe = shouldRunRealTests ? describe : describe.skip
 conditionalDescribe('Real Vector Search and RAG Integration (NO MOCKING)', () => {
   let testWorkspace: any
   let testFile: any
-  let testUserId = 1
+  const testUserId = 1
 
   beforeAll(async () => {
     if (!process.env.OPENROUTER_API_KEY) {

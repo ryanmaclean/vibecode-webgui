@@ -38,7 +38,7 @@ const conditionalDescribe = shouldRunRealTests ? describe : describe.skip
 conditionalDescribe('Real AI Chat with RAG Integration (NO AI MOCKING)', () => {
   let testWorkspace: any
   let testFile: any
-  let testUserId = 1
+  const testUserId = 1
 
   const mockSession = {
     user: {
