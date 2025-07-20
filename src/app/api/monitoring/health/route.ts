@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 /**
  * Monitoring system health check endpoint
  * Provides comprehensive health status for monitoring infrastructure

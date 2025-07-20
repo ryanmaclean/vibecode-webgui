@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 /**
  * Monitoring metrics API endpoint
  * Provides real-time system metrics from Datadog for the monitoring dashboard
