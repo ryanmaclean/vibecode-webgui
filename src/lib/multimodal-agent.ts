@@ -428,7 +428,7 @@ Be encouraging, technically accurate, and provide working code examples.`;
    * Enhance AI response with additional processing
    */
   private async enhanceResponse(aiResponse: any, input: MultimodalInput) {
-    let enhanced = { ...aiResponse };
+    const enhanced = { ...aiResponse };
 
     // Extract and validate code blocks
     const codeBlocks = this.extractCodeBlocks(enhanced.content);
