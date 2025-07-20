@@ -6,9 +6,11 @@
 'use client'
 
 import { SessionProvider } from 'next-auth/react'
-import { ReactNode, useEffect } from 'react'
+import { useEffect } from 'react'
+import type { ReactNode } from 'react'
 import { datadogRum } from '@datadog/browser-rum'
 import { datadogLogs } from '@datadog/browser-logs'
+import { ConsoleProvider } from '@/providers/ConsoleProvider'
 
 interface ProvidersProps {
   children: ReactNode
@@ -52,7 +54,9 @@ export default function Providers({ children }: ProvidersProps) {
 
   return (
     <SessionProvider>
-      {children}
+      <ConsoleProvider>
+        {children}
+      </ConsoleProvider>
     </SessionProvider>
   )
 }

@@ -1,122 +1,179 @@
+# VibeCode Platform Docker Compose
+# Enhanced with MCP Server support and Docker AI features (July 2025)
+
+version: '3.8'
 
 services:
-  # Main Next.js application
-  web:
+  # Main VibeCode Application
+  app:
     build:
       context: .
-      dockerfile: docker/development/Dockerfile
+      dockerfile: Dockerfile
+      target: runner
+    container_name: vibecode-app
     ports:
       - "3000:3000"
-    env_file:
-      - .env.docker
     environment:
-      - NODE_ENV=development
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://vibecode:password@db:5432/vibecode
+      - NEXTAUTH_SECRET=your-secret-key-here
+      - NEXTAUTH_URL=http://localhost:3000
     depends_on:
-      - postgres
+      - db
       - redis
     networks:
       - vibecode-network
-    restart: unless-stopped
-
-  # Code-server IDE
-  code-server:
-    build:
-      context: ./docker/code-server
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    environment:
-      - PASSWORD=${CODE_SERVER_PASSWORD:-vibecode123}
-      - DOCKER_USER=coder
     volumes:
-      - ./:/home/coder/workspace
-      - code-server-config:/home/coder/.local/share/code-server
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - vibecode-network
-    restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    cap_add:
-      - CHOWN
-      - SETUID
-      - SETGID
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 4G
-        reservations:
-          cpus: '1.0'
-          memory: 2G
-
-  # PostgreSQL database
-  postgres:
-    image: pgvector/pgvector:pg16
-    environment:
-      - POSTGRES_DB=vibecode_dev
-      - POSTGRES_USER=vibecode
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-vibecode123}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "5432:5432"
-    networks:
-      - vibecode-network
-    restart: unless-stopped
+      - ./src:/app/src:ro
+      - node_modules:/app/node_modules
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vibecode -d vibecode_dev"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
 
-  # Redis for caching and sessions
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: vibecode-db
+    environment:
+      - POSTGRES_DB=vibecode
+      - POSTGRES_USER=vibecode
+      - POSTGRES_PASSWORD=password
     volumes:
-      - redis-data:/data
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - vibecode-network
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "vibecode"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for Session Storage
+  redis:
+    image: redis:7-alpine
+    container_name: vibecode-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - vibecode-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
-    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
 
-  # WebSocket server for real-time features
-  websocket:
-    build:
-      context: .
-      dockerfile: docker/development/Dockerfile.websocket
+  # Code Server for Development Environment
+  code-server:
+    image: codercom/code-server:latest
+    container_name: vibecode-code-server
     ports:
-      - "3001:3001"
-    env_file:
-      - .env.docker
+      - "8080:8080"
     environment:
-      - NODE_ENV=development
+      - PASSWORD=vibecode123
     volumes:
-      - ./server:/app/server
-    depends_on:
-      - redis
+      - ./workspaces:/home/coder/workspaces
+      - code_server_data:/home/coder/.local/share/code-server
     networks:
       - vibecode-network
-    restart: unless-stopped
+
+  # Docker Model Runner Integration
+  ai-model-runner:
+    image: nginx:alpine
+    container_name: vibecode-model-runner-proxy
+    ports:
+      - "12434:80"
+    environment:
+      - MODEL_RUNNER_ENDPOINT=http://model-runner.docker.internal/engines/v1
+      - OPENAI_API_BASE=http://model-runner.docker.internal/engines/v1
+    volumes:
+      - ./docker/model-runner-proxy.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - vibecode-network
+    depends_on:
+      - app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MCP Server with Model Runner Integration
+  mcp-servers:
+    build:
+      context: ./docker/mcp-servers
+      dockerfile: Dockerfile
+    container_name: vibecode-mcp-servers
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./src:/workspace/src:ro
+      - ./public:/workspace/public:ro
+      - model-runner-cache:/app/models
+    environment:
+      - DOCKER_MODEL_RUNNER_URL=http://model-runner.docker.internal/engines/v1
+      - MCP_SERVER_PORT=3001
+      - WORKSPACE_PATH=/workspace
+      - AVAILABLE_MODELS=ai/smollm2:360M-Q4_K_M,ai/llama3.2:1b-Q4_K_M,ai/qwen2.5-coder:1.5b-Q4_K_M
+    ports:
+      - "3001:3001"
+      - "3002:3002"
+      - "3003:3003"
+    networks:
+      - vibecode-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Voice Processing Service  
+  voice-processor:
+    image: node:20-alpine
+    container_name: vibecode-voice-processor
+    working_dir: /app
+    volumes:
+      - ./docker/voice-processor:/app
+      - voice-uploads:/app/uploads
+    environment:
+      - MODEL_RUNNER_URL=http://model-runner.docker.internal/engines/v1
+      - SPEECH_MODEL=ai/whisper:base-Q4_K_M
+    ports:
+      - "3004:3004"
+    networks:
+      - vibecode-network
+    command: >
+      sh -c "
+        npm install express multer node-fetch cors &&
+        node server.js
+      "
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
-  postgres-data:
-  redis-data:
-  code-server-config:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  code_server_data:
+    driver: local
+  workspaces:
+    driver: local
+  node_modules:
+    driver: local
+  git-cache:
+    driver: local
+  model-cache:
+    driver: local
+  model-runner-cache:
+    driver: local
+  voice-uploads:
+    driver: local
 
 networks:
   vibecode-network:

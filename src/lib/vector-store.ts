@@ -162,8 +162,8 @@ class VectorStore {
       const embeddingString = `[${queryEmbedding.join(',')}]`
 
       // Build WHERE clause for filtering
-      let whereConditions = []
-      const params: any[] = []
+      const whereConditions: string[] = []
+      const params: (string | number | number[])[] = []
       let paramIndex = 1
 
       if (workspaceId) {
@@ -173,12 +173,16 @@ class VectorStore {
       }
 
       if (fileIds && fileIds.length > 0) {
-        whereConditions.push(`rc.file_id = ANY($${paramIndex})`)
-        params.push(fileIds)
+        whereConditions.push(`rc.file_id = ANY($${paramIndex}::int[])`)
+        params.push(`{${fileIds.join(',')}}`)
         paramIndex++
       }
 
       const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''
+
+      // Add embedding parameter
+      const embeddingParamIndex = paramIndex++
+      const limitParamIndex = paramIndex++
 
       // Use pgvector for fast similarity search with cosine distance
       const sql = `
@@ -191,23 +195,37 @@ class VectorStore {
           rc.file_id,
           f.name as file_name,
           f.language,
-          (1 - (rc.embedding <=> $${paramIndex}::vector)) as similarity
+          (1 - (rc.embedding <=> $${embeddingParamIndex}::vector)) as similarity
         FROM rag_chunks rc
         JOIN files f ON rc.file_id = f.id
         ${whereClause}
-        ORDER BY rc.embedding <=> $${paramIndex}::vector
-        LIMIT $${paramIndex + 1}
+        ORDER BY rc.embedding <=> $${embeddingParamIndex}::vector
+        LIMIT $${limitParamIndex}
       `
 
+      // Add parameters in the correct order
       params.push(embeddingString, limit)
 
+      // Define interface for raw SQL result
+      interface RawResult {
+        chunk_id: string
+        content: string
+        start_line: number | null
+        end_line: number | null
+        tokens: number
+        file_id: number
+        file_name: string
+        language: string | null
+        similarity: number
+      }
+
       // Execute raw SQL query using Prisma
-      const rawResults = await prisma.$queryRawUnsafe(sql, ...params) as any[]
+      const rawResults = await prisma.$queryRawUnsafe<RawResult[]>(sql, ...params)
 
       // Filter by threshold and format results
       const results: SearchResult[] = rawResults
-        .filter((row: any) => row.similarity >= threshold)
-        .map((row: any) => ({
+        .filter((row) => row.similarity >= threshold)
+        .map((row) => ({
           chunk: {
             id: row.chunk_id,
             content: row.content,
@@ -248,7 +266,11 @@ class VectorStore {
     try {
       const { workspaceId, fileIds, limit = 10 } = options
 
-      let whereClause: any = {
+      const whereClause: {
+        content: { contains: string; mode: string }
+        file?: { workspace_id: number }
+        file_id?: { in: number[] }
+      } = {
         content: {
           contains: query,
           mode: 'insensitive'

@@ -50,10 +50,10 @@ async function ensureConversationsDir() {
 // GET - Load conversation history
 export async function GET(
   request: NextRequest,
-  { params }: { params: { workspaceId: string } }
+  { params }: { params: Promise<{ workspaceId: string }> }
 ) {
   try {
-    const { workspaceId } = params
+    const { workspaceId } = await params
 
     if (!workspaceId) {
       return NextResponse.json(

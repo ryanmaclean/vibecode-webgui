@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "noEmit": true,
+    "incremental": false
+  },
+  "include": ["src/lib/ai/search/vector-search.ts"],
+  "exclude": ["node_modules"]
+}
