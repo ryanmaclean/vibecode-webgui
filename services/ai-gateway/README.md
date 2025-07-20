@@ -6,6 +6,7 @@ A production-ready AI gateway service that provides intelligent routing, caching
 
 ### 🔀 Intelligent Model Routing
 - **Multi-Provider Support**: Access 100+ AI models from leading providers
+- **Project Generation**: Specialized routing for Lovable/Replit/Bolt.diy-style project creation
 - **Automatic Fallback**: Intelligent fallback to healthy models when primary models fail
 - **Performance Monitoring**: Real-time tracking of model latency and success rates
 - **Cost Optimization**: Smart model recommendations based on cost and performance

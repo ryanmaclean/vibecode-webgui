@@ -3,9 +3,8 @@
  * Integrates Datadog APM tracing, Winston logging, and custom metrics
  */
 
-import tracer from 'dd-trace'
-import winston from 'winston'
-import { createLogger, format, transports } from 'winston'
+import { createLogger, format, transports } from 'winston';
+import tracer from '@/instrument';
 
 // Initialize Datadog tracer (should be done before importing other modules)
 if (process.env.DD_API_KEY) {
@@ -62,257 +61,89 @@ const logger = createLogger({
         })
       )
     }),
-
-    // File transport for persistent logging
-    new transports.File({
-      filename: 'logs/error.log',
-      level: 'error',
-      maxsize: 50 * 1024 * 1024, // 50MB
-      maxFiles: 5,
-      tailable: true
-    }),
-
-    new transports.File({
-      filename: 'logs/combined.log',
-      maxsize: 100 * 1024 * 1024, // 100MB
-      maxFiles: 10,
-      tailable: true
-    })
-  ],
-  exceptionHandlers: [
-    new transports.File({ filename: 'logs/exceptions.log' })
-  ],
-  rejectionHandlers: [
-    new transports.File({ filename: 'logs/rejections.log' })
-  ],
-  exitOnError: false
+    // In production, you would add transports for services like Datadog, Logstash, etc.
+    // new transports.Http({ host: 'datadog-agent', port: 80, path: '/v1/input' })
+  ]
 })
 
-// Custom metrics tracking
+logger.info('Winston logger initialized')
+
+/**
+ * Custom metrics collector (compatible with Datadog)
+ */
 class MetricsCollector {
-  private metrics: Map<string, { count: number; lastValue?: number; sum?: number }> = new Map()
+  private metrics: Record<string, any> = {}
 
-  /**
-   * Increment a counter metric
-   */
-  increment(metricName: string, tags?: Record<string, string>): void {
-    const key = this.getMetricKey(metricName, tags)
-    const current = this.metrics.get(key) || { count: 0 }
-    current.count += 1
-    this.metrics.set(key, current)
-
-    logger.info('Metric incremented', {
-      metric: metricName,
-      count: current.count,
-      tags
-    })
+  increment(name: string, tags: Record<string, string | number> = {}): void {
+    console.log(`📊 Metric increment: ${name}`, tags)
+    // In a real scenario, this would send to Datadog agent
+    // Example: client.increment(name, tags)
+    this.metrics[name] = (this.metrics[name] || 0) + 1
   }
 
-  /**
-   * Set a gauge metric value
-   */
-  gauge(metricName: string, value: number, tags?: Record<string, string>): void {
-    const key = this.getMetricKey(metricName, tags)
-    const current = this.metrics.get(key) || { count: 0 }
-    current.lastValue = value
-    this.metrics.set(key, current)
-
-    logger.info('Gauge metric set', {
-      metric: metricName,
-      value,
-      tags
-    })
+  gauge(name: string, value: number, tags: Record<string, string | number> = {}): void {
+    console.log(`📊 Metric gauge: ${name} = ${value}`, tags)
+    // Example: client.gauge(name, value, tags)
+    this.metrics[name] = value
   }
 
-  /**
-   * Record a histogram/timing metric
-   */
-  histogram(metricName: string, value: number, tags?: Record<string, string>): void {
-    const key = this.getMetricKey(metricName, tags)
-    const current = this.metrics.get(key) || { count: 0, sum: 0 }
-    current.count += 1
-    current.sum = (current.sum || 0) + value
-    current.lastValue = value
-    this.metrics.set(key, current)
-
-    logger.info('Histogram metric recorded', {
-      metric: metricName,
-      value,
-      average: current.sum / current.count,
-      count: current.count,
-      tags
-    })
+  histogram(name: string, value: number, tags: Record<string, string | number> = {}): void {
+    console.log(`📊 Metric histogram: ${name} = ${value}`, tags)
+    // Example: client.histogram(name, value, tags)
+    if (!this.metrics[name]) {
+      this.metrics[name] = []
+    }
+    this.metrics[name].push(value)
   }
 
-  /**
-   * Get all current metrics
-   */
   getMetrics(): Record<string, any> {
-    const result: Record<string, any> = {}
-    this.metrics.forEach((value, key) => {
-      result[key] = value
-    })
-    return result
-  }
-
-  private getMetricKey(metricName: string, tags?: Record<string, string>): string {
-    if (!tags) return metricName
-    const tagString = Object.entries(tags)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([k, v]) => `${k}:${v}`)
-      .join(',')
-    return `${metricName}|${tagString}`
+    return this.metrics
   }
 }
 
 const metrics = new MetricsCollector()
 
-// Application-specific logging helpers
+/**
+ * Centralized application logger
+ */
 class ApplicationLogger {
   /**
-   * Log authentication events
-   */
-  logAuth(event: string, context: {
-    userId?: string
-    email?: string
-    provider?: string
-    success?: boolean
-    error?: string
-    ip?: string
-    userAgent?: string
-  }): void {
-    const level = context.success === false ? 'warn' : 'info'
-    logger.log(level, `Authentication: ${event}`, {
-      category: 'auth',
-      ...context
-    })
-
-    if (context.success === false) {
-      metrics.increment('auth.failure', { event, provider: context.provider || 'unknown' })
-    } else {
-      metrics.increment('auth.success', { event, provider: context.provider || 'unknown' })
-    }
-  }
-
-  /**
-   * Log workspace operations
-   */
-  logWorkspace(event: string, context: {
-    workspaceId: string
-    userId?: string
-    action?: string
-    duration?: number
-    error?: string
-    codeServerStatus?: string
-    terminalSessions?: number
-  }): void {
-    const level = context.error ? 'error' : 'info'
-    logger.log(level, `Workspace: ${event}`, {
-      category: 'workspace',
-      ...context
-    })
-
-    if (context.duration) {
-      metrics.histogram('workspace.operation.duration', context.duration, {
-        event,
-        action: context.action || 'unknown'
-      })
-    }
-
-    metrics.increment('workspace.events', { event, action: context.action || 'unknown' })
-  }
-
-  /**
-   * Log AI interactions
-   */
-  logAI(event: string, context: {
-    userId?: string
-    workspaceId?: string
-    model?: string
-    tokensUsed?: number
-    responseTime?: number
-    error?: string
-    codeContext?: boolean
-  }): void {
-    const level = context.error ? 'error' : 'info'
-    logger.log(level, `AI: ${event}`, {
-      category: 'ai',
-      ...context
-    })
-
-    if (context.responseTime) {
-      metrics.histogram('ai.response_time', context.responseTime, {
-        model: context.model || 'unknown'
-      })
-    }
-
-    if (context.tokensUsed) {
-      metrics.histogram('ai.tokens_used', context.tokensUsed, {
-        model: context.model || 'unknown'
-      })
-    }
-
-    metrics.increment('ai.interactions', {
-      event,
-      model: context.model || 'unknown',
-      hasContext: context.codeContext ? 'true' : 'false'
-    })
-  }
-
-  /**
-   * Log system performance metrics
+   * Log performance metrics
    */
   logPerformance(context: {
-    endpoint?: string
-    method?: string
-    statusCode?: number
-    responseTime?: number
-    memoryUsage?: number
-    cpuUsage?: number
-    activeConnections?: number
-    error?: string
+    endpoint: string
+    method: string
+    statusCode: number
+    responseTime: number
+    memoryUsage: number
   }): void {
-    logger.info('Performance metrics', {
+    logger.info(`Performance: ${context.method} ${context.endpoint}`, {
       category: 'performance',
       ...context
     })
 
-    if (context.responseTime) {
-      metrics.histogram('http.response_time', context.responseTime, {
-        endpoint: context.endpoint || 'unknown',
-        method: context.method || 'unknown',
-        status: context.statusCode?.toString() || 'unknown'
-      })
-    }
+    metrics.histogram('http.request.duration', context.responseTime, {
+      endpoint: context.endpoint,
+      method: context.method,
+      status_code: context.statusCode
+    })
 
-    if (context.memoryUsage) {
-      metrics.gauge('system.memory_usage', context.memoryUsage)
-    }
-
-    if (context.cpuUsage) {
-      metrics.gauge('system.cpu_usage', context.cpuUsage)
-    }
-
-    if (context.activeConnections) {
-      metrics.gauge('system.active_connections', context.activeConnections)
-    }
+    metrics.gauge('memory.heap.used', context.memoryUsage, {
+      endpoint: context.endpoint
+    })
   }
 
   /**
-   * Log security events
+   * Log security-related events
    */
   logSecurity(event: string, context: {
     userId?: string
     ip?: string
-    userAgent?: string
-    severity: 'low' | 'medium' | 'high' | 'critical'
-    details?: Record<string, any>
+    severity: 'info' | 'warn' | 'error' | 'critical'
     blocked?: boolean
+    metadata?: Record<string, any>
   }): void {
-    const level = context.severity === 'critical' ? 'error' :
-                  context.severity === 'high' ? 'warn' : 'info'
-
-    logger.log(level, `Security: ${event}`, {
+    logger.warn(`Security: ${event}`, {
       category: 'security',
       ...context
     })

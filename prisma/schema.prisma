@@ -1,0 +1,244 @@
+// VibeCode Database Schema
+// Complete data model for the AI-powered development platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users and Authentication
+model User {
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  name        String?
+  role        String   @default("user") // user, admin
+  avatar      String?
+  github_id   String?  @unique
+  google_id   String?  @unique
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  sessions    Session[]
+  workspaces  Workspace[]
+  projects    Project[]
+  files       File[]
+  uploads     Upload[]
+  ai_requests AIRequest[]
+
+  @@map("users")
+}
+
+model Session {
+  id            Int      @id @default(autoincrement())
+  session_token String   @unique
+  user_id       Int
+  expires       DateTime
+  created_at    DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([session_token])
+  @@index([user_id])
+  @@map("sessions")
+}
+
+// Workspaces and Projects
+model Workspace {
+  id           Int      @id @default(autoincrement())
+  name         String
+  description  String?
+  user_id      Int
+  status       String   @default("active") // active, archived, deleting
+  workspace_id String   @unique // External workspace identifier
+  url          String?  // code-server URL
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  user     User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  projects Project[]
+  files    File[]
+  uploads  Upload[]
+
+  @@index([user_id])
+  @@index([workspace_id])
+  @@map("workspaces")
+}
+
+model Project {
+  id           Int      @id @default(autoincrement())
+  name         String
+  description  String?
+  user_id      Int
+  workspace_id Int?
+  language     String?  // typescript, javascript, python, etc.
+  framework    String?  // react, vue, express, fastapi, etc.
+  template     String?  // Template used to generate project
+  ai_prompt    String?  // Original AI prompt used for generation
+  status       String   @default("active") // active, archived, generating
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  files     File[]
+  ai_requests AIRequest[]
+
+  @@index([user_id])
+  @@index([workspace_id])
+  @@map("projects")
+}
+
+// Files and RAG System
+model File {
+  id           Int      @id @default(autoincrement())
+  name         String
+  path         String
+  content      String?  // File content for small files
+  size         Int?     // File size in bytes
+  mime_type    String?
+  language     String?  // Detected programming language
+  lines        Int?     // Number of lines
+  checksum     String?  // Content hash
+  user_id      Int
+  workspace_id Int?
+  project_id   Int?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace  Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  project    Project?   @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  rag_chunks RAGChunk[]
+
+  @@index([user_id])
+  @@index([workspace_id])
+  @@index([project_id])
+  @@index([path])
+  @@map("files")
+}
+
+model Upload {
+  id           Int      @id @default(autoincrement())
+  original_name String
+  stored_name  String   @unique
+  path         String
+  size         Int
+  mime_type    String
+  user_id      Int
+  workspace_id Int?
+  status       String   @default("uploaded") // uploaded, processing, processed, error
+  metadata     Json?    // Additional metadata
+  created_at   DateTime @default(now())
+
+  // Relations
+  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([workspace_id])
+  @@index([stored_name])
+  @@map("uploads")
+}
+
+// RAG and Vector Search with pgvector
+model RAGChunk {
+  id         Int                          @id @default(autoincrement())
+  file_id    Int
+  chunk_id   String                       @unique // file_id + chunk index
+  content    String
+  start_line Int?
+  end_line   Int?
+  tokens     Int?
+  embedding  Unsupported("vector(1536)")? // pgvector embedding for semantic search
+  metadata   Json?                        // Additional chunk metadata
+  created_at DateTime                     @default(now())
+
+  // Relations
+  file File @relation(fields: [file_id], references: [id], onDelete: Cascade)
+
+  @@index([file_id])
+  @@index([chunk_id])
+  @@map("rag_chunks")
+}
+
+// AI Integration and Requests
+model AIRequest {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  project_id   Int?
+  request_type String   // generate_project, chat, completion, etc.
+  prompt       String
+  model        String   // anthropic/claude-3.5-sonnet, etc.
+  provider     String   // openrouter, anthropic, openai
+  input_tokens Int?
+  output_tokens Int?
+  cost         Float?   // Cost in USD
+  duration_ms  Int?     // Request duration
+  status       String   @default("pending") // pending, completed, error, cancelled
+  response     Json?    // AI response data
+  error        String?  // Error message if failed
+  created_at   DateTime @default(now())
+  completed_at DateTime?
+
+  // Relations
+  user    User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [project_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([project_id])
+  @@index([created_at])
+  @@index([request_type])
+  @@map("ai_requests")
+}
+
+// Monitoring and Analytics
+model Event {
+  id         Int      @id @default(autoincrement())
+  user_id    Int?
+  event_type String   // page_view, api_call, error, etc.
+  event_name String   // Specific event name
+  properties Json?    // Event properties
+  session_id String?
+  ip_address String?
+  user_agent String?
+  created_at DateTime @default(now())
+
+  @@index([user_id])
+  @@index([event_type])
+  @@index([created_at])
+  @@map("events")
+}
+
+model SystemMetric {
+  id         Int      @id @default(autoincrement())
+  metric_name String  // cpu_usage, memory_usage, disk_usage, etc.
+  value      Float
+  unit       String?  // percentage, bytes, ms, etc.
+  tags       Json?    // Additional tags for filtering
+  created_at DateTime @default(now())
+
+  @@index([metric_name])
+  @@index([created_at])
+  @@map("system_metrics")
+}
+
+// Configuration and Settings
+model Setting {
+  id         Int      @id @default(autoincrement())
+  key        String   @unique
+  value      String
+  type       String   @default("string") // string, number, boolean, json
+  description String?
+  updated_at DateTime @updatedAt
+
+  @@map("settings")
+}

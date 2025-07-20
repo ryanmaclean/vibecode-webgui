@@ -1,5 +1,21 @@
 # Change Log
 
+## [1.1.0] - 2025-07-18
+
+### Added
+- Live workspace integration with code-server
+- Project generation creates live workspaces instead of downloads
+- Automatic workspace provisioning after project generation
+- Direct integration with VibeCode platform for seamless workflow
+- Real-time file sync to live development environments
+- "Open in Editor" as primary action for generated projects
+
+### Enhanced
+- Complete Lovable/Replit/Bolt.diy-style workflow implementation
+- Improved project generation with better scaffolding
+- Enhanced error handling for workspace creation
+- Better integration testing and reliability
+
 ## [1.0.0] - 2025-07-11
 
 ### Added

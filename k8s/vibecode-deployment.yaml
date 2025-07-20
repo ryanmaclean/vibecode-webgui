@@ -37,7 +37,7 @@ spec:
     spec:
       initContainers:
       - name: wait-for-postgres
-        image: postgres:15
+        image: pgvector/pgvector:pg16
         command:
           - sh
           - -c

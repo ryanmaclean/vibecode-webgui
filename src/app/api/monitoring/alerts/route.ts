@@ -35,7 +35,7 @@ interface AlertItem {
   resolved: boolean
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Verify admin access
     const session = await getServerSession(authOptions)
@@ -64,15 +64,27 @@ export async function GET(request: NextRequest) {
 
       // Transform Datadog monitors to our alert format
       const alerts: AlertItem[] = monitorsResponse
-        .filter((monitor: any) => monitor.overallState !== 'OK')
-        .map((monitor: any) => ({
-          id: monitor.id.toString(),
-          severity: mapSeverity(monitor.overallState),
-          title: monitor.name || 'Unknown Monitor',
-          description: monitor.message || 'No description available',
-          timestamp: new Date(monitor.modified * 1000).toISOString(),
-          resolved: monitor.overallState === 'OK',
-        }))
+        .filter((monitor: unknown) => {
+          const typedMonitor = monitor as { overallState?: string }
+          return typedMonitor.overallState !== 'OK'
+        })
+        .map((monitor: unknown) => {
+          const typedMonitor = monitor as {
+            id?: number
+            overallState?: string
+            name?: string
+            message?: string
+            modified?: number
+          }
+          return {
+            id: (typedMonitor.id || 0).toString(),
+            severity: mapSeverity(typedMonitor.overallState || 'Unknown'),
+            title: typedMonitor.name || 'Unknown Monitor',
+            description: typedMonitor.message || 'No description available',
+            timestamp: new Date((typedMonitor.modified || 0) * 1000).toISOString(),
+            resolved: typedMonitor.overallState === 'OK',
+          }
+        })
 
       return NextResponse.json({ alerts })
     } catch (datadogError) {

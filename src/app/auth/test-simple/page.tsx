@@ -105,7 +105,7 @@ export default function SimpleAuthTestPage() {
             <div className="flex gap-4">
               <a
                 href="/auth/signin"
-                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
+                className="bg-green-700 text-white px-6 py-2 rounded-lg hover:bg-green-800"
               >
                 Go to Sign In Page
               </a>

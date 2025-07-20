@@ -7,20 +7,29 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import { monitoring } from '@/lib/monitoring'
+import dynamic from 'next/dynamic'
+import { BarChart, LineChart, PieChart, XAxis, YAxis, Tooltip, Legend, Line, Bar, Pie, Cell, ResponsiveContainer } from 'recharts'
+
+// Dynamically import the NetworkDiagnostics component with no SSR
+const NetworkDiagnostics = dynamic(
+  () => import('@/components/NetworkDiagnostics/NetworkDiagnostics').then(mod => mod.default),
+  { ssr: false }
+);
 
 interface SystemMetrics {
-  cpu: number
-  memory: number
-  diskUsage: number
-  networkIO: { in: number; out: number }
-  activeUsers: number
-  activeWorkspaces: number
-  totalSessions: number
-  avgResponseTime: number
-  errorRate: number
-  uptime: number
+  cpu: { usage: number; history: { time: string; usage: number }[] };
+  memory: { usage: number; total: number; history: { time: string; usage: number }[] };
+  disk: { usage: number; total: number };
+  network: { in: number; out: number; history: { time: string; in: number; out: number }[] };
+  activeUsers: number;
+  activeWorkspaces: number;
+  requests: { total: number; errorRate: number };
+  latency: { avg: number; p95: number; history: { time: string; avg: number }[] };
+  kubernetes: { pods: number; restarts: number };
+  uptime: string;
 }
+
+type TabType = 'overview' | 'metrics' | 'logs' | 'alerts' | 'security' | 'network';
 
 interface LogEntry {
   timestamp: string
@@ -40,75 +49,54 @@ interface AlertItem {
 }
 
 export default function MonitoringDashboard() {
-  const { data: session } = useSession()
-  const user = session?.user
-  const [metrics, setMetrics] = useState<SystemMetrics | null>(null)
-  const [logs, setLogs] = useState<LogEntry[]>([])
-  const [alerts, setAlerts] = useState<AlertItem[]>([])
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'metrics' | 'logs' | 'alerts' | 'security'>('overview')
+  const { data: session } = useSession();
+  const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState<TabType>('overview');
   const [isLiveMode, setIsLiveMode] = useState(true)
   const [timeRange, setTimeRange] = useState('1h')
   const metricsInterval = useRef<NodeJS.Timeout | null>(null)
 
-  // Fetch real-time metrics
   useEffect(() => {
-    const fetchMetrics = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('/api/monitoring/metrics')
-        if (response.ok) {
-          const data = await response.json()
-          setMetrics(data)
+        setIsLoading(true)
+        const [metricsRes, logsRes, alertsRes] = await Promise.all([
+          fetch(`/api/monitoring/metrics?range=${timeRange}`),
+          fetch(`/api/monitoring/logs?range=${timeRange}`),
+          fetch(`/api/monitoring/alerts?range=${timeRange}`),
+        ])
 
-          // Track critical metrics
-          if (data.errorRate > 5) {
-            monitoring.logWarning('High error rate detected', { errorRate: data.errorRate })
-          }
-          if (data.avgResponseTime > 1000) {
-            monitoring.logWarning('Slow response time detected', { avgResponseTime: data.avgResponseTime })
-          }
+        if (!metricsRes.ok || !logsRes.ok || !alertsRes.ok) {
+          throw new Error('Failed to fetch monitoring data')
         }
-      } catch (error) {
-        console.error('Failed to fetch metrics:', error)
-        monitoring.logError('Metrics fetch failed', { error })
+
+        const metricsData = await metricsRes.json()
+        const logsData = await logsRes.json()
+        const alertsData = await alertsRes.json()
+
+        setMetrics(metricsData)
+        setLogs(logsData)
+        setAlerts(alertsData)
+        setError(null)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred')
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    const fetchLogs = async () => {
-      try {
-        const response = await fetch(`/api/monitoring/logs?timeRange=${timeRange}&limit=100`)
-        if (response.ok) {
-          const data = await response.json()
-          setLogs(data.logs || [])
-        }
-      } catch (error) {
-        console.error('Failed to fetch logs:', error)
-      }
-    }
+    fetchData()
 
-    const fetchAlerts = async () => {
-      try {
-        const response = await fetch('/api/monitoring/alerts')
-        if (response.ok) {
-          const data = await response.json()
-          setAlerts(data.alerts || [])
-        }
-      } catch (error) {
-        console.error('Failed to fetch alerts:', error)
-      }
-    }
-
-    // Initial fetch
-    fetchMetrics()
-    fetchLogs()
-    fetchAlerts()
-
-    // Set up real-time updates
     if (isLiveMode) {
-      metricsInterval.current = setInterval(() => {
-        fetchMetrics()
-        fetchLogs()
-        fetchAlerts()
-      }, 30000) // Update every 30 seconds
+      metricsInterval.current = setInterval(fetchData, 5000) // Refresh every 5 seconds
+    } else {
+      if (metricsInterval.current) {
+        clearInterval(metricsInterval.current)
+      }
     }
 
     return () => {
@@ -118,224 +106,120 @@ export default function MonitoringDashboard() {
     }
   }, [isLiveMode, timeRange])
 
-  const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
+  const StatCard = ({ title, value, subtext }: { title: string; value: string | number; subtext?: string }) => (
+    <div className="bg-white p-4 rounded-lg shadow">
+      <h3 className="text-sm font-medium text-gray-500">{title}</h3>
+      <p className="text-3xl font-bold text-gray-900">{value}</p>
+      {subtext && <p className="text-xs text-gray-500">{subtext}</p>}
+    </div>
+  );
 
-  const formatDuration = (seconds: number): string => {
-    const days = Math.floor(seconds / 86400)
-    const hours = Math.floor((seconds % 86400) / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
-    if (days > 0) return `${days}d ${hours}h ${minutes}m`
-    if (hours > 0) return `${hours}h ${minutes}m`
-    return `${minutes}m`
-  }
-
-  const getStatusColor = (value: number, thresholds: { good: number; warning: number }): string => {
-    if (value <= thresholds.good) return 'text-green-600'
-    if (value <= thresholds.warning) return 'text-yellow-600'
-    return 'text-red-600'
-  }
-
-  const getAlertColor = (severity: string): string => {
+  const getSeverityColor = (severity: AlertItem['severity']) => {
     switch (severity) {
-      case 'critical': return 'bg-red-100 border-red-500 text-red-800'
-      case 'high': return 'bg-orange-100 border-orange-500 text-orange-800'
-      case 'medium': return 'bg-yellow-100 border-yellow-500 text-yellow-800'
-      case 'low': return 'bg-blue-100 border-blue-500 text-blue-800'
-      default: return 'bg-gray-100 border-gray-500 text-gray-800'
+      case 'critical': return 'bg-red-500';
+      case 'high': return 'bg-orange-500';
+      case 'medium': return 'bg-yellow-500';
+      case 'low': return 'bg-blue-500';
     }
+  };
+
+  if (!session) {
+    return <div>Access Denied. Please sign in to view the monitoring dashboard.</div>;
   }
 
-  if (!user || user.role !== 'admin') {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600">Administrator privileges required to view monitoring dashboard.</p>
-        </div>
-      </div>
-    )
+  if (isLoading && !metrics) {
+    return <div>Loading monitoring data...</div>;
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-semibold text-gray-900">Monitoring Dashboard</h1>
-              <div className={`h-2 w-2 rounded-full ${isLiveMode ? 'bg-green-500' : 'bg-gray-400'}`} />
-              <span className="text-sm text-gray-600">
-                {isLiveMode ? 'Live' : 'Paused'}
-              </span>
-            </div>
+  if (error) {
+    return <div className="text-red-500">Error: {error}</div>;
+  }
 
-            <div className="flex items-center space-x-4">
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
-                className="px-3 py-1 border border-gray-300 rounded-md text-sm"
-              >
-                <option value="1h">Last Hour</option>
-                <option value="24h">Last 24 Hours</option>
-                <option value="7d">Last 7 Days</option>
-                <option value="30d">Last 30 Days</option>
-              </select>
-
-              <button
-                onClick={() => setIsLiveMode(!isLiveMode)}
-                className={`px-3 py-1 rounded-md text-sm font-medium ${
-                  isLiveMode
-                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                }`}
-              >
-                {isLiveMode ? 'Pause' : 'Resume'}
-              </button>
-            </div>
+  const renderContent = () => {
+    switch (selectedTab) {
+      case 'overview':
+        return metrics && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <StatCard title="CPU Usage" value={`${metrics.cpu.usage.toFixed(1)}%`} />
+            <StatCard title="Memory Usage" value={`${metrics.memory.usage.toFixed(1)}%`} subtext={`${formatBytes(metrics.memory.usage * metrics.memory.total / 100)} / ${formatBytes(metrics.memory.total)}`} />
+            <StatCard title="Disk Usage" value={`${metrics.disk.usage.toFixed(1)}%`} />
+            <StatCard title="Active Users" value={metrics.activeUsers} />
+            <StatCard title="Active Workspaces" value={metrics.activeWorkspaces} />
+            <StatCard title="Total Requests" value={metrics.requests.total} />
+            <StatCard title="Error Rate" value={`${metrics.requests.errorRate.toFixed(2)}%`} />
+            <StatCard title="Avg Latency" value={`${metrics.latency.avg.toFixed(0)}ms`} />
+            <StatCard title="P95 Latency" value={`${metrics.latency.p95.toFixed(0)}ms`} />
+            <StatCard title="K8s Pods" value={metrics.kubernetes.pods} />
+            <StatCard title="K8s Restarts" value={metrics.kubernetes.restarts} />
+            <StatCard title="Uptime" value={metrics.uptime} />
           </div>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8">
-            {[
-              { id: 'overview', label: 'Overview' },
-              { id: 'metrics', label: 'Metrics' },
-              { id: 'logs', label: 'Logs' },
-              { id: 'alerts', label: `Alerts (${alerts.filter(a => !a.resolved).length})` },
-              { id: 'security', label: 'Security' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setSelectedTab(tab.id as any)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  selectedTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {selectedTab === 'overview' && (
-          <div className="space-y-6">
-            {/* Key Metrics Grid */}
-            {metrics && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-lg shadow">
-                  <h3 className="text-sm font-medium text-gray-900">CPU Usage</h3>
-                  <p className={`text-2xl font-bold ${getStatusColor(metrics.cpu, { good: 70, warning: 85 })}`} data-testid="cpu-metric">
-                    {metrics.cpu.toFixed(1)}%
-                  </p>
-                </div>
-
-                <div className="bg-white p-4 rounded-lg shadow">
-                  <h3 className="text-sm font-medium text-gray-900">Memory Usage</h3>
-                  <p className={`text-2xl font-bold ${getStatusColor(metrics.memory, { good: 80, warning: 90 })}`} data-testid="memory-metric">
-                    {metrics.memory.toFixed(1)}%
-                  </p>
-                </div>
-
-                <div className="bg-white p-4 rounded-lg shadow">
-                  <h3 className="text-sm font-medium text-gray-900">Active Users</h3>
-                  <p className="text-2xl font-bold text-blue-600" data-testid="users-metric">{metrics.activeUsers}</p>
-                </div>
-
-                <div className="bg-white p-4 rounded-lg shadow">
-                  <h3 className="text-sm font-medium text-gray-900">Error Rate</h3>
-                  <p className={`text-2xl font-bold ${getStatusColor(metrics.errorRate, { good: 1, warning: 5 })}`} data-testid="error-rate-metric">
-                    {metrics.errorRate.toFixed(2)}%
-                  </p>
-                </div>
+        );
+      case 'metrics':
+        return metrics && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h4 className="font-medium mb-4">CPU & Memory Usage (%)</h4>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={metrics.cpu.history}>
+                    <XAxis dataKey="time" fontSize={12} />
+                    <YAxis fontSize={12} />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="usage" name="CPU" stroke="#8884d8" dot={false} />
+                    <Line type="monotone" dataKey="memory" name="Memory" data={metrics.memory.history} stroke="#82ca9d" dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-            )}
-
-            {/* Recent Alerts */}
-            {alerts.length > 0 && (
-              <div className="bg-white rounded-lg shadow">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">Recent Alerts</h3>
-                </div>
-                <div className="max-h-64 overflow-y-auto">
-                  {alerts.slice(0, 5).map((alert) => (
-                    <div key={alert.id} className={`px-6 py-3 border-l-4 ${getAlertColor(alert.severity)}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{alert.title}</p>
-                          <p className="text-sm opacity-75">{alert.description}</p>
-                        </div>
-                        <span className="text-xs">{new Date(alert.timestamp).toLocaleTimeString()}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h4 className="font-medium mb-4">Network I/O</h4>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={metrics.network.history}>
+                    <XAxis dataKey="time" fontSize={12} />
+                    <YAxis fontSize={12} tickFormatter={formatBytes} />
+                    <Tooltip formatter={(value: number) => formatBytes(value)} />
+                    <Legend />
+                    <Bar dataKey="in" name="Incoming" fill="#8884d8" />
+                    <Bar dataKey="out" name="Outgoing" fill="#82ca9d" />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-            )}
-
-            {/* System Information */}
-            {metrics && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">System Status</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Uptime</span>
-                      <span className="font-medium">{formatDuration(metrics.uptime)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Active Workspaces</span>
-                      <span className="font-medium">{metrics.activeWorkspaces}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Total Sessions</span>
-                      <span className="font-medium">{metrics.totalSessions}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Avg Response Time</span>
-                      <span className="font-medium">{metrics.avgResponseTime}ms</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Network I/O</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Incoming</span>
-                      <span className="font-medium">{formatBytes(metrics.networkIO.in)}/s</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Outgoing</span>
-                      <span className="font-medium">{formatBytes(metrics.networkIO.out)}/s</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Disk Usage</span>
-                      <span className="font-medium">{metrics.diskUsage.toFixed(1)}%</span>
-                    </div>
-                  </div>
-                </div>
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h4 className="font-medium mb-4">API Latency (ms)</h4>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={metrics.latency.history}>
+                    <XAxis dataKey="time" fontSize={12} />
+                    <YAxis fontSize={12} />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="avg" name="Average" stroke="#8884d8" dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-            )}
-          </div>
-        )}
-
-        {selectedTab === 'logs' && (
+              <div className="bg-white p-4 rounded-lg shadow">
+                <h4 className="font-medium mb-4">Disk Usage</h4>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie data={[{ name: 'Used', value: metrics.disk.usage }, { name: 'Free', value: 100 - metrics.disk.usage }]} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                      <Cell fill="#8884d8" />
+                      <Cell fill="#eeeeee" />
+                    </Pie>
+                    <Tooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+        );
+      case 'logs':
+        return (
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">System Logs</h3>
@@ -345,13 +229,7 @@ export default function MonitoringDashboard() {
                 <div key={index} className="px-6 py-3 border-b border-gray-100 font-mono text-sm">
                   <div className="flex items-start space-x-3">
                     <span className="text-gray-500">{log.timestamp}</span>
-                    <span className={`font-medium ${
-                      log.level === 'error' ? 'text-red-600' :
-                      log.level === 'warn' ? 'text-yellow-600' :
-                      'text-gray-600'
-                    }`}>
-                      [{log.level.toUpperCase()}]
-                    </span>
+                    <span className={`font-medium ${log.level === 'error' ? 'text-red-600' : log.level === 'warn' ? 'text-yellow-600' : 'text-gray-600'}`}>[{log.level.toUpperCase()}]</span>
                     <span className="text-blue-600">{log.source}</span>
                     <span className="flex-1">{log.message}</span>
                   </div>
@@ -359,10 +237,75 @@ export default function MonitoringDashboard() {
               ))}
             </div>
           </div>
-        )}
+        );
+      case 'alerts':
+        return (
+          <div className="bg-white rounded-lg shadow">
+             <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">System Alerts</h3>
+            </div>
+            <div className="divide-y divide-gray-200">
+              {alerts.map(alert => (
+                <div key={alert.id} className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className={`w-3 h-3 rounded-full mr-3 ${getSeverityColor(alert.severity)}`}></span>
+                      <h4 className="font-semibold">{alert.title}</h4>
+                    </div>
+                    <span className="text-xs text-gray-500">{alert.timestamp}</span>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1 ml-6">{alert.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      case 'security':
+        return <div className="text-center p-8 bg-white rounded-lg shadow">Security monitoring coming soon.</div>;
+      case 'network':
+        return <NetworkDiagnostics />;
+      default:
+        return null;
+    }
+  };
 
-        {/* Additional tabs would be implemented here */}
+  return (
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Monitoring Dashboard</h1>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium">Live Mode:</span>
+            <button onClick={() => setIsLiveMode(!isLiveMode)} className={`px-3 py-1 text-sm rounded-full ${isLiveMode ? 'bg-green-500 text-white' : 'bg-gray-300'}`}>
+              {isLiveMode ? 'ON' : 'OFF'}
+            </button>
+          </div>
+          <select value={timeRange} onChange={e => setTimeRange(e.target.value)} className="px-3 py-1 border rounded-md text-sm">
+            <option value="1h">Last 1 Hour</option>
+            <option value="6h">Last 6 Hours</option>
+            <option value="24h">Last 24 Hours</option>
+            <option value="7d">Last 7 Days</option>
+          </select>
+        </div>
       </div>
+
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+            {(['overview', 'metrics', 'logs', 'alerts', 'security', 'network'] as TabType[]).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setSelectedTab(tab)}
+                className={`${selectedTab === tab ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm capitalize`}
+              >
+                {tab}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </div>
+
+      <div>{renderContent()}</div>
     </div>
-  )
+  );
 }

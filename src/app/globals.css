@@ -2,27 +2,152 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* VibeCode Design System - Inspired by magic-code-gen lovable UI */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    
+    --primary: 262 80% 50%;
+    --primary-foreground: 210 40% 98%;
+    
+    --secondary: 220 14.3% 95.9%;
+    --secondary-foreground: 220.9 39.3% 11%;
+    
+    --muted: 220 14.3% 95.9%;
+    --muted-foreground: 220 8.9% 46.1%;
+    
+    --accent: 220 14.3% 95.9%;
+    --accent-foreground: 220.9 39.3% 11%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 262 80% 50%;
+    
+    --radius: 0.75rem;
+    
+    /* VibeCode Custom Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(262 80% 50%), hsl(242 80% 65%));
+    --gradient-secondary: linear-gradient(135deg, hsl(242 80% 65%), hsl(222 80% 75%));
+    --gradient-accent: linear-gradient(135deg, hsl(280 80% 50%), hsl(262 80% 60%));
+    --gradient-vibecode: linear-gradient(135deg, hsl(262 80% 50%), hsl(200 80% 60%));
+    
+    /* Background patterns */
+    --bg-dot-pattern: radial-gradient(circle, hsl(262 80% 50% / 0.1) 1px, transparent 1px);
+    --bg-grid-pattern: linear-gradient(hsl(220 13% 91% / 0.1) 1px, transparent 1px), linear-gradient(90deg, hsl(220 13% 91% / 0.1) 1px, transparent 1px);
+    
+    /* Shadow presets for modern UI */
+    --shadow-glow: 0 0 40px hsl(262 80% 50% / 0.3);
+    --shadow-elegant: 0 10px 30px -10px hsl(240 10% 3.9% / 0.2);
+    
+    /* Animation transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    
+    --card: 240 10% 6%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 240 10% 6%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 262 80% 50%;
+    --primary-foreground: 210 40% 98%;
+    
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 262 80% 50%;
+    
+    /* Dark theme gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(262 80% 50%), hsl(242 80% 65%));
+    --gradient-secondary: linear-gradient(135deg, hsl(242 80% 65%), hsl(222 80% 75%));
+    --gradient-accent: linear-gradient(135deg, hsl(280 80% 50%), hsl(262 80% 60%));
+    --gradient-vibecode: linear-gradient(135deg, hsl(262 80% 50%), hsl(200 80% 60%));
+    
+    /* Dark background patterns */
+    --bg-dot-pattern: radial-gradient(circle, hsl(262 80% 50% / 0.2) 1px, transparent 1px);
+    --bg-grid-pattern: linear-gradient(hsl(240 3.7% 15.9% / 0.5) 1px, transparent 1px), linear-gradient(90deg, hsl(240 3.7% 15.9% / 0.5) 1px, transparent 1px);
+    
+    /* Dark shadows */
+    --shadow-glow: 0 0 40px hsl(262 80% 50% / 0.4);
+    --shadow-elegant: 0 10px 30px -10px hsl(0 0% 0% / 0.5);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .bg-gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  
+  .bg-gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  .bg-gradient-vibecode {
+    background: var(--gradient-vibecode);
+  }
+  
+  .text-gradient-primary {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+  
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
 }

@@ -11,6 +11,8 @@ The authentication system has been successfully configured with 10 test user acc
 - **Credentials Provider**: Working with development test users
 - **Role-Based Access**: Admin and user roles properly differentiated
 - **Session Management**: 30-day session lifetime
+- **AI Project Authentication**: Secure access to AI project generation endpoints
+- **Workspace Access Control**: User-specific workspace isolation
 - **Security**: Development-only credentials (auto-disabled in production)
 
 ### 📱 **Available Endpoints**
@@ -18,6 +20,9 @@ The authentication system has been successfully configured with 10 test user acc
 - **Sign Out**: http://localhost:3000/auth/signout
 - **Test Page**: http://localhost:3000/auth/test
 - **API Routes**: `/api/auth/*` (NextAuth handlers)
+- **AI Project Generation**: `/api/ai/generate-project` (Authenticated)
+- **Code-Server Sessions**: `/api/code-server/session` (Authenticated)
+- **File Sync**: `/api/files/sync` (Authenticated)
 
 ## 👥 **Test User Accounts**
 
@@ -68,6 +73,17 @@ The authentication system has been successfully configured with 10 test user acc
 - **CSRF Protection**: Built-in CSRF token handling
 - **Session Expiry**: Configurable session timeouts
 
+<<<<<<< HEAD
+=======
+### 🔒 API Key Protection System
+- **Pre-commit Hooks**: Automatic API key detection before commits
+- **BFG Docker Integration**: Git history scanning with `jtmotox/bfg`
+- **Security Scanner**: Comprehensive repository scanning
+- **Pattern Matching**: Protection for 10+ API key formats
+- **Integration Tests**: 11/11 tests passing with real API validation
+- **Emergency Cleanup**: BFG Docker commands for history sanitization
+
+>>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 ## 🚀 **Usage Examples**
 
 ### Sign In Process
@@ -83,6 +99,21 @@ node test-credentials.js
 
 # Test specific endpoint
 curl -s "http://localhost:3000/api/health/simple" | jq .
+<<<<<<< HEAD
+=======
+
+# Test AI project generation (requires authentication)
+curl -X POST http://localhost:3000/api/ai/generate-project \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <session-token>" \
+  -d '{"prompt": "Create a React app", "projectName": "test-project"}'
+
+# Test code-server session creation
+curl -X POST http://localhost:3000/api/code-server/session \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <session-token>" \
+  -d '{"workspaceId": "test-workspace", "userId": "test-user"}'
+>>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 ```
 
 ### Environment Validation
@@ -97,6 +128,8 @@ node scripts/validate-env.js
 - **Environment Variables**: All required variables configured
 - **Authentication Flow**: All 10 test users successfully authenticated
 - **API Endpoints**: Health checks and monitoring endpoints working
+- **AI Project Generation**: Authentication-protected AI endpoints functional
+- **Workspace Access**: User-specific workspace isolation verified
 - **Security**: Development-only restrictions properly enforced
 
 ### 🔄 **OAuth Migration Path**
@@ -116,7 +149,7 @@ node scripts/validate-env.js
 ---
 
 **Status**: ✅ **READY FOR DEVELOPMENT**
-**Last Updated**: July 16, 2025
+**Last Updated**: July 18, 2025
 **Authentication**: 10 test users active
 **Security**: Development-only mode active
 **Next Milestone**: OAuth deployment

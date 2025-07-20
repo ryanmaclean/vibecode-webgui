@@ -20,7 +20,8 @@ A powerful VS Code extension that provides multi-provider AI coding assistance t
 - **Test Generation**: Automatically generate comprehensive test suites
 
 ### 🚀 Advanced Features
-- **Project Generation**: Create entire projects from descriptions
+- **Project Generation**: Create entire projects from descriptions (Lovable/Replit/Bolt.diy workflow)
+- **Live Workspace Integration**: Generated projects open directly in code-server
 - **Interactive Chat**: Chat with AI about your code with context awareness
 - **Streaming Responses**: Get real-time AI responses as they're generated
 - **Context Awareness**: AI understands your current file and selection

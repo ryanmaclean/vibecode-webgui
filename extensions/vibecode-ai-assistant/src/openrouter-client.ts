@@ -177,7 +177,13 @@ export class OpenRouterClient {
                             }
 
                             try {
-                                const parsed: StreamingResponse = JSON.parse(data);
+                                let parsed: StreamingResponse;
+                                try {
+                                    parsed = JSON.parse(data);
+                                } catch (e) {
+                                    // Skip invalid JSON lines
+                                    continue;
+                                }
                                 const content = parsed.choices[0]?.delta?.content;
 
                                 if (content) {

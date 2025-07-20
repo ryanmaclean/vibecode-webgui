@@ -11,7 +11,7 @@ interface ComponentHealth {
   status: 'healthy' | 'unhealthy' | 'degraded'
   responseTime: number
   lastCheck: string
-  details?: Record<string, any>
+  details?: Record<string, unknown>
 }
 
 interface HealthStatus {
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     const isAdmin = session?.user?.role === 'admin'
 
     // Basic health check
-    const startTime = Date.now()
+    const _startTime = Date.now()
     const uptime = process.uptime()
 
     // Component health checks
@@ -238,6 +238,7 @@ async function checkDatabaseHealth(): Promise<ComponentHealth> {
     }
 
     // Import pg here to avoid issues if database is not available
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Client } = require('pg')
     const client = new Client({
       connectionString: process.env.DATABASE_URL,
@@ -285,6 +286,7 @@ async function checkRedisHealth(): Promise<ComponentHealth> {
     }
 
     // Import redis client here
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const redis = require('redis')
     const client = redis.createClient({
       url: process.env.REDIS_URL,

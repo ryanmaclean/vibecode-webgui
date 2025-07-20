@@ -28,11 +28,14 @@ GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
 
 ### Required for All Environments
 ```bash
-# PostgreSQL Database
+# PostgreSQL Database with pgvector support
 DATABASE_URL=postgresql://username:password@host:port/database
 
 # Redis Cache
 REDIS_URL=redis://host:port
+
+# Database Monitoring
+DD_DATABASE_MONITORING_ENABLED=true
 ```
 
 ### Examples by Environment
@@ -50,12 +53,50 @@ DATABASE_URL=postgresql://username:password@prod-db-host:5432/vibecode_prod
 REDIS_URL=redis://prod-redis-host:6379
 ```
 
-## 🤖 AI Integration
+### 🎯 Vector Database Requirements
+The platform now uses **pgvector** for semantic search capabilities:
+
+```bash
+# Ensure PostgreSQL has pgvector extension installed
+# Run after database setup:
+# CREATE EXTENSION IF NOT EXISTS vector;
+
+# Vector embeddings are generated using OpenAI models via OpenRouter
+# Requires OPENROUTER_API_KEY for embedding generation
+```
+
+## 🤖 AI Integration & Project Generation
+>>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 
 ### Required for All Environments
 ```bash
 # OpenRouter API for AI Models
 OPENROUTER_API_KEY=sk-or-v1-your-openrouter-api-key
+<<<<<<< HEAD
+=======
+
+# Claude API (Primary AI Model)
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key
+CLAUDE_MODEL=claude-3-5-sonnet-20241022
+
+# AI Project Generation Settings
+AI_PROJECT_GENERATION_ENABLED=true
+AI_MAX_TOKENS=4000
+AI_TEMPERATURE=0.7
+AI_MODEL_TIMEOUT=60000
+
+# Code-Server Integration
+CODE_SERVER_BASE_URL=http://localhost:8080
+CODE_SERVER_PASSWORD=your-code-server-password
+WORKSPACE_BASE_PATH=/workspaces
+```
+
+### Artificial Analysis Integration (Optional)
+```bash
+# AI Model Performance Analytics
+ARTIFICIAL_ANALYSIS_API_KEY=your-artificial-analysis-key
+AI_PERFORMANCE_MONITORING=true
+>>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 ```
 
 ## 📊 Monitoring & Observability
@@ -65,7 +106,23 @@ OPENROUTER_API_KEY=sk-or-v1-your-openrouter-api-key
 # Backend Monitoring
 DATADOG_API_KEY=your-datadog-api-key
 DD_API_KEY=your-datadog-api-key  # Alternative format
+<<<<<<< HEAD
 DATADOG_SITE=datadoghq.com
+=======
+DD_APP_KEY=your-datadog-app-key
+DATADOG_SITE=datadoghq.com
+DD_SITE=datadoghq.com
+
+# LLM Observability (NEW)
+DD_LLMOBS_ENABLED=1
+DD_LLMOBS_AGENTLESS_ENABLED=1
+DD_LLMOBS_ML_APP=vibecode-ai
+DD_SERVICE=vibecode-webgui
+DD_ENV=production
+
+# Database Monitoring (NEW)
+DD_DATABASE_MONITORING_ENABLED=true
+>>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 
 # Frontend RUM Monitoring (Public variables)
 NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID=your-app-id
@@ -113,8 +170,16 @@ data:
   GOOGLE_CLIENT_SECRET: <base64-encoded-google-secret>
   DATADOG_API_KEY: <base64-encoded-datadog-key>
   OPENROUTER_API_KEY: <base64-encoded-openrouter-key>
+<<<<<<< HEAD
   DATABASE_URL: <base64-encoded-database-url>
   REDIS_URL: <base64-encoded-redis-url>
+=======
+  ANTHROPIC_API_KEY: <base64-encoded-anthropic-key>
+  DATABASE_URL: <base64-encoded-database-url>
+  REDIS_URL: <base64-encoded-redis-url>
+  CODE_SERVER_PASSWORD: <base64-encoded-codeserver-password>
+  ARTIFICIAL_ANALYSIS_API_KEY: <base64-encoded-artificial-analysis-key>
+>>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 ```
 
 ## 📋 Environment Variable Checklist
@@ -123,9 +188,18 @@ data:
 - [ ] NEXTAUTH_URL
 - [ ] NEXTAUTH_SECRET
 - [ ] OPENROUTER_API_KEY
+<<<<<<< HEAD
 - [ ] DATABASE_URL
 - [ ] REDIS_URL
 - [ ] DATADOG_API_KEY
+=======
+- [ ] ANTHROPIC_API_KEY
+- [ ] DATABASE_URL
+- [ ] REDIS_URL
+- [ ] DATADOG_API_KEY
+- [ ] CODE_SERVER_BASE_URL
+- [ ] WORKSPACE_BASE_PATH
+>>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 - [ ] ADMIN_EMAIL (dev only)
 - [ ] ADMIN_PASSWORD (dev only)
 
@@ -152,6 +226,49 @@ data:
 6. **Use Kubernetes secrets for cluster deployments**
 7. **Validate all required variables at startup**
 
+<<<<<<< HEAD
+=======
+## 🔒 API Key Protection System
+
+VibeCode implements comprehensive API key protection to prevent accidental exposure:
+
+### Multi-Layer Security
+- **Pre-commit Hooks**: Automatic API key detection before commits
+- **BFG Docker Integration**: Git history scanning with `jtmotox/bfg`
+- **Security Scanner**: Comprehensive repository scanning (`scripts/security-scan.sh`)
+- **Pattern Matching**: Detection of 10+ API key formats (OpenAI, Anthropic, Datadog, GitHub, etc.)
+
+### Protected Key Patterns
+- ✅ OpenAI/OpenRouter: `sk-*` patterns
+- ✅ Anthropic: `sk-ant-*` patterns
+- ✅ Datadog: 32-character hex keys
+- ✅ GitHub: `ghp_*`, `gho_*`, `ghu_*` patterns
+- ✅ AWS: `AKIA*` access keys
+- ✅ Google: `ya29.*` OAuth tokens
+
+### Emergency Cleanup
+```bash
+# If API keys are accidentally committed
+./scripts/security-scan.sh
+
+# BFG cleanup (if needed)
+docker run --rm -v "$(pwd):/workspace" -w /workspace jtmotox/bfg \
+  --replace-text patterns.txt .git
+```
+
+### Validation Commands
+```bash
+# Run security scan
+./scripts/security-scan.sh
+
+# Check pre-commit hooks
+./scripts/pre-commit-tests.sh
+
+# Validate API keys work
+ENABLE_REAL_DATADOG_TESTS=true npm test -- tests/integration/real-datadog-integration.test.ts
+```
+
+>>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 ## 🔧 Environment Validation
 
 Add this to your startup script to validate required variables:
@@ -161,16 +278,37 @@ const requiredEnvVars = [
   'NEXTAUTH_URL',
   'NEXTAUTH_SECRET',
   'OPENROUTER_API_KEY',
+<<<<<<< HEAD
   'DATABASE_URL',
   'REDIS_URL',
   'DATADOG_API_KEY',
+=======
+  'ANTHROPIC_API_KEY',
+  'DATABASE_URL',
+  'REDIS_URL',
+  'DATADOG_API_KEY',
+  'CODE_SERVER_BASE_URL',
+  'WORKSPACE_BASE_PATH',
+>>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 ];
 
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingVars.length > 0) {
   console.error('Missing required environment variables:', missingVars);
+  console.error('Please check ENV_VARIABLES.md for setup instructions');
   process.exit(1);
+}
+
+// Validate AI project generation is properly configured
+if (process.env.AI_PROJECT_GENERATION_ENABLED === 'true') {
+  const aiRequiredVars = ['OPENROUTER_API_KEY', 'ANTHROPIC_API_KEY', 'CODE_SERVER_BASE_URL'];
+  const missingAiVars = aiRequiredVars.filter(varName => !process.env[varName]);
+  
+  if (missingAiVars.length > 0) {
+    console.error('AI Project Generation enabled but missing variables:', missingAiVars);
+    process.exit(1);
+  }
 }
 ```
 
@@ -208,6 +346,6 @@ if (missingVars.length > 0) {
 
 ---
 
-**Last Updated**: July 16, 2025
+**Last Updated**: July 18, 2025
 **Next Review**: After production deployment
 **Owner**: Platform Team

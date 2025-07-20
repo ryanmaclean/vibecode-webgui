@@ -185,6 +185,20 @@ export function ProjectScaffolder({
     }, 500)
   }
 
+  const openInEditor = () => {
+    const projectData: ProjectData = {
+      name: projectName,
+      template,
+      files: generatedFiles,
+      packageJson: JSON.parse(generatedFiles.find(f => f.path === 'package.json')?.content || '{}'),
+      envFile: generatedFiles.find(f => f.path === '.env.example')?.content || '',
+      dockerFile: generatedFiles.find(f => f.path === 'Dockerfile')?.content,
+      readmeContent: generatedFiles.find(f => f.path === 'README.md')?.content || ''
+    }
+
+    onGenerate?.(projectData)
+  }
+
   const downloadProject = () => {
     const projectData: ProjectData = {
       name: projectName,
@@ -345,10 +359,16 @@ export function ProjectScaffolder({
                     <FileText className="w-5 h-5" />
                     Generated Project Files
                   </CardTitle>
-                  <Button onClick={downloadProject} className="flex items-center gap-2">
-                    <Download className="w-4 h-4" />
-                    Download Project
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={openInEditor} className="flex items-center gap-2">
+                      <Play className="w-4 h-4" />
+                      Open in Editor
+                    </Button>
+                    <Button onClick={downloadProject} variant="outline" className="flex items-center gap-2">
+                      <Download className="w-4 h-4" />
+                      Download ZIP
+                    </Button>
+                  </div>
                 </div>
                 <CardDescription>
                   {generatedFiles.length} files generated successfully
@@ -483,7 +503,7 @@ services:
       - redis
 
   db:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: ${packageJson.name}
       POSTGRES_USER: postgres
@@ -700,11 +720,10 @@ function ProjectSummary({
       <div>
         <h4 className="font-semibold mb-2">Next Steps</h4>
         <ol className="text-sm space-y-1">
-          <li>1. Download the project files</li>
-          <li>2. Extract to your development directory</li>
-          <li>3. Run <code className="bg-gray-100 px-1 rounded">npm install</code></li>
-          <li>4. Configure your environment variables</li>
-          <li>5. Start development with <code className="bg-gray-100 px-1 rounded">npm run dev</code></li>
+          <li><strong>Option 1:</strong> Click "Open in Editor" to start coding immediately</li>
+          <li><strong>Option 2:</strong> Download ZIP for local development</li>
+          <li>3. Configure your environment variables</li>
+          <li>4. Start development and iterate with AI assistance</li>
         </ol>
       </div>
     </div>

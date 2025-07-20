@@ -214,7 +214,7 @@ echo "-------------------------------------" | tee -a $TEST_RESULTS_FILE
 
 # Common images used in the project
 images=(
-    "postgres:15-alpine"
+            "pgvector/pgvector:pg16"
     "redis:7-alpine"
     "nginx:alpine"
     "datadog/agent:latest"

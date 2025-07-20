@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json()
-    const { prompt, workspaceId, filePath, language } = body
+    const { prompt, workspaceId, filePath } = body
 
     if (!prompt || typeof prompt !== 'string') {
       return NextResponse.json(
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS(_request: NextRequest) {
   return new NextResponse(null, {
     status: 200,
     headers: {
