@@ -195,10 +195,19 @@ build_application() {
     log "Building production bundle..."
     npm run build
     
-    # Build Docker image
-    log "Building Docker image..."
-    docker build -f Dockerfile.production -t "vibecode/webgui:${DEPLOYMENT_ENV}-$(date +%Y%m%d-%H%M%S)" .
-    docker tag "vibecode/webgui:${DEPLOYMENT_ENV}-$(date +%Y%m%d-%H%M%S)" "vibecode/webgui:${DEPLOYMENT_ENV}-latest"
+    # Build and push multi-platform Docker image
+    log "Building multi-platform Docker image for linux/amd64 and linux/arm64..."
+    local image_tag_timestamp="ryanmaclean/vibecode-webgui:${DEPLOYMENT_ENV}-$(date +%Y%m%d-%H%M%S)"
+    local image_tag_latest="ryanmaclean/vibecode-webgui:${DEPLOYMENT_ENV}-latest"
+
+    docker buildx build \
+      --platform linux/amd64,linux/arm64 \
+      -f Dockerfile.production \
+      -t "$image_tag_timestamp" \
+      -t "$image_tag_latest" \
+      --push \
+      .
+
     
     log "✅ Application build complete"
 }
