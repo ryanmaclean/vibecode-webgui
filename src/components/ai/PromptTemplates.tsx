@@ -21,8 +21,20 @@ import {
   Star
 } from 'lucide-react'
 
+// Template type definition
+interface PromptTemplate {
+  id: string
+  name: string
+  description: string
+  icon: React.ComponentType<any>
+  template: string
+  variables: string[]
+  category: string
+  popular?: boolean
+}
+
 // Pre-defined prompt templates organized by category
-const PROMPT_TEMPLATES = {
+const PROMPT_TEMPLATES: Record<string, PromptTemplate[]> = {
   'Code Development': [
     {
       id: 'code-review',
@@ -114,6 +126,74 @@ const PROMPT_TEMPLATES = {
       variables: ['technology_1', 'technology_2', 'use_case', 'context', 'requirements'],
       category: 'Learning'
     }
+  ],
+  'AI Applications': [
+    {
+      id: 'gradio-chatbot',
+      name: 'Gradio Chatbot Interface',
+      description: 'Create interactive chatbot with Gradio UI',
+      icon: MessageSquare,
+      template: 'Create a Gradio chatbot application with the following features:\n\n**Chatbot Purpose:** {chatbot_purpose}\n**AI Model:** {ai_model}\n**Features:** {features}\n\nPlease provide:\n1. Complete Python code with Gradio interface\n2. Chat history management\n3. Custom CSS styling\n4. Message formatting\n5. Error handling\n6. Deployment instructions\n\nInclude proper imports, model loading, and a responsive UI design.',
+      variables: ['chatbot_purpose', 'ai_model', 'features'],
+      category: 'AI Applications',
+      popular: true
+    },
+    {
+      id: 'gradio-image-analyzer',
+      name: 'Gradio Image Analysis Tool',
+      description: 'Build image processing and analysis interface',
+      icon: Search,
+      template: 'Create a Gradio image analysis application for: {analysis_type}\n\n**Input:** {input_format}\n**Analysis Features:**\n{analysis_features}\n\n**Output Requirements:**\n{output_requirements}\n\nPlease provide:\n1. Complete Gradio interface with image upload\n2. Image preprocessing pipeline\n3. Analysis function implementation\n4. Results visualization\n5. Batch processing capability\n6. Export functionality\n\nInclude proper error handling and progress indicators.',
+      variables: ['analysis_type', 'input_format', 'analysis_features', 'output_requirements'],
+      category: 'AI Applications',
+      popular: true
+    },
+    {
+      id: 'gradio-text-processor',
+      name: 'Gradio Text Processing App',
+      description: 'Create text analysis and processing tools',
+      icon: FileText,
+      template: 'Build a Gradio text processing application for: {processing_task}\n\n**Input:** {input_type}\n**Processing Features:**\n{processing_features}\n**Model/Library:** {model_library}\n\nPlease provide:\n1. Gradio interface with text input/upload\n2. Text preprocessing functions\n3. Processing pipeline implementation\n4. Results display with formatting\n5. Download/export options\n6. Performance metrics display\n\nInclude examples and proper documentation.',
+      variables: ['processing_task', 'input_type', 'processing_features', 'model_library'],
+      category: 'AI Applications'
+    },
+    {
+      id: 'gradio-data-dashboard',
+      name: 'Gradio Data Dashboard',
+      description: 'Interactive data visualization and analysis dashboard',
+      icon: Lightbulb,
+      template: 'Create a Gradio data analysis dashboard for: {data_domain}\n\n**Data Source:** {data_source}\n**Analysis Types:** {analysis_types}\n**Visualizations:** {visualizations}\n\nPlease provide:\n1. Gradio interface with file upload/data input\n2. Data validation and cleaning\n3. Interactive charts and plots\n4. Statistical analysis functions\n5. Export capabilities\n6. Real-time updates\n\nInclude proper data handling and visualization libraries (plotly, matplotlib).',
+      variables: ['data_domain', 'data_source', 'analysis_types', 'visualizations'],
+      category: 'AI Applications'
+    },
+    {
+      id: 'gradio-ml-model-demo',
+      name: 'Gradio ML Model Demo',
+      description: 'Create interactive machine learning model demonstration',
+      icon: Star,
+      template: 'Build a Gradio demo for a {model_type} model that performs: {task_description}\n\n**Model Details:**\n- Model: {model_name}\n- Input: {input_format}\n- Output: {output_format}\n\n**Demo Features:**\n{demo_features}\n\nPlease provide:\n1. Complete Gradio interface\n2. Model loading and inference code\n3. Input preprocessing\n4. Output postprocessing and display\n5. Example inputs for testing\n6. Performance metrics display\n7. Model information panel\n\nMake it user-friendly with clear instructions and examples.',
+      variables: ['model_type', 'task_description', 'model_name', 'input_format', 'output_format', 'demo_features'],
+      category: 'AI Applications',
+      popular: true
+    },
+    {
+      id: 'gradio-multimodal-app',
+      name: 'Gradio Multimodal Application',
+      description: 'Create apps that handle multiple input types',
+      icon: Wand2,
+      template: 'Create a multimodal Gradio application that processes: {input_types}\n\n**Application Purpose:** {app_purpose}\n**Processing Pipeline:** {pipeline_description}\n**Output Format:** {output_format}\n\nPlease provide:\n1. Gradio interface with multiple input components\n2. Input validation for each modality\n3. Unified processing pipeline\n4. Cross-modal analysis functions\n5. Rich output display\n6. Comparison tools\n7. Export and sharing features\n\nEnsure seamless integration between different input types.',
+      variables: ['input_types', 'app_purpose', 'pipeline_description', 'output_format'],
+      category: 'AI Applications'
+    },
+    {
+      id: 'gradio-realtime-app',
+      name: 'Gradio Real-time Processing',
+      description: 'Build real-time AI processing applications',
+      icon: Code,
+      template: 'Create a real-time Gradio application for: {realtime_task}\n\n**Input Source:** {input_source}\n**Processing Requirements:** {processing_requirements}\n**Update Frequency:** {update_frequency}\n\nPlease provide:\n1. Gradio interface with real-time components\n2. Stream processing implementation\n3. Queue management for high throughput\n4. Live visualization updates\n5. Performance monitoring\n6. Resource management\n7. Graceful error handling\n\nOptimize for low latency and high throughput.',
+      variables: ['realtime_task', 'input_source', 'processing_requirements', 'update_frequency'],
+      category: 'AI Applications'
+    }
   ]
 }
 
@@ -129,7 +209,7 @@ interface TemplateVariable {
 
 export default function PromptTemplates({ onSelectTemplate, className = '' }: PromptTemplatesProps) {
   const [selectedCategory, setSelectedCategory] = useState('Code Development')
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null)
   const [variables, setVariables] = useState<TemplateVariable[]>([])
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -144,44 +224,52 @@ export default function PromptTemplates({ onSelectTemplate, className = '' }: Pr
         template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         template.description.toLowerCase().includes(searchTerm.toLowerCase())
       )
-    : PROMPT_TEMPLATES[selectedCategory] || []
+    : (PROMPT_TEMPLATES[selectedCategory as keyof typeof PROMPT_TEMPLATES] || [])
 
-  const handleTemplateSelect = (template: any) => {
+  const handleTemplateSelect = (template: PromptTemplate) => {
     setSelectedTemplate(template)
     // Initialize variables
-    const templateVars = template.variables.map((varName: string) => ({
+    const templateVars = template.variables.map(varName => ({
       name: varName,
       value: ''
     }))
     setVariables(templateVars)
   }
 
-  const handleVariableChange = (varName: string, value: string) => {
-    setVariables(prev => prev.map(v =>
-      v.name === varName ? { ...v, value } : v
+  const updateVariable = (name: string, value: string) => {
+    setVariables(prev => prev.map(variable =>
+      variable.name === name ? { ...variable, value } : variable
     ))
   }
 
-  const generatePrompt = () => {
-    if (!selectedTemplate) return ''
+  const fillTemplate = () => {
+    if (!selectedTemplate) return
 
-    let prompt = selectedTemplate.template
+    let filledTemplate = selectedTemplate.template
     variables.forEach(variable => {
-      prompt = prompt.replace(new RegExp(`{${variable.name}}`, 'g'), variable.value)
+      const placeholder = `{${variable.name}}`
+      filledTemplate = filledTemplate.replace(new RegExp(placeholder, 'g'), variable.value)
     })
 
-    return prompt
-  }
-
-  const handleUseTemplate = () => {
-    const prompt = generatePrompt()
-    onSelectTemplate(prompt)
+    onSelectTemplate(filledTemplate)
     setSelectedTemplate(null)
     setVariables([])
   }
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
+  const copyTemplate = (template: PromptTemplate) => {
+    navigator.clipboard.writeText(template.template)
+  }
+
+  const getPreviewTemplate = () => {
+    if (!selectedTemplate) return 'Fill in the variables above to see the prompt preview'
+
+    let preview = selectedTemplate.template
+    variables.forEach(variable => {
+      const placeholder = `{${variable.name}}`
+      preview = preview.replace(new RegExp(placeholder, 'g'), variable.value || `{${variable.name}}`)
+    })
+
+    return preview
   }
 
   return (
@@ -251,7 +339,7 @@ export default function PromptTemplates({ onSelectTemplate, className = '' }: Pr
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
-                        copyToClipboard(template.template)
+                        copyTemplate(template)
                       }}
                     >
                       <Copy className="h-3 w-3" />
@@ -289,7 +377,7 @@ export default function PromptTemplates({ onSelectTemplate, className = '' }: Pr
                       className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[60px]"
                       placeholder={`Enter ${variable.name.replace(/_/g, ' ')}`}
                       value={variable.value}
-                      onChange={(e) => handleVariableChange(variable.name, e.target.value)}
+                      onChange={(e) => updateVariable(variable.name, e.target.value)}
                     />
                   </div>
                 ))}
@@ -299,7 +387,7 @@ export default function PromptTemplates({ onSelectTemplate, className = '' }: Pr
               <div>
                 <h4 className="font-medium mb-2">Preview:</h4>
                 <div className="bg-gray-50 p-3 rounded-md text-sm whitespace-pre-wrap border">
-                  {generatePrompt() || 'Fill in the variables above to see the prompt preview'}
+                  {getPreviewTemplate()}
                 </div>
               </div>
 
@@ -312,7 +400,7 @@ export default function PromptTemplates({ onSelectTemplate, className = '' }: Pr
                   Cancel
                 </Button>
                 <Button
-                  onClick={handleUseTemplate}
+                  onClick={fillTemplate}
                   disabled={variables.some(v => !v.value.trim())}
                 >
                   Use Template
