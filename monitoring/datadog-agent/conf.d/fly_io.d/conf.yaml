@@ -1,0 +1,6 @@
+instances:
+- empty_default_hostname: true
+  headers:
+      Authorization: Bearer <YOUR_FLY_TOKEN>
+  machines_api_endpoint: http://_api.internal:4280
+  org_slug: <YOUR_ORG_SLUG>

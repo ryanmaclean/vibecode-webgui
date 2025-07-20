@@ -1,0 +1,21 @@
+# fly.toml configuration for the dedicated Datadog Agent application
+
+app = 'vibecode-datadog-agent' # A unique name for your Datadog agent app
+primary_region = 'sjc'
+
+[build]
+  image = 'gcr.io/datadoghq/agent:7' # Use the official Datadog Agent image
+
+# The [files] block copies your local configuration into the Docker image.
+# This ensures the agent starts with the correct settings for the fly_io check.
+[[files]]
+  guest_path = '/etc/datadog-agent/conf.d/fly_io.d/conf.yaml'
+  local_path = './conf.d/fly_io.d/conf.yaml'
+
+# The agent runs as a service. This section keeps the machine alive.
+[http_service]
+  internal_port = 8126 # Default port for Datadog Trace Agent
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
