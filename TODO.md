@@ -44,6 +44,8 @@
     -   Prometheus is now streamlined to expose metrics for the Datadog agent.
 - [✅] **Centralized Logging:**
     -   Configured the application to produce structured JSON logs and enabled log collection in Datadog.
+- [✅] **Expand Datadog Synthetic Tests**:
+    -   Created a comprehensive multi-step browser test using OpenTofu to cover a critical user journey (login, chat, logout).
 
 ### **3. Documentation**
 **Status**: 📝 Planning
