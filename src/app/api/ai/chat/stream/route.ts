@@ -71,13 +71,15 @@ async function buildWorkspaceContext(workspaceId: string, files: string[]) {
 
     for (const file of contextFiles) {
       try {
-        // In a real scenario, this would fetch file content from a persistent store
-        // For this example, we assume content is available or fetched elsewhere
-        contextContent += `\n--- File: ${file} ---\n`
+        // This part is a placeholder for actual file reading logic
+        // In a real implementation, you would fetch file content from a source
+        // based on the workspaceId and file path.
+        contextContent += `\n--- File: ${file} ---\n// ... content of ${file} ...\n`
       } catch (error) {
-        console.warn(`Could not read file ${file}:`, error)
+        console.error(`Failed to read context file ${file}:`, error)
       }
     }
+
     return contextContent
   } catch (error) {
     console.error('Failed to build workspace context:', error)
@@ -85,33 +87,27 @@ async function buildWorkspaceContext(workspaceId: string, files: string[]) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    // Check authentication
     const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    if (!session || !session.user || !session.user.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // OpenRouter configuration
+    const { message, model, context }: ChatRequest = await req.json()
+
+    // Initialize OpenRouter client
     const openrouter = new OpenAI({
-      baseURL: "https://openrouter.ai/api/v1",
+      baseURL: process.env.OPENROUTER_API_BASE,
       apiKey: process.env.OPENROUTER_API_KEY,
-      defaultHeaders: {
-        "HTTP-Referer": `https://vibecode.com`,
-        "X-Title": `Vibecode`,
-      }
-    });
+    })
 
-    const { message, model, context }: ChatRequest = await request.json()
-
-    // Build context string from workspace and RAG
+    // Build context string
     let contextString = ''
-    if (context.workspaceId) {
+    if (context.files && context.files.length > 0) {
       contextString += await buildWorkspaceContext(context.workspaceId, context.files)
+    }
+    if (context.workspaceId) {
       contextString += await buildRAGContext(context.workspaceId, message, session.user.id)
     }
 
@@ -120,13 +116,17 @@ export async function POST(request: NextRequest) {
       {
         role: 'system',
         content: `You are an expert AI pair programmer. Use the provided context to answer the user's question. Context: ${contextString}`
-      },
-      ...context.previousMessages.map(msg => ({
-        role: msg.type === 'user' ? 'user' : 'assistant',
+      }
+    ];
+
+    for (const msg of context.previousMessages) {
+      messages.push({
+        role: msg.type,
         content: msg.content
-      })),
-      { role: 'user', content: message }
-    ]
+      });
+    }
+
+    messages.push({ role: 'user', content: message });
 
     // Create a streaming completion
     const stream = await openrouter.chat.completions.create({
