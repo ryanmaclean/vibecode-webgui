@@ -1,0 +1,345 @@
+{{- if .Values.chaosEngineering.enabled }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.chaosEngineering.namespace }}
+  labels:
+    name: {{ .Values.chaosEngineering.namespace }}
+    app.kubernetes.io/name: chaos-controller
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: disruptions.chaos.datadoghq.com
+  namespace: {{ .Values.chaosEngineering.namespace }}
+spec:
+  group: chaos.datadoghq.com
+  versions:
+  - name: v1beta1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              selector:
+                type: object
+                description: "Target selector for pods"
+              count:
+                type: integer
+                description: "Number of targets to disrupt"
+              percentage:
+                type: integer
+                description: "Percentage of targets to disrupt"
+              duration:
+                type: string
+                description: "Duration of the disruption"
+              nodeFailure:
+                type: object
+                properties:
+                  shutdown:
+                    type: boolean
+                    description: "Whether to shutdown nodes"
+              networkDisruption:
+                type: object
+                properties:
+                  drop:
+                    type: integer
+                    description: "Percentage of packets to drop"
+                  delay:
+                    type: string
+                    description: "Network delay to introduce"
+                  corrupt:
+                    type: integer
+                    description: "Percentage of packets to corrupt"
+              cpuPressure:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    description: "Number of CPU stress processes"
+              memoryPressure:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    description: "Number of memory stress processes"
+              diskPressure:
+                type: object
+                properties:
+                  path:
+                    type: string
+                    description: "Path to create disk pressure"
+                  throttling:
+                    type: object
+                    properties:
+                      readBytesPerSec:
+                        type: string
+                      writeBytesPerSec:
+                        type: string
+          status:
+            type: object
+            properties:
+              conditions:
+                type: array
+                items:
+                  type: object
+  scope: Namespaced
+  names:
+    plural: disruptions
+    singular: disruption
+    kind: Disruption
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: chaos-controller
+  namespace: {{ .Values.chaosEngineering.namespace }}
+  labels:
+    app.kubernetes.io/name: chaos-controller
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: chaos-controller
+  labels:
+    app.kubernetes.io/name: chaos-controller
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+rules:
+- apiGroups: [""]
+  resources: ["pods", "nodes", "events"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["chaos.datadoghq.com"]
+  resources: ["disruptions"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["metrics.k8s.io"]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: chaos-controller
+  labels:
+    app.kubernetes.io/name: chaos-controller
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: chaos-controller
+subjects:
+- kind: ServiceAccount
+  name: chaos-controller
+  namespace: {{ .Values.chaosEngineering.namespace }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chaos-controller
+  namespace: {{ .Values.chaosEngineering.namespace }}
+  labels:
+    app.kubernetes.io/name: chaos-controller
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: chaos-controller
+      app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: chaos-controller
+        app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+        tags.datadoghq.com/service: chaos-controller
+        tags.datadoghq.com/version: {{ .Values.chaosEngineering.image.tag }}
+      annotations:
+        ad.datadoghq.com/chaos-controller.logs: '[{"source":"chaos-controller","service":"chaos-controller"}]'
+        ad.datadoghq.com/chaos-controller.check_names: '["openmetrics"]'
+        ad.datadoghq.com/chaos-controller.init_configs: '[{}]'
+        ad.datadoghq.com/chaos-controller.instances: '[{"openmetrics_endpoint":"http://%%host%%:8080/metrics","namespace":"chaos_controller","metrics":[".*"]}]'
+    spec:
+      serviceAccountName: chaos-controller
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: chaos-controller
+        image: "{{ .Values.chaosEngineering.image.repository }}:{{ .Values.chaosEngineering.image.tag }}"
+        imagePullPolicy: {{ .Values.chaosEngineering.image.pullPolicy }}
+        ports:
+        - containerPort: 8080
+          name: metrics
+          protocol: TCP
+        - containerPort: 9443
+          name: webhook
+          protocol: TCP
+        env:
+        - name: DD_SERVICE
+          value: "chaos-controller"
+        - name: DD_VERSION
+          value: {{ .Values.chaosEngineering.image.tag | quote }}
+        - name: DD_ENV
+          value: {{ .Values.global.environment }}
+        - name: DD_LOGS_INJECTION
+          value: "true"
+        - name: DD_TRACE_SAMPLE_RATE
+          value: "1"
+        - name: LOG_LEVEL
+          value: {{ .Values.chaosEngineering.logLevel }}
+        - name: METRICS_ADDR
+          value: ":8080"
+        - name: ENABLE_WEBHOOK
+          value: "true"
+        - name: WEBHOOK_PORT
+          value: "9443"
+        - name: LEADER_ELECT
+          value: "true"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: {{ .Values.chaosEngineering.resources.requests.cpu }}
+            memory: {{ .Values.chaosEngineering.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.chaosEngineering.resources.limits.cpu }}
+            memory: {{ .Values.chaosEngineering.resources.limits.memory }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - name: webhook-certs
+          mountPath: /tmp/k8s-webhook-server/serving-certs
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: webhook-certs
+        secret:
+          secretName: chaos-controller-webhook-certs
+          optional: true
+      - name: tmp
+        emptyDir: {}
+      nodeSelector:
+        {{- toYaml .Values.chaosEngineering.nodeSelector | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.chaosEngineering.tolerations | nindent 8 }}
+      affinity:
+        {{- toYaml .Values.chaosEngineering.affinity | nindent 8 }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chaos-controller-metrics
+  namespace: {{ .Values.chaosEngineering.namespace }}
+  labels:
+    app.kubernetes.io/name: chaos-controller
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: metrics
+    protocol: TCP
+    name: metrics
+  selector:
+    app.kubernetes.io/name: chaos-controller
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chaos-controller-webhook
+  namespace: {{ .Values.chaosEngineering.namespace }}
+  labels:
+    app.kubernetes.io/name: chaos-controller
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+spec:
+  type: ClusterIP
+  ports:
+  - port: 443
+    targetPort: webhook
+    protocol: TCP
+    name: webhook
+  selector:
+    app.kubernetes.io/name: chaos-controller
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+
+{{- if .Values.chaosEngineering.networkPolicy.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: chaos-controller
+  namespace: {{ .Values.chaosEngineering.namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: chaos-controller
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: TCP
+      port: 9443
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: {{ .Values.datadog.namespace }}
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 6443
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+{{- end }}
+{{- end }}

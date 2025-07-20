@@ -1,0 +1,948 @@
+{{- if .Values.supplyChainSecurity.guarddog.enabled }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.supplyChainSecurity.namespace }}
+  labels:
+    name: {{ .Values.supplyChainSecurity.namespace }}
+    app.kubernetes.io/name: guarddog-supply-chain
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: guarddog-scanner
+  namespace: {{ .Values.supplyChainSecurity.namespace }}
+  labels:
+    app.kubernetes.io/name: guarddog-scanner
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: guarddog-scanner
+  labels:
+    app.kubernetes.io/name: guarddog-scanner
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+rules:
+# Read access to analyze running workloads
+- apiGroups: [""]
+  resources: ["pods", "configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+# Access to image information
+- apiGroups: [""]
+  resources: ["pods", "nodes"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: guarddog-scanner
+  labels:
+    app.kubernetes.io/name: guarddog-scanner
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: guarddog-scanner
+subjects:
+- kind: ServiceAccount
+  name: guarddog-scanner
+  namespace: {{ .Values.supplyChainSecurity.namespace }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: guarddog-config
+  namespace: {{ .Values.supplyChainSecurity.namespace }}
+  labels:
+    app.kubernetes.io/name: guarddog-config
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+data:
+  guarddog-config.yaml: |
+    # GuardDog Supply Chain Security Configuration for VibeCode Platform
+    scanner:
+      name: "vibecode-supply-chain-scan"
+      description: "Supply chain security scanning for VibeCode AI platform"
+      
+    # Scan configuration
+    scan:
+      # Package ecosystems to scan
+      ecosystems:
+        - npm
+        - pypi
+        - docker
+        - go
+        
+      # Severity thresholds
+      severity:
+        min_threshold: "medium"
+        fail_on: ["critical", "high"]
+        
+      # Scan scope
+      scope:
+        # AI and ML packages of particular interest
+        ai_packages:
+          - langchain
+          - openai
+          - anthropic
+          - huggingface_hub
+          - transformers
+          - torch
+          - tensorflow
+          - numpy
+          - pandas
+          - scikit-learn
+          
+        # Infrastructure packages
+        infrastructure_packages:
+          - kubernetes
+          - docker
+          - helm
+          - prometheus
+          - grafana
+          
+        # Development dependencies
+        dev_packages:
+          - webpack
+          - babel
+          - eslint
+          - jest
+          - typescript
+          
+    # Detection rules
+    detection:
+      # Malicious package indicators
+      malicious_indicators:
+        enabled: true
+        check_typosquatting: true
+        check_suspicious_scripts: true
+        check_network_access: true
+        check_file_access: true
+        
+      # Vulnerability detection
+      vulnerabilities:
+        enabled: true
+        check_known_cves: true
+        check_outdated_packages: true
+        check_abandoned_packages: true
+        
+      # License compliance
+      license_compliance:
+        enabled: true
+        allowed_licenses:
+          - MIT
+          - Apache-2.0
+          - BSD-3-Clause
+          - BSD-2-Clause
+          - ISC
+        forbidden_licenses:
+          - GPL-3.0
+          - AGPL-3.0
+          - SSPL-1.0
+          
+    # Reporting configuration
+    reporting:
+      formats: ["json", "sarif", "html"]
+      output_dir: "/tmp/guarddog-results"
+      include_remediation: true
+      include_dependencies: true
+      
+    # Integration with security tools
+    integrations:
+      datadog:
+        enabled: {{ .Values.datadog.enabled }}
+        send_metrics: true
+        send_events: true
+        service_name: "guarddog-supply-chain"
+        
+      # SBOM generation
+      sbom:
+        enabled: true
+        format: "spdx-json"
+        include_container_images: true
+
+  scan-targets.yaml: |
+    # Scan targets for VibeCode platform components
+    targets:
+      # Frontend packages (package.json)
+      - name: "chat-ui-frontend"
+        type: "npm"
+        source: "/scan-data/package.json"
+        description: "Chat UI frontend dependencies"
+        
+      # Backend Python packages  
+      - name: "semantic-kernel-backend"
+        type: "pypi"
+        source: "/scan-data/requirements.txt"
+        description: "Semantic Kernel AI agent dependencies"
+        
+      # Container images
+      - name: "chat-ui-container"
+        type: "docker"
+        source: "vibecode/chat-ui:latest"
+        description: "Chat UI container image"
+        
+      - name: "mongodb-container"
+        type: "docker" 
+        source: "mongo:7.0.12"
+        description: "MongoDB database container"
+        
+      - name: "semantic-kernel-container"
+        type: "docker"
+        source: "vibecode/semantic-kernel:latest"
+        description: "Semantic Kernel container image"
+        
+      # Infrastructure containers
+      - name: "datadog-agent-container"
+        type: "docker"
+        source: "gcr.io/datadoghq/agent:7"
+        description: "Datadog monitoring agent"
+        
+      - name: "vector-container"
+        type: "docker"
+        source: "timberio/vector:0.34.0-distroless-libc"
+        description: "Vector observability pipeline"
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: guarddog-supply-chain-scan
+  namespace: {{ .Values.supplyChainSecurity.namespace }}
+  labels:
+    app.kubernetes.io/name: guarddog-supply-chain-scan
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+spec:
+  schedule: {{ .Values.supplyChainSecurity.guarddog.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: {{ .Values.supplyChainSecurity.guarddog.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.supplyChainSecurity.guarddog.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: guarddog-scan-job
+            tags.datadoghq.com/service: guarddog-supply-chain
+            tags.datadoghq.com/version: {{ .Values.supplyChainSecurity.guarddog.image.tag }}
+          annotations:
+            ad.datadoghq.com/guarddog-scanner.logs: '[{"source":"guarddog","service":"guarddog-supply-chain"}]'
+        spec:
+          serviceAccountName: guarddog-scanner
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            fsGroup: 1000
+          initContainers:
+          # Collect scan data from running workloads
+          - name: collect-scan-data
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Collecting package manifests from VibeCode workloads..."
+              mkdir -p /scan-data
+              
+              # Extract package.json from chat-ui if available
+              if kubectl get deployment chat-ui -n {{ .Release.Namespace }} >/dev/null 2>&1; then
+                echo "Extracting chat-ui package.json..."
+                POD=$(kubectl get pods -n {{ .Release.Namespace }} -l app=chat-ui -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+                if [ -n "$POD" ]; then
+                  kubectl exec -n {{ .Release.Namespace }} "$POD" -- cat package.json > /scan-data/package.json 2>/dev/null || echo "{}" > /scan-data/package.json
+                else
+                  echo "{}" > /scan-data/package.json
+                fi
+              else
+                echo "{}" > /scan-data/package.json
+              fi
+              
+              # Extract requirements.txt from semantic kernel if available
+              if kubectl get deployment semantic-kernel-agent -n {{ .Release.Namespace }} >/dev/null 2>&1; then
+                echo "Extracting semantic-kernel requirements.txt..."
+                POD=$(kubectl get pods -n {{ .Release.Namespace }} -l app=semantic-kernel-agent -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+                if [ -n "$POD" ]; then
+                  kubectl exec -n {{ .Release.Namespace }} "$POD" -- cat requirements.txt > /scan-data/requirements.txt 2>/dev/null || echo "" > /scan-data/requirements.txt
+                else
+                  echo "" > /scan-data/requirements.txt
+                fi
+              else
+                echo "" > /scan-data/requirements.txt
+              fi
+              
+              # Collect container image information
+              echo "Collecting container image information..."
+              kubectl get pods --all-namespaces -o jsonpath='{range .items[*]}{.spec.containers[*].image}{"\n"}{end}' | sort | uniq > /scan-data/container-images.txt
+              
+              echo "Scan data collection completed"
+            volumeMounts:
+            - name: scan-data
+              mountPath: /scan-data
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                - ALL
+              readOnlyRootFilesystem: true
+          containers:
+          - name: guarddog-scanner
+            image: "{{ .Values.supplyChainSecurity.guarddog.image.repository }}:{{ .Values.supplyChainSecurity.guarddog.image.tag }}"
+            imagePullPolicy: {{ .Values.supplyChainSecurity.guarddog.image.pullPolicy }}
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting GuardDog Supply Chain Security Scan..."
+              
+              export SCAN_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+              export RESULTS_DIR="/tmp/guarddog-results/${SCAN_TIMESTAMP}"
+              mkdir -p "${RESULTS_DIR}"
+              
+              # Install GuardDog if not already available
+              if ! command -v guarddog &> /dev/null; then
+                echo "Installing GuardDog..."
+                pip install guarddog
+              fi
+              
+              # 1. Scan NPM packages (Frontend)
+              echo "Scanning NPM packages..."
+              if [ -s "/scan-data/package.json" ] && [ "$(cat /scan-data/package.json)" != "{}" ]; then
+                guarddog npm scan /scan-data/package.json \
+                  --output-format json \
+                  --output-path "${RESULTS_DIR}/npm-scan-results.json" \
+                  --exclude-dev || echo "NPM scan failed or no issues found"
+              else
+                echo "No package.json found or empty"
+                echo "[]" > "${RESULTS_DIR}/npm-scan-results.json"
+              fi
+              
+              # 2. Scan Python packages (Backend)
+              echo "Scanning Python packages..."
+              if [ -s "/scan-data/requirements.txt" ]; then
+                guarddog pypi scan /scan-data/requirements.txt \
+                  --output-format json \
+                  --output-path "${RESULTS_DIR}/pypi-scan-results.json" || echo "PyPI scan failed or no issues found"
+              else
+                echo "No requirements.txt found or empty"
+                echo "[]" > "${RESULTS_DIR}/pypi-scan-results.json"
+              fi
+              
+              # 3. Scan specific AI/ML packages of concern
+              echo "Scanning critical AI/ML packages..."
+              AI_PACKAGES="langchain openai anthropic huggingface_hub transformers torch tensorflow"
+              for package in $AI_PACKAGES; do
+                echo "Scanning $package..."
+                guarddog pypi verify "$package" \
+                  --output-format json \
+                  --output-path "${RESULTS_DIR}/ai-package-${package}-scan.json" || echo "Package $package scan failed"
+              done
+              
+              # 4. Generate consolidated report
+              echo "Generating consolidated security report..."
+              python3 /scripts/guarddog-analyzer.py \
+                --results-dir "${RESULTS_DIR}" \
+                --config-file /etc/guarddog/guarddog-config.yaml \
+                --output-format json,html
+              
+              # 5. Generate SBOM (Software Bill of Materials)
+              echo "Generating SBOM..."
+              python3 /scripts/sbom-generator.py \
+                --scan-data-dir /scan-data \
+                --results-dir "${RESULTS_DIR}"
+              
+              # 6. Send results to Datadog if enabled
+              {{- if .Values.datadog.enabled }}
+              echo "Sending supply chain security metrics to Datadog..."
+              
+              # Count findings by severity
+              CRITICAL_COUNT=$(find "${RESULTS_DIR}" -name "*.json" -exec jq -r '.[] | select(.severity == "critical") | .severity' {} \; 2>/dev/null | wc -l)
+              HIGH_COUNT=$(find "${RESULTS_DIR}" -name "*.json" -exec jq -r '.[] | select(.severity == "high") | .severity' {} \; 2>/dev/null | wc -l)
+              MEDIUM_COUNT=$(find "${RESULTS_DIR}" -name "*.json" -exec jq -r '.[] | select(.severity == "medium") | .severity' {} \; 2>/dev/null | wc -l)
+              
+              # Send metrics to Datadog
+              curl -X POST "https://api.{{ .Values.datadog.site }}/api/v1/series" \
+                -H "Content-Type: application/json" \
+                -H "DD-API-KEY: ${DD_API_KEY}" \
+                -d '{
+                  "series": [
+                    {
+                      "metric": "guarddog.supply_chain.vulnerabilities.critical",
+                      "points": [['$(date +%s)', '${CRITICAL_COUNT}']],
+                      "tags": ["service:vibecode-platform", "scanner:guarddog"]
+                    },
+                    {
+                      "metric": "guarddog.supply_chain.vulnerabilities.high", 
+                      "points": [['$(date +%s)', '${HIGH_COUNT}']],
+                      "tags": ["service:vibecode-platform", "scanner:guarddog"]
+                    },
+                    {
+                      "metric": "guarddog.supply_chain.vulnerabilities.medium",
+                      "points": [['$(date +%s)', '${MEDIUM_COUNT}']],
+                      "tags": ["service:vibecode-platform", "scanner:guarddog"]
+                    }
+                  ]
+                }'
+              
+              # Send event
+              curl -X POST "https://api.{{ .Values.datadog.site }}/api/v1/events" \
+                -H "Content-Type: application/json" \
+                -H "DD-API-KEY: ${DD_API_KEY}" \
+                -d '{
+                  "title": "GuardDog Supply Chain Scan Completed",
+                  "text": "Supply chain security scan completed. Critical: '${CRITICAL_COUNT}', High: '${HIGH_COUNT}', Medium: '${MEDIUM_COUNT}'",
+                  "date_happened": '$(date +%s)',
+                  "priority": "normal",
+                  "tags": ["guarddog", "supply-chain-security", "vibecode-platform"],
+                  "alert_type": "'$([ "${CRITICAL_COUNT}" -gt 0 ] && echo "error" || echo "info")'"
+                }'
+              {{- end }}
+              
+              echo "Supply chain security scan completed. Results saved to ${RESULTS_DIR}"
+              
+              # Fail job if critical vulnerabilities found
+              if [ -n "${CRITICAL_COUNT}" ] && [ "${CRITICAL_COUNT}" -gt 0 ]; then
+                echo "CRITICAL: ${CRITICAL_COUNT} critical vulnerabilities found!"
+                {{- if .Values.supplyChainSecurity.guarddog.failOnCritical }}
+                exit 1
+                {{- else }}
+                echo "Warning: Critical vulnerabilities found but failOnCritical is disabled"
+                {{- end }}
+              fi
+              
+            env:
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: datadog-secret
+                  key: api-key
+                  optional: true
+            - name: PYTHONPATH
+              value: "/scripts"
+            resources:
+              requests:
+                cpu: {{ .Values.supplyChainSecurity.guarddog.resources.requests.cpu }}
+                memory: {{ .Values.supplyChainSecurity.guarddog.resources.requests.memory }}
+              limits:
+                cpu: {{ .Values.supplyChainSecurity.guarddog.resources.limits.cpu }}
+                memory: {{ .Values.supplyChainSecurity.guarddog.resources.limits.memory }}
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                - ALL
+              readOnlyRootFilesystem: true
+            volumeMounts:
+            - name: config
+              mountPath: /etc/guarddog
+              readOnly: true
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: scan-data
+              mountPath: /scan-data
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            - name: results
+              mountPath: /tmp/guarddog-results
+          volumes:
+          - name: config
+            configMap:
+              name: guarddog-config
+          - name: scripts
+            configMap:
+              name: guarddog-scripts
+              defaultMode: 0755
+          - name: scan-data
+            emptyDir: {}
+          - name: tmp
+            emptyDir: {}
+          - name: results
+            {{- if .Values.supplyChainSecurity.guarddog.persistence.enabled }}
+            persistentVolumeClaim:
+              claimName: guarddog-results
+            {{- else }}
+            emptyDir: {}
+            {{- end }}
+          {{- with .Values.supplyChainSecurity.guarddog.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.supplyChainSecurity.guarddog.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: guarddog-scripts
+  namespace: {{ .Values.supplyChainSecurity.namespace }}
+  labels:
+    app.kubernetes.io/name: guarddog-scripts
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+data:
+  guarddog-analyzer.py: |
+    #!/usr/bin/env python3
+    """
+    GuardDog Results Analyzer and Report Generator
+    """
+    
+    import json
+    import os
+    import sys
+    import argparse
+    import datetime
+    from typing import Dict, List, Any
+    
+    class GuardDogAnalyzer:
+        def __init__(self, results_dir: str, config: Dict[str, Any]):
+            self.results_dir = results_dir
+            self.config = config
+            self.consolidated_findings = []
+            
+        def consolidate_results(self):
+            """Consolidate all GuardDog scan results"""
+            result_files = [f for f in os.listdir(self.results_dir) if f.endswith('-scan-results.json') or f.endswith('-scan.json')]
+            
+            for result_file in result_files:
+                try:
+                    with open(os.path.join(self.results_dir, result_file), 'r') as f:
+                        results = json.load(f)
+                        
+                    # Normalize results format
+                    if isinstance(results, list):
+                        for result in results:
+                            self._normalize_finding(result, result_file)
+                    elif isinstance(results, dict):
+                        self._normalize_finding(results, result_file)
+                        
+                except Exception as e:
+                    print(f"Error processing {result_file}: {e}")
+                    
+        def _normalize_finding(self, finding: Dict, source_file: str):
+            """Normalize finding format"""
+            normalized = {
+                'source': source_file,
+                'package': finding.get('package', finding.get('name', 'unknown')),
+                'version': finding.get('version', 'unknown'),
+                'severity': finding.get('severity', 'medium').lower(),
+                'vulnerability_type': finding.get('type', finding.get('vulnerability_type', 'unknown')),
+                'description': finding.get('description', finding.get('message', '')),
+                'cve_id': finding.get('cve', finding.get('cve_id', '')),
+                'remediation': finding.get('remediation', finding.get('fix', '')),
+                'ecosystem': self._detect_ecosystem(source_file)
+            }
+            
+            self.consolidated_findings.append(normalized)
+            
+        def _detect_ecosystem(self, source_file: str) -> str:
+            """Detect package ecosystem from source file"""
+            if 'npm' in source_file or 'package.json' in source_file:
+                return 'npm'
+            elif 'pypi' in source_file or 'requirements.txt' in source_file:
+                return 'pypi'
+            elif 'docker' in source_file or 'container' in source_file:
+                return 'docker'
+            else:
+                return 'unknown'
+                
+        def generate_summary_report(self) -> Dict[str, Any]:
+            """Generate summary report"""
+            ecosystems = {}
+            severity_breakdown = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0}
+            
+            for finding in self.consolidated_findings:
+                ecosystem = finding['ecosystem']
+                severity = finding['severity']
+                
+                if ecosystem not in ecosystems:
+                    ecosystems[ecosystem] = {'total': 0, 'packages': set()}
+                    
+                ecosystems[ecosystem]['total'] += 1
+                ecosystems[ecosystem]['packages'].add(finding['package'])
+                
+                if severity in severity_breakdown:
+                    severity_breakdown[severity] += 1
+                    
+            # Convert sets to lists for JSON serialization
+            for ecosystem in ecosystems:
+                ecosystems[ecosystem]['packages'] = list(ecosystems[ecosystem]['packages'])
+                ecosystems[ecosystem]['unique_packages'] = len(ecosystems[ecosystem]['packages'])
+                
+            return {
+                'scan_metadata': {
+                    'timestamp': datetime.datetime.now().isoformat(),
+                    'total_findings': len(self.consolidated_findings),
+                    'unique_packages_affected': len(set(f['package'] for f in self.consolidated_findings))
+                },
+                'severity_breakdown': severity_breakdown,
+                'ecosystem_breakdown': ecosystems,
+                'top_vulnerable_packages': self._get_top_vulnerable_packages(),
+                'critical_issues': [f for f in self.consolidated_findings if f['severity'] == 'critical'],
+                'recommendations': self._generate_recommendations()
+            }
+            
+        def _get_top_vulnerable_packages(self) -> List[Dict]:
+            """Get packages with most vulnerabilities"""
+            package_counts = {}
+            for finding in self.consolidated_findings:
+                pkg = finding['package']
+                if pkg not in package_counts:
+                    package_counts[pkg] = {'count': 0, 'ecosystem': finding['ecosystem'], 'max_severity': 'low'}
+                package_counts[pkg]['count'] += 1
+                
+                # Track highest severity
+                current_severity = package_counts[pkg]['max_severity']
+                new_severity = finding['severity']
+                severity_order = ['low', 'medium', 'high', 'critical']
+                if severity_order.index(new_severity) > severity_order.index(current_severity):
+                    package_counts[pkg]['max_severity'] = new_severity
+                    
+            # Sort by count and severity
+            sorted_packages = sorted(
+                [(pkg, data) for pkg, data in package_counts.items()],
+                key=lambda x: (x[1]['count'], ['low', 'medium', 'high', 'critical'].index(x[1]['max_severity'])),
+                reverse=True
+            )
+            
+            return [
+                {
+                    'package': pkg,
+                    'vulnerability_count': data['count'],
+                    'ecosystem': data['ecosystem'],
+                    'max_severity': data['max_severity']
+                }
+                for pkg, data in sorted_packages[:10]
+            ]
+            
+        def _generate_recommendations(self) -> List[str]:
+            """Generate security recommendations"""
+            recommendations = []
+            
+            critical_count = len([f for f in self.consolidated_findings if f['severity'] == 'critical'])
+            high_count = len([f for f in self.consolidated_findings if f['severity'] == 'high'])
+            
+            if critical_count > 0:
+                recommendations.append(f"URGENT: Address {critical_count} critical vulnerabilities immediately")
+                
+            if high_count > 0:
+                recommendations.append(f"HIGH PRIORITY: Address {high_count} high-severity vulnerabilities")
+                
+            # AI-specific recommendations
+            ai_packages = [f for f in self.consolidated_findings if f['package'] in ['langchain', 'openai', 'anthropic', 'huggingface_hub']]
+            if ai_packages:
+                recommendations.append("Review AI/ML package vulnerabilities carefully as they handle sensitive data")
+                
+            recommendations.extend([
+                "Enable automated dependency scanning in CI/CD pipelines",
+                "Implement Software Bill of Materials (SBOM) tracking",
+                "Regular security audits of third-party dependencies",
+                "Use package pinning and lock files for reproducible builds"
+            ])
+            
+            return recommendations
+            
+        def generate_reports(self, output_formats: List[str]):
+            """Generate security reports in specified formats"""
+            summary = self.generate_summary_report()
+            
+            # JSON report
+            if 'json' in output_formats:
+                report_data = {
+                    'summary': summary,
+                    'detailed_findings': self.consolidated_findings
+                }
+                
+                with open(os.path.join(self.results_dir, 'consolidated-security-report.json'), 'w') as f:
+                    json.dump(report_data, f, indent=2)
+                    
+            # HTML report
+            if 'html' in output_formats:
+                self._generate_html_report(summary)
+                
+            print(f"Generated supply chain security reports with {len(self.consolidated_findings)} findings")
+            
+        def _generate_html_report(self, summary: Dict):
+            """Generate HTML report"""
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>VibeCode Supply Chain Security Report</title>
+                <style>
+                    body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                    .header {{ background: #f8f9fa; padding: 20px; border-radius: 5px; margin-bottom: 20px; }}
+                    .metric {{ display: inline-block; margin: 10px; padding: 15px; background: #e9ecef; border-radius: 5px; }}
+                    .finding {{ margin: 10px 0; padding: 15px; border-left: 4px solid #007bff; background: #f8f9fa; }}
+                    .severity-critical {{ border-left-color: #8b0000; background: #ffe6e6; }}
+                    .severity-high {{ border-left-color: #dc3545; background: #fff0f0; }}
+                    .severity-medium {{ border-left-color: #ffc107; background: #fffbf0; }}
+                    .severity-low {{ border-left-color: #28a745; background: #f0fff0; }}
+                    .ecosystem {{ background: #d1ecf1; padding: 5px 10px; border-radius: 3px; font-size: 0.8em; }}
+                    table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
+                    th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                    th {{ background-color: #f2f2f2; }}
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>VibeCode Supply Chain Security Report</h1>
+                    <p>Generated: {summary['scan_metadata']['timestamp']}</p>
+                    <div class="metric">
+                        <strong>Total Findings:</strong> {summary['scan_metadata']['total_findings']}
+                    </div>
+                    <div class="metric">
+                        <strong>Packages Affected:</strong> {summary['scan_metadata']['unique_packages_affected']}
+                    </div>
+                    <div class="metric">
+                        <strong>Critical:</strong> {summary['severity_breakdown']['critical']}
+                    </div>
+                    <div class="metric">
+                        <strong>High:</strong> {summary['severity_breakdown']['high']}
+                    </div>
+                    <div class="metric">
+                        <strong>Medium:</strong> {summary['severity_breakdown']['medium']}
+                    </div>
+                    <div class="metric">
+                        <strong>Low:</strong> {summary['severity_breakdown']['low']}
+                    </div>
+                </div>
+                
+                <h2>Top Vulnerable Packages</h2>
+                <table>
+                    <tr>
+                        <th>Package</th>
+                        <th>Ecosystem</th>
+                        <th>Vulnerabilities</th>
+                        <th>Max Severity</th>
+                    </tr>
+            """
+            
+            for pkg in summary['top_vulnerable_packages']:
+                html_content += f"""
+                    <tr>
+                        <td>{pkg['package']}</td>
+                        <td><span class="ecosystem">{pkg['ecosystem']}</span></td>
+                        <td>{pkg['vulnerability_count']}</td>
+                        <td><span class="severity-{pkg['max_severity']}">{pkg['max_severity']}</span></td>
+                    </tr>
+                """
+                
+            html_content += "</table>"
+            
+            # Critical issues section
+            if summary['critical_issues']:
+                html_content += "<h2>Critical Issues (Immediate Action Required)</h2>"
+                for issue in summary['critical_issues']:
+                    html_content += f"""
+                    <div class="finding severity-critical">
+                        <h3>{issue['package']} v{issue['version']}</h3>
+                        <p><strong>Ecosystem:</strong> {issue['ecosystem']}</p>
+                        <p><strong>Type:</strong> {issue['vulnerability_type']}</p>
+                        <p><strong>Description:</strong> {issue['description']}</p>
+                        {f"<p><strong>CVE:</strong> {issue['cve_id']}</p>" if issue['cve_id'] else ""}
+                        {f"<p><strong>Remediation:</strong> {issue['remediation']}</p>" if issue['remediation'] else ""}
+                    </div>
+                    """
+                    
+            # Recommendations
+            html_content += "<h2>Security Recommendations</h2><ul>"
+            for rec in summary['recommendations']:
+                html_content += f"<li>{rec}</li>"
+            html_content += "</ul></body></html>"
+            
+            with open(os.path.join(self.results_dir, 'supply-chain-security-report.html'), 'w') as f:
+                f.write(html_content)
+                
+        def run_analysis(self, output_formats: List[str]):
+            """Run complete analysis"""
+            print("Consolidating GuardDog scan results...")
+            self.consolidate_results()
+            self.generate_reports(output_formats)
+            
+    def main():
+        parser = argparse.ArgumentParser(description='GuardDog Results Analyzer')
+        parser.add_argument('--results-dir', required=True, help='Directory containing scan results')
+        parser.add_argument('--output-format', default='json,html', help='Output formats')
+        parser.add_argument('--config-file', help='Configuration file path')
+        
+        args = parser.parse_args()
+        
+        config = {}
+        if args.config_file and os.path.exists(args.config_file):
+            import yaml
+            with open(args.config_file, 'r') as f:
+                config = yaml.safe_load(f)
+                
+        analyzer = GuardDogAnalyzer(args.results_dir, config)
+        analyzer.run_analysis(args.output_format.split(','))
+        
+    if __name__ == '__main__':
+        main()
+
+  sbom-generator.py: |
+    #!/usr/bin/env python3
+    """
+    Software Bill of Materials (SBOM) Generator
+    """
+    
+    import json
+    import os
+    import datetime
+    from typing import Dict, List, Any
+    
+    class SBOMGenerator:
+        def __init__(self, scan_data_dir: str, results_dir: str):
+            self.scan_data_dir = scan_data_dir
+            self.results_dir = results_dir
+            
+        def generate_sbom(self):
+            """Generate SPDX-format SBOM"""
+            sbom = {
+                "spdxVersion": "SPDX-2.3",
+                "dataLicense": "CC0-1.0",
+                "SPDXID": "SPDXRef-DOCUMENT",
+                "name": "VibeCode-Platform-SBOM",
+                "documentNamespace": f"https://vibecode.dev/sbom/{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}",
+                "creationInfo": {
+                    "created": datetime.datetime.now().isoformat() + "Z",
+                    "creators": ["Tool: GuardDog-SBOM-Generator"],
+                    "licenseListVersion": "3.21"
+                },
+                "packages": []
+            }
+            
+            # Process package.json
+            if os.path.exists(os.path.join(self.scan_data_dir, 'package.json')):
+                self._add_npm_packages(sbom)
+                
+            # Process requirements.txt  
+            if os.path.exists(os.path.join(self.scan_data_dir, 'requirements.txt')):
+                self._add_python_packages(sbom)
+                
+            # Process container images
+            if os.path.exists(os.path.join(self.scan_data_dir, 'container-images.txt')):
+                self._add_container_images(sbom)
+                
+            # Save SBOM
+            with open(os.path.join(self.results_dir, 'vibecode-platform-sbom.spdx.json'), 'w') as f:
+                json.dump(sbom, f, indent=2)
+                
+            print(f"Generated SBOM with {len(sbom['packages'])} packages")
+            
+        def _add_npm_packages(self, sbom: Dict):
+            """Add NPM packages to SBOM"""
+            try:
+                with open(os.path.join(self.scan_data_dir, 'package.json'), 'r') as f:
+                    package_json = json.load(f)
+                    
+                dependencies = package_json.get('dependencies', {})
+                dev_dependencies = package_json.get('devDependencies', {})
+                
+                for pkg_name, version in {**dependencies, **dev_dependencies}.items():
+                    sbom['packages'].append({
+                        "SPDXID": f"SPDXRef-Package-npm-{pkg_name}",
+                        "name": pkg_name,
+                        "versionInfo": version,
+                        "downloadLocation": f"https://registry.npmjs.org/{pkg_name}/-/{pkg_name}-{version}.tgz",
+                        "filesAnalyzed": False,
+                        "homepage": f"https://www.npmjs.com/package/{pkg_name}",
+                        "supplier": "Organization: NPM Registry"
+                    })
+                    
+            except Exception as e:
+                print(f"Error processing package.json: {e}")
+                
+        def _add_python_packages(self, sbom: Dict):
+            """Add Python packages to SBOM"""
+            try:
+                with open(os.path.join(self.scan_data_dir, 'requirements.txt'), 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#'):
+                            # Parse package==version format
+                            if '==' in line:
+                                pkg_name, version = line.split('==', 1)
+                            else:
+                                pkg_name, version = line, "unknown"
+                                
+                            sbom['packages'].append({
+                                "SPDXID": f"SPDXRef-Package-pypi-{pkg_name}",
+                                "name": pkg_name,
+                                "versionInfo": version,
+                                "downloadLocation": f"https://pypi.org/project/{pkg_name}/{version}/",
+                                "filesAnalyzed": False,
+                                "homepage": f"https://pypi.org/project/{pkg_name}/",
+                                "supplier": "Organization: PyPI"
+                            })
+                            
+            except Exception as e:
+                print(f"Error processing requirements.txt: {e}")
+                
+        def _add_container_images(self, sbom: Dict):
+            """Add container images to SBOM"""
+            try:
+                with open(os.path.join(self.scan_data_dir, 'container-images.txt'), 'r') as f:
+                    for line in f:
+                        image = line.strip()
+                        if image:
+                            # Parse image:tag format
+                            if ':' in image:
+                                image_name, tag = image.rsplit(':', 1)
+                            else:
+                                image_name, tag = image, "latest"
+                                
+                            sbom['packages'].append({
+                                "SPDXID": f"SPDXRef-Package-container-{image_name.replace('/', '-')}",
+                                "name": image_name,
+                                "versionInfo": tag,
+                                "downloadLocation": f"docker://{image}",
+                                "filesAnalyzed": False,
+                                "supplier": "Organization: Container Registry"
+                            })
+                            
+            except Exception as e:
+                print(f"Error processing container images: {e}")
+                
+    if __name__ == '__main__':
+        import argparse
+        parser = argparse.ArgumentParser(description='SBOM Generator')
+        parser.add_argument('--scan-data-dir', required=True)
+        parser.add_argument('--results-dir', required=True)
+        args = parser.parse_args()
+        
+        generator = SBOMGenerator(args.scan_data_dir, args.results_dir)
+        generator.generate_sbom()
+
+{{- if .Values.supplyChainSecurity.guarddog.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: guarddog-results
+  namespace: {{ .Values.supplyChainSecurity.namespace }}
+  labels:
+    app.kubernetes.io/name: guarddog-results
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.supplyChainSecurity.guarddog.persistence.size }}
+  {{- if .Values.supplyChainSecurity.guarddog.persistence.storageClass }}
+  storageClassName: {{ .Values.supplyChainSecurity.guarddog.persistence.storageClass }}
+  {{- end }}
+{{- end }}
+{{- end }}

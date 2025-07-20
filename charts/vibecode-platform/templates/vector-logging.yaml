@@ -1,0 +1,438 @@
+{{- if .Values.vector.enabled }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.vector.namespace }}
+  labels:
+    name: {{ .Values.vector.namespace }}
+    app.kubernetes.io/name: vector
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vector-config
+  namespace: {{ .Values.vector.namespace }}
+  labels:
+    app.kubernetes.io/name: vector
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+data:
+  vector.toml: |
+    # Vector configuration for VibeCode platform observability pipeline
+    
+    [api]
+    enabled = true
+    address = "0.0.0.0:8686"
+    playground = {{ .Values.vector.api.playground }}
+    
+    # Sources - Collect logs from multiple sources
+    [sources.kubernetes_logs]
+    type = "kubernetes_logs"
+    
+    [sources.host_metrics]
+    type = "host_metrics"
+    filesystem.devices.excludes = ["binfmt_misc"]
+    filesystem.filesystems.excludes = ["binfmt_misc"]
+    filesystem.mountpoints.excludes = ["*/proc/sys/fs/binfmt_misc"]
+    
+    [sources.internal_metrics]
+    type = "internal_metrics"
+    
+    # Sources for AI workload specific logs
+    [sources.chat_ui_logs]
+    type = "file"
+    include = ["/var/log/pods/{{ .Release.Namespace }}_chat-ui-*/*/*.log"]
+    read_from = "beginning"
+    
+    [sources.semantic_kernel_logs]
+    type = "file"
+    include = ["/var/log/pods/{{ .Release.Namespace }}_semantic-kernel-*/*/*.log"]
+    read_from = "beginning"
+    
+    [sources.mongodb_logs]
+    type = "file"
+    include = ["/var/log/pods/{{ .Release.Namespace }}_mongodb-*/*/*.log"]
+    read_from = "beginning"
+    
+    # Transforms - Process and enrich logs
+    [transforms.parse_json_logs]
+    type = "remap"
+    inputs = ["kubernetes_logs"]
+    source = '''
+    # Parse JSON logs and add structured fields
+    if exists(.message) {
+      parsed = parse_json(.message) ?? {}
+      . = merge(., parsed)
+    }
+    
+    # Add platform-specific tags
+    .platform = "vibecode"
+    .cluster = "{{ .Values.global.cluster.name }}"
+    .environment = "{{ .Values.global.environment }}"
+    
+    # Detect AI workload types
+    if match(.kubernetes.pod_name, r"chat-ui") {
+      .workload_type = "ai-chat"
+      .service = "chat-ui"
+    } else if match(.kubernetes.pod_name, r"semantic-kernel") {
+      .workload_type = "ai-agent"
+      .service = "semantic-kernel"
+    } else if match(.kubernetes.pod_name, r"mongodb") {
+      .workload_type = "database"
+      .service = "mongodb"
+    } else if match(.kubernetes.pod_name, r"datadog") {
+      .workload_type = "monitoring"
+      .service = "datadog-agent"
+    }
+    
+    # Security event detection
+    if match(string!(.message), r"(?i)(error|exception|failed|denied|unauthorized|forbidden)") {
+      .security_event = true
+      .severity = "warning"
+    }
+    
+    # Performance metrics extraction for AI workloads
+    if exists(.response_time) {
+      .performance.response_time_ms = to_float!(.response_time)
+    }
+    if exists(.token_count) {
+      .ai_metrics.token_count = to_int!(.token_count)
+    }
+    '''
+    
+    [transforms.route_by_service]
+    type = "route"
+    inputs = ["parse_json_logs"]
+    
+    [transforms.route_by_service.route.ai_workloads]
+    condition = '.workload_type == "ai-chat" || .workload_type == "ai-agent"'
+    
+    [transforms.route_by_service.route.infrastructure]
+    condition = '.workload_type == "database" || .workload_type == "monitoring"'
+    
+    [transforms.route_by_service.route.security_events]
+    condition = 'exists(.security_event)'
+    
+    # Metrics transforms
+    [transforms.ai_performance_metrics]
+    type = "log_to_metric"
+    inputs = ["route_by_service.ai_workloads"]
+    
+    [[transforms.ai_performance_metrics.metrics]]
+    type = "counter"
+    field = "ai_requests_total"
+    name = "ai_requests_total"
+    namespace = "vibecode"
+    tags.service = "{{ "{{" }} service {{ "}}" }}"
+    tags.workload_type = "{{ "{{" }} workload_type {{ "}}" }}"
+    
+    [[transforms.ai_performance_metrics.metrics]]
+    type = "histogram"
+    field = "performance.response_time_ms"
+    name = "ai_response_time_seconds"
+    namespace = "vibecode"
+    tags.service = "{{ "{{" }} service {{ "}}" }}"
+    
+    # Sinks - Send data to multiple destinations
+    {{- if .Values.vector.sinks.datadog.enabled }}
+    [sinks.datadog_logs]
+    type = "datadog_logs"
+    inputs = ["parse_json_logs"]
+    default_api_key = "${DD_API_KEY}"
+    site = "{{ .Values.datadog.site }}"
+    compression = "gzip"
+    
+    [sinks.datadog_logs.encoding]
+    codec = "json"
+    
+    [sinks.datadog_metrics]
+    type = "datadog_metrics"
+    inputs = ["ai_performance_metrics", "host_metrics", "internal_metrics"]
+    default_api_key = "${DD_API_KEY}"
+    site = "{{ .Values.datadog.site }}"
+    {{- end }}
+    
+    {{- if .Values.vector.sinks.console.enabled }}
+    [sinks.console_debug]
+    type = "console"
+    inputs = ["route_by_service.security_events"]
+    target = "stdout"
+    
+    [sinks.console_debug.encoding]
+    codec = "json"
+    {{- end }}
+    
+    {{- if .Values.vector.sinks.prometheus.enabled }}
+    [sinks.prometheus_metrics]
+    type = "prometheus_exporter"
+    inputs = ["ai_performance_metrics", "internal_metrics"]
+    address = "0.0.0.0:9598"
+    default_namespace = "vector"
+    {{- end }}
+    
+    {{- if .Values.vector.sinks.elasticsearch.enabled }}
+    [sinks.elasticsearch]
+    type = "elasticsearch"
+    inputs = ["parse_json_logs"]
+    endpoints = {{ .Values.vector.sinks.elasticsearch.endpoints | toJson }}
+    index = "vibecode-logs-%Y.%m.%d"
+    
+    [sinks.elasticsearch.encoding]
+    codec = "json"
+    {{- end }}
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: vector
+  namespace: {{ .Values.vector.namespace }}
+  labels:
+    app.kubernetes.io/name: vector
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vector
+      app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vector
+        app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+        tags.datadoghq.com/service: vector
+        tags.datadoghq.com/version: {{ .Values.vector.image.tag }}
+      annotations:
+        ad.datadoghq.com/vector.logs: '[{"source":"vector","service":"vector"}]'
+        ad.datadoghq.com/vector.check_names: '["openmetrics"]'
+        ad.datadoghq.com/vector.init_configs: '[{}]'
+        ad.datadoghq.com/vector.instances: '[{"openmetrics_endpoint":"http://%%host%%:8686/metrics","namespace":"vector","metrics":[".*"]}]'
+    spec:
+      serviceAccountName: vector
+      securityContext:
+        fsGroup: 0
+      containers:
+      - name: vector
+        image: "{{ .Values.vector.image.repository }}:{{ .Values.vector.image.tag }}"
+        imagePullPolicy: {{ .Values.vector.image.pullPolicy }}
+        ports:
+        - containerPort: 8686
+          name: api
+          protocol: TCP
+        - containerPort: 9598
+          name: prometheus
+          protocol: TCP
+        env:
+        - name: DD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secret
+              key: api-key
+        - name: DD_SERVICE
+          value: "vector"
+        - name: DD_VERSION
+          value: {{ .Values.vector.image.tag | quote }}
+        - name: DD_ENV
+          value: {{ .Values.global.environment }}
+        - name: VECTOR_CONFIG
+          value: "/etc/vector/vector.toml"
+        - name: VECTOR_REQUIRE_HEALTHY
+          value: "true"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: api
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: api
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: {{ .Values.vector.resources.requests.cpu }}
+            memory: {{ .Values.vector.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.vector.resources.limits.cpu }}
+            memory: {{ .Values.vector.resources.limits.memory }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+        volumeMounts:
+        - name: config
+          mountPath: /etc/vector
+          readOnly: true
+        - name: var-log
+          mountPath: /var/log
+          readOnly: true
+        - name: var-lib-docker-containers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        - name: var-lib-docker-overlay2
+          mountPath: /var/lib/docker/overlay2
+          readOnly: true
+        - name: proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: sys
+          mountPath: /host/sys
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: config
+        configMap:
+          name: vector-config
+      - name: var-log
+        hostPath:
+          path: /var/log
+      - name: var-lib-docker-containers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: var-lib-docker-overlay2
+        hostPath:
+          path: /var/lib/docker/overlay2
+      - name: proc
+        hostPath:
+          path: /proc
+      - name: sys
+        hostPath:
+          path: /sys
+      - name: tmp
+        emptyDir: {}
+      hostNetwork: true
+      hostPID: true
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        effect: NoSchedule
+      {{- with .Values.vector.tolerations }}
+        {{- toYaml . | nindent 6 }}
+      {{- end }}
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vector
+  namespace: {{ .Values.vector.namespace }}
+  labels:
+    app.kubernetes.io/name: vector
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vector
+  labels:
+    app.kubernetes.io/name: vector
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+rules:
+- apiGroups: [""]
+  resources: ["pods", "nodes", "namespaces"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vector
+  labels:
+    app.kubernetes.io/name: vector
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vector
+subjects:
+- kind: ServiceAccount
+  name: vector
+  namespace: {{ .Values.vector.namespace }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vector-api
+  namespace: {{ .Values.vector.namespace }}
+  labels:
+    app.kubernetes.io/name: vector
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8686
+    targetPort: api
+    protocol: TCP
+    name: api
+  selector:
+    app.kubernetes.io/name: vector
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vector-prometheus
+  namespace: {{ .Values.vector.namespace }}
+  labels:
+    app.kubernetes.io/name: vector
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9598"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9598
+    targetPort: prometheus
+    protocol: TCP
+    name: prometheus
+  selector:
+    app.kubernetes.io/name: vector
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+
+{{- if .Values.vector.networkPolicy.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: vector
+  namespace: {{ .Values.vector.namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: vector
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: {{ .Values.datadog.namespace }}
+    ports:
+    - protocol: TCP
+      port: 8686
+    - protocol: TCP
+      port: 9598
+  egress:
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: UDP
+      port: 53
+{{- end }}
+{{- end }}
