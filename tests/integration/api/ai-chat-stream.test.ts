@@ -27,7 +27,7 @@ describe('Integration: /api/ai/chat/stream', () => {
 
     server = createServer(handler);
     server.listen(done);
-    request = supertest(server);
+    request = supertest(server) as unknown as supertest.SuperTest<supertest.Test>;
   });
 
   afterAll((done) => {

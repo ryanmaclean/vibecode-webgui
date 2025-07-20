@@ -31,11 +31,11 @@ Deploy VibeCode to **Azure** with enterprise features in one click:
 - 🎯 **Infrastructure-First**: KIND (Kubernetes in Docker) orchestration eliminates 60-80% custom development.
 - 🤖 **AI Project Generation**: Complete Lovable/Replit/Bolt.diy-inspired workflow. The system uses **Claude-3.5-Sonnet** via OpenRouter to turn natural language prompts into a complete project structure, delivered as a strictly-validated JSON object.
 - 🌐 **Production-Ready**: NGINX Ingress, cert-manager, Helm charts, persistent storage.
-- 📊 **Real-Time Monitoring & Test Visibility**: Datadog integration with live metrics, logs, alerts, and Test Optimization for CI/CD pipelines.
-- 🖥️ **React Management Dashboard**: Complete cluster administration interface with real-time Datadog metrics.
+- 📊 **Multi-Platform Observability**: Datadog (primary) + Prometheus hybrid stack with OpenTelemetry Collector support for vendor-neutral telemetry.
+- 🖥️ **React Management Dashboard**: Complete cluster administration interface with real-time metrics and visualization.
 - 🔄 **Per-User Workspaces**: Isolated environments with dedicated persistent volumes.
-- ⚡ **AI-Powered Auto-Scaling**: Datadog WPA + DatadogPodAutoscaler with intelligent resource optimization.
-- 🛡️ **Security**: Integrated security scanning with Datadog SAST (Static Application Security Testing) and SCA (Software Composition Analysis). Scans are run automatically on every push to the `main` branch.
+- ⚡ **AI-Powered Auto-Scaling**: Kubernetes-native scaling with Datadog WPA + intelligent resource optimization.
+- 🛡️ **Security**: Integrated security scanning with Datadog SAST/SCA + Kubehound attack path analysis. Scans run automatically on every push to `main` branch.
 
     **Note:** To run the security scans, you will need to add your Datadog API and App keys as secrets to your GitHub repository. The required secrets are `DD_API_KEY` and `DD_APP_KEY`.
 - 🎨 **Modern UI/UX**: React + TypeScript + Tailwind CSS dashboard with VS Code integration
@@ -71,6 +71,26 @@ VibeCode includes comprehensive database monitoring with Datadog DBM (Database M
    ```
 
 [View complete documentation](./docs/database-monitoring.md) for detailed configuration and usage.
+
+## 📊 **Observability & Monitoring Options**
+
+VibeCode supports multiple observability platforms to accommodate different licensing and infrastructure requirements:
+
+### **Primary (Default): Datadog + Prometheus + Vector Hybrid**
+- **Datadog Agent + Cluster Agent**: Full-featured SaaS platform (commercial license)
+- **Prometheus**: Open source metrics collection (Apache 2.0 license)  
+- **Vector**: High-performance log/metrics router (MPL-2.0 license, by Datadog)
+- **Combined Benefits**: Enterprise features + vendor independence + high-performance data pipeline
+
+### **Alternative Options (Permissive Licenses)**
+- **OpenTelemetry Collector**: Vendor-neutral telemetry (Apache 2.0 license)
+- **Grafana**: Visualization layer (AGPL v3 license)
+- **Full Open Source Stack**: Prometheus + OpenTelemetry + Vector + Grafana
+
+### **Security Analysis**
+- **Kubehound**: Kubernetes attack path analysis (by Datadog, open source)
+
+**Deployment**: Run `./scripts/deploy-monitoring.sh -d <your-datadog-key>` to deploy the hybrid stack.
 
 ## 🤖 **Enterprise AI Infrastructure**
 
