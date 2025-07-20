@@ -197,16 +197,22 @@ export default function MonitoringDashboard() {
             </div>
 
             <div className="flex items-center space-x-4">
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
-                className="px-3 py-1 border border-gray-300 rounded-md text-sm"
-              >
-                <option value="1h">Last Hour</option>
-                <option value="24h">Last 24 Hours</option>
-                <option value="7d">Last 7 Days</option>
-                <option value="30d">Last 30 Days</option>
-              </select>
+              <div>
+                <label htmlFor="timeRangeSelect" className="sr-only">Select Time Range</label>
+                <select
+                  id="timeRangeSelect"
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value)}
+                  className="px-3 py-1 border border-gray-300 rounded-md text-sm"
+                  title="Select time range for metrics"
+                  aria-label="Select time range for metrics"
+                >
+                  <option value="1h">Last Hour</option>
+                  <option value="24h">Last 24 Hours</option>
+                  <option value="7d">Last 7 Days</option>
+                  <option value="30d">Last 30 Days</option>
+                </select>
+              </div>
 
               <button
                 onClick={() => setIsLiveMode(!isLiveMode)}
