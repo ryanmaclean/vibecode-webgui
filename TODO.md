@@ -32,6 +32,48 @@ nvironment, begin performance testing to identify bottlenecks.
 
 ---
 
+## 🚀 Next Sprint: Platform Hardening & Automation
+
+**Objective**: With core features stable, this sprint focuses on improving developer velocity, system reliability, and security posture.
+
+### **1. CI/CD & Automation**
+**Status**: 📝 Planning
+**Priority**: P1 - Reduces manual deployment overhead and risk.
+
+- [ ] **Automate Deployments with GitHub Actions**
+  - [ ] Create a reusable workflow to trigger the `production-deploy.sh` script on merges to `main`.
+  - [ ] Securely store `DATADOG_API_KEY` and other secrets in GitHub Actions secrets.
+  - [ ] Add a manual trigger for deploying to staging or production environments.
+
+### **2. Codebase Health & Security**
+**Status**: 📝 Planning
+**Priority**: P1 - Proactively addresses security risks and improves maintainability.
+
+- [ ] **Address Dependabot Vulnerability**
+  - [ ] Investigate and resolve the low-severity vulnerability reported by Dependabot.
+- [ ] **Enhance Test Coverage**
+  - [ ] Add integration tests for the AI chat stream API endpoint.
+  - [ ] Increase unit test coverage for critical UI components.
+
+### **3. Enhanced Observability**
+**Status**: 📝 Planning
+**Priority**: P2 - Provides deeper insights into application performance and user behavior.
+
+- [ ] **Create Custom Grafana Dashboards**
+  - [ ] Build a dashboard for core application metrics (request rate, error rate, duration).
+  - [ ] Develop a dashboard to monitor Kubernetes cluster health.
+- [ ] **Configure Prometheus Alerts**
+  - [ ] Define alerting rules for critical conditions (e.g., high error rates, high latency, pods crashing).
+
+### **4. Documentation**
+**Status**: 📝 Planning
+**Priority**: P3 - Improves onboarding for new developers and clarifies system architecture.
+
+- [ ] **Update Project README**: Add detailed sections on the new deployment process and monitoring stack.
+- [ ] **Create Architecture Diagrams**: Develop diagrams illustrating the Kubernetes deployment and data flow.
+
+---
+
 ## 🎯 NEW HIGH PRIORITY: GenAI Infrastructure & Multi-User Scalability (January 2025)
 
 ### **Advanced Observability with Toto Open Base 1.0**
