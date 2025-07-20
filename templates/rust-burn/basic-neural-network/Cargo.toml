@@ -1,0 +1,36 @@
+[package]
+name = "burn-neural-network"
+version = "0.1.0"
+edition = "2021"
+description = "Basic neural network implementation using Burn deep learning framework"
+license = "MIT"
+
+[dependencies]
+# Burn framework with autodiff backend
+burn = { version = "0.18.0", features = ["default"] }
+burn-ndarray = { version = "0.18.0" }
+burn-autodiff = { version = "0.18.0" }
+burn-train = { version = "0.18.0" }
+
+# Data handling
+burn-dataset = { version = "0.18.0" }
+serde = { version = "1.0", features = ["derive"] }
+
+# Utilities
+indicatif = "0.17"
+log = "0.4"
+env_logger = "0.11"
+
+[features]
+default = ["burn-ndarray"]
+cuda = ["burn/cuda-jit"]
+metal = ["burn/metal"]
+wgpu = ["burn/wgpu"]
+
+[[bin]]
+name = "train"
+path = "src/bin/train.rs"
+
+[[bin]]
+name = "inference"
+path = "src/bin/inference.rs"

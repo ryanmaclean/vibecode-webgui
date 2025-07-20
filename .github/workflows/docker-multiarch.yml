@@ -1,0 +1,200 @@
+name: Multi-Architecture Docker Builds
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-matrix:
+    name: Build Multi-Arch Images
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dockerfile: Dockerfile
+            image: vibecode-webgui
+            context: .
+          - dockerfile: services/ai-gateway/Dockerfile
+            image: vibecode-ai-gateway
+            context: services/ai-gateway
+          - dockerfile: docker/code-server/Dockerfile
+            image: vibecode-code-server
+            context: .
+          - dockerfile: docker/development/Dockerfile
+            image: vibecode-dev
+            context: docker/development
+          - dockerfile: docker/mcp-servers/Dockerfile
+            image: vibecode-mcp-servers
+            context: docker/mcp-servers
+          - dockerfile: watermarkpodautoscaler/Dockerfile
+            image: vibecode-wpa
+            context: watermarkpodautoscaler
+          - dockerfile: docs/Dockerfile
+            image: vibecode-docs
+            context: docs
+
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.image }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Check if Dockerfile exists
+        id: dockerfile-check
+        run: |
+          if [ -f "${{ matrix.context }}/${{ matrix.dockerfile }}" ] || [ -f "${{ matrix.dockerfile }}" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            if [ -f "${{ matrix.context }}/${{ matrix.dockerfile }}" ]; then
+              echo "dockerfile=${{ matrix.context }}/${{ matrix.dockerfile }}" >> $GITHUB_OUTPUT
+            else
+              echo "dockerfile=${{ matrix.dockerfile }}" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push Docker image
+        if: steps.dockerfile-check.outputs.exists == 'true'
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ steps.dockerfile-check.outputs.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+
+      - name: Generate artifact attestation
+        if: steps.dockerfile-check.outputs.exists == 'true' && github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+  security-scan:
+    name: Security Scan Images
+    runs-on: ubuntu-latest
+    needs: build-matrix
+    if: github.event_name != 'pull_request'
+    strategy:
+      matrix:
+        image: [vibecode-webgui, vibecode-ai-gateway, vibecode-code-server, vibecode-docs]
+
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.image }}:latest
+          format: 'sarif'
+          output: 'trivy-results-${{ matrix.image }}.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results-${{ matrix.image }}.sarif'
+
+  test-multiarch:
+    name: Test Multi-Arch Images
+    runs-on: ubuntu-latest
+    needs: build-matrix
+    if: github.event_name != 'pull_request'
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+        image: [vibecode-webgui, vibecode-ai-gateway]
+
+    steps:
+      - name: Set up QEMU
+        if: matrix.platform == 'linux/arm64'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Test image functionality
+        run: |
+          # Test basic container startup and health
+          docker run --rm --platform ${{ matrix.platform }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.image }}:latest \
+            timeout 30s sh -c 'echo "Container started successfully on ${{ matrix.platform }}"'
+
+  notify-success:
+    name: Notify Build Success
+    runs-on: ubuntu-latest
+    needs: [build-matrix, security-scan, test-multiarch]
+    if: always() && github.event_name != 'pull_request'
+
+    steps:
+      - name: Notify Datadog of successful build
+        if: needs.build-matrix.result == 'success'
+        run: |
+          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+            -d '{
+              "title": "Multi-Arch Docker Build Successful",
+              "text": "All Docker images built successfully for amd64 and arm64 architectures",
+              "tags": ["source:github", "env:production", "service:vibecode-webgui", "event:docker-build"],
+              "alert_type": "success"
+            }'
+
+      - name: Notify Datadog of build failure
+        if: needs.build-matrix.result == 'failure'
+        run: |
+          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+            -d '{
+              "title": "Multi-Arch Docker Build Failed",
+              "text": "One or more Docker images failed to build",
+              "tags": ["source:github", "env:production", "service:vibecode-webgui", "event:docker-build"],
+              "alert_type": "error"
+            }'

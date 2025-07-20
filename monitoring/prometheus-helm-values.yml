@@ -1,0 +1,61 @@
+# Prometheus Helm Chart Values for VibeCode Platform
+# Optimized for minimal resource usage while maintaining functionality
+
+# Global settings
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Server configuration
+server:
+  persistentVolume:
+    enabled: true
+    size: 10Gi
+  retention: "30d"
+  
+  # Resource limits for development/staging
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+
+# Disable components we don't need to save resources
+alertmanager:
+  enabled: false
+
+pushgateway:
+  enabled: false
+
+# Node exporter for system metrics
+nodeExporter:
+  enabled: true
+  resources:
+    limits:
+      cpu: 100m
+      memory: 64Mi
+    requests:
+      cpu: 50m
+      memory: 32Mi
+
+# Kube state metrics
+kubeStateMetrics:
+  enabled: true
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 9090
+
+# Ingress (disabled by default)
+ingress:
+  enabled: false
