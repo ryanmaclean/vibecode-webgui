@@ -1,0 +1,285 @@
+{{- if .Values.chaosEngineering.enabled }}
+# AI Workload Resilience Test - Test Chat-UI under network stress
+apiVersion: chaos.datadoghq.com/v1beta1
+kind: Disruption
+metadata:
+  name: chat-ui-network-stress
+  namespace: {{ .Values.chaosEngineering.namespace }}
+  labels:
+    app.kubernetes.io/name: chaos-experiment
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+    experiment-type: network-disruption
+    target-workload: chat-ui
+spec:
+  selector:
+    matchLabels:
+      app: chat-ui
+  {{- if .Values.chaosEngineering.experiments.chatUI.networkStress.enabled }}
+  count: {{ .Values.chaosEngineering.experiments.chatUI.networkStress.count }}
+  duration: {{ .Values.chaosEngineering.experiments.chatUI.networkStress.duration }}
+  networkDisruption:
+    drop: {{ .Values.chaosEngineering.experiments.chatUI.networkStress.packetDrop }}
+    delay: {{ .Values.chaosEngineering.experiments.chatUI.networkStress.delay }}
+    corrupt: {{ .Values.chaosEngineering.experiments.chatUI.networkStress.corruption }}
+  {{- else }}
+  count: 0
+  duration: 1m
+  networkDisruption:
+    drop: 0
+  {{- end }}
+
+---
+# MongoDB Resilience Test - Test database under CPU pressure
+apiVersion: chaos.datadoghq.com/v1beta1
+kind: Disruption
+metadata:
+  name: mongodb-cpu-pressure
+  namespace: {{ .Values.chaosEngineering.namespace }}
+  labels:
+    app.kubernetes.io/name: chaos-experiment
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+    experiment-type: cpu-pressure
+    target-workload: mongodb
+spec:
+  selector:
+    matchLabels:
+      app: mongodb
+  {{- if .Values.chaosEngineering.experiments.mongodb.cpuPressure.enabled }}
+  count: {{ .Values.chaosEngineering.experiments.mongodb.cpuPressure.count }}
+  duration: {{ .Values.chaosEngineering.experiments.mongodb.cpuPressure.duration }}
+  cpuPressure:
+    count: {{ .Values.chaosEngineering.experiments.mongodb.cpuPressure.processes }}
+  {{- else }}
+  count: 0
+  duration: 1m
+  cpuPressure:
+    count: 1
+  {{- end }}
+
+---
+# Semantic Kernel Agent Resilience Test - Test AI agents under memory pressure
+apiVersion: chaos.datadoghq.com/v1beta1
+kind: Disruption
+metadata:
+  name: semantic-kernel-memory-pressure
+  namespace: {{ .Values.chaosEngineering.namespace }}
+  labels:
+    app.kubernetes.io/name: chaos-experiment
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+    experiment-type: memory-pressure
+    target-workload: semantic-kernel
+spec:
+  selector:
+    matchLabels:
+      app: semantic-kernel-agent
+  {{- if .Values.chaosEngineering.experiments.semanticKernel.memoryPressure.enabled }}
+  count: {{ .Values.chaosEngineering.experiments.semanticKernel.memoryPressure.count }}
+  duration: {{ .Values.chaosEngineering.experiments.semanticKernel.memoryPressure.duration }}
+  memoryPressure:
+    count: {{ .Values.chaosEngineering.experiments.semanticKernel.memoryPressure.processes }}
+  {{- else }}
+  count: 0
+  duration: 1m
+  memoryPressure:
+    count: 1
+  {{- end }}
+
+---
+# Datadog Agent Resilience Test - Test monitoring under disk pressure
+apiVersion: chaos.datadoghq.com/v1beta1
+kind: Disruption
+metadata:
+  name: datadog-agent-disk-pressure
+  namespace: {{ .Values.chaosEngineering.namespace }}
+  labels:
+    app.kubernetes.io/name: chaos-experiment
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+    experiment-type: disk-pressure
+    target-workload: datadog-agent
+spec:
+  selector:
+    matchLabels:
+      app: datadog-agent
+  {{- if .Values.chaosEngineering.experiments.datadogAgent.diskPressure.enabled }}
+  count: {{ .Values.chaosEngineering.experiments.datadogAgent.diskPressure.count }}
+  duration: {{ .Values.chaosEngineering.experiments.datadogAgent.diskPressure.duration }}
+  diskPressure:
+    path: {{ .Values.chaosEngineering.experiments.datadogAgent.diskPressure.path }}
+    throttling:
+      readBytesPerSec: {{ .Values.chaosEngineering.experiments.datadogAgent.diskPressure.throttling.read }}
+      writeBytesPerSec: {{ .Values.chaosEngineering.experiments.datadogAgent.diskPressure.throttling.write }}
+  {{- else }}
+  count: 0
+  duration: 1m
+  diskPressure:
+    path: "/var/log"
+  {{- end }}
+
+---
+# Node Failure Simulation - Test platform resilience to node failures
+apiVersion: chaos.datadoghq.com/v1beta1
+kind: Disruption
+metadata:
+  name: worker-node-failure
+  namespace: {{ .Values.chaosEngineering.namespace }}
+  labels:
+    app.kubernetes.io/name: chaos-experiment
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+    experiment-type: node-failure
+    target-workload: all
+spec:
+  selector:
+    matchLabels:
+      workload-type: ai-compute
+  {{- if .Values.chaosEngineering.experiments.nodeFailure.enabled }}
+  count: {{ .Values.chaosEngineering.experiments.nodeFailure.count }}
+  duration: {{ .Values.chaosEngineering.experiments.nodeFailure.duration }}
+  nodeFailure:
+    shutdown: {{ .Values.chaosEngineering.experiments.nodeFailure.shutdown }}
+  {{- else }}
+  count: 0
+  duration: 1m
+  nodeFailure:
+    shutdown: false
+  {{- end }}
+
+{{- if .Values.chaosEngineering.experiments.scheduled.enabled }}
+---
+# Scheduled Chaos Experiment - Weekly resilience testing
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: weekly-chaos-test
+  namespace: {{ .Values.chaosEngineering.namespace }}
+  labels:
+    app.kubernetes.io/name: chaos-cronjob
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+spec:
+  schedule: {{ .Values.chaosEngineering.experiments.scheduled.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: chaos-job
+            tags.datadoghq.com/service: chaos-scheduler
+        spec:
+          serviceAccountName: chaos-controller
+          containers:
+          - name: chaos-runner
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting scheduled chaos engineering tests..."
+              
+              # Create and apply network disruption test
+              cat <<EOF | kubectl apply -f -
+              apiVersion: chaos.datadoghq.com/v1beta1
+              kind: Disruption
+              metadata:
+                name: scheduled-network-test-$(date +%s)
+                namespace: {{ .Values.chaosEngineering.namespace }}
+              spec:
+                selector:
+                  matchLabels:
+                    app: chat-ui
+                count: 1
+                duration: 5m
+                networkDisruption:
+                  drop: 10
+                  delay: 100ms
+              EOF
+              
+              # Wait for test completion
+              sleep 300
+              
+              # Cleanup
+              kubectl delete disruptions -l app.kubernetes.io/name=chaos-experiment --field-selector metadata.name=scheduled-network-test-*
+              
+              echo "Scheduled chaos test completed"
+            env:
+            - name: DD_SERVICE
+              value: "chaos-scheduler"
+            - name: DD_LOGS_INJECTION
+              value: "true"
+          restartPolicy: OnFailure
+          {{- if .Values.chaosEngineering.experiments.scheduled.nodeSelector }}
+          nodeSelector:
+            {{- toYaml .Values.chaosEngineering.experiments.scheduled.nodeSelector | nindent 12 }}
+          {{- end }}
+{{- end }}
+
+{{- if .Values.chaosEngineering.gamedays.enabled }}
+---
+# Game Day Chaos Experiment Collection
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chaos-gameday-scenarios
+  namespace: {{ .Values.chaosEngineering.namespace }}
+  labels:
+    app.kubernetes.io/name: chaos-gameday
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+data:
+  scenario-1-ai-overload.yaml: |
+    # Scenario 1: AI Workload Overload
+    # Simulates high AI inference load with network and CPU pressure
+    apiVersion: chaos.datadoghq.com/v1beta1
+    kind: Disruption
+    metadata:
+      name: gameday-ai-overload
+      namespace: {{ .Values.chaosEngineering.namespace }}
+    spec:
+      selector:
+        matchLabels:
+          app: semantic-kernel-agent
+      count: 2
+      duration: 15m
+      cpuPressure:
+        count: 4
+      networkDisruption:
+        delay: 200ms
+        drop: 5
+        
+  scenario-2-database-failure.yaml: |
+    # Scenario 2: Database Connection Failure
+    # Tests application resilience to database connectivity issues
+    apiVersion: chaos.datadoghq.com/v1beta1
+    kind: Disruption
+    metadata:
+      name: gameday-db-network-partition
+      namespace: {{ .Values.chaosEngineering.namespace }}
+    spec:
+      selector:
+        matchLabels:
+          app: mongodb
+      count: 1
+      duration: 10m
+      networkDisruption:
+        drop: 80
+        delay: 5s
+        
+  scenario-3-monitoring-blind-spot.yaml: |
+    # Scenario 3: Monitoring System Disruption
+    # Tests system behavior when monitoring is degraded
+    apiVersion: chaos.datadoghq.com/v1beta1
+    kind: Disruption
+    metadata:
+      name: gameday-monitoring-disruption
+      namespace: {{ .Values.chaosEngineering.namespace }}
+    spec:
+      selector:
+        matchLabels:
+          app: datadog-agent
+      percentage: 50
+      duration: 20m
+      memoryPressure:
+        count: 2
+      diskPressure:
+        path: "/var/log"
+        throttling:
+          writeBytesPerSec: "1MB"
+{{- end }}
+{{- end }}

@@ -1,0 +1,675 @@
+{{- if .Values.securityAudit.mkat.enabled }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.securityAudit.namespace }}
+  labels:
+    name: {{ .Values.securityAudit.namespace }}
+    app.kubernetes.io/name: mkat-security-audit
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mkat-auditor
+  namespace: {{ .Values.securityAudit.namespace }}
+  labels:
+    app.kubernetes.io/name: mkat-auditor
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+  {{- if .Values.securityAudit.mkat.azure.workloadIdentity.enabled }}
+  annotations:
+    azure.workload.identity/client-id: {{ .Values.securityAudit.mkat.azure.workloadIdentity.clientId }}
+    azure.workload.identity/tenant-id: {{ .Values.securityAudit.mkat.azure.workloadIdentity.tenantId }}
+  {{- end }}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mkat-auditor
+  labels:
+    app.kubernetes.io/name: mkat-auditor
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+rules:
+# Core Kubernetes resources for security auditing
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets", "serviceaccounts", "nodes"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods/exec", "pods/log"]
+  verbs: ["create", "get"]
+# Apps and extensions
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["extensions"]
+  resources: ["deployments", "replicasets", "daemonsets"]
+  verbs: ["get", "list", "watch"]
+# RBAC resources
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+  verbs: ["get", "list", "watch"]
+# Networking
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies", "ingresses"]
+  verbs: ["get", "list", "watch"]
+# Security policies
+- apiGroups: ["policy"]
+  resources: ["podsecuritypolicies"]
+  verbs: ["get", "list", "watch"]
+# Custom resources for monitoring and security
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["servicemonitors", "prometheusrules"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: mkat-auditor
+  labels:
+    app.kubernetes.io/name: mkat-auditor
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: mkat-auditor
+subjects:
+- kind: ServiceAccount
+  name: mkat-auditor
+  namespace: {{ .Values.securityAudit.namespace }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mkat-config
+  namespace: {{ .Values.securityAudit.namespace }}
+  labels:
+    app.kubernetes.io/name: mkat-config
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+data:
+  audit-config.yaml: |
+    # MKAT Security Audit Configuration for VibeCode Platform
+    audit:
+      name: "vibecode-security-audit"
+      description: "Comprehensive security audit for VibeCode AI platform"
+      
+    # Cloud provider configuration
+    cloud:
+      provider: {{ .Values.securityAudit.mkat.cloudProvider | quote }}
+      {{- if eq .Values.securityAudit.mkat.cloudProvider "azure" }}
+      azure:
+        subscription_id: {{ .Values.securityAudit.mkat.azure.subscriptionId | quote }}
+        resource_group: {{ .Values.securityAudit.mkat.azure.resourceGroup | quote }}
+        cluster_name: {{ .Values.global.cluster.name | quote }}
+      {{- end }}
+      {{- if eq .Values.securityAudit.mkat.cloudProvider "aws" }}
+      aws:
+        region: {{ .Values.securityAudit.mkat.aws.region | quote }}
+        cluster_name: {{ .Values.global.cluster.name | quote }}
+      {{- end }}
+    
+    # Audit scope and targets
+    scope:
+      namespaces:
+        include:
+          - {{ .Release.Namespace }}
+          - {{ .Values.datadog.namespace }}
+          - {{ .Values.chaosEngineering.namespace }}
+          - {{ .Values.vector.namespace }}
+          - kube-system
+          - kube-public
+        exclude:
+          - kube-node-lease
+      
+      # Workload-specific auditing
+      workloads:
+        ai_components:
+          - chat-ui
+          - semantic-kernel-agent
+          - mongodb
+        security_tools:
+          - datadog-agent
+          - chaos-controller
+          - vector
+        infrastructure:
+          - ingress-nginx
+          - cert-manager
+    
+    # Security checks configuration
+    checks:
+      # Cloud-to-cluster security
+      cloud_integration:
+        enabled: true
+        check_service_account_bindings: true
+        check_workload_identity: true
+        check_credential_exposure: true
+        
+      # RBAC and permissions
+      rbac:
+        enabled: true
+        check_overprivileged_accounts: true
+        check_cluster_admin_usage: true
+        check_service_account_tokens: true
+        
+      # Network security
+      network:
+        enabled: true
+        check_network_policies: true
+        check_ingress_security: true
+        check_service_exposure: true
+        
+      # Container security
+      container:
+        enabled: true
+        check_security_contexts: true
+        check_resource_limits: true
+        check_image_policies: true
+        check_secrets_exposure: true
+        
+      # AI workload specific
+      ai_security:
+        enabled: true
+        check_model_access: true
+        check_data_exposure: true
+        check_api_security: true
+        
+    # Reporting configuration
+    reporting:
+      format: ["json", "html", "csv"]
+      output_path: "/tmp/audit-results"
+      include_remediation: true
+      severity_levels: ["critical", "high", "medium", "low"]
+      
+    # Integration with Datadog
+    datadog:
+      enabled: {{ .Values.datadog.enabled }}
+      send_metrics: true
+      send_events: true
+      service_name: "mkat-security-audit"
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mkat-security-audit
+  namespace: {{ .Values.securityAudit.namespace }}
+  labels:
+    app.kubernetes.io/name: mkat-security-audit
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+spec:
+  schedule: {{ .Values.securityAudit.mkat.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: {{ .Values.securityAudit.mkat.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.securityAudit.mkat.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: mkat-audit-job
+            tags.datadoghq.com/service: mkat-security-audit
+            tags.datadoghq.com/version: {{ .Values.securityAudit.mkat.image.tag }}
+          annotations:
+            ad.datadoghq.com/mkat-auditor.logs: '[{"source":"mkat","service":"mkat-security-audit"}]'
+        spec:
+          serviceAccountName: mkat-auditor
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            fsGroup: 1000
+          containers:
+          - name: mkat-auditor
+            image: "{{ .Values.securityAudit.mkat.image.repository }}:{{ .Values.securityAudit.mkat.image.tag }}"
+            imagePullPolicy: {{ .Values.securityAudit.mkat.image.pullPolicy }}
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting MKAT Security Audit for VibeCode Platform..."
+              
+              # Set up environment
+              export KUBECONFIG=/var/run/secrets/kubernetes.io/serviceaccount
+              export AUDIT_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+              export AUDIT_DIR="/tmp/audit-results/${AUDIT_TIMESTAMP}"
+              mkdir -p "${AUDIT_DIR}"
+              
+              # Cloud provider specific setup
+              {{- if eq .Values.securityAudit.mkat.cloudProvider "azure" }}
+              echo "Configuring Azure authentication..."
+              # Azure CLI login using workload identity
+              if [ -n "${AZURE_CLIENT_ID}" ]; then
+                az login --identity --username "${AZURE_CLIENT_ID}"
+                az account set --subscription "${AZURE_SUBSCRIPTION_ID}"
+              fi
+              {{- end }}
+              
+              {{- if eq .Values.securityAudit.mkat.cloudProvider "aws" }}
+              echo "Configuring AWS authentication..."
+              # AWS authentication is handled via IAM roles for service accounts
+              {{- end }}
+              
+              # Run MKAT audits
+              echo "Running Kubernetes security audit..."
+              
+              # 1. RBAC Analysis
+              echo "Analyzing RBAC configurations..."
+              kubectl get clusterrolebindings -o json > "${AUDIT_DIR}/clusterrolebindings.json"
+              kubectl get rolebindings --all-namespaces -o json > "${AUDIT_DIR}/rolebindings.json"
+              
+              # 2. Service Account Analysis
+              echo "Analyzing service accounts..."
+              kubectl get serviceaccounts --all-namespaces -o json > "${AUDIT_DIR}/serviceaccounts.json"
+              
+              # 3. Network Policy Analysis
+              echo "Analyzing network policies..."
+              kubectl get networkpolicies --all-namespaces -o json > "${AUDIT_DIR}/networkpolicies.json" || echo "No network policies found"
+              
+              # 4. Secret and ConfigMap Analysis
+              echo "Analyzing secrets and configmaps..."
+              kubectl get secrets --all-namespaces -o json > "${AUDIT_DIR}/secrets.json"
+              kubectl get configmaps --all-namespaces -o json > "${AUDIT_DIR}/configmaps.json"
+              
+              # 5. Pod Security Analysis
+              echo "Analyzing pod security contexts..."
+              kubectl get pods --all-namespaces -o json > "${AUDIT_DIR}/pods.json"
+              
+              # 6. AI Workload Specific Checks
+              echo "Running AI workload security checks..."
+              
+              # Check Chat-UI security
+              if kubectl get deployment chat-ui -n {{ .Release.Namespace }} >/dev/null 2>&1; then
+                kubectl get deployment chat-ui -n {{ .Release.Namespace }} -o json > "${AUDIT_DIR}/chat-ui-deployment.json"
+                kubectl describe pod -l app=chat-ui -n {{ .Release.Namespace }} > "${AUDIT_DIR}/chat-ui-pods.txt"
+              fi
+              
+              # Check Semantic Kernel security
+              if kubectl get deployment semantic-kernel-agent -n {{ .Release.Namespace }} >/dev/null 2>&1; then
+                kubectl get deployment semantic-kernel-agent -n {{ .Release.Namespace }} -o json > "${AUDIT_DIR}/semantic-kernel-deployment.json"
+              fi
+              
+              # Check MongoDB security
+              if kubectl get deployment mongodb -n {{ .Release.Namespace }} >/dev/null 2>&1; then
+                kubectl get deployment mongodb -n {{ .Release.Namespace }} -o json > "${AUDIT_DIR}/mongodb-deployment.json"
+              fi
+              
+              # 7. Generate Security Report
+              echo "Generating security audit report..."
+              python3 /scripts/security-audit-analyzer.py \
+                --input-dir "${AUDIT_DIR}" \
+                --output-format json,html \
+                --severity-threshold medium \
+                --config-file /etc/mkat/audit-config.yaml
+              
+              # 8. Send results to Datadog if enabled
+              {{- if .Values.datadog.enabled }}
+              echo "Sending audit metrics to Datadog..."
+              curl -X POST "https://api.{{ .Values.datadog.site }}/api/v1/events" \
+                -H "Content-Type: application/json" \
+                -H "DD-API-KEY: ${DD_API_KEY}" \
+                -d '{
+                  "title": "VibeCode Security Audit Completed",
+                  "text": "MKAT security audit completed for timestamp: '${AUDIT_TIMESTAMP}'",
+                  "date_happened": '$(date +%s)',
+                  "priority": "normal",
+                  "tags": ["mkat", "security-audit", "vibecode-platform"],
+                  "alert_type": "info"
+                }'
+              {{- end }}
+              
+              echo "Security audit completed. Results saved to ${AUDIT_DIR}"
+              
+              # Clean up old audit results
+              find /tmp/audit-results -type d -mtime +{{ .Values.securityAudit.mkat.retentionDays }} -exec rm -rf {} + || true
+              
+            env:
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: datadog-secret
+                  key: api-key
+                  optional: true
+            {{- if eq .Values.securityAudit.mkat.cloudProvider "azure" }}
+            - name: AZURE_CLIENT_ID
+              value: {{ .Values.securityAudit.mkat.azure.workloadIdentity.clientId | quote }}
+            - name: AZURE_TENANT_ID
+              value: {{ .Values.securityAudit.mkat.azure.workloadIdentity.tenantId | quote }}
+            - name: AZURE_SUBSCRIPTION_ID
+              value: {{ .Values.securityAudit.mkat.azure.subscriptionId | quote }}
+            {{- end }}
+            - name: CLUSTER_NAME
+              value: {{ .Values.global.cluster.name | quote }}
+            - name: ENVIRONMENT
+              value: {{ .Values.global.environment | quote }}
+            resources:
+              requests:
+                cpu: {{ .Values.securityAudit.mkat.resources.requests.cpu }}
+                memory: {{ .Values.securityAudit.mkat.resources.requests.memory }}
+              limits:
+                cpu: {{ .Values.securityAudit.mkat.resources.limits.cpu }}
+                memory: {{ .Values.securityAudit.mkat.resources.limits.memory }}
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                - ALL
+              readOnlyRootFilesystem: true
+            volumeMounts:
+            - name: config
+              mountPath: /etc/mkat
+              readOnly: true
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            - name: audit-results
+              mountPath: /tmp/audit-results
+          volumes:
+          - name: config
+            configMap:
+              name: mkat-config
+          - name: scripts
+            configMap:
+              name: mkat-scripts
+              defaultMode: 0755
+          - name: tmp
+            emptyDir: {}
+          - name: audit-results
+            {{- if .Values.securityAudit.mkat.persistence.enabled }}
+            persistentVolumeClaim:
+              claimName: mkat-audit-results
+            {{- else }}
+            emptyDir: {}
+            {{- end }}
+          {{- with .Values.securityAudit.mkat.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.securityAudit.mkat.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mkat-scripts
+  namespace: {{ .Values.securityAudit.namespace }}
+  labels:
+    app.kubernetes.io/name: mkat-scripts
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+data:
+  security-audit-analyzer.py: |
+    #!/usr/bin/env python3
+    """
+    VibeCode Security Audit Analyzer
+    Processes Kubernetes security audit data and generates reports
+    """
+    
+    import json
+    import os
+    import sys
+    import argparse
+    import datetime
+    from typing import Dict, List, Any
+    
+    class SecurityAuditAnalyzer:
+        def __init__(self, input_dir: str, config: Dict[str, Any]):
+            self.input_dir = input_dir
+            self.config = config
+            self.findings = []
+            
+        def analyze_rbac(self):
+            """Analyze RBAC configurations for security issues"""
+            try:
+                # Check ClusterRoleBindings
+                with open(f"{self.input_dir}/clusterrolebindings.json", 'r') as f:
+                    crbs = json.load(f)
+                    
+                for crb in crbs.get('items', []):
+                    # Check for overprivileged cluster-admin bindings
+                    if crb.get('roleRef', {}).get('name') == 'cluster-admin':
+                        for subject in crb.get('subjects', []):
+                            if subject.get('kind') == 'ServiceAccount':
+                                self.findings.append({
+                                    'type': 'RBAC',
+                                    'severity': 'HIGH',
+                                    'title': 'Cluster Admin Service Account Found',
+                                    'description': f"ServiceAccount {subject.get('name')} in namespace {subject.get('namespace')} has cluster-admin privileges",
+                                    'resource': f"ClusterRoleBinding/{crb.get('metadata', {}).get('name')}",
+                                    'remediation': 'Review if cluster-admin privileges are necessary. Consider using more restrictive roles.'
+                                })
+                                
+            except Exception as e:
+                print(f"Error analyzing RBAC: {e}")
+                
+        def analyze_secrets(self):
+            """Analyze secrets for potential credential exposure"""
+            try:
+                with open(f"{self.input_dir}/secrets.json", 'r') as f:
+                    secrets = json.load(f)
+                    
+                for secret in secrets.get('items', []):
+                    secret_name = secret.get('metadata', {}).get('name', '')
+                    namespace = secret.get('metadata', {}).get('namespace', '')
+                    
+                    # Check for hardcoded credentials in names
+                    suspicious_patterns = ['password', 'key', 'token', 'credential']
+                    if any(pattern in secret_name.lower() for pattern in suspicious_patterns):
+                        self.findings.append({
+                            'type': 'SECRETS',
+                            'severity': 'MEDIUM',
+                            'title': 'Potential Credential in Secret Name',
+                            'description': f"Secret {secret_name} in namespace {namespace} may contain credentials",
+                            'resource': f"Secret/{namespace}/{secret_name}",
+                            'remediation': 'Review secret contents and ensure proper access controls'
+                        })
+                        
+            except Exception as e:
+                print(f"Error analyzing secrets: {e}")
+                
+        def analyze_ai_workloads(self):
+            """Analyze AI workload security configurations"""
+            ai_deployments = ['chat-ui-deployment.json', 'semantic-kernel-deployment.json', 'mongodb-deployment.json']
+            
+            for deployment_file in ai_deployments:
+                try:
+                    file_path = f"{self.input_dir}/{deployment_file}"
+                    if os.path.exists(file_path):
+                        with open(file_path, 'r') as f:
+                            deployment = json.load(f)
+                            
+                        self._analyze_deployment_security(deployment, deployment_file)
+                        
+                except Exception as e:
+                    print(f"Error analyzing {deployment_file}: {e}")
+                    
+        def _analyze_deployment_security(self, deployment: Dict, source_file: str):
+            """Analyze individual deployment security"""
+            dep_name = deployment.get('metadata', {}).get('name', 'unknown')
+            
+            # Check security context
+            containers = deployment.get('spec', {}).get('template', {}).get('spec', {}).get('containers', [])
+            for container in containers:
+                security_context = container.get('securityContext', {})
+                
+                # Check if running as root
+                if security_context.get('runAsUser') == 0 or not security_context.get('runAsNonRoot'):
+                    self.findings.append({
+                        'type': 'CONTAINER_SECURITY',
+                        'severity': 'HIGH',
+                        'title': 'Container Running as Root',
+                        'description': f"Container {container.get('name')} in deployment {dep_name} may be running as root",
+                        'resource': f"Deployment/{dep_name}",
+                        'remediation': 'Configure securityContext to run as non-root user'
+                    })
+                    
+                # Check for missing resource limits
+                resources = container.get('resources', {})
+                if not resources.get('limits'):
+                    self.findings.append({
+                        'type': 'RESOURCE_LIMITS',
+                        'severity': 'MEDIUM',
+                        'title': 'Missing Resource Limits',
+                        'description': f"Container {container.get('name')} in deployment {dep_name} has no resource limits",
+                        'resource': f"Deployment/{dep_name}",
+                        'remediation': 'Configure CPU and memory limits to prevent resource exhaustion'
+                    })
+                    
+        def generate_report(self, output_formats: List[str]):
+            """Generate security audit report"""
+            timestamp = datetime.datetime.now().isoformat()
+            
+            report_data = {
+                'audit_metadata': {
+                    'timestamp': timestamp,
+                    'cluster': self.config.get('global', {}).get('cluster', {}).get('name', 'unknown'),
+                    'total_findings': len(self.findings),
+                    'severity_breakdown': self._get_severity_breakdown()
+                },
+                'findings': self.findings,
+                'summary': self._generate_summary()
+            }
+            
+            # Generate JSON report
+            if 'json' in output_formats:
+                with open(f"{self.input_dir}/security-audit-report.json", 'w') as f:
+                    json.dump(report_data, f, indent=2)
+                    
+            # Generate HTML report
+            if 'html' in output_formats:
+                self._generate_html_report(report_data)
+                
+            print(f"Generated security audit report with {len(self.findings)} findings")
+            
+        def _get_severity_breakdown(self) -> Dict[str, int]:
+            """Get breakdown of findings by severity"""
+            breakdown = {'CRITICAL': 0, 'HIGH': 0, 'MEDIUM': 0, 'LOW': 0}
+            for finding in self.findings:
+                severity = finding.get('severity', 'LOW')
+                breakdown[severity] = breakdown.get(severity, 0) + 1
+            return breakdown
+            
+        def _generate_summary(self) -> Dict[str, Any]:
+            """Generate audit summary"""
+            return {
+                'total_resources_analyzed': len([f for f in os.listdir(self.input_dir) if f.endswith('.json')]),
+                'critical_issues': len([f for f in self.findings if f.get('severity') == 'CRITICAL']),
+                'high_priority_issues': len([f for f in self.findings if f.get('severity') == 'HIGH']),
+                'recommendations': [
+                    'Enable network policies for all namespaces',
+                    'Review RBAC permissions regularly',
+                    'Implement Pod Security Standards',
+                    'Regular security auditing with MKAT'
+                ]
+            }
+            
+        def _generate_html_report(self, report_data: Dict):
+            """Generate HTML report"""
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>VibeCode Security Audit Report</title>
+                <style>
+                    body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                    .header {{ background: #f8f9fa; padding: 20px; border-radius: 5px; }}
+                    .finding {{ margin: 10px 0; padding: 15px; border-left: 4px solid #007bff; background: #f8f9fa; }}
+                    .severity-high {{ border-left-color: #dc3545; }}
+                    .severity-medium {{ border-left-color: #ffc107; }}
+                    .severity-low {{ border-left-color: #28a745; }}
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>VibeCode Security Audit Report</h1>
+                    <p>Generated: {report_data['audit_metadata']['timestamp']}</p>
+                    <p>Cluster: {report_data['audit_metadata']['cluster']}</p>
+                    <p>Total Findings: {report_data['audit_metadata']['total_findings']}</p>
+                </div>
+                
+                <h2>Findings Summary</h2>
+                <ul>
+            """
+            
+            for severity, count in report_data['audit_metadata']['severity_breakdown'].items():
+                html_content += f"<li>{severity}: {count} findings</li>"
+                
+            html_content += "</ul><h2>Detailed Findings</h2>"
+            
+            for finding in self.findings:
+                severity_class = f"severity-{finding.get('severity', 'low').lower()}"
+                html_content += f"""
+                <div class="finding {severity_class}">
+                    <h3>{finding.get('title', 'Unknown Issue')}</h3>
+                    <p><strong>Severity:</strong> {finding.get('severity', 'Unknown')}</p>
+                    <p><strong>Resource:</strong> {finding.get('resource', 'Unknown')}</p>
+                    <p><strong>Description:</strong> {finding.get('description', 'No description')}</p>
+                    <p><strong>Remediation:</strong> {finding.get('remediation', 'No remediation provided')}</p>
+                </div>
+                """
+                
+            html_content += "</body></html>"
+            
+            with open(f"{self.input_dir}/security-audit-report.html", 'w') as f:
+                f.write(html_content)
+                
+        def run_analysis(self, output_formats: List[str]):
+            """Run complete security analysis"""
+            print("Starting security audit analysis...")
+            
+            self.analyze_rbac()
+            self.analyze_secrets()
+            self.analyze_ai_workloads()
+            
+            self.generate_report(output_formats)
+            
+    def main():
+        parser = argparse.ArgumentParser(description='VibeCode Security Audit Analyzer')
+        parser.add_argument('--input-dir', required=True, help='Directory containing audit data')
+        parser.add_argument('--output-format', default='json,html', help='Output formats (comma-separated)')
+        parser.add_argument('--severity-threshold', default='medium', help='Minimum severity threshold')
+        parser.add_argument('--config-file', help='Configuration file path')
+        
+        args = parser.parse_args()
+        
+        # Load configuration
+        config = {}
+        if args.config_file and os.path.exists(args.config_file):
+            import yaml
+            with open(args.config_file, 'r') as f:
+                config = yaml.safe_load(f)
+                
+        # Run analysis
+        analyzer = SecurityAuditAnalyzer(args.input_dir, config)
+        analyzer.run_analysis(args.output_format.split(','))
+        
+    if __name__ == '__main__':
+        main()
+
+{{- if .Values.securityAudit.mkat.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mkat-audit-results
+  namespace: {{ .Values.securityAudit.namespace }}
+  labels:
+    app.kubernetes.io/name: mkat-audit-results
+    app.kubernetes.io/instance: {{ include "vibecode-platform.fullname" . }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.securityAudit.mkat.persistence.size }}
+  {{- if .Values.securityAudit.mkat.persistence.storageClass }}
+  storageClassName: {{ .Values.securityAudit.mkat.persistence.storageClass }}
+  {{- end }}
+{{- end }}
+{{- end }}

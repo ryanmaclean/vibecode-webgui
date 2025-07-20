@@ -271,3 +271,207 @@ semanticKernel:
     limits:
       memory: "1Gi"
       cpu: "500m"
+
+# Chaos Engineering configuration
+chaosEngineering:
+  enabled: false
+  namespace: chaos-engineering
+  
+  image:
+    repository: datadog/chaos-controller
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  logLevel: "info"
+  
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  
+  networkPolicy:
+    enabled: true
+  
+  # Chaos experiment configurations
+  experiments:
+    # Chat-UI network stress testing
+    chatUI:
+      networkStress:
+        enabled: false
+        count: 1
+        duration: "5m"
+        packetDrop: 10
+        delay: "100ms"
+        corruption: 2
+    
+    # MongoDB resilience testing
+    mongodb:
+      cpuPressure:
+        enabled: false
+        count: 1
+        duration: "3m"
+        processes: 2
+    
+    # Semantic Kernel memory pressure testing
+    semanticKernel:
+      memoryPressure:
+        enabled: false
+        count: 1
+        duration: "5m"
+        processes: 1
+    
+    # Datadog agent disk pressure testing
+    datadogAgent:
+      diskPressure:
+        enabled: false
+        count: 1
+        duration: "3m"
+        path: "/var/log"
+        throttling:
+          read: "10MB"
+          write: "5MB"
+    
+    # Node failure simulation
+    nodeFailure:
+      enabled: false
+      count: 1
+      duration: "2m"
+      shutdown: false
+    
+    # Scheduled chaos experiments
+    scheduled:
+      enabled: false
+      schedule: "0 2 * * 1"  # Every Monday at 2 AM
+      nodeSelector: {}
+  
+  # Game day scenarios for comprehensive testing
+  gamedays:
+    enabled: false
+
+# Vector logging pipeline configuration
+vector:
+  enabled: false
+  namespace: observability-pipeline
+  
+  image:
+    repository: timberio/vector
+    tag: "0.34.0-distroless-libc"
+    pullPolicy: IfNotPresent
+  
+  api:
+    playground: false
+  
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+  
+  tolerations: []
+  
+  networkPolicy:
+    enabled: true
+  
+  # Output sinks configuration
+  sinks:
+    datadog:
+      enabled: true
+    console:
+      enabled: false
+    prometheus:
+      enabled: true
+    elasticsearch:
+      enabled: false
+      endpoints: ["http://elasticsearch:9200"]
+
+# Global configuration
+global:
+  environment: "production"
+  cluster:
+    name: "vibecode-platform"
+
+# Security Audit configuration (MKAT)
+securityAudit:
+  namespace: security-audit
+  
+  mkat:
+    enabled: false
+    schedule: "0 3 * * 1"  # Weekly Monday at 3 AM
+    successfulJobsHistoryLimit: 3
+    failedJobsHistoryLimit: 3
+    retentionDays: 30
+    
+    image:
+      repository: ubuntu
+      tag: "22.04"
+      pullPolicy: IfNotPresent
+    
+    cloudProvider: "azure"  # or "aws"
+    
+    azure:
+      subscriptionId: ""
+      resourceGroup: ""
+      workloadIdentity:
+        enabled: false
+        clientId: ""
+        tenantId: ""
+        
+    aws:
+      region: "us-west-2"
+    
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+        
+    persistence:
+      enabled: false
+      size: "5Gi"
+      storageClass: ""
+      
+    nodeSelector: {}
+    tolerations: []
+
+# Supply Chain Security configuration (GuardDog)
+supplyChainSecurity:
+  namespace: supply-chain-security
+  
+  guarddog:
+    enabled: false
+    schedule: "0 4 * * *"  # Daily at 4 AM
+    successfulJobsHistoryLimit: 7
+    failedJobsHistoryLimit: 7
+    failOnCritical: true
+    
+    image:
+      repository: python
+      tag: "3.11-slim"
+      pullPolicy: IfNotPresent
+      
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+        
+    persistence:
+      enabled: false
+      size: "10Gi"
+      storageClass: ""
+      
+    nodeSelector: {}
+    tolerations: []
