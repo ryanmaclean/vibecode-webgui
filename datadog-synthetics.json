@@ -1,0 +1,13 @@
+{
+  "apiKey": "${DD_API_KEY}",
+  "appKey": "${DD_APP_KEY}",
+  "site": "datadoghq.com",
+  "config": {
+    "testFiles": ["tests/datadog/**/*.synthetics.json"],
+    "global": {
+      "locations": [
+        "aws:us-east-1"
+      ]
+    }
+  }
+}
