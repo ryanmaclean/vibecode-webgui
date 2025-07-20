@@ -21,7 +21,6 @@
     "test:k8s:quick": "jest --testPathPattern=tests/k8s/kind-cluster-validation\\.test\\.ts$ --maxWorkers=1",
     "test:k8s:helm": "jest --testPathPattern=tests/k8s/helm-chart-deployment\\.test\\.ts$ --maxWorkers=1",
     "test:k8s:provisioning": "jest --testPathPattern=tests/integration/user-provisioning-integration\\.test\\.ts$ --maxWorkers=1",
-    "test:k8s:load": "k6 run tests/k8s/load-test.js",
     "test:monitoring": "jest --testPathPattern=tests/unit/.*monitoring.*\\.test\\.(ts|js)$ --testPathPattern=tests/integration/monitoring-api\\.test\\.(ts|js)$",
     "test:monitoring:unit": "jest --testPathPattern=tests/unit/.*monitoring.*\\.test\\.(ts|js)$",
     "test:monitoring:integration": "jest --testPathPattern=tests/integration/monitoring-api\\.test\\.(ts|js)$",
