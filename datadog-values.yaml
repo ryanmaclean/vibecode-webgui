@@ -12,7 +12,9 @@ datadog:
           secretKeyRef:
             name: datadog-secret
             key: api-key
+  # Environment variables for Datadog agent
   env:
+    # Core Datadog settings
     - name: DD_API_KEY
       valueFrom:
         secretKeyRef:
@@ -24,6 +26,22 @@ datadog:
           fieldPath: spec.nodeName
     - name: DD_KUBELET_TLS_VERIFY
       value: "false"
+    # DBM and APM settings
+    - name: DD_DBM_PROPAGATION_MODE
+      value: "full"
+    - name: DD_SERVICE
+      value: "vibecode-webgui"
+    - name: DD_ENV
+      value: "production"
+    - name: DD_VERSION
+      value: "1.0.0"
+    - name: DD_DBM_TRACE_INJECTION
+      value: "true"
+    - name: DD_TRACE_SAMPLE_RATE
+      value: "1.0"
+    - name: DD_TRACE_RATE_LIMIT
+      value: "100"
+
   otelCollector:
     enabled: true
     ports:
@@ -34,7 +52,12 @@ datadog:
         hostPort: 4318
         name: "otel-http"
   tags:
-    - "env:dev"
+    - "env:production"
+    - "service:vibecode-webgui"
+    - "application:vibecode-platform"
+    - "version:1.0.0"
+    - "team:platform"
+    - "tier:database"
   apm:
     instrumentation:
       enabled: true
@@ -47,6 +70,28 @@ datadog:
             php: "1"
             dotnet: "3"
             ruby: "2"
+  # Database Monitoring Configuration
+  processAgent:
+    enabled: true
+    processCollection: true
+  databaseMonitoring:
+    enabled: true
+    postgres:
+      enabled: true
+      instances:
+        - dbm: true
+          host: postgres.vibecode.svc.cluster.local
+          port: 5432
+          username: datadog
+          password: ${DATADOG_DB_PASSWORD}
+          dbname: vibecode
+          ssl: false
+          tags:
+            - "env:production"
+            - "service:vibecode-webgui"
+            - "application:vibecode-platform"
+            - "version:1.0.0"
+
   logs:
     enabled: true
     containerCollectAll: true
@@ -59,8 +104,6 @@ datadog:
   serviceMonitoring:
     enabled: true
   networkMonitoring:
-    enabled: false
-  processAgent:
-    processCollection: true
+    enabled: true
   systemProbe:
     enabled: false
