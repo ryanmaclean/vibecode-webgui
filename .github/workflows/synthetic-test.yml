@@ -1,0 +1,27 @@
+name: Run Synthetic Tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-synthetic-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Datadog Synthetic Tests
+        run: |
+          datadog-ci synthetics run-tests --search "VibeCode Critical User Journey" --failOnCriticalErrors
+        env:
+          DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
+          DATADOG_APP_KEY: ${{ secrets.DD_APP_KEY }}
+          DATADOG_SITE: datadoghq.com
