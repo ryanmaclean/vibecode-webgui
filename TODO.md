@@ -1,6 +1,6 @@
 # Staff Engineer Digest: VibeCode TODO.md
 
-**Last Updated**: 2025-07-18
+**Last Updated**: 2025-01-20
 
 ## High-Level Project Synthesis & Priorities
 
@@ -17,6 +17,107 @@
 - ✅ **RESOLVED - Accessibility Compliance:** Critical accessibility issues have been resolved after user feedback about poor contrast. The platform now meets WCAG 2.1 AA standards with automated testing infrastructure.
 
 ### 2. Current Sprint: Core Integration & User Experience
+
+---
+
+## 🎯 NEW HIGH PRIORITY: GenAI Infrastructure & Multi-User Scalability (January 2025)
+
+### **LiteLLM Proxy Integration (CRITICAL)**
+**Status**: ⚠️ REQUIRED - Based on license sweep and architecture analysis  
+**Priority**: P0 - Blocks scalable multi-user AI operations  
+**Owner**: Platform Team
+
+- [ ] **LiteLLM Proxy Server Deployment**
+  - [ ] Deploy LiteLLM proxy as Kubernetes service with Helm chart
+  - [ ] Configure unified API endpoint for all AI providers (OpenAI, Anthropic, Azure OpenAI, Ollama)
+  - [ ] Set up load balancing across multiple AI providers with intelligent routing
+  - [ ] Implement fallback chains: Local Ollama → Azure OpenAI → OpenRouter → Anthropic
+  - [ ] Configure rate limiting and request prioritization for concurrent users
+
+- [ ] **Enhanced AI Client Migration**
+  - [ ] Migrate from direct provider SDKs to LiteLLM unified interface
+  - [ ] Update `src/lib/ai/enhanced-model-client.ts` to use LiteLLM proxy
+  - [ ] Implement semantic caching with Redis for cost optimization
+  - [ ] Add provider health monitoring and automatic failover
+  - [ ] Configure budget management and cost tracking per user/project
+
+- [ ] **VS Code Extension Configuration**
+  - [ ] Pre-install VibeCode AI Assistant in code-server Docker image
+  - [ ] Bypass all extension warnings and security prompts
+  - [ ] Configure auto-activation of AI features on workspace creation
+  - [ ] Set up extension settings for seamless LiteLLM integration
+  - [ ] Document extension installation and configuration process
+
+### **Temporal Workflow Orchestration (HIGH PRIORITY)**
+**Status**: 🚀 NEW - Critical for multi-user AI scalability  
+**Priority**: P1 - Required for 100+ concurrent users  
+**Owner**: Backend Team
+
+- [ ] **Temporal Server Infrastructure**
+  - [ ] Deploy Temporal server cluster on Kubernetes
+  - [ ] Configure Temporal workflows for AI request orchestration
+  - [ ] Set up intelligent queue management for concurrent AI operations
+  - [ ] Implement resource allocation algorithms (priority users vs standard users)
+  - [ ] Create fault-tolerant AI workflow patterns with automatic retry
+
+- [ ] **Multi-User AI Workflow Management**
+  - [ ] Design workflow definitions for AI project generation, code analysis, and assistance
+  - [ ] Implement user-aware resource allocation (dedicated vs shared AI instances)
+  - [ ] Set up overflow routing: Local resources → Cloud APIs for high demand
+  - [ ] Create comprehensive AI operation observability with Temporal UI
+  - [ ] Configure workflow timeouts and failure handling
+
+### **Advanced GenAI Library Integration**
+**Status**: 📋 PLANNED - Based on comprehensive license sweep  
+**Priority**: P2 - Enhances AI capabilities  
+**Owner**: AI Team
+
+- [ ] **Mastra AI Agent Framework (NEW TOP PRIORITY)**
+  - [ ] Add Mastra (MIT, 15.1k stars) to dependencies for TypeScript AI agents
+  - [ ] Import 50+ Mastra example templates into VibeCode template library
+  - [ ] Integrate Mastra workflows for agent orchestration and RAG
+  - [ ] Use Mastra patterns for multi-LLM support and observability
+  - [ ] Configure Mastra-based project generation with TypeScript best practices
+
+- [ ] **Local LLM Infrastructure (Ollama + VLLM)**
+  - [ ] Deploy Ollama cluster for privacy-sensitive code analysis
+  - [ ] Integrate VLLM for high-performance inference serving
+  - [ ] Configure automatic model downloading and management
+  - [ ] Set up GPU resource allocation for local inference
+  - [ ] Implement model switching based on task complexity
+
+- [ ] **Vector Database Enhancement (LanceDB)**
+  - [ ] Migrate from pgvector to LanceDB for high-performance vector operations
+  - [ ] Implement multi-modal embeddings (code, text, documentation)
+  - [ ] Set up real-time indexing for project files and documentation
+  - [ ] Configure hybrid search (semantic + keyword) for code assistance
+  - [ ] Add vector similarity caching for faster retrieval
+
+- [ ] **AI Agent Framework (Pydantic AI + DSPy)**
+  - [ ] Integrate Pydantic AI for type-safe agent definitions
+  - [ ] Implement DSPy for systematic prompt optimization
+  - [ ] Create specialized agents: Code Review, Bug Detection, Documentation
+  - [ ] Set up agent collaboration patterns for complex tasks
+  - [ ] Configure agent monitoring and performance tracking
+
+### **Production AI Operations**
+**Status**: 📊 PLANNED - Enterprise readiness  
+**Priority**: P2 - Production scaling requirements  
+**Owner**: DevOps Team
+
+- [ ] **AI Observability (Langfuse + DataDog)**
+  - [ ] Deploy Langfuse for comprehensive LLM operation tracking
+  - [ ] Configure cost tracking per user, project, and model
+  - [ ] Set up performance monitoring for AI response times
+  - [ ] Implement quality scoring for AI-generated content
+  - [ ] Create alerting for AI service degradation
+
+- [ ] **AI Security & Governance**
+  - [ ] Implement Guardrails for content filtering and safety
+  - [ ] Set up model output validation and sanitization
+  - [ ] Configure data privacy controls for sensitive code
+  - [ ] Create audit logs for all AI operations
+  - [ ] Implement user consent management for AI features
 
 ---
 
