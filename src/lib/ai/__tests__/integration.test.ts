@@ -15,18 +15,23 @@ describe('AI Integration', () => {
   });
 
   it('should add and retrieve prompts', async () => {
-    const promptId = await ai.prompts.addPrompt({
-      name: 'Test Prompt',
+    const testPrompt = {
+      name: 'test-prompt',
       description: 'A test prompt',
-      template: 'This is a test prompt with {variable}',
-      tags: ['test']
-    });
+      template: 'This is a test prompt with {{variable}}',
+      tags: ['test', 'integration'],
+      version: '1.0.0'
+    };
 
-    expect(promptId).toBeDefined();
-    
-    const prompt = ai.prompts.getPrompt(promptId);
+    const prompt = await ai.prompts.addPrompt(testPrompt);
+
     expect(prompt).toBeDefined();
-    expect(prompt?.name).toBe('Test Prompt');
+    expect(prompt.id).toBeDefined();
+    expect(prompt.name).toBe('test-prompt');
+    
+    const retrievedPrompt = await ai.prompts.getPrompt(prompt.id);
+    expect(retrievedPrompt).toBeDefined();
+    expect(retrievedPrompt?.name).toBe('test-prompt');
   });
 
   it('should perform vector search', async () => {

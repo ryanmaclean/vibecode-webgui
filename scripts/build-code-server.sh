@@ -11,6 +11,17 @@ cd "$(dirname "$0")/.."
 
 echo "🚀 Building VibeCode custom code-server image..."
 
+# Verify extension licenses before building
+echo "🔍 Verifying extension licenses..."
+if ./scripts/verify-extension-licenses.sh; then
+  echo "✅ License verification passed!"
+else
+  echo "❌ License verification failed. Aborting build."
+  exit 1
+fi
+
+echo ""
+
 # Ensure Docker is running
 if ! docker info > /dev/null 2>&1; then
   echo "❌ Docker is not running. Please start Docker and try again."
@@ -20,13 +31,13 @@ fi
 # Build the image
 if [ "$1" = "--push" ]; then
   echo "🔧 Building and pushing multi-architecture image..."
-  docker buildx create --use --name=vibecode-builder
+  docker buildx create --use --name=vibecode-builder 2>/dev/null || true
   docker buildx build --platform ${PLATFORM} \
     -t ${IMAGE_NAME}:${TAG} \
     -f docker/code-server/Dockerfile \
     --push \
     .
-  docker buildx rm vibecode-builder
+  docker buildx rm vibecode-builder 2>/dev/null || true
 else
   echo "🔧 Building local image..."
   docker build \
@@ -34,9 +45,19 @@ else
     -f docker/code-server/Dockerfile \
     .
   
-  echo "\n✅ Build complete!"
+  echo ""
+  echo "✅ Build complete!"
+  echo ""
+  echo "🎯 Installed Extensions Summary:"
+  echo "Phase 1: Core Microsoft Language Support (5 extensions)"
+  echo "Phase 2: Essential Development Tools (5 extensions)"  
+  echo "Phase 3: Web Development Extensions (4 extensions)"
+  echo "Phase 4: UI and Theme Extensions (2 extensions)"
+  echo "Phase 5: Additional Productivity Extensions (2 extensions)"
+  echo "Total: 18 MIT/BSD licensed extensions + VibeCode AI Assistant"
+  echo ""
   echo "To run the container locally:"
-  echo "  docker run -p 8080:8080 -v $(pwd):/home/coder/workspace ${IMAGE_NAME}:${TAG}"
+  echo "  docker run -p 8080:8080 -v \$(pwd):/home/coder/workspace ${IMAGE_NAME}:${TAG}"
 fi
 
 echo "✨ Done!"

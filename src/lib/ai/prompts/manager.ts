@@ -1,17 +1,33 @@
-import { z } from 'zod';
+// Types for prompt management
 import { VectorStoreRetriever } from 'langchain/vectorstores/base';
 
-const PromptSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
-  description: z.string(),
-  template: z.string(),
-  tags: z.array(z.string()),
-  version: z.string().default('1.0.0'),
-  metadata: z.record(z.any()).optional(),
-});
+interface DocumentMetadata {
+  source?: string;
+  type?: string;
+  [key: string]: string | number | boolean | string[] | null | undefined;
+}
 
-type Prompt = z.infer<typeof PromptSchema>;
+interface PromptInput {
+  name: string;
+  description: string;
+  template: string;
+  tags: string[];
+  version?: string;
+  metadata?: DocumentMetadata;
+}
+
+
+export interface Prompt {
+  id: string;
+  name: string;
+  description: string;
+  template: string;
+  tags: string[];
+  version: string;
+  metadata?: DocumentMetadata;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 
 export class PromptManager {
   private retriever: VectorStoreRetriever;
@@ -21,23 +37,41 @@ export class PromptManager {
     this.retriever = retriever;
   }
 
-  async addPrompt(promptData: Omit<Prompt, 'id'> & { id?: string }): Promise<string> {
-    const validated = PromptSchema.parse({
-      ...promptData,
-      id: promptData.id || crypto.randomUUID(),
-    });
+  async addPrompt(input: PromptInput): Promise<Prompt> {
+    const id = crypto.randomUUID();
+    const version = input.version || '1.0.0';
+    const metadata = input.metadata || {};
     
-    this.prompts.set(validated.id, validated);
-    
+    const newPrompt: Prompt = {
+      id,
+      name: input.name,
+      description: input.description,
+      template: input.template,
+      tags: [...input.tags],
+      version,
+      metadata: { ...metadata, type: 'prompt' },
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
     await this.retriever.addDocuments([{
-      pageContent: `${validated.name}\n\n${validated.description}\n\n${validated.template}`,
+      pageContent: input.template,
       metadata: {
+        ...metadata,
+        id,
+        name: input.name,
+        description: input.description,
+        tags: input.tags.join(','), // Store tags as comma-separated string for vector search
+        version,
         type: 'prompt',
-        ...validated,
-      },
+        source: metadata.source || 'user',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
     }]);
     
-    return validated.id;
+    this.prompts.set(id, newPrompt);
+    return newPrompt;
   }
 
   async findRelevantPrompts(query: string, limit = 5) {

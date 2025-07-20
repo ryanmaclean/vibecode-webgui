@@ -15,6 +15,14 @@ import { VectorSearch } from './search/vector-search';
 import { PromptManager } from './prompts/manager';
 import { DocumentationSources } from './documentation/sources';
 import { aiAnalytics } from './analytics';
+import { VectorStoreRetriever } from 'langchain/vectorstores/base';
+import { Document } from 'langchain/document';
+
+interface AIConfig {
+  openAIApiKey?: string;
+  chromaDbUrl?: string;
+  enableAnalytics?: boolean;
+}
 
 export class AIIntegration {
   private static instance: AIIntegration;
@@ -22,27 +30,53 @@ export class AIIntegration {
   public readonly search: VectorSearch;
   public readonly prompts: PromptManager;
   public readonly docs: DocumentationSources;
+  private readonly config: AIConfig;
 
-  private constructor() {
+  private constructor(config: AIConfig = {}) {
+    this.config = {
+      openAIApiKey: process.env.OPENAI_API_KEY,
+      chromaDbUrl: process.env.CHROMA_DB_URL || 'http://localhost:8000',
+      enableAnalytics: process.env.ENABLE_AI_ANALYTICS !== 'false',
+      ...config
+    };
+
     this.search = new VectorSearch();
-    this.prompts = new PromptManager(this.search as any); // Type assertion for now
+    // Create a VectorStoreRetriever instance with proper typing
+    const retriever = {
+      getRelevantDocuments: async (query: string) => {
+        const results = await this.search.semanticSearch(query, 'prompts');
+        return results.map(result => new Document({
+          pageContent: result.content,
+          metadata: result.metadata || {}
+        }));
+      },
+      addDocuments: async (documents: Document[]) => {
+        await this.search.addDocuments(documents, 'prompts');
+      }
+    } as unknown as VectorStoreRetriever; // Type assertion to match the expected interface
+    this.prompts = new PromptManager(retriever);
     this.docs = new DocumentationSources();
     
     // Initialize with default prompts
-    this.initializeDefaultPrompts().catch(console.error);
+    this.initializeDefaultPrompts().catch(error => {
+      console.error('Failed to initialize default prompts:', error);
+      if (this.config.enableAnalytics) {
+        aiAnalytics.trackError(error instanceof Error ? error : new Error(String(error)));
+      }
+    });
     
     // Set up error handling
-    process.on('unhandledRejection', (reason, promise) => {
-      aiAnalytics.trackError(
-        new Error('Unhandled promise rejection'), 
-        { reason, promise }
-      );
+    process.on('unhandledRejection', (reason, _promise) => {
+      const error = new Error('Unhandled promise rejection');
+      if (this.config.enableAnalytics) {
+        aiAnalytics.trackError(error, { reason: String(reason) });
+      }
     });
   }
 
-  public static getInstance(): AIIntegration {
+  public static getInstance(config?: AIConfig): AIIntegration {
     if (!AIIntegration.instance) {
-      AIIntegration.instance = new AIIngration();
+      AIIntegration.instance = new AIIntegration(config);
     }
     return AIIntegration.instance;
   }
@@ -59,14 +93,21 @@ export class AIIntegration {
             template: template.template,
             tags: ['system', 'default'],
             version: '1.0.0',
-            metadata: { source: 'system' }
+            metadata: { source: 'system', type: 'prompt_template' }
           })
         )
       );
       
-      aiAnalytics.logEvent('default_prompts_initialized');
+      if (this.config.enableAnalytics) {
+        aiAnalytics.logEvent('default_prompts_initialized');
+      }
     } catch (error) {
-      aiAnalytics.trackError(error, { context: 'initializeDefaultPrompts' });
+      console.error('Failed to initialize default prompts:', error);
+      if (this.config.enableAnalytics) {
+        aiAnalytics.trackError(error instanceof Error ? error : new Error(String(error)), { 
+          context: 'initializeDefaultPrompts' 
+        });
+      }
       throw error;
     }
   }
@@ -82,14 +123,21 @@ export class AIIntegration {
       
       await Promise.all(
         requiredCollections
-          .filter(name => !collections.some(c => c.name === name))
+          .filter(name => !collections.some((c: { name: string }) => c.name === name))
           .map(name => this.search.createCollection(name))
       );
       
-      aiAnalytics.logEvent('ai_integration_initialized');
+      if (this.config.enableAnalytics) {
+        aiAnalytics.logEvent('ai_integration_initialized');
+      }
       return true;
     } catch (error) {
-      aiAnalytics.trackError(error, { context: 'AIIntegration.initialize' });
+      console.error('Failed to initialize AI integration:', error);
+      if (this.config.enableAnalytics) {
+        aiAnalytics.trackError(error instanceof Error ? error : new Error(String(error)), { 
+          context: 'AIIntegration.initialize' 
+        });
+      }
       throw error;
     }
   }
