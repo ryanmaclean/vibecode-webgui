@@ -97,11 +97,10 @@ class NetworkDiagnostics {
       p90: hub.P90,
       p95: hub.P95,
       p99: hub.P99,
-    }));
       hop: hub.count,
       host: hub.host || 'Unknown',
       ip: hub.host || hub.ASN || 'Unknown',
-      loss: `${hub.Loss%}%`,
+      loss: `${hub.Loss || 0}%`,
       sent: hub.Snt,
       last: hub.Last || 0,
       avg: hub.Avg || 0,

@@ -43,7 +43,34 @@ Deploy VibeCode to **Azure** with enterprise features in one click:
 - 🔧 **Development Tools**: ESLint accessibility linting, pre-commit hooks, and comprehensive test coverage
 - 🧠 **Vector Search & RAG**: Full semantic search capabilities with pgvector and OpenAI embeddings for intelligent code assistance
 - 🗄️ **Enterprise Database**: Complete Prisma schema with versioned migrations and comprehensive monitoring
+- 📊 **Database Monitoring**: Real-time PostgreSQL performance monitoring with Datadog DBM, including query performance, connection pools, and slow query analysis
 - 🔍 **LLM Observability**: Comprehensive AI operation tracking with Datadog LLM monitoring integration
+- 📊 **Database Monitoring**: Real-time PostgreSQL performance monitoring with Datadog DBM, including query performance, connection pools, and slow query analysis
+
+## 📊 Database Monitoring
+
+VibeCode includes comprehensive database monitoring with Datadog DBM (Database Monitoring) to ensure optimal PostgreSQL performance:
+
+- **Query Performance**: Track and optimize slow queries with execution plans
+- **Connection Pooling**: Monitor connection usage and prevent pool exhaustion
+- **Table Statistics**: Track table sizes, row counts, and growth trends
+- **Custom Metrics**: Extended monitoring for application-specific database operations
+
+### Setup Instructions
+
+1. **Enable PostgreSQL Extensions**:
+
+   ```bash
+   npm run db:setup-datadog
+   ```
+
+2. **Deploy Monitoring Configuration**:
+
+   ```bash
+   ./scripts/deploy-datadog-dbm.sh "your-database-password"
+   ```
+
+[View complete documentation](./docs/database-monitoring.md) for detailed configuration and usage.
 
 ## 🤖 **Enterprise AI Infrastructure**
 

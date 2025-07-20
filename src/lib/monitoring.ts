@@ -326,6 +326,98 @@ class MonitoringService {
   }
 
   /**
+   * Track page load metrics
+   */
+  trackPageLoad(path: string, startTime: number): void {
+    const loadTime = Date.now() - startTime
+    
+    // Submit page load metric
+    this.submitMetric({
+      metric: 'vibecode.page.load_time',
+      value: loadTime,
+      tags: [
+        `page:${path}`,
+        'service:vibecode-webgui',
+        `env:${process.env.NODE_ENV || 'development'}`
+      ]
+    }).catch(error => {
+      console.warn('Failed to track page load:', error)
+    })
+  }
+
+  /**
+   * Track user actions
+   */
+  trackUserAction(action: string, properties: Record<string, any> = {}): void {
+    // Submit user action event
+    this.submitEvent({
+      title: `User Action: ${action}`,
+      text: `User performed action: ${action}`,
+      tags: [
+        `action:${action}`,
+        'service:vibecode-webgui',
+        `env:${process.env.NODE_ENV || 'development'}`,
+        ...Object.entries(properties).map(([key, value]) => `${key}:${value}`)
+      ],
+      alert_type: 'info'
+    }).catch(error => {
+      console.warn('Failed to track user action:', error)
+    })
+  }
+
+  /**
+   * Track errors with context
+   */
+  trackError(error: Error, context: Record<string, any> = {}): void {
+    // Submit error event
+    this.submitEvent({
+      title: `Error: ${error.name}`,
+      text: `${error.message}\n\nStack trace:\n${error.stack}`,
+      tags: [
+        `error:${error.name.toLowerCase()}`,
+        'service:vibecode-webgui',
+        `env:${process.env.NODE_ENV || 'development'}`,
+        ...Object.entries(context).map(([key, value]) => `${key}:${value}`)
+      ],
+      alert_type: 'error'
+    }).catch(submitError => {
+      console.warn('Failed to track error:', submitError)
+    })
+
+    // Also submit error count metric
+    this.submitMetric({
+      metric: 'vibecode.errors.count',
+      value: 1,
+      tags: [
+        `error_type:${error.name.toLowerCase()}`,
+        'service:vibecode-webgui',
+        `env:${process.env.NODE_ENV || 'development'}`
+      ]
+    }).catch(metricError => {
+      console.warn('Failed to submit error metric:', metricError)
+    })
+  }
+
+  /**
+   * Initialize monitoring
+   */
+  init(): void {
+    // Track initialization
+    this.submitEvent({
+      title: 'Monitoring Initialized',
+      text: 'VibeCode monitoring service started',
+      tags: [
+        'service:vibecode-webgui',
+        `env:${process.env.NODE_ENV || 'development'}`,
+        'event:monitoring_init'
+      ],
+      alert_type: 'info'
+    }).catch(error => {
+      console.warn('Failed to track monitoring init:', error)
+    })
+  }
+
+  /**
    * Check if Datadog integration is properly configured
    */
   isConfigured(): boolean {
