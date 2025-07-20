@@ -1,0 +1,246 @@
+{{- if .Values.mongodb.enabled }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-secret
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+type: Opaque
+data:
+  mongodb-root-password: {{ .Values.mongodb.auth.rootPassword | b64enc | quote }}
+  mongodb-password: {{ .Values.mongodb.auth.password | b64enc | quote }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-init
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+data:
+  init-chatui-db.js: |
+    // MongoDB initialization script for chat-ui
+    db = db.getSiblingDB('{{ .Values.mongodb.auth.database }}');
+    
+    // Create user for chat-ui application
+    db.createUser({
+      user: '{{ .Values.mongodb.auth.username }}',
+      pwd: '{{ .Values.mongodb.auth.password }}',
+      roles: [{ role: 'readWrite', db: '{{ .Values.mongodb.auth.database }}' }]
+    });
+    
+    // Create collections with validation schemas
+    db.createCollection('conversations', {
+      validator: {
+        $jsonSchema: {
+          bsonType: 'object',
+          required: ['_id', 'title', 'createdAt', 'updatedAt'],
+          properties: {
+            title: { bsonType: 'string', maxLength: 500 },
+            sessionId: { bsonType: 'string' },
+            messages: { bsonType: 'array' },
+            model: { bsonType: 'string' },
+            embeddingModel: { bsonType: 'string' }
+          }
+        }
+      }
+    });
+    
+    db.createCollection('sessions', {
+      validator: {
+        $jsonSchema: {
+          bsonType: 'object',
+          required: ['_id', 'sessionId', 'createdAt'],
+          properties: {
+            sessionId: { bsonType: 'string' },
+            userId: { bsonType: 'string' },
+            expiresAt: { bsonType: 'date' }
+          }
+        }
+      }
+    });
+    
+    db.createCollection('assistants', {
+      validator: {
+        $jsonSchema: {
+          bsonType: 'object',
+          required: ['_id', 'name', 'createdAt'],
+          properties: {
+            name: { bsonType: 'string', maxLength: 100 },
+            description: { bsonType: 'string', maxLength: 500 },
+            model: { bsonType: 'string' },
+            instructions: { bsonType: 'string' },
+            avatar: { bsonType: 'string' }
+          }
+        }
+      }
+    });
+    
+    // Create indexes for performance
+    db.conversations.createIndex({ "sessionId": 1 });
+    db.conversations.createIndex({ "createdAt": -1 });
+    db.conversations.createIndex({ "updatedAt": -1 });
+    db.sessions.createIndex({ "sessionId": 1 }, { unique: true });
+    db.sessions.createIndex({ "expiresAt": 1 }, { expireAfterSeconds: 0 });
+    db.assistants.createIndex({ "name": 1 });
+    
+    print("✅ Chat-UI database initialized successfully");
+
+---
+{{- if .Values.mongodb.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-pvc
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.mongodb.persistence.storageClass }}
+  storageClassName: {{ .Values.mongodb.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.mongodb.persistence.size }}
+{{- end }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+  annotations:
+    {{- if .Values.mongodb.datadog.enabled }}
+    ad.datadoghq.com/mongodb.check_names: '["{{ .Values.mongodb.datadog.configCheckName }}"]'
+    ad.datadoghq.com/mongodb.init_configs: '[{}]'
+    ad.datadoghq.com/mongodb.instances: |
+      [
+        {
+          "hosts": ["%%host%%:27017"],
+          "username": "datadog",
+          "password": "%%env_MONGODB_DATADOG_PASSWORD%%",
+          "database": "admin",
+          "options": {
+            "authSource": "admin"
+          },
+          "tags": ["env:{{ .Values.global.nodeEnv | default "production" }}", "service:mongodb", "version:{{ .Values.mongodb.image.tag }}"]
+        }
+      ]
+    {{- end }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "vibecode-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mongodb
+  template:
+    metadata:
+      labels:
+        {{- include "vibecode-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mongodb
+      annotations:
+        {{- if .Values.mongodb.datadog.enabled }}
+        ad.datadoghq.com/tags: '{"env": "{{ .Values.global.nodeEnv | default "production" }}", "service": "mongodb", "version": "{{ .Values.mongodb.image.tag }}"}'
+        {{- end }}
+    spec:
+      containers:
+      - name: mongodb
+        image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: mongodb
+          containerPort: 27017
+          protocol: TCP
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: {{ .Values.mongodb.auth.rootUsername | quote }}
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: mongodb-root-password
+        - name: MONGO_INITDB_DATABASE
+          value: {{ .Values.mongodb.auth.database | quote }}
+        {{- if .Values.mongodb.datadog.enabled }}
+        - name: MONGODB_DATADOG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secret
+              key: mongodb-password
+              optional: true
+        {{- end }}
+        volumeMounts:
+        {{- if .Values.mongodb.persistence.enabled }}
+        - name: mongodb-data
+          mountPath: /data/db
+        {{- end }}
+        - name: mongodb-init
+          mountPath: /docker-entrypoint-initdb.d
+        livenessProbe:
+          exec:
+            command:
+            - mongosh
+            - --eval
+            - "db.adminCommand('ping')"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 6
+        readinessProbe:
+          exec:
+            command:
+            - mongosh
+            - --eval
+            - "db.adminCommand('ping')"
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 3
+        resources:
+          {{- toYaml .Values.mongodb.resources | nindent 10 }}
+      volumes:
+      {{- if .Values.mongodb.persistence.enabled }}
+      - name: mongodb-data
+        persistentVolumeClaim:
+          claimName: mongodb-pvc
+      {{- end }}
+      - name: mongodb-init
+        configMap:
+          name: mongodb-init
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+spec:
+  type: ClusterIP
+  ports:
+  - port: 27017
+    targetPort: mongodb
+    protocol: TCP
+    name: mongodb
+  selector:
+    {{- include "vibecode-platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+{{- end }}

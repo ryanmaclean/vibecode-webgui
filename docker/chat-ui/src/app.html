@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" %sveltekit.theme%>
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>VibeCode Chat</title>
+		<meta name="description" content="AI-powered chat interface for the VibeCode development platform" />
+		
+		<!-- VibeCode branding -->
+		<meta name="theme-color" content="#3b82f6" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+		
+		<!-- Open Graph metadata -->
+		<meta property="og:title" content="VibeCode Chat" />
+		<meta property="og:description" content="AI-powered development assistant" />
+		<meta property="og:type" content="website" />
+		
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover" class="bg-gray-50 dark:bg-gray-900">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>

@@ -8,6 +8,7 @@
 import { useState, useRef, useCallback } from 'react'
 import CodeServerIDE from '@/components/ide/CodeServerIDE'
 import CodeAssistant from '@/components/ai/CodeAssistant'
+import EnhancedTerminal from '@/components/terminal/EnhancedTerminal'
 import { useAuth } from '@/hooks/useAuth'
 
 interface WorkspaceLayoutProps {
@@ -23,11 +24,12 @@ export default function WorkspaceLayout({
 }: WorkspaceLayoutProps) {
   const { user } = useAuth()
   const [sidebarWidth, setSidebarWidth] = useState(280)
-  const [isResizing, setIsResizing] = useState<'sidebar' | null>(null)
+  const [terminalHeight, setTerminalHeight] = useState(320)
+  const [isResizing, setIsResizing] = useState<'sidebar' | 'terminal' | null>(null)
   const [showAIAssistant, setShowAIAssistant] = useState(false)
   const layoutRef = useRef<HTMLDivElement>(null)
 
-  const handleMouseDown = useCallback((type: 'sidebar') => {
+  const handleMouseDown = useCallback((type: 'sidebar' | 'terminal') => {
     setIsResizing(type)
   }, [])
 
@@ -39,6 +41,9 @@ export default function WorkspaceLayout({
     if (isResizing === 'sidebar') {
       const newWidth = Math.max(200, Math.min(600, e.clientX - rect.left))
       setSidebarWidth(newWidth)
+    } else if (isResizing === 'terminal') {
+      const newHeight = Math.max(160, Math.min(600, rect.bottom - e.clientY))
+      setTerminalHeight(newHeight)
     }
   }, [isResizing])
 
@@ -151,27 +156,50 @@ export default function WorkspaceLayout({
           onMouseDown={() => handleMouseDown('sidebar')}
         />
 
-        {/* Main Editor Area - Code-server with built-in terminal */}
-        <div className="flex-1">
-          <CodeServerIDE
-            workspaceId={workspaceId}
-            className="h-full"
-            onReady={(iframe) => {
-              console.log('Code-server IDE ready with built-in terminal:', iframe)
+        {/* Main Editor Area - Split between Code-server IDE and Enhanced Terminal */}
+        <div className="flex-1 flex flex-col">
+          {/* Code Editor - Code-server without terminal */}
+          <div className="flex-1">
+            <CodeServerIDE
+              workspaceId={workspaceId}
+              className="h-full"
+              onReady={(iframe) => {
+                console.log('Code-server IDE ready (terminal disabled):', iframe)
+                
+                // Hide the built-in terminal since we use our enhanced terminal
+                try {
+                  iframe.contentWindow?.postMessage({
+                    type: 'workbench.action.togglePanel'
+                  }, '*')
+                } catch (error) {
+                  console.log('Could not hide terminal panel:', error)
+                }
+              }}
+              onError={(error) => {
+                console.error('Code-server IDE error:', error)
+              }}
+            />
+          </div>
 
-              // Send message to code-server to show terminal by default
-              try {
-                iframe.contentWindow?.postMessage({
-                  type: 'workbench.action.terminal.toggleTerminal'
-                }, '*')
-              } catch (error) {
-                console.log('Could not auto-open terminal:', error)
-              }
-            }}
-            onError={(error) => {
-              console.error('Code-server IDE error:', error)
-            }}
+          {/* Terminal Resize Handle */}
+          <div
+            className="h-1 bg-gray-700 hover:bg-gray-600 cursor-row-resize transition-colors"
+            onMouseDown={() => handleMouseDown('terminal')}
           />
+
+                     {/* Enhanced Terminal with AI Integration */}
+           <div className="min-h-40" style={{ height: `${terminalHeight}px` }}>
+            <EnhancedTerminal
+              workspaceId={workspaceId}
+              className="h-full border-t border-gray-700"
+              theme="dark"
+              enableAI={true}
+              enableWebGL={true}
+              onReady={(terminal) => {
+                console.log('Enhanced AI terminal ready:', terminal)
+              }}
+            />
+          </div>
         </div>
       </div>
 

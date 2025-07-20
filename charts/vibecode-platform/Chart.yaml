@@ -1,9 +1,22 @@
 apiVersion: v2
 name: vibecode-platform
-description: Cloud-native development platform with code-server and AI integration
+description: Cloud-native development platform with code-server, AI integration, and Hugging Face chat-ui
 type: application
-version: 0.1.0
-appVersion: "1.0.0"
+version: 0.2.0
+appVersion: "1.1.0"
 maintainers:
   - name: VibeCode Team
     email: platform@vibecode.dev
+dependencies:
+  - name: mongodb
+    version: "~15.6.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: mongodb.enabled
+keywords:
+  - ai
+  - development
+  - kubernetes
+  - chat-ui
+  - semantic-kernel
+  - mongodb
+  - huggingface

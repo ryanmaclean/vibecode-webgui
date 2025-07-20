@@ -1,0 +1,179 @@
+{{- if .Values.chatui.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vibecode-platform.fullname" . }}-chat-ui
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: chat-ui
+spec:
+  replicas: {{ .Values.chatui.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "vibecode-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: chat-ui
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/chat-ui-configmap.yaml") . | sha256sum }}
+        {{- if .Values.chatui.datadog.enabled }}
+        ad.datadoghq.com/chat-ui.check_names: '["nodejs"]'
+        ad.datadoghq.com/chat-ui.init_configs: '[{}]'
+        ad.datadoghq.com/chat-ui.instances: '[{"host": "%%host%%", "port": 3000, "tags": ["env:{{ .Values.global.nodeEnv | default "production" }}", "service:{{ .Values.chatui.datadog.apm.serviceName }}", "version:{{ .Values.chatui.image.tag }}"]}]'
+        ad.datadoghq.com/tags: '{"env": "{{ .Values.global.nodeEnv | default "production" }}", "service": "{{ .Values.chatui.datadog.apm.serviceName }}", "version": "{{ .Values.chatui.image.tag }}"}'
+        {{- end }}
+      labels:
+        {{- include "vibecode-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: chat-ui
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "vibecode-platform.serviceAccountName" . }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      initContainers:
+        - name: wait-for-mongodb
+          image: busybox:1.35
+          command: ['sh', '-c']
+          args:
+            - |
+              until nc -z mongodb 27017; do
+                echo "Waiting for MongoDB..."
+                sleep 2
+              done
+              echo "MongoDB is ready!"
+      containers:
+        - name: chat-ui
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 1001
+            capabilities:
+              drop:
+              - ALL
+          image: "{{ .Values.chatui.image.repository }}:{{ .Values.chatui.image.tag }}"
+          imagePullPolicy: {{ .Values.chatui.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PUBLIC_ORIGIN
+              value: {{ .Values.chatui.config.publicOrigin | quote }}
+            - name: MONGODB_URL
+              value: {{ printf "mongodb://%s:%s@mongodb:27017/%s" .Values.mongodb.auth.username .Values.mongodb.auth.password .Values.mongodb.auth.database | quote }}
+            - name: ENABLE_ASSISTANTS
+              value: {{ .Values.chatui.config.enableAssistants | quote }}
+            - name: ENABLE_ASSISTANTS_RAG
+              value: {{ .Values.chatui.config.enableAssistantsRag | quote }}
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vibecode-platform.fullname" . }}-secrets
+                  key: openai-api-key
+                  optional: true
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vibecode-platform.fullname" . }}-secrets
+                  key: anthropic-api-key
+                  optional: true
+            - name: HF_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vibecode-platform.fullname" . }}-chat-ui-secrets
+                  key: hf-access-token
+                  optional: true
+            - name: RATE_LIMIT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vibecode-platform.fullname" . }}-chat-ui-secrets
+                  key: rate-limit-secret
+                  optional: true
+            - name: PARQUET_EXPORT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vibecode-platform.fullname" . }}-chat-ui-secrets
+                  key: parquet-export-secret
+                  optional: true
+            {{- if .Values.chatui.datadog.enabled }}
+            # Datadog APM Configuration
+            - name: DD_SERVICE
+              value: {{ .Values.chatui.datadog.apm.serviceName | quote }}
+            - name: DD_ENV
+              value: {{ .Values.global.nodeEnv | default "production" | quote }}
+            - name: DD_VERSION
+              value: {{ .Values.chatui.image.tag | quote }}
+            - name: DD_TRACE_ENABLED
+              value: "true"
+            - name: DD_RUNTIME_METRICS_ENABLED
+              value: "true"
+            - name: DD_PROFILING_ENABLED
+              value: "true"
+            - name: DD_LOGS_INJECTION
+              value: "true"
+            - name: DD_TRACE_SAMPLE_RATE
+              value: "1.0"
+            - name: DD_TRACE_DEBUG
+              value: "false"
+            {{- if .Values.chatui.datadog.rum.enabled }}
+            # Datadog RUM Configuration
+            - name: DD_APPLICATION_ID
+              value: {{ .Values.chatui.datadog.rum.applicationId | quote }}
+            - name: DD_CLIENT_TOKEN
+              value: {{ .Values.chatui.datadog.rum.clientToken | quote }}
+            {{- end }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "vibecode-platform.fullname" . }}-chat-ui-config
+          resources:
+            {{- toYaml .Values.chatui.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+      restartPolicy: Always
+{{- end }}
