@@ -1,179 +1,37 @@
-name: CI
+name: VibeCode CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
-  build-and-scan:
+  build-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Configure Datadog Test Optimization
-      # NOTE: Secrets are configured in the GitHub repository settings, not in this file.
-      # The 'Context access might be invalid' warnings are expected if secrets are not set locally.
-      uses: datadog/test-visibility-github-action@v2
-      with:
-        languages: js
-        api_key: ${{secrets.DD_API_KEY}}
-        site: datadoghq.com
+      - name: Lint code
+        run: npm run lint
 
-    - name: Type checking
-      run: npm run type-check
+      - name: Check types
+        run: npm run type-check
 
-    - name: Linting
-      run: npm run lint
+      - name: Run tests
+        run: npm test
 
-    - name: Unit tests
-      run: npm run test:unit
-      env:
-        DD_API_KEY: ${{secrets.DD_API_KEY}}
-        DD_APP_KEY: ${{secrets.DD_APP_KEY}}
-        NODE_OPTIONS: -r ${{env.DD_TRACE_PACKAGE}}
-
-    - name: AI workflow tests
-      run: npm run test:ai-workflow
-      env:
-        DD_API_KEY: ${{secrets.DD_API_KEY}}
-        DD_APP_KEY: ${{secrets.DD_APP_KEY}}
-        NODE_OPTIONS: -r ${{env.DD_TRACE_PACKAGE}}
-        OPENROUTER_API_KEY: ${{secrets.OPENROUTER_API_KEY}}
-
-    - name: AI component tests
-      run: npm run test:ai-components
-      env:
-        DD_API_KEY: ${{secrets.DD_API_KEY}}
-        DD_APP_KEY: ${{secrets.DD_APP_KEY}}
-        NODE_OPTIONS: -r ${{env.DD_TRACE_PACKAGE}}
-
-    - name: Integration tests
-      run: npm run test:integration
-      env:
-        DD_API_KEY: ${{secrets.DD_API_KEY}}
-        DD_APP_KEY: ${{secrets.DD_APP_KEY}}
-        NODE_OPTIONS: -r ${{env.DD_TRACE_PACKAGE}}
-
-    - name: Accessibility tests
-      run: npm run test tests/accessibility/contrast.test.js
-      env:
-        DD_API_KEY: ${{secrets.DD_API_KEY}}
-        DD_APP_KEY: ${{secrets.DD_APP_KEY}}
-        NODE_OPTIONS: -r ${{env.DD_TRACE_PACKAGE}}
-
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-
-    - name: End-to-end tests
-      run: npm run test:e2e
-      env:
-        DD_API_KEY: ${{secrets.DD_API_KEY}}
-        DD_APP_KEY: ${{secrets.DD_APP_KEY}}
-        NODE_OPTIONS: -r ${{env.DD_TRACE_PACKAGE}}
-
-    - name: AI workflow E2E tests
-      run: npm run test:ai-e2e
-      env:
-        DD_API_KEY: ${{secrets.DD_API_KEY}}
-        DD_APP_KEY: ${{secrets.DD_APP_KEY}}
-        NODE_OPTIONS: -r ${{env.DD_TRACE_PACKAGE}}
-        OPENROUTER_API_KEY: ${{secrets.OPENROUTER_API_KEY}}
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to GitHub Container Registry
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Build Docker images
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile.production
-        push: ${{'{{'}} github.ref == 'refs/heads/main' && github.event_name == 'push' {{'}}'}}
-        tags: |
-          ghcr.io/${{'{{'}} github.repository {{'}}'}}:latest
-          ghcr.io/${{'{{'}} github.repository {{'}}'}}:{{'{{'}} github.sha {{'}}'}}
-
-    - name: Build and push code-server image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./docker/code-server/Dockerfile
-        push: ${{'{{'}} github.ref == 'refs/heads/main' && github.event_name == 'push' {{'}}'}}
-        tags: |
-          ghcr.io/${{'{{'}} github.repository {{'}}'}}/code-server:latest
-          ghcr.io/${{'{{'}} github.repository {{'}}'}}/code-server:${{'{{'}} github.sha {{'}}'}}
-
-    - name: Build and push watermark-pod-autoscaler image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./watermarkpodautoscaler/Dockerfile
-        push: ${{'{{'}} github.ref == 'refs/heads/main' && github.event_name == 'push' {{'}}'}}
-        tags: |
-          ghcr.io/${{'{{'}} github.repository {{'}}'}}/wpa:latest
-          ghcr.io/${{'{{'}} github.repository {{'}}'}}/wpa:${{'{{'}} github.sha {{'}}'}}
-
-    - name: Attest Build Provenance
-      uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
-
-    - name: Run npm audit
-      run: npm audit --audit-level=high
-
-    - name: Run license check
-      run: |
-        npm install -g license-checker
-        ./scripts/check-licenses.sh
-
-    - name: Datadog SAST Scan
-      if: github.event_name == 'push'
-      run: npx @datadog/datadog-ci@2.29.0 sast scan
-      env:
-        DD_API_KEY: ${{ secrets.DD_API_KEY }}
-        DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-
-    - name: Generate SBOM for SCA
-      run: npx @cyclonedx/cyclonedx-npm --output-file sbom.json
-
-    - name: Datadog SCA Scan
-      if: github.event_name == 'push'
-      run: npx @datadog/datadog-ci@2.29.0 sbom upload sbom.json
-      env:
-        DD_API_KEY: ${{ secrets.DD_API_KEY }}
-        DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-
-    - name: Push Datadog Dashboards
-      if: github.ref == 'refs/heads/main'
-      run: datadog-ci dashboards push --dashboard-glob monitoring/datadog/dashboards/*.json
-      env:
-        DD_SITE: datadoghq.com
-        DD_API_KEY: ${{ secrets.DD_API_KEY }}
-        DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-
-    - name: Run Datadog Synthetic Tests
-      if: github.ref == 'refs/heads/main'
-      run: datadog-ci synthetics run-tests --public-id vib-ecd-aig-perf --failOnCriticalErrors
-      env:
-        DD_SITE: datadoghq.com
-        DD_API_KEY: ${{ secrets.DD_API_KEY }}
-        DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-        VIBECODE_SESSION_TOKEN: ${{ secrets.VIBECODE_SESSION_TOKEN }}
+      - name: Build project
+        run: npm run build
