@@ -42,8 +42,8 @@
     -   Replaced Grafana and Alertmanager with Datadog for a unified monitoring, visualization, and alerting platform.
 - [✅] **Configure Prometheus as a Datadog Source:**
     -   Prometheus is now streamlined to expose metrics for the Datadog agent.
-- [ ] **Centralized Logging:**
-    -   Ensure logs from all services are aggregated and searchable in Datadog.
+- [✅] **Centralized Logging:**
+    -   Configured the application to produce structured JSON logs and enabled log collection in Datadog.
 
 ### **3. Documentation**
 **Status**: 📝 Planning
