@@ -1,0 +1,164 @@
+# Multi-architecture Docker Compose for VibeCode Platform
+# Supports both x86-64 and ARM64 architectures
+
+version: '3.8'
+
+services:
+  # Main VibeCode application
+  vibecode-app:
+    image: ghcr.io/vibecode/vibecode-webgui:latest
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - DATADOG_API_KEY=${DATADOG_API_KEY}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+    depends_on:
+      - postgres
+      - redis
+      - ai-gateway
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # AI Gateway service
+  ai-gateway:
+    image: ghcr.io/vibecode/vibecode-webgui/ai-gateway:latest
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - DATADOG_API_KEY=${DATADOG_API_KEY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Code Server (VS Code in browser)
+  code-server:
+    image: ghcr.io/vibecode/vibecode-webgui/code-server:latest
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    ports:
+      - "8080:8080"
+    volumes:
+      - code-server-data:/home/coder/projects
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - PASSWORD=${CODE_SERVER_PASSWORD:-vibecode123}
+      - SUDO_PASSWORD=${CODE_SERVER_PASSWORD:-vibecode123}
+    restart: unless-stopped
+
+  # Documentation site
+  docs:
+    image: ghcr.io/vibecode/vibecode-webgui/docs:latest
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # MCP Servers
+  mcp-servers:
+    image: ghcr.io/vibecode/vibecode-webgui/mcp-servers:latest
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    ports:
+      - "3002:3001"
+      - "3003:3002"
+      - "3004:3003"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - mcp-models:/app/models
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  postgres:
+    image: pgvector/pgvector:pg16
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=vibecode
+      - POSTGRES_USER=vibecode
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-vibecode123}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vibecode -d vibecode"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # Prometheus (monitoring)
+  prometheus:
+    image: prom/prometheus:latest
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  # Vector (log router)
+  vector:
+    image: timberio/vector:latest-alpine
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    ports:
+      - "9598:9598"
+    volumes:
+      - ./monitoring/vector.toml:/etc/vector/vector.toml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    environment:
+      - DATADOG_API_KEY=${DATADOG_API_KEY}
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
+  prometheus-data:
+  code-server-data:
+  mcp-models:
+
+networks:
+  default:
+    name: vibecode-network

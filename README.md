@@ -84,8 +84,7 @@ VibeCode supports multiple observability platforms to accommodate different lice
 
 ### **Alternative Options (Permissive Licenses)**
 - **OpenTelemetry Collector**: Vendor-neutral telemetry (Apache 2.0 license)
-- **Grafana**: Visualization layer (AGPL v3 license)
-- **Full Open Source Stack**: Prometheus + OpenTelemetry + Vector + Grafana
+- **Full Open Source Stack**: Prometheus + OpenTelemetry + Vector
 
 ### **Security Analysis**
 - **Kubehound**: Kubernetes attack path analysis (by Datadog, open source)
@@ -1780,8 +1779,3 @@ VibeCode implements comprehensive security measures to protect against API key l
 - Join the community discussions
 - Share your deployment experiences
 
-**License:** MIT - Feel free to use this in your own projects!
-
----
-
-*Built with ❤️ by the VibeCode team. Powered by Kubernetes, OpenRouter, and Claude AI.*

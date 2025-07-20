@@ -1,0 +1,72 @@
+---
+title: VibeCode Platform Documentation
+description: Welcome to the VibeCode cloud-native development platform with AI-powered workflows
+template: splash
+hero:
+  tagline: Cloud-Native Development Platform with AI-Powered Workflows
+  image:
+    file: ../../assets/logo.svg
+  actions:
+    - text: Get Started
+      link: /guides/quick-start/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/vibecode/vibecode-webgui
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## What is VibeCode?
+
+VibeCode is an **infrastructure-first** cloud-native development platform that combines the power of AI-driven project generation with enterprise-grade security and observability. Built on Kubernetes with a complete VS Code experience in the cloud.
+
+<CardGrid>
+  <Card title="🚀 AI Project Generation" icon="rocket">
+    Transform natural language prompts into production-ready codebases using Claude-3.5-Sonnet and multiple AI providers.
+  </Card>
+  <Card title="🖥️ Live VS Code Experience" icon="laptop">
+    Full IDE via code-server with real-time collaboration, not a limited web editor.
+  </Card>
+  <Card title="📊 Multi-Platform Observability" icon="chart">
+    Hybrid monitoring stack: Datadog + Prometheus + Vector + OpenTelemetry support.
+  </Card>
+  <Card title="🔐 Enterprise Security" icon="shield">
+    Authelia 2FA/SSO, hardware keys, TOTP, integrated security scanning with Kubehound.
+  </Card>
+</CardGrid>
+
+## Key Features
+
+- **Infrastructure-First**: KIND (Kubernetes in Docker) orchestration eliminates 60-80% custom development
+- **Multi-AI Provider Support**: Avoid vendor lock-in with intelligent routing across 6+ AI models
+- **Production-Ready**: NGINX Ingress, cert-manager, Helm charts, persistent storage
+- **Accessibility Compliance**: WCAG 2.1 AA compliant with comprehensive testing
+- **Open Source**: MIT license with permissive dependencies (Apache 2.0, BSD, MPL-2.0)
+
+## Architecture Overview
+
+VibeCode leverages a **hybrid observability stack** that provides both enterprise features and vendor independence:
+
+### Primary (Default): Datadog + Prometheus + Vector Hybrid
+- **Datadog Agent + Cluster Agent**: Full-featured SaaS platform (commercial license)
+- **Prometheus**: Open source metrics collection (Apache 2.0 license)  
+- **Vector**: High-performance log/metrics router (MPL-2.0 license, by Datadog)
+- **Combined Benefits**: Enterprise features + vendor independence + high-performance data pipeline
+
+### Alternative Options (Permissive Licenses)
+- **OpenTelemetry Collector**: Vendor-neutral telemetry (Apache 2.0 license)
+- **Grafana**: Visualization layer (AGPL v3 license)
+- **Full Open Source Stack**: Prometheus + OpenTelemetry + Vector + Grafana
+
+### Security Analysis
+- **Kubehound**: Kubernetes attack path analysis (by Datadog, open source)
+
+## Quick Links
+
+- [Quick Start Guide](/guides/quick-start/) - Get up and running in minutes
+- [Monitoring Setup](/monitoring/overview/) - Configure your observability stack
+- [Azure Deployment](/deployment/azure/) - Deploy to production
+- [API Reference](/development/api/) - Developer documentation
