@@ -25,49 +25,42 @@ if (process.env.DD_API_KEY) {
 }
 
 // Custom Winston formatter for structured logging
-const structuredFormat = format.combine(
-  format.timestamp({
-    format: 'YYYY-MM-DD HH:mm:ss.SSS'
-  }),
-  format.errors({ stack: true }),
-  format.json(),
-  format.printf(({ timestamp, level, message, service, ...meta }) => {
-    return JSON.stringify({
-      timestamp,
-      level,
-      message,
-      service: service || 'vibecode-webgui',
-      ...meta
-    })
+// Define different formats for production and development
+const developmentFormat = format.combine(
+  format.colorize(),
+  format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
+  format.printf(({ timestamp, level, message, stack, ...meta }) => {
+    const metaStr = Object.keys(meta).length ? `\n${JSON.stringify(meta, null, 2)}` : '';
+    const stackStr = stack ? `\n${stack}` : '';
+    return `${timestamp} ${level}: ${message}${stackStr}${metaStr}`;
   })
-)
+);
+
+const productionFormat = format.combine(
+  format.timestamp(),
+  format.errors({ stack: true }),
+  format.json()
+);
 
 // Create logger instance
 const logger = createLogger({
   level: process.env.LOG_LEVEL || 'info',
-  format: structuredFormat,
+  // Use JSON format in production, and human-readable in development
+  format: process.env.NODE_ENV === 'production' ? productionFormat : developmentFormat,
   defaultMeta: {
     service: 'vibecode-webgui',
     environment: process.env.NODE_ENV || 'development',
     version: process.env.APP_VERSION || '1.0.0'
   },
   transports: [
-    // Console transport for development
-    new transports.Console({
-      format: format.combine(
-        format.colorize(),
-        format.simple(),
-        format.printf(({ timestamp, level, message, ...meta }) => {
-          const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''
-          return `${timestamp} [${level}]: ${message} ${metaStr}`
-        })
-      )
-    }),
+    // Console transport is the primary target for containerized environments
+    new transports.Console(),
 
-    // File transport for persistent logging
+    // File transports for persistent logging, always in JSON format
     new transports.File({
       filename: 'logs/error.log',
       level: 'error',
+      format: productionFormat,
       maxsize: 50 * 1024 * 1024, // 50MB
       maxFiles: 5,
       tailable: true
