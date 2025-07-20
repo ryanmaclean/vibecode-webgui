@@ -3,13 +3,9 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare, Wand2, FileText } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import PromptTemplates from './PromptTemplates'
-import PromptEnhancer from './PromptEnhancer'
+import { Button, Textarea, Card, CardContent, Badge, ScrollArea } from '@/components/ui';
+// import PromptTemplates from './PromptTemplates'
+// import PromptEnhancer from './PromptEnhancer'
 
 interface Message {
   id: string
@@ -31,20 +27,20 @@ interface AIChatInterfaceProps {
   className?: string
 }
 
-export default function AIChatInterface({
+export const AIChatInterface = ({
   workspaceId = 'default',
   initialContext = [],
   onFileUpload,
   className = ''
-}: AIChatInterfaceProps) {
+}: AIChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [selectedModel, setSelectedModel] = useState('anthropic/claude-3-sonnet')
   const [contextFiles, setContextFiles] = useState<string[]>(initialContext)
   const [showSettings, setShowSettings] = useState(false)
-  const [showPromptTemplates, setShowPromptTemplates] = useState(false)
-  const [showPromptEnhancer, setShowPromptEnhancer] = useState(false)
+  // const [showPromptTemplates, setShowPromptTemplates] = useState(false)
+  // const [showPromptEnhancer, setShowPromptEnhancer] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -125,55 +121,45 @@ export default function AIChatInterface({
           context: {
             workspaceId,
             files: contextFiles,
-            previousMessages: messages.slice(-10) // Last 10 messages for context
           }
         })
       })
 
-      if (!response.body) throw new Error('No response body')
+      if (!response.body) {
+        throw new Error('Response body is null')
+      }
 
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
+      let done = false
       let accumulatedContent = ''
 
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
+      while (!done) {
+        const { value, done: readerDone } = await reader.read()
+        done = readerDone
         const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
+        accumulatedContent += chunk
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6))
-              if (data.content) {
-                accumulatedContent += data.content
-
-                // Update the assistant message with streaming content
-                setMessages(prev => prev.map(msg =>
-                  msg.id === assistantMessage.id
-                    ? { ...msg, content: accumulatedContent }
-                    : msg
-                ))
-              }
-            } catch (e) {
-              // Ignore parsing errors for streaming chunks
-            }
-          }
-        }
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMessage.id 
+            ? { ...msg, content: accumulatedContent } 
+            : msg
+        ))
       }
 
-      // Save conversation
-      await saveConversation([...messages, userMessage, { ...assistantMessage, content: accumulatedContent }])
+      const finalMessages = [...messages, userMessage, { ...assistantMessage, content: accumulatedContent }]
+      saveConversation(finalMessages)
 
     } catch (error) {
-      console.error('Chat error:', error)
-      setMessages(prev => prev.map(msg =>
-        msg.id === assistantMessage.id
-          ? { ...msg, content: 'Sorry, I encountered an error. Please try again.' }
-          : msg
-      ))
+      console.error('Error streaming AI response:', error)
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        type: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+        timestamp: new Date(),
+        metadata: { model: 'system' }
+      }
+      setMessages(prev => [...prev.slice(0, -1), errorMessage])
     } finally {
       setIsStreaming(false)
     }
@@ -184,7 +170,7 @@ export default function AIChatInterface({
       await fetch(`/api/ai/conversations/${workspaceId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: messagesToSave })
+        body: JSON.stringify({ messages: messagesToSave }),
       })
     } catch (error) {
       console.error('Failed to save conversation:', error)
@@ -192,12 +178,10 @@ export default function AIChatInterface({
   }
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files
-    if (files && onFileUpload) {
-      onFileUpload(files)
-      // Add uploaded files to context
-      const fileNames = Array.from(files).map(f => f.name)
+    if (event.target.files) {
+      const fileNames = Array.from(event.target.files).map(file => file.name)
       setContextFiles(prev => [...prev, ...fileNames])
+      onFileUpload?.(event.target.files)
     }
   }
 
@@ -209,25 +193,29 @@ export default function AIChatInterface({
   }
 
   const formatTimestamp = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
+    return new Date(date).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit'
-    }).format(date)
+    })
   }
 
+  /*
   const handlePromptTemplate = (prompt: string) => {
     setInput(prompt)
-    setShowPromptTemplates(false)
-    // Focus the textarea after selecting template
+    // setShowPromptTemplates(false)
+    // Focus the textarea after applying a template
     setTimeout(() => textareaRef.current?.focus(), 100)
   }
+  */
 
+  /*
   const handleEnhancedPrompt = (prompt: string) => {
     setInput(prompt)
-    setShowPromptEnhancer(false)
+    // setShowPromptEnhancer(false)
     // Focus the textarea after enhancement
     setTimeout(() => textareaRef.current?.focus(), 100)
   }
+  */
 
   const currentModel = availableModels.find(m => m.id === selectedModel)
 
@@ -236,82 +224,71 @@ export default function AIChatInterface({
       {/* Header */}
       <div className="border-b border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-              <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                AI Assistant
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {currentModel?.icon} {currentModel?.name} • Ready to help
-              </p>
-            </div>
-          </div>
-
           <div className="flex items-center space-x-2">
-            {contextFiles.length > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {contextFiles.length} files in context
-              </Badge>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowPromptTemplates(!showPromptTemplates)}
-              title="Prompt Templates"
-            >
-              <FileText className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowPromptEnhancer(!showPromptEnhancer)}
-              title="Enhance Prompt"
-            >
-              <Wand2 className="w-4 h-4" />
-            </Button>
+            <Bot className="w-6 h-6 text-blue-600" />
+            <h2 className="font-semibold text-lg">AI Assistant</h2>
+            <Badge variant="outline">{currentModel?.name}</Badge>
+          </div>
+          <div className="flex items-center space-x-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowSettings(!showSettings)}
+              title="Settings"
             >
               <Settings className="w-4 h-4" />
             </Button>
+            {/* <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {}}
+              title="Prompt Templates"
+            >
+              <FileText className="w-4 h-4" />
+            </Button> */}
+            {/* <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {}}
+              title="Enhance Prompt"
+            >
+              <Wand2 className="w-4 h-4" />
+            </Button> */}
           </div>
         </div>
+      </div>
 
-        {/* Model selector (when settings open) */}
-        {showSettings && (
-          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <label className="block text-sm font-medium mb-2">AI Model</label>
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
-            >
-              {availableModels.map(model => (
-                <option key={model.id} value={model.id}>
-                  {model.icon} {model.name} ({model.provider})
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+      {/* Settings Panel */}
+      {showSettings && (
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          <label htmlFor="model-select" className="block text-sm font-medium mb-2">Select AI Model:</label>
+          <select
+            id="model-select"
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            className="w-full p-2 border rounded-md bg-white dark:bg-gray-900"
+          >
+            {availableModels.map(model => (
+              <option key={model.id} value={model.id}>
+                {model.icon} {model.name} ({model.provider})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
-        {/* Prompt Templates Panel */}
-        {showPromptTemplates && (
+      {/* Panels for Templates and Enhancer */}
+      <div className="relative">
+        {/* {showPromptTemplates && (
           <div className="mt-4 max-h-96 overflow-y-auto">
             <PromptTemplates
               onSelectTemplate={handlePromptTemplate}
-              className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
+              onClose={() => setShowPromptTemplates(false)}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-lg"
             />
           </div>
-        )}
-
-        {/* Prompt Enhancer Panel */}
-        {showPromptEnhancer && input.trim() && (
+        )} */}
+        {/* {showPromptEnhancer && input.trim() && (
           <div className="mt-4 max-h-96 overflow-y-auto">
             <PromptEnhancer
               originalPrompt={input}
@@ -319,31 +296,14 @@ export default function AIChatInterface({
               className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
             />
           </div>
-        )}
+        )} */}
       </div>
 
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
+      {/* Messages area */}
+      <ScrollArea className="flex-1 p-4" data-testid="chat-messages">
         <div className="space-y-4">
-          {messages.length === 0 && (
-            <div className="text-center py-8">
-              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg inline-block">
-                <MessageSquare className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-600 dark:text-gray-400">
-                  Start a conversation with your AI assistant
-                </p>
-                <p className="text-sm text-gray-500 mt-1">
-                  Ask questions, upload files, or request code help
-                </p>
-              </div>
-            </div>
-          )}
-
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex space-x-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+          {messages.map((message, index) => (
+            <div key={message.id} className={`flex items-start gap-3 ${message.type === 'user' ? 'justify-end' : ''}`}>
               {message.type === 'assistant' && (
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
@@ -424,6 +384,7 @@ export default function AIChatInterface({
               size="sm"
               onClick={() => fileInputRef.current?.click()}
               disabled={isStreaming}
+              aria-label="Upload files"
             >
               <Upload className="w-4 h-4" />
             </Button>

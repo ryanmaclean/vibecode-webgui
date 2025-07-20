@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 /**
  * Monitoring alerts API endpoint
  * Provides real-time alerts from Datadog for the monitoring dashboard

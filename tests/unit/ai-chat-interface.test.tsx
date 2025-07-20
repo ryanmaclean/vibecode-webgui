@@ -5,11 +5,14 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals'
-import AIChatInterface from '@/components/ai/AIChatInterface'
+import './ai-chat-interface.setup.js';
+import { useChat } from 'ai/react';
+import { AIChatInterface } from '../../src/components/ai/AIChatInterface'
 
-// Mock fetch for API calls
-const mockFetch = jest.fn();
-global.fetch = mockFetch as any;
+
+
+// Mock file reader for file uploads
+const mockedUseChat = useChat as jest.MockedFunction<typeof useChat>;
 
 // Mock file reader for file uploads
 const mockFileReader = {
@@ -30,11 +33,7 @@ describe('AIChatInterface', () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
-    // Mock successful conversation history fetch
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ messages: [] })
-    })
+
   })
 
   afterEach(() => {
@@ -289,24 +288,23 @@ describe('AIChatInterface', () => {
 
   describe('Error Handling', () => {
     it('handles streaming errors gracefully', async () => {
-      const user = userEvent.setup()
+      mockedUseChat.mockReturnValue({
+        messages: [],
+        input: 'Test message',
+        handleInputChange: jest.fn(),
+        handleSubmit: jest.fn(),
+        isLoading: false,
+        error: new Error('Streaming error'),
+        stop: jest.fn(),
+      });
 
-      mockFetch.mockRejectedValueOnce(new Error('Network error'))
+      render(<AIChatInterface {...defaultProps} />);
 
-      render(<AIChatInterface {...defaultProps} />)
-
-      const textarea = screen.getByPlaceholderText('Ask anything... (Shift+Enter for new line)')
-      await user.type(textarea, 'Test message')
-
-      const sendButton = screen.getByRole('button', { name: /send/i })
-      await user.click(sendButton)
-
-      // Should show error message in UI
       await waitFor(() => {
-        expect(screen.getByText(/Sorry, I encountered an error/i)).toBeInTheDocument()
-      })
-    })
-  })
+        expect(screen.getByText(/Sorry, I encountered an error/i)).toBeInTheDocument();
+      });
+    });
+  });
 
   describe('Responsive Design', () => {
     it('adapts to different screen sizes', async () => {

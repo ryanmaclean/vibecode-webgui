@@ -71,15 +71,13 @@ async function buildWorkspaceContext(workspaceId: string, files: string[]) {
 
     for (const file of contextFiles) {
       try {
-        // In a real implementation, this would read from the workspace
-        // For now, we'll use a placeholder
-        contextContent += `\n--- ${file} ---\n`
-        contextContent += `// File content would be loaded from workspace ${workspaceId}\n`
+        // In a real scenario, this would fetch file content from a persistent store
+        // For this example, we assume content is available or fetched elsewhere
+        contextContent += `\n--- File: ${file} ---\n`
       } catch (error) {
-        console.error(`Failed to read file ${file}:`, error)
+        console.warn(`Could not read file ${file}:`, error)
       }
     }
-
     return contextContent
   } catch (error) {
     console.error('Failed to build workspace context:', error)
@@ -87,18 +85,8 @@ async function buildWorkspaceContext(workspaceId: string, files: string[]) {
   }
 }
 
-// Helper to convert previous messages to OpenAI format
-function formatPreviousMessages(messages: RawMessage[]): ChatMessage[] {
-  return messages.slice(-6).map(msg => ({  // Last 6 messages for context
-    role: msg.type === 'user' ? 'user' : 'assistant',
-    content: msg.content
-  }))
-}
-
 export async function POST(request: NextRequest) {
   try {
-<<<<<<< HEAD
-=======
     // Check authentication
     const session = await getServerSession(authOptions)
     if (!session?.user) {
@@ -108,86 +96,39 @@ export async function POST(request: NextRequest) {
       )
     }
 
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
     // OpenRouter configuration
     const openrouter = new OpenAI({
       baseURL: "https://openrouter.ai/api/v1",
       apiKey: process.env.OPENROUTER_API_KEY,
       defaultHeaders: {
-        "HTTP-Referer": process.env.NEXTAUTH_URL || "http://localhost:3000",
-        "X-Title": "VibeCode Platform",
+        "HTTP-Referer": `https://vibecode.com`,
+        "X-Title": `Vibecode`,
       }
-    })
+    });
 
-    const body: ChatRequest = await request.json()
-    const { message, model, context } = body
+    const { message, model, context }: ChatRequest = await request.json()
 
-    // Validate required fields
-    if (!message || !model) {
-      return NextResponse.json(
-        { error: 'Message and model are required' },
-        { status: 400 }
-      )
-    }
-
-    // Check API key
-    if (!process.env.OPENROUTER_API_KEY) {
-      return NextResponse.json(
-        { error: 'OpenRouter API key not configured' },
-        { status: 500 }
-      )
-    }
-
-    // Build enhanced context with RAG
-    let enhancedContext = ''
-    
-    // Try RAG context first (vector search)
+    // Build context string from workspace and RAG
+    let contextString = ''
     if (context.workspaceId) {
-      const ragContext = await buildRAGContext(context.workspaceId, message, session.user.id)
-      if (ragContext) {
-        enhancedContext = ragContext
-      } else {
-        // Fallback to basic workspace context
-        enhancedContext = await buildWorkspaceContext(context.workspaceId, context.files)
-      }
+      contextString += await buildWorkspaceContext(context.workspaceId, context.files)
+      contextString += await buildRAGContext(context.workspaceId, message, session.user.id)
     }
-    
-    const previousMessages = formatPreviousMessages(context.previousMessages || [])
 
-    // Build system prompt with context
-    const systemPrompt = `You are an expert AI coding assistant integrated into the VibeCode development platform. You help developers with:
-
-1. Code generation, debugging, and optimization
-2. Architecture and design decisions
-3. Best practices and modern development patterns
-4. Framework-specific guidance (React, Next.js, Node.js, Python, etc.)
-5. DevOps and deployment strategies
-
-Current workspace context:
-- Workspace ID: ${context.workspaceId}
-- Files in context: ${context.files.length > 0 ? context.files.join(', ') : 'None'}
-- Vector search enabled: ${enhancedContext.includes('RELEVANT CODE CONTEXT') ? 'Yes (RAG active)' : 'Basic mode'}
-
-${enhancedContext ? `\nRelevant code context from vector search:\n${enhancedContext}` : ''}
-
-Guidelines:
-- Use the provided context to give specific, relevant answers
-- Reference specific files and line numbers when available in context
-- Provide practical, production-ready code that builds on existing codebase
-- Explain your reasoning and trade-offs
-- Ask clarifying questions when needed
-- Focus on security and performance best practices
-- Use modern JavaScript/TypeScript patterns consistent with the codebase
-- Be concise but comprehensive`
-
-    // Prepare messages for OpenAI API
+    // Construct message history for the model
     const messages: ChatMessage[] = [
-      { role: 'system', content: systemPrompt },
-      ...previousMessages,
+      {
+        role: 'system',
+        content: `You are an expert AI pair programmer. Use the provided context to answer the user's question. Context: ${contextString}`
+      },
+      ...context.previousMessages.map(msg => ({
+        role: msg.type === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      })),
       { role: 'user', content: message }
     ]
 
-    // Create streaming response
+    // Create a streaming completion
     const stream = await openrouter.chat.completions.create({
       model: model,
       messages: messages,

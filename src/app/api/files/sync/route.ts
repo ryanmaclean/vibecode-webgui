@@ -72,9 +72,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(_request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    // Authenticate user
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -83,34 +82,36 @@ export async function POST(_request: NextRequest) {
       )
     }
 
-<<<<<<< HEAD
-    // This endpoint could be used to initiate a sync process manually
-    // For now, it returns a success message
-=======
     const body = await request.json()
     const { workspaceId, files } = body
 
-    if (!workspaceId) {
+    if (!workspaceId || !files || !Array.isArray(files)) {
       return NextResponse.json(
-        { error: 'Workspace ID required' },
+        { error: 'Workspace ID and files array are required' },
         { status: 400 }
       )
     }
 
-    if (files && Array.isArray(files) && files.length > 0) {
-      // Create files in the workspace
-      await createFilesInWorkspace(workspaceId, files)
-      
-      return NextResponse.json({
-        success: true,
-        workspaceId,
-        filesCreated: files.length,
-        message: 'Files synchronized successfully'
-      })
+    // Validate workspace access
+    if (!await hasWorkspaceAccess(session.user.id, workspaceId)) {
+      return NextResponse.json(
+        { error: 'Access denied to workspace' },
+        { status: 403 }
+      )
     }
 
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
-    return NextResponse.json({ success: true, message: 'Sync initiated' })
+    // This endpoint is for manual bulk sync, e.g., on project import
+    // Real-time sync is handled via WebSocket
+    try {
+      await createFilesInWorkspace(workspaceId, files)
+      return NextResponse.json({ success: true, message: 'Sync initiated' })
+    } catch (error) {
+      console.error('File creation error:', error)
+      return NextResponse.json(
+        { error: 'Failed to create files in workspace' },
+        { status: 500 }
+      )
+    }
 
   } catch (error) {
     console.error('File sync POST error:', error)
@@ -121,90 +122,110 @@ export async function POST(_request: NextRequest) {
   }
 }
 
-<<<<<<< HEAD
-=======
 async function createFilesInWorkspace(workspaceId: string, files: Array<{path: string, content: string, type: string}>) {
   const { spawn } = require('child_process')
   const namespace = 'vibecode'
-  
-  for (const file of files) {
-    if (file.type === 'directory') {
-      // Create directory
-      await execInPod(namespace, workspaceId, `mkdir -p "/home/coder/workspace/${file.path}"`)
-    } else {
-      // Create file and its directory structure
-      const dirPath = file.path.includes('/') ? file.path.substring(0, file.path.lastIndexOf('/')) : ''
-      if (dirPath) {
-        await execInPod(namespace, workspaceId, `mkdir -p "/home/coder/workspace/${dirPath}"`)
-      }
-      
-      // Write file content using base64 encoding to handle special characters
-      const base64Content = Buffer.from(file.content).toString('base64')
-      await execInPod(namespace, workspaceId, `echo "${base64Content}" | base64 -d > "/home/coder/workspace/${file.path}"`)
-    }
-  }
-}
 
-function execInPod(namespace: string, workspaceId: string, command: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const deploymentName = `code-server-${workspaceId}`
-    
-    // Execute command in pod
-    const execCmd = spawn('kubectl', [
-      'exec', '-n', namespace,
-      `deployment/${deploymentName}`,
-      '--', 'bash', '-c', command
-    ])
-    
-    let stderr = ''
-    
-    execCmd.stderr.on('data', (data) => {
-      stderr += data.toString()
-    })
-    
-    execCmd.on('close', (code) => {
-      if (code === 0) {
-        resolve()
-      } else {
-        reject(new Error(`Command failed: ${stderr}`))
-      }
-    })
-    
-    execCmd.on('error', (error) => {
-      reject(error)
-    })
+  // Create a temporary pod to handle file creation
+  const podName = `file-creator-${workspaceId}-${Date.now()}`
+  const podSpec = {
+    apiVersion: 'v1',
+    kind: 'Pod',
+    metadata: {
+      name: podName,
+      namespace: namespace,
+    },
+    spec: {
+      containers: [
+        {
+          name: 'file-creator',
+          image: 'alpine:latest',
+          command: ['/bin/sh', '-c'],
+          args: [
+            `
+              mkdir -p /workspace/${workspaceId} && \
+              echo '${JSON.stringify(files)}' | \
+              while IFS= read -r file; do
+                path=$(echo "$file" | jq -r .path)
+                content=$(echo "$file" | jq -r .content)
+                type=$(echo "$file" | jq -r .type)
+                
+                if [ "$type" = "directory" ]; then
+                  mkdir -p "/workspace/${workspaceId}/$path"
+                else
+                  mkdir -p "/workspace/${workspaceId}/$(dirname "$path")"
+                  echo "$content" > "/workspace/${workspaceId}/$path"
+                fi
+              done && \
+              echo "Files created successfully"
+            `
+          ],
+          volumeMounts: [
+            {
+              name: 'workspace-storage',
+              mountPath: '/workspace',
+            },
+          ],
+        },
+      ],
+      volumes: [
+        {
+          name: 'workspace-storage',
+          persistentVolumeClaim: {
+            claimName: 'vibecode-pvc',
+          },
+        },
+      ],
+      restartPolicy: 'Never',
+    },
+  }
+
+  // Use kubectl to apply the pod spec
+  const kubectl = spawn('kubectl', ['apply', '-f', '-'], {
+    stdio: ['pipe', 'pipe', 'pipe'],
+  })
+
+  kubectl.stdin.write(JSON.stringify(podSpec))
+  kubectl.stdin.end()
+
+  kubectl.stdout.on('data', (data: Buffer) => {
+    console.log(`kubectl stdout: ${data}`)
+  })
+
+  kubectl.stderr.on('data', (data: Buffer) => {
+    console.error(`kubectl stderr: ${data}`)
+  })
+
+  kubectl.on('close', (code: number) => {
+    if (code !== 0) {
+      console.error(`kubectl process exited with code ${code}`)
+    } else {
+      console.log('File creation pod applied successfully')
+    }
   })
 }
 
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 // Extend the global object to hold the WebSocket server
 declare global {
   var wss: WebSocketServer | undefined
 }
 
-// Initialize WebSocket server
+// Initialize WebSocket server if it doesn't exist
 if (!global.wss) {
   global.wss = new WebSocketServer({ noServer: true })
+  console.log('WebSocket server initialized')
 
   global.wss.on('connection', async (ws: WebSocket, request: NextRequest) => {
-    const { searchParams } = new URL(request.url || '', `http://${request.headers.get('host')}`)
-    const workspaceId = searchParams.get('workspaceId') || 'default'
+    const { searchParams } = new URL(request.url || '', `http://${request.headers.host}`)
+    const workspaceId = searchParams.get('workspaceId') || ''
+    const userId = searchParams.get('userId') || ''
 
     try {
-      const session = await getServerSession()
-      if (!session?.user?.id) {
-        ws.close(4001, 'Unauthorized')
+      // Validate connection parameters
+      if (!workspaceId || !userId) {
+        ws.close(1008, 'Workspace ID and User ID are required')
         return
       }
-
-      const userId = session.user.id
-
-      // Get file system instance for the user
-      const fsConfig: FileSystemConfig = {
-        userId,
-        workspaceId
-      }
-      const fileSystem = getFileSystemInstance(fsConfig)
 
       // Add connection to workspace pool
       if (!workspaceConnections.has(workspaceId)) {
@@ -212,10 +233,22 @@ if (!global.wss) {
       }
       workspaceConnections.get(workspaceId)?.add(ws)
 
-      // Define event handler
+      // Initialize file system monitoring for this workspace
+      const fsConfig: FileSystemConfig = {
+        workspaceId,
+        // Other config for this workspace
+      }
+      const fileSystem = getFileSystemInstance(fsConfig)
+
+      // Event handler for file sync events
       const handleFileSyncEvent = (event: FileSyncEvent) => {
-        if (event.workspaceId === workspaceId) {
-          ws.send(JSON.stringify(event))
+        const connections = workspaceConnections.get(workspaceId)
+        if (connections) {
+          connections.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify(event))
+            }
+          })
         }
       }
 
@@ -224,11 +257,15 @@ if (!global.wss) {
       fileSystem.on('conflict-detected', handleFileSyncEvent)
 
       // Handle incoming messages
-      ws.on('message', (data) => {
+      ws.on('message', (data: string) => {
         try {
-          const message: WebSocketMessage = JSON.parse(data.toString())
+          const message: WebSocketMessage = JSON.parse(data)
 
           switch (message.type) {
+            case 'file-update':
+              fileSystem.handleFileUpdate(message.payload)
+              break
+
             case 'ping':
               ws.send(JSON.stringify({ type: 'pong', timestamp: new Date() }))
               break
