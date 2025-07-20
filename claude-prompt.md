@@ -77,7 +77,79 @@ The AI project generation workflow is the core innovation of VibeCode.
 - `ProjectScaffolder` enhanced with an "Open in Editor" primary call-to-action.
 - Comprehensive test coverage for the entire AI project generation workflow.
 
-## 5. Development Standards
+## 5. Chat Interface Architecture
+
+### Hugging Face Chat-UI Integration
+
+**Implementation Strategy**: Replace the current React chat interface with the production-ready Hugging Face chat-ui system to provide enterprise-grade conversational AI capabilities.
+
+#### Key Features
+- **SvelteKit Framework**: Modern, performant frontend with excellent SSR capabilities
+- **MongoDB Backend**: Robust chat history persistence and conversation management
+- **Multimodal Support**: Image upload, file attachments, and rich media handling
+- **Web Search Integration**: RAG-powered web search with automatic content scraping
+- **Tool Integration**: Function calling capabilities for extended AI functionality
+- **Model Flexibility**: Support for multiple LLM providers and models
+
+#### Architecture Components
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   SvelteKit     │    │     MongoDB      │    │   File Storage  │
+│   Chat UI       │◄───┤   Conversations  │◄───┤   Upload System │
+│   (Frontend)    │    │   & Messages     │    │   (Existing)    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                        │                        │
+         ▼                        ▼                        ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   OpenRouter    │    │     Vector DB    │    │   RAG Pipeline  │
+│   LLM Gateway   │    │    (pgvector)    │    │   (Existing)    │
+│   (Existing)    │    │    (Existing)    │    │                 │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+#### Migration Plan
+1. **Phase 1**: Deploy MongoDB alongside existing PostgreSQL
+2. **Phase 2**: Implement SvelteKit chat-ui with VibeCode theming
+3. **Phase 3**: Integrate with existing file upload and RAG systems
+4. **Phase 4**: Gradually migrate users from React to SvelteKit interface
+
+### File Upload Storage System
+
+**Current Implementation**: Complete file upload API with RAG integration at `/api/ai/upload`
+
+#### Storage Architecture
+```typescript
+// File Structure
+data/
+├── uploads/
+│   └── {workspaceId}/
+│       └── {fileId}-{filename}
+└── rag/
+    └── {workspaceId}.json
+```
+
+#### Key Features
+- **Multi-format Support**: JavaScript, TypeScript, Python, Java, C++, HTML, CSS, JSON, Markdown
+- **Automatic Language Detection**: File extension-based language classification
+- **RAG Chunking**: Intelligent text segmentation for vector search
+- **Metadata Generation**: File size, line count, checksum, and timestamps
+- **Error Handling**: Graceful degradation and partial failure recovery
+
+#### Integration with Chat-UI
+```typescript
+// Enhanced upload endpoint for chat attachments
+interface ChatAttachment {
+  id: string
+  name: string
+  type: 'file' | 'image' | 'document'
+  size: number
+  conversationId: string
+  ragIndexed: boolean
+  embedding?: number[]
+}
+```
+
+## 6. Development Standards
 
 ### Datadog Tagging Strategy
 ```typescript
@@ -98,6 +170,8 @@ vibecode.{component}.{metric_name}
 vibecode.api.response_time
 vibecode.frontend.page_load_time
 vibecode.backend.database_query_duration
+vibecode.chat.message_processing_time
+vibecode.upload.file_processing_duration
 ```
 
 ### Log Levels

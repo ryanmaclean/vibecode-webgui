@@ -1,0 +1,78 @@
+# KIND cluster configuration for VibeCode platform testing
+# This creates a multi-node cluster with ingress and port mappings for local development
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: vibecode-test
+
+# Kubernetes version (latest stable)
+kubeadmConfigPatches:
+- |
+  kind: InitConfiguration
+  nodeRegistration:
+    kubeletExtraArgs:
+      node-labels: "ingress-ready=true"
+
+nodes:
+# Control plane node
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  # HTTP Ingress
+  - containerPort: 80
+    hostPort: 8080
+    protocol: TCP
+  # HTTPS Ingress  
+  - containerPort: 443
+    hostPort: 8443
+    protocol: TCP
+  # MongoDB access
+  - containerPort: 27017
+    hostPort: 27017
+    protocol: TCP
+  # Redis access
+  - containerPort: 6379
+    hostPort: 6379
+    protocol: TCP
+  # Chat-UI direct access
+  - containerPort: 3000
+    hostPort: 3000
+    protocol: TCP
+  # Semantic Kernel API
+  - containerPort: 8081
+    hostPort: 8081
+    protocol: TCP
+  # Datadog Agent (using alternative ports)
+  - containerPort: 8125
+    hostPort: 18125
+    protocol: UDP
+  - containerPort: 8126
+    hostPort: 18126
+    protocol: TCP
+
+# Worker nodes for distributed testing
+- role: worker
+  labels:
+    workload-type: "ai-compute"
+    
+- role: worker
+  labels:
+    workload-type: "database"
+
+# Networking configuration
+networking:
+  # Disable default CNI to test our custom networking
+  disableDefaultCNI: false
+  # Use kind's default pod subnet
+  podSubnet: "10.244.0.0/16"
+  serviceSubnet: "10.96.0.0/16"
+
+# Feature gates for testing latest Kubernetes features
+featureGates:
+  "KubeletInUserNamespace": true
+  "PodSecurity": true

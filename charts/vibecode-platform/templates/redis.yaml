@@ -56,6 +56,20 @@ spec:
         app.kubernetes.io/name: {{ include "vibecode-platform.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/component: redis
+      annotations:
+        {{- if .Values.datadog.enabled }}
+        ad.datadoghq.com/redis.check_names: '["redisdb"]'
+        ad.datadoghq.com/redis.init_configs: '[{}]'
+        ad.datadoghq.com/redis.instances: |
+          [
+            {
+              "host": "%%host%%",
+              "port": 6379,
+              "tags": ["env:{{ .Values.global.nodeEnv | default "production" }}", "service:redis", "version:{{ .Values.redis.image.tag }}"]
+            }
+          ]
+        ad.datadoghq.com/tags: '{"env": "{{ .Values.global.nodeEnv | default "production" }}", "service": "redis", "version": "{{ .Values.redis.image.tag }}"}'
+        {{- end }}
     spec:
       containers:
       - name: redis
@@ -74,11 +88,42 @@ spec:
         ports:
         - containerPort: 6379
           name: redis
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 1
+          failureThreshold: 3
         volumeMounts:
         - name: redis-data
           mountPath: /data
         resources:
           {{- toYaml .Values.redis.resources | nindent 10 }}
+        env:
+        {{- if .Values.datadog.enabled }}
+        - name: DD_AGENT_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: DD_SERVICE
+          value: "redis"
+        - name: DD_ENV
+          value: {{ .Values.global.nodeEnv | default "production" | quote }}
+        - name: DD_VERSION
+          value: {{ .Values.redis.image.tag | quote }}
+        {{- end }}
       volumes:
       - name: redis-data
         persistentVolumeClaim:

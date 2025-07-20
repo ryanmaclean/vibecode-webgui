@@ -1,0 +1,386 @@
+{{- if .Values.datadog.enabled }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: datadog-secret
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: datadog
+type: Opaque
+data:
+  api-key: {{ .Values.datadog.apiKey | b64enc | quote }}
+  app-key: {{ .Values.datadog.appKey | b64enc | quote }}
+  {{- if .Values.datadog.site }}
+  site: {{ .Values.datadog.site | b64enc | quote }}
+  {{- end }}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datadog-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: datadog
+data:
+  datadog.yaml: |
+    api_key: <DD_API_KEY>
+    site: {{ .Values.datadog.site | default "datadoghq.com" }}
+    dd_url: https://app.{{ .Values.datadog.site | default "datadoghq.com" }}
+    
+    # Core settings
+    hostname: {{ .Release.Name }}-{{ .Release.Namespace }}
+    tags:
+      - "env:{{ .Values.global.nodeEnv | default "production" }}"
+      - "cluster:{{ .Release.Name }}"
+      - "namespace:{{ .Release.Namespace }}"
+      - "platform:aks"
+      - "region:{{ .Values.global.region | default "eastus" }}"
+    
+    # APM Configuration
+    apm_config:
+      enabled: true
+      apm_non_local_traffic: true
+      max_traces_per_second: 50
+      analyzed_rate_by_service:
+        "vibecode-chat-ui|nodejs": 1.0
+        "vibecode-semantic-kernel|python": 1.0
+        "vibecode-mongodb|mongo": 1.0
+        "vibecode-redis|redis": 1.0
+    
+    # Log collection
+    logs_enabled: true
+    logs_config:
+      container_collect_all: true
+      use_http: true
+      compression_level: 6
+      batch_wait: 5
+      
+    # Process monitoring
+    process_config:
+      enabled: true
+      
+    # Network monitoring
+    network_config:
+      enabled: true
+      
+    # Security monitoring
+    security_agent:
+      enabled: true
+      compliance_config:
+        enabled: true
+      runtime_security_config:
+        enabled: true
+        
+    # Kubernetes integration
+    kubernetes_kubeconfig_path: /var/lib/kubelet/kubeconfig
+    kubernetes_collect_metadata_tags: true
+    collect_kubernetes_events: true
+    
+    # Database monitoring
+    database_monitoring:
+      enabled: true
+      
+    # Autodiscovery
+    autodiscovery:
+      include:
+        - "kubernetes.io/os:linux"
+      exclude:
+        - "name:datadog-agent"
+      listeners:
+        - name: kubelet
+        - name: kubernetes
+        - name: docker
+        
+    # Additional integrations
+    integrations:
+      mongo:
+        enabled: true
+        auto_conf:
+          - host: mongodb
+            port: 27017
+            username: datadog
+            password: <DD_MONGO_PASSWORD>
+            database: admin
+            options:
+              authSource: admin
+            tags:
+              - "service:mongodb"
+              - "env:{{ .Values.global.nodeEnv | default "production" }}"
+              
+      redis:
+        enabled: true
+        auto_conf:
+          - host: redis
+            port: 6379
+            tags:
+              - "service:redis"
+              - "env:{{ .Values.global.nodeEnv | default "production" }}"
+              
+      nodejs:
+        enabled: true
+        auto_conf:
+          - host: "%%host%%"
+            port: 3000
+            tags:
+              - "service:chat-ui"
+              - "env:{{ .Values.global.nodeEnv | default "production" }}"
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: datadog-agent
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: datadog
+spec:
+  selector:
+    matchLabels:
+      {{- include "vibecode-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: datadog
+  template:
+    metadata:
+      labels:
+        {{- include "vibecode-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: datadog
+      name: datadog-agent
+    spec:
+      serviceAccountName: datadog-agent
+      hostNetwork: true
+      hostPID: true
+      containers:
+      - name: agent
+        image: gcr.io/datadoghq/agent:7
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8125
+          name: dogstatsdport
+          protocol: UDP
+        - containerPort: 8126
+          name: traceport
+          protocol: TCP
+        env:
+        - name: DD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secret
+              key: api-key
+        - name: DD_APP_KEY
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secret
+              key: app-key
+        - name: DD_SITE
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secret
+              key: site
+              optional: true
+        - name: DD_KUBERNETES_KUBELET_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: DD_CLUSTER_NAME
+          value: {{ .Release.Name | quote }}
+        - name: DD_CLUSTER_AGENT_ENABLED
+          value: "true"
+        - name: DD_CLUSTER_AGENT_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secret
+              key: token
+              optional: true
+        - name: KUBERNETES
+          value: "yes"
+        - name: DD_HEALTH_PORT
+          value: "5555"
+        - name: DD_COLLECT_KUBERNETES_EVENTS
+          value: "true"
+        - name: DD_LEADER_ELECTION
+          value: "true"
+        - name: DD_APM_ENABLED
+          value: "true"
+        - name: DD_APM_NON_LOCAL_TRAFFIC
+          value: "true"
+        - name: DD_LOGS_ENABLED
+          value: "true"
+        - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+          value: "true"
+        - name: DD_PROCESS_AGENT_ENABLED
+          value: "true"
+        - name: DD_SYSTEM_PROBE_ENABLED
+          value: "true"
+        - name: DD_DOGSTATSD_NON_LOCAL_TRAFFIC
+          value: "true"
+        - name: DD_AC_EXCLUDE
+          value: "name:datadog-agent"
+        - name: DD_TAGS
+          value: "env:{{ .Values.global.nodeEnv | default "production" }} cluster:{{ .Release.Name }} platform:aks"
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: 5555
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 5555
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        volumeMounts:
+        - name: dockersocket
+          mountPath: /var/run/docker.sock
+          readOnly: true
+        - name: procdir
+          mountPath: /host/proc
+          readOnly: true
+        - name: cgroups
+          mountPath: /host/sys/fs/cgroup
+          readOnly: true
+        - name: config
+          mountPath: /etc/datadog-agent
+        - name: logpodpath
+          mountPath: /var/log/pods
+          readOnly: true
+        - name: logcontainerpath
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        - name: s6-run
+          mountPath: /var/run/s6
+      volumes:
+      - name: dockersocket
+        hostPath:
+          path: /var/run/docker.sock
+      - name: procdir
+        hostPath:
+          path: /proc
+      - name: cgroups
+        hostPath:
+          path: /sys/fs/cgroup
+      - name: config
+        configMap:
+          name: datadog-config
+      - name: logpodpath
+        hostPath:
+          path: /var/log/pods
+      - name: logcontainerpath
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: s6-run
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: datadog-agent
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: datadog
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: datadog-agent
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: datadog
+rules:
+- apiGroups: [""]
+  resources:
+  - services
+  - events
+  - endpoints
+  - pods
+  - nodes
+  - componentstatuses
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources:
+  - configmaps
+  verbs: ["get", "update", "create"]
+- apiGroups: [""]
+  resources:
+  - nodes/metrics
+  - nodes/spec
+  - nodes/proxy
+  verbs: ["get"]
+- apiGroups: ["extensions", "apps"]
+  resources:
+  - deployments
+  - replicasets
+  - daemonsets
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources:
+  - jobs
+  - cronjobs
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["metrics.k8s.io"]
+  resources:
+  - nodes
+  - pods
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: datadog-agent
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: datadog
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: datadog-agent
+subjects:
+- kind: ServiceAccount
+  name: datadog-agent
+  namespace: {{ .Release.Namespace }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: datadog-agent
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: datadog
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "vibecode-platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: datadog
+  ports:
+  - port: 8125
+    targetPort: 8125
+    protocol: UDP
+    name: dogstatsdport
+  - port: 8126
+    targetPort: 8126
+    protocol: TCP
+    name: traceport
+{{- end }}

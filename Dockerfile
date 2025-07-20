@@ -1,78 +1,61 @@
-# Multi-stage Dockerfile for VibeCode WebGUI
-# Optimized for production with security and performance
+# VibeCode WebGUI Dockerfile - Optimized for Yarn & Robustness (July 2025)
 
-# Stage 1: Dependencies
-FROM node:18-alpine AS deps
+# Stage 1: Base image with necessary tools
+FROM node:20-alpine AS base
+
+# Install essential build tools and security updates first
 RUN apk add --no-cache libc6-compat python3 make g++
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json .npmrc ./
-COPY package-lock.json* ./
+# Stage 2: Install dependencies
+FROM base AS deps
 
-# Install dependencies
-RUN npm ci && npm cache clean --force
+# Copy package definition and lockfile
+COPY package.json yarn.lock* .npmrc ./
 
-# Stage 2: Builder
-FROM node:18-alpine AS builder
-RUN apk add --no-cache python3 make g++
+# Use Yarn to install dependencies. This is often more resilient.
+# The --frozen-lockfile flag ensures we use the exact versions from the lockfile.
+RUN yarn install --frozen-lockfile --network-timeout 100000 && yarn cache clean
 
-WORKDIR /app
-
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
+# Stage 3: Build the application
+FROM base AS builder
 
 # Copy source code
 COPY . .
 
-# Set environment for build
+# Copy dependencies from the previous stage for a clean build
+COPY --from=deps /app/node_modules ./node_modules
+
+# Set environment for production build
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build the application
-RUN npm run build
+# Run the build command
+RUN yarn build
 
-# Stage 3: Runner
-FROM node:18-alpine AS runner
+# Stage 4: Production runner
+FROM base AS runner
 
-# Install security updates
-RUN apk update && apk upgrade && apk add --no-cache \
-    dumb-init \
-    tini \
-    && rm -rf /var/cache/apk/*
-
-WORKDIR /app
-
-# Set environment
+# Set environment for production
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 
-# Create non-root user
+# Create a non-root user for security
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy built application
+# Copy only the necessary production artifacts from the builder stage
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Set up proper permissions
-RUN chown -R nextjs:nodejs /app
-
-# Switch to non-root user
+# Switch to the non-root user
 USER nextjs
 
-# Expose port
+# Expose the application port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3000/api/health || exit 1
-
-# Use tini as init system
-ENTRYPOINT ["tini", "--"]
-
-# Start the application
+# Start the application using the standalone server
 CMD ["node", "server.js"]

@@ -1,0 +1,23 @@
+{{- if .Values.chatUi.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "vibecode-platform.fullname" . }}-chat-ui
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: chat-ui
+  {{- with .Values.chatUi.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.chatUi.service.type }}
+  ports:
+    - port: {{ .Values.chatUi.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "vibecode-platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: chat-ui
+{{- end }}

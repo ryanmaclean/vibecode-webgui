@@ -1,7 +1,7 @@
 # VibeCode Platform Docker Compose
 # Enhanced with MCP Server support and Docker AI features (July 2025)
 
-version: '3.8'
+
 
 services:
   # Main VibeCode Application
@@ -14,10 +14,14 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - DATABASE_URL=postgresql://vibecode:password@db:5432/vibecode
-      - NEXTAUTH_SECRET=your-secret-key-here
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - NEXTAUTH_URL=http://localhost:3000
+      # Pass Datadog RUM variables from .env file
+      - NEXT_PUBLIC_DATADOG_APPLICATION_ID=${NEXT_PUBLIC_DATADOG_APPLICATION_ID}
+      - NEXT_PUBLIC_DATADOG_CLIENT_TOKEN=${NEXT_PUBLIC_DATADOG_CLIENT_TOKEN}
+      - NEXT_PUBLIC_DATADOG_SITE=${NEXT_PUBLIC_DATADOG_SITE}
     depends_on:
       - db
       - redis
@@ -104,8 +108,8 @@ services:
   # MCP Server with Model Runner Integration
   mcp-servers:
     build:
-      context: ./docker/mcp-servers
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./docker/mcp-servers/Dockerfile
     container_name: vibecode-mcp-servers
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro

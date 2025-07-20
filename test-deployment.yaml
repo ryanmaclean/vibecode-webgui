@@ -1,0 +1,186 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vibecode-test
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-secret
+  namespace: vibecode-test
+type: Opaque
+data:
+  mongodb-root-password: dGVzdC1yb290LXBhc3N3b3Jk  # test-root-password
+  mongodb-password: dGVzdC1jaGF0dWktcGFzc3dvcmQ=  # test-chatui-password
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: vibecode-test
+  labels:
+    app: mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+      - name: mongodb
+        image: vibecode/mongodb:test
+        imagePullPolicy: Never  # Use local image
+        ports:
+        - containerPort: 27017
+          name: mongodb
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: admin
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: mongodb-root-password
+        - name: MONGO_INITDB_DATABASE
+          value: chatui
+        - name: CHATUI_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: mongodb-password
+        livenessProbe:
+          exec:
+            command:
+            - mongosh
+            - --eval
+            - "db.adminCommand('ping')"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - mongosh
+            - --eval
+            - "db.adminCommand('ping')"
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: vibecode-test
+  labels:
+    app: mongodb
+spec:
+  type: ClusterIP
+  ports:
+  - port: 27017
+    targetPort: mongodb
+    protocol: TCP
+    name: mongodb
+  selector:
+    app: mongodb
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-ui
+  namespace: vibecode-test
+  labels:
+    app: chat-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-ui
+  template:
+    metadata:
+      labels:
+        app: chat-ui
+    spec:
+      initContainers:
+      - name: wait-for-mongodb
+        image: busybox:1.35
+        command: ['sh', '-c']
+        args:
+          - |
+            until nc -z mongodb 27017; do
+              echo "Waiting for MongoDB..."
+              sleep 2
+            done
+            echo "MongoDB is ready!"
+      containers:
+      - name: chat-ui
+        image: vibecode/chat-ui:test
+        imagePullPolicy: Never  # Use local image
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PUBLIC_ORIGIN
+          value: "http://localhost:3000"
+        - name: MONGODB_URL
+          value: "mongodb://chatui:test-chatui-password@mongodb:27017/chatui"
+        - name: ENABLE_ASSISTANTS
+          value: "true"
+        - name: ENABLE_ASSISTANTS_RAG
+          value: "true"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "100m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-ui
+  namespace: vibecode-test
+  labels:
+    app: chat-ui
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3000
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: chat-ui

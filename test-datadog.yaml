@@ -1,0 +1,185 @@
+# Secret created separately with real credentials
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: datadog-agent
+  namespace: vibecode-test
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: datadog-agent
+rules:
+- apiGroups: [""]
+  resources:
+  - services
+  - events
+  - endpoints
+  - pods
+  - nodes
+  - componentstatuses
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources:
+  - configmaps
+  verbs: ["get", "update", "create"]
+- apiGroups: [""]
+  resources:
+  - nodes/metrics
+  - nodes/spec
+  - nodes/proxy
+  verbs: ["get"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: datadog-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: datadog-agent
+subjects:
+- kind: ServiceAccount
+  name: datadog-agent
+  namespace: vibecode-test
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: datadog-agent
+  namespace: vibecode-test
+  labels:
+    app: datadog-agent
+spec:
+  selector:
+    matchLabels:
+      app: datadog-agent
+  template:
+    metadata:
+      labels:
+        app: datadog-agent
+      name: datadog-agent
+    spec:
+      serviceAccountName: datadog-agent
+      hostNetwork: true
+      hostPID: true
+      containers:
+      - name: agent
+        image: gcr.io/datadoghq/agent:7
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "100m"
+        ports:
+        - containerPort: 8125
+          name: dogstatsdport
+          protocol: UDP
+        - containerPort: 8126
+          name: traceport
+          protocol: TCP
+        env:
+        - name: DD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secret
+              key: api-key
+        - name: DD_SITE
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secret
+              key: site
+        - name: DD_KUBERNETES_KUBELET_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: DD_CLUSTER_NAME
+          value: "vibecode-test"
+        - name: KUBERNETES
+          value: "yes"
+        - name: DD_HEALTH_PORT
+          value: "5555"
+        - name: DD_COLLECT_KUBERNETES_EVENTS
+          value: "true"
+        - name: DD_LEADER_ELECTION
+          value: "true"
+        - name: DD_APM_ENABLED
+          value: "true"
+        - name: DD_APM_NON_LOCAL_TRAFFIC
+          value: "true"
+        - name: DD_LOGS_ENABLED
+          value: "true"
+        - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+          value: "true"
+        - name: DD_PROCESS_AGENT_ENABLED
+          value: "true"
+        - name: DD_DOGSTATSD_NON_LOCAL_TRAFFIC
+          value: "true"
+        - name: DD_AC_EXCLUDE
+          value: "name:datadog-agent"
+        - name: DD_TAGS
+          value: "env:test cluster:vibecode-test platform:kind"
+        - name: DD_LOG_LEVEL
+          value: "WARN"  # Reduce log noise for testing
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: 5555
+          initialDelaySeconds: 15
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 5555
+          initialDelaySeconds: 15
+          periodSeconds: 15
+        volumeMounts:
+        - name: dockersocket
+          mountPath: /var/run/docker.sock
+          readOnly: true
+        - name: procdir
+          mountPath: /host/proc
+          readOnly: true
+        - name: cgroups
+          mountPath: /host/sys/fs/cgroup
+          readOnly: true
+      volumes:
+      - name: dockersocket
+        hostPath:
+          path: /var/run/docker.sock
+      - name: procdir
+        hostPath:
+          path: /proc
+      - name: cgroups
+        hostPath:
+          path: /sys/fs/cgroup
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: datadog-agent
+  namespace: vibecode-test
+  labels:
+    app: datadog-agent
+spec:
+  type: ClusterIP
+  selector:
+    app: datadog-agent
+  ports:
+  - port: 8125
+    targetPort: 8125
+    protocol: UDP
+    name: dogstatsdport
+  - port: 8126
+    targetPort: 8126
+    protocol: TCP
+    name: traceport

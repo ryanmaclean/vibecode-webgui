@@ -1,0 +1,5 @@
+agentlite
+duckduckgo-search
+openai
+python-dotenv
+wikipedia

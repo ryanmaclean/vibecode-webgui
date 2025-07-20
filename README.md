@@ -30,6 +30,7 @@ Deploy VibeCode to **Azure** with enterprise features in one click:
 - 🔐 **Enterprise 2FA/SSO**: Fully configured Authelia authentication with hardware keys, TOTP, and Duo push, protecting all ingress resources.
 - 🎯 **Infrastructure-First**: KIND (Kubernetes in Docker) orchestration eliminates 60-80% custom development.
 - 🤖 **AI Project Generation**: Complete Lovable/Replit/Bolt.diy-inspired workflow. The system uses **Claude-3.5-Sonnet** via OpenRouter to turn natural language prompts into a complete project structure, delivered as a strictly-validated JSON object.
+- 💬 **Hugging Face Chat-UI**: Production-ready SvelteKit chat interface with MongoDB backend, web search, multimodal support, and tool integration capabilities.
 - 🌐 **Production-Ready**: NGINX Ingress, cert-manager, Helm charts, persistent storage.
 - 📊 **Multi-Platform Observability**: Datadog (primary) + Prometheus hybrid stack with OpenTelemetry Collector support for vendor-neutral telemetry.
 - 🖥️ **React Management Dashboard**: Complete cluster administration interface with real-time metrics and visualization.
@@ -38,14 +39,14 @@ Deploy VibeCode to **Azure** with enterprise features in one click:
 - 🛡️ **Security**: Integrated security scanning with Datadog SAST/SCA + Kubehound attack path analysis. Scans run automatically on every push to `main` branch.
 
     **Note:** To run the security scans, you will need to add your Datadog API and App keys as secrets to your GitHub repository. The required secrets are `DD_API_KEY` and `DD_APP_KEY`.
-- 🎨 **Modern UI/UX**: React + TypeScript + Tailwind CSS dashboard with VS Code integration
+- 🎨 **Modern UI/UX**: React + TypeScript + Tailwind CSS dashboard with VS Code integration + Hugging Face SvelteKit chat interface
 - ♿ **Accessibility Compliance**: WCAG 2.1 AA compliant with comprehensive accessibility testing, automated contrast validation, and jest-axe integration
 - 🔧 **Development Tools**: ESLint accessibility linting, pre-commit hooks, and comprehensive test coverage
 - 🧠 **Vector Search & RAG**: Full semantic search capabilities with pgvector and OpenAI embeddings for intelligent code assistance
 - 🗄️ **Enterprise Database**: Complete Prisma schema with versioned migrations and comprehensive monitoring
 - 📊 **Database Monitoring**: Real-time PostgreSQL performance monitoring with Datadog DBM, including query performance, connection pools, and slow query analysis
 - 🔍 **LLM Observability**: Comprehensive AI operation tracking with Datadog LLM monitoring integration
-- 📊 **Database Monitoring**: Real-time PostgreSQL performance monitoring with Datadog DBM, including query performance, connection pools, and slow query analysis
+- 🔥 **Burn Framework Integration**: Complete Rust + AI development templates with Microsoft Phi models for edge-capable AI applications
 
 ## 📊 Database Monitoring
 
