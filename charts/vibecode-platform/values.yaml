@@ -19,7 +19,19 @@ web:
     repository: ryanmaclean/web
     tag: "latest"
     pullPolicy: Always
+  # Set the application environment (e.g., development, production)
+  nodeEnv: "production"
   resources: {}
+
+  # Datadog RUM configuration for the frontend
+  datadog:
+    rum:
+      # Enable to inject Datadog RUM variables into the web deployment
+      enabled: false
+      # The following values are typically sourced from a secret store in CI/CD
+      applicationId: ""
+      clientToken: ""
+      site: "datadoghq.com"
 
 # WebSocket Service Configuration
 websocket:
@@ -105,3 +117,157 @@ redis:
     limits:
       memory: "256Mi"
       cpu: "200m"
+
+# MongoDB configuration for chat-ui
+mongodb:
+  enabled: true
+  image:
+    repository: mongo
+    tag: 7.0.12
+  auth:
+    enabled: true
+    rootUsername: admin
+    rootPassword: ""  # Set via secret
+    database: chatui
+    username: chatui
+    password: ""  # Set via secret
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: ""
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+  # Datadog integration
+  datadog:
+    enabled: true
+    configCheckName: "mongo"
+
+# Chat-UI Configuration
+chatui:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: vibecode/chat-ui
+    tag: "latest"
+    pullPolicy: Always
+  
+  # Environment configuration
+  config:
+    mongodbUrl: "mongodb://chatui:PASSWORD@mongodb:27017/chatui"
+    publicOrigin: "https://chat.vibecode.dev"
+    enableAssistants: true
+    enableAssistantsRag: true
+    
+  # Datadog configuration
+  datadog:
+    enabled: true
+    apm:
+      enabled: true
+      serviceName: "vibecode-chat-ui"
+    rum:
+      enabled: true
+      applicationId: ""
+      clientToken: ""
+      
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "250m"
+
+# Datadog Configuration - P0 Priority Observability
+datadog:
+  enabled: true
+  apiKey: ""  # Set via secret or environment
+  appKey: ""  # Set via secret or environment 
+  site: "datadoghq.com"  # or datadoghq.eu for EU customers
+  
+  # Core monitoring features
+  apm:
+    enabled: true
+    sampleRate: 1.0
+  logs:
+    enabled: true
+    containerCollectAll: true
+  metrics:
+    enabled: true
+    kubernetes: true
+    prometheus: true
+  security:
+    enabled: true
+    compliance: true
+    runtimeSecurity: true
+  networkMonitoring:
+    enabled: true
+  processMonitoring:
+    enabled: true
+  
+  # Database monitoring
+  dbm:
+    enabled: true
+    mongodb:
+      enabled: true
+      username: "datadog"
+      password: ""  # Set via secret
+    redis:
+      enabled: true
+  
+  # Azure integration
+  azure:
+    enabled: true
+    tenantName: ""
+    clientId: ""
+    clientSecret: ""  # Set via secret
+    
+  # Custom dashboards and alerts
+  dashboards:
+    aiWorkloads: true
+    chatPerformance: true
+    kubernetesOverview: true
+    securityOverview: true
+    
+  # RUM (Real User Monitoring) for frontend
+  rum:
+    enabled: true
+    applicationId: ""  # Set for each frontend app
+    clientToken: ""    # Set via secret
+    
+  # Synthetic monitoring
+  synthetics:
+    enabled: true
+    
+  # SIEM integration
+  siem:
+    enabled: true
+    logForwarding: true
+
+# Semantic Kernel Configuration
+semanticKernel:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: vibecode/semantic-kernel
+    tag: "latest"
+    pullPolicy: Always
+    
+  # Datadog configuration
+  datadog:
+    enabled: true
+    apm:
+      enabled: true
+      serviceName: "vibecode-semantic-kernel"
+      
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"

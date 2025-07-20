@@ -9,7 +9,9 @@ RUN apk add --no-cache \
     python3 \
     py3-pip \
     docker-cli \
-    docker-cli-compose
+    docker-cli-compose \
+    make \
+    g++
 
 # Create app directory
 WORKDIR /app
@@ -21,10 +23,10 @@ RUN npm install -g @modelcontextprotocol/sdk typescript ts-node
 COPY package*.json ./
 
 # Install Node.js dependencies
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Install Python MCP requirements
-RUN pip3 install --no-cache-dir \
+RUN pip3 install --no-cache-dir --break-system-packages \
     mcp \
     anthropic \
     openai \
@@ -32,8 +34,8 @@ RUN pip3 install --no-cache-dir \
     aiohttp
 
 # Copy server files
-COPY servers/ ./servers/
-COPY scripts/ ./scripts/
+COPY docker/mcp-servers/servers/ ./servers/
+COPY docker/mcp-servers/scripts/ ./scripts/
 
 # Make scripts executable
 RUN chmod +x scripts/*.sh
@@ -50,4 +52,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
       curl -f http://model-runner.docker.internal/engines/v1/models || exit 1
 
 # Start all MCP servers with Model Runner integration
-CMD ["./scripts/start-with-model-runner.sh"] 
+CMD ["./scripts/start-with-model-runner.sh"]

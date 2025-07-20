@@ -28,6 +28,17 @@ spec:
             - name: http
               containerPort: 3000
               protocol: TCP
+          env:
+            - name: NODE_ENV
+              value: {{ .Values.web.nodeEnv | quote }}
+            {{- if .Values.web.datadog.rum.enabled }}
+            - name: NEXT_PUBLIC_DATADOG_APPLICATION_ID
+              value: {{ .Values.web.datadog.rum.applicationId | quote }}
+            - name: NEXT_PUBLIC_DATADOG_CLIENT_TOKEN
+              value: {{ .Values.web.datadog.rum.clientToken | quote }}
+            - name: NEXT_PUBLIC_DATADOG_SITE
+              value: {{ .Values.web.datadog.rum.site | quote }}
+            {{- end }}
           resources:
             {{- toYaml .Values.web.resources | nindent 12 }}
 {{- end }}

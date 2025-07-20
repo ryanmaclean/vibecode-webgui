@@ -1,0 +1,190 @@
+{{- if .Values.semanticKernel.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vibecode-platform.fullname" . }}-semantic-kernel
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: semantic-kernel
+spec:
+  replicas: {{ .Values.semanticKernel.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "vibecode-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: semantic-kernel
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/semantic-kernel-configmap.yaml") . | sha256sum }}
+        {{- if .Values.semanticKernel.datadog.enabled }}
+        ad.datadoghq.com/semantic-kernel.check_names: '["dotnet"]'
+        ad.datadoghq.com/semantic-kernel.init_configs: '[{}]'
+        ad.datadoghq.com/semantic-kernel.instances: '[{"host": "%%host%%", "port": 8080, "tags": ["env:{{ .Values.global.nodeEnv | default "production" }}", "service:{{ .Values.semanticKernel.datadog.apm.serviceName }}", "version:{{ .Values.semanticKernel.image.tag }}"]}]'
+        ad.datadoghq.com/tags: '{"env": "{{ .Values.global.nodeEnv | default "production" }}", "service": "{{ .Values.semanticKernel.datadog.apm.serviceName }}", "version": "{{ .Values.semanticKernel.image.tag }}"}'
+        {{- end }}
+      labels:
+        {{- include "vibecode-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: semantic-kernel
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "vibecode-platform.serviceAccountName" . }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+        - name: semantic-kernel
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 1001
+            capabilities:
+              drop:
+              - ALL
+          image: "{{ .Values.semanticKernel.image.repository }}:{{ .Values.semanticKernel.image.tag }}"
+          imagePullPolicy: {{ .Values.semanticKernel.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: "Production"
+            - name: ASPNETCORE_URLS
+              value: "http://+:8080"
+            - name: DOTNET_RUNNING_IN_CONTAINER
+              value: "true"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vibecode-platform.fullname" . }}-secrets
+                  key: openai-api-key
+                  optional: true
+            - name: AZURE_OPENAI_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vibecode-platform.fullname" . }}-secrets
+                  key: azure-openai-endpoint
+                  optional: true
+            - name: AZURE_OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vibecode-platform.fullname" . }}-secrets
+                  key: azure-openai-api-key
+                  optional: true
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vibecode-platform.fullname" . }}-secrets
+                  key: anthropic-api-key
+                  optional: true
+            {{- if .Values.semanticKernel.datadog.enabled }}
+            # Datadog APM Configuration for .NET
+            - name: DD_SERVICE
+              value: {{ .Values.semanticKernel.datadog.apm.serviceName | quote }}
+            - name: DD_ENV
+              value: {{ .Values.global.nodeEnv | default "production" | quote }}
+            - name: DD_VERSION
+              value: {{ .Values.semanticKernel.image.tag | quote }}
+            - name: DD_TRACE_ENABLED
+              value: "true"
+            - name: DD_RUNTIME_METRICS_ENABLED
+              value: "true"
+            - name: DD_PROFILING_ENABLED
+              value: "true"
+            - name: DD_LOGS_INJECTION
+              value: "true"
+            - name: DD_TRACE_SAMPLE_RATE
+              value: "1.0"
+            - name: DD_TRACE_DEBUG
+              value: "false"
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_TRACE_AGENT_PORT
+              value: "8126"
+            - name: DD_DOGSTATSD_PORT
+              value: "8125"
+            # .NET specific tracing
+            - name: CORECLR_ENABLE_PROFILING
+              value: "1"
+            - name: CORECLR_PROFILER
+              value: "{846F5F1C-F9AE-4B07-969E-05C26BC060D8}"
+            - name: CORECLR_PROFILER_PATH
+              value: "/opt/datadog/Datadog.Trace.ClrProfiler.Native.so"
+            - name: DD_DOTNET_TRACER_HOME
+              value: "/opt/datadog"
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "vibecode-platform.fullname" . }}-semantic-kernel-config
+          resources:
+            {{- toYaml .Values.semanticKernel.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: logs
+              mountPath: /app/logs
+            - name: tmp
+              mountPath: /tmp
+            {{- with .Values.semanticKernel.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        - name: data
+          {{- if .Values.semanticKernel.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-semantic-kernel-data" (include "vibecode-platform.fullname" .)) .Values.semanticKernel.persistence.existingClaim }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: logs
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        {{- with .Values.semanticKernel.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.semanticKernel.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.semanticKernel.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.semanticKernel.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
