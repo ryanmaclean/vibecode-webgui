@@ -43,10 +43,16 @@ datadog:
     enableTCPQueueLength: true
     enableOOMKill: true
 
-# Cluster Agent Configuration
+  # Orchestrator Explorer (Required for Pod collection)
+  orchestratorExplorer:
+    enabled: true
+
+# Cluster Agent Configuration (Required version >=1.18.0)
 clusterAgent:
   enabled: true
-
+  image:
+    tag: "1.24.0"  # Ensure we meet minimum version requirement
+  
   # Enable custom metrics for autoscaling
   metricsProvider:
     enabled: true
@@ -60,12 +66,20 @@ clusterAgent:
   autoscaling:
     workload:
       enabled: true
+  
+  # Orchestrator Explorer (Required for Pod collection)
+  orchestratorExplorer:
+    enabled: true
 
-# Node Agent Configuration
+# Node Agent Configuration (Required version >=7.33.0)
 agents:
   enabled: true
   image:
-    tag: "7.66.1"  # Required version for autoscaling
+    tag: "7.66.1"  # Meets minimum version requirement
+  
+  # Orchestrator Explorer for Pod collection
+  orchestratorExplorer:
+    enabled: true
 
 # Target Allocator for advanced metrics
 targetAllocator:

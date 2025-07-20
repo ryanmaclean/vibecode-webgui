@@ -169,7 +169,7 @@ export default function AuthTestPage() {
           <div>
             <a
               href="/auth/signin"
-              className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 inline-block"
+              className="bg-green-700 text-white px-6 py-2 rounded-lg hover:bg-green-800 inline-block"
             >
               Go to Sign In Page
             </a>

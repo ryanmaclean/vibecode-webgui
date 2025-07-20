@@ -40,7 +40,7 @@ services:
 
   # PostgreSQL database
   postgres:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg16
     container_name: vibecode-postgres
     restart: unless-stopped
     environment:

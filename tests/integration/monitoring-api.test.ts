@@ -32,12 +32,13 @@ import { GET, POST } from '../../../src/app/api/monitoring/metrics/route'
 
 describe('Monitoring API Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks()})
+    jest.clearAllMocks()
+  })
 
   describe('GET /api/monitoring/metrics', () => {
     test('should return metrics for admin user', async () => {
       // Mock admin session
-      (getServerSession as jest.Mock).mockResolvedValue({
+      ;(getServerSession as any).mockResolvedValue({
         user: { id: 'admin123', role: 'admin' },
       })
 
@@ -60,7 +61,7 @@ describe('Monitoring API Integration', () => {
 
     test('should deny access for non-admin users', async () => {
       // Mock regular user session
-      (getServerSession as jest.Mock).mockResolvedValue({
+      ;(getServerSession as any).mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       })
 
@@ -74,7 +75,7 @@ describe('Monitoring API Integration', () => {
 
     test('should deny access for unauthenticated users', async () => {
       // Mock no session
-      ;(getServerSession as jest.Mock).mockResolvedValue(null)
+      ;(getServerSession as any).mockResolvedValue(null)
 
       const request = new NextRequest('http://localhost:3000/api/monitoring/metrics');
       const response = await GET(request);
@@ -86,7 +87,7 @@ describe('Monitoring API Integration', () => {
 
     test('should handle internal server errors gracefully', async () => {
       // Mock admin session
-      (getServerSession as jest.Mock).mockResolvedValue({
+      ;(getServerSession as any).mockResolvedValue({
         user: { id: 'admin123', role: 'admin' },
       })
 
@@ -113,7 +114,7 @@ describe('Monitoring API Integration', () => {
   describe('POST /api/monitoring/metrics', () => {
     test('should accept response time metrics from authenticated users', async () => {
       // Mock authenticated session
-      (getServerSession as jest.Mock).mockResolvedValue({
+      ;(getServerSession as any).mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       })
 
@@ -136,7 +137,7 @@ describe('Monitoring API Integration', () => {
 
     test('should accept error metrics from authenticated users', async () => {
       // Mock authenticated session
-      (getServerSession as jest.Mock).mockResolvedValue({
+      ;(getServerSession as any).mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       })
 
@@ -159,7 +160,7 @@ describe('Monitoring API Integration', () => {
 
     test('should accept user activity metrics from authenticated users', async () => {
       // Mock authenticated session
-      (getServerSession as jest.Mock).mockResolvedValue({
+      ;(getServerSession as any).mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       })
 
@@ -182,7 +183,7 @@ describe('Monitoring API Integration', () => {
 
     test('should accept network I/O metrics from authenticated users', async () => {
       // Mock authenticated session
-      (getServerSession as jest.Mock).mockResolvedValue({
+      ;(getServerSession as any).mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       })
 
@@ -205,7 +206,7 @@ describe('Monitoring API Integration', () => {
 
     test('should reject unknown metric types', async () => {
       // Mock authenticated session
-      (getServerSession as jest.Mock).mockResolvedValue({
+      ;(getServerSession as any).mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       })
 
@@ -228,7 +229,7 @@ describe('Monitoring API Integration', () => {
 
     test('should deny access for unauthenticated users', async () => {
       // Mock no session
-      ;(getServerSession as jest.Mock).mockResolvedValue(null)
+      ;(getServerSession as any).mockResolvedValue(null)
 
       const requestBody = {
         type: 'response_time',
@@ -249,7 +250,7 @@ describe('Monitoring API Integration', () => {
 
     test('should handle malformed JSON gracefully', async () => {
       // Mock authenticated session
-      (getServerSession as jest.Mock).mockResolvedValue({
+      ;(getServerSession as any).mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       })
 
@@ -274,7 +275,7 @@ describe('Monitoring API Integration', () => {
   describe('Metrics Storage and Limits', () => {
     test('should maintain response time array size limit', async () => {
       // Mock authenticated session
-      (getServerSession as jest.Mock).mockResolvedValue({
+      ;(getServerSession as any).mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       });
 
@@ -293,7 +294,7 @@ describe('Monitoring API Integration', () => {
         await POST(request)}
 
       // Get metrics to verify limit
-      (getServerSession as jest.Mock).mockResolvedValue({
+      ;(getServerSession as any).mockResolvedValue({
         user: { id: 'admin123', role: 'admin' },
       })
 

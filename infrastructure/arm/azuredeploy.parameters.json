@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "projectName": {
+      "value": "vibecode"
+    },
+    "environment": {
+      "value": "prod"
+    },
+    "location": {
+      "value": "East US 2"
+    },
+    "administratorLogin": {
+      "value": "vibecodeusr"
+    },
+    "administratorPassword": {
+      "value": "GEN-PASSWORD"
+    },
+    "datadogApiKey": {
+      "value": "GEN-UNIQUE"
+    },
+    "datadogAppKey": {
+      "value": "GEN-UNIQUE"
+    },
+    "aksKubernetesVersion": {
+      "value": "1.28"
+    },
+    "aksSystemNodeCount": {
+      "value": 2
+    },
+    "aksUserNodeCount": {
+      "value": 3
+    },
+    "postgresqlSkuName": {
+      "value": "GP_Standard_D4s_v3"
+    },
+    "postgresqlStorageGB": {
+      "value": 64
+    },
+    "enableHighAvailability": {
+      "value": true
+    },
+    "tags": {
+      "value": {
+        "Project": "VibeCode",
+        "Environment": "Production",
+        "DeployedBy": "ARM Template",
+        "Owner": "DevOps Team"
+      }
+    }
+  }
+} 

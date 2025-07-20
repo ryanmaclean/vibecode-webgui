@@ -19,6 +19,8 @@ This directory contains operational runbooks for incident response, troubleshoot
 
 ### Data & AI Issues
 - [AI Model Performance](./ai-model-performance.md) - Code suggestion quality degradation
+- [AI Project Generation](./ai-project-generation.md) - AI project generation workflow failures
+- [Workspace Provisioning](./workspace-provisioning.md) - Code-server workspace creation issues
 - [Data Pipeline Issues](./data-pipeline-issues.md) - Metaplane data observability alerts
 - [Data Quality Failures](./data-quality.md) - Data quality check failures
 
@@ -158,6 +160,17 @@ WHERE (now() - pg_stat_activity.query_start) > interval '10 minutes';
 # Main application health
 curl -s http://localhost:3000/api/monitoring/health | jq
 
+<<<<<<< HEAD
+=======
+# AI project generation health
+curl -s http://localhost:3000/api/ai/generate-project -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"test","projectName":"test"}' | jq
+
+# Code-server session health
+curl -s http://localhost:3000/api/code-server/session | jq
+
+>>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 # WebSocket server health
 curl -s http://localhost:3001/health | jq
 

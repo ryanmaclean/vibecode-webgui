@@ -1,4 +1,4 @@
 #!/bin/sh
 
-# Run comprehensive pre-commit tests
-./scripts/pre-commit-tests.sh
+# Run optimized pre-commit tests with parallel execution
+./scripts/pre-commit-tests-optimized.sh

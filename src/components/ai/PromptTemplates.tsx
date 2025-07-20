@@ -18,11 +18,27 @@ import {
   Search,
   Wand2,
   Copy,
-  Star
+  Star,
+  Users,
+  FileClock,
+  ShieldCheck,
+  PackageSearch
 } from 'lucide-react'
 
+// Template type definition
+interface PromptTemplate {
+  id: string
+  name: string
+  description: string
+  icon: React.ComponentType<any>
+  template: string
+  variables: string[]
+  category: string
+  popular?: boolean
+}
+
 // Pre-defined prompt templates organized by category
-const PROMPT_TEMPLATES = {
+const PROMPT_TEMPLATES: Record<string, PromptTemplate[]> = {
   'Code Development': [
     {
       id: 'code-review',
@@ -48,136 +64,137 @@ const PROMPT_TEMPLATES = {
       name: 'Refactor Code',
       description: 'Improve code structure and maintainability',
       icon: Wand2,
-      template: 'Please refactor this {language} code to improve:\n- Readability\n- Performance\n- Maintainability\n- Following best practices\n\nOriginal code:\n```{language}\n{code}\n```\n\nProvide the refactored version with explanations of changes made.',
+      template: 'Please refactor this {language} code to improve:\n- Readability\n- Performance\n- Maintainability\n- Adherence to best practices\n\nCode:\n```{language}\n{code}\n```',
       variables: ['language', 'code'],
-      category: 'Code Development',
-      popular: true
-    }
-  ],
-  'Debugging': [
-    {
-      id: 'debug-error',
-      name: 'Debug Error',
-      description: 'Help diagnose and fix bugs',
-      icon: Bug,
-      template: 'I\'m encountering an error in my {language} code. Please help me debug it:\n\n**Error Message:**\n```\n{error}\n```\n\n**Code:**\n```{language}\n{code}\n```\n\n**Expected Behavior:**\n{expected}\n\n**Actual Behavior:**\n{actual}\n\nPlease provide:\n1. Root cause analysis\n2. Step-by-step debugging approach\n3. Fixed code solution\n4. Prevention strategies',
-      variables: ['language', 'error', 'code', 'expected', 'actual'],
-      category: 'Debugging',
-      popular: true
+      category: 'Code Development'
     },
     {
-      id: 'performance-issue',
-      name: 'Performance Analysis',
-      description: 'Analyze and optimize performance issues',
-      icon: Search,
-      template: 'My {language} application is experiencing performance issues:\n\n**Problem:**\n{problem}\n\n**Code:**\n```{language}\n{code}\n```\n\n**Performance Metrics (if available):**\n{metrics}\n\nPlease analyze and provide:\n1. Performance bottlenecks\n2. Optimization strategies\n3. Improved code implementation\n4. Monitoring recommendations',
-      variables: ['language', 'problem', 'code', 'metrics'],
-      category: 'Debugging'
-    }
-  ],
-  'Architecture': [
-    {
-      id: 'system-design',
-      name: 'System Design',
-      description: 'Design scalable system architecture',
-      icon: Lightbulb,
-      template: 'I need to design a system for: {requirement}\n\n**Requirements:**\n- {functional_requirements}\n- Expected scale: {scale}\n- Technology constraints: {constraints}\n\nPlease provide:\n1. High-level architecture diagram description\n2. Component breakdown\n3. Technology stack recommendations\n4. Scalability considerations\n5. Security implications\n6. Implementation approach',
-      variables: ['requirement', 'functional_requirements', 'scale', 'constraints'],
-      category: 'Architecture'
-    },
-    {
-      id: 'api-design',
-      name: 'API Design',
-      description: 'Design RESTful APIs and data models',
+      id: 'generate-docs',
+      name: 'Generate Docs',
+      description: 'Create documentation from code',
       icon: FileText,
-      template: 'Design a {api_type} API for: {purpose}\n\n**Requirements:**\n{requirements}\n\n**Data entities:**\n{entities}\n\nPlease provide:\n1. API endpoints with HTTP methods\n2. Request/response schemas\n3. Authentication approach\n4. Error handling strategy\n5. Documentation structure\n6. Rate limiting considerations',
-      variables: ['api_type', 'purpose', 'requirements', 'entities'],
-      category: 'Architecture'
+      template: 'Generate documentation for the following {language} code:\n\n```{language}\n{code}\n```\n\nFocus on:\n- Function purpose\n- Parameters\n- Return values\n- Usage examples',
+      variables: ['language', 'code'],
+      category: 'Code Development'
     }
   ],
-  'Learning': [
+  'Testing & Debugging': [
     {
-      id: 'learn-concept',
-      name: 'Learn Concept',
-      description: 'Learn new programming concepts with examples',
-      icon: Star,
-      template: 'I want to learn about {concept} in {context}.\n\nMy current experience level: {experience_level}\n\nPlease explain:\n1. What {concept} is and why it\'s important\n2. Key principles and concepts\n3. Practical examples with code\n4. Common use cases\n5. Best practices\n6. Resources for further learning',
-      variables: ['concept', 'context', 'experience_level'],
-      category: 'Learning'
+      id: 'find-bugs',
+      name: 'Find Bugs',
+      description: 'Analyze code to find potential bugs',
+      icon: Bug,
+      template: 'Analyze the following {language} code and identify potential bugs or errors. For each issue, explain the problem and suggest a fix.\n\nCode:\n```{language}\n{code}\n```',
+      variables: ['language', 'code'],
+      category: 'Testing & Debugging',
+      popular: true
     },
     {
-      id: 'compare-technologies',
-      name: 'Compare Technologies',
-      description: 'Compare different technologies or approaches',
-      icon: Search,
-      template: 'Compare {technology_1} vs {technology_2} for {use_case}:\n\n**Project context:**\n{context}\n\n**Requirements:**\n{requirements}\n\nPlease provide:\n1. Feature comparison\n2. Pros and cons of each\n3. Performance considerations\n4. Learning curve\n5. Community and ecosystem\n6. Recommendation with reasoning',
-      variables: ['technology_1', 'technology_2', 'use_case', 'context', 'requirements'],
-      category: 'Learning'
+      id: 'write-tests',
+      name: 'Write Unit Tests',
+      description: 'Generate unit tests for a piece of code',
+      icon: FileText,
+      template: 'Write comprehensive unit tests for the following {language} code using the {testing_framework} framework.\n\nCode:\n```{language}\n{code}\n```\n\nEnsure tests cover:\n- Happy paths\n- Edge cases\n- Error handling',
+      variables: ['language', 'code', 'testing_framework'],
+      category: 'Testing & Debugging'
+    }
+  ],
+  'Security': [
+    {
+      id: 'security-audit',
+      name: 'Security Audit',
+      description: 'Audit code for common security vulnerabilities',
+      icon: ShieldCheck,
+      template: 'Perform a security audit on the following {language} code. Look for common vulnerabilities such as {vulnerabilities_list} and other potential security risks.\n\nCode:\n```{language}\n{code}\n```',
+      variables: ['language', 'code', 'vulnerabilities_list'],
+      category: 'Security',
+      popular: true
+    },
+    {
+      id: 'dependency-check',
+      name: 'Dependency Check',
+      description: 'Analyze dependencies for known vulnerabilities',
+      icon: PackageSearch,
+      template: 'Analyze the following list of project dependencies from {package_manager_file} and check for known security vulnerabilities. Provide a summary of any found vulnerabilities and suggest remediation steps.\n\nDependencies:\n```{text}\n{dependencies}\n```',
+      variables: ['package_manager_file', 'dependencies'],
+      category: 'Security'
+    }
+  ],
+  'Project Management': [
+    {
+      id: 'user-story',
+      name: 'User Story',
+      description: 'Generate user stories from a feature description',
+      icon: Users,
+      template: 'As a {user_role}, I want to {action} so that I can {benefit}.\n\nFeature Description:\n{feature_description}',
+      variables: ['user_role', 'action', 'benefit', 'feature_description'],
+      category: 'Project Management',
+      popular: true
+    },
+    {
+      id: 'release-notes',
+      name: 'Release Notes',
+      description: 'Draft release notes for a new version',
+      icon: FileClock,
+      template: 'Generate release notes for version {version_number}.\n\nNew Features:\n{new_features}\n\nBug Fixes:\n{bug_fixes}\n\nImprovements:\n{improvements}',
+      variables: ['version_number', 'new_features', 'bug_fixes', 'improvements'],
+      category: 'Project Management'
+    }
+  ],
+  'General': [
+    {
+      id: 'brainstorm-ideas',
+      name: 'Brainstorm Ideas',
+      description: 'Generate creative ideas for a given topic',
+      icon: Lightbulb,
+      template: 'Brainstorm and list creative ideas about {topic}. Provide a diverse range of ideas, from practical to innovative.',
+      variables: ['topic'],
+      category: 'General'
     }
   ]
 }
 
 interface PromptTemplatesProps {
-  onSelectTemplate: (prompt: string) => void
-  className?: string
+  onUseTemplate: (template: string) => void
 }
 
-interface TemplateVariable {
-  name: string
-  value: string
-}
-
-export default function PromptTemplates({ onSelectTemplate, className = '' }: PromptTemplatesProps) {
-  const [selectedCategory, setSelectedCategory] = useState('Code Development')
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
-  const [variables, setVariables] = useState<TemplateVariable[]>([])
+export default function PromptTemplates({ onUseTemplate }: PromptTemplatesProps) {
+  const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null)
+  const [variables, setVariables] = useState<{ name: string; value: string }[]>([])
   const [searchTerm, setSearchTerm] = useState('')
+  const [activeCategory, setActiveCategory] = useState('All')
 
-  const categories = Object.keys(PROMPT_TEMPLATES)
-
-  // Get all templates for search
   const allTemplates = Object.values(PROMPT_TEMPLATES).flat()
+  const categories = ['All', 'Popular', ...Object.keys(PROMPT_TEMPLATES)]
 
-  // Filter templates based on search
-  const filteredTemplates = searchTerm
-    ? allTemplates.filter(template =>
-        template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        template.description.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : PROMPT_TEMPLATES[selectedCategory] || []
+  const filteredTemplates = allTemplates.filter(template => {
+    const matchesCategory = activeCategory === 'All' || 
+                            (activeCategory === 'Popular' && template.popular) || 
+                            template.category === activeCategory
+    const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          template.description.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesCategory && matchesSearch
+  })
 
-  const handleTemplateSelect = (template: any) => {
+  const handleSelectTemplate = (template: PromptTemplate) => {
     setSelectedTemplate(template)
-    // Initialize variables
-    const templateVars = template.variables.map((varName: string) => ({
-      name: varName,
-      value: ''
-    }))
-    setVariables(templateVars)
+    setVariables(template.variables.map(v => ({ name: v, value: '' })))
   }
 
-  const handleVariableChange = (varName: string, value: string) => {
-    setVariables(prev => prev.map(v =>
-      v.name === varName ? { ...v, value } : v
-    ))
+  const updateVariable = (name: string, value: string) => {
+    setVariables(vars => vars.map(v => (v.name === name ? { ...v, value } : v)))
   }
 
-  const generatePrompt = () => {
+  const getPreviewTemplate = () => {
     if (!selectedTemplate) return ''
-
-    let prompt = selectedTemplate.template
-    variables.forEach(variable => {
-      prompt = prompt.replace(new RegExp(`{${variable.name}}`, 'g'), variable.value)
-    })
-
-    return prompt
+    return variables.reduce((acc, v) => {
+      return acc.replace(new RegExp(`{${v.name}}`, 'g'), v.value || `{${v.name}}`)
+    }, selectedTemplate.template)
   }
 
   const handleUseTemplate = () => {
-    const prompt = generatePrompt()
-    onSelectTemplate(prompt)
+    onUseTemplate(getPreviewTemplate())
     setSelectedTemplate(null)
-    setVariables([])
   }
 
   const copyToClipboard = (text: string) => {
@@ -185,101 +202,76 @@ export default function PromptTemplates({ onSelectTemplate, className = '' }: Pr
   }
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Prompt Templates</h3>
-          <p className="text-sm text-muted-foreground">
-            Choose from pre-built templates to enhance your AI conversations
-          </p>
+    <div className="w-full max-w-4xl mx-auto p-4">
+      {/* Search and Filter */}
+      <div className="mb-6">
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search templates..."
+            className="w-full pl-10 pr-4 py-2 border rounded-full bg-background"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-      </div>
-
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="Search templates..."
-          className="w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      {/* Categories */}
-      {!searchTerm && (
         <div className="flex flex-wrap gap-2">
           {categories.map(category => (
             <Button
               key={category}
-              variant={selectedCategory === category ? "default" : "outline"}
+              variant={activeCategory === category ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setSelectedCategory(category)}
+              onClick={() => setActiveCategory(category)}
             >
+              {category === 'Popular' && <Star className="w-4 h-4 mr-2" />} 
               {category}
             </Button>
           ))}
         </div>
-      )}
-
-      {/* Templates Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredTemplates.map(template => {
-          const IconComponent = template.icon
-          return (
-            <Card
-              key={template.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => handleTemplateSelect(template)}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <IconComponent className="h-4 w-4 text-blue-600" />
-                    <CardTitle className="text-sm font-medium">{template.name}</CardTitle>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    {template.popular && (
-                      <Badge variant="secondary" className="text-xs">
-                        Popular
-                      </Badge>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        copyToClipboard(template.template)
-                      }}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">{template.description}</p>
-              </CardHeader>
-            </Card>
-          )
-        })}
       </div>
 
-      {/* Template Configuration Modal */}
-      {selectedTemplate && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto m-4">
+      {/* Template Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredTemplates.map(template => (
+          <Card
+            key={template.id}
+            className="cursor-pointer hover:shadow-lg transition-shadow bg-card text-card-foreground"
+            onClick={() => handleSelectTemplate(template)}
+          >
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <selectedTemplate.icon className="h-5 w-5" />
-                <span>{selectedTemplate.name}</span>
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">{selectedTemplate.description}</p>
+              <div className="flex justify-between items-start">
+                <template.icon className="h-8 w-8 mb-2 text-primary" />
+                {template.popular && <Badge variant="secondary">Popular</Badge>}
+              </div>
+              <CardTitle className="text-lg">{template.name}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">{template.description}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Template Modal */}
+      {selectedTemplate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-2xl bg-background">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-2xl flex items-center">
+                  <selectedTemplate.icon className="h-6 w-6 mr-2" />
+                  {selectedTemplate.name}
+                </CardTitle>
+                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(getPreviewTemplate())}>
+                  <Copy className="h-5 w-5" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              <p className="text-muted-foreground">{selectedTemplate.description}</p>
+              
               {/* Variables */}
               <div className="space-y-3">
-                <h4 className="font-medium">Fill in the template variables:</h4>
                 {variables.map(variable => (
                   <div key={variable.name}>
                     <label className="block text-sm font-medium mb-1 capitalize">
@@ -289,7 +281,7 @@ export default function PromptTemplates({ onSelectTemplate, className = '' }: Pr
                       className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[60px]"
                       placeholder={`Enter ${variable.name.replace(/_/g, ' ')}`}
                       value={variable.value}
-                      onChange={(e) => handleVariableChange(variable.name, e.target.value)}
+                      onChange={(e) => updateVariable(variable.name, e.target.value)}
                     />
                   </div>
                 ))}
@@ -299,7 +291,7 @@ export default function PromptTemplates({ onSelectTemplate, className = '' }: Pr
               <div>
                 <h4 className="font-medium mb-2">Preview:</h4>
                 <div className="bg-gray-50 p-3 rounded-md text-sm whitespace-pre-wrap border">
-                  {generatePrompt() || 'Fill in the variables above to see the prompt preview'}
+                  {getPreviewTemplate()}
                 </div>
               </div>
 

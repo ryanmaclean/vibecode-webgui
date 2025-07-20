@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 /**
  * Validate chat request parameters
  */
-function validateChatRequest(params: any): string[] {
+function validateChatRequest(params: unknown): string[] {
   const errors: string[] = []
 
   // Validate message
@@ -173,7 +173,7 @@ function validateChatRequest(params: any): string[] {
     } else if (params.contextFiles.length > 10) {
       errors.push('Too many context files (maximum 10)')
     } else {
-      params.contextFiles.forEach((file: any, index: number) => {
+      params.contextFiles.forEach((file: unknown, index: number) => {
         if (typeof file !== 'string') {
           errors.push(`Context file ${index} must be a string`)
         } else if (file.length > 255) {
@@ -259,7 +259,7 @@ async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<
   return true // Temporary for development
 }
 
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS(_request: NextRequest) {
   return new NextResponse(null, {
     status: 200,
     headers: {
