@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone',
+  // To deploy to a static host like GitHub Pages, set output to 'export'.
+  // For a Node.js server deployment, use 'standalone'.
+  output: 'export',
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -11,6 +13,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+
+  // Required for GitHub Pages deployment.
+  basePath: process.env.NODE_ENV === 'production' ? '/vibecode-webgui' : '',
   async rewrites() {
     return [
       {
