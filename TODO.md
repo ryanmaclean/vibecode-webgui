@@ -51,8 +51,8 @@
 
 - [ ] **Update Deployment Guides:**
     -   Reflect the new automated deployment process in the documentation.
-- [ ] **Onboarding Documentation:**
-    -   Create a guide for new developers to set up their local environment.
+- [✅] **Onboarding & Contribution Guide**:
+    -   Created `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md` to guide new developers.
 
 ### **4. Security Hardening**
 **Status**: 🟡 In Progress
