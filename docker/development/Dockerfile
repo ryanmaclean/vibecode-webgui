@@ -26,6 +26,9 @@ RUN npm ci && npm cache clean --force
 # Copy source code
 COPY --chown=nextjs:nodejs . .
 
+# Change ownership of the entire app directory to the non-root user
+RUN chown -R nextjs:nodejs /app
+
 # Switch to non-root user
 USER nextjs
 

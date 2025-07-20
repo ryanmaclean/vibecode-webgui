@@ -5,6 +5,32 @@ global:
   domain: vibecode.dev
   storageClass: standard
 
+  # Global pull secret for private registries.
+  # Create the secret using:
+  # kubectl create secret docker-registry regcred --docker-server=<your-registry-server> --docker-username=<your-name> --docker-password=<your-pword> --docker-email=<your-email>
+  imagePullSecrets:
+    - name: regcred
+
+# Web Application Configuration
+web:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ryanmaclean/web
+    tag: "latest"
+    pullPolicy: Always
+  resources: {}
+
+# WebSocket Service Configuration
+websocket:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ryanmaclean/websocket
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  resources: {}
+
 # Code-Server Configuration
 codeServer:
   enabled: true
@@ -47,8 +73,35 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 
-
 # User configuration (set via --set user.id=xxx)
 user:
   id: ""
   email: ""
+
+# --- Database and Cache --- #
+# Using custom manifests instead of chart dependencies for license compliance.
+
+postgresql:
+  enabled: true
+  image:
+    repository: pgvector/pgvector
+    tag: pg16
+  persistence:
+    size: 8Gi
+
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: 7.2.4-alpine
+  commandArgs:
+    maxmemory: 256mb
+  persistence:
+    size: 1Gi
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"

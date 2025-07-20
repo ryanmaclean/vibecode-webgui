@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
           feature: 'experimentation',
           metadata: {
             flagCount: body.flags.length,
-            flags: body.flags.map((f: any) => f.key)
+            flags: body.flags.map((f: { key: string; defaultValue?: boolean }) => f.key)
           }
         })
 

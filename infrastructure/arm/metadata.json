@@ -1,0 +1,20 @@
+{
+  "$schema": "https://aka.ms/azure-quickstart-templates-metadata-schema#",
+  "type": "QuickStart",
+  "itemDisplayName": "VibeCode WebGUI - Enterprise Development Platform",
+  "description": "Deploy a complete enterprise-ready development platform on Azure with AKS, PostgreSQL with pgvector, Azure AI Services, and Datadog monitoring.",
+  "summary": "One-click deployment of VibeCode WebGUI platform with Kubernetes, AI services, vector database, and comprehensive monitoring.",
+  "githubUsername": "vibecode",
+  "dateUpdated": "2024-12-19",
+  "environments": [
+    "AzureCloud"
+  ],
+  "validationType": "Manual",
+  "tags": {
+    "subscriptiontype": "Azure4Student",
+    "cost": "$$",
+    "resource": "AKS, PostgreSQL, Cognitive Services, Container Registry, Key Vault",
+    "level": "Intermediate",
+    "github": "vibecode/vibecode-webgui"
+  }
+} 

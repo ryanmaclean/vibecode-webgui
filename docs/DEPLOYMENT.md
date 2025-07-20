@@ -6,9 +6,10 @@ This guide covers all deployment options for the VibeCode platform, from one-cli
 
 ### Option 1: One-Click Cloud Deployment (Recommended)
 
-**Fastest way to get started - No technical expertise required**
+> **Fastest way to get started - No technical expertise required**
 
 #### Deploy to Vercel (2-3 minutes)
+
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyour-repo%2Fvibecode-webgui&env=OPENROUTER_API_KEY,NEXTAUTH_SECRET&envDescription=API%20keys%20required%20for%20AI%20chat%20functionality)
 
 1. Click the deploy button above
@@ -17,9 +18,11 @@ This guide covers all deployment options for the VibeCode platform, from one-cli
 4. Deploy!
 
 #### Deploy to Netlify (3-5 minutes)
+
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/your-repo/vibecode-webgui)
 
 #### Deploy to Railway (5-7 minutes)
+
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Fyour-repo%2Fvibecode-webgui)
 
 ### Option 2: Automated CLI Deployment
@@ -39,6 +42,7 @@ node scripts/deploy.js
 ```
 
 The script will:
+
 - Check prerequisites
 - Help you choose a platform
 - Set up environment variables
@@ -46,33 +50,68 @@ The script will:
 
 ## 📋 Environment Variables
 
-### Required Variables
+### Required Environment Variables
+
+Setting up the correct environment variables is crucial for the platform to function correctly. The following variables are required for a full deployment.
 
 ```bash
-# AI Service Configuration
-OPENROUTER_API_KEY=sk-or-your-api-key-here
+# ---------------------------------
+# --- Authentication (REQUIRED) ---
+# ---------------------------------
+NEXTAUTH_URL=https://your-domain.com          # The public URL of your deployment.
+NEXTAUTH_SECRET=your-32-char-secret           # A 32-character secret for session encryption.
 
-# Authentication
-NEXTAUTH_SECRET=your-secure-random-string-here
-NEXTAUTH_URL=https://your-app-domain.com
+# ---------------------------
+# --- Database (REQUIRED) ---
+# ---------------------------
+DATABASE_URL=postgresql://user:pass@host:port/db  # Connection string for your PostgreSQL database.
+REDIS_URL=redis://host:port                       # Connection string for your Redis instance.
 
-# Database (optional - uses file storage if not provided)
-DATABASE_URL=postgresql://user:password@host:5432/database
+# --------------------------------------
+# --- AI Integration (REQUIRED)      ---
+# --------------------------------------
+OPENROUTER_API_KEY=sk-or-v1-your-key          # Your API key from OpenRouter.
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key # Your API key from Anthropic for Claude models.
+AI_PROJECT_GENERATION_ENABLED=true            # Must be true to enable AI features.
+AI_MAX_TOKENS=4000                            # Max tokens for AI responses.
+AI_TEMPERATURE=0.7                            # Creativity of the AI model.
+CLAUDE_MODEL=claude-3-5-sonnet-20241022      # The specific Claude model to use.
 
-# Redis (optional - uses memory if not provided)
-REDIS_URL=redis://host:6379
+# -----------------------------------------
+# --- Code-Server Integration (REQUIRED) --
+# -----------------------------------------
+CODE_SERVER_BASE_URL=http://localhost:8080    # URL for the code-server instance.
+CODE_SERVER_PASSWORD=your-code-server-password  # Password to access code-server.
+WORKSPACE_BASE_PATH=/workspaces               # Path where user workspaces are stored.
+
+# -------------------------------------------
+# --- Datadog Monitoring (RECOMMENDED)    ---
+# -------------------------------------------
+DD_API_KEY=your-datadog-api-key             # Your Datadog API key.
+DD_LLMOBS_ENABLED=1                         # Enables LLM Observability.
+DD_DATABASE_MONITORING_ENABLED=true         # Enables Database Monitoring.
 ```
 
 ### Getting API Keys
 
 #### OpenRouter API Key
+
 1. Visit [OpenRouter](https://openrouter.ai/keys)
 2. Sign up for an account
 3. Create a new API key
 4. Copy the key (starts with `sk-or-`)
 
+#### Anthropic API Key (For Claude AI)
+
+1. Visit [Anthropic Console](https://console.anthropic.com/keys)
+2. Sign up for an account
+3. Create a new API key
+4. Copy the key (starts with `sk-ant-`)
+
 #### NextAuth Secret
+
 Generate a secure random string:
+
 ```bash
 # Option 1: Use OpenSSL
 openssl rand -base64 32
@@ -87,15 +126,18 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ### Platform-Specific Setup
 
 #### Vercel
+
 1. Add environment variables in the Vercel dashboard
 2. Redeploy if variables were added after initial deployment
 
 #### Netlify
+
 1. Go to Site Settings > Environment Variables
 2. Add each variable individually
 3. Redeploy the site
 
 #### Railway
+
 1. Variables are set during initial deployment
 2. Update in Project Settings > Variables if needed
 
@@ -118,6 +160,7 @@ docker run -p 3000:3000 \
 ```bash
 # Create environment file
 cp .env.example .env
+
 # Edit .env with your values
 
 # Start all services
@@ -128,11 +171,13 @@ docker-compose -f docker-compose.production.yml --profile monitoring up -d
 ```
 
 Services included:
+
 - VibeCode App (port 3000)
 - PostgreSQL Database (port 5432)
 - Redis Cache (port 6379)
 - NGINX Reverse Proxy (ports 80/443)
 - Code Server for VS Code (port 8080)
+- AI Gateway Service (port 3001)
 - Prometheus + Grafana (ports 9090/3001) - optional
 
 ## ☸️ Kubernetes Deployment
@@ -166,6 +211,7 @@ kubectl apply -k k8s/
 ## 🔧 Self-Hosted Server
 
 ### Prerequisites
+
 - Ubuntu 20.04+ or similar Linux distribution
 - Node.js 18+
 - PostgreSQL 13+ (optional)
@@ -205,9 +251,13 @@ sudo systemctl reload nginx
 All deployments include health check endpoints:
 
 - **Health Check:** `GET /api/health`
+- **AI Project Generation:** `POST /api/ai/generate-project`
+- **Code-Server Sessions:** `POST /api/code-server/session`
+- **File Sync:** `POST /api/files/sync`
 - **Metrics:** Available in Docker/K8s deployments
 
 Example health check response:
+
 ```json
 {
   "status": "healthy",
@@ -217,7 +267,10 @@ Example health check response:
   "checks": {
     "memory": { "status": "healthy" },
     "database": { "status": "healthy" },
-    "ai": { "status": "healthy" }
+    "ai": { "status": "healthy" },
+    "codeServer": { "status": "healthy" },
+    "openrouter": { "status": "healthy" },
+    "anthropic": { "status": "healthy" }
   }
 }
 ```
@@ -227,34 +280,54 @@ Example health check response:
 ### Common Issues
 
 #### "OpenRouter API key not configured"
+
 - Ensure `OPENROUTER_API_KEY` is set correctly
 - Check the key format (should start with `sk-or-`)
 - Verify the key is active on OpenRouter dashboard
 
+#### "Anthropic API key not configured"
+
+- Ensure `ANTHROPIC_API_KEY` is set correctly
+- Check the key format (should start with `sk-ant-`)
+- Verify the key is active on Anthropic Console
+- Ensure you have sufficient Claude API credits
+
 #### "NextAuth configuration error"
+
 - Set `NEXTAUTH_SECRET` to a secure random string
 - Update `NEXTAUTH_URL` to match your deployment URL
 - For HTTPS deployments, ensure the URL uses `https://`
 
 #### "Build failed" during deployment
+
 - Check Node.js version (requires 18+)
 - Ensure all dependencies are properly installed
 - Review build logs for specific error messages
 
 #### Database connection issues
+
 - Verify `DATABASE_URL` format: `postgresql://user:pass@host:port/db`
 - Ensure database server is accessible
 - Check firewall rules and security groups
 
+#### AI project generation not working
+
+- Verify both `OPENROUTER_API_KEY` and `ANTHROPIC_API_KEY` are set
+- Check `AI_PROJECT_GENERATION_ENABLED=true` is set
+- Ensure `CODE_SERVER_BASE_URL` points to running code-server instance
+- Verify workspace directory permissions for `WORKSPACE_BASE_PATH`
+
 ### Performance Optimization
 
 #### For High Traffic
+
 - Use PostgreSQL instead of file storage
 - Enable Redis for caching
 - Set up CDN for static assets
 - Configure horizontal scaling (K8s/Railway)
 
 #### For Large Files
+
 - Configure file upload limits
 - Use cloud storage (S3, etc.) for file uploads
 - Enable compression in NGINX
@@ -262,11 +335,13 @@ Example health check response:
 ## 📊 Monitoring and Analytics
 
 ### Built-in Monitoring
+
 - Health check endpoint (`/api/health`)
 - Performance metrics in production
 - Error tracking and logging
 
 ### External Monitoring
+
 - Datadog integration (configured)
 - Prometheus metrics (Docker/K8s)
 - Custom monitoring via webhooks
@@ -274,6 +349,7 @@ Example health check response:
 ## 🔒 Security Considerations
 
 ### Production Checklist
+
 - [ ] Use strong `NEXTAUTH_SECRET`
 - [ ] Enable HTTPS/TLS
 - [ ] Configure CORS properly
@@ -285,6 +361,7 @@ Example health check response:
 - [ ] API key rotation schedule
 
 ### Firewall Rules
+
 ```bash
 # Essential ports
 80/tcp    # HTTP

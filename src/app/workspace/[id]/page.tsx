@@ -52,34 +52,70 @@ export default function WorkspacePage() {
 
   // Load workspace data
   useEffect(() => {
-    const mockWorkspace: WorkspaceInfo = {
-      id: workspaceId,
-      name: `VibeCode ${workspaceId}`,
-      status: 'running',
-      url: `http://localhost:8080`, // Use local code-server for now
-      lastActive: new Date().toISOString(),
-      resources: {
-        cpu: '50%',
-        memory: '1.2GB',
-        storage: '8.5GB'
-      },
-      gitRepo: 'https://github.com/user/my-project',
-      branch: 'main',
-      language: 'TypeScript'
+    const loadWorkspace = async () => {
+      try {
+        // Try to get real workspace info from the session API
+        const response = await fetch(`/api/code-server/session?workspaceId=${workspaceId}`)
+        
+        if (response.ok) {
+          const data = await response.json()
+          const session = data.sessions?.[0]
+          
+          if (session) {
+            const realWorkspace: WorkspaceInfo = {
+              id: workspaceId,
+              name: `VibeCode ${workspaceId}`,
+              status: session.status === 'ready' ? 'running' : 'starting',
+              url: session.url,
+              lastActive: new Date(session.last_active * 1000).toLocaleString(),
+              resources: {
+                cpu: '1 vCPU',
+                memory: '2 GB',
+                storage: '10 GB',
+              },
+              gitRepo: 'github.com/vibecode/platform',
+              branch: 'main',
+              language: 'TypeScript',
+            }
+            setWorkspace(realWorkspace)
+          } else {
+            throw new Error('Workspace session not found')
+          }
+        } else {
+          throw new Error('Failed to fetch workspace session')
+        }
+      } catch (error) {
+        console.warn('Failed to fetch real workspace, using mock data:', error)
+        // Fallback to mock data if API fails
+        setWorkspace({
+          id: workspaceId,
+          name: `VibeCode ${workspaceId}`,
+          status: 'running',
+          url: `http://localhost:8080/?folder=/home/coder/project/${workspaceId}`,
+          lastActive: '5 minutes ago',
+          resources: {
+            cpu: '2 vCPU',
+            memory: '4 GB',
+            storage: '20 GB',
+          },
+          gitRepo: 'github.com/vibecode/platform',
+          branch: 'feature/ai-chat',
+          language: 'TypeScript',
+        })
+      }
+      setIsLoading(false)
     }
 
-    setTimeout(() => {
-      setWorkspace(mockWorkspace)
-      setIsLoading(false)
-    }, 1000)
+    loadWorkspace()
   }, [workspaceId])
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your vibe coding workspace...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="text-center text-white">
+          <Sparkles className="w-12 h-12 mx-auto mb-4 animate-pulse" />
+          <h2 className="text-2xl font-bold">Loading Your VibeCode Workspace...</h2>
+          <p className="text-gray-400">Please wait while we set up your coding environment.</p>
         </div>
       </div>
     )
@@ -87,88 +123,51 @@ export default function WorkspacePage() {
 
   if (!workspace) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Workspace Not Found</h1>
-          <p className="text-gray-600">The requested workspace could not be loaded.</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+        <h2 className="text-2xl font-bold">Workspace not found.</h2>
       </div>
     )
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="h-screen flex flex-col bg-gray-900 text-white">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  {workspace.name}
-                </h1>
-                <div className="flex items-center space-x-3 text-sm text-gray-500 dark:text-gray-400">
-                  <Badge variant={workspace.status === 'running' ? 'default' : 'secondary'}>
-                    {workspace.status}
-                  </Badge>
-                  <span className="flex items-center">
-                    <Bot className="w-3 h-3 mr-1" />
-                    AI Enhanced
-                  </span>
-                  {workspace.language && (
-                    <span className="flex items-center">
-                      <Code className="w-3 h-3 mr-1" />
-                      {workspace.language}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <div className="text-right text-sm text-gray-500 dark:text-gray-400">
-              <div>CPU: {workspace.resources.cpu}</div>
-              <div>Memory: {workspace.resources.memory}</div>
-            </div>
-            <Button variant="outline" size="sm">
-              <Settings className="w-4 h-4" />
-            </Button>
+      <header className="flex items-center justify-between p-2 border-b border-gray-700 bg-gray-800">
+        <div className="flex items-center space-x-4">
+          <h1 className="text-xl font-bold">{workspace.name}</h1>
+          <Badge variant={workspace.status === 'running' ? 'default' : 'destructive'}>
+            {workspace.status}
+          </Badge>
+          <div className="flex items-center text-sm text-gray-400">
+            <GitBranch className="w-4 h-4 mr-2" />
+            <span>{workspace.branch}</span>
           </div>
         </div>
-      </div>
+        <div className="flex items-center space-x-2">
+          <Button size="sm" variant="outline">
+            <Settings className="w-4 h-4 mr-2" />
+            Settings
+          </Button>
+        </div>
+      </header>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <TabsList className="h-12 w-full justify-start rounded-none bg-transparent p-0">
-              <TabsTrigger
-                value="integrated"
-                className="flex items-center space-x-2 h-12 px-6 data-[state=active]:bg-blue-50 dark:data-[state=active]:bg-blue-900/20 data-[state=active]:text-blue-600"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>Vibe Code (AI + Editor)</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="ai"
-                className="flex items-center space-x-2 h-12 px-6 data-[state=active]:bg-gray-50 dark:data-[state=active]:bg-gray-700"
-              >
-                <Bot className="w-4 h-4" />
-                <span>AI Chat</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="code"
-                className="flex items-center space-x-2 h-12 px-6 data-[state=active]:bg-gray-50 dark:data-[state=active]:bg-gray-700"
-              >
-                <Code className="w-4 h-4" />
-                <span>Code Only</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+      {/* Main Content Area */}
+      <div className="flex-1 flex overflow-hidden">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col">
+          <TabsList className="bg-gray-800 border-b border-gray-700 rounded-none">
+            <TabsTrigger value="integrated">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Vibe
+            </TabsTrigger>
+            <TabsTrigger value="ai">
+              <Bot className="w-4 h-4 mr-2" />
+              AI Chat
+            </TabsTrigger>
+            <TabsTrigger value="code">
+              <Code className="w-4 h-4 mr-2" />
+              Code Editor
+            </TabsTrigger>
+          </TabsList>
 
           <div className="flex-1 overflow-hidden">
             <TabsContent value="integrated" className="h-full m-0">
@@ -176,7 +175,7 @@ export default function WorkspacePage() {
               <VSCodeIntegration
                 workspaceId={workspaceId}
                 codeServerUrl={workspace.url}
-                isEmbedded={false}
+                isEmbedded={true}
                 className="h-full"
               />
             </TabsContent>

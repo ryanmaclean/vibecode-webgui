@@ -11,7 +11,7 @@ import { z } from 'zod'
 const createSessionSchema = z.object({
   workspaceId: z.string().min(1),
   projectPath: z.string().default('/workspace'),
-  userId: z.string().min(1),
+  userId: z.string().min(1).optional(),
 })
 
 interface CodeServerInstance {
@@ -32,21 +32,66 @@ function generateSessionId(): string {
   return `cs-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
 }
 
-async function startCodeServerContainer(workspaceId: string): Promise<{
+async function startCodeServerContainer(workspaceId: string, userId: string): Promise<{
   containerId: string
   url: string
 }> {
-  // For development, simulate container creation
-  // In production, this would interact with Docker/Kubernetes API
-
-  const containerId = `code-server-${workspaceId}-${Date.now()}`
-  const port = 8080 + Math.floor(Math.random() * 1000) // Random port for demo
-  const url = `http://localhost:${port}`
-
-  // Simulate container startup delay
-  await new Promise(resolve => setTimeout(resolve, 2000))
-
-  return { containerId, url }
+  // Real Kubernetes deployment
+  const { spawn } = require('child_process')
+  const path = require('path')
+  
+  const scriptPath = path.join(process.cwd(), 'scripts', 'create-workspace.sh')
+  
+  return new Promise((resolve, reject) => {
+    const child = spawn('bash', [scriptPath, workspaceId, userId], {
+      stdio: ['pipe', 'pipe', 'pipe']
+    })
+    
+    let stdout = ''
+    let stderr = ''
+    
+    child.stdout.on('data', (data: Buffer) => {
+      stdout += data.toString()
+    })
+    
+    child.stderr.on('data', (data: Buffer) => {
+      stderr += data.toString()
+    })
+    
+    child.on('close', (code) => {
+      if (code === 0) {
+        // Parse the output to get service details
+        const serviceName = `code-server-${workspaceId}-svc`
+        const internalUrl = `http://${serviceName}.vibecode.svc.cluster.local:8080`
+        
+        // Set up port forwarding for external access
+        const portNumber = 8080 + Math.floor(Math.random() * 1000) // Random port for dev
+        const externalUrl = `http://localhost:${portNumber}`
+        
+        // Start port forwarding in background
+        const portForwardCmd = spawn('kubectl', [
+          'port-forward', '-n', 'vibecode',
+          `deployment/code-server-${workspaceId}`,
+          `${portNumber}:8080`
+        ], { detached: true, stdio: 'ignore' })
+        
+        portForwardCmd.unref()
+        
+        resolve({
+          containerId: `code-server-${workspaceId}`,
+          url: externalUrl
+        })
+      } else {
+        console.error('Workspace creation failed:', stderr)
+        reject(new Error(`Failed to create workspace: ${stderr}`))
+      }
+    })
+    
+    child.on('error', (error) => {
+      console.error('Script execution error:', error)
+      reject(error)
+    })
+  })
 }
 
 async function stopCodeServerContainer(containerId: string): Promise<void> {
@@ -68,14 +113,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { workspaceId, userId } = createSessionSchema.parse(body)
 
-    // Verify user owns the workspace (add proper authorization logic)
-    if (session.user.id !== userId) {
+    // Verify user owns the workspace - use session user ID if no userId provided
+    const effectiveUserId = userId || session.user.id
+    if (session.user.id !== effectiveUserId && userId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     // Check for existing session
     const existingSession = Array.from(activeSessions.values()).find(
-      s => s.workspaceId === workspaceId && s.userId === userId && s.status !== 'stopped'
+      s => s.workspaceId === workspaceId && s.userId === effectiveUserId && s.status !== 'stopped'
     )
 
     if (existingSession) {
@@ -89,7 +135,7 @@ export async function POST(request: NextRequest) {
       url: '', // Will be set after container starts
       status: 'starting',
       workspaceId,
-      userId,
+      userId: effectiveUserId,
       createdAt: new Date(),
       lastActivity: new Date(),
     }
@@ -97,7 +143,7 @@ export async function POST(request: NextRequest) {
     activeSessions.set(sessionId, newSession)
 
     // Start code-server container in background
-    startCodeServerContainer(workspaceId)
+    startCodeServerContainer(workspaceId, effectiveUserId)
       .then(({ containerId, url }) => {
         const session = activeSessions.get(sessionId)
         if (session) {

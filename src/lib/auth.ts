@@ -41,6 +41,8 @@ declare module 'next-auth/jwt' {
   }
 }
 
+// NextAuth configuration is properly loaded
+
 export const authOptions: NextAuthOptions = {
   // adapter: PrismaAdapter(prisma), // Disabled for file-based development
   secret: process.env.NEXTAUTH_SECRET,
@@ -66,7 +68,7 @@ export const authOptions: NextAuthOptions = {
           name: profile.name || profile.login,
           email: profile.email,
           image: profile.avatar_url,
-          role: 'user',
+          role: 'user', // Default role
           githubId: profile.id.toString(),
         }
       },
@@ -80,56 +82,58 @@ export const authOptions: NextAuthOptions = {
           name: profile.name,
           email: profile.email,
           image: profile.picture,
-          role: 'user',
+          role: 'user', // Default role
           googleId: profile.sub,
         }
       },
     }),
     CredentialsProvider({
-      name: 'credentials',
+      name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
+        email: { label: 'Email', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        console.log('🔐 AUTHORIZE FUNCTION CALLED!', {
-          email: credentials?.email,
-          password: credentials?.password ? 'PROVIDED' : 'MISSING',
-          env: process.env.NODE_ENV
-        })
+        if (!credentials) return null
 
-        // Simple hardcoded test
-        if (credentials?.email === 'developer@vibecode.dev' && credentials?.password === 'dev123') {
-          console.log('✅ HARDCODED TEST PASSED')
-          return {
-            id: '1',
-            email: 'developer@vibecode.dev',
-            name: 'Test Developer',
-            role: 'user',
-          }
+        // In a real app, you'd look up the user from a database
+        // This is a mock implementation for development
+        const users = [
+          { id: '1', email: 'admin@vibecode.dev', password: 'admin123', name: 'Admin User', role: 'admin' },
+          { id: '2', email: 'developer@vibecode.dev', password: 'dev123', name: 'Developer User', role: 'developer' },
+          { id: '3', email: 'lead@vibecode.dev', password: 'lead123', name: 'Lead User', role: 'lead' },
+          { id: '4', email: 'frontend@vibecode.dev', password: 'frontend123', name: 'Frontend Developer', role: 'developer' },
+          { id: '5', email: 'backend@vibecode.dev', password: 'backend123', name: 'Backend Developer', role: 'developer' },
+          { id: '6', email: 'fullstack@vibecode.dev', password: 'fullstack123', name: 'Fullstack Developer', role: 'developer' },
+          { id: '7', email: 'designer@vibecode.dev', password: 'design123', name: 'Designer', role: 'designer' },
+          { id: '8', email: 'tester@vibecode.dev', password: 'test123', name: 'QA Tester', role: 'tester' },
+          { id: '9', email: 'devops@vibecode.dev', password: 'devops123', name: 'DevOps Engineer', role: 'devops' },
+          { id: '10', email: 'intern@vibecode.dev', password: 'intern123', name: 'Intern', role: 'intern' },
+        ]
+
+        const user = users.find(u => u.email === credentials.email)
+
+        if (user && user.password === credentials.password) {
+          return { id: user.id, name: user.name, email: user.email, role: user.role }
+        } else {
+          return null
         }
-
-        console.log('❌ HARDCODED TEST FAILED')
-        return null
       },
     }),
   ],
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-  jwt: {
-    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
     signIn: '/auth/signin',
     signOut: '/auth/signout',
     error: '/auth/error',
     verifyRequest: '/auth/verify-request',
+    newUser: '/auth/new-user',
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      console.log('🔑 JWT callback:', {
+      console.log('🔄 JWT callback:', {
         hasUser: !!user,
         hasToken: !!token,
         provider: account?.provider,
@@ -140,6 +144,8 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id
         token.role = user.role
+        token.email = user.email
+        token.name = user.name
         if (account?.provider === 'github') {
           token.githubId = user.githubId
         }
@@ -161,11 +167,13 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user.id = token.id
         session.user.role = token.role
+        session.user.email = token.email as string
+        session.user.name = token.name as string
         console.log('✅ Session updated with token:', { id: session.user.id, role: session.user.role })
       }
       return session
     },
-    async signIn({ user, account, profile, email, credentials }) {
+    async signIn({ user: _user, account: _account, profile: _profile, email: _email, credentials: _credentials }) {
       // Allow sign in for all providers
       return true
     },

@@ -19,3 +19,9 @@ keywords:
   - ai
 annotations:
   category: Development
+
+dependencies:
+  - name: datadog-operator
+    version: "1.2.0"
+    repository: "https://helm.datadoghq.com"
+    alias: datadogOperator
