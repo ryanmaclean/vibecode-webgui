@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 # Optimized Pre-commit Test Script
-# Parallel execution with smart skipping for faster commits
+# Parallel execution with smart caching for faster commits
 # Staff Engineer Implementation - Performance optimized
 
 set -euo pipefail
 
-echo "🚀 Running Optimized Pre-Commit Tests..."
+echo "Running Optimized Pre-Commit Tests..."
 
 # Configuration
 PARALLEL_JOBS=${PARALLEL_JOBS:-4}
@@ -20,7 +20,7 @@ run_in_background() {
     local command="$2"
     local log_file="$CACHE_DIR/${name}.log"
     
-    echo "🔄 Starting: $name"
+    echo "Starting: $name"
     (
         eval "$command" > "$log_file" 2>&1
         echo $? > "$CACHE_DIR/${name}.exitcode"
@@ -43,10 +43,10 @@ wait_for_job() {
         if [[ -f "$exit_code_file" ]]; then
             local exit_code=$(cat "$exit_code_file")
             if [[ "$exit_code" -eq 0 ]]; then
-                echo "✅ $name passed"
+                echo "PASS: $name"
                 return 0
             else
-                echo "❌ $name failed"
+                echo "FAIL: $name"
                 echo "--- Log output for $name ---"
                 cat "$log_file" || echo "No log available"
                 echo "--- End log ---"
@@ -55,7 +55,7 @@ wait_for_job() {
         fi
     fi
     
-    echo "⚠️  $name status unknown"
+    echo "WARNING: $name status unknown"
     return 1
 }
 
@@ -82,10 +82,10 @@ mark_file_cached() {
 }
 
 # Quick prerequisite checks (fast, run serially)
-echo "🔍 Checking prerequisites..."
+echo "Checking prerequisites..."
 
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
-    echo "❌ Not in a git repository"
+    echo "ERROR: Not in a git repository"
     exit 1
 fi
 
@@ -95,13 +95,13 @@ staged_ts_files=$(echo "$staged_files" | grep -E '\.(ts|tsx|js|jsx)$' || true)
 staged_package_json=$(echo "$staged_files" | grep 'package\.json$' || true)
 staged_helm_files=$(echo "$staged_files" | grep -E '^helm/.*\.(yaml|yml)$' || true)
 
-echo "📊 Found $(echo "$staged_files" | wc -l | tr -d ' ') staged files"
-echo "📊 Found $(echo "$staged_ts_files" | wc -l | tr -d ' ') TypeScript/JS files"
+echo "Found $(echo "$staged_files" | wc -l | tr -d ' ') staged files"
+echo "Found $(echo "$staged_ts_files" | wc -l | tr -d ' ') TypeScript/JS files"
 
 # Skip expensive tests if no relevant files changed
 if [[ -z "$staged_files" ]]; then
-    echo "📝 No staged files - skipping most checks"
-    echo "✅ All pre-commit tests passed!"
+    echo "No staged files - skipping most checks"
+    echo "All pre-commit tests passed"
     exit 0
 fi
 
@@ -114,7 +114,7 @@ if [[ -n "$staged_ts_files" ]]; then
         run_in_background "typecheck" "npx tsc --noEmit --skipLibCheck"
         jobs+=("typecheck")
     else
-        echo "⚡ Skipping type check - no relevant changes"
+        echo "Skipping type check - no relevant changes"
     fi
 fi
 
@@ -139,13 +139,13 @@ for file in $(git diff --cached --name-only); do
     if [[ -f "$file" && "$file" != *.env.local && "$file" != *.env.* && "$file" != *node_modules* ]]; then
         for pattern in "${api_key_patterns[@]}"; do
             if grep -E "$pattern" "$file" > /dev/null; then
-                echo "❌ Potential API key found in $file"
+                echo "ERROR: Potential API key found in $file"
                 exit 1
             fi
         done
     fi
 done
-echo "✅ No API keys detected"
+echo "No API keys detected"
 '
 jobs+=("security-scan")
 
@@ -167,7 +167,7 @@ if [[ -n "$staged_ts_files" ]] || [[ "$test_files_changed" == "true" ]]; then
         run_in_background "jest-tests" "npm test -- --passWithNoTests --silent --cache"
         jobs+=("jest-tests")
     else
-        echo "⚡ Skipping Jest tests (SKIP_EXPENSIVE_TESTS=true)"
+        echo "Skipping Jest tests (SKIP_EXPENSIVE_TESTS=true)"
     fi
 fi
 
@@ -184,7 +184,7 @@ if [[ -n "$staged_helm_files" ]] && command -v helm > /dev/null 2>&1; then
 fi
 
 # Wait for all background jobs
-echo "⏳ Waiting for $(echo "${jobs[@]}" | wc -w | tr -d ' ') parallel jobs to complete..."
+echo "Waiting for $(echo "${jobs[@]}" | wc -w | tr -d ' ') parallel jobs to complete..."
 
 failed_jobs=()
 for job in "${jobs[@]}"; do
@@ -195,8 +195,8 @@ done
 
 # Report results
 if [[ ${#failed_jobs[@]} -eq 0 ]]; then
-    echo "✅ All pre-commit tests passed!"
-    echo "🎉 Ready for commit"
+    echo "All pre-commit tests passed"
+    echo "Ready for commit"
     
     # Mark successful files as cached
     for file in $staged_files; do
@@ -205,9 +205,9 @@ if [[ ${#failed_jobs[@]} -eq 0 ]]; then
     
     exit 0
 else
-    echo "❌ The following tests failed: ${failed_jobs[*]}"
+    echo "The following tests failed: ${failed_jobs[*]}"
     echo ""
-    echo "💡 Tips for faster commits:"
+    echo "Tips for faster commits:"
     echo "   - Set SKIP_EXPENSIVE_TESTS=true for quick commits"
     echo "   - Use --no-verify to bypass pre-commit hooks"
     echo "   - Fix issues and commit again"
