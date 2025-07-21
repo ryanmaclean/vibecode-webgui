@@ -34,25 +34,22 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Run the build command
 RUN yarn build
 
-# Stage 4: Production runner
-FROM base AS runner
+# Stage 4: Production runner (Distroless)
+# Using a distroless image for a smaller and more secure final image.
+FROM gcr.io/distroless/nodejs:20 AS runner
+
+WORKDIR /app
 
 # Set environment for production
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 
-# Create a non-root user for security
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Copy only the necessary production artifacts from the builder stage
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Switch to the non-root user
-USER nextjs
+# Copy only the necessary production artifacts from the builder stage.
+# The distroless image has a default non-root user 'nonroot' (uid: 65532).
+COPY --from=builder --chown=65532:65532 /app/public ./public
+COPY --from=builder --chown=65532:65532 /app/.next/standalone ./
+COPY --from=builder --chown=65532:65532 /app/.next/static ./.next/static
 
 # Expose the application port
 EXPOSE 3000
