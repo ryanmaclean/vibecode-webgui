@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   // To deploy to a static host like GitHub Pages, set output to 'export'.
   // For a Node.js server deployment, use 'standalone'.
-  output: 'export',
+  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -33,6 +33,7 @@ const nextConfig = {
       fs: false,
       net: false,
       tls: false,
+      fsevents: false,
     };
 
     if (!isServer) {
