@@ -6,6 +6,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fvibecode%2Fvibecode-webgui%2Fmain%2Finfrastructure%2Farm%2Fazuredeploy.json)
 
+---
+
+
+
 ## 🌟 **New: Enterprise Azure Deployment**
 
 Deploy VibeCode to **Azure** with enterprise features in one click:
@@ -1753,26 +1757,27 @@ VibeCode implements comprehensive security measures to protect against API key l
 
 ## 🎉 Success! You now have a fully operational VibeCode platform
 
-**What you've built:**
-- **Cloud-native development platform** with Kubernetes-native architecture
-- **Full AI integration** with 318 models via OpenRouter and Claude-3.5-Sonnet
-- **Production-ready monitoring** with Datadog and real-time metrics
-- **Scalable infrastructure** with auto-scaling and load balancing
-- **Enterprise security** with authentication, rate limiting, and secrets management
-- **Complete data persistence** with PostgreSQL and Redis
-- **Real-time collaboration** ready for VS Code integration
-<<<<<<< HEAD
-=======
-- **Accessibility-first UI** with WCAG 2.1 AA compliance and automated testing
-- **🔒 Advanced API Key Protection** with pre-commit hooks, BFG integration, and comprehensive scanning
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
+### Key Features
 
-**Next steps:**
-1. **Customize your setup** with your own API keys and domain
-2. **Add more AI models** through OpenRouter's extensive catalog
-3. **Implement authentication** with your preferred OAuth providers
-4. **Scale to production** with multiple clusters and environments
-5. **Monitor and optimize** with Datadog's advanced analytics
+- **Cloud-Native Development:** Kubernetes-native architecture with `code-server` and KIND for reproducible, enterprise-grade environments.
+- **Full AI Integration:** Access to 318+ models via OpenRouter and a first-class integration with Claude-3.5-Sonnet.
+- **Production-Ready Observability:** Comprehensive monitoring with Datadog, including APM, logging, and continuous profiling.
+- **Scalable Infrastructure:** Built on Azure Kubernetes Service (AKS) with auto-scaling and managed databases.
+- **Enterprise Security:** Features Authelia for 2FA/SSO, rate limiting, and automated secrets scanning.
+- **Extensible Templates:** A growing library of project starters, including Node.js, Python, Rust, and our new Azure PyTorch DSVM template.
+
+### What's New (July 2025)
+
+- **🚀 Azure PyTorch DSVM Template:** Added a new starter template for rapid AI development, inspired by Azure's Data Science Virtual Machine.
+- **🔒 Enhanced Security & Efficiency:** The production web application now uses a minimal, more secure distroless Docker image, reducing its attack surface and size.
+- **📊 Upgraded Observability:** Enabled Datadog's Continuous Profiler for deep insights into application performance and fixed all known Kubernetes monitoring issues.
+- **✅ Build System Fixed:** Resolved all critical build failures, ensuring a smooth and reliable development workflow.
+
+### Next Steps
+
+1.  **Explore the New Template:** Try out the `Azure PyTorch DSVM Starter` to quickly build and train a new model.
+2.  **Leverage Full Observability:** Dive into Datadog to explore traces, logs, and profiles for your application.
+3.  **Prepare for MLOps:** Get ready to take your models to production with our upcoming **ZenML integration**, which will provide a unified pipeline for both classical ML and modern AI agents.
 
 **Contributing:**
 - Fork the repository and submit pull requests
