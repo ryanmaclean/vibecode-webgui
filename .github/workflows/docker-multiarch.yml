@@ -116,7 +116,7 @@ jobs:
 
       - name: Generate artifact attestation
         if: steps.dockerfile-check.outputs.exists == 'true' && github.event_name != 'pull_request'
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v2
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.image }}
           subject-digest: ${{ steps.build.outputs.digest }}
