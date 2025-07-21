@@ -1,0 +1,23 @@
+# Core ML Framework
+torch
+torchvision
+torchaudio
+
+# Interactive Development
+jupyter
+notebook
+
+# Model Optimization & Inference
+onnx
+onnxruntime
+
+# Large-scale Model Training
+deepspeed
+
+# Hugging Face Ecosystem
+transformers
+datasets
+accelerate
+
+# Utility
+tqdm
