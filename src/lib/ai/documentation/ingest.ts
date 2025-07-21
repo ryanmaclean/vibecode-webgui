@@ -1,6 +1,6 @@
 import { ChromaClient } from 'chroma-js';
-import { Document } from 'langchain/document';
-import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
+import { Document } from '@langchain/core/documents';
+import { OpenAIEmbeddings } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 
 export class DocumentationIngester {
