@@ -4,10 +4,16 @@
   "private": true,
   "description": "A command-line interface for VibeCode, built with Ink.",
   "main": "dist/index.js",
+  "bin": "dist/index.js",
   "scripts": {
     "start": "ts-node-dev src/index.tsx",
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "build:binary": "tsc && pkg . --targets node18-linux-x64 --output vibecode-cli"
+  },
+  "pkg": {
+    "scripts": "dist/**/*.js",
+    "assets": []
   },
   "dependencies": {
     "@kubernetes/client-node": "^0.21.0",
@@ -25,6 +31,7 @@
     "@types/react": "^18.2.0",
     "ink-testing-library": "^3.0.0",
     "jest": "^29.7.0",
+    "pkg": "^5.8.1",
     "ts-jest": "^29.1.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.0.0"
