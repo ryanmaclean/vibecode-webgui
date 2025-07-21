@@ -1,4 +1,4 @@
-import { PromptTemplate } from 'langchain/prompts';
+import { PromptTemplate } from '@langchain/core/prompts';
 
 export const CODE_REVIEW_PROMPT = PromptTemplate.fromTemplate(`
 You are a senior developer reviewing the following code:
