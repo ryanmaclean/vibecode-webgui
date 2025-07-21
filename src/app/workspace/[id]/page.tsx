@@ -24,7 +24,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import VSCodeIntegration from '@/components/ai/VSCodeIntegration'
-import AIChatInterface from '@/components/ai/AIChatInterface'
+import { AIChatInterface } from '@/components/ai/AIChatInterface'
 
 interface WorkspaceInfo {
   id: string

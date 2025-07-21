@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Bot, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import AIChatInterface from './AIChatInterface'
+import { AIChatInterface } from './AIChatInterface'
 
 interface VSCodeIntegrationProps {
   workspaceId: string
