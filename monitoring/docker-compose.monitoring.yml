@@ -299,6 +299,8 @@ services:
       - DD_PROCESS_AGENT_ENABLED=true
       - DD_DOCKER_LABELS_AS_TAGS=true
       - DD_TAGS=env:production,service:vibecode-platform
+      - DD_KUBELET_TLS_VERIFY=false
+      - DD_ORCHESTRATOR_EXPLORER_ENABLED=true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
