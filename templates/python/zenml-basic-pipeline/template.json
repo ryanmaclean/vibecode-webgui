@@ -1,0 +1,16 @@
+{
+  "name": "ZenML Basic Pipeline",
+  "description": "A starter template for building reproducible MLOps pipelines with ZenML. Includes a basic pipeline with data loading, training, and evaluation steps.",
+  "author": "VibeCode",
+  "tags": ["python", "zenml", "mlops", "pipeline", "machine-learning"],
+  "icon": "zenml",
+  "version": "1.0.0",
+  "type": "application",
+  "language": "python",
+  "framework": "zenml",
+  "files": [
+    "run_pipeline.py",
+    "requirements.txt",
+    "README.md"
+  ]
+}

@@ -1,0 +1,6 @@
+# ZenML MLOps Framework (includes server for local dashboard)
+zenml[server]
+
+# Core ML Libraries
+scikit-learn
+numpy
