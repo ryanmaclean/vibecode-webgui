@@ -13,11 +13,13 @@
     "@kubernetes/client-node": "^0.21.0",
     "@ltd/j-toml": "^1.38.0",
     "axios": "^1.7.2",
+    "dockerode": "^4.0.2",
     "glob": "^10.4.1",
     "ink": "^4.4.1",
     "react": "^18.2.0"
   },
   "devDependencies": {
+    "@types/dockerode": "^3.3.29",
     "@types/glob": "^8.1.0",
     "@types/jest": "^29.5.12",
     "@types/react": "^18.2.0",
