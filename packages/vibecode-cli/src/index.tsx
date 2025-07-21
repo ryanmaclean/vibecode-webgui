@@ -1,21 +1,26 @@
 import React from 'react';
 import { render, Text, Box } from 'ink';
 import FlyStatus from './commands/fly-status';
+import K8sStatus from './commands/k8s-status';
 
 export const App = ({ args }: { args: string[] }) => {
   const command = args[0];
 
-  if (command === 'fly-status') {
-    return <FlyStatus />;
+  switch (command) {
+    case 'fly-status':
+      return <FlyStatus />;
+    case 'k8s-status':
+      return <K8sStatus />;
+    default:
+      return (
+        <Box flexDirection="column">
+          <Text>Welcome to VibeCode CLI!</Text>
+          <Text>Available commands:</Text>
+          <Text> - fly-status: Check the status of Fly.io applications in the project.</Text>
+          <Text> - k8s-status: Check the status of Kubernetes pods in the default namespace.</Text>
+        </Box>
+      );
   }
-
-  return (
-    <Box flexDirection="column">
-      <Text>Welcome to VibeCode CLI!</Text>
-      <Text>Available commands:</Text>
-      <Text> - fly-status: Check the status of Fly.io applications in the project.</Text>
-    </Box>
-  );
 };
 
 // Pass command line arguments, excluding 'node' and the script path
