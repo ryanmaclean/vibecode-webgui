@@ -62,7 +62,7 @@
     "@vercel/kv": "^3.0.0",
     "@vercel/postgres": "^0.10.0",
     "@xterm/addon-fit": "^0.9.0",
-    "@xterm/addon-web-links": "^0.10.0",
+    "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
     "ai": "^4.3.19",
     "async-mutex": "0.5.0",
