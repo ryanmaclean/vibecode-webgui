@@ -43,41 +43,41 @@ resource "kubernetes_secret" "app_config" {
   data = {
     # Database configuration
     DATABASE_URL = azurerm_key_vault_secret.postgres_connection_string.value
-    
+
     # Azure AI Services configuration
-    AZURE_OPENAI_ENDPOINT     = azurerm_cognitive_account.openai.endpoint
-    AZURE_OPENAI_API_KEY      = azurerm_cognitive_account.openai.primary_access_key
-    AZURE_OPENAI_API_VERSION  = "2024-02-01"
-    AZURE_OPENAI_DEPLOYMENT   = "gpt-4-turbo"
-    
+    AZURE_OPENAI_ENDPOINT    = azurerm_cognitive_account.openai.endpoint
+    AZURE_OPENAI_API_KEY     = azurerm_cognitive_account.openai.primary_access_key
+    AZURE_OPENAI_API_VERSION = "2024-02-01"
+    AZURE_OPENAI_DEPLOYMENT  = "gpt-4-turbo"
+
     # Cognitive Services configuration
-    AZURE_COGNITIVE_ENDPOINT  = azurerm_cognitive_account.multi_service.endpoint
-    AZURE_COGNITIVE_KEY       = azurerm_cognitive_account.multi_service.primary_access_key
-    
+    AZURE_COGNITIVE_ENDPOINT = azurerm_cognitive_account.multi_service.endpoint
+    AZURE_COGNITIVE_KEY      = azurerm_cognitive_account.multi_service.primary_access_key
+
     # Computer Vision configuration
-    AZURE_VISION_ENDPOINT     = azurerm_cognitive_account.computer_vision.endpoint
-    AZURE_VISION_KEY          = azurerm_cognitive_account.computer_vision.primary_access_key
-    
+    AZURE_VISION_ENDPOINT = azurerm_cognitive_account.computer_vision.endpoint
+    AZURE_VISION_KEY      = azurerm_cognitive_account.computer_vision.primary_access_key
+
     # Language Service configuration
-    AZURE_LANGUAGE_ENDPOINT   = azurerm_cognitive_account.language.endpoint
-    AZURE_LANGUAGE_KEY        = azurerm_cognitive_account.language.primary_access_key
-    
+    AZURE_LANGUAGE_ENDPOINT = azurerm_cognitive_account.language.endpoint
+    AZURE_LANGUAGE_KEY      = azurerm_cognitive_account.language.primary_access_key
+
     # NextAuth configuration
-    NEXTAUTH_URL              = "https://${var.domain_name}"
-    NEXTAUTH_SECRET           = random_password.nextauth_secret.result
-    
+    NEXTAUTH_URL    = "https://${var.domain_name}"
+    NEXTAUTH_SECRET = random_password.nextauth_secret.result
+
     # Application configuration
-    NODE_ENV                  = "production"
-    PORT                      = "3000"
-    
+    NODE_ENV = "production"
+    PORT     = "3000"
+
     # Monitoring configuration
-    DD_API_KEY               = var.datadog_api_key
-    DD_APP_KEY               = var.datadog_app_key
-    DD_SITE                  = "datadoghq.com"
-    DD_SERVICE               = "vibecode-webgui"
-    DD_ENV                   = var.environment
-    DD_VERSION               = "1.0.0"
-    
+    DD_API_KEY = var.datadog_api_key
+    DD_APP_KEY = var.datadog_app_key
+    DD_SITE    = "datadoghq.com"
+    DD_SERVICE = "vibecode-webgui"
+    DD_ENV     = var.environment
+    DD_VERSION = "1.0.0"
+
     # Database monitoring
     DD_DATABASE_MONITORING_ENABLED = "true"
     DATADOG_POSTGRES_USER          = azurerm_key_vault_secret.datadog_postgres_user.value
@@ -96,23 +96,23 @@ resource "kubernetes_config_map" "app_config" {
     # AI Model configurations (public information)
     AZURE_OPENAI_MODELS = jsonencode([
       for deployment in azurerm_cognitive_deployment.openai_models : {
-        name           = deployment.name
-        deployment_id  = deployment.name
-        model_name     = deployment.model[0].name
-        model_version  = deployment.model[0].version
-        endpoint_url   = "${azurerm_cognitive_account.openai.endpoint}openai/deployments/${deployment.name}"
+        name          = deployment.name
+        deployment_id = deployment.name
+        model_name    = deployment.model[0].name
+        model_version = deployment.model[0].version
+        endpoint_url  = "${azurerm_cognitive_account.openai.endpoint}openai/deployments/${deployment.name}"
       }
     ])
-    
+
     # Azure region and resource information
     AZURE_REGION         = var.azure_region
     AZURE_RESOURCE_GROUP = azurerm_resource_group.main.name
-    
+
     # PostgreSQL connection info (non-sensitive)
-    POSTGRES_HOST        = azurerm_postgresql_flexible_server.main.fqdn
-    POSTGRES_DB          = azurerm_postgresql_flexible_server_database.vibecode.name
-    POSTGRES_PORT        = "5432"
-    
+    POSTGRES_HOST = azurerm_postgresql_flexible_server.main.fqdn
+    POSTGRES_DB   = azurerm_postgresql_flexible_server_database.vibecode.name
+    POSTGRES_PORT = "5432"
+
     # Application features
     ENABLE_AZURE_AI      = "true"
     ENABLE_VECTOR_SEARCH = "true"
@@ -151,7 +151,7 @@ resource "helm_release" "datadog" {
   chart      = "datadog"
   version    = "3.47.0"
   namespace  = "datadog"
-  
+
   create_namespace = true
 
   values = [
@@ -160,40 +160,40 @@ resource "helm_release" "datadog" {
         apiKeyExistingSecret = kubernetes_secret.datadog_config.metadata[0].name
         appKeyExistingSecret = kubernetes_secret.datadog_config.metadata[0].name
         site                 = "datadoghq.com"
-        clusterName         = azurerm_kubernetes_cluster.main.name
-        
+        clusterName          = azurerm_kubernetes_cluster.main.name
+
         # Enable Database Monitoring
         dbm = {
           enabled = true
         }
-        
+
         # Enable Log Collection
         logs = {
           enabled             = true
           containerCollectAll = true
         }
-        
+
         # Enable APM
         apm = {
           portEnabled = true
         }
-        
+
         # Enable Process Monitoring
         processAgent = {
           enabled = true
         }
-        
+
         # Enable Network Monitoring
         networkMonitoring = {
           enabled = true
         }
-        
+
         # Orchestrator Explorer
         orchestratorExplorer = {
           enabled = true
         }
       }
-      
+
       clusterAgent = {
         enabled = true
         image = {
@@ -203,7 +203,7 @@ resource "helm_release" "datadog" {
           enabled = true
         }
       }
-      
+
       agents = {
         image = {
           tag = "7.66.1"
@@ -272,7 +272,7 @@ resource "kubernetes_deployment" "vibecode_app" {
 
           port {
             container_port = 3000
-            name          = "http"
+            name           = "http"
           }
 
           env_from {
@@ -325,8 +325,8 @@ resource "kubernetes_deployment" "vibecode_app" {
           # Security context
           security_context {
             read_only_root_filesystem  = false
-            run_as_non_root           = true
-            run_as_user               = 1000
+            run_as_non_root            = true
+            run_as_user                = 1000
             allow_privilege_escalation = false
             capabilities {
               drop = ["ALL"]
@@ -371,6 +371,175 @@ resource "kubernetes_deployment" "vibecode_app" {
         }
       }
     }
+  }
+}
+
+# Deploy VibeCode Documentation service
+resource "kubernetes_deployment" "vibecode_docs" {
+  metadata {
+    name      = "vibecode-docs"
+    namespace = kubernetes_namespace.vibecode.metadata[0].name
+    labels = {
+      app       = "vibecode-docs"
+      component = "documentation"
+      tier      = "frontend"
+      version   = "1.0.0"
+    }
+  }
+
+  spec {
+    replicas = 2
+
+    selector {
+      match_labels = {
+        app = "vibecode-docs"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app       = "vibecode-docs"
+          component = "documentation"
+          tier      = "frontend"
+          version   = "1.0.0"
+        }
+        annotations = {
+          "prometheus.io/scrape" = "true"
+          "prometheus.io/port"   = "8080"
+          "prometheus.io/path"   = "/metrics"
+        }
+      }
+
+      spec {
+        container {
+          name              = "docs"
+          image             = "${azurerm_container_registry.main.login_server}/vibecode-docs:latest"
+          image_pull_policy = "Always"
+
+          port {
+            container_port = 8080
+            name           = "http"
+            protocol       = "TCP"
+          }
+
+          env {
+            name  = "NODE_ENV"
+            value = "production"
+          }
+
+          env {
+            name  = "PORT"
+            value = "8080"
+          }
+
+          # Resource limits and requests
+          resources {
+            limits = {
+              cpu    = "200m"
+              memory = "128Mi"
+            }
+            requests = {
+              cpu    = "50m"
+              memory = "64Mi"
+            }
+          }
+
+          # Health checks
+          liveness_probe {
+            http_get {
+              path = "/"
+              port = 8080
+            }
+            initial_delay_seconds = 30
+            period_seconds        = 30
+            timeout_seconds       = 5
+            failure_threshold     = 3
+          }
+
+          readiness_probe {
+            http_get {
+              path = "/"
+              port = 8080
+            }
+            initial_delay_seconds = 5
+            period_seconds        = 10
+            timeout_seconds       = 3
+            failure_threshold     = 3
+          }
+
+          # Security context
+          security_context {
+            allow_privilege_escalation = false
+            read_only_root_filesystem  = true
+            run_as_non_root            = true
+            run_as_user                = 1001
+            capabilities {
+              drop = ["ALL"]
+            }
+          }
+
+          # Volume mounts for writable directories
+          volume_mount {
+            name       = "tmp"
+            mount_path = "/tmp"
+          }
+
+          volume_mount {
+            name       = "var-cache"
+            mount_path = "/var/cache/nginx"
+          }
+
+          volume_mount {
+            name       = "var-run"
+            mount_path = "/var/run"
+          }
+        }
+
+        # Volumes
+        volume {
+          name = "tmp"
+          empty_dir {}
+        }
+
+        volume {
+          name = "var-cache"
+          empty_dir {}
+        }
+
+        volume {
+          name = "var-run"
+          empty_dir {}
+        }
+      }
+    }
+  }
+}
+
+# Service for VibeCode Documentation
+resource "kubernetes_service" "vibecode_docs" {
+  metadata {
+    name      = "vibecode-docs-service"
+    namespace = kubernetes_namespace.vibecode.metadata[0].name
+    labels = {
+      app       = "vibecode-docs"
+      component = "documentation"
+    }
+  }
+
+  spec {
+    selector = {
+      app = "vibecode-docs"
+    }
+
+    port {
+      name        = "http"
+      port        = 80
+      target_port = 8080
+      protocol    = "TCP"
+    }
+
+    type = "ClusterIP"
   }
 }
 
