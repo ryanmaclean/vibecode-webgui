@@ -53,7 +53,7 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # Private cluster configuration
   private_cluster_enabled             = var.enable_private_cluster
-  private_dns_zone_id                = var.enable_private_cluster ? "System" : null
+  private_dns_zone_id                 = var.enable_private_cluster ? "System" : null
   private_cluster_public_fqdn_enabled = false
 
   # API server configuration
@@ -66,20 +66,20 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # System node pool
   default_node_pool {
-    name                = local.system_node_pool.name
-    vm_size             = local.system_node_pool.vm_size
-    node_count          = local.system_node_pool.node_count
-    max_pods            = local.system_node_pool.max_pods
-    os_disk_size_gb     = local.system_node_pool.os_disk_size_gb
-    os_disk_type        = local.system_node_pool.os_disk_type
-    vnet_subnet_id      = azurerm_subnet.aks.id
-    
+    name            = local.system_node_pool.name
+    vm_size         = local.system_node_pool.vm_size
+    node_count      = local.system_node_pool.node_count
+    max_pods        = local.system_node_pool.max_pods
+    os_disk_size_gb = local.system_node_pool.os_disk_size_gb
+    os_disk_type    = local.system_node_pool.os_disk_type
+    vnet_subnet_id  = azurerm_subnet.aks.id
+
     enable_auto_scaling = local.system_node_pool.enable_auto_scaling
-    min_count          = local.system_node_pool.min_count
-    max_count          = local.system_node_pool.max_count
-    
+    min_count           = local.system_node_pool.min_count
+    max_count           = local.system_node_pool.max_count
+
     only_critical_addons_enabled = true
-    
+
     upgrade_settings {
       max_surge = "10%"
     }
@@ -101,12 +101,12 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # Network configuration
   network_profile {
-    network_plugin      = "azure"
-    network_policy      = var.enable_network_policy ? "azure" : null
-    dns_service_ip      = "10.2.0.10"
-    service_cidr        = "10.2.0.0/24"
-    load_balancer_sku   = "standard"
-    outbound_type       = "loadBalancer"
+    network_plugin    = "azure"
+    network_policy    = var.enable_network_policy ? "azure" : null
+    dns_service_ip    = "10.2.0.10"
+    service_cidr      = "10.2.0.0/24"
+    load_balancer_sku = "standard"
+    outbound_type     = "loadBalancer"
   }
 
   # Monitoring and logging
@@ -132,7 +132,7 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # Workload identity
   workload_identity_enabled = true
-  oidc_issuer_enabled      = true
+  oidc_issuer_enabled       = true
 
   # Azure Active Directory integration
   azure_active_directory_role_based_access_control {
@@ -145,18 +145,18 @@ resource "azurerm_kubernetes_cluster" "main" {
   # Auto-scaler profile
   auto_scaler_profile {
     balance_similar_node_groups      = false
-    expander                        = "random"
-    max_graceful_termination_sec    = "600"
-    max_node_provisioning_time      = "15m"
-    max_unready_nodes               = 3
-    max_unready_percentage          = 45
-    new_pod_scale_up_delay          = "10s"
-    scale_down_delay_after_add      = "10m"
-    scale_down_delay_after_delete   = "10s"
-    scale_down_delay_after_failure  = "3m"
-    scan_interval                   = "10s"
-    scale_down_unneeded             = "10m"
-    scale_down_unready              = "20m"
+    expander                         = "random"
+    max_graceful_termination_sec     = "600"
+    max_node_provisioning_time       = "15m"
+    max_unready_nodes                = 3
+    max_unready_percentage           = 45
+    new_pod_scale_up_delay           = "10s"
+    scale_down_delay_after_add       = "10m"
+    scale_down_delay_after_delete    = "10s"
+    scale_down_delay_after_failure   = "3m"
+    scan_interval                    = "10s"
+    scale_down_unneeded              = "10m"
+    scale_down_unready               = "20m"
     scale_down_utilization_threshold = "0.5"
   }
 
@@ -181,16 +181,16 @@ resource "azurerm_kubernetes_cluster" "main" {
 resource "azurerm_kubernetes_cluster_node_pool" "user" {
   name                  = local.user_node_pool.name
   kubernetes_cluster_id = azurerm_kubernetes_cluster.main.id
-  vm_size              = local.user_node_pool.vm_size
-  node_count           = local.user_node_pool.node_count
-  max_pods             = local.user_node_pool.max_pods
-  os_disk_size_gb      = local.user_node_pool.os_disk_size_gb
-  os_disk_type         = local.user_node_pool.os_disk_type
-  vnet_subnet_id       = azurerm_subnet.aks.id
+  vm_size               = local.user_node_pool.vm_size
+  node_count            = local.user_node_pool.node_count
+  max_pods              = local.user_node_pool.max_pods
+  os_disk_size_gb       = local.user_node_pool.os_disk_size_gb
+  os_disk_type          = local.user_node_pool.os_disk_type
+  vnet_subnet_id        = azurerm_subnet.aks.id
 
   enable_auto_scaling = local.user_node_pool.enable_auto_scaling
-  min_count          = local.user_node_pool.min_count
-  max_count          = local.user_node_pool.max_count
+  min_count           = local.user_node_pool.min_count
+  max_count           = local.user_node_pool.max_count
 
   # Node labels and taints
   node_labels = {
@@ -222,7 +222,7 @@ resource "azurerm_container_registry" "main" {
     for_each = var.acr_sku == "Premium" ? [1] : []
     content {
       default_action = "Allow"
-      
+
       virtual_network {
         action    = "Allow"
         subnet_id = azurerm_subnet.aks.id

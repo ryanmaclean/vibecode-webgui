@@ -1,5 +1,5 @@
 // Vector Database Abstraction Layer
-// Unified interface for multiple vector database providers (pgvector, Pinecone, Chroma, Weaviate)
+// Unified interface for multiple vector database providers (pgvector, Chroma, Weaviate - all open source)
 
 export interface VectorDocument {
   id: string
@@ -25,7 +25,7 @@ export interface VectorSearchResult {
 }
 
 export interface VectorDatabaseConfig {
-  provider: 'pgvector' | 'pinecone' | 'chroma' | 'weaviate'
+  provider: 'pgvector' | 'chroma' | 'weaviate'
   connectionString?: string
   apiKey?: string
   environment?: string
@@ -286,27 +286,26 @@ export class ChromaProvider extends VectorDatabaseProvider {
   }
 }
 
-// Pinecone implementation
-export class PineconeProvider extends VectorDatabaseProvider {
+// Weaviate implementation (open source vector database)
+export class WeaviateProvider extends VectorDatabaseProvider {
   private client: any = null
-  private index: any = null
 
   async initialize(): Promise<void> {
-    // Dynamic import for Pinecone client
-    const { Pinecone } = await import('@pinecone-database/pinecone')
+    // Dynamic import for Weaviate client
+    const weaviate = await import('weaviate-ts-client')
     
-    this.client = new Pinecone({
-      apiKey: this.config.apiKey!,
-      environment: this.config.environment!
+    this.client = weaviate.default.client({
+      scheme: 'http',
+      host: this.config.connectionString || 'localhost:8080',
+      apiKey: this.config.apiKey ? 
+        new weaviate.ApiKey(this.config.apiKey) : undefined
     })
-    
-    this.index = this.client.index(this.config.indexName!)
   }
 
   async isConnected(): Promise<boolean> {
     try {
       if (!this.client) return false
-      await this.client.listIndexes()
+      await this.client.misc().liveChecker().do()
       return true
     } catch {
       return false
@@ -314,75 +313,118 @@ export class PineconeProvider extends VectorDatabaseProvider {
   }
 
   async upsert(documents: VectorDocument[]): Promise<void> {
-    if (!this.index) throw new Error('Not connected')
+    if (!this.client) throw new Error('Not connected')
     
-    const vectors = documents.map(doc => ({
-      id: doc.id,
-      values: doc.embedding!,
-      metadata: { ...doc.metadata, content: doc.content }
-    }))
+    const className = this.config.indexName || 'VibeCodeDocument'
     
-    await this.index.upsert(vectors)
+    // Batch insert documents
+    let batcher = this.client.batch().objectsBatcher()
+    
+    for (const doc of documents) {
+      batcher = batcher.withObject({
+        class: className,
+        id: doc.id,
+        properties: {
+          content: doc.content,
+          metadata: JSON.stringify(doc.metadata)
+        },
+        vector: doc.embedding
+      })
+    }
+    
+    await batcher.do()
   }
 
   async search(query: number[], options: VectorSearchOptions = {}): Promise<VectorSearchResult> {
-    if (!this.index) throw new Error('Not connected')
+    if (!this.client) throw new Error('Not connected')
     
     const startTime = Date.now()
-    const { limit = 10, filter = {} } = options
+    const { limit = 10 } = options
+    const className = this.config.indexName || 'VibeCodeDocument'
     
-    const results = await this.index.query({
-      vector: query,
-      topK: limit,
-      filter: Object.keys(filter).length > 0 ? filter : undefined,
-      includeMetadata: true
-    })
+    const results = await this.client.graphql
+      .get()
+      .withClassName(className)
+      .withFields('content metadata _additional { id distance }')
+      .withNearVector({ vector: query })
+      .withLimit(limit)
+      .do()
     
-    const documents: VectorDocument[] = results.matches.map((match: any) => ({
-      id: match.id,
-      content: match.metadata.content,
-      metadata: match.metadata,
-      score: match.score
+    const documents: VectorDocument[] = results.data.Get[className].map((item: any) => ({
+      id: item._additional.id,
+      content: item.content,
+      metadata: JSON.parse(item.metadata || '{}'),
+      score: 1 - item._additional.distance // Convert distance to similarity
     }))
     
     return {
       documents,
       totalResults: documents.length,
       searchTime: Date.now() - startTime,
-      provider: 'pinecone'
+      provider: 'weaviate'
     }
   }
 
   async delete(ids: string[]): Promise<void> {
-    if (!this.index) throw new Error('Not connected')
+    if (!this.client) throw new Error('Not connected')
     
-    await this.index.delete1(ids)
+    const className = this.config.indexName || 'VibeCodeDocument'
+    
+    for (const id of ids) {
+      await this.client.data().deleter()
+        .withClassName(className)
+        .withId(id)
+        .do()
+    }
   }
 
   async createIndex(name: string, dimensions: number): Promise<void> {
     if (!this.client) throw new Error('Not connected')
     
-    await this.client.createIndex({
-      name,
-      dimension: dimensions,
-      metric: 'cosine'
-    })
+    const schema = {
+      class: name,
+      vectorizer: 'none',
+      properties: [
+        {
+          name: 'content',
+          dataType: ['text']
+        },
+        {
+          name: 'metadata',
+          dataType: ['text']
+        }
+      ]
+    }
+    
+    await this.client.schema().classCreator().withClass(schema).do()
   }
 
   async deleteIndex(name: string): Promise<void> {
     if (!this.client) throw new Error('Not connected')
     
-    await this.client.deleteIndex(name)
+    await this.client.schema().classDeleter().withClassName(name).do()
   }
 
   async getStats(): Promise<{ documentCount: number; indexSize: number }> {
-    if (!this.index) throw new Error('Not connected')
+    if (!this.client) throw new Error('Not connected')
     
-    const stats = await this.index.describeIndexStats()
+    const className = this.config.indexName || 'VibeCodeDocument'
     
-    return {
-      documentCount: stats.totalVectorCount || 0,
-      indexSize: stats.indexFullness || 0
+    try {
+      const result = await this.client.graphql
+        .aggregate()
+        .withClassName(className)
+        .withFields('meta { count }')
+        .do()
+      
+      const count = result.data.Aggregate[className]?.[0]?.meta?.count || 0
+      
+      return {
+        documentCount: count,
+        indexSize: 0 // Weaviate doesn't provide index size info
+      }
+    } catch {
+      return { documentCount: 0, indexSize: 0 }
     }
   }
 }
@@ -394,8 +436,8 @@ export function createVectorDatabase(config: VectorDatabaseConfig): VectorDataba
       return new PgVectorProvider(config)
     case 'chroma':
       return new ChromaProvider(config)
-    case 'pinecone':
-      return new PineconeProvider(config)
+    case 'weaviate':
+      return new WeaviateProvider(config)
     default:
       throw new Error(`Unsupported vector database provider: ${config.provider}`)
   }
@@ -527,13 +569,13 @@ export const createVibeCodeVectorStore = () => {
     })
   }
 
-  // Add Pinecone if configured
-  if (process.env.PINECONE_API_KEY && process.env.PINECONE_ENVIRONMENT) {
+  // Add Weaviate if configured
+  if (process.env.WEAVIATE_URL) {
     configs.push({
-      provider: 'pinecone',
-      apiKey: process.env.PINECONE_API_KEY,
-      environment: process.env.PINECONE_ENVIRONMENT,
-      indexName: process.env.PINECONE_INDEX_NAME || 'vibecode'
+      provider: 'weaviate',
+      connectionString: process.env.WEAVIATE_URL,
+      apiKey: process.env.WEAVIATE_API_KEY,
+      indexName: process.env.WEAVIATE_CLASS_NAME || 'VibeCodeDocument'
     })
   }
 

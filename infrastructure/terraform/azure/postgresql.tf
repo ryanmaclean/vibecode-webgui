@@ -24,15 +24,15 @@ resource "azurerm_postgresql_flexible_server" "main" {
   location            = azurerm_resource_group.main.location
 
   # Database configuration
-  version                      = var.postgresql_version
-  administrator_login          = var.postgresql_admin_username
-  administrator_password       = random_password.postgres_admin_password.result
-  
+  version                = var.postgresql_version
+  administrator_login    = var.postgresql_admin_username
+  administrator_password = random_password.postgres_admin_password.result
+
   # Performance and storage
-  sku_name                     = var.postgresql_sku_name
-  storage_mb                   = var.postgresql_storage_mb
-  storage_tier                 = "P30"
-  
+  sku_name     = var.postgresql_sku_name
+  storage_mb   = var.postgresql_storage_mb
+  storage_tier = "P30"
+
   # Backup configuration
   backup_retention_days        = var.postgresql_backup_retention_days
   geo_redundant_backup_enabled = var.postgresql_geo_redundant_backup_enabled
@@ -48,14 +48,14 @@ resource "azurerm_postgresql_flexible_server" "main" {
   # Network configuration
   delegated_subnet_id = azurerm_subnet.postgresql.id
   private_dns_zone_id = azurerm_private_dns_zone.postgresql.id
-  
+
   # Security
   create_mode = "Default"
-  
+
   # Maintenance window
   maintenance_window {
-    day_of_week  = 0  # Sunday
-    start_hour   = 2  # 2 AM
+    day_of_week  = 0 # Sunday
+    start_hour   = 2 # 2 AM
     start_minute = 0
   }
 
@@ -149,7 +149,7 @@ resource "null_resource" "setup_postgresql_extensions" {
 
   # Trigger re-execution when server configuration changes
   triggers = {
-    server_id = azurerm_postgresql_flexible_server.main.id
+    server_id   = azurerm_postgresql_flexible_server.main.id
     database_id = azurerm_postgresql_flexible_server_database.vibecode.id
   }
 
@@ -190,9 +190,9 @@ resource "null_resource" "setup_postgresql_extensions" {
       
       echo "PostgreSQL extensions and monitoring setup completed"
     EOT
-    
+
     interpreter = ["/bin/bash", "-c"]
-    
+
     environment = {
       PGCONNECT_TIMEOUT = "30"
     }

@@ -75,16 +75,6 @@ const codeReviewWorkflow = new StateGraph()
 
 ### **Missing Scalable Options:**
 
-#### **Pinecone** (High Priority for Scale)
-```bash
-npm install @pinecone-database/pinecone
-```
-**Why Critical:**
-- **Managed vector database** with enterprise features
-- **Better performance** for large-scale RAG applications
-- **Built-in metadata filtering** for workspace isolation
-- **Auto-scaling** for production workloads
-
 #### **Chroma** (High Priority for Development)
 ```bash
 npm install chromadb
@@ -106,22 +96,25 @@ npm install weaviate-ts-client
 
 ### **Implementation Impact:**
 ```typescript
-// Example: Pinecone integration for production RAG
-import { Pinecone } from '@pinecone-database/pinecone'
+// Example: Chroma integration for production RAG
+import { ChromaClient } from 'chromadb'
 
-const pinecone = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY,
-  environment: process.env.PINECONE_ENVIRONMENT
+const client = new ChromaClient({
+  path: process.env.CHROMA_URL
 })
 
 // Enhanced RAG with metadata filtering
-const searchResults = await pinecone.query({
-  vector: embeddings,
-  filter: { 
+const collection = await client.getCollection({
+  name: "vibecode-documents"
+})
+
+const searchResults = await collection.query({
+  queryEmbeddings: [embeddings],
+  nResults: 10,
+  where: { 
     workspace_id: workspaceId,
     file_type: "typescript" 
-  },
-  topK: 10
+  }
 })
 ```
 
@@ -291,7 +284,7 @@ npm install onnxruntime-web
 
 ### **Phase 2: Production Scale (Next month)**
 1. **LangChain + LangGraph** - Multi-agent workflows
-2. **Pinecone Migration** - Enterprise vector database
+2. **Weaviate Integration** - Enterprise open-source vector database
 3. **MLflow Integration** - Experiment tracking
 4. **vLLM Deployment** - High-performance inference
 
@@ -312,7 +305,7 @@ npm install onnxruntime-web
 - **Continue.dev**: Free alternative to expensive coding assistants
 
 ### **Enterprise Value:**
-- **Pinecone**: Better performance and reliability for production
+- **Weaviate**: Better performance and reliability for production (open source)
 - **LangChain**: Enable complex AI workflows and automations
 - **MLflow**: Optimize model performance and reduce operational costs
 - **vLLM**: Improve inference speed and reduce compute costs
@@ -328,7 +321,7 @@ npm install onnxruntime-web
 
 ### **Medium Complexity (Planned Effort):**
 - 🔄 **LangChain** - Requires workflow redesign
-- 🔄 **Pinecone** - Migration from pgvector
+- 🔄 **Weaviate** - Additional vector database option
 - 🔄 **MLflow** - New monitoring infrastructure
 
 ### **High Complexity (Strategic Initiatives):**
@@ -347,7 +340,7 @@ npm install onnxruntime-web
 4. **Add Continue.dev** for enhanced coding assistance
 
 ### **Strategic Investments:**
-1. **Migrate to Pinecone** for production vector database
+1. **Add Weaviate** for enterprise open-source vector database
 2. **Implement LangChain** for multi-agent capabilities
 3. **Deploy MLflow** for AI experiment tracking
 4. **Consider vLLM** for high-performance inference
@@ -366,13 +359,13 @@ VibeCode has a **strong foundation** but is missing several **critical libraries
 
 ### **Key Gaps:**
 - **Multi-agent frameworks** for complex workflows
-- **Enterprise vector databases** for better scale
+- **Additional open-source vector databases** for better flexibility
 - **Local AI inference** for cost reduction and privacy
 - **Advanced MLOps tools** for production optimization
 
 ### **Recommended Next Steps:**
 1. **Quick wins**: LiteLLM, Ollama, Chroma, Continue.dev
-2. **Strategic upgrades**: LangChain, Pinecone, MLflow
+2. **Strategic upgrades**: LangChain, Weaviate, MLflow
 3. **Future exploration**: AutoGen, vLLM, Transformers.js
 
 **Implementation of these tools would position VibeCode as a cutting-edge AI development platform competitive with the best solutions available in 2025.**

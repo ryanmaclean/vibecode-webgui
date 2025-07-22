@@ -3,7 +3,7 @@
 
 terraform {
   required_version = ">= 1.5"
-  
+
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -42,7 +42,7 @@ provider "azurerm" {
     resource_group {
       prevent_deletion_if_contains_resources = false
     }
-    
+
     key_vault {
       purge_soft_delete_on_destroy    = true
       recover_soft_deleted_key_vaults = true
@@ -60,7 +60,7 @@ provider "datadog" {
 locals {
   # Resource naming convention
   name_prefix = "${var.project_name}-${var.environment}"
-  
+
   # Common tags applied to all resources
   common_tags = merge(var.additional_tags, {
     Project     = var.project_name
@@ -74,27 +74,27 @@ locals {
   # AKS system node pool configuration
   system_node_pool = {
     name                = "system"
-    vm_size            = var.aks_system_node_vm_size
-    node_count         = var.aks_system_node_count
-    max_pods           = 110
-    os_disk_size_gb    = 128
-    os_disk_type       = "Managed"
+    vm_size             = var.aks_system_node_vm_size
+    node_count          = var.aks_system_node_count
+    max_pods            = 110
+    os_disk_size_gb     = 128
+    os_disk_type        = "Managed"
     enable_auto_scaling = true
-    min_count          = 1
-    max_count          = 5
+    min_count           = 1
+    max_count           = 5
   }
 
   # AKS user node pool configuration  
   user_node_pool = {
     name                = "user"
-    vm_size            = var.aks_user_node_vm_size
-    node_count         = var.aks_user_node_count
-    max_pods           = 110
-    os_disk_size_gb    = 128
-    os_disk_type       = "Managed"
+    vm_size             = var.aks_user_node_vm_size
+    node_count          = var.aks_user_node_count
+    max_pods            = 110
+    os_disk_size_gb     = 128
+    os_disk_type        = "Managed"
     enable_auto_scaling = true
-    min_count          = var.aks_user_node_min_count
-    max_count          = var.aks_user_node_max_count
+    min_count           = var.aks_user_node_min_count
+    max_count           = var.aks_user_node_max_count
   }
 }
 
@@ -210,7 +210,7 @@ resource "azurerm_subnet" "postgresql" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.2.0/24"]
-  
+
   delegation {
     name = "postgresql-delegation"
     service_delegation {
