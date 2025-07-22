@@ -24,7 +24,11 @@ export default defineConfig({
         },
         {
           label: 'Wiki Index',
-          link: '/WIKI_INDEX/'
+          link: '/wiki-index/'
+        },
+        {
+          label: 'Quick Start Guide',
+          link: '/guides/quick-start/'
         },
         {
           label: 'Documentation',
