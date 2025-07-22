@@ -1,0 +1,375 @@
+name: Documentation CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'docs/**'
+      - '*.md'
+      - '.github/workflows/docs-ci-cd.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - '*.md'
+  workflow_dispatch:
+
+env:
+  REGISTRY: vibecodecr.azurecr.io
+  IMAGE_NAME: vibecode-docs
+
+jobs:
+  # Security and code quality scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./docs
+        run: npm ci
+
+      - name: Run security audit
+        working-directory: ./docs
+        run: npm audit --audit-level high
+
+      - name: Run dependency check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'vibecode-docs'
+          path: './docs'
+          format: 'ALL'
+
+      - name: Upload dependency check results
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: reports/
+
+  # Build and test documentation
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    needs: security-scan
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./docs
+        run: npm ci
+
+      - name: Lint documentation
+        working-directory: ./docs
+        run: npm run astro check || true
+
+      - name: Build documentation
+        working-directory: ./docs
+        run: npm run build
+
+      - name: Test build output
+        working-directory: ./docs
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Build failed: no dist directory"
+            exit 1
+          fi
+          if [ ! -f "dist/index.html" ]; then
+            echo "Build failed: no index.html"
+            exit 1
+          fi
+          echo "Build successful: $(find dist -name "*.html" | wc -l) HTML files generated"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-build
+          path: docs/dist/
+          retention-days: 7
+
+  # Container image build and security scan
+  container-build:
+    name: Container Build & Scan
+    runs-on: ubuntu-latest
+    needs: build-test
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-url: ${{ steps.build.outputs.image-url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=vibecode-docs-{{sha}}
+
+      - name: Build and push container image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./docs
+          file: ./docs/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy
+
+      - name: Run Trivy vulnerability scanner
+        run: |
+          trivy image --format sarif --output trivy-results.sarif ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Deploy to staging (KIND cluster)
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: container-build
+    if: github.ref == 'refs/heads/develop' || github.event_name == 'pull_request'
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup KIND cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: vibecode-test
+          config: k8s/kind-config.yaml
+
+      - name: Load container image to KIND
+        run: |
+          kind load docker-image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --name=vibecode-test
+
+      - name: Deploy to KIND with monitoring
+        run: |
+          # Deploy with full monitoring stack using automated script
+          chmod +x scripts/deploy-kind-with-monitoring.sh
+          
+          # Update image in deployment to use built image
+          sed -i "s|vibecode-docs:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}|g" k8s/docs-deployment.yaml
+          
+          # Deploy with monitoring
+          scripts/deploy-kind-with-monitoring.sh
+          
+          # Wait for rollout
+          kubectl rollout status deployment/vibecode-docs -n vibecode --timeout=300s
+
+      - name: Test deployment and monitoring
+        run: |
+          # Test docs service
+          kubectl port-forward -n vibecode svc/vibecode-docs-service 8080:80 &
+          PF_PID=$!
+          sleep 10
+          
+          if curl -f http://localhost:8080/ > /dev/null; then
+            echo "✅ Docs deployment successful"
+          else
+            echo "❌ Docs deployment failed"
+            kubectl logs -l app=vibecode-docs -n vibecode
+            exit 1
+          fi
+          
+          # Test Datadog monitoring
+          DATADOG_PODS=$(kubectl get pods -n datadog --no-headers | wc -l)
+          if [ "$DATADOG_PODS" -gt 0 ]; then
+            echo "✅ Datadog monitoring deployed ($DATADOG_PODS pods)"
+          else
+            echo "❌ Datadog monitoring not deployed"
+            exit 1
+          fi
+          
+          kill $PF_PID
+
+  # Deploy to production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: container-build
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Deploy to production
+        run: |
+          # Update image in deployment
+          sed -i "s|vibecode-docs:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}|g" k8s/docs-deployment.yaml
+          
+          kubectl apply -f k8s/docs-deployment.yaml
+          kubectl rollout status deployment/vibecode-docs -n vibecode --timeout=600s
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -l app=vibecode-docs -n vibecode
+          kubectl get ingress vibecode-docs-ingress -n vibecode
+
+      - name: Test production endpoint
+        run: |
+          sleep 30
+          if curl -f https://docs.vibecode.dev/ > /dev/null; then
+            echo "✅ Production deployment successful"
+          else
+            echo "❌ Production deployment failed"
+            kubectl describe pods -l app=vibecode-docs -n vibecode
+            exit 1
+          fi
+
+  # Update documentation index
+  update-wiki:
+    name: Update Documentation Wiki
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update wiki index
+        run: |
+          # Update last modified date in wiki index
+          sed -i "s/\*\*Last Updated:\*\* .*/\*\*Last Updated:\*\* $(date +'%B %d, %Y')/g" WIKI_INDEX.md
+          
+          # Update documentation links if needed
+          echo "📚 Documentation updated on $(date)" >> docs/DEPLOYMENT_LOG.md
+
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git diff --staged --quiet || git commit -m "docs: Update documentation wiki [skip ci]"
+          git push
+
+  # Performance and accessibility testing
+  lighthouse-test:
+    name: Lighthouse Tests
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup KIND cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: vibecode-test
+
+      - name: Deploy docs for testing
+        run: |
+          kubectl create namespace vibecode --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -f k8s/docs-deployment.yaml
+          kubectl port-forward -n vibecode svc/vibecode-docs-service 8080:80 &
+          sleep 30
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          urls: |
+            http://localhost:8080
+          configPath: './docs/.lighthouserc.json'
+          uploadArtifacts: true
+
+      - name: Upload Lighthouse results
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-results
+          path: '.lighthouseci/'
+
+# Notification and monitoring
+  notify:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: always()
+    steps:
+      - name: Notify Datadog
+        if: needs.deploy-production.result == 'success'
+        run: |
+          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+            -d '{
+              "title": "Documentation Deployed",
+              "text": "VibeCode documentation successfully deployed to production",
+              "priority": "normal",
+              "tags": ["environment:production", "service:docs", "deployment:success"]
+            }'
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+            -d '{
+              "title": "Documentation Deployment Failed",
+              "text": "VibeCode documentation deployment failed",
+              "priority": "high",
+              "tags": ["environment:production", "service:docs", "deployment:failure"]
+            }'

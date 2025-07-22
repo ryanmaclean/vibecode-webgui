@@ -34,7 +34,7 @@
     "test:monitoring:health": "jest --testPathPattern=tests/unit/health-check.test.ts"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^0.0.36",
+    "@ai-sdk/openai": "^0.0.66",
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-python": "^6.2.1",
     "@datadog/browser-logs": "6.13.0",
@@ -42,7 +42,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@langchain/community": "^0.3.49",
-    "@langchain/core": "^0.2.16",
+    "@langchain/core": "^0.3.66",
     "@langchain/openai": "^0.2.1",
     "@monaco-editor/react": "4.7.0",
     "@mui/material": "^7.2.0",
@@ -90,7 +90,7 @@
     "next-themes": "^0.4.6",
     "node-pty": "^1.0.0",
     "node-statsd": "^0.1.1",
-    "openai": "^5.10.1",
+    "openai": "^4.104.0",
     "pg": "^8.16.3",
     "postcss": "8.5.6",
     "react": "^19.1.0",
