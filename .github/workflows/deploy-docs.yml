@@ -3,6 +3,9 @@ name: Deploy Documentation to GitHub Pages
 on:
   push:
     branches: [main]
+    # Always build docs on main branch pushes to keep them up to date
+  pull_request:
+    branches: [main]
     paths:
       - 'docs/**'
       - 'content/wiki/**'

@@ -1,0 +1,110 @@
+# Datadog Helm Values for KIND Local Development
+# Minimal configuration suitable for local development
+
+datadog:
+  # Use dummy keys for local development
+  apiKeyExistingSecret: datadog-secret
+  appKeyExistingSecret: datadog-secret
+  
+  # Datadog site configuration
+  site: "datadoghq.com"
+  
+  # Cluster name for identification
+  clusterName: "vibecode-kind-local"
+  
+  # Reduced resource configuration for local development
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "512Mi"
+  
+  # Enable basic monitoring features
+  logs:
+    enabled: true
+    containerCollectAll: true
+  
+  # Enable APM for application tracing
+  apm:
+    portEnabled: true
+    socketEnabled: true
+    hostSocketPath: /var/run/datadog
+  
+  # Enable process monitoring (lightweight)
+  processAgent:
+    enabled: true
+    
+  # Disable network monitoring for local development
+  networkMonitoring:
+    enabled: false
+    
+  # Disable database monitoring for local development
+  dbm:
+    enabled: false
+    
+  # Basic orchestrator explorer
+  orchestratorExplorer:
+    enabled: true
+    
+  # Local development tags
+  tags:
+    - "env:local"
+    - "cluster:kind"
+    - "project:vibecode"
+
+# Cluster Agent configuration
+clusterAgent:
+  enabled: true
+  image:
+    tag: "1.24.0"
+  
+  # Reduced resources for local development
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+  
+  # Enable metrics provider for HPA
+  metricsProvider:
+    enabled: true
+    
+  # Enable cluster checks
+  clusterChecks:
+    enabled: true
+
+# Node Agent configuration
+agents:
+  image:
+    tag: "7.66.1"
+    
+  # Reduced resources for local development
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+      
+  # Use host network for KIND compatibility
+  useHostNetwork: true
+
+# Disable features not needed in local development
+systemProbe:
+  enabled: false
+  
+securityAgent:
+  runtime:
+    enabled: false
+    
+# Tolerations for KIND single-node cluster
+tolerations:
+  - operator: Exists
+    effect: NoSchedule
+  - operator: Exists
+    effect: NoExecute
