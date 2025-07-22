@@ -15,3 +15,6 @@ Built with Astro + Starlight for comprehensive documentation.
 - ✅ 5,033 words indexed for search
 
 Repository made public to enable free GitHub Actions for CI/CD.
+
+## Deployment
+Automatically deployed to GitHub Pages via Actions workflow.
