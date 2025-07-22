@@ -11,9 +11,9 @@ variable "redis_deployment_type" {
   default     = "azure_cache_redis"
   validation {
     condition = contains([
-      "azure_cache_redis", 
-      "azure_managed_redis", 
-      "valkey", 
+      "azure_cache_redis",
+      "azure_managed_redis",
+      "valkey",
       "all"
     ], var.redis_deployment_type)
     error_message = "redis_deployment_type must be one of: azure_cache_redis, azure_managed_redis, valkey, or all"
@@ -24,20 +24,20 @@ variable "redis_deployment_type" {
 variable "azure_cache_redis_config" {
   description = "Configuration for Azure Cache for Redis"
   type = object({
-    sku_name               = optional(string, "Premium")
-    family                 = optional(string, "P")
-    capacity              = optional(number, 1)
-    enable_non_ssl_port   = optional(bool, false)
-    minimum_tls_version   = optional(string, "1.2")
-    redis_version         = optional(string, "6")
-    zones                 = optional(list(string), ["1", "2", "3"])
+    sku_name            = optional(string, "Premium")
+    family              = optional(string, "P")
+    capacity            = optional(number, 1)
+    enable_non_ssl_port = optional(bool, false)
+    minimum_tls_version = optional(string, "1.2")
+    redis_version       = optional(string, "6")
+    zones               = optional(list(string), ["1", "2", "3"])
     redis_configuration = optional(object({
       enable_authentication         = optional(bool, true)
-      maxmemory_reserved           = optional(number, 50)
-      maxmemory_delta              = optional(number, 50)
-      maxmemory_policy             = optional(string, "allkeys-lru")
-      rdb_backup_enabled           = optional(bool, true)
-      rdb_backup_frequency         = optional(number, 60)
+      maxmemory_reserved            = optional(number, 50)
+      maxmemory_delta               = optional(number, 50)
+      maxmemory_policy              = optional(string, "allkeys-lru")
+      rdb_backup_enabled            = optional(bool, true)
+      rdb_backup_frequency          = optional(number, 60)
       rdb_backup_max_snapshot_count = optional(number, 5)
     }), {})
   })
@@ -48,17 +48,17 @@ variable "azure_cache_redis_config" {
 variable "azure_managed_redis_config" {
   description = "Configuration for Azure Managed Redis"
   type = object({
-    sku_name              = optional(string, "Balanced")
-    capacity_gb           = optional(number, 12)
-    zones                 = optional(list(string), ["1", "2", "3"])
-    high_availability     = optional(bool, true)
-    clustering_enabled    = optional(bool, true)
-    data_persistence      = optional(bool, true)
-    backup_frequency      = optional(string, "Daily")
+    sku_name           = optional(string, "Balanced")
+    capacity_gb        = optional(number, 12)
+    zones              = optional(list(string), ["1", "2", "3"])
+    high_availability  = optional(bool, true)
+    clustering_enabled = optional(bool, true)
+    data_persistence   = optional(bool, true)
+    backup_frequency   = optional(string, "Daily")
     modules = optional(list(string), [
-      "RediSearch", 
-      "RedisJSON", 
-      "RedisTimeSeries", 
+      "RediSearch",
+      "RedisJSON",
+      "RedisTimeSeries",
       "RedisBloom"
     ])
   })
@@ -69,15 +69,15 @@ variable "azure_managed_redis_config" {
 variable "valkey_config" {
   description = "Configuration for Valkey deployment on AKS"
   type = object({
-    cluster_size          = optional(number, 3)
-    replica_count         = optional(number, 1)
-    memory_limit          = optional(string, "4Gi")
-    cpu_limit             = optional(string, "2")
-    storage_size          = optional(string, "10Gi")
-    storage_class         = optional(string, "managed-premium")
-    enable_persistence    = optional(bool, true)
-    enable_monitoring     = optional(bool, true)
-    namespace             = optional(string, "valkey")
+    cluster_size       = optional(number, 3)
+    replica_count      = optional(number, 1)
+    memory_limit       = optional(string, "4Gi")
+    cpu_limit          = optional(string, "2")
+    storage_size       = optional(string, "10Gi")
+    storage_class      = optional(string, "managed-premium")
+    enable_persistence = optional(bool, true)
+    enable_monitoring  = optional(bool, true)
+    namespace          = optional(string, "valkey")
   })
   default = {}
 }
@@ -88,7 +88,7 @@ resource "azurerm_redis_cache" "main" {
   name                = "${var.project_name}-${var.environment}-redis"
   location            = var.azure_region
   resource_group_name = azurerm_resource_group.main.name
-  
+
   capacity            = var.azure_cache_redis_config.capacity
   family              = var.azure_cache_redis_config.family
   sku_name            = var.azure_cache_redis_config.sku_name
@@ -98,16 +98,16 @@ resource "azurerm_redis_cache" "main" {
   zones               = var.azure_cache_redis_config.zones
 
   # Network configuration
-  subnet_id = azurerm_subnet.redis[0].id
+  subnet_id = azurerm_subnet.redis.id
 
   # Redis configuration
   redis_configuration {
     enable_authentication         = var.azure_cache_redis_config.redis_configuration.enable_authentication
-    maxmemory_reserved           = var.azure_cache_redis_config.redis_configuration.maxmemory_reserved
-    maxmemory_delta              = var.azure_cache_redis_config.redis_configuration.maxmemory_delta
-    maxmemory_policy             = var.azure_cache_redis_config.redis_configuration.maxmemory_policy
-    rdb_backup_enabled           = var.azure_cache_redis_config.redis_configuration.rdb_backup_enabled
-    rdb_backup_frequency         = var.azure_cache_redis_config.redis_configuration.rdb_backup_frequency
+    maxmemory_reserved            = var.azure_cache_redis_config.redis_configuration.maxmemory_reserved
+    maxmemory_delta               = var.azure_cache_redis_config.redis_configuration.maxmemory_delta
+    maxmemory_policy              = var.azure_cache_redis_config.redis_configuration.maxmemory_policy
+    rdb_backup_enabled            = var.azure_cache_redis_config.redis_configuration.rdb_backup_enabled
+    rdb_backup_frequency          = var.azure_cache_redis_config.redis_configuration.rdb_backup_frequency
     rdb_backup_max_snapshot_count = var.azure_cache_redis_config.redis_configuration.rdb_backup_max_snapshot_count
     rdb_storage_connection_string = azurerm_storage_account.redis_backup[0].primary_blob_connection_string
   }
@@ -138,46 +138,36 @@ resource "azurerm_redis_enterprise_database" "main" {
   count               = contains(["azure_managed_redis", "all"], var.redis_deployment_type) ? 1 : 0
   name                = "default"
   resource_group_name = azurerm_resource_group.main.name
-  
-  cluster_id          = azurerm_redis_enterprise_cluster.main[0].id
-  
+
+  cluster_id = azurerm_redis_enterprise_cluster.main[0].id
+
   # Configure modules
   module {
     name = "RediSearch"
   }
-  
+
   module {
     name = "RedisJSON"
   }
-  
+
   module {
     name = "RedisTimeSeries"
   }
-  
+
   module {
     name = "RedisBloom"
   }
 
   # Enable clustering if specified
   clustering_policy = var.azure_managed_redis_config.clustering_enabled ? "EnterpriseCluster" : "OSS"
-  
+
   # High availability
   linked_database_id = var.azure_managed_redis_config.high_availability ? [
     azurerm_redis_enterprise_cluster.main[0].id
   ] : []
 }
 
-# Dedicated subnet for Redis services
-resource "azurerm_subnet" "redis" {
-  count                = contains(["azure_cache_redis", "azure_managed_redis", "all"], var.redis_deployment_type) ? 1 : 0
-  name                 = "redis-subnet"
-  resource_group_name  = azurerm_resource_group.main.name
-  virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = ["10.0.4.0/24"]
-
-  # Enable private endpoints
-  private_endpoint_network_policies_enabled = false
-}
+# Use existing Redis subnet from main.tf
 
 # Storage account for Redis backups
 resource "azurerm_storage_account" "redis_backup" {
@@ -187,11 +177,11 @@ resource "azurerm_storage_account" "redis_backup" {
   location                 = var.azure_region
   account_tier             = "Standard"
   account_replication_type = "GRS"
-  
+
   # Enable advanced threat protection
-  enable_https_traffic_only = true
-  min_tls_version          = "TLS1_2"
-  
+  https_traffic_only_enabled = true
+  min_tls_version            = "TLS1_2"
+
   tags = var.additional_tags
 }
 
@@ -201,7 +191,7 @@ resource "azurerm_private_endpoint" "redis" {
   name                = "${var.project_name}-${var.environment}-redis-pe"
   location            = var.azure_region
   resource_group_name = azurerm_resource_group.main.name
-  subnet_id           = azurerm_subnet.redis[0].id
+  subnet_id           = azurerm_subnet.redis.id
 
   private_service_connection {
     name                           = "${var.project_name}-${var.environment}-redis-psc"
@@ -238,7 +228,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "redis" {
 # Valkey Namespace
 resource "kubernetes_namespace" "valkey" {
   count = contains(["valkey", "all"], var.redis_deployment_type) ? 1 : 0
-  
+
   metadata {
     name = var.valkey_config.namespace
     labels = {
@@ -246,14 +236,14 @@ resource "kubernetes_namespace" "valkey" {
       environment = var.environment
     }
   }
-  
+
   depends_on = [azurerm_kubernetes_cluster.main]
 }
 
 # Valkey ConfigMap
 resource "kubernetes_config_map" "valkey" {
   count = contains(["valkey", "all"], var.redis_deployment_type) ? 1 : 0
-  
+
   metadata {
     name      = "valkey-config"
     namespace = kubernetes_namespace.valkey[0].metadata[0].name
@@ -310,7 +300,7 @@ resource "random_password" "valkey_password" {
 
 resource "kubernetes_secret" "valkey" {
   count = contains(["valkey", "all"], var.redis_deployment_type) ? 1 : 0
-  
+
   metadata {
     name      = "valkey-secret"
     namespace = kubernetes_namespace.valkey[0].metadata[0].name
@@ -324,7 +314,7 @@ resource "kubernetes_secret" "valkey" {
 # Valkey Service
 resource "kubernetes_service" "valkey" {
   count = contains(["valkey", "all"], var.redis_deployment_type) ? 1 : 0
-  
+
   metadata {
     name      = "valkey-service"
     namespace = kubernetes_namespace.valkey[0].metadata[0].name
@@ -359,7 +349,7 @@ resource "kubernetes_service" "valkey" {
 # Valkey StatefulSet
 resource "kubernetes_stateful_set" "valkey" {
   count = contains(["valkey", "all"], var.redis_deployment_type) ? 1 : 0
-  
+
   metadata {
     name      = "valkey"
     namespace = kubernetes_namespace.valkey[0].metadata[0].name
@@ -542,7 +532,7 @@ resource "kubernetes_stateful_set" "valkey" {
 # Valkey Cluster Initialization Job
 resource "kubernetes_job" "valkey_cluster_init" {
   count = contains(["valkey", "all"], var.redis_deployment_type) ? 1 : 0
-  
+
   metadata {
     name      = "valkey-cluster-init"
     namespace = kubernetes_namespace.valkey[0].metadata[0].name
@@ -611,7 +601,7 @@ resource "azurerm_key_vault_secret" "redis_connection_string" {
   value        = azurerm_redis_cache.main[0].primary_connection_string
   key_vault_id = azurerm_key_vault.main.id
 
-  depends_on = [azurerm_key_vault_access_policy.current_user]
+  depends_on = [azurerm_key_vault.main]
 }
 
 resource "azurerm_key_vault_secret" "managed_redis_connection_string" {
@@ -620,7 +610,7 @@ resource "azurerm_key_vault_secret" "managed_redis_connection_string" {
   value        = azurerm_redis_enterprise_database.main[0].primary_access_key
   key_vault_id = azurerm_key_vault.main.id
 
-  depends_on = [azurerm_key_vault_access_policy.current_user]
+  depends_on = [azurerm_key_vault.main]
 }
 
 resource "azurerm_key_vault_secret" "valkey_password" {
@@ -629,7 +619,7 @@ resource "azurerm_key_vault_secret" "valkey_password" {
   value        = random_password.valkey_password[0].result
   key_vault_id = azurerm_key_vault.main.id
 
-  depends_on = [azurerm_key_vault_access_policy.current_user]
+  depends_on = [azurerm_key_vault.main]
 }
 
 # Outputs for Redis/Valkey services
@@ -637,19 +627,19 @@ output "redis_services" {
   description = "Redis and Valkey service endpoints and details"
   value = {
     deployment_type = var.redis_deployment_type
-    
+
     azure_cache_redis = var.redis_deployment_type == "azure_cache_redis" || var.redis_deployment_type == "all" ? {
-      hostname      = try(azurerm_redis_cache.main[0].hostname, null)
-      ssl_port      = try(azurerm_redis_cache.main[0].ssl_port, null)
-      port          = try(azurerm_redis_cache.main[0].port, null)
-      primary_key   = try(azurerm_redis_cache.main[0].primary_access_key, null)
+      hostname    = try(azurerm_redis_cache.main[0].hostname, null)
+      ssl_port    = try(azurerm_redis_cache.main[0].ssl_port, null)
+      port        = try(azurerm_redis_cache.main[0].port, null)
+      primary_key = try(azurerm_redis_cache.main[0].primary_access_key, null)
     } : null
-    
+
     azure_managed_redis = var.redis_deployment_type == "azure_managed_redis" || var.redis_deployment_type == "all" ? {
       hostname    = try(azurerm_redis_enterprise_cluster.main[0].hostname, null)
       access_keys = try(azurerm_redis_enterprise_database.main[0].primary_access_key, null)
     } : null
-    
+
     valkey = var.redis_deployment_type == "valkey" || var.redis_deployment_type == "all" ? {
       service_name = try(kubernetes_service.valkey[0].metadata[0].name, null)
       namespace    = try(kubernetes_namespace.valkey[0].metadata[0].name, null)
