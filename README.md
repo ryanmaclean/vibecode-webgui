@@ -1,6 +1,6 @@
 # VibeCode: The Future of Cloud Development
 
-**Enterprise-Grade Cloud Development Environment** powered by **code-server** and **Kubernetes**. Featuring **AI-powered project generation**, **multi-model AI assistance**, and **enterprise security** with full WCAG 2.1 AA compliance.
+Cloud Dev Env powered by **code-server**. Featuring project generation, multi-model AI assistance, and security with WCAG 2.1 AA compliance as a target (WIP).
 
 [![Build Status](https://github.com/vibecode/webgui/actions/workflows/ci.yml/badge.svg)](https://github.com/vibecode/webgui/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -10,13 +10,12 @@
 
 ## 🚀 Key Features (July 2025)
 
-- **VS Code in Browser** - Full-featured IDE experience with zero setup
-- **AI Project Generation** - Create complete projects from natural language prompts (avg. 45s)
-- **Multi-AI Model Support** - Seamlessly switch between Claude, GPT, and local models
-- **Kubernetes-Native** - Built for scale with automatic resource optimization
-- **Enterprise Security** - 2FA, SSO, and RBAC out of the box
-- **Full Accessibility** - WCAG 2.1 AA compliant interface
-- **Production Ready** - 99.9% uptime with comprehensive monitoring
+- **Edit Code in Browser** - IDE experience with zero setup
+- **AI Project Generation** - Create projects from natural language prompts
+- **Multi-AI Model Support** - Switch between Claude, GPT, and local or remote models
+- **Kubernetes-Native** - Built for automatic resource optimization
+- **Security** - 2FA, SSO, and RBAC out of the box
+- **Accessibility** - Goal: WCAG 2.1 AA compliant interface
 
 ## ⚡ Quick Start
 
