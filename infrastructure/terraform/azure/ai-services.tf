@@ -3,19 +3,20 @@
 
 # Azure OpenAI Service
 resource "azurerm_cognitive_account" "openai" {
-  name                = "${local.name_prefix}-openai"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  kind                = "OpenAI"
-  sku_name            = var.azure_openai_sku_name
+  name                  = "${local.name_prefix}-openai"
+  location              = azurerm_resource_group.main.location
+  resource_group_name   = azurerm_resource_group.main.name
+  kind                  = "OpenAI"
+  sku_name              = var.azure_openai_sku_name
+  custom_subdomain_name = "${local.name_prefix}-openai"
 
   # Network configuration
   network_acls {
     default_action = "Allow"
-    
+
     # Restrict to Azure services and AKS subnet in production
     ip_rules = var.authorized_ip_ranges
-    
+
     virtual_network_rules {
       subnet_id = azurerm_subnet.aks.id
     }
@@ -57,18 +58,19 @@ resource "azurerm_cognitive_deployment" "openai_models" {
 
 # Azure Cognitive Services (Multi-Service Account)
 resource "azurerm_cognitive_account" "multi_service" {
-  name                = "${local.name_prefix}-cognitive-services"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  kind                = "CognitiveServices"
-  sku_name            = var.cognitive_services_sku
+  name                  = "${local.name_prefix}-cognitive-services"
+  location              = azurerm_resource_group.main.location
+  resource_group_name   = azurerm_resource_group.main.name
+  kind                  = "CognitiveServices"
+  sku_name              = var.cognitive_services_sku
+  custom_subdomain_name = "${local.name_prefix}-cognitive-services"
 
   # Network configuration
   network_acls {
     default_action = "Allow"
-    
+
     ip_rules = var.authorized_ip_ranges
-    
+
     virtual_network_rules {
       subnet_id = azurerm_subnet.aks.id
     }
