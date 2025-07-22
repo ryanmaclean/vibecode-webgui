@@ -1,4 +1,4 @@
-# VibeCode: The Future of Cloud Development
+# VibeCode: Sample Web-Based Codegen Platform (GenAI-Assisted Creation)
 
 Cloud Dev Env powered by **code-server**. Featuring project generation, multi-model AI assistance, and security with WCAG 2.1 AA compliance as a target (WIP).
 
