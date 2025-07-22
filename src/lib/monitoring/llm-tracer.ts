@@ -188,3 +188,4 @@ export function TraceLLM(options: Partial<LLMSpanOptions> = {}) {
     return descriptor;
   };
 }
+export default tracer;
