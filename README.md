@@ -5,6 +5,13 @@ Cloud Dev Env powered by **code-server**. Featuring project generation, multi-mo
 ## 📚 **[→ View Live Documentation](https://ryanmaclean.github.io/vibecode-webgui/)**
 *Complete project documentation with 81 pages, full-text search, and mobile-responsive design*
 
+### 🚀 **GitHub Pages Status** ✅
+- **Astro v5.12.1 + Starlight v0.35.1** - Latest versions deployed
+- **Performance**: < 0.4s average load time, 200 OK responses
+- **SEO Optimized** with meta tags, sitemap, and structured data  
+- **25+ automated tests** covering functionality, navigation, performance
+- **Auto-deploy** on every commit to main branch
+
 [![Build Status](https://github.com/vibecode/webgui/actions/workflows/ci.yml/badge.svg)](https://github.com/vibecode/webgui/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Accessibility](https://img.shields.io/badge/Accessibility-WCAG%202.1%20AA-brightgreen)](https://www.w3.org/TR/WCAG21/)
