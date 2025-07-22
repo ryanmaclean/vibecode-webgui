@@ -1,6 +1,6 @@
 # VibeCode: Sample Web-Based Codegen Platform (GenAI-Assisted Creation)
 
-Cloud Dev Env powered by **code-server**. Featuring project generation, multi-model AI assistance, and security with WCAG 2.1 AA compliance as a target (WIP).
+Cloud Dev Env powered by **code-server**. Featuring project generation, multi-modal AI assistance, and security with WCAG 2.1 AA compliance as a target (WIP).
 
 [![Build Status](https://github.com/vibecode/webgui/actions/workflows/ci.yml/badge.svg)](https://github.com/vibecode/webgui/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
