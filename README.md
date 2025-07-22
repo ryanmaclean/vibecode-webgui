@@ -2,6 +2,9 @@
 
 Cloud Dev Env powered by **code-server**. Featuring project generation, multi-modal AI assistance, and security with WCAG 2.1 AA compliance as a target (WIP).
 
+## 📚 **[→ View Live Documentation](https://ryanmaclean.github.io/vibecode-webgui/)**
+*Complete project documentation with 81 pages, full-text search, and mobile-responsive design*
+
 [![Build Status](https://github.com/vibecode/webgui/actions/workflows/ci.yml/badge.svg)](https://github.com/vibecode/webgui/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Accessibility](https://img.shields.io/badge/Accessibility-WCAG%202.1%20AA-brightgreen)](https://www.w3.org/TR/WCAG21/)
@@ -10,14 +13,6 @@ Cloud Dev Env powered by **code-server**. Featuring project generation, multi-mo
 
 ## 🚀 Key Features (July 2025)
 
-<<<<<<< Updated upstream
-- **Edit Code in Browser** - IDE experience with zero setup
-- **AI Project Generation** - Create projects from natural language prompts
-- **Multi-AI Model Support** - Switch between Claude, GPT, and local or remote models
-- **Kubernetes-Native** - Built for automatic resource optimization
-- **Security** - 2FA, SSO, and RBAC out of the box
-- **Accessibility** - Goal: WCAG 2.1 AA compliant interface
-=======
 - **VS Code in Browser** - Full-featured IDE experience with zero setup
 - **AI Project Generation** - Create complete projects from natural language prompts (avg. 45s)
 - **Multi-AI Model Support** - Seamlessly switch between Claude, GPT, and local models
@@ -30,7 +25,6 @@ Cloud Dev Env powered by **code-server**. Featuring project generation, multi-mo
 - **Enterprise Security** - 2FA, SSO, and RBAC out of the box
 - **Full Accessibility** - WCAG 2.1 AA compliant interface
 - **Production Ready** - 99.9% uptime with comprehensive monitoring
->>>>>>> Stashed changes
 
 ## ⚡ Quick Start
 
