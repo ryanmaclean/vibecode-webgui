@@ -4,6 +4,36 @@
 
 
 services:
+  # Documentation Service (Astro + Starlight)
+  docs:
+    build:
+      context: ./docs
+      dockerfile: Dockerfile
+    container_name: vibecode-docs
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - DD_SERVICE=vibecode-docs
+      - DD_ENV=${ENVIRONMENT:-local}
+      - DD_VERSION=1.0.0
+      - DD_TAGS=env:local,service:vibecode-docs,component:docs
+    depends_on:
+      - datadog-agent
+    networks:
+      - vibecode-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.docs.rule=Host(`docs.localhost`)"
+      - "traefik.http.services.docs.loadbalancer.server.port=8080"
+      # Datadog log processing
+      - "com.datadoghq.ad.logs=[{\"source\": \"nginx\", \"service\": \"vibecode-docs\"}]"
+
   # Main VibeCode Application
   app:
     build:
@@ -18,16 +48,32 @@ services:
       - DATABASE_URL=postgresql://vibecode:password@db:5432/vibecode
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - NEXTAUTH_URL=http://localhost:3000
-      # Pass Datadog RUM variables from .env file
+      
+      # Datadog RUM (Real User Monitoring) variables
       - NEXT_PUBLIC_DATADOG_APPLICATION_ID=${NEXT_PUBLIC_DATADOG_APPLICATION_ID}
       - NEXT_PUBLIC_DATADOG_CLIENT_TOKEN=${NEXT_PUBLIC_DATADOG_CLIENT_TOKEN}
-      - NEXT_PUBLIC_DATADOG_SITE=${NEXT_PUBLIC_DATADOG_SITE}
-      # Enable Datadog APM & Profiling
+      - NEXT_PUBLIC_DATADOG_SITE=${NEXT_PUBLIC_DATADOG_SITE:-datadoghq.com}
+      
+      # Datadog APM (Application Performance Monitoring)
+      - DD_AGENT_HOST=datadog-agent
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_SERVICE=vibecode-app
+      - DD_ENV=${ENVIRONMENT:-local}
+      - DD_VERSION=1.0.0
       - DD_PROFILING_ENABLED=true
       - DD_LOGS_INJECTION=true
+      - DD_RUNTIME_METRICS_ENABLED=true
+      
+      # Database monitoring integration
+      - DD_DATABASE_MONITORING_ENABLED=true
+      - DD_DBM_PROPAGATION_MODE=full
+      
+      # Tags for better organization
+      - DD_TAGS=env:local,service:vibecode-app,component:web
     depends_on:
       - db
       - redis
+      - datadog-agent
     networks:
       - vibecode-network
     volumes:
@@ -38,6 +84,9 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    labels:
+      # Datadog log processing
+      - "com.datadoghq.ad.logs=[{\"source\": \"nextjs\", \"service\": \"vibecode-app\"}]"
 
   # PostgreSQL Database
   db:
@@ -162,6 +211,69 @@ services:
       timeout: 10s
       retries: 3
 
+  # Datadog Agent for Local Development
+  # Provides dev/stg/prd parity for monitoring
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:7.66.1
+    container_name: vibecode-datadog-agent
+    environment:
+      - DD_API_KEY=${DATADOG_API_KEY:-dummy-key-for-local-dev}
+      - DD_APP_KEY=${DATADOG_APP_KEY:-dummy-app-key-for-local-dev}
+      - DD_SITE=${DATADOG_SITE:-datadoghq.com}
+      - DD_HOSTNAME=vibecode-docker-compose
+      - DD_ENV=${ENVIRONMENT:-local}
+      - DD_SERVICE=vibecode-webgui
+      - DD_VERSION=1.0.0
+      
+      # Enable core monitoring features
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_APM_ENABLED=true
+      - DD_APM_NON_LOCAL_TRAFFIC=true
+      - DD_PROCESS_AGENT_ENABLED=true
+      - DD_DOCKER_ENABLED=true
+      
+      # Database monitoring
+      - DD_DATABASE_MONITORING_ENABLED=true
+      
+      # Local development optimizations
+      - DD_PROCESS_CONFIG_PROCESS_COLLECTION_ENABLED=true
+      - DD_LOG_LEVEL=${DD_LOG_LEVEL:-INFO}
+      
+      # Container insights
+      - DD_CONTAINER_INCLUDE=name:vibecode.*
+      - DD_CONTAINER_EXCLUDE=name:datadog.*
+      
+      # Tags for local environment
+      - DD_TAGS=env:local,cluster:docker-compose,project:vibecode
+    volumes:
+      # Essential Docker socket for container monitoring
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - /etc/passwd:/etc/passwd:ro
+      
+      # APM traces directory
+      - datadog-apm:/opt/datadog-agent/run
+    ports:
+      - "8126:8126"  # APM traces
+      - "8125:8125/udp"  # DogStatsD metrics
+    networks:
+      - vibecode-network
+    labels:
+      - "com.datadoghq.ad.check_names=[\"docker\"]"
+      - "com.datadoghq.ad.init_configs=[{}]"
+      - "com.datadoghq.ad.instances=[{\"docker_root\":\"/host\"}]"
+    healthcheck:
+      test: ["CMD", "agent", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    
+    # Monitor services but don't create hard dependencies to avoid cycles
+    # depends_on omitted to prevent circular dependencies
+
 volumes:
   postgres_data:
     driver: local
@@ -180,6 +292,8 @@ volumes:
   model-runner-cache:
     driver: local
   voice-uploads:
+    driver: local
+  datadog-apm:
     driver: local
 
 networks:
