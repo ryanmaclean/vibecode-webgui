@@ -10,10 +10,12 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/starlight": "^0.28.4",
-    "astro": "^5.2.1"
+    "@astrojs/starlight": "^0.35.1", 
+    "astro": "^5.12.1"
   },
   "devDependencies": {
-    "@types/node": "^22.10.5"
+    "@playwright/test": "^1.54.1",
+    "@types/node": "^22.10.5",
+    "playwright": "^1.54.1"
   }
 }
