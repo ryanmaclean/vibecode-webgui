@@ -3,16 +3,20 @@ import starlight from '@astrojs/starlight';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'http://localhost:4321',
-  // base: '/vibecode-webgui', // Removed for local testing
+  site: 'https://ryanmaclean.github.io',
+  base: '/vibecode-webgui',
   trailingSlash: 'always',
   integrations: [
     starlight({
       title: 'VibeCode Platform',
       description: 'Cloud-Native Development Platform with AI-Powered Workflows',
-      social: {
-        github: 'https://github.com/vibecode/vibecode-webgui',
-      },
+      social: [
+        {
+          label: 'GitHub',
+          icon: 'github',
+          href: 'https://github.com/ryanmaclean/vibecode-webgui',
+        },
+      ],
       sidebar: [
         {
           label: 'Home',
