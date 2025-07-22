@@ -1,0 +1,360 @@
+[
+  {
+    "label": "Getting Started",
+    "items": [
+      {
+        "label": "AUTHENTICATION_TESTING_GUIDE",
+        "link": "/AUTHENTICATION_TESTING_GUIDE/"
+      },
+      {
+        "label": "COMPREHENSIVE_TESTING_GUIDE",
+        "link": "/COMPREHENSIVE_TESTING_GUIDE/"
+      },
+      {
+        "label": "KIND_TROUBLESHOOTING_GUIDE",
+        "link": "/KIND_TROUBLESHOOTING_GUIDE/"
+      },
+      {
+        "label": "MASTRA_INTEGRATION_GUIDE",
+        "link": "/MASTRA_INTEGRATION_GUIDE/"
+      },
+      {
+        "label": "REDIS_VALKEY_INTEGRATION_GUIDE",
+        "link": "/REDIS_VALKEY_INTEGRATION_GUIDE/"
+      },
+      {
+        "label": "Wiki Index",
+        "link": "/wiki-index/"
+      }
+    ]
+  },
+  {
+    "label": "AI & Machine Learning",
+    "items": [
+      {
+        "label": "Ai Cli Tools",
+        "link": "/ai-cli-tools/"
+      },
+      {
+        "label": "AI_CLI_TOOLS_IMPLEMENTATION_PLAN",
+        "link": "/AI_CLI_TOOLS_IMPLEMENTATION_PLAN/"
+      },
+      {
+        "label": "AI_CLI_TOOLS_IMPLEMENTATION_SUMMARY",
+        "link": "/AI_CLI_TOOLS_IMPLEMENTATION_SUMMARY/"
+      },
+      {
+        "label": "Container Manifest",
+        "link": "/container-manifest/"
+      },
+      {
+        "label": "CONTAINER_MANIFEST",
+        "link": "/CONTAINER_MANIFEST/"
+      },
+      {
+        "label": "Docker Model Runner",
+        "link": "/docker-model-runner/"
+      },
+      {
+        "label": "DOCKER_MODEL_RUNNER_SETUP",
+        "link": "/DOCKER_MODEL_RUNNER_SETUP/"
+      },
+      {
+        "label": "Enhanced Ai Features",
+        "link": "/enhanced-ai-features/"
+      },
+      {
+        "label": "ENHANCED_AI_FEATURES",
+        "link": "/ENHANCED_AI_FEATURES/"
+      },
+      {
+        "label": "Genai Integration",
+        "link": "/genai-integration/"
+      },
+      {
+        "label": "GENAI_ENHANCEMENT_SUMMARY",
+        "link": "/GENAI_ENHANCEMENT_SUMMARY/"
+      },
+      {
+        "label": "GENAI_INTEGRATION_ARCHITECTURE",
+        "link": "/GENAI_INTEGRATION_ARCHITECTURE/"
+      },
+      {
+        "label": "LICENSE_SWEEP_GENAI_LIBRARIES",
+        "link": "/LICENSE_SWEEP_GENAI_LIBRARIES/"
+      },
+      {
+        "label": "Missing Ai Libraries",
+        "link": "/missing-ai-libraries/"
+      },
+      {
+        "label": "MISSING_AI_LIBRARIES_ANALYSIS",
+        "link": "/MISSING_AI_LIBRARIES_ANALYSIS/"
+      },
+      {
+        "label": "TEMPORAL_GENAI_INTEGRATION",
+        "link": "/TEMPORAL_GENAI_INTEGRATION/"
+      }
+    ]
+  },
+  {
+    "label": "Infrastructure & Deployment",
+    "items": [
+      {
+        "label": "Azure Infrastructure",
+        "link": "/azure-infrastructure/"
+      },
+      {
+        "label": "AZURE_INFRASTRUCTURE_SUMMARY",
+        "link": "/AZURE_INFRASTRUCTURE_SUMMARY/"
+      },
+      {
+        "label": "DOCS_DEPLOYMENT_VALIDATION",
+        "link": "/DOCS_DEPLOYMENT_VALIDATION/"
+      },
+      {
+        "label": "Kind Troubleshooting",
+        "link": "/kind-troubleshooting/"
+      },
+      {
+        "label": "Kind Validation",
+        "link": "/kind-validation/"
+      },
+      {
+        "label": "KIND_VALIDATION_REPORT",
+        "link": "/KIND_VALIDATION_REPORT/"
+      },
+      {
+        "label": "Production Status",
+        "link": "/production-status/"
+      },
+      {
+        "label": "PRODUCTION_STATUS_REPORT",
+        "link": "/PRODUCTION_STATUS_REPORT/"
+      },
+      {
+        "label": "Test Infrastructure",
+        "link": "/test-infrastructure/"
+      },
+      {
+        "label": "TEST_INFRASTRUCTURE_SUMMARY",
+        "link": "/TEST_INFRASTRUCTURE_SUMMARY/"
+      }
+    ]
+  },
+  {
+    "label": "Data & Integrations",
+    "items": [
+      {
+        "label": "Prisma Pgvector",
+        "link": "/prisma-pgvector/"
+      },
+      {
+        "label": "PRISMA_PGVECTOR_TEST_RESULTS",
+        "link": "/PRISMA_PGVECTOR_TEST_RESULTS/"
+      },
+      {
+        "label": "Redis Valkey",
+        "link": "/redis-valkey/"
+      },
+      {
+        "label": "REDIS_VALKEY_IMPLEMENTATION_SUMMARY",
+        "link": "/REDIS_VALKEY_IMPLEMENTATION_SUMMARY/"
+      },
+      {
+        "label": "Temporal Integration",
+        "link": "/temporal-integration/"
+      },
+      {
+        "label": "TEMPORAL_INTEGRATION_SUMMARY",
+        "link": "/TEMPORAL_INTEGRATION_SUMMARY/"
+      }
+    ]
+  },
+  {
+    "label": "Security & Authentication",
+    "items": [
+      {
+        "label": "Authentication Summary",
+        "link": "/authentication-summary/"
+      },
+      {
+        "label": "Authentication Testing",
+        "link": "/authentication-testing/"
+      },
+      {
+        "label": "AUTHENTICATION_SUMMARY",
+        "link": "/AUTHENTICATION_SUMMARY/"
+      },
+      {
+        "label": "Dev Credentials",
+        "link": "/dev-credentials/"
+      },
+      {
+        "label": "DEVELOPMENT_CREDENTIALS",
+        "link": "/DEVELOPMENT_CREDENTIALS/"
+      },
+      {
+        "label": "License Sweep",
+        "link": "/license-sweep/"
+      }
+    ]
+  },
+  {
+    "label": "Testing & Quality",
+    "items": [
+      {
+        "label": "Comprehensive Testing",
+        "link": "/comprehensive-testing/"
+      },
+      {
+        "label": "COMPREHENSIVE_TEST_REPORT",
+        "link": "/COMPREHENSIVE_TEST_REPORT/"
+      },
+      {
+        "label": "COMPREHENSIVE_TESTING_ASSESSMENT",
+        "link": "/COMPREHENSIVE_TESTING_ASSESSMENT/"
+      },
+      {
+        "label": "Precommit Optimization",
+        "link": "/precommit-optimization/"
+      },
+      {
+        "label": "PRECOMMIT_OPTIMIZATION_SUMMARY",
+        "link": "/PRECOMMIT_OPTIMIZATION_SUMMARY/"
+      },
+      {
+        "label": "Test Coverage Report",
+        "link": "/test-coverage-report/"
+      }
+    ]
+  },
+  {
+    "label": "Extensions & Tools",
+    "items": [
+      {
+        "label": "Mastra Integration",
+        "link": "/mastra-integration/"
+      },
+      {
+        "label": "Microsoft Extensions",
+        "link": "/microsoft-extensions/"
+      },
+      {
+        "label": "MICROSOFT_VSCODE_EXTENSIONS_MIT_BSD",
+        "link": "/MICROSOFT_VSCODE_EXTENSIONS_MIT_BSD/"
+      },
+      {
+        "label": "THIRD_PARTY_NOTICES_EXTENSIONS",
+        "link": "/THIRD_PARTY_NOTICES_EXTENSIONS/"
+      },
+      {
+        "label": "Vscode Extensions",
+        "link": "/vscode-extensions/"
+      },
+      {
+        "label": "VSCODE_EXTENSION_CONFIGURATION",
+        "link": "/VSCODE_EXTENSION_CONFIGURATION/"
+      }
+    ]
+  },
+  {
+    "label": "Configuration",
+    "items": [
+      {
+        "label": "Code Of Conduct",
+        "link": "/code-of-conduct/"
+      },
+      {
+        "label": "Contributing",
+        "link": "/contributing/"
+      },
+      {
+        "label": "DATADOG_MONITORING_CONFIGURATION",
+        "link": "/DATADOG_MONITORING_CONFIGURATION/"
+      },
+      {
+        "label": "Env Variables",
+        "link": "/env-variables/"
+      },
+      {
+        "label": "ENV_VARIABLES",
+        "link": "/ENV_VARIABLES/"
+      }
+    ]
+  },
+  {
+    "label": "Monitoring & Operations",
+    "items": [
+      {
+        "label": "Datadog Compatibility",
+        "link": "/datadog-compatibility/"
+      },
+      {
+        "label": "DATADOG_COMPATIBILITY_SUMMARY",
+        "link": "/DATADOG_COMPATIBILITY_SUMMARY/"
+      },
+      {
+        "label": "DATADOG_LOCAL_DEVELOPMENT",
+        "link": "/DATADOG_LOCAL_DEVELOPMENT/"
+      }
+    ]
+  },
+  {
+    "label": "Documentation",
+    "items": [
+      {
+        "label": "Claude Prompt",
+        "link": "/claude-prompt/"
+      },
+      {
+        "label": "CODE_OF_CONDUCT",
+        "link": "/CODE_OF_CONDUCT/"
+      },
+      {
+        "label": "COMPONENT_ONBOARDING_CHECKLIST",
+        "link": "/COMPONENT_ONBOARDING_CHECKLIST/"
+      },
+      {
+        "label": "Docker Troubleshooting",
+        "link": "/docker-troubleshooting/"
+      },
+      {
+        "label": "DOCKER_TROUBLESHOOTING_SUMMARY",
+        "link": "/DOCKER_TROUBLESHOOTING_SUMMARY/"
+      },
+      {
+        "label": "Docs Plan",
+        "link": "/docs-plan/"
+      },
+      {
+        "label": "DOCS_CONSOLIDATION_PLAN",
+        "link": "/DOCS_CONSOLIDATION_PLAN/"
+      },
+      {
+        "label": "Repository Scan",
+        "link": "/repository-scan/"
+      },
+      {
+        "label": "REPOSITORY_SCAN_REPORT_JULY_2025",
+        "link": "/REPOSITORY_SCAN_REPORT_JULY_2025/"
+      },
+      {
+        "label": "Third Party Notices",
+        "link": "/third-party-notices/"
+      },
+      {
+        "label": "TODO",
+        "link": "/TODO/"
+      },
+      {
+        "label": "Wiki",
+        "link": "/wiki/"
+      },
+      {
+        "label": "WIKI_INDEX",
+        "link": "/WIKI_INDEX/"
+      }
+    ]
+  }
+]

@@ -25,25 +25,28 @@ RUN apk update && apk upgrade && apk add --no-cache \
     dumb-init \
     && rm -rf /var/cache/apk/*
 
-# Copy built site from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Remove default nginx files and copy built site
+RUN rm -f /usr/share/nginx/html/index.html /usr/share/nginx/html/50x.html
+COPY --from=builder /app/dist/ /usr/share/nginx/html/
+# Create index.html from 404.html for Starlight compatibility
+RUN cp /usr/share/nginx/html/404.html /usr/share/nginx/html/index.html
 
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Create non-root user
-RUN addgroup -g 1001 -S nginx && \
-    adduser -S vibecode -u 1001 -G nginx
+RUN addgroup -g 1001 -S vibecode && \
+    adduser -S vibecode -u 1001 -G vibecode
 
 # Set proper permissions
-RUN chown -R vibecode:nginx /usr/share/nginx/html && \
-    chown -R vibecode:nginx /var/cache/nginx && \
-    chown -R vibecode:nginx /var/log/nginx && \
-    chown -R vibecode:nginx /etc/nginx/conf.d
+RUN chown -R vibecode:vibecode /usr/share/nginx/html && \
+    chown -R vibecode:vibecode /var/cache/nginx && \
+    chown -R vibecode:vibecode /var/log/nginx && \
+    chown -R vibecode:vibecode /etc/nginx/conf.d
 
 # Create pid directory and set permissions
 RUN mkdir -p /var/run/nginx && \
-    chown -R vibecode:nginx /var/run/nginx
+    chown -R vibecode:vibecode /var/run/nginx
 
 # Switch to non-root user
 USER vibecode
