@@ -1,0 +1,210 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: datadog-agent
+  namespace: datadog
+  labels:
+    app: datadog-agent
+spec:
+  selector:
+    matchLabels:
+      app: datadog-agent
+  template:
+    metadata:
+      labels:
+        app: datadog-agent
+      name: datadog-agent
+    spec:
+      serviceAccountName: datadog-agent
+      tolerations:
+        - operator: Exists
+      containers:
+      - name: datadog-agent
+        image: gcr.io/datadoghq/agent:7.66.1
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+        ports:
+        - containerPort: 8125
+          name: dogstatsdport
+          protocol: UDP
+        - containerPort: 8126
+          name: traceport
+          protocol: TCP
+        env:
+        # Core Configuration
+        - name: DD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secret
+              key: api-key
+        - name: DD_SITE
+          value: "datadoghq.com"
+        - name: DD_CLUSTER_NAME
+          value: "vibecode-kind-local"
+        - name: DD_ENV
+          value: "local"
+        - name: DD_SERVICE
+          value: "vibecode-k8s"
+        - name: DD_VERSION
+          value: "1.0.0"
+        
+        # Kubernetes Integration
+        - name: KUBERNETES
+          value: "true"
+        - name: DD_KUBERNETES_KUBELET_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: DD_KUBELET_TLS_VERIFY
+          value: "false"
+        
+        # Monitoring Features
+        - name: DD_LOGS_ENABLED
+          value: "true"
+        - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+          value: "true"
+        - name: DD_APM_ENABLED
+          value: "true"
+        - name: DD_APM_NON_LOCAL_TRAFFIC
+          value: "true"
+        - name: DD_PROCESS_AGENT_ENABLED
+          value: "true"
+        - name: DD_SYSTEM_PROBE_ENABLED
+          value: "false"
+        - name: DD_DOCKER_ENABLED
+          value: "false"  # Using containerd in KIND
+        - name: DD_CONTAINERD_ENABLED
+          value: "true"
+        
+        # Database Monitoring
+        - name: DD_DATABASE_MONITORING_ENABLED
+          value: "true"
+        
+        # LLM Observability
+        - name: DD_LLMOBS_ENABLED
+          value: "true"
+        - name: DD_LLMOBS_ML_APP
+          value: "vibecode-ai-k8s"
+        
+        # Performance & Reliability
+        - name: DD_DOGSTATSD_NON_LOCAL_TRAFFIC
+          value: "true"
+        - name: DD_LOG_LEVEL
+          value: "INFO"
+        - name: DD_HEALTH_PORT
+          value: "5555"
+        
+        # Fix read-only filesystem issues
+        - name: DD_AUTH_TOKEN_FILE_PATH
+          value: "/tmp/auth_token"
+        - name: DD_CONF_DIR
+          value: "/etc/datadog-agent"
+        
+        # Hostname configuration for Kubernetes
+        - name: DD_HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: DD_KUBERNETES_POD_LABELS_AS_TAGS
+          value: "true"
+        - name: DD_KUBERNETES_POD_ANNOTATIONS_AS_TAGS
+          value: "true"
+        
+        # Disable problematic features in KIND
+        - name: DD_SYSTEM_PROBE_ENABLED
+          value: "false"
+        - name: DD_NETWORK_MONITORING_ENABLED
+          value: "false"
+        - name: DD_RUNTIME_SECURITY_CONFIG_ENABLED
+          value: "false"
+        
+        # Tags
+        - name: DD_TAGS
+          value: "env:local,cluster:kind,platform:kubernetes,service:vibecode"
+        
+        volumeMounts:
+        # Configuration (read-only)
+        - name: config-volume
+          mountPath: /etc/datadog-agent
+          readOnly: true
+        
+        # Writable directories for runtime files
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: auth-token-volume
+          mountPath: /opt/datadog-agent/run
+        - name: logs-volume
+          mountPath: /var/log/datadog
+          
+        # Host system access (read-only)
+        - name: dockersocket
+          mountPath: /var/run/docker.sock
+          readOnly: true
+        - name: procdir
+          mountPath: /host/proc
+          readOnly: true
+        - name: cgroups
+          mountPath: /host/sys/fs/cgroup
+          readOnly: true
+        - name: containerd-socket
+          mountPath: /var/run/containerd/containerd.sock
+          readOnly: true
+          
+        # Kubernetes API access
+        - name: passwd
+          mountPath: /etc/passwd
+          readOnly: true
+        
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5555
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 5555
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 3
+
+      volumes:
+      # Configuration
+      - name: config-volume
+        configMap:
+          name: datadog-config
+          optional: true
+      
+      # Writable volumes
+      - name: tmp-volume
+        emptyDir: {}
+      - name: auth-token-volume
+        emptyDir: {}
+      - name: logs-volume
+        emptyDir: {}
+      
+      # Host system access
+      - name: dockersocket
+        hostPath:
+          path: /var/run/docker.sock
+      - name: procdir
+        hostPath:
+          path: /proc
+      - name: cgroups
+        hostPath:
+          path: /sys/fs/cgroup
+      - name: containerd-socket
+        hostPath:
+          path: /var/run/containerd/containerd.sock
+      - name: passwd
+        hostPath:
+          path: /etc/passwd
