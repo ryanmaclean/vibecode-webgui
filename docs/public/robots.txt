@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ryanmaclean.github.io/vibecode-webgui/sitemap-index.xml
