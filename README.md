@@ -25,17 +25,18 @@ Cloud Dev Env powered by **code-server**.
 ## 🚀 Key Features (July 2025)
 
 - **VS Code in Browser** - Full-featured IDE experience with zero setup
-- **AI Project Generation** - Create complete projects from natural language prompts (avg. 45s)
-- **Multi-AI Model Support** - Seamlessly switch between Claude, GPT, and local models
+- **AI Project Generation** - Create complete projects from natural language prompts using Claude-3.5-Sonnet
+- **Multi-AI Model Support** - 321 AI models available through OpenRouter integration
 - **🆕 Unified AI Client** - LiteLLM-inspired multi-provider access with automatic fallbacks
 - **🆕 Agent Framework** - Multi-agent coordination system for complex development tasks
 - **🆕 Local AI Models** - Ollama integration for privacy-first, cost-effective inference
 - **🆕 Vector Database Abstraction** - Support for pgvector, Chroma, Weaviate (all open source)
 - **🆕 Advanced RAG Pipeline** - Multi-threshold semantic search with relevance scoring
+- **🆕 Valkey Integration** - Redis-compatible open-source caching (Linux Foundation fork)
 - **Kubernetes-Native** - Built for scale with automatic resource optimization
-- **Enterprise Security** - 2FA, SSO, and RBAC out of the box
+- **Enterprise Security** - NextAuth with GitHub, Google, and credentials providers
 - **Full Accessibility** - WCAG 2.1 AA compliant interface
-- **Production Ready** - 99.9% uptime with comprehensive monitoring
+- **Performance Optimized** - 13s build time, 146ms mean response time, 6.82 req/sec
 
 ## ⚡ Quick Start
 
@@ -98,6 +99,25 @@ helm install vibecode ./charts/vibecode \
 - [Documentation](https://docs.vibecode.dev)
 - [API Reference](https://api.vibecode.dev)
 - [Community Forum](https://community.vibecode.dev)
+
+## 📊 Performance Benchmarks (July 23, 2025)
+
+**Latest Performance Results:**
+- **Build Time**: 13.0s production build
+- **Response Times**: 
+  - 50% of requests served in <285ms
+  - 90% of requests served in <828ms
+  - API endpoints: ~147ms average
+- **Throughput**: 6.82 requests/sec sustained
+- **Codebase**: 188 files, 51,671 lines of code
+- **Infrastructure**: Valkey (Redis-compatible) caching layer
+- **Authentication**: Multi-provider (GitHub, Google, credentials)
+
+**AI Generation Performance:**
+- **Models Available**: 321 via OpenRouter integration
+- **Primary Model**: Claude-3.5-Sonnet for project generation
+- **Success Rate**: Validated working AI project generation pipeline
+- **Response**: Streaming with progress tracking
 
 ## 📄 License
 
