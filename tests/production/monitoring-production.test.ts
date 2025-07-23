@@ -23,7 +23,7 @@ describe('Production Monitoring Validation', () => {
           body: JSON.stringify({
             type: 'response_time',
             data: { duration: Math.random() * 1000 }
-          });
+          })
         });
         promises.push(promise);
       }
@@ -31,14 +31,14 @@ describe('Production Monitoring Validation', () => {
       const responses = await Promise.allSettled(promises);
       const endTime = performance.now();
 
-      // Should complete within reasonable time (less than 10 seconds);
+      // Should complete within reasonable time (less than 10 seconds)
       expect(endTime - startTime).toBeLessThan(10000);
 
-      // Most requests should succeed (allowing for some failures under load);
-      const successCount = responses.filter(r => ;
+      // Most requests should succeed (allowing for some failures under load)
+      const successCount = responses.filter(r => 
         r.status === 'fulfilled' && r.value.ok
-      ).length
-      expect(successCount).toBeGreaterThan(900) // 90% success rate minimum
+      ).length;
+      expect(successCount).toBeGreaterThan(900); // 90% success rate minimum
     }, 30000);
 
     test('should maintain response times under load', async () => {
@@ -79,16 +79,16 @@ describe('Production Monitoring Validation', () => {
           body: JSON.stringify({
             type: 'test_metric',
             data: { value: 1 }
-          });
-        });
+          })
+        })
       );
 
       const responses = await Promise.allSettled(rapidRequests);
 
-      // Should have some rate-limited responses (429 status);
-      const rateLimitedCount = responses.filter(r => ;
+      // Should have some rate-limited responses (429 status)
+      const rateLimitedCount = responses.filter(r => 
         r.status === 'fulfilled' && r.value.status === 429
-      ).length
+      ).length;
 
       expect(rateLimitedCount).toBeGreaterThan(0);
     });
@@ -193,8 +193,8 @@ describe('Production Monitoring Validation', () => {
             body: JSON.stringify({
               type: 'request',
               data: {}
-            });
-          });
+            })
+          })
         );
       }
 
@@ -245,8 +245,14 @@ describe('Production Monitoring Validation', () => {
       expect(health.components).toHaveProperty('metrics_api');
       expect(health.components).toHaveProperty('database');
 
+      // Define component health interface
+      interface ComponentHealth {
+        status: 'healthy' | 'unhealthy' | 'degraded';
+        [key: string]: unknown;
+      }
+
       // All components should be operational
-      Object.values(health.components).forEach((component: any) => {
+      Object.values(health.components as Record<string, ComponentHealth>).forEach((component) => {
         expect(component.status).toBe('healthy');
       });
     });
@@ -284,8 +290,8 @@ describe('Production Monitoring Validation', () => {
           body: JSON.stringify({
             type: 'error',
             data: { error: 'Test error' }
-          });
-        });
+          })
+        })
       );
 
       await Promise.all(errorRequests);
@@ -300,8 +306,8 @@ describe('Production Monitoring Validation', () => {
       const alerts = await alertsResponse.json();
 
       // Should have generated high error rate alert
-      const errorRateAlert = alerts.alerts.find((alert: any) => ;
-        alert.title.includes('Error Rate');
+      const errorRateAlert = alerts.alerts.find((alert: any) => 
+        alert.title.includes('Error Rate')
       );
       expect(errorRateAlert).toBeDefined();
     });
@@ -309,7 +315,12 @@ describe('Production Monitoring Validation', () => {
 
   describe('Security Validation', () => {
     test('should block unauthorized access to monitoring endpoints', async () => {
-      const unauthorizedTests = [;
+      interface EndpointTest {
+        url: string;
+        method: string;
+      }
+
+      const unauthorizedTests: EndpointTest[] = [
         { url: '/api/monitoring/metrics', method: 'GET' },
         { url: '/api/monitoring/alerts', method: 'GET' },
         { url: '/api/monitoring/health', method: 'GET' }
@@ -326,9 +337,9 @@ describe('Production Monitoring Validation', () => {
     });
 
     test('should validate admin role for sensitive operations', async () => {
-      const userToken = 'Bearer user-token' // Regular user token;
+      const userToken = 'Bearer user-token'; // Regular user token
 
-      const adminOnlyEndpoints = [;
+      const adminOnlyEndpoints: string[] = [
         '/api/monitoring/metrics',
         '/api/monitoring/alerts',
         '/api/monitoring/config'

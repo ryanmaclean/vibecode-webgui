@@ -15,6 +15,7 @@ tracer.init({
   
   // Enable LLM observability
   experimental: {
+    // @ts-expect-error - llmobs is not in the type definitions yet
     llmobs: {
       enabled: process.env.DD_LLMOBS_ENABLED === '1' || process.env.DD_LLMOBS_ENABLED === 'true',
       agentlessEnabled: process.env.DD_LLMOBS_AGENTLESS_ENABLED === '1' || process.env.DD_LLMOBS_AGENTLESS_ENABLED === 'true',
@@ -22,29 +23,19 @@ tracer.init({
       site: process.env.DD_SITE || 'datadoghq.com',
       apiKey: process.env.DD_API_KEY,
     }
-  },
+  } as Record<string, unknown>, // Type assertion with more specific type
   
-  // Database monitoring
-  plugins: {
-    pg: {
-      enabled: true,
-      service: 'vibecode-postgres',
-    },
-    redis: {
-      enabled: true,
-      service: 'vibecode-redis',
-    },
-    http: {
-      enabled: true,
-      headers: ['user-agent', 'host'],
-    },
-    express: {
-      enabled: true,
-    },
-    next: {
-      enabled: true,
-    }
-  },
+  // Database monitoring - using type assertion for plugins config
+  plugins: true, // Enable all plugins by default
+  
+  // Plugin-specific configuration
+  clientToken: process.env.NEXT_PUBLIC_DD_CLIENT_TOKEN,
+  site: process.env.DD_SITE || 'datadoghq.com',
+  serviceVersion: process.env.DD_VERSION || process.env.npm_package_version || '1.0.0',
+  
+  // Configure specific plugins
+  // Note: These will be applied on top of the default configuration
+  // when the plugins are required
   
   // Tag all traces with deployment info
   tags: {

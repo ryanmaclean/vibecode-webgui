@@ -350,17 +350,16 @@ class MonitoringService {
    */
   trackUserAction(action: string, properties: Record<string, any> = {}): void {
     // Submit user action event
-    this.submitEvent({
-      title: `User Action: ${action}`,
-      text: `User performed action: ${action}`,
-      tags: [
+    this.submitEvent(
+      `User Action: ${action}`,
+      `User performed action: ${action}`,
+      [
         `action:${action}`,
         'service:vibecode-webgui',
         `env:${process.env.NODE_ENV || 'development'}`,
         ...Object.entries(properties).map(([key, value]) => `${key}:${value}`)
-      ],
-      alert_type: 'info'
-    }).catch(error => {
+      ]
+    ).catch(error => {
       console.warn('Failed to track user action:', error)
     })
   }
@@ -370,17 +369,16 @@ class MonitoringService {
    */
   trackError(error: Error, context: Record<string, any> = {}): void {
     // Submit error event
-    this.submitEvent({
-      title: `Error: ${error.name}`,
-      text: `${error.message}\n\nStack trace:\n${error.stack}`,
-      tags: [
+    this.submitEvent(
+      `Error: ${error.name}`,
+      `${error.message}\n\nStack trace:\n${error.stack}`,
+      [
         `error:${error.name.toLowerCase()}`,
         'service:vibecode-webgui',
         `env:${process.env.NODE_ENV || 'development'}`,
         ...Object.entries(context).map(([key, value]) => `${key}:${value}`)
-      ],
-      alert_type: 'error'
-    }).catch(submitError => {
+      ]
+    ).catch(submitError => {
       console.warn('Failed to track error:', submitError)
     })
 
@@ -403,10 +401,10 @@ class MonitoringService {
    */
   init(): void {
     // Track initialization
-    this.submitEvent({
-      title: 'Monitoring Initialized',
-      text: 'VibeCode monitoring service started',
-      tags: [
+    this.submitEvent(
+      'Monitoring Initialized',
+      'VibeCode monitoring service started',
+      [
         'service:vibecode-webgui',
         `env:${process.env.NODE_ENV || 'development'}`,
         'event:monitoring_init'

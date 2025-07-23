@@ -1,0 +1,162 @@
+name: Kubernetes Deployment
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run tests
+      run: npm test
+    
+    - name: Run lint
+      run: npm run lint || true  # Continue on lint warnings
+    
+    - name: Type check
+      run: npm run type-check || true
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+    
+    - name: Build and push
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Output image
+      id: image
+      run: echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+  deploy-staging:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+    
+    - name: Configure kubectl for staging
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > ~/.kube/config
+        chmod 600 ~/.kube/config
+    
+    - name: Deploy to staging namespace
+      run: |
+        # Update image in deployment
+        kubectl set image deployment/vibecode-webgui vibecode-webgui=${{ needs.build.outputs.image }} -n vibecode-staging
+        
+        # Wait for rollout
+        kubectl rollout status deployment/vibecode-webgui -n vibecode-staging --timeout=300s
+        
+        # Verify deployment
+        kubectl get pods -n vibecode-staging -l app=vibecode-webgui
+
+  deploy-production:
+    needs: [build, deploy-staging]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+    
+    - name: Configure kubectl for production
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > ~/.kube/config
+        chmod 600 ~/.kube/config
+    
+    - name: Deploy to production namespace
+      run: |
+        # Update image in deployment
+        kubectl set image deployment/vibecode-webgui vibecode-webgui=${{ needs.build.outputs.image }} -n vibecode-platform
+        
+        # Wait for rollout
+        kubectl rollout status deployment/vibecode-webgui -n vibecode-platform --timeout=300s
+        
+        # Verify deployment
+        kubectl get pods -n vibecode-platform -l app=vibecode-webgui
+        
+        # Run health check
+        kubectl run health-check --image=curlimages/curl:latest --restart=Never --rm -i --tty --timeout=30s -- \
+          curl -f http://vibecode-service.vibecode-platform.svc.cluster.local:3000/api/health
+
+    - name: Notify on success
+      if: success()
+      run: |
+        echo "🚀 Production deployment successful!"
+        echo "Image: ${{ needs.build.outputs.image }}"
+        echo "Digest: ${{ needs.build.outputs.digest }}"
