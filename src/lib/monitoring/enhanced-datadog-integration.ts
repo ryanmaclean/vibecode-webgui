@@ -94,13 +94,14 @@ export class EnhancedDatadogMonitoring {
       lastActivity: Date.now()
     })
 
-    // Send metrics
-    statsd.increment('terminal.sessions.created', 1, {
-      workspace: workspaceId,
-      terminal_type: 'enhanced-ai'
-    })
+    // Send metrics with string array tags
+    const sessionTags = [
+      `workspace:${workspaceId}`,
+      'terminal_type:enhanced-ai'
+    ];
     
-    statsd.gauge('terminal.sessions.active', this.terminalSessionMetrics.size)
+    statsd.increment('terminal.sessions.created', 1, sessionTags);
+    statsd.gauge('terminal.sessions.active', this.terminalSessionMetrics.size, sessionTags);
 
     span.finish()
   }
@@ -120,15 +121,15 @@ export class EnhancedDatadogMonitoring {
       session.lastActivity = Date.now()
     }
 
-    // Send metrics
-    statsd.increment('terminal.commands.executed', 1, {
-      command_type: this.categorizeCommand(command),
-      session: sessionId
-    })
-
-    statsd.histogram('terminal.command.execution_time', executionTime, {
-      command_type: this.categorizeCommand(command)
-    })
+    // Send metrics with string array tags
+    const commandType = this.categorizeCommand(command);
+    const commandTags = [
+      `command_type:${commandType}`,
+      `session:${sessionId}`
+    ];
+    
+    statsd.increment('terminal.commands.executed', 1, commandTags);
+    statsd.histogram('terminal.command.execution_time', executionTime, commandTags);
 
     span.finish()
   }
@@ -155,26 +156,20 @@ export class EnhancedDatadogMonitoring {
       session.lastActivity = Date.now()
     }
 
-    // Send metrics
-    statsd.increment('ai.requests', 1, {
-      type,
-      provider,
-      model,
-      context: 'terminal'
-    })
+    // Create common tags for all metrics
+    const aiTags = [
+      `type:${type}`,
+      `provider:${provider}`,
+      `model:${model}`,
+      'context:terminal'
+    ];
 
-    statsd.histogram('ai.response_time', responseTime, {
-      type,
-      provider,
-      model
-    })
+    // Send metrics with string array tags
+    statsd.increment('ai.requests', 1, aiTags);
+    statsd.histogram('ai.response_time', responseTime, aiTags);
 
     if (tokenUsage) {
-      statsd.histogram('ai.tokens_used', tokenUsage, {
-        type,
-        provider,
-        model
-      })
+      statsd.histogram('ai.tokens_used', tokenUsage, aiTags);
     }
 
     span.finish()
@@ -195,17 +190,16 @@ export class EnhancedDatadogMonitoring {
       span.setTag('claude.error_type', errorType)
     }
 
-    // Send metrics
-    statsd.increment('claude.cli.commands', 1, {
-      command,
-      success: success ? 'true' : 'false',
-      error_type: errorType || 'none'
-    })
-
-    statsd.histogram('claude.cli.response_time', responseTime, {
-      command,
-      success: success ? 'true' : 'false'
-    })
+    // Create common tags for all metrics
+    const cliTags = [
+      `command:${command}`,
+      `success:${success ? 'true' : 'false'}`,
+      `error_type:${errorType || 'none'}`
+    ];
+    
+    // Send metrics with string array tags
+    statsd.increment('claude.cli.commands', 1, cliTags);
+    statsd.histogram('claude.cli.response_time', responseTime, cliTags);
 
     span.finish()
   }
@@ -225,27 +219,17 @@ export class EnhancedDatadogMonitoring {
       span.setTag('openrouter.cost', cost)
     }
 
-    // Send metrics
-    statsd.increment('openrouter.requests', 1, {
-      model
-    })
-
-    statsd.histogram('openrouter.response_time', responseTime, {
-      model
-    })
-
-    statsd.histogram('openrouter.prompt_tokens', promptTokens, {
-      model
-    })
-
-    statsd.histogram('openrouter.completion_tokens', completionTokens, {
-      model
-    })
+    // Convert model to string array tag format
+    const modelTag = `model:${model}`;
+    
+    // Send metrics with string array tags
+    statsd.increment('openrouter.requests', 1, [modelTag]);
+    statsd.histogram('openrouter.response_time', responseTime, [modelTag]);
+    statsd.histogram('openrouter.prompt_tokens', promptTokens, [modelTag]);
+    statsd.histogram('openrouter.completion_tokens', completionTokens, [modelTag]);
 
     if (cost) {
-      statsd.histogram('openrouter.cost', cost, {
-        model
-      })
+      statsd.histogram('openrouter.cost', cost, [modelTag]);
     }
 
     span.finish()
@@ -259,6 +243,9 @@ export class EnhancedDatadogMonitoring {
     span.setTag('session.id', sessionId)
     span.setTag('session.end_reason', reason)
 
+    // Create common tags for all metrics
+    const sessionEndTags = [`end_reason:${reason}`];
+    
     const session = this.terminalSessionMetrics.get(sessionId)
     if (session) {
       const sessionDuration = Date.now() - session.startTime
@@ -269,23 +256,23 @@ export class EnhancedDatadogMonitoring {
       span.setTag('session.ai_usage', session.aiUsageCount)
       span.setTag('session.inactive_time', inactiveTime)
 
-      // Send metrics
-      statsd.histogram('terminal.session.duration', sessionDuration, {
-        end_reason: reason
-      })
+      // Add more tags if needed
+      sessionEndTags.push(
+        `session_duration:${sessionDuration}`,
+        `commands:${session.commandCount}`,
+        `ai_usage:${session.aiUsageCount}`
+      );
 
-      statsd.histogram('terminal.session.commands', session.commandCount, {
-        end_reason: reason
-      })
-
-      statsd.histogram('terminal.session.ai_usage', session.aiUsageCount, {
-        end_reason: reason
-      })
+      // Send metrics with string array tags
+      statsd.histogram('terminal.session.duration', sessionDuration, sessionEndTags);
+      statsd.histogram('terminal.session.commands', session.commandCount, sessionEndTags);
+      statsd.histogram('terminal.session.ai_usage', session.aiUsageCount, sessionEndTags);
 
       this.terminalSessionMetrics.delete(sessionId)
     }
 
-    statsd.gauge('terminal.sessions.active', this.terminalSessionMetrics.size)
+    // Update active sessions gauge with the same end_reason tag
+    statsd.gauge('terminal.sessions.active', this.terminalSessionMetrics.size, sessionEndTags)
 
     span.finish()
   }
@@ -304,10 +291,14 @@ export class EnhancedDatadogMonitoring {
       })
     }
 
-    statsd.increment('workspace.activities', 1, {
-      workspace: workspaceId,
-      activity
-    })
+    // Create tags for workspace activity
+    const workspaceTags = [
+      `workspace:${workspaceId}`,
+      `activity:${activity}`
+    ];
+    
+    // Send metrics with string array tags
+    statsd.increment('workspace.activities', 1, workspaceTags)
 
     span.finish()
   }
@@ -330,15 +321,19 @@ export class EnhancedDatadogMonitoring {
       span.setTag('suggestion.helpfulness', helpfulness)
     }
 
-    statsd.increment('ai.suggestions', 1, {
-      trigger,
-      accepted: accepted ? 'true' : 'false'
-    })
+    // Create common tags for suggestion metrics
+    const suggestionTags = [
+      `trigger:${trigger}`,
+      `accepted:${accepted ? 'true' : 'false'}`
+    ];
+    
+    // Send metrics with string array tags
+    statsd.increment('ai.suggestions', 1, suggestionTags);
 
     if (helpfulness !== undefined) {
-      statsd.histogram('ai.suggestion.helpfulness', helpfulness, {
-        trigger
-      })
+      statsd.histogram('ai.suggestion.helpfulness', helpfulness, [
+        `trigger:${trigger}`
+      ]);
     }
 
     span.finish()
@@ -351,17 +346,21 @@ export class EnhancedDatadogMonitoring {
     const memUsage = process.memoryUsage()
     const cpuUsage = process.cpuUsage()
 
+    // Common tags for system metrics
+    const systemTags = ['source:node_process'];
+
     // Memory metrics
-    statsd.gauge('system.memory.used', memUsage.heapUsed)
-    statsd.gauge('system.memory.total', memUsage.heapTotal)
-    statsd.gauge('system.memory.external', memUsage.external)
+    statsd.gauge('system.memory.used', memUsage.heapUsed, systemTags)
+    statsd.gauge('system.memory.total', memUsage.heapTotal, systemTags)
+    statsd.gauge('system.memory.external', memUsage.external, systemTags)
 
     // CPU metrics
-    statsd.gauge('system.cpu.user', cpuUsage.user)
-    statsd.gauge('system.cpu.system', cpuUsage.system)
+    statsd.gauge('system.cpu.user', cpuUsage.user, systemTags)
+    statsd.gauge('system.cpu.system', cpuUsage.system, systemTags)
 
     // Active sessions
-    statsd.gauge('terminal.sessions.active', this.terminalSessionMetrics.size)
+    const sessionTags = [...systemTags, 'metric_type:session'];
+    statsd.gauge('terminal.sessions.active', this.terminalSessionMetrics.size, sessionTags)
 
     // Terminal session health
     let healthySessions = 0
@@ -373,7 +372,7 @@ export class EnhancedDatadogMonitoring {
       }
     }
 
-    statsd.gauge('terminal.sessions.healthy', healthySessions)
+    statsd.gauge('terminal.sessions.healthy', healthySessions, sessionTags)
   }
 
   /**
