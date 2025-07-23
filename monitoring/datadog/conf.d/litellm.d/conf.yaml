@@ -1,0 +1,172 @@
+# Datadog LiteLLM Integration Configuration
+# ========================================
+
+init_config:
+  # Global configuration for the LiteLLM check
+  prometheus_timeout: 10
+  health_service_check: true
+  
+instances:
+  # Main LiteLLM proxy instance
+  - openmetrics_endpoint: http://litellm-proxy:4000/metrics
+    namespace: "litellm"
+    
+    # Authentication (if required)
+    # headers:
+    #   Authorization: "Bearer ${LITELLM_MASTER_KEY}"
+    
+    # Metrics configuration
+    metrics:
+      # Request metrics
+      - litellm_requests_total
+      - litellm_request_duration_seconds
+      - litellm_request_duration_seconds_bucket
+      - litellm_request_duration_seconds_count
+      - litellm_request_duration_seconds_sum
+      
+      # Model performance metrics
+      - litellm_model_requests_total
+      - litellm_model_latency_seconds
+      - litellm_model_cost_usd_total
+      - litellm_model_tokens_total
+      - litellm_model_errors_total
+      - litellm_model_cache_hits_total
+      - litellm_model_cache_misses_total
+      
+      # Budget and cost metrics
+      - litellm_spend_budget_usd
+      - litellm_remaining_budget_usd
+      - litellm_daily_spend_usd
+      - litellm_cost_per_model_usd
+      - litellm_cost_per_user_usd
+      
+      # Performance metrics
+      - litellm_concurrent_requests
+      - litellm_queue_size
+      - litellm_response_time_p50
+      - litellm_response_time_p95
+      - litellm_response_time_p99
+      
+      # Health metrics
+      - litellm_health_check_status
+      - litellm_model_availability
+      - litellm_uptime_seconds
+      
+      # Rate limiting metrics
+      - litellm_rate_limit_exceeded_total
+      - litellm_rate_limit_remaining
+      - litellm_throttled_requests_total
+      
+      # Cache metrics
+      - litellm_cache_hit_ratio
+      - litellm_cache_size_bytes
+      - litellm_cache_evictions_total
+      
+      # Database metrics
+      - litellm_db_connections_active
+      - litellm_db_connections_idle
+      - litellm_db_query_duration_seconds
+      
+      # Authentication metrics
+      - litellm_auth_successful_total
+      - litellm_auth_failed_total
+      - litellm_invalid_api_key_total
+    
+    # Labels to include
+    labels_to_match:
+      - model
+      - user
+      - status
+      - provider
+      - team
+      - environment
+      - request_id
+    
+    # Custom tags
+    tags:
+      - "service:litellm-proxy"
+      - "component:ai-gateway"
+      - "env:${DD_ENV:-development}"
+      - "version:latest"
+      - "team:vibecode"
+      - "product:ai-platform"
+    
+    # Health check configuration
+    health_service_check: true
+    health_service_check_whitelist:
+      - litellm_health_check_status
+    
+    # Timeout settings
+    timeout: 30
+    
+    # Additional OpenMetrics configuration
+    raw_metric_prefix: "litellm."
+    telemetry: true
+    
+    # Histogram configuration
+    histogram_buckets_as_distributions: true
+    
+    # Rate limiting for metrics collection
+    max_returned_metrics: 2000
+
+# Log processing rules
+logs:
+  # LiteLLM proxy logs
+  - type: file
+    path: /app/logs/*.log
+    service: litellm-proxy
+    source: litellm
+    sourcecategory: ai
+    tags:
+      - "env:${DD_ENV:-development}"
+      - "service:litellm-proxy"
+      - "component:ai-gateway"
+    
+    # Log processing
+    log_processing_rules:
+      # Exclude health check logs
+      - type: exclude_at_match
+        name: exclude_health_checks
+        pattern: "GET /health"
+      
+      # Extract request IDs
+      - type: mask_sequences
+        name: extract_request_id
+        replace_placeholder: "[request_id:$1]"
+        pattern: "request_id[\"=:]([a-zA-Z0-9-_]+)"
+      
+      # Extract model information
+      - type: mask_sequences
+        name: extract_model
+        replace_placeholder: "[model:$1]"
+        pattern: "model[\"=:]([a-zA-Z0-9.-_]+)"
+      
+      # Extract user information
+      - type: mask_sequences
+        name: extract_user
+        replace_placeholder: "[user:$1]"
+        pattern: "user[\"=:]([a-zA-Z0-9@.-_]+)"
+      
+      # Extract costs
+      - type: mask_sequences
+        name: extract_cost
+        replace_placeholder: "[cost:$1]"
+        pattern: "cost[\"=:](\\d+\\.\\d+)"
+      
+      # Extract response times
+      - type: mask_sequences
+        name: extract_response_time
+        replace_placeholder: "[response_time:$1]"
+        pattern: "response_time[\"=:](\\d+\\.\\d+)"
+      
+      # Mask API keys for security
+      - type: mask_sequences
+        name: mask_api_keys
+        replace_placeholder: "[API_KEY_MASKED]"
+        pattern: "sk-[a-zA-Z0-9]+"
+      
+      # Extract error types
+      - type: mask_sequences
+        name: extract_error_type
+        replace_placeholder: "[error_type:$1]"
+        pattern: "error[\"=:]([a-zA-Z0-9_]+)" 
