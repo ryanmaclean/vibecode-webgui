@@ -204,7 +204,7 @@ run_unit_tests() {
     cd "$PROJECT_ROOT"
     
     # Run specific LiteLLM integration tests
-    if npm test -- --testPathPattern="litellm-integration" --verbose; then
+    if npm test -- --testPathPatterns="litellm-integration" --verbose; then
         print_success "Unit tests passed"
     else
         print_error "Unit tests failed"

@@ -6,9 +6,14 @@ const createJestConfig = nextJest({
 
 /** @type {import('jest').Config} */
 const customJestConfig = {
-  testEnvironment: 'jest-environment-jsdom',
+  testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/tests/jest.setup.js'],
+  setupFiles: ['<rootDir>/tests/jest.polyfills.js'],
   modulePaths: ['<rootDir>'],
+  
+  // Increase timeout for integration tests
+  testTimeout: 30000,
+  
   moduleNameMapper: {
     '^lucide-react$': '<rootDir>/__mocks__/lucide-react.js',
     '^@/components/ui$': '<rootDir>/src/components/ui',
@@ -21,6 +26,24 @@ const customJestConfig = {
   },
   transformIgnorePatterns: [
     '/node_modules/(?!(.*\\.mjs$))',
+  ],
+  
+  // Test environment options
+  testEnvironmentOptions: {
+    customExportConditions: [''],
+  },
+  
+  collectCoverageFrom: [
+    'src/**/*.{js,jsx,ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/pages/_app.tsx',
+    '!src/pages/_document.tsx',
+  ],
+  
+  testPathIgnorePatterns: [
+    '<rootDir>/.next/',
+    '<rootDir>/node_modules/',
+    '<rootDir>/tests/e2e/',
   ],
 };
 

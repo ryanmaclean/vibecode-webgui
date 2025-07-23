@@ -6,7 +6,7 @@ metadata:
   namespace: vibecode-platform
 data:
   DATABASE_URL: "postgresql://vibecode:vibecode_password@postgres-service:5432/vibecode"
-  REDIS_URL: "redis://redis-service:6379"
+  REDIS_URL: "redis://valkey-service:6379"
   NEXTAUTH_URL: "http://localhost:3000"
   NEXTAUTH_URL_INTERNAL: "http://0.0.0.0:3000"
   NODE_ENV: "production"
@@ -47,21 +47,29 @@ spec:
               sleep 2
             done
             echo "PostgreSQL is ready!"
-      - name: wait-for-redis
-        image: redis:7-alpine
+      - name: wait-for-valkey
+        image: valkey/valkey:7-alpine
         command:
           - sh
           - -c
           - |
-            until redis-cli -h redis-service -p 6379 ping; do
-              echo "Waiting for Redis..."
+            until valkey-cli -h valkey-service -p 6379 ping; do
+              echo "Waiting for Valkey..."
               sleep 2
             done
-            echo "Redis is ready!"
+            echo "Valkey is ready!"
       containers:
       - name: vibecode-webgui
-        image: ryanmaclean/vibecode-webgui:latest
-        imagePullPolicy: Never
+        image: node:20-alpine
+        imagePullPolicy: IfNotPresent
+        workingDir: /app
+        command: ["sh", "-c"]
+        args:
+          - |
+            apk add --no-cache git &&
+            git clone https://github.com/ryanmaclean/vibecode-webgui.git . &&
+            npm install &&
+            npm run dev
         ports:
         - containerPort: 3000
         env:

@@ -36,7 +36,7 @@ RUN yarn build
 
 # Stage 4: Production runner (Distroless)
 # Using a distroless image for a smaller and more secure final image.
-FROM gcr.io/distroless/nodejs:20 AS runner
+FROM gcr.io/distroless/nodejs20-debian12 AS runner
 
 WORKDIR /app
 

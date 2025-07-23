@@ -168,13 +168,13 @@ describe('Monitoring Security Tests', () => {
       process.env.JWT_SECRET = 'secret-jwt'
 
       // Mock environment exposure check
-      const exposedEnvVars = Object.keys(process.env).filter(key => ;
-        key.includes('SECRET') || key.includes('PASSWORD') || key.includes('KEY');
+      const exposedEnvVars = Object.keys(process.env).filter(key => 
+        key.includes('SECRET') || key.includes('PASSWORD') || key.includes('KEY')
       );
 
       // These should not be exposed to client-side
-      const clientSafeVars = exposedEnvVars.filter(key => ;
-        key.startsWith('NEXT_PUBLIC_');
+      const clientSafeVars = exposedEnvVars.filter(key => 
+        key.startsWith('NEXT_PUBLIC_')
       );
 
       // Ensure no sensitive vars are exposed to client
@@ -183,11 +183,11 @@ describe('Monitoring Security Tests', () => {
 
     test('should validate environment configuration', () => {
       // Test required environment variables
-      const requiredVars = [;
+      const requiredVars = [
         'NEXTAUTH_SECRET',
         'DD_API_KEY',
         'DATABASE_URL'
-      ]
+      ];
 
       // Set test values
       process.env.NEXTAUTH_SECRET = 'test-secret'
