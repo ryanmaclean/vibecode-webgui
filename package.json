@@ -83,7 +83,7 @@
     "jsonwebtoken": "^9.0.2",
     "langchain": "^0.3.30",
     "lucide-react": "^0.525.0",
-    "marked": "^12.0.2",
+    "marked": "^16.1.1",
     "monaco-editor": "^0.52.2",
     "next": "^15.4.2",
     "next-auth": "^4.24.11",
