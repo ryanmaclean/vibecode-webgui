@@ -1,0 +1,374 @@
+# LiteLLM Configuration for VibeCode AI Platform
+# ============================================
+
+model_list:
+  # OpenAI Models
+  - model_name: gpt-4o
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+      max_tokens: 128000
+      temperature: 0.7
+      timeout: 600
+      stream: true
+      supports_function_calling: true
+      supports_vision: true
+      input_cost_per_token: 0.0000025
+      output_cost_per_token: 0.00001
+
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+      max_tokens: 128000
+      temperature: 0.7
+      timeout: 600
+      stream: true
+      supports_function_calling: true
+      supports_vision: true
+      input_cost_per_token: 0.00000015
+      output_cost_per_token: 0.0000006
+
+  - model_name: gpt-3.5-turbo
+    litellm_params:
+      model: openai/gpt-3.5-turbo
+      api_key: os.environ/OPENAI_API_KEY
+      max_tokens: 16385
+      temperature: 0.7
+      timeout: 300
+      stream: true
+      supports_function_calling: true
+      input_cost_per_token: 0.0000005
+      output_cost_per_token: 0.0000015
+
+  # Anthropic Models
+  - model_name: claude-3.5-sonnet
+    litellm_params:
+      model: anthropic/claude-3-5-sonnet-20241022
+      api_key: os.environ/ANTHROPIC_API_KEY
+      max_tokens: 200000
+      temperature: 0.7
+      timeout: 600
+      stream: true
+      supports_function_calling: true
+      supports_vision: true
+      input_cost_per_token: 0.000003
+      output_cost_per_token: 0.000015
+
+  - model_name: claude-3.5-haiku
+    litellm_params:
+      model: anthropic/claude-3-5-haiku-20241022
+      api_key: os.environ/ANTHROPIC_API_KEY
+      max_tokens: 200000
+      temperature: 0.7
+      timeout: 300
+      stream: true
+      supports_function_calling: true
+      supports_vision: true
+      input_cost_per_token: 0.00000025
+      output_cost_per_token: 0.00000125
+
+  # Local Ollama Models
+  - model_name: llama3.2
+    litellm_params:
+      model: ollama/llama3.2:latest
+      api_base: "${OLLAMA_BASE_URL:-http://localhost:11434}"
+      temperature: 0.7
+      timeout: 300
+      stream: true
+      supports_function_calling: false
+      input_cost_per_token: 0.0
+      output_cost_per_token: 0.0
+
+  - model_name: codellama
+    litellm_params:
+      model: ollama/codellama:latest
+      api_base: "${OLLAMA_BASE_URL:-http://localhost:11434}"
+      temperature: 0.1
+      timeout: 300
+      stream: true
+      supports_function_calling: false
+      input_cost_per_token: 0.0
+      output_cost_per_token: 0.0
+
+  - model_name: qwen2.5-coder
+    litellm_params:
+      model: ollama/qwen2.5-coder:latest
+      api_base: "${OLLAMA_BASE_URL:-http://localhost:11434}"
+      temperature: 0.2
+      timeout: 300
+      stream: true
+      supports_function_calling: false
+      input_cost_per_token: 0.0
+      output_cost_per_token: 0.0
+
+  # Embedding Models
+  - model_name: text-embedding-ada-002
+    litellm_params:
+      model: openai/text-embedding-ada-002
+      api_key: os.environ/OPENAI_API_KEY
+      timeout: 60
+      input_cost_per_token: 0.0000001
+      output_cost_per_token: 0.0
+
+  - model_name: text-embedding-3-small
+    litellm_params:
+      model: openai/text-embedding-3-small
+      api_key: os.environ/OPENAI_API_KEY
+      timeout: 60
+      input_cost_per_token: 0.00000002
+      output_cost_per_token: 0.0
+
+  - model_name: text-embedding-3-large
+    litellm_params:
+      model: openai/text-embedding-3-large
+      api_key: os.environ/OPENAI_API_KEY
+      timeout: 60
+      input_cost_per_token: 0.00000013
+      output_cost_per_token: 0.0
+
+# Model Groups for Load Balancing
+model_groups:
+  - group_name: production-chat
+    models:
+      - model_name: gpt-4o
+        weight: 0.4
+      - model_name: claude-3.5-sonnet
+        weight: 0.4
+      - model_name: gpt-4o-mini
+        weight: 0.2
+
+  - group_name: development-chat
+    models:
+      - model_name: gpt-4o-mini
+        weight: 0.5
+      - model_name: claude-3.5-haiku
+        weight: 0.3
+      - model_name: llama3.2
+        weight: 0.2
+
+  - group_name: code-generation
+    models:
+      - model_name: gpt-4o
+        weight: 0.3
+      - model_name: claude-3.5-sonnet
+        weight: 0.4
+      - model_name: qwen2.5-coder
+        weight: 0.2
+      - model_name: codellama
+        weight: 0.1
+
+  - group_name: embeddings
+    models:
+      - model_name: text-embedding-3-small
+        weight: 0.7
+      - model_name: text-embedding-ada-002
+        weight: 0.3
+
+# Router Settings
+router_settings:
+  routing_strategy: "least-busy"
+  model_group_alias:
+    "gpt-4": "production-chat"
+    "claude": "production-chat"
+    "dev-chat": "development-chat"
+    "code": "code-generation"
+    "embed": "embeddings"
+  
+  # Fallback Strategy
+  fallback_models:
+    "gpt-4o": ["claude-3.5-sonnet", "gpt-4o-mini"]
+    "claude-3.5-sonnet": ["gpt-4o", "gpt-4o-mini"]
+    "gpt-4o-mini": ["claude-3.5-haiku", "llama3.2"]
+  
+  # Retry Settings
+  num_retries: 3
+  timeout: 600
+  context_window_fallbacks:
+    - {"gpt-4o": ["claude-3.5-sonnet"]}
+    - {"claude-3.5-sonnet": ["gpt-4o"]}
+
+# Caching Configuration
+cache:
+  type: "redis"
+  host: "${REDIS_HOST:-litellm-redis}"
+  port: "${REDIS_PORT:-6379}"
+  password: "${REDIS_PASSWORD:-litellm_redis_password}"
+  ttl: 3600  # 1 hour default TTL
+  namespace: "litellm:vibecode"
+  
+  # Cache Rules
+  cache_responses: true
+  cache_embedding_responses: true
+  cache_kwargs:
+    similarity_threshold: 0.8
+    cache_controls:
+      - "no-cache"
+      - "no-store"
+
+# Rate Limiting
+rate_limit:
+  rpm: 10000  # requests per minute
+  tpm: 2000000  # tokens per minute
+  max_parallel_requests: 100
+  
+  # Per-user rate limits
+  user_rate_limits:
+    default:
+      rpm: 100
+      tpm: 50000
+    premium:
+      rpm: 500
+      tpm: 200000
+    enterprise:
+      rpm: 2000
+      tpm: 500000
+
+# Budget Management
+budgets:
+  max_budget: 1000.0  # USD per month
+  budget_duration: "30d"
+  soft_budget_limit: 800.0  # Warning threshold
+  
+  # Budget alerts
+  budget_alerts:
+    email_alerts: true
+    webhook_alerts: true
+    alert_thresholds: [0.5, 0.8, 0.9, 1.0]
+  
+  # Per-user budgets
+  user_budgets:
+    default: 10.0
+    premium: 50.0
+    enterprise: 200.0
+
+# Logging Configuration
+logs:
+  level: "INFO"
+  log_raw_request_response: false
+  log_user_id: true
+  log_request_id: true
+  
+  # Log callbacks
+  success_callback: ["prometheus", "langfuse"]
+  failure_callback: ["prometheus", "langfuse"]
+  
+  # Custom logging
+  custom_logs:
+    - callback_name: "datadog"
+      callback_type: "success"
+      callback_vars:
+        dd_api_key: "os.environ/DD_API_KEY"
+        service: "litellm-proxy"
+        env: "os.environ/ENVIRONMENT"
+
+# Security Settings
+security:
+  # Authentication
+  enforce_user_param: true
+  default_user_params:
+    user: "anonymous"
+    team: "default"
+  
+  # API Key Management
+  master_key: "${LITELLM_MASTER_KEY}"
+  salt_key: "${LITELLM_SALT_KEY}"
+  
+  # Request filtering
+  blocked_user_list: []
+  allowed_model_region: ["us", "eu"]
+  
+  # Content filtering
+  content_policy: "strict"
+  max_file_size_mb: 10
+  
+  # PII Detection
+  enable_pii_detection: true
+  pii_masking: true
+
+# Health Checks
+health_checks:
+  enable: true
+  interval: 30  # seconds
+  timeout: 10
+  
+  # Model health checks
+  model_health_checks:
+    check_interval: 300  # 5 minutes
+    failure_threshold: 3
+    recovery_threshold: 2
+
+# Prometheus Metrics
+prometheus:
+  enable: true
+  port: 4000
+  path: "/metrics"
+  
+  # Custom metrics
+  custom_metrics:
+    - name: "litellm_requests_total"
+      type: "counter"
+      description: "Total number of requests processed"
+      labels: ["model", "user", "status"]
+    
+    - name: "litellm_request_duration"
+      type: "histogram"
+      description: "Request processing duration"
+      labels: ["model", "user"]
+      buckets: [0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0, 60.0]
+    
+    - name: "litellm_cost_total"
+      type: "counter"
+      description: "Total cost incurred"
+      labels: ["model", "user"]
+
+# General Settings
+general_settings:
+  completion_model: "gpt-4o-mini"  # Default model
+  embedding_model: "text-embedding-3-small"  # Default embedding model
+  
+  # Model routing
+  enable_pre_call_checks: true
+  enable_loadbalancing_on_user_param: true
+  
+  # Performance
+  async_data_store: true
+  background_health_checks: true
+  
+  # Development
+  debug_mode: false
+  verbose_proxy_logs: true
+  
+  # UI Configuration
+  ui_username: "admin"
+  ui_password: "${LITELLM_UI_PASSWORD:-vibecode-admin-2025}"
+  
+  # Webhooks
+  alerting_threshold: 300  # seconds
+  webhook_url: "${WEBHOOK_URL}"
+  
+  # Database
+  database_url: "${DATABASE_URL}"
+  database_connection_pool_limit: 100
+  database_connection_timeout: 30
+
+# Environment-specific overrides
+environment_variables:
+  production:
+    logs.level: "WARN"
+    rate_limit.rpm: 5000
+    budgets.max_budget: 5000.0
+    security.content_policy: "strict"
+  
+  development:
+    logs.level: "DEBUG"
+    rate_limit.rpm: 1000
+    budgets.max_budget: 100.0
+    security.content_policy: "permissive"
+    debug_mode: true
+  
+  staging:
+    logs.level: "INFO"
+    rate_limit.rpm: 2000
+    budgets.max_budget: 500.0
+    security.content_policy: "moderate" 
