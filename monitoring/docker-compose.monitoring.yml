@@ -1,5 +1,5 @@
 # Complete Monitoring Stack for VibeCode Platform
-# Production-ready observability with Prometheus, Grafana, Vector, OpenTelemetry
+# Production-ready observability with Prometheus, Datadog, Vector, OpenTelemetry
 
 version: '3.8'
 
@@ -34,27 +34,26 @@ services:
       timeout: 10s
       retries: 3
 
-  # Grafana - Visualization and dashboards
-  grafana:
-    image: grafana/grafana:10.2.0
-    container_name: vibecode-grafana
+  # Datadog Agent - Full-stack observability
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:7
+    container_name: vibecode-datadog-agent
     restart: unless-stopped
-    ports:
-      - "3001:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel,grafana-clock-panel
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_USERS_ALLOW_ORG_CREATE=false
-      - GF_AUTH_ANONYMOUS_ENABLED=false
-      - GF_ALERTING_ENABLED=true
-      - GF_UNIFIED_ALERTING_ENABLED=true
-      - GF_SERVER_ROOT_URL=https://grafana.vibecode.dev
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=${DD_SITE:-datadoghq.com}
+      - DD_HOSTNAME=vibecode-monitoring
+      - DD_TAGS=env:production,service:vibecode-platform
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_PROCESS_AGENT_ENABLED=true
+      - DD_APM_ENABLED=true
+      - DD_APM_NON_LOCAL_TRAFFIC=true
     volumes:
-      - grafana-data:/var/lib/grafana
-      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
     networks:
       - monitoring
     depends_on:
@@ -317,8 +316,7 @@ services:
 volumes:
   prometheus-data:
     driver: local
-  grafana-data:
-    driver: local
+  # Datadog uses cloud-based storage, no local volume needed
   alertmanager-data:
     driver: local
   vector-data:
