@@ -34,7 +34,7 @@
     "test:monitoring:health": "jest --testPathPattern=tests/unit/health-check.test.ts"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^0.0.66",
+    "@ai-sdk/openai": "1.3.23",
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-python": "^6.2.1",
     "@datadog/browser-logs": "6.13.0",
