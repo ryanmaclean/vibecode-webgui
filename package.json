@@ -151,7 +151,7 @@
     "eslint-config-next": "15.4.2",
     "eslint-plugin-jsx-a11y": "6.10.2",
     "husky": "9.1.7",
-    "jest": "^30.0.4",
+    "jest": "^30.0.5",
     "jest-axe": "10.0.0",
     "jest-environment-jsdom": "^30.0.4",
     "msw": "^2.10.4",
