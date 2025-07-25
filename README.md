@@ -6,8 +6,14 @@ Cloud Dev Env powered by **code-server**.
 * multi-modal
 * WCAG 2.1 AA target (WIP)
 
-## 📚 **[→ View Live Documentation](https://ryanmaclean.github.io/vibecode-webgui/)**
-*Complete project documentation with 81 pages, full-text search, and mobile-responsive design*
+## 📚 **[→ Complete Documentation Wiki](https://ryanmaclean.github.io/vibecode-webgui/)**
+*Comprehensive documentation with 80+ pages, full-text search, and mobile-responsive design*
+
+**Quick Links:**
+- 🎨 [**Tailwind CSS v4 Guide**](https://ryanmaclean.github.io/vibecode-webgui/wiki) - Complete implementation with 3 production-ready approaches
+- 🏗️ [**Deployment Guide**](https://ryanmaclean.github.io/vibecode-webgui/kind-troubleshooting) - KIND, Docker, Kubernetes setup
+- 🤖 [**AI Integration**](https://ryanmaclean.github.io/vibecode-webgui/enhanced-ai-features) - Claude, OpenRouter, Multi-model support
+- 📊 [**Testing & Validation**](https://ryanmaclean.github.io/vibecode-webgui/comprehensive-environment-test-report) - Complete test coverage
 
 ### 🚀 **GitHub Pages Status** ✅
 - **Astro v5.12.1 + Starlight v0.35.1** - Latest versions deployed
@@ -22,21 +28,18 @@ Cloud Dev Env powered by **code-server**.
 [![Uptime](https://img.shields.io/badge/Uptime-99.9%25-brightgreen)](https://status.vibecode.dev)
 [![Project Generation](https://img.shields.io/badge/Project%20Success-95%25-brightgreen)](https://vibecode.dev/generate)
 
-## 🚀 Key Features (July 2025)
+## 🚀 Key Features
 
-- **VS Code in Browser** - Full-featured IDE experience with zero setup
-- **AI Project Generation** - Create complete projects from natural language prompts using Claude-3.5-Sonnet
-- **Multi-AI Model Support** - 321 AI models available through OpenRouter integration
-- **🆕 Unified AI Client** - LiteLLM-inspired multi-provider access with automatic fallbacks
-- **🆕 Agent Framework** - Multi-agent coordination system for complex development tasks
-- **🆕 Local AI Models** - Ollama integration for privacy-first, cost-effective inference
-- **🆕 Vector Database Abstraction** - Support for pgvector, Chroma, Weaviate (all open source)
-- **🆕 Advanced RAG Pipeline** - Multi-threshold semantic search with relevance scoring
-- **🆕 Valkey Integration** - Redis-compatible open-source caching (Linux Foundation fork)
-- **Kubernetes-Native** - Built for scale with automatic resource optimization
-- **Enterprise Security** - NextAuth with GitHub, Google, and credentials providers
-- **Full Accessibility** - WCAG 2.1 AA compliant interface
-- **Performance Optimized** - 13s build time, 146ms mean response time, 6.82 req/sec
+- **🖥️ VS Code in Browser** - Full-featured IDE with zero setup
+- **🤖 AI Project Generation** - Natural language to complete projects with Claude-3.5-Sonnet
+- **🔄 Multi-AI Model Support** - 321+ AI models via OpenRouter integration
+- **⚡ Unified AI Client** - Multi-provider access with automatic fallbacks
+- **🤝 Agent Framework** - Multi-agent coordination for complex development
+- **🏠 Local AI Models** - Ollama integration for privacy-first inference
+- **🗄️ Vector Databases** - pgvector, Chroma, Weaviate support
+- **☸️ Kubernetes-Native** - Built for enterprise scale
+- **🔐 Enterprise Security** - NextAuth with multiple providers
+- **♿ Full Accessibility** - WCAG 2.1 AA compliant
 
 ## ⚡ Quick Start
 
@@ -50,7 +53,57 @@ npm install
 
 # Start development server
 npm run dev
+
+# OR use Tailwind CSS v4 (CDN mode for development)
+npm run dev:cdn
+
+# OR use Docker development environment
+npm run dev:docker
 ```
+
+## 🎨 Tailwind CSS v4 Integration
+
+**✅ PRODUCTION READY** - Complete Tailwind CSS v4 + Next.js integration with three verified approaches:
+
+### 🌐 CDN Development (Recommended for Development)
+- ✅ Zero native module dependencies
+- ✅ Instant setup (< 2s startup) 
+- ✅ Perfect for ARM64 macOS development
+
+```bash
+npm run dev:cdn
+```
+
+### 🐳 Docker Development (Production Testing)
+- ✅ Full PostCSS integration
+- ✅ Container-based native module compilation
+- ✅ Production-grade consistency
+
+```bash
+npm run dev:docker
+```
+
+### 🏭 x86-64 Production (Eliminates All ARM64 Issues)
+- ✅ **Critical Discovery**: ARM64 macOS issues completely eliminated on x86-64 production
+- ✅ lightningcss works perfectly on production architecture
+- ✅ Verified through Docker Desktop emulation
+
+```bash
+docker buildx build --platform linux/amd64 -f Dockerfile.prod -t vibecode-prod .
+docker-compose -f docker-compose.prod.yml up
+```
+
+**Migration Commands:**
+```bash
+npm run tailwind:cdn      # Switch to CDN mode
+npm run tailwind:docker   # Switch to Docker mode  
+npm run tailwind:restore  # Restore original setup
+```
+
+**📚 Complete Documentation**: See our comprehensive [Wiki Documentation](https://ryanmaclean.github.io/vibecode-webgui/) for detailed guides:
+- [Tailwind CSS v4 Migration Guide](https://ryanmaclean.github.io/vibecode-webgui/wiki) - Complete implementation guide
+- [Testing Reports](https://ryanmaclean.github.io/vibecode-webgui/comprehensive-environment-test-report) - Environment validation results
+- [Production Deployment](https://ryanmaclean.github.io/vibecode-webgui/x86-production-test-report) - Architecture verification
 
 ## 🏗️ Deployment Options
 
