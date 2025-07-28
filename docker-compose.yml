@@ -122,6 +122,45 @@ services:
       timeout: 10s
       retries: 3
 
+  # Authelia Authentication Server
+  authelia:
+    image: authelia/authelia:4.38.10
+    container_name: vibecode-authelia
+    ports:
+      - "9091:9091"
+    environment:
+      - AUTHELIA_LOG_LEVEL=info
+      - AUTHELIA_JWT_SECRET=${AUTHELIA_JWT_SECRET:-insecure_jwt_secret_change_in_production}
+      - AUTHELIA_SESSION_SECRET=${AUTHELIA_SESSION_SECRET:-insecure_session_secret_change_in_production}
+      - AUTHELIA_STORAGE_ENCRYPTION_KEY=${AUTHELIA_STORAGE_ENCRYPTION_KEY:-vibecode-storage-encryption-key-change-in-production}
+      - AUTHELIA_STORAGE_POSTGRES_HOST=db
+      - AUTHELIA_STORAGE_POSTGRES_DATABASE=vibecode
+      - AUTHELIA_STORAGE_POSTGRES_USERNAME=vibecode
+      - AUTHELIA_STORAGE_POSTGRES_PASSWORD=password
+      - AUTHELIA_SESSION_REDIS_HOST=redis
+      - AUTHELIA_SESSION_REDIS_PORT=6379
+      - AUTHELIA_NOTIFIER_FILESYSTEM_FILENAME=/config/notification.txt
+    volumes:
+      - ./docker/authelia/configuration.yml:/config/configuration.yml:ro
+      - ./docker/authelia/users_database.yml:/config/users_database.yml:ro
+      - authelia_data:/config
+    networks:
+      - vibecode-network
+    depends_on:
+      - db
+      - redis
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9091/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.authelia.rule=Host(`auth.localhost`)"
+      - "traefik.http.services.authelia.loadbalancer.server.port=9091"
+      # Datadog log processing
+      - "com.datadoghq.ad.logs=[{\"source\": \"authelia\", \"service\": \"vibecode-authelia\"}]"
+
   # Code Server for Development Environment
   code-server:
     image: codercom/code-server:latest
@@ -278,6 +317,8 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  authelia_data:
     driver: local
   code_server_data:
     driver: local

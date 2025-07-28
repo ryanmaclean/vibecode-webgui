@@ -1,0 +1,36 @@
+# Production x86-64 deployment simulation
+version: '3.8'
+
+services:
+  vibecode-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+      platforms:
+        - linux/amd64
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DOCKER=true
+    networks:
+      - vibecode-prod-network
+
+  # Valkey for Redis compatibility  
+  valkey:
+    image: valkey/valkey:7-alpine
+    container_name: vibecode-valkey-prod
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey-data-prod:/data
+    command: valkey-server --save 900 1 --maxmemory 512mb --appendonly yes
+    networks:
+      - vibecode-prod-network
+
+networks:
+  vibecode-prod-network:
+    driver: bridge
+
+volumes:
+  valkey-data-prod:

@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  vibecode-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      # Bind mount source code for hot reloading
+      - .:/app
+      # CRITICAL: Anonymous volume for node_modules to prevent host override
+      - /app/node_modules
+      # Prevent .next cache conflicts
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      - DOCKER=true
+    stdin_open: true
+    tty: true
+    networks:
+      - vibecode-network
+
+  # Valkey for Redis compatibility
+  valkey:
+    image: valkey/valkey:7-alpine
+    container_name: vibecode-valkey-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey-data-dev:/data
+    command: valkey-server --save 900 1 --maxmemory 256mb --appendonly yes
+    networks:
+      - vibecode-network
+
+networks:
+  vibecode-network:
+    driver: bridge
+
+volumes:
+  valkey-data-dev:
