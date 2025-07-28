@@ -148,7 +148,7 @@
     "babel-jest": "30.0.4",
     "dotenv": "17.2.0",
     "eslint": "^9",
-    "eslint-config-next": "15.4.2",
+    "eslint-config-next": "15.4.4",
     "eslint-plugin-jsx-a11y": "6.10.2",
     "husky": "9.1.7",
     "jest": "^30.0.4",
