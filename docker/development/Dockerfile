@@ -18,7 +18,9 @@ RUN addgroup -g 1001 -S nodejs && \
 
 # Copy package files
 COPY package*.json ./
-COPY .npmrc ./
+
+# Copy .npmrc if it exists
+COPY .npmrc ./ 2>/dev/null || true
 
 # Install dependencies
 RUN npm ci && npm cache clean --force
