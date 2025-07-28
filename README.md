@@ -10,8 +10,9 @@ Cloud Dev Env powered by **code-server**.
 *Comprehensive documentation with 80+ pages, full-text search, and mobile-responsive design*
 
 **Quick Links:**
-- 🎨 [**Tailwind CSS v4 Guide**](https://ryanmaclean.github.io/vibecode-webgui/wiki) - Complete implementation with 3 production-ready approaches
+- 🎨 [**Tailwind CSS v4 Guide**](https://ryanmaclean.github.io/vibecode-webgui/wiki) - Complete implementation with 3 production-ready approaches  
 - 🏗️ [**Deployment Guide**](https://ryanmaclean.github.io/vibecode-webgui/kind-troubleshooting) - KIND, Docker, Kubernetes setup
+- ⚓ [**Helm Charts Guide**](https://ryanmaclean.github.io/vibecode-webgui/helm-deployment-guide) - Production-ready Helm deployment with environment scaling
 - 🤖 [**AI Integration**](https://ryanmaclean.github.io/vibecode-webgui/enhanced-ai-features) - Claude, OpenRouter, Multi-model support
 - 📊 [**Testing & Validation**](https://ryanmaclean.github.io/vibecode-webgui/comprehensive-environment-test-report) - Complete test coverage
 
@@ -38,7 +39,7 @@ Cloud Dev Env powered by **code-server**.
 - **🏠 Local AI Models** - Ollama integration for privacy-first inference
 - **🗄️ Vector Databases** - pgvector, Chroma, Weaviate support
 - **☸️ Kubernetes-Native** - Built for enterprise scale
-- **🔐 Enterprise Security** - NextAuth with multiple providers
+- **🔐 Enterprise Security** - Authelia 2FA/TOTP/WebAuthn + NextAuth with multiple providers
 - **♿ Full Accessibility** - WCAG 2.1 AA compliant
 
 ## ⚡ Quick Start
@@ -107,7 +108,25 @@ npm run tailwind:restore  # Restore original setup
 
 ## 🏗️ Deployment Options
 
-### Local Development with KIND (Recommended)
+### 🎯 Helm Chart Deployment (Production-Ready)
+```bash
+# Development Environment
+helm install vibecode-dev ./helm/vibecode-platform \
+  -f ./helm/vibecode-platform/values-dev.yaml \
+  --namespace vibecode-dev --create-namespace
+
+# Staging Environment  
+helm install vibecode-staging ./helm/vibecode-platform \
+  -f ./helm/vibecode-platform/values-staging.yaml \
+  --namespace vibecode-staging --create-namespace
+
+# Production Environment
+helm install vibecode-prod ./helm/vibecode-platform \
+  -f ./helm/vibecode-platform/values-prod.yaml \
+  --namespace vibecode-production --create-namespace
+```
+
+### Local Development with KIND
 ```bash
 # Automated setup with Docker Doctor
 ./scripts/kind-setup.sh

@@ -1,9 +1,12 @@
 import { datadogRum } from '@datadog/browser-rum';
 
+// Define allowed site values according to Datadog RUM documentation
+type DatadogSite = 'datadoghq.com' | 'us3.datadoghq.com' | 'us5.datadoghq.com' | 'datadoghq.eu' | 'ddog-gov.com' | 'ap1.datadoghq.com';
+
 interface RUMConfig {
   applicationId: string;
   clientToken: string;
-  site?: string;
+  site?: DatadogSite;
   service?: string;
   env?: string;
   version?: string;
@@ -34,7 +37,7 @@ class RUMMonitoring {
       clientToken: process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN || 
                    process.env.NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN || 
                    '',
-      site: process.env.NEXT_PUBLIC_DATADOG_SITE || 'datadoghq.com',
+      site: (process.env.NEXT_PUBLIC_DATADOG_SITE as DatadogSite) || 'datadoghq.com',
       service: 'vibecode-webgui',
       env: process.env.NODE_ENV || 'development',
       version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
@@ -70,7 +73,6 @@ class RUMMonitoring {
         
         // Enhanced configuration
         trackViewsManually: false,
-        trackFrustrations: true,
         enableExperimentalFeatures: ['clickmap'],
         
         // Custom global context
