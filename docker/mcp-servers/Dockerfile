@@ -33,9 +33,9 @@ RUN pip3 install --no-cache-dir --break-system-packages \
     requests \
     aiohttp
 
-# Copy server files
-COPY docker/mcp-servers/servers/ ./servers/
-COPY docker/mcp-servers/scripts/ ./scripts/
+# Copy server files (using paths relative to the build context)
+COPY servers/ ./servers/
+COPY scripts/ ./scripts/
 
 # Make scripts executable
 RUN chmod +x scripts/*.sh
