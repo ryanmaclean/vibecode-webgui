@@ -441,3 +441,107 @@ logging:
         apiKey: "${DATADOG_API_KEY}"
         service: "vibecode-platform"
         env: "production"
+
+# Datadog configuration for production - 2025 best practices
+# Target OS specification
+targetSystem: "linux"
+
+datadog:
+  enabled: true
+  # API key set via Helm values from environment, never committed
+  apiKeyExistingSecret: datadog-secrets
+  site: datadoghq.com
+
+# Production agent configuration with enhanced resources (DaemonSet - Node Agents)
+agents:
+  enabled: true  # Explicitly enable DaemonSet (node agents)
+  image:
+    tag: "7.50.0"  # Pinned version for production stability
+  containers:
+    agent:
+      # Enable all monitoring features for production
+      env:
+        - name: DD_DATABASE_MONITORING_ENABLED
+          value: "true"
+        - name: DD_LOGS_ENABLED
+          value: "true"
+        - name: DD_APM_ENABLED
+          value: "true"
+        - name: DD_PROCESS_AGENT_ENABLED
+          value: "true"
+        - name: DD_KUBERNETES_KUBELET_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: DD_CONTAINER_EXCLUDE
+          value: "name:datadog-agent"
+      # Production resource allocation
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+        limits:
+          cpu: "2000m"
+          memory: "4Gi"
+
+# Cluster Agent configuration for production
+clusterAgent:
+  enabled: true
+  # Higher resources for production cluster agent
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2000m"
+      memory: "2Gi"
+  # Production database monitoring with SSL
+  confd:
+    postgres.yaml: |
+      cluster_check: true
+      init_config:
+      instances:
+      - host: postgres-primary.vibecode-production.svc.cluster.local
+        port: 5432
+        username: datadog
+        password: "PLACEHOLDER_PASSWORD"  # Set via environment
+        dbm: true
+        # Production SSL configuration
+        ssl: true
+        ssl_mode: require
+        # Enhanced DBM configuration for production
+        collect_schemas: true
+        collect_database_size_metrics: true
+        collect_activity_metrics: true
+        collect_settings: 
+          - "shared_preload_libraries"
+          - "max_connections"
+          - "effective_cache_size"
+          - "shared_buffers" 
+          - "work_mem"
+          - "maintenance_work_mem"
+        # Optimized query sampling for production
+        query_samples:
+          enabled: true
+          collection_interval: 1  # 1 second sampling
+        query_metrics:
+          enabled: true
+          collection_interval: 10  # 10 seconds for metrics
+        query_activity:
+          enabled: true
+          collection_interval: 10  # 10 seconds for activity
+        # Production tagging strategy
+        tags:
+          - "env:production"
+          - "service:vibecode-postgres"
+          - "database:vibecode_production"
+          - "cluster:primary"
+          - "tier:database"
+
+# Production RBAC with enhanced permissions
+rbac:
+  create: true
+  serviceAccountAnnotations:
+    # Production service account annotations
+    "iam.gke.io/gcp-service-account": "datadog-agent@project.iam.gserviceaccount.com"
+  

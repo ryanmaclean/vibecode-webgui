@@ -213,31 +213,92 @@ database:
             
             GRANT EXECUTE ON FUNCTION datadog.explain_statement TO datadog;
 
-# Datadog configuration for development
+# Datadog configuration for development - Updated for 2025 best practices
 datadog:
   enabled: true
-  # API key set via Helm values from environment, never committed
-  apiKeyExistingSecret: datadog-secrets
-  site: datadoghq.com
+  # Target OS specification for the subchart
+  targetSystem: "linux"
   
+  # Datadog service configuration
+  datadog:
+    # API key set via Helm values from environment, never committed
+    apiKeyExistingSecret: datadog-secrets
+    site: datadoghq.com
+
+  # Agent configuration following 2025 best practices (DaemonSet - Node Agents) 
+  agents:
+    enabled: true  # Explicitly enable DaemonSet (node agents)
+    image:
+      tag: "7.50.0"  # Pinned version for consistency
+    containers:
+      agent:
+        # Enable database monitoring and other features
+        env:
+          - name: DD_DATABASE_MONITORING_ENABLED
+            value: "true"
+          - name: DD_LOGS_ENABLED
+            value: "true"
+          - name: DD_KUBERNETES_KUBELET_HOST
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+        # Resource limits for development node agents
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
+
+  # Cluster Agent configuration (2025 best practices)
   clusterAgent:
     enabled: true
+    # Resource limits for cluster agent
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+    # Database monitoring via cluster check runners
     confd:
       postgres.yaml: |
         cluster_check: true
+        init_config:
         instances:
         - host: postgres-primary.vibecode-dev.svc.cluster.local
           port: 5432
           username: datadog
           password: "PLACEHOLDER_PASSWORD"  # Set via environment
           dbm: true
+          # Enhanced DBM configuration for 2025
           collect_schemas: true
           collect_database_size_metrics: false  # Disabled for dev cost savings
           collect_activity_metrics: true
           collect_settings: 
             - "shared_preload_libraries"
             - "max_connections"
+            - "effective_cache_size"
+          # Query sampling configuration (2025 best practices)
+          query_samples:
+            enabled: true
+            collection_interval: 1  # 1 second for development
+          query_metrics:
+            enabled: true
+            collection_interval: 10  # 10 seconds for metrics
+          query_activity:
+            enabled: true
+            collection_interval: 10  # 10 seconds for activity
           tags:
             - "env:development"
             - "service:vibecode-postgres"
             - "database:vibecode_dev"
+            - "cluster:dev"
+
+  # RBAC configuration for cluster agent
+  rbac:
+    create: true
+    serviceAccountAnnotations:
+      # Annotations for service account if needed
