@@ -21,11 +21,16 @@ FROM base AS deps
 # Copy package definition and lockfile
 COPY package.json yarn.lock* .npmrc ./
 
-# Use Yarn to install dependencies. This is often more resilient.
-# The --frozen-lockfile flag ensures we use the exact versions from the lockfile.
-# Install only production dependencies and ignore platform-specific optional dependencies
-RUN yarn install --frozen-lockfile --network-timeout 100000 --production=false --ignore-optional && \
-    yarn cache clean
+# Use Yarn to install dependencies with specific platform overrides
+# 1. Set the target platform to Linux x64 to avoid downloading macOS-specific binaries
+# 2. Use --ignore-optional to skip optional dependencies
+# 3. Use --production=false to include devDependencies needed for build
+# 4. Use --frozen-lockfile to ensure consistent dependency resolution
+RUN yarn config set target_platform linux-x64 && \
+    yarn install --frozen-lockfile --network-timeout 100000 --production=false --ignore-optional && \
+    yarn cache clean && \
+    # Remove any macOS-specific SWC binaries that might have been installed
+    find node_modules -name "*darwin*" -type d -prune -exec rm -rf {} + || true
 
 # Stage 3: Build the application
 FROM base AS builder
@@ -36,8 +41,11 @@ COPY . .
 # Copy dependencies from the previous stage for a clean build
 COPY --from=deps /app/node_modules ./node_modules
 
-# Remove any platform-specific dependencies that might have been installed
-RUN rm -rf node_modules/.bin/next-swc-*
+# Remove any platform-specific dependencies and binaries that might have been installed
+RUN rm -rf node_modules/.bin/next-swc-* && \
+    # Remove any remaining platform-specific SWC binaries
+    find node_modules -name "*darwin*" -type d -prune -exec rm -rf {} + || true && \
+    find node_modules -name "*darwin*" -type f -delete || true
 
 # Set environment for production build
 ENV NODE_ENV=production
