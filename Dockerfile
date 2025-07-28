@@ -6,6 +6,13 @@ FROM node:20-alpine AS base
 # Install essential build tools and security updates first
 RUN apk add --no-cache libc6-compat python3 make g++
 
+# Set platform-specific environment variables
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
+# Ensure we only install production dependencies when needed
+ENV NEXT_SHARP_PATH="/tmp/node_modules/sharp"
+
 WORKDIR /app
 
 # Stage 2: Install dependencies
@@ -16,7 +23,9 @@ COPY package.json yarn.lock* .npmrc ./
 
 # Use Yarn to install dependencies. This is often more resilient.
 # The --frozen-lockfile flag ensures we use the exact versions from the lockfile.
-RUN yarn install --frozen-lockfile --network-timeout 100000 && yarn cache clean
+# Install only production dependencies and ignore platform-specific optional dependencies
+RUN yarn install --frozen-lockfile --network-timeout 100000 --production=false --ignore-optional && \
+    yarn cache clean
 
 # Stage 3: Build the application
 FROM base AS builder
@@ -26,6 +35,9 @@ COPY . .
 
 # Copy dependencies from the previous stage for a clean build
 COPY --from=deps /app/node_modules ./node_modules
+
+# Remove any platform-specific dependencies that might have been installed
+RUN rm -rf node_modules/.bin/next-swc-*
 
 # Set environment for production build
 ENV NODE_ENV=production
