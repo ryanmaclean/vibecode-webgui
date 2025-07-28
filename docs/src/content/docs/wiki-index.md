@@ -35,6 +35,9 @@ Welcome to the comprehensive VibeCode documentation. This wiki provides complete
 - **[Consolidated Documentation](./consolidated-documentation)** - Complete documentation index
 
 ### 🔧 Infrastructure & Deployment
+- **[Helm Deployment Guide](./helm-deployment-guide)** - Production-ready Helm charts with environment scaling
+- **[Storage Sizing Analysis](./storage-sizing-analysis)** - Right-sized storage allocation for cost optimization
+- **[Helm Scaling Analysis](./helm-scaling-analysis)** - Complete resource scaling strategy
 - **[Azure Infrastructure](AZURE_INFRASTRUCTURE_SUMMARY.md)** - Cloud deployment
 - **[Production Status](PRODUCTION_STATUS_REPORT.md)** - Current production state
 - **[Comprehensive Testing](COMPREHENSIVE_TESTING_ASSESSMENT.md)** - Test coverage analysis

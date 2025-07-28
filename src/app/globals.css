@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* VibeCode Design System - Inspired by magic-code-gen lovable UI */
 

@@ -13,25 +13,31 @@ tracer.init({
   // Enhanced sampling for better observability
   sampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
   
-  // Enable LLM observability
+  // Enable LLM observability with type assertion
   experimental: {
-    // @ts-expect-error - llmobs is not in the type definitions yet
-    llmobs: {
-      enabled: process.env.DD_LLMOBS_ENABLED === '1' || process.env.DD_LLMOBS_ENABLED === 'true',
-      agentlessEnabled: process.env.DD_LLMOBS_AGENTLESS_ENABLED === '1' || process.env.DD_LLMOBS_AGENTLESS_ENABLED === 'true',
-      mlApp: process.env.DD_LLMOBS_ML_APP || 'vibecode-ai',
-      site: process.env.DD_SITE || 'datadoghq.com',
-      apiKey: process.env.DD_API_KEY,
-    }
-  } as Record<string, unknown>, // Type assertion with more specific type
+    // Use type assertion for experimental features
+    ...(process.env.DD_LLMOBS_ENABLED === '1' || process.env.DD_LLMOBS_ENABLED === 'true' ? {
+      llmobs: {
+        enabled: true,
+        agentlessEnabled: process.env.DD_LLMOBS_AGENTLESS_ENABLED === '1' || 
+                         process.env.DD_LLMOBS_AGENTLESS_ENABLED === 'true',
+        mlApp: process.env.DD_LLMOBS_ML_APP || 'vibecode-ai',
+        site: process.env.DD_SITE || 'datadoghq.com',
+        apiKey: process.env.DD_API_KEY
+      }
+    } : {}) as Record<string, unknown>,
+    
+    // Add any other experimental features here
+    // Example:
+    // someOtherFeature: true
+  },
   
   // Database monitoring - using type assertion for plugins config
   plugins: true, // Enable all plugins by default
   
   // Plugin-specific configuration
-  clientToken: process.env.NEXT_PUBLIC_DD_CLIENT_TOKEN,
-  site: process.env.DD_SITE || 'datadoghq.com',
-  serviceVersion: process.env.DD_VERSION || process.env.npm_package_version || '1.0.0',
+  // Note: clientToken and site are not valid TracerOptions properties
+  // They should be set via DD_CLIENT_TOKEN and DD_SITE environment variables
   
   // Configure specific plugins
   // Note: These will be applied on top of the default configuration

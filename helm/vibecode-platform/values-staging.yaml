@@ -1,0 +1,232 @@
+# Staging Environment Values
+# Production-like but smaller scale for testing
+
+# Global configuration - production-like
+global:
+  namespace: vibecode-staging
+  storageClass: ssd-fast
+  imagePullPolicy: IfNotPresent
+
+# Code-server configuration - medium resources
+codeServer:
+  image:
+    repository: codercom/code-server
+    tag: "4.22.1"
+    pullPolicy: IfNotPresent
+
+  # Medium resources for staging
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+
+  # Production-like security
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
+    allowPrivilegeEscalation: false
+
+  # Medium persistent storage
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: ssd-fast
+    accessMode: ReadWriteOnce
+
+  # NodePort for external access testing
+  service:
+    type: NodePort
+    port: 8080
+    nodePort: 30080
+
+  # Full ingress with TLS for staging
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-staging"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/websocket-services: "code-server-{USER_ID}"
+    hosts:
+      - host: "{USER_ID}.staging.vibecode.dev"
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: "{USER_ID}-staging-tls"
+        hosts:
+          - "{USER_ID}.staging.vibecode.dev"
+
+# Medium user limits for staging
+userManagement:
+  workspace:
+    defaultSize: 5Gi
+    maxSize: 20Gi
+    storageClass: ssd-fast
+
+# AI Integration - full setup for testing
+aiIntegration:
+  openRouter:
+    enabled: true
+  mcp:
+    enabled: true
+    serverPort: 3001
+  artificialAnalysis:
+    enabled: true
+
+# Monitoring enabled for staging validation
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    port: 9090
+    retention: "7d"  # Short retention for staging
+  grafana:
+    enabled: true
+  resources:
+    enabled: true
+    interval: "30s"
+
+# Production-like security for staging
+security:
+  podSecurityStandards:
+    enforce: restricted
+    audit: restricted
+    warn: restricted
+  networkPolicies:
+    enabled: true
+  rbac:
+    enabled: true
+
+# Full ingress setup
+ingress:
+  enabled: true
+  className: nginx
+  controller:
+    hostNetwork: false
+    hostPort:
+      enabled: false
+    replicas: 2  # Multiple replicas for testing HA
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "90Mi"
+      limits:
+        cpu: "500m"
+        memory: "500Mi"
+
+# Cert-manager for staging TLS
+certManager:
+  enabled: true
+  issuer:
+    name: letsencrypt-staging
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: admin@vibecode.dev
+
+# Fast SSD storage for staging
+storage:
+  defaultClass: ssd-fast
+  persistentVolumes:
+    - name: user-workspaces
+      size: 100Gi
+      accessMode: ReadWriteMany
+      reclaimPolicy: Retain
+
+# Basic auto-scaling for testing
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 70
+
+# Medium resource quotas for staging
+resourceQuota:
+  enabled: true
+  hard:
+    requests.cpu: "10"      # 10 cores total
+    requests.memory: 20Gi   # 20GB total
+    limits.cpu: "40"        # 40 cores max
+    limits.memory: 80Gi     # 80GB max
+    requests.storage: 500Gi # 500GB storage
+    persistentvolumeclaims: "50"
+    pods: "100"
+    services: "50"
+    secrets: "100"
+    configmaps: "50"
+
+# Staging-specific overrides
+environments:
+  staging:
+    codeServer:
+      resources:
+        requests:
+          cpu: "250m"
+          memory: "512Mi"
+        limits:
+          cpu: "1000m"
+          memory: "2Gi"
+    monitoring:
+      enabled: true
+
+# Examples disabled for staging
+examples:
+  createSampleUser: false
+  createProvisionerJob: false
+
+# Database configuration for staging
+database:
+  postgresql:
+    enabled: true
+    auth:
+      database: vibecode_staging
+      username: vibecode_staging
+    primary:
+      resources:
+        requests:
+          cpu: "250m"
+          memory: "512Mi"
+        limits:
+          cpu: "1000m"
+          memory: "2Gi"
+      persistence:
+        size: 20Gi
+        storageClass: ssd-fast
+
+# Redis/Valkey for staging
+redis:
+  enabled: true
+  auth:
+    enabled: false  # Simplified for staging
+  master:
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+    persistence:
+      size: 5Gi
+      storageClass: ssd-fast
+
+# Node affinity for staging (prefer specific nodes)
+nodeSelector:
+  environment: staging
+
+# Tolerations for staging workloads
+tolerations:
+  - key: "staging"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"

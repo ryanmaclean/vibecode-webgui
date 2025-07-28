@@ -1,0 +1,37 @@
+# Dockerfile for development with Tailwind v4 support
+FROM node:20-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy package files first for better caching
+COPY package.json package-lock.json* ./
+
+# Clean install with legacy peer deps and include optional dependencies
+# This ensures native modules are built for the container's architecture
+RUN npm ci --legacy-peer-deps --include=optional
+
+# Install Tailwind v4 dependencies specifically for container architecture
+RUN npm install tailwindcss@next @tailwindcss/postcss lightningcss --legacy-peer-deps
+
+# Rebuild native modules for container architecture
+RUN npm rebuild lightningcss
+
+# Copy source files AFTER dependency installation
+COPY . .
+
+# Expose development port
+EXPOSE 3000
+
+# Set development environment
+ENV NODE_ENV=development
+
+# Start Next.js in development mode
+CMD ["npm", "run", "dev"]

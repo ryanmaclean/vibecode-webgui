@@ -35,11 +35,6 @@ spec:
     # Network limits
     services.nodeports: "0"
     services.loadbalancers: "0"
-  scopeSelector:
-    matchExpressions:
-    - operator: In
-      scopeName: PriorityClass
-      values: ["high-priority", "medium-priority", "low-priority"]
 {{- end }}
 
 {{/*

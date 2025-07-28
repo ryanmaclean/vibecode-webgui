@@ -1,0 +1,443 @@
+# Production Environment Values
+# High availability, security, and scale
+
+# Global configuration - production grade
+global:
+  namespace: vibecode-production
+  storageClass: premium-ssd-retained
+  imagePullPolicy: IfNotPresent
+
+# Code-server configuration - production resources
+codeServer:
+  image:
+    repository: codercom/code-server
+    tag: "4.22.1"
+    pullPolicy: IfNotPresent
+
+  # Production resources with generous limits
+  resources:
+    requests:
+      cpu: "500m"      # Guaranteed compute
+      memory: "1Gi"    # Guaranteed memory
+    limits:
+      cpu: "4000m"     # Burst to 4 cores
+      memory: "8Gi"    # Up to 8GB memory
+
+  # Strict security for production
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
+    allowPrivilegeEscalation: false
+    seccompProfile:
+      type: RuntimeDefault
+
+  # Reasonable persistent storage with premium SSDs
+  persistence:
+    enabled: true
+    size: 10Gi  # Standard production workspace size
+    storageClass: premium-ssd-retained
+    accessMode: ReadWriteOnce
+
+  # LoadBalancer service for production
+  service:
+    type: LoadBalancer
+    port: 8080
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+      service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+
+  # Production ingress with full TLS
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/websocket-services: "code-server-{USER_ID}"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+      nginx.ingress.kubernetes.io/rate-limit: "100"
+      nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    hosts:
+      - host: "{USER_ID}.vibecode.com"
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: "{USER_ID}-prod-tls"
+        hosts:
+          - "{USER_ID}.vibecode.com"
+
+# Enterprise user management
+userManagement:
+  workspace:
+    defaultSize: 10Gi   # Generous but realistic workspaces
+    maxSize: 50Gi       # Large projects (Enterprise repos, Docker builds)
+    storageClass: premium-ssd-retained
+
+# Full AI Integration suite
+aiIntegration:
+  openRouter:
+    enabled: true
+    rateLimiting:
+      enabled: true
+      requestsPerMinute: 60
+  mcp:
+    enabled: true
+    serverPort: 3001
+    replicas: 3  # Multiple MCP servers for HA
+  artificialAnalysis:
+    enabled: true
+
+# Full production monitoring
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    port: 9090
+    retention: "30d"  # Long retention for production
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "2Gi"
+      limits:
+        cpu: "2000m"
+        memory: "8Gi"
+    persistence:
+      size: 100Gi
+      storageClass: premium-ssd-retained
+  grafana:
+    enabled: true
+    replicas: 2  # HA Grafana
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+  alerting:
+    enabled: true
+    slack:
+      enabled: true
+      channel: "#alerts-production"
+    pagerduty:
+      enabled: true
+  resources:
+    enabled: true
+    interval: "15s"  # High frequency monitoring
+
+# Maximum security for production
+security:
+  podSecurityStandards:
+    enforce: restricted
+    audit: restricted
+    warn: restricted
+  networkPolicies:
+    enabled: true
+    defaultDeny: true
+  rbac:
+    enabled: true
+    strict: true
+  admission:
+    enabled: true
+    policies:
+      - name: "deny-privileged"
+      - name: "require-security-context"
+      - name: "limit-resource-usage"
+
+# Production ingress with multiple replicas
+ingress:
+  enabled: true
+  className: nginx
+  controller:
+    hostNetwork: false
+    hostPort:
+      enabled: false
+    replicas: 3  # HA ingress controllers
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "512Mi"
+      limits:
+        cpu: "2000m"
+        memory: "2Gi"
+    nodeSelector:
+      node-role.kubernetes.io/ingress: "true"
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - ingress-nginx
+          topologyKey: kubernetes.io/hostname
+
+# Production TLS with Let's Encrypt
+certManager:
+  enabled: true
+  issuer:
+    name: letsencrypt-prod
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: ops@vibecode.com
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+# Premium storage for production
+storage:
+  defaultClass: premium-ssd-retained
+  persistentVolumes:
+    - name: user-workspaces
+      size: 200Gi  # Shared workspace storage pool
+      accessMode: ReadWriteMany
+      reclaimPolicy: Retain
+      storageClass: premium-ssd-retained
+    - name: shared-data
+      size: 100Gi  # Shared data for templates, assets
+      accessMode: ReadWriteMany
+      reclaimPolicy: Retain
+      storageClass: premium-ssd-retained
+
+# Aggressive auto-scaling for production
+autoscaling:
+  enabled: true
+  minReplicas: 3     # Always at least 3 replicas
+  maxReplicas: 50    # Scale up to 50 replicas
+  targetCPUUtilizationPercentage: 60    # Scale at 60% CPU
+  targetMemoryUtilizationPercentage: 70 # Scale at 70% memory
+  scaleUp:
+    stabilizationWindowSeconds: 60     # Quick scale up
+    selectPolicy: Max
+    policies:
+    - type: Percent
+      value: 100  # Double the replicas
+      periodSeconds: 60
+  scaleDown:
+    stabilizationWindowSeconds: 300    # Slower scale down
+    selectPolicy: Min
+    policies:
+    - type: Percent
+      value: 10   # Reduce by 10% at a time
+      periodSeconds: 60
+
+# Large resource quotas for production
+resourceQuota:
+  enabled: true
+  hard:
+    requests.cpu: "200"     # 200 cores total
+    requests.memory: 400Gi  # 400GB total  
+    limits.cpu: "800"       # 800 cores max
+    limits.memory: 1600Gi   # 1.6TB max
+    requests.storage: 2Ti   # 2TB storage (realistic for production)
+    persistentvolumeclaims: "500"
+    pods: "1000"
+    services: "200"
+    secrets: "500"
+    configmaps: "200"
+    count/deployments.apps: "200"
+    count/replicasets.apps: "500"
+    count/ingresses.networking.k8s.io: "100"
+
+# Production-specific overrides
+environments:
+  production:
+    codeServer:
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+        limits:
+          cpu: "4000m"
+          memory: "8Gi"
+    monitoring:
+      enabled: true
+      retention: "30d"
+    alerting:
+      enabled: true
+
+# No examples in production
+examples:
+  createSampleUser: false
+  createProvisionerJob: false
+
+# Production database with read replicas
+database:
+  postgresql:
+    enabled: true
+    auth:
+      database: vibecode_production
+      username: vibecode_prod
+    architecture: replication  # Primary + read replicas
+    primary:
+      resources:
+        requests:
+          cpu: "1000m"
+          memory: "4Gi"
+        limits:
+          cpu: "4000m"
+          memory: "16Gi"
+      persistence:
+        size: 100Gi
+        storageClass: premium-ssd-retained
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/database
+                operator: In
+                values:
+                - "true"
+    readReplicas:
+      replicaCount: 2  # 2 read replicas
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "2Gi"
+        limits:
+          cpu: "2000m"
+          memory: "8Gi"
+      persistence:
+        size: 100Gi
+        storageClass: premium-ssd-retained
+
+# Production Redis cluster
+redis:
+  enabled: true
+  architecture: replication  # Redis cluster
+  auth:
+    enabled: true
+  master:
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: "2000m"
+        memory: "4Gi"
+    persistence:
+      size: 20Gi
+      storageClass: premium-ssd-retained
+  replica:
+    replicaCount: 2  # 2 Redis replicas
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+    persistence:
+      size: 20Gi
+      storageClass: premium-ssd-retained
+
+# Multi-zone deployment
+nodeSelector:
+  node-role.kubernetes.io/worker: "true"
+
+# Production affinity rules
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - vibecode-platform
+        topologyKey: kubernetes.io/hostname
+    - weight: 50
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - vibecode-platform
+        topologyKey: topology.kubernetes.io/zone
+
+# Production tolerations
+tolerations:
+  - key: "production"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+  - key: "high-memory"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+# Backup and disaster recovery
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention: "30d"
+  destinations:
+    - s3:
+        bucket: "vibecode-backups-prod"
+        region: "us-west-2"
+    - gcs:
+        bucket: "vibecode-backups-prod-gcs"
+
+# Network policies for production isolation
+networkPolicies:
+  enabled: true
+  policies:
+    - name: "deny-all-default"
+      podSelector: {}
+      policyTypes:
+      - Ingress
+      - Egress
+    - name: "allow-ingress-from-lb"
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/component: code-server
+      ingress:
+      - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+    - name: "allow-database-access"
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/component: code-server
+      egress:
+      - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+        ports:
+        - protocol: TCP
+          port: 5432
+
+# Production logging
+logging:
+  enabled: true
+  level: "info"
+  structured: true
+  destinations:
+    - elasticsearch:
+        enabled: true
+        host: "elasticsearch.logging.svc.cluster.local"
+        index: "vibecode-prod"
+    - datadog:
+        enabled: true
+        apiKey: "${DATADOG_API_KEY}"
+        service: "vibecode-platform"
+        env: "production"

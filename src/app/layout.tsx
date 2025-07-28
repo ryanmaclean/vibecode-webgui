@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+// Import CSS based on environment
 import "./globals.css";
 import Providers from './providers';
 import DatadogRUM from '@/components/monitoring/DatadogRUM';
@@ -26,6 +27,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Tailwind CSS v4 CDN for local development only */}
+        {process.env.DOCKER !== 'true' && (
+          <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" defer></script>
+        )}
+      </head>
       <body
         className="antialiased"
       >

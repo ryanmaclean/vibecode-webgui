@@ -1,0 +1,243 @@
+# Development Environment Values
+# Optimized for local development and testing
+
+# Global configuration - minimal resources
+global:
+  namespace: vibecode-dev
+  storageClass: standard
+  imagePullPolicy: Always  # Always pull for latest dev builds
+
+# Code-server configuration - minimal resources
+codeServer:
+  image:
+    repository: codercom/code-server
+    tag: "4.22.1"
+    pullPolicy: Always
+
+  # Minimal resources for dev
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+
+  # Relaxed security for easier debugging
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false
+    allowPrivilegeEscalation: false
+
+  # Small persistent storage
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: standard
+    accessMode: ReadWriteOnce
+
+  # Basic service - no load balancer
+  service:
+    type: ClusterIP
+    port: 8080
+
+  # Simple ingress for dev
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    hosts:
+      - host: "{USER_ID}.dev.localhost"
+        paths:
+          - path: /
+            pathType: Prefix
+
+# Minimal user limits for dev
+userManagement:
+  workspace:
+    defaultSize: 2Gi
+    maxSize: 5Gi
+    storageClass: standard
+
+# AI Integration - basic setup
+aiIntegration:
+  openRouter:
+    enabled: true
+  mcp:
+    enabled: true
+    serverPort: 3001
+  artificialAnalysis:
+    enabled: false  # Disabled for dev to save costs
+
+# Minimal monitoring
+monitoring:
+  enabled: false  # Disabled for dev
+  prometheus:
+    enabled: false
+  grafana:
+    enabled: false
+
+# Relaxed security for dev
+security:
+  podSecurityStandards:
+    enforce: baseline  # Less strict for dev
+    audit: baseline
+    warn: baseline
+  networkPolicies:
+    enabled: false  # Disabled for easier debugging
+  rbac:
+    enabled: true
+
+# Basic ingress - no TLS
+ingress:
+  enabled: true
+  className: nginx
+  controller:
+    hostNetwork: false
+    hostPort:
+      enabled: false
+
+# No cert-manager for dev
+certManager:
+  enabled: false
+
+# Basic storage
+storage:
+  defaultClass: standard
+  persistentVolumes:
+    - name: user-workspaces
+      size: 20Gi  # Small for dev
+      accessMode: ReadWriteMany
+      reclaimPolicy: Delete  # Can delete dev data
+
+# No auto-scaling for dev
+autoscaling:
+  enabled: false
+
+# Minimal resource quotas for dev
+resourceQuota:
+  enabled: true
+  hard:
+    requests.cpu: "2"      # 2 cores total
+    requests.memory: 4Gi   # 4GB total
+    limits.cpu: "8"        # 8 cores max
+    limits.memory: 16Gi    # 16GB max
+    requests.storage: 50Gi # 50GB storage
+    persistentvolumeclaims: "20"
+    pods: "50"
+    services: "20"
+
+# Dev-specific overrides
+environments:
+  development:
+    codeServer:
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "256Mi"
+        limits:
+          cpu: "500m"
+          memory: "1Gi"
+    monitoring:
+      enabled: false
+
+# Examples enabled for dev testing
+examples:
+  createSampleUser: true
+  createProvisionerJob: true
+
+# Database configuration for development with DBM
+database:
+  postgresql:
+    enabled: true
+    auth:
+      database: vibecode_dev
+      username: vibecode_dev
+      # Passwords set via Helm values, never committed
+      existingSecret: postgres-credentials
+      secretKeys:
+        adminPasswordKey: postgres-password
+        
+    primary:
+      configuration: |
+        # PostgreSQL configuration for DBM
+        shared_preload_libraries = 'pg_stat_statements'
+        pg_stat_statements.max = 10000
+        pg_stat_statements.track = all
+        pg_stat_statements.save = on
+        track_activity_query_size = 4096
+        track_io_timing = on
+        log_min_duration_statement = 500
+        log_statement = 'ddl'
+        
+      initdb:
+        scripts:
+          02-dbm-setup.sql: |
+            -- Create datadog monitoring user
+            CREATE USER datadog WITH PASSWORD 'PLACEHOLDER_PASSWORD';
+            GRANT pg_monitor TO datadog;
+            GRANT pg_read_all_stats TO datadog;
+            GRANT pg_read_all_settings TO datadog;
+            
+            -- Create extensions
+            CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+            
+            -- Create datadog schema and functions
+            CREATE SCHEMA IF NOT EXISTS datadog;
+            GRANT USAGE ON SCHEMA datadog TO datadog;
+            
+            -- Explain plans function
+            CREATE OR REPLACE FUNCTION datadog.explain_statement(
+                l_query TEXT,
+                OUT explain JSON
+            ) RETURNS SETOF JSON AS $$
+            DECLARE
+                curs REFCURSOR;
+                plan JSON;
+            BEGIN
+                OPEN curs FOR EXECUTE pg_catalog.concat('EXPLAIN (FORMAT JSON) ', l_query);
+                FETCH curs INTO plan;
+                CLOSE curs;
+                RETURN QUERY SELECT plan;
+            END;
+            $$ LANGUAGE 'plpgsql'
+            RETURNS NULL ON NULL INPUT
+            SECURITY DEFINER;
+            
+            GRANT EXECUTE ON FUNCTION datadog.explain_statement TO datadog;
+
+# Datadog configuration for development
+datadog:
+  enabled: true
+  # API key set via Helm values from environment, never committed
+  apiKeyExistingSecret: datadog-secrets
+  site: datadoghq.com
+  
+  clusterAgent:
+    enabled: true
+    confd:
+      postgres.yaml: |
+        cluster_check: true
+        instances:
+        - host: postgres-primary.vibecode-dev.svc.cluster.local
+          port: 5432
+          username: datadog
+          password: "PLACEHOLDER_PASSWORD"  # Set via environment
+          dbm: true
+          collect_schemas: true
+          collect_database_size_metrics: false  # Disabled for dev cost savings
+          collect_activity_metrics: true
+          collect_settings: 
+            - "shared_preload_libraries"
+            - "max_connections"
+          tags:
+            - "env:development"
+            - "service:vibecode-postgres"
+            - "database:vibecode_dev"

@@ -1,0 +1,45 @@
+# Production Dockerfile for x86-64 deployment
+# Optimized for lightningcss compatibility and production readiness
+
+FROM --platform=linux/amd64 node:20-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies for native module compilation
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy package files first for better caching
+COPY package.json package-lock.json* ./
+
+# Clean install with legacy peer deps for production
+RUN npm ci --only=production --legacy-peer-deps
+
+# Install Tailwind v4 dependencies for x86-64 production
+RUN npm install tailwindcss@next @tailwindcss/postcss lightningcss --legacy-peer-deps
+
+# Critical: Rebuild native modules for x86-64 architecture
+RUN npm rebuild lightningcss
+
+# Verify lightningcss installation
+RUN node -e "require('lightningcss'); console.log('✅ lightningcss working on x86-64')"
+
+# Copy source files
+COPY . .
+
+# Configure for Docker production environment
+ENV NODE_ENV=production
+ENV DOCKER=true
+
+# Build the application with Tailwind v4
+RUN npm run build
+
+# Expose production port
+EXPOSE 3000
+
+# Use production start command
+CMD ["npm", "start"]

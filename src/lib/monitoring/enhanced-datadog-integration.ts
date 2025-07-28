@@ -7,46 +7,66 @@
 import { StatsD } from 'node-statsd'
 import tracer from 'dd-trace'
 
-// Initialize Datadog tracer
+// Initialize Datadog tracer with minimal configuration
 tracer.init({
   service: 'vibecode-enhanced-platform',
   version: process.env.DD_VERSION || '2.0.0',
-  env: process.env.DD_ENV || 'development',
+  env: process.env.NODE_ENV || 'development',
   profiling: true,
   runtimeMetrics: true,
-  plugins: false // We'll enable specific plugins
-})
+  // Enable all plugins
+  plugins: true
+});
 
-// Enable specific plugins for our stack
+// Configure Express plugin after initialization
+tracer.use('express', {
+  enabled: true,
+  hooks: {
+    request: (span: any, req: any) => {
+      if (req && req.headers) {
+        span.setTag('user.workspace', req.headers['x-workspace-id']);
+        span.setTag('user.session', req.headers['x-session-id']);
+      }
+    }
+  }
+});
+
+// Configure custom tags for Express requests
 tracer.use('express', {
   hooks: {
-    request: (span, req) => {
-      span.setTag('user.workspace', req.headers['x-workspace-id'])
-      span.setTag('user.session', req.headers['x-session-id'])
+    request: (span: any, req: any) => {
+      if (req && req.headers) {
+        span.setTag('user.workspace', req.headers['x-workspace-id']);
+        span.setTag('user.session', req.headers['x-session-id']);
+      }
     }
   }
-})
+});
 
-tracer.use('ws', {
-  service: 'vibecode-websocket',
-  hooks: {
-    request: (span, info) => {
-      span.setTag('websocket.type', info.type)
-      span.setTag('workspace.id', info.workspaceId)
+// Custom span for WebSocket events
+const createWebSocketSpan = (eventName: string, metadata: Record<string, any> = {}) => {
+  const span = tracer.startSpan('websocket.event');
+  span.setTag('ws.event', eventName);
+  Object.entries(metadata).forEach(([key, value]) => {
+    if (value !== undefined) {
+      span.setTag(`ws.${key}`, String(value));
     }
-  }
-})
+  });
+  return span;
+};
 
-tracer.use('anthropic', {
-  service: 'vibecode-claude',
-  hooks: {
-    request: (span, params) => {
-      span.setTag('ai.provider', 'anthropic')
-      span.setTag('ai.model', params.model)
-      span.setTag('ai.max_tokens', params.max_tokens)
-    }
+// Custom span for Anthropic API calls
+const createAnthropicSpan = (model: string, params: Record<string, any> = {}) => {
+  const span = tracer.startSpan('ai.anthropic.request');
+  span.setTag('ai.provider', 'anthropic');
+  span.setTag('ai.model', model);
+  
+  if (params.max_tokens) {
+    span.setTag('ai.max_tokens', params.max_tokens);
   }
-})
+  
+  return span;
+};
 
 // StatsD client for custom metrics
 const statsd = new StatsD({
