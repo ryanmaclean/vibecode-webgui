@@ -9,11 +9,14 @@ WORKDIR /app
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install all dependencies including devDependencies for building
+RUN npm ci && npm cache clean --force
 
 # Copy source code
 COPY src/ ./src/
+
+# Install TypeScript globally as a fallback
+RUN npm install -g typescript
 
 # Build TypeScript
 RUN npm run build
