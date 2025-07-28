@@ -83,7 +83,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "codemirror": "^6.0.2",
-    "dd-trace": "5.59.0",
+    "dd-trace": "5.61.1",
     "gray-matter": "^4.0.3",
     "isomorphic-dompurify": "^2.16.0",
     "js-cookie": "^3.0.5",
