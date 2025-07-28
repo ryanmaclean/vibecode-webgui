@@ -1,0 +1,121 @@
+# Authelia Configuration for Docker Compose
+# Enterprise-grade authentication with 2FA/SSO support
+
+# Server configuration
+server:
+  address: "tcp://0.0.0.0:9091"
+
+# Logging configuration
+log:
+  level: info
+  format: text
+
+# Identity validation configuration
+identity_validation:
+  reset_password:
+    jwt_secret: "insecure_jwt_secret_change_in_production"
+
+# Time-based One-Time Password configuration
+totp:
+  issuer: VibeCode
+  algorithm: sha1
+  digits: 6
+  period: 30
+  skew: 1
+  secret_size: 32
+
+# WebAuthn configuration for hardware keys
+webauthn:
+  timeout: 60s
+  display_name: VibeCode Development Platform
+  attestation_conveyance_preference: indirect
+  user_verification: preferred
+
+# Authentication backend
+authentication_backend:
+  password_reset:
+    disable: false
+  refresh_interval: 5m
+
+  # File-based user database for development
+  file:
+    path: /config/users_database.yml
+    password:
+      algorithm: argon2id
+      iterations: 1
+      salt_length: 16
+      parallelism: 8
+      memory: 64
+
+# Access control configuration
+access_control:
+  default_policy: deny
+  networks:
+    - name: internal
+      networks:
+        - 172.0.0.0/8
+        - 192.168.0.0/16
+  rules:
+    # Allow access to Authelia itself
+    - domain: auth.localhost
+      policy: bypass
+
+    # User workspaces - requires user group with 2FA
+    - domain: "*.localhost"
+      policy: two_factor
+      subject: ["group:users", "group:developers"]
+
+    # Public documentation
+    - domain: docs.localhost
+      policy: bypass
+
+    # API endpoints - require API access group
+    - domain: localhost
+      policy: one_factor
+      subject: ["group:api-users"]
+      resources:
+        - "^/api/.*$"
+
+# Session configuration  
+session:
+  secret: "insecure_session_secret_change_in_production"
+  name: 'vibecode_session'
+  expiration: 1h
+  inactivity: 5m
+  remember_me: 1M
+  cookies:
+    - domain: "127.0.0.1"
+      authelia_url: http://127.0.0.1:9091
+      default_redirection_url: http://127.0.0.1:3000
+      same_site: 'lax'
+  
+  # Redis session storage
+  redis:
+    host: redis
+    port: 6379
+    database_index: 0
+    maximum_active_connections: 8
+    minimum_idle_connections: 0
+
+# Regulation (rate limiting)
+regulation:
+  max_retries: 3
+  find_time: 10m
+  ban_time: 12h
+
+# Storage configuration
+storage:
+  encryption_key: "vibecode-storage-encryption-key-change-in-production"
+  postgres:
+    address: tcp://db:5432
+    database: vibecode
+    schema: public
+    username: vibecode
+    password: "password"
+    timeout: 5s
+
+# Notification configuration
+notifier:
+  disable_startup_check: true
+  filesystem:
+    filename: /config/notification.txt

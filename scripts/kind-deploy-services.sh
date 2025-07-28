@@ -6,7 +6,7 @@ echo "🏗️  Deploying VibeCode services to KIND cluster"
 echo "=============================================="
 
 CLUSTER_NAME="vibecode-test"
-NAMESPACE="vibecode"
+NAMESPACE="vibecode-platform"
 
 # Verify cluster exists and is accessible
 if ! kubectl cluster-info --context="kind-${CLUSTER_NAME}" > /dev/null 2>&1; then
@@ -76,7 +76,35 @@ fi
 
 # Deploy additional services if they exist
 echo ""
-echo "📦 Step 5: Deploying additional services..."
+echo "📦 Step 5: Deploying Authelia authentication..."
+
+# Create authentication namespace
+AUTH_NAMESPACE="vibecode-auth"
+echo "📦 Creating authentication namespace: $AUTH_NAMESPACE"
+kubectl create namespace "$AUTH_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+
+# Deploy Authelia configuration and secrets
+if [ -f "k8s/authelia/authelia-config.yaml" ]; then
+    echo "🔐 Deploying Authelia configuration..."
+    kubectl apply -f k8s/authelia/authelia-config.yaml
+    echo "✅ Authelia configuration applied"
+else
+    echo "❌ Authelia config not found: k8s/authelia/authelia-config.yaml"
+fi
+
+# Deploy Authelia service
+if [ -f "k8s/authelia/authelia-deployment.yaml" ]; then
+    echo "🔒 Deploying Authelia authentication server..."
+    kubectl apply -f k8s/authelia/authelia-deployment.yaml
+    echo "⏱️  Waiting for Authelia to be ready (timeout: 2min)..."
+    kubectl wait --for=condition=ready pod -l app=authelia -n "$AUTH_NAMESPACE" --timeout=120s || echo "⚠️  Authelia may still be starting"
+    echo "✅ Authelia authentication server deployed"
+else
+    echo "❌ Authelia deployment not found: k8s/authelia/authelia-deployment.yaml"
+fi
+
+echo ""
+echo "📦 Step 6: Deploying additional services..."
 
 # Deploy secrets if they exist
 if [ -f "k8s/vibecode-secrets.yaml" ]; then
@@ -101,8 +129,13 @@ echo "🔍 Deployment status check..."
 kubectl get pods -n "$NAMESPACE" -o wide
 
 echo ""
+echo "🔒 Authentication status:"
+kubectl get pods -n "$AUTH_NAMESPACE" -o wide
+
+echo ""
 echo "🌐 Service status:"
 kubectl get services -n "$NAMESPACE"
+kubectl get services -n "$AUTH_NAMESPACE"
 
 # Check if all pods are running
 PENDING_PODS=$(kubectl get pods -n "$NAMESPACE" --no-headers | grep -v "Running\|Completed" | wc -l)
@@ -133,7 +166,15 @@ echo "💡 Access your application:"
 echo "   kubectl port-forward -n $NAMESPACE svc/vibecode-service 3000:3000"
 echo "   Then open: http://localhost:3000"
 echo ""
+echo "🔒 Access Authelia authentication:"
+echo "   kubectl port-forward -n $AUTH_NAMESPACE svc/authelia 9091:9091"
+echo "   Then open: http://localhost:9091"
+echo "   Default users: admin@vibecode.dev, dev@vibecode.dev, user@vibecode.dev"
+echo "   Default password: Check k8s/authelia/authelia-config.yaml for hashed passwords"
+echo ""
 echo "🔍 Useful commands:"
 echo "   kubectl get all -n $NAMESPACE"
+echo "   kubectl get all -n $AUTH_NAMESPACE"
 echo "   kubectl logs -f deployment/vibecode-webgui -n $NAMESPACE"
+echo "   kubectl logs -f deployment/authelia -n $AUTH_NAMESPACE"
 echo "   kubectl exec -it deployment/vibecode-webgui -n $NAMESPACE -- bash"
