@@ -36,6 +36,12 @@ RUN npm install -g \
     eslint \
     ts-node
 
+# Install Go
+RUN wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz \
+    && tar -C /usr/local -xzf go1.22.4.linux-amd64.tar.gz \
+    && rm go1.22.4.linux-amd64.tar.gz \
+    && ln -s /usr/local/go/bin/go /usr/local/bin/go
+
 # Install Goose for database migrations
 RUN go install github.com/pressly/goose/v3/cmd/goose@latest \
     && echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> /home/coder/.bashrc \
