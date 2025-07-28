@@ -22,8 +22,16 @@ RUN npm install -g @modelcontextprotocol/sdk typescript ts-node
 # Copy package configuration
 COPY package*.json ./
 
-# Install Node.js dependencies
-RUN npm install --legacy-peer-deps
+# Install Node.js dependencies with more verbose output and error handling
+RUN echo "Starting npm install..." && \
+    npm config set loglevel verbose && \
+    npm cache verify && \
+    npm install --legacy-peer-deps --loglevel verbose || (\
+      echo "npm install failed, showing debug info..." && \
+      npm cache verify && \
+      npm config list && \
+      exit 1\
+    )
 
 # Install Python MCP requirements
 RUN pip3 install --no-cache-dir --break-system-packages \
