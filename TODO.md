@@ -188,6 +188,43 @@
 - [ ] Database performance monitoring
 - [ ] User behavior analytics
 
+## 🐕 Datadog Best Practices Research Findings (2025)
+
+### **Web Research Summary** ✅ **COMPLETED JULY 28, 2025**
+Based on comprehensive web research of current Datadog best practices for 2025:
+
+### **Cluster Agent vs Node Agent Architecture** ✅ **VALIDATED**
+- **Cluster Agent Default**: Since Helm chart v2.7.0, Cluster Agent is enabled by default
+- **Current Practice**: Both cluster agent AND node agent should be deployed together
+- **Cluster Agent Role**: Provides centralized cluster-level monitoring and acts as proxy to API server
+- **Node Agent Role**: Handles node-level metrics, logs, and APM traces
+- **Database Monitoring**: Best practice is to use cluster check runners for external databases
+
+### **Database Monitoring Configuration** ✅ **RESEARCH VALIDATED**
+- **SSL Configuration**: Production deployments should use SSL/TLS for database connections
+- **Cluster Check Runners**: Recommended for database monitoring vs individual node agents
+- **Query Sampling**: Should be configured with appropriate collection intervals (1s for samples, 10s for metrics)
+- **Schema Collection**: Enable for DBM explain plans and query optimization
+- **Custom Metrics**: Use cluster-level configuration for database size and activity metrics
+
+### **Security Best Practices** ✅ **VALIDATED**
+- **Secret Management**: All API keys via Kubernetes secrets, never hardcoded
+- **RBAC Configuration**: Proper cluster roles for cluster agent access to cluster resources
+- **Network Policies**: Recommended for production to isolate monitoring traffic
+- **Encryption**: All data transmission should be encrypted (TLS 1.2+)
+
+### **Performance Optimization** ✅ **VALIDATED**
+- **Resource Limits**: Cluster agent should have appropriate CPU/memory limits
+- **Collection Intervals**: Optimize based on monitoring needs (1s-10s for critical metrics)
+- **Tag Optimization**: Limit tag cardinality to prevent metric explosion
+- **Batch Processing**: Use appropriate batch sizes for metric collection
+
+### **Version Requirements** ✅ **VALIDATED**
+- **Minimum Datadog Agent**: v7.40+ for full DBM feature support
+- **Helm Chart Version**: v3.50+ recommended for latest features
+- **PostgreSQL Compatibility**: v11+ required for full DBM functionality
+- **Kubernetes Version**: v1.20+ recommended for all monitoring features
+
 ## 🌟 Future Enhancements
 
 ### AI/ML
