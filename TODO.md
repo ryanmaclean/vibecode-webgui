@@ -225,6 +225,49 @@ Based on comprehensive web research of current Datadog best practices for 2025:
 - **PostgreSQL Compatibility**: v11+ required for full DBM functionality
 - **Kubernetes Version**: v1.20+ recommended for all monitoring features
 
+## Kubernetes Secrets Automation Implementation (July 28, 2025)
+
+### **Automated Secrets Management** ✅ **COMPLETED JULY 28, 2025**
+
+Following comprehensive web research of 2025 best practices for Kubernetes secrets automation:
+
+### **Implementation Components Completed**
+- **Automated Secret Creation Script**: `scripts/setup-secrets.sh` with multi-environment support
+- **Helm Pre-Install Hooks**: `helm/vibecode-platform/templates/datadog-secret-hook.yaml` for automatic deployment
+- **External Secrets Operator**: `k8s/external-secrets/external-secret-datadog.yaml` for enterprise scenarios
+- **Live API Key Integration**: Real Datadog API key from .env.local (32 characters validated)
+- **Database Credentials**: PostgreSQL and Datadog user passwords automated
+
+### **2025 Best Practices Implemented**
+- **CI/CD Integration**: Production-ready scripts with comprehensive validation
+- **RBAC Compliance**: Minimal privilege access with proper security contexts
+- **Multi-Environment**: Separate dev/staging/production configurations
+- **Secret Rotation**: Automated update mechanisms with external providers
+- **Audit Logging**: Complete secret access tracking and monitoring
+- **Environment Isolation**: Namespace-based secret separation
+
+### **Security Features**
+- **No Hardcoded Secrets**: 100% environment-based secret management
+- **External Provider Support**: AWS Secrets Manager, HashiCorp Vault, Azure Key Vault
+- **Automated Validation**: Pre and post-deployment secret verification
+- **Resource Constraints**: Proper CPU/memory limits and security contexts
+- **Cleanup Automation**: Automatic cleanup after successful execution
+
+### **Live Validation Results**
+```bash
+Connected to Kubernetes cluster: kind-vibecode-test
+Namespace 'vibecode-dev' created
+Secret 'datadog-secrets' created successfully (api-key: 32 characters)
+Secret 'postgres-credentials' created successfully (postgres-password, datadog-password)
+All secrets verified successfully
+```
+
+### **Helm Chart Integration**
+- **Datadog Chart Dependency**: Added official Datadog Helm chart v3.60.0
+- **Both Agents Configured**: Cluster Agent (Deployment) + Node Agents (DaemonSet)
+- **Database Monitoring**: Enhanced DBM with query sampling and explain plans
+- **Template Validation**: Both development and production configurations validated
+
 ## 🌟 Future Enhancements
 
 ### AI/ML
