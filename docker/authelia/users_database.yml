@@ -1,0 +1,31 @@
+# Users database for Authelia Docker Compose
+# Default password for all users: "password123"
+
+users:
+  admin:
+    disabled: false
+    displayname: "Admin User"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$QVlVSUFXUWpBa3VUU1JvZkV6YWJ5ZA$G4jup3aYRNzHHIbXJvjT5jAZcXQlLJGnbPvE8VQqOhk"
+    email: admin@vibecode.dev
+    groups:
+      - admins
+      - users
+      - api-users
+
+  developer:
+    disabled: false
+    displayname: "Developer"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$QVlVSUFXUWpBa3VUU1JvZkV6YWJ5ZA$G4jup3aYRNzHHIbXJvjT5jAZcXQlLJGnbPvE8VQqOhk"
+    email: dev@vibecode.dev
+    groups:
+      - users
+      - developers
+      - api-users
+
+  user:
+    disabled: false
+    displayname: "Regular User"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$QVlVSUFXUWpBa3VUU1JvZkV6YWJ5ZA$G4jup3aYRNzHHIbXJvjT5jAZcXQlLJGnbPvE8VQqOhk"
+    email: user@vibecode.dev
+    groups:
+      - users

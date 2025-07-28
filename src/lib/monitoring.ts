@@ -408,9 +408,8 @@ class MonitoringService {
         'service:vibecode-webgui',
         `env:${process.env.NODE_ENV || 'development'}`,
         'event:monitoring_init'
-      ],
-      alert_type: 'info'
-    }).catch(error => {
+      ]
+    ).catch(error => {
       console.warn('Failed to track monitoring init:', error)
     })
   }

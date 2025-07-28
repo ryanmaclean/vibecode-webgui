@@ -17,6 +17,13 @@ spec:
   - name: test-provisioning
     image: bitnami/kubectl:latest
     command: ['sh', '-c']
+    resources:
+      requests:
+        cpu: "10m"
+        memory: "64Mi"
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
     args:
     - |
       set -e
