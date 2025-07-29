@@ -22,16 +22,37 @@ RUN npm install -g @modelcontextprotocol/sdk typescript ts-node
 # Copy package configuration
 COPY package*.json ./
 
-# Install Node.js dependencies with more verbose output and error handling
-RUN echo "Starting npm install..." && \
-    npm config set loglevel verbose && \
-    npm cache verify && \
-    npm install --legacy-peer-deps --loglevel verbose || (\
-      echo "npm install failed, showing debug info..." && \
-      npm cache verify && \
-      npm config list && \
-      exit 1\
-    )
+# Install Node.js dependencies with comprehensive error handling and debugging
+RUN echo "=== Starting npm install with debug info ===" && \
+    echo "Current directory: $(pwd)" && \
+    echo "Contents of current directory:" && ls -la && \
+    echo "\n=== npm config before changes ===" && npm config list && \
+    \
+    # Configure npm for better debugging
+    npm config set loglevel silly && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    \
+    echo "\n=== npm config after changes ===" && npm config list && \
+    echo "\n=== Verifying npm cache ===" && npm cache verify || true && \
+    \
+    # Attempt npm install with full debug output
+    echo "\n=== Starting npm install ===" && \
+    if npm install --legacy-peer-deps --loglevel silly; then \
+        echo "npm install completed successfully" && \
+        npm cache clean --force; \
+    else \
+        echo "\n!!! npm install failed, showing debug info..." && \
+        echo "\n=== npm version ===" && npm --version && \
+        echo "\n=== node version ===" && node --version && \
+        echo "\n=== npm config ===" && npm config list && \
+        echo "\n=== npm cache info ===" && npm cache verify && \
+        echo "\n=== Disk space info ===" && df -h && \
+        echo "\n=== Current directory contents ===" && ls -la && \
+        echo "\n=== node_modules contents (if any) ===" && ls -la node_modules/ 2>/dev/null || echo "No node_modules directory"; \
+        exit 1; \
+    fi
 
 # Install Python MCP requirements
 RUN pip3 install --no-cache-dir --break-system-packages \
