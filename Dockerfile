@@ -21,16 +21,21 @@ FROM base AS deps
 # Copy package definition and lockfile
 COPY package.json yarn.lock* .npmrc ./
 
-# Use Yarn to install dependencies with specific platform overrides
-# 1. Set the target platform to Linux x64 to avoid downloading macOS-specific binaries
-# 2. Use --ignore-optional to skip optional dependencies
-# 3. Use --production=false to include devDependencies needed for build
-# 4. Use --frozen-lockfile to ensure consistent dependency resolution
-RUN yarn config set target_platform linux-x64 && \
+# Create a temporary package.json without the platform-specific SWC dependencies
+RUN jq 'del(.devDependencies."@next/swc-darwin-arm64")' package.json > package.tmp.json && \
+    mv package.tmp.json package.json && \
+    # Clean up any existing node_modules to prevent conflicts
+    rm -rf node_modules && \
+    # Use Yarn to install dependencies with specific platform overrides
+    yarn config set target_platform linux-x64 && \
     yarn install --frozen-lockfile --network-timeout 100000 --production=false --ignore-optional && \
     yarn cache clean && \
-    # Remove any macOS-specific SWC binaries that might have been installed
-    find node_modules -name "*darwin*" -type d -prune -exec rm -rf {} + || true
+    # Remove any platform-specific SWC binaries that might have been installed
+    find node_modules -name "*swc-*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
+    find node_modules -name "*darwin*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
+    find node_modules -name "*win32*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
+    # Ensure required SWC binaries are present
+    test -d node_modules/@next/swc-linux-x64-gnu || (echo "Missing required SWC binary for Linux x64" && exit 1)
 
 # Stage 3: Build the application
 FROM base AS builder
@@ -41,11 +46,16 @@ COPY . .
 # Copy dependencies from the previous stage for a clean build
 COPY --from=deps /app/node_modules ./node_modules
 
-# Remove any platform-specific dependencies and binaries that might have been installed
+# Ensure we have a clean node_modules without platform-specific artifacts
 RUN rm -rf node_modules/.bin/next-swc-* && \
-    # Remove any remaining platform-specific SWC binaries
-    find node_modules -name "*darwin*" -type d -prune -exec rm -rf {} + || true && \
-    find node_modules -name "*darwin*" -type f -delete || true
+    # Remove any remaining platform-specific SWC binaries and artifacts
+    find node_modules -name "*swc-*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
+    find node_modules -name "*darwin*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
+    find node_modules -name "*win32*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
+    find node_modules -name "*darwin*" -type f -delete 2>/dev/null || true && \
+    find node_modules -name "*win32*" -type f -delete 2>/dev/null || true && \
+    # Ensure required SWC binaries are present
+    test -d node_modules/@next/swc-linux-x64-gnu || (echo "Missing required SWC binary for Linux x64" && exit 1)
 
 # Set environment for production build
 ENV NODE_ENV=production
