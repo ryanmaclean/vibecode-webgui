@@ -1,0 +1,16 @@
+{
+  "name": "vibecode-mcp-servers",
+  "version": "1.0.0",
+  "description": "Model Context Protocol (MCP) Servers for VibeCode",
+  "main": "servers/filesystem/server.js",
+  "scripts": {
+    "start": "node servers/filesystem/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "private": true
+}
