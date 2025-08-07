@@ -19,11 +19,14 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '20.11.0'
         cache: 'npm'
     
     - name: Install dependencies
-      run: npm ci
+      run: |
+        # Remove platform-specific dependencies for CI
+        npm pkg delete devDependencies.@next/swc-darwin-arm64 2>/dev/null || true
+        npm ci --legacy-peer-deps --omit=optional
     
     - name: Run tests
       run: npm test
