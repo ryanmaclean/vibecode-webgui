@@ -10,29 +10,35 @@ import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 global.fetch = jest.fn();
 
 describe('Monitoring Library (Minimal Mocking)', () => {
+  let originalWindow: any;
+  
   beforeEach(() => {
     // Reset fetch mock
     fetch.mockClear();
 
+    // Store original window
+    originalWindow = (global as any).window;
+
     // Mock browser environment only
-    delete (global as any).window;
-    Object.defineProperty(global, 'window', {
-      value: {
-        location: { href: 'http://localhost:3000' },
-        navigator: { userAgent: 'test-agent' },
-        performance: {
-          now: () => Date.now(),
-          timing: {
-            navigationStart: Date.now() - 1000
-          }
+    (global as any).window = {
+      location: { href: 'http://localhost:3000' },
+      navigator: { userAgent: 'test-agent' },
+      performance: {
+        now: () => Date.now(),
+        timing: {
+          navigationStart: Date.now() - 1000
         }
-      },
-      writable: true
-    });
+      }
+    };
   });
 
   afterEach(() => {
-    delete global.window;
+    // Restore original window state
+    if (originalWindow) {
+      (global as any).window = originalWindow;
+    } else {
+      delete (global as any).window;
+    }
   });
 
   test('should handle monitoring initialization without throwing', async () => {
