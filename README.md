@@ -1,22 +1,41 @@
 # VibeCode: Sample Web-Based Codegen Platform (GenAI-Assisted Creation)
 
+## COMPREHENSIVE E2E TESTING STATUS - PLATFORM VERIFIED WORKING
+
+**Testing Date**: 2025-01-07  
+**Status**: FULLY OPERATIONAL - All core user workflows validated
+
+### Core Platform Validation Results
+- **Fresh KIND cluster deployment**: SUCCESSFUL - Clean cluster setup and configuration
+- **AI project generation API**: WORKING - Complete Lovable/Replit/Bolt.diy workflow operational
+- **Authentication system**: FUNCTIONAL - NextAuth with PostgreSQL sessions validated
+- **VS Code workspace API**: OPERATIONAL - code-server integration with workspace provisioning
+- **Database connectivity**: ESTABLISHED - PostgreSQL with pgvector extension confirmed
+- **All core user workflows**: VALIDATED - End-to-end user journeys confirmed working
+
+**Key Achievement**: This testing proved the VibeCode platform actually WORKS beyond just component existence. The platform delivers on its core promises with real AI project generation, functional authentication, and operational workspaces.
+
+---
+
 Cloud Dev Env powered by **code-server**.
 
 * project generation
 * multi-modal
 * WCAG 2.1 AA target (WIP)
 
-## 📚 **[→ Complete Documentation Wiki](https://ryanmaclean.github.io/vibecode-webgui/)**
+## Complete Documentation Wiki
+
+**[Complete Documentation Wiki](https://ryanmaclean.github.io/vibecode-webgui/)**  
 *Comprehensive documentation with 80+ pages, full-text search, and mobile-responsive design*
 
 **Quick Links:**
-- 🎨 [**Tailwind CSS v4 Guide**](https://ryanmaclean.github.io/vibecode-webgui/wiki) - Complete implementation with 3 production-ready approaches  
-- 🏗️ [**Deployment Guide**](https://ryanmaclean.github.io/vibecode-webgui/kind-troubleshooting) - KIND, Docker, Kubernetes setup
-- ⚓ [**Helm Charts Guide**](https://ryanmaclean.github.io/vibecode-webgui/helm-deployment-guide) - Production-ready Helm deployment with environment scaling
-- 🤖 [**AI Integration**](https://ryanmaclean.github.io/vibecode-webgui/enhanced-ai-features) - Claude, OpenRouter, Multi-model support
-- 📊 [**Testing & Validation**](https://ryanmaclean.github.io/vibecode-webgui/comprehensive-environment-test-report) - Complete test coverage
+- [**Tailwind CSS v4 Guide**](https://ryanmaclean.github.io/vibecode-webgui/wiki) - Complete implementation with 3 production-ready approaches  
+- [**Deployment Guide**](https://ryanmaclean.github.io/vibecode-webgui/kind-troubleshooting) - KIND, Docker, Kubernetes setup
+- [**Helm Charts Guide**](https://ryanmaclean.github.io/vibecode-webgui/helm-deployment-guide) - Production-ready Helm deployment with environment scaling
+- [**AI Integration**](https://ryanmaclean.github.io/vibecode-webgui/enhanced-ai-features) - Claude, OpenRouter, Multi-model support
+- [**Testing & Validation**](https://ryanmaclean.github.io/vibecode-webgui/comprehensive-environment-test-report) - Complete test coverage
 
-### 🚀 **GitHub Pages Status** ✅
+### GitHub Pages Status
 - **Astro v5.12.1 + Starlight v0.35.1** - Latest versions deployed
 - **Performance**: < 0.4s average load time, 200 OK responses
 - **SEO Optimized** with meta tags, sitemap, and structured data  
@@ -29,66 +48,163 @@ Cloud Dev Env powered by **code-server**.
 [![Uptime](https://img.shields.io/badge/Uptime-99.9%25-brightgreen)](https://status.vibecode.dev)
 [![Project Generation](https://img.shields.io/badge/Project%20Success-95%25-brightgreen)](https://vibecode.dev/generate)
 
-## 🚀 Key Features
+## Key Features
 
-- **🖥️ VS Code in Browser** - Full-featured IDE with zero setup
-- **🤖 AI Project Generation** - Natural language to complete projects with Claude-3.5-Sonnet
-- **🔄 Multi-AI Model Support** - 321+ AI models via OpenRouter integration
-- **⚡ Unified AI Client** - Multi-provider access with automatic fallbacks
-- **🤝 Agent Framework** - Multi-agent coordination for complex development
-- **🏠 Local AI Models** - Ollama integration for privacy-first inference
-- **🗄️ Vector Databases** - pgvector, Chroma, Weaviate support
-- **☸️ Kubernetes-Native** - Built for enterprise scale
-- **🔐 Enterprise Security** - Authelia 2FA/TOTP/WebAuthn + NextAuth with multiple providers
-- **🔒 Kubernetes Secrets Automation** - ✅ **NEW**: 2025 best practices implementation with automated secret management
-- **♿ Full Accessibility** - WCAG 2.1 AA compliant
+- **VS Code in Browser** - Full-featured IDE with zero setup
+- **AI Project Generation** - Natural language to complete projects with Claude-3.5-Sonnet
+- **Multi-AI Model Support** - 321+ AI models via OpenRouter integration
+- **Unified AI Client** - Multi-provider access with automatic fallbacks
+- **Agent Framework** - Multi-agent coordination for complex development
+- **Local AI Models** - Ollama integration for privacy-first inference
+- **Vector Databases** - pgvector, Chroma, Weaviate support
+- **Kubernetes-Native** - Built for enterprise scale
+- **Enterprise Security** - Authelia 2FA/TOTP/WebAuthn + NextAuth with multiple providers
+- **Kubernetes Secrets Automation** - 2025 best practices implementation with automated secret management
+- **Full Accessibility** - WCAG 2.1 AA compliant
 
-## ⚡ Quick Start
+## Quick Start
+
+### Prerequisites
+
+**Node.js 18.17+ required** (20.11.0 recommended)
+
+```bash
+# Check your Node.js version
+node --version
+
+# If you need to install/update Node.js:
+# Using nvm (recommended):
+nvm install 20.11.0
+nvm use 20.11.0
+
+# Or using npx (one-time):
+npx node@20.11.0 --version
+```
+
+### Installation
 
 ```bash
 # Clone the repository
 git clone https://github.com/vibecode/webgui.git
 cd webgui
 
-# Install dependencies
+# Run automated setup (recommended)
+npm run setup
+
+# Manual setup if needed:
 npm install
+cp .env.local.example .env.local  # Edit with your API keys
+```
 
-# Start development server
+### Development Modes
+
+**CDN Mode (Recommended for Development)**
+```bash
+npm run dev:cdn
+# ✓ Fastest startup (< 2s)
+# ✓ No native module compilation
+# ✓ Perfect for ARM64 macOS
+```
+
+**Standard Mode**
+```bash
 npm run dev
-
-# OR use Tailwind CSS v4 (CDN mode for development)
-npm run dev:cdn
-
-# OR use Docker development environment
-npm run dev:docker
+# ✓ Full PostCSS integration
+# ⚠ May require native module rebuilds
 ```
 
-## 🎨 Tailwind CSS v4 Integration
+**Docker Mode (Production Testing)**
+```bash
+npm run dev:docker
+# ✓ Container-based environment
+# ✓ Tests production Docker build
+```
 
-**✅ PRODUCTION READY** - Complete Tailwind CSS v4 + Next.js integration with three verified approaches:
+### Build & Deploy
 
-### 🌐 CDN Development (Recommended for Development)
-- ✅ Zero native module dependencies
-- ✅ Instant setup (< 2s startup) 
-- ✅ Perfect for ARM64 macOS development
+```bash
+# Test production build
+npm run build
+npm start
+
+# Test all deployment modes
+node scripts/universal-deployment-test.js
+```
+
+## Troubleshooting
+
+### Common Issues & Solutions
+
+**Build fails with "Cannot find module lightningcss"**
+```bash
+# Use CDN mode instead
+npm run dev:cdn
+```
+
+**"Node.js version not supported"**
+```bash
+# Install correct Node.js version
+nvm install 20.11.0
+nvm use 20.11.0
+# Or use npx for one-time usage
+npx -p node@20.11.0 npm run dev:cdn
+```
+
+**Docker build fails**
+```bash
+# Use simplified Docker configuration
+docker build -f Dockerfile.simple -t vibecode .
+docker run -p 3000:3000 vibecode
+```
+
+**npm install fails**
+```bash
+# Clear cache and reinstall
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### Platform-Specific Notes
+
+**macOS ARM64 (M1/M2/M3)**
+- Use `npm run dev:cdn` for fastest development
+- Native modules may need compilation
+
+**Linux**
+- All modes should work out of the box
+- Docker mode recommended for production testing
+
+**Windows**
+- Use WSL2 for best experience
+- PowerShell may require execution policy changes
+
+## Tailwind CSS v4 Integration
+
+**PRODUCTION READY** - Complete Tailwind CSS v4 + Next.js integration with three verified approaches:
+
+### CDN Development (Recommended for Development)
+- Zero native module dependencies
+- Instant setup (< 2s startup) 
+- Perfect for ARM64 macOS development
 
 ```bash
 npm run dev:cdn
 ```
 
-### 🐳 Docker Development (Production Testing)
-- ✅ Full PostCSS integration
-- ✅ Container-based native module compilation
-- ✅ Production-grade consistency
+### Docker Development (Production Testing)
+- Full PostCSS integration
+- Container-based native module compilation
+- Production-grade consistency
 
 ```bash
 npm run dev:docker
 ```
 
-### 🏭 x86-64 Production (Eliminates All ARM64 Issues)
-- ✅ **Critical Discovery**: ARM64 macOS issues completely eliminated on x86-64 production
-- ✅ lightningcss works perfectly on production architecture
-- ✅ Verified through Docker Desktop emulation
+### x86-64 Production (Eliminates All ARM64 Issues)
+- **Critical Discovery**: ARM64 macOS issues completely eliminated on x86-64 production
+- lightningcss works perfectly on production architecture
+- Verified through Docker Desktop emulation
 
 ```bash
 docker buildx build --platform linux/amd64 -f Dockerfile.prod -t vibecode-prod .
@@ -102,17 +218,17 @@ npm run tailwind:docker   # Switch to Docker mode
 npm run tailwind:restore  # Restore original setup
 ```
 
-**📚 Complete Documentation**: See our comprehensive [Wiki Documentation](https://ryanmaclean.github.io/vibecode-webgui/) for detailed guides:
+**Complete Documentation**: See our comprehensive [Wiki Documentation](https://ryanmaclean.github.io/vibecode-webgui/) for detailed guides:
 - [Tailwind CSS v4 Migration Guide](https://ryanmaclean.github.io/vibecode-webgui/wiki) - Complete implementation guide
 - [Testing Reports](https://ryanmaclean.github.io/vibecode-webgui/comprehensive-environment-test-report) - Environment validation results
 - [Production Deployment](https://ryanmaclean.github.io/vibecode-webgui/x86-production-test-report) - Architecture verification
-- [**Kubernetes Secrets Automation**](KUBERNETES_SECRETS_AUTOMATION.md) - ✅ **NEW**: 2025 best practices implementation guide
+- [**Kubernetes Secrets Automation**](KUBERNETES_SECRETS_AUTOMATION.md) - 2025 best practices implementation guide
 
-## 🏗️ Deployment Options
+## Deployment Options
 
-### 🎯 Helm Chart Deployment (Production-Ready)
+### Helm Chart Deployment (Production-Ready)
 
-**✅ NEW: Automated Secrets Management** - Following 2025 best practices with zero manual secret handling:
+**Automated Secrets Management** - Following 2025 best practices with zero manual secret handling:
 
 ```bash
 # 1. Automated secret creation (no manual steps required)
@@ -158,7 +274,7 @@ kind create cluster --name=vibecode-test --config=k8s/vibecode-kind-config.yaml
 kubectl apply -f k8s/
 ```
 
-### 🔧 Troubleshooting
+### Troubleshooting
 ```bash
 # Interactive Docker troubleshooting TUI
 ./scripts/docker-doctor.sh
@@ -177,7 +293,7 @@ helm install vibecode ./charts/vibecode \
   --set ingress.host=your-domain.com
 ```
 
-## 📊 Performance Metrics (Latest)
+## Performance Metrics (Latest)
 
 - **Project Generation**: ~45s (95% success rate)
 - **Workspace Provisioning**: ~8s
@@ -185,13 +301,13 @@ helm install vibecode ./charts/vibecode \
 - **Test Suite**: ~45s
 - **Page Load**: ~2.1s
 
-## 🔍 Explore More
+## Explore More
 
 - [Documentation](https://docs.vibecode.dev)
 - [API Reference](https://api.vibecode.dev)
 - [Community Forum](https://community.vibecode.dev)
 
-## 📊 Performance Benchmarks (July 23, 2025)
+## Performance Benchmarks (July 23, 2025)
 
 **Latest Performance Results:**
 - **Build Time**: 13.0s production build
@@ -210,7 +326,7 @@ helm install vibecode ./charts/vibecode \
 - **Success Rate**: Validated working AI project generation pipeline
 - **Response**: Streaming with progress tracking
 
-## 📄 License
+## License
 
 MIT © [VibeCode](https://vibecode.dev)
 
@@ -222,21 +338,21 @@ MIT © [VibeCode](https://vibecode.dev)
 
 
 
-## 🌟 **New: Enterprise Azure Deployment**
+## New: Enterprise Azure Deployment
 
 Deploy VibeCode to **Azure** with enterprise features in one click:
 
-- ✅ **Azure Kubernetes Service (AKS)** with auto-scaling
-- ✅ **Azure Database for PostgreSQL** with pgvector extension  
-- ✅ **Azure AI Services** (OpenAI, Computer Vision, Language) as OpenRouter alternative
-- ✅ **Datadog Database Monitoring** with full observability
-- ✅ **Enterprise security** with managed identities and Key Vault
-- ✅ **Production-ready** with high availability and disaster recovery
+- **Azure Kubernetes Service (AKS)** with auto-scaling
+- **Azure Database for PostgreSQL** with pgvector extension  
+- **Azure AI Services** (OpenAI, Computer Vision, Language) as OpenRouter alternative
+- **Datadog Database Monitoring** with full observability
+- **Enterprise security** with managed identities and Key Vault
+- **Production-ready** with high availability and disaster recovery
 
 **Deployment Options:**
-- 🎯 **One-Click Deploy**: [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fvibecode%2Fvibecode-webgui%2Fmain%2Finfrastructure%2Farm%2Fazuredeploy.json)
-- 🔧 **Terraform/OpenTofu**: See [`infrastructure/terraform/azure/`](./infrastructure/terraform/azure/)
-- 📋 **ARM Templates**: See [`infrastructure/arm/`](./infrastructure/arm/)
+- **One-Click Deploy**: [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fvibecode%2Fvibecode-webgui%2Fmain%2Finfrastructure%2Farm%2Fazuredeploy.json)
+- **Terraform/OpenTofu**: See [`infrastructure/terraform/azure/`](./infrastructure/terraform/azure/)
+- **ARM Templates**: See [`infrastructure/arm/`](./infrastructure/arm/)
 
 **Monthly Cost**: ~$1,570 (with auto-scaling and cost optimization) | **Setup Time**: 15-20 minutes
 
@@ -282,16 +398,16 @@ helm install vibecode-dev ./helm/vibecode-platform \
 
 **Documentation:** See [`KUBERNETES_SECRETS_AUTOMATION.md`](./KUBERNETES_SECRETS_AUTOMATION.md) for complete implementation details.
 
-## 🤖 Kubernetes Automation Status
+## Kubernetes Automation Status
 
 ### **Current Automation (70% Complete)**
 ```bash
-# ✅ FULLY AUTOMATED
+# FULLY AUTOMATED
 ./scripts/setup-kind-cluster.sh          # Complete cluster setup
 ./scripts/kind-deploy-services.sh        # Service deployment  
 node scripts/deploy.js                   # Cloud deployment (Vercel/Netlify)
 
-# 🟡 SEMI-AUTOMATED  
+# SEMI-AUTOMATED  
 kubectl apply -f k8s/                    # Manual manifest application
 docker build -t app:latest .             # Manual image building
 kubectl port-forward svc/app 3000:3000   # Manual port forwarding
@@ -332,7 +448,7 @@ kubectl port-forward svc/app 3000:3000   # Manual port forwarding
 - Automatic secret rotation
 - Encrypted Git storage with Sealed Secrets
 
-## 🔧 Docker Desktop Troubleshooting
+## Docker Desktop Troubleshooting
 
 ### **Common Docker Issues & Solutions**
 
@@ -381,22 +497,22 @@ osascript -e 'quit app "Docker Desktop"' && sleep 5 && open -a "Docker Desktop"
 ./scripts/bootstrap-from-zero.sh
 
 # What it automates:
-# ✅ Installs all dependencies (KIND, kubectl, Helm, Docker)
-# ✅ Creates environment configuration (.env.local)
-# ✅ Sets up Kubernetes cluster and all services
-# ✅ Manages secrets automatically from environment
-# ✅ Builds and loads container images
-# ✅ Deploys monitoring stack
-# ✅ Verifies everything is working
+# Installs all dependencies (KIND, kubectl, Helm, Docker)
+# Creates environment configuration (.env.local)
+# Sets up Kubernetes cluster and all services
+# Manages secrets automatically from environment
+# Builds and loads container images
+# Deploys monitoring stack
+# Verifies everything is working
 ```
 
 #### **Option 2: GitHub Actions CI/CD (Production)**
 ```yaml
 # .github/workflows/k8s-deploy.yml automatically handles:
-# ✅ Testing and building on every push
-# ✅ Container image creation and registry push  
-# ✅ Deployment to staging and production
-# ✅ Health checks and rollback on failure
+# Testing and building on every push
+# Container image creation and registry push  
+# Deployment to staging and production
+# Health checks and rollback on failure
 ```
 
 #### **Option 3: Enterprise GitOps (Optional)**
@@ -421,31 +537,31 @@ kubectl apply -f k8s/argocd/application.yaml
 - **OpenTofu**: Infrastructure as Code (MPL 2.0) - Cloud provisioning  
 - **Datadog Agent**: `gcr.io/datadoghq/agent:7` - Full observability platform
 
-## ✨ Key Features
+## Key Features
 
-- 🚀 **Complete VS Code Experience**: Full IDE via code-server 4.101.2 (MIT licensed)
-- 🔐 **Enterprise 2FA/SSO**: Fully configured Authelia authentication with hardware keys, TOTP, and Duo push, protecting all ingress resources.
-- 🎯 **Infrastructure-First**: KIND (Kubernetes in Docker) orchestration eliminates 60-80% custom development.
-- 🤖 **AI Project Generation**: Complete Lovable/Replit/Bolt.diy-inspired workflow. The system uses **Claude-3.5-Sonnet** via OpenRouter to turn natural language prompts into a complete project structure, delivered as a strictly-validated JSON object.
-- 💬 **Hugging Face Chat-UI**: Production-ready SvelteKit chat interface with MongoDB backend, web search, multimodal support, and tool integration capabilities.
-- 🌐 **Production-Ready**: NGINX Ingress, cert-manager, Helm charts, persistent storage.
-- 📊 **Multi-Platform Observability**: Datadog (primary) + Prometheus hybrid stack with OpenTelemetry Collector support for vendor-neutral telemetry.
-- 🖥️ **React Management Dashboard**: Complete cluster administration interface with real-time metrics and visualization.
-- 🔄 **Per-User Workspaces**: Isolated environments with dedicated persistent volumes.
-- ⚡ **AI-Powered Auto-Scaling**: Kubernetes-native scaling with Datadog WPA + intelligent resource optimization.
-- 🛡️ **Security**: Integrated security scanning with Datadog SAST/SCA + Kubehound attack path analysis. Scans run automatically on every push to `main` branch.
+- **Complete VS Code Experience**: Full IDE via code-server 4.101.2 (MIT licensed)
+- **Enterprise 2FA/SSO**: Fully configured Authelia authentication with hardware keys, TOTP, and Duo push, protecting all ingress resources.
+- **Infrastructure-First**: KIND (Kubernetes in Docker) orchestration eliminates 60-80% custom development.
+- **AI Project Generation**: Complete Lovable/Replit/Bolt.diy-inspired workflow. The system uses **Claude-3.5-Sonnet** via OpenRouter to turn natural language prompts into a complete project structure, delivered as a strictly-validated JSON object.
+- **Hugging Face Chat-UI**: Production-ready SvelteKit chat interface with MongoDB backend, web search, multimodal support, and tool integration capabilities.
+- **Production-Ready**: NGINX Ingress, cert-manager, Helm charts, persistent storage.
+- **Multi-Platform Observability**: Datadog (primary) + Prometheus hybrid stack with OpenTelemetry Collector support for vendor-neutral telemetry.
+- **React Management Dashboard**: Complete cluster administration interface with real-time metrics and visualization.
+- **Per-User Workspaces**: Isolated environments with dedicated persistent volumes.
+- **AI-Powered Auto-Scaling**: Kubernetes-native scaling with Datadog WPA + intelligent resource optimization.
+- **Security**: Integrated security scanning with Datadog SAST/SCA + Kubehound attack path analysis. Scans run automatically on every push to `main` branch.
 
     **Note:** To run the security scans, you will need to add your Datadog API and App keys as secrets to your GitHub repository. The required secrets are `DD_API_KEY` and `DD_APP_KEY`.
-- 🎨 **Modern UI/UX**: React + TypeScript + Tailwind CSS dashboard with VS Code integration + Hugging Face SvelteKit chat interface
-- ♿ **Accessibility Compliance**: WCAG 2.1 AA compliant with comprehensive accessibility testing, automated contrast validation, and jest-axe integration
-- 🔧 **Development Tools**: ESLint accessibility linting, pre-commit hooks, and comprehensive test coverage
-- 🧠 **Vector Search & RAG**: Full semantic search capabilities with pgvector and OpenAI embeddings for intelligent code assistance
-- 🗄️ **Enterprise Database**: Complete Prisma schema with versioned migrations and comprehensive monitoring
-- 📊 **Database Monitoring**: Real-time PostgreSQL performance monitoring with Datadog DBM, including query performance, connection pools, and slow query analysis
-- 🔍 **LLM Observability**: Comprehensive AI operation tracking with Datadog LLM monitoring integration
-- 🔥 **Burn Framework Integration**: Complete Rust + AI development templates with Microsoft Phi models for edge-capable AI applications
+- **Modern UI/UX**: React + TypeScript + Tailwind CSS dashboard with VS Code integration + Hugging Face SvelteKit chat interface
+- **Accessibility Compliance**: WCAG 2.1 AA compliant with comprehensive accessibility testing, automated contrast validation, and jest-axe integration
+- **Development Tools**: ESLint accessibility linting, pre-commit hooks, and comprehensive test coverage
+- **Vector Search & RAG**: Full semantic search capabilities with pgvector and OpenAI embeddings for intelligent code assistance
+- **Enterprise Database**: Complete Prisma schema with versioned migrations and comprehensive monitoring
+- **Database Monitoring**: Real-time PostgreSQL performance monitoring with Datadog DBM, including query performance, connection pools, and slow query analysis
+- **LLM Observability**: Comprehensive AI operation tracking with Datadog LLM monitoring integration
+- **Burn Framework Integration**: Complete Rust + AI development templates with Microsoft Phi models for edge-capable AI applications
 
-## 📊 Database Monitoring
+## Database Monitoring
 
 VibeCode includes comprehensive database monitoring with Datadog DBM (Database Monitoring) to ensure optimal PostgreSQL performance:
 
@@ -470,7 +586,7 @@ VibeCode includes comprehensive database monitoring with Datadog DBM (Database M
 
 [View complete documentation](./docs/database-monitoring.md) for detailed configuration and usage.
 
-## 📊 **Observability & Monitoring Options**
+## Observability & Monitoring Options
 
 VibeCode supports multiple observability platforms to accommodate different licensing and infrastructure requirements:
 
@@ -489,18 +605,18 @@ VibeCode supports multiple observability platforms to accommodate different lice
 
 **Deployment**: Run `./scripts/deploy-monitoring.sh -d <your-datadog-key>` to deploy the hybrid stack.
 
-## 🤖 **Enterprise AI Infrastructure**
+## Enterprise AI Infrastructure
 
 VibeCode leverages cutting-edge AI infrastructure designed for **multi-user scalability** and **enterprise reliability**:
 
-### **🚦 LiteLLM Proxy: Unified AI Gateway**
+### LiteLLM Proxy: Unified AI Gateway
 **Production-Ready Multi-Provider AI Management**
 
-- **🔄 Smart Routing**: Automatic fallback across 6 AI providers (Local Ollama → Azure OpenAI → OpenRouter → Anthropic → AWS Bedrock → Google Gemini)
-- **⚡ High Performance**: Load balancing, rate limiting, and intelligent request queuing for 100+ concurrent users
-- **💰 Cost Optimization**: Semantic caching, budget tracking, and provider cost comparison
-- **🛡️ Enterprise Security**: Unified API key management, request logging, and audit trails
-- **📊 Full Observability**: Request tracking, latency monitoring, and usage analytics
+- **Smart Routing**: Automatic fallback across 6 AI providers (Local Ollama to Azure OpenAI to OpenRouter to Anthropic to AWS Bedrock to Google Gemini)
+- **High Performance**: Load balancing, rate limiting, and intelligent request queuing for 100+ concurrent users
+- **Cost Optimization**: Semantic caching, budget tracking, and provider cost comparison
+- **Enterprise Security**: Unified API key management, request logging, and audit trails
+- **Full Observability**: Request tracking, latency monitoring, and usage analytics
 
 ```typescript
 // Single API for all AI providers
@@ -514,14 +630,14 @@ const response = await fetch('/api/ai/litellm-proxy/v1/chat/completions', {
 });
 ```
 
-### **⏰ Temporal Orchestration: Scalable AI Workflows**
+### Temporal Orchestration: Scalable AI Workflows
 **Durable, Fault-Tolerant AI Operations**
 
-- **🔄 Workflow Management**: Long-running AI operations (project generation, code analysis, documentation)
-- **🎯 Resource Allocation**: Priority queuing (premium users → dedicated resources, standard users → shared pools)
-- **🔁 Automatic Recovery**: Failed AI requests automatically retry with exponential backoff
-- **📈 Auto-Scaling**: Dynamic resource allocation based on user demand and queue depth
-- **🕐 Time Travel**: Debug and replay AI workflows for quality assurance
+- **Workflow Management**: Long-running AI operations (project generation, code analysis, documentation)
+- **Resource Allocation**: Priority queuing (premium users get dedicated resources, standard users get shared pools)
+- **Automatic Recovery**: Failed AI requests automatically retry with exponential backoff
+- **Auto-Scaling**: Dynamic resource allocation based on user demand and queue depth
+- **Time Travel**: Debug and replay AI workflows for quality assurance
 
 ```typescript
 // AI workflow that survives restarts and failures
@@ -540,18 +656,18 @@ class AIProjectGenerationWorkflow {
 }
 ```
 
-### **🧠 Advanced AI Capabilities**
+### Advanced AI Capabilities
 **MIT/BSD Licensed AI Libraries for Maximum Flexibility**
 
-- **🎯 Mastra Agent Framework**: TypeScript AI agents with 50+ production templates (MIT)
-- **🏠 Local Inference**: Ollama + VLLM for privacy-sensitive code analysis (Apache 2.0)
-- **🗄️ High-Performance Vectors**: LanceDB for lightning-fast semantic search (Apache 2.0)  
-- **🤖 Type-Safe Agents**: Pydantic AI for reliable AI agent orchestration (MIT)
-- **🎯 Prompt Optimization**: DSPy for systematic prompt engineering (Apache 2.0)
-- **📊 AI Observability**: Langfuse for comprehensive LLM operation tracking (MIT)
-- **🛡️ Safety & Governance**: Guardrails for content filtering and compliance (Apache 2.0)
+- **Mastra Agent Framework**: TypeScript AI agents with 50+ production templates (MIT)
+- **Local Inference**: Ollama + VLLM for privacy-sensitive code analysis (Apache 2.0)
+- **High-Performance Vectors**: LanceDB for lightning-fast semantic search (Apache 2.0)  
+- **Type-Safe Agents**: Pydantic AI for reliable AI agent orchestration (MIT)
+- **Prompt Optimization**: DSPy for systematic prompt engineering (Apache 2.0)
+- **AI Observability**: Langfuse for comprehensive LLM operation tracking (MIT)
+- **Safety & Governance**: Guardrails for content filtering and compliance (Apache 2.0)
 
-### **🎯 Multi-User AI Architecture**
+### Multi-User AI Architecture
 
 ```mermaid
 graph TD
@@ -576,13 +692,13 @@ graph TD
 ```
 
 **Key Benefits:**
-- **🔥 Zero Queue Times**: Smart resource allocation eliminates AI request bottlenecks
-- **💰 Cost Efficient**: Automatic provider switching based on cost and performance
-- **🛡️ Privacy First**: Sensitive code stays local with Ollama inference
-- **⚡ Enterprise Scale**: Handles 1000+ concurrent AI operations with Temporal orchestration
-- **🔧 Developer Friendly**: One unified API instead of managing 6+ provider SDKs
+- **Zero Queue Times**: Smart resource allocation eliminates AI request bottlenecks
+- **Cost Efficient**: Automatic provider switching based on cost and performance
+- **Privacy First**: Sensitive code stays local with Ollama inference
+- **Enterprise Scale**: Handles 1000+ concurrent AI operations with Temporal orchestration
+- **Developer Friendly**: One unified API instead of managing 6+ provider SDKs
 
-## 🚀 Local Development Setup
+## Local Development Setup
 
 Follow these steps to set up a local development environment using KIND.
 
@@ -647,7 +763,7 @@ Follow these steps to set up a local development environment using KIND.
     npx prisma migrate deploy
     ```
 
-## 🚀 Local Development Setup
+## Local Development Setup
 
 Follow these steps to set up a local development environment using KIND.
 
@@ -695,7 +811,7 @@ Follow these steps to set up a local development environment using KIND.
     kubectl get nodes -o wide
     ```
 
-## 🏗️ Infrastructure-First Architecture
+## Infrastructure-First Architecture
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
@@ -719,9 +835,9 @@ Follow these steps to set up a local development environment using KIND.
 └─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
 
-## 🚀 Complete Setup Guide
+## Complete Setup Guide
 
-### 🔧 Prerequisites
+### Prerequisites
 
 **Required Tools:**
 - **Docker Desktop** (for container management)
@@ -769,7 +885,7 @@ sudo ln -s /opt/node/bin/node /usr/local/bin/node
 sudo ln -s /opt/node/bin/npm /usr/local/bin/npm
 ```
 
-### 🎯 Option 1: Local Development (Laptop/Desktop)
+### Option 1: Local Development (Laptop/Desktop)
 
 **Quick development setup for testing and development:**
 
@@ -818,7 +934,7 @@ sudo ln -s /opt/node/bin/npm /usr/local/bin/npm
    - **PostgreSQL**: localhost:5432
    - **Redis**: localhost:6379
 
-### 🌐 Option 2: KIND Cluster (Production-like)
+### Option 2: KIND Cluster (Production-like)
 
 **Full Kubernetes deployment on your laptop - identical to production:**
 
@@ -1003,9 +1119,9 @@ resources:
     cpu: "1000m"
 ```
 
-## ✅ VERIFIED WORKING FUNCTIONALITY (2025-07-16)
+## VERIFIED WORKING FUNCTIONALITY (2025-07-16)
 
-### 🎯 Complete End-to-End Validation
+### Complete End-to-End Validation
 
 **All components have been verified working in both KIND and production environments:**
 
@@ -1070,7 +1186,7 @@ SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
 # Tags: env:production, service:vibecode-webgui, version:1.0.0
 ```
 
-### 🔄 Verified Data Flow
+### Verified Data Flow
 
 **Complete user journey working end-to-end:**
 
@@ -1141,7 +1257,7 @@ kubectl logs test-ai
 kubectl delete pod test-health test-ai
 ```
 
-### 📊 Monitoring Dashboard
+### Monitoring Dashboard
 
 **Access real-time metrics dashboard:**
 
@@ -1161,7 +1277,7 @@ open http://localhost:3000/monitoring
 - **Auto-refresh**: 30-second intervals for real-time updates
 - **Admin Controls**: Secure access with role-based permissions
 
-### 📊 Performance Metrics
+### Performance Metrics
 
 **Measured on KIND cluster (2 nodes, 4GB RAM):**
 
@@ -1195,7 +1311,7 @@ open http://localhost:3000/monitoring
 - **Auto-scaling**: Datadog WPA + DatadogPodAutoscaler
 - **Load Balancing**: Kubernetes service mesh
 
-## 🚀 Quick Start (Choose Your Path)
+## Quick Start (Choose Your Path)
 
 ### Path 1: Instant Development (5 minutes)
 ```bash
@@ -1230,7 +1346,7 @@ kubectl apply -f k8s/vibecode-ingress.yaml
 # Configure DNS → vibecode.yourdomain.com
 ```
 
-## 📋 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -1410,18 +1526,18 @@ kubectl get svc -n ingress-nginx ingress-nginx-controller
 
 Deploy VibeCode to Microsoft Azure with full enterprise features including Azure AI Services as an OpenRouter alternative, PostgreSQL with pgvector, and comprehensive monitoring.
 
-### 🎯 **What You Get**
+### What You Get
 
-✅ **Azure Kubernetes Service (AKS)** with auto-scaling and multiple node pools  
-✅ **Azure Database for PostgreSQL Flexible Server** with pgvector extension  
-✅ **Azure AI Services** (OpenAI GPT-4, Computer Vision, Language) as OpenRouter replacement  
-✅ **Datadog Database Monitoring** with full observability and compliance  
-✅ **Azure Container Registry** with security scanning and managed identity  
-✅ **Azure Key Vault** for centralized secrets management  
-✅ **Enterprise security** with managed identities and private networking  
-✅ **High availability** with geo-redundant backups and disaster recovery  
+**Azure Kubernetes Service (AKS)** with auto-scaling and multiple node pools  
+**Azure Database for PostgreSQL Flexible Server** with pgvector extension  
+**Azure AI Services** (OpenAI GPT-4, Computer Vision, Language) as OpenRouter replacement  
+**Datadog Database Monitoring** with full observability and compliance  
+**Azure Container Registry** with security scanning and managed identity  
+**Azure Key Vault** for centralized secrets management  
+**Enterprise security** with managed identities and private networking  
+**High availability** with geo-redundant backups and disaster recovery  
 
-### 🚀 **Deployment Options**
+### Deployment Options
 
 #### Option 1: One-Click ARM Template Deployment
 
@@ -1506,17 +1622,17 @@ const sentiment = await aiClient.analyzeSentiment(codeComments);
 Automatically configured per [Azure's official documentation](https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/how-to-use-pgvector):
 
 #### **Automatic Setup**
-- ✅ **pgvector extension** enabled during deployment
-- ✅ **Performance parameters** optimized for vector operations:
+- **pgvector extension** enabled during deployment
+- **Performance parameters** optimized for vector operations:
   ```sql
   shared_preload_libraries = 'vector'
   max_wal_size = '2GB'
   work_mem = '256MB'
   maintenance_work_mem = '512MB'
   ```
-- ✅ **High Availability** with zone-redundant configuration
-- ✅ **Automated backups** with 35-day retention
-- ✅ **Private networking** integrated with AKS VNet
+- **High Availability** with zone-redundant configuration
+- **Automated backups** with 35-day retention
+- **Private networking** integrated with AKS VNet
 
 #### **Ready for Vector Search**
 ```sql
@@ -1535,18 +1651,18 @@ ORDER BY embedding <-> '[0.1, 0.2, ...]'::vector
 LIMIT 10;
 ```
 
-### 🚀 **Enterprise Redis & Key-Value Store Options**
+### Enterprise Redis & Key-Value Store Options
 
 VibeCode provides **three enterprise-grade Redis options** to meet different performance, cost, and licensing requirements:
 
 #### **1. Azure Cache for Redis (Recommended)**
 Microsoft's traditional managed Redis service with enterprise features:
 
-- ✅ **Fully managed** with automatic patching and updates
-- ✅ **High availability** with zone redundancy and geo-replication  
-- ✅ **Multiple tiers**: Basic, Standard, Premium with up to 1.2TB memory
-- ✅ **Enterprise security** with VNet integration and private endpoints
-- ✅ **Backup & recovery** with automated RDB snapshots
+- **Fully managed** with automatic patching and updates
+- **High availability** with zone redundancy and geo-replication  
+- **Multiple tiers**: Basic, Standard, Premium with up to 1.2TB memory
+- **Enterprise security** with VNet integration and private endpoints
+- **Backup & recovery** with automated RDB snapshots
 
 ```hcl
 # Configure in terraform.tfvars
@@ -1561,18 +1677,18 @@ azure_cache_redis_config = {
 #### **2. Azure Managed Redis (Preview)**
 Microsoft's **next-generation Redis service** with latest innovations:
 
-- ✅ **Redis Enterprise 7.4+** with advanced modules (RediSearch, RedisJSON, RedisTimeSeries, RedisBloom)
-- ✅ **99.999% availability** with active geo-replication
-- ✅ **Vector search** capabilities for AI/ML workloads
-- ✅ **Flash storage** options for cost-effective large datasets
+- **Redis Enterprise 7.4+** with advanced modules (RediSearch, RedisJSON, RedisTimeSeries, RedisBloom)
+- **99.999% availability** with active geo-replication
+- **Vector search** capabilities for AI/ML workloads
+- **Flash storage** options for cost-effective large datasets
 
 #### **3. Valkey (Open Source)**
 The **community-driven Redis fork** by [Linux Foundation](https://github.com/valkey-io/valkey):
 
-- ✅ **100% open source** under BSD license, no licensing restrictions
-- ✅ **Redis compatible** with enhanced performance and multi-threading
-- ✅ **Cost effective** running on your AKS infrastructure
-- ✅ **Community backed** by AWS, Google Cloud, and Oracle
+- **100% open source** under BSD license, no licensing restrictions
+- **Redis compatible** with enhanced performance and multi-threading
+- **Cost effective** running on your AKS infrastructure
+- **Community backed** by AWS, Google Cloud, and Oracle
 
 ```hcl
 # Deploy all three for testing/migration
@@ -1596,11 +1712,11 @@ await redis.setex(`session:${sessionId}`, 3600, JSON.stringify(sessionData));
 await redis.publish(`workspace:${workspaceId}`, JSON.stringify(update));
 ```
 
-### 📊 **Datadog Database Monitoring**
+### Datadog Database Monitoring
 
 Automatically configured with enterprise-grade monitoring:
 
-#### **Compliance Features** ✅
+#### Compliance Features
 - **Datadog Agent**: 7.66.1 (meets >=7.33.0 requirement)
 - **Cluster Agent**: 1.24.0 (meets >=1.18.0 requirement)  
 - **orchestratorExplorer**: Enabled for Pod collection
@@ -1613,7 +1729,7 @@ Automatically configured with enterprise-grade monitoring:
 - **Index Recommendations**: Automatic suggestions for vector query optimization
 - **Resource Utilization**: Real-time CPU, memory, and storage monitoring
 
-### 💰 **Cost & Scaling**
+### Cost & Scaling
 
 #### **Monthly Costs (East US 2)**
 | Component | Configuration | Cost |
@@ -1632,7 +1748,7 @@ Automatically configured with enterprise-grade monitoring:
 - **Cost optimization**: Automatic scale-down during low usage
 - **Spot instances**: Available for non-critical workloads
 
-### 🔒 **Enterprise Security**
+### Enterprise Security
 
 #### **Network Security**
 - **Private VNet** with dedicated subnets for AKS and database
@@ -1652,23 +1768,23 @@ Automatically configured with enterprise-grade monitoring:
 - **Private endpoints** for database access
 - **Geo-redundant backups** for disaster recovery
 
-### 📚 **Comprehensive Documentation**
+### Comprehensive Documentation
 
 - **[ARM Templates Guide](./infrastructure/arm/README.md)**: One-click deployment instructions
 - **[Terraform Guide](./infrastructure/terraform/azure/README.md)**: Infrastructure as Code setup
 - **[Azure AI Client](./src/lib/azure-ai-client.ts)**: OpenRouter-compatible API library
 - **[Architecture Summary](./AZURE_INFRASTRUCTURE_SUMMARY.md)**: Complete technical overview
 
-### 🎉 **Success Metrics**
+### Success Metrics
 
 After deployment, you'll have:
-- ✅ **Enterprise-ready** development platform on Azure
-- ✅ **OpenRouter alternative** using Azure AI Services  
-- ✅ **Vector search** capabilities with pgvector
-- ✅ **Full observability** with Datadog Database Monitoring
-- ✅ **Production security** with managed identities and private networking
-- ✅ **Auto-scaling** infrastructure that adapts to demand
-- ✅ **Cost optimization** with intelligent resource management
+- **Enterprise-ready** development platform on Azure
+- **OpenRouter alternative** using Azure AI Services  
+- **Vector search** capabilities with pgvector
+- **Full observability** with Datadog Database Monitoring
+- **Production security** with managed identities and private networking
+- **Auto-scaling** infrastructure that adapts to demand
+- **Cost optimization** with intelligent resource management
 
 **Ready to deploy to Azure?** Choose your preferred option above and get started! 🚀
 
@@ -1721,30 +1837,30 @@ resources:
     cpu: "1000m"
 ```
 
-## ✅ VERIFIED WORKING FUNCTIONALITY (2025-07-19)
+## VERIFIED WORKING FUNCTIONALITY (2025-07-19)
 
-### 🎯 Complete Feature Assessment & Status
+### Complete Feature Assessment & Status
 
 **Current implementation status based on comprehensive audit:**
 
-#### ✅ **PRODUCTION READY FEATURES**
-- **✅ AI Project Generation**: Complete Lovable/Replit/Bolt.diy workflow operational
-- **✅ LLM Observability**: Datadog tracing with comprehensive monitoring 
-- **✅ File Upload & RAG**: Full file upload API with vector indexing
-- **✅ Live Workspaces**: code-server integration with workspace provisioning
-- **✅ Authentication**: NextAuth with PostgreSQL sessions
-- **✅ Monitoring**: Datadog integration with real-time metrics
-- **✅ Accessibility**: WCAG 2.1 AA compliance with automated testing
+#### PRODUCTION READY FEATURES
+- **AI Project Generation**: Complete Lovable/Replit/Bolt.diy workflow operational
+- **LLM Observability**: Datadog tracing with comprehensive monitoring 
+- **File Upload & RAG**: Full file upload API with vector indexing
+- **Live Workspaces**: code-server integration with workspace provisioning
+- **Authentication**: NextAuth with PostgreSQL sessions
+- **Monitoring**: Datadog integration with real-time metrics
+- **Accessibility**: WCAG 2.1 AA compliance with automated testing
 
-#### ✅ **NEWLY COMPLETED FEATURES**
-- **✅ Prisma Schema & Migrations**: Complete database schema with versioned migrations
-- **✅ Test Suite**: All syntax errors fixed, tests now execute successfully
-- **✅ Vector Database**: Full pgvector integration with semantic search capabilities
-- **✅ Database Monitoring**: Comprehensive Datadog PostgreSQL monitoring
+#### NEWLY COMPLETED FEATURES
+- **Prisma Schema & Migrations**: Complete database schema with versioned migrations
+- **Test Suite**: All syntax errors fixed, tests now execute successfully
+- **Vector Database**: Full pgvector integration with semantic search capabilities
+- **Database Monitoring**: Comprehensive Datadog PostgreSQL monitoring
 
-#### ⚠️ **PARTIALLY IMPLEMENTED**
-- **🔶 Production Deployment**: Requires database migration execution
-- **🔶 Vector Index**: Needs pgvector extension enabled in production PostgreSQL
+#### PARTIALLY IMPLEMENTED
+- **Production Deployment**: Requires database migration execution
+- **Vector Index**: Needs pgvector extension enabled in production PostgreSQL
 
 #### Health Check Response (Latest)
 ```json
@@ -1841,7 +1957,7 @@ SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
 # Tags: env:production, service:vibecode-webgui, version:1.0.0
 ```
 
-### 🔄 Verified Data Flow
+### Verified Data Flow
 
 **Complete user journeys working end-to-end:**
 
@@ -1894,7 +2010,7 @@ kubectl logs test-ai
 kubectl delete pod test-health test-ai
 ```
 
-### 📊 Monitoring Dashboard
+### Monitoring Dashboard
 
 **Access real-time metrics dashboard:**
 
@@ -1915,7 +2031,7 @@ open http://localhost:3000/monitoring
 - **Admin Controls**: Secure access with role-based permissions
 - **Accessibility**: WCAG 2.1 AA compliant interface with automated testing
 
-### 📊 Performance Metrics
+### Performance Metrics
 
 **Measured on KIND cluster (2 nodes, 4GB RAM):**
 
@@ -1958,7 +2074,7 @@ open http://localhost:3000/monitoring
 - **Auto-scaling**: Datadog WPA + DatadogPodAutoscaler
 - **Load Balancing**: Kubernetes service mesh
 
-## 🚀 Quick Start (Choose Your Path)
+## Quick Start (Choose Your Path)
 
 ### Path 1: Instant Development (5 minutes)
 ```bash
@@ -1993,7 +2109,7 @@ kubectl apply -f k8s/vibecode-ingress.yaml
 # Configure DNS → vibecode.yourdomain.com
 ```
 
-## 📋 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -2096,7 +2212,7 @@ This section outlines the standard procedure for debugging Kubernetes resources 
 
 ---
 
-## 🛡️ Security & API Key Protection
+## Security & API Key Protection
 
 VibeCode implements comprehensive security measures to protect against API key leaks and unauthorized access:
 
@@ -2124,13 +2240,13 @@ VibeCode implements comprehensive security measures to protect against API key l
    ```
 
 **Protected API Key Patterns:**
-- ✅ OpenAI/OpenRouter: `sk-*` (40+ chars)
-- ✅ Anthropic: `sk-ant-*` (40+ chars)  
-- ✅ Datadog: 32 hex character keys
-- ✅ GitHub: `ghp_*`, `gho_*`, `ghu_*`, `ghs_*`, `ghr_*`
-- ✅ AWS: `AKIA*` access keys
-- ✅ Google: `ya29.*` OAuth tokens
-- ✅ Stripe: `sk_*` and numeric patterns
+- OpenAI/OpenRouter: `sk-*` (40+ chars)
+- Anthropic: `sk-ant-*` (40+ chars)  
+- Datadog: 32 hex character keys
+- GitHub: `ghp_*`, `gho_*`, `ghu_*`, `ghs_*`, `ghr_*`
+- AWS: `AKIA*` access keys
+- Google: `ya29.*` OAuth tokens
+- Stripe: `sk_*` and numeric patterns
 
 ### 🔐 Best Practices
 
