@@ -1,0 +1,92 @@
+# VibeCode WebGUI - Optimized Multi-Architecture Dockerfile
+# Supports both ARM64 and x64 architectures with efficient caching
+
+ARG NODE_VERSION=20
+ARG ALPINE_VERSION=3.20
+
+# Stage 1: Base image with platform dependencies
+FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS base
+
+# Install system dependencies and security updates
+RUN apk add --no-cache \
+    libc6-compat \
+    python3 \
+    make \
+    g++ \
+    git \
+    curl \
+    ca-certificates \
+    && apk upgrade --no-cache \
+    && rm -rf /var/cache/apk/*
+
+# Set production environment variables
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_SHARP_PATH=""
+
+WORKDIR /app
+
+# Stage 2: Dependencies installation with smart caching
+FROM base AS deps
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies with platform-agnostic approach
+RUN set -eux; \
+    # Remove platform-specific SWC dependencies from package.json
+    sed -i '/"@next\/swc-darwin-arm64":/d' package.json \
+    # Install ALL dependencies first (including dev deps for build)
+    && npm install --legacy-peer-deps --no-audit --no-fund \
+    # Clean npm cache aggressively
+    && npm cache clean --force \
+    # Only remove platform-specific binaries, keep @swc helpers
+    && find node_modules -name "*darwin*" -type d -path "*/node_modules/*" -prune -exec rm -rf {} + 2>/dev/null || true \
+    && find node_modules -name "*win32*" -type d -path "*/node_modules/*" -prune -exec rm -rf {} + 2>/dev/null || true
+
+# Stage 3: Build the application
+FROM base AS builder
+
+# Copy source code and dependencies
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build the application
+RUN set -eux; \
+    npm run build \
+    # Clean up build artifacts and dev dependencies
+    && rm -rf .next/cache \
+    && rm -rf node_modules/.cache \
+    && npm prune --production
+
+# Stage 4: Production runtime
+FROM base AS runtime
+
+WORKDIR /app
+
+# Set runtime environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
+
+# Copy production artifacts with proper permissions
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Health check (using wget since it's available in alpine)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+
+# Expose application port
+EXPOSE 3000
+
+# Run as non-root user
+USER nextjs
+
+# Start the application
+CMD ["node", "server.js"]
