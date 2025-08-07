@@ -1,6 +1,10 @@
 // Jest Polyfills for Browser APIs
 // ==============================
 
+// Add setImmediate polyfill for Winston and other Node.js modules
+global.setImmediate = global.setImmediate || ((fn, ...args) => setTimeout(fn, 0, ...args));
+global.clearImmediate = global.clearImmediate || clearTimeout;
+
 // Mock fetch API for tests
 global.fetch = jest.fn();
 

@@ -3,7 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
+  "engines": {
+    "node": ">=18.17.0 <25.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
+    "setup": "node scripts/setup-development.js",
     "dev": "node --require ./src/instrument.ts node_modules/.bin/next dev",
     "build": "next build",
     "start": "next start",
@@ -32,6 +37,8 @@
     "test:synthetics": "datadog-ci synthetics run-tests -c datadog-synthetics.json",
     "test:monitoring:production": "jest --testPathPattern=tests/production/.*monitoring.*\\.test\\.(ts|js)$",
     "test:monitoring:health": "jest --testPathPattern=tests/unit/health-check.test.ts",
+    "test:security": "jest --testPathPatterns=\"tests/security/.*\\.test\\.(ts|tsx|js|jsx)$\"",
+    "test:fix": "npm run setup && npm install --legacy-peer-deps",
     "dev:cdn": "./scripts/setup-tailwind-mode.sh cdn && npm run dev",
     "dev:docker": "./scripts/setup-tailwind-mode.sh docker && docker-compose -f docker-compose.dev.yml up --build",
     "dev:docker:detached": "./scripts/setup-tailwind-mode.sh docker && docker-compose -f docker-compose.dev.yml up --build -d",

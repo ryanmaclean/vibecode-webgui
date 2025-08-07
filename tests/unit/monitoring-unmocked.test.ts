@@ -15,6 +15,7 @@ describe('Monitoring Library (Minimal Mocking)', () => {
     fetch.mockClear();
 
     // Mock browser environment only
+    delete (global as any).window;
     Object.defineProperty(global, 'window', {
       value: {
         location: { href: 'http://localhost:3000' },

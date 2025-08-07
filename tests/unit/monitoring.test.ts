@@ -44,6 +44,7 @@ describe('Monitoring Library', () => {
   describe('Browser Environment', () => {
     beforeEach(() => {
       // Mock browser environment
+      delete (global as any).window;
       Object.defineProperty(global, 'window', {
         value: {
           location: { href: 'http://localhost:3000' },
