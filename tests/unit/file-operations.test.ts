@@ -328,7 +328,7 @@ describe('LazyFileLoader', () => {
 
   describe('Search Functionality', () => {
     beforeEach(async () => {
-      global.fetch = jest.fn();
+      global.fetch = jest.fn()
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
