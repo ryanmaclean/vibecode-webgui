@@ -36,11 +36,10 @@
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     ".next/types/**/*.ts",
-    "src/types/**/*.d.ts",
-    "tests/jest.d.ts"
+    "src/types/**/*.d.ts"
   ],
-  "exclude": ["node_modules", "jest.config.js"]
+  "exclude": ["node_modules", "jest.config.js", "tests/**/*.ts", "tests/**/*.tsx"]
 }
