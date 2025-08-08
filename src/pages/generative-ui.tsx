@@ -1,14 +1,8 @@
 import { useChat } from 'ai/react';
-import { GithubRepo } from '@/components/github-repo';
 
 export default function GenerativeUIChat() {
   const { messages, input, handleInputChange, handleSubmit } = useChat({
     api: '/api/chat',
-    tools: {
-      getGithubRepoInfo: {
-        render: props => <GithubRepo {...props} />,
-      },
-    },
   });
 
   return (
@@ -18,17 +12,6 @@ export default function GenerativeUIChat() {
           <div key={m.id} className="whitespace-pre-wrap">
             <strong className='capitalize'>{m.role === 'user' ? 'You: ' : 'AI: '}</strong>
             {m.content}
-            {m.toolInvocations?.map(toolInvocation => (
-              <div key={toolInvocation.toolCallId} className="mt-2">
-                {toolInvocation.result ? (
-                  <div className="bg-gray-200 p-4 rounded-lg">
-                    <pre className="whitespace-pre-wrap">{JSON.stringify(toolInvocation.result, null, 2)}</pre>
-                  </div>
-                ) : (
-                  <div className="animate-pulse">Loading tool output...</div>
-                )}
-              </div>
-            ))}
           </div>
         ))}
       </div>

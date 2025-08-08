@@ -67,13 +67,13 @@ export class ResourceManager {
     }
 
     try {
-      // Check if user has premium subscription
+      // Use role to determine quotas (no subscription_tier in schema)
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { subscription_tier: true }
+        select: { role: true }
       })
 
-      const quotas = user?.subscription_tier === 'premium' ? PREMIUM_QUOTAS : DEFAULT_QUOTAS
+      const quotas = user?.role === 'admin' ? PREMIUM_QUOTAS : DEFAULT_QUOTAS
       this.quotaCache.set(userId, quotas)
       
       return quotas
@@ -109,13 +109,12 @@ export class ResourceManager {
           where: { file: { user_id: userId } }
         }),
         
-        // API calls in last hour
-        prisma.aPICall.count({
+        // API calls in last hour (logged via Event model)
+        prisma.event.count({
           where: {
             user_id: userId,
-            created_at: {
-              gte: new Date(Date.now() - 60 * 60 * 1000)
-            }
+            event_type: 'api_call',
+            created_at: { gte: new Date(Date.now() - 60 * 60 * 1000) }
           }
         }),
         
@@ -213,12 +212,12 @@ export class ResourceManager {
    */
   async recordAPICall(userId: number, endpoint: string, tokensUsed?: number): Promise<void> {
     try {
-      await prisma.aPICall.create({
+      await prisma.event.create({
         data: {
           user_id: userId,
-          endpoint,
-          tokens_used: tokensUsed || 0,
-          created_at: new Date()
+          event_type: 'api_call',
+          event_name: endpoint,
+          properties: { tokens_used: tokensUsed || 0 }
         }
       })
 
@@ -236,8 +235,8 @@ export class ResourceManager {
     try {
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
       
-      await prisma.aPICall.deleteMany({
-        where: { created_at: { lt: oneDayAgo } }
+      await prisma.event.deleteMany({
+        where: { created_at: { lt: oneDayAgo }, event_type: 'api_call' }
       })
 
       console.log('Cleaned up old API call records')

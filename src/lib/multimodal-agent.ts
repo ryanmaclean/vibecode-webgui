@@ -103,6 +103,15 @@ export interface UIElement {
   interactions: string[];
 }
 
+type CodeBlock = { language: string; content: string };
+type ImprovementSuggestion = {
+  type: string;
+  description: string;
+  effort: 'low' | 'medium' | 'high';
+  impact: 'low' | 'medium' | 'high';
+};
+type DeploymentSuggestion = { platform: string; description: string; steps: string[] };
+
 export interface FileChange {
   path: string;
   operation: 'create' | 'update' | 'delete' | 'rename';
@@ -304,9 +313,10 @@ export class MultimodalAgent {
     let prompt = `You are VibeCode AI, an expert multimodal coding assistant. `;
 
     // Add context from previous messages
-    if (context?.previousMessages.length > 0) {
+    const prevMessages = context?.previousMessages ?? [];
+    if (prevMessages.length > 0) {
       prompt += `\n\nConversation Context:\n`;
-      prompt += context.previousMessages.slice(-3).map(msg => 
+      prompt += prevMessages.slice(-3).map(msg => 
         `${msg.role}: ${msg.content.substring(0, 200)}...`
       ).join('\n');
     }
@@ -505,9 +515,9 @@ Be encouraging, technically accurate, and provide working code examples.`;
   /**
    * Extract code blocks from text
    */
-  private extractCodeBlocks(text: string) {
+  private extractCodeBlocks(text: string): CodeBlock[] {
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
-    const blocks = [];
+    const blocks: CodeBlock[] = [];
     let match;
 
     while ((match = codeBlockRegex.exec(text)) !== null) {
@@ -540,9 +550,9 @@ Be encouraging, technically accurate, and provide working code examples.`;
   /**
    * Generate improvement suggestions
    */
-  private async generateImprovementSuggestions(files: ProjectFile[], response: string) {
+  private async generateImprovementSuggestions(files: ProjectFile[], response: string): Promise<ImprovementSuggestion[]> {
     // Analyze files for common improvement opportunities
-    const suggestions = [];
+    const suggestions: ImprovementSuggestion[] = [];
 
     // Check for missing TypeScript
     if (files.some(f => f.language === 'javascript')) {
@@ -582,8 +592,8 @@ Be encouraging, technically accurate, and provide working code examples.`;
   /**
    * Generate deployment suggestions
    */
-  private async generateDeploymentSuggestions(codeBlocks: any[]) {
-    const suggestions = [];
+  private async generateDeploymentSuggestions(codeBlocks: CodeBlock[]): Promise<DeploymentSuggestion[]> {
+    const suggestions: DeploymentSuggestion[] = [];
 
     // Check for React components
     if (codeBlocks.some(block => block.content.includes('React'))) {
@@ -631,7 +641,7 @@ Be encouraging, technically accurate, and provide working code examples.`;
   /**
    * Infer appropriate file path for code block
    */
-  private inferFilePath(codeBlock: any, input: MultimodalInput): string {
+  private inferFilePath(codeBlock: CodeBlock, input: MultimodalInput): string {
     const { language, content } = codeBlock;
 
     // TypeScript/React components
@@ -710,7 +720,7 @@ Be encouraging, technically accurate, and provide working code examples.`;
    * Analyze input types for logging
    */
   private analyzeInputTypes(input: MultimodalInput): string[] {
-    const types = [];
+    const types: string[] = [];
     if (input.text) types.push('text');
     if (input.audio) types.push('audio');
     if (input.images?.length) types.push('images');

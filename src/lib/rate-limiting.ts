@@ -105,18 +105,15 @@ function getClientIP(req: NextRequest): string {
     return forwarded.split(',')[0].trim()
   }
 
-  const realIP = req.headers.get('x-real-ip')
-  if (realIP) {
-    return realIP
-  }
+  const realIP =
+    req.headers.get('x-real-ip') ||
+    req.headers.get('cf-connecting-ip') ||
+    req.headers.get('true-client-ip') ||
+    ''
+  if (realIP) return realIP
 
-  const cfConnectingIP = req.headers.get('cf-connecting-ip')
-  if (cfConnectingIP) {
-    return cfConnectingIP
-  }
-
-  // Fallback to connection IP
-  return req.ip || 'unknown'
+  // Safe fallback when no proxy headers present
+  return 'unknown'
 }
 
 /**

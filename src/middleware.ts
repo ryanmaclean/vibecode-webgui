@@ -89,7 +89,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const ip = request.ip ?? '127.0.0.1';
+  // Derive client IP from headers (NextRequest has no `ip`)
+  const xff = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  const realIp =
+    request.headers.get('x-real-ip') ||
+    request.headers.get('cf-connecting-ip') ||
+    request.headers.get('true-client-ip') ||
+    ''
+  const ip = xff || realIp || '127.0.0.1'
 
   if (ratelimit) {
     const { success, limit, remaining, reset } = await ratelimit.limit(ip);

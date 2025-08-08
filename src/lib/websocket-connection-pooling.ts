@@ -8,7 +8,7 @@
  */
 
 import { EventEmitter } from 'events'
-import WebSocket from 'ws'
+import WebSocket, { RawData } from 'ws'
 
 interface ConnectionPoolConfig {
   maxConnections: number
@@ -316,9 +316,25 @@ export class WebSocketConnectionPool extends EventEmitter {
           }
         })
 
-        socket.on('message', (data) => {
-          connection.bytesReceived += data.length
-          this.metrics.totalBytes += data.length
+        socket.on('message', (data: RawData) => {
+          let size = 0
+          if (typeof data === 'string') {
+            size = Buffer.byteLength(data)
+          } else if (Buffer.isBuffer(data)) {
+            size = data.length
+          } else if (Array.isArray(data)) {
+            size = data.reduce((sum, part) => sum + (Buffer.isBuffer(part) ? part.length : 0), 0)
+          } else if (data instanceof ArrayBuffer) {
+            size = data.byteLength
+          } else {
+            try {
+              size = Buffer.byteLength(String(data))
+            } catch {
+              size = 0
+            }
+          }
+          connection.bytesReceived += size
+          this.metrics.totalBytes += size
         })
 
         // Setup ping/pong for health monitoring
