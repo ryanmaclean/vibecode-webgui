@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 // Import CSS based on environment
 import "./globals.css";
 import Providers from './providers';
-import DatadogRUM from '@/components/monitoring/DatadogRUM';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
 // const geistSans = Geist({
@@ -36,7 +35,6 @@ export default function RootLayout({
       <body
         className="antialiased"
       >
-        <DatadogRUM />
         <Providers>
           {children}
         </Providers>

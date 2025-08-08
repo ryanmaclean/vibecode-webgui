@@ -22,7 +22,7 @@ const DatadogRUM = () => {
     if ((isProduction || isDevelopment) && process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN) {
       console.log(`Initializing Datadog RUM for ${process.env.NODE_ENV}...`);
       datadogRum.init({
-        applicationId: process.env.NEXT_PUBLIC_DATADOG_APP_ID || 'vibecode-rum',
+        applicationId: process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID || 'vibecode-rum',
         clientToken: process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN,
         site: process.env.NEXT_PUBLIC_DATADOG_SITE || 'datadoghq.com',
         service: process.env.NEXT_PUBLIC_DATADOG_SERVICE || 'vibecode-webgui',
