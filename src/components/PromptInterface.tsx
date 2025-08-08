@@ -1021,7 +1021,7 @@ export default function LandingPage() {
                             </audio>
                             {message.transcription && (
                               <p className="text-xs text-muted-foreground mt-1 italic">
-                                "{message.transcription}"
+                                &quot;{message.transcription}&quot;
                               </p>
                             )}
                           </div>

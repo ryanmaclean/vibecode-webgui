@@ -59,8 +59,8 @@ This project adheres to our [Code of Conduct](CODE_OF_CONDUCT.md). By participat
 
 2. Set up environment variables:
    ```bash
-   cp .env.example .env.local
-   # Edit .env.local with your configuration
+   cp .env.example .env
+   # Edit .env with your configuration (use .env.local for local-only overrides)
    ```
 
 3. Start the development server:

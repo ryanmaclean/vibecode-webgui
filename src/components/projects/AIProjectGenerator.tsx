@@ -59,7 +59,7 @@ export function AIProjectGenerator({
           </span>
         </CardTitle>
         <CardDescription>
-          Describe your project and let AI generate the code. We'll set up a complete development environment for you.
+          Describe your project and let AI generate the code. We&apos;ll set up a complete development environment for you.
         </CardDescription>
       </CardHeader>
       <CardContent>

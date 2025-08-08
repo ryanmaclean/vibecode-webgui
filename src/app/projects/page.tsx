@@ -151,7 +151,7 @@ export default function ProjectsPage() {
                     <CardHeader>
                       <CardTitle>Select a Template First</CardTitle>
                       <CardDescription>
-                        Go to the "From Template" tab to choose a project starter.
+                        Go to the &quot;From Template&quot; tab to choose a project starter.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>

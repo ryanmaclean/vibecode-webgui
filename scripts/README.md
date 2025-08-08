@@ -93,7 +93,7 @@ The cluster is configured via `k8s/vibecode-kind-config.yaml`:
 ```
 
 ### Environment Variables
-Set these in `.env.local`:
+Set these in `.env` (use `.env.local` for local-only overrides):
 ```bash
 # Required for AI features
 OPENROUTER_API_KEY=sk-or-v1-your-key
