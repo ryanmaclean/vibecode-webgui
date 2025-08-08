@@ -7,7 +7,7 @@
  * Staff Engineer Implementation - Enterprise-grade file operations
  */
 
-import chokidar from 'chokidar'
+import * as chokidar from 'chokidar'
 import { EventEmitter } from 'events'
 import path from 'path'
 import * as fs from 'fs/promises'
@@ -72,7 +72,7 @@ export interface FileSystemConfig {
 
 export class SecureFileSystemOperations extends EventEmitter {
   private config: FileSystemConfig
-  private watcher: chokidar.FSWatcher | null = null
+  private watcher: ReturnType<typeof chokidar.watch> | null = null
   private fileMetadataCache: Map<string, FileMetadata> = new Map()
   private operationQueue: Map<string, FileOperation[]> = new Map()
   private fileLocks: Map<string, { userId: string; timestamp: Date }> = new Map()
@@ -211,10 +211,10 @@ export class SecureFileSystemOperations extends EventEmitter {
     this.watcher = chokidar.watch('**/*', watchOptions)
 
     this.watcher
-      .on('add', (filePath) => this.handleFileEvent('created', filePath))
-      .on('change', (filePath) => this.handleFileEvent('changed', filePath))
-      .on('unlink', (filePath) => this.handleFileEvent('deleted', filePath))
-      .on('error', (err) => {
+      .on('add', (filePath: string) => this.handleFileEvent('created', filePath))
+      .on('change', (filePath: string) => this.handleFileEvent('changed', filePath))
+      .on('unlink', (filePath: string) => this.handleFileEvent('deleted', filePath))
+      .on('error', (err: unknown) => {
         console.error('Error handling file event:', err instanceof Error ? err.message : 'Unknown error')
         this.emit('error', err)
       })
