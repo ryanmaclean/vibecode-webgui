@@ -47,7 +47,13 @@
     "tailwind:restore": "./scripts/setup-tailwind-mode.sh restore",
     "monitoring:setup": "npx tsx scripts/setup-datadog-monitoring.ts",
     "monitoring:health": "curl -s http://localhost:3000/api/monitoring/dashboard | jq '.health'",
-    "monitoring:metrics": "curl -s http://localhost:3000/api/monitoring/metrics?config=true | jq"
+    "monitoring:metrics": "curl -s http://localhost:3000/api/monitoring/metrics?config=true | jq",
+    "test:performance": "node scripts/run-performance-tests.js",
+    "test:performance:k6": "k6 run tests/performance/k6-load-tests.js",
+    "test:performance:lighthouse": "node tests/performance/lighthouse-performance.js",
+    "test:performance:ci": "BASE_URL=http://localhost:3000 npm run test:performance",
+    "performance:baseline": "BASE_URL=http://localhost:3000 k6 run --tag test_type=baseline tests/performance/k6-load-tests.js",
+    "performance:stress": "BASE_URL=http://localhost:3000 k6 run --tag test_type=stress tests/performance/k6-load-tests.js"
   },
   "dependencies": {
     "@ai-sdk/openai": "1.3.23",
@@ -166,6 +172,7 @@
     "@types/ws": "^8.18.1",
     "autoprefixer": "^10.4.19",
     "babel-jest": "30.0.4",
+    "chrome-launcher": "1.2.0",
     "dotenv": "17.2.0",
     "eslint": "^9",
     "eslint-config-next": "15.4.4",
@@ -175,6 +182,7 @@
     "jest": "^30.0.4",
     "jest-axe": "10.0.0",
     "jest-environment-jsdom": "^30.0.4",
+    "lighthouse": "12.8.1",
     "msw": "^2.10.4",
     "postcss": "^8.4.38",
     "prisma": "^6.12.0",
