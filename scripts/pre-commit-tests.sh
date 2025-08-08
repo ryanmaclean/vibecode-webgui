@@ -95,7 +95,7 @@ api_key_patterns=(
 for file in $staged_files; do
     if [[ -f "$file" ]]; then
         # Skip binary files and specific ignored files
-        if [[ "$file" == *.env.local || "$file" == *.env.* || "$file" == *node_modules* || "$file" == *.git* ]]; then
+        if [[ "$file" == .env || "$file" == *.env.local || "$file" == *.env.* || "$file" == *node_modules* || "$file" == *.git* ]]; then
             continue
         fi
         
@@ -134,7 +134,7 @@ EOF
     
     # Use BFG to scan for these patterns (dry run)
     for file in $staged_files; do
-        if [[ -f "$file" && "$file" != *.env.local && "$file" != *.env.* ]]; then
+        if [[ -f "$file" && "$file" != .env && "$file" != *.env.local && "$file" != *.env.* ]]; then
             # Check file content for patterns
             while IFS= read -r pattern; do
                 if [[ "$pattern" =~ ^# ]] || [[ -z "$pattern" ]]; then

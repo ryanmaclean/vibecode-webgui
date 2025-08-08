@@ -100,7 +100,7 @@ done
 
 # Test 8: Configuration Management
 log_info "Test 8: Configuration Management"
-if [ -f ".env.example" ] || [ -f ".env.local" ]; then
+if [ -f ".env" ] || [ -f ".env.example" ]; then
     log_warning "⚠️  Configuration exists but may need manual setup"
 else
     log_missing "❌ No configuration template found"

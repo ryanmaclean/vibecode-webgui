@@ -24,7 +24,7 @@ const ALLOWED_FILE_EXTENSIONS = [
 ]
 const BLOCKED_PATHS = [
   'node_modules', '.git', '.next', 'dist', 'build', '.cache', 'coverage',
-  '.DS_Store', 'Thumbs.db', '*.log', '*.tmp', '.env.local', '.env.production'
+  '.DS_Store', 'Thumbs.db', '*.log', '*.tmp', '.env', '.env.local', '.env.production'
 ]
 
 export interface FileMetadata {

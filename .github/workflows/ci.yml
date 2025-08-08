@@ -21,6 +21,13 @@ jobs:
           node-version: '20.11.0'
           cache: 'npm'
 
+      - name: Prepare environment (.env)
+        run: |
+          if [ -f .env.example ] && [ ! -f .env ]; then
+            cp .env.example .env
+            echo "Created .env from .env.example"
+          fi
+
       - name: Install dependencies
         run: |
           # Remove any existing package-lock.json to avoid platform-specific issues
