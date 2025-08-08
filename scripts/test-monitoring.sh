@@ -15,9 +15,12 @@ NC='\033[0m'
 BASE_DIR="/Users/ryan.maclean/vibecode-webgui"
 cd "$BASE_DIR"
 
-# Load environment variables if .env.local exists
-if [ -f ".env.local" ]; then
-    echo "📁 Loading environment variables from .env.local"
+# Load environment variables: prefer .env, fall back to .env.local
+if [ -f ".env" ]; then
+    echo "📁 Loading environment variables from .env"
+    export $(grep -v '^#' .env | grep -v '^$' | xargs)
+elif [ -f ".env.local" ]; then
+    echo "📁 Loading environment variables from .env.local (fallback)"
     export $(grep -v '^#' .env.local | grep -v '^$' | xargs)
 fi
 
@@ -141,12 +144,13 @@ echo -e "\n${BLUE}9. Environment Files Check${NC}"
 echo "----------------------------"
 
 # Check for proper environment configuration
-if [ -f ".env.local" ]; then
-    run_test "Datadog API key configured in .env.local" "grep -q 'DATADOG_API_KEY=' .env.local"
-    run_test "DD_LLMOBS_ENABLED configured" "grep -q 'DD_LLMOBS_ENABLED=' .env.local"
-    run_test "RUM application ID configured" "grep -q 'NEXT_PUBLIC_DATADOG.*APPLICATION_ID=' .env.local"
+if [ -f ".env" ] || [ -f ".env.local" ]; then
+    ENV_FILE=".env"; [ ! -f ".env" ] && ENV_FILE=".env.local"
+    run_test "Datadog API key configured in $ENV_FILE" "grep -q 'DATADOG_API_KEY=' $ENV_FILE"
+    run_test "DD_LLMOBS_ENABLED configured" "grep -q 'DD_LLMOBS_ENABLED=' $ENV_FILE"
+    run_test "RUM application ID configured" "grep -q 'NEXT_PUBLIC_DATADOG.*APPLICATION_ID=' $ENV_FILE"
 else
-    echo "⚠️  .env.local not found, using environment variables"
+    echo "⚠️  No .env or .env.local found, using environment variables"
 fi
 
 echo -e "\n${YELLOW}10. Integration Recommendations${NC}"
