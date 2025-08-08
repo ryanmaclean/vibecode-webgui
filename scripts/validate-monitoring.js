@@ -2,7 +2,21 @@
 
 // Simple script to validate Datadog monitoring integration
 const https = require('https');
-require('dotenv').config({ path: '.env.local' });
+const fs = require('fs');
+const path = require('path');
+const dotenv = require('dotenv');
+
+// Prefer .env at repo root, fallback to .env.local
+const root = path.join(__dirname, '..');
+const envPrimary = path.join(root, '.env');
+const envLocal = path.join(root, '.env.local');
+if (fs.existsSync(envPrimary)) {
+  dotenv.config({ path: envPrimary });
+} else if (fs.existsSync(envLocal)) {
+  dotenv.config({ path: envLocal });
+} else {
+  dotenv.config();
+}
 
 const API_KEY = process.env.DD_API_KEY || process.env.DATADOG_API_KEY;
 const SITE = process.env.DD_SITE || process.env.DATADOG_SITE || 'datadoghq.com';
@@ -12,7 +26,7 @@ console.log('============================================');
 
 if (!API_KEY) {
   console.error('❌ No Datadog API key found');
-  console.error('   Set DD_API_KEY or DATADOG_API_KEY in .env.local');
+  console.error('   Set DD_API_KEY or DATADOG_API_KEY in .env or .env.local');
   process.exit(1);
 }
 

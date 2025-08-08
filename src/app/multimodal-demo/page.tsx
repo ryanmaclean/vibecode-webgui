@@ -303,7 +303,7 @@ export default function MultimodalDemoPage() {
                       <h4 className="text-sm font-medium text-gray-800">Try saying:</h4>
                       {capability.examples.map((example, i) => (
                         <div key={i} className="text-xs bg-gray-100 p-2 rounded italic">
-                          "{example}"
+                          &quot;{example}&quot;
                         </div>
                       ))}
                     </div>
