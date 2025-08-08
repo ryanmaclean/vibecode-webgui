@@ -525,7 +525,7 @@ volumes:
   return [
     { path: 'Dockerfile', content: dockerfile, type: 'file' },
     { path: 'docker-compose.yml', content: dockerCompose, type: 'file' },
-    { path: '.dockerignore', content: 'node_modules\n.git\n.env.local\n', type: 'file' }
+    { path: '.dockerignore', content: 'node_modules\n.git\n.env\n.env.local\n', type: 'file' }
   ]
 }
 

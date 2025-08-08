@@ -42,7 +42,7 @@ const platforms = {
     icon: '▲',
     install: 'npm install -g vercel',
     deploy: 'vercel --prod',
-    envFile: '.env.local',
+    envFile: '.env',
     docs: 'https://vercel.com/docs'
   },
   netlify: {

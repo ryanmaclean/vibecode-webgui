@@ -308,7 +308,7 @@ export default function VoiceTestPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-4">🎤 Voice Interface Test</h1>
         <p className="text-muted-foreground">
-          Test Web Speech API and audio recording capabilities for VibeCode's multimodal interface.
+          Test Web Speech API and audio recording capabilities for VibeCode&apos;s multimodal interface.
         </p>
       </div>
 
@@ -376,7 +376,7 @@ export default function VoiceTestPage() {
             
             <div className="p-4 border rounded min-h-24">
               <p className="text-sm text-muted-foreground mb-2">Speech transcript:</p>
-              <p className="text-lg">{transcript || 'Say something...'}</p>
+              <p className="text-lg">{transcript || &apos;Say something...&apos;}</p>
             </div>
           </div>
         </CardContent>
@@ -450,7 +450,7 @@ export default function VoiceTestPage() {
             <div>
               <strong>Speech Recognition:</strong>
               <ul className="list-disc list-inside ml-4 mt-1 text-muted-foreground">
-                <li>Click "Start Listening" and speak clearly</li>
+                <li>Click &quot;Start Listening&quot; and speak clearly</li>
                 <li>Watch for real-time transcription in the text box</li>
                 <li>Best results in Safari on macOS</li>
               </ul>
@@ -458,7 +458,7 @@ export default function VoiceTestPage() {
             <div>
               <strong>Audio Recording:</strong>
               <ul className="list-disc list-inside ml-4 mt-1 text-muted-foreground">
-                <li>Click "Start Recording" and speak</li>
+                <li>Click &quot;Start Recording&quot; and speak</li>
                 <li>Watch the audio level indicator</li>
                 <li>Stop recording and play back your audio</li>
               </ul>
@@ -466,7 +466,7 @@ export default function VoiceTestPage() {
             <div>
               <strong>Expected Results:</strong>
               <ul className="list-disc list-inside ml-4 mt-1 text-muted-foreground">
-                <li>All tests should show "pass" status in Safari</li>
+                <li>All tests should show &quot;pass&quot; status in Safari</li>
                 <li>Speech recognition should work in real-time</li>
                 <li>Audio recording should capture and play back clearly</li>
               </ul>
