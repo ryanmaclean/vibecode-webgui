@@ -428,13 +428,14 @@ export class SecureClaudeCliIntegration extends EventEmitter {
     return new Promise((resolve, reject) => {
       this.processCount++
 
-      const process = spawn(command[0], command.slice(1), {
+      const child = spawn(command[0], command.slice(1), {
         cwd: this.config.workingDirectory,
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: ['pipe', 'pipe', 'pipe'] as const,
         env: {
           // Minimal environment
           PATH: '/usr/bin:/bin',
           HOME: '/tmp',
+          NODE_ENV: process.env.NODE_ENV || 'production',
           ANTHROPIC_API_KEY: this.config.apiKey
         },
         // Security options
@@ -442,36 +443,36 @@ export class SecureClaudeCliIntegration extends EventEmitter {
         gid: 1000,
         detached: false,
         shell: false
-      })
+      }) as import('child_process').ChildProcessWithoutNullStreams
 
       let stdout = ''
       let stderr = ''
       let killed = false
 
-      process.stdout?.on('data', (data) => {
+      child.stdout?.on('data', (data) => {
         stdout += data.toString()
         // Limit output size
         if (stdout.length > MAX_FILE_SIZE) {
           if (!killed) {
             killed = true
-            process.kill('SIGTERM')
+            child.kill('SIGTERM')
             reject(new Error('Output size limit exceeded'))
           }
         }
       })
 
-      process.stderr?.on('data', (data) => {
+      child.stderr?.on('data', (data) => {
         stderr += data.toString()
         if (stderr.length > MAX_FILE_SIZE) {
           if (!killed) {
             killed = true
-            process.kill('SIGTERM')
+            child.kill('SIGTERM')
             reject(new Error('Error output size limit exceeded'))
           }
         }
       })
 
-      process.on('close', (code) => {
+      child.on('close', (code) => {
         this.processCount--
         if (killed) return
 
@@ -482,7 +483,7 @@ export class SecureClaudeCliIntegration extends EventEmitter {
         }
       })
 
-      process.on('error', (error) => {
+      child.on('error', (error) => {
         this.processCount--
         if (!killed) {
           reject(error)
@@ -493,19 +494,19 @@ export class SecureClaudeCliIntegration extends EventEmitter {
       const timeout = setTimeout(() => {
         if (!killed) {
           killed = true
-          process.kill('SIGKILL') // Force kill
+          child.kill('SIGKILL') // Force kill
           reject(new Error('Command execution timeout'))
         }
       }, this.config.timeout || 30000)
 
       // Send input
-      if (input && process.stdin) {
-        process.stdin.write(input)
-        process.stdin.end()
+      if (input && child.stdin) {
+        child.stdin.write(input)
+        child.stdin.end()
       }
 
       // Clear timeout on completion
-      process.on('close', () => clearTimeout(timeout))
+      child.on('close', () => clearTimeout(timeout))
     })
   }
 
