@@ -72,18 +72,22 @@ fi
 echo -e "\n${BLUE}2. Environment Configuration${NC}"
 echo "-------------------------------"
 
-# Create .env file if it doesn't exist
-if [ ! -f ".env" ]; then
-    log_info "Creating .env file from template..."
-    cp .env.example .env
-    log_warning "Please update .env file with your Datadog API keys"
-    log_info "For local development, dummy keys are sufficient"
-else
+# Ensure environment file exists: prefer .env, fall back to .env.local
+if [ -f ".env" ]; then
     log_success ".env file exists"
+elif [ -f ".env.local" ]; then
+    log_success ".env.local file exists (fallback)"
+else
+    log_info "Creating .env from template..."
+    cp .env.example .env
+    log_warning "Please update .env with your Datadog API keys"
+    log_info "For local development, dummy keys are sufficient"
 fi
 
-# Check if essential environment variables are set
-if grep -q "DATADOG_API_KEY=dummy-key" .env; then
+# Check if essential environment variables are set in whichever env file exists
+ENV_FILE=""
+if [ -f ".env" ]; then ENV_FILE=".env"; elif [ -f ".env.local" ]; then ENV_FILE=".env.local"; fi
+if [ -n "$ENV_FILE" ] && grep -q "DATADOG_API_KEY=dummy-key" "$ENV_FILE" 2>/dev/null; then
     log_info "Using dummy Datadog keys for local development"
 else
     log_success "Datadog API key configured"

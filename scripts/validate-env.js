@@ -8,10 +8,15 @@
 const fs = require('fs');
 const path = require('path');
 
-// Load environment variables from .env.local
-const envPath = path.join(__dirname, '../.env.local');
-if (fs.existsSync(envPath)) {
-  const envFile = fs.readFileSync(envPath, 'utf8');
+// Load environment variables, preferring .env then falling back to .env.local
+const envPathPrimary = path.join(__dirname, '../.env');
+const envPathFallback = path.join(__dirname, '../.env.local');
+const chosenEnvPath = fs.existsSync(envPathPrimary)
+  ? envPathPrimary
+  : (fs.existsSync(envPathFallback) ? envPathFallback : null);
+
+if (chosenEnvPath) {
+  const envFile = fs.readFileSync(chosenEnvPath, 'utf8');
   const envLines = envFile.split('\n').filter(line => line.trim() && !line.startsWith('#'));
 
   envLines.forEach(line => {

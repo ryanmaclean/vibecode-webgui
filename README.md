@@ -93,7 +93,7 @@ npm run setup
 
 # Manual setup if needed:
 npm install
-cp .env.example .env.local  # Edit with your API keys
+cp .env.example .env  # Edit .env with your API keys (use .env.local for local-only overrides)
 ```
 
 ### Development Modes
@@ -904,10 +904,10 @@ sudo ln -s /opt/node/bin/npm /usr/local/bin/npm
    npm install
 
    # Setup environment variables
-   cp .env.example .env.local
+   cp .env.example .env  # Prefer .env; use .env.local for overrides
    ```
 
-2. **Configure environment (.env.local)**:
+2. **Configure environment (.env)**:
    ```bash
    # Required API keys
    OPENROUTER_API_KEY=sk-or-v1-your-openrouter-key
@@ -1324,8 +1324,8 @@ open http://localhost:3000/monitoring
 git clone https://github.com/vibecode/webgui.git
 cd vibecode-webgui
 npm install
-cp .env.example .env.local
-# Edit .env.local with your API keys
+cp .env.example .env
+# Edit .env with your API keys (use .env.local for local-only overrides)
 docker-compose up -d postgres redis
 npm run dev
 # Visit http://localhost:3000
@@ -2087,8 +2087,8 @@ open http://localhost:3000/monitoring
 git clone https://github.com/vibecode/webgui.git
 cd vibecode-webgui
 npm install
-cp .env.example .env.local
-# Edit .env.local with your API keys
+cp .env.example .env
+# Edit .env with your API keys (use .env.local for local-only overrides)
 docker-compose up -d postgres redis
 npm run dev
 # Visit http://localhost:3000

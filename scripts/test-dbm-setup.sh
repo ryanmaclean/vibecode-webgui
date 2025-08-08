@@ -12,7 +12,9 @@ check_env_vars() {
     echo "📋 Checking environment variables..."
     
     if [ -z "$DATADOG_API_KEY" ]; then
-        echo "❌ DATADOG_API_KEY not set. Source .env.local first:"
+        echo "❌ DATADOG_API_KEY not set. Source your env first:"
+        echo "   source .env    # preferred"
+        echo "   # or"
         echo "   source .env.local"
         exit 1
     fi

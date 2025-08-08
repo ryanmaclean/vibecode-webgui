@@ -4,21 +4,31 @@
  * This verifies our monitoring integration works with the provided API key
  */
 
-// Load environment variables from .env.local
+// Load environment variables from .env (preferred) or .env.local
 const fs = require('fs')
 const path = require('path')
 
 try {
-  const envPath = path.join(__dirname, '..', '.env.local')
-  const envContent = fs.readFileSync(envPath, 'utf8')
-  envContent.split('\n').forEach(line => {
-    const [key, value] = line.split('=')
-    if (key && value) {
-      process.env[key.trim()] = value.trim()
-    }
-  })
+  const envPathPrimary = path.join(__dirname, '..', '.env')
+  const envPathFallback = path.join(__dirname, '..', '.env.local')
+  const envPath = fs.existsSync(envPathPrimary)
+    ? envPathPrimary
+    : (fs.existsSync(envPathFallback) ? envPathFallback : null)
+
+  if (envPath) {
+    const envContent = fs.readFileSync(envPath, 'utf8')
+    envContent.split('\n').forEach(line => {
+      const [key, ...rest] = line.split('=')
+      if (key && rest.length) {
+        const value = rest.join('=').trim()
+        process.env[key.trim()] = value.replace(/^["']|["']$/g, '')
+      }
+    })
+  } else {
+    console.log('No .env or .env.local file found, using system environment variables')
+  }
 } catch (error) {
-  console.log('No .env.local file found, using system environment variables')
+  console.log('Failed to load .env/.env.local, using system environment variables')
 }
 
 const https = require('https')

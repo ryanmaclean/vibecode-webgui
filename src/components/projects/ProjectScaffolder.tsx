@@ -720,7 +720,7 @@ function ProjectSummary({
       <div>
         <h4 className="font-semibold mb-2">Next Steps</h4>
         <ol className="text-sm space-y-1">
-          <li><strong>Option 1:</strong> Click "Open in Editor" to start coding immediately</li>
+          <li><strong>Option 1:</strong> Click &quot;Open in Editor&quot; to start coding immediately</li>
           <li><strong>Option 2:</strong> Download ZIP for local development</li>
           <li>3. Configure your environment variables</li>
           <li>4. Start development and iterate with AI assistance</li>

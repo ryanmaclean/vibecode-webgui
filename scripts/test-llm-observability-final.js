@@ -5,8 +5,20 @@
  * Uses direct tracer integration with proper CommonJS imports
  */
 
-// Load environment from .env.local
-require('dotenv').config({ path: '.env.local' })
+// Load environment from .env (preferred) or .env.local
+const fs = require('fs')
+const path = require('path')
+const dotenv = require('dotenv')
+const root = path.join(__dirname, '..')
+const primary = path.join(root, '.env')
+const local = path.join(root, '.env.local')
+if (fs.existsSync(primary)) {
+  dotenv.config({ path: primary })
+} else if (fs.existsSync(local)) {
+  dotenv.config({ path: local })
+} else {
+  dotenv.config()
+}
 
 // Initialize ddtrace BEFORE any other imports
 const tracer = require('dd-trace')

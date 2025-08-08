@@ -50,7 +50,7 @@ export function ConsoleModal({ isOpen, onClose, workspaceId }: ConsoleModalProps
             </div>
             <div className="border-t border-gray-800 bg-gray-900 px-4 py-2 text-xs text-gray-500">
               <div className="flex items-center justify-between">
-                <span>Goose is pre-installed. Use 'goose -h' for help.</span>
+                <span>Goose is pre-installed. Use &apos;goose -h&apos; for help.</span>
                 <div className="flex space-x-4">
                   <span>Ctrl+C to interrupt</span>
                   <span>Ctrl+D to exit</span>

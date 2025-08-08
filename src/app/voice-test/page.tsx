@@ -369,7 +369,7 @@ export default function VoiceTestPage() {
                   <span className="text-sm font-medium text-green-700">Listening...</span>
                 </div>
                 {interimTranscript && (
-                  <p className="text-sm text-green-600 italic">"{interimTranscript}"</p>
+                  <p className="text-sm text-green-600 italic">&quot;{interimTranscript}&quot;</p>
                 )}
               </div>
             )}
