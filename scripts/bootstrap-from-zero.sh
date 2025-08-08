@@ -71,10 +71,10 @@ install_dependencies() {
 setup_environment() {
     log_info "Step 2: Setting up environment..."
     
-    # Create .env.local if it doesn't exist
-    if [ ! -f ".env.local" ]; then
-        log_info "Creating .env.local with default values..."
-        cat > .env.local <<EOF
+    # Create .env if it doesn't exist (preferred). .env.local can be used for local-only overrides.
+    if [ ! -f ".env" ]; then
+        log_info "Creating .env with default values..."
+        cat > .env <<EOF
 # Database Configuration
 DATABASE_URL=postgresql://vibecode:vibecode_password@postgres-service:5432/vibecode
 REDIS_URL=redis://valkey-service:6379
@@ -100,10 +100,10 @@ DD_SERVICE=vibecode-webgui
 DD_VERSION=1.0.0
 DD_ENV=development
 EOF
-        log_success ".env.local created with defaults"
-        log_warning "⚠️  Edit .env.local to add your real API keys"
+        log_success ".env created with defaults"
+        log_warning "⚠️  Edit .env to add your real API keys"
     else
-        log_success ".env.local already exists"
+        log_success ".env already exists"
     fi
 }
 
@@ -112,9 +112,9 @@ setup_secrets() {
     log_info "Step 3: Setting up Kubernetes secrets..."
     
     # Source environment variables
-    if [ -f ".env.local" ]; then
+    if [ -f ".env" ] || [ -f ".env.local" ]; then
         set -a
-        source .env.local
+        if [ -f ".env" ]; then source .env; else source .env.local; fi
         set +a
     fi
     
@@ -237,7 +237,7 @@ main() {
     echo ""
     echo "📊 What was automated:"
     echo "✅ Dependency installation (KIND, kubectl, Helm)"
-    echo "✅ Environment configuration (.env.local)"
+    echo "✅ Environment configuration (.env)"
     echo "✅ Kubernetes cluster creation"
     echo "✅ Secret management (from environment variables)"
     echo "✅ Container image building and loading"
@@ -254,7 +254,7 @@ main() {
     echo "Default users: admin@vibecode.dev, dev@vibecode.dev, user@vibecode.dev"
     echo "Default password: password123 (see k8s/authelia/authelia-config.yaml)"
     echo ""
-    echo "⚙️  To customize: Edit .env.local and re-run this script"
+    echo "⚙️  To customize: Edit .env and re-run this script"
 }
 
 # Allow running specific steps
