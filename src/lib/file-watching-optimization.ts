@@ -442,6 +442,7 @@ export class OptimizedFileWatcher extends EventEmitter {
       '**/.nyc_output/**',
 
       // Environment files
+      '**/.env',
       '**/.env.local',
       '**/.env.production',
       '**/.env.*.local'
