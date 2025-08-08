@@ -398,7 +398,7 @@ export class ClaudeCliIntegration extends EventEmitter {
       // Set timeout
       if (this.config.timeout) {
         setTimeout(() => {
-          process.kill('SIGTERM')
+          child.kill('SIGTERM')
           reject(new Error('Claude command timed out'))
         }, this.config.timeout)
       }
