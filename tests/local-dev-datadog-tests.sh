@@ -42,7 +42,7 @@ echo -e "\n${BLUE}1. Datadog Configuration Tests${NC}"
 echo "--------------------------------"
 
 # Test environment file
-[ -f ".env.local.example" ]
+[ -f ".env.example" ]
 test_result "Datadog environment template exists"
 
 # Test Docker Compose configuration
