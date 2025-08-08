@@ -196,6 +196,13 @@ jobs:
           test -f "src/lib/monitoring/alerts-configuration.ts"
           test -f "scripts/setup-datadog-monitoring.ts"
           test -f "docs/DATADOG_MONITORING.md"
+          # Check OpenTelemetry files exist
+          test -f "src/lib/monitoring/opentelemetry.ts"
+          test -f "src/lib/monitoring/opentelemetry-client.ts"
+          test -f "src/app/api/monitoring/traces/route.ts"
+          test -f "src/app/api/monitoring/otel-config/route.ts"
+          test -f "scripts/setup-opentelemetry.ts"
+          test -f "docs/OPENTELEMETRY_INTEGRATION.md"
           echo "✅ All monitoring files present"
 
       - name: Build and test monitoring endpoints
@@ -210,11 +217,20 @@ jobs:
           
           echo "Testing monitoring metrics endpoint..."
           curl -f http://localhost:3000/api/monitoring/metrics?config=true | jq '.monitoring'
+          
+          echo "Testing OpenTelemetry configuration endpoint..."
+          curl -f http://localhost:3000/api/monitoring/otel-config | jq '.status'
+          
+          echo "Testing OpenTelemetry health endpoint..."
+          curl -f http://localhost:3000/api/monitoring/otel-config?action=health | jq '.healthy'
 
-      - name: Validate monitoring setup script
+      - name: Validate monitoring setup scripts
         run: |
           # Test monitoring setup script (without API keys)
-          npx tsx scripts/setup-datadog-monitoring.ts || echo "✅ Monitoring setup script validation complete"
+          npx tsx scripts/setup-datadog-monitoring.ts || echo "✅ Datadog monitoring setup script validation complete"
+          
+          # Test OpenTelemetry setup script
+          npx tsx scripts/setup-opentelemetry.ts || echo "✅ OpenTelemetry setup script validation complete"
 
   # Build & Performance
   build-and-performance:
