@@ -14,7 +14,7 @@ This document outlines how Datadog monitoring is integrated into local developme
 ### 1. Environment Setup
 ```bash
 # Copy environment template
-cp .env.local.example .env
+cp .env.example .env
 
 # Edit .env with your Datadog keys (or use dummy keys for local testing)
 vim .env
