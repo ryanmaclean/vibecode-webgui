@@ -3,7 +3,7 @@
  * Handles database connections with connection pooling and comprehensive logging
  */
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 import tracer from 'dd-trace'
 import { metrics } from './server-monitoring'
 
@@ -35,17 +35,16 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient({
 prisma.$use(async (params, next) => {
   const startTime = Date.now()
   const span = tracer?.startSpan?.('prisma.query', {
-    service: 'vibecode-webgui',
-    resource: `${params.model}.${params.action}`,
-    type: 'sql',
     tags: {
       'env': process.env.NODE_ENV || 'development',
-      'service': 'vibecode-webgui',
+      'service.name': 'vibecode-webgui',
       'version': '1.0.0',
       'db.system': 'postgresql',
       'db.operation': params.action,
       'db.table': params.model || 'unknown',
       'span.kind': 'client',
+      'resource.name': `${params.model}.${params.action}`,
+      'span.type': 'sql',
     }
   })
   
@@ -144,7 +143,7 @@ export async function logAIRequest(data: {
   cost?: number
   duration_ms?: number
   status: string
-  response?: unknown
+  response?: Prisma.InputJsonValue
   error?: string
 }) {
   return prisma.aIRequest.create({
