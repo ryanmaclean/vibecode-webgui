@@ -75,7 +75,7 @@ echo "-------------------------------"
 # Create .env file if it doesn't exist
 if [ ! -f ".env" ]; then
     log_info "Creating .env file from template..."
-    cp .env.local.example .env
+    cp .env.example .env
     log_warning "Please update .env file with your Datadog API keys"
     log_info "For local development, dummy keys are sufficient"
 else

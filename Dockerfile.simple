@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies with clean cache
-RUN npm ci --legacy-peer-deps --omit=dev && \
+RUN npm ci --only=production --omit=dev && \
     npm cache clean --force
 
 # Copy source code

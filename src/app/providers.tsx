@@ -18,37 +18,50 @@ interface ProvidersProps {
 
 export default function Providers({ children }: ProvidersProps) {
   useEffect(() => {
-    // Initialize Datadog RUM monitoring
-    if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID) {
-      datadogRum.init({
-        applicationId: process.env.NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID,
-        clientToken: process.env.NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN || '',
-        site: process.env.NEXT_PUBLIC_DATADOG_SITE || 'datadoghq.com',
-        service: 'vibecode-webgui',
-        env: process.env.NODE_ENV || 'development',
-        version: '1.0.0',
-        sessionSampleRate: 100,
-        sessionReplaySampleRate: 20,
-        trackUserInteractions: true,
-        trackResources: true,
-        trackLongTasks: true,
-        defaultPrivacyLevel: 'mask-user-input',
-      })
+    // Initialize Datadog RUM/Logs on client
+    if (typeof window !== 'undefined') {
+      const isProd = process.env.NODE_ENV === 'production'
+      const enableDev = process.env.NEXT_PUBLIC_ENABLE_RUM_IN_DEV === 'true'
 
-      // Initialize Datadog Logs
-      datadogLogs.init({
-        clientToken: process.env.NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN || '',
-        site: process.env.NEXT_PUBLIC_DATADOG_SITE || 'datadoghq.com',
-        forwardErrorsToLogs: true,
-        sessionSampleRate: 100,
-        service: 'vibecode-webgui',
-        env: process.env.NODE_ENV || 'development',
-        version: '1.0.0',
-      })
+      // Prefer standardized env vars; fall back to legacy RUM names for compatibility
+      const applicationId =
+        process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID ||
+        process.env.NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID ||
+        ''
+      const clientToken =
+        process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN ||
+        process.env.NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN ||
+        ''
+      const site = process.env.NEXT_PUBLIC_DATADOG_SITE || 'datadoghq.com'
 
-      console.log('✅ Datadog RUM and Logs initialized successfully')
-    } else {
-      console.warn('⚠️ Datadog RUM not initialized - missing environment variables')
+      const shouldInit = (isProd || enableDev) && applicationId && clientToken
+
+      if (shouldInit) {
+        datadogRum.init({
+          applicationId,
+          clientToken,
+          site: site as any,
+          service: 'vibecode-webgui',
+          env: process.env.NODE_ENV || 'development',
+          version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
+          sessionSampleRate: 100,
+          sessionReplaySampleRate: isProd ? 20 : 100,
+          trackUserInteractions: true,
+          trackResources: true,
+          trackLongTasks: true,
+          defaultPrivacyLevel: 'mask-user-input',
+        })
+
+        datadogLogs.init({
+          clientToken,
+          site: site as any,
+          forwardErrorsToLogs: true,
+          sessionSampleRate: 100,
+          service: 'vibecode-webgui',
+          env: process.env.NODE_ENV || 'development',
+          version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
+        })
+      }
     }
   }, [])
 

@@ -24,8 +24,8 @@ class MonitoringService {
   constructor() {
     // Only initialize on server-side
     if (typeof window === 'undefined') {
-      this.datadogApiKey = process.env.DATADOG_API_KEY
-      this.datadogSite = process.env.DATADOG_SITE || 'datadoghq.com'
+      this.datadogApiKey = process.env.DD_API_KEY || process.env.DATADOG_API_KEY
+      this.datadogSite = process.env.DD_SITE || process.env.DATADOG_SITE || 'datadoghq.com'
       this.baseUrl = `https://api.${this.datadogSite}/api/v1`
     } else {
       this.datadogApiKey = undefined
