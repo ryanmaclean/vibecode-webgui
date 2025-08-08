@@ -7,8 +7,8 @@ const createJestConfig = nextJest({
 /** @type {import('jest').Config} */
 const customJestConfig = {
   testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/tests/jest.setup.js'],
-  setupFiles: ['<rootDir>/tests/jest.polyfills.js'],
+  setupFilesAfterEnv: ['./tests/jest.setup.js'],
+  setupFiles: ['./tests/jest.polyfills.js'],
   modulePaths: ['<rootDir>'],
   
   // Increase timeout for integration tests
