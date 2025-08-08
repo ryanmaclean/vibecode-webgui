@@ -58,7 +58,11 @@
     "otel:config": "curl -s http://localhost:3000/api/monitoring/otel-config | jq",
     "otel:health": "curl -s http://localhost:3000/api/monitoring/otel-config?action=health | jq",
     "otel:metrics": "curl -s http://localhost:9090/metrics",
-    "otel:test": "curl -s http://localhost:3000/api/monitoring/otel-config?action=status | jq"
+    "otel:test": "curl -s http://localhost:3000/api/monitoring/otel-config?action=status | jq",
+    "docs:validate": "node scripts/validate-documentation.js",
+    "docs:stats": "node scripts/validate-documentation.js stats",
+    "docs:index": "echo 'Documentation index available at docs/DOCUMENTATION_INDEX.md'",
+    "docs:consolidated": "echo 'Consolidated documentation available at docs/CONSOLIDATED_DOCUMENTATION.md'"
   },
   "dependencies": {
     "@ai-sdk/openai": "1.3.23",
