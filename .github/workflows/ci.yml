@@ -172,14 +172,17 @@ jobs:
         run: |
           echo "DATABASE_URL=postgresql://test:test@localhost:5432/testdb" >> .env.local
           echo "REDIS_URL=redis://localhost:6379" >> .env.local
+          # Disable SWC for tests to avoid binary loading issues
+          echo "NEXT_DISABLE_SWC=1" >> .env.local
+          echo "NEXT_TELEMETRY_DISABLED=1" >> .env.local
 
       - name: Run unit tests
         if: matrix.test-type == 'unit'
-        run: npm run test:unit
+        run: NEXT_DISABLE_SWC=1 npm run test:unit
 
       - name: Run integration tests
         if: matrix.test-type == 'integration'
-        run: npm run test:integration
+        run: NEXT_DISABLE_SWC=1 npm run test:integration
 
       - name: Upload test coverage
         if: matrix.test-type == 'unit'
