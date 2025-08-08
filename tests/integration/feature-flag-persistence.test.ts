@@ -52,7 +52,7 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
         ORDER BY ordinal_position
       `);
 
-      const expectedColumns = [;
+      const expectedColumns = [
         { name: 'id', type: 'uuid', nullable: 'NO' },
         { name: 'key', type: 'character varying', nullable: 'NO' },
         { name: 'name', type: 'character varying', nullable: 'NO' },
@@ -62,16 +62,18 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
         { name: 'user_targeting', type: 'jsonb', nullable: 'YES' },
         { name: 'created_at', type: 'timestamp with time zone', nullable: 'NO' },
         { name: 'updated_at', type: 'timestamp with time zone', nullable: 'NO' }
-      ]
+      ];
 
       expectedColumns.forEach(expectedCol => {
         const actualCol = result.rows.find(row => row.column_name === expectedCol.name);
-        expect(actualCol).toBeTruthy()
+        expect(actualCol).toBeTruthy();
         expect(actualCol.data_type).toContain(expectedCol.type.split(' ')[0]);
-        expect(actualCol.is_nullable).toBe(expectedCol.nullable)})})
+        expect(actualCol.is_nullable).toBe(expectedCol.nullable);
+      });
+    });
 
     test('should have unique constraint on feature flag key', async () => {
-      const result = await client.query(`;
+      const result = await client.query(`
         SELECT constraint_name, constraint_type
         FROM information_schema.table_constraints
         WHERE table_schema = 'public'
@@ -79,10 +81,10 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
         AND constraint_type = 'UNIQUE'
       `);
 
-      expect(result.rows.length).toBeGreaterThan(0)
+      expect(result.rows.length).toBeGreaterThan(0);
 
       // Check specific unique constraint on key column
-      const keyConstraint = await client.query(`;
+      const keyConstraint = await client.query(`
         SELECT kcu.column_name
         FROM information_schema.key_column_usage kcu
         JOIN information_schema.table_constraints tc
@@ -93,7 +95,8 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
         AND kcu.column_name = 'key'
       `);
 
-      expect(keyConstraint.rows).toHaveLength(1)})});
+      expect(keyConstraint.rows).toHaveLength(1);
+    });
 
   describe('CRUD Operations', () => {
     let testFlagId: string
@@ -101,11 +104,11 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
     test('should create feature flag with real persistence', async () => {
       const flagKey = `test-flag-${Date.now()}`
 
-      const result = await client.query(`;
+      const result = await client.query(`
         INSERT INTO feature_flags (
           id, key, name, description, enabled, rollout_percentage,
           user_targeting, created_at, updated_at
-        );
+        )
         VALUES (
           gen_random_uuid(), $1, $2, $3, $4, $5, $6, NOW(), NOW())
         RETURNING id, key, name, enabled
@@ -115,13 +118,14 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
         'A test feature flag for persistence validation',
         true,
         50,
-        JSON.stringify({ userIds: ['test-user-1'], segments: ['beta'] })]);
+        JSON.stringify({ userIds: ['test-user-1'], segments: ['beta'] })
+      ]);
 
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].key).toBe(flagKey);
       expect(result.rows[0].enabled).toBe(true);
 
-      testFlagId = result.rows[0].id
+      testFlagId = result.rows[0].id;
     })
 
     test('should read feature flag from database', async () => {
@@ -134,12 +138,13 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
       expect(result.rows).toHaveLength(1);
       const flag = result.rows[0];
 
-      expect(flag.key).toContain('test-flag-')
+      expect(flag.key).toContain('test-flag-');
       expect(flag.name).toBe('Test Feature Flag');
       expect(flag.enabled).toBe(true);
-      expect(flag.rollout_percentage).toBe(50)
-      expect(flag.user_targeting).toHaveProperty('userIds')
-      expect(flag.user_targeting.userIds).toContain('test-user-1')})
+      expect(flag.rollout_percentage).toBe(50);
+      expect(flag.user_targeting).toHaveProperty('userIds');
+      expect(flag.user_targeting.userIds).toContain('test-user-1');
+    });
 
     test('should update feature flag state', async () => {
       // Update flag to disabled
@@ -336,7 +341,8 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
       expect(new Date(updatedTimestamp).getTime()).toBeGreaterThan(new Date(originalUpdatedAt).getTime());
 
       // Cleanup
-      await client.query('DELETE FROM feature_flags WHERE id = $1', [flagId])})
+      await client.query('DELETE FROM feature_flags WHERE id = $1', [flagId]);
+    });
 
     test('should validate JSON structure in user_targeting', async () => {
       const jsonKey = `json-${Date.now()}`
@@ -345,7 +351,7 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
       await client.query(`
         INSERT INTO feature_flags (
           id, key, name, enabled, user_targeting, created_at, updated_at
-        );
+        )
         VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW(), NOW())
       `, [
         jsonKey,
@@ -355,7 +361,8 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
           userIds: ['user1', 'user2'],
           segments: ['premium', 'beta'],
           rules: [{ attribute: 'country', operator: 'equals', value: 'US' }]
-        })]);
+        })
+      ]);
 
       // Verify JSON can be queried
       const result = await client.query(`
@@ -365,14 +372,17 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
       `, [jsonKey]);
 
       const targeting = result.rows[0].user_targeting;
-      expect(targeting).toHaveProperty('userIds')
-      expect(targeting).toHaveProperty('segments')
+      expect(targeting).toHaveProperty('userIds');
+      expect(targeting).toHaveProperty('segments');
       expect(targeting).toHaveProperty('rules');
       expect(Array.isArray(targeting.userIds)).toBe(true);
-      expect(Array.isArray(targeting.segments)).toBe(true)
+      expect(Array.isArray(targeting.segments)).toBe(true);
 
       // Cleanup
-      await client.query('DELETE FROM feature_flags WHERE key = $1', [jsonKey])})})})
+      await client.query('DELETE FROM feature_flags WHERE key = $1', [jsonKey]);
+    });
+  });
+});
 
 describe('Feature Flag Anti-Fake Implementation Tests', () => {
   test('should not use in-memory storage for production feature flags', async () => {
@@ -385,10 +395,11 @@ describe('Feature Flag Anti-Fake Implementation Tests', () => {
         if (Array.isArray(data.flags) && data.flags.length > 0) {
           // Check if all flags have realistic IDs (UUIDs, not sequential numbers)
           const hasRealisticIds = data.flags.every((flag: any) => {
-            return flag.id && (
-              flag.id.length >= 32 || // UUID without dashes
-              (flag.id.includes('-') && flag.id.length >= 36) // UUID with dashes
-            )});
+                          return flag.id && (
+                flag.id.length >= 32 || // UUID without dashes
+                (flag.id.includes('-') && flag.id.length >= 36) // UUID with dashes
+              );
+          });
 
           expect(hasRealisticIds).toBe(true);
 
@@ -397,14 +408,15 @@ describe('Feature Flag Anti-Fake Implementation Tests', () => {
             if (flag.created_at) {
               const createdDate = new Date(flag.created_at);
               const now = new Date();
-              const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate();
+              const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
 
-              return createdDate >= oneYearAgo && createdDate <= now
-            };
-            return true // OK if no timestamp field
-          })
+              return createdDate >= oneYearAgo && createdDate <= now;
+            }
+            return true; // OK if no timestamp field
+          });
 
-          expect(hasRealisticTimestamps).toBe(true)}
+          expect(hasRealisticTimestamps).toBe(true);
+        }
       }
     } catch (error) {
       // Connection errors are OK - we're testing implementation, not connectivity
@@ -413,20 +425,23 @@ describe('Feature Flag Anti-Fake Implementation Tests', () => {
 
   test('should not have hardcoded feature flag responses', async () => {
     // Test that feature flag evaluation returns different results for different keys
-    const testKeys = [`test-${Date.now()}-1`, `test-${Date.now()}-2`]
-    const responses: any[] = []
+    const testKeys = [`test-${Date.now()}-1`, `test-${Date.now()}-2`];
+    const responses: any[] = [];
 
     try {
       for (const key of testKeys) {
         const response = await fetch(`http://localhost:3000/api/experiments?action=evaluate&key=${key}&userId=test`);
         if (response.ok) {
           const data = await response.json();
-          responses.push(data)}
-      };
+          responses.push(data);
+        }
+      }
       if (responses.length >= 2) {
-        // Responses should not be identical (indicating hardcoded responses);
-        expect(responses[0]).not.toEqual(responses[1])}
+        // Responses should not be identical (indicating hardcoded responses)
+        expect(responses[0]).not.toEqual(responses[1]);
+      }
     } catch (error) {
       // Connection errors are OK
     }
-  })});
+  });
+});
