@@ -93,7 +93,7 @@ npm run setup
 
 # Manual setup if needed:
 npm install
-cp .env.local.example .env.local  # Edit with your API keys
+cp .env.example .env.local  # Edit with your API keys
 ```
 
 ### Development Modes
@@ -111,6 +111,12 @@ npm run dev:cdn
 npm run dev
 # ✓ Full PostCSS integration
 # ⚠ May require native module rebuilds
+```
+
+**Production server with Datadog tracing**
+```bash
+npm run build
+npm run start:dd  # starts Next.js with dd-trace instrumentation (uses src/instrument.ts)
 ```
 
 **Docker Mode (Production Testing)**

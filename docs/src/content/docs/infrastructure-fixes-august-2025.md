@@ -185,5 +185,5 @@ With all critical infrastructure issues resolved, the platform is now ready for:
 
 - [Quick Start Guide](/guides/quick-start/) - Updated setup instructions
 - [Monitoring Overview](/monitoring/overview/) - Datadog integration details
-- [Authentication Guide](/authentication-testing/) - Security implementation
-- [TODO.md](/todo/) - Updated project status and achievements
+- [Authentication Testing](/authentication-testing/) - Security implementation
+- [Project TODO](/todo/) - Updated project status and achievements
