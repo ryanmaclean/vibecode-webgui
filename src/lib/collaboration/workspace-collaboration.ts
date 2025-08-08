@@ -716,7 +716,7 @@ export class WorkspaceCollaboration extends EventEmitter {
    */
   private releaseUserLocks(session: WorkspaceSession, userId: string): void {
     for (const fileState of session.files.values()) {
-      const locksToRemove = [];
+      const locksToRemove: string[] = [];
       for (const [lockId, lock] of fileState.locks) {
         if (lock.userId === userId) {
           locksToRemove.push(lockId);

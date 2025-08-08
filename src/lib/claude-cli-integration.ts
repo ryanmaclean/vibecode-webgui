@@ -105,7 +105,7 @@ export class ClaudeCliIntegration extends EventEmitter {
         command.push('--model', this.config.model)
       }
 
-      const process = spawn(command[0], command.slice(1), {
+      const child = spawn(command[0], command.slice(1), {
         cwd: this.config.workingDirectory,
         stdio: ['pipe', 'pipe', 'pipe'],
         env: {
@@ -115,22 +115,22 @@ export class ClaudeCliIntegration extends EventEmitter {
         }
       })
 
-      this.activeProcesses.set(this.sessionId, process)
+      this.activeProcesses.set(this.sessionId, child)
 
-      process.stdout?.on('data', (data) => {
+      child.stdout?.on('data', (data) => {
         this.emit('output', data.toString())
       })
 
-      process.stderr?.on('data', (data) => {
+      child.stderr?.on('data', (data) => {
         this.emit('error', data.toString())
       })
 
-      process.on('close', (code) => {
+      child.on('close', (code) => {
         this.activeProcesses.delete(this.sessionId)
         this.emit('session-closed', { sessionId: this.sessionId, exitCode: code })
       })
 
-      process.on('error', (error) => {
+      child.on('error', (error) => {
         this.activeProcesses.delete(this.sessionId)
         reject(error)
       })
@@ -357,7 +357,7 @@ export class ClaudeCliIntegration extends EventEmitter {
    */
   private async runCliCommand(command: string[], input: string): Promise<{ stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
-      const process = spawn(command[0], command.slice(1), {
+      const child = spawn(command[0], command.slice(1), {
         cwd: this.config.workingDirectory,
         stdio: ['pipe', 'pipe', 'pipe'],
         env: {
@@ -369,15 +369,15 @@ export class ClaudeCliIntegration extends EventEmitter {
       let stdout = ''
       let stderr = ''
 
-      process.stdout?.on('data', (data) => {
+      child.stdout?.on('data', (data) => {
         stdout += data.toString()
       })
 
-      process.stderr?.on('data', (data) => {
+      child.stderr?.on('data', (data) => {
         stderr += data.toString()
       })
 
-      process.on('close', (code) => {
+      child.on('close', (code) => {
         if (code === 0) {
           resolve({ stdout, stderr })
         } else {
@@ -385,14 +385,14 @@ export class ClaudeCliIntegration extends EventEmitter {
         }
       })
 
-      process.on('error', (error) => {
+      child.on('error', (error) => {
         reject(error)
       })
 
       // Send input to Claude
       if (input) {
-        process.stdin?.write(input)
-        process.stdin?.end()
+        child.stdin?.write(input)
+        child.stdin?.end()
       }
 
       // Set timeout

@@ -268,7 +268,7 @@ export function withFeatureFlag<T extends object>(
  */
 interface ABTestProps {
   flagKey: string
-  variants: Record<string, React.ReactNode>
+  variants: Record<string, React.ReactElement>
   defaultVariant?: string
   context?: ExperimentContext
   onVariantShown?: (variant: string) => void
@@ -296,8 +296,8 @@ export function ABTest({
   }
 
   const selectedVariant = variant in variants ? variant : defaultVariant
-  const result = variants[selectedVariant] || variants[defaultVariant]
-  return result ?? React.createElement('div', null, 'Variant not found')
+  const node = variants[selectedVariant] ?? variants[defaultVariant] ?? React.createElement('div', null, 'Variant not found')
+  return node
 }
 
 /**
