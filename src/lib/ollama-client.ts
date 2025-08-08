@@ -379,7 +379,7 @@ export class OllamaClient {
 
   // Utility methods
   getRecommendedModels(category: keyof typeof RECOMMENDED_MODELS = 'general'): string[] {
-    return RECOMMENDED_MODELS[category]
+    return [...RECOMMENDED_MODELS[category]]
   }
 
   formatModelSize(bytes: number): string {

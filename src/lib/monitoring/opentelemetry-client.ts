@@ -153,7 +153,7 @@ export function trackClientAPICall(endpoint: string, method: string, duration: n
     'api.method': method,
     'api.duration_ms': duration,
     'api.status_code': status,
-    'api.success': status < 400
+    'api.success': status < 400 ? 1 : 0
   })
 
   if (span) {

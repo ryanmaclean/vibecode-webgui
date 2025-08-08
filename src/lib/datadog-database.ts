@@ -192,16 +192,12 @@ class DatadogDatabaseMonitoring {
    */
   private async getVectorStoreMetrics() {
     try {
-      const [embeddingCount, indexSize] = await Promise.all([
-        prisma.rAGChunk.count({
-          where: {
-            embedding: {
-              not: null
-            }
-          }
-        }),
+      const [embeddingCountResult, indexSize] = await Promise.all([
+        prisma.$queryRaw<Array<{ count: bigint }>>`SELECT COUNT(*)::bigint as count FROM rag_chunks WHERE embedding IS NOT NULL`,
         this.getVectorIndexSize()
       ])
+
+      const embeddingCount = Number(embeddingCountResult[0]?.count || 0)
 
       return {
         totalEmbeddings: embeddingCount,
@@ -316,7 +312,7 @@ class DatadogDatabaseMonitoring {
       message: string
     }>
   }> {
-    const checks = []
+    const checks: Array<{ name: string; status: 'pass' | 'fail'; message: string }> = []
 
     try {
       // Check database connectivity

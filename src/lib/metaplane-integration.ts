@@ -230,7 +230,8 @@ export class MetaplaneDataObservability {
       return { passed: false, message: 'Column not specified', affectedRows: 0, value: 0 }
     }
 
-    const nullCount = data.filter(row => row[check.column] == null).length
+    const column = check.column as string
+    const nullCount = data.filter(row => row[column] == null).length
     const nullRate = nullCount / data.length
     const passed = nullRate <= check.threshold
 
@@ -252,7 +253,7 @@ export class MetaplaneDataObservability {
     let duplicates = 0
 
     for (const row of data) {
-      const key = check.column ? row[check.column] : JSON.stringify(row)
+      const key = check.column ? row[check.column as string] : JSON.stringify(row)
       if (uniqueValues.has(key)) {
         duplicates++
       } else {
@@ -353,9 +354,10 @@ export class MetaplaneDataObservability {
     if (data.length === 0) return Infinity
 
     // Assume data has a timestamp field
-    const timestampField = 'created_at' || 'updated_at' || 'timestamp'
+    const firstRow = data[0]
+    const timestampField = (['created_at', 'updated_at', 'timestamp'] as const).find(f => f in firstRow) || 'created_at'
     const timestamps = data
-      .map(row => row[timestampField] ? new Date(row[timestampField]) : null)
+      .map(row => (row[timestampField] ? new Date(row[timestampField]) : null))
       .filter(date => date !== null) as Date[]
 
     if (timestamps.length === 0) return Infinity
