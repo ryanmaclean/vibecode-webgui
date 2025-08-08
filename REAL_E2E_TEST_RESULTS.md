@@ -112,7 +112,7 @@ psql:/docker-entrypoint-initdb.d/init.sql: error: could not read from input file
 - Ensure proper database schema setup
 
 ### 3. Add Missing Environment Variables
-- Create .env.local with required variables
+- Create .env with required variables (.env.local optional for local-only overrides)
 - Update documentation with setup requirements
 
 ### 4. Main Application Dependencies

@@ -95,7 +95,7 @@ echo -e "${BLUE}🔧 Checking .gitignore coverage...${NC}"
 
 # Check if critical files are properly ignored
 GITIGNORE_ISSUES=false
-CRITICAL_PATTERNS=(".env.local" "*.key" "*.pem" "secrets/" ".datadog/")
+CRITICAL_PATTERNS=(".env" ".env.local" "*.key" "*.pem" "secrets/" ".datadog/")
 
 for pattern in "${CRITICAL_PATTERNS[@]}"; do
     if ! grep -q "$pattern" .gitignore 2>/dev/null; then
