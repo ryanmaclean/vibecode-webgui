@@ -335,6 +335,7 @@ export class LazyFileLoader extends EventEmitter {
    */
   private prefetchAdjacentChunks(currentChunks: string[]): void {
     if (!this.fileMetadata) return
+    const fileMetadata = this.fileMetadata
 
     const prefetchChunks = new Set<string>()
 
@@ -350,7 +351,7 @@ export class LazyFileLoader extends EventEmitter {
           prefetchChunks.add(this.getChunkId(prevChunk))
         }
 
-        const totalChunks = Math.ceil(this.fileMetadata.totalLines / this.config.chunkSize)
+        const totalChunks = Math.ceil(fileMetadata.totalLines / this.config.chunkSize)
         if (nextChunk < totalChunks) {
           prefetchChunks.add(this.getChunkId(nextChunk))
         }
