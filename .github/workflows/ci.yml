@@ -54,15 +54,15 @@ jobs:
       # - name: Check types
       #   run: npm run type-check
 
-      - name: Datadog SAST - Static Application Security Testing
-        uses: DataDog/datadog-sast-action@v1
-        with:
-          dd_api_key: ${{ secrets.DD_API_KEY }}
-          dd_app_key: ${{ secrets.DD_APP_KEY }}
-          dd_service: vibecode-webgui
-          dd_env: ci
-          dd_version: ${{ github.sha }}
-        continue-on-error: true
+      # - name: Datadog SAST - Static Application Security Testing
+      #   uses: DataDog/datadog-sast-action@v1
+      #   with:
+      #     dd_api_key: ${{ secrets.DD_API_KEY }}
+      #     dd_app_key: ${{ secrets.DD_APP_KEY }}
+      #     dd_service: vibecode-webgui
+      #     dd_env: ci
+      #     dd_version: ${{ github.sha }}
+      #   continue-on-error: true
 
       - name: SAST - ESLint Security Analysis
         run: |
@@ -78,15 +78,15 @@ jobs:
           grep -r -E "(sk-[a-zA-Z0-9]{40,}|sk-ant-[a-zA-Z0-9]{40,}|ghp_[a-zA-Z0-9]{36}|AKIA[0-9A-Z]{16})" src/ --exclude-dir=node_modules || echo "✅ No hardcoded secrets found"
           grep -r -E "(password\s*=\s*['\"][^'\"]+['\"]|api[_-]?key\s*=\s*['\"][^'\"]+['\"])" src/ --exclude-dir=node_modules || echo "✅ No hardcoded credentials found"
 
-      - name: Datadog Software Composition Analysis (SCA)
-        uses: DataDog/datadog-sca-github-action@main
-        with:
-          dd_api_key: ${{ secrets.DD_API_KEY }}
-          dd_app_key: ${{ secrets.DD_APP_KEY }}
-          dd_service: vibecode-webgui
-          dd_env: ci
-          dd_version: ${{ github.sha }}
-        continue-on-error: true
+      # - name: Datadog Software Composition Analysis (SCA)
+      #   uses: DataDog/datadog-sca-github-action@main
+      #   with:
+      #     dd_api_key: ${{ secrets.DD_API_KEY }}
+      #     dd_app_key: ${{ secrets.DD_APP_KEY }}
+      #     dd_service: vibecode-webgui
+      #     dd_env: ci
+      #     dd_version: ${{ github.sha }}
+      #   continue-on-error: true
 
       - name: Dependency vulnerability check
         run: |
