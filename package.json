@@ -53,7 +53,12 @@
     "test:performance:lighthouse": "node tests/performance/lighthouse-performance.js",
     "test:performance:ci": "BASE_URL=http://localhost:3000 npm run test:performance",
     "performance:baseline": "BASE_URL=http://localhost:3000 k6 run --tag test_type=baseline tests/performance/k6-load-tests.js",
-    "performance:stress": "BASE_URL=http://localhost:3000 k6 run --tag test_type=stress tests/performance/k6-load-tests.js"
+    "performance:stress": "BASE_URL=http://localhost:3000 k6 run --tag test_type=stress tests/performance/k6-load-tests.js",
+    "otel:setup": "npx tsx scripts/setup-opentelemetry.ts",
+    "otel:config": "curl -s http://localhost:3000/api/monitoring/otel-config | jq",
+    "otel:health": "curl -s http://localhost:3000/api/monitoring/otel-config?action=health | jq",
+    "otel:metrics": "curl -s http://localhost:9090/metrics",
+    "otel:test": "curl -s http://localhost:3000/api/monitoring/otel-config?action=status | jq"
   },
   "dependencies": {
     "@ai-sdk/openai": "1.3.23",
@@ -69,6 +74,14 @@
     "@monaco-editor/react": "4.7.0",
     "@mui/material": "^7.2.0",
     "@mui/x-charts": "^8.9.0",
+    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "0.62.0",
+    "@opentelemetry/exporter-otlp-http": "0.26.0",
+    "@opentelemetry/exporter-prometheus": "0.203.0",
+    "@opentelemetry/instrumentation-express": "0.52.0",
+    "@opentelemetry/instrumentation-fs": "0.23.0",
+    "@opentelemetry/instrumentation-http": "0.203.0",
+    "@opentelemetry/sdk-node": "0.203.0",
     "@radix-ui/react-label": "2.1.7",
     "@radix-ui/react-progress": "1.1.7",
     "@radix-ui/react-scroll-area": "1.2.9",
