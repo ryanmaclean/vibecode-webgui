@@ -1,13 +1,102 @@
 {
-  "apiKey": "${DD_API_KEY}",
-  "appKey": "${DD_APP_KEY}",
-  "site": "datadoghq.com",
-  "config": {
-    "testFiles": ["tests/datadog/**/*.synthetics.json"],
-    "global": {
-      "locations": [
-        "aws:us-east-1"
-      ]
+  "apiVersion": "v1",
+  "kind": "test",
+  "tests": [
+    {
+      "name": "VibeCode API Health Check",
+      "type": "api",
+      "subtype": "http",
+      "config": {
+        "request": {
+          "method": "GET",
+          "url": "{{ BASE_URL }}/api/health",
+          "timeout": 60,
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "assertions": [
+          {
+            "type": "statusCode",
+            "operator": "is",
+            "target": 200
+          },
+          {
+            "type": "responseTime",
+            "operator": "lessThan",
+            "target": 1000
+          },
+          {
+            "type": "header",
+            "property": "content-type",
+            "operator": "contains",
+            "target": "application/json"
+          }
+        ]
+      },
+      "options": {
+        "tick_every": 300,
+        "locations": ["aws:us-east-1"],
+        "device_ids": ["laptop_large"],
+        "retry": {
+          "count": 2,
+          "interval": 300
+        }
+      },
+      "message": "API health check failed - investigate immediately",
+      "tags": ["env:ci", "service:vibecode-webgui", "test:health"]
+    },
+    {
+      "name": "VibeCode Monitoring Dashboard API",
+      "type": "api", 
+      "subtype": "http",
+      "config": {
+        "request": {
+          "method": "GET",
+          "url": "{{ BASE_URL }}/api/monitoring/dashboard",
+          "timeout": 60,
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "assertions": [
+          {
+            "type": "statusCode",
+            "operator": "is",
+            "target": 200
+          },
+          {
+            "type": "responseTime",
+            "operator": "lessThan",
+            "target": 2000
+          },
+          {
+            "type": "body",
+            "operator": "contains",
+            "target": "health"
+          }
+        ]
+      },
+      "options": {
+        "tick_every": 300,
+        "locations": ["aws:us-east-1"],
+        "device_ids": ["laptop_large"],
+        "retry": {
+          "count": 2,
+          "interval": 300
+        }
+      },
+      "message": "Monitoring dashboard API failed",
+      "tags": ["env:ci", "service:vibecode-webgui", "test:monitoring"]
     }
+  ],
+  "global": {
+    "variables": [
+      {
+        "name": "BASE_URL",
+        "value": "http://localhost:3000"
+      }
+    ]
   }
 }
+EOF < /dev/null

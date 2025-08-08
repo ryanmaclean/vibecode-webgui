@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Comprehensive Performance Testing Runner
- * Runs K6 load tests and Lighthouse audits, then submits results to monitoring
+ * Runs Datadog Synthetic tests and Lighthouse audits, then submits results to monitoring
  */
 
 const { execSync, spawn } = require('child_process');
@@ -15,7 +15,7 @@ const MONITORING_ENDPOINT = `${BASE_URL}/api/monitoring/performance`;
 class PerformanceTestRunner {
   constructor() {
     this.results = {
-      k6_tests: [],
+      datadog_synthetic_tests: [],
       lighthouse_audits: [],
       overall_passed: true,
       timestamp: new Date().toISOString()
@@ -43,47 +43,56 @@ class PerformanceTestRunner {
     }
   }
 
-  async runK6LoadTests() {
-    console.log('\n📊 Running K6 load tests...');
+  async runDatadogSyntheticTests() {
+    console.log('\n🐕 Running Datadog Synthetic tests...');
     
-    const k6TestFile = path.join(__dirname, '../tests/performance/k6-load-tests.js');
-    const outputFile = path.join(OUTPUT_DIR, 'k6-results.json');
+    const configFile = path.join(__dirname, '../datadog-synthetics.json');
+    const outputFile = path.join(OUTPUT_DIR, 'datadog-synthetic-results.json');
     
     try {
-      // Check if k6 is installed
-      execSync('k6 version', { stdio: 'ignore' });
+      // Check if Datadog CLI is available
+      execSync('npx @datadog/datadog-ci --version', { stdio: 'ignore' });
     } catch (error) {
-      console.log('⚠️  K6 not installed, skipping load tests');
+      console.log('⚠️  Datadog CLI not installed, skipping synthetic tests');
       return;
     }
 
     try {
-      const k6Command = `k6 run --out json=${outputFile} ${k6TestFile}`;
-      console.log(`   Running: ${k6Command}`);
+      const datadogCommand = `npx @datadog/datadog-ci synthetics run-tests --config ${configFile} --variables BASE_URL=${BASE_URL} --timeout 300`;
+      console.log(`   Running: ${datadogCommand}`);
       
-      execSync(k6Command, { 
-        stdio: 'inherit',
-        env: { ...process.env, BASE_URL }
+      const output = execSync(datadogCommand, { 
+        encoding: 'utf8',
+        env: { 
+          ...process.env, 
+          DD_API_KEY: process.env.DD_API_KEY,
+          DD_APP_KEY: process.env.DD_APP_KEY,
+          BASE_URL 
+        }
       });
 
-      // Parse K6 results
-      const rawResults = await fs.readFile(outputFile, 'utf8');
-      const k6Metrics = this.parseK6Results(rawResults);
+      // Parse Datadog Synthetic results
+      const syntheticResults = this.parseDatadogSyntheticResults(output);
       
-      this.results.k6_tests.push(k6Metrics);
+      this.results.datadog_synthetic_tests.push(syntheticResults);
       
       // Submit to monitoring API
-      await this.submitToMonitoring('load_test_results', k6Metrics);
+      await this.submitToMonitoring('synthetic_test_results', syntheticResults);
       
-      if (!k6Metrics.passed) {
+      if (!syntheticResults.passed) {
         this.results.overall_passed = false;
       }
       
-      console.log(`   K6 Load Test: ${k6Metrics.passed ? '✅ PASSED' : '❌ FAILED'}`);
+      console.log(`   Datadog Synthetic Tests: ${syntheticResults.passed ? '✅ PASSED' : '❌ FAILED'}`);
       
     } catch (error) {
-      console.error('❌ K6 load test failed:', error.message);
-      this.results.overall_passed = false;
+      console.error('❌ Datadog synthetic tests failed:', error.message);
+      // Don't fail the build if API keys are missing in development
+      if (!process.env.DD_API_KEY || !process.env.DD_APP_KEY) {
+        console.log('   ⚠️  Datadog API keys not configured - skipping synthetic tests');
+      } else {
+        this.results.overall_passed = false;
+      }
     }
   }
 
@@ -190,63 +199,57 @@ class PerformanceTestRunner {
     }
   }
 
-  parseK6Results(rawResults) {
-    // Parse K6 JSON output for key metrics
-    const lines = rawResults.trim().split('\n');
-    let totalRequests = 0;
-    let errorCount = 0;
-    let responseTimes = [];
+  parseDatadogSyntheticResults(output) {
+    // Parse Datadog Synthetic test output for key metrics
+    const lines = output.trim().split('\n');
+    let testsRun = 0;
+    let testsPassed = 0;
+    let testsFailed = 0;
+    const testResults = [];
     
+    // Look for test result indicators in the output
     for (const line of lines) {
-      try {
-        const metric = JSON.parse(line);
-        
-        if (metric.type === 'Point' && metric.metric === 'http_req_duration') {
-          responseTimes.push(metric.data.value);
-        }
-        
-        if (metric.type === 'Point' && metric.metric === 'http_reqs') {
-          totalRequests += metric.data.value;
-        }
-        
-        if (metric.type === 'Point' && metric.metric === 'http_req_failed' && metric.data.value > 0) {
-          errorCount++;
-        }
-      } catch (e) {
-        // Skip invalid JSON lines
-        continue;
+      // Parse test results based on Datadog CLI output format
+      if (line.includes('✅') || line.includes('PASSED')) {
+        testsPassed++;
+        testsRun++;
+        testResults.push({ status: 'passed', line });
+      } else if (line.includes('❌') || line.includes('FAILED')) {
+        testsFailed++;
+        testsRun++;
+        testResults.push({ status: 'failed', line });
       }
     }
     
-    if (responseTimes.length === 0) {
-      // Fallback metrics for simple tests
+    // If no specific test results found, check overall success
+    if (testsRun === 0) {
+      const hasErrors = output.toLowerCase().includes('error') || 
+                       output.toLowerCase().includes('failed') ||
+                       output.toLowerCase().includes('timeout');
+      
       return {
-        test_name: 'basic_load_test',
-        duration_seconds: 60,
-        total_requests: 100,
-        requests_per_second: 1.67,
-        error_rate: 0,
-        p50_response_time: 500,
-        p95_response_time: 1000,
-        p99_response_time: 1500,
-        passed: true
+        test_name: 'datadog_synthetic_tests',
+        tests_run: 1,
+        tests_passed: hasErrors ? 0 : 1,
+        tests_failed: hasErrors ? 1 : 0,
+        success_rate: hasErrors ? 0 : 100,
+        response_time_avg: 0, // Not available from CLI output
+        passed: !hasErrors,
+        test_details: testResults
       };
     }
     
-    responseTimes.sort((a, b) => a - b);
-    const errorRate = (errorCount / totalRequests) * 100;
+    const successRate = (testsPassed / testsRun) * 100;
     
     return {
-      test_name: 'k6_load_test',
-      duration_seconds: 180, // Approximate from test configuration
-      total_requests: totalRequests,
-      requests_per_second: totalRequests / 180,
-      error_rate: errorRate,
-      p50_response_time: responseTimes[Math.floor(responseTimes.length * 0.5)],
-      p95_response_time: responseTimes[Math.floor(responseTimes.length * 0.95)],
-      p99_response_time: responseTimes[Math.floor(responseTimes.length * 0.99)],
-      passed: errorRate < 5 && responseTimes[Math.floor(responseTimes.length * 0.95)] < 2000,
-      thresholds_failed: errorRate >= 5 ? ['error_rate'] : []
+      test_name: 'datadog_synthetic_tests',
+      tests_run: testsRun,
+      tests_passed: testsPassed,
+      tests_failed: testsFailed,
+      success_rate: successRate,
+      response_time_avg: 0, // Not available from CLI output
+      passed: testsFailed === 0,
+      test_details: testResults
     };
   }
 
@@ -274,9 +277,9 @@ class PerformanceTestRunner {
     const summary = {
       ...this.results,
       summary: {
-        total_k6_tests: this.results.k6_tests.length,
+        total_synthetic_tests: this.results.datadog_synthetic_tests.length,
         total_lighthouse_audits: this.results.lighthouse_audits.length,
-        k6_passed: this.results.k6_tests.filter(t => t.passed).length,
+        synthetic_passed: this.results.datadog_synthetic_tests.filter(t => t.passed).length,
         lighthouse_passed: this.results.lighthouse_audits.filter(t => t.passed).length,
         overall_performance_score: this.calculateOverallScore()
       }
@@ -285,7 +288,7 @@ class PerformanceTestRunner {
     await fs.writeFile(reportFile, JSON.stringify(summary, null, 2));
     
     console.log('\n📈 Performance Test Summary:');
-    console.log(`   K6 Load Tests: ${summary.summary.k6_passed}/${summary.summary.total_k6_tests} passed`);
+    console.log(`   Datadog Synthetic Tests: ${summary.summary.synthetic_passed}/${summary.summary.total_synthetic_tests} passed`);
     console.log(`   Lighthouse Audits: ${summary.summary.lighthouse_passed}/${summary.summary.total_lighthouse_audits} passed`);
     console.log(`   Overall Score: ${summary.summary.overall_performance_score}/100`);
     console.log(`   Result: ${this.results.overall_passed ? '✅ PASSED' : '❌ FAILED'}`);
@@ -300,9 +303,9 @@ class PerformanceTestRunner {
       ? lighthouseScores.reduce((a, b) => a + b, 0) / lighthouseScores.length 
       : 0;
     
-    const k6Score = this.results.k6_tests.some(t => t.passed) ? 85 : 60;
+    const syntheticScore = this.results.datadog_synthetic_tests.some(t => t.passed) ? 90 : 60;
     
-    return Math.round((avgLighthouseScore * 0.7) + (k6Score * 0.3));
+    return Math.round((avgLighthouseScore * 0.6) + (syntheticScore * 0.4));
   }
 }
 
@@ -311,7 +314,7 @@ async function runPerformanceTests() {
   
   try {
     await runner.initialize();
-    await runner.runK6LoadTests();
+    await runner.runDatadogSyntheticTests();
     await runner.runLighthouseAudits();
     
     const summary = await runner.generateFinalReport();

@@ -71,6 +71,16 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString()
         })
 
+      case 'synthetic_test_results':
+        const syntheticTestPassed = await performanceMonitor.submitSyntheticTestResults(data)
+        
+        return NextResponse.json({
+          success: true,
+          test_passed: syntheticTestPassed,
+          message: `Datadog Synthetic test results processed: ${syntheticTestPassed ? 'PASSED' : 'FAILED'}`,
+          timestamp: new Date().toISOString()
+        })
+
       case 'lighthouse_results':
         const lighthousePassed = await performanceMonitor.submitLighthouseResults(data)
         

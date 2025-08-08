@@ -38,6 +38,20 @@ interface LighthouseResult {
   passed: boolean
 }
 
+interface SyntheticTestResult {
+  test_name: string
+  tests_run: number
+  tests_passed: number
+  tests_failed: number
+  success_rate: number
+  response_time_avg: number
+  passed: boolean
+  test_details?: Array<{
+    status: 'passed' | 'failed'
+    line: string
+  }>
+}
+
 export class PerformanceMonitor {
   private static instance: PerformanceMonitor
   private metrics: PerformanceMetric[] = []
@@ -189,6 +203,58 @@ export class PerformanceMonitor {
 
     await monitoring.submitEvent(
       `Load Test: ${results.test_name}`,
+      eventText,
+      [...baseTagsTest, `result:${results.passed ? 'passed' : 'failed'}`, `alert_type:${alertType}`]
+    )
+
+    return results.passed
+  }
+
+  /**
+   * Process and submit Datadog Synthetic test results
+   */
+  async submitSyntheticTestResults(results: SyntheticTestResult) {
+    console.log(`🐕 Processing Datadog Synthetic test results for: ${results.test_name}`)
+
+    const baseTagsTest = [
+      `test_name:${results.test_name}`,
+      'test_type:synthetic',
+      'service:vibecode-webgui'
+    ]
+    
+    // Submit core synthetic test metrics
+    const metrics = [
+      { name: 'synthetic_test.tests_run', value: results.tests_run, unit: 'count' },
+      { name: 'synthetic_test.tests_passed', value: results.tests_passed, unit: 'count' },
+      { name: 'synthetic_test.tests_failed', value: results.tests_failed, unit: 'count' },
+      { name: 'synthetic_test.success_rate', value: results.success_rate, unit: 'percent' },
+    ]
+
+    // Add response time if available
+    if (results.response_time_avg > 0) {
+      metrics.push({ 
+        name: 'synthetic_test.response_time_avg', 
+        value: results.response_time_avg, 
+        unit: 'ms' 
+      })
+    }
+
+    for (const metric of metrics) {
+      await monitoring.submitMetric({
+        metric: `vibecode.${metric.name}`,
+        value: metric.value,
+        tags: baseTagsTest
+      })
+    }
+
+    // Submit test result event
+    const alertType = results.passed ? 'success' : 'error'
+    const eventText = results.passed 
+      ? `Synthetic test "${results.test_name}" passed (${results.tests_passed}/${results.tests_run} tests)`
+      : `Synthetic test "${results.test_name}" failed (${results.tests_failed}/${results.tests_run} tests failed)`
+
+    await monitoring.submitEvent(
+      `Synthetic Test: ${results.test_name}`,
       eventText,
       [...baseTagsTest, `result:${results.passed ? 'passed' : 'failed'}`, `alert_type:${alertType}`]
     )
