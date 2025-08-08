@@ -22,7 +22,16 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps --omit=optional
+        run: npm install --legacy-peer-deps --omit=optional
+
+      - name: Clean platform-specific dependencies
+        run: |
+          # Remove platform-specific Next.js dependencies that might cause issues
+          rm -rf node_modules/@next/swc-darwin-*
+          rm -rf node_modules/@next/swc-linux-*
+          rm -rf node_modules/@next/swc-win32-*
+          # Reinstall only the current platform's dependencies
+          npm install --legacy-peer-deps --omit=optional
 
       - name: Lint code
         run: npm run lint
