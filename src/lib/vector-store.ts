@@ -5,6 +5,7 @@
 
 import OpenAI from 'openai'
 import { prisma } from './prisma'
+import { Prisma } from '@prisma/client'
 
 interface VectorChunk {
   id: string
@@ -239,7 +240,7 @@ class VectorStore {
               tokens: row.tokens || 0
             }
           },
-          similarity: parseFloat(row.similarity)
+          similarity: row.similarity
         }))
 
       console.log(`Vector search found ${results.length} relevant chunks for query: "${query.substring(0, 100)}..."`)
@@ -266,27 +267,19 @@ class VectorStore {
     try {
       const { workspaceId, fileIds, limit = 10 } = options
 
-      const whereClause: {
-        content: { contains: string; mode: string }
-        file?: { workspace_id: number }
-        file_id?: { in: number[] }
-      } = {
+      const whereClause: Prisma.RAGChunkWhereInput = {
         content: {
           contains: query,
-          mode: 'insensitive'
+          mode: Prisma.QueryMode.insensitive
         }
       }
       
       if (workspaceId) {
-        whereClause.file = {
-          workspace_id: workspaceId
-        }
+        whereClause.file = { is: { workspace_id: workspaceId } }
       }
       
       if (fileIds && fileIds.length > 0) {
-        whereClause.file_id = {
-          in: fileIds
-        }
+        whereClause.file_id = { in: fileIds }
       }
 
       const chunks = await prisma.rAGChunk.findMany({
