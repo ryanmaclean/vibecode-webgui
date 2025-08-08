@@ -98,11 +98,14 @@ test_secrets_automation() {
     log_header "Testing Secrets Automation"
     
     # Source environment
-    if [[ -f "$PROJECT_ROOT/.env.local" ]]; then
+    if [[ -f "$PROJECT_ROOT/.env" ]]; then
+        source "$PROJECT_ROOT/.env"
+        log_info "Sourced .env"
+    elif [[ -f "$PROJECT_ROOT/.env.local" ]]; then
         source "$PROJECT_ROOT/.env.local"
         log_info "Sourced .env.local"
     else
-        log_warning ".env.local not found, using environment variables"
+        log_warning ".env not found (nor .env.local), using environment variables"
     fi
     
     # Set test passwords
