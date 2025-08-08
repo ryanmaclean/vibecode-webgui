@@ -1,11 +1,5 @@
-const nextJest = require('next/jest');
-
-const createJestConfig = nextJest({
-  dir: './',
-});
-
 /** @type {import('jest').Config} */
-const customJestConfig = {
+const config = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['./tests/jest.setup.js'],
   setupFiles: ['./tests/jest.polyfills.js'],
@@ -45,6 +39,20 @@ const customJestConfig = {
     '<rootDir>/node_modules/',
     '<rootDir>/tests/e2e/',
   ],
+
+  // Use Babel for transformation to avoid SWC issues
+  transform: {
+    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { 
+      presets: [
+        ['@babel/preset-env', { targets: { node: 'current' } }],
+        ['@babel/preset-react', { runtime: 'automatic' }],
+        '@babel/preset-typescript'
+      ]
+    }],
+  },
+
+  // Extensions to handle
+  moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json'],
 };
 
-module.exports = createJestConfig(customJestConfig);
+module.exports = config;
