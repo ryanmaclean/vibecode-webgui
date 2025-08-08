@@ -231,7 +231,7 @@ export { handler as GET, handler as POST }`,
     ],
     setupInstructions: [
       'Install dependencies with npm install',
-      'Copy .env.example to .env.local and fill in your values',
+      'Copy .env.example to .env and fill in your values (.env.local optional for local-only overrides)',
       'Set up your database with npx prisma db push',
       'Run the development server with npm run dev',
       'Configure your Stripe webhook endpoints'
