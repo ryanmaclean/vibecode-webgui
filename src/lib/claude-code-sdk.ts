@@ -313,8 +313,8 @@ ${request.code}
   private parseCodeResponse(response: string): { code: string; explanation: string } {
     // Extract code blocks
     const codeBlockRegex = /```[\w]*\n([\s\S]*?)```/g
-    const codeBlocks = []
-    let match
+    const codeBlocks: string[] = []
+    let match: RegExpExecArray | null
 
     while ((match = codeBlockRegex.exec(response)) !== null) {
       codeBlocks.push(match[1].trim())
@@ -322,7 +322,7 @@ ${request.code}
 
     // Use the largest code block as the main code
     const code = codeBlocks.length > 0
-      ? codeBlocks.reduce((a, b) => a.length > b.length ? a : b)
+      ? codeBlocks.reduce((a, b) => (a.length > b.length ? a : b))
       : ''
 
     // Extract explanation (text outside code blocks)
