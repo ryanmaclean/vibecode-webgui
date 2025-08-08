@@ -62,8 +62,8 @@ source_environment() {
     log_info "Sourcing environment variables..."
     
     local env_files=(
-        "$PROJECT_ROOT/.env.local"
         "$PROJECT_ROOT/.env"
+        "$PROJECT_ROOT/.env.local"
         "$HOME/.vibecode/.env"
     )
     
@@ -113,7 +113,7 @@ validate_environment() {
         done
         log_info ""
         log_info "Please set these variables in one of:"
-        log_info "  - $PROJECT_ROOT/.env.local"
+        log_info "  - $PROJECT_ROOT/.env (preferred) or $PROJECT_ROOT/.env.local"
         log_info "  - Environment variables"
         log_info "  - CI/CD pipeline secrets"
         exit 1
@@ -333,8 +333,8 @@ ENVIRONMENT VARIABLES:
 
 ENVIRONMENT FILES:
     The script will automatically source environment variables from:
-        1. $PROJECT_ROOT/.env.local
-        2. $PROJECT_ROOT/.env
+        1. $PROJECT_ROOT/.env (preferred)
+        2. $PROJECT_ROOT/.env.local
         3. $HOME/.vibecode/.env
 
 EOF
