@@ -73,7 +73,7 @@
     "@radix-ui/react-tabs": "1.1.12",
     "@tailwindcss/postcss": "4.1.11",
     "@tremor/react": "^3.18.7",
-    "@uiw/react-codemirror": "^4.24.1",
+    "@uiw/react-codemirror": "^4.24.2",
     "@upstash/ratelimit": "2.0.5",
     "@upstash/redis": "1.35.1",
     "@vercel/analytics": "^1.5.0",
