@@ -7,10 +7,79 @@
  * Staff Engineer Implementation - Enterprise-grade file watching performance
  */
 
-import chokidar from 'chokidar'
+import * as chokidar from 'chokidar'
 import { EventEmitter } from 'events'
 import path from 'path'
-import { debounce, throttle } from 'lodash'
+
+// Minimal utilities to avoid lodash dependency
+type Debounced<T extends (...args: any[]) => void> = ((...args: Parameters<T>) => void) & { flush: () => void; cancel: () => void }
+
+function debounce<T extends (...args: any[]) => void>(fn: T, wait: number, options?: { maxWait?: number }): Debounced<T> {
+  let timeout: NodeJS.Timeout | null = null
+  let startTime: number | null = null
+  const maxWait = options?.maxWait
+  const wrapper = ((...args: Parameters<T>) => {
+    const now = Date.now()
+    if (startTime === null) startTime = now
+    if (timeout) clearTimeout(timeout)
+    const shouldFlush = typeof maxWait === 'number' && now - startTime >= maxWait
+    if (shouldFlush) {
+      startTime = now
+      fn(...args)
+      return
+    }
+    timeout = setTimeout(() => {
+      startTime = null
+      fn(...args)
+    }, wait)
+  }) as Debounced<T>
+  wrapper.flush = () => {
+    if (timeout) {
+      clearTimeout(timeout)
+      timeout = null
+    }
+    startTime = null
+    // Execute immediately with no args
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(fn as any)()
+  }
+  wrapper.cancel = () => {
+    if (timeout) {
+      clearTimeout(timeout)
+      timeout = null
+    }
+    startTime = null
+  }
+  return wrapper
+}
+
+function throttle<T extends (...args: any[]) => void>(fn: T, wait: number, opts?: { leading?: boolean; trailing?: boolean }) {
+  const leading = opts?.leading !== false
+  const trailingEnabled = opts?.trailing !== false
+  let last = 0
+  let trailing: NodeJS.Timeout | null = null
+  let lastArgs: Parameters<T> | null = null
+  return (...args: Parameters<T>) => {
+    const now = Date.now()
+    if (!last && !leading) last = now
+    const remaining = wait - (now - last)
+    lastArgs = args
+    if (remaining <= 0) {
+      if (trailing) {
+        clearTimeout(trailing)
+        trailing = null
+      }
+      last = now
+      fn(...args)
+    } else if (trailingEnabled && !trailing) {
+      trailing = setTimeout(() => {
+        last = leading === false ? 0 : Date.now()
+        trailing = null
+        if (lastArgs) fn(...lastArgs)
+      }, remaining)
+    }
+  }
+}
 
 interface OptimizedWatcherConfig {
   watchPath: string
@@ -49,11 +118,11 @@ interface WatcherStats {
 
 export class OptimizedFileWatcher extends EventEmitter {
   private config: Required<OptimizedWatcherConfig>
-  private watcher: chokidar.FSWatcher | null = null
+  private watcher: ReturnType<typeof chokidar.watch> | null = null
   private pendingEvents: FileChangeEvent[] = []
   private stats: WatcherStats
   private isWatching = false
-  private batchProcessor: ReturnType<typeof debounce>
+  private batchProcessor: Debounced<() => Promise<void>>
   private eventThrottle: Map<string, ReturnType<typeof throttle>> = new Map()
   private recentEvents = new Set<string>()
   private startTime = Date.now()
@@ -142,7 +211,7 @@ export class OptimizedFileWatcher extends EventEmitter {
    * Initialize the file watcher with optimizations
    */
   private async initializeWatcher(): Promise<void> {
-    const watchOptions: chokidar.WatchOptions = {
+    const watchOptions = {
       ignored: this.config.ignored,
       persistent: true,
       ignoreInitial: true,
@@ -183,12 +252,12 @@ export class OptimizedFileWatcher extends EventEmitter {
 
     // File events with intelligent throttling
     this.watcher
-      .on('add', (filePath, stats) => this.handleFileEvent('add', filePath, stats))
-      .on('change', (filePath, stats) => this.handleFileEvent('change', filePath, stats))
-      .on('unlink', (filePath) => this.handleFileEvent('unlink', filePath))
-      .on('addDir', (dirPath, stats) => this.handleFileEvent('addDir', dirPath, stats))
-      .on('unlinkDir', (dirPath) => this.handleFileEvent('unlinkDir', dirPath))
-      .on('error', (error) => this.emit('error', error))
+      .on('add', (filePath: string, stats?: unknown) => this.handleFileEvent('add', filePath, stats))
+      .on('change', (filePath: string, stats?: unknown) => this.handleFileEvent('change', filePath, stats))
+      .on('unlink', (filePath: string) => this.handleFileEvent('unlink', filePath))
+      .on('addDir', (dirPath: string, stats?: unknown) => this.handleFileEvent('addDir', dirPath, stats))
+      .on('unlinkDir', (dirPath: string) => this.handleFileEvent('unlinkDir', dirPath))
+      .on('error', (error: unknown) => this.emit('error', error))
       .on('ready', () => this.emit('watcher-ready'))
   }
 
