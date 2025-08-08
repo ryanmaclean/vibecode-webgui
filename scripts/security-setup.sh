@@ -104,7 +104,6 @@ kubectl create secret generic auth-secrets \
     --namespace=vibecode-platform \
     --dry-run=client -o yaml | kubectl apply -f -
 
-#!/bin/bash
 # Create local .env file (preferred). You may also create .env.local for local-only overrides.
 echo -e "${BLUE}📝 Creating local environment file...${NC}"
 cat > .env << EOF

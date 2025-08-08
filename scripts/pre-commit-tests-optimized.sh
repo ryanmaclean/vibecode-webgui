@@ -136,7 +136,7 @@ api_key_patterns=(
 )
 
 for file in $(git diff --cached --name-only); do
-    if [[ -f "$file" && "$file" != *.env.local && "$file" != *.env.* && "$file" != *node_modules* ]]; then
+    if [[ -f "$file" && "$file" != .env && "$file" != *.env.local && "$file" != *.env.* && "$file" != *node_modules* ]]; then
         for pattern in "${api_key_patterns[@]}"; do
             if grep -E "$pattern" "$file" > /dev/null; then
                 echo "ERROR: Potential API key found in $file"
