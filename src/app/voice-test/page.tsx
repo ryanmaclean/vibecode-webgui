@@ -376,7 +376,7 @@ export default function VoiceTestPage() {
             
             <div className="p-4 border rounded min-h-24">
               <p className="text-sm text-muted-foreground mb-2">Speech transcript:</p>
-              <p className="text-lg">{transcript || &apos;Say something...&apos;}</p>
+              <p className="text-lg">{transcript || 'Say something...'}</p>
             </div>
           </div>
         </CardContent>
