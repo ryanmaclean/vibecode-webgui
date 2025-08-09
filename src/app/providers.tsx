@@ -8,9 +8,9 @@
 import { SessionProvider } from 'next-auth/react'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
-import { datadogRum } from '@datadog/browser-rum'
 import { datadogLogs } from '@datadog/browser-logs'
 import { ConsoleProvider } from '@/providers/ConsoleProvider'
+import RUMMonitoring from '@/lib/monitoring/rum-client'
 
 interface ProvidersProps {
   children: ReactNode
@@ -37,7 +37,8 @@ export default function Providers({ children }: ProvidersProps) {
       const shouldInit = (isProd || enableDev) && applicationId && clientToken
 
       if (shouldInit) {
-        datadogRum.init({
+        // Initialize enhanced RUM monitoring with automatic tracking
+        RUMMonitoring.initializeWithTracking({
           applicationId,
           clientToken,
           site: site as any,
@@ -52,6 +53,7 @@ export default function Providers({ children }: ProvidersProps) {
           defaultPrivacyLevel: 'mask-user-input',
         })
 
+        // Initialize Datadog Logs
         datadogLogs.init({
           clientToken,
           site: site as any,
@@ -61,6 +63,18 @@ export default function Providers({ children }: ProvidersProps) {
           env: process.env.NODE_ENV || 'development',
           version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
         })
+
+        // Track application initialization
+        RUMMonitoring.addAction('app.initialized', {
+          timestamp: Date.now(),
+          version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
+          environment: process.env.NODE_ENV || 'development',
+          category: 'app-lifecycle'
+        })
+
+        console.log('🐕 VibeCode RUM monitoring initialized successfully')
+      } else {
+        console.warn('🐕 RUM monitoring disabled - missing configuration or not production/dev mode')
       }
     }
   }, [])
