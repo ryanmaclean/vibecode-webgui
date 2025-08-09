@@ -67,7 +67,7 @@ interface EnhancedMonitoringData {
   }
 }
 
-type TabType = 'overview' | 'metrics' | 'logs' | 'alerts' | 'security' | 'network' | 'health';
+type TabType = 'overview' | 'metrics' | 'logs' | 'alerts' | 'security' | 'network' | 'health' | 'rum';
 
 interface LogEntry {
   timestamp: string
@@ -92,6 +92,7 @@ export default function MonitoringDashboard() {
   const [enhancedData, setEnhancedData] = useState<EnhancedMonitoringData | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [rumData, setRumData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<TabType>('health');
@@ -103,11 +104,12 @@ export default function MonitoringDashboard() {
     const fetchData = async () => {
       try {
         setIsLoading(true)
-        const [metricsRes, dashboardRes, logsRes, alertsRes] = await Promise.all([
+        const [metricsRes, dashboardRes, logsRes, alertsRes, rumRes] = await Promise.all([
           fetch(`/api/monitoring/metrics?range=${timeRange}`).catch(() => null),
           fetch(`/api/monitoring/dashboard?range=${timeRange}`),
           fetch(`/api/monitoring/logs?range=${timeRange}`).catch(() => null),
           fetch(`/api/monitoring/alerts?range=${timeRange}`).catch(() => null),
+          fetch(`/api/monitoring/rum?action=health`).catch(() => null),
         ])
 
         // Enhanced dashboard data is required
@@ -140,6 +142,12 @@ export default function MonitoringDashboard() {
         if (alertsRes && alertsRes.ok) {
           const alertsData = await alertsRes.json()
           setAlerts(alertsData)
+        }
+
+        // RUM health data (optional)
+        if (rumRes && rumRes.ok) {
+          const rumHealth = await rumRes.json()
+          setRumData(rumHealth)
         } else {
           // Mock alerts for demo
           setAlerts([
@@ -539,6 +547,138 @@ export default function MonitoringDashboard() {
             </div>
           </div>
         );
+      
+      case 'rum':
+        return (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6 border">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Real User Monitoring (RUM) Status</h2>
+              
+              {rumData ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="bg-white border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-medium text-gray-900">RUM Health</h3>
+                      <div className={`h-3 w-3 rounded-full ${rumData.healthy ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    </div>
+                    <p className={`text-sm font-medium ${rumData.healthy ? 'text-green-600' : 'text-red-600'}`}>
+                      {rumData.status}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Status: {rumData.healthy ? 'Active' : 'Configuration Required'}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-white border rounded-lg p-4">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Configuration</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Application ID:</span>
+                        <span className={rumData.configuration.hasApplicationId ? 'text-green-600' : 'text-red-600'}>
+                          {rumData.configuration.hasApplicationId ? '✅ Set' : '❌ Missing'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Client Token:</span>
+                        <span className={rumData.configuration.hasClientToken ? 'text-green-600' : 'text-red-600'}>
+                          {rumData.configuration.hasClientToken ? '✅ Set' : '❌ Missing'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span>Site:</span>
+                        <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
+                          {rumData.configuration.site}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white border rounded-lg p-4">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Features</h3>
+                    <div className="space-y-2">
+                      {Object.entries(rumData.features).map(([feature, enabled]) => (
+                        <div key={feature} className="flex justify-between text-sm">
+                          <span className="capitalize">{feature.replace(/([A-Z])/g, ' $1').trim()}:</span>
+                          <span className={enabled ? 'text-green-600' : 'text-gray-400'}>
+                            {enabled ? '✅ Enabled' : '❌ Disabled'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-gray-500">Loading RUM status...</p>
+                </div>
+              )}
+            </div>
+
+            {/* RUM Features Overview */}
+            <div className="bg-white rounded-lg shadow p-6 border">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">Available RUM Features</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                    <h4 className="font-medium text-blue-900 mb-2">📹 Session Replay</h4>
+                    <p className="text-sm text-blue-700">Record and replay user sessions for debugging and UX analysis</p>
+                  </div>
+                  <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                    <h4 className="font-medium text-green-900 mb-2">👆 User Interactions</h4>
+                    <p className="text-sm text-green-700">Track clicks, scrolls, and user interactions automatically</p>
+                  </div>
+                  <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                    <h4 className="font-medium text-purple-900 mb-2">⚡ Web Vitals</h4>
+                    <p className="text-sm text-purple-700">Monitor Core Web Vitals and performance metrics in real-time</p>
+                  </div>
+                  <div className="border border-red-200 rounded-lg p-4 bg-red-50">
+                    <h4 className="font-medium text-red-900 mb-2">🐛 Error Tracking</h4>
+                    <p className="text-sm text-red-700">Capture and analyze client-side errors with full context</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
+                    <h4 className="font-medium text-yellow-900 mb-2">🤖 AI Interactions</h4>
+                    <p className="text-sm text-yellow-700">Track AI usage patterns, response times, and costs</p>
+                  </div>
+                  <div className="border border-indigo-200 rounded-lg p-4 bg-indigo-50">
+                    <h4 className="font-medium text-indigo-900 mb-2">💻 Workspace Tracking</h4>
+                    <p className="text-sm text-indigo-700">Monitor workspace usage and productivity metrics</p>
+                  </div>
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <h4 className="font-medium text-gray-900 mb-2">📝 Code Editor</h4>
+                    <p className="text-sm text-gray-700">Track code editor usage, languages, and efficiency</p>
+                  </div>
+                  <div className="border border-teal-200 rounded-lg p-4 bg-teal-50">
+                    <h4 className="font-medium text-teal-900 mb-2">⌨️ Terminal Usage</h4>
+                    <p className="text-sm text-teal-700">Monitor terminal usage with privacy-safe command tracking</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* RUM Configuration Guide */}
+            {rumData && !rumData.healthy && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                <h3 className="text-lg font-medium text-yellow-900 mb-4">🔧 RUM Setup Required</h3>
+                <div className="space-y-3 text-sm text-yellow-800">
+                  <p>To enable Real User Monitoring, configure the following environment variables:</p>
+                  <div className="bg-yellow-100 p-4 rounded-md font-mono text-xs space-y-1">
+                    <div>NEXT_PUBLIC_DATADOG_APPLICATION_ID=your-app-id</div>
+                    <div>NEXT_PUBLIC_DATADOG_CLIENT_TOKEN=your-client-token</div>
+                    <div>NEXT_PUBLIC_DATADOG_SITE=datadoghq.com (or your region)</div>
+                  </div>
+                  <p className="mt-3">
+                    Get these values from your Datadog dashboard → APM & Continuous Profiler → RUM Applications
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+        
       default:
         return null;
     }
@@ -567,7 +707,7 @@ export default function MonitoringDashboard() {
       <div className="mb-6">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-            {(['health', 'overview', 'metrics', 'logs', 'alerts', 'security', 'network'] as TabType[]).map(tab => (
+            {(['health', 'overview', 'metrics', 'logs', 'alerts', 'security', 'network', 'rum'] as TabType[]).map(tab => (
               <button
                 key={tab}
                 onClick={() => setSelectedTab(tab)}
