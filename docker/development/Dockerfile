@@ -22,8 +22,8 @@ COPY package*.json ./
 # Create .npmrc with default settings if it doesn't exist
 RUN if [ ! -f .npmrc ]; then echo "optional=false" > .npmrc; fi
 
-# Install dependencies
-RUN npm ci && npm cache clean --force
+# Install dependencies (use npm install instead of npm ci for more flexibility)
+RUN npm install --no-optional && npm cache clean --force
 
 # Copy source code
 COPY --chown=nextjs:nodejs . .
