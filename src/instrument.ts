@@ -12,30 +12,17 @@ tracer.init({
   logInjection: true,
   profiling: true,
   runtimeMetrics: true,
-  env: process.env.DD_ENV || process.env.NODE_ENV === 'production' ? 'production' : 'development',
+  env: process.env.DD_ENV ?? (process.env.NODE_ENV === 'production' ? 'production' : 'development'),
   service: process.env.DD_SERVICE || 'vibecode-webgui',
   version: process.env.DD_VERSION || process.env.npm_package_version || '1.0.0',
   
   // Enhanced sampling for better observability
   sampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
   
-  // Enable LLM observability with type assertion
+  // Experimental, typed flags only. LLM Observability is controlled via env vars
+  // (e.g., DD_LLMOBS_ENABLED, DD_API_KEY, DD_SITE) and is not configured here
   experimental: {
-    // Use type assertion for experimental features
-    ...(process.env.DD_LLMOBS_ENABLED === '1' || process.env.DD_LLMOBS_ENABLED === 'true' ? {
-      llmobs: {
-        enabled: true,
-        agentlessEnabled: process.env.DD_LLMOBS_AGENTLESS_ENABLED === '1' || 
-                         process.env.DD_LLMOBS_AGENTLESS_ENABLED === 'true',
-        mlApp: process.env.DD_LLMOBS_ML_APP || 'vibecode-ai',
-        site: process.env.DD_SITE || 'datadoghq.com',
-        apiKey: process.env.DD_API_KEY
-      }
-    } : {}),
-    
-    // Add any other experimental features here
-    // Example:
-    // someOtherFeature: true
+    enableGetRumData: process.env.DD_ENABLE_GET_RUM_DATA === '1' || process.env.DD_ENABLE_GET_RUM_DATA === 'true'
   },
   
   // Database monitoring - using type assertion for plugins config
