@@ -223,6 +223,228 @@ class RUMMonitoring {
       }
     });
   }
+
+  /**
+   * Track business metrics and conversions
+   */
+  static trackBusinessMetric(metric: string, value: number, attributes?: Record<string, any>) {
+    this.addAction(`business.${metric}`, {
+      value,
+      ...attributes,
+      timestamp: Date.now(),
+      category: 'business-metric'
+    });
+  }
+
+  /**
+   * Track workspace interactions
+   */
+  static trackWorkspaceAction(action: string, workspaceId: string, metadata?: Record<string, any>) {
+    this.addAction(`workspace.${action}`, {
+      workspaceId,
+      ...metadata,
+      timestamp: Date.now(),
+      category: 'workspace'
+    });
+  }
+
+  /**
+   * Track authentication events
+   */
+  static trackAuth(event: 'login' | 'logout' | 'signup' | 'password_reset', context?: Record<string, any>) {
+    this.addAction(`auth.${event}`, {
+      ...context,
+      timestamp: Date.now(),
+      category: 'authentication'
+    });
+  }
+
+  /**
+   * Track code editor interactions
+   */
+  static trackCodeEditor(action: string, context: {
+    language?: string;
+    fileType?: string;
+    linesOfCode?: number;
+    charactersTyped?: number;
+    timeSpent?: number;
+  }) {
+    this.addAction(`editor.${action}`, {
+      ...context,
+      timestamp: Date.now(),
+      category: 'code-editor'
+    });
+  }
+
+  /**
+   * Track terminal usage
+   */
+  static trackTerminal(action: string, context: {
+    command?: string;
+    exitCode?: number;
+    duration?: number;
+    workspaceId?: string;
+  }) {
+    // Sanitize potentially sensitive command data
+    const sanitizedContext = {
+      ...context,
+      command: context.command ? this.sanitizeCommand(context.command) : undefined,
+      timestamp: Date.now(),
+      category: 'terminal'
+    };
+
+    this.addAction(`terminal.${action}`, sanitizedContext);
+  }
+
+  /**
+   * Track user journey and flows
+   */
+  static trackUserJourney(step: string, flow: string, metadata?: Record<string, any>) {
+    this.addAction(`journey.${flow}.${step}`, {
+      flow,
+      step,
+      ...metadata,
+      timestamp: Date.now(),
+      category: 'user-journey'
+    });
+  }
+
+  /**
+   * Track API usage patterns
+   */
+  static trackAPIUsage(endpoint: string, method: string, context: {
+    responseTime?: number;
+    statusCode?: number;
+    payloadSize?: number;
+    rateLimitRemaining?: number;
+  }) {
+    this.addAction('api.request', {
+      endpoint,
+      method,
+      ...context,
+      timestamp: Date.now(),
+      category: 'api-usage'
+    });
+  }
+
+  /**
+   * Track errors with enhanced context
+   */
+  static trackError(error: Error | string, context: {
+    component?: string;
+    action?: string;
+    userId?: string;
+    workspaceId?: string;
+    severity?: 'low' | 'medium' | 'high' | 'critical';
+    metadata?: Record<string, any>;
+  }) {
+    const errorContext = {
+      ...context,
+      timestamp: Date.now(),
+      category: 'error',
+      url: typeof window !== 'undefined' ? window.location.href : 'unknown',
+      userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'unknown'
+    };
+
+    this.addError(error, errorContext);
+  }
+
+  /**
+   * Set up enhanced Web Vitals tracking
+   */
+  static setupWebVitalsTracking() {
+    if (typeof window === 'undefined') return;
+
+    // Track Web Vitals with enhanced context
+    const observer = new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        // Track Core Web Vitals
+        if (entry.entryType === 'largest-contentful-paint') {
+          this.trackPerformance({ largestContentfulPaint: entry.startTime });
+        }
+        
+        if (entry.entryType === 'layout-shift' && !(entry as any).hadRecentInput) {
+          this.trackPerformance({ cumulativeLayoutShift: (entry as any).value });
+        }
+        
+        if (entry.entryType === 'first-input') {
+          this.addAttribute('performance.firstInputDelay', (entry as any).processingStart - entry.startTime);
+        }
+      });
+    });
+
+    // Observe various performance metrics
+    try {
+      observer.observe({ entryTypes: ['largest-contentful-paint', 'layout-shift', 'first-input'] });
+    } catch (error) {
+      console.warn('[RUM] Performance observer not supported:', error);
+    }
+  }
+
+  /**
+   * Initialize RUM with automatic tracking setup
+   */
+  static initializeWithTracking(config?: Partial<RUMConfig>) {
+    this.init(config);
+    
+    if (this.initialized) {
+      this.setupWebVitalsTracking();
+      this.setupAutomaticTracking();
+    }
+  }
+
+  /**
+   * Set up automatic tracking for common user interactions
+   */
+  static setupAutomaticTracking() {
+    if (typeof window === 'undefined') return;
+
+    // Track page visibility changes
+    document.addEventListener('visibilitychange', () => {
+      this.addAction('page.visibility_change', {
+        hidden: document.hidden,
+        timestamp: Date.now(),
+        category: 'page-lifecycle'
+      });
+    });
+
+    // Track page unload
+    window.addEventListener('beforeunload', () => {
+      this.addAction('page.unload', {
+        timestamp: Date.now(),
+        category: 'page-lifecycle'
+      });
+    });
+  }
+
+  /**
+   * Sanitize sensitive command data
+   */
+  private static sanitizeCommand(command: string): string {
+    // Remove potential API keys, passwords, and sensitive data
+    return command
+      .replace(/--?(?:api-?key|password|token|secret)\s*[=:]?\s*\S+/gi, '--[REDACTED]')
+      .replace(/(?:api_key|password|token|secret)\s*[=:]\s*\S+/gi, '[REDACTED]')
+      .substring(0, 100); // Truncate long commands
+  }
+
+  /**
+   * Get RUM session information
+   */
+  static getSessionInfo() {
+    if (!this.initialized) return null;
+
+    try {
+      return {
+        sessionId: datadogRum.getInternalContext()?.session_id,
+        viewId: datadogRum.getInternalContext()?.view?.id,
+        initialized: this.initialized
+      };
+    } catch (error) {
+      console.error('[RUM] Failed to get session info:', error);
+      return null;
+    }
+  }
 }
 
 export default RUMMonitoring;
