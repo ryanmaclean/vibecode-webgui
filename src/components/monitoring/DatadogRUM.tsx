@@ -21,10 +21,12 @@ const DatadogRUM = () => {
     // Initialize in production or development, if the client token is available.
     if ((isProduction || isDevelopment) && process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN) {
       console.log(`Initializing Datadog RUM for ${process.env.NODE_ENV}...`);
+      type DatadogSite = 'datadoghq.com' | 'us3.datadoghq.com' | 'us5.datadoghq.com' | 'datadoghq.eu' | 'ddog-gov.com' | 'ap1.datadoghq.com'
+      const site: DatadogSite = (process.env.NEXT_PUBLIC_DATADOG_SITE as DatadogSite) || 'datadoghq.com'
       datadogRum.init({
         applicationId: process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID || 'vibecode-rum',
         clientToken: process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN,
-        site: process.env.NEXT_PUBLIC_DATADOG_SITE || 'datadoghq.com',
+        site,
         service: process.env.NEXT_PUBLIC_DATADOG_SERVICE || 'vibecode-webgui',
         env: process.env.NODE_ENV,
         version: process.env.NEXT_PUBLIC_DATADOG_VERSION || process.env.npm_package_version,

@@ -268,6 +268,7 @@ class RUMMonitoring {
     linesOfCode?: number;
     charactersTyped?: number;
     timeSpent?: number;
+    userId?: string;
   }) {
     this.addAction(`editor.${action}`, {
       ...context,
@@ -284,6 +285,7 @@ class RUMMonitoring {
     exitCode?: number;
     duration?: number;
     workspaceId?: string;
+    userId?: string;
   }) {
     // Sanitize potentially sensitive command data
     const sanitizedContext = {
@@ -317,6 +319,7 @@ class RUMMonitoring {
     statusCode?: number;
     payloadSize?: number;
     rateLimitRemaining?: number;
+    userId?: string;
   }) {
     this.addAction('api.request', {
       endpoint,
