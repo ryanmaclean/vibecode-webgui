@@ -4,7 +4,7 @@
 FROM node:20-alpine AS base
 
 # Install essential build tools and security updates first
-RUN apk add --no-cache libc6-compat python3 make g++
+RUN apk add --no-cache libc6-compat python3 make g++ jq
 
 # Set platform-specific environment variables
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -19,7 +19,7 @@ WORKDIR /app
 FROM base AS deps
 
 # Copy package definition and lockfile
-COPY package.json yarn.lock* .npmrc ./
+COPY package.json yarn.lock* ./
 
 # Create a temporary package.json without the platform-specific SWC dependencies
 RUN jq 'del(.devDependencies."@next/swc-darwin-arm64")' package.json > package.tmp.json && \
@@ -34,6 +34,8 @@ RUN jq 'del(.devDependencies."@next/swc-darwin-arm64")' package.json > package.t
     find node_modules -name "*swc-*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
     find node_modules -name "*darwin*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
     find node_modules -name "*win32*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
+    # Install the correct SWC binary for Linux x64
+    yarn add @next/swc-linux-x64-gnu && \
     # Ensure required SWC binaries are present
     test -d node_modules/@next/swc-linux-x64-gnu || (echo "Missing required SWC binary for Linux x64" && exit 1)
 
@@ -54,6 +56,8 @@ RUN rm -rf node_modules/.bin/next-swc-* && \
     find node_modules -name "*win32*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
     find node_modules -name "*darwin*" -type f -delete 2>/dev/null || true && \
     find node_modules -name "*win32*" -type f -delete 2>/dev/null || true && \
+    # Install the correct SWC binary for Linux x64
+    yarn add @next/swc-linux-x64-gnu && \
     # Ensure required SWC binaries are present
     test -d node_modules/@next/swc-linux-x64-gnu || (echo "Missing required SWC binary for Linux x64" && exit 1)
 
