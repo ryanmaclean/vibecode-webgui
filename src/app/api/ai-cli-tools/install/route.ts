@@ -186,7 +186,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Safety check for request.url during build time
-    if (!request.url || request.url === '') {
+    if (!request.url || typeof request.url !== 'string' || request.url.trim() === '') {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
 
