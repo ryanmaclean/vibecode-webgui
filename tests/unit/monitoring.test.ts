@@ -44,8 +44,8 @@ describe('Monitoring Library', () => {
   describe('Browser Environment', () => {
     beforeEach(() => {
       // Mock browser environment
-      delete (global as any).window;
-      Object.defineProperty(global, 'window', {
+      if (!(global as any).window) {
+        Object.defineProperty(global, 'window', {
         value: {
           location: { href: 'http://localhost:3000' },
           navigator: { userAgent: 'test-agent' },
@@ -56,7 +56,8 @@ describe('Monitoring Library', () => {
           },
         },
         writable: true,
-      })})
+      });
+    });
 
     test('should initialize Datadog RUM and Logs', () => {
       monitoring.init()
