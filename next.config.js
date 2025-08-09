@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const path = require('path');
+
 const nextConfig = {
   reactStrictMode: true,
   // To deploy to a static host like GitHub Pages, set output to 'export'.
@@ -34,6 +36,14 @@ const nextConfig = {
       net: false,
       tls: false,
       fsevents: false,
+    };
+
+    // Explicitly handle path aliases
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.join(__dirname, 'src'),
+      pg: false,
+      redis: false,
     };
 
     if (!isServer) {
