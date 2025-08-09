@@ -1,0 +1,109 @@
+{
+  "users": {
+    "admin": {
+      "email": "admin@test.com",
+      "name": "Test Admin",
+      "role": "admin",
+      "avatar": "https://via.placeholder.com/64"
+    },
+    "user": {
+      "email": "user@test.com", 
+      "name": "Test User",
+      "role": "user",
+      "avatar": "https://via.placeholder.com/64"
+    },
+    "developer": {
+      "email": "dev@test.com",
+      "name": "Test Developer", 
+      "role": "user",
+      "avatar": "https://via.placeholder.com/64"
+    }
+  },
+  "workspaces": {
+    "personal": {
+      "name": "Personal Workspace",
+      "description": "Personal development workspace for testing",
+      "status": "active"
+    },
+    "team": {
+      "name": "Team Workspace", 
+      "description": "Shared team workspace for collaboration testing",
+      "status": "active"
+    },
+    "enterprise": {
+      "name": "Enterprise Workspace",
+      "description": "Enterprise-level workspace with advanced features",
+      "status": "active"
+    }
+  },
+  "projects": {
+    "webapp": {
+      "name": "Test Web App",
+      "description": "A sample web application project for testing",
+      "template": "nextjs-typescript",
+      "status": "active"
+    },
+    "api": {
+      "name": "Test API",
+      "description": "A sample REST API project for testing", 
+      "template": "nodejs-express",
+      "status": "active"
+    },
+    "mobile": {
+      "name": "Test Mobile App",
+      "description": "A sample mobile application for testing",
+      "template": "react-native",
+      "status": "active"
+    }
+  },
+  "files": {
+    "typescript": {
+      "filename": "test.ts",
+      "content": "// Test TypeScript file\\ninterface User {\\n  id: number;\\n  name: string;\\n  email: string;\\n}\\n\\nexport const testUser: User = {\\n  id: 1,\\n  name: 'Test User',\\n  email: 'test@example.com'\\n};",
+      "language": "typescript"
+    },
+    "javascript": {
+      "filename": "test.js", 
+      "content": "// Test JavaScript file\\nconst users = [];\\n\\nfunction addUser(user) {\\n  users.push(user);\\n  return users.length;\\n}\\n\\nmodule.exports = { addUser };",
+      "language": "javascript"
+    },
+    "python": {
+      "filename": "test.py",
+      "content": "# Test Python file\\nclass User:\\n    def __init__(self, name, email):\\n        self.name = name\\n        self.email = email\\n    \\n    def __str__(self):\\n        return f'{self.name} <{self.email}>'\\n\\ntest_user = User('Test User', 'test@example.com')",
+      "language": "python"
+    }
+  },
+  "aiPrompts": {
+    "codeGeneration": {
+      "prompt": "Create a simple React component that displays a user profile with name and email",
+      "expectedKeywords": ["React", "component", "profile", "name", "email"]
+    },
+    "codeExplanation": {
+      "prompt": "Explain what this JavaScript function does: function fibonacci(n) { return n <= 1 ? n : fibonacci(n-1) + fibonacci(n-2); }",
+      "expectedKeywords": ["fibonacci", "recursive", "sequence", "function"]
+    },
+    "debugging": {
+      "prompt": "Help me fix this TypeScript error: Property 'id' does not exist on type '{}'",
+      "expectedKeywords": ["TypeScript", "interface", "type", "property"]
+    }
+  },
+  "monitoring": {
+    "healthEndpoints": [
+      "/api/health",
+      "/api/health/db", 
+      "/api/health/redis",
+      "/api/monitoring/status"
+    ],
+    "expectedMetrics": [
+      "http_requests_total",
+      "response_time_seconds", 
+      "active_connections",
+      "memory_usage_bytes"
+    ]
+  },
+  "testFiles": {
+    "sampleCode": "src/components/TestComponent.tsx",
+    "sampleConfig": "config/test.json",
+    "sampleData": "data/test-dataset.csv"
+  }
+}
