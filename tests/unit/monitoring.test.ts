@@ -75,7 +75,7 @@ describe('Monitoring Library', () => {
         trackResources: true,
         trackLongTasks: true,
         defaultPrivacyLevel: 'mask-user-input',
-      })
+      });
 
       expect(datadogLogs.init).toHaveBeenCalledWith({
         clientToken: process.env.NEXT_PUBLIC_DD_RUM_CLIENT_TOKEN || 'test-client-token',
@@ -85,49 +85,49 @@ describe('Monitoring Library', () => {
         version: '1.0.0',
         forwardErrorsToLogs: true,
         sessionSampleRate: 100,
-      })
+      });
     })
 
     test('should track page view', () => {
-      monitoring.trackPageView('/test-page', { userId: 'user123' })
+      monitoring.trackPageView('/test-page', { userId: 'user123' });
 
       expect(datadogRum.addAction).toHaveBeenCalledWith('page_view', {
         page: '/test-page',
         userId: 'user123',
-      })
-    })
+      });
+    });
 
     test('should track custom event', () => {
-      const eventData = { action: 'click', element: 'button' }
-      monitoring.trackEvent('user_interaction', eventData)
+      const eventData = { action: 'click', element: 'button' };
+      monitoring.trackEvent('user_interaction', eventData);
 
-      expect(datadogRum.addAction).toHaveBeenCalledWith('user_interaction', eventData)
-    })
+      expect.*toHaveBeenCalledWith.*);;
+    });
 
     test('should log info messages', () => {
       monitoring.logInfo('Test info message', { key: 'value' })
 
-      expect(datadogLogs.logger.info).toHaveBeenCalledWith('Test info message', { key: 'value' })
+      expect.*toHaveBeenCalledWith.*);
     })
 
     test('should log warning messages', () => {
       monitoring.logWarning('Test warning', { level: 'warning' })
 
-      expect(datadogLogs.logger.warn).toHaveBeenCalledWith('Test warning', { level: 'warning' })
+      expect.*toHaveBeenCalledWith.*);
     })
 
     test('should log error messages', () => {
       const error = new Error('Test error')
       monitoring.logError('Error occurred', { error })
 
-      expect(datadogLogs.logger.error).toHaveBeenCalledWith('Error occurred', { error })
-      expect(datadogRum.addError).toHaveBeenCalledWith(error, { message: 'Error occurred', error })
+      expect.*toHaveBeenCalledWith.*);
+      expect.*toHaveBeenCalledWith.*);
     })
 
     test('should track performance metrics', () => {
       monitoring.trackPerformance('api_call', 150, { endpoint: '/api/test' })
 
-      expect(datadogRum.addTiming).toHaveBeenCalledWith('api_call', 150)
+      expect.*toHaveBeenCalledWith.*);
       expect(datadogRum.addAction).toHaveBeenCalledWith('performance_metric', {
         metric: 'api_call',
         duration: 150,
@@ -169,7 +169,7 @@ describe('Monitoring Library', () => {
 
       monitoring.trackCoreWebVitals();
 
-      expect(global.PerformanceObserver).toHaveBeenCalled()})})
+      expect.*toHaveBeenCalled();})})
 
   describe('Server Environment', () => {
     test('should handle server environment gracefully', () => {
@@ -196,7 +196,7 @@ describe('Monitoring Library', () => {
         throw new Error('Init failed')});
 
       expect(() => monitoring.init()).not.toThrow()
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to initialize monitoring:', expect.any(Error));
+      expect.*toHaveBeenCalledWith.*);;
 
       consoleSpy.mockRestore()})
 
@@ -208,7 +208,7 @@ describe('Monitoring Library', () => {
         throw new Error('Tracking failed')})
 
       expect(() => monitoring.trackEvent('test', {})).not.toThrow();
-      expect(consoleSpy).toHaveBeenCalled();
+      expect.*toHaveBeenCalled();;
 
       consoleSpy.mockRestore()})})
 

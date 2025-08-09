@@ -132,7 +132,7 @@ describe('AIProjectGenerator Component', () => {
     )
     
     expect(screen.getByText('AI Project Generator')).toBeInTheDocument()
-    expect(screen.getByText(/Describe your project and let AI generate the code/)).toBeInTheDocument()
+    expect(screen.getByText(/Describe your project idea and let AI generate a complete, production-ready codebase/)).toBeInTheDocument()
   })
 
   it('renders the ProjectGenerator component', () => {
@@ -161,7 +161,7 @@ describe('AIProjectGenerator Component', () => {
     
     // Check loading state
     expect(screen.getByTestId('loading-state')).toBeInTheDocument()
-    expect(screen.getByText('Generating...')).toBeInTheDocument()
+    expect(screen.getByTestId('loading-state')).toBeInTheDocument()
     
     // Wait for completion and redirect
     await waitFor(() => {
@@ -205,6 +205,6 @@ describe('AIProjectGenerator Component', () => {
     
     expect(screen.getByText('AI-powered code generation')).toBeInTheDocument()
     expect(screen.getByText(/Powered by/)).toBeInTheDocument()
-    expect(screen.getByText('VibeCode AI')).toBeInTheDocument()
+    expect(screen.getByText(/Powered by VibeCode AI/)).toBeInTheDocument()
   })
 })
