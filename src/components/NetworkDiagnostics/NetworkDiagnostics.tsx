@@ -16,24 +16,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import Tooltip from '@mui/material/Tooltip';
-
-interface HopStat {
-  hop: number;
-  host: string;
-  ip: string;
-  loss: number;
-  sent: number;
-  last: number;
-  avg: number;
-  best: number;
-  worst: number;
-  stdev: number;
-  jitter?: number;
-  p50?: number;
-  p90?: number;
-  p95?: number;
-  p99?: number;
-}
+import type { HopStat } from '@/types/network';
 
 const NetworkDiagnostics = () => {
   const [host, setHost] = useState('api.vibecode.com');

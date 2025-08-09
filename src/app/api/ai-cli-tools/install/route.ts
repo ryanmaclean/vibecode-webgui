@@ -185,6 +185,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Safety check for request.url during build time
+    if (!request.url) {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    }
+
     const { searchParams } = new URL(request.url)
     const toolId = searchParams.get('toolId')
 
