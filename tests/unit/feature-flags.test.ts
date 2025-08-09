@@ -237,10 +237,11 @@ describe('FeatureFlagEngine', () => {
       ]
 
       // 3 out of 5 users convert (60% conversion rate);
-      for (let i = 0; i < testContexts.length i++) {
+      for (let i = 0; i < testContexts.length; i++) {
         await engine.evaluateFlag('stats_test', testContexts[i]);
-        const conversionValue = i < 3 ? 1 : 0 // First 3 convert
-        await engine.trackMetric('stats_test', 'conversion', conversionValue, testContexts[i])}
+        const conversionValue = i < 3 ? 1 : 0; // First 3 convert
+        await engine.trackMetric('stats_test', 'conversion', conversionValue, testContexts[i]);
+      }
       const results = await engine.getExperimentResults('stats_test')
       const controlMetrics = results.metrics['control'];
 
