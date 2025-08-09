@@ -17,8 +17,9 @@ jest.mock('next/navigation', () => ({
 // Mock the ProjectGenerator component
 jest.mock('@/components/ProjectGenerator', () => ({
   ProjectGenerator: ({ onComplete, initialPrompt, autoStart }: any) => {
-    const [isGenerating, setIsGenerating] = React.useState(false)
-    const [prompt, setPrompt] = React.useState(initialPrompt || '')
+    const mockReact = require('react')
+    const [isGenerating, setIsGenerating] = mockReact.useState(false)
+    const [prompt, setPrompt] = mockReact.useState(initialPrompt || '')
 
     const handleGenerate = () => {
       if (!prompt.trim()) return

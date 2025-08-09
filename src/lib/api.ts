@@ -22,12 +22,17 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     try {
+      // Build headers safely; do NOT set JSON content-type when using FormData
+      const mergedHeaders: Record<string, string> = {
+        ...(options.headers as Record<string, string> | undefined),
+      }
+      if (!(options.body instanceof FormData)) {
+        mergedHeaders['Content-Type'] = mergedHeaders['Content-Type'] || 'application/json'
+      }
+
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
         ...options,
+        headers: mergedHeaders,
       })
 
       if (!response.ok) {
@@ -135,6 +140,23 @@ class ApiClient {
 
   async getAlerts() {
     return this.request('/api/monitoring/alerts')
+  }
+
+  // Generic helpers for callers expecting raw data and exceptions on failure
+  async get<T = any>(endpoint: string, init?: RequestInit): Promise<T> {
+    const res = await this.request<T>(endpoint, { method: 'GET', ...(init || {}) })
+    if (!res.success) throw new Error(res.error || 'Request failed')
+    return res.data as T
+  }
+
+  async post<T = any>(endpoint: string, body?: any, init?: RequestInit): Promise<T> {
+    const opts: RequestInit = { method: 'POST', ...(init || {}) }
+    if (body !== undefined) {
+      opts.body = body instanceof FormData ? body : JSON.stringify(body)
+    }
+    const res = await this.request<T>(endpoint, opts)
+    if (!res.success) throw new Error(res.error || 'Request failed')
+    return res.data as T
   }
 }
 

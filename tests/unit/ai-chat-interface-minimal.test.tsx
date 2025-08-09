@@ -11,6 +11,6 @@ describe('Minimal AIChatInterface Test', () => {
     render(<AIChatInterface />);
     // A simple assertion to ensure the component renders something.
     // We can check for a more specific element later.
-    expect(screen.getByText('VibeCode AI')).toBeInTheDocument();
+    expect(screen.getByText('AI Assistant')).toBeInTheDocument();
   });
 });
