@@ -60,7 +60,7 @@ describe('Monitoring Library', () => {
     });
 
     test('should initialize Datadog RUM and Logs', () => {
-      monitoring.init()
+      monitoring.init();
 
       expect(datadogRum.init).toHaveBeenCalledWith({
         applicationId: process.env.NEXT_PUBLIC_DD_RUM_APPLICATION_ID || 'test-app-id',
