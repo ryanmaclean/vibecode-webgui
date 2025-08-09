@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 // Import CSS based on environment
-import "./globals.css";
+import "./globals.docker.css";
 import Providers from './providers';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
@@ -27,10 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Tailwind CSS v4 CDN for local development only */}
-        {process.env.DOCKER !== 'true' && (
-          <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" defer></script>
-        )}
+        {/* Tailwind CSS v4 is now handled via PostCSS in Docker mode */}
       </head>
       <body
         className="antialiased"
