@@ -85,7 +85,8 @@ describe('Monitoring Library', () => {
         version: '1.0.0',
         forwardErrorsToLogs: true,
         sessionSampleRate: 100,
-      })})
+      })
+    })
 
     test('should track page view', () => {
       monitoring.trackPageView('/test-page', { userId: 'user123' })
@@ -93,30 +94,35 @@ describe('Monitoring Library', () => {
       expect(datadogRum.addAction).toHaveBeenCalledWith('page_view', {
         page: '/test-page',
         userId: 'user123',
-      })})
+      })
+    })
 
     test('should track custom event', () => {
       const eventData = { action: 'click', element: 'button' }
       monitoring.trackEvent('user_interaction', eventData)
 
-      expect(datadogRum.addAction).toHaveBeenCalledWith('user_interaction', eventData)})
+      expect(datadogRum.addAction).toHaveBeenCalledWith('user_interaction', eventData)
+    })
 
     test('should log info messages', () => {
       monitoring.logInfo('Test info message', { key: 'value' })
 
-      expect(datadogLogs.logger.info).toHaveBeenCalledWith('Test info message', { key: 'value' })})
+      expect(datadogLogs.logger.info).toHaveBeenCalledWith('Test info message', { key: 'value' })
+    })
 
     test('should log warning messages', () => {
       monitoring.logWarning('Test warning', { level: 'warning' })
 
-      expect(datadogLogs.logger.warn).toHaveBeenCalledWith('Test warning', { level: 'warning' })})
+      expect(datadogLogs.logger.warn).toHaveBeenCalledWith('Test warning', { level: 'warning' })
+    })
 
     test('should log error messages', () => {
       const error = new Error('Test error')
       monitoring.logError('Error occurred', { error })
 
       expect(datadogLogs.logger.error).toHaveBeenCalledWith('Error occurred', { error })
-      expect(datadogRum.addError).toHaveBeenCalledWith(error, { message: 'Error occurred', error })})
+      expect(datadogRum.addError).toHaveBeenCalledWith(error, { message: 'Error occurred', error })
+    })
 
     test('should track performance metrics', () => {
       monitoring.trackPerformance('api_call', 150, { endpoint: '/api/test' })
@@ -126,7 +132,8 @@ describe('Monitoring Library', () => {
         metric: 'api_call',
         duration: 150,
         endpoint: '/api/test',
-      })})
+      })
+    })
 
     test('should track workspace events', () => {
       monitoring.trackWorkspaceEvent('file_opened', 'workspace123', { fileName: 'test.js' })
@@ -135,7 +142,8 @@ describe('Monitoring Library', () => {
         event: 'file_opened',
         workspaceId: 'workspace123',
         fileName: 'test.js',
-      })})
+      })
+    })
 
     test('should track Core Web Vitals', () => {
       const mockObserver = {

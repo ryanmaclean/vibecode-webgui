@@ -7,56 +7,58 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { SessionProvider } from 'next-auth/react'
 
 // Mock the AIProjectGenerator component
-jest.mock('@/components/projects/AIProjectGenerator', () => ({
-  AIProjectGenerator: ({ onComplete, initialPrompt, autoStart }: any) => {
-    const [isGenerating, setIsGenerating] = React.useState(false)
-    const [prompt, setPrompt] = React.useState(initialPrompt || '')
+jest.mock('@/components/projects/AIProjectGenerator', () => {
+  const React = require('react')
+  return {
+    AIProjectGenerator: ({ onComplete, initialPrompt, autoStart }: any) => {
+      const [isGenerating, setIsGenerating] = React.useState(false)
+      const [prompt, setPrompt] = React.useState(initialPrompt || '')
 
-    const handleGenerate = () => {
-      if (!prompt.trim()) return
-      
-      setIsGenerating(true)
-      
-      // Simulate API call
-      setTimeout(() => {
-        setIsGenerating(false)
-        onComplete?.({
-          workspaceId: 'ai-project-123',
-          projectName: 'test-project'
-        })
-      }, 100)
+      const handleGenerate = () => {
+        if (!prompt.trim()) return
+        
+        setIsGenerating(true)
+        
+        // Simulate API call
+        setTimeout(() => {
+          setIsGenerating(false)
+          onComplete?.({
+            workspaceId: 'ai-project-123',
+            projectName: 'test-project'
+          })
+        }, 100)
+      }
+
+      return React.createElement('div', {}, [
+        React.createElement('h3', { key: 'title' }, 'AI Project Generator'),
+        React.createElement('div', { key: 'desc' }, 'Describe your project idea and let AI generate a complete, production-ready codebase'),
+        React.createElement('input', {
+          key: 'input',
+          type: 'text',
+          value: prompt,
+          onChange: (e: any) => setPrompt(e.target.value),
+          placeholder: 'A modern React dashboard with dark mode...',
+          'data-testid': 'prompt-input'
+        }),
+        React.createElement('button', {
+          key: 'button',
+          onClick: handleGenerate,
+          disabled: isGenerating || !prompt.trim(),
+          'data-testid': 'generate-button'
+        }, isGenerating ? 'Generating...' : 'Generate'),
+        isGenerating && React.createElement('div', {
+          key: 'loading',
+          'data-testid': 'loading-state'
+        }, [
+          React.createElement('span', { key: 'text' }, 'Generating...'),
+          React.createElement('div', { key: 'progress', role: 'progressbar' })
+        ]),
+        React.createElement('div', { key: 'powered' }, 'AI-powered code generation'),
+        React.createElement('div', { key: 'vibecode' }, 'Powered by VibeCode AI')
+      ].filter(Boolean))
     }
-
-    return (
-      <div>
-        <h3>AI Project Generator</h3>
-        <div>Describe your project idea and let AI generate a complete, production-ready codebase</div>
-        <input
-          type="text"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="A modern React dashboard with dark mode..."
-          data-testid="prompt-input"
-        />
-        <button 
-          onClick={handleGenerate}
-          disabled={isGenerating || !prompt.trim()}
-          data-testid="generate-button"
-        >
-          {isGenerating ? 'Generating...' : 'Generate'}
-        </button>
-        {isGenerating && (
-          <div data-testid="loading-state">
-            <span>Generating...</span>
-            <div role="progressbar" />
-          </div>
-        )}
-        <div>AI-powered code generation</div>
-        <div>Powered by VibeCode AI</div>
-      </div>
-    )
   }
-}))
+})
 
 import { AIProjectGenerator } from '@/components/projects/AIProjectGenerator'
 

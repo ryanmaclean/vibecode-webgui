@@ -12,11 +12,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
-import { WebglAddon } from '@xterm/addon-webgl'
-import { AttachAddon } from '@xterm/addon-attach'
-import { SearchAddon } from '@xterm/addon-search'
 import { WebLinksAddon } from '@xterm/addon-web-links'
-import { Unicode11Addon } from '@xterm/addon-unicode11'
 import '@xterm/xterm/css/xterm.css'
 
 export interface WebGLTerminalProps {
@@ -124,16 +120,12 @@ export default function WebGLTerminal({
   const terminal = useRef<Terminal | null>(null)
   const addons = useRef<{
     fit?: FitAddon
-    webgl?: WebglAddon
-    attach?: AttachAddon
-    search?: SearchAddon
     webLinks?: WebLinksAddon
-    unicode11?: Unicode11Addon
   }>({})
 
   const [isReady, setIsReady] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
-  const [performance, setPerformance] = useState({
+  const [perfStats, setPerfStats] = useState({
     fps: 0,
     renderTime: 0,
     memoryUsage: 0
@@ -177,11 +169,10 @@ export default function WebGLTerminal({
       macOptionIsMeta: true,
 
       // WebGL optimizations
-      rendererType: enableWebGL ? 'webgl' : 'canvas',
       allowProposedApi: true,
 
       // Scrolling optimizations
-      fastScrollModifier: 'alt',
+      fastScrollModifier: 'alt' as const,
       fastScrollSensitivity: 5,
       scrollSensitivity: 3,
 
@@ -225,24 +216,18 @@ export default function WebGLTerminal({
       addons.current.fit = new FitAddon()
       terminal.current.loadAddon(addons.current.fit)
 
-      // WebGL addon for hardware acceleration
-      if (enableWebGL && rendererType === 'webgl') {
-        addons.current.webgl = new WebglAddon()
-        terminal.current.loadAddon(addons.current.webgl)
-
-        // Performance monitoring for WebGL
-        addons.current.webgl.onContextLoss(() => {
-          console.warn('WebGL context lost, falling back to canvas renderer')
-          setPerformance(prev => ({ ...prev, renderTime: -1 }))
-        })
-      }
-
       // WebSocket attachment if URL provided
       if (websocketUrl) {
         try {
           const websocket = new WebSocket(websocketUrl)
-          addons.current.attach = new AttachAddon(websocket)
-          terminal.current.loadAddon(addons.current.attach)
+          websocket.onmessage = (ev) => {
+            try {
+              const data = typeof ev.data === 'string' ? ev.data : ''
+              if (data && terminal.current) terminal.current.write(data)
+            } catch (e) {
+              console.error('Failed to write websocket data to terminal:', e)
+            }
+          }
 
           websocket.onopen = () => setIsConnected(true)
           websocket.onclose = () => setIsConnected(false)
@@ -255,18 +240,9 @@ export default function WebGLTerminal({
         }
       }
 
-      // Search addon
-      addons.current.search = new SearchAddon()
-      terminal.current.loadAddon(addons.current.search)
-
       // Web links addon
       addons.current.webLinks = new WebLinksAddon()
       terminal.current.loadAddon(addons.current.webLinks)
-
-      // Unicode 11 support
-      addons.current.unicode11 = new Unicode11Addon()
-      terminal.current.loadAddon(addons.current.unicode11)
-      terminal.current.unicode.activeVersion = '11'
 
     } catch (error) {
       console.error('Failed to initialize terminal addons:', error)
@@ -308,7 +284,7 @@ export default function WebGLTerminal({
           ? monitor.renderTimes.reduce((a, b) => a + b, 0) / monitor.renderTimes.length
           : 0
 
-        setPerformance({
+        setPerfStats({
           fps,
           renderTime: Math.round(avgRenderTime * 100) / 100,
           memoryUsage: getMemoryUsage()
@@ -389,9 +365,6 @@ export default function WebGLTerminal({
    * Search in terminal
    */
   const searchInTerminal = useCallback((term: string, options?: any) => {
-    if (addons.current.search) {
-      return addons.current.search.findNext(term, options)
-    }
     return false
   }, [])
 
@@ -473,10 +446,10 @@ export default function WebGLTerminal({
       {/* Performance monitor (development only) */}
       {process.env.NODE_ENV === 'development' && enableWebGL && (
         <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs p-2 rounded font-mono">
-          <div>FPS: {performance.fps}</div>
-          <div>Render: {performance.renderTime}ms</div>
-          {performance.memoryUsage > 0 && (
-            <div>Memory: {performance.memoryUsage}MB</div>
+          <div>FPS: {perfStats.fps}</div>
+          <div>Render: {perfStats.renderTime}ms</div>
+          {perfStats.memoryUsage > 0 && (
+            <div>Memory: {perfStats.memoryUsage}MB</div>
           )}
           <div>Renderer: {rendererType}</div>
         </div>
