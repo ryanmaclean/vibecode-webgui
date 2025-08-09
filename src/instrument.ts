@@ -31,7 +31,7 @@ tracer.init({
         site: process.env.DD_SITE || 'datadoghq.com',
         apiKey: process.env.DD_API_KEY
       }
-    } : {}) as Record<string, unknown>,
+    } : {}),
     
     // Add any other experimental features here
     // Example:
