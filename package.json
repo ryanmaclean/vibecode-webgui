@@ -10,6 +10,7 @@
   "scripts": {
     "setup": "node scripts/setup-development.js",
     "dev": "node --require ./src/instrument.ts node_modules/.bin/next dev",
+    "dev:simple": "next dev",
     "build": "next build",
     "start": "next start",
     "start:dd": "node --require ./src/instrument.ts node_modules/.bin/next start",
