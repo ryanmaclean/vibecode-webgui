@@ -2,26 +2,9 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { tracer } from './server-monitoring';
 import { metrics } from './server-monitoring';
+import type { HopStat } from '../types/network';
 
 const execAsync = promisify(exec);
-export interface HopStat {
-  hop: number;
-  host?: string;
-  ip?: string;
-  // Loss percentage as a numeric value (0-100)
-  loss: number;
-  sent: number;
-  last: number;
-  avg: number;
-  best: number;
-  worst: number;
-  stdev: number;
-  jitter?: number;
-  p50?: number;
-  p90?: number;
-  p95?: number;
-  p99?: number;
-}
 
 class NetworkDiagnostics {
   private static readonly PACKET_COUNT = 10;
@@ -121,12 +104,12 @@ class NetworkDiagnostics {
       metrics.gauge('network.hop.latency.best', hop.best, tags);
       metrics.gauge('network.hop.latency.worst', hop.worst, tags);
       metrics.gauge('network.hop.latency.stdev', hop.stdev, tags);
-      metrics.gauge('network.hop.jitter', hop.jitter, tags);
+      metrics.gauge('network.hop.jitter', hop.jitter ?? 0, tags);
       metrics.gauge('network.hop.loss', hop.loss, tags);
-      metrics.gauge('network.hop.percentile.p50', hop.p50, tags);
-      metrics.gauge('network.hop.percentile.p90', hop.p90, tags);
-      metrics.gauge('network.hop.percentile.p95', hop.p95, tags);
-      metrics.gauge('network.hop.percentile.p99', hop.p99, tags);
+      metrics.gauge('network.hop.percentile.p50', hop.p50 ?? 0, tags);
+      metrics.gauge('network.hop.percentile.p90', hop.p90 ?? 0, tags);
+      metrics.gauge('network.hop.percentile.p95', hop.p95 ?? 0, tags);
+      metrics.gauge('network.hop.percentile.p99', hop.p99 ?? 0, tags);
     });
   }
 
