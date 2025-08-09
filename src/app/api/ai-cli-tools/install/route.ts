@@ -186,11 +186,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Safety check for request.url during build time
-    if (!request.url) {
+    if (!request.url || request.url === '') {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
 
-    const { searchParams } = new URL(request.url)
+    let searchParams: URLSearchParams
+    try {
+      const url = new URL(request.url)
+      searchParams = url.searchParams
+    } catch (error) {
+      return NextResponse.json({ error: 'Invalid URL' }, { status: 400 })
+    }
+    
     const toolId = searchParams.get('toolId')
 
     if (toolId) {
