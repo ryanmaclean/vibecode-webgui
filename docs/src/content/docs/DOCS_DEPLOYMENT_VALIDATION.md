@@ -112,7 +112,7 @@ Content Type:    text/html (Astro/Starlight)
 ### Container Registry
 - **✅ ACR integration** - vibecodecr.azurecr.io/vibecode-docs:latest
 - **✅ Multi-platform** - linux/amd64, linux/arm64 support
-- **✅ Security scanning** - Trivy integration in CI/CD
+- **✅ Security scanning** - Datadog integration in CI/CD
 
 ### Terraform Infrastructure
 - **✅ AKS deployment** - Kubernetes resources defined
@@ -123,7 +123,7 @@ Content Type:    text/html (Astro/Starlight)
 ### CI/CD Pipeline
 - **✅ GitHub Actions** - Complete build, test, deploy workflow
 - **✅ Multi-environment** - Staging (KIND) and production deployment
-- **✅ Security scanning** - Trivy vulnerability scanning
+- **✅ Security scanning** - Datadog vulnerability scanning
 - **✅ Performance testing** - Lighthouse CI integration
 
 ## 📈 Monitoring & Observability
