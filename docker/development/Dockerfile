@@ -19,8 +19,8 @@ RUN addgroup -g 1001 -S nodejs && \
 # Copy package files
 COPY package*.json ./
 
-# Copy .npmrc if it exists, otherwise create a default one
-COPY .npmrc ./ 2>/dev/null || echo "optional=false" > .npmrc
+# Create .npmrc with default settings if it doesn't exist
+RUN if [ ! -f .npmrc ]; then echo "optional=false" > .npmrc; fi
 
 # Install dependencies
 RUN npm ci && npm cache clean --force
