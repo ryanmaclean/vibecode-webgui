@@ -60,7 +60,7 @@ description: COMPONENT ONBOARDING CHECKLIST documentation
 - [ ] **Build notifications** configured
 
 ### 🔐 **6. Security & Compliance**
-- [ ] **Vulnerability scanning** enabled (Trivy, Snyk, etc.)
+- [ ] **Vulnerability scanning** enabled (Datadog, Snyk, etc.)
 - [ ] **Secret management** properly configured
 - [ ] **Network security** policies defined
 - [ ] **Access controls** and authentication
@@ -231,7 +231,7 @@ MONITORING_ENABLED=true
 - kubectl and Helm
 - GitHub CLI
 - Datadog CLI tools
-- Security scanning tools (Trivy, etc.)
+- Security scanning tools (Datadog, etc.)
 
 ### **Recommended Templates**
 - [Component Dockerfile Template](./templates/Dockerfile.template)

@@ -78,7 +78,7 @@ All images are published to GitHub Container Registry (GHCR):
 1. **QEMU Setup**: Cross-platform emulation
 2. **Docker Buildx**: Multi-arch build engine
 3. **Layer Caching**: GitHub Actions cache optimization
-4. **Security Scanning**: Trivy vulnerability scanning
+4. **Security Scanning**: Datadog agentless vulnerability scanning
 5. **Attestation**: SLSA build provenance
 
 ## Automated Workflows
@@ -94,7 +94,7 @@ All images are published to GitHub Container Registry (GHCR):
 #### 2. **Multi-Arch Docker** (`.github/workflows/docker-multiarch.yml`)
 - **Triggers**: Push to `main`, tags, manual dispatch
 - **Matrix Strategy**: Parallel builds for all containers
-- **Security**: Trivy scanning, SBOM generation
+- **Security**: Datadog scanning, SBOM generation
 - **Monitoring**: Datadog build notifications
 
 #### 3. **Production Deployment** (`.github/workflows/production-deployment.yml`)
@@ -112,7 +112,7 @@ All images are published to GitHub Container Registry (GHCR):
 - **SLSA attestation** for supply chain security
 
 ### Build Security
-- **Vulnerability scanning** with Trivy
+- **Vulnerability scanning** with Datadog agentless scanning
 - **Dependency scanning** with npm audit
 - **License compliance** checking
 - **SAST/SCA** with Datadog security scanning
