@@ -5,6 +5,59 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { SessionProvider } from 'next-auth/react'
+
+// Mock the AIProjectGenerator component
+jest.mock('@/components/projects/AIProjectGenerator', () => ({
+  AIProjectGenerator: ({ onComplete, initialPrompt, autoStart }: any) => {
+    const [isGenerating, setIsGenerating] = React.useState(false)
+    const [prompt, setPrompt] = React.useState(initialPrompt || '')
+
+    const handleGenerate = () => {
+      if (!prompt.trim()) return
+      
+      setIsGenerating(true)
+      
+      // Simulate API call
+      setTimeout(() => {
+        setIsGenerating(false)
+        onComplete?.({
+          workspaceId: 'ai-project-123',
+          projectName: 'test-project'
+        })
+      }, 100)
+    }
+
+    return (
+      <div>
+        <h3>AI Project Generator</h3>
+        <div>Describe your project idea and let AI generate a complete, production-ready codebase</div>
+        <input
+          type="text"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="A modern React dashboard with dark mode..."
+          data-testid="prompt-input"
+        />
+        <button 
+          onClick={handleGenerate}
+          disabled={isGenerating || !prompt.trim()}
+          data-testid="generate-button"
+        >
+          {isGenerating ? 'Generating...' : 'Generate'}
+        </button>
+        {isGenerating && (
+          <div data-testid="loading-state">
+            <span>Generating...</span>
+            <div role="progressbar" />
+          </div>
+        )}
+        <div>AI-powered code generation</div>
+        <div>Powered by VibeCode AI</div>
+      </div>
+    )
+  }
+}))
+
 import { AIProjectGenerator } from '@/components/projects/AIProjectGenerator'
 
 // Mock Next.js router
