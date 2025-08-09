@@ -65,6 +65,9 @@ RUN rm -rf node_modules/.bin/next-swc-* && \
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Generate Prisma client before building
+RUN npx prisma generate
+
 # Run the build command
 RUN yarn build
 
@@ -84,6 +87,7 @@ ENV PORT=3000
 COPY --from=builder --chown=65532:65532 /app/public ./public
 COPY --from=builder --chown=65532:65532 /app/.next/standalone ./
 COPY --from=builder --chown=65532:65532 /app/.next/static ./.next/static
+COPY --from=builder --chown=65532:65532 /app/node_modules/@prisma ./node_modules/@prisma
 
 # Expose the application port
 EXPOSE 3000
