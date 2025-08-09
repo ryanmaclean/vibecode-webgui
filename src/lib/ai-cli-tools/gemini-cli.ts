@@ -154,7 +154,7 @@ export class GeminiCLI {
   async testConnection(): Promise<boolean> {
     try {
       const startTime = Date.now()
-      const result = await this.chat('Hello, this is a test message.')
+      const result = await this.chat({ message: 'Hello, this is a test message.' })
       const latency = Date.now() - startTime
       
       if (result.response && latency < 10000) { // 10 second timeout
