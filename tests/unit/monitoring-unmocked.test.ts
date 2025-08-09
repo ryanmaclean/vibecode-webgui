@@ -15,20 +15,21 @@ describe('Monitoring Library (Minimal Mocking)', () => {
     fetch.mockClear();
 
     // Mock browser environment only
-    delete (global as any).window;
-    Object.defineProperty(global, 'window', {
-      value: {
-        location: { href: 'http://localhost:3000' },
-        navigator: { userAgent: 'test-agent' },
-        performance: {
-          now: () => Date.now(),
-          timing: {
-            navigationStart: Date.now() - 1000
+    if (!(global as any).window) {
+      Object.defineProperty(global, 'window', {
+        value: {
+          location: { href: 'http://localhost:3000' },
+          navigator: { userAgent: 'test-agent' },
+          performance: {
+            now: () => Date.now(),
+            timing: {
+              navigationStart: Date.now() - 1000
+            }
           }
-        }
-      },
-      writable: true
-    });
+        },
+        writable: true
+      });
+    }
   });
 
   afterEach(() => {
