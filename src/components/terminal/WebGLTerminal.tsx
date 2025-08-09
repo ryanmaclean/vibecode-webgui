@@ -27,7 +27,6 @@ export interface WebGLTerminalProps {
   onReady?: (terminal: Terminal) => void
   enableWebGL?: boolean
   maxScrollback?: number
-  rendererType?: 'dom' | 'canvas' | 'webgl'
 }
 
 interface TerminalTheme {
@@ -114,7 +113,6 @@ export default function WebGLTerminal({
   onReady,
   enableWebGL = true,
   maxScrollback = 10000,
-  rendererType = 'webgl'
 }: WebGLTerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null)
   const terminal = useRef<Terminal | null>(null)
@@ -181,7 +179,6 @@ export default function WebGLTerminal({
       tabStopWidth: 4,
 
       // Advanced features
-      logLevel: process.env.NODE_ENV === 'development' ? 'debug' : 'warn'
     }
 
     terminal.current = new Terminal(terminalOptions)
@@ -247,7 +244,7 @@ export default function WebGLTerminal({
     } catch (error) {
       console.error('Failed to initialize terminal addons:', error)
     }
-  }, [enableWebGL, rendererType, websocketUrl])
+  }, [enableWebGL, websocketUrl])
 
   /**
    * Setup terminal event handlers
@@ -451,7 +448,6 @@ export default function WebGLTerminal({
           {perfStats.memoryUsage > 0 && (
             <div>Memory: {perfStats.memoryUsage}MB</div>
           )}
-          <div>Renderer: {rendererType}</div>
         </div>
       )}
     </div>
