@@ -165,6 +165,34 @@ export class PerformanceMonitor {
   }
 
   /**
+   * Generic operation tracker for analytics integration
+   */
+  trackOperation(name: string, value: number, success: boolean = true, metadata: Record<string, any> = {}) {
+    const tags: string[] = ['service:vibecode-webgui', `success:${success}`]
+    // Flatten metadata into tag strings key:value (primitives only)
+    for (const [k, v] of Object.entries(metadata || {})) {
+      if (v === undefined || v === null) continue
+      const val = typeof v === 'object' ? JSON.stringify(v) : String(v)
+      tags.push(`${k}:${val}`)
+    }
+
+    const metric: PerformanceMetric = {
+      name,
+      value,
+      unit: 'count',
+      tags
+    }
+
+    this.recordMetric(metric)
+
+    monitoring.submitMetric({
+      metric: `vibecode.${name}`,
+      value,
+      tags
+    })
+  }
+
+  /**
    * Process and submit K6 load test results
    */
   async submitLoadTestResults(results: LoadTestResult) {

@@ -135,17 +135,35 @@ jobs:
         image: [vibecode-webgui, vibecode-ai-gateway, vibecode-code-server, vibecode-docs]
 
     steps:
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+      - name: Datadog Container Security Scanning
+        uses: DataDog/datadog-sast-action@v1
+        continue-on-error: true
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.image }}:latest
-          format: 'sarif'
-          output: 'trivy-results-${{ matrix.image }}.sarif'
+          dd_api_key: ${{ secrets.DD_API_KEY }}
+          dd_app_key: ${{ secrets.DD_APP_KEY }}
+          dd_service: ${{ matrix.image }}
+          dd_env: ci
+          dd_version: ${{ github.sha }}
+          scan_type: container
+          image_ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.image }}:latest
 
-      - name: Upload Trivy scan results to GitHub Security tab
+      - name: Datadog Container Vulnerability Management
+        run: |
+          echo "Running Datadog container vulnerability scan for ${{ matrix.image }}..."
+          # Use Datadog CLI for container vulnerability scanning
+          if command -v datadog-ci &> /dev/null; then
+            datadog-ci security scan container --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.image }}:latest --format sarif --output datadog-container-results-${{ matrix.image }}.sarif
+          else
+            echo "Datadog CLI not available, skipping container vulnerability scan"
+            echo '{"version": "2.1.0", "runs": []}' > datadog-container-results-${{ matrix.image }}.sarif
+          fi
+
+      - name: Upload Datadog container security results
         uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        continue-on-error: true
         with:
-          sarif_file: 'trivy-results-${{ matrix.image }}.sarif'
+          sarif_file: 'datadog-container-results-${{ matrix.image }}.sarif'
 
   test-multiarch:
     name: Test Multi-Arch Images

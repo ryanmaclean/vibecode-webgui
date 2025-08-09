@@ -322,7 +322,7 @@ export class EnhancedAIClient {
       model: config.model,
       max_tokens: config.maxTokens || 4000,
       temperature: config.temperature || 0.7,
-      messages: anthropicMessages.filter(m => m.role !== 'system'),
+      messages: anthropicMessages,
       ...(systemMessage && { system: systemMessage.content })
     };
 

@@ -299,7 +299,7 @@ if [ -f "$WORKFLOW_FILE" ]; then
         log_error "Workflow missing KIND testing"
     fi
     
-    if grep -q "trivy" "$WORKFLOW_FILE"; then
+    if grep -q "datadog.*security" "$WORKFLOW_FILE"; then
         log_success "Workflow includes security scanning"
     else
         log_error "Workflow missing security scanning"

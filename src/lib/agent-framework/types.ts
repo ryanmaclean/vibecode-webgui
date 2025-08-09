@@ -1,6 +1,6 @@
 // Type definitions for the Agent Framework
 
-import { UnifiedChatMessage } from '../unified-ai-client';
+import type { AgentEvent, AgentMessage, AgentResponse, ToolDefinition, Agent } from './index';
 
 export * from './index';
 

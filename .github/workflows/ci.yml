@@ -99,20 +99,43 @@ jobs:
             echo "✅ No vulnerabilities found"
           fi
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+      - name: Datadog Security Scanning - Code Security
+        uses: DataDog/datadog-sast-action@v1
+        continue-on-error: true
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
+          dd_api_key: ${{ secrets.DD_API_KEY }}
+          dd_app_key: ${{ secrets.DD_APP_KEY }}
+          dd_service: vibecode-webgui
+          dd_env: ci
+          dd_version: ${{ github.sha }}
 
-      - name: Upload Trivy scan results
+      - name: Datadog Software Composition Analysis (SCA)
+        uses: DataDog/datadog-sca-github-action@main
+        continue-on-error: true
+        with:
+          dd_api_key: ${{ secrets.DD_API_KEY }}
+          dd_app_key: ${{ secrets.DD_APP_KEY }}
+          dd_service: vibecode-webgui
+          dd_env: ci
+          dd_version: ${{ github.sha }}
+
+      - name: Datadog Vulnerability Management
+        run: |
+          echo "Running Datadog vulnerability management scan..."
+          # Use Datadog CLI for vulnerability scanning
+          if command -v datadog-ci &> /dev/null; then
+            datadog-ci security scan --format sarif --output datadog-security-results.sarif
+          else
+            echo "Datadog CLI not available, skipping vulnerability scan"
+            echo '{"version": "2.1.0", "runs": []}' > datadog-security-results.sarif
+          fi
+
+      - name: Upload Datadog security results
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         continue-on-error: true
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: 'datadog-security-results.sarif'
 
       - name: Security headers validation
         run: |

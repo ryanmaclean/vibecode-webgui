@@ -1,6 +1,7 @@
 // Specialized agent implementations
 
 import { Agent, type AgentOptions } from '..';
+import type { ToolDefinition } from '..';
 import { builtInTools } from '../tools';
 
 export interface CodeAgentOptions extends AgentOptions {
@@ -19,7 +20,7 @@ export interface CodeAgentOptions extends AgentOptions {
  */
 export class CodeAgent extends Agent {
   constructor(options: CodeAgentOptions = {}) {
-    const tools = [];
+    const tools: ToolDefinition[] = [];
     
     if (options.enableCodeExecution !== false) {
       tools.push(builtInTools.executeCode);
@@ -64,7 +65,7 @@ export interface ResearchAgentOptions extends AgentOptions {
  */
 export class ResearchAgent extends Agent {
   constructor(options: ResearchAgentOptions = {}) {
-    const tools = [];
+    const tools: ToolDefinition[] = [];
     
     if (options.enableWebSearch !== false) {
       tools.push({
@@ -117,7 +118,7 @@ export interface CreativeAgentOptions extends AgentOptions {
  */
 export class CreativeAgent extends Agent {
   constructor(options: CreativeAgentOptions = {}) {
-    const tools = [];
+    const tools: ToolDefinition[] = [];
     
     if (options.enableWebSearch !== false) {
       tools.push(builtInTools.webSearch);
@@ -153,7 +154,7 @@ export interface DataAnalysisAgentOptions extends AgentOptions {
  */
 export class DataAnalysisAgent extends Agent {
   constructor(options: DataAnalysisAgentOptions = {}) {
-    const tools = [];
+    const tools: ToolDefinition[] = [];
     
     if (options.enableCodeExecution !== false) {
       tools.push(builtInTools.executeCode);

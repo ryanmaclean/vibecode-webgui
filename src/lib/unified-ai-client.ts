@@ -27,6 +27,12 @@ export interface UnifiedChatResponse {
     totalTokens: number
   }
   finishReason?: string
+  // Optional tool calls (for function/tool calling capable providers)
+  tool_calls?: Array<{
+    id: string
+    type: 'function'
+    function: { name: string; arguments: string }
+  }>
 }
 
 export interface UnifiedStreamChunk {

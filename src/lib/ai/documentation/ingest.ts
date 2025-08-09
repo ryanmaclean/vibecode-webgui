@@ -1,4 +1,4 @@
-import { ChromaClient } from 'chroma-js';
+import { ChromaClient } from 'chromadb';
 import { Document } from '@langchain/core/documents';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
@@ -33,12 +33,18 @@ export class DocumentationIngester {
       docs.map(doc => doc.pageContent)
     );
 
-    // Store in vector database
-    await this.chroma.upsert({
+    // Store in vector database via collection
+    const collection = await this.chroma.getOrCreateCollection({ name: 'documentation' } as any);
+    const payload = {
       ids: docs.map((_, i) => `${source}-${i}`),
       embeddings,
-      metadatas: docs.map(doc => doc.metadata),
+      metadatas: docs.map(doc => doc.metadata as any),
       documents: docs.map(doc => doc.pageContent),
-    });
+    } as any;
+    if (typeof (collection as any).upsert === 'function') {
+      await (collection as any).upsert(payload);
+    } else {
+      await (collection as any).add(payload);
+    }
   }
 }

@@ -145,12 +145,12 @@ export class Agent extends EventEmitter {
    * Convert agent memory to unified chat messages
    */
   private getChatMessages(): UnifiedChatMessage[] {
-    return this.memory.map(msg => ({
-      role: msg.role as 'system' | 'user' | 'assistant',
-      content: msg.content,
-      ...(msg.tool_calls && { tool_calls: msg.tool_calls }),
-      ...(msg.tool_call_id && { tool_call_id: msg.tool_call_id }),
-    }));
+    return this.memory
+      .filter(msg => msg.role === 'system' || msg.role === 'user' || msg.role === 'assistant')
+      .map(msg => ({
+        role: msg.role as 'system' | 'user' | 'assistant',
+        content: msg.content,
+      }));
   }
 
   /**
@@ -217,8 +217,8 @@ export class Agent extends EventEmitter {
       this.addToMemory(assistantMessage);
 
       // Handle tool calls if present
-      if (response.tool_calls?.length) {
-        const toolResults = [];
+      if (response.tool_calls && response.tool_calls.length) {
+        const toolResults: AgentMessage[] = [];
         
         for (const toolCall of response.tool_calls) {
           try {
