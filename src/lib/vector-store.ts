@@ -327,10 +327,11 @@ class VectorStore {
   async getContext(
     query: string,
     workspaceId?: number,
-    maxTokens: number = 4000
+    maxTokens: number = 4000,
+    threshold?: number
   ): Promise<string> {
     try {
-      const results = await this.search(query, { workspaceId, limit: 20 })
+      const results = await this.search(query, { workspaceId, limit: 20, threshold })
       
       if (results.length === 0) {
         return ''
