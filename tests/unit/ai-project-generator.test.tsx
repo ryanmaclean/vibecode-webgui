@@ -4,6 +4,7 @@
 
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { SessionProvider } from 'next-auth/react'
 import { AIProjectGenerator } from '@/components/projects/AIProjectGenerator'
 
 // Mock Next.js router
@@ -69,21 +70,33 @@ describe('AIProjectGenerator Component', () => {
   })
 
   it('renders the component with title and description', () => {
-    render(<AIProjectGenerator />)
+    render(
+      <SessionProvider session={null}>
+        <AIProjectGenerator />
+      </SessionProvider>
+    )
     
     expect(screen.getByText('AI Project Generator')).toBeInTheDocument()
     expect(screen.getByText(/Describe your project and let AI generate the code/)).toBeInTheDocument()
   })
 
   it('renders the ProjectGenerator component', () => {
-    render(<AIProjectGenerator />)
+    render(
+      <SessionProvider session={null}>
+        <AIProjectGenerator />
+      </SessionProvider>
+    )
     
     expect(screen.getByTestId('prompt-input')).toBeInTheDocument()
     expect(screen.getByTestId('generate-button')).toBeInTheDocument()
   })
 
   it('handles project generation completion', async () => {
-    render(<AIProjectGenerator />)
+    render(
+      <SessionProvider session={null}>
+        <AIProjectGenerator />
+      </SessionProvider>
+    )
     
     const promptInput = screen.getByTestId('prompt-input')
     const generateButton = screen.getByTestId('generate-button')
@@ -102,14 +115,22 @@ describe('AIProjectGenerator Component', () => {
   })
 
   it('handles initial prompt and auto-start', () => {
-    render(<AIProjectGenerator initialPrompt="Create a blog" autoStart={true} />)
+    render(
+      <SessionProvider session={null}>
+        <AIProjectGenerator initialPrompt="Create a blog" autoStart={true} />
+      </SessionProvider>
+    )
     
     const promptInput = screen.getByTestId('prompt-input')
     expect(promptInput).toHaveValue('Create a blog')
   })
 
   it('disables generate button when prompt is empty', () => {
-    render(<AIProjectGenerator />)
+    render(
+      <SessionProvider session={null}>
+        <AIProjectGenerator />
+      </SessionProvider>
+    )
     
     const generateButton = screen.getByTestId('generate-button')
     expect(generateButton).toBeDisabled()
@@ -121,7 +142,11 @@ describe('AIProjectGenerator Component', () => {
   })
 
   it('shows powered by VibeCode AI text', () => {
-    render(<AIProjectGenerator />)
+    render(
+      <SessionProvider session={null}>
+        <AIProjectGenerator />
+      </SessionProvider>
+    )
     
     expect(screen.getByText('AI-powered code generation')).toBeInTheDocument()
     expect(screen.getByText(/Powered by/)).toBeInTheDocument()
