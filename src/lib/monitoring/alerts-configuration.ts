@@ -3,6 +3,8 @@
  * Defines and manages critical alerts for VibeCode platform
  */
 
+import { getDatadogApiKey, getDatadogAppKey, getDatadogSite } from './datadog-env'
+
 export interface AlertConfig {
   name: string
   type: 'metric alert' | 'service check' | 'event alert' | 'log alert'
@@ -28,9 +30,9 @@ export class DatadogAlertsManager {
   private baseUrl: string
 
   constructor() {
-    this.apiKey = process.env.DATADOG_API_KEY || ''
-    this.appKey = process.env.DATADOG_APP_KEY || ''
-    const site = process.env.DATADOG_SITE || 'datadoghq.com'
+    this.apiKey = getDatadogApiKey() || ''
+    this.appKey = getDatadogAppKey() || ''
+    const site = getDatadogSite()
     this.baseUrl = `https://api.${site}/api/v1`
   }
 

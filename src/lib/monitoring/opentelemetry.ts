@@ -9,6 +9,7 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-otlp-http'
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus'
 import { Resource } from '@opentelemetry/resources'
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions'
+import { getDatadogApiKey } from './datadog-env'
 
 const isServer = typeof window === 'undefined'
 const serviceName = 'vibecode-webgui'
@@ -36,12 +37,13 @@ export function initializeOpenTelemetry() {
     })
 
     // Configure OTLP exporter (for Datadog and other OTLP-compatible backends)
+    const ddApiKey = getDatadogApiKey()
     const otlpExporter = new OTLPTraceExporter({
       url: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || 'http://localhost:4318/v1/traces',
       headers: {
         // Support for Datadog Agent OTLP ingestion
-        ...(process.env.DD_API_KEY && {
-          'DD-API-KEY': process.env.DD_API_KEY
+        ...(ddApiKey && {
+          'DD-API-KEY': ddApiKey
         })
       }
     })
@@ -127,7 +129,7 @@ export function getOpenTelemetryConfig() {
     environment: process.env.NODE_ENV || 'development',
     otlp_endpoint: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || 'http://localhost:4318/v1/traces',
     prometheus_port: process.env.OTEL_PROMETHEUS_PORT || '9090',
-    datadog_integration: !!process.env.DD_API_KEY
+    datadog_integration: !!getDatadogApiKey()
   }
 }
 
