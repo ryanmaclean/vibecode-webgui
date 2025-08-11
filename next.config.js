@@ -16,6 +16,10 @@ const nextConfig = {
     unoptimized: true,
   },
 
+  // Skip static analysis of API routes to prevent ERR_INVALID_URL during build
+  skipTrailingSlashRedirect: true,
+  skipMiddlewareUrlNormalize: true,
+
   // Required for GitHub Pages deployment.
   basePath: process.env.NODE_ENV === 'production' ? '/vibecode-webgui' : '',
   async rewrites() {
