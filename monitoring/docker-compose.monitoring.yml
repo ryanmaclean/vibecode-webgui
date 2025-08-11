@@ -40,7 +40,7 @@ services:
     container_name: vibecode-datadog-agent
     restart: unless-stopped
     environment:
-      - DD_API_KEY=${DD_API_KEY}
+      - DD_API_KEY=${DD_API_KEY:-${DATADOG_API_KEY}}
       - DD_SITE=${DD_SITE:-datadoghq.com}
       - DD_HOSTNAME=vibecode-monitoring
       - DD_TAGS=env:production,service:vibecode-platform
@@ -102,7 +102,7 @@ services:
       - vector-data:/tmp/vector
     environment:
       - ENVIRONMENT=production
-      - DATADOG_API_KEY=${DATADOG_API_KEY}
+      - DATADOG_API_KEY=${DD_API_KEY:-${DATADOG_API_KEY}}
       - VECTOR_LOG=info
     networks:
       - monitoring
@@ -129,7 +129,7 @@ services:
       - ./otel-collector.yaml:/etc/otelcol-contrib/otel-collector.yaml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
-      - DATADOG_API_KEY=${DATADOG_API_KEY}
+      - DATADOG_API_KEY=${DD_API_KEY:-${DATADOG_API_KEY}}
       - HONEYCOMB_API_KEY=${HONEYCOMB_API_KEY}
     command: ["--config=/etc/otelcol-contrib/otel-collector.yaml"]
     networks:
@@ -281,15 +281,15 @@ services:
       retries: 3
 
   # Datadog Agent - APM and metrics
-  datadog-agent:
+  datadog-agent-apm:
     image: gcr.io/datadoghq/agent:7.48.0
-    container_name: vibecode-datadog-agent
+    container_name: vibecode-datadog-agent-apm
     restart: unless-stopped
     ports:
       - "8125:8125/udp" # DogStatsD
       - "8126:8126"     # APM
     environment:
-      - DD_API_KEY=${DATADOG_API_KEY}
+      - DD_API_KEY=${DD_API_KEY:-${DATADOG_API_KEY}}
       - DD_SITE=datadoghq.com
       - DD_APM_ENABLED=true
       - DD_APM_NON_LOCAL_TRAFFIC=true

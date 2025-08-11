@@ -35,8 +35,7 @@ nano .env.local
 **Required Environment Variables:**
 ```bash
 # Datadog (for monitoring)
-DATADOG_API_KEY="your-datadog-api-key"
-DD_API_KEY="your-datadog-api-key"
+DD_API_KEY="your-datadog-api-key"  # falls back to DATADOG_API_KEY if set
 
 # AI Integration
 OPENROUTER_API_KEY="your-openrouter-key"
@@ -63,7 +62,7 @@ kubectl cluster-info --context kind-vibecode-cluster
 source .env.local
 
 # Deploy hybrid monitoring (Datadog + Prometheus + Vector)
-./scripts/deploy-monitoring.sh -m kubernetes -d "$DATADOG_API_KEY"
+./scripts/deploy-monitoring.sh -m kubernetes -d "${DD_API_KEY:-$DATADOG_API_KEY}"
 ```
 
 ### 5. Start the Application
@@ -130,7 +129,7 @@ kubectl top nodes
 
 # Verify Datadog API key
 curl -X GET "https://api.datadoghq.com/api/v1/validate" \
-  -H "DD-API-KEY: $DATADOG_API_KEY"
+  -H "DD-API-KEY: ${DD_API_KEY:-$DATADOG_API_KEY}"
 ```
 
 ### Getting Help
