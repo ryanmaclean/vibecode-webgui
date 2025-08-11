@@ -6,6 +6,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { monitoring } from '../../../../lib/monitoring'
 import { datadogMonitoring } from '../../../../lib/monitoring/enhanced-datadog-integration'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
 
 interface MetricSubmission {
   type: 'counter' | 'gauge' | 'histogram' | 'event'

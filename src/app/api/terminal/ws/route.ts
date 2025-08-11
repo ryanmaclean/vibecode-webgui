@@ -4,11 +4,16 @@
  * Replaces simple terminal backend with AI-powered terminal
  */
 
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { WebSocketServer } from 'ws'
 import { spawn, IPty } from 'node-pty'
 import { ClaudeCliIntegration } from '@/lib/claude-cli-integration'
 import { datadogMonitoring } from '@/lib/monitoring/enhanced-datadog-integration'
+
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
 
 // Terminal session management
 const terminalSessions = new Map<string, {
@@ -118,8 +123,16 @@ export const webSocketHandler = (ws: any, request: any) => {
   })
 
   // Handle create terminal
-  async function handleCreateTerminal(ws: any, message: any, workspaceId: string, userId: string) {
+  async function handleCreateTerminal(ws: any, message: any, workspaceId: string | null, userId: string) {
     try {
+      if (!workspaceId) {
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: 'Workspace ID is required'
+        }))
+        return
+      }
+      
       const sessionId = generateSessionId()
       const workspaceDir = `/workspaces/${workspaceId}`
       
