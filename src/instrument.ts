@@ -1,5 +1,11 @@
-// Conditional monitoring initialization to prevent ERR_INVALID_URL during Docker build
-const isDockerBuild = process.env.DOCKER_BUILD === 'true' || process.env.SKIP_MONITORING === 'true';
+// Hard-coded Docker build detection to prevent ERR_INVALID_URL during build
+// This file is imported during Next.js build, so we need to completely bypass monitoring
+const isDockerBuild = process.env.NODE_ENV === 'production' && (
+  process.env.DOCKER_BUILD === 'true' || 
+  process.env.SKIP_MONITORING === 'true' ||
+  process.env.CI === 'true' ||
+  process.env.GITHUB_ACTIONS === 'true'
+);
 
 if (isDockerBuild) {
   // Mock tracer for Docker build - completely bypass monitoring
