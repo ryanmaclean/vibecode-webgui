@@ -9,6 +9,8 @@ RUN apk add --no-cache libc6-compat python3 make g++ jq
 # Set platform-specific environment variables
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV DOCKER_BUILD=true
+ENV SKIP_MONITORING=true
 
 # Ensure we only install production dependencies when needed
 ENV NEXT_SHARP_PATH="/tmp/node_modules/sharp"
