@@ -172,7 +172,7 @@
     "@babel/preset-env": "7.28.0",
     "@babel/preset-react": "7.27.1",
     "@babel/preset-typescript": "7.27.1",
-    "@datadog/browser-rum": "6.16.0",
+    "@datadog/browser-rum": "6.17.0",
     "@datadog/datadog-ci": "3.17.0",
     "@eslint/eslintrc": "3.3.1",
     "@next-auth/prisma-adapter": "1.0.7",
