@@ -1,5 +1,7 @@
 // Complete monitoring bypass during Docker build to prevent ERR_INVALID_URL
 // This file is imported during Next.js build, so we need to completely bypass monitoring
+
+// Check if we're in a Docker build environment
 const isDockerBuild = process.env.NODE_ENV === 'production' && (
   process.env.DOCKER_BUILD === 'true' || 
   process.env.SKIP_MONITORING === 'true' ||
@@ -18,9 +20,27 @@ if (isDockerBuild) {
 } else {
   // Normal monitoring initialization for development/production
   try {
+    // Dynamic imports to prevent static analysis issues
     const tracer = require('dd-trace');
-    const { initializeOpenTelemetry } = require('./lib/monitoring/opentelemetry');
-    const { getServiceEnvVersion } = require('./lib/monitoring/datadog-env');
+    
+    // Only import monitoring modules if not in Docker build
+    let initializeOpenTelemetry, getServiceEnvVersion;
+    
+    try {
+      const opentelemetryModule = require('./lib/monitoring/opentelemetry');
+      initializeOpenTelemetry = opentelemetryModule.initializeOpenTelemetry;
+    } catch (e) {
+      console.log('⚠️ OpenTelemetry module not available');
+      initializeOpenTelemetry = () => {};
+    }
+    
+    try {
+      const datadogEnvModule = require('./lib/monitoring/datadog-env');
+      getServiceEnvVersion = datadogEnvModule.getServiceEnvVersion;
+    } catch (e) {
+      console.log('⚠️ Datadog env module not available');
+      getServiceEnvVersion = () => ({ env: 'development', service: 'vibecode-webgui', version: '0.1.0' });
+    }
 
     // Initialize OpenTelemetry first for auto-instrumentation (if enabled)
     if (process.env.OTEL_ENABLED === 'true' && process.env.NODE_ENV !== 'test') {
