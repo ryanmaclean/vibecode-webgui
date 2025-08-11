@@ -13,6 +13,11 @@ import { authOptions } from '@/lib/auth'
 import { WebSocketServer, WebSocket } from 'ws'
 import { getFileSystemInstance } from '@/lib/file-system-operations'
 import type { FileSystemConfig, FileSyncEvent } from '@/lib/file-system-operations'
+import { prisma } from '@/lib/prisma'
+import { vectorStore } from '@/lib/vector-store'
+
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
 
 interface WebSocketMessage {
   type: string;
