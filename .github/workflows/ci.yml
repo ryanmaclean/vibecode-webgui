@@ -494,7 +494,7 @@ jobs:
         continue-on-error: true
 
       - name: Lighthouse Performance Audit
-        uses: treosh/lighthouse-ci-action@v11
+        uses: treosh/lighthouse-ci-action@v12
         with:
           configPath: './lighthouse-ci.json'
           temporaryPublicStorage: true
