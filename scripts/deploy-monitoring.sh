@@ -38,6 +38,7 @@ MONITORING_DIR="$PROJECT_ROOT/monitoring"
 ENVIRONMENT=${ENVIRONMENT:-production}
 NAMESPACE=${NAMESPACE:-vibecode-monitoring}
 DEPLOY_METHOD=${DEPLOY_METHOD:-docker-compose}
+DD_API_KEY=${DD_API_KEY:-}
 DATADOG_API_KEY=${DATADOG_API_KEY:-}
 
 # Function to check prerequisites
@@ -62,15 +63,33 @@ check_prerequisites() {
     log "Prerequisites check passed ✅"
 }
 
+# Resolve Datadog API key with DD_* preferred and DATADOG_* fallback
+resolve_dd_api_key() {
+    # Prefer DD_API_KEY; fall back to DATADOG_API_KEY for compatibility
+    local dd_key="${DD_API_KEY:-}"
+    local datadog_key="${DATADOG_API_KEY:-}"
+
+    if [[ -n "$dd_key" && -n "$datadog_key" && "$dd_key" != "$datadog_key" ]]; then
+        warn "Both DD_API_KEY and DATADOG_API_KEY are set and differ; preferring DD_API_KEY"
+    fi
+
+    EFFECTIVE_DD_API_KEY="${dd_key:-$datadog_key}"
+}
+
 # Function to validate environment
 validate_environment() {
     log "Validating environment configuration..."
-    if [[ -z "$DATADOG_API_KEY" ]]; then
-        error "DATADOG_API_KEY is required. Please provide it with the -d flag or by setting the environment variable."
+    resolve_dd_api_key
+    if [[ -z "${EFFECTIVE_DD_API_KEY:-}" ]]; then
+        error "Datadog API key is required. Set DD_API_KEY (preferred) or DATADOG_API_KEY, or provide with -d flag."
     fi
-    
+
     local env_file="$MONITORING_DIR/.env"
-    echo "DATADOG_API_KEY=$DATADOG_API_KEY" > "$env_file"
+    # Write both keys for compatibility; consumers should prefer DD_API_KEY
+    {
+        echo "DD_API_KEY=$EFFECTIVE_DD_API_KEY"
+        echo "DATADOG_API_KEY=$EFFECTIVE_DD_API_KEY"
+    } > "$env_file"
     log "Environment validation passed ✅"
 }
 
@@ -98,7 +117,7 @@ deploy_kubernetes() {
     log "Deploying Datadog agent with log collection enabled..."
     helm upgrade --install datadog-agent datadog/datadog \
         --namespace "$NAMESPACE" \
-        --set datadog.apiKey="$DATADOG_API_KEY" \
+        --set datadog.apiKey="$EFFECTIVE_DD_API_KEY" \
         --set datadog.site='datadoghq.com' \
         --set datadog.logs.enabled=true \
         --set datadog.logs.containerCollectAll=true \
@@ -158,7 +177,7 @@ usage() {
     echo "  -e, --environment    Environment (default: production)"
     echo "  -m, --method         Deployment method: docker-compose|kubernetes (default: docker-compose)"
     echo "  -n, --namespace      Kubernetes namespace (default: vibecode-monitoring)"
-    echo "  -d, --datadog-key    Datadog API key (required)"
+    echo "  -d, --datadog-key    Datadog API key (sets DD_API_KEY; DATADOG_API_KEY supported for compatibility)"
     echo "  -h, --help           Show this help message"
     echo
     echo "Examples:"
@@ -182,7 +201,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -d|--datadog-key)
-            DATADOG_API_KEY="$2"
+            DD_API_KEY="$2"; DATADOG_API_KEY="$2"
             shift 2
             ;;
         -h|--help)

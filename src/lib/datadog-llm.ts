@@ -5,8 +5,11 @@
 
 // Import ddtrace for LLM observability
 // NOTE: This must be imported before any other modules that use AI services
-import tracer from '../instrument';
-import { Span } from 'dd-trace';
+// Using CommonJS require because '../instrument' exports via module.exports
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const tracer = require('../instrument')
+import { Span } from 'dd-trace'
+import { getDatadogSite, getDatadogApiKey, getServiceEnvVersion } from '@/lib/monitoring/datadog-env'
 
 interface LLMSpanMetadata {
   tags?: string[];
@@ -30,15 +33,16 @@ class LLMObservability {
   private config: LLMObservabilityConfig;
 
   private constructor() {
+    const { service, env } = getServiceEnvVersion()
     this.config = {
       enabled: process.env.DD_LLMOBS_ENABLED === '1' || false,
       agentlessEnabled: process.env.DD_LLMOBS_AGENTLESS_ENABLED === '1' || true,
       mlApp: process.env.DD_LLMOBS_ML_APP || 'vibecode-ai',
-      site: process.env.DD_SITE || process.env.DATADOG_SITE || 'datadoghq.com',
-      apiKey: process.env.DD_API_KEY || process.env.DATADOG_API_KEY,
-      service: process.env.DD_SERVICE || 'vibecode-webgui',
-      environment: process.env.DD_ENV || process.env.NODE_ENV || 'development',
-    };
+      site: getDatadogSite(),
+      apiKey: getDatadogApiKey(),
+      service,
+      environment: env,
+    }
   }
 
   public static getInstance(): LLMObservability {

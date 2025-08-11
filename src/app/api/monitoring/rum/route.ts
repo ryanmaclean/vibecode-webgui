@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { getRUMPublicConfig } from '@/lib/monitoring/datadog-env'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -18,16 +19,14 @@ export async function GET(request: NextRequest) {
     switch (action) {
       case 'config':
         // Return RUM configuration for client-side initialization
+        const { applicationId, clientToken, site, env, version } = getRUMPublicConfig()
         const rumConfig = {
-          enabled: !!(
-            process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID && 
-            process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN
-          ),
-          applicationId: process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID || '',
-          site: process.env.NEXT_PUBLIC_DATADOG_SITE || 'datadoghq.com',
+          enabled: !!(applicationId && clientToken),
+          applicationId: applicationId || '',
+          site: site || 'datadoghq.com',
           service: 'vibecode-webgui',
-          env: process.env.NODE_ENV || 'development',
-          version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
+          env: env || 'development',
+          version: version || '1.0.0',
           features: {
             sessionReplay: true,
             userInteractions: true,
@@ -50,18 +49,16 @@ export async function GET(request: NextRequest) {
 
       case 'health':
         // RUM health check
-        const isConfigured = !!(
-          process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID && 
-          process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN
-        )
+        const { applicationId: appId, clientToken: token, site: publicSite } = getRUMPublicConfig()
+        const isConfigured = !!(appId && token)
 
         return NextResponse.json({
           healthy: isConfigured,
           status: isConfigured ? 'configured' : 'missing-config',
           configuration: {
-            hasApplicationId: !!process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID,
-            hasClientToken: !!process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN,
-            site: process.env.NEXT_PUBLIC_DATADOG_SITE || 'datadoghq.com'
+            hasApplicationId: !!appId,
+            hasClientToken: !!token,
+            site: publicSite || 'datadoghq.com'
           },
           features: {
             sessionReplay: isConfigured,
