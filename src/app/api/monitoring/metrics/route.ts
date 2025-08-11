@@ -8,6 +8,7 @@ import { monitoring } from '../../../../lib/monitoring'
 import { datadogMonitoring } from '../../../../lib/monitoring/enhanced-datadog-integration'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { getServiceEnvVersion, getDatadogSite } from '@/lib/monitoring/datadog-env'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as MetricSubmission | MetricSubmission[]
     const metrics = Array.isArray(body) ? body : [body]
 
-    const results = []
+    const results: Array<{ success: boolean; metric: string; error?: string }> = []
 
     for (const metric of metrics) {
       const result = await processMetric(metric, request)
@@ -51,9 +52,10 @@ export async function POST(request: NextRequest) {
 async function processMetric(metric: MetricSubmission, request: NextRequest): Promise<{ success: boolean; metric: string; error?: string }> {
   try {
     // Add common tags
+    const { service, env } = getServiceEnvVersion()
     const commonTags = [
-      `service:${process.env.DATADOG_SERVICE || 'vibecode-webgui'}`,
-      `env:${process.env.NODE_ENV || 'development'}`,
+      `service:${service}`,
+      `env:${env}`,
       ...(metric.tags || [])
     ]
 
@@ -152,11 +154,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (includeConfig) {
+      const { service, env, version } = getServiceEnvVersion()
       response.configuration = {
-        datadog_site: process.env.DATADOG_SITE || 'datadoghq.com',
-        service: process.env.DATADOG_SERVICE || 'vibecode-webgui',
-        environment: process.env.NODE_ENV || 'development',
-        version: process.env.npm_package_version || '1.0.0'
+        datadog_site: getDatadogSite(),
+        service,
+        environment: env,
+        version,
       }
     }
 

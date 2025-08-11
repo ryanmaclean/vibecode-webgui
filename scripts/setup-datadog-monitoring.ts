@@ -6,6 +6,7 @@
 
 import { dashboardManager } from '../src/lib/monitoring/advanced-datadog-dashboards'
 import { alertsManager } from '../src/lib/monitoring/alerts-configuration'
+import { getDatadogApiKey, getDatadogAppKey, getDatadogSite, getServiceEnvVersion } from '../src/lib/monitoring/datadog-env'
 
 interface SetupResults {
   dashboards: {
@@ -28,24 +29,29 @@ async function setupDatadogMonitoring(): Promise<SetupResults> {
     errors: []
   }
 
-  // Check environment variables
-  const requiredEnvVars = ['DATADOG_API_KEY', 'DATADOG_APP_KEY']
-  const missingVars = requiredEnvVars.filter(varName => !process.env[varName])
+  // Check environment variables (prefer DD_* with DATADOG_* fallback)
+  const apiKey = getDatadogApiKey()
+  const appKey = getDatadogAppKey()
+  const missing: string[] = []
+  if (!apiKey) missing.push('DD_API_KEY (or DATADOG_API_KEY)')
+  if (!appKey) missing.push('DD_APP_KEY (or DATADOG_APP_KEY)')
 
-  if (missingVars.length > 0) {
-    const error = `Missing required environment variables: ${missingVars.join(', ')}`
+  if (missing.length > 0) {
+    const error = `Missing required environment variables: ${missing.join(', ')}`
     results.errors.push(error)
     console.error(`❌ ${error}`)
-    console.log('\nPlease set the following environment variables:')
-    console.log('export DATADOG_API_KEY="your-api-key"')
-    console.log('export DATADOG_APP_KEY="your-app-key"')
-    console.log('export DATADOG_SITE="datadoghq.com"  # Optional')
+    console.log('\nPlease set the following environment variables (prefer DD_*):')
+    console.log('export DD_API_KEY="your-api-key"             # falls back to DATADOG_API_KEY if set')
+    console.log('export DD_APP_KEY="your-app-key"             # falls back to DATADOG_APP_KEY if set')
+    console.log('export DD_SITE="datadoghq.com"               # optional, falls back to DATADOG_SITE')
     return results
   }
 
   console.log('✅ Environment variables configured')
-  console.log(`   Site: ${process.env.DATADOG_SITE || 'datadoghq.com'}`)
-  console.log(`   Service: ${process.env.DATADOG_SERVICE || 'vibecode-webgui'}\n`)
+  const site = getDatadogSite()
+  const { service } = getServiceEnvVersion()
+  console.log(`   Site: ${site}`)
+  console.log(`   Service: ${service}\n`)
 
   // Set up dashboards
   console.log('📊 Setting up Datadog dashboards...')

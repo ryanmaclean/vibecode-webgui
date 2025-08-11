@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { monitoring } from '../../../../lib/monitoring'
 import { datadogMonitoring } from '../../../../lib/monitoring/enhanced-datadog-integration'
+import { getServiceEnvVersion } from '@/lib/monitoring/datadog-env'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -76,16 +77,14 @@ export async function GET(request: NextRequest) {
       // Configuration Status
       monitoring: {
         datadog_configured: monitoring.isConfigured(),
-        environment: process.env.NODE_ENV || 'development',
-        service: process.env.DATADOG_SERVICE || 'vibecode-webgui',
-        version: process.env.npm_package_version || '1.0.0'
+        ...getServiceEnvVersion(),
       },
 
       // Recent Activity (placeholder for future implementation)
       activity: {
-        recent_commands: [], // Will be populated from monitoring data
-        recent_ai_requests: [], // Will be populated from monitoring data
-        alerts_triggered: [] // Will be populated from Datadog API
+        recent_commands: [] as Array<{ timestamp: string; command: string; session: string }>,
+        recent_ai_requests: [] as Array<Record<string, unknown>>,
+        alerts_triggered: [] as Array<Record<string, unknown>>,
       }
     }
 

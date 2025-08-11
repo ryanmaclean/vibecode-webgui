@@ -5,14 +5,16 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
+import { getDatadogApiKey, getDatadogSite, getRUMPublicConfig } from '../../src/lib/monitoring/datadog-env';
 
 // Only mock fetch for controlled testing - allow real monitoring modules
-global.fetch = jest.fn();
+global.fetch = jest.fn() as unknown as typeof fetch;
+const fetchMock = global.fetch as unknown as jest.Mock;
 
 describe('Monitoring Library (Minimal Mocking)', () => {
   beforeEach(() => {
     // Reset fetch mock
-    fetch.mockClear();
+    fetchMock.mockClear();
 
     // Mock browser environment only
     if (!(global as any).window) {
@@ -33,7 +35,7 @@ describe('Monitoring Library (Minimal Mocking)', () => {
   });
 
   afterEach(() => {
-    delete global.window;
+    Reflect.deleteProperty(global as any, 'window');
   });
 
   test('should handle monitoring initialization without throwing', async () => {
@@ -80,7 +82,7 @@ describe('Monitoring Library (Minimal Mocking)', () => {
     }).not.toThrow();
 
     expect(() => {
-      monitoring.trackUserAction(null, properties); // Invalid action
+      monitoring.trackUserAction(null as any, properties); // Invalid action
     }).not.toThrow();
   });
 
@@ -112,7 +114,7 @@ describe('Monitoring Library (Minimal Mocking)', () => {
     const { monitoring } = await import('../../src/lib/monitoring');
 
     // Mock fetch to simulate network failure
-    fetch.mockRejectedValue(new Error('Network error'));
+    fetchMock.mockRejectedValue(new Error('Network error'));
 
     expect(() => {
       monitoring.trackPageLoad('/test', Date.now());
@@ -160,7 +162,7 @@ describe('Monitoring Library (Minimal Mocking)', () => {
 
     // Simulate concurrent calls that might happen in real usage
     const promises = Array.from({ length: 10 }, (_, i) =>
-      new Promise(resolve => {
+      new Promise<void>(resolve => {
         setTimeout(() => {
           monitoring.trackUserAction(`concurrent_action_${i}`, { index: i });
           resolve();
@@ -174,7 +176,7 @@ describe('Monitoring Library (Minimal Mocking)', () => {
   test('should preserve error details for debugging', async () => {
     const { monitoring } = await import('../../src/lib/monitoring');
 
-    const complexError = new Error('Complex error with details');
+    const complexError = new Error('Complex error with details') as any;
     complexError.code = 'E_COMPLEX';
     complexError.statusCode = 500;
     complexError.details = {
@@ -198,47 +200,46 @@ describe('Monitoring Library (Minimal Mocking)', () => {
     // Test with different NODE_ENV values
     const originalEnv = process.env.NODE_ENV;
 
-    process.env.NODE_ENV = 'development';
+    (process.env as any).NODE_ENV = 'development';
     expect(() => monitoring.init()).not.toThrow();
 
-    process.env.NODE_ENV = 'production';
+    (process.env as any).NODE_ENV = 'production';
     expect(() => monitoring.init()).not.toThrow();
 
-    process.env.NODE_ENV = 'test';
+    (process.env as any).NODE_ENV = 'test';
     expect(() => monitoring.init()).not.toThrow();
 
     // Restore original environment
-    process.env.NODE_ENV = originalEnv;
+    (process.env as any).NODE_ENV = originalEnv;
   });
 });
 
 describe('Real Integration Validation', () => {
   test('should validate environment variables for real integration', () => {
     // This test verifies we have real configuration for integration tests
-    const hasDatadogKey = process.env.DATADOG_API_KEY &&
-                          process.env.DATADOG_API_KEY.length > 10 &&
-                          !process.env.DATADOG_API_KEY.includes('test');
+    const apiKey = getDatadogApiKey();
+    const hasDatadogKey = !!(apiKey && apiKey.length > 10 && !apiKey.includes('test'));
 
-    const hasRumConfig = process.env.NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID &&
-                        process.env.NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN;
+    const rum = getRUMPublicConfig();
+    const hasRumConfig = !!(rum.applicationId && rum.clientToken);
 
-    if (hasDatadogKey) {
-      expect(process.env.DATADOG_API_KEY).toBeTruthy();
-      expect(process.env.DATADOG_API_KEY).not.toContain('test');
-      expect(process.env.DATADOG_API_KEY).not.toContain('fake');
-      expect(process.env.DATADOG_API_KEY).not.toContain('mock');
+    if (hasDatadogKey && apiKey) {
+      expect(apiKey).toBeTruthy();
+      expect(apiKey).not.toContain('test');
+      expect(apiKey).not.toContain('fake');
+      expect(apiKey).not.toContain('mock');
     }
 
     if (hasRumConfig) {
-      expect(process.env.NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID).toBeTruthy();
-      expect(process.env.NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN).toBeTruthy();
+      expect(rum.applicationId).toBeTruthy();
+      expect(rum.clientToken).toBeTruthy();
     }
 
     // Log configuration status for debugging
     console.log('Real integration configuration:', {
-      hasDatadogKey: hasDatadogKey,
-      hasRumConfig: hasRumConfig,
-      datadogSite: process.env.DATADOG_SITE || 'datadoghq.com'
+      hasDatadogKey,
+      hasRumConfig,
+      datadogSite: getDatadogSite()
     });
   });
 
