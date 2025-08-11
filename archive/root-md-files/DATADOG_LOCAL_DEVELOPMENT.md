@@ -105,6 +105,7 @@ NEXT_PUBLIC_DD_APPLICATION_ID=your-rum-app-id
 NEXT_PUBLIC_DD_CLIENT_TOKEN=your-rum-client-token
 NEXT_PUBLIC_DD_SITE=datadoghq.com
 # Legacy: NEXT_PUBLIC_DATADOG_* variables are still recognized
+NEXT_PUBLIC_ENABLE_RUM_IN_DEV=false  # default off; enable only when testing RUM locally
 ```
 
 ### Development vs Production Keys
@@ -279,4 +280,4 @@ docker-compose logs -f datadog-agent
 
 **Status**: ✅ Dev/Stg/Prd parity achieved with Datadog monitoring  
 **Environment**: Local development with full monitoring stack  
-**Last Updated**: January 21, 2025
+**Last Updated**: August 11, 2025
