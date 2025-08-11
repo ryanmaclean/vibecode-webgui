@@ -1,20 +1,29 @@
-import tracer from 'dd-trace';
-import { initializeOpenTelemetry } from './lib/monitoring/opentelemetry';
-import { getServiceEnvVersion } from './lib/monitoring/datadog-env'
+// Conditional monitoring initialization to prevent ERR_INVALID_URL during Docker build
+const isDockerBuild = process.env.DOCKER_BUILD === 'true' || process.env.SKIP_MONITORING === 'true';
 
-// Disable monitoring during Docker build to prevent ERR_INVALID_URL errors
-const isDockerBuild = process.env.DOCKER_BUILD === 'true' || process.env.NODE_ENV === 'production' && process.env.SKIP_MONITORING === 'true';
+if (isDockerBuild) {
+  // Mock tracer for Docker build - completely bypass monitoring
+  console.log('🚫 Monitoring completely disabled during Docker build');
+  const mockTracer = {
+    init: () => console.log('Mock tracer initialized'),
+    // Add other tracer methods as needed
+  };
+  module.exports = mockTracer;
+} else {
+  // Normal monitoring initialization for development/production
+  const tracer = require('dd-trace');
+  const { initializeOpenTelemetry } = require('./lib/monitoring/opentelemetry');
+  const { getServiceEnvVersion } = require('./lib/monitoring/datadog-env');
 
-// Initialize OpenTelemetry first for auto-instrumentation (if enabled)
-if (!isDockerBuild && process.env.OTEL_ENABLED === 'true' && process.env.NODE_ENV !== 'test') {
-  initializeOpenTelemetry();
-}
+  // Initialize OpenTelemetry first for auto-instrumentation (if enabled)
+  if (process.env.OTEL_ENABLED === 'true' && process.env.NODE_ENV !== 'test') {
+    initializeOpenTelemetry();
+  }
 
-// Resolve standardized env/service/version
-const { env, service, version } = getServiceEnvVersion()
+  // Resolve standardized env/service/version
+  const { env, service, version } = getServiceEnvVersion();
 
-// Initialize the tracer with LLM observability support (only if not Docker build)
-if (!isDockerBuild) {
+  // Initialize the tracer with LLM observability support
   tracer.init({
     // Docs: https://docs.datadoghq.com/tracing/trace_collection/library_config/nodejs/
     logInjection: true,
@@ -37,10 +46,6 @@ if (!isDockerBuild) {
     plugins: true, // Enable all plugins by default
     
     // Plugin-specific configuration
-    // Note: clientToken and site are not valid TracerOptions properties
-    // They should be set via DD_CLIENT_TOKEN and DD_SITE environment variables
-    
-    // Configure specific plugins
     // Note: These will be applied on top of the default configuration
     // when the plugins are required
     
@@ -53,10 +58,7 @@ if (!isDockerBuild) {
       'git.repository.url': 'https://github.com/vibecode/vibecode-webgui',
     }
   });
-} else {
-  // Mock tracer for Docker build
-  console.log('🚫 Monitoring disabled during Docker build');
-}
 
-// Export tracer for manual instrumentation
-export default tracer;
+  // Export tracer for manual instrumentation
+  module.exports = tracer;
+}
