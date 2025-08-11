@@ -119,6 +119,14 @@ npm run build
 npm run start:dd  # starts Next.js with dd-trace instrumentation (uses src/instrument.ts)
 ```
 
+### Datadog Environment Variables
+
+- Prefer `DD_*` variables. Legacy `DATADOG_*` are still recognized as fallback via the centralized helper at `src/lib/monitoring/datadog-env.ts`.
+- Core backend vars: `DD_API_KEY`, `DD_SITE` (default `datadoghq.com`), `DD_ENV`, `DD_SERVICE`, `DD_VERSION`.
+- Frontend RUM vars (public): `NEXT_PUBLIC_DD_APPLICATION_ID`, `NEXT_PUBLIC_DD_CLIENT_TOKEN`, `NEXT_PUBLIC_DD_SITE`.
+- Dev-only override: `NEXT_PUBLIC_ENABLE_RUM_IN_DEV` (default `false`). RUM is prod-only unless this flag is set.
+- Use `.env.example` as your source of truth. CI and scripts expect `.env` to be present; `.env.local` is optional for local-only overrides.
+
 **Docker Mode (Production Testing)**
 ```bash
 npm run dev:docker

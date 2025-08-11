@@ -23,6 +23,34 @@ This document outlines the comprehensive Datadog monitoring setup across all env
 - ✅ **Network Monitoring**
 - ✅ **Security Monitoring**
 
+## ⚙️ Environment Variables Standardization
+
+To ensure consistent configuration across app, infra, and docs:
+
+- Prefer `DD_*` variables for all Datadog configuration.
+- Legacy `DATADOG_*` variables are still supported as fallback.
+- Frontend RUM uses public vars `NEXT_PUBLIC_DD_*` with fallback to legacy `NEXT_PUBLIC_DATADOG_*`.
+- Centralized resolver: `src/lib/monitoring/datadog-env.ts` handles DD_* first with DATADOG_* fallback and safe mismatch warnings.
+
+Examples:
+
+```bash
+# Backend (primary)
+DD_API_KEY=...            # falls back to DATADOG_API_KEY if unset
+DD_APP_KEY=...
+DD_SITE=datadoghq.com
+DD_ENV=production
+DD_SERVICE=vibecode-webgui
+DD_VERSION=1.0.0
+
+# Frontend RUM (public)
+NEXT_PUBLIC_DD_APPLICATION_ID=...
+NEXT_PUBLIC_DD_CLIENT_TOKEN=...
+NEXT_PUBLIC_DD_SITE=datadoghq.com
+# Dev-only override (RUM is prod-only by default)
+NEXT_PUBLIC_ENABLE_RUM_IN_DEV=false
+```
+
 ## 🏗️ Architecture Overview
 
 ```
@@ -326,6 +354,6 @@ helm upgrade datadog datadog/datadog -n datadog
 
 ---
 
-**Last Updated**: January 21, 2025  
+**Last Updated**: August 11, 2025  
 **Environment**: dev/stg/prd parity achieved ✅  
 **Status**: Production ready with comprehensive monitoring
