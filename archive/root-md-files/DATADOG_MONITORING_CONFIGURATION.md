@@ -321,6 +321,6 @@ helm upgrade datadog datadog/datadog -n datadog
 
 ---
 
-**Last Updated**: January 21, 2025  
+**Last Updated**: August 11, 2025  
 **Environment**: dev/stg/prd parity achieved ✅  
 **Status**: Production ready with comprehensive monitoring
