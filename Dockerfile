@@ -11,6 +11,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV DOCKER_BUILD=true
 ENV SKIP_MONITORING=true
+ENV CI=true
+ENV GITHUB_ACTIONS=true
+ENV OTEL_ENABLED=false
+ENV DD_ENABLED=false
 
 # Ensure we only install production dependencies when needed
 ENV NEXT_SHARP_PATH="/tmp/node_modules/sharp"
