@@ -8,7 +8,8 @@ import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'
 import { prisma } from '@/lib/prisma'
 
-
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
 
 
 interface ChatMessage {
