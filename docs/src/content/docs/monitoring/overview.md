@@ -72,10 +72,10 @@ Deploy the hybrid monitoring stack:
 source .env.local
 
 # Deploy to Kubernetes
-./scripts/deploy-monitoring.sh -m kubernetes -d "$DATADOG_API_KEY"
+./scripts/deploy-monitoring.sh -m kubernetes -d "${DD_API_KEY:-$DATADOG_API_KEY}"
 
 # Or deploy with Docker Compose
-./scripts/deploy-monitoring.sh -d "$DATADOG_API_KEY"
+./scripts/deploy-monitoring.sh -d "${DD_API_KEY:-$DATADOG_API_KEY}"
 ```
 
 ## Next Steps
