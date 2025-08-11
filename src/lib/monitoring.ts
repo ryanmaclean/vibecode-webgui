@@ -3,6 +3,8 @@
  * Actual Datadog metrics submission and health checks
  */
 
+import { getDatadogApiKey, getDatadogSite } from './monitoring/datadog-env'
+
 interface MetricData {
   metric: string
   value: number
@@ -24,8 +26,8 @@ class MonitoringService {
   constructor() {
     // Only initialize on server-side
     if (typeof window === 'undefined') {
-      this.datadogApiKey = process.env.DD_API_KEY || process.env.DATADOG_API_KEY
-      this.datadogSite = process.env.DD_SITE || process.env.DATADOG_SITE || 'datadoghq.com'
+      this.datadogApiKey = getDatadogApiKey()
+      this.datadogSite = getDatadogSite()
       this.baseUrl = `https://api.${this.datadogSite}/api/v1`
     } else {
       this.datadogApiKey = undefined

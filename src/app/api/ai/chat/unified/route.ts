@@ -8,6 +8,9 @@ import { vectorStore } from '@/lib/vector-store'
 import { prisma } from '@/lib/prisma'
 import { UnifiedAIClient, type UnifiedChatMessage } from '@/lib/unified-ai-client'
 
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
+
 interface UnifiedChatRequest {
   message: string
   model: string
