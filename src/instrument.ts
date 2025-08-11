@@ -6,7 +6,9 @@ const isDockerBuild = process.env.NODE_ENV === 'production' && (
   process.env.DOCKER_BUILD === 'true' || 
   process.env.SKIP_MONITORING === 'true' ||
   process.env.CI === 'true' ||
-  process.env.GITHUB_ACTIONS === 'true'
+  process.env.GITHUB_ACTIONS === 'true' ||
+  process.env.OTEL_ENABLED === 'false' ||
+  process.env.DD_ENABLED === 'false'
 );
 
 if (isDockerBuild) {
