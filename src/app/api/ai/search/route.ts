@@ -10,6 +10,9 @@ import { vectorStore } from '@/lib/vector-store'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
+
 const searchSchema = z.object({
   query: z.string().min(1, 'Search query is required'),
   workspaceId: z.string().optional(),

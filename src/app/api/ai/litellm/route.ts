@@ -7,6 +7,9 @@ import { authOptions } from '@/lib/auth';
 import { LiteLLMClient } from '@/lib/ai-clients/litellm-client';
 import rateLimit from '@/lib/rate-limiting';
 
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
+
 // Initialize LiteLLM client
 const litellmClient = new LiteLLMClient({
   baseUrl: process.env.LITELLM_BASE_URL || 'http://localhost:4000',
