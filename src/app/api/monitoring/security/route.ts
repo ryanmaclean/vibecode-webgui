@@ -217,11 +217,11 @@ function addSecurityEvent(
 }
 
 // Export helper functions for use by middleware
-export function incrementRateLimitCounter() {
+function _incrementRateLimitCounter() {
   rateLimitedRequests++;
 }
 
-export function incrementSuspiciousActivityCounter() {
+function _incrementSuspiciousActivityCounter() {
   suspiciousActivities++;
 }
 
