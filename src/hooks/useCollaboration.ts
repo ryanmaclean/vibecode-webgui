@@ -1,356 +1,239 @@
-/**
- * Collaboration Hook
- *
- * React hook for managing collaborative editing sessions
- * Provides state management and event handling for real-time editing
- *
- * Staff Engineer Implementation - Production-ready collaboration hook
- */
-
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { CollaborationUser, CollaborationSession, collaborationManager } from '@/lib/collaboration'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import io, { Socket } from 'socket.io-client'
+import { CollaborativeUser } from '@/lib/services/collaboration'
 
-export interface UseCollaborationOptions {
-  documentId: string
-  projectId: string
-  filePath: string
-  currentUser: CollaborationUser
-  autoSave?: boolean
-  autoSaveInterval?: number
-  onUserJoin?: (user: CollaborationUser) => void
-  onUserLeave?: (user: CollaborationUser) => void
-  onConnectionChange?: (connected: boolean) => void
-  onContentChange?: (content: string) => void
-  onError?: (error: Error) => void
+interface UseCollaborationProps {
+  workspaceId: string
+  conversationId?: string
+  userId: string
+  userName: string
+  enabled?: boolean
 }
 
-export interface UseCollaborationReturn {
-  // Session state
-  session: CollaborationSession | null
-  isConnected: boolean
-  isLoading: boolean
-  error: string | null
-
-  // User management
-  activeUsers: CollaborationUser[]
-  userCount: number
-
-  // Content management
-  content: string
-  hasUnsavedChanges: boolean
-
-  // Actions
-  joinSession: () => Promise<void>
-  leaveSession: () => Promise<void>
-  saveContent: () => Promise<void>
-  getContent: () => string
-  setContent: (content: string) => void
-
-  // Statistics
-  stats: {
-    documentSize: number
-    conflicts: number
-    lastActivity: number
-  } | null
+interface TypingUser {
+  userId: string
+  conversationId: string
+  timestamp: Date
 }
 
-export const useCollaboration = (options: UseCollaborationOptions): UseCollaborationReturn => {
-  const {
-    documentId,
-    projectId,
-    filePath,
-    currentUser,
-    autoSave = true,
-    autoSaveInterval = 30000, // 30 seconds
-    onUserJoin,
-    onUserLeave,
-    onConnectionChange,
-    onContentChange,
-    onError
-  } = options
+interface CursorPosition {
+  userId: string
+  x: number
+  y: number
+  timestamp: Date
+}
 
-  // State
-  const [session, setSession] = useState<CollaborationSession | null>(null)
+export function useCollaboration({
+  workspaceId,
+  conversationId,
+  userId,
+  userName,
+  enabled = true
+}: UseCollaborationProps) {
+  const [socket, setSocket] = useState<Socket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [activeUsers, setActiveUsers] = useState<CollaborationUser[]>([])
-  const [content, setContentState] = useState('')
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const [stats, setStats] = useState<UseCollaborationReturn['stats']>(null)
+  const [activeUsers, setActiveUsers] = useState<CollaborativeUser[]>([])
+  const [typingUsers, setTypingUsers] = useState<TypingUser[]>([])
+  const [cursors, setCursors] = useState<CursorPosition[]>([])
+  const [connectionError, setConnectionError] = useState<string | null>(null)
 
-  // Refs
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const lastSavedContentRef = useRef('')
+  const typingTimeoutRef = useRef<NodeJS.Timeout>()
+  const cursorThrottleRef = useRef<NodeJS.Timeout>()
 
-  /**
-   * Join collaborative editing session
-   */
-  const joinSession = useCallback(async (): Promise<void> => {
-    if (session || isLoading) return
+  // Initialize socket connection
+  useEffect(() => {
+    if (!enabled || !workspaceId || !userId) return
 
-    setIsLoading(true)
-    setError(null)
+    const initializeSocket = async () => {
+      try {
+        // Initialize socket endpoint
+        await fetch('/api/collaboration/socket')
+        
+        const socketInstance = io({
+          path: '/api/collaboration/socket',
+          transports: ['websocket', 'polling']
+        })
 
-    try {
-      // Set current user
-      collaborationManager.setCurrentUser(currentUser)
+        socketInstance.on('connect', () => {
+          console.log('🔌 Connected to collaboration server')
+          setIsConnected(true)
+          setConnectionError(null)
 
-      // Join session
-      const newSession = await collaborationManager.joinSession(
-        documentId,
-        projectId,
-        filePath
+          // Join workspace
+          socketInstance.emit('join_workspace', {
+            workspaceId,
+            conversationId,
+            userId,
+            userName
+          })
+        })
+
+        socketInstance.on('disconnect', () => {
+          console.log('🔌 Disconnected from collaboration server')
+          setIsConnected(false)
+          setActiveUsers([])
+          setTypingUsers([])
+          setCursors([])
+        })
+
+        socketInstance.on('connect_error', (error) => {
+          console.error('❌ Collaboration connection error:', error)
+          setConnectionError(error.message)
+          setIsConnected(false)
+        })
+
+        // Handle workspace events
+        socketInstance.on('workspace_state', (data) => {
+          setActiveUsers(data.activeUsers || [])
+        })
+
+        socketInstance.on('user_joined', (data) => {
+          setActiveUsers(data.activeUsers || [])
+          console.log(`👥 User joined: ${data.user.name}`)
+        })
+
+        socketInstance.on('user_left', (data) => {
+          setActiveUsers(data.activeUsers || [])
+          console.log(`👥 User left: ${data.userId}`)
+        })
+
+        socketInstance.on('user_typing', (data) => {
+          setTypingUsers(current => {
+            const filtered = current.filter(u => u.userId !== data.userId)
+            if (data.isTyping) {
+              return [...filtered, {
+                userId: data.userId,
+                conversationId: data.conversationId,
+                timestamp: new Date()
+              }]
+            }
+            return filtered
+          })
+        })
+
+        socketInstance.on('cursor_moved', (data) => {
+          setCursors(current => {
+            const filtered = current.filter(c => c.userId !== data.userId)
+            return [...filtered, {
+              userId: data.userId,
+              x: data.cursor.x,
+              y: data.cursor.y,
+              timestamp: new Date(data.timestamp)
+            }]
+          })
+        })
+
+        setSocket(socketInstance)
+
+      } catch (error) {
+        console.error('Failed to initialize collaboration:', error)
+        setConnectionError(error instanceof Error ? error.message : 'Connection failed')
+      }
+    }
+
+    initializeSocket()
+
+    return () => {
+      if (socket) {
+        socket.emit('leave_workspace', { workspaceId, userId })
+        socket.disconnect()
+      }
+    }
+  }, [enabled, workspaceId, conversationId, userId, userName])
+
+  // Typing indicators
+  const startTyping = useCallback((conversationId: string) => {
+    if (!socket || !isConnected) return
+
+    socket.emit('typing_start', { conversationId })
+
+    // Auto-stop typing after 3 seconds of inactivity
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current)
+    }
+    
+    typingTimeoutRef.current = setTimeout(() => {
+      stopTyping(conversationId)
+    }, 3000)
+  }, [socket, isConnected])
+
+  const stopTyping = useCallback((conversationId: string) => {
+    if (!socket || !isConnected) return
+
+    socket.emit('typing_stop', { conversationId })
+    
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current)
+    }
+  }, [socket, isConnected])
+
+  // Cursor sharing
+  const updateCursor = useCallback((x: number, y: number, messageId?: string) => {
+    if (!socket || !isConnected) return
+
+    // Throttle cursor updates to avoid spam
+    if (cursorThrottleRef.current) return
+
+    socket.emit('cursor_move', { x, y, messageId })
+    
+    cursorThrottleRef.current = setTimeout(() => {
+      cursorThrottleRef.current = undefined
+    }, 100) // 10 FPS max
+  }, [socket, isConnected])
+
+  // Get user info by ID
+  const getUserById = useCallback((userId: string) => {
+    return activeUsers.find(user => user.id === userId)
+  }, [activeUsers])
+
+  // Get typing users for a conversation
+  const getTypingUsers = useCallback((conversationId: string) => {
+    return typingUsers
+      .filter(t => t.conversationId === conversationId)
+      .map(t => getUserById(t.userId))
+      .filter(Boolean) as CollaborativeUser[]
+  }, [typingUsers, getUserById])
+
+  // Clean up old cursors and typing indicators
+  useEffect(() => {
+    const cleanup = setInterval(() => {
+      const now = new Date()
+      
+      // Remove old typing indicators (10 seconds)
+      setTypingUsers(current => 
+        current.filter(t => now.getTime() - t.timestamp.getTime() < 10000)
       )
 
-      setSession(newSession)
+      // Remove old cursors (5 seconds)
+      setCursors(current => 
+        current.filter(c => now.getTime() - c.timestamp.getTime() < 5000)
+      )
+    }, 5000)
 
-      // Get initial content
-      const yText = collaborationManager.getText(newSession)
-      const initialContent = yText.toString()
-      setContentState(initialContent)
-      lastSavedContentRef.current = initialContent
-
-      // Set up content monitoring
-      yText.observe(() => {
-        const newContent = yText.toString()
-        setContentState(newContent)
-        onContentChange?.(newContent)
-
-        // Check for unsaved changes
-        const hasChanges = newContent !== lastSavedContentRef.current
-        setHasUnsavedChanges(hasChanges)
-      })
-
-      // Monitor connection status
-      if (newSession.provider) {
-        const provider = newSession.provider
-
-        const handleStatusChange = ({ status }: { status: string }) => {
-          const connected = status === 'connected'
-          setIsConnected(connected)
-          onConnectionChange?.(connected)
-        }
-
-        const handleConnectionError = (err: Error) => {
-          setError(err.message)
-          onError?.(err)
-        }
-
-        provider.on('status', handleStatusChange)
-        provider.on('connection-error', handleConnectionError)
-
-        // Monitor user presence
-        if (provider.awareness) {
-          const handleAwarenessChange = () => {
-            const users = collaborationManager.getActiveUsers(newSession)
-            setActiveUsers(users)
-
-            // Detect user join/leave events
-            const currentUserIds = new Set(activeUsers.map(u => u.id))
-            const newUserIds = new Set(users.map(u => u.id))
-
-            // New users
-            users.forEach(user => {
-              if (!currentUserIds.has(user.id) && user.id !== currentUser.id) {
-                onUserJoin?.(user)
-              }
-            })
-
-            // Users who left
-            activeUsers.forEach(user => {
-              if (!newUserIds.has(user.id) && user.id !== currentUser.id) {
-                onUserLeave?.(user)
-              }
-            })
-          }
-
-          provider.awareness.on('change', handleAwarenessChange)
-          handleAwarenessChange() // Initial call
-        }
-      }
-
-      // Update stats
-      const sessionStats = collaborationManager.getStats(newSession)
-      setStats(sessionStats)
-
-      setIsConnected(true)
-
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to join session')
-      setError(error.message)
-      onError?.(error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [
-    session, isLoading, documentId, projectId, filePath, currentUser,
-    onContentChange, onConnectionChange, onError, onUserJoin, onUserLeave, activeUsers
-  ])
-
-  /**
-   * Leave collaborative editing session
-   */
-  const leaveSession = useCallback(async (): Promise<void> => {
-    if (!session) return
-
-    try {
-      // Save any unsaved changes
-      if (hasUnsavedChanges) {
-        await saveContent()
-      }
-
-      // Leave session
-      await collaborationManager.leaveSession(documentId)
-
-      // Clear timers
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current)
-        autoSaveTimerRef.current = null
-      }
-
-      // Reset state
-      setSession(null)
-      setIsConnected(false)
-      setActiveUsers([])
-      setHasUnsavedChanges(false)
-      setStats(null)
-
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to leave session')
-      setError(error.message)
-      onError?.(error)
-    }
-  }, [session, hasUnsavedChanges, documentId, onError])
-
-  /**
-   * Save current content
-   */
-  const saveContent = useCallback(async (): Promise<void> => {
-    if (!session) return
-
-    try {
-      const currentContent = collaborationManager.getText(session).toString()
-
-      // Update metadata
-      const metadata = collaborationManager.getMap(session)
-      metadata.set('lastSaved', Date.now())
-      metadata.set('lastSavedBy', currentUser.id)
-
-      // Mark as saved
-      lastSavedContentRef.current = currentContent
-      setHasUnsavedChanges(false)
-
-      // TODO: Integrate with file system API
-      console.log('Content saved:', currentContent.length, 'characters')
-
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to save content')
-      setError(error.message)
-      onError?.(error)
-    }
-  }, [session, currentUser.id, onError])
-
-  /**
-   * Get current content
-   */
-  const getContent = useCallback((): string => {
-    if (!session) return ''
-    return collaborationManager.getText(session).toString()
-  }, [session])
-
-  /**
-   * Set content programmatically
-   */
-  const setContent = useCallback((newContent: string): void => {
-    if (!session) return
-
-    const yText = collaborationManager.getText(session)
-    yText.delete(0, yText.length)
-    yText.insert(0, newContent)
-  }, [session])
-
-  /**
-   * Auto-save functionality
-   */
-  useEffect(() => {
-    if (!autoSave || !hasUnsavedChanges || !session) return
-
-    // Clear existing timer
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current)
-    }
-
-    // Set new timer
-    autoSaveTimerRef.current = setTimeout(() => {
-      saveContent()
-    }, autoSaveInterval)
-
-    return () => {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current)
-      }
-    }
-  }, [autoSave, hasUnsavedChanges, session, autoSaveInterval, saveContent])
-
-  /**
-   * Update stats periodically
-   */
-  useEffect(() => {
-    if (!session) return
-
-    const updateStats = () => {
-      const sessionStats = collaborationManager.getStats(session)
-      setStats(sessionStats)
-    }
-
-    // Update immediately
-    updateStats()
-
-    // Update every 5 seconds
-    const interval = setInterval(updateStats, 5000)
-
-    return () => clearInterval(interval)
-  }, [session])
-
-  /**
-   * Cleanup on unmount
-   */
-  useEffect(() => {
-    return () => {
-      if (session) {
-        leaveSession()
-      }
-    }
-  }, []) // Only on unmount
+    return () => clearInterval(cleanup)
+  }, [])
 
   return {
-    // Session state
-    session,
+    // Connection state
     isConnected,
-    isLoading,
-    error,
-
-    // User management
+    connectionError,
+    
+    // Users and presence
     activeUsers,
-    userCount: activeUsers.length,
-
-    // Content management
-    content,
-    hasUnsavedChanges,
-
-    // Actions
-    joinSession,
-    leaveSession,
-    saveContent,
-    getContent,
-    setContent,
-
-    // Statistics
-    stats
+    getUserById,
+    
+    // Typing indicators
+    typingUsers: getTypingUsers,
+    startTyping,
+    stopTyping,
+    
+    // Cursor sharing
+    cursors,
+    updateCursor,
+    
+    // Raw socket for custom events
+    socket: isConnected ? socket : null
   }
 }
-
-export default useCollaboration

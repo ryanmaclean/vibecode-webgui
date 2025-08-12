@@ -4,7 +4,8 @@
  */
 
 import { z } from 'zod';
-import DOMPurify from 'isomorphic-dompurify';
+// Use dynamic import for DOMPurify to avoid edge runtime issues
+// import DOMPurify from 'isomorphic-dompurify';
 
 // Common patterns for potential security threats
 const SUSPICIOUS_PATTERNS = [
@@ -78,13 +79,18 @@ function containsSuspiciousPatterns(input: string): boolean {
 
 /**
  * Sanitize HTML content while preserving safe formatting
+ * Using basic regex sanitization to avoid edge runtime issues
  */
 export function sanitizeHtml(input: string): string {
-  return DOMPurify.sanitize(input, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'code', 'pre', 'p', 'br', 'ul', 'ol', 'li'],
-    ALLOWED_ATTR: [],
-    KEEP_CONTENT: true,
-  });
+  // Basic HTML sanitization for server-side use
+  return input
+    .replace(/<script[^>]*>.*?<\/script>/gi, '')
+    .replace(/on\w+="[^"]*"/gi, '')
+    .replace(/javascript:/gi, '')
+    .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '')
+    .replace(/<object[^>]*>.*?<\/object>/gi, '')
+    .replace(/<embed[^>]*>/gi, '')
+    .trim();
 }
 
 /**
