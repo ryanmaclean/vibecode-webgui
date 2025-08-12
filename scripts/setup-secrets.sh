@@ -17,6 +17,9 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Flags (can be toggled by CLI options)
+WRITE_ENV=false
+
 # Logging functions
 log_info() {
     echo -e "${BLUE}ℹ️  $1${NC}"
@@ -32,6 +35,64 @@ log_warning() {
 
 log_error() {
     echo -e "${RED}❌ $1${NC}"
+}
+
+# Generate a secure random password (32 chars alnum + symbols)
+generate_password() {
+    local pass
+    if command -v openssl >/dev/null 2>&1; then
+        pass=$(openssl rand -base64 48 | tr -d '\n' | tr -dc 'A-Za-z0-9!@#%^*_+=' | head -c 32)
+    else
+        # Fallback using /dev/urandom
+        pass=$(LC_CTYPE=C tr -dc 'A-Za-z0-9!@#%^*_+=' </dev/urandom | head -c 32)
+    fi
+    echo "$pass"
+}
+
+# Optionally persist generated creds to .env.local
+write_env_if_requested() {
+    local key="$1"; local value="$2"
+    if [[ "$WRITE_ENV" == "true" ]]; then
+        local env_file="$PROJECT_ROOT/.env.local"
+        if [[ ! -f "$env_file" ]]; then
+            touch "$env_file"
+        fi
+        # Append; last one wins if duplicates exist
+        printf "\n# Added by setup-secrets.sh on $(date -u +'%Y-%m-%dT%H:%M:%SZ')\n%s=%s\n" "$key" "$value" >> "$env_file"
+    fi
+}
+
+# Ensure Datadog DBM username/password exist in env (generate if missing)
+ensure_dbm_creds() {
+    # Username: default to 'datadog' if unset
+    if [[ -z "${DD_POSTGRES_USER:-}" ]]; then
+        export DD_POSTGRES_USER="datadog"
+        write_env_if_requested "DD_POSTGRES_USER" "$DD_POSTGRES_USER"
+    fi
+    # Maintain legacy alias in the environment for compatibility (not persisted unless requested)
+    if [[ -z "${DATADOG_POSTGRES_USER:-}" ]]; then
+        export DATADOG_POSTGRES_USER="$DD_POSTGRES_USER"
+    fi
+
+    # Password: prefer DD_POSTGRES_PASSWORD, fallback from legacy, otherwise generate
+    if [[ -z "${DD_POSTGRES_PASSWORD:-}" && -n "${DATADOG_POSTGRES_PASSWORD:-}" ]]; then
+        export DD_POSTGRES_PASSWORD="$DATADOG_POSTGRES_PASSWORD"
+        log_warning "DD_POSTGRES_PASSWORD missing; using legacy DATADOG_POSTGRES_PASSWORD"
+    fi
+
+    if [[ -z "${DD_POSTGRES_PASSWORD:-}" ]]; then
+        local gen
+        gen=$(generate_password)
+        export DD_POSTGRES_PASSWORD="$gen"
+        # Also set legacy var for downstream compatibility
+        export DATADOG_POSTGRES_PASSWORD="$gen"
+        write_env_if_requested "DD_POSTGRES_PASSWORD" "$DD_POSTGRES_PASSWORD"
+        # Optionally persist legacy for compatibility
+        if [[ "$WRITE_ENV" == "true" ]]; then
+            write_env_if_requested "DATADOG_POSTGRES_PASSWORD" "$DD_POSTGRES_PASSWORD"
+        fi
+        log_success "Generated Datadog DBM password"
+    fi
 }
 
 # Check dependencies
@@ -90,7 +151,6 @@ validate_environment() {
     local required_vars=(
         "DD_API_KEY:Datadog API Key"
         "POSTGRES_PASSWORD:PostgreSQL Password"
-        "DATADOG_POSTGRES_PASSWORD:Datadog PostgreSQL User Password"
     )
     
     local missing_vars=()
@@ -227,6 +287,14 @@ setup_postgres_secrets() {
     
     log_info "Setting up PostgreSQL secrets..."
     
+    # Resolve effective Datadog DBM creds (DD_* preferred, legacy fallback)
+    local EFFECTIVE_DD_DBM_USER="${DD_POSTGRES_USER:-${DATADOG_POSTGRES_USER:-datadog}}"
+    local EFFECTIVE_DD_DBM_PASS="${DD_POSTGRES_PASSWORD:-${DATADOG_POSTGRES_PASSWORD:-}}"
+    if [[ -z "$EFFECTIVE_DD_DBM_PASS" ]]; then
+        log_error "Internal error: DD_POSTGRES_PASSWORD should have been generated; empty at secret creation"
+        exit 1
+    fi
+
     # PostgreSQL credentials secret
     local postgres_secret_yaml
     postgres_secret_yaml=$(cat <<EOF
@@ -242,7 +310,8 @@ metadata:
 type: Opaque
 data:
   postgres-password: $(echo -n "$POSTGRES_PASSWORD" | base64 -w 0)
-  datadog-password: $(echo -n "$DATADOG_POSTGRES_PASSWORD" | base64 -w 0)
+  datadog-username: $(echo -n "$EFFECTIVE_DD_DBM_USER" | base64 -w 0)
+  datadog-password: $(echo -n "$EFFECTIVE_DD_DBM_PASS" | base64 -w 0)
 EOF
 )
     
@@ -273,7 +342,7 @@ verify_secrets() {
                     fi
                     ;;
                 "postgres-credentials")
-                    local keys=("postgres-password" "datadog-password")
+                    local keys=("postgres-password" "datadog-username" "datadog-password")
                     for key in "${keys[@]}"; do
                         if kubectl get secret "$secret" -n "$namespace" -o jsonpath="{.data.$key}" | base64 -d >/dev/null 2>&1; then
                             log_success "  - $key: ✓"
@@ -311,6 +380,7 @@ OPTIONS:
     -h, --help          Show this help message
     -v, --verify-only   Only verify existing secrets, don't create/update
     -d, --dry-run       Show what would be done without making changes
+    --write-env         Persist generated DBM creds to $PROJECT_ROOT/.env.local
     
 ARGUMENTS:
     NAMESPACE           Target namespace (default: $DEFAULT_NAMESPACE)
@@ -361,6 +431,10 @@ main() {
                 dry_run=true
                 shift
                 ;;
+            --write-env)
+                WRITE_ENV=true
+                shift
+                ;;
             -*)
                 log_error "Unknown option: $1"
                 usage
@@ -383,6 +457,7 @@ main() {
     # Run checks
     check_dependencies
     source_environment
+    ensure_dbm_creds
     validate_environment
     check_kubernetes_connection
     
