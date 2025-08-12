@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
 }
 
 // WebSocket handler (this would be handled by your WebSocket server)
-export const webSocketHandler = (ws: any, request: any) => {
+const webSocketHandler = (ws: any, request: any) => {
   const url = new URL(request.url, 'http://localhost')
   const workspaceId = url.searchParams.get('workspaceId')
   const userId = url.searchParams.get('userId') || 'anonymous'

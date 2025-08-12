@@ -225,7 +225,7 @@ function _incrementSuspiciousActivityCounter() {
   suspiciousActivities++;
 }
 
-export function logSecurityEvent(
+function _logSecurityEvent(
   type: string,
   severity: 'low' | 'medium' | 'high' | 'critical',
   message: string
