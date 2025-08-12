@@ -274,7 +274,7 @@ metadata:
     app.kubernetes.io/part-of: vibecode-platform
 type: Opaque
 data:
-  api-key: $(echo -n "$DD_API_KEY" | base64 -w 0)
+  api-key: $(echo -n "$DD_API_KEY" | base64 | tr -d '\n')
 EOF
 )
     
@@ -309,9 +309,9 @@ metadata:
     app.kubernetes.io/part-of: vibecode-platform
 type: Opaque
 data:
-  postgres-password: $(echo -n "$POSTGRES_PASSWORD" | base64 -w 0)
-  datadog-username: $(echo -n "$EFFECTIVE_DD_DBM_USER" | base64 -w 0)
-  datadog-password: $(echo -n "$EFFECTIVE_DD_DBM_PASS" | base64 -w 0)
+  postgres-password: $(echo -n "$POSTGRES_PASSWORD" | base64 | tr -d '\n')
+  datadog-username: $(echo -n "$EFFECTIVE_DD_DBM_USER" | base64 | tr -d '\n')
+  datadog-password: $(echo -n "$EFFECTIVE_DD_DBM_PASS" | base64 | tr -d '\n')
 EOF
 )
     
