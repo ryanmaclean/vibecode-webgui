@@ -27,8 +27,8 @@ FROM base AS deps
 # Copy package definition and lockfile
 COPY package.json yarn.lock* ./
 
-# Create a temporary package.json without the platform-specific SWC dependencies
-RUN jq 'del(.devDependencies."@next/swc-darwin-arm64")' package.json > package.tmp.json && \
+# Create a temporary package.json without monitoring dependencies and platform-specific SWC dependencies
+RUN jq 'del(.devDependencies."@next/swc-darwin-arm64") | del(.dependencies."@opentelemetry/api") | del(.dependencies."@opentelemetry/auto-instrumentations-node") | del(.dependencies."@opentelemetry/core") | del(.dependencies."@opentelemetry/exporter-otlp-http") | del(.dependencies."@opentelemetry/exporter-prometheus") | del(.dependencies."@opentelemetry/instrumentation") | del(.dependencies."@opentelemetry/instrumentation-express") | del(.dependencies."@opentelemetry/instrumentation-fs") | del(.dependencies."@opentelemetry/instrumentation-http") | del(.dependencies."@opentelemetry/sdk-node") | del(.dependencies."dd-trace")' package.json > package.tmp.json && \
     mv package.tmp.json package.json && \
     # Clean up any existing node_modules to prevent conflicts
     rm -rf node_modules && \
