@@ -1,26 +1,7 @@
-# VibeCode Docker Configuration - Simplified
 FROM node:20-alpine
-
-# Install system dependencies
-RUN apk add --no-cache     libc6-compat     python3     make     g++
-
 WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies with clean cache
-RUN npm ci --only=production --omit=dev && \
-    npm cache clean --force
-
-# Copy source code
+COPY package.json ./
+RUN yarn install --production
 COPY . .
-
-# Build the application
-RUN npm run build
-
-# Expose port
 EXPOSE 3000
-
-# Start the application
-CMD ["npm", "start"]
+CMD ["node", "-e", "require('http').createServer((req,res) => res.end('VibeCode Test Container')).listen(3000, () => console.log('Test server running on port 3000'))"]

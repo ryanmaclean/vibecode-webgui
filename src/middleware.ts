@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
+import { apiSecurityMiddleware, addSecurityHeaders } from './middleware/security-middleware';
 
 const BOT_PROTECTION_CONFIG = {
   suspiciousPatterns: [
@@ -89,6 +90,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Apply API security middleware first
+  const apiSecurityResponse = await apiSecurityMiddleware(request);
+  if (apiSecurityResponse) {
+    return addSecurityHeaders(apiSecurityResponse);
+  }
+
   // Derive client IP from headers (NextRequest has no `ip`)
   const xff = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
   const realIp =
@@ -145,7 +152,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+  return addSecurityHeaders(response);
 }
 
 export const config = {

@@ -1,0 +1,79 @@
+# Base Kustomization for VibeCode Platform
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: vibecode-base
+
+resources:
+- ../../base/namespace.yaml
+- ../../base/configmap.yaml
+- ../../base/secret.yaml
+- ../../base/postgresql.yaml
+- ../../base/redis.yaml
+- ../../base/litellm.yaml
+- ../../base/application.yaml
+- ../../base/service.yaml
+- ../../base/ingress.yaml
+- ../../base/hpa.yaml
+- ../../base/networkpolicy.yaml
+
+commonLabels:
+  app: vibecode-webgui
+  managed-by: kustomize
+
+commonAnnotations:
+  app.kubernetes.io/version: "2.0.0"
+  app.kubernetes.io/part-of: vibecode-platform
+
+images:
+- name: vibecode-webgui
+  newTag: latest
+
+configMapGenerator:
+- name: app-config-common
+  literals:
+  - NODE_ENV=production
+  - NEXT_PUBLIC_APP_NAME=VibeCode
+  - DD_LOGS_INJECTION=true
+  - DD_PROFILING_ENABLED=true
+  - DD_RUNTIME_METRICS_ENABLED=true
+
+secretGenerator:
+- name: app-secrets-common
+  type: Opaque
+  literals:
+  - NEXTAUTH_URL=https://vibecode.yourdomain.com
+
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    app: vibecode-webgui
+  annotations:
+    config.kubernetes.io/managed-by: kustomize
+
+replacements:
+- source:
+    kind: ConfigMap
+    name: app-config-common
+    fieldPath: data.NODE_ENV
+  targets:
+  - select:
+      kind: Deployment
+      name: vibecode-webgui
+    fieldPaths:
+    - spec.template.spec.containers.[name=vibecode-webgui].env.[name=NODE_ENV].value
+
+patchesStrategicMerge:
+- |-
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: vibecode-webgui
+  spec:
+    template:
+      metadata:
+        annotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "3000"
+          prometheus.io/path: "/api/metrics"
