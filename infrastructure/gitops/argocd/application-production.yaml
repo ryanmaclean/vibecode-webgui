@@ -1,0 +1,148 @@
+# ArgoCD Application for Production Environment
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vibecode-webgui-production
+  namespace: argocd
+  labels:
+    app: vibecode-webgui
+    environment: production
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/hook: PreSync
+spec:
+  project: vibecode-platform
+  source:
+    repoURL: https://github.com/ryanmaclean/vibecode-webgui.git
+    targetRevision: main
+    path: infrastructure/kubernetes/environments/production
+    helm:
+      valueFiles:
+      - ../../../helm/values-production.yaml
+      parameters:
+      - name: image.tag
+        value: "main-latest"
+      - name: environment
+        value: "production"
+      - name: replicas
+        value: "5"
+      - name: resources.requests.cpu
+        value: "500m"
+      - name: resources.requests.memory
+        value: "512Mi"
+      - name: resources.limits.cpu
+        value: "2000m"
+      - name: resources.limits.memory
+        value: "2Gi"
+      - name: database.storage
+        value: "100Gi"
+      - name: redis.memory
+        value: "2Gi"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vibecode-webgui-production
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+    - CreateNamespace=true
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
+    - ApplyOutOfSyncOnly=true
+    - RespectIgnoreDifferences=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 5m
+  revisionHistoryLimit: 20
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+    - /spec/replicas
+  - group: ""
+    kind: Secret
+    jsonPointers:
+    - /data
+  - group: ""
+    kind: ConfigMap
+    jsonPointers:
+    - /data/DATABASE_URL
+  info:
+  - name: Environment
+    value: Production
+  - name: URL
+    value: https://vibecode-webgui.yourdomain.com
+  - name: Monitoring
+    value: https://grafana.yourdomain.com/d/vibecode-overview
+
+---
+# ArgoCD Application for Database Migration Job (Production)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vibecode-db-migration-production
+  namespace: argocd
+  labels:
+    app: vibecode-webgui
+    component: database
+    environment: production
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: vibecode-platform
+  source:
+    repoURL: https://github.com/ryanmaclean/vibecode-webgui.git
+    targetRevision: main
+    path: infrastructure/kubernetes/jobs/database-migration
+    helm:
+      valueFiles:
+      - ../../../helm/values-production.yaml
+      parameters:
+      - name: environment
+        value: "production"
+      - name: database.name
+        value: "vibecode_production"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vibecode-webgui-production
+  syncPolicy:
+    manual: {}
+    syncOptions:
+    - CreateNamespace=true
+    - Replace=true
+  revisionHistoryLimit: 10
+
+---
+# ArgoCD Application for Monitoring Stack (Production)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vibecode-monitoring
+  namespace: argocd
+  labels:
+    app: vibecode-monitoring
+    environment: production
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: vibecode-platform
+  source:
+    repoURL: https://github.com/ryanmaclean/vibecode-webgui.git
+    targetRevision: main
+    path: infrastructure/kubernetes/monitoring
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+  revisionHistoryLimit: 5

@@ -1,0 +1,151 @@
+# ArgoCD Project for VibeCode Platform
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: vibecode-platform
+  namespace: argocd
+  labels:
+    app: vibecode-platform
+spec:
+  description: VibeCode WebGUI Platform - AI-Enhanced Development Environment
+  
+  # Source repositories that applications within this project can pull from
+  sourceRepos:
+  - 'https://github.com/ryanmaclean/vibecode-webgui.git'
+  - 'https://github.com/ryanmaclean/vibecode-webgui'
+  - 'https://charts.bitnami.com/bitnami'
+  - 'https://kubernetes.github.io/ingress-nginx'
+  - 'https://prometheus-community.github.io/helm-charts'
+  - 'https://grafana.github.io/helm-charts'
+  
+  # Destination clusters and namespaces
+  destinations:
+  - namespace: 'vibecode-webgui-*'
+    server: 'https://kubernetes.default.svc'
+    name: 'in-cluster'
+  - namespace: 'monitoring'
+    server: 'https://kubernetes.default.svc'
+    name: 'in-cluster'
+  - namespace: 'ingress-nginx'
+    server: 'https://kubernetes.default.svc'
+    name: 'in-cluster'
+  - namespace: 'cert-manager'
+    server: 'https://kubernetes.default.svc'
+    name: 'in-cluster'
+  
+  # Cluster-scoped resources which may be created
+  clusterResourceWhitelist:
+  - group: 'rbac.authorization.k8s.io'
+    kind: 'ClusterRole'
+  - group: 'rbac.authorization.k8s.io'
+    kind: 'ClusterRoleBinding'
+  - group: 'networking.k8s.io'
+    kind: 'NetworkPolicy'
+  - group: 'storage.k8s.io'
+    kind: 'StorageClass'
+  - group: 'apiextensions.k8s.io'
+    kind: 'CustomResourceDefinition'
+  - group: 'cert-manager.io'
+    kind: 'ClusterIssuer'
+  - group: 'admissionregistration.k8s.io'
+    kind: 'MutatingWebhookConfiguration'
+  - group: 'admissionregistration.k8s.io'
+    kind: 'ValidatingWebhookConfiguration'
+  
+  # Namespace-scoped resources which may be created
+  namespaceResourceWhitelist:
+  - group: ''
+    kind: 'ConfigMap'
+  - group: ''
+    kind: 'Secret'
+  - group: ''
+    kind: 'Service'
+  - group: ''
+    kind: 'ServiceAccount'
+  - group: ''
+    kind: 'PersistentVolumeClaim'
+  - group: 'apps'
+    kind: 'Deployment'
+  - group: 'apps'
+    kind: 'StatefulSet'
+  - group: 'apps'
+    kind: 'DaemonSet'
+  - group: 'apps'
+    kind: 'ReplicaSet'
+  - group: 'batch'
+    kind: 'Job'
+  - group: 'batch'
+    kind: 'CronJob'
+  - group: 'networking.k8s.io'
+    kind: 'Ingress'
+  - group: 'networking.k8s.io'
+    kind: 'NetworkPolicy'
+  - group: 'autoscaling'
+    kind: 'HorizontalPodAutoscaler'
+  - group: 'policy'
+    kind: 'PodDisruptionBudget'
+  - group: 'monitoring.coreos.com'
+    kind: 'ServiceMonitor'
+  - group: 'monitoring.coreos.com'
+    kind: 'PrometheusRule'
+  
+  # Roles which provide access to this project
+  roles:
+  - name: admin
+    description: Full access to VibeCode platform
+    policies:
+    - p, proj:vibecode-platform:admin, applications, *, vibecode-platform/*, allow
+    - p, proj:vibecode-platform:admin, repositories, *, *, allow
+    - p, proj:vibecode-platform:admin, clusters, *, *, allow
+    - p, proj:vibecode-platform:admin, exec, create, vibecode-platform/*, allow
+    groups:
+    - vibecode:admins
+    - platform-team
+  
+  - name: developer
+    description: Developer access to VibeCode platform
+    policies:
+    - p, proj:vibecode-platform:developer, applications, get, vibecode-platform/*, allow
+    - p, proj:vibecode-platform:developer, applications, sync, vibecode-platform/*staging*, allow
+    - p, proj:vibecode-platform:developer, repositories, get, *, allow
+    - p, proj:vibecode-platform:developer, logs, get, vibecode-platform/*, allow
+    groups:
+    - vibecode:developers
+    - engineering-team
+  
+  - name: viewer
+    description: Read-only access to VibeCode platform
+    policies:
+    - p, proj:vibecode-platform:viewer, applications, get, vibecode-platform/*, allow
+    - p, proj:vibecode-platform:viewer, repositories, get, *, allow
+    - p, proj:vibecode-platform:viewer, logs, get, vibecode-platform/*, allow
+    groups:
+    - vibecode:viewers
+    - stakeholders
+  
+  # Sync windows for automated deployments
+  syncWindows:
+  - kind: allow
+    schedule: '0 9-17 * * 1-5'  # 9 AM to 5 PM, Monday to Friday
+    duration: 8h
+    applications:
+    - 'vibecode-webgui-staging'
+    manualSync: true
+  
+  - kind: deny
+    schedule: '0 18-8 * * *'     # 6 PM to 8 AM daily
+    duration: 14h
+    applications:
+    - 'vibecode-webgui-production'
+    manualSync: false
+  
+  - kind: allow
+    schedule: '0 10-16 * * 1-5'  # 10 AM to 4 PM, Monday to Friday (Production)
+    duration: 6h
+    applications:
+    - 'vibecode-webgui-production'
+    manualSync: true
+    
+  # Signature keys for verification
+  signatureKeys:
+  - keyID: 'vibecode-signing-key'

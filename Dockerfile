@@ -4,7 +4,7 @@
 FROM node:20-alpine AS base
 
 # Install essential build tools and security updates first
-RUN apk add --no-cache libc6-compat python3 make g++
+RUN apk add --no-cache libc6-compat python3 make g++ jq
 
 # Set platform-specific environment variables
 ENV NEXT_TELEMETRY_DISABLED=1

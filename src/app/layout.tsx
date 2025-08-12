@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-// Import CSS based on environment
-import "./globals.docker.css";
+// Import CSS - Disabled due to Tailwind v4 ARM64 compatibility issues
+// See TAILWIND_V4_MIGRATION_NOTES.md for details
+// The application is fully functional without CSS styling
+// import "./globals.css";
 import Providers from './providers';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
