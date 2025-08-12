@@ -28,6 +28,7 @@ type: Opaque
 stringData:
   NEXTAUTH_SECRET: "test-jwt-secret-for-health-check-testing"
   DATADOG_API_KEY: "placeholder-set-real-key"
+  DD_API_KEY: "placeholder-set-real-key"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -100,6 +101,11 @@ spec:
               name: health-check-secrets
               key: NEXTAUTH_SECRET
         - name: DATADOG_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: health-check-secrets
+              key: DATADOG_API_KEY
+        - name: DD_API_KEY
           valueFrom:
             secretKeyRef:
               name: health-check-secrets

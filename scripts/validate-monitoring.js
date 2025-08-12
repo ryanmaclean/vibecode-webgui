@@ -137,9 +137,15 @@ console.log('DD_LLMOBS_ML_APP:', process.env.DD_LLMOBS_ML_APP || 'not set');
 
 // Test RUM configuration
 console.log('\n🌐 RUM Configuration:');
-console.log('NEXT_PUBLIC_DATADOG_APPLICATION_ID:', process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID || 'not set');
-console.log('NEXT_PUBLIC_DATADOG_CLIENT_TOKEN:', process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN ? 
-  process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN.substring(0, 8) + '...' : 'not set');
+const RUM_APP_ID = process.env.NEXT_PUBLIC_DD_APPLICATION_ID || process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID || process.env.NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID;
+const RUM_CLIENT_TOKEN = process.env.NEXT_PUBLIC_DD_CLIENT_TOKEN || process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN || process.env.NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN;
+const RUM_SITE = process.env.NEXT_PUBLIC_DD_SITE || process.env.NEXT_PUBLIC_DATADOG_SITE || 'datadoghq.com';
+console.log('NEXT_PUBLIC_DD_APPLICATION_ID (preferred):', RUM_APP_ID ? (RUM_APP_ID.substring(0, 8) + '...') : 'not set');
+console.log('NEXT_PUBLIC_DD_CLIENT_TOKEN (preferred):', RUM_CLIENT_TOKEN ? (RUM_CLIENT_TOKEN.substring(0, 8) + '...') : 'not set');
+console.log('NEXT_PUBLIC_DD_SITE (preferred):', RUM_SITE);
+if (process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID || process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN || process.env.NEXT_PUBLIC_DATADOG_SITE) {
+  console.log('Legacy NEXT_PUBLIC_DATADOG_* variables detected; prefer NEXT_PUBLIC_DD_*');
+}
 
 console.log('\n📋 Next Steps:');
 console.log('1. Start your application: npm run dev');
