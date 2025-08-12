@@ -30,11 +30,13 @@ COPY package.json yarn.lock* ./
 # Create a temporary package.json without monitoring dependencies and platform-specific SWC dependencies
 RUN jq 'del(.devDependencies."@next/swc-darwin-arm64") | del(.dependencies."@opentelemetry/api") | del(.dependencies."@opentelemetry/auto-instrumentations-node") | del(.dependencies."@opentelemetry/core") | del(.dependencies."@opentelemetry/exporter-otlp-http") | del(.dependencies."@opentelemetry/exporter-prometheus") | del(.dependencies."@opentelemetry/instrumentation") | del(.dependencies."@opentelemetry/instrumentation-express") | del(.dependencies."@opentelemetry/instrumentation-fs") | del(.dependencies."@opentelemetry/instrumentation-http") | del(.dependencies."@opentelemetry/sdk-node") | del(.dependencies."dd-trace") | del(.dependencies."@opentelemetry/instrumentation-winston") | del(.dependencies."@opentelemetry/winston-transport") | del(.dependencies."@opentelemetry/resources") | del(.dependencies."@opentelemetry/semantic-conventions") | del(.dependencies."@opentelemetry/context-async-hooks") | del(.dependencies."@opentelemetry/otlp-exporter-base") | del(.dependencies."@opentelemetry/otlp-transformer") | del(.dependencies."@opentelemetry/sdk-logs") | del(.dependencies."@opentelemetry/api-logs") | del(.dependencies."@opentelemetry/otlp-grpc-exporter-base")' package.json > package.tmp.json && \
     mv package.tmp.json package.json && \
+    # Remove yarn.lock to force regeneration without OpenTelemetry dependencies
+    rm -f yarn.lock && \
     # Clean up any existing node_modules to prevent conflicts
     rm -rf node_modules && \
-    # Use Yarn to install dependencies with specific platform overrides
+    # Use Yarn to install dependencies with specific platform overrides (without --frozen-lockfile)
     yarn config set target_platform linux-x64 && \
-    yarn install --frozen-lockfile --network-timeout 100000 --production=false --ignore-optional && \
+    yarn install --network-timeout 100000 --production=false --ignore-optional && \
     yarn cache clean && \
     # Remove any platform-specific SWC binaries that might have been installed
     find node_modules -name "*swc-*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
