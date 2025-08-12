@@ -9,19 +9,20 @@ const isDockerBuild = (
   process.env.CI === 'true' ||
   process.env.GITHUB_ACTIONS === 'true' ||
   process.env.OTEL_ENABLED === 'false' ||
-  process.env.DD_ENABLED === 'false' ||
-  process.env.NODE_ENV === 'production' && process.env.CI === 'true'
+  process.env.DD_ENABLED === 'false'
 );
 
-if (isDockerBuild) {
-  // Mock tracer for Docker build - completely bypass monitoring
-  console.log('🚫 Monitoring completely disabled during Docker build');
-  const mockTracer = {
-    init: () => console.log('Mock tracer initialized'),
-    // Add other tracer methods as needed
-  };
-  module.exports = mockTracer;
-} else {
+// Function to get the appropriate tracer based on environment
+function getTracer() {
+  if (isDockerBuild) {
+    // Mock tracer for Docker build - completely bypass monitoring
+    console.log('🚫 Monitoring completely disabled during Docker build');
+    return {
+      init: () => console.log('Mock tracer initialized'),
+      // Add other tracer methods as needed
+    };
+  }
+
   // Normal monitoring initialization for development/production
   try {
     // Dynamic imports to prevent static analysis issues
@@ -90,15 +91,16 @@ if (isDockerBuild) {
       }
     });
 
-    // Export tracer for manual instrumentation
-    module.exports = tracer;
+    return tracer;
   } catch (error) {
     // Fallback to mock tracer if monitoring fails
     console.log('⚠️ Monitoring failed to initialize, using mock tracer');
-    const mockTracer = {
+    return {
       init: () => console.log('Mock tracer initialized'),
       // Add other tracer methods as needed
     };
-    module.exports = mockTracer;
   }
 }
+
+// Export the tracer using ES module syntax
+export default getTracer();

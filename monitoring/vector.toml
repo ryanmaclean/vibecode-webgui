@@ -184,14 +184,14 @@ condition = '.level == "debug"'
 [sinks.datadog_logs]
 type = "datadog_logs"
 inputs = ["parse_application_logs", "security_filter"]
-default_api_key = "${DATADOG_API_KEY}"
+default_api_key = "${DD_API_KEY:-${DATADOG_API_KEY}}"
 site = "datadoghq.com"
 compression = "gzip"
 
 [sinks.datadog_metrics]
 type = "datadog_metrics"
 inputs = ["normalize_metrics"]
-default_api_key = "${DATADOG_API_KEY}"
+default_api_key = "${DD_API_KEY:-${DATADOG_API_KEY}}"
 site = "datadoghq.com"
 
 # Send to Prometheus

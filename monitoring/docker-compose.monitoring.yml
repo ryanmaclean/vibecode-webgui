@@ -102,7 +102,7 @@ services:
       - vector-data:/tmp/vector
     environment:
       - ENVIRONMENT=production
-      - DATADOG_API_KEY=${DD_API_KEY:-${DATADOG_API_KEY}}
+      - DD_API_KEY=${DD_API_KEY:-${DATADOG_API_KEY}}
       - VECTOR_LOG=info
     networks:
       - monitoring
@@ -129,7 +129,7 @@ services:
       - ./otel-collector.yaml:/etc/otelcol-contrib/otel-collector.yaml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
-      - DATADOG_API_KEY=${DD_API_KEY:-${DATADOG_API_KEY}}
+      - DD_API_KEY=${DD_API_KEY:-${DATADOG_API_KEY}}
       - HONEYCOMB_API_KEY=${HONEYCOMB_API_KEY}
     command: ["--config=/etc/otelcol-contrib/otel-collector.yaml"]
     networks:
