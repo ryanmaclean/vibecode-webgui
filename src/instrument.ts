@@ -1,7 +1,7 @@
 // Complete monitoring bypass during Docker build to prevent ERR_INVALID_URL
 // This file is imported during Next.js build, so we need to completely bypass monitoring
 
-// Hard-coded Docker build detection - more aggressive approach
+// Hard-coded Docker build detection - most aggressive approach
 const isDockerBuild = (
   process.env.NODE_ENV === 'production' ||
   process.env.DOCKER_BUILD === 'true' || 
@@ -9,7 +9,8 @@ const isDockerBuild = (
   process.env.CI === 'true' ||
   process.env.GITHUB_ACTIONS === 'true' ||
   process.env.OTEL_ENABLED === 'false' ||
-  process.env.DD_ENABLED === 'false'
+  process.env.DD_ENABLED === 'false' ||
+  process.env.NODE_ENV === 'production' && process.env.CI === 'true'
 );
 
 if (isDockerBuild) {

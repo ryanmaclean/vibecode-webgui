@@ -66,11 +66,11 @@ async function checkNodeVersion() {
 function setupEnvironmentFile() {
   log('Setting up environment file...', 'blue');
   
-  const envPath = '.env.local';
+  const envPath = '.env';
   
   if (!fs.existsSync(envPath)) {
     const envTemplate = `# VibeCode Environment Configuration
-# Copy this file to .env.local and fill in your values
+# Primary env file for local dev (.env). You may override in .env.local if needed.
 
 # AI Provider API Keys
 OPENROUTER_API_KEY=your-openrouter-api-key-here
@@ -85,9 +85,12 @@ NEXTAUTH_URL=http://localhost:3000
 DATABASE_URL=postgresql://user:password@localhost:5432/vibecode_dev
 
 # Datadog Monitoring (optional)
+# Backend keys
 DD_API_KEY=your-datadog-api-key-here
-NEXT_PUBLIC_DATADOG_APPLICATION_ID=your-app-id
-NEXT_PUBLIC_DATADOG_CLIENT_TOKEN=your-client-token
+# Frontend RUM (prefer DD_*; legacy NEXT_PUBLIC_DATADOG_* will be used as fallback by the app)
+NEXT_PUBLIC_DD_APPLICATION_ID=your-app-id
+NEXT_PUBLIC_DD_CLIENT_TOKEN=your-client-token
+NEXT_PUBLIC_DD_SITE=datadoghq.com
 
 # Development Settings
 NODE_ENV=development
@@ -95,9 +98,9 @@ NODE_ENV=development
     
     fs.writeFileSync(envPath, envTemplate);
     log(`Created ${envPath} template`, 'green');
-    log('Please edit .env.local and add your API keys', 'yellow');
+    log('You can also create .env.local for overrides. Please add your API keys.', 'yellow');
   } else {
-    log('.env.local already exists ✓', 'green');
+    log(`${envPath} already exists ✓`, 'green');
   }
 }
 

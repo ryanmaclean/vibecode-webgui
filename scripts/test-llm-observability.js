@@ -11,8 +11,13 @@ process.env.DD_LLMOBS_AGENTLESS_ENABLED = '1'
 process.env.DD_LLMOBS_ML_APP = 'vibecode-ai-test'
 process.env.DD_SERVICE = 'vibecode-test'
 process.env.DD_ENV = 'development'
-process.env.DD_API_KEY = process.env.DATADOG_API_KEY || '7ff60a7cdd44e0a596562bad2fd89342'
-process.env.DD_SITE = 'datadoghq.com'
+process.env.DD_API_KEY = process.env.DD_API_KEY || process.env.DATADOG_API_KEY || ''
+process.env.DD_SITE = process.env.DD_SITE || process.env.DATADOG_SITE || 'datadoghq.com'
+
+if (!process.env.DD_API_KEY) {
+  console.error('❌ Missing Datadog API key. Set DD_API_KEY (preferred) or DATADOG_API_KEY in your environment.')
+  process.exit(1)
+}
 
 // Initialize ddtrace BEFORE any other imports
 const tracer = require('dd-trace')

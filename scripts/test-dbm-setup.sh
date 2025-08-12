@@ -11,13 +11,15 @@ echo "============================================="
 check_env_vars() {
     echo "📋 Checking environment variables..."
     
-    if [ -z "$DATADOG_API_KEY" ]; then
-        echo "❌ DATADOG_API_KEY not set. Source your env first:"
+    local dd_key="${DD_API_KEY:-${DATADOG_API_KEY:-}}"
+    if [ -z "$dd_key" ]; then
+        echo "❌ Datadog API key not set. Set DD_API_KEY (preferred) or DATADOG_API_KEY. Source your env first:"
         echo "   source .env    # preferred"
         echo "   # or"
         echo "   source .env.local"
         exit 1
     fi
+    export EFFECTIVE_DD_API_KEY="$dd_key"
     
     if [ -z "$DATADOG_POSTGRES_PASSWORD" ]; then
         echo "⚠️  DATADOG_POSTGRES_PASSWORD not set. Generating random password..."
@@ -31,7 +33,7 @@ check_env_vars() {
     fi
     
     echo "✅ Environment variables configured"
-    echo "   API Key: $(echo $DATADOG_API_KEY | head -c 10)..."
+    echo "   API Key: $(echo "$EFFECTIVE_DD_API_KEY" | head -c 10)..."
     echo "   Postgres Password: [HIDDEN]"
     echo "   Datadog Password: [HIDDEN]"
 }
@@ -94,7 +96,7 @@ services:
   datadog-agent-test:
     image: datadog/agent:7.50.0
     environment:
-      - DD_API_KEY=${DATADOG_API_KEY}
+      - DD_API_KEY=${EFFECTIVE_DD_API_KEY}
       - DD_SITE=datadoghq.com
       - DD_DATABASE_MONITORING_ENABLED=true
       - DD_LOGS_ENABLED=false
@@ -168,7 +170,7 @@ test_helm_values() {
     echo "📝 Validating development Helm values..."
     if helm template test-dev ./helm/vibecode-platform \
         -f ./helm/vibecode-platform/values-dev.yaml \
-        --set datadog.apiKey="$DATADOG_API_KEY" \
+        --set datadog.apiKey="$EFFECTIVE_DD_API_KEY" \
         --set database.postgresql.auth.postgresPassword="$POSTGRES_PASSWORD" \
         --set database.postgresql.auth.datadogPassword="$DATADOG_POSTGRES_PASSWORD" \
         --dry-run > /dev/null 2>&1; then
@@ -181,7 +183,7 @@ test_helm_values() {
     echo "📝 Validating production Helm values..."
     if helm template test-prod ./helm/vibecode-platform \
         -f ./helm/vibecode-platform/values-prod.yaml \
-        --set datadog.apiKey="$DATADOG_API_KEY" \
+        --set datadog.apiKey="$EFFECTIVE_DD_API_KEY" \
         --set database.postgresql.auth.postgresPassword="$POSTGRES_PASSWORD" \
         --set database.postgresql.auth.datadogPassword="$DATADOG_POSTGRES_PASSWORD" \
         --dry-run > /dev/null 2>&1; then
@@ -211,7 +213,7 @@ test_kind_deployment() {
     
     # Create secrets (without exposing in logs)
     kubectl create secret generic datadog-secrets \
-        --from-literal=api-key="$DATADOG_API_KEY" \
+        --from-literal=api-key="$EFFECTIVE_DD_API_KEY" \
         --namespace=vibecode-dbm-test \
         --dry-run=client -o yaml | kubectl apply -f -
     

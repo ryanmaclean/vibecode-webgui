@@ -87,10 +87,16 @@ fi
 # Check if essential environment variables are set in whichever env file exists
 ENV_FILE=""
 if [ -f ".env" ]; then ENV_FILE=".env"; elif [ -f ".env.local" ]; then ENV_FILE=".env.local"; fi
-if [ -n "$ENV_FILE" ] && grep -q "DATADOG_API_KEY=dummy-key" "$ENV_FILE" 2>/dev/null; then
-    log_info "Using dummy Datadog keys for local development"
-else
-    log_success "Datadog API key configured"
+if [ -n "$ENV_FILE" ]; then
+    if grep -Eq '^(DD_API_KEY|DATADOG_API_KEY)=' "$ENV_FILE" 2>/dev/null; then
+        if grep -Eq '^(DD_API_KEY|DATADOG_API_KEY)=dummy' "$ENV_FILE" 2>/dev/null; then
+            log_info "Using dummy Datadog keys for local development"
+        else
+            log_success "Datadog API key configured"
+        fi
+    else
+        log_warning "Datadog API key not found in $ENV_FILE; set DD_API_KEY (preferred) or DATADOG_API_KEY"
+    fi
 fi
 
 echo -e "\n${BLUE}3. Docker Compose Stack with Monitoring${NC}"

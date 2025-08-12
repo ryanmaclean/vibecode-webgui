@@ -438,7 +438,7 @@ logging:
         index: "vibecode-prod"
     - datadog:
         enabled: true
-        apiKey: "${DATADOG_API_KEY}"
+        apiKey: "${DD_API_KEY:-${DATADOG_API_KEY}}"
         service: "vibecode-platform"
         env: "production"
 
