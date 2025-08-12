@@ -1,10 +1,12 @@
 import tracer from 'dd-trace';
-import { initializeOpenTelemetry } from './lib/monitoring/opentelemetry';
+// Temporarily disable OpenTelemetry to fix startup issue
+// import { initializeOpenTelemetry } from './lib/monitoring/opentelemetry';
 
 // Initialize OpenTelemetry first for auto-instrumentation (if enabled)
-if (process.env.OTEL_ENABLED === 'true' && process.env.NODE_ENV !== 'test') {
-  initializeOpenTelemetry();
-}
+// Temporarily disabled to fix startup
+// if (process.env.OTEL_ENABLED === 'true' && process.env.NODE_ENV !== 'test') {
+//   initializeOpenTelemetry();
+// }
 
 // Initialize the tracer with LLM observability support
 tracer.init({
