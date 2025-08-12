@@ -1,0 +1,121 @@
+# Staging Environment Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+metadata:
+  name: vibecode-staging
+
+namespace: vibecode-webgui-staging
+
+resources:
+- ../base
+
+namePrefix: staging-
+
+commonLabels:
+  environment: staging
+  tier: staging
+
+commonAnnotations:
+  environment: staging
+  deployment.kubernetes.io/revision: "1"
+
+images:
+- name: vibecode-webgui
+  newName: ghcr.io/ryanmaclean/vibecode-webgui
+  newTag: develop-latest
+
+configMapGenerator:
+- name: app-config-staging
+  literals:
+  - NODE_ENV=staging
+  - NEXT_PUBLIC_APP_URL=https://vibecode-webgui-staging.yourdomain.com
+  - DD_ENV=staging
+  - DD_SERVICE=vibecode-webgui-staging
+  - LITELLM_BASE_URL=http://staging-litellm:4000
+  - DATABASE_POOL_MAX=10
+  - REDIS_TTL=300
+  behavior: merge
+
+secretGenerator:
+- name: app-secrets-staging
+  type: Opaque
+  literals:
+  - NEXTAUTH_URL=https://vibecode-webgui-staging.yourdomain.com
+  - NEXTAUTH_SECRET=staging-secret-key-replace-in-sealed-secrets
+  behavior: merge
+
+patchesStrategicMerge:
+- |-
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: vibecode-webgui
+  spec:
+    replicas: 2
+    template:
+      spec:
+        containers:
+        - name: vibecode-webgui
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          env:
+          - name: LOG_LEVEL
+            value: debug
+          - name: ENABLE_DEBUG_FEATURES
+            value: "true"
+
+- |-
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: vibecode-webgui
+  spec:
+    type: ClusterIP
+
+- |-
+  apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    name: vibecode-webgui
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+      cert-manager.io/cluster-issuer: letsencrypt-staging
+  spec:
+    tls:
+    - hosts:
+      - vibecode-webgui-staging.yourdomain.com
+      secretName: vibecode-staging-tls
+    rules:
+    - host: vibecode-webgui-staging.yourdomain.com
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: staging-vibecode-webgui
+              port:
+                number: 80
+
+patchesJson6902:
+- target:
+    group: autoscaling
+    version: v2
+    kind: HorizontalPodAutoscaler
+    name: vibecode-webgui
+  patch: |-
+    - op: replace
+      path: /spec/minReplicas
+      value: 2
+    - op: replace
+      path: /spec/maxReplicas
+      value: 5
+    - op: replace
+      path: /spec/metrics/0/resource/target/averageUtilization
+      value: 60

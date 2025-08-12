@@ -1,7 +1,7 @@
-// PostCSS config for Docker environment with Tailwind v4
+// PostCSS config - Compatible with both Tailwind v3 and v4
 const config = {
   plugins: {
-    "@tailwindcss/postcss": {},
+    tailwindcss: {},
     autoprefixer: {},
   },
 };
