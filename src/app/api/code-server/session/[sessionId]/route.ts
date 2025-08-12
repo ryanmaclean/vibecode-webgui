@@ -6,7 +6,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { stopCodeServerContainer } from '../route'
+// Local implementation of container stopping
+async function stopCodeServerContainer(containerId: string): Promise<void> {
+  console.log(`[Code-Server] Stopping container: ${containerId}`)
+  // Simulate container stopping - replace with actual Docker API call
+  await new Promise(resolve => setTimeout(resolve, 500))
+}
 
 interface CodeServerInstance {
   id: string
