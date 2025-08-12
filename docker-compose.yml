@@ -50,14 +50,10 @@ services:
       - NEXTAUTH_URL=http://localhost:3000
       
       # Datadog RUM (Real User Monitoring) variables
-      # Prefer NEXT_PUBLIC_DD_*; legacy NEXT_PUBLIC_DATADOG_* also passed for compatibility
-      - NEXT_PUBLIC_DD_APPLICATION_ID=${NEXT_PUBLIC_DD_APPLICATION_ID}
-      - NEXT_PUBLIC_DD_CLIENT_TOKEN=${NEXT_PUBLIC_DD_CLIENT_TOKEN}
-      - NEXT_PUBLIC_DD_SITE=${NEXT_PUBLIC_DD_SITE:-datadoghq.com}
-      # Legacy (fallback) variables supported by app helper
-      - NEXT_PUBLIC_DATADOG_APPLICATION_ID=${NEXT_PUBLIC_DATADOG_APPLICATION_ID}
-      - NEXT_PUBLIC_DATADOG_CLIENT_TOKEN=${NEXT_PUBLIC_DATADOG_CLIENT_TOKEN}
-      - NEXT_PUBLIC_DATADOG_SITE=${NEXT_PUBLIC_DATADOG_SITE:-datadoghq.com}
+      # Prefer NEXT_PUBLIC_DD_*; map from legacy NEXT_PUBLIC_DATADOG_* if DD_* is unset
+      - NEXT_PUBLIC_DD_APPLICATION_ID=${NEXT_PUBLIC_DD_APPLICATION_ID:-${NEXT_PUBLIC_DATADOG_APPLICATION_ID}}
+      - NEXT_PUBLIC_DD_CLIENT_TOKEN=${NEXT_PUBLIC_DD_CLIENT_TOKEN:-${NEXT_PUBLIC_DATADOG_CLIENT_TOKEN}}
+      - NEXT_PUBLIC_DD_SITE=${NEXT_PUBLIC_DD_SITE:-${NEXT_PUBLIC_DATADOG_SITE:-datadoghq.com}}
       
       # Datadog APM (Application Performance Monitoring)
       - DD_AGENT_HOST=datadog-agent

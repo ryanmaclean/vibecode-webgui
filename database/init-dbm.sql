@@ -1,32 +1,44 @@
 -- PostgreSQL Database Monitoring (DBM) Initialization
 -- Creates datadog monitoring user and required functions for Datadog DBM
 
--- Create datadog user for monitoring if it doesn't exist
+-- Resolve Datadog DBM username from environment (DD_POSTGRES_USER preferred)
+\set datadog_user `echo "${DD_POSTGRES_USER:-datadog}"`
+
+-- Create monitoring user if it doesn't exist (uses resolved username)
 DO $$ 
+DECLARE
+    v_user TEXT := :'datadog_user';
 BEGIN
-    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'datadog') THEN
-        CREATE USER datadog;
-        RAISE NOTICE 'Created datadog monitoring user';
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = v_user) THEN
+        EXECUTE 'CREATE USER ' || quote_ident(v_user);
+        RAISE NOTICE 'Created % monitoring user', v_user;
     ELSE
-        RAISE NOTICE 'Datadog user already exists, skipping creation';
+        RAISE NOTICE 'Monitoring user % already exists, skipping creation', v_user;
     END IF;
 END
 $$;
 
 -- Set password for datadog user (from environment variable)
 -- This will be handled by the container initialization
-\set datadog_password `echo "$DATADOG_POSTGRES_PASSWORD"`
-ALTER USER datadog WITH PASSWORD :'datadog_password';
+\set datadog_password `echo "${DD_POSTGRES_PASSWORD:-${DATADOG_POSTGRES_PASSWORD:-}}"`
+DO $$
+DECLARE
+    v_user TEXT := :'datadog_user';
+    v_pass TEXT := :'datadog_password';
+BEGIN
+    EXECUTE 'ALTER USER ' || quote_ident(v_user) || ' WITH PASSWORD ' || quote_literal(v_pass);
+END
+$$;
 
 -- Grant necessary permissions for database monitoring
-GRANT pg_monitor TO datadog;
-GRANT pg_read_all_stats TO datadog;
-GRANT pg_read_all_settings TO datadog;
+GRANT pg_monitor TO :"datadog_user";
+GRANT pg_read_all_stats TO :"datadog_user";
+GRANT pg_read_all_settings TO :"datadog_user";
 
 -- Create datadog schema for custom functions and views
 CREATE SCHEMA IF NOT EXISTS datadog;
-GRANT USAGE ON SCHEMA datadog TO datadog;
-GRANT CREATE ON SCHEMA datadog TO datadog;
+GRANT USAGE ON SCHEMA datadog TO :"datadog_user";
+GRANT CREATE ON SCHEMA datadog TO :"datadog_user";
 
 -- Enable required extensions for monitoring
 CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
@@ -58,7 +70,7 @@ RETURNS NULL ON NULL INPUT
 SECURITY DEFINER;
 
 -- Grant execute permission on explain function
-GRANT EXECUTE ON FUNCTION datadog.explain_statement TO datadog;
+GRANT EXECUTE ON FUNCTION datadog.explain_statement TO :"datadog_user";
 
 -- Create activity monitoring function for older PostgreSQL versions
 CREATE OR REPLACE FUNCTION datadog.pg_stat_activity()
@@ -67,7 +79,7 @@ RETURNS SETOF pg_stat_activity AS $$
 $$ LANGUAGE sql
 SECURITY DEFINER;
 
-GRANT EXECUTE ON FUNCTION datadog.pg_stat_activity TO datadog;
+GRANT EXECUTE ON FUNCTION datadog.pg_stat_activity TO :"datadog_user";
 
 -- Create statements monitoring function for older PostgreSQL versions  
 CREATE OR REPLACE FUNCTION datadog.pg_stat_statements()
@@ -76,7 +88,7 @@ RETURNS SETOF pg_stat_statements AS $$
 $$ LANGUAGE sql
 SECURITY DEFINER;
 
-GRANT EXECUTE ON FUNCTION datadog.pg_stat_statements TO datadog;
+GRANT EXECUTE ON FUNCTION datadog.pg_stat_statements TO :"datadog_user";
 
 -- Create schema monitoring view for tracking migrations
 CREATE OR REPLACE VIEW datadog.schema_migrations AS
@@ -97,7 +109,7 @@ AND NOT attisdropped
 AND nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast', 'datadog')
 ORDER BY schemaname, tablename, attnum;
 
-GRANT SELECT ON datadog.schema_migrations TO datadog;
+GRANT SELECT ON datadog.schema_migrations TO :"datadog_user";
 
 -- Create table size monitoring view
 CREATE OR REPLACE VIEW datadog.table_sizes AS
@@ -113,7 +125,7 @@ FROM pg_tables
 WHERE schemaname NOT IN ('information_schema', 'pg_catalog', 'pg_toast', 'datadog')
 ORDER BY total_bytes DESC;
 
-GRANT SELECT ON datadog.table_sizes TO datadog;
+GRANT SELECT ON datadog.table_sizes TO :"datadog_user";
 
 -- Create index usage monitoring view
 CREATE OR REPLACE VIEW datadog.index_usage AS
@@ -131,7 +143,7 @@ FROM pg_stat_user_indexes
 JOIN pg_stat_user_tables USING (schemaname, tablename)
 ORDER BY index_scans DESC;
 
-GRANT SELECT ON datadog.index_usage TO datadog;
+GRANT SELECT ON datadog.index_usage TO :"datadog_user";
 
 -- Create database statistics view
 CREATE OR REPLACE VIEW datadog.database_stats AS
@@ -191,7 +203,7 @@ END;
 $$ LANGUAGE plpgsql
 SECURITY DEFINER;
 
-GRANT EXECUTE ON FUNCTION datadog.get_slow_queries TO datadog;
+GRANT EXECUTE ON FUNCTION datadog.get_slow_queries TO :"datadog_user";
 
 -- Create connection monitoring view
 CREATE OR REPLACE VIEW datadog.connection_stats AS
@@ -206,7 +218,7 @@ FROM pg_stat_activity
 WHERE pid != pg_backend_pid()
 GROUP BY state;
 
-GRANT SELECT ON datadog.connection_stats TO datadog;
+GRANT SELECT ON datadog.connection_stats TO :"datadog_user";
 
 -- Log successful initialization
 SELECT 'Database monitoring initialization completed successfully' as status;

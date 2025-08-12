@@ -3,26 +3,70 @@
  * Provides vendor-neutral observability integration
  */
 
-import { NodeSDK } from '@opentelemetry/sdk-node'
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
-import { OTLPTraceExporter } from '@opentelemetry/exporter-otlp-http'
-import { PrometheusExporter } from '@opentelemetry/exporter-prometheus'
-import { Resource } from '@opentelemetry/resources'
-import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions'
+// Check if we're in a Docker build environment
+const isDockerBuild = (
+  process.env.DOCKER_BUILD === 'true' ||
+  process.env.SKIP_MONITORING === 'true' ||
+  process.env.CI === 'true' ||
+  process.env.GITHUB_ACTIONS === 'true' ||
+  process.env.OTEL_ENABLED === 'false' ||
+  process.env.DD_ENABLED === 'false'
+);
+
+// Conditional imports to prevent build-time errors in Docker
+let NodeSDK: any = null;
+let getNodeAutoInstrumentations: any = null;
+let OTLPTraceExporter: any = null;
+let PrometheusExporter: any = null;
+let Resource: any = null;
+let ATTR_SERVICE_NAME: any = null;
+let ATTR_SERVICE_VERSION: any = null;
+
+if (!isDockerBuild) {
+  try {
+    // Dynamic imports to prevent static analysis issues
+    const sdkNode = require('@opentelemetry/sdk-node');
+    const autoInstrumentations = require('@opentelemetry/auto-instrumentations-node');
+    const otlpExporter = require('@opentelemetry/exporter-otlp-http');
+    const prometheusExporter = require('@opentelemetry/exporter-prometheus');
+    const resources = require('@opentelemetry/resources');
+    const semanticConventions = require('@opentelemetry/semantic-conventions');
+    
+    NodeSDK = sdkNode.NodeSDK;
+    getNodeAutoInstrumentations = autoInstrumentations.getNodeAutoInstrumentations;
+    OTLPTraceExporter = otlpExporter.OTLPTraceExporter;
+    PrometheusExporter = prometheusExporter.PrometheusExporter;
+    Resource = resources.Resource;
+    ATTR_SERVICE_NAME = semanticConventions.ATTR_SERVICE_NAME;
+    ATTR_SERVICE_VERSION = semanticConventions.ATTR_SERVICE_VERSION;
+  } catch (error) {
+    console.log('⚠️ OpenTelemetry modules not available, monitoring disabled');
+  }
+}
+
 import { getDatadogApiKey } from './datadog-env'
 
 const isServer = typeof window === 'undefined'
 const serviceName = 'vibecode-webgui'
 const serviceVersion = process.env.npm_package_version || '0.1.0'
 
-let otelSDK: NodeSDK | null = null
+let otelSDK: any = null
 
 /**
  * Initialize OpenTelemetry instrumentation
  */
 export function initializeOpenTelemetry() {
-  if (!isServer || otelSDK) {
+  if (!isServer || otelSDK || isDockerBuild) {
+    if (isDockerBuild) {
+      console.log('🚫 OpenTelemetry disabled during Docker build');
+    }
     return otelSDK
+  }
+
+  // Check if all required modules are available
+  if (!NodeSDK || !getNodeAutoInstrumentations || !OTLPTraceExporter || !PrometheusExporter || !Resource || !ATTR_SERVICE_NAME || !ATTR_SERVICE_VERSION) {
+    console.log('⚠️ OpenTelemetry modules not available, monitoring disabled');
+    return null;
   }
 
   console.log('🔧 Initializing OpenTelemetry...')
@@ -73,7 +117,7 @@ export function initializeOpenTelemetry() {
           // Enable key instrumentations
           '@opentelemetry/instrumentation-http': {
             enabled: true,
-            requestHook: (span, request) => {
+            requestHook: (span: any, request: any) => {
               // Add custom attributes to HTTP spans
               span.setAttributes({
                 'vibecode.request.user_agent': request.headers['user-agent'] || 'unknown',
