@@ -101,7 +101,7 @@ async function stopCodeServerContainer(containerId: string): Promise<void> {
 }
 
 // Export for use in other files
-export { stopCodeServerContainer }
+// stopCodeServerContainer is available internally only
 
 export async function POST(request: NextRequest) {
   try {
