@@ -7,7 +7,6 @@
  * Staff Engineer Implementation - Replacing over-mocked monitoring tests
  */
 
-const { describe, test, expect, beforeAll } = require('@jest/globals');
 const { getDatadogApiKey, getDatadogSite } = require('../../src/lib/monitoring/datadog-env');
 
 // Skip these tests if not in environment with real monitoring setup
@@ -50,7 +49,7 @@ conditionalDescribe('Real Monitoring Integration Tests (NO MOCKING)', () => {
     // Should not throw when initializing with real config
     expect(() => {
       monitoring.init()
-    });.not.toThrow()
+    }).not.toThrow()
 
     // Test metric submission
     const startTime = Date.now()
@@ -61,8 +60,8 @@ conditionalDescribe('Real Monitoring Integration Tests (NO MOCKING)', () => {
     expect(() => {
       monitoring.trackError(new Error('Test integration error'), {
         context: 'integration-test'
-      });
-    });.not.toThrow()
+      })
+    }).not.toThrow()
 
     // Cleanup
     delete (global as any).window
@@ -112,7 +111,7 @@ conditionalDescribe('Real Monitoring Integration Tests (NO MOCKING)', () => {
         WHERE datname = current_database()
       `)
 
-      expect(poolResult.rows[0].total_connections).toBeGreaterThan('0')
+      expect(Number(poolResult.rows[0].total_connections)).toBeGreaterThan(0)
       expect(parseInt(poolResult.rows[0].active_connections)).toBeGreaterThanOrEqual(1)
 
     } finally {
@@ -317,8 +316,8 @@ conditionalDescribe('Real Monitoring Integration Tests (NO MOCKING)', () => {
           message: testLogMessage,
           service: 'vibecode-webgui',
           environment: 'test'
-        });
-      });
+        })
+      })
 
       if (logResponse.ok) {
         console.log('Successfully sent log to monitoring pipeline')
@@ -448,7 +447,8 @@ describe('Monitoring Test Quality Validation', () => {
   test('should validate environment has real monitoring configuration', () => {
     if (shouldRunRealTests) {
       // Verify we have real configuration values
-      expect(process.env.DATADOG_API_KEY).toBeTruthy()
+      const effectiveApiKey = process.env.DD_API_KEY || process.env.DATADOG_API_KEY
+      expect(effectiveApiKey).toBeTruthy()
       expect(process.env.DATABASE_URL).toBeTruthy()
       expect(process.env.REDIS_URL).toBeTruthy()
 
@@ -461,7 +461,7 @@ describe('Monitoring Test Quality Validation', () => {
       ]
 
       dangerousValues.forEach(dangerousValue => {
-        expect(process.env.DATADOG_API_KEY).not.toContain(dangerousValue)
+        expect(effectiveApiKey).not.toContain(dangerousValue)
         expect(process.env.DATABASE_URL).not.toContain(dangerousValue)
         expect(process.env.REDIS_URL).not.toContain(dangerousValue)
       });
