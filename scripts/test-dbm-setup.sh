@@ -21,11 +21,26 @@ check_env_vars() {
     fi
     export EFFECTIVE_DD_API_KEY="$dd_key"
     
-    if [ -z "$DATADOG_POSTGRES_PASSWORD" ]; then
-        echo "⚠️  DATADOG_POSTGRES_PASSWORD not set. Generating random password..."
-        export DATADOG_POSTGRES_PASSWORD=$(openssl rand -base64 32)
-        echo "   Generated password for datadog user"
+    # Resolve DBM credentials: prefer DD_* with legacy fallback
+    if [ -z "${DD_POSTGRES_USER:-}" ]; then
+        export DD_POSTGRES_USER="datadog"
     fi
+    if [ -z "${DATADOG_POSTGRES_USER:-}" ]; then
+        export DATADOG_POSTGRES_USER="$DD_POSTGRES_USER"
+    fi
+
+    if [ -z "${DD_POSTGRES_PASSWORD:-}" ] && [ -n "${DATADOG_POSTGRES_PASSWORD:-}" ]; then
+        export DD_POSTGRES_PASSWORD="$DATADOG_POSTGRES_PASSWORD"
+        echo "⚠️  DD_POSTGRES_PASSWORD missing; using legacy DATADOG_POSTGRES_PASSWORD"
+    fi
+    if [ -z "${DD_POSTGRES_PASSWORD:-}" ]; then
+        echo "⚠️  No DBM password set. Generating random password..."
+        export DD_POSTGRES_PASSWORD="$(openssl rand -base64 32)"
+        export DATADOG_POSTGRES_PASSWORD="$DD_POSTGRES_PASSWORD"
+        echo "   Generated password for DBM user"
+    fi
+    export EFFECTIVE_DD_DBM_USER="$DD_POSTGRES_USER"
+    export EFFECTIVE_DD_DBM_PASSWORD="$DD_POSTGRES_PASSWORD"
     
     if [ -z "$POSTGRES_PASSWORD" ]; then
         echo "⚠️  POSTGRES_PASSWORD not set. Using default..."
@@ -35,7 +50,8 @@ check_env_vars() {
     echo "✅ Environment variables configured"
     echo "   API Key: $(echo "$EFFECTIVE_DD_API_KEY" | head -c 10)..."
     echo "   Postgres Password: [HIDDEN]"
-    echo "   Datadog Password: [HIDDEN]"
+    echo "   DBM User: $EFFECTIVE_DD_DBM_USER"
+    echo "   DBM Password: [HIDDEN]"
 }
 
 # Test Docker Compose DBM setup
@@ -62,6 +78,8 @@ services:
       POSTGRES_DB: vibecode_test
       POSTGRES_USER: vibecode
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DD_POSTGRES_USER: ${DD_POSTGRES_USER:-datadog}
+      DD_POSTGRES_PASSWORD: ${DD_POSTGRES_PASSWORD}
       DATADOG_POSTGRES_PASSWORD: ${DATADOG_POSTGRES_PASSWORD}
     volumes:
       - ./database/init-dbm.sql:/docker-entrypoint-initdb.d/02-dbm.sql:ro
@@ -83,8 +101,8 @@ services:
           {
             "host": "%%host%%",
             "port": 5432,
-            "username": "datadog",
-            "password": "${DATADOG_POSTGRES_PASSWORD}",
+            "username": "${DD_POSTGRES_USER:-datadog}",
+            "password": "${DD_POSTGRES_PASSWORD:-${DATADOG_POSTGRES_PASSWORD}}",
             "dbm": true,
             "collect_schemas": true,
             "collect_database_size_metrics": true,
@@ -172,7 +190,7 @@ test_helm_values() {
         -f ./helm/vibecode-platform/values-dev.yaml \
         --set datadog.apiKey="$EFFECTIVE_DD_API_KEY" \
         --set database.postgresql.auth.postgresPassword="$POSTGRES_PASSWORD" \
-        --set database.postgresql.auth.datadogPassword="$DATADOG_POSTGRES_PASSWORD" \
+        --set database.postgresql.auth.datadogPassword="${DD_POSTGRES_PASSWORD:-$DATADOG_POSTGRES_PASSWORD}" \
         --dry-run > /dev/null 2>&1; then
         echo "✅ Development Helm values render successfully"
     else
@@ -185,7 +203,7 @@ test_helm_values() {
         -f ./helm/vibecode-platform/values-prod.yaml \
         --set datadog.apiKey="$EFFECTIVE_DD_API_KEY" \
         --set database.postgresql.auth.postgresPassword="$POSTGRES_PASSWORD" \
-        --set database.postgresql.auth.datadogPassword="$DATADOG_POSTGRES_PASSWORD" \
+        --set database.postgresql.auth.datadogPassword="${DD_POSTGRES_PASSWORD:-$DATADOG_POSTGRES_PASSWORD}" \
         --dry-run > /dev/null 2>&1; then
         echo "✅ Production Helm values render successfully"
     else
@@ -219,7 +237,8 @@ test_kind_deployment() {
     
     kubectl create secret generic postgres-credentials \
         --from-literal=postgres-password="$POSTGRES_PASSWORD" \
-        --from-literal=datadog-password="$DATADOG_POSTGRES_PASSWORD" \
+        --from-literal=datadog-username="${DD_POSTGRES_USER:-datadog}" \
+        --from-literal=datadog-password="${DD_POSTGRES_PASSWORD:-$DATADOG_POSTGRES_PASSWORD}" \
         --namespace=vibecode-dbm-test \
         --dry-run=client -o yaml | kubectl apply -f -
     
@@ -238,11 +257,21 @@ data:
     track_activity_query_size = 4096
     track_io_timing = on
   init-dbm.sql: |
-    CREATE USER datadog;
-    GRANT pg_monitor TO datadog;
+    \set datadog_user `echo "${DD_POSTGRES_USER:-datadog}"`
+    \set datadog_password `echo "${DD_POSTGRES_PASSWORD:-${DATADOG_POSTGRES_PASSWORD:-}}"`
+    DO $$
+    DECLARE v_user TEXT := :'datadog_user';
+    BEGIN
+      IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = v_user) THEN
+        EXECUTE 'CREATE USER ' || quote_ident(v_user);
+      END IF;
+      EXECUTE 'ALTER USER ' || quote_ident(v_user) || ' WITH PASSWORD ' || quote_literal(:'datadog_password');
+    END
+    $$;
     CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
     CREATE SCHEMA IF NOT EXISTS datadog;
-    GRANT USAGE ON SCHEMA datadog TO datadog;
+    GRANT pg_monitor TO :"datadog_user";
+    GRANT USAGE ON SCHEMA datadog TO :"datadog_user";
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -266,8 +295,8 @@ spec:
             {
               "host": "%%host%%",
               "port": 5432,
-              "username": "datadog",
-              "password": "${DATADOG_POSTGRES_PASSWORD}",
+              "username": "${DD_POSTGRES_USER:-datadog}",
+              "password": "${DD_POSTGRES_PASSWORD:-${DATADOG_POSTGRES_PASSWORD}}",
               "dbm": true
             }
           ]
@@ -285,6 +314,16 @@ spec:
             secretKeyRef:
               name: postgres-credentials
               key: postgres-password
+        - name: DD_POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-credentials
+              key: datadog-username
+        - name: DD_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-credentials
+              key: datadog-password
         - name: DATADOG_POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:

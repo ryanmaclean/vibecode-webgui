@@ -99,6 +99,9 @@ kubectl create namespace "$TEST_NAMESPACE" >/dev/null 2>&1 || true
 export DD_API_KEY="test-datadog-api-key-32-chars-long"
 export POSTGRES_PASSWORD="test-postgres-password-123"
 export DATADOG_POSTGRES_PASSWORD="test-datadog-password-123"
+# Prefer DD_* with legacy fallback for DBM
+export DD_POSTGRES_USER="${DD_POSTGRES_USER:-datadog}"
+export DD_POSTGRES_PASSWORD="${DD_POSTGRES_PASSWORD:-$DATADOG_POSTGRES_PASSWORD}"
 
 # Test secrets creation script
 if "$PROJECT_ROOT/scripts/setup-secrets.sh" "$TEST_NAMESPACE" >/dev/null 2>&1; then
@@ -107,13 +110,20 @@ else
     test_result "Secrets Creation Script" "FAIL"
 fi
 
-# Verify Datadog secret
-if kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
+# Verify Datadog secret (canonical + legacy alias)
+secret_name=""
+if kubectl get secret datadog-secret -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
+    secret_name="datadog-secret"
+elif kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
+    secret_name="datadog-secrets"
+fi
+
+if [[ -n "$secret_name" ]]; then
     # Check secret has correct key
-    if kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" -o jsonpath='{.data.api-key}' | base64 -d | grep -q "test-datadog-api-key"; then
-        test_result "Datadog Secret Content" "PASS"
+    if kubectl get secret "$secret_name" -n "$TEST_NAMESPACE" -o jsonpath='{.data.api-key}' | base64 -d | grep -q "test-datadog-api-key"; then
+        test_result "Datadog Secret Content ($secret_name)" "PASS"
     else
-        test_result "Datadog Secret Content" "FAIL"
+        test_result "Datadog Secret Content ($secret_name)" "FAIL"
     fi
 else
     test_result "Datadog Secret Creation" "FAIL"
@@ -261,7 +271,8 @@ else
 fi
 
 # Check for 2025 best practices
-if grep -q "apiKeyExistingSecret.*datadog-secrets" "$PROJECT_ROOT/helm/vibecode-platform/values-dev.yaml" && \
+if (grep -q "apiKeyExistingSecret.*datadog-secret" "$PROJECT_ROOT/helm/vibecode-platform/values-dev.yaml" || \
+    grep -q "apiKeyExistingSecret.*datadog-secrets" "$PROJECT_ROOT/helm/vibecode-platform/values-dev.yaml") && \
    grep -q "targetSystem.*linux" "$PROJECT_ROOT/helm/vibecode-platform/values-dev.yaml"; then
     test_result "2025 Best Practices Configuration" "PASS"
 else

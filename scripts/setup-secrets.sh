@@ -266,6 +266,27 @@ setup_datadog_secrets() {
 apiVersion: v1
 kind: Secret
 metadata:
+  name: datadog-secret
+  namespace: $namespace
+  labels:
+    app.kubernetes.io/name: datadog-secret
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/part-of: vibecode-platform
+type: Opaque
+data:
+  api-key: $(echo -n "$DD_API_KEY" | base64 | tr -d '\n')
+EOF
+)
+    
+    # Create/Update canonical secret
+    create_or_update_secret "$namespace" "datadog-secret" "$datadog_secret_yaml"
+
+    # Maintain legacy alias for backward compatibility
+    local datadog_legacy_secret_yaml
+    datadog_legacy_secret_yaml=$(cat <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
   name: datadog-secrets
   namespace: $namespace
   labels:
@@ -277,8 +298,7 @@ data:
   api-key: $(echo -n "$DD_API_KEY" | base64 | tr -d '\n')
 EOF
 )
-    
-    create_or_update_secret "$namespace" "datadog-secrets" "$datadog_secret_yaml"
+    create_or_update_secret "$namespace" "datadog-secrets" "$datadog_legacy_secret_yaml"
 }
 
 # Setup PostgreSQL secrets
@@ -324,7 +344,7 @@ verify_secrets() {
     
     log_info "Verifying secrets in namespace '$namespace'..."
     
-    local secrets=("datadog-secrets" "postgres-credentials")
+    local secrets=("datadog-secret" "datadog-secrets" "postgres-credentials")
     local all_good=true
     
     for secret in "${secrets[@]}"; do
