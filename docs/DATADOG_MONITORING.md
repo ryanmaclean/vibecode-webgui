@@ -40,16 +40,16 @@ The enhanced monitoring system provides:
 
 ```bash
 # Required environment variables
-export DATADOG_API_KEY="your-datadog-api-key"
-export DATADOG_APP_KEY="your-datadog-app-key"
-export DATADOG_SITE="datadoghq.com"  # Optional, defaults to datadoghq.com
-export DATADOG_SERVICE="vibecode-webgui"
-export DATADOG_VERSION="1.0.0"
+export DD_API_KEY="your-datadog-api-key"             # falls back to DATADOG_API_KEY if set
+export DD_APP_KEY="your-datadog-app-key"             # falls back to DATADOG_APP_KEY if set
+export DD_SITE="datadoghq.com"                       # Optional, defaults to datadoghq.com
+export DD_SERVICE="vibecode-webgui"
+export DD_VERSION="1.0.0"
 export DD_ENV="production"  # or development
 
 # Optional: Client-side RUM
-export NEXT_PUBLIC_DATADOG_CLIENT_TOKEN="your-client-token"
-export NEXT_PUBLIC_DATADOG_APP_ID="your-app-id"
+export NEXT_PUBLIC_DD_CLIENT_TOKEN="your-client-token"       # falls back to NEXT_PUBLIC_DATADOG_CLIENT_TOKEN
+export NEXT_PUBLIC_DD_APPLICATION_ID="your-app-id"           # falls back to NEXT_PUBLIC_DATADOG_APP_ID
 ```
 
 ### 2. Setup Dashboards and Alerts
@@ -306,9 +306,9 @@ curl -X POST http://localhost:3000/api/monitoring/metrics \
 
 ```bash
 # Production environment variables
-DATADOG_API_KEY=your-production-api-key
-DATADOG_APP_KEY=your-production-app-key  
-DATADOG_SITE=datadoghq.com
+DD_API_KEY=your-production-api-key         # falls back to DATADOG_API_KEY if set
+DD_APP_KEY=your-production-app-key         # falls back to DATADOG_APP_KEY if set
+DD_SITE=datadoghq.com
 DD_ENV=production
 DD_SERVICE=vibecode-webgui
 DD_VERSION=1.0.0
@@ -318,8 +318,8 @@ DD_STATSD_HOST=localhost
 DD_STATSD_PORT=8125
 
 # Optional: RUM configuration
-NEXT_PUBLIC_DATADOG_CLIENT_TOKEN=your-client-token
-NEXT_PUBLIC_DATADOG_APP_ID=your-app-id
+NEXT_PUBLIC_DD_CLIENT_TOKEN=your-client-token   # falls back to NEXT_PUBLIC_DATADOG_CLIENT_TOKEN
+NEXT_PUBLIC_DD_APPLICATION_ID=your-app-id       # falls back to NEXT_PUBLIC_DATADOG_APP_ID
 ```
 
 ### Deployment Steps
@@ -335,7 +335,7 @@ NEXT_PUBLIC_DATADOG_APP_ID=your-app-id
 ### Common Issues
 
 1. **"Datadog API keys not configured"**
-   - Set `DATADOG_API_KEY` and `DATADOG_APP_KEY` environment variables
+   - Set `DD_API_KEY` and `DD_APP_KEY` environment variables (legacy `DATADOG_*` still supported)
    - Verify API key permissions include dashboards and monitors
 
 2. **Health checks failing**

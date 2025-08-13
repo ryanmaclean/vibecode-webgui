@@ -35,23 +35,28 @@ describe('SecureFileSystemOperations', () => {
     it('should validate safe file paths', () => {
       const safePath = '/test/workspace/src/index.ts';
       expect((fileOps as any).validateFilePath(safePath)).toBe(true);
+    });
 
     it('should reject path traversal attempts', () => {
       const maliciousPath = '/test/workspace/../../../etc/passwd';
       expect((fileOps as any).validateFilePath(maliciousPath)).toBe(false);
+    });
 
     it('should reject paths outside workspace', () => {
       const outsidePath = '/other/workspace/file.ts';
       expect((fileOps as any).validateFilePath(outsidePath)).toBe(false);
+    });
 
     it('should reject blocked file extensions', () => {
       const blockedPath = '/test/workspace/malware.exe';
       expect((fileOps as any).validateFilePath(blockedPath)).toBe(false);
+    });
 
     it('should handle null and undefined paths', () => {
       expect((fileOps as any).validateFilePath(null)).toBe(false);
-      expect((fileOps as any).validateFilePath(undefined)).toBe(false)
+      expect((fileOps as any).validateFilePath(undefined)).toBe(false);
       expect((fileOps as any).validateFilePath('')).toBe(false);
+    });
 
   describe('File CRUD Operations', () => {
     const validFilePath = '/test/workspace/src/test.ts'
@@ -72,7 +77,8 @@ describe('SecureFileSystemOperations', () => {
       await fileOps.createFile(validFilePath, fileContent);
 
       const content = await fileOps.readFile(validFilePath);
-      expect(content).toBe(fileContent)})
+      expect(content).toBe(fileContent);
+    });
 
     it('should update file content', async () => {
       const newContent = 'console.log("Updated content");';
@@ -84,7 +90,8 @@ describe('SecureFileSystemOperations', () => {
       const metadata = await fileOps.updateFile(validFilePath, newContent);
 
       expect(metadata.size).toBe(newContent.length);
-      expect(metadata.modified).toBeGreaterThan(metadata.created)})
+      expect(metadata.modified).toBeGreaterThan(metadata.created);
+    });
 
     it('should delete file', async () => {
       // Create file first
@@ -94,7 +101,8 @@ describe('SecureFileSystemOperations', () => {
       await fileOps.deleteFile(validFilePath);
 
       // Verify file is deleted
-      await expect(fileOps.readFile(validFilePath)).rejects.toThrow()})
+      await expect(fileOps.readFile(validFilePath)).rejects.toThrow();
+    });
 
     it('should handle large files', async () => {
       const largeContent = 'A'.repeat(1024 * 1024); // 1MB content;
@@ -103,7 +111,9 @@ describe('SecureFileSystemOperations', () => {
       expect(metadata.size).toBe(largeContent.length);
 
       const readContent = await fileOps.readFile(validFilePath);
-      expect(readContent).toBe(largeContent)})})
+      expect(readContent).toBe(largeContent);
+    });
+  });
 
   describe('File Synchronization', () => {
     const filePath = '/test/workspace/sync-test.ts'
@@ -349,24 +359,28 @@ describe('LazyFileLoader', () => {
       expect(results[0].content).toContain('function')})
 
     it('should support regex search', async () => {
-      const results = await lazyLoader.searchInFile('function\\s+\\w+', { ;
+      const results = await lazyLoader.searchInFile('function\\s+\\w+', {
         regex: true,
         maxResults: 5
       });
       expect(results.length).toBeGreaterThan(0);
-      expect(results[0].match).toBeInstanceOf(RegExp)})
+      expect(results[0].match).toBeInstanceOf(RegExp);
+    });
 
     it('should support case-sensitive search', async () => {
-      const caseSensitive = await lazyLoader.searchInFile('FUNCTION', { ;
+      const caseSensitive = await lazyLoader.searchInFile('FUNCTION', {
         caseSensitive: true,
         maxResults: 5
-      })
-      const caseInsensitive = await lazyLoader.searchInFile('FUNCTION', { ;
+      });
+      const caseInsensitive = await lazyLoader.searchInFile('FUNCTION', {
         caseSensitive: false,
         maxResults: 5
       });
 
-      expect(caseSensitive.length).toBeLessThanOrEqual(caseInsensitive.length)})})})
+      expect(caseSensitive.length).toBeLessThanOrEqual(caseInsensitive.length);
+    });
+  });
+});
 
 describe('OptimizedFileWatcher', () => {
   let fileWatcher: OptimizedFileWatcher
@@ -689,7 +703,7 @@ describe('Integration Tests', () => {
         await fileOps.createFile(filePath, largeContent);
 
         // Initialize lazy loading
-        global.fetch = jest.fn();
+        global.fetch = jest.fn()
           .mockResolvedValueOnce({
             ok: true,
             json: async () => ({
@@ -706,10 +720,13 @@ describe('Integration Tests', () => {
 
         // Test lazy loading of file chunks
         const lines = await lazyLoader.getLineRange(0, 50);
-        expect(lines).toHaveLength(51)} finally {
+        expect(lines).toHaveLength(51);
+      } finally {
         await fileOps.destroy();
-        lazyLoader.destroy()}
-    })})
+        lazyLoader.destroy();
+      }
+    });
+  });
 
   describe('File Watching with Connection Pooling', () => {
     it('should coordinate file watching with WebSocket notifications', async () => {
@@ -725,23 +742,29 @@ describe('Integration Tests', () => {
         await fileWatcher.start();
 
         // Track events
-        const fileEvents: any[] = []
+        const fileEvents: any[] = [];
         fileWatcher.on('file-change', (event) => {
-          fileEvents.push(event)})
+          fileEvents.push(event);
+        });
 
         // Simulate file change
         const changeEvent = {
           type: 'change' as const,
           path: '/test/workspace/file.ts',
-          timestamp: Date.now()}
+          timestamp: Date.now()
+        };
 
-        ;(fileWatcher as any).addToBatch(changeEvent);
+        (fileWatcher as any).addToBatch(changeEvent);
 
         // Wait for event processing
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        expect(fileEvents.length).toBeGreaterThan(0)
-        expect(fileEvents[0].type).toBe('change')} finally {
+        expect(fileEvents.length).toBeGreaterThan(0);
+        expect(fileEvents[0].type).toBe('change');
+      } finally {
         await fileWatcher.destroy();
-        await connectionPool.destroy()}
-    })})});
+        await connectionPool.destroy();
+      }
+    });
+  });
+});

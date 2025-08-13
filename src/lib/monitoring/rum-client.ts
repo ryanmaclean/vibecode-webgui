@@ -1,4 +1,5 @@
 import { datadogRum } from '@datadog/browser-rum';
+import { getRUMPublicConfig } from './datadog-env'
 
 // Define allowed site values according to Datadog RUM documentation
 type DatadogSite = 'datadoghq.com' | 'us3.datadoghq.com' | 'us5.datadoghq.com' | 'datadoghq.eu' | 'ddog-gov.com' | 'ap1.datadoghq.com';
@@ -30,17 +31,14 @@ class RUMMonitoring {
       return;
     }
 
+    const pub = getRUMPublicConfig()
     const rumConfig: RUMConfig = {
-      applicationId: process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID || 
-                   process.env.NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID || 
-                   'vibecode-docs-rum',
-      clientToken: process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN || 
-                   process.env.NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN || 
-                   '',
-      site: (process.env.NEXT_PUBLIC_DATADOG_SITE as DatadogSite) || 'datadoghq.com',
+      applicationId: pub.applicationId || 'vibecode-docs-rum',
+      clientToken: pub.clientToken || '',
+      site: (pub.site as DatadogSite) || 'datadoghq.com',
       service: 'vibecode-webgui',
-      env: process.env.NODE_ENV || 'development',
-      version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
+      env: pub.env || 'development',
+      version: pub.version || '1.0.0',
       sessionSampleRate: 100,
       sessionReplaySampleRate: 20,
       trackUserInteractions: true,
@@ -268,6 +266,7 @@ class RUMMonitoring {
     linesOfCode?: number;
     charactersTyped?: number;
     timeSpent?: number;
+    userId?: string;
   }) {
     this.addAction(`editor.${action}`, {
       ...context,
@@ -284,6 +283,7 @@ class RUMMonitoring {
     exitCode?: number;
     duration?: number;
     workspaceId?: string;
+    userId?: string;
   }) {
     // Sanitize potentially sensitive command data
     const sanitizedContext = {
@@ -317,6 +317,7 @@ class RUMMonitoring {
     statusCode?: number;
     payloadSize?: number;
     rateLimitRemaining?: number;
+    userId?: string;
   }) {
     this.addAction('api.request', {
       endpoint,

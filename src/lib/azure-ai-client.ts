@@ -1,10 +1,7 @@
 // Azure AI Services Client
 // Provides OpenRouter-like functionality using Azure AI Services
 
-import { OpenAIApi, Configuration } from 'openai';
-import { DefaultAzureCredential } from '@azure/identity';
-import { ComputerVisionClient } from '@azure/cognitiveservices-computervision';
-import { TextAnalyticsClient, AzureKeyCredential } from '@azure/ai-text-analytics';
+import OpenAI from 'openai';
 
 export interface AzureAIConfig {
   // Azure OpenAI configuration
@@ -94,9 +91,10 @@ export interface EmbeddingResponse {
 }
 
 export class AzureAIClient {
-  private openaiClient: OpenAIApi;
-  private visionClient?: ComputerVisionClient;
-  private languageClient?: TextAnalyticsClient;
+  private openaiClient: OpenAI;
+  // Optional Azure SDK clients, loaded lazily if dependencies are available
+  private visionClient?: any;
+  private languageClient?: any;
   private config: AzureAIConfig;
 
   constructor(config: AzureAIConfig) {
@@ -105,48 +103,16 @@ export class AzureAIClient {
   }
 
   private initializeClients() {
-    // Initialize Azure OpenAI client
-    const openaiConfig = new Configuration({
+    // Initialize Azure OpenAI client (OpenAI v4 SDK)
+    this.openaiClient = new OpenAI({
       apiKey: this.config.openai.apiKey,
-      basePath: `${this.config.openai.endpoint}/openai/deployments`,
-      baseOptions: {
-        headers: {
-          'api-key': this.config.openai.apiKey,
-        },
-        params: {
-          'api-version': this.config.openai.apiVersion,
-        },
-      },
+      baseURL: `${this.config.openai.endpoint}/openai/deployments`,
+      defaultQuery: { 'api-version': this.config.openai.apiVersion },
+      defaultHeaders: { 'api-key': this.config.openai.apiKey },
     });
-    
-    this.openaiClient = new OpenAIApi(openaiConfig);
-
-    // Initialize Computer Vision client
-    if (this.config.vision.endpoint) {
-      if (this.config.useCredentials) {
-        const credential = new DefaultAzureCredential();
-        this.visionClient = new ComputerVisionClient(credential, this.config.vision.endpoint);
-      } else if (this.config.vision.apiKey) {
-        this.visionClient = new ComputerVisionClient(
-          new AzureKeyCredential(this.config.vision.apiKey),
-          this.config.vision.endpoint
-        );
-      }
-    }
-
-    // Initialize Language Service client
-    if (this.config.language.endpoint) {
-      if (this.config.useCredentials) {
-        const credential = new DefaultAzureCredential();
-        // Note: Language client with DefaultAzureCredential requires additional setup
-        console.warn('Language client with DefaultAzureCredential not fully implemented');
-      } else if (this.config.language.apiKey) {
-        this.languageClient = new TextAnalyticsClient(
-          this.config.language.endpoint,
-          new AzureKeyCredential(this.config.language.apiKey)
-        );
-      }
-    }
+    // NOTE: Azure SDK clients are optional to keep dependencies light.
+    // If you need them, install @azure/cognitiveservices-computervision and @azure/ai-text-analytics
+    // and replace the lazy loading below.
   }
 
   /**
@@ -159,34 +125,35 @@ export class AzureAIClient {
         ? this.config.openai.deployments.chat 
         : this.config.openai.deployments.completion;
 
-      const response = await this.openaiClient.createChatCompletion({
+      const response = await this.openaiClient.chat.completions.create({
         model: deployment, // Use Azure deployment name
-        messages: request.messages,
-        temperature: request.temperature || 0.7,
-        max_tokens: request.max_tokens || 1000,
-        top_p: request.top_p || 1,
-        frequency_penalty: request.frequency_penalty || 0,
-        presence_penalty: request.presence_penalty || 0,
-        stream: request.stream || false,
+        messages: request.messages as any,
+        temperature: request.temperature ?? 0.7,
+        max_tokens: request.max_tokens ?? 1000,
+        top_p: request.top_p ?? 1,
+        frequency_penalty: request.frequency_penalty ?? 0,
+        presence_penalty: request.presence_penalty ?? 0,
+        // Force non-streaming to avoid union types and simplify consumers
+        stream: false as false,
       });
 
       return {
-        id: response.data.id,
-        object: response.data.object,
-        created: response.data.created,
+        id: response.id,
+        object: response.object,
+        created: response.created as number,
         model: request.model || deployment,
-        choices: response.data.choices.map(choice => ({
-          index: choice.index!,
+        choices: response.choices.map(choice => ({
+          index: choice.index ?? 0,
           message: {
-            role: choice.message?.role as 'assistant',
+            role: (choice.message?.role || 'assistant') as 'assistant',
             content: choice.message?.content || '',
           },
-          finish_reason: choice.finish_reason || 'stop',
+          finish_reason: (choice.finish_reason as string) || 'stop',
         })),
         usage: {
-          prompt_tokens: response.data.usage?.prompt_tokens || 0,
-          completion_tokens: response.data.usage?.completion_tokens || 0,
-          total_tokens: response.data.usage?.total_tokens || 0,
+          prompt_tokens: response.usage?.prompt_tokens || 0,
+          completion_tokens: response.usage?.completion_tokens || 0,
+          total_tokens: response.usage?.total_tokens || 0,
         },
       };
     } catch (error) {
@@ -203,22 +170,22 @@ export class AzureAIClient {
     try {
       const deployment = this.config.openai.deployments.embedding;
       
-      const response = await this.openaiClient.createEmbedding({
+      const response = await this.openaiClient.embeddings.create({
         model: deployment,
-        input: request.input,
+        input: request.input as any,
       });
 
       return {
-        object: response.data.object,
-        data: response.data.data.map((item, index) => ({
+        object: response.object,
+        data: response.data.map((item, index) => ({
           object: 'embedding',
           embedding: item.embedding,
           index: index,
         })),
         model: request.model || deployment,
         usage: {
-          prompt_tokens: response.data.usage.prompt_tokens,
-          total_tokens: response.data.usage.total_tokens,
+          prompt_tokens: (response.usage as any)?.prompt_tokens ?? 0,
+          total_tokens: (response.usage as any)?.total_tokens ?? 0,
         },
       };
     } catch (error) {
@@ -231,86 +198,30 @@ export class AzureAIClient {
    * Analyze image using Azure Computer Vision
    */
   async analyzeImage(imageUrl: string, features: string[] = ['Description', 'Tags']) {
-    if (!this.visionClient) {
-      throw new Error('Computer Vision client not initialized');
-    }
-
-    try {
-      const result = await this.visionClient.analyzeImage(imageUrl, {
-        visualFeatures: features,
-        language: 'en',
-      });
-
-      return {
-        description: result.description?.captions?.[0]?.text || '',
-        tags: result.tags?.map(tag => ({ name: tag.name, confidence: tag.confidence })) || [],
-        categories: result.categories?.map(cat => ({ name: cat.name, score: cat.score })) || [],
-        objects: result.objects?.map(obj => ({
-          object: obj.objectProperty,
-          confidence: obj.confidence,
-          rectangle: obj.rectangle,
-        })) || [],
-      };
-    } catch (error) {
-      console.error('Computer Vision analysis error:', error);
-      throw new Error(`Computer Vision request failed: ${error}`);
-    }
+    // Optional feature not enabled (to avoid heavy Azure SDK dependency)
+    throw new Error(
+      'Azure Computer Vision is not enabled. Install @azure/cognitiveservices-computervision and wire up initializeClients() to enable.'
+    );
   }
 
   /**
    * Analyze text sentiment using Azure Language Service
    */
   async analyzeSentiment(text: string | string[]) {
-    if (!this.languageClient) {
-      throw new Error('Language client not initialized');
-    }
-
-    try {
-      const documents = Array.isArray(text) 
-        ? text.map((t, i) => ({ id: i.toString(), text: t }))
-        : [{ id: '0', text }];
-
-      const results = await this.languageClient.analyzeSentiment(documents);
-      
-      return results.map(result => ({
-        id: result.id,
-        sentiment: result.sentiment,
-        confidence: result.confidenceScores,
-        sentences: result.sentences?.map(sentence => ({
-          text: sentence.text,
-          sentiment: sentence.sentiment,
-          confidence: sentence.confidenceScores,
-        })) || [],
-      }));
-    } catch (error) {
-      console.error('Language sentiment analysis error:', error);
-      throw new Error(`Language sentiment analysis failed: ${error}`);
-    }
+    // Optional feature not enabled
+    throw new Error(
+      'Azure Text Analytics (sentiment) is not enabled. Install @azure/ai-text-analytics and wire up initializeClients() to enable.'
+    );
   }
 
   /**
    * Extract key phrases using Azure Language Service
    */
   async extractKeyPhrases(text: string | string[]) {
-    if (!this.languageClient) {
-      throw new Error('Language client not initialized');
-    }
-
-    try {
-      const documents = Array.isArray(text) 
-        ? text.map((t, i) => ({ id: i.toString(), text: t }))
-        : [{ id: '0', text }];
-
-      const results = await this.languageClient.extractKeyPhrases(documents);
-      
-      return results.map(result => ({
-        id: result.id,
-        keyPhrases: result.keyPhrases || [],
-      }));
-    } catch (error) {
-      console.error('Language key phrase extraction error:', error);
-      throw new Error(`Language key phrase extraction failed: ${error}`);
-    }
+    // Optional feature not enabled
+    throw new Error(
+      'Azure Text Analytics (key phrases) is not enabled. Install @azure/ai-text-analytics and wire up initializeClients() to enable.'
+    );
   }
 
   /**

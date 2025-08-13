@@ -10,10 +10,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebglAddon } from '@xterm/addon-webgl'
-import { AttachAddon } from '@xterm/addon-attach'
-import { SearchAddon } from '@xterm/addon-search'
 import { WebLinksAddon } from '@xterm/addon-web-links'
-import { Unicode11Addon } from '@xterm/addon-unicode11'
 import { ClaudeCliIntegration } from '@/lib/claude-cli-integration'
 import '@xterm/xterm/css/xterm.css'
 
@@ -109,7 +106,6 @@ export default function EnhancedTerminal({
       scrollback: 10000,
       allowTransparency: false,
       convertEol: true,
-      rendererType: enableWebGL ? 'webgl' : 'canvas'
     })
 
     // Initialize addons
@@ -121,14 +117,8 @@ export default function EnhancedTerminal({
       terminal.current.loadAddon(addons.current.webgl)
     }
 
-    addons.current.search = new SearchAddon()
-    terminal.current.loadAddon(addons.current.search)
-
     addons.current.webLinks = new WebLinksAddon()
     terminal.current.loadAddon(addons.current.webLinks)
-
-    addons.current.unicode11 = new Unicode11Addon()
-    terminal.current.loadAddon(addons.current.unicode11)
 
     terminal.current.open(terminalRef.current)
     addons.current.fit.fit()
@@ -141,7 +131,7 @@ export default function EnhancedTerminal({
       setupAIIntegration()
     }
 
-    // Set up keyboard shortcuts
+    // Set up keyboard shortcuts (without search addon dependency)
     setupKeyboardShortcuts()
 
     setIsReady(true)
@@ -245,13 +235,6 @@ export default function EnhancedTerminal({
         return false
       }
 
-      // Ctrl+Shift+F: Search in terminal
-      if (event.ctrlKey && event.shiftKey && event.key === 'F') {
-        event.preventDefault()
-        openSearch()
-        return false
-      }
-
       return true
     })
   }, [])
@@ -346,12 +329,7 @@ export default function EnhancedTerminal({
     terminal.current.write('\r\n\x1b[35m💡 AI Suggestion: ' + data.suggestion + '\x1b[0m\r\n')
   }, [])
 
-  // Open search
-  const openSearch = useCallback(() => {
-    if (addons.current.search) {
-      addons.current.search.findNext('') // Opens search box
-    }
-  }, [])
+  // Search functionality is disabled (optional addon not installed)
 
   // Handle resize
   const handleResize = useCallback(() => {

@@ -4,12 +4,58 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getOpenTelemetryConfig, otelSDK } from '../../../../lib/monitoring/opentelemetry'
+
+// Check if we're in a Docker build environment
+const isDockerBuild = (
+  process.env.DOCKER_BUILD === 'true' ||
+  process.env.SKIP_MONITORING === 'true' ||
+  process.env.CI === 'true' ||
+  process.env.GITHUB_ACTIONS === 'true' ||
+  process.env.OTEL_ENABLED === 'false' ||
+  process.env.DD_ENABLED === 'false'
+);
+
+// Conditional imports to prevent build-time errors in Docker
+let getOpenTelemetryConfig: any = null;
+let otelSDK: any = null;
+
+if (!isDockerBuild) {
+  try {
+    // Dynamic imports to prevent static analysis issues
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const opentelemetryModule = require('../../../../lib/monitoring/opentelemetry');
+    getOpenTelemetryConfig = opentelemetryModule.getOpenTelemetryConfig;
+    otelSDK = opentelemetryModule.otelSDK;
+  } catch {
+    console.log('⚠️ OpenTelemetry module not available, monitoring disabled');
+  }
+}
+
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  // If in Docker build, return a simple response
+  if (isDockerBuild) {
+    return NextResponse.json({
+      status: 'disabled',
+      message: 'OpenTelemetry monitoring disabled during Docker build',
+      timestamp: new Date().toISOString()
+    });
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const action = searchParams.get('action') || 'config'
+
+    // Check if OpenTelemetry modules are available
+    if (!getOpenTelemetryConfig || !otelSDK) {
+      return NextResponse.json({
+        status: 'unavailable',
+        message: 'OpenTelemetry modules not available',
+        timestamp: new Date().toISOString()
+      });
+    }
 
     switch (action) {
       case 'config':
@@ -93,8 +139,7 @@ export async function GET(request: NextRequest) {
             OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || 'not_set',
             OTEL_PROMETHEUS_PORT: process.env.OTEL_PROMETHEUS_PORT || '9090',
             DD_API_KEY: process.env.DD_API_KEY ? 'configured' : 'not_set'
-          },
-          timestamp: new Date().toISOString()
+          }
         })
 
       default:

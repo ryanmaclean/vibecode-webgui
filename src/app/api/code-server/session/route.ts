@@ -8,6 +8,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
+
 const createSessionSchema = z.object({
   workspaceId: z.string().min(1),
   projectPath: z.string().default('/workspace'),

@@ -158,7 +158,7 @@ exporters:
   # Datadog exporter
   datadog:
     api:
-      key: ${DATADOG_API_KEY}
+      key: ${DD_API_KEY:-${DATADOG_API_KEY}}
       site: datadoghq.com
     metrics:
       resource_attributes_as_tags: true
