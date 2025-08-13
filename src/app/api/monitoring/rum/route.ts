@@ -1,12 +1,9 @@
 /**
- * RUM Monitoring API Endpoint
- * Provides RUM configuration, health status, and session management
+ * Real User Monitoring (RUM) API Endpoint
+ * Provides RUM data collection and analysis
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { getRUMPublicConfig } from '@/lib/monitoring/datadog-env'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'

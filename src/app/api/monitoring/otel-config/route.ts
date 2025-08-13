@@ -4,8 +4,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 
 // Check if we're in a Docker build environment
 const isDockerBuild = (
@@ -24,10 +22,11 @@ let otelSDK: any = null;
 if (!isDockerBuild) {
   try {
     // Dynamic imports to prevent static analysis issues
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const opentelemetryModule = require('../../../../lib/monitoring/opentelemetry');
     getOpenTelemetryConfig = opentelemetryModule.getOpenTelemetryConfig;
     otelSDK = opentelemetryModule.otelSDK;
-  } catch (error) {
+  } catch {
     console.log('⚠️ OpenTelemetry module not available, monitoring disabled');
   }
 }
