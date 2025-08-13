@@ -80,6 +80,8 @@ resource "kubernetes_secret" "app_config" {
 
     # Database monitoring
     DD_DATABASE_MONITORING_ENABLED = "true"
+    DD_POSTGRES_USER               = azurerm_key_vault_secret.datadog_postgres_user.value
+    DD_POSTGRES_PASSWORD           = azurerm_key_vault_secret.datadog_postgres_password.value
     DATADOG_POSTGRES_USER          = azurerm_key_vault_secret.datadog_postgres_user.value
     DATADOG_POSTGRES_PASSWORD      = azurerm_key_vault_secret.datadog_postgres_password.value
   }
@@ -225,8 +227,8 @@ resource "kubernetes_secret" "datadog_config" {
   type = "Opaque"
 
   data = {
-    api-key = var.datadog_api_key
-    app-key = var.datadog_app_key
+    "api-key" = var.datadog_api_key
+    "app-key" = var.datadog_app_key
   }
 }
 

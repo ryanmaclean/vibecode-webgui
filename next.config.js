@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const path = require('path');
+
 const nextConfig = {
   reactStrictMode: true,
   // To deploy to a static host like GitHub Pages, set output to 'export'.
@@ -13,6 +15,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+
+  // Skip static analysis of API routes to prevent ERR_INVALID_URL during build
+  skipTrailingSlashRedirect: true,
+  skipMiddlewareUrlNormalize: true,
 
   // Required for GitHub Pages deployment.
   basePath: process.env.NODE_ENV === 'production' ? '/vibecode-webgui' : '',
@@ -115,6 +121,14 @@ const nextConfig = {
       net: false,
       tls: false,
       fsevents: false,
+    };
+
+    // Explicitly handle path aliases
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.join(__dirname, 'src'),
+      pg: false,
+      redis: false,
     };
 
     if (!isServer) {

@@ -6,6 +6,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { ollamaClient, RECOMMENDED_MODELS } from '@/lib/ollama-client'
 
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)

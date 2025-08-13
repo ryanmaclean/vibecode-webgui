@@ -438,7 +438,7 @@ logging:
         index: "vibecode-prod"
     - datadog:
         enabled: true
-        apiKey: "${DATADOG_API_KEY}"
+        apiKey: "${DD_API_KEY:-${DATADOG_API_KEY}}"
         service: "vibecode-platform"
         env: "production"
 
@@ -449,7 +449,7 @@ targetSystem: "linux"
 datadog:
   enabled: true
   # API key set via Helm values from environment, never committed
-  apiKeyExistingSecret: datadog-secrets
+  apiKeyExistingSecret: datadog-secret
   site: datadoghq.com
 
 # Production agent configuration with enhanced resources (DaemonSet - Node Agents)

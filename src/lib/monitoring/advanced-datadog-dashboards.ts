@@ -3,6 +3,8 @@
  * Creates and manages custom dashboards for VibeCode monitoring
  */
 
+import { getDatadogApiKey, getDatadogAppKey, getDatadogSite } from './datadog-env'
+
 export interface DashboardWidget {
   id: string
   definition: any
@@ -21,9 +23,9 @@ export class DatadogDashboardManager {
   private baseUrl: string
 
   constructor() {
-    this.apiKey = process.env.DATADOG_API_KEY || ''
-    this.appKey = process.env.DATADOG_APP_KEY || ''
-    this.site = process.env.DATADOG_SITE || 'datadoghq.com'
+    this.apiKey = getDatadogApiKey() || ''
+    this.appKey = getDatadogAppKey() || ''
+    this.site = getDatadogSite()
     this.baseUrl = `https://api.${this.site}/api/v1`
   }
 

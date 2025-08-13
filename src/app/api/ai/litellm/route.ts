@@ -4,11 +4,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { LiteLLMClient } from '@/lib/ai/litellm-client';
+import { LiteLLMClient } from '@/lib/ai-clients/litellm-client';
 import rateLimit from '@/lib/rate-limiting';
 
-// Initialize LiteLLM client (internal only)
-const __litellmClient = new LiteLLMClient({
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
+
+// Initialize LiteLLM client
+const litellmClient = new LiteLLMClient({
   baseUrl: process.env.LITELLM_BASE_URL || 'http://localhost:4000',
   apiKey: process.env.LITELLM_MASTER_KEY || 'sk-vibecode-master-key-12345',
   defaultModel: 'gpt-4o-mini',
@@ -35,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     switch (action) {
       case 'health':
-        const health = await _litellmClient.checkHealth();
+        const health = await litellmClient.checkHealth();
         return NextResponse.json({
           status: 'healthy',
           litellm: health,
@@ -43,19 +46,19 @@ export async function GET(request: NextRequest) {
         });
 
       case 'models':
-        const models = await _litellmClient.listModels();
+        const models = await litellmClient.listModels();
         return NextResponse.json(models);
 
       case 'stats':
-        const stats = await _litellmClient.getUsageStats();
+        const stats = await litellmClient.getUsageStats();
         return NextResponse.json(stats);
 
       case 'budget':
-        const budget = await _litellmClient.getBudgetInfo();
+        const budget = await litellmClient.getBudgetInfo();
         return NextResponse.json(budget);
 
       case 'config':
-        const config = _litellmClient.getConfig();
+        const config = litellmClient.getConfig();
         // Remove sensitive information
         const { apiKey, ...safeConfig } = config;
         return NextResponse.json(safeConfig);
@@ -155,11 +158,11 @@ export async function PUT(request: NextRequest) {
       enableLogging: config.enableLogging
     };
 
-    _litellmClient.updateConfig(safeConfig);
+    litellmClient.updateConfig(safeConfig);
 
     return NextResponse.json({
       message: 'Configuration updated successfully',
-      config: _litellmClient.getConfig()
+      config: litellmClient.getConfig()
     });
 
   } catch (error) {
@@ -206,7 +209,7 @@ async function handleChatCompletion(requestData: any, session: any) {
       ...otherParams
     };
 
-    const response = await _litellmClient.createChatCompletion(chatRequest);
+    const response = await litellmClient.createChatCompletion(chatRequest);
 
     return NextResponse.json({
       ...response,
@@ -246,7 +249,7 @@ async function handleEmbedding(requestData: any, session: any) {
       user: session.user?.email || 'anonymous'
     };
 
-    const response = await _litellmClient.createEmbedding(embeddingRequest);
+    const response = await litellmClient.createEmbedding(embeddingRequest);
 
     return NextResponse.json({
       ...response,
@@ -297,7 +300,7 @@ async function handleStreamingChat(requestData: any, session: any) {
           ...otherParams
         };
 
-        _litellmClient.createChatCompletionStream(
+        litellmClient.createChatCompletionStream(
           chatRequest,
           (chunk) => {
             // Send chunk as Server-Sent Event
@@ -337,4 +340,5 @@ function generateRequestId(): string {
   return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Client is available internally within this module only 
+// Export for external use
+export { litellmClient }; 

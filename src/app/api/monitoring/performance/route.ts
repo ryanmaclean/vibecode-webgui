@@ -1,10 +1,12 @@
 /**
  * Performance Monitoring API Endpoint
- * Provides performance metrics, reports, and test result submission
+ * Provides performance metrics and optimization insights
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { performanceMonitor } from '../../../../lib/monitoring/performance-monitoring'
+
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {

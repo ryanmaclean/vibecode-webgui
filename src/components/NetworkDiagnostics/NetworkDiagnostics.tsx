@@ -4,7 +4,7 @@ import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CircularProgress from '@mui/material/CircularProgress';
-import Grid from '@mui/material/Grid';
+// Using Box-based layout to avoid Grid typing issues
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -16,55 +16,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import Tooltip from '@mui/material/Tooltip';
-import IconButton from '@mui/material/IconButton';
-import Refresh from '@mui/icons-material/Refresh';
-import Info from '@mui/icons-material/Info';
-
-interface HopStat {
-  hop: number;
-  host: string;
-  ip: string;
-  loss: number;
-  sent: number;
-  last: number;
-  avg: number;
-  best: number;
-  worst: number;
-  stdev: number;
-  jitter?: number;
-  p50?: number;
-  p90?: number;
-  p95?: number;
-  p99?: number;
-}
-
-interface HopStat {
-  hop: number;
-  host: string;
-  ip: string;
-  loss: number;
-  sent: number;
-  last: number;
-  avg: number;
-  best: number;
-  worst: number;
-  stdev: number;
-  jitter?: number;
-  host?: string;
-  ip?: string;
-  loss: string;
-  sent: number;
-  last: number;
-  avg: number;
-  best: number;
-  worst: number;
-  stdev: number;
-  jitter: number;
-  p50: number;
-  p90: number;
-  p95: number;
-  p99: number;
-}
+import type { HopStat } from '@/types/network';
 
 const NetworkDiagnostics = () => {
   const [host, setHost] = useState('api.vibecode.com');
@@ -118,14 +70,20 @@ const NetworkDiagnostics = () => {
           <Typography variant="h5" gutterBottom>
             Network Diagnostics
             <Tooltip title="Run network diagnostics to check connectivity and trace routes">
-              <IconButton size="small" sx={{ ml: 1, verticalAlign: 'middle' }}>
-                <Info fontSize="small" />
-              </IconButton>
+              <Box component="span" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 12, color: 'text.secondary' }}>i</Box>
             </Tooltip>
           </Typography>
           
-          <Grid container spacing={2} alignItems="center" sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={5}>
+          <Box
+            sx={{
+              mb: 3,
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 2,
+              alignItems: 'center'
+            }}
+          >
+            <Box sx={{ flex: { sm: 5 } , width: '100%' }}>
               <TextField
                 fullWidth
                 label="Host"
@@ -135,8 +93,8 @@ const NetworkDiagnostics = () => {
                 size="small"
                 disabled={isLoading}
               />
-            </Grid>
-            <Grid item xs={12} sm={3}>
+            </Box>
+            <Box sx={{ flex: { sm: 3 } , width: '100%' }}>
               <TextField
                 fullWidth
                 label="Port"
@@ -147,20 +105,20 @@ const NetworkDiagnostics = () => {
                 type="number"
                 disabled={isLoading}
               />
-            </Grid>
-            <Grid item xs={12} sm={4}>
+            </Box>
+            <Box sx={{ flex: { sm: 4 } , width: '100%' }}>
               <Button
                 fullWidth
                 variant="contained"
                 color="primary"
                 onClick={runDiagnostics}
                 disabled={isLoading}
-                startIcon={isLoading ? <CircularProgress size={20} /> : <Refresh />}
+                startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
               >
                 {isLoading ? 'Running...' : 'Run Diagnostics'}
               </Button>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
 
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -218,9 +176,9 @@ const NetworkDiagnostics = () => {
                             <TableCell>{hop.best.toFixed(2)}</TableCell>
                             <TableCell>{hop.worst.toFixed(2)}</TableCell>
                             <TableCell>{hop.stdev.toFixed(2)}</TableCell>
-                            <TableCell>{hop.jitter.toFixed(2)}</TableCell>
-                            <TableCell>{hop.p90.toFixed(2)}</TableCell>
-                            <TableCell>{hop.p99.toFixed(2)}</TableCell>
+                            <TableCell>{hop.jitter != null ? hop.jitter.toFixed(2) : '-'}</TableCell>
+                            <TableCell>{hop.p90 != null ? hop.p90.toFixed(2) : '-'}</TableCell>
+                            <TableCell>{hop.p99 != null ? hop.p99.toFixed(2) : '-'}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

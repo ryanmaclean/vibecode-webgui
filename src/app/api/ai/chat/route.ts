@@ -3,7 +3,12 @@
  * Handles AI-powered code assistance using Vercel AI SDK
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
 
 // Log AI interaction events to Datadog
 function logAIInteraction(

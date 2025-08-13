@@ -5,7 +5,6 @@
  * Tests run on git commit to ensure deployment integrity
  */
 
-const { describe, test, expect, beforeAll, afterAll } = require('@jest/globals');
 const { execSync } = require('child_process');
 
 describe('KIND Cluster Validation (Complete)', () => {
@@ -169,8 +168,7 @@ describe('Integration Test Quality (Complete)', () => {
 
     if (fs.existsSync(envPath)) {
       const envContent = fs.readFileSync(envPath, 'utf8');
-      expect(envContent).toContain('DATADOG_API_KEY');
-      expect(envContent).toContain('OPENROUTER_API_KEY');
+      expect(envContent).toMatch(/^(?=.*(DD_API_KEY|DATADOG_API_KEY))(?=.*OPENROUTER_API_KEY)/ms);
     }
   });
 });
