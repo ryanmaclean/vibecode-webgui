@@ -123,13 +123,16 @@ test_secrets_automation() {
         return 1
     fi
     
-    # Verify secrets created
-    if kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
+    # Verify secrets created (canonical + legacy)
+    if kubectl get secret datadog-secret -n "$TEST_NAMESPACE" >/dev/null 2>&1 || \
+       kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
         test_result "Datadog Secrets Creation" "PASS"
         
         # Verify API key length
         local api_key_length
-        api_key_length=$(kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" -o jsonpath='{.data.api-key}' | base64 -d | wc -c | tr -d ' ')
+        api_key_length=$(((kubectl get secret datadog-secret -n "$TEST_NAMESPACE" -o jsonpath='{.data.api-key}' 2>/dev/null) || \
+                           (kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" -o jsonpath='{.data.api-key}' 2>/dev/null)) \
+                          | base64 -d | wc -c | tr -d ' ')
         if [[ "$api_key_length" -gt 20 ]]; then
             test_result "API Key Validation" "PASS"
         else
@@ -253,7 +256,8 @@ test_datadog_configuration() {
         
         # Check for 2025 best practices
         if grep -q "targetSystem.*linux" "$dev_values" && \
-           grep -q "apiKeyExistingSecret.*datadog-secrets" "$dev_values"; then
+           (grep -q "apiKeyExistingSecret.*datadog-secret" "$dev_values" || \
+            grep -q "apiKeyExistingSecret.*datadog-secrets" "$dev_values"); then
             test_result "2025 Best Practices Configuration" "PASS"
         else
             test_result "2025 Best Practices Configuration" "FAIL"
