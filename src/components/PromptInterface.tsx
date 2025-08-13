@@ -320,6 +320,9 @@ export default function PromptInterface() {
   });
   const [showApiKeySetup, setShowApiKeySetup] = useState(false);
   
+  // Template marketplace integration
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -363,6 +366,23 @@ export default function PromptInterface() {
         setApiKeys(JSON.parse(savedKeys));
       } catch (error) {
         console.error('Error loading saved API keys:', error);
+      }
+    }
+  }, []);
+
+  // Check for selected template from marketplace
+  useEffect(() => {
+    const templateData = sessionStorage.getItem('selectedTemplate');
+    if (templateData) {
+      try {
+        const template = JSON.parse(templateData);
+        setSelectedTemplate(template);
+        sessionStorage.removeItem('selectedTemplate'); // Clean up after use
+        
+        // Pre-populate the input with template context
+        setInput(`Generate a project using the "${template.name}" template. This template is described as: ${template.description}`);
+      } catch (error) {
+        console.error('Error loading selected template:', error);
       }
     }
   }, []);
@@ -982,6 +1002,11 @@ export default function LandingPage() {
               </h2>
               <p className="text-sm text-muted-foreground">
                 Type, upload files, or speak to interact
+                {selectedTemplate && (
+                  <span className="block mt-1 text-blue-600 font-medium">
+                    🎯 Using template: {selectedTemplate.name}
+                  </span>
+                )}
               </p>
             </div>
             
