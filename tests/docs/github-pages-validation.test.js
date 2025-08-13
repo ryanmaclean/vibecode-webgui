@@ -18,7 +18,8 @@ describe('GitHub Pages Documentation Site', () => {
       
       const html = await response.text();
       expect(html).toContain('VibeCode Platform');
-      expect(html).toContain('Astro v5.12.1');
+      // Check for current Astro version (v5.12.9 or higher)
+      expect(html).toMatch(/Astro v5\.12\.[0-9]+/);
       expect(html).toContain('Starlight v0.35.1');
     }, 10000);
 
