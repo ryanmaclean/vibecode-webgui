@@ -69,6 +69,9 @@ kubectl create namespace "$TEST_NAMESPACE" >/dev/null 2>&1 || true
 export DD_API_KEY="test-api-key-validation-32chars"
 export POSTGRES_PASSWORD="test-postgres-validation"
 export DATADOG_POSTGRES_PASSWORD="test-datadog-validation"
+# Prefer DD_* with legacy fallback for DBM
+export DD_POSTGRES_USER="${DD_POSTGRES_USER:-datadog}"
+export DD_POSTGRES_PASSWORD="${DD_POSTGRES_PASSWORD:-$DATADOG_POSTGRES_PASSWORD}"
 
 # Test script exists
 if [[ -x "$PROJECT_ROOT/scripts/setup-secrets.sh" ]]; then
