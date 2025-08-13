@@ -4,6 +4,9 @@ import { AIAssistantManager } from './ai-assistant-manager';
 import { ChatWebviewProvider } from './chat-webview-provider';
 import { CodeGenerator } from './code-generator';
 import { ProjectGenerator } from './project-generator';
+import { TemplatesProvider } from './templates-provider';
+import { DeploymentWebviewProvider } from './deployment-provider';
+import { GitHubProvider } from './github-provider';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('VibeCode AI Assistant is now active!');
@@ -20,10 +23,28 @@ export function activate(context: vscode.ExtensionContext) {
     // Initialize Project Generator
     const projectGenerator = new ProjectGenerator(openRouterClient);
 
+    // Initialize Templates Provider
+    const templatesProvider = new TemplatesProvider();
+    context.subscriptions.push(
+        vscode.window.registerTreeDataProvider('vibeCodeTemplates', templatesProvider)
+    );
+
+    // Initialize Deployment Provider
+    const deploymentProvider = new DeploymentWebviewProvider(context.extensionUri);
+    context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider('vibeCodeDeployment', deploymentProvider)
+    );
+
+    // Initialize GitHub Provider
+    const githubProvider = new GitHubProvider();
+    context.subscriptions.push(
+        vscode.window.registerTreeDataProvider('vibeCodeGitHub', githubProvider)
+    );
+
     // Register Chat WebView Provider
     const chatProvider = new ChatWebviewProvider(context.extensionUri, openRouterClient);
     context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider(ChatWebviewProvider.viewType, chatProvider)
+        vscode.window.registerWebviewViewProvider('vibeCodeChat', chatProvider)
     );
 
     // Register commands
@@ -59,6 +80,94 @@ export function activate(context: vscode.ExtensionContext) {
 
         vscode.commands.registerCommand('vibecode.selectAIModel', async () => {
             await aiAssistantManager.selectAIModel();
+        }),
+
+        // Template commands
+        vscode.commands.registerCommand('vibecode.templates.refresh', () => {
+            templatesProvider.refresh();
+        }),
+
+        vscode.commands.registerCommand('vibecode.templates.browse', async () => {
+            const panel = vscode.window.createWebviewPanel(
+                'templateMarketplace',
+                'Template Marketplace',
+                vscode.ViewColumn.One,
+                { enableScripts: true }
+            );
+            panel.webview.html = `
+                <html>
+                <body>
+                    <h1>Template Marketplace</h1>
+                    <p>Browse and discover templates at <a href="http://localhost:3000/marketplace">localhost:3000/marketplace</a></p>
+                    <script>window.open('http://localhost:3000/marketplace', '_blank');</script>
+                </body>
+                </html>
+            `;
+        }),
+
+        vscode.commands.registerCommand('vibecode.templates.create', async (template) => {
+            if (template) {
+                await templatesProvider.createProjectFromTemplate(template);
+            } else {
+                vscode.window.showInformationMessage('Please select a template from the Templates view');
+            }
+        }),
+
+        vscode.commands.registerCommand('vibecode.templates.preview', async (template) => {
+            await templatesProvider.previewTemplate(template);
+        }),
+
+        // GitHub commands
+        vscode.commands.registerCommand('vibecode.github.authenticate', async () => {
+            await githubProvider.authenticateWithGitHub();
+        }),
+
+        vscode.commands.registerCommand('vibecode.github.createRepo', async () => {
+            await githubProvider.createRepository();
+        }),
+
+        vscode.commands.registerCommand('vibecode.github.setupWorkflow', async (repo) => {
+            await githubProvider.setupWorkflow(repo);
+        }),
+
+        vscode.commands.registerCommand('vibecode.github.openRepo', async (repo) => {
+            await githubProvider.openRepository(repo);
+        }),
+
+        vscode.commands.registerCommand('vibecode.github.triggerWorkflow', async (workflow) => {
+            await githubProvider.triggerWorkflow(workflow);
+        }),
+
+        vscode.commands.registerCommand('vibecode.github.refresh', () => {
+            githubProvider.refresh();
+        }),
+
+        // Deployment commands
+        vscode.commands.registerCommand('vibecode.deployment.deploy', async () => {
+            vscode.window.showInformationMessage('Select a provider from the Deployment view to deploy your project');
+        }),
+
+        vscode.commands.registerCommand('vibecode.deployment.status', async () => {
+            vscode.window.showInformationMessage('Check deployment status in the Deployment view');
+        }),
+
+        // Collaboration commands
+        vscode.commands.registerCommand('vibecode.collaboration.start', async () => {
+            vscode.window.showInformationMessage('Collaborative features coming soon!');
+        }),
+
+        vscode.commands.registerCommand('vibecode.collaboration.join', async () => {
+            vscode.window.showInformationMessage('Collaborative features coming soon!');
+        }),
+
+        // Monitoring commands
+        vscode.commands.registerCommand('vibecode.monitoring.dashboard', async () => {
+            vscode.env.openExternal(vscode.Uri.parse('http://localhost:3000/api/monitoring/dashboard'));
+        }),
+
+        // AI orchestration commands
+        vscode.commands.registerCommand('vibecode.ai.orchestration', async () => {
+            vscode.window.showInformationMessage('AI Model Orchestration features coming soon!');
         })
     ];
 
@@ -67,14 +176,14 @@ export function activate(context: vscode.ExtensionContext) {
         context.subscriptions.push(command);
     });
 
-    // Set context for chat view
-    vscode.commands.executeCommand('setContext', 'vibeCodeChatEnabled', true);
+    // Set context for all views
+    vscode.commands.executeCommand('setContext', 'vibeCodeEnabled', true);
 
     // Register status bar item
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    statusBarItem.text = "$(robot) VibeCode AI";
-    statusBarItem.tooltip = "VibeCode AI Assistant";
-    statusBarItem.command = 'vibecode.chatWithCode';
+    statusBarItem.text = "$(robot) VibeCode AI Platform";
+    statusBarItem.tooltip = "VibeCode AI Platform - Templates • Deployment • Collaboration • AI Models";
+    statusBarItem.command = 'workbench.view.extension.vibecode-ai';
     statusBarItem.show();
     context.subscriptions.push(statusBarItem);
 
@@ -88,14 +197,17 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Welcome message
     vscode.window.showInformationMessage(
-        'VibeCode AI Assistant is ready! Use Ctrl+Shift+C to open chat or right-click in editor.',
-        'Open Chat',
-        'Select Model'
+        'VibeCode AI Platform is ready! Access all features from the VibeCode AI sidebar.',
+        'Open Templates',
+        'Browse Marketplace',
+        'Setup GitHub'
     ).then(selection => {
-        if (selection === 'Open Chat') {
-            vscode.commands.executeCommand('vibecode.chatWithCode');
-        } else if (selection === 'Select Model') {
-            vscode.commands.executeCommand('vibecode.selectAIModel');
+        if (selection === 'Open Templates') {
+            vscode.commands.executeCommand('workbench.view.extension.vibecode-ai');
+        } else if (selection === 'Browse Marketplace') {
+            vscode.commands.executeCommand('vibecode.templates.browse');
+        } else if (selection === 'Setup GitHub') {
+            vscode.commands.executeCommand('vibecode.github.authenticate');
         }
     });
 }
