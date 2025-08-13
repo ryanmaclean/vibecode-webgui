@@ -1,10 +1,9 @@
 /**
- * Enhanced Terminal WebSocket API
- * Handles terminal sessions with AI integration and Claude Code CLI support
- * Replaces simple terminal backend with AI-powered terminal
+ * WebSocket endpoint for terminal sessions
+ * Handles real-time terminal communication
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { WebSocketServer } from 'ws'
