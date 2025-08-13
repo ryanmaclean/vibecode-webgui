@@ -82,7 +82,7 @@ describe('Astro Documentation Build Tests', () => {
     expect(indexContent).toContain('<title>');
     expect(indexContent).toContain('<html');
     expect(indexContent).toContain('<head>');
-    expect(indexContent).toContain('<body>');
+    expect(indexContent).toMatch(/<body[^>]*>/);
     
     // Check for Starlight-specific elements
     expect(indexContent).toContain('data-starlight');
