@@ -98,9 +98,15 @@ test_secrets_functionality() {
         return 1
     fi
     
-    # Verify secrets were created
-    if kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
-        test_result "Datadog Secret Created" "PASS"
+    # Verify secrets were created (canonical + legacy)
+    local secret_name=""
+    if kubectl get secret datadog-secret -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
+        secret_name="datadog-secret"
+    elif kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
+        secret_name="datadog-secrets"
+    fi
+    if [[ -n "$secret_name" ]]; then
+        test_result "Datadog Secret Created ($secret_name)" "PASS"
     else
         test_result "Datadog Secret Created" "FAIL"
     fi
@@ -113,7 +119,7 @@ test_secrets_functionality() {
     
     # Test secret content
     local api_key_content
-    api_key_content=$(kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" -o jsonpath='{.data.api-key}' 2>/dev/null | (base64 -d 2>/dev/null || base64 -D) || echo "FAILED")
+    api_key_content=$((kubectl get secret "$secret_name" -n "$TEST_NAMESPACE" -o jsonpath='{.data.api-key}' 2>/dev/null) | (base64 -d 2>/dev/null || base64 -D) || echo "FAILED")
     if [[ "$api_key_content" == "$DD_API_KEY" ]]; then
         test_result "Secret Content Validation" "PASS"
     else
@@ -146,7 +152,7 @@ datadog:
   enabled: true
   targetSystem: "linux"
   datadog:
-    apiKeyExistingSecret: datadog-secrets
+    apiKeyExistingSecret: datadog-secret
     site: datadoghq.com
   agents:
     enabled: true
