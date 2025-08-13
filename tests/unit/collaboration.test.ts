@@ -7,7 +7,7 @@
  * Staff Engineer Implementation - Comprehensive collaboration testing
  */
 
-const { describe, test, expect, beforeEach, afterEach, jest } = require('@jest/globals')
+const { describe, test, expect, beforeEach, afterEach } = require('@jest/globals')
 
 // Mock Yjs and related dependencies
 jest.mock('yjs', () => ({

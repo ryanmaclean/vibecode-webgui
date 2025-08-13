@@ -3,6 +3,36 @@ import { MultimodalAgent, MultimodalInput, AgentContext } from '../../src/lib/mu
 // Mock dependencies
 jest.mock('../../src/lib/openrouter-client');
 
+// Test helper function
+const createTestContext = (): AgentContext => ({
+  workspaceId: 'test-workspace',
+  userId: 'test-user',
+  sessionId: 'test-session',
+  previousMessages: [],
+  userPreferences: {
+    codeStyle: 'typescript',
+    framework: 'react',
+    uiLibrary: 'shadcn',
+    voiceSettings: {
+      enabled: true,
+      autoplay: false,
+      speed: 1.0,
+      voice: 'en-US-Standard-A'
+    },
+    assistantPersonality: 'professional'
+  },
+  projectMetadata: {
+    name: 'Test Project',
+    description: 'Test project for multimodal agent',
+    type: 'web-app',
+    technologies: ['React', 'TypeScript'],
+    complexity: 'intermediate',
+    estimatedTime: 60,
+    targetAudience: 'developers',
+    features: ['responsive', 'accessible']
+  }
+});
+
 describe('MultimodalAgent', () => {
   let agent: MultimodalAgent;
   let mockConfig: any;
@@ -538,34 +568,4 @@ And some CSS:
     });
   });
 
-  describe('createTestContext helper', () => {
-    const createTestContext = (): AgentContext => ({
-      workspaceId: 'test-workspace',
-      userId: 'test-user',
-      sessionId: 'test-session',
-      previousMessages: [],
-      userPreferences: {
-        codeStyle: 'typescript',
-        framework: 'react',
-        uiLibrary: 'shadcn',
-        voiceSettings: {
-          enabled: true,
-          autoplay: false,
-          speed: 1.0,
-          voice: 'en-US-Standard-A'
-        },
-        assistantPersonality: 'professional'
-      },
-      projectMetadata: {
-        name: 'Test Project',
-        description: 'Test project for multimodal agent',
-        type: 'web-app',
-        technologies: ['React', 'TypeScript'],
-        complexity: 'intermediate',
-        estimatedTime: 60,
-        targetAudience: 'developers',
-        features: ['responsive', 'accessible']
-      }
-    });
-  });
 }); 

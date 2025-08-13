@@ -40,6 +40,11 @@ const config = {
     '<rootDir>/tests/e2e/',
   ],
 
+  // Fix haste map collision
+  haste: {
+    enableSymlinks: false,
+  },
+
   // Use Babel for transformation to avoid SWC issues
   transform: {
     '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { 
