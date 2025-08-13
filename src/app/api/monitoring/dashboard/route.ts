@@ -1,14 +1,9 @@
 /**
- * API endpoint for monitoring dashboard data
- * Provides real-time metrics and health information
+ * Monitoring Dashboard API Endpoint
+ * Provides comprehensive monitoring data and health status
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { monitoring } from '../../../../lib/monitoring'
-import { datadogMonitoring } from '../../../../lib/monitoring/enhanced-datadog-integration'
-import { getServiceEnvVersion } from '@/lib/monitoring/datadog-env'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
