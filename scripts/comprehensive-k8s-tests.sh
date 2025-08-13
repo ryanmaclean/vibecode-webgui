@@ -148,6 +148,9 @@ test_secrets_deployment() {
         export DD_API_KEY="test-api-key-32-characters-long-123"
         export POSTGRES_PASSWORD="test-postgres-password"
         export DATADOG_POSTGRES_PASSWORD="test-datadog-password"
+        # Prefer DD_* with legacy fallback for DBM
+        export DD_POSTGRES_USER="${DD_POSTGRES_USER:-datadog}"
+        export DD_POSTGRES_PASSWORD="${DD_POSTGRES_PASSWORD:-$DATADOG_POSTGRES_PASSWORD}"
     fi
     
     # Test secret creation script
@@ -161,7 +164,7 @@ test_secrets_deployment() {
     # Verify secrets exist and have correct structure
     if kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
         local api_key_length
-        api_key_length=$(kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" -o jsonpath='{.data.api-key}' | base64 -d | wc -c | tr -d ' ')
+        api_key_length=$(kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" -o jsonpath='{.data.api-key}' | (base64 -d 2>/dev/null || base64 -D) | wc -c | tr -d ' ')
         if [[ "$api_key_length" -gt 20 ]]; then
             test_result "Datadog Secret Validation" "PASS" "API key length: $api_key_length chars"
         else

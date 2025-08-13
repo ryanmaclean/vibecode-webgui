@@ -4,6 +4,7 @@
 import { datadogRum } from '@datadog/browser-rum';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
+import { getRUMPublicConfig } from '@/lib/monitoring/datadog-env';
 
 // This component initializes Datadog RUM for client-side monitoring.
 const DatadogRUM = () => {
@@ -15,19 +16,24 @@ const DatadogRUM = () => {
       return;
     }
 
-    const isDevelopment = process.env.NODE_ENV === 'development';
     const isProduction = process.env.NODE_ENV === 'production';
+    const enableDev = process.env.NEXT_PUBLIC_ENABLE_RUM_IN_DEV === 'true';
 
-    // Initialize in production or development, if the client token is available.
-    if ((isProduction || isDevelopment) && process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN) {
+    // Resolve public RUM config via centralized helper (prefers NEXT_PUBLIC_DD_*; legacy fallback)
+    const { applicationId, clientToken, site, env, version } = getRUMPublicConfig();
+
+    // Initialize in production or when explicitly enabled for development, if the client token is available.
+    if ((isProduction || enableDev) && clientToken && applicationId) {
       console.log(`Initializing Datadog RUM for ${process.env.NODE_ENV}...`);
+      type DatadogSite = 'datadoghq.com' | 'us3.datadoghq.com' | 'us5.datadoghq.com' | 'datadoghq.eu' | 'ddog-gov.com' | 'ap1.datadoghq.com';
+      const ddSite: DatadogSite = (site as DatadogSite) || 'datadoghq.com';
       datadogRum.init({
-        applicationId: process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID || 'vibecode-rum',
-        clientToken: process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN,
-        site: process.env.NEXT_PUBLIC_DATADOG_SITE || 'datadoghq.com',
-        service: process.env.NEXT_PUBLIC_DATADOG_SERVICE || 'vibecode-webgui',
-        env: process.env.NODE_ENV,
-        version: process.env.NEXT_PUBLIC_DATADOG_VERSION || process.env.npm_package_version,
+        applicationId: applicationId || 'vibecode-rum',
+        clientToken,
+        site: ddSite,
+        service: 'vibecode-webgui',
+        env,
+        version: version || process.env.npm_package_version,
         sessionSampleRate: 100,
         sessionReplaySampleRate: isProduction ? 20 : 100, // 20% for prod, 100% for dev
         trackUserInteractions: true,

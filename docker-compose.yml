@@ -50,9 +50,10 @@ services:
       - NEXTAUTH_URL=http://localhost:3000
       
       # Datadog RUM (Real User Monitoring) variables
-      - NEXT_PUBLIC_DATADOG_APPLICATION_ID=${NEXT_PUBLIC_DATADOG_APPLICATION_ID}
-      - NEXT_PUBLIC_DATADOG_CLIENT_TOKEN=${NEXT_PUBLIC_DATADOG_CLIENT_TOKEN}
-      - NEXT_PUBLIC_DATADOG_SITE=${NEXT_PUBLIC_DATADOG_SITE:-datadoghq.com}
+      # Prefer NEXT_PUBLIC_DD_*; map from legacy NEXT_PUBLIC_DATADOG_* if DD_* is unset
+      - NEXT_PUBLIC_DD_APPLICATION_ID=${NEXT_PUBLIC_DD_APPLICATION_ID:-${NEXT_PUBLIC_DATADOG_APPLICATION_ID}}
+      - NEXT_PUBLIC_DD_CLIENT_TOKEN=${NEXT_PUBLIC_DD_CLIENT_TOKEN:-${NEXT_PUBLIC_DATADOG_CLIENT_TOKEN}}
+      - NEXT_PUBLIC_DD_SITE=${NEXT_PUBLIC_DD_SITE:-${NEXT_PUBLIC_DATADOG_SITE:-datadoghq.com}}
       
       # Datadog APM (Application Performance Monitoring)
       - DD_AGENT_HOST=datadog-agent
@@ -256,9 +257,9 @@ services:
     image: gcr.io/datadoghq/agent:7.66.1
     container_name: vibecode-datadog-agent
     environment:
-      - DD_API_KEY=${DATADOG_API_KEY:-dummy-key-for-local-dev}
-      - DD_APP_KEY=${DATADOG_APP_KEY:-dummy-app-key-for-local-dev}
-      - DD_SITE=${DATADOG_SITE:-datadoghq.com}
+      - DD_API_KEY=${DD_API_KEY:-${DATADOG_API_KEY:-dummy-key-for-local-dev}}
+      - DD_APP_KEY=${DD_APP_KEY:-${DATADOG_APP_KEY:-dummy-app-key-for-local-dev}}
+      - DD_SITE=${DD_SITE:-${DATADOG_SITE:-datadoghq.com}}
       - DD_HOSTNAME=vibecode-docker-compose
       - DD_ENV=${ENVIRONMENT:-local}
       - DD_SERVICE=vibecode-webgui

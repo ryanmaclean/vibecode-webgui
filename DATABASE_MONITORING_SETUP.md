@@ -108,7 +108,7 @@ services:
             "host": "%%host%%",
             "port": 5432,
             "username": "datadog",
-            "password": "${DATADOG_POSTGRES_PASSWORD}",
+            "password": "${DD_POSTGRES_PASSWORD:-${DATADOG_POSTGRES_PASSWORD}}",
             "dbm": true,
             "collect_schemas": true,
             "collect_database_size_metrics": true,
@@ -121,7 +121,7 @@ services:
   datadog-agent:
     image: datadog/agent:7.50.0
     environment:
-      - DD_API_KEY=${DATADOG_API_KEY}
+      - DD_API_KEY=${DD_API_KEY:-${DATADOG_API_KEY}}
       - DD_SITE=datadoghq.com
       - DD_LOGS_ENABLED=true
       - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
@@ -420,12 +420,16 @@ data:
 
 ```bash
 # Set in your shell (not in Git!)
-export DATADOG_API_KEY="your-datadog-api-key-here"
-export DATADOG_POSTGRES_PASSWORD="secure-datadog-password"
+export DD_API_KEY="your-datadog-api-key-here"
+export DD_POSTGRES_PASSWORD="secure-datadog-password"
 export POSTGRES_PASSWORD="secure-postgres-password"
 
-# Verify variables are set
-echo "Keys configured: $([ -n "$DATADOG_API_KEY" ] && echo "✅" || echo "❌")"
+# Legacy fallback supported (optional)
+# export DATADOG_API_KEY="$DD_API_KEY"
+# export DATADOG_POSTGRES_PASSWORD="$DD_POSTGRES_PASSWORD"
+
+# Verify variables are set (DD_* preferred, legacy supported)
+echo "Keys configured: $([ -n \"$DD_API_KEY\" ] || [ -n \"$DATADOG_API_KEY\" ] && echo \"✅\" || echo \"❌\")"
 ```
 
 ### 2. Deploy Development Environment
@@ -436,9 +440,9 @@ helm install vibecode-dev ./helm/vibecode-platform \
   -f ./helm/vibecode-platform/values-dev.yaml \
   --namespace vibecode-dev \
   --create-namespace \
-  --set datadog.apiKey="$DATADOG_API_KEY" \
+  --set datadog.apiKey="${DD_API_KEY:-$DATADOG_API_KEY}" \
   --set database.postgresql.auth.postgresPassword="$POSTGRES_PASSWORD" \
-  --set database.postgresql.auth.datadogPassword="$DATADOG_POSTGRES_PASSWORD"
+  --set database.postgresql.auth.datadogPassword="${DD_POSTGRES_PASSWORD:-$DATADOG_POSTGRES_PASSWORD}"
 ```
 
 ### 3. Deploy Production Environment
@@ -449,9 +453,9 @@ helm install vibecode-prod ./helm/vibecode-platform \
   -f ./helm/vibecode-platform/values-prod.yaml \
   --namespace vibecode-production \
   --create-namespace \
-  --set datadog.apiKey="$DATADOG_API_KEY" \
+  --set datadog.apiKey="${DD_API_KEY:-$DATADOG_API_KEY}" \
   --set database.postgresql.auth.postgresPassword="$POSTGRES_PASSWORD" \
-  --set database.postgresql.auth.datadogPassword="$DATADOG_POSTGRES_PASSWORD" \
+  --set database.postgresql.auth.datadogPassword="${DD_POSTGRES_PASSWORD:-$DATADOG_POSTGRES_PASSWORD}" \
   --set datadog.logs.enabled=true \
   --set datadog.apm.enabled=true
 ```
