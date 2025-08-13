@@ -1,5 +1,5 @@
 # Development container for Next.js application
-FROM node:18-alpine AS base
+FROM node:18-alpine
 
 # Install dependencies for native modules
 RUN apk add --no-cache \
@@ -12,27 +12,14 @@ RUN apk add --no-cache \
 # Set working directory
 WORKDIR /app
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001 -G nodejs
-
-# Copy package files
+# Copy package files first
 COPY package*.json ./
 
-# Copy .npmrc if it exists
-COPY .npmrc ./ 2>/dev/null || true
-
-# Install dependencies
-RUN npm ci && npm cache clean --force
+# Install dependencies using legacy peer deps to handle conflicts
+RUN npm install --legacy-peer-deps
 
 # Copy source code
-COPY --chown=nextjs:nodejs . .
-
-# Change ownership of the entire app directory to the non-root user
-RUN chown -R nextjs:nodejs /app
-
-# Switch to non-root user
-USER nextjs
+COPY . .
 
 # Expose port
 EXPOSE 3000

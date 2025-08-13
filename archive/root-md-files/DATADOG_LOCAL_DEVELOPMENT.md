@@ -44,8 +44,8 @@ docker-compose up -d
 datadog-agent:
   image: gcr.io/datadoghq/agent:7.66.1
   environment:
-    - DD_API_KEY=${DATADOG_API_KEY:-dummy-key-for-local-dev}
-    - DD_SITE=datadoghq.com
+    - DD_API_KEY=${DD_API_KEY:-${DATADOG_API_KEY:-dummy-key-for-local-dev}} # Prefer DD_API_KEY; legacy DATADOG_API_KEY supported
+    - DD_SITE=${DD_SITE:-${DATADOG_SITE:-datadoghq.com}}
     - DD_ENV=local
     - DD_LOGS_ENABLED=true
     - DD_APM_ENABLED=true
@@ -91,19 +91,24 @@ docs:
 ### Required Environment Variables
 ```bash
 # Datadog Core Configuration
-DATADOG_API_KEY=your-api-key-or-dummy-for-local
-DATADOG_APP_KEY=your-app-key-or-dummy-for-local  
-DATADOG_SITE=datadoghq.com
-
+# Prefer DD_*; legacy DATADOG_* still recognized as fallback
+DD_API_KEY=your-api-key-or-dummy-for-local
+DD_APP_KEY=your-app-key-or-dummy-for-local
+DD_SITE=datadoghq.com
+# Legacy: DATADOG_API_KEY / DATADOG_APP_KEY / DATADOG_SITE are still supported and used as fallback
+  
 # Environment Identification
-ENVIRONMENT=local
 DD_ENV=local
-
+  
 # Real User Monitoring (RUM) for frontend
-NEXT_PUBLIC_DATADOG_APPLICATION_ID=your-rum-app-id
-NEXT_PUBLIC_DATADOG_CLIENT_TOKEN=your-rum-client-token
-NEXT_PUBLIC_DATADOG_SITE=datadoghq.com
+NEXT_PUBLIC_DD_APPLICATION_ID=your-rum-app-id
+NEXT_PUBLIC_DD_CLIENT_TOKEN=your-rum-client-token
+NEXT_PUBLIC_DD_SITE=datadoghq.com
+# Legacy: NEXT_PUBLIC_DATADOG_* variables are still recognized as fallback
+NEXT_PUBLIC_ENABLE_RUM_IN_DEV=false  # default off; enable only when testing RUM locally
 ```
+
+> Note: Throughout local dev, examples prefer DD_* variables. Where third-party tools expect legacy names (e.g., Vector/OTel env placeholders), we map `DD_API_KEY` to those via `${DD_API_KEY:-${DATADOG_API_KEY:-...}}` so either works seamlessly.
 
 ### Development vs Production Keys
 - **Local Development**: Use dummy keys or development-specific keys
@@ -277,4 +282,4 @@ docker-compose logs -f datadog-agent
 
 **Status**: ✅ Dev/Stg/Prd parity achieved with Datadog monitoring  
 **Environment**: Local development with full monitoring stack  
-**Last Updated**: January 21, 2025
+**Last Updated**: August 11, 2025

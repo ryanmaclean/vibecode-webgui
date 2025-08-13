@@ -41,9 +41,8 @@ const requiredVars = {
   ai: [
     'OPENROUTER_API_KEY',
   ],
-  monitoring: [
-    'DATADOG_API_KEY',
-  ],
+  // Do not require Datadog in development; prefer optional with warnings
+  monitoring: [],
 };
 
 // Development-only variables
@@ -58,8 +57,14 @@ const optionalVars = [
   'GITHUB_SECRET',
   'GOOGLE_CLIENT_ID',
   'GOOGLE_CLIENT_SECRET',
-  'NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID',
-  'NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN',
+  // Preferred RUM envs (prefer NEXT_PUBLIC_DD_* with DATADOG_* fallback)
+  'NEXT_PUBLIC_DD_APPLICATION_ID',
+  'NEXT_PUBLIC_DD_CLIENT_TOKEN',
+  'NEXT_PUBLIC_DD_SITE',
+  // Legacy RUM vars (kept to detect and warn)
+  'NEXT_PUBLIC_DATADOG_APPLICATION_ID',
+  'NEXT_PUBLIC_DATADOG_CLIENT_TOKEN',
+  'NEXT_PUBLIC_DATADOG_SITE',
   'SLACK_WEBHOOK_URL',
   'SENDGRID_API_KEY',
   'PAGERDUTY_INTEGRATION_KEY',
@@ -117,6 +122,79 @@ optionalVars.forEach(varName => {
     console.log(`  ✅ ${varName}: CONFIGURED`);
   }
 });
+
+console.log('');
+
+// Normalize Datadog env var variants and emit warnings
+console.log('🧩 Datadog Environment Normalization:');
+
+// API Key
+if (!process.env.DD_API_KEY && process.env.DATADOG_API_KEY) {
+  console.log('  ⚠️  DATADOG_API_KEY detected. Prefer DD_API_KEY. Mapping for this process.');
+  process.env.DD_API_KEY = process.env.DATADOG_API_KEY;
+}
+if (process.env.DD_API_KEY && process.env.DATADOG_API_KEY && process.env.DD_API_KEY !== process.env.DATADOG_API_KEY) {
+  console.log('  ⚠️  Both DD_API_KEY and DATADOG_API_KEY set and differ. Using DD_API_KEY.');
+}
+
+// Application Key
+if (!process.env.DD_APP_KEY && process.env.DATADOG_APP_KEY) {
+  console.log('  ⚠️  DATADOG_APP_KEY detected. Prefer DD_APP_KEY. Mapping for this process.');
+  process.env.DD_APP_KEY = process.env.DATADOG_APP_KEY;
+}
+if (process.env.DD_APP_KEY && process.env.DATADOG_APP_KEY && process.env.DD_APP_KEY !== process.env.DATADOG_APP_KEY) {
+  console.log('  ⚠️  Both DD_APP_KEY and DATADOG_APP_KEY set and differ. Using DD_APP_KEY.');
+}
+
+// Site
+if (!process.env.DD_SITE && process.env.DATADOG_SITE) {
+  console.log('  ⚠️  DATADOG_SITE detected. Prefer DD_SITE. Mapping for this process.');
+  process.env.DD_SITE = process.env.DATADOG_SITE;
+}
+if (process.env.DD_SITE && process.env.DATADOG_SITE && process.env.DD_SITE !== process.env.DATADOG_SITE) {
+  console.log('  ⚠️  Both DD_SITE and DATADOG_SITE set and differ. Using DD_SITE.');
+}
+
+// Service
+if (!process.env.DD_SERVICE && process.env.DATADOG_SERVICE) {
+  console.log('  ⚠️  DATADOG_SERVICE detected. Prefer DD_SERVICE. Mapping for this process.');
+  process.env.DD_SERVICE = process.env.DATADOG_SERVICE;
+}
+if (process.env.DD_SERVICE && process.env.DATADOG_SERVICE && process.env.DD_SERVICE !== process.env.DATADOG_SERVICE) {
+  console.log('  ⚠️  Both DD_SERVICE and DATADOG_SERVICE set and differ. Using DD_SERVICE.');
+}
+
+// RUM/public config mapping and warnings
+// Map legacy NEXT_PUBLIC_DATADOG_* to NEXT_PUBLIC_DD_* for this process
+if (!process.env.NEXT_PUBLIC_DD_APPLICATION_ID) {
+  const legacyAppId = process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID || process.env.NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID
+  if (legacyAppId) {
+    console.log('  ⚠️  RUM: Legacy DATADOG application id detected. Prefer NEXT_PUBLIC_DD_APPLICATION_ID. Mapping for this process.')
+    process.env.NEXT_PUBLIC_DD_APPLICATION_ID = legacyAppId
+  }
+}
+if (process.env.NEXT_PUBLIC_DD_APPLICATION_ID && process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID && process.env.NEXT_PUBLIC_DD_APPLICATION_ID !== process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID) {
+  console.log('  ⚠️  Both NEXT_PUBLIC_DD_APPLICATION_ID and NEXT_PUBLIC_DATADOG_APPLICATION_ID set and differ. Using NEXT_PUBLIC_DD_APPLICATION_ID.')
+}
+
+if (!process.env.NEXT_PUBLIC_DD_CLIENT_TOKEN) {
+  const legacyClientToken = process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN || process.env.NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN
+  if (legacyClientToken) {
+    console.log('  ⚠️  RUM: Legacy DATADOG client token detected. Prefer NEXT_PUBLIC_DD_CLIENT_TOKEN. Mapping for this process.')
+    process.env.NEXT_PUBLIC_DD_CLIENT_TOKEN = legacyClientToken
+  }
+}
+if (process.env.NEXT_PUBLIC_DD_CLIENT_TOKEN && process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN && process.env.NEXT_PUBLIC_DD_CLIENT_TOKEN !== process.env.NEXT_PUBLIC_DATADOG_CLIENT_TOKEN) {
+  console.log('  ⚠️  Both NEXT_PUBLIC_DD_CLIENT_TOKEN and NEXT_PUBLIC_DATADOG_CLIENT_TOKEN set and differ. Using NEXT_PUBLIC_DD_CLIENT_TOKEN.')
+}
+
+if (!process.env.NEXT_PUBLIC_DD_SITE && process.env.NEXT_PUBLIC_DATADOG_SITE) {
+  console.log('  ⚠️  RUM: NEXT_PUBLIC_DATADOG_SITE detected. Prefer NEXT_PUBLIC_DD_SITE. Mapping for this process.')
+  process.env.NEXT_PUBLIC_DD_SITE = process.env.NEXT_PUBLIC_DATADOG_SITE
+}
+if (process.env.NEXT_PUBLIC_DD_SITE && process.env.NEXT_PUBLIC_DATADOG_SITE && process.env.NEXT_PUBLIC_DD_SITE !== process.env.NEXT_PUBLIC_DATADOG_SITE) {
+  console.log('  ⚠️  Both NEXT_PUBLIC_DD_SITE and NEXT_PUBLIC_DATADOG_SITE set and differ. Using NEXT_PUBLIC_DD_SITE.')
+}
 
 console.log('');
 

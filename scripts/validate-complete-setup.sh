@@ -111,6 +111,9 @@ test_secrets_automation() {
     # Set test passwords
     export POSTGRES_PASSWORD="test_postgres_$(date +%s)"
     export DATADOG_POSTGRES_PASSWORD="test_datadog_$(date +%s)"
+    # Prefer DD_* with legacy fallback for DBM
+    export DD_POSTGRES_USER="${DD_POSTGRES_USER:-datadog}"
+    export DD_POSTGRES_PASSWORD="${DD_POSTGRES_PASSWORD:-$DATADOG_POSTGRES_PASSWORD}"
     
     # Test script execution
     if "$PROJECT_ROOT/scripts/setup-secrets.sh" "$TEST_NAMESPACE" >/dev/null 2>&1; then

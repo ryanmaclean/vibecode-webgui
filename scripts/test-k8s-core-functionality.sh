@@ -87,6 +87,8 @@ test_secrets_functionality() {
     export DD_API_KEY="test-datadog-api-key-32chars-long"
     export POSTGRES_PASSWORD="test-postgres-pass-123"
     export DATADOG_POSTGRES_PASSWORD="test-datadog-pass-123"
+    export DD_POSTGRES_USER="${DD_POSTGRES_USER:-datadog}"
+    export DD_POSTGRES_PASSWORD="${DD_POSTGRES_PASSWORD:-$DATADOG_POSTGRES_PASSWORD}"
     
     # Test secrets script execution
     if "$PROJECT_ROOT/scripts/setup-secrets.sh" "$TEST_NAMESPACE" >/dev/null 2>&1; then
@@ -111,7 +113,7 @@ test_secrets_functionality() {
     
     # Test secret content
     local api_key_content
-    api_key_content=$(kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" -o jsonpath='{.data.api-key}' 2>/dev/null | base64 -d || echo "FAILED")
+    api_key_content=$(kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" -o jsonpath='{.data.api-key}' 2>/dev/null | (base64 -d 2>/dev/null || base64 -D) || echo "FAILED")
     if [[ "$api_key_content" == "$DD_API_KEY" ]]; then
         test_result "Secret Content Validation" "PASS"
     else

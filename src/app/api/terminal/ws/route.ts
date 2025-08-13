@@ -1,14 +1,18 @@
 /**
- * Enhanced Terminal WebSocket API
- * Handles terminal sessions with AI integration and Claude Code CLI support
- * Replaces simple terminal backend with AI-powered terminal
+ * WebSocket endpoint for terminal sessions
+ * Handles real-time terminal communication
  */
 
 import { NextRequest } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { WebSocketServer } from 'ws'
 import { spawn, IPty } from 'node-pty'
 import { ClaudeCliIntegration } from '@/lib/claude-cli-integration'
 import { datadogMonitoring } from '@/lib/monitoring/enhanced-datadog-integration'
+
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
 
 // Terminal session management
 const terminalSessions = new Map<string, {
@@ -118,8 +122,16 @@ const webSocketHandler = (ws: any, request: any) => {
   })
 
   // Handle create terminal
-  async function handleCreateTerminal(ws: any, message: any, workspaceId: string, userId: string) {
+  async function handleCreateTerminal(ws: any, message: any, workspaceId: string | null, userId: string) {
     try {
+      if (!workspaceId) {
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: 'Workspace ID is required'
+        }))
+        return
+      }
+      
       const sessionId = generateSessionId()
       const workspaceDir = `/workspaces/${workspaceId}`
       

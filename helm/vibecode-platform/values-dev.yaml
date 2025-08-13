@@ -222,7 +222,7 @@ datadog:
   # Datadog service configuration
   datadog:
     # API key set via Helm values from environment, never committed
-    apiKeyExistingSecret: datadog-secrets
+    apiKeyExistingSecret: datadog-secret
     site: datadoghq.com
 
   # Agent configuration following 2025 best practices (DaemonSet - Node Agents) 

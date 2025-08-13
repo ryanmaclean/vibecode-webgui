@@ -125,6 +125,51 @@ resource "helm_release" "datadog" {
 }
 ```
 
+## 🔧 Environment Variables
+
+To standardize configuration, we prefer `DD_*` variables with a safe fallback to legacy `DATADOG_*` variants. For client-side RUM, prefer `NEXT_PUBLIC_DD_*` with legacy `NEXT_PUBLIC_DATADOG_*` fallback.
+
+- __Server-side (preferred → fallback)__
+  - `DD_API_KEY` → `DATADOG_API_KEY`
+  - `DD_APP_KEY` → `DATADOG_APP_KEY`
+  - `DD_SITE` → `DATADOG_SITE` (default: `datadoghq.com`)
+  - `DD_SERVICE` → `DATADOG_SERVICE` (default: `vibecode-webgui`)
+  - `DD_ENV` → `DATADOG_ENV` (default: `development`/`production` by `NODE_ENV`)
+  - `DD_VERSION` → `DATADOG_VERSION` (default: package version or `1.0.0`)
+
+- __Client (RUM)__
+  - `NEXT_PUBLIC_DD_APPLICATION_ID` → `NEXT_PUBLIC_DATADOG_APPLICATION_ID` (also accepts `NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID`)
+  - `NEXT_PUBLIC_DD_CLIENT_TOKEN` → `NEXT_PUBLIC_DATADOG_CLIENT_TOKEN` (also accepts `NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN`)
+  - `NEXT_PUBLIC_DD_SITE` → `NEXT_PUBLIC_DATADOG_SITE` (default: `datadoghq.com`)
+  - Optional: `NEXT_PUBLIC_APP_VERSION` for front-end version tagging
+  - RUM is prod-only by default; enable in dev with `NEXT_PUBLIC_ENABLE_RUM_IN_DEV=true`.
+
+- __Centralized helper__
+  - Code should resolve env vars via `src/lib/monitoring/datadog-env.ts` to ensure consistent precedence and safe mismatch warnings.
+
+Example `.env` excerpt:
+
+```env
+# Server
+DD_API_KEY=your-datadog-api-key
+# DATADOG_API_KEY=your-datadog-api-key  # optional fallback
+DD_SITE=datadoghq.com
+DD_SERVICE=vibecode-webgui
+DD_ENV=development
+DD_VERSION=1.0.0
+
+# Client (RUM)
+NEXT_PUBLIC_DD_APPLICATION_ID=your-app-id
+NEXT_PUBLIC_DD_CLIENT_TOKEN=your-client-token
+NEXT_PUBLIC_DD_SITE=datadoghq.com
+# NEXT_PUBLIC_DATADOG_APPLICATION_ID=your-app-id     # optional fallback
+# NEXT_PUBLIC_DATADOG_CLIENT_TOKEN=your-client-token # optional fallback
+# NEXT_PUBLIC_DATADOG_SITE=datadoghq.com             # optional fallback
+
+# Enable RUM in dev only if needed
+NEXT_PUBLIC_ENABLE_RUM_IN_DEV=false
+```
+
 ## 🚀 Deployment Process
 
 ### Automated Deployment
@@ -321,6 +366,6 @@ helm upgrade datadog datadog/datadog -n datadog
 
 ---
 
-**Last Updated**: January 21, 2025  
+**Last Updated**: August 11, 2025  
 **Environment**: dev/stg/prd parity achieved ✅  
 **Status**: Production ready with comprehensive monitoring

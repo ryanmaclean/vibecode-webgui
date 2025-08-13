@@ -161,7 +161,7 @@ userManagement:
 ### Environment Variables
 ```bash
 # Set environment-specific variables
-export DATADOG_API_KEY="your-datadog-key"
+export DD_API_KEY="your-datadog-key"  # falls back to legacy DATADOG_API_KEY if set
 export OPENROUTER_API_KEY="your-openrouter-key"
 export GITHUB_CLIENT_ID="your-github-app-id"
 export GITHUB_CLIENT_SECRET="your-github-secret"
@@ -172,7 +172,7 @@ helm install vibecode-prod ./helm/vibecode-platform \
   --namespace vibecode-production \
   --create-namespace \
   --set aiIntegration.openRouter.apiKey="$OPENROUTER_API_KEY" \
-  --set monitoring.datadog.apiKey="$DATADOG_API_KEY"
+  --set monitoring.datadog.apiKey="${DD_API_KEY:-$DATADOG_API_KEY}"
 ```
 
 ### Custom Values Override

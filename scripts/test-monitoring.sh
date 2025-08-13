@@ -146,9 +146,9 @@ echo "----------------------------"
 # Check for proper environment configuration
 if [ -f ".env" ] || [ -f ".env.local" ]; then
     ENV_FILE=".env"; [ ! -f ".env" ] && ENV_FILE=".env.local"
-    run_test "Datadog API key configured in $ENV_FILE" "grep -q 'DATADOG_API_KEY=' $ENV_FILE"
+    run_test "Datadog API key configured in $ENV_FILE" "grep -Eq '^(DD_API_KEY|DATADOG_API_KEY)=' $ENV_FILE"
     run_test "DD_LLMOBS_ENABLED configured" "grep -q 'DD_LLMOBS_ENABLED=' $ENV_FILE"
-    run_test "RUM application ID configured" "grep -q 'NEXT_PUBLIC_DATADOG.*APPLICATION_ID=' $ENV_FILE"
+    run_test "RUM application ID configured" "grep -Eq '^NEXT_PUBLIC_(DD|DATADOG).*APPLICATION_ID=' $ENV_FILE"
 else
     echo "⚠️  No .env or .env.local found, using environment variables"
 fi

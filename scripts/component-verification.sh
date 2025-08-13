@@ -48,13 +48,15 @@ kubectl create namespace "$TEST_NAMESPACE" >/dev/null 2>&1 || true
 export DD_API_KEY="test-key-32-characters-long-123"
 export POSTGRES_PASSWORD="test-postgres-123"
 export DATADOG_POSTGRES_PASSWORD="test-datadog-123"
+export DD_POSTGRES_USER="${DD_POSTGRES_USER:-datadog}"
+export DD_POSTGRES_PASSWORD="${DD_POSTGRES_PASSWORD:-$DATADOG_POSTGRES_PASSWORD}"
 
 check "Secrets Creation Script Exists" "test -f '$PROJECT_ROOT/scripts/setup-secrets.sh'"
 check "Secrets Script Executable" "test -x '$PROJECT_ROOT/scripts/setup-secrets.sh'"
 check "Secrets Script Execution" "'$PROJECT_ROOT/scripts/setup-secrets.sh' '$TEST_NAMESPACE'"
 check "Datadog Secret Created" "kubectl get secret datadog-secrets -n '$TEST_NAMESPACE'"
 check "PostgreSQL Secret Created" "kubectl get secret postgres-credentials -n '$TEST_NAMESPACE'"
-check "API Key in Secret" "kubectl get secret datadog-secrets -n '$TEST_NAMESPACE' -o jsonpath='{.data.api-key}' | base64 -d | grep -q 'test-key'"
+check "API Key in Secret" "kubectl get secret datadog-secrets -n '$TEST_NAMESPACE' -o jsonpath='{.data.api-key}' | (base64 -d 2>/dev/null || base64 -D) | grep -q 'test-key'"
 
 echo ""
 echo "📦 Helm Chart Components:"
