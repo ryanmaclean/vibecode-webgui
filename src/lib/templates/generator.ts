@@ -20,8 +20,12 @@ export interface GenerateFromTemplateOptions {
 }
 
 export interface GeneratedProject {
+  id: string
   name: string
   description: string
+  category: string
+  complexity: 'beginner' | 'intermediate' | 'advanced'
+  tags: string[]
   files: TemplateFile[]
   scripts: Record<string, string>
   dependencies: Record<string, string>
@@ -32,6 +36,14 @@ export interface GeneratedProject {
     description: string
   }>
   setupInstructions: string[]
+  documentation: {
+    readme: string
+    setup: string
+    deployment: string
+  }
+  createdAt: Date
+  estimatedTime: number
+  features: string[]
 }
 
 /**

@@ -91,6 +91,12 @@ export default function Home() {
             </div>
             
             <div className="flex items-center gap-4">
+              <Link
+                href="/marketplace"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Template Marketplace
+              </Link>
               <span className="text-sm text-muted-foreground">
                 Welcome, {user?.name || user?.email}
               </span>
