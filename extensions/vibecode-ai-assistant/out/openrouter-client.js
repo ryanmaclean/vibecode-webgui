@@ -147,7 +147,14 @@ class OpenRouterClient {
                                 return;
                             }
                             try {
-                                const parsed = JSON.parse(data);
+                                let parsed;
+                                try {
+                                    parsed = JSON.parse(data);
+                                }
+                                catch (e) {
+                                    // Skip invalid JSON lines
+                                    continue;
+                                }
                                 const content = parsed.choices[0]?.delta?.content;
                                 if (content) {
                                     fullResponse += content;
