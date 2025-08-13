@@ -1,13 +1,16 @@
 // Enhanced AI Chat API using Vercel AI SDK
 // Multi-provider support with standardized streaming and tool calling
 
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'
 import { prisma } from '@/lib/prisma'
 import { OpenAI } from 'openai'
 import { z } from 'zod'
+
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
 
 // Provider configuration - Enhanced multi-provider support
 const SUPPORTED_MODELS = {

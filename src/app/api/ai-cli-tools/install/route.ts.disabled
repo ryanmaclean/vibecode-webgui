@@ -185,7 +185,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
+    // Safety check for request.url during build time
+    if (!request.url || typeof request.url !== 'string' || request.url.trim() === '') {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    }
+
+    let searchParams: URLSearchParams
+    try {
+      const url = new URL(request.url)
+      searchParams = url.searchParams
+    } catch (error) {
+      return NextResponse.json({ error: 'Invalid URL' }, { status: 400 })
+    }
+    
     const toolId = searchParams.get('toolId')
 
     if (toolId) {

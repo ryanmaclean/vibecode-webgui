@@ -10,6 +10,9 @@ import { authOptions } from '@/lib/auth'
 import { featureFlagEngine, type ExperimentContext } from '@/lib/feature-flags'
 import { appLogger } from '@/lib/server-monitoring'
 
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)

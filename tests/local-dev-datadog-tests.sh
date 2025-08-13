@@ -63,11 +63,17 @@ echo "-----------------------------------"
 [ -x "scripts/setup-local-dev-with-monitoring.sh" ]
 test_result "Local development setup script exists"
 
-# Create minimal .env for testing
+# Create minimal .env for testing (with sentinel)
 if [ ! -f ".env" ]; then
-    echo "DATADOG_API_KEY=dummy-key-for-testing" > .env
-    echo "DATADOG_APP_KEY=dummy-app-key-for-testing" >> .env
-    echo "ENVIRONMENT=local-test" >> .env
+    {
+        echo "# AUTO-GENERATED FOR LOCAL DATADOG TESTS"
+        echo "DD_API_KEY=dummy-key-for-testing"
+        echo "DATADOG_API_KEY=dummy-key-for-testing"
+        echo "DATADOG_APP_KEY=dummy-app-key-for-testing"
+        echo "NODE_ENV=local-test"
+        echo "ENVIRONMENT=local-test"
+    } > .env
+    CREATED_TEMP_ENV=1
 fi
 
 # Test Docker Compose build
@@ -211,8 +217,11 @@ else
 fi
 
 # Clean up test .env if we created it
-if [ -f ".env" ] && [ "$(cat .env)" = "DATADOG_API_KEY=dummy-key-for-testing" ]; then
-    rm .env
+if [ "${CREATED_TEMP_ENV:-0}" = "1" ] && [ -f ".env" ]; then
+    # Ensure it is our auto-generated file by checking sentinel
+    if grep -q "AUTO-GENERATED FOR LOCAL DATADOG TESTS" .env; then
+        rm .env
+    fi
 fi
 
 exit $FAILED

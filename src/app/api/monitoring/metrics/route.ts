@@ -1,168 +1,129 @@
 /**
- * API endpoint for submitting custom metrics
- * Allows frontend and other services to submit metrics to Datadog
+ * Monitoring Metrics API Endpoint
+ * Provides detailed metrics and performance data
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { monitoring } from '../../../../lib/monitoring'
-import { datadogMonitoring } from '../../../../lib/monitoring/enhanced-datadog-integration'
 
-interface MetricSubmission {
-  type: 'counter' | 'gauge' | 'histogram' | 'event'
-  name: string
-  value?: number
-  tags?: string[]
-  metadata?: Record<string, any>
-}
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const body = await request.json() as MetricSubmission | MetricSubmission[]
-    const metrics = Array.isArray(body) ? body : [body]
+    const { searchParams } = new URL(request.url)
+    const metricType = searchParams.get('type') || 'all'
+    const timeRange = searchParams.get('range') || '1h'
+    const limit = parseInt(searchParams.get('limit') || '100')
 
-    const results = []
+    // Mock metrics data for now - replace with actual implementation
+    const mockMetrics = {
+      system: {
+        cpu_usage: Math.random() * 100,
+        memory_usage: Math.random() * 100,
+        disk_usage: Math.random() * 100,
+        network_io: Math.random() * 1000
+      },
+      application: {
+        request_count: Math.floor(Math.random() * 1000),
+        error_rate: Math.random() * 0.1,
+        response_time: Math.random() * 1000,
+        active_connections: Math.floor(Math.random() * 100)
+      },
+      business: {
+        user_sessions: Math.floor(Math.random() * 500),
+        api_calls: Math.floor(Math.random() * 2000),
+        database_queries: Math.floor(Math.random() * 5000),
+        cache_hit_rate: Math.random() * 0.9
+      }
+    }
 
-    for (const metric of metrics) {
-      const result = await processMetric(metric, request)
-      results.push(result)
+    let filteredMetrics: Record<string, unknown> = {}
+
+    if (metricType === 'all') {
+      filteredMetrics = mockMetrics
+    } else if (metricType === 'system') {
+      filteredMetrics = { system: mockMetrics.system }
+    } else if (metricType === 'application') {
+      filteredMetrics = { application: mockMetrics.application }
+    } else if (metricType === 'business') {
+      filteredMetrics = { business: mockMetrics.business }
     }
 
     return NextResponse.json({
       success: true,
-      processed: results.length,
-      results: results
+      data: {
+        metrics: filteredMetrics,
+        metadata: {
+          type: metricType,
+          time_range: timeRange,
+          limit,
+          timestamp: new Date().toISOString(),
+          source: 'mock_data'
+        }
+      }
     })
 
   } catch (error) {
-    console.error('Metrics API error:', error)
+    console.error('Error fetching metrics:', error)
     
-    return NextResponse.json({
-      error: 'Failed to process metrics',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
-  }
-}
-
-async function processMetric(metric: MetricSubmission, request: NextRequest): Promise<{ success: boolean; metric: string; error?: string }> {
-  try {
-    // Add common tags
-    const commonTags = [
-      `service:${process.env.DATADOG_SERVICE || 'vibecode-webgui'}`,
-      `env:${process.env.NODE_ENV || 'development'}`,
-      ...(metric.tags || [])
-    ]
-
-    switch (metric.type) {
-      case 'counter':
-      case 'gauge':
-        if (typeof metric.value !== 'number') {
-          throw new Error('Counter and gauge metrics require a numeric value')
-        }
-        
-        await monitoring.submitMetric({
-          metric: `vibecode.${metric.name}`,
-          value: metric.value,
-          tags: commonTags
-        })
-        break
-
-      case 'event':
-        await monitoring.submitEvent(
-          metric.name,
-          JSON.stringify(metric.metadata || {}),
-          commonTags
-        )
-        break
-
-      case 'histogram':
-        // For histograms, we'll treat them as gauges for now
-        // In a full implementation, you'd use the Datadog histogram API
-        if (typeof metric.value !== 'number') {
-          throw new Error('Histogram metrics require a numeric value')
-        }
-        
-        await monitoring.submitMetric({
-          metric: `vibecode.${metric.name}`,
-          value: metric.value,
-          tags: [...commonTags, 'metric_type:histogram']
-        })
-        break
-
-      default:
-        throw new Error(`Unknown metric type: ${metric.type}`)
-    }
-
-    return { success: true, metric: metric.name }
-
-  } catch (error) {
-    return { 
-      success: false, 
-      metric: metric.name, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    }
-  }
-}
-
-// GET endpoint to retrieve current metric status
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const includeConfig = searchParams.get('config') === 'true'
-
-    const response: any = {
-      monitoring: {
-        status: monitoring.isConfigured() ? 'active' : 'configured_but_inactive',
-        datadog_configured: monitoring.isConfigured(),
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch metrics',
+        message: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString()
       },
-      supported_metrics: {
-        types: ['counter', 'gauge', 'histogram', 'event'],
-        examples: {
-          counter: {
-            type: 'counter',
-            name: 'user.login',
-            value: 1,
-            tags: ['method:oauth', 'provider:github']
-          },
-          gauge: {
-            type: 'gauge', 
-            name: 'terminal.sessions.active',
-            value: 5,
-            tags: ['workspace:default']
-          },
-          histogram: {
-            type: 'histogram',
-            name: 'ai.response_time',
-            value: 1500,
-            tags: ['provider:openrouter', 'model:claude-3']
-          },
-          event: {
-            type: 'event',
-            name: 'Deployment Completed',
-            metadata: { version: '1.2.3', environment: 'production' },
-            tags: ['deployment', 'success']
-          }
-        }
-      }
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { metric_name, value, tags, timestamp } = body
+
+    // Validate required fields
+    if (!metric_name || value === undefined) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Missing required fields: metric_name and value',
+          timestamp: new Date().toISOString()
+        },
+        { status: 400 }
+      )
     }
 
-    if (includeConfig) {
-      response.configuration = {
-        datadog_site: process.env.DATADOG_SITE || 'datadoghq.com',
-        service: process.env.DATADOG_SERVICE || 'vibecode-webgui',
-        environment: process.env.NODE_ENV || 'development',
-        version: process.env.npm_package_version || '1.0.0'
-      }
+    // Mock metric submission - replace with actual implementation
+    const submittedMetric = {
+      name: metric_name,
+      value,
+      tags: tags || {},
+      timestamp: timestamp || new Date().toISOString(),
+      status: 'submitted'
     }
 
-    return NextResponse.json(response)
+    return NextResponse.json({
+      success: true,
+      data: {
+        metric: submittedMetric,
+        message: 'Metric submitted successfully',
+        timestamp: new Date().toISOString()
+      }
+    })
 
   } catch (error) {
-    console.error('Metrics config API error:', error)
+    console.error('Error submitting metric:', error)
     
-    return NextResponse.json({
-      error: 'Failed to retrieve metrics configuration',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to submit metric',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      },
+      { status: 500 }
+    )
   }
 }

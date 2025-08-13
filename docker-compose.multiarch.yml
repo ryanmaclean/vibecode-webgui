@@ -13,7 +13,15 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=${DATABASE_URL}
+      - DD_API_KEY=${DD_API_KEY}
       - DATADOG_API_KEY=${DATADOG_API_KEY}
+      # RUM (prefer NEXT_PUBLIC_DD_*; legacy NEXT_PUBLIC_DATADOG_* as fallback)
+      - NEXT_PUBLIC_DD_APPLICATION_ID=${NEXT_PUBLIC_DD_APPLICATION_ID}
+      - NEXT_PUBLIC_DD_CLIENT_TOKEN=${NEXT_PUBLIC_DD_CLIENT_TOKEN}
+      - NEXT_PUBLIC_DD_SITE=${NEXT_PUBLIC_DD_SITE:-datadoghq.com}
+      - NEXT_PUBLIC_DATADOG_APPLICATION_ID=${NEXT_PUBLIC_DATADOG_APPLICATION_ID}
+      - NEXT_PUBLIC_DATADOG_CLIENT_TOKEN=${NEXT_PUBLIC_DATADOG_CLIENT_TOKEN}
+      - NEXT_PUBLIC_DATADOG_SITE=${NEXT_PUBLIC_DATADOG_SITE:-datadoghq.com}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
     depends_on:
       - postgres
@@ -36,6 +44,7 @@ services:
       - NODE_ENV=production
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - DD_API_KEY=${DD_API_KEY}
       - DATADOG_API_KEY=${DATADOG_API_KEY}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
@@ -149,7 +158,7 @@ services:
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
     environment:
-      - DATADOG_API_KEY=${DATADOG_API_KEY}
+      - DATADOG_API_KEY=${DD_API_KEY:-${DATADOG_API_KEY}}
     restart: unless-stopped
 
 volumes:

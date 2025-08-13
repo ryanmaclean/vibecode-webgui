@@ -666,11 +666,12 @@ export default function MonitoringDashboard() {
                 <div className="space-y-3 text-sm text-yellow-800">
                   <p>To enable Real User Monitoring, configure the following environment variables:</p>
                   <div className="bg-yellow-100 p-4 rounded-md font-mono text-xs space-y-1">
-                    <div>NEXT_PUBLIC_DATADOG_APPLICATION_ID=your-app-id</div>
-                    <div>NEXT_PUBLIC_DATADOG_CLIENT_TOKEN=your-client-token</div>
-                    <div>NEXT_PUBLIC_DATADOG_SITE=datadoghq.com (or your region)</div>
+                    <div>NEXT_PUBLIC_DD_APPLICATION_ID=your-app-id</div>
+                    <div>NEXT_PUBLIC_DD_CLIENT_TOKEN=your-client-token</div>
+                    <div>NEXT_PUBLIC_DD_SITE=datadoghq.com (or your region)</div>
                   </div>
                   <p className="mt-3">
+                    Prefer the DD_* names. Legacy NEXT_PUBLIC_DATADOG_* variables are still supported for compatibility.
                     Get these values from your Datadog dashboard → APM & Continuous Profiler → RUM Applications
                   </p>
                 </div>
