@@ -91,8 +91,9 @@ else
     ((fail++))
 fi
 
-# Test secrets created
-if kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
+# Test secrets created (canonical + legacy alias)
+if kubectl get secret datadog-secret -n "$TEST_NAMESPACE" >/dev/null 2>&1 || \
+   kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
     echo -e "${GREEN}✅ Datadog Secret Creation${NC}"
     ((pass++))
 else
