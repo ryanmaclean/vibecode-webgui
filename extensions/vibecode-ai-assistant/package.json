@@ -29,42 +29,116 @@
       {
         "command": "vibecode.generateCode",
         "title": "Generate Code with AI",
-        "category": "VibeCode"
+        "category": "VibeCode",
+        "icon": "$(code)"
       },
       {
         "command": "vibecode.explainCode",
         "title": "Explain Code",
-        "category": "VibeCode"
+        "category": "VibeCode",
+        "icon": "$(question)"
       },
       {
         "command": "vibecode.optimizeCode",
         "title": "Optimize Code",
-        "category": "VibeCode"
+        "category": "VibeCode",
+        "icon": "$(zap)"
       },
       {
         "command": "vibecode.fixCode",
         "title": "Fix Code Issues",
-        "category": "VibeCode"
+        "category": "VibeCode",
+        "icon": "$(tools)"
       },
       {
         "command": "vibecode.generateTests",
         "title": "Generate Tests",
-        "category": "VibeCode"
+        "category": "VibeCode",
+        "icon": "$(beaker)"
       },
       {
         "command": "vibecode.generateProject",
-        "title": "Generate Project from Description",
-        "category": "VibeCode"
+        "title": "Generate Project from Template",
+        "category": "VibeCode",
+        "icon": "$(folder-library)"
       },
       {
         "command": "vibecode.chatWithCode",
         "title": "Chat with AI about Code",
-        "category": "VibeCode"
+        "category": "VibeCode",
+        "icon": "$(comment-discussion)"
       },
       {
         "command": "vibecode.selectAIModel",
         "title": "Select AI Model",
-        "category": "VibeCode"
+        "category": "VibeCode",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "vibecode.templates.refresh",
+        "title": "Refresh Templates",
+        "category": "VibeCode",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "vibecode.templates.browse",
+        "title": "Browse Template Marketplace",
+        "category": "VibeCode",
+        "icon": "$(extensions)"
+      },
+      {
+        "command": "vibecode.templates.create",
+        "title": "Create Project from Template",
+        "category": "VibeCode",
+        "icon": "$(add)"
+      },
+      {
+        "command": "vibecode.deployment.deploy",
+        "title": "Deploy to Cloud",
+        "category": "VibeCode",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "vibecode.deployment.status",
+        "title": "Check Deployment Status",
+        "category": "VibeCode",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "vibecode.github.createRepo",
+        "title": "Create GitHub Repository",
+        "category": "VibeCode",
+        "icon": "$(github)"
+      },
+      {
+        "command": "vibecode.github.setupWorkflow",
+        "title": "Setup CI/CD Workflow",
+        "category": "VibeCode",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "vibecode.collaboration.start",
+        "title": "Start Collaborative Session",
+        "category": "VibeCode",
+        "icon": "$(live-share)"
+      },
+      {
+        "command": "vibecode.collaboration.join",
+        "title": "Join Collaborative Session",
+        "category": "VibeCode",
+        "icon": "$(person-add)"
+      },
+      {
+        "command": "vibecode.monitoring.dashboard",
+        "title": "Open Monitoring Dashboard",
+        "category": "VibeCode",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "vibecode.ai.orchestration",
+        "title": "AI Model Orchestration",
+        "category": "VibeCode",
+        "icon": "$(organization)"
       }
     ],
     "menus": {
@@ -147,11 +221,55 @@
       }
     ],
     "views": {
-      "explorer": [
+      "vibecode-ai": [
         {
           "id": "vibeCodeChat",
-          "name": "VibeCode AI Chat",
-          "when": "vibeCodeChatEnabled"
+          "name": "AI Chat",
+          "type": "webview",
+          "icon": "$(comment-discussion)",
+          "when": "vibeCodeEnabled"
+        },
+        {
+          "id": "vibeCodeTemplates",
+          "name": "Templates & Marketplace",
+          "type": "tree",
+          "icon": "$(extensions)",
+          "when": "vibeCodeEnabled"
+        },
+        {
+          "id": "vibeCodeDeployment",
+          "name": "Cloud Deployment",
+          "type": "webview",
+          "icon": "$(cloud-upload)",
+          "when": "vibeCodeEnabled"
+        },
+        {
+          "id": "vibeCodeGitHub",
+          "name": "GitHub Integration",
+          "type": "tree",
+          "icon": "$(github)",
+          "when": "vibeCodeEnabled"
+        },
+        {
+          "id": "vibeCodeCollaboration",
+          "name": "Collaboration",
+          "type": "webview",
+          "icon": "$(live-share)",
+          "when": "vibeCodeEnabled"
+        },
+        {
+          "id": "vibeCodeAIModels",
+          "name": "AI Models",
+          "type": "tree",
+          "icon": "$(organization)",
+          "when": "vibeCodeEnabled"
+        },
+        {
+          "id": "vibeCodeMonitoring",
+          "name": "Monitoring",
+          "type": "webview",
+          "icon": "$(dashboard)",
+          "when": "vibeCodeEnabled"
         }
       ]
     },
