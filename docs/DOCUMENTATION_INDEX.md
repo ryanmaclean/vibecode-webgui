@@ -30,6 +30,7 @@ This document serves as the central navigation hub for all VibeCode platform doc
 - **[OSS Tools Integration](./oss-tools-integration.md)** - Open source tool integrations
 
 ### Infrastructure & Deployment
+- **[Infrastructure Overview](./INFRASTRUCTURE_OVERVIEW.md)** - Complete infrastructure guide and navigation
 - **[Kubernetes Deployment](../k8s/README.md)** - Kubernetes manifests and setup
 - **[Docker Configuration](../docker/README.md)** - Container setup and optimization
 - **[Azure Infrastructure](../infrastructure/terraform/azure/README.md)** - Azure deployment guide
