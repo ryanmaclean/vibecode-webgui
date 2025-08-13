@@ -161,14 +161,20 @@ test_secrets_deployment() {
         return 1
     fi
     
-    # Verify secrets exist and have correct structure
-    if kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
+    # Verify secrets exist and have correct structure (canonical + legacy)
+    local dd_secret_name=""
+    if kubectl get secret datadog-secret -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
+        dd_secret_name="datadog-secret"
+    elif kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
+        dd_secret_name="datadog-secrets"
+    fi
+    if [[ -n "$dd_secret_name" ]]; then
         local api_key_length
-        api_key_length=$(kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" -o jsonpath='{.data.api-key}' | (base64 -d 2>/dev/null || base64 -D) | wc -c | tr -d ' ')
+        api_key_length=$(kubectl get secret "$dd_secret_name" -n "$TEST_NAMESPACE" -o jsonpath='{.data.api-key}' | (base64 -d 2>/dev/null || base64 -D) | wc -c | tr -d ' ')
         if [[ "$api_key_length" -gt 20 ]]; then
-            test_result "Datadog Secret Validation" "PASS" "API key length: $api_key_length chars"
+            test_result "Datadog Secret Validation ($dd_secret_name)" "PASS" "API key length: $api_key_length chars"
         else
-            test_result "Datadog Secret Validation" "FAIL" "API key too short: $api_key_length chars"
+            test_result "Datadog Secret Validation ($dd_secret_name)" "FAIL" "API key too short: $api_key_length chars"
         fi
     else
         test_result "Datadog Secret Validation" "FAIL"
@@ -271,7 +277,7 @@ test_datadog_deployment() {
     datadog_values=$(mktemp)
     cat > "$datadog_values" <<EOF
 datadog:
-  apiKeyExistingSecret: datadog-secrets
+  apiKeyExistingSecret: datadog-secret
   site: datadoghq.com
   
 agents:
