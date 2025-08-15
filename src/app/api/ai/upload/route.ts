@@ -103,7 +103,12 @@ function chunkText(content: string, maxChunkSize: number = 1000): Array<{
   tokens: number
 }> {
   const lines = content.split('\n')
-  const chunks = []
+  const chunks: Array<{
+    content: string
+    startLine: number
+    endLine: number
+    tokens: number
+  }> = []
   let currentChunk = ''
   let startLine = 1
   let currentLine = 1

@@ -18,7 +18,7 @@ const AUTH_ERRORS = {
 
 function ErrorContent() {
   const searchParams = useSearchParams()
-  const error = searchParams.get('error') as keyof typeof AUTH_ERRORS
+  const error = (searchParams?.get('error') || 'Default') as keyof typeof AUTH_ERRORS
   const errorMessage = AUTH_ERRORS[error] || AUTH_ERRORS.Default
 
   return (

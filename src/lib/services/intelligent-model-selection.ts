@@ -565,5 +565,4 @@ class IntelligentModelSelectionService {
 // Export singleton instance
 export const intelligentModelSelection = new IntelligentModelSelectionService()
 
-// Export types for external use
-export type { ModelCapability, PromptAnalysis, ModelSelection }
+// Types are already exported above with interface declarations

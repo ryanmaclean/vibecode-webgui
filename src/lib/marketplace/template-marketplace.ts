@@ -190,9 +190,9 @@ export class TemplateMarketplace {
         id: `marketplace-${index}`,
         name: template.name || 'Unnamed Template',
         description: template.description || '',
-        category: 'Web Application',
+        category: 'frontend',
         complexity: 'intermediate',
-        tags: template.marketplace?.category || [],
+        tags: template.marketplace?.category ? [template.marketplace.category] : [],
         files: [],
         dependencies: {},
         scripts: {},
@@ -606,10 +606,4 @@ export class TemplateMarketplace {
 // Export singleton instance
 export const templateMarketplace = new TemplateMarketplace()
 
-// Export types
-export type {
-  MarketplaceTemplate,
-  TemplateReview,
-  TemplateSubmission,
-  MarketplaceSearchOptions
-}
+// Types are already exported above with interface declarations

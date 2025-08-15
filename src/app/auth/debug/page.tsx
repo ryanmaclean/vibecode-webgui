@@ -103,7 +103,7 @@ export default function AuthDebugPage() {
           </div>
         )}
         
-        {session && (
+        {session as React.ReactNode && (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Current Session</h2>
             <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto text-sm">
