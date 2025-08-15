@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { mongodbChatService } from '@/lib/services/chat-mongodb'
-import { enhancedRAGService } from '@/lib/services/rag-enhanced'
+import { enhancedRAGService, RAGContext } from '@/lib/services/rag-enhanced'
 import { datadogMetrics } from '@/lib/monitoring/datadog-metrics'
 import { getToken } from 'next-auth/jwt'
 import { logger } from '@/lib/monitoring'
@@ -9,6 +9,7 @@ import { logger } from '@/lib/monitoring'
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
   let statusCode = 200
+  let userId = 'anonymous'
   
   try {
     // Get authentication token or use development bypass
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const userId = token?.sub || testUserId || 'anonymous'
+    userId = token?.sub || testUserId || 'anonymous'
 
     const body = await request.json()
     const { 
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Build RAG context if enabled
-    let ragContext = null
+    let ragContext: RAGContext | null = null
     if (enableRAG || enableWebSearch) {
       const ragStartTime = Date.now()
       try {
@@ -79,20 +80,22 @@ export async function POST(request: NextRequest) {
         const ragDuration = Date.now() - ragStartTime
         
         // Record RAG metrics
-        datadogMetrics.recordRAGContext(
-          ragDuration,
-          ragContext.sources.length,
-          ragContext.relevanceScore,
-          { tags: { user_id: userId, workspace_id: workspaceId } }
-        )
-        
-        logger.info('RAG context built', {
-          service: 'enhanced-rag',
-          sourcesCount: ragContext.sources.length,
-          webResultsCount: ragContext.webResults?.length || 0,
-          relevanceScore: ragContext.relevanceScore,
-          conversationId
-        })
+        if (ragContext) {
+          datadogMetrics.recordRAGContext(
+            ragDuration,
+            ragContext.sources.length,
+            ragContext.relevanceScore,
+            { tags: { user_id: userId, workspace_id: workspaceId } }
+          )
+          
+          logger.info('RAG context built', {
+            service: 'enhanced-rag',
+            sourcesCount: ragContext.sources.length,
+            webResultsCount: ragContext.webResults?.length || 0,
+            relevanceScore: ragContext.relevanceScore,
+            conversationId
+          })
+        }
       } catch (error) {
         datadogMetrics.recordError('rag_context_failed', 'rag', '/api/chat/stream')
         logger.warn('RAG context building failed, continuing without context', {
@@ -185,7 +188,7 @@ export async function POST(request: NextRequest) {
                     })
 
                     // Send final metadata including RAG info
-                    const metadata = {
+                    const metadata: any = {
                       type: 'metadata',
                       conversationId: conversation.id,
                       userMessageId: userMessage.id,
@@ -274,7 +277,7 @@ export async function POST(request: NextRequest) {
     logger.error('Chat Stream API Error', {
       service: 'vibecode-webgui',
       error: error instanceof Error ? error.message : String(error),
-      userId
+      userId: userId
     })
 
     return NextResponse.json(

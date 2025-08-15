@@ -37,8 +37,8 @@ if (!isDockerBuild) {
     OTLPTraceExporter = otlpExporter.OTLPTraceExporter;
     PrometheusExporter = prometheusExporter.PrometheusExporter;
     Resource = resources.Resource;
-    ATTR_SERVICE_NAME = semanticConventions.ATTR_SERVICE_NAME;
-    ATTR_SERVICE_VERSION = semanticConventions.ATTR_SERVICE_VERSION;
+    ATTR_SERVICE_NAME = semanticConventions.SEMRESATTRS_SERVICE_NAME || semanticConventions.ATTR_SERVICE_NAME;
+    ATTR_SERVICE_VERSION = semanticConventions.SEMRESATTRS_SERVICE_VERSION || semanticConventions.ATTR_SERVICE_VERSION;
   } catch (error) {
     console.log('⚠️ OpenTelemetry modules not available, monitoring disabled');
   }

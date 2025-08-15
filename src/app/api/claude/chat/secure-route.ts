@@ -8,6 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import path from 'path'
 import { getServerSession } from 'next-auth'
 import { getSecureClaudeCliInstance } from '@/lib/claude-cli-integration-secure'
 import type { SecureClaudeCliConfig } from '@/lib/claude-cli-integration-secure'
@@ -19,7 +20,7 @@ const rateLimiter = rateLimit({
   max: 20,
   keyGenerator: (req: NextRequest) => {
     const session = req.headers.get('x-user-session')
-    return session || req.ip || 'anonymous'
+    return session || req.headers.get('x-forwarded-for')?.split(',')[0] || 'anonymous'
   }
 })
 
@@ -141,11 +142,11 @@ export async function POST(request: NextRequest) {
 /**
  * Validate chat request parameters
  */
-function validateChatRequest(params: unknown): string[] {
+function validateChatRequest(params: any): string[] {
   const errors: string[] = []
 
   // Validate message
-  if (!params.message) {
+  if (!params?.message) {
     errors.push('Message is required')
   } else if (typeof params.message !== 'string') {
     errors.push('Message must be a string')
@@ -156,7 +157,7 @@ function validateChatRequest(params: unknown): string[] {
   }
 
   // Validate workspaceId
-  if (!params.workspaceId) {
+  if (!params?.workspaceId) {
     errors.push('Workspace ID is required')
   } else if (typeof params.workspaceId !== 'string') {
     errors.push('Workspace ID must be a string')

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WebSocketServer, WebSocket } from 'ws';
-import { spawn } from 'child_process';
+import { spawn } from 'node-pty';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getToken } from 'next-auth/jwt';
 
 // Store active PTY processes
 interface PtyProcess {
-  process: ReturnType<typeof spawn>;
+  process: any; // node-pty IPty interface
   ws: WebSocket;
 }
 const activeProcesses = new Map<string, PtyProcess>();
@@ -32,6 +32,8 @@ function ensureWebSocketServer() {
       const shell = process.env.SHELL || '/bin/bash';
       const ptyProcess = spawn(shell, [], {
         name: 'xterm-256color',
+        cols: 80,
+        rows: 30,
         env: { 
           ...process.env,
           TERM: 'xterm-256color',
@@ -44,13 +46,7 @@ function ensureWebSocketServer() {
       activeProcesses.set(workspaceId, { process: ptyProcess, ws });
 
       // Handle data from PTY process
-      ptyProcess.stdout.on('data', (data: Buffer) => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(data);
-        }
-      });
-
-      ptyProcess.stderr.on('data', (data: Buffer) => {
+      ptyProcess.onData((data: string) => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(data);
         }
@@ -58,7 +54,7 @@ function ensureWebSocketServer() {
 
       // Handle terminal input
       ws.on('message', (message: string) => {
-        ptyProcess.stdin.write(message);
+        ptyProcess.write(message);
       });
 
       // Cleanup on close
