@@ -94,16 +94,16 @@ Warning: Found multiple lockfiles. Selecting /Users/studio/package-lock.json.
 Updated `.env.local` with proper configuration:
 ```bash
 # Authentication
-NEXTAUTH_SECRET="09v+4uOyeebydlcoBYimzqtqP+0Y3SnT+24uQkjs2NA="
+NEXTAUTH_SECRET="your-nextauth-secret-key-32-chars-min"
 NEXTAUTH_URL="http://localhost:3000"
 
 # Datadog Monitoring
-DD_API_KEY="eb9a040a5e044d89731a9158f0357ca4"
-NEXT_PUBLIC_DATADOG_APPLICATION_ID="52590244-d98c-4d53-a756-cfe50a8e868b"
-NEXT_PUBLIC_DATADOG_CLIENT_TOKEN="pub91c2b093bc1483a4bfb5881c3511cde6"
+DD_API_KEY="your-datadog-api-key-32-chars"
+NEXT_PUBLIC_DATADOG_APPLICATION_ID="your-datadog-application-id"
+NEXT_PUBLIC_DATADOG_CLIENT_TOKEN="your-datadog-client-token"
 
 # AI Integration
-OPENROUTER_API_KEY="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"
+OPENROUTER_API_KEY="your-openrouter-api-key"
 ```
 
 ### Code Changes
