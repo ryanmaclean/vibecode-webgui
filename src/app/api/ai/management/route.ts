@@ -316,7 +316,7 @@ async function handleCostAnalysis(requestUserId?: string, filterUserId?: string,
   };
 
   if (requestUserId && requestUserId === 'admin') {
-    costAnalysis.byUser = aggregateCostByField(dbRequests, 'user_id');
+    (costAnalysis as any).byUser = aggregateCostByField(dbRequests, 'user_id');
   }
 
   return NextResponse.json(costAnalysis);
@@ -550,18 +550,18 @@ function calculatePercentile(values: number[], percentile: number): number {
   return sorted[index] || 0;
 }
 
-function generateTimeline(requests: any[], timeframe: string) {
+function generateTimeline(_requests: any[], _timeframe: string) {
   // Implementation for generating timeline data
   // This would create hourly/daily buckets based on timeframe
   return [];
 }
 
-function generateCostTimeline(requests: any[], timeframe: string) {
+function generateCostTimeline(_requests: any[], _timeframe: string) {
   // Implementation for generating cost timeline
   return [];
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   // Implementation for administrative actions like model configuration
   return NextResponse.json({ message: 'POST endpoint not implemented' }, { status: 501 });
 }

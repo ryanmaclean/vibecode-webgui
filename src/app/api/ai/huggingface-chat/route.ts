@@ -36,18 +36,15 @@ export async function POST(request: NextRequest) {
           ? context.map(msg => `${msg.role === 'user' ? 'User' : 'Bot'}: ${msg.content}`).join('\n') + `\nUser: ${input}\nBot:`
           : `User: ${input}\nBot:`
 
-        const result = await hf.conversational({
+        const result = await hf.textGeneration({
           model,
-          inputs: {
-            past_user_inputs: context.filter(msg => msg.role === 'user').map(msg => msg.content),
-            generated_responses: context.filter(msg => msg.role === 'assistant').map(msg => msg.content),
-            text: input
-          },
+          inputs: conversationInput,
           parameters: {
-            max_length: max_tokens,
+            max_new_tokens: max_tokens,
             temperature,
             do_sample: true,
-            top_p: 0.9
+            top_p: 0.9,
+            return_full_text: false
           }
         })
         

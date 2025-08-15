@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         const session = await mongodbChatService.createSession(
           token.sub,
           request.headers.get('user-agent') || undefined,
-          request.ip || request.headers.get('x-forwarded-for') || undefined
+          request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined
         )
         return NextResponse.json({ success: true, session })
 

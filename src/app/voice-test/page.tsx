@@ -118,7 +118,7 @@ export default function VoiceTestPage() {
     }
 
     // Test getUserMedia
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
       results.push({
         test: 'getUserMedia',
         result: 'Available',
@@ -133,7 +133,7 @@ export default function VoiceTestPage() {
     }
 
     // Test AudioContext
-    if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
+    if (typeof AudioContext !== 'undefined' || typeof (window as any).webkitAudioContext !== 'undefined') {
       results.push({
         test: 'AudioContext',
         result: 'Available',
@@ -243,7 +243,7 @@ export default function VoiceTestPage() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
       // Set up audio context for visualization
-      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       analyserRef.current = audioContextRef.current.createAnalyser();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);

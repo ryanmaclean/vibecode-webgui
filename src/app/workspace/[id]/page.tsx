@@ -44,7 +44,7 @@ interface WorkspaceInfo {
 
 export default function WorkspacePage() {
   const params = useParams()
-  const workspaceId = params.id as string
+  const workspaceId = params?.id as string
 
   const [workspace, setWorkspace] = useState<WorkspaceInfo | null>(null)
   const [activeTab, setActiveTab] = useState('integrated') // Start with AI+Code view

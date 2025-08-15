@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+// import { getServerSession } from 'next-auth'
+// import { authOptions } from '@/lib/auth' // TODO: Add authentication when ready
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'

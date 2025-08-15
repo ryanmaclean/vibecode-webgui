@@ -162,7 +162,7 @@ export class UnifiedAIClient {
     this.initializeClients()
   }
 
-  private getProviderForModel(model: string): string {
+  public getProviderForModel(model: string): string {
     // Try to determine provider from model name
     if (model.includes('/')) {
       // OpenRouter format: provider/model

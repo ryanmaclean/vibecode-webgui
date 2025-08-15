@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const { query, workspaceId, fileIds, limit, threshold } = searchSchema.parse(body)
 
     // Verify workspace access if provided
-    let workspace = null
+    let workspace: { status: string; name: string; id: number; created_at: Date; updated_at: Date; user_id: number; description: string | null; workspace_id: string; url: string | null; } | null = null
     if (workspaceId) {
       workspace = await prisma.workspace.findFirst({
         where: {

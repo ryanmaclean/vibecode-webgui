@@ -534,6 +534,6 @@ const functionDefinitions = [
 ]
 
 // Store definitions for external access
-functionCallingService['registeredDefinitions'] = new Map(
+functionCallingService['registeredDefinitions'] = new Map<string, FunctionDefinition>(
   functionDefinitions.map(def => [def.name, def])
 )
