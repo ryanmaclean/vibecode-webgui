@@ -82,7 +82,7 @@ export default function LiteLLMInterface() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Auto-refresh interval
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load data on component mount
   useEffect(() => {
@@ -268,7 +268,7 @@ export default function LiteLLMInterface() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {(stats?.cache_hit_ratio * 100)?.toFixed(1) || '0.0'}%
+            {(stats?.cache_hit_ratio ? (stats.cache_hit_ratio * 100).toFixed(1) : '0.0')}%
           </div>
           <p className="text-xs text-muted-foreground">
             Avg latency: {stats?.latency_avg?.toFixed(0) || 0}ms

@@ -12,6 +12,7 @@ interface SliderProps {
   step?: number
   className?: string
   disabled?: boolean
+  id?: string
 }
 
 export function Slider({
@@ -21,7 +22,8 @@ export function Slider({
   max = 100,
   step = 1,
   className = '',
-  disabled = false
+  disabled = false,
+  id
 }: SliderProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseFloat(e.target.value)
@@ -38,6 +40,7 @@ export function Slider({
         value={value[0] || 0}
         onChange={handleChange}
         disabled={disabled}
+        id={id}
         className={`
           w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer
           disabled:opacity-50 disabled:cursor-not-allowed
