@@ -58,8 +58,9 @@
 ```bash
 # These variables are not set (warnings shown):
 NEXTAUTH_SECRET=""
-NEXT_PUBLIC_DATADOG_APPLICATION_ID=""
-NEXT_PUBLIC_DATADOG_CLIENT_TOKEN=""
+NEXT_PUBLIC_DD_APPLICATION_ID=""
+NEXT_PUBLIC_DD_CLIENT_TOKEN=""
+# (Legacy NEXT_PUBLIC_DATADOG_* variables are still recognized as a fallback)
 ```
 
 ### Database Init Script Issue

@@ -119,6 +119,10 @@ elif kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" >/dev/null 2>&1; th
 fi
 
 if [[ -n "$secret_name" ]]; then
+    # Warn on legacy usage
+    if [[ "$secret_name" == "datadog-secrets" ]]; then
+        log_info "Using legacy secret name 'datadog-secrets' — prefer 'datadog-secret'"
+    fi
     # Check secret has correct key
     if kubectl get secret "$secret_name" -n "$TEST_NAMESPACE" -o jsonpath='{.data.api-key}' | base64 -d | grep -q "test-datadog-api-key"; then
         test_result "Datadog Secret Content ($secret_name)" "PASS"
@@ -271,10 +275,16 @@ else
 fi
 
 # Check for 2025 best practices
-if (grep -q "apiKeyExistingSecret.*datadog-secret" "$PROJECT_ROOT/helm/vibecode-platform/values-dev.yaml" || \
-    grep -q "apiKeyExistingSecret.*datadog-secrets" "$PROJECT_ROOT/helm/vibecode-platform/values-dev.yaml") && \
+if [[ -f "$PROJECT_ROOT/helm/vibecode-platform/values-dev.yaml" ]] && \
    grep -q "targetSystem.*linux" "$PROJECT_ROOT/helm/vibecode-platform/values-dev.yaml"; then
-    test_result "2025 Best Practices Configuration" "PASS"
+    if grep -q "apiKeyExistingSecret.*datadog-secret" "$PROJECT_ROOT/helm/vibecode-platform/values-dev.yaml"; then
+        test_result "2025 Best Practices Configuration" "PASS"
+    elif grep -q "apiKeyExistingSecret.*datadog-secrets" "$PROJECT_ROOT/helm/vibecode-platform/values-dev.yaml"; then
+        test_result "2025 Best Practices Configuration" "PASS"
+        log_info "values-dev.yaml uses legacy secret name 'datadog-secrets' — prefer 'datadog-secret'"
+    else
+        test_result "2025 Best Practices Configuration" "FAIL" "missing apiKeyExistingSecret"
+    fi
 else
     test_result "2025 Best Practices Configuration" "FAIL"
 fi
