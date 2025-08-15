@@ -26,7 +26,7 @@ class DatadogMetricsService {
       component: 'api' // Default component, can be overridden
     }
     
-    this.isEnabled = process.env.NODE_ENV === 'production' && !!process.env.DATADOG_API_KEY
+    this.isEnabled = process.env.NODE_ENV === 'production' && !!(process.env.DD_API_KEY || process.env.DATADOG_API_KEY)
   }
 
   private formatMetricName(component: string, metricName: string): string {
@@ -34,10 +34,23 @@ class DatadogMetricsService {
   }
 
   private mergeTags(additionalTags?: Partial<DatadogTags>): DatadogTags {
-    return {
+    const merged: Record<string, string | undefined> = {
       ...this.standardTags,
-      ...additionalTags
+      ...(additionalTags || {})
     }
+    const clean: DatadogTags = {
+      env: merged.env || this.standardTags.env,
+      service: merged.service || this.standardTags.service,
+      version: merged.version || this.standardTags.version,
+      team: merged.team || this.standardTags.team,
+      component: merged.component || this.standardTags.component
+    }
+    for (const [k, v] of Object.entries(merged)) {
+      if (typeof v === 'string') {
+        clean[k] = v
+      }
+    }
+    return clean
   }
 
   // API Response Time Metrics
@@ -244,13 +257,14 @@ class DatadogMetricsService {
         console.log('📊 Datadog Metric:', JSON.stringify(metric, null, 2))
       }
 
-      // In production, send to Datadog
-      if (process.env.DATADOG_API_KEY && process.env.NODE_ENV === 'production') {
+      // In production, send to Datadog (prefer DD_API_KEY with DATADOG_API_KEY fallback)
+      const apiKey = process.env.DD_API_KEY || process.env.DATADOG_API_KEY
+      if (apiKey && process.env.NODE_ENV === 'production') {
         const response = await fetch('https://api.datadoghq.com/api/v1/series', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'DD-API-KEY': process.env.DATADOG_API_KEY
+            'DD-API-KEY': apiKey
           },
           body: JSON.stringify({
             series: [metric]
@@ -286,13 +300,14 @@ class DatadogMetricsService {
       return
     }
 
-    if (process.env.DATADOG_API_KEY && process.env.NODE_ENV === 'production') {
+    const apiKey = process.env.DD_API_KEY || process.env.DATADOG_API_KEY
+    if (apiKey && process.env.NODE_ENV === 'production') {
       try {
         const response = await fetch('https://api.datadoghq.com/api/v1/series', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'DD-API-KEY': process.env.DATADOG_API_KEY
+            'DD-API-KEY': apiKey
           },
           body: JSON.stringify({
             series: formattedMetrics

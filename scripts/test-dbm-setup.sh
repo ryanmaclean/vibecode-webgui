@@ -230,7 +230,7 @@ test_kind_deployment() {
     kubectl create namespace vibecode-dbm-test --dry-run=client -o yaml | kubectl apply -f -
     
     # Create secrets (without exposing in logs)
-    kubectl create secret generic datadog-secrets \
+    kubectl create secret generic datadog-secret \
         --from-literal=api-key="$EFFECTIVE_DD_API_KEY" \
         --namespace=vibecode-dbm-test \
         --dry-run=client -o yaml | kubectl apply -f -

@@ -136,18 +136,21 @@ spec:
             secretKeyRef:
               name: vibecode-secrets
               key: DD_APP_KEY
-        - name: NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID
+        - name: NEXT_PUBLIC_DD_APPLICATION_ID
           valueFrom:
             secretKeyRef:
               name: vibecode-secrets
-              key: NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID
-        - name: NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN
+              key: NEXT_PUBLIC_DD_APPLICATION_ID
+        - name: NEXT_PUBLIC_DD_CLIENT_TOKEN
           valueFrom:
             secretKeyRef:
               name: vibecode-secrets
-              key: NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN
-        - name: NEXT_PUBLIC_DATADOG_SITE
-          value: "datadoghq.com"
+              key: NEXT_PUBLIC_DD_CLIENT_TOKEN
+        - name: NEXT_PUBLIC_DD_SITE
+          valueFrom:
+            secretKeyRef:
+              name: vibecode-secrets
+              key: NEXT_PUBLIC_DD_SITE
         - name: OPENROUTER_API_KEY
           valueFrom:
             secretKeyRef:

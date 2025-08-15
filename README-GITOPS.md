@@ -86,7 +86,7 @@ kubectl port-forward svc/vibecode-test-service -n vibecode-webgui-staging 8081:8
 
 ## 🔧 Environment Configuration
 
-The automation sources all configuration from `.env.local`:
+The automation sources configuration from `.env` (with optional overrides from `.env.local` if present):
 
 ```env
 # Authentication & Security
