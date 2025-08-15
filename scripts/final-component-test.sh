@@ -9,6 +9,7 @@ TEST_NAMESPACE="final-test-$(date +%s)"
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
+YELLOW='\033[0;33m'
 NC='\033[0m'
 
 pass=0
@@ -92,9 +93,12 @@ else
 fi
 
 # Test secrets created (canonical + legacy alias)
-if kubectl get secret datadog-secret -n "$TEST_NAMESPACE" >/dev/null 2>&1 || \
-   kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
+if kubectl get secret datadog-secret -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
+    echo -e "${GREEN}✅ Datadog Secret Creation (canonical 'datadog-secret')${NC}"
+    ((pass++))
+elif kubectl get secret datadog-secrets -n "$TEST_NAMESPACE" >/dev/null 2>&1; then
     echo -e "${GREEN}✅ Datadog Secret Creation${NC}"
+    echo -e "${YELLOW}⚠️  Using legacy secret name 'datadog-secrets' — prefer 'datadog-secret'${NC}"
     ((pass++))
 else
     echo -e "${RED}❌ Datadog Secret Creation${NC}"
@@ -211,12 +215,20 @@ fi
 
 # Check for 2025 best practices
 if [[ -f "$PROJECT_ROOT/helm/vibecode-platform/values-dev.yaml" ]] && \
-   grep -q "apiKeyExistingSecret.*datadog-secrets" "$PROJECT_ROOT/helm/vibecode-platform/values-dev.yaml" && \
    grep -q "targetSystem.*linux" "$PROJECT_ROOT/helm/vibecode-platform/values-dev.yaml"; then
-    echo -e "${GREEN}✅ 2025 Best Practices Configuration${NC}"
-    ((pass++))
+    if grep -q "apiKeyExistingSecret.*datadog-secret" "$PROJECT_ROOT/helm/vibecode-platform/values-dev.yaml"; then
+        echo -e "${GREEN}✅ 2025 Best Practices Configuration${NC}"
+        ((pass++))
+    elif grep -q "apiKeyExistingSecret.*datadog-secrets" "$PROJECT_ROOT/helm/vibecode-platform/values-dev.yaml"; then
+        echo -e "${GREEN}✅ 2025 Best Practices Configuration${NC}"
+        echo -e "${YELLOW}⚠️  values-dev.yaml uses legacy secret name 'datadog-secrets' — prefer 'datadog-secret'${NC}"
+        ((pass++))
+    else
+        echo -e "${RED}❌ 2025 Best Practices Configuration (missing apiKeyExistingSecret)${NC}"
+        ((fail++))
+    fi
 else
-    echo -e "${RED}❌ 2025 Best Practices Configuration${NC}"
+    echo -e "${RED}❌ 2025 Best Practices Configuration (file missing or wrong targetSystem)${NC}"
     ((fail++))
 fi
 
