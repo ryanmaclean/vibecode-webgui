@@ -4,10 +4,10 @@ import { Server as HTTPServer } from 'http'
 import { collaborationService } from '@/lib/services/collaboration'
 
 const SocketHandler = (req: NextApiRequest, res: NextApiResponse) => {
-  if (!res.socket.server.io) {
+  if (!(res.socket as any).server.io) {
     console.log('🚀 Initializing Socket.IO server for collaboration...')
 
-    const httpServer: HTTPServer = res.socket.server
+    const httpServer: HTTPServer = (res.socket as any).server
     const io = new SocketIOServer(httpServer, {
       path: '/api/collaboration/socket',
       addTrailingSlash: false,
@@ -20,7 +20,7 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponse) => {
     // Initialize collaboration service with the socket server
     collaborationService.initialize(httpServer)
     
-    res.socket.server.io = io
+    (res.socket as any).server.io = io
 
     console.log('✅ Socket.IO server initialized for real-time collaboration')
   } else {

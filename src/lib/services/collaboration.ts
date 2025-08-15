@@ -396,5 +396,4 @@ class CollaborationService {
 // Export singleton instance
 export const collaborationService = new CollaborationService()
 
-// Export types for external use
-export type { CollaborativeUser, WorkspaceState, CollaborationEvent }
+// Types are already exported above with interface declarations

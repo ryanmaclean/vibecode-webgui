@@ -21,6 +21,8 @@ interface AIProjectGeneratorProps {
   initialPrompt?: string;
   /** Auto-start generation if initialPrompt is provided */
   autoStart?: boolean;
+  /** Callback when project is generated */
+  onProjectGenerated?: (projectData: any) => void;
 }
 
 /**
@@ -31,7 +33,8 @@ interface AIProjectGeneratorProps {
 export function AIProjectGenerator({ 
   className = '',
   initialPrompt = '',
-  autoStart = false 
+  autoStart = false,
+  onProjectGenerated
 }: AIProjectGeneratorProps) {
   const router = useRouter()
   const [isRedirecting, setIsRedirecting] = useState(false)
@@ -42,6 +45,11 @@ export function AIProjectGenerator({
    */
   const handleProjectComplete = (data: { workspaceId: string; projectName: string }) => {
     console.log('Project generation complete:', data)
+    
+    // Call the onProjectGenerated callback if provided
+    if (onProjectGenerated) {
+      onProjectGenerated(data)
+    }
     
     // Set a small delay before redirecting to show success state
     setIsRedirecting(true)

@@ -30,6 +30,7 @@ describe('ProjectGenerator', () => {
       generateProject: mockGenerateProject,
       cancelGeneration: mockCancelGeneration,
       updateProgress: mockUpdateProgress,
+      handleComplete: jest.fn(),
     });
   });
 
@@ -73,6 +74,7 @@ describe('ProjectGenerator', () => {
       generateProject: mockGenerateProject,
       cancelGeneration: mockCancelGeneration,
       updateProgress: mockUpdateProgress,
+      handleComplete: jest.fn(),
     });
 
     render(<ProjectGenerator {...defaultProps} />);
@@ -95,6 +97,7 @@ describe('ProjectGenerator', () => {
       generateProject: mockGenerateProject,
       cancelGeneration: mockCancelGeneration,
       updateProgress: mockUpdateProgress,
+      handleComplete: jest.fn(),
     });
 
     render(<ProjectGenerator {...defaultProps} />);
@@ -107,7 +110,8 @@ describe('ProjectGenerator', () => {
   it('calls onComplete when generation is successful', async () => {
     const mockOnComplete = jest.fn();
     
-    mockUseProjectGenerator.mockImplementation(({ onComplete }) => {
+    mockUseProjectGenerator.mockImplementation((options) => {
+      const onComplete = options?.onComplete;
       // Simulate completion after a short delay
       setTimeout(() => {
         onComplete?.({ workspaceId: 'test-workspace', projectName: 'test-project' });
@@ -123,6 +127,7 @@ describe('ProjectGenerator', () => {
         generateProject: mockGenerateProject,
         cancelGeneration: mockCancelGeneration,
         updateProgress: mockUpdateProgress,
+        handleComplete: jest.fn(),
       };
     });
 
@@ -154,6 +159,7 @@ describe('ProjectGenerator', () => {
       generateProject: mockGenerateProject,
       cancelGeneration: mockCancelGeneration,
       updateProgress: mockUpdateProgress,
+      handleComplete: jest.fn(),
     });
 
     render(<ProjectGenerator {...defaultProps} />);

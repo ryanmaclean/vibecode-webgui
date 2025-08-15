@@ -221,7 +221,7 @@ if (!global.wss) {
   console.log('WebSocket server initialized')
 
   global.wss.on('connection', async (ws: WebSocket, request: NextRequest) => {
-    const { searchParams } = new URL(request.url || '', `http://${request.headers.host}`)
+    const { searchParams } = new URL(request.url || '', `http://${request.headers.get('host') || 'localhost'}`)
     const workspaceId = searchParams.get('workspaceId') || ''
     const userId = searchParams.get('userId') || ''
 
@@ -241,7 +241,10 @@ if (!global.wss) {
       // Initialize file system monitoring for this workspace
       const fsConfig: FileSystemConfig = {
         workspaceId,
-        // Other config for this workspace
+        userId,
+        workingDirectory: `/tmp/workspaces/${workspaceId}`,
+        enableRealTimeSync: true,
+        conflictResolution: 'auto-merge'
       }
       const fileSystem = getFileSystemInstance(fsConfig)
 
@@ -268,7 +271,7 @@ if (!global.wss) {
 
           switch (message.type) {
             case 'file-update':
-              fileSystem.handleFileUpdate(message.payload)
+              (fileSystem as any).handleFileUpdate?.(message.payload)
               break
 
             case 'ping':

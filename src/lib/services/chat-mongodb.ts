@@ -2,7 +2,7 @@ import { Collection, ObjectId } from 'mongodb'
 import { v4 as uuidv4 } from 'uuid'
 import { getDatabase } from '../mongodb'
 import { Conversation, Message, ChatSession, Assistant } from '../models/chat'
-// import { logger } from '../monitoring'
+import { logger } from '../monitoring'
 
 export class MongoDBChatService {
   private conversationsCollection?: Collection<Conversation>

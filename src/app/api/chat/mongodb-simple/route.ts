@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         const updateResult = await db.collection('conversations').updateOne(
           { id: conversationId },
           {
-            $push: { messages: message },
+            $push: { messages: message } as any,
             $set: { updatedAt: new Date() }
           }
         )

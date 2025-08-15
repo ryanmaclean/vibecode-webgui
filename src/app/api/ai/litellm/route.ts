@@ -7,6 +7,12 @@ import { authOptions } from '@/lib/auth';
 import { LiteLLMClient } from '@/lib/ai-clients/litellm-client';
 import rateLimit from '@/lib/rate-limiting';
 
+// Create rate limiter for AI endpoints
+const aiRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each user to 100 requests per windowMs
+});
+
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
@@ -20,7 +26,7 @@ const litellmClient = new LiteLLMClient({
 });
 
 // Rate limiting configuration
-const ratelimit = rateLimit({
+const _ratelimit = rateLimit({
   max: 100,
   windowMs: 60 * 60 * 1000, // 1 hour
 });
@@ -60,7 +66,7 @@ export async function GET(request: NextRequest) {
       case 'config':
         const config = litellmClient.getConfig();
         // Remove sensitive information
-        const { apiKey, ...safeConfig } = config;
+        const { apiKey: _apiKey, ...safeConfig } = config;
         return NextResponse.json(safeConfig);
 
       default:
@@ -94,8 +100,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting
-    const identifier = session.user?.email || 'anonymous';
-    const rateLimitResult = await ratelimit.limit(identifier);
+    const rateLimitResult = await aiRateLimit(request);
     
     if (!rateLimitResult.success) {
       return NextResponse.json({
