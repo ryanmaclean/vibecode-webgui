@@ -32,11 +32,11 @@ spec:
             - name: NODE_ENV
               value: {{ .Values.web.nodeEnv | quote }}
             {{- if .Values.web.datadog.rum.enabled }}
-            - name: NEXT_PUBLIC_DATADOG_APPLICATION_ID
+            - name: NEXT_PUBLIC_DD_APPLICATION_ID
               value: {{ .Values.web.datadog.rum.applicationId | quote }}
-            - name: NEXT_PUBLIC_DATADOG_CLIENT_TOKEN
+            - name: NEXT_PUBLIC_DD_CLIENT_TOKEN
               value: {{ .Values.web.datadog.rum.clientToken | quote }}
-            - name: NEXT_PUBLIC_DATADOG_SITE
+            - name: NEXT_PUBLIC_DD_SITE
               value: {{ .Values.web.datadog.rum.site | quote }}
             {{- end }}
           resources:

@@ -130,10 +130,11 @@ DD_DATABASE_MONITORING_ENABLED=true
 >>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 
 # Frontend RUM Monitoring (Public variables)
-NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID=your-app-id
-NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN=your-client-token
-NEXT_PUBLIC_DATADOG_SITE=datadoghq.com
+NEXT_PUBLIC_DD_APPLICATION_ID=your-app-id      # falls back to NEXT_PUBLIC_DATADOG_APPLICATION_ID / NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID
+NEXT_PUBLIC_DD_CLIENT_TOKEN=your-client-token  # falls back to NEXT_PUBLIC_DATADOG_CLIENT_TOKEN / NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN
+NEXT_PUBLIC_DD_SITE=datadoghq.com              # falls back to NEXT_PUBLIC_DATADOG_SITE
 ```
+Legacy NEXT_PUBLIC_DATADOG_* variables are still recognized as a fallback.
 
 ### Optional Monitoring Integrations
 ```bash
