@@ -306,7 +306,7 @@ Following comprehensive web research of 2025 best practices for Kubernetes secre
 ```bash
 Connected to Kubernetes cluster: kind-vibecode-test
 Namespace 'vibecode-dev' created
-Secret 'datadog-secrets' created successfully (api-key: 32 characters)
+Secret 'datadog-secret' created successfully (api-key: 32 characters)
 Secret 'postgres-credentials' created successfully (postgres-password, datadog-password)
 All secrets verified successfully
 ```
@@ -315,17 +315,48 @@ All secrets verified successfully
 - **Datadog Chart Dependency**: Added official Datadog Helm chart v3.60.0
 - **Both Agents Configured**: Cluster Agent (Deployment) + Node Agents (DaemonSet)
 - **Database Monitoring**: Enhanced DBM with query sampling and explain plans
-- **Template Validation**: Both development and production configurations validated
+  - **Template Validation**: Both development and production configurations validated
 
+## 🔧 Datadog Env/Secret Standardization (Aug 2025)
+ 
+ - **Canonical secret name**: `datadog-secret`
+   - Legacy alias `datadog-secrets` accepted only for migration; tests warn on legacy usage
+ - **Canonical env vars**: Prefer `DD_*` and `NEXT_PUBLIC_DD_*`;
+   - Legacy fallbacks: `DATADOG_*` and `NEXT_PUBLIC_DATADOG_*` supported for compatibility
+ - **Central helper**: `src/lib/monitoring/datadog-env.ts` centralizes resolution + warnings
+ - **RUM dev override**: `NEXT_PUBLIC_ENABLE_RUM_IN_DEV` (off by default)
+ - **datadog-ci note**: CI synthetic tools may expect `DATADOG_*`; scripts map from `DD_*` safely
+ 
+ - **Infra state**
+   - Helm secret hook: `helm/vibecode-platform/templates/datadog-secret-hook.yaml`
+     - Sets both `DD_POSTGRES_PASSWORD` and `DATADOG_POSTGRES_PASSWORD`, prefers `DD_*`
+   - External Secrets: `k8s/external-secrets/external-secret-datadog.yaml` uses `datadog-secret`
+   - `.env.example`: primary `DD_*` keys and RUM flags present
+ 
+ - **Validation & docs status**
+   - Scripts: `scripts/quick-k8s-validation.sh`, `scripts/final-component-test.sh` — update checks to prefer `datadog-secret`; warn on `datadog-secrets` (in progress)
+   - Docs: audit for legacy `datadog-secrets` and `NEXT_PUBLIC_DATADOG_*` (in progress)
+ 
+ - **Checklist**
+   - [x] Canonical secret `datadog-secret` in Helm/k8s and external-secrets
+   - [x] Prefer `DD_*` and `NEXT_PUBLIC_DD_*` across code + RUM
+   - [x] Centralized env resolver in `datadog-env.ts`
+   - [x] Hook sets both `DD_POSTGRES_PASSWORD` and legacy fallback
+   - [x] `.env.example` aligned with `DD_*` standard
+   - [ ] Validation scripts warn on legacy secret usage
+   - [ ] Docs/READMEs fully patched to canonical names
+   - [ ] Terraform/k8s leftovers (if any) patched
+   - [ ] Re-grep: no unexpected `datadog-secrets` or `NEXT_PUBLIC_DATADOG_*`
+ 
 ## 🌟 Future Enhancements
-
-### AI/ML
+  
+  ### AI/ML
 - [ ] AI-powered code review
 - [ ] Automated test generation
 - [ ] Smart code completion
 - [ ] Natural language to code
 
-### Community
+{{ ... }}
 - [ ] Public API
 - [ ] Plugin marketplace
 - [ ] Community templates

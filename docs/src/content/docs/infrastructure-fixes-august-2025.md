@@ -36,7 +36,7 @@ Datadog API key not configured - metric submission skipped
 
 **Solution**:
 - Fixed environment variable naming: `DATADOG_API_KEY` → `DD_API_KEY`
-- Updated application ID variable: `NEXT_PUBLIC_DATADOG_APP_ID` → `NEXT_PUBLIC_DATADOG_APPLICATION_ID`
+- Standardized RUM env vars: prefer `NEXT_PUBLIC_DD_APPLICATION_ID` and `NEXT_PUBLIC_DD_CLIENT_TOKEN` with fallback to legacy `NEXT_PUBLIC_DATADOG_*`
 - **Result**: Metrics and events now submitting properly to Datadog
 
 ### 3. Health Endpoint Restoration
@@ -94,13 +94,14 @@ Warning: Found multiple lockfiles. Selecting /Users/studio/package-lock.json.
 Updated `.env.local` with proper configuration:
 ```bash
 # Authentication
-NEXTAUTH_SECRET="your-nextauth-secret-key-32-chars-min"
+NEXTAUTH_SECRET="09v+4uOyeebydlcoBYimzqtqP+0Y3SnT+24uQkjs2NA="
 NEXTAUTH_URL="http://localhost:3000"
 
 # Datadog Monitoring
 DD_API_KEY="your-datadog-api-key-32-chars"
-NEXT_PUBLIC_DATADOG_APPLICATION_ID="your-datadog-application-id"
-NEXT_PUBLIC_DATADOG_CLIENT_TOKEN="your-datadog-client-token"
+NEXT_PUBLIC_DD_APPLICATION_ID="your-datadog-application-id"
+NEXT_PUBLIC_DD_CLIENT_TOKEN="your-datadog-client-token"
+# (Legacy NEXT_PUBLIC_DATADOG_* variables are still recognized as a fallback)
 
 # AI Integration
 OPENROUTER_API_KEY="your-openrouter-api-key"
@@ -118,7 +119,10 @@ this.datadogSite = process.env.DD_SITE || process.env.DATADOG_SITE || 'datadoghq
 #### Datadog RUM Component (`src/components/monitoring/DatadogRUM.tsx`)
 ```typescript
 // Fixed application ID variable
-applicationId: process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID || 'vibecode-rum'
+applicationId: process.env.NEXT_PUBLIC_DD_APPLICATION_ID ||
+               process.env.NEXT_PUBLIC_DATADOG_APPLICATION_ID ||
+               process.env.NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID ||
+               'vibecode-rum'
 ```
 
 ## Validation Results

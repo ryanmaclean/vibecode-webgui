@@ -353,7 +353,7 @@ verify_secrets() {
             
             # Verify secret has required keys
             case "$secret" in
-                "datadog-secrets")
+                "datadog-secret"|"datadog-secrets")
                     if kubectl get secret "$secret" -n "$namespace" -o jsonpath='{.data.api-key}' | base64 -d >/dev/null 2>&1; then
                         log_success "  - api-key: ✓"
                     else
@@ -489,8 +489,9 @@ main() {
     
     if [[ "$dry_run" == "true" ]]; then
         log_info "Would create/update secrets in namespace: $namespace"
-        log_info "  - datadog-secrets (api-key)"
-        log_info "  - postgres-credentials (postgres-password, datadog-password)"
+        log_info "  - datadog-secret (api-key)"
+        log_info "  - datadog-secrets (api-key) [legacy alias]"
+        log_info "  - postgres-credentials (postgres-password, datadog-username, datadog-password)"
         exit 0
     fi
     
