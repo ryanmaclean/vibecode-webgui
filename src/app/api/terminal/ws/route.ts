@@ -295,7 +295,7 @@ const webSocketHandler = (ws: any, request: any) => {
         'anthropic',
         'claude-3-5-sonnet', // Could be made configurable
         responseTime,
-        response.metadata?.tokens
+        response.metadata?.tokensUsed
       )
 
       // Track Claude CLI specific metrics
@@ -402,5 +402,4 @@ function generateSessionId(): string {
   return `term_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
-// Export for use in WebSocket server setup
-export { terminalSessions }
+// terminalSessions available for internal use only in this module

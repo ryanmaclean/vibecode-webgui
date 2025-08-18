@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle, Terminal, FileCode, Wrench, Rocket } from 'lucide-react';
+import { AlertCircle, CheckCircle, Terminal, File, Wrench, Send } from 'lucide-react';
 import { useProjectGenerator } from '@/hooks/useProjectGenerator';
 
 // Re-export types for external use
@@ -13,10 +13,10 @@ export type { GenerationStatus, ProgressData } from '@/hooks/useProjectGenerator
 const statusIcons = {
   idle: <Terminal className="h-4 w-4" />,
   initializing: <Wrench className="h-4 w-4 animate-spin" />,
-  generating: <FileCode className="h-4 w-4 animate-pulse" />,
-  seeding: <FileCode className="h-4 w-4 animate-pulse" />,
+  generating: <File className="h-4 w-4 animate-pulse" />,
+  seeding: <File className="h-4 w-4 animate-pulse" />,
   installing: <Wrench className="h-4 w-4 animate-spin" />,
-  finalizing: <Rocket className="h-4 w-4 animate-pulse" />,
+  finalizing: <Send className="h-4 w-4 animate-pulse" />,
   completed: <CheckCircle className="h-4 w-4 text-green-500" />,
   error: <AlertCircle className="h-4 w-4 text-red-500" />,
 };

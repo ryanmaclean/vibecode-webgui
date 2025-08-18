@@ -13,17 +13,16 @@ import React, { useState, useEffect, useRef } from 'react'
 import {
   Bot,
   Code,
-  FileSearch,
+  Search,
   Zap,
-  Bug,
-  TestTube,
+  XCircle,
+  CheckCircle,
   FileText,
   Sparkles,
   ChevronDown,
   ChevronRight,
   Copy,
-  Check,
-  AlertTriangle
+  Check
 } from 'lucide-react'
 import { claudeCodeSDK } from '@/lib/claude-code-sdk'
 import type {
@@ -179,10 +178,10 @@ export default function AICodeAssistant({
 
   const modeConfig = {
     generate: { icon: Code, label: 'Generate Code', color: 'blue' },
-    analyze: { icon: FileSearch, label: 'Analyze Code', color: 'green' },
+    analyze: { icon: Search, label: 'Analyze Code', color: 'green' },
     optimize: { icon: Zap, label: 'Optimize Code', color: 'yellow' },
-    debug: { icon: Bug, label: 'Debug Code', color: 'red' },
-    test: { icon: TestTube, label: 'Generate Tests', color: 'purple' },
+    debug: { icon: XCircle, label: 'Debug Code', color: 'red' },
+    test: { icon: CheckCircle, label: 'Generate Tests', color: 'purple' },
     explain: { icon: FileText, label: 'Explain Code', color: 'indigo' }
   }
 
@@ -255,7 +254,7 @@ export default function AICodeAssistant({
         {error && (
           <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
             <div className="flex items-center space-x-2 text-red-700 dark:text-red-300">
-              <AlertTriangle className="w-4 h-4" />
+              <XCircle className="w-4 h-4" />
               <span className="text-sm font-medium">Error</span>
             </div>
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>
@@ -427,7 +426,7 @@ function AnalysisResult({
           className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         >
           <div className="flex items-center space-x-2">
-            <FileSearch className="w-4 h-4" />
+            <Search className="w-4 h-4" />
             <span className="font-medium">Analysis</span>
           </div>
           {expandedSections.has('analysis') ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -452,7 +451,7 @@ function AnalysisResult({
             className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <div className="flex items-center space-x-2">
-              <Bug className="w-4 h-4" />
+              <XCircle className="w-4 h-4" />
               <span className="font-medium">Issues Found</span>
               <span className="text-xs bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300 px-2 py-1 rounded">
                 {result.issues.length} issue{result.issues.length !== 1 ? 's' : ''}
@@ -529,7 +528,7 @@ function AnalysisResult({
             className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <div className="flex items-center space-x-2">
-              <TestTube className="w-4 h-4" />
+              <CheckCircle className="w-4 h-4" />
               <span className="font-medium">Test Suggestions</span>
             </div>
             {expandedSections.has('tests') ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}

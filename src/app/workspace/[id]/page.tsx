@@ -17,9 +17,8 @@ import {
   Upload,
   Settings,
   Play,
-  GitBranch,
+  Folder,
   Terminal,
-  Folders,
   Bot,
   Sparkles
 } from 'lucide-react'
@@ -139,7 +138,7 @@ export default function WorkspacePage() {
             {workspace.status}
           </Badge>
           <div className="flex items-center text-sm text-gray-400">
-            <GitBranch className="w-4 h-4 mr-2" />
+            <Folder className="w-4 h-4 mr-2" />
             <span>{workspace.branch}</span>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 
-interface GitHubRepoProps {
+interface FolderHubRepoProps {
   owner: string;
   name: string;
   stars: number;
@@ -8,7 +8,7 @@ interface GitHubRepoProps {
   description: string;
 }
 
-export const GithubRepo: React.FC<GitHubRepoProps> = ({ owner, name, stars, url, description }) => {
+export const FolderhubRepo: React.FC<FolderHubRepoProps> = ({ owner, name, stars, url, description }) => {
   return (
     <div className="not-prose rounded-xl bg-gray-800 p-4 text-white border border-gray-600">
       <h3 className="text-lg font-bold">

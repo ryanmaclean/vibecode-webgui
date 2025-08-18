@@ -5,7 +5,7 @@ import {
   Server,
   Bot,
   Users,
-  BarChart3,
+  BarChart,
   Settings,
   Menu,
   X,
@@ -19,7 +19,7 @@ const navigation = [
   { name: 'Workspaces', href: '/workspaces', icon: Server },
   { name: 'AI Models', href: '/models', icon: Bot },
   { name: 'Users', href: '/users', icon: Users },
-  { name: 'Monitoring', href: '/monitoring', icon: BarChart3 },
+  { name: 'Monitoring', href: '/monitoring', icon: BarChart },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 

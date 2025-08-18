@@ -102,6 +102,9 @@ const handler = async (req: Request, _res: unknown) => {
   wss.handleUpgrade(req, (req as any).socket, Buffer.alloc(0), (ws) => {
     wss.emit('connection', ws, req);
   });
+  
+  // Return a response indicating WebSocket upgrade is handled
+  return new NextResponse(null, { status: 101 });
 };
 
 export { handler as POST };

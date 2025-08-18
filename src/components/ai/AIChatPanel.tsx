@@ -10,7 +10,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Code, FileText, AlertCircle, Loader2 } from 'lucide-react'
+import { Send, Bot, User, Code, FileText, AlertCircle, Loader } from 'lucide-react'
 import { claudeCodeSDK } from '@/lib/claude-code-sdk'
 import type { ChatRequest, ChatResponse, CodeContext } from '@/lib/claude-code-sdk'
 
@@ -164,7 +164,7 @@ export default function AIChatPanel({
 
         {isLoading && (
           <div className="flex items-center space-x-2 text-gray-500 dark:text-gray-400">
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader className="w-4 h-4 animate-spin" />
             <span className="text-sm">Claude is thinking...</span>
           </div>
         )}
