@@ -15,6 +15,19 @@ interface QuotaCheckResult {
   resetTime?: number
 }
 
+interface QuotaLimits {
+  maxWorkspaces: number
+  maxAPICallsPerHour: number
+  maxConcurrentSessions: number
+  maxFileSize?: number
+}
+
+interface UsageMetrics {
+  workspaceCount: number
+  apiCallsThisHour: number
+  activeSessions: number
+}
+
 export async function withQuotaCheck(
   request: NextRequest,
   action: 'create_workspace' | 'upload_file' | 'api_call' | 'create_session',
@@ -58,7 +71,7 @@ export async function withQuotaCheck(
   }
 }
 
-function getRemainingQuota(quotas: any, usage: any, action: string): number {
+function getRemainingQuota(quotas: QuotaLimits, usage: UsageMetrics, action: string): number {
   switch (action) {
     case 'create_workspace':
       return quotas.maxWorkspaces - usage.workspaceCount
