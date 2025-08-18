@@ -387,7 +387,7 @@ Expected AI Response:
         expectedOutputs: [
           'Dockerfile configuration',
           'Kubernetes manifests',
-          'GitHub Actions workflow',
+          'FolderHub Actions workflow',
           'Monitoring setup',
           'Environment configurations'
         ]

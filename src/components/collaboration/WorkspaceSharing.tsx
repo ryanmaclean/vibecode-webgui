@@ -12,10 +12,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Share2,
+  Share,
   Users,
   Shield,
-  Globe,
+  Link,
   Lock,
   UserPlus,
   UserMinus,
@@ -494,7 +494,7 @@ export default function WorkspaceSharing({
                 {shareSettings.isPublic && (
                   <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <div className="flex items-center gap-2 mb-2">
-                      <Globe className="w-4 h-4 text-blue-600" />
+                      <Link className="w-4 h-4 text-blue-600" />
                       <span className="text-sm font-medium text-blue-800 dark:text-blue-300">
                         Public Workspace
                       </span>
@@ -582,7 +582,7 @@ export default function WorkspaceSharing({
         <div className="flex items-center gap-3">
           {shareSettings.isPublic && (
             <div className="flex items-center gap-2 px-3 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 rounded-full text-sm">
-              <Globe className="w-4 h-4" />
+              <Link className="w-4 h-4" />
               Public
             </div>
           )}

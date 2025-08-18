@@ -61,7 +61,7 @@ async function startCodeServerContainer(workspaceId: string, userId: string): Pr
       stderr += data.toString()
     })
     
-    child.on('close', (code) => {
+    child.on('close', (code: number | null) => {
       if (code === 0) {
         // Parse the output to get service details
         const serviceName = `code-server-${workspaceId}-svc`
@@ -90,7 +90,7 @@ async function startCodeServerContainer(workspaceId: string, userId: string): Pr
       }
     })
     
-    child.on('error', (error) => {
+    child.on('error', (error: Error) => {
       console.error('Script execution error:', error)
       reject(error)
     })

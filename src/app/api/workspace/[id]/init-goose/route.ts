@@ -8,14 +8,14 @@ const execAsync = promisify(exec);
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const workspaceId = params.id;
+  const { id: workspaceId } = await params;
   if (!workspaceId) {
     return new NextResponse('Workspace ID is required', { status: 400 });
   }

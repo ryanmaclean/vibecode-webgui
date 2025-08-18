@@ -29,7 +29,7 @@ const activeSessions = new Map<string, CodeServerInstance>()
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -37,7 +37,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const sessionId = params.sessionId
+    const { sessionId } = await params
     const codeServerSession = activeSessions.get(sessionId)
 
     if (!codeServerSession) {
@@ -63,7 +63,7 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -71,7 +71,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const sessionId = params.sessionId
+    const { sessionId } = await params
     const codeServerSession = activeSessions.get(sessionId)
 
     if (!codeServerSession) {
@@ -111,7 +111,7 @@ export async function DELETE(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -119,7 +119,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const sessionId = params.sessionId
+    const { sessionId } = await params
     const codeServerSession = activeSessions.get(sessionId)
 
     if (!codeServerSession) {
