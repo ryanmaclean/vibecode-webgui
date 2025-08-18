@@ -33,6 +33,14 @@ const ENDPOINT_SECURITY = {
 
 type SecurityLevel = 'low' | 'medium' | 'high' | 'critical';
 
+interface AuthToken {
+  sub?: string | null;
+  id?: string | null;
+  role?: string | null;
+  email?: string | null;
+  name?: string | null;
+}
+
 /**
  * Request size limiter
  */
@@ -193,7 +201,7 @@ async function validateRequestSecurity(
     const isDevelopmentTesting = process.env.NODE_ENV === 'development' && 
                                 request.headers.get('x-test-user-id');
     
-    let token: any = null;
+    let token: AuthToken | null = null;
     
     if (isDevelopmentTesting) {
       // Create a mock token for testing purposes

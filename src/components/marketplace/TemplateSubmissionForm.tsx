@@ -12,8 +12,6 @@ import {
   CodeBracketIcon,
   TagIcon,
   CurrencyDollarIcon,
-  GlobeAltIcon,
-  InformationCircleIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline'
@@ -27,7 +25,7 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
   const [template, setTemplate] = useState<Partial<ProjectTemplate>>({
     name: '',
     description: '',
-    category: 'Web Application',
+    category: 'frontend',
     complexity: 'beginner',
     tags: [],
     files: [],
@@ -35,9 +33,9 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
     scripts: {},
     envVars: [],
     documentation: {
-      readme: '',
-      setup: '',
-      deployment: ''
+      setup: [],
+      usage: [],
+      deployment: []
     }
   })
 
@@ -121,17 +119,26 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           id: `template-${Date.now()}`,
           name: template.name || '',
           description: template.description || '',
-          category: template.category || 'Web Application',
+          category: template.category || 'frontend',
           complexity: template.complexity || 'beginner',
           tags: template.tags || [],
+          language: ['javascript'],
+          frameworks: [],
+          features: [],
+          estimatedSetupTime: '10 minutes',
           files: template.files || [],
           dependencies: template.dependencies || {},
           scripts: template.scripts || {},
           envVars: template.envVars || [],
+          dockerSupport: false,
+          kubernetesSupport: false,
+          cicdTemplate: false,
+          testingSetup: false,
+          monitoringSetup: false,
           documentation: template.documentation || {
-            readme: '',
-            setup: '',
-            deployment: ''
+            setup: [],
+            usage: [],
+            deployment: []
           }
         },
         author,
@@ -162,7 +169,7 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
         <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Submission Successful!</h2>
         <p className="text-gray-600 mb-4">
-          Your template has been submitted for review. You'll be notified when it's approved.
+          Your template has been submitted for review. You&apos;ll be notified when it&apos;s approved.
         </p>
         <div className="animate-pulse text-sm text-gray-500">
           Redirecting...

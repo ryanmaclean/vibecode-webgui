@@ -16,8 +16,7 @@ import {
   ArrowRightIcon, 
   RocketLaunchIcon,
   ExclamationTriangleIcon,
-  CheckCircleIcon,
-  XMarkIcon
+  CheckCircleIcon
 } from '@heroicons/react/24/outline'
 
 interface TemplateBasedProjectGeneratorProps {
@@ -305,7 +304,7 @@ export function TemplateBasedProjectGenerator({
               Project Generated Successfully!
             </h3>
             <p className="text-gray-600 mb-6">
-              Your project "{generationResult.projectName}" is ready to use
+              Your project &quot;{generationResult.projectName}&quot; is ready to use
             </p>
             <div className="space-y-3">
               <button
