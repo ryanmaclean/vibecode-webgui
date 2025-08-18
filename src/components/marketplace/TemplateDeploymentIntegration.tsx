@@ -219,7 +219,7 @@ export function TemplateDeploymentIntegration({
       {/* Template Features */}
       {template.tags && template.tags.length > 0 && (
         <div className="bg-gray-50 rounded-lg p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">What's Included</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">What&apos;s Included</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {template.tags.map((tag, index) => (
               <div key={index} className="flex items-center gap-2">
