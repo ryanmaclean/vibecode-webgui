@@ -192,9 +192,28 @@ export async function PUT(req: NextRequest) {
     const body = await req.json()
     const registration = registerSchema.parse(body)
 
+    // Transform registration resources to match WorkspaceResources interface
+    const workspaceResources: Partial<import('@/lib/workspace/auto-scaler').WorkspaceResources> = {
+      workspaceId: registration.workspaceId,
+      instances: registration.resources?.instances?.map(instance => ({
+        instanceId: instance.instanceId,
+        workspaceId: registration.workspaceId,
+        status: instance.status,
+        resources: instance.resources,
+        createdAt: new Date(),
+        lastActivity: new Date()
+      })) || [],
+      limits: registration.resources?.limits || {
+        maxCpu: 4,
+        maxMemory: 8192,
+        maxDisk: 100,
+        maxInstances: 5
+      }
+    }
+
     await workspaceAutoScaler.registerWorkspace(
       registration.workspaceId, 
-      registration.resources || {}
+      workspaceResources
     )
 
     // Initialize metrics for the workspace
@@ -206,6 +225,7 @@ export async function PUT(req: NextRequest) {
       diskUsage: 0,
       networkIO: 0,
       activeConnections: 0,
+      lastActivity: new Date(),
       resourceRequests: 0,
       queueLength: 0
     })
@@ -261,7 +281,25 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json()
     const config = configSchema.parse(body)
 
-    workspaceAutoScaler.updateConfig(config)
+    // Transform config to match AutoScalingConfig interface
+    const autoScalingConfig: Partial<import('@/lib/workspace/auto-scaler').AutoScalingConfig> = {
+      enabled: config.enabled,
+      evaluationInterval: config.evaluationInterval,
+      resourceLimits: config.resourceLimits ? {
+        maxCpuPerWorkspace: config.resourceLimits.maxCpuPerWorkspace ?? 8,
+        maxMemoryPerWorkspace: config.resourceLimits.maxMemoryPerWorkspace ?? 16384,
+        maxInstancesPerWorkspace: config.resourceLimits.maxInstancesPerWorkspace ?? 10,
+        maxInstancesPerUser: config.resourceLimits.maxInstancesPerUser ?? 5
+      } : undefined,
+      costOptimization: config.costOptimization ? {
+        enabled: config.costOptimization.enabled ?? true,
+        idleTimeoutMinutes: config.costOptimization.idleTimeoutMinutes ?? 30,
+        scaleDownDelay: config.costOptimization.scaleDownDelay ?? 300,
+        prioritizeResourceUtilization: config.costOptimization.prioritizeResourceUtilization ?? true
+      } : undefined
+    }
+
+    workspaceAutoScaler.updateConfig(autoScalingConfig)
 
     return NextResponse.json({
       status: 'success',

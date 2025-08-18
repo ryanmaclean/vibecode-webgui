@@ -1,11 +1,12 @@
 /**
  * AI Chat API endpoint for VibeCode WebGUI
  * Handles AI-powered code assistance using Vercel AI SDK
+ * Now with proper authentication and security measures
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-// import { getServerSession } from 'next-auth'
-// import { authOptions } from '@/lib/auth' // TODO: Add authentication when ready
+import { withAIAuth, AuthenticatedRequest } from '@/lib/auth/middleware'
+import { validateAIQuery } from '@/lib/security/input-validator'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -44,7 +45,7 @@ function logAIInteraction(
   }));
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: AuthenticatedRequest) {
   const startTime = Date.now();
   
   try {
@@ -52,10 +53,32 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { messages, model = 'ai/smollm2:360M-Q4_K_M', stream = false } = body;
 
-    // Validate input
+    // Validate input using security validator
+    try {
+      validateAIQuery({
+        query: messages?.[messages.length - 1]?.content || '',
+        context: messages?.slice(0, -1).map((m: any) => m.content).join('\n'),
+        metadata: { model, stream, userId: request.user?.id }
+      });
+    } catch (validationError) {
+      logAIInteraction(request, 'chat_error', {
+        error: 'Input validation failed',
+        validationError: validationError instanceof Error ? validationError.message : 'Unknown validation error',
+        userId: request.user?.id,
+        model,
+      });
+
+      return NextResponse.json(
+        { error: 'Invalid input format or content' },
+        { status: 400 }
+      );
+    }
+
+    // Validate messages structure
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       logAIInteraction(request, 'chat_error', {
         error: 'Invalid messages format',
+        userId: request.user?.id,
         model,
       });
 
@@ -71,6 +94,8 @@ export async function POST(request: NextRequest) {
       message_count: messages.length,
       stream,
       last_message_length: messages[messages.length - 1]?.content?.length || 0,
+      userId: request.user?.id,
+      userRole: request.user?.role,
     });
 
     // Mock AI response for testing (replace with real AI when Docker is working)
@@ -91,6 +116,8 @@ export async function POST(request: NextRequest) {
       response_length: response.length,
       processing_time_ms: processingTime,
       stream,
+      userId: request.user?.id,
+      userRole: request.user?.role,
     });
 
     // Simulate streaming response if requested
@@ -157,10 +184,15 @@ export async function POST(request: NextRequest) {
         total_tokens: (messages.reduce((sum: number, msg: any) => sum + (msg.content?.length || 0), 0) + response.length) / 4,
       },
       processing_time_ms: processingTime,
+      user: {
+        id: request.user?.id,
+        role: request.user?.role,
+      },
     }, {
       headers: {
         'X-Processing-Time': processingTime.toString(),
         'X-Model': model,
+        'X-User-ID': request.user?.id || 'anonymous',
       },
     });
 
@@ -170,6 +202,8 @@ export async function POST(request: NextRequest) {
     logAIInteraction(request, 'chat_error', {
       error: error instanceof Error ? error.message : 'Unknown error',
       processing_time_ms: processingTime,
+      userId: request.user?.id,
+      userRole: request.user?.role,
     });
 
     return NextResponse.json(
@@ -183,16 +217,23 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Health check endpoint
-export async function GET(request: NextRequest) {
+// Health check endpoint (authenticated)
+async function handleGET(request: AuthenticatedRequest) {
   logAIInteraction(request, 'chat_request', {
     type: 'health_check',
+    userId: request.user?.id,
+    userRole: request.user?.role,
   });
 
   return NextResponse.json({
     status: 'healthy',
     service: 'ai-chat-api',
     timestamp: new Date().toISOString(),
+    user: {
+      id: request.user?.id,
+      role: request.user?.role,
+      email: request.user?.email,
+    },
     available_models: [
       'ai/smollm2:360M-Q4_K_M',
       'ai/llama3.2:1b-Q4_K_M', 
@@ -202,11 +243,22 @@ export async function GET(request: NextRequest) {
       'google/gemini-2.0-flash',
     ],
     features: [
-      'bot_protection',
+      'authentication',
+      'authorization',
+      'input_validation',
       'rate_limiting', 
       'datadog_monitoring',
-      'voice_integration',
-      'multimodal_support',
+      'security_logging',
     ],
+    security: {
+      authenticated: true,
+      user_role: request.user?.role,
+      rate_limited: true,
+      input_validated: true,
+    },
   });
 }
+
+// Export authenticated handlers
+export const POST = withAIAuth(handlePOST);
+export const GET = withAIAuth(handleGET);

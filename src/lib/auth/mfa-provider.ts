@@ -253,7 +253,7 @@ export class MFAProvider {
     }
 
     // Select device for challenge
-    let selectedDevice = userDevices.find(d => d.id === preferredDeviceId) || userDevices[0]
+    const selectedDevice = userDevices.find(d => d.id === preferredDeviceId) || userDevices[0]
     
     const challengeId = this.generateChallengeId()
     const challenge: MFAChallenge = {

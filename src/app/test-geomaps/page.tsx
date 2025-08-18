@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Globe, MapPin, User, Bot, Shield, Activity } from 'lucide-react';
+import { Link, MapPin, User, Bot, Shield, Activity } from 'lucide-react';
 
 export default function TestGeomapsPage() {
   const [lastEvent, setLastEvent] = useState<string>('');
@@ -115,7 +115,7 @@ export default function TestGeomapsPage() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Globe className="w-5 h-5" />
+            <Link className="w-5 h-5" />
             Your Geographic Information
           </CardTitle>
         </CardHeader>

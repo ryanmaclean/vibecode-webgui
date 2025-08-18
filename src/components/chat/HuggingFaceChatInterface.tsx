@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Upload, Settings, Sparkles, MessageSquare, FileText, Image, Paperclip, Globe, Zap, Terminal, Code, Package } from 'lucide-react'
+import { Send, Bot, User, Upload, Settings, Sparkles, MessageSquare, FileText, Image, Paperclip, Link, Zap, Terminal, Code, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
@@ -530,7 +530,7 @@ export const HuggingFaceChatInterface = ({
             <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Globe className="w-4 h-4" />
+                  <Link className="w-4 h-4" />
                   <span className="text-sm">Web Search</span>
                 </div>
                 <Button

@@ -13,16 +13,15 @@ import {
   Code,
   MessageSquare,
   FileText,
-  Bug,
-  Lightbulb,
   Search,
   Wand2,
   Copy,
   Star,
   Users,
-  FileClock,
-  ShieldCheck,
-  PackageSearch
+  Zap,
+  Clock,
+  Shield,
+  Package
 } from 'lucide-react'
 
 // Template type definition
@@ -83,7 +82,7 @@ const PROMPT_TEMPLATES: Record<string, PromptTemplate[]> = {
       id: 'find-bugs',
       name: 'Find Bugs',
       description: 'Analyze code to find potential bugs',
-      icon: Bug,
+      icon: Zap,
       template: 'Analyze the following {language} code and identify potential bugs or errors. For each issue, explain the problem and suggest a fix.\n\nCode:\n```{language}\n{code}\n```',
       variables: ['language', 'code'],
       category: 'Testing & Debugging',
@@ -104,7 +103,7 @@ const PROMPT_TEMPLATES: Record<string, PromptTemplate[]> = {
       id: 'security-audit',
       name: 'Security Audit',
       description: 'Audit code for common security vulnerabilities',
-      icon: ShieldCheck,
+      icon: Shield,
       template: 'Perform a security audit on the following {language} code. Look for common vulnerabilities such as {vulnerabilities_list} and other potential security risks.\n\nCode:\n```{language}\n{code}\n```',
       variables: ['language', 'code', 'vulnerabilities_list'],
       category: 'Security',
@@ -114,7 +113,7 @@ const PROMPT_TEMPLATES: Record<string, PromptTemplate[]> = {
       id: 'dependency-check',
       name: 'Dependency Check',
       description: 'Analyze dependencies for known vulnerabilities',
-      icon: PackageSearch,
+      icon: Package,
       template: 'Analyze the following list of project dependencies from {package_manager_file} and check for known security vulnerabilities. Provide a summary of any found vulnerabilities and suggest remediation steps.\n\nDependencies:\n```{text}\n{dependencies}\n```',
       variables: ['package_manager_file', 'dependencies'],
       category: 'Security'
@@ -135,7 +134,7 @@ const PROMPT_TEMPLATES: Record<string, PromptTemplate[]> = {
       id: 'release-notes',
       name: 'Release Notes',
       description: 'Draft release notes for a new version',
-      icon: FileClock,
+      icon: Clock,
       template: 'Generate release notes for version {version_number}.\n\nNew Features:\n{new_features}\n\nBug Fixes:\n{bug_fixes}\n\nImprovements:\n{improvements}',
       variables: ['version_number', 'new_features', 'bug_fixes', 'improvements'],
       category: 'Project Management'
@@ -146,7 +145,7 @@ const PROMPT_TEMPLATES: Record<string, PromptTemplate[]> = {
       id: 'brainstorm-ideas',
       name: 'Brainstorm Ideas',
       description: 'Generate creative ideas for a given topic',
-      icon: Lightbulb,
+      icon: Zap,
       template: 'Brainstorm and list creative ideas about {topic}. Provide a diverse range of ideas, from practical to innovative.',
       variables: ['topic'],
       category: 'General'

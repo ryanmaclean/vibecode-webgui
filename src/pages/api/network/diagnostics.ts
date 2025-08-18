@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
 import { tracer } from '../../../lib/server-monitoring';
-import NetworkDiagnostics from '../../../lib/network-diagnostics';
+import LinkDiagnostics from '../../../lib/network-diagnostics';
 
 export default async function handler(
   req: NextApiRequest,
@@ -28,7 +28,7 @@ export default async function handler(
     }
 
     // Run connectivity test
-    const connectivity = await NetworkDiagnostics.testConnectivity(host, parseInt(port, 10));
+    const connectivity = await LinkDiagnostics.testConnectivity(host, parseInt(port, 10));
     
     // If connectivity fails, return early
     if (!connectivity.success) {
@@ -41,7 +41,7 @@ export default async function handler(
     }
 
     // Run full trace route if connectivity is successful
-    const traceResults = await NetworkDiagnostics.traceRoute(host);
+    const traceResults = await LinkDiagnostics.traceRoute(host);
 
     // Return results
     return res.status(200).json({
