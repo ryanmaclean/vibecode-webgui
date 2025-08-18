@@ -10,11 +10,26 @@ import { NextRequest, NextResponse } from 'next/server'
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
+interface AIInteractionMetadata {
+  model?: string
+  provider?: string
+  messageCount?: number
+  error?: string
+  responseTime?: number
+  [key: string]: string | number | boolean | undefined
+}
+
+interface ChatMessage {
+  role: 'system' | 'user' | 'assistant'
+  content?: string
+  [key: string]: unknown
+}
+
 // Log AI interaction events to Datadog
 function logAIInteraction(
   request: NextRequest,
   event: 'chat_request' | 'chat_response' | 'chat_error',
-  metadata: Record<string, any>
+  metadata: AIInteractionMetadata
 ) {
   const logData = {
     timestamp: new Date().toISOString(),
@@ -152,9 +167,9 @@ export async function POST(request: NextRequest) {
         },
       ],
       usage: {
-        prompt_tokens: messages.reduce((sum: number, msg: any) => sum + (msg.content?.length || 0), 0) / 4,
+        prompt_tokens: messages.reduce((sum: number, msg: ChatMessage) => sum + (msg.content?.length || 0), 0) / 4,
         completion_tokens: response.length / 4,
-        total_tokens: (messages.reduce((sum: number, msg: any) => sum + (msg.content?.length || 0), 0) + response.length) / 4,
+        total_tokens: (messages.reduce((sum: number, msg: ChatMessage) => sum + (msg.content?.length || 0), 0) + response.length) / 4,
       },
       processing_time_ms: processingTime,
     }, {
