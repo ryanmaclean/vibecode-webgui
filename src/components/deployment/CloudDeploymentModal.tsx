@@ -148,7 +148,7 @@ export function CloudDeploymentModal({
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900">Deploy to Cloud</h2>
-              <p className="text-sm text-gray-600">Deploy "{generatedProject.name}" to your preferred cloud provider</p>
+              <p className="text-sm text-gray-600">Deploy &quot;{generatedProject.name}&quot; to your preferred cloud provider</p>
             </div>
           </div>
           <button

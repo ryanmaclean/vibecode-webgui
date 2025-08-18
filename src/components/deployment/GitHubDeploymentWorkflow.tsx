@@ -366,7 +366,7 @@ export function GitHubDeploymentWorkflow({
             <div className="mt-2 text-sm text-blue-700">
               <ol className="list-decimal list-inside space-y-1">
                 <li>Go to GitHub Settings → Developer settings → Personal access tokens</li>
-                <li>Click "Generate new token (classic)"</li>
+                <li>Click &quot;Generate new token (classic)&quot;</li>
                 <li>Select scopes: repo, workflow, write:packages</li>
                 <li>Copy the token and paste it below</li>
               </ol>
