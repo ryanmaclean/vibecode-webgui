@@ -12,9 +12,8 @@ import {
   Sparkles, 
   Code, 
   Eye, 
-  Globe,
+  Link,
   Download,
-  Github,
   Monitor,
   Smartphone,
   Tablet,
@@ -33,11 +32,11 @@ import {
   Cpu,
   AlertCircle,
   CheckCircle,
-  FileCode,
+  File,
   Upload,
   Mic,
   MicOff,
-  Volume2,
+  Volume,
   Headphones,
   Radio
 } from 'lucide-react';
@@ -995,7 +994,7 @@ export default function LandingPage() {
                 AI Assistant
                 {voiceSupported && (
                   <Badge variant="outline" className="text-xs">
-                    <Volume2 className="w-3 h-3 mr-1" />
+                    <Volume className="w-3 h-3 mr-1" />
                     Voice Enabled
                   </Badge>
                 )}
@@ -1058,7 +1057,7 @@ export default function LandingPage() {
                             {message.attachments.map((attachment) => (
                               <div key={attachment.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
                                 {attachment.type === 'image' && <Image className="w-4 h-4" />}
-                                {attachment.type === 'code' && <FileCode className="w-4 h-4" />}
+                                {attachment.type === 'code' && <File className="w-4 h-4" />}
                                 {attachment.type === 'document' && <FileText className="w-4 h-4" />}
                                 {attachment.type === 'audio' && <Headphones className="w-4 h-4" />}
                                 <span className="text-xs">{attachment.name}</span>
@@ -1087,7 +1086,7 @@ export default function LandingPage() {
                               )}
                               {message.metadata.deploymentUrl && (
                                 <Badge variant="secondary" className="text-xs">
-                                  <Globe className="w-3 h-3 mr-1" />
+                                  <Link className="w-3 h-3 mr-1" />
                                   Deployed
                                 </Badge>
                               )}
@@ -1190,7 +1189,7 @@ export default function LandingPage() {
                   {attachments.map((attachment) => (
                     <div key={attachment.id} className="flex items-center gap-2 p-2 bg-muted rounded border group">
                       {attachment.type === 'image' && <Image className="w-4 h-4" />}
-                      {attachment.type === 'code' && <FileCode className="w-4 h-4" />}
+                      {attachment.type === 'code' && <File className="w-4 h-4" />}
                       {attachment.type === 'document' && <FileText className="w-4 h-4" />}
                       {attachment.type === 'audio' && <Headphones className="w-4 h-4" />}
                       <span className="text-sm truncate max-w-24">{attachment.name}</span>
@@ -1358,7 +1357,7 @@ export default function LandingPage() {
                   <RefreshCw className="w-4 h-4" />
                 </Button>
                 <Button variant="ghost" size="sm">
-                  <Globe className="w-4 h-4" />
+                  <Link className="w-4 h-4" />
                 </Button>
               </div>
             </div>
@@ -1405,7 +1404,7 @@ export default function LandingPage() {
                         Export
                       </Button>
                       <Button variant="outline" size="sm">
-                        <Github className="w-4 h-4 mr-2" />
+                        <Code className="w-4 h-4 mr-2" />
                         Push to GitHub
                       </Button>
                     </div>

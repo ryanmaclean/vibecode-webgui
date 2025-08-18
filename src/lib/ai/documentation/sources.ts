@@ -86,7 +86,7 @@ export class DocumentationSources {
           );
         }
         
-        // Finally, try GitHub README
+        // Finally, try FolderHub README
         await this.loadFromUrl(
           `${framework.name} README`,
           `https://raw.githubusercontent.com/${framework.url.split('github.com/')[1]}/main/README.md`,

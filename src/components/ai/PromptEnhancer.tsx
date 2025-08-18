@@ -14,10 +14,9 @@ import {
   ArrowRight,
   Check,
   X,
-  Lightbulb,
   Target,
-  Brain,
-  Zap
+  Bot,
+  Zap,
 } from 'lucide-react'
 
 // Prompt enhancement patterns and rules
@@ -43,7 +42,7 @@ const ENHANCEMENT_RULES = {
   },
   context: {
     name: 'Context',
-    icon: Brain,
+    icon: Bot,
     rules: [
       {
         pattern: /code|programming|software/i,
@@ -75,7 +74,7 @@ const ENHANCEMENT_RULES = {
   },
   format: {
     name: 'Output Format',
-    icon: Lightbulb,
+    icon: Zap,
     rules: [
       {
         pattern: /.*/,

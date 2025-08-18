@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare, Wand2, FileText, Image, Paperclip, Search, Zap, Globe } from 'lucide-react'
+import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare, Wand2, FileText, Image, Search, Zap, Link } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
@@ -348,7 +348,7 @@ export const EnhancedChatInterface = ({
             <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Globe className="w-4 h-4" />
+                  <Link className="w-4 h-4" />
                   <span className="text-sm">Web Search</span>
                 </div>
                 <Button
@@ -552,7 +552,7 @@ export const EnhancedChatInterface = ({
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isStreaming}
                   >
-                    <Paperclip className="w-4 h-4" />
+                    <Link className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
