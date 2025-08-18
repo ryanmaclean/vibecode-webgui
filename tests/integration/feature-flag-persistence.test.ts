@@ -69,8 +69,9 @@ conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
         expect(actualCol).toBeTruthy();
         expect(actualCol.data_type).toContain(expectedCol.type.split(' ')[0]);
         expect(actualCol.is_nullable).toBe(expectedCol.nullable);
-      });
-    });
+  });
+});
+});
 
     test('should have unique constraint on feature flag key', async () => {
       const result = await client.query(`
