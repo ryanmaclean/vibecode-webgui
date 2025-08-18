@@ -11,12 +11,12 @@ import {
   MicOff, 
   Camera, 
   Upload,
-  FileCode,
+  File,
   Image,
   Zap,
   Bot,
   User,
-  Volume2,
+  Volume,
   VolumeX,
   Settings,
   Sparkles,
@@ -368,7 +368,7 @@ export default function MultimodalPromptInterface({
             {/* Audio output */}
             {message.multimodal.audioUrl && (
               <div className="flex items-center gap-2 p-2 bg-purple-50 rounded">
-                <Volume2 className="w-4 h-4 text-purple-600" />
+                <Volume className="w-4 h-4 text-purple-600" />
                 <audio controls src={message.multimodal.audioUrl} className="flex-1" />
               </div>
             )}
@@ -392,7 +392,7 @@ export default function MultimodalPromptInterface({
             {message.multimodal.fileChanges && message.multimodal.fileChanges.length > 0 && (
               <div className="space-y-2">
                 <h4 className="text-sm font-medium flex items-center gap-1">
-                  <FileCode className="w-4 h-4" />
+                  <File className="w-4 h-4" />
                   File Changes
                 </h4>
                 {message.multimodal.fileChanges.map((change, i) => (
@@ -491,7 +491,7 @@ export default function MultimodalPromptInterface({
                   <div className="mb-3 flex flex-wrap gap-2">
                     {attachedFiles.map((file, i) => (
                       <Badge key={i} variant="secondary" className="text-xs">
-                        <FileCode className="w-3 h-3 mr-1" />
+                        <File className="w-3 h-3 mr-1" />
                         {file.name}
                       </Badge>
                     ))}

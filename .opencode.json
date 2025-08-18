@@ -1,0 +1,28 @@
+{
+  "data": {},
+  "tui": {
+    "theme": "tokyonight"
+  },
+  "mcp": {
+    "sequential-thinking": {
+      "command": "npx",
+	"args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "type": "local",
+      "enabled": "true"
+    }
+  },
+  "mcp": {
+    "my-local-mcp-server": {
+      "type": "local",
+      "command": ["bun", "x", "my-mcp-command"],
+      "enabled": true,
+      "environment": {
+        "MY_ENV_VAR": "my_env_var_value"
+      }
+    },
+  "shell": {}
+}
+

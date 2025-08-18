@@ -81,8 +81,12 @@ export async function generateFromTemplate(
   const setupInstructions = generateSetupInstructions(template, projectName)
 
   return {
+    id: `${template.id}-${Date.now()}`,
     name: projectName,
     description: options.customizations?.description || template.description,
+    category: template.category,
+    complexity: template.complexity,
+    tags: template.tags,
     files,
     scripts: { ...template.scripts },
     dependencies: { ...template.dependencies },

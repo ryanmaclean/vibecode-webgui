@@ -4,11 +4,15 @@
  */
 
 import { NextAuthOptions } from 'next-auth'
-import GithubProvider from 'next-auth/providers/github'
+import GitHubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import { authenticateUser, initializeDefaultUsers, logSecurityEvent } from './auth/user-manager'
 // import { PrismaAdapter } from '@next-auth/prisma-adapter'
 // import { prisma } from './prisma'
+
+// Initialize default users on startup
+initializeDefaultUsers().catch(console.error)
 
 declare module 'next-auth' {
   interface Session {
@@ -59,7 +63,7 @@ export const authOptions: NextAuthOptions = {
     }
   },
   providers: [
-    GithubProvider({
+    GitHubProvider({
       clientId: process.env.GITHUB_ID!,
       clientSecret: process.env.GITHUB_SECRET!,
       profile(profile) {
@@ -94,28 +98,47 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials) return null
+        if (!credentials?.email || !credentials?.password) {
+          logSecurityEvent('login_failure', undefined, { 
+            reason: 'Missing credentials',
+            email: credentials?.email 
+          })
+          return null
+        }
 
-        // In a real app, you'd look up the user from a database
-        // This is a mock implementation for development
-        const users = [
-          { id: '1', email: 'admin@vibecode.dev', password: 'admin123', name: 'Admin User', role: 'admin' },
-          { id: '2', email: 'developer@vibecode.dev', password: 'dev123', name: 'Developer User', role: 'developer' },
-          { id: '3', email: 'lead@vibecode.dev', password: 'lead123', name: 'Lead User', role: 'lead' },
-          { id: '4', email: 'frontend@vibecode.dev', password: 'frontend123', name: 'Frontend Developer', role: 'developer' },
-          { id: '5', email: 'backend@vibecode.dev', password: 'backend123', name: 'Backend Developer', role: 'developer' },
-          { id: '6', email: 'fullstack@vibecode.dev', password: 'fullstack123', name: 'Fullstack Developer', role: 'developer' },
-          { id: '7', email: 'designer@vibecode.dev', password: 'design123', name: 'Designer', role: 'designer' },
-          { id: '8', email: 'tester@vibecode.dev', password: 'test123', name: 'QA Tester', role: 'tester' },
-          { id: '9', email: 'devops@vibecode.dev', password: 'devops123', name: 'DevOps Engineer', role: 'devops' },
-          { id: '10', email: 'intern@vibecode.dev', password: 'intern123', name: 'Intern', role: 'intern' },
-        ]
+        try {
+          // Authenticate user with secure password hashing
+          const user = await authenticateUser({
+            email: credentials.email,
+            password: credentials.password,
+          })
 
-        const user = users.find(u => u.email === credentials.email)
-
-        if (user && user.password === credentials.password) {
-          return { id: user.id, name: user.name, email: user.email, role: user.role }
-        } else {
+          if (user) {
+            logSecurityEvent('login_success', user.id, { 
+              email: user.email,
+              role: user.role 
+            })
+            
+            return {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+            }
+          } else {
+            logSecurityEvent('login_failure', undefined, { 
+              email: credentials.email,
+              reason: 'Invalid credentials' 
+            })
+            return null
+          }
+        } catch (error) {
+          console.error('Authentication error:', error)
+          logSecurityEvent('login_failure', undefined, { 
+            email: credentials.email,
+            reason: 'Authentication system error',
+            error: error instanceof Error ? error.message : 'Unknown error'
+          })
           return null
         }
       },

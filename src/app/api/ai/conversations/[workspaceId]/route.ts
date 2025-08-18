@@ -102,10 +102,10 @@ export async function GET(
 // POST - Save conversation history
 export async function POST(
   request: NextRequest,
-  { params }: { params: { workspaceId: string } }
+  { params }: { params: Promise<{ workspaceId: string }> }
 ) {
   try {
-    const { workspaceId } = params
+    const { workspaceId } = await params
     const body = await request.json()
 
     if (!workspaceId) {
@@ -174,10 +174,10 @@ export async function POST(
 // DELETE - Clear conversation history
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { workspaceId: string } }
+  { params }: { params: Promise<{ workspaceId: string }> }
 ) {
   try {
-    const { workspaceId } = params
+    const { workspaceId } = await params
 
     if (!workspaceId) {
       return NextResponse.json(

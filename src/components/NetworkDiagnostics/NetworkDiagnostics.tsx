@@ -18,7 +18,7 @@ import Alert from '@mui/material/Alert';
 import Tooltip from '@mui/material/Tooltip';
 import type { HopStat } from '@/types/network';
 
-const NetworkDiagnostics = () => {
+const LinkDiagnostics = () => {
   const [host, setHost] = useState('api.vibecode.com');
   const [port, setPort] = useState('443');
   const [isLoading, setIsLoading] = useState(false);
@@ -68,7 +68,7 @@ const NetworkDiagnostics = () => {
       <Card variant="outlined">
         <CardContent>
           <Typography variant="h5" gutterBottom>
-            Network Diagnostics
+            Link Diagnostics
             <Tooltip title="Run network diagnostics to check connectivity and trace routes">
               <Box component="span" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 12, color: 'text.secondary' }}>i</Box>
             </Tooltip>
@@ -146,7 +146,7 @@ const NetworkDiagnostics = () => {
               {results.trace && results.trace.length > 0 && (
                 <Box>
                   <Typography variant="subtitle1" gutterBottom>
-                    Network Path Analysis
+                    Link Path Analysis
                   </Typography>
                   <TableContainer component={Paper} variant="outlined">
                     <Table size="small">
@@ -200,4 +200,4 @@ const NetworkDiagnostics = () => {
   );
 };
 
-export default NetworkDiagnostics;
+export default LinkDiagnostics;

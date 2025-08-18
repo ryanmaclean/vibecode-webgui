@@ -12,7 +12,7 @@ import {
   Sparkles,
   Download,
   ExternalLink,
-  Rocket,
+  Send,
   Code,
   Zap,
   Shield,
@@ -120,7 +120,7 @@ export default function ProjectsPage() {
               From Template
             </TabsTrigger>
             <TabsTrigger value="scaffolder">
-              <Rocket className="w-4 h-4 mr-2" />
+              <Send className="w-4 h-4 mr-2" />
               Scaffolder
             </TabsTrigger>
           </TabsList>

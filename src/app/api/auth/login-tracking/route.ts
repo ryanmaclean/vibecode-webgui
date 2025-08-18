@@ -52,7 +52,7 @@ function logUserAuth(
       referer: request.headers.get('referer') || null,
     },
     
-    // Network details for geographic mapping - KEY FOR GEOMAPS
+    // Link details for geographic mapping - KEY FOR GEOMAPS
     network: {
       client: {
         ip: clientIP, // Datadog will automatically enrich with geo data

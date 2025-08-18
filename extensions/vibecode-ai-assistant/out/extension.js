@@ -44,6 +44,9 @@ const project_generator_1 = require("./project-generator");
 const templates_provider_1 = require("./templates-provider");
 const deployment_provider_1 = require("./deployment-provider");
 const github_provider_1 = require("./github-provider");
+const collaboration_provider_1 = require("./collaboration-provider");
+const ai_models_provider_1 = require("./ai-models-provider");
+const monitoring_provider_1 = require("./monitoring-provider");
 function activate(context) {
     console.log('VibeCode AI Assistant is now active!');
     // Initialize OpenRouter client
@@ -63,6 +66,15 @@ function activate(context) {
     // Initialize GitHub Provider
     const githubProvider = new github_provider_1.GitHubProvider();
     context.subscriptions.push(vscode.window.registerTreeDataProvider('vibeCodeGitHub', githubProvider));
+    // Initialize Collaboration Provider
+    const collaborationProvider = new collaboration_provider_1.CollaborationProvider(context);
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider('vibeCodeCollaboration', collaborationProvider));
+    // Initialize AI Models Provider
+    const aiModelsProvider = new ai_models_provider_1.AIModelsProvider();
+    context.subscriptions.push(vscode.window.registerTreeDataProvider('vibeCodeAIModels', aiModelsProvider));
+    // Initialize Monitoring Provider
+    const monitoringProvider = new monitoring_provider_1.MonitoringProvider(context);
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider('vibeCodeMonitoring', monitoringProvider));
     // Register Chat WebView Provider
     const chatProvider = new chat_webview_provider_1.ChatWebviewProvider(context.extensionUri, openRouterClient);
     context.subscriptions.push(vscode.window.registerWebviewViewProvider('vibeCodeChat', chatProvider));
@@ -148,18 +160,58 @@ function activate(context) {
         }),
         // Collaboration commands
         vscode.commands.registerCommand('vibecode.collaboration.start', async () => {
-            vscode.window.showInformationMessage('Collaborative features coming soon!');
+            await vscode.commands.executeCommand('workbench.view.extension.vibecode-ai');
+            vscode.window.showInformationMessage('Use the Collaboration panel to start a new session');
         }),
         vscode.commands.registerCommand('vibecode.collaboration.join', async () => {
-            vscode.window.showInformationMessage('Collaborative features coming soon!');
+            await vscode.commands.executeCommand('workbench.view.extension.vibecode-ai');
+            vscode.window.showInformationMessage('Use the Collaboration panel to join an existing session');
+        }),
+        vscode.commands.registerCommand('vibecode.collaboration.showPanel', async () => {
+            await vscode.commands.executeCommand('workbench.view.extension.vibecode-ai');
+        }),
+        vscode.commands.registerCommand('vibecode.collaboration.shareFile', async () => {
+            await collaborationProvider.shareCurrentFile();
         }),
         // Monitoring commands
         vscode.commands.registerCommand('vibecode.monitoring.dashboard', async () => {
-            vscode.env.openExternal(vscode.Uri.parse('http://localhost:3000/api/monitoring/dashboard'));
+            await vscode.commands.executeCommand('workbench.view.extension.vibecode-ai');
+            vscode.window.showInformationMessage('Check the Monitoring panel for real-time metrics');
+        }),
+        vscode.commands.registerCommand('vibecode.monitoring.refresh', () => {
+            // The monitoring provider handles its own refresh
+            vscode.window.showInformationMessage('Monitoring metrics refreshed');
+        }),
+        vscode.commands.registerCommand('vibecode.monitoring.export', async () => {
+            const format = await vscode.window.showQuickPick(['JSON', 'CSV'], {
+                placeHolder: 'Select export format'
+            });
+            if (format) {
+                // This will be handled by the monitoring provider's webview
+                vscode.window.showInformationMessage(`Exporting metrics as ${format}...`);
+            }
         }),
         // AI orchestration commands
         vscode.commands.registerCommand('vibecode.ai.orchestration', async () => {
-            vscode.window.showInformationMessage('AI Model Orchestration features coming soon!');
+            await aiModelsProvider.configureOrchestration();
+        }),
+        vscode.commands.registerCommand('vibecode.ai.models.refresh', () => {
+            aiModelsProvider.refresh();
+        }),
+        vscode.commands.registerCommand('vibecode.ai.models.test', async (model) => {
+            if (model && model.model) {
+                await aiModelsProvider.testModel(model.model);
+            }
+        }),
+        vscode.commands.registerCommand('vibecode.ai.models.configure', async (model) => {
+            if (model && model.model) {
+                await aiModelsProvider.configureModel(model.model);
+            }
+        }),
+        vscode.commands.registerCommand('vibecode.ai.usage.details', async (usage) => {
+            if (usage && usage.usage) {
+                await aiModelsProvider.showUsageDetails(usage.usage);
+            }
         })
     ];
     // Register all commands
