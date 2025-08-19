@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { webSearchService, WebSearchOptions } from '@/lib/services/web-search'
+import { webSearchService } from '@/lib/services/web-search'
 
 interface WebSearchRequest {
   query: string
