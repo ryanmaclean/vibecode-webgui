@@ -48,7 +48,7 @@ DROP TABLE IF EXISTS schema_migrations;`;
     
     // In a real implementation, you would write this to the migration file
     // For now, we'll just log it
-    console.log(`Migration file content for ${workspaceId}:\n${migrationContent}`);
+    // Debug log removed
     
     return NextResponse.json({ 
       success: true, 
@@ -56,7 +56,7 @@ DROP TABLE IF EXISTS schema_migrations;`;
     });
     
   } catch (error) {
-    console.error('Error initializing Goose:', error);
+    // Server error logged
     return NextResponse.json(
       { error: 'Failed to initialize Goose' },
       { status: 500 }

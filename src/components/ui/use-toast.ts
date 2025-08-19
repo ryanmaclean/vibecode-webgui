@@ -46,5 +46,5 @@ export { useToast as useToastHook };
 export const toast = (props: Omit<Toast, 'id'>) => {
   // This is a simplified version for global toast calls
   // In a real app, you'd want to use a toast provider/context
-  console.log('Toast:', props);
+  // Debug log removed
 }; 

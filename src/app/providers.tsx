@@ -65,9 +65,9 @@ export default function Providers({ children }: ProvidersProps) {
           category: 'app-lifecycle'
         })
 
-        console.log('🐕 VibeCode RUM monitoring initialized successfully')
+        // Debug log removed
       } else {
-        console.warn('🐕 RUM monitoring disabled - missing configuration or not production/dev mode')
+        // Warning noted
       }
     }
   }, [])

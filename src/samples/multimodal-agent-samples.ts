@@ -538,9 +538,9 @@ Expected AI Response:
       throw new Error(`Sample ${sampleId} not found`);
     }
 
-    console.log(`🚀 Running sample: ${sample.title}`);
-    console.log(`📝 Description: ${sample.description}`);
-    console.log(`⏱️ Estimated time: ${sample.estimatedTime}s`);
+    // Debug log removed
+    // Debug log removed
+    // Debug log removed
 
     const startTime = Date.now();
     
@@ -549,9 +549,9 @@ Expected AI Response:
       
       const duration = Date.now() - startTime;
       
-      console.log(`✅ Sample completed in ${duration}ms`);
-      console.log(`📊 Confidence: ${result.metadata.confidence}`);
-      console.log(`💰 Cost: $${result.metadata.cost.toFixed(4)}`);
+      // Debug log removed
+      // Debug log removed
+      // Debug log removed}`);
       
       return {
         sample,

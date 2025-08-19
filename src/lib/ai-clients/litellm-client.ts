@@ -186,7 +186,7 @@ export class LiteLLMClient extends EventEmitter {
       });
 
       if (this.config.enableLogging) {
-        console.log(`[LiteLLM] Chat completion: ${request.model}, ${duration}ms, $${data.cost?.total_cost?.toFixed(6) || '0'}`);
+        // Debug log removed || '0'}`);
       }
 
       return data;
@@ -298,7 +298,7 @@ export class LiteLLMClient extends EventEmitter {
       });
 
       if (this.config.enableLogging) {
-        console.log(`[LiteLLM] Embedding: ${request.model}, ${duration}ms, $${data.cost?.total_cost?.toFixed(6) || '0'}`);
+        // Debug log removed || '0'}`);
       }
 
       return data;
@@ -469,11 +469,11 @@ export class LiteLLMClient extends EventEmitter {
 
   private setupLogging(): void {
     this.on('chat_completion', (data) => {
-      console.log(`[LiteLLM] Chat completion completed: ${data.request.model}`);
+      // Debug log removed
     });
 
     this.on('embedding_created', (data) => {
-      console.log(`[LiteLLM] Embedding created: ${data.request.model}`);
+      // Debug log removed
     });
 
     this.on('error', (data) => {

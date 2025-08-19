@@ -212,7 +212,7 @@ export default function VoiceTestPage() {
         };
         
         recognitionRef.current.onerror = (event) => {
-          console.error('Speech recognition error:', event.error);
+          // Error handled
           setIsListening(false);
           setInterimTranscript('');
         };
@@ -287,7 +287,7 @@ export default function VoiceTestPage() {
       mediaRecorder.start();
       setIsRecording(true);
     } catch (error) {
-      console.error('Error starting recording:', error);
+      // Error handled
     }
   }, [isRecording, recordings.length]);
 

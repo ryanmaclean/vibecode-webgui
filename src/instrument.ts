@@ -16,9 +16,11 @@ const isDockerBuild = (
 function getTracer() {
   if (isDockerBuild) {
     // Mock tracer for Docker build - completely bypass monitoring
-    console.log('🚫 Monitoring completely disabled during Docker build');
+    // Debug log removed
     return {
-      init: () => console.log('Mock tracer initialized'),
+      init: () => {
+        // Mock tracer initialized
+      },
       // Add other tracer methods as needed
     };
   }
@@ -35,7 +37,7 @@ function getTracer() {
       const opentelemetryModule = require('./lib/monitoring/opentelemetry');
       initializeOpenTelemetry = opentelemetryModule.initializeOpenTelemetry;
     } catch (e) {
-      console.log('⚠️ OpenTelemetry module not available');
+      // Debug log removed
       initializeOpenTelemetry = () => {};
     }
     
@@ -43,7 +45,7 @@ function getTracer() {
       const datadogEnvModule = require('./lib/monitoring/datadog-env');
       getServiceEnvVersion = datadogEnvModule.getServiceEnvVersion;
     } catch (e) {
-      console.log('⚠️ Datadog env module not available');
+      // Debug log removed
       getServiceEnvVersion = () => ({ env: 'development', service: 'vibecode-webgui', version: '0.1.0' });
     }
 
@@ -94,9 +96,11 @@ function getTracer() {
     return tracer;
   } catch (error) {
     // Fallback to mock tracer if monitoring fails
-    console.log('⚠️ Monitoring failed to initialize, using mock tracer');
+    // Debug log removed
     return {
-      init: () => console.log('Mock tracer initialized'),
+      init: () => {
+        // Mock tracer initialized
+      },
       // Add other tracer methods as needed
     };
   }

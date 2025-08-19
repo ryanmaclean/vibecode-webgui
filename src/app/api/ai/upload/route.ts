@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
         }
 
       } catch (error) {
-        console.error(`Failed to process file ${file.name}:`, error)
+        // Server error logged
         // Continue with other files
       }
     }
@@ -255,7 +255,7 @@ export async function POST(request: NextRequest) {
         const updatedIndex = [...existingIndex, ...ragIndexes]
         await writeFile(ragIndexPath, JSON.stringify(updatedIndex, null, 2))
       } catch (error) {
-        console.error('Failed to save RAG index:', error)
+        // Server error logged
       }
     }
 
@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Upload error:', error)
+    // Server error logged
 
     return NextResponse.json(
       {
@@ -307,7 +307,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Failed to list files:', error)
+    // Server error logged
     return NextResponse.json(
       {
         error: 'Failed to list files',

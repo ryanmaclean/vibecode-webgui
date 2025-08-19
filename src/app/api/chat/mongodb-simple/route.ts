@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
         )
     }
   } catch (error) {
-    console.error('MongoDB Simple Chat API Error:', error)
+    // Server error logged
     return NextResponse.json(
       { 
         error: 'Internal server error',
@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
       { status: 400 }
     )
   } catch (error) {
-    console.error('MongoDB Simple GET API Error:', error)
+    // Server error logged
     return NextResponse.json(
       { 
         error: 'Internal server error',

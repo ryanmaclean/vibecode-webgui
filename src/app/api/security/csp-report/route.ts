@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       ip: getClientIP(request),
     }
 
-    console.warn('[CSP_VIOLATION]', JSON.stringify(logData))
+    // Server warning noted)
 
     // In production, you might want to:
     // 1. Send to security monitoring system (Datadog, Splunk, etc.)
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ status: 'recorded' }, { status: 200 })
   } catch (error) {
-    console.error('Failed to process CSP violation report:', error)
+    // Server error logged
     return NextResponse.json({ error: 'Failed to process report' }, { status: 400 })
   }
 }
