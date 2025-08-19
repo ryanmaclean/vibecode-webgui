@@ -699,7 +699,7 @@ export class WorkspaceCollaboration extends EventEmitter {
   private async loadWorkspaceFiles(workspaceId: string, session: WorkspaceSession): Promise<void> {
     // Implementation would load files from workspace storage
     // This is a placeholder
-    console.log(`Loading files for workspace ${workspaceId}`);
+    // Debug log removed
   }
 
   /**
@@ -708,7 +708,7 @@ export class WorkspaceCollaboration extends EventEmitter {
   private async persistFileState(workspaceId: string, fileState: FileState): Promise<void> {
     // Implementation would save file to workspace storage
     // This is a placeholder
-    console.log(`Persisting file ${fileState.path} for workspace ${workspaceId}`);
+    // Debug log removed
   }
 
   /**
@@ -774,7 +774,7 @@ export class WorkspaceCollaboration extends EventEmitter {
    */
   private async startTerminalProcess(terminal: TerminalSession): Promise<void> {
     // Implementation would start actual terminal process
-    console.log(`Starting terminal: ${terminal.command}`);
+    // Debug log removed
   }
 
   /**
@@ -782,7 +782,7 @@ export class WorkspaceCollaboration extends EventEmitter {
    */
   private async writeToTerminalProcess(terminal: TerminalSession, input: string): Promise<void> {
     // Implementation would write to actual terminal process
-    console.log(`Terminal ${terminal.id} input: ${input}`);
+    // Debug log removed
   }
 
   /**
@@ -790,7 +790,7 @@ export class WorkspaceCollaboration extends EventEmitter {
    */
   private async stopTerminalProcess(terminal: TerminalSession): Promise<void> {
     // Implementation would stop actual terminal process
-    console.log(`Stopping terminal: ${terminal.id}`);
+    // Debug log removed
   }
 
   /**
@@ -798,7 +798,7 @@ export class WorkspaceCollaboration extends EventEmitter {
    */
   private async startDebugAdapter(debugSession: DebugSession): Promise<void> {
     // Implementation would start language-specific debug adapter
-    console.log(`Starting debug session: ${debugSession.name}`);
+    // Debug log removed
   }
 
   /**
@@ -806,7 +806,7 @@ export class WorkspaceCollaboration extends EventEmitter {
    */
   private async stopDebugAdapter(debugSession: DebugSession): Promise<void> {
     // Implementation would stop debug adapter
-    console.log(`Stopping debug session: ${debugSession.id}`);
+    // Debug log removed
   }
 }
 

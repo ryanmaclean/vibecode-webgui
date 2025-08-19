@@ -5,7 +5,7 @@ import { collaborationService } from '@/lib/services/collaboration'
 
 const SocketHandler = (req: NextApiRequest, res: NextApiResponse) => {
   if (!(res.socket as any).server.io) {
-    console.log('🚀 Initializing Socket.IO server for collaboration...')
+    // Debug log removed
 
     const httpServer: HTTPServer = (res.socket as any).server
     const io = new SocketIOServer(httpServer, {
@@ -22,9 +22,9 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponse) => {
     
     (res.socket as any).server.io = io
 
-    console.log('✅ Socket.IO server initialized for real-time collaboration')
+    // Debug log removed
   } else {
-    console.log('📡 Socket.IO server already running')
+    // Debug log removed
   }
 
   res.end()

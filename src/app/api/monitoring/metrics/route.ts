@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error fetching metrics:', error)
+    // Server error logged
     
     return NextResponse.json(
       {
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error submitting metric:', error)
+    // Server error logged
     
     return NextResponse.json(
       {

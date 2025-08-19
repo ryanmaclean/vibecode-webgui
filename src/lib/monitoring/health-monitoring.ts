@@ -17,7 +17,7 @@ if (process.env.DD_API_KEY) {
     profiling: true,
     appsec: true, // Application Security Management
   })
-  console.log('🔍 Datadog APM tracer initialized')
+  // Debug log removed
 } else {
   console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }
@@ -75,20 +75,20 @@ class MetricsCollector {
   private metrics: Record<string, any> = {}
 
   increment(name: string, tags: Record<string, string | number> = {}): void {
-    console.log(`📊 Metric increment: ${name}`, tags)
+    // Debug log removed
     // In a real scenario, this would send to Datadog agent
     // Example: client.increment(name, tags)
     this.metrics[name] = (this.metrics[name] || 0) + 1
   }
 
   gauge(name: string, value: number, tags: Record<string, string | number> = {}): void {
-    console.log(`📊 Metric gauge: ${name} = ${value}`, tags)
+    // Debug log removed
     // Example: client.gauge(name, value, tags)
     this.metrics[name] = value
   }
 
   histogram(name: string, value: number, tags: Record<string, string | number> = {}): void {
-    console.log(`📊 Metric histogram: ${name} = ${value}`, tags)
+    // Debug log removed
     // Example: client.histogram(name, value, tags)
     if (!this.metrics[name]) {
       this.metrics[name] = []

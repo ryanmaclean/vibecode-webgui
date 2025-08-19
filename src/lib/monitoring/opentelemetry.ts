@@ -40,7 +40,7 @@ if (!isDockerBuild) {
     ATTR_SERVICE_NAME = semanticConventions.SEMRESATTRS_SERVICE_NAME || semanticConventions.ATTR_SERVICE_NAME;
     ATTR_SERVICE_VERSION = semanticConventions.SEMRESATTRS_SERVICE_VERSION || semanticConventions.ATTR_SERVICE_VERSION;
   } catch (error) {
-    console.log('⚠️ OpenTelemetry modules not available, monitoring disabled');
+    // Debug log removed
   }
 }
 
@@ -58,18 +58,18 @@ let otelSDK: any = null
 export function initializeOpenTelemetry() {
   if (!isServer || otelSDK || isDockerBuild) {
     if (isDockerBuild) {
-      console.log('🚫 OpenTelemetry disabled during Docker build');
+      // Debug log removed
     }
     return otelSDK
   }
 
   // Check if all required modules are available
   if (!NodeSDK || !getNodeAutoInstrumentations || !OTLPTraceExporter || !PrometheusExporter || !Resource || !ATTR_SERVICE_NAME || !ATTR_SERVICE_VERSION) {
-    console.log('⚠️ OpenTelemetry modules not available, monitoring disabled');
+    // Debug log removed
     return null;
   }
 
-  console.log('🔧 Initializing OpenTelemetry...')
+  // Debug log removed
 
   try {
     // Configure resource attributes
@@ -97,7 +97,7 @@ export function initializeOpenTelemetry() {
       port: parseInt(process.env.OTEL_PROMETHEUS_PORT || '9090'),
       endpoint: process.env.OTEL_PROMETHEUS_ENDPOINT || '/metrics'
     }, () => {
-      console.log('📊 Prometheus metrics available at http://localhost:9090/metrics')
+      // Debug log removed
     })
 
     // Initialize SDK with auto-instrumentation
@@ -138,7 +138,7 @@ export function initializeOpenTelemetry() {
     // Start the SDK
     otelSDK.start()
     
-    console.log('✅ OpenTelemetry initialized successfully')
+    // Debug log removed
 
     return otelSDK
 
@@ -155,7 +155,7 @@ export async function shutdownOpenTelemetry() {
   if (otelSDK) {
     try {
       await otelSDK.shutdown()
-      console.log('✅ OpenTelemetry shutdown complete')
+      // Debug log removed
     } catch (error) {
       console.error('❌ Error shutting down OpenTelemetry:', error)
     }

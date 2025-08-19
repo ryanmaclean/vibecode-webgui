@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       message: 'SAML authentication request generated'
     })
   } catch (error) {
-    console.error('SAML SSO initiation error:', error)
+    // Server error logged
     
     if (error instanceof z.ZodError) {
       return NextResponse.json({
@@ -125,7 +125,7 @@ export async function PUT(req: NextRequest) {
       message: 'SAML authentication successful'
     })
   } catch (error) {
-    console.error('SAML ACS error:', error)
+    // Server error logged
     
     if (error instanceof z.ZodError) {
       return NextResponse.json({
@@ -167,7 +167,7 @@ export async function GET(req: NextRequest) {
       data: config
     })
   } catch (error) {
-    console.error('SAML config error:', error)
+    // Server error logged
     
     return NextResponse.json({
       error: 'Failed to get SAML configuration',

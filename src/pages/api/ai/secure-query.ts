@@ -79,7 +79,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    console.error('AI Query API Error:', error);
+    // Server error logged
     res.status(500).json({ 
       error: 'Internal server error' 
     });

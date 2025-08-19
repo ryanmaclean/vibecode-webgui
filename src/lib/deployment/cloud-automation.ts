@@ -185,12 +185,12 @@ export class VercelDeploymentProvider extends CloudDeploymentProvider {
 
   async updateEnvironmentVariables(deploymentId: string, variables: Record<string, string>) {
     // Mock environment variable update
-    console.log(`Updating environment variables for ${deploymentId}:`, variables)
+    // Debug log removed
   }
 
   async deleteDeployment(deploymentId: string) {
     // Mock deployment deletion
-    console.log(`Deleting deployment ${deploymentId}`)
+    // Debug log removed
   }
 
   private detectFramework(project: GeneratedProject): string {
@@ -283,11 +283,11 @@ export class NetlifyDeploymentProvider extends CloudDeploymentProvider {
   }
 
   async updateEnvironmentVariables(deploymentId: string, variables: Record<string, string>) {
-    console.log(`Updating Netlify environment variables for ${deploymentId}:`, variables)
+    // Debug log removed
   }
 
   async deleteDeployment(deploymentId: string) {
-    console.log(`Deleting Netlify deployment ${deploymentId}`)
+    // Debug log removed
   }
 
   private async simulateDeployment(delay: number): Promise<void> {
@@ -355,11 +355,11 @@ export class AWSDeploymentProvider extends CloudDeploymentProvider {
   }
 
   async updateEnvironmentVariables(deploymentId: string, variables: Record<string, string>) {
-    console.log(`Updating AWS environment variables for ${deploymentId}:`, variables)
+    // Debug log removed
   }
 
   async deleteDeployment(deploymentId: string) {
-    console.log(`Deleting AWS deployment ${deploymentId}`)
+    // Debug log removed
   }
 
   private isStaticSite(project: GeneratedProject): boolean {
@@ -550,15 +550,7 @@ export class CloudDeploymentOrchestrator {
     config: DeploymentConfig,
     result: DeploymentResult
   ): void {
-    console.log(`Deployment ${result.success ? 'succeeded' : 'failed'}:`, {
-      project: project.name,
-      provider: config.provider,
-      environment: config.environment,
-      deploymentId: result.deploymentId,
-      url: result.url,
-      deploymentTime: result.deploymentTime,
-      estimatedCost: result.estimatedCost
-    })
+    // Debug log removed
   }
 }
 

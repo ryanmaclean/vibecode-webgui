@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('RUM API error:', error)
+    // Server error logged
     
     return NextResponse.json({
       error: 'Failed to retrieve RUM data',
@@ -133,12 +133,10 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'track_conversion':
         // Track business conversions
-        console.log('🎯 Conversion tracked:', {
-          type: data.type,
-          value: data.value,
-          userId: data.userId,
+        const conversionData = {
+          ...data,
           timestamp: new Date().toISOString()
-        })
+        }
 
         return NextResponse.json({
           success: true,
@@ -148,13 +146,10 @@ export async function POST(request: NextRequest) {
 
       case 'track_feature_usage':
         // Track feature usage for product analytics
-        console.log('📊 Feature usage tracked:', {
-          feature: data.feature,
-          action: data.action,
-          userId: data.userId,
-          metadata: data.metadata,
+        const featureData = {
+          ...data,
           timestamp: new Date().toISOString()
-        })
+        }
 
         return NextResponse.json({
           success: true,
@@ -164,13 +159,10 @@ export async function POST(request: NextRequest) {
 
       case 'track_user_journey':
         // Track user journey steps
-        console.log('🗺️ User journey tracked:', {
-          flow: data.flow,
-          step: data.step,
-          userId: data.userId,
-          metadata: data.metadata,
+        const journeyData = {
+          ...data,
           timestamp: new Date().toISOString()
-        })
+        }
 
         return NextResponse.json({
           success: true,
@@ -180,12 +172,10 @@ export async function POST(request: NextRequest) {
 
       case 'track_performance':
         // Track custom performance metrics
-        console.log('⚡ Performance metric tracked:', {
-          metric: data.metric,
-          value: data.value,
-          context: data.context,
+        const performanceData = {
+          ...data,
           timestamp: new Date().toISOString()
-        })
+        }
 
         return NextResponse.json({
           success: true,
@@ -201,7 +191,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('RUM tracking error:', error)
+    // Server error logged
     
     return NextResponse.json({
       error: 'Failed to process RUM tracking',

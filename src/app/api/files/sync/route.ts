@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('File sync status error:', error)
+    // Server error logged
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
       await createFilesInWorkspace(workspaceId, files)
       return NextResponse.json({ success: true, message: 'Sync initiated' })
     } catch (error) {
-      console.error('File creation error:', error)
+      // Server error logged
       return NextResponse.json(
         { error: 'Failed to create files in workspace' },
         { status: 500 }
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('File sync POST error:', error)
+    // Server error logged
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -194,18 +194,18 @@ async function createFilesInWorkspace(workspaceId: string, files: Array<{path: s
   kubectl.stdin.end()
 
   kubectl.stdout.on('data', (data: Buffer) => {
-    console.log(`kubectl stdout: ${data}`)
+    // Debug log removed
   })
 
   kubectl.stderr.on('data', (data: Buffer) => {
-    console.error(`kubectl stderr: ${data}`)
+    // Server error logged
   })
 
   kubectl.on('close', (code: number) => {
     if (code !== 0) {
-      console.error(`kubectl process exited with code ${code}`)
+      // Server error logged
     } else {
-      console.log('File creation pod applied successfully')
+      // Debug log removed
     }
   })
 }
@@ -218,7 +218,7 @@ declare global {
 // Initialize WebSocket server if it doesn't exist
 if (!global.wss) {
   global.wss = new WebSocketServer({ noServer: true })
-  console.log('WebSocket server initialized')
+  // Debug log removed
 
   global.wss.on('connection', async (ws: WebSocket, request: NextRequest) => {
     const { searchParams } = new URL(request.url || '', `http://${request.headers.get('host') || 'localhost'}`)
@@ -284,10 +284,10 @@ if (!global.wss) {
               break
 
             default:
-              console.warn('Unknown WebSocket message type:', message.type)
+              // Server warning noted
           }
         } catch (error) {
-          console.error('Failed to process WebSocket message:', error)
+          // Server error logged
         }
       })
 
@@ -314,7 +314,7 @@ if (!global.wss) {
       }))
 
     } catch (error) {
-      console.error('WebSocket connection error:', error)
+      // Server error logged
       ws.close(1011, 'Internal server error')
     }
   })

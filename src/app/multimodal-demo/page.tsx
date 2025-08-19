@@ -57,10 +57,10 @@ export default function MultimodalDemoPage() {
         setIsInitialized(true);
         
         // Log demo session start
-        console.log('🚀 VibeCode Multimodal Demo Session Started');
+        // Debug log removed
         
       } catch (error) {
-        console.error('Failed to initialize agent:', error);
+        // Error handled
       }
     };
 

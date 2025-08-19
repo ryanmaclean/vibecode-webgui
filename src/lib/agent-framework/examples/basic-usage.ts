@@ -22,7 +22,7 @@ async function exampleBasicAgent() {
 
   // Process a message
   const response = await agent.processMessage('Hello, how are you?');
-  console.log('Basic Agent Response:', response.content);
+  // Debug log removed
 }
 
 /**
@@ -42,13 +42,13 @@ async function exampleWithTools() {
   const mathResponse = await agent.processMessage(
     'What is 123 * 45? Use the calculator tool.'
   );
-  console.log('Math Response:', mathResponse.content);
+  // Debug log removed
 
   // The agent can also get the current time
   const timeResponse = await agent.processMessage(
     'What time is it in New York?'
   );
-  console.log('Time Response:', timeResponse.content);
+  // Debug log removed
 }
 
 /**
@@ -64,7 +64,7 @@ async function exampleCodeAgent() {
   const response = await agent.processMessage(
     'Write a function that calculates the factorial of a number in JavaScript.'
   );
-  console.log('Code Agent Response:', response.content);
+  // Debug log removed
 }
 
 /**
@@ -81,7 +81,7 @@ async function exampleResearchAgent() {
   const response = await agent.processMessage(
     'What are the latest developments in AI as of 2024?'
   );
-  console.log('Research Agent Response:', response.content);
+  // Debug log removed
 }
 
 /**
@@ -92,13 +92,13 @@ async function exampleStreaming() {
     model: 'openrouter/anthropic/claude-3-sonnet',
   });
 
-  console.log('Streaming response:');
+  // Debug log removed
   for await (const chunk of agent.streamResponse(
     'Tell me a short story about a robot learning to paint.'
   )) {
     process.stdout.write(chunk.content);
   }
-  console.log('\n');
+  // Debug log removed
 }
 
 /**
@@ -147,7 +147,7 @@ async function exampleCustomTool() {
   const response = await agent.processMessage(
     'What is the weather like in Paris?'
   );
-  console.log('Weather Response:', response.content);
+  // Debug log removed
 }
 
 /**
@@ -164,45 +164,45 @@ async function exampleSpecializedAgents() {
   const codeResponse = await codeAgent.processMessage(
     'Write a Python function to sort a list of dictionaries by a specific key.'
   );
-  console.log('Code Agent:', codeResponse.content.substring(0, 100) + '...');
+  // Debug log removed + '...');
 
   const researchResponse = await researchAgent.processMessage(
     'What are the latest developments in quantum computing?'
   );
-  console.log('Research Agent:', researchResponse.content.substring(0, 100) + '...');
+  // Debug log removed + '...');
 
   const creativeResponse = await creativeAgent.processMessage(
     'Write a haiku about artificial intelligence.'
   );
-  console.log('Creative Agent:', creativeResponse.content);
+  // Debug log removed
 
   const dataResponse = await dataAgent.processMessage(
     'Analyze this dataset and tell me the average, min, and max values.'
   );
-  console.log('Data Agent:', dataResponse.content.substring(0, 100) + '...');
+  // Debug log removed + '...');
 }
 
 // Run all examples
 async function runExamples() {
-  console.log('=== Example 1: Basic Agent ===');
+  // Debug log removed
   await exampleBasicAgent();
   
-  console.log('\n=== Example 2: Agent with Tools ===');
+  // Debug log removed
   await exampleWithTools();
   
-  console.log('\n=== Example 3: Code Agent ===');
+  // Debug log removed
   await exampleCodeAgent();
   
-  console.log('\n=== Example 4: Research Agent ===');
+  // Debug log removed
   await exampleResearchAgent();
   
-  console.log('\n=== Example 5: Streaming ===');
+  // Debug log removed
   await exampleStreaming();
   
-  console.log('\n=== Example 6: Custom Tool ===');
+  // Debug log removed
   await exampleCustomTool();
   
-  console.log('\n=== Example 7: Specialized Agents ===');
+  // Debug log removed
   await exampleSpecializedAgents();
 }
 

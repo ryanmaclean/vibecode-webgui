@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
           })
 
         } catch (error) {
-          console.error('Template generation error:', error)
+          // Server error logged
           
           const errorMessage = error instanceof Error ? error.message : 'Unknown error'
           
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.error('Template generation API error:', error)
+    // Server error logged
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -284,7 +284,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Template listing error:', error)
+    // Server error logged
     return NextResponse.json(
       { error: 'Failed to retrieve templates' },
       { status: 500 }

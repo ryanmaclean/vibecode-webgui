@@ -206,11 +206,7 @@ async function validateRequestSecurity(
         email: `test-${testUserId}@vibecode.dev`,
         name: `Test User ${testUserId}`
       };
-      console.log('🧪 Development testing mode: Using mock token', {
-        userId: token.id,
-        role: token.role,
-        endpoint: pathname
-      });
+      // Debug log removed
     } else {
       token = await getToken({
         req: request,

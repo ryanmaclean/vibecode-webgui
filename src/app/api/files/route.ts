@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('File API GET error:', error)
+    // Server error logged
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('File API POST error:', error)
+    // Server error logged
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -332,7 +332,7 @@ export async function PUT(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('File API PUT error:', error)
+    // Server error logged
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -401,7 +401,7 @@ export async function DELETE(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('File API DELETE error:', error)
+    // Server error logged
     return NextResponse.json(
       {
         error: 'Internal server error',

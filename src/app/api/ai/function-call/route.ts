@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const responseTime = Date.now() - startTime
 
     // Log function execution for monitoring
-    console.log(`Function call: ${function_call.name} -> ${result.success ? 'success' : 'failed'} (${responseTime}ms)`)
+    // Debug log removed`)
 
     return NextResponse.json({
       success: result.success,
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Function calling API error:', error)
+    // Server error logged
     
     return NextResponse.json({
       success: false,

@@ -33,15 +33,15 @@ export default function HuggingFaceChatPage() {
       if (data.success && data.conversation) {
         setConversationId(data.conversation.id)
       } else {
-        console.error('Failed to create conversation:', data.error)
+        // Error handled
       }
     } catch (error) {
-      console.error('Error creating conversation:', error)
+      // Error handled
     }
   }
 
   const handleFileUpload = (files: FileList) => {
-    console.log('Files uploaded to Hugging Face chat:', Array.from(files).map(f => f.name))
+    // Debug log removed.map(f => f.name))
   }
 
   return (
