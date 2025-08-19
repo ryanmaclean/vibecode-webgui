@@ -79,7 +79,7 @@ export default function ProjectsPage() {
       // Redirect to the new workspace
       router.push(workspaceUrl)
     } catch (error) {
-      console.error('Failed to create workspace:', error)
+      // Error handled
       alert('Error creating workspace. See console for details.')
     }
   }

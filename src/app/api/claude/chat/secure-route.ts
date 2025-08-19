@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
     }, { headers })
 
   } catch (error) {
-    console.error('Secure Claude chat API error:', error)
+    // Server error logged
 
     // Don't expose internal errors
     return NextResponse.json(

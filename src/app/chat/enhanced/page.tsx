@@ -35,15 +35,15 @@ export default function EnhancedChatPage() {
       if (data.success && data.conversation) {
         setConversationId(data.conversation.id)
       } else {
-        console.error('Failed to create conversation:', data.error)
+        // Failed to create conversation
       }
     } catch (error) {
-      console.error('Error creating conversation:', error)
+      // Error creating conversation
     }
   }
 
   const handleFileUpload = (files: FileList) => {
-    console.log('Files uploaded to enhanced chat:', Array.from(files).map(f => f.name))
+    // Files uploaded to enhanced chat
   }
 
   const demoQueries = {
@@ -54,7 +54,7 @@ export default function EnhancedChatPage() {
     ],
     functions: [
       "Can you create a new file called 'utils.ts' with some helper functions?",
-      "Execute this JavaScript code: console.log('Hello, Link!')",
+      "Execute this JavaScript code: // Debug log removed",
       "Install the lodash package using npm",
       "List all files in my workspace"
     ],

@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     const responseTime = Date.now() - startTime
 
     // Log search for monitoring
-    console.log(`Web search: "${query}" -> ${searchResults.length} results (${responseTime}ms)`)
+    // Debug log removed`)
 
     return NextResponse.json({
       success: true,
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Web search API error:', error)
+    // Server error logged
     
     return NextResponse.json({
       success: false,

@@ -164,7 +164,7 @@ export class WeaviateVectorStore {
       }
 
       this.isConnected = true
-      console.log('✅ Weaviate connected and schema ready')
+      // Debug log removed
       return true
     } catch (error) {
       console.error('Failed to initialize Weaviate:', error)
@@ -266,7 +266,7 @@ export class WeaviateVectorStore {
     }
 
     await this.client.schema.classCreator().withClass(classDefinition).do()
-    console.log(`✅ Created Weaviate schema for class: ${this.className}`)
+    // Debug log removed
   }
 
   /**
@@ -330,7 +330,7 @@ export class WeaviateVectorStore {
         await batch.do()
       }
 
-      console.log(`✅ Stored ${documents.length} documents in Weaviate`)
+      // Debug log removed
       return true
     } catch (error) {
       console.error('Failed to store documents in Weaviate:', error)
@@ -494,7 +494,7 @@ export class WeaviateVectorStore {
         .do()
 
       const deletedCount = result.results?.successful || 0
-      console.log(`🗑️  Deleted ${deletedCount} documents from Weaviate`)
+      // Debug log removed
       return deletedCount
     } catch (error) {
       console.error('Failed to delete documents from Weaviate:', error)

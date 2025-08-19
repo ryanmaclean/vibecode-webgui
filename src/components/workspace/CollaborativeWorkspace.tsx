@@ -475,7 +475,7 @@ export function CollaborativeWorkspace({
               <GitHubDeploymentWorkflow
                 project={selectedProject}
                 onDeploymentComplete={(result) => {
-                  console.log('Deployment completed:', result)
+                  // Debug log removed
                   setShowDeployment(false)
                 }}
                 onClose={() => setShowDeployment(false)}

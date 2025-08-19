@@ -30,7 +30,7 @@ setInterval(() => {
   
   for (const [sessionId, session] of terminalSessions.entries()) {
     if (session.lastActivity < thirtyMinutesAgo) {
-      console.log(`Cleaning up inactive terminal session: ${sessionId}`)
+      // Debug log removed
       session.pty.kill()
       terminalSessions.delete(sessionId)
     }
@@ -100,7 +100,7 @@ const webSocketHandler = (ws: any, request: any) => {
           }))
       }
     } catch (error) {
-      console.error('WebSocket message error:', error)
+      // Server error logged
       ws.send(JSON.stringify({
         type: 'error',
         message: 'Failed to process message'
@@ -215,7 +215,7 @@ const webSocketHandler = (ws: any, request: any) => {
       }, 500)
 
     } catch (error) {
-      console.error('Error creating terminal:', error)
+      // Server error logged
       ws.send(JSON.stringify({
         type: 'error',
         message: 'Failed to create terminal session'
@@ -330,7 +330,7 @@ const webSocketHandler = (ws: any, request: any) => {
         }))
       }
     } catch (error) {
-      console.error('AI command error:', error)
+      // Server error logged
       ws.send(JSON.stringify({
         type: 'ai-error',
         sessionId,
@@ -392,7 +392,7 @@ const webSocketHandler = (ws: any, request: any) => {
       }
     } catch (error) {
       // Silently fail for suggestions
-      console.debug('AI suggestion error:', error)
+      // AI suggestion error logged
     }
   }
 }

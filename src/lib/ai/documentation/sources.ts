@@ -93,7 +93,7 @@ export class DocumentationSources {
           { type: 'readme', framework: framework.name, source: 'github' }
         );
         
-        console.log(`Successfully loaded documentation for ${framework.name}`);
+        // Debug log removed
       } catch (error) {
         console.error(`Failed to load ${framework.name}:`, error.message);
       }

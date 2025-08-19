@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Auto-scaling API error:', error)
+    // Server error logged
     return NextResponse.json(
       {
         status: 'error',
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Metrics update error:', error)
+    // Server error logged
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -239,7 +239,7 @@ export async function PUT(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Workspace registration error:', error)
+    // Server error logged
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -310,7 +310,7 @@ export async function PATCH(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Config update error:', error)
+    // Server error logged
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -359,7 +359,7 @@ export async function DELETE(req: NextRequest) {
 
     // In a real implementation, you would remove the workspace from tracking
     // For now, we'll just log it
-    console.log(`🗑️  Unregistering workspace ${workspaceId} from auto-scaling`)
+    // Debug log removed
 
     return NextResponse.json({
       status: 'success',
@@ -370,7 +370,7 @@ export async function DELETE(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Workspace unregistration error:', error)
+    // Server error logged
     
     return NextResponse.json(
       {

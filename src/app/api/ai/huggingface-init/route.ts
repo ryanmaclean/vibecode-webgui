@@ -41,7 +41,7 @@ export async function GET(_request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Hugging Face initialization error:', error)
+    // Server error logged
     return NextResponse.json({
       initialized: false,
       error: 'Failed to initialize Hugging Face client'

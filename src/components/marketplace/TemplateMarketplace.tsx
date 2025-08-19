@@ -377,7 +377,7 @@ export function TemplateMarketplace({ onSelectTemplate, selectedCategory }: Temp
           template={selectedTemplateForDeploy}
           onClose={() => setSelectedTemplateForDeploy(null)}
           onDeploymentComplete={(result) => {
-            console.log('Template deployed successfully:', result)
+            // Debug log removed
             setSelectedTemplateForDeploy(null)
           }}
         />

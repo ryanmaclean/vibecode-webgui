@@ -11,7 +11,7 @@ const nextConfig = {
     dirs: ['src'], // Only lint src directory for faster builds
   },
   typescript: {
-    ignoreBuildErrors: true, // Temporarily ignore to see other issues
+    ignoreBuildErrors: false, // Re-enable to check specific issues
   },
   images: {
     unoptimized: true,

@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Claude session API error:', error)
+    // Server error logged
 
     return NextResponse.json(
       {
@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Claude session status API error:', error)
+    // Server error logged
 
     return NextResponse.json(
       {

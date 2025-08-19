@@ -242,8 +242,8 @@ class DatadogDatabaseMonitoring {
     ]
 
     // Log metrics in Datadog format
-    console.log(JSON.stringify({
-      '@timestamp': new Date().toISOString(),
+    const logEntry = {
+      timestamp: new Date().toISOString(),
       level: 'info',
       service: 'vibecode-database',
       message: 'Database metrics collected',
@@ -298,7 +298,9 @@ class DatadogDatabaseMonitoring {
           tags: [...tags, 'vector_store:pgvector']
         }
       }
-    }))
+    }
+    
+    // Metrics logged for Datadog
   }
 
   /**

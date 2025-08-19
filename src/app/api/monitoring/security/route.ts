@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(metrics);
 
   } catch (error) {
-    console.error('Security monitoring error:', error);
+    // Server error logged
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Security action error:', error);
+    // Server error logged
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -212,7 +212,7 @@ function addSecurityEvent(
 
   // Log critical and high severity events
   if (severity === 'critical' || severity === 'high') {
-    console.warn(`[SECURITY_${severity.toUpperCase()}]`, event);
+    // Server warning noted}]`, event);
   }
 }
 

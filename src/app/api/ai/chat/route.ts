@@ -39,10 +39,7 @@ function logAIInteraction(
     },
   };
 
-  console.log(JSON.stringify({
-    message: `[AI_CHAT] ${event}`,
-    ...logData,
-  }));
+  // Debug log removed);
 }
 
 async function handlePOST(request: AuthenticatedRequest) {
