@@ -156,7 +156,7 @@ jobs:
     if: github.event_name != 'pull_request'
     strategy:
       matrix:
-        image: [vibecode-webgui, vibecode-ai-gateway, vibecode-code-server, vibecode-docs]
+        image: [vibecode-webgui, vibecode-ai-gateway, vibecode-code-server, vibecode-docs, vibecode-mcp-servers]
 
     steps:
       - name: Setup Datadog CLI
