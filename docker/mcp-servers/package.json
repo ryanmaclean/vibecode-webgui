@@ -4,7 +4,8 @@
   "description": "Model Context Protocol (MCP) Servers for VibeCode",
   "main": "servers/filesystem/server.js",
   "scripts": {
-    "start": "node servers/filesystem/server.js"
+    "start": "node servers/filesystem/server.js",
+    "start:sequential-thinking": "node servers/sequential_thinking/server.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
