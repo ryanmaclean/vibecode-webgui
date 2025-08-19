@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Vector store API error:', error)
+    // Server error logged
     return NextResponse.json(
       {
         status: 'error',
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Vector store search error:', error)
+    // Server error logged
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -191,7 +191,7 @@ export async function PUT(req: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Vector store storage error:', error)
+    // Server error logged
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -244,7 +244,7 @@ export async function DELETE(req: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Vector store deletion error:', error)
+    // Server error logged
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(

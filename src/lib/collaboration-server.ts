@@ -47,7 +47,7 @@ export class CollaborationServer {
    */
   private setupSocketHandlers(): void {
     this.io.on('connection', (socket) => {
-      console.log(`Collaboration client connected: ${socket.id}`)
+      // Debug log removed
 
       // Handle document join
       socket.on('collab:join', async (data: {
@@ -111,7 +111,7 @@ export class CollaborationServer {
 
       // Handle disconnect
       socket.on('disconnect', () => {
-        console.log(`Collaboration client disconnected: ${socket.id}`)
+        // Debug log removed
         this.handleDisconnect(socket)
       })
     })
@@ -205,7 +205,7 @@ export class CollaborationServer {
       users: currentUsers
     })
 
-    console.log(`User ${userId} joined document ${documentId}`)
+    // Debug log removed
   }
 
   /**
@@ -246,7 +246,7 @@ export class CollaborationServer {
       this.scheduleDocumentCleanup(documentId)
     }
 
-    console.log(`User ${userId} left document ${documentId}`)
+    // Debug log removed
   }
 
   /**
@@ -309,7 +309,7 @@ export class CollaborationServer {
 
     // TODO: Integrate with file system API to save to actual file
     // This would involve calling the file system API with the project and file path
-    console.log(`Saving document ${documentId} (${doc.filePath}) by user ${userId}`)
+    // Debug log removed by user ${userId}`)
   }
 
   /**
@@ -331,7 +331,7 @@ export class CollaborationServer {
     setTimeout(() => {
       const doc = this.documents.get(documentId)
       if (doc && doc.users.size === 0) {
-        console.log(`Cleaning up inactive document: ${documentId}`)
+        // Debug log removed
         doc.persistence?.destroy()
         this.documents.delete(documentId)
       }
@@ -349,7 +349,7 @@ export class CollaborationServer {
 
       for (const [documentId, doc] of this.documents.entries()) {
         if (doc.users.size === 0 && doc.lastActivity < cutoff) {
-          console.log(`Cleaning up old document: ${documentId}`)
+          // Debug log removed
           doc.persistence?.destroy()
           this.documents.delete(documentId)
         }

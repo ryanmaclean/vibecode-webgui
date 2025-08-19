@@ -73,7 +73,7 @@ export class Agent {
   }
 
   async executeTask(task: AgentTask, context: AgentContext): Promise<any> {
-    console.log(`Agent ${this.name} executing task: ${task.description}`)
+    // Debug log removed
     
     try {
       // Check if agent has required capabilities
@@ -313,7 +313,7 @@ export class AgentWorkflow {
   }
 
   async execute(): Promise<Map<string, any>> {
-    console.log(`Executing workflow for goal: ${this.plan.goal}`)
+    // Debug log removed
     
     // Sort tasks by dependencies and priority
     const sortedTasks = this.topologicalSort(this.plan.tasks)
@@ -331,7 +331,7 @@ export class AgentWorkflow {
           throw new Error(`No suitable agent found for task: ${task.description}`)
         }
 
-        console.log(`Executing task ${task.id} with agent ${agent.name}`)
+        // Debug log removed
         
         const result = await agent.executeTask(task, this.context)
         

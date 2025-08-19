@@ -158,7 +158,7 @@ export class WorkspaceAutoScaler {
       }
     }, interval)
 
-    console.log(`🔄 Workspace auto-scaling started (interval: ${this.config.evaluationInterval}s)`)
+    // Debug log removed`)
   }
 
   /**
@@ -202,7 +202,7 @@ export class WorkspaceAutoScaler {
     const updated = { ...current, ...resources }
     this.resources.set(workspaceId, updated)
 
-    console.log(`📝 Workspace registered for auto-scaling: ${workspaceId}`)
+    // Debug log removed
   }
 
   /**
@@ -317,7 +317,7 @@ export class WorkspaceAutoScaler {
 
     // Check resource limits
     if (!this.canScale(scalingAction, resources)) {
-      console.log(`⚠️  Scaling blocked by limits for workspace ${workspaceId}`)
+      // Debug log removed
       return
     }
 
@@ -328,7 +328,7 @@ export class WorkspaceAutoScaler {
     resources.scaling.pendingActions.push(scalingAction)
 
     try {
-      console.log(`🔧 Executing scaling action: ${action.type} ${action.resourceType} by ${action.amount} for workspace ${workspaceId}`)
+      // Debug log removed
 
       switch (scalingAction.type) {
         case 'scale_up':
@@ -348,7 +348,7 @@ export class WorkspaceAutoScaler {
       scalingAction.status = 'completed'
       scalingAction.completedAt = new Date()
 
-      console.log(`✅ Scaling action completed for workspace ${workspaceId}`)
+      // Debug log removed
     } catch (error) {
       scalingAction.status = 'failed'
       scalingAction.error = error instanceof Error ? error.message : 'Unknown error'
@@ -476,7 +476,7 @@ export class WorkspaceAutoScaler {
         metrics.activeConnections === 0 && 
         metrics.cpuUsage < 5) {
       
-      console.log(`💤 Workspace ${workspaceId} is idle, scaling down...`)
+      // Debug log removed
       
       const scaleDownAction: ScalingAction = {
         actionId: this.generateActionId(),
@@ -591,17 +591,17 @@ export class WorkspaceAutoScaler {
   private async mockKubernetesResourceUpdate(workspaceId: string, instance: WorkspaceInstance): Promise<void> {
     // Mock API call delay
     await new Promise(resolve => setTimeout(resolve, 1000))
-    console.log(`🔧 Updated Kubernetes resources for instance ${instance.instanceId}`)
+    // Debug log removed
   }
 
   private async mockKubernetesPodCreation(instance: WorkspaceInstance): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 2000))
-    console.log(`🚀 Created Kubernetes pod ${instance.podName}`)
+    // Debug log removed
   }
 
   private async mockKubernetesPodDeletion(instance: WorkspaceInstance): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 1000))
-    console.log(`🗑️  Deleted Kubernetes pod ${instance.podName}`)
+    // Debug log removed
   }
 
   /**
@@ -640,7 +640,7 @@ export class WorkspaceAutoScaler {
    */
   updateConfig(config: Partial<AutoScalingConfig>): void {
     this.config = { ...this.config, ...config }
-    console.log('🔧 Auto-scaling configuration updated')
+    // Debug log removed
   }
 
   /**

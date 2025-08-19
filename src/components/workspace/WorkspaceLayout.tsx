@@ -164,7 +164,7 @@ export default function WorkspaceLayout({
               workspaceId={workspaceId}
               className="h-full"
               onReady={(iframe) => {
-                console.log('Code-server IDE ready (terminal disabled):', iframe)
+                // Debug log removed:', iframe)
                 
                 // Hide the built-in terminal since we use our enhanced terminal
                 try {
@@ -172,7 +172,7 @@ export default function WorkspaceLayout({
                     type: 'workbench.action.togglePanel'
                   }, '*')
                 } catch (error) {
-                  console.log('Could not hide terminal panel:', error)
+                  // Debug log removed
                 }
               }}
               onError={(error) => {
@@ -196,7 +196,7 @@ export default function WorkspaceLayout({
               enableAI={true}
               enableWebGL={true}
               onReady={(terminal) => {
-                console.log('Enhanced AI terminal ready:', terminal)
+                // Debug log removed
               }}
             />
           </div>

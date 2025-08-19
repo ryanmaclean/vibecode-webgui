@@ -61,7 +61,7 @@ class CollaborationService {
     if (!this.io) return
 
     this.io.on('connection', (socket) => {
-      console.log(`👥 User connected: ${socket.id}`)
+      // Debug log removed
 
       socket.on('join_workspace', async (data) => {
         const { workspaceId, userId, userName, conversationId } = data
@@ -166,7 +166,7 @@ class CollaborationService {
       // Record collaboration metric
       datadogMetrics.recordUserAction('workspace_join', userId, workspaceId)
 
-      console.log(`👥 User ${userName} joined workspace ${workspaceId}`)
+      // Debug log removed
 
     } catch (error) {
       console.error('Error handling user join workspace:', error)
@@ -206,7 +206,7 @@ class CollaborationService {
 
       datadogMetrics.recordUserAction('workspace_leave', userId, workspaceId)
 
-      console.log(`👥 User ${userId} left workspace ${workspaceId}`)
+      // Debug log removed
 
     } catch (error) {
       console.error('Error handling user leave workspace:', error)
@@ -310,7 +310,7 @@ class CollaborationService {
     if (userId && workspaceId) {
       this.handleUserLeaveWorkspace(socket, workspaceId, userId)
     }
-    console.log(`👥 User disconnected: ${socket.id}`)
+    // Debug log removed
   }
 
   // Broadcast message to all users in a conversation
@@ -386,7 +386,7 @@ class CollaborationService {
         if (workspace.activeUsers.size === 0 && 
             now.getTime() - workspace.lastActivity.getTime() > inactivityThreshold) {
           this.workspaces.delete(workspaceId)
-          console.log(`🧹 Cleaned up inactive workspace: ${workspaceId}`)
+          // Debug log removed
         }
       }
     }, 60000) // Run cleanup every minute

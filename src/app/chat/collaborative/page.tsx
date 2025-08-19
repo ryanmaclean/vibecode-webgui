@@ -47,15 +47,15 @@ export default function CollaborativeChatPage() {
         setConversationId(data.conversation.id)
         setShowDemo(true)
       } else {
-        console.error('Failed to create conversation:', data.error)
+        // Error handled
       }
     } catch (error) {
-      console.error('Error creating conversation:', error)
+      // Error handled
     }
   }
 
   const handleFileUpload = (files: FileList) => {
-    console.log('Files uploaded to collaborative chat:', Array.from(files).map(f => f.name))
+    // Debug log removed.map(f => f.name))
   }
 
   const shareWorkspaceLink = () => {

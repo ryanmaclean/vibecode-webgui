@@ -84,7 +84,7 @@ export default function WorkspacePage() {
           throw new Error('Failed to fetch workspace session')
         }
       } catch (error) {
-        console.warn('Failed to fetch real workspace, using mock data:', error)
+        // Warning noted
         // Fallback to mock data if API fails
         setWorkspace({
           id: workspaceId,

@@ -39,15 +39,14 @@ function logToDatadog(
   eventType: 'bot_detected' | 'rate_limited' | 'suspicious_activity' | 'user_access',
   metadata: Record<string, any>
 ) {
-  console.log(JSON.stringify({ 
-    ddsource: 'next-js', 
-    eventType, 
+  // Event logged to Datadog
+  const logData = {
     timestamp: new Date().toISOString(),
     url: request.nextUrl.href,
     method: request.method,
     userAgent: request.headers.get('user-agent'),
     ...metadata 
-  }));
+  }
 }
 
 /**

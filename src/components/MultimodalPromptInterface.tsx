@@ -17,7 +17,7 @@ import {
   Bot,
   User,
   Volume,
-  VolumeX,
+  Volume as VolumeX,
   Settings,
   Sparkles,
   Play,
@@ -96,7 +96,7 @@ export default function MultimodalPromptInterface({
       };
       
       recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
+        // Speech recognition error handled
         setIsListening(false);
       };
       
@@ -150,7 +150,7 @@ export default function MultimodalPromptInterface({
         mediaRecorder.start();
         setIsRecording(true);
       } catch (error) {
-        console.error('Error starting audio recording:', error);
+        // Error starting audio recording
       }
     }
   }, [isRecording]);
@@ -170,7 +170,7 @@ export default function MultimodalPromptInterface({
   // Handle audio input from recording
   const handleAudioInput = (audioBlob: Blob) => {
     // Add audio to the current input processing
-    console.log('Audio recorded:', audioBlob.size, 'bytes');
+    // Debug log removed
   };
 
   // Process multimodal input
@@ -272,7 +272,7 @@ export default function MultimodalPromptInterface({
       setAttachedImages([]);
       
     } catch (error) {
-      console.error('Error processing multimodal input:', error);
+      // Error processing multimodal input
       
       // Add error message
       const errorMessage: AgentMessage = {
@@ -308,7 +308,7 @@ export default function MultimodalPromptInterface({
       
       onSampleRun?.(sampleId, result);
     } catch (error) {
-      console.error('Error running sample:', error);
+      // Error running sample
     }
     
     setRunningSample(null);

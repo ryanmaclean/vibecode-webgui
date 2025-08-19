@@ -120,11 +120,11 @@ export default function CodeServerIntegration({
 
         case 'settings-updated':
           // Handle settings changes
-          console.log('Settings updated:', message.data)
+          // Debug log removed
           break
 
         default:
-          console.log('Unknown message type:', message.type)
+          // Debug log removed
       }
     }
 
@@ -335,7 +335,7 @@ export default function CodeServerIntegration({
                     selectedText={codeServerState.selectedText || undefined}
                     onCodeGenerated={handleCodeInsert}
                     onAnalysisComplete={(analysis) => {
-                      console.log('Analysis complete:', analysis)
+                      // Debug log removed
                       // Could send results back to code-server for inline display
                       sendToCodeServer({
                         type: 'analysis-complete',

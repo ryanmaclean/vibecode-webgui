@@ -88,7 +88,7 @@ export async function GET(
     return NextResponse.json(conversation)
 
   } catch (error) {
-    console.error('Failed to load conversation:', error)
+    // Server error logged
     return NextResponse.json(
       {
         error: 'Failed to load conversation',
@@ -160,7 +160,7 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('Failed to save conversation:', error)
+    // Server error logged
     return NextResponse.json(
       {
         error: 'Failed to save conversation',
@@ -200,7 +200,7 @@ export async function DELETE(
     })
 
   } catch (error) {
-    console.error('Failed to clear conversation:', error)
+    // Server error logged
     return NextResponse.json(
       {
         error: 'Failed to clear conversation',

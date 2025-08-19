@@ -21,12 +21,12 @@ import {
   Play,
   Bot,
   User,
-  Paperclip,
+  Link as Paperclip,
   Image,
   FileText,
   Zap,
   Settings,
-  DollarSign,
+  Circle as DollarSign,
   Clock,
   Database,
   Cpu,
@@ -364,7 +364,7 @@ export default function PromptInterface() {
       try {
         setApiKeys(JSON.parse(savedKeys));
       } catch (error) {
-        console.error('Error loading saved API keys:', error);
+        // Error loading saved API keys
       }
     }
   }, []);
@@ -381,7 +381,7 @@ export default function PromptInterface() {
         // Pre-populate the input with template context
         setInput(`Generate a project using the "${template.name}" template. This template is described as: ${template.description}`);
       } catch (error) {
-        console.error('Error loading selected template:', error);
+        // Error loading selected template
       }
     }
   }, []);
@@ -426,7 +426,7 @@ export default function PromptInterface() {
         };
         
         recognitionRef.current.onerror = (event) => {
-          console.error('Speech recognition error:', event.error);
+          // Speech recognition error handled
           setIsListening(false);
           setInterimTranscript("");
         };
@@ -531,7 +531,7 @@ export default function PromptInterface() {
       mediaRecorder.start();
       setIsRecording(true);
     } catch (error) {
-      console.error('Error starting audio recording:', error);
+      // Error starting audio recording
     }
   }, [isRecording]);
 
@@ -744,7 +744,7 @@ Would you like to set up your API keys now?`,
       setMessages(welcomeMessages);
       
     } catch (error) {
-      console.error('Auth error:', error);
+      // Auth error handled
       
       // Track failed login
       await fetch('/api/auth/login-tracking', {

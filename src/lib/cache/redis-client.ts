@@ -76,7 +76,7 @@ try {
 
     // Event listeners for monitoring
     redis.on('connect', () => {
-      console.log('Redis connected successfully');
+      // Debug log removed
       metrics.increment('redis.connection.success');
     });
 
@@ -86,7 +86,7 @@ try {
     });
 
     redis.on('ready', () => {
-      console.log('Redis client ready');
+      // Debug log removed
       metrics.increment('redis.ready');
     });
   }

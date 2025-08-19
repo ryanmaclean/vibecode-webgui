@@ -755,7 +755,7 @@ Be encouraging, technically accurate, and provide working code examples.`;
       ...data
     };
 
-    console.log(JSON.stringify(logData));
+    // Debug log removed);
   }
 }
 

@@ -20,7 +20,7 @@ import {
   Settings,
   Copy,
   ExternalLink,
-  AlertTriangle,
+  AlertCircle as AlertTriangle,
   CheckCircle,
   XCircle,
   RefreshCw
@@ -115,7 +115,12 @@ export default function CollaborativeEditingSessions({
   onInviteUsers,
   className = ''
 }: CollaborativeEditingSessionsProps) {
-  const { collaborationManager, isConnected } = useCollaboration()
+  const { isConnected, activeUsers, socket } = useCollaboration({
+    workspaceId: 'default',
+    userId: 'current-user',
+    userName: 'Current User',
+    enabled: true
+  })
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
@@ -214,7 +219,7 @@ export default function CollaborativeEditingSessions({
    */
   const canManageSession = useCallback((session: CollaborativeSession, userId: string): boolean => {
     const role = getUserRole(session, userId)
-    return role === 'owner' || (role === 'editor' && session.participants.find(p => p.userId === userId)?.permissions.canManage)
+    return role === 'owner' || (role === 'editor' && (session.participants.find(p => p.userId === userId)?.permissions.canManage ?? false))
   }, [getUserRole])
 
   /**
