@@ -16,7 +16,10 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies using legacy peer deps to handle conflicts
-RUN npm install --legacy-peer-deps
+RUN npm cache clean --force && \
+    npm config set registry https://registry.npmjs.org/ && \
+    npm install --legacy-peer-deps --no-fund --no-audit --loglevel verbose || \
+    npm install --legacy-peer-deps --no-fund --no-audit --force
 
 # Copy source code
 COPY . .
