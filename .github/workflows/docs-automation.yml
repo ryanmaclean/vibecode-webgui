@@ -41,7 +41,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
       - name: Validate documentation
         run: npm run docs:validate
@@ -77,7 +77,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
       - name: Install additional tools
         run: npm install -g glob
@@ -134,7 +134,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
       - name: Extract and validate TypeScript examples
         run: |
@@ -212,22 +212,15 @@ jobs:
             fi
             
             # Check for proper heading hierarchy
-            python3 -c "
-import re
-import sys
-
-with open('$file', 'r') as f:
-    content = f.read()
-
-headings = re.findall(r'^(#{1,6})\s+(.+)$', content, re.MULTILINE)
-prev_level = 0
-
-for heading_markup, heading_text in headings:
-    level = len(heading_markup)
-    if level > prev_level + 1:
-        print(f'Warning: Heading level jump in $file: {heading_text}')
-    prev_level = level
-            "
+            echo "Checking heading structure in $file"
+            grep -n "^#" "$file" | awk -F':' '{print $1,$2}' | awk '{print $1,length($2),$0}' | 
+            awk 'BEGIN {prev=0} {
+              curr=int($2);
+              if (curr > prev+1) {
+                print "Warning: Heading level jump in '$file' at line " $1;
+              }
+              prev=curr;
+            }'
           done
 
   performance-check:
