@@ -14,6 +14,12 @@ on:
       - '*.md'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write        # For Docker image publishing
+  security-events: write  # For security scan results
+  id-token: write        # For OIDC authentication
+
 env:
   REGISTRY: vibecodecr.azurecr.io
   IMAGE_NAME: vibecode-docs
