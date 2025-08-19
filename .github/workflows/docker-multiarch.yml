@@ -101,7 +101,7 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build and push Docker image
+      - name: Build and push ${{ matrix.image }}
         if: steps.dockerfile-check.outputs.exists == 'true'
         id: build
         uses: docker/build-push-action@v5
