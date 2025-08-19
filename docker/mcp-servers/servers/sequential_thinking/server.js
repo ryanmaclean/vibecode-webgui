@@ -72,20 +72,39 @@ class SequentialThinkingMCPServer {
 
   async thinkSequentially(prompt, num_steps) {
     const thoughts = [];
+    
+    // Create more structured thinking steps with different focuses
+    const thinkingTemplates = [
+      { prefix: "Initial Analysis: ", content: "Understanding the core problem - " },
+      { prefix: "Breaking Down: ", content: "Decomposing the problem into parts - " },
+      { prefix: "Gathering Context: ", content: "Considering relevant information - " },
+      { prefix: "Exploring Solutions: ", content: "Identifying potential approaches - " },
+      { prefix: "Evaluating Options: ", content: "Assessing pros and cons - " },
+      { prefix: "Developing Strategy: ", content: "Planning implementation steps - " },
+      { prefix: "Considering Edge Cases: ", content: "Accounting for exceptions - " },
+      { prefix: "Synthesizing: ", content: "Bringing insights together - " },
+      { prefix: "Reflecting: ", content: "Reviewing the thinking process - " },
+      { prefix: "Concluding: ", content: "Finalizing thoughts on - " }
+    ];
+    
     for (let i = 1; i <= num_steps; i++) {
+      const templateIndex = (i - 1) % thinkingTemplates.length;
+      const template = thinkingTemplates[templateIndex];
+      
       thoughts.push({
         type: 'thought',
-        text: `Step ${i}/${num_steps}: Thinking about '${prompt}'.`,
+        text: `Step ${i}/${num_steps}: ${template.prefix}${template.content}'${prompt}'.`
       });
     }
 
+    // Add a conclusion with a summary
     thoughts.push({
         type: 'text',
-        text: `Finished thinking about '${prompt}' in ${num_steps} steps.`,
+        text: `Completed sequential thinking process for '${prompt}' in ${num_steps} steps. This systematic approach helps break down complex problems into manageable parts, ensuring thorough analysis and consideration of multiple perspectives.`
     });
 
     return {
-      content: thoughts,
+      content: thoughts
     };
   }
 

@@ -73,7 +73,7 @@ RUN chmod +x scripts/*.sh
 RUN mkdir -p /app/models /app/uploads
 
 # Expose ports for different MCP servers
-EXPOSE 3001 3002 3003
+EXPOSE 3001 3002 3003 3004
 
 # Health check that includes Model Runner connectivity
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
