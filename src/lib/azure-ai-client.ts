@@ -134,7 +134,7 @@ export class AzureAIClient {
         frequency_penalty: request.frequency_penalty ?? 0,
         presence_penalty: request.presence_penalty ?? 0,
         // Force non-streaming to avoid union types and simplify consumers
-        stream: false as false,
+        stream: false as const,
       });
 
       return {
