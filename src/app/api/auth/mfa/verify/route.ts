@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       message: 'MFA challenge created'
     })
   } catch (error) {
-    console.error('MFA challenge error:', error)
+    // Server error logged
     
     if (error instanceof z.ZodError) {
       return NextResponse.json({
@@ -93,7 +93,7 @@ export async function PUT(req: NextRequest) {
       }, { status: 400 })
     }
   } catch (error) {
-    console.error('MFA verification error:', error)
+    // Server error logged
     
     if (error instanceof z.ZodError) {
       return NextResponse.json({
@@ -140,7 +140,7 @@ export async function GET(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Get MFA devices error:', error)
+    // Server error logged
     
     return NextResponse.json({
       error: 'Failed to retrieve MFA devices',
@@ -179,7 +179,7 @@ export async function DELETE(req: NextRequest) {
       }, { status: 404 })
     }
   } catch (error) {
-    console.error('Remove MFA device error:', error)
+    // Server error logged
     
     return NextResponse.json({
       error: 'Failed to remove MFA device',

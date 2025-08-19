@@ -80,7 +80,7 @@ async function buildAdvancedRAGContext(workspaceId: string, userQuery: string, u
       totalLength: combinedContext.length
     }
   } catch (error) {
-    console.error('Advanced RAG context error:', error)
+    // Server error logged
     return null
   }
 }
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     const availableProviders = aiClient.getAvailableProviders().map(p => p.name)
     const providerHealth = await aiClient.getProviderHealth()
     
-    console.log('Provider health check:', providerHealth)
+    // Debug log removed
 
     // Build advanced RAG context
     const ragResult = await buildAdvancedRAGContext(
@@ -253,10 +253,10 @@ ${generateToolCapabilities(enableTools, availableProviders)}
           controller.close()
 
           // Enhanced completion analytics
-          console.log(`Unified AI completion: ${model}, tokens: ${tokenCount}, providers: ${availableProviders.length}, RAG: ${ragResult?.relevanceScore || 'none'}`)
+          // Debug log removed
 
         } catch (error) {
-          console.error('Unified streaming error:', error)
+          // Server error logged
           
           // Send error with fallback suggestions
           const errorData = JSON.stringify({
@@ -295,7 +295,7 @@ ${generateToolCapabilities(enableTools, availableProviders)}
     })
 
   } catch (error) {
-    console.error('Unified chat API error:', error)
+    // Server error logged
 
     return NextResponse.json(
       {

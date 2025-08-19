@@ -99,7 +99,7 @@ export function validateEnv(): Env {
 
   try {
     validatedEnv = envSchema.parse(process.env)
-    console.log('✅ Environment variables validated successfully')
+    // Debug log removed
     
     // Log warnings for missing optional but recommended variables
     const warnings: string[] = []

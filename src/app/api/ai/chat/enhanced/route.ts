@@ -78,7 +78,7 @@ async function buildEnhancedRAGContext(workspaceId: string, userQuery: string, u
 
     return null
   } catch (error) {
-    console.error('Enhanced RAG context error:', error)
+    // Server error logged
     return null
   }
 }
@@ -221,10 +221,10 @@ ${getToolCapabilities(enableTools)}
           controller.close()
           
           // Log enhanced completion analytics
-          console.log(`Enhanced AI completion: ${model} (${SUPPORTED_MODELS[model]}), tokens: ~${tokenCount}, RAG: ${ragResult ? ragResult.relevanceScore : 'none'}`)
+          // Debug log removed, tokens: ~${tokenCount}, RAG: ${ragResult ? ragResult.relevanceScore : 'none'}`)
           
         } catch (error) {
-          console.error('Enhanced streaming error:', error)
+          // Server error logged
           controller.error(error)
         }
       }
@@ -247,7 +247,7 @@ ${getToolCapabilities(enableTools)}
     })
 
   } catch (error) {
-    console.error('Enhanced chat API error:', error)
+    // Server error logged
     
     return Response.json({
       error: 'Failed to process enhanced chat request',

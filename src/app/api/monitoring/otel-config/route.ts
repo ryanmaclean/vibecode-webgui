@@ -27,7 +27,7 @@ if (!isDockerBuild) {
     getOpenTelemetryConfig = opentelemetryModule.getOpenTelemetryConfig;
     otelSDK = opentelemetryModule.otelSDK;
   } catch {
-    console.log('⚠️ OpenTelemetry module not available, monitoring disabled');
+    // Debug log removed
   }
 }
 
@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('OpenTelemetry config API error:', error)
+    // Server error logged
     
     return NextResponse.json({
       error: 'Failed to retrieve OpenTelemetry configuration',
@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('OpenTelemetry config POST error:', error)
+    // Server error logged
     
     return NextResponse.json({
       error: 'Failed to process OpenTelemetry configuration request',

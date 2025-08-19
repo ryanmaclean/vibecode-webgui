@@ -241,7 +241,7 @@ class DatadogMetricsService {
       }
 
       if (process.env.NODE_ENV === 'development') {
-        console.log('📊 Datadog Metric:', JSON.stringify(metric, null, 2))
+        // Debug log removed)
       }
 
       // In production, send to Datadog
@@ -282,7 +282,7 @@ class DatadogMetricsService {
     }))
 
     if (process.env.NODE_ENV === 'development') {
-      console.log('📊 Datadog Batch Metrics:', JSON.stringify(formattedMetrics, null, 2))
+      // Debug log removed)
       return
     }
 

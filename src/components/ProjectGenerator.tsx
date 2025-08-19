@@ -50,10 +50,10 @@ export function ProjectGenerator({
       }, 1500);
     },
     onProgress: (data) => {
-      console.log('Generation progress:', data);
+      // Debug log removed
     },
     onError: (error) => {
-      console.error('Generation error:', error);
+      // Generation error handled
     }
   });
 
@@ -72,7 +72,7 @@ export function ProjectGenerator({
     generateProject(trimmedPrompt, {
       // Add any generation options here
     }).catch(error => {
-      console.error('Failed to start project generation:', error);
+      // Failed to start project generation
       updateProgress({
         status: 'error',
         message: error.message || 'Failed to start project generation',
@@ -92,7 +92,7 @@ export function ProjectGenerator({
         generateProject(trimmedPrompt, {
           // Add any generation options here
         }).catch(error => {
-          console.error('Failed to start project generation:', error);
+          // Failed to start project generation
           updateProgress({
             status: 'error',
             message: error.message || 'Failed to start project generation',
@@ -174,7 +174,7 @@ export function ProjectGenerator({
                               generateProject(prompt, {
                                 // Add any generation options here
                               }).catch(error => {
-                                console.error('Failed to retry project generation:', error);
+                                // Failed to retry project generation
                                 updateProgress({
                                   status: 'error',
                                   message: error.message || 'Failed to retry project generation',

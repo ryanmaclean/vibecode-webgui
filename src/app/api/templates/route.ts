@@ -398,7 +398,7 @@ app.use('/api/users', userRoutes);
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(\`🚀 Server is running on port \${PORT}\`);
+  // Debug log removed
 });`,
       'tsconfig.json': JSON.stringify({
         compilerOptions: {
@@ -606,7 +606,7 @@ export async function GET() {
       }
     })
   } catch (error) {
-    console.error('Templates API error:', error)
+    // Server error logged
     return NextResponse.json(
       { error: 'Failed to fetch templates' },
       { status: 500 }

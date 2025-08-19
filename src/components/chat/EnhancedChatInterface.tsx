@@ -544,37 +544,25 @@ export const EnhancedChatInterface = ({
                 className="hidden"
               />
               
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isStreaming}
-                  >
-                    <Link className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Attach files</p>
-                </TooltipContent>
-              </Tooltip>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isStreaming}
+                title="Attach files"
+              >
+                <Link className="w-4 h-4" />
+              </Button>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={sendMessage}
-                    disabled={isStreaming || (!input.trim() && attachedFiles.length === 0)}
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Send message</p>
-                </TooltipContent>
-              </Tooltip>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={sendMessage}
+                disabled={isStreaming || (!input.trim() && attachedFiles.length === 0)}
+                title="Send message"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         </CardContent>

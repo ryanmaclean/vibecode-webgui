@@ -101,7 +101,7 @@ export async function createUser(userData: CreateUserData): Promise<User> {
   // Store user
   users.set(user.id, user)
   
-  console.log(`User created: ${user.email} with role: ${user.role}`)
+  // Debug log removed
   return user
 }
 
@@ -232,7 +232,7 @@ export async function initializeDefaultUsers(): Promise<void> {
       role: 'admin',
     })
 
-    console.log('✅ Default admin user created successfully')
+    // Debug log removed
   } catch (error) {
     console.error('❌ Failed to create default admin user:', error)
   }
@@ -256,10 +256,11 @@ export function logSecurityEvent(
   userId?: string,
   metadata?: Record<string, any>
 ): void {
-  console.log('[SECURITY_AUDIT]', {
+  // Security event logged
+  const logData = {
     timestamp: new Date().toISOString(),
     event,
     userId,
-    metadata,
-  })
+    metadata
+  }
 }

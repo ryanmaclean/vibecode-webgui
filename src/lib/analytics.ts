@@ -51,12 +51,12 @@ export function logEvent<T extends NestedObject = NestedObject>(
   // In production, send to your analytics service
   if (config.enabled) {
     // Example: sendToAnalyticsService(event);
-    console.log('[Analytics]', event);
+    // Debug log removed
   }
 
   // In development, log to console and buffer
   if (config.debug) {
-    console.log(`[Analytics] ${name}`, properties);
+    // Debug log removed
     
     // Add to buffer (useful for debugging)
     eventBuffer.push(event);
@@ -154,7 +154,7 @@ export function initAnalytics(options: {
   }
   
   if (config.enabled || config.debug) {
-    console.log('[Analytics] Initialized', { config });
+    // Debug log removed
   }
 }
 

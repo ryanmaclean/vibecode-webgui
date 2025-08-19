@@ -156,13 +156,7 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      console.log('🔄 JWT callback:', {
-        hasUser: !!user,
-        hasToken: !!token,
-        provider: account?.provider,
-        tokenId: token?.id,
-        userId: user?.id
-      })
+      // Debug log removed
 
       if (user) {
         token.id = user.id
@@ -175,24 +169,19 @@ export const authOptions: NextAuthOptions = {
         if (account?.provider === 'google') {
           token.googleId = user.googleId
         }
-        console.log('✅ JWT token updated with user:', { id: token.id, role: token.role })
+        // Debug log removed
       }
       return token
     },
     async session({ session, token }) {
-      console.log('📋 Session callback:', {
-        hasSession: !!session,
-        hasToken: !!token,
-        tokenId: token?.id,
-        sessionUserId: session?.user?.id
-      })
+      // Debug log removed
 
       if (token) {
         session.user.id = token.id
         session.user.role = token.role
         session.user.email = token.email as string
         session.user.name = token.name as string
-        console.log('✅ Session updated with token:', { id: session.user.id, role: session.user.role })
+        // Debug log removed
       }
       return session
     },
@@ -210,10 +199,10 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signIn({ user, account }) {
-      console.log(`User ${user.email} signed in via ${account?.provider}`)
+      // Debug log removed
     },
     async signOut({ token }) {
-      console.log(`User ${token?.email} signed out`)
+      // Debug log removed
     },
   },
   debug: process.env.NODE_ENV === 'development',

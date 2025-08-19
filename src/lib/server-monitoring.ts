@@ -19,7 +19,7 @@ if (process.env.DD_API_KEY) {
     profiling: true,
     appsec: true, // Application Security Management
   })
-  console.log('🔍 Datadog APM tracer initialized')
+  // Debug log removed
 } else {
   console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }
