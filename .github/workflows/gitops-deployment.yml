@@ -20,6 +20,22 @@ on:
         default: 'staging'
         type: choice
         options:
+          - staging
+          - production
+      force_deploy:
+        description: 'Force deployment'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write        # For OIDC authentication
+  pull-requests: write   # For commenting on PRs
+  issues: write          # For updating issues
+  deployments: write     # For deployment statuses
+        type: choice
+        options:
         - staging
         - production
       force_deploy:
