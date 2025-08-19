@@ -19,8 +19,8 @@ let SEMRESATTRS_SERVICE_VERSION: any = null;
 // Safe import function
 function safeImport(moduleName: string, exportName?: string): any {
   try {
-    const module = require(moduleName);
-    return exportName ? module[exportName] : module;
+    const moduleExports = require(moduleName);
+    return exportName ? moduleExports[exportName] : moduleExports;
   } catch (error) {
     console.warn(`⚠️ OpenTelemetry module '${moduleName}' not available:`, (error as Error).message);
     return null;

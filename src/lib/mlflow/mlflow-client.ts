@@ -202,7 +202,7 @@ export class MLflowClient {
 
     try {
       // First try to get by ID
-      let response = await fetch(`${this.baseURL}/api/2.0/mlflow/experiments/get?experiment_id=${nameOrId}`, {
+      const response = await fetch(`${this.baseURL}/api/2.0/mlflow/experiments/get?experiment_id=${nameOrId}`, {
         headers: this.headers
       })
 
