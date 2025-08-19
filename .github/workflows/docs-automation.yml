@@ -36,13 +36,13 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci --legacy-peer-deps --legacy-peer-deps
 
       - name: Validate documentation
         run: npm run docs:validate
 
       - name: Check for broken links
-        uses: lycheeverse/lychee-action@v1
+        uses: lycheeverse/lychee-action@v1.9.0
         with:
           args: --verbose --no-progress --exclude-loopback --exclude-private --exclude-mail docs/**/*.md README.md
           fail: true
@@ -72,7 +72,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci --legacy-peer-deps --legacy-peer-deps
 
       - name: Install additional tools
         run: npm install -g glob
@@ -129,7 +129,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci --legacy-peer-deps --legacy-peer-deps
 
       - name: Extract and validate TypeScript examples
         run: |
