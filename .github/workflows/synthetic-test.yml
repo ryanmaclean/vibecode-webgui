@@ -3,6 +3,11 @@ name: Run Synthetic Tests
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write        # For OIDC authentication
+  checks: write          # For posting test results
+
 jobs:
   run-synthetic-tests:
     runs-on: ubuntu-latest
@@ -14,9 +19,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies with retry
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: npm ci --legacy-peer-deps
 
       - name: Run Datadog Synthetic Tests
         run: |

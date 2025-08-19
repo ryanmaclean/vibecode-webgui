@@ -59,11 +59,10 @@ RUN if [ -n "$DD_API_KEY" ]; then \
 RUN npm install -g @datadog/datadog-ci
 
 # 3. Vector (for log collection)
-RUN curl -1sLf 'https://repositories.timber.io/public/vector/cfg/setup/bash.deb.sh' | bash && \
-    apt-get update && apt-get install -y vector || \
-    (echo "Vector installation failed, installing manually" && \
-     curl -L https://releases.timber.io/vector/latest/vector-amd64.deb -o vector.deb && \
-     dpkg -i vector.deb && rm vector.deb)
+RUN apt-get update && \
+    curl -L https://packages.timber.io/vector/0.32.1/vector-0.32.1-amd64.deb -o vector.deb && \
+    apt-get install -y ./vector.deb && \
+    rm vector.deb
 
 # 4. KubeHound (Kubernetes security)
 RUN curl -sSfL https://raw.githubusercontent.com/DataDog/kubehound/main/install.sh | sh

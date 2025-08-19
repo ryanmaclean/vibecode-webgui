@@ -6,6 +6,12 @@ on:
       - main
   workflow_dispatch: # Allows manual triggering
 
+permissions:
+  contents: read
+  id-token: write        # For OIDC authentication
+  deployments: write     # For deployment statuses
+  packages: write        # For Docker image publishing
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
