@@ -79,11 +79,11 @@ resource "kubernetes_secret" "app_config" {
     DD_VERSION = "1.0.0"
 
     # Database monitoring
+    # Note: Only canonical DD_* variables are injected here.
+    # Legacy DATADOG_* fallbacks are handled by Helm hooks/scripts during migration.
     DD_DATABASE_MONITORING_ENABLED = "true"
     DD_POSTGRES_USER               = azurerm_key_vault_secret.datadog_postgres_user.value
     DD_POSTGRES_PASSWORD           = azurerm_key_vault_secret.datadog_postgres_password.value
-    DATADOG_POSTGRES_USER          = azurerm_key_vault_secret.datadog_postgres_user.value
-    DATADOG_POSTGRES_PASSWORD      = azurerm_key_vault_secret.datadog_postgres_password.value
   }
 }
 

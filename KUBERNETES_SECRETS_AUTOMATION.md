@@ -53,7 +53,7 @@ Implemented comprehensive Kubernetes secrets automation for the VibeCode platfor
 **Supported Environment Variables:**
 - `DD_API_KEY` - Datadog API key for monitoring
 - `POSTGRES_PASSWORD` - PostgreSQL admin password
-- `DATADOG_POSTGRES_PASSWORD` - Datadog database user password
+- `DD_POSTGRES_PASSWORD` - Datadog database user password (preferred; legacy `DATADOG_POSTGRES_PASSWORD` supported as fallback)
 
 ### 2. **Helm Pre-Install Hooks** (`helm/vibecode-platform/templates/datadog-secret-hook.yaml`)
 
@@ -109,7 +109,7 @@ datadog:
   targetSystem: "linux"
   
   datadog:
-    apiKeyExistingSecret: datadog-secrets  # References automated secret
+    apiKeyExistingSecret: datadog-secret  # References automated secret
     site: datadoghq.com
 
   agents:
@@ -164,7 +164,7 @@ PostgreSQL Password: VALID
 Datadog PostgreSQL User Password: VALID
 Connected to Kubernetes cluster: kind-vibecode-test
 Namespace 'vibecode-dev' created
-Secret 'datadog-secrets' created successfully
+Secret 'datadog-secret' created successfully
 Secret 'postgres-credentials' created successfully
 ```
 
@@ -172,14 +172,14 @@ Secret 'postgres-credentials' created successfully
 ```bash
 kubectl get secrets -n vibecode-dev
 NAME                  TYPE    DATA   AGE
-datadog-secrets       Opaque  1      34s
+datadog-secret        Opaque  1      34s
 postgres-credentials  Opaque  2      34s
 ```
 
 **Content Validation:**
 ```bash
 # API key properly stored (32 characters)
-kubectl get secret datadog-secrets -n vibecode-dev -o jsonpath='{.data.api-key}' | base64 -d | wc -c
+kubectl get secret datadog-secret -n vibecode-dev -o jsonpath='{.data.api-key}' | base64 -d | wc -c
 32
 
 # Database credentials structure correct

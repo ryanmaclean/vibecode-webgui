@@ -137,6 +137,10 @@ To standardize configuration, we prefer `DD_*` variables with a safe fallback to
   - `DD_ENV` → `DATADOG_ENV` (default: `development`/`production` by `NODE_ENV`)
   - `DD_VERSION` → `DATADOG_VERSION` (default: package version or `1.0.0`)
 
+- __Database Monitoring (DBM)__
+  - `DD_POSTGRES_PASSWORD` → `DATADOG_POSTGRES_PASSWORD` (password for the Datadog DB user)
+  - `DD_POSTGRES_USER` (default: `datadog`)
+
 - __Client (RUM)__
   - `NEXT_PUBLIC_DD_APPLICATION_ID` → `NEXT_PUBLIC_DATADOG_APPLICATION_ID` (also accepts `NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID`)
   - `NEXT_PUBLIC_DD_CLIENT_TOKEN` → `NEXT_PUBLIC_DATADOG_CLIENT_TOKEN` (also accepts `NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN`)
@@ -157,6 +161,11 @@ DD_SITE=datadoghq.com
 DD_SERVICE=vibecode-webgui
 DD_ENV=development
 DD_VERSION=1.0.0
+
+# Database Monitoring (DBM)
+DD_POSTGRES_USER=datadog
+DD_POSTGRES_PASSWORD=your-strong-password
+# DATADOG_POSTGRES_PASSWORD=your-strong-password # optional fallback
 
 # Client (RUM)
 NEXT_PUBLIC_DD_APPLICATION_ID=your-app-id
