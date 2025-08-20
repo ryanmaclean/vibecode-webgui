@@ -59,7 +59,7 @@ export default function HuggingFaceChatPage() {
             </CardTitle>
             <div className="text-sm text-gray-600 mt-2">
               Experience the power of open-source conversational AI with Hugging Face transformers, 
-              integrated seamlessly with VibeCode's enterprise platform.
+              integrated seamlessly with VibeCode&apos;s enterprise platform.
             </div>
           </CardHeader>
           <CardContent>
