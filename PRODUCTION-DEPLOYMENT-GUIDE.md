@@ -147,7 +147,7 @@ kubectl apply -f infrastructure/kubernetes/ssl/cert-manager.yaml
 
 ```bash
 # Update Datadog configuration for production
-kubectl create secret generic datadog-secrets -n monitoring \
+kubectl create secret generic datadog-secret -n monitoring \
   --from-literal=api-key=your-production-dd-api-key \
   --from-literal=app-key=your-production-dd-app-key
 
