@@ -557,11 +557,15 @@ export class MFAProvider {
 
   private cleanupExpiredChallenges(): void {
     const now = new Date()
-    for (const [challengeId, challenge] of this.challenges.entries()) {
+    const challengesToDelete: string[] = [];
+    this.challenges.forEach((challenge, challengeId) => {
       if (now > challenge.expiresAt) {
-        this.challenges.delete(challengeId)
+        challengesToDelete.push(challengeId);
       }
-    }
+    });
+    challengesToDelete.forEach(challengeId => {
+      this.challenges.delete(challengeId);
+    });
   }
 }
 
