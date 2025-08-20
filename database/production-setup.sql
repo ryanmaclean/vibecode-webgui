@@ -9,7 +9,8 @@ CREATE EXTENSION IF NOT EXISTS "pg_stat_statements";
 -- Create Datadog monitoring user (if credentials provided)
 DO $$
 BEGIN
-  -- Only create if DATADOG_DB_PASSWORD is provided
+  -- Only create if 'vibecode.datadog_password' is provided (typically sourced from
+  -- DD_POSTGRES_PASSWORD with legacy DATADOG_POSTGRES_PASSWORD fallback)
   IF current_setting('vibecode.datadog_password', true) IS NOT NULL THEN
     -- Create user if doesn't exist
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'datadog') THEN

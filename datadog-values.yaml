@@ -83,7 +83,7 @@ datadog:
           host: postgres.vibecode.svc.cluster.local
           port: 5432
           username: datadog
-          password: ${DATADOG_DB_PASSWORD}
+          password: ${DD_POSTGRES_PASSWORD:-${DATADOG_POSTGRES_PASSWORD}}
           dbname: vibecode
           ssl: false
           tags:

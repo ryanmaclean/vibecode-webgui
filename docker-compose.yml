@@ -89,9 +89,9 @@ services:
       # Datadog log processing
       - "com.datadoghq.ad.logs=[{\"source\": \"nextjs\", \"service\": \"vibecode-app\"}]"
 
-  # PostgreSQL Database
+  # PostgreSQL Database with pgvector support
   db:
-    image: postgres:15-alpine
+    image: pgvector/pgvector:pg15
     container_name: vibecode-db
     environment:
       - POSTGRES_DB=vibecode
@@ -99,7 +99,7 @@ services:
       - POSTGRES_PASSWORD=password
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - vibecode-network
     healthcheck:
