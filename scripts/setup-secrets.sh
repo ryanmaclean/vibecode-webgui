@@ -148,6 +148,16 @@ source_environment() {
 validate_environment() {
     log_info "Validating environment variables..."
     
+    # Prefer DD_*; allow legacy DATADOG_* fallback with warning
+    if [[ -z "${DD_API_KEY:-}" && -n "${DATADOG_API_KEY:-}" ]]; then
+        export DD_API_KEY="$DATADOG_API_KEY"
+        log_warning "DD_API_KEY missing; using legacy DATADOG_API_KEY"
+    fi
+    # If both are set and differ, warn and prefer DD_API_KEY
+    if [[ -n "${DD_API_KEY:-}" && -n "${DATADOG_API_KEY:-}" && "$DD_API_KEY" != "$DATADOG_API_KEY" ]]; then
+        log_warning "Both DD_API_KEY and DATADOG_API_KEY are set and differ; using DD_API_KEY"
+    fi
+    
     local required_vars=(
         "DD_API_KEY:Datadog API Key"
         "POSTGRES_PASSWORD:PostgreSQL Password"
@@ -415,9 +425,12 @@ ENVIRONMENT VARIABLES:
     Required:
         DD_API_KEY                        # Datadog API Key
         POSTGRES_PASSWORD                 # PostgreSQL admin password
-        DATADOG_POSTGRES_PASSWORD         # Datadog user password for PostgreSQL
         
     Optional:
+        DD_POSTGRES_USER                  # Datadog DBM username (default: datadog)
+        DD_POSTGRES_PASSWORD              # Datadog DBM password (auto-generated if missing)
+        DATADOG_POSTGRES_PASSWORD         # Legacy fallback to set DD_POSTGRES_PASSWORD
+        DATADOG_API_KEY                   # Legacy fallback to set DD_API_KEY
         KUBECONFIG                        # Kubernetes config file path
         KUBECTL_CONTEXT                   # Kubernetes context to use
 

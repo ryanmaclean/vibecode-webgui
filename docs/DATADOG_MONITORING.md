@@ -48,8 +48,8 @@ export DD_VERSION="1.0.0"
 export DD_ENV="production"  # or development
 
 # Optional: Client-side RUM
-export NEXT_PUBLIC_DD_CLIENT_TOKEN="your-client-token"       # falls back to NEXT_PUBLIC_DATADOG_CLIENT_TOKEN
-export NEXT_PUBLIC_DD_APPLICATION_ID="your-app-id"           # falls back to NEXT_PUBLIC_DATADOG_APP_ID
+export NEXT_PUBLIC_DD_CLIENT_TOKEN="your-client-token"       # falls back to NEXT_PUBLIC_DATADOG_CLIENT_TOKEN (or NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN)
+export NEXT_PUBLIC_DD_APPLICATION_ID="your-app-id"           # falls back to NEXT_PUBLIC_DATADOG_APPLICATION_ID (or NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID)
 ```
 
 ### 2. Setup Dashboards and Alerts
@@ -318,8 +318,8 @@ DD_STATSD_HOST=localhost
 DD_STATSD_PORT=8125
 
 # Optional: RUM configuration
-NEXT_PUBLIC_DD_CLIENT_TOKEN=your-client-token   # falls back to NEXT_PUBLIC_DATADOG_CLIENT_TOKEN
-NEXT_PUBLIC_DD_APPLICATION_ID=your-app-id       # falls back to NEXT_PUBLIC_DATADOG_APP_ID
+NEXT_PUBLIC_DD_CLIENT_TOKEN=your-client-token   # falls back to NEXT_PUBLIC_DATADOG_CLIENT_TOKEN (or NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN)
+NEXT_PUBLIC_DD_APPLICATION_ID=your-app-id       # falls back to NEXT_PUBLIC_DATADOG_APPLICATION_ID (or NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID)
 ```
 
 ### Deployment Steps
