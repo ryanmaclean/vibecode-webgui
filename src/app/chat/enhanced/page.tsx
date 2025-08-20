@@ -84,7 +84,7 @@ export default function EnhancedChatPage() {
               </Badge>
             </CardTitle>
             <div className="text-blue-100 mt-2 text-sm">
-              Experience the full power of VibeCode's AI platform with Hugging Face models, 
+              Experience the full power of VibeCode&apos;s AI platform with Hugging Face models, 
               RAG context, web search, and function calling capabilities.
             </div>
           </CardHeader>
@@ -149,11 +149,11 @@ export default function EnhancedChatPage() {
                     Try these {demoMode} examples:
                   </h4>
                   <div className="grid grid-cols-1 gap-2">
-                    {demoQueries[demoMode].map((query, index) => (
-                      <div key={index} className="text-sm bg-white p-2 rounded border italic text-gray-700">
-                        "{query}"
-                      </div>
-                    ))}
+                     {demoQueries[demoMode].map((query, index) => (
+                       <div key={index} className="text-sm bg-white p-2 rounded border italic text-gray-700">
+                         &quot;{query}&quot;
+                       </div>
+                     ))}
                   </div>
                 </div>
               </TabsContent>

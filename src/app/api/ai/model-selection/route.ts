@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
     const provider = searchParams.get('provider') as 'openrouter' | 'huggingface' | null
     const includeDetails = searchParams.get('details') === 'true'
 
-    let models = provider 
+    const models = provider 
       ? intelligentModelSelection.getModelsByProvider(provider)
       : intelligentModelSelection.getAllModels()
 
