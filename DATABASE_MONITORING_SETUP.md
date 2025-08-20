@@ -269,7 +269,7 @@ database:
 # Datadog Agent configuration
 datadog:
   enabled: true
-  apiKeyExistingSecret: datadog-secrets
+  apiKeyExistingSecret: datadog-secret
   site: datadoghq.com
   
   agents:
@@ -390,11 +390,11 @@ datadog:
 ### 3. Kubernetes Secret Management
 
 ```yaml
-# k8s/secrets/datadog-secrets.yaml (deployed via Helm, values from env)
+# k8s/secrets/datadog-secret.yaml (deployed via Helm, values from env)
 apiVersion: v1
 kind: Secret
 metadata:
-  name: datadog-secrets
+  name: datadog-secret
   namespace: {{ .Values.global.namespace }}
 type: Opaque
 data:

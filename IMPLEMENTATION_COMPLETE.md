@@ -105,7 +105,7 @@ helm install vibecode-dev ./helm/vibecode-platform \
 # 1. Set production environment variables
 export DD_API_KEY="your-datadog-api-key"
 export POSTGRES_PASSWORD="secure-postgres-password"
-export DATADOG_POSTGRES_PASSWORD="secure-datadog-password"
+export DD_POSTGRES_PASSWORD="secure-datadog-password"  # legacy DATADOG_POSTGRES_PASSWORD supported as fallback
 
 # 2. Setup secrets for production
 ./scripts/setup-secrets.sh vibecode-prod
@@ -124,7 +124,8 @@ steps:
     run: |
       export DD_API_KEY="${{ secrets.DATADOG_API_KEY }}"
       export POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
-      export DATADOG_POSTGRES_PASSWORD="${{ secrets.DATADOG_POSTGRES_PASSWORD }}"
+      # Map legacy secret to canonical var name if your secret store still uses DATADOG_POSTGRES_PASSWORD
+      export DD_POSTGRES_PASSWORD="${{ secrets.DATADOG_POSTGRES_PASSWORD }}"
       ./scripts/setup-secrets.sh ${{ env.ENVIRONMENT }}
       
   - name: Deploy with Helm

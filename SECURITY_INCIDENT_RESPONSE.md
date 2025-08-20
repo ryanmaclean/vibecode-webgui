@@ -62,7 +62,7 @@ openssl rand -base64 32
 # 2. Navigate to Organization Settings > Client Tokens
 # 3. Revoke token: pub91c2b093bc1483a4bfb5881c3511cde6
 # 4. Generate new client token
-# 5. Update NEXT_PUBLIC_DATADOG_CLIENT_TOKEN
+# 5. Update NEXT_PUBLIC_DD_CLIENT_TOKEN
 ```
 
 ### 🔄 3. Update Environment Variables
@@ -74,7 +74,7 @@ DATADOG_API_KEY=<new-datadog-api-key>
 DD_API_KEY=<new-datadog-api-key>  
 OPENROUTER_API_KEY=<new-openrouter-key>
 NEXTAUTH_SECRET=<new-nextauth-secret>
-NEXT_PUBLIC_DATADOG_CLIENT_TOKEN=<new-datadog-client-token>
+NEXT_PUBLIC_DD_CLIENT_TOKEN=<new-datadog-client-token>
 ```
 
 #### Production Environment Updates
