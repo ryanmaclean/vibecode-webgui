@@ -47,7 +47,7 @@ jobs:
         run: npm run docs:validate
 
       - name: Check for broken links
-        uses: lycheeverse/lychee-action@v1.9.0
+        uses: lycheeverse/lychee-action@v2.5.0
         with:
           args: --verbose --no-progress --exclude-loopback --exclude-private --exclude-mail docs/**/*.md README.md
           fail: true
