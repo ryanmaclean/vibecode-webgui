@@ -114,6 +114,7 @@ export default function CodeServerIDE({
       }
     } catch (err) {
       console.error('Error setting up iframe communication:', err)
+      return () => {} // Return empty cleanup function on error
     }
   }, [session, onReady])
 
