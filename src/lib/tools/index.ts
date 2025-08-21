@@ -5,14 +5,14 @@ export const tools = {
   getGithubRepoInfo: tool({
     description: 'Get information about a GitHub repository.',
     parameters: z.object({
-      repo: z.string().describe('The repository name in the format \"owner/repo\"'),
+      repo: z.string().describe('The repository name in the format "owner/repo"'),
     }),
-    execute: async ({ repo }) => {
+    execute: async ({ repo }: { repo: string }) => {
       // In a real application, you would fetch this data from the GitHub API.
-      // For this example, we\'ll return mock data.
+      // For this example, we'll return mock data.
       const [owner, name] = repo.split('/');
       if (!owner || !name) {
-        return { error: 'Invalid repository format. Use \"owner/repo\".' };
+        return { error: 'Invalid repository format. Use "owner/repo".' };
       }
 
       // Simulate API call
