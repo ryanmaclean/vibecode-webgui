@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI API Test - Browser</title>
+</head>
+<body>
+    <h1>AI API Test</h1>
+    <button onclick="testPagesAPI()">Test Pages API /api/chat</button>
+    <button onclick="testAppAPI()">Test App API /api/ai/chat</button>
+    <div id="result"></div>
+    
+    <script>
+        async function testPagesAPI() {
+            document.getElementById('result').innerHTML = '🔄 Testing Pages API...';
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        messages: [{
+                            role: 'user',
+                            content: 'Hello! Can you tell me about the microsoft/vscode repository?'
+                        }]
+                    })
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                if (response.headers.get('content-type')?.includes('text/plain')) {
+                    // Handle streaming text response
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let fullText = '';
+                    
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        const chunk = decoder.decode(value);
+                        fullText += chunk;
+                    }
+                    
+                    document.getElementById('result').innerHTML = 
+                        '<h3>✅ Pages API Success (Streaming):</h3><pre>' + 
+                        fullText.substring(0, 1000) + '</pre>';
+                } else {
+                    // Handle JSON response
+                    const result = await response.json();
+                    document.getElementById('result').innerHTML = 
+                        '<h3>✅ Pages API Success (JSON):</h3><pre>' + 
+                        JSON.stringify(result, null, 2) + '</pre>';
+                }
+                
+            } catch (error) {
+                console.error('Pages API Error:', error);
+                document.getElementById('result').innerHTML = 
+                    '<h3>❌ Pages API Error:</h3><pre>' + error.message + '</pre>';
+            }
+        }
+        
+        async function testAppAPI() {
+            document.getElementById('result').innerHTML = '🔄 Testing App API...';
+            
+            try {
+                // First try the health check
+                const healthResponse = await fetch('/api/ai/chat', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                console.log('Health check status:', healthResponse.status);
+                
+                if (healthResponse.ok) {
+                    const healthData = await healthResponse.json();
+                    document.getElementById('result').innerHTML = 
+                        '<h3>✅ App API Health Check:</h3><pre>' + 
+                        JSON.stringify(healthData, null, 2) + '</pre>';
+                } else {
+                    const errorText = await healthResponse.text();
+                    document.getElementById('result').innerHTML = 
+                        '<h3>❌ App API Health Check Failed:</h3><pre>' + errorText + '</pre>';
+                }
+                
+            } catch (error) {
+                console.error('App API Error:', error);
+                document.getElementById('result').innerHTML = 
+                    '<h3>❌ App API Error:</h3><pre>' + error.message + '</pre>';
+            }
+        }
+    </script>
+</body>
+</html>

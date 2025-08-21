@@ -48,8 +48,10 @@ function checkRequestSize(request: NextRequest): boolean {
  * Header validation
  */
 function validateHeaders(request: NextRequest): { valid: boolean; reason?: string } {
-  // Check for suspicious headers
-  const suspiciousHeaders = ['x-forwarded-host', 'x-originating-ip', 'x-cluster-client-ip'];
+  // Check for suspicious headers (skip x-forwarded-host in development)
+  const suspiciousHeaders = process.env.NODE_ENV === 'development' 
+    ? ['x-originating-ip', 'x-cluster-client-ip']
+    : ['x-forwarded-host', 'x-originating-ip', 'x-cluster-client-ip'];
   
   for (const header of suspiciousHeaders) {
     const value = request.headers.get(header);
