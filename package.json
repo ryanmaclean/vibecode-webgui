@@ -80,7 +80,7 @@
     "@emotion/styled": "^11.14.1",
     "@heroicons/react": "2.2.0",
     "@huggingface/inference": "4.7.1",
-    "@langchain/community": "^0.3.49",
+    "@langchain/community": "^0.3.53",
     "@langchain/core": "^0.3.72",
     "@langchain/openai": "^0.2.1",
     "@langchain/weaviate": "^0.2.1",
