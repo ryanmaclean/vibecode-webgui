@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: valkey-datadog-config
+  namespace: vibecode-platform
+  labels:
+    app.kubernetes.io/name: datadog-agent
+    app.kubernetes.io/component: monitoring
+data:
+  # Redis check configuration for ValKey
+  redisdb.d/conf.yaml: |
+    init_config:
+
+    instances:
+      - host: valkey-service
+        port: 6379
+        # Uncomment for password authentication if enabled
+        # password: <PASSWORD>
+        
+        # This tag will separate ValKey metrics from any Redis instances
+        tags:
+          - 'redis_type:valkey'
+          - 'application:vibecode-platform'
+          - 'service:valkey'
+          - 'env:production'
+        
+        # Performance metrics
+        slowlog-max-len: 128
+        command_stats: true
+        
+        # Cache metrics
+        keys:
+          - pattern: 'workspace:*'
+            tag: 'cache_type:workspace'
+          - pattern: 'ai:response:*'
+            tag: 'cache_type:ai_response'
+          - pattern: 'vector:search:*'
+            tag: 'cache_type:vector_search'
+          - pattern: 'session:*'
+            tag: 'cache_type:session'
+          
+        # Collect comprehensive metrics
+        collect_info_all_keys: true
+        
+        # Detailed latency tracking
+        latency_monitor_threshold: 100
+        
+        # Connection pool metrics
+        warn_on_missing_keys: true
+        connection_pool_size: 5
+        
+        # Set max value size for key collection (bytes)
+        max_user_key_size: 256
+        
+        # Additional metrics for cache analysis
+        keyspace_db_details: true
