@@ -46,7 +46,7 @@ const getValkeyConfig = () => {
 const config = getValkeyConfig();
 
 // Create Valkey client with optimized settings (using Redis-compatible ioredis client)
-let valkeyClient: Redis | null = null;
+const valkeyClient: Redis | null = null;
 
 try {
   if (config.type === 'standard') {
