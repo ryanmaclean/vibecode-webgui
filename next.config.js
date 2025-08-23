@@ -3,8 +3,6 @@ const path = require('path');
 
 const nextConfig = {
   reactStrictMode: true,
-  // To deploy to a static host like GitHub Pages, set output to 'export'.
-  // For a Node.js server deployment, use 'standalone'.
   output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
@@ -19,9 +17,20 @@ const nextConfig = {
   // Skip static analysis of API routes to prevent ERR_INVALID_URL during build
   skipTrailingSlashRedirect: true,
   skipMiddlewareUrlNormalize: true,
+  
 
-  // Required for GitHub Pages deployment.
-  basePath: process.env.NODE_ENV === 'production' ? '/vibecode-webgui' : '',
+
+  // Force app router and disable problematic features
+  experimental: {
+    // Disable ISR completely
+    isrFlushToDisk: false,
+  },
+  
+  trailingSlash: false,
+  generateBuildId: () => 'build',
+
+  // Remove basePath during build to avoid static generation conflicts  
+  basePath: process.env.BUILDING === 'true' ? '' : (process.env.NODE_ENV === 'production' ? '/vibecode-webgui' : ''),
 
   // Security headers configuration
   async headers() {
