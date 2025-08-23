@@ -37,6 +37,36 @@ describe('MultimodalAgent', () => {
   let agent: MultimodalAgent;
   let mockConfig: any;
 
+  // Helper function for creating test context
+  const createTestContext = (): AgentContext => ({
+    workspaceId: 'test-workspace',
+    userId: 'test-user',
+    sessionId: 'test-session',
+    previousMessages: [],
+    userPreferences: {
+      codeStyle: 'typescript',
+      framework: 'react',
+      uiLibrary: 'shadcn',
+      voiceSettings: {
+        enabled: true,
+        autoplay: false,
+        speed: 1.0,
+        voice: 'en-US-Standard-A'
+      },
+      assistantPersonality: 'professional'
+    },
+    projectMetadata: {
+      name: 'Test Project',
+      description: 'Test project for multimodal agent',
+      type: 'web-app',
+      technologies: ['React', 'TypeScript'],
+      complexity: 'intermediate',
+      estimatedTime: 60,
+      targetAudience: 'developers',
+      features: ['responsive', 'accessible']
+    }
+  });
+
   beforeEach(() => {
     mockConfig = {
       openRouterKey: 'test-key',
@@ -48,6 +78,9 @@ describe('MultimodalAgent', () => {
 
     // Mock console.log to capture Datadog logs
     jest.spyOn(console, 'log').mockImplementation(() => {});
+
+    // Mock URL.createObjectURL for Jest environment
+    global.URL.createObjectURL = jest.fn().mockReturnValue('mock-url');
 
     agent = new MultimodalAgent(mockConfig);
   });
@@ -79,34 +112,6 @@ describe('MultimodalAgent', () => {
   });
 
   describe('Multimodal Input Processing', () => {
-    const createTestContext = (): AgentContext => ({
-      workspaceId: 'test-workspace',
-      userId: 'test-user',
-      sessionId: 'test-session',
-      previousMessages: [],
-      userPreferences: {
-        codeStyle: 'typescript',
-        framework: 'react',
-        uiLibrary: 'shadcn',
-        voiceSettings: {
-          enabled: true,
-          autoplay: false,
-          speed: 1.0,
-          voice: 'en-US-Standard-A'
-        },
-        assistantPersonality: 'professional'
-      },
-      projectMetadata: {
-        name: 'Test Project',
-        description: 'Test project for multimodal agent',
-        type: 'web-app',
-        technologies: ['React', 'TypeScript'],
-        complexity: 'intermediate',
-        estimatedTime: 60,
-        targetAudience: 'developers',
-        features: ['responsive', 'accessible']
-      }
-    });
 
     test('should process text input successfully', async () => {
       const input: MultimodalInput = {

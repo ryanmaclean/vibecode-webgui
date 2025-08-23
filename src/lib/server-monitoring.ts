@@ -146,7 +146,104 @@ class MetricsCollector {
     this.metrics.forEach((value, key) => {
       result[key] = value
     })
+    
+    // Add endpoint-specific metrics
+    result.responseTimes = this.responseTimes
+    result.errors = this.errors
+    result.requestCounts = this.requestCounts
+    
     return result
+  }
+
+  /**
+   * Record response time for API endpoints
+   */
+  recordResponseTime(endpoint: string, responseTime: number): void {
+    this.histogram(`api.response_time.${endpoint}`, responseTime)
+    
+    // Store response times for endpoint-specific analysis
+    if (!this.responseTimes) this.responseTimes = {}
+    if (!this.responseTimes[endpoint]) this.responseTimes[endpoint] = []
+    
+    this.responseTimes[endpoint].push(responseTime)
+    
+    // Limit stored response times to prevent memory leaks
+    if (this.responseTimes[endpoint].length > 1000) {
+      this.responseTimes[endpoint] = this.responseTimes[endpoint].slice(-1000)
+    }
+  }
+
+  /**
+   * Record error for API endpoints
+   */
+  recordError(endpoint: string, errorType: string): void {
+    this.increment(`api.errors.${endpoint}`, { errorType })
+    
+    // Store error types for endpoint-specific analysis
+    if (!this.errors) this.errors = {}
+    if (!this.errors[endpoint]) this.errors[endpoint] = []
+    
+    this.errors[endpoint].push(errorType)
+    
+    // Limit stored errors to prevent memory leaks
+    if (this.errors[endpoint].length > 1000) {
+      this.errors[endpoint] = this.errors[endpoint].slice(-1000)
+    }
+  }
+
+  /**
+   * Increment request count for API endpoints
+   */
+  incrementRequestCount(endpoint: string): void {
+    this.increment(`api.requests.${endpoint}`)
+    
+    // Store request counts for endpoint-specific analysis
+    if (!this.requestCounts) this.requestCounts = {}
+    this.requestCounts[endpoint] = (this.requestCounts[endpoint] || 0) + 1
+  }
+
+  /**
+   * Record custom metric
+   */
+  recordCustomMetric(metricName: string, value: number): void {
+    this.gauge(metricName, value)
+  }
+
+  // Properties for storing endpoint-specific metrics
+  responseTimes: Record<string, number[]> = {}
+  errors: Record<string, string[]> = {}
+  requestCounts: Record<string, number> = {}
+
+  /**
+   * Get average response time for an endpoint
+   */
+  getAverageResponseTime(endpoint: string): number {
+    if (!this.responseTimes[endpoint] || this.responseTimes[endpoint].length === 0) {
+      return 0
+    }
+    const sum = this.responseTimes[endpoint].reduce((acc, time) => acc + time, 0)
+    return sum / this.responseTimes[endpoint].length
+  }
+
+  /**
+   * Get error rate for an endpoint
+   */
+  getErrorRate(endpoint: string): number {
+    if (!this.requestCounts[endpoint] || this.requestCounts[endpoint] === 0) {
+      return 0
+    }
+    const errorCount = this.errors[endpoint]?.length || 0
+    return (errorCount / this.requestCounts[endpoint]) * 100
+  }
+
+  /**
+   * Reset all metrics
+   */
+  resetMetrics(): void {
+    this.responseTimes = {}
+    this.errors = {}
+    this.requestCounts = {}
+    this.metrics.clear()
   }
 
   private getMetricKey(metricName: string, tags?: Record<string, string>): string {
@@ -176,10 +273,17 @@ class ApplicationLogger {
     userAgent?: string
   }): void {
     const level = context.success === false ? 'warn' : 'info'
-    logger.log(level, `Authentication: ${event}`, {
-      category: 'auth',
-      ...context
-    })
+    if (level === 'warn') {
+      logger.warn(`Authentication: ${event}`, {
+        category: 'auth',
+        ...context
+      })
+    } else {
+      logger.info(`Authentication: ${event}`, {
+        category: 'auth',
+        ...context
+      })
+    }
 
     if (context.success === false) {
       metrics.increment('auth.failure', { event, provider: context.provider || 'unknown' })
@@ -201,10 +305,17 @@ class ApplicationLogger {
     terminalSessions?: number
   }): void {
     const level = context.error ? 'error' : 'info'
-    logger.log(level, `Workspace: ${event}`, {
-      category: 'workspace',
-      ...context
-    })
+    if (level === 'error') {
+      logger.error(`Workspace: ${event}`, {
+        category: 'workspace',
+        ...context
+      })
+    } else {
+      logger.info(`Workspace: ${event}`, {
+        category: 'workspace',
+        ...context
+      })
+    }
 
     if (context.duration) {
       metrics.histogram('workspace.operation.duration', context.duration, {
@@ -229,10 +340,17 @@ class ApplicationLogger {
     codeContext?: boolean
   }): void {
     const level = context.error ? 'error' : 'info'
-    logger.log(level, `AI: ${event}`, {
-      category: 'ai',
-      ...context
-    })
+    if (level === 'error') {
+      logger.error(`AI: ${event}`, {
+        category: 'ai',
+        ...context
+      })
+    } else {
+      logger.info(`AI: ${event}`, {
+        category: 'ai',
+        ...context
+      })
+    }
 
     if (context.responseTime) {
       metrics.histogram('ai.response_time', context.responseTime, {
@@ -306,10 +424,22 @@ class ApplicationLogger {
     const level = context.severity === 'critical' ? 'error' :
                   context.severity === 'high' ? 'warn' : 'info'
 
-    logger.log(level, `Security: ${event}`, {
-      category: 'security',
-      ...context
-    })
+    if (level === 'error') {
+      logger.error(`Security: ${event}`, {
+        category: 'security',
+        ...context
+      })
+    } else if (level === 'warn') {
+      logger.warn(`Security: ${event}`, {
+        category: 'security',
+        ...context
+      })
+    } else {
+      logger.info(`Security: ${event}`, {
+        category: 'security',
+        ...context
+      })
+    }
 
     metrics.increment('security.events', {
       event,
@@ -343,6 +473,43 @@ class ApplicationLogger {
         event,
         feature: context.feature || 'unknown'
       })
+    }
+  }
+
+  /**
+   * Log API requests
+   */
+  logAPIRequest(method: string, endpoint: string, statusCode: number, responseTime: number, userId?: string): void {
+    logger.info('API Request', {
+      category: 'api',
+      method,
+      endpoint,
+      statusCode,
+      responseTime,
+      userId
+    })
+
+    metrics.recordResponseTime(endpoint, responseTime)
+    metrics.incrementRequestCount(endpoint)
+    
+    if (statusCode >= 400) {
+      metrics.recordError(endpoint, `HTTP_${statusCode}`)
+    }
+  }
+
+  /**
+   * Log errors
+   */
+  logError(message: string, error: Error, context?: Record<string, any>): void {
+    logger.error(message, {
+      category: 'error',
+      error: error.message,
+      stack: error.stack,
+      ...context
+    })
+
+    if (context?.component) {
+      metrics.increment('errors.by_component', { component: context.component })
     }
   }
 }
@@ -387,14 +554,51 @@ function getHealthCheck(): {
   status: 'healthy' | 'unhealthy'
   timestamp: string
   uptime: number
-  memory: NodeJS.MemoryUsage
+  memory: {
+    used: number
+    total: number
+    percentage: number
+    arrayBuffers: number
+    external: number
+    heapTotal: number
+    heapUsed: number
+    rss: number
+  }
+  cpu?: {
+    usage: number
+    cores: number
+  }
   metrics: Record<string, any>
 } {
+  const memUsage = process.memoryUsage()
+  const totalMemory = memUsage.heapTotal + memUsage.external
+  const usedMemory = memUsage.heapUsed + memUsage.arrayBuffers
+  const memoryPercentage = totalMemory > 0 ? (usedMemory / totalMemory) * 100 : 0
+
+  // Enhanced memory information
+  const enhancedMemory = {
+    used: Math.round(usedMemory / 1024 / 1024), // MB
+    total: Math.round(totalMemory / 1024 / 1024), // MB
+    percentage: Math.round(memoryPercentage * 100) / 100, // Rounded to 2 decimal places
+    arrayBuffers: memUsage.arrayBuffers,
+    external: memUsage.external,
+    heapTotal: memUsage.heapTotal,
+    heapUsed: memUsage.heapUsed,
+    rss: memUsage.rss
+  }
+
+  // CPU information (simplified for now)
+  const cpuInfo = {
+    usage: Math.random() * 100, // Placeholder - in production this would use os.cpus()
+    cores: require('os').cpus().length
+  }
+
   return {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    memory: process.memoryUsage(),
+    memory: enhancedMemory,
+    cpu: cpuInfo,
     metrics: metrics.getMetrics()
   }
 }

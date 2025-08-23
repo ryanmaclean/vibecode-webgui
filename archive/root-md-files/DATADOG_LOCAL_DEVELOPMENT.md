@@ -114,6 +114,20 @@ NEXT_PUBLIC_ENABLE_RUM_IN_DEV=false  # default off; enable only when testing RUM
 - **Local Development**: Use dummy keys or development-specific keys
 - **Production**: Use real API keys stored in Azure Key Vault
 
+### Frontend RUM in local dev
+- __Init location__: `src/app/providers.tsx` in a client `useEffect`, using `getRUMPublicConfig()` from `src/lib/monitoring/datadog-env.ts` and `RUMMonitoring.initializeWithTracking(...)` from `src/lib/monitoring/rum-client.ts`.
+- __Enable in dev__: set `NEXT_PUBLIC_ENABLE_RUM_IN_DEV=true` in `.env`. Requires `NEXT_PUBLIC_DD_APPLICATION_ID` and `NEXT_PUBLIC_DD_CLIENT_TOKEN`.
+- __Defaults__: `service: vibecode-webgui`, `defaultPrivacyLevel: mask-user-input`, `trackUserInteractions: true`, `trackResources: true`, `trackLongTasks: true`, session replay 100% in dev.
+- __Logs__: Browser logs are initialized via `datadogLogs.init(...)` in `providers.tsx` with `forwardErrorsToLogs: true`.
+- __Alternative component (optional)__: `src/components/monitoring/DatadogRUM.tsx` also initializes RUM and tracks views on route changes. Do not use both at the same time to avoid double initialization.
+
+#### Verify RUM locally
+1) In the browser console, confirm you see: `VibeCode RUM monitoring initialized successfully`.
+2) Run in console: `window.DD_RUM?.getInternalContext?.()` or `datadogRum.getInternalContext()` and verify `application_id`, `session_id`.
+3) Trigger an action in-app; check Network tab for `browser-rum` intake requests to your `NEXT_PUBLIC_DD_SITE`.
+4) If nothing appears, ensure `NEXT_PUBLIC_ENABLE_RUM_IN_DEV=true` and that `applicationId`/`clientToken` are set.
+5) Conflicts: ensure only one initializer is active (either `providers.tsx` or `DatadogRUM.tsx`).
+
 ## 🧪 Testing
 
 ### Automated Tests
