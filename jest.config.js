@@ -30,8 +30,6 @@ const config = {
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
-    '!src/pages/_app.tsx',
-    '!src/pages/_document.tsx',
   ],
   
   testPathIgnorePatterns: [

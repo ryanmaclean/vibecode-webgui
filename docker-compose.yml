@@ -93,6 +93,8 @@ services:
   db:
     image: pgvector/pgvector:pg15
     container_name: vibecode-db
+    ports:
+      - "5432:5432"
     environment:
       - POSTGRES_DB=vibecode
       - POSTGRES_USER=vibecode
@@ -108,17 +110,19 @@ services:
       timeout: 10s
       retries: 3
 
-  # Redis for Session Storage
+  # Valkey for Session Storage (Redis-compatible successor)
   redis:
-    image: redis:7-alpine
-    container_name: vibecode-redis
-    command: redis-server --appendonly yes
+    image: valkey/valkey:7-alpine
+    container_name: vibecode-valkey
+    ports:
+      - "6379:6379"
+    command: valkey-server --appendonly yes
     volumes:
       - redis_data:/data
     networks:
       - vibecode-network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "valkey-cli", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
