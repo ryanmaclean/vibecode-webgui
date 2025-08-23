@@ -3,7 +3,6 @@
 
 // Hard-coded Docker build detection - most aggressive approach
 const isDockerBuild = (
-  process.env.NODE_ENV === 'production' ||
   process.env.DOCKER_BUILD === 'true' || 
   process.env.SKIP_MONITORING === 'true' ||
   process.env.CI === 'true' ||
@@ -16,7 +15,7 @@ const isDockerBuild = (
 function getTracer() {
   if (isDockerBuild) {
     // Mock tracer for Docker build - completely bypass monitoring
-    console.log('🚫 Monitoring completely disabled during Docker build');
+    console.log('🚫 Monitoring disabled by environment flags/bypass conditions');
     return {
       init: () => console.log('Mock tracer initialized'),
       // Add other tracer methods as needed

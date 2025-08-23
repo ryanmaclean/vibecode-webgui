@@ -253,8 +253,8 @@ describe('Real Integration Validation', () => {
     const jestFnCount = (testFileContent.match(/jest\.fn/g) || []).length;
 
     // Should have minimal mocking compared to original test
-    expect(jestMockCount).toBeLessThanOrEqual(2); // Only fetch mock
-    expect(jestFnCount).toBeLessThanOrEqual(3); // Only essential mocks
+    expect(jestMockCount).toBeLessThanOrEqual(1); // Only fetch mock
+    expect(jestFnCount).toBeLessThanOrEqual(1); // Only essential mocks
 
     // Should not mock the core monitoring modules
     expect(testFileContent).not.toContain("jest.mock('../../src/lib/monitoring')");
