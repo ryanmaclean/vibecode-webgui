@@ -125,8 +125,8 @@ export class EnhancedAIManager {
   async executeWorkflow(request: AIWorkflowRequest): Promise<AIWorkflowResponse> {
     const startTime = Date.now();
     const modelsUsed: string[] = [];
-    let tokensUsed = 0;
-    let cost = 0;
+    const tokensUsed = 0;
+    const cost = 0;
 
     try {
       let steps: WorkflowStep[];
