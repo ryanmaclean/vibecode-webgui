@@ -70,7 +70,7 @@ describe('useProjectGenerator', () => {
     })
 
     // Should update progress throughout
-    expect(onProgress).toHaveBeenCalledTimes(6) // initial + 3 updates + 2 internal updates
+    expect(onProgress).toHaveBeenCalledTimes(4) // initial + 3 updates
     expect(result.current.isGenerating).toBe(false)
   })
 

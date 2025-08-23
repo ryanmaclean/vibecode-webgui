@@ -1,6 +1,18 @@
 import '@testing-library/jest-dom';
 
 // Mock scrollIntoView for components that use it
+
+// Global fetch mock for API tests
+global.fetch = jest.fn(() => Promise.resolve({
+  ok: true,
+  status: 200,
+  headers: {
+    get: () => null,
+    has: () => false
+  },
+  json: () => Promise.resolve({}),
+  text: () => Promise.resolve('')
+}));
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
 
 
