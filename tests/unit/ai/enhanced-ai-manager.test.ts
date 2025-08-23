@@ -3,11 +3,12 @@ import { MultiAgentWorkflow } from '@/lib/ai/agents/multi-agent-workflow';
 
 // Mock the external dependencies
 jest.mock('@/lib/ai/agents/multi-agent-workflow');
-jest.mock('@/lib/ai/vector-stores/weaviate-client', () => ({
-  WeaviateClient: jest.fn().mockImplementation(() => ({
-    healthCheck: jest.fn().mockResolvedValue(true),
+jest.mock('@/lib/ai/vector-stores/pgvector-client', () => ({
+  PGVectorClient: jest.fn().mockImplementation(() => ({
+    initialize: jest.fn().mockResolvedValue(true),
     createCollection: jest.fn().mockResolvedValue(true),
-    listCollections: jest.fn().mockResolvedValue(['documents', 'code_snippets'])
+    listCollections: jest.fn().mockResolvedValue(['documents', 'code_snippets']),
+    healthCheck: jest.fn().mockResolvedValue(true)
   })),
   COLLECTION_SCHEMAS: {
     DOCUMENTS: { name: 'documents', properties: {} },
@@ -65,9 +66,12 @@ describe('EnhancedAIManager', () => {
         model: 'codellama:7b',
         temperature: 0.1
       },
-      weaviate: {
-        url: 'http://localhost:8080',
-        apiKey: 'test-key'
+      pgvector: {
+        host: 'localhost',
+        port: 5432,
+        database: 'testdb',
+        user: 'test',
+        password: 'test'
       }
     };
 
@@ -194,7 +198,7 @@ describe('EnhancedAIManager', () => {
     it('should return system status', async () => {
       const status = await aiManager.getSystemStatus();
 
-      expect(status).toHaveProperty('weaviate');
+      expect(status).toHaveProperty('pgvector');
       expect(status).toHaveProperty('ollama');
       expect(status).toHaveProperty('openai');
       expect(status).toHaveProperty('models');
