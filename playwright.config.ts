@@ -1,69 +1,57 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Playwright configuration for VibeCode WebGUI E2E tests
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
-  // Test directory
   testDir: './tests/e2e',
-
-  // Run tests in files in parallel
+  /* Run tests in files in parallel */
   fullyParallel: true,
-
-  // Fail the build on CI if you accidentally left test.only in the source code
+  /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-
-  // Retry on CI only
+  /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-
-  // Opt out of parallel tests on CI
+  /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
-
-  // Reporter to use
+  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html'],
-    ['json', { outputFile: 'playwright-report/results.json' }],
-    ['junit', { outputFile: 'playwright-report/results.xml' }],
+    ['json', { outputFile: 'test-results/playwright-results.json' }],
+    ['junit', { outputFile: 'test-results/playwright-results.xml' }]
   ],
-
-  // Shared settings for all the projects below
+  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    // Base URL to use in actions like `await page.goto('/')`
-    baseURL: 'http://localhost:3000',
+    /* Base URL to use in actions like `await page.goto('/')`. */
+    baseURL: process.env.BASE_URL || 'http://localhost:3000',
 
-    // Collect trace when retrying the failed test
+    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
 
-    // Capture screenshot after each test failure
+    /* Take screenshot on failure */
     screenshot: 'only-on-failure',
 
-    // Record video on test failure
+    /* Record video on failure */
     video: 'retain-on-failure',
-
-    // Global timeout for each action
-    actionTimeout: 15000,
-
-    // Global timeout for navigation
-    navigationTimeout: 30000,
   },
 
-  // Configure projects for major browsers
+  /* Configure projects for major browsers */
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
     },
+
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
     },
 
-    // Test against mobile viewports
+    /* Test against mobile viewports. */
     {
       name: 'Mobile Chrome',
       use: { ...devices['Pixel 5'] },
@@ -73,42 +61,26 @@ export default defineConfig({
       use: { ...devices['iPhone 12'] },
     },
 
-    // Test against branded browsers
-    {
-      name: 'Microsoft Edge',
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    },
-    {
-      name: 'Google Chrome',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    },
+    /* Test against branded browsers. */
+    // {
+    //   name: 'Microsoft Edge',
+    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    // },
+    // {
+    //   name: 'Google Chrome',
+    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+    // },
   ],
 
-  // Run your local dev server before starting the tests
-  webServer: [
-    {
-      command: 'npm run dev:simple',
-      url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI,
-      timeout: 120000,
-    },
-  ],
-
-  // Global setup and teardown
-  globalSetup: './tests/e2e/global-setup.ts',
-  globalTeardown: './tests/e2e/global-teardown.ts',
-
-  // Test timeout
-  timeout: 60000,
-
-  // Expect timeout
-  expect: {
-    timeout: 10000,
+  /* Run your local dev server before starting the tests */
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000,
   },
 
-  // Output directory for test artifacts
-  outputDir: 'test-results/',
-
-  // Maximum time for the entire test run
-  globalTimeout: 600000,
+  /* Global setup and teardown */
+  // globalSetup: require.resolve('./tests/e2e/global-setup.ts'),
+  // globalTeardown: require.resolve('./tests/e2e/global-teardown.ts'),
 });

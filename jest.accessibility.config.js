@@ -36,7 +36,7 @@ const customJestConfig = {
   // Coverage configuration for accessibility tests
   collectCoverageFrom: [
     'src/components/**/*.{js,jsx,ts,tsx}',
-    'src/pages/**/*.{js,jsx,ts,tsx}',
+    'src/app/**/*.{js,jsx,ts,tsx}',
     'src/lib/**/*.{js,ts}',
     '!src/**/*.d.ts',
     '!src/**/*.stories.{js,jsx,ts,tsx}',

@@ -179,6 +179,51 @@ NEXT_PUBLIC_DD_SITE=datadoghq.com
 NEXT_PUBLIC_ENABLE_RUM_IN_DEV=false
 ```
 
+## 🧩 Application Instrumentation
+
+### Server (Node/Next.js API)
+- __Tracer__: Initialize Datadog tracing in the server entrypoint as early as possible.
+- __Config source__: Use `src/lib/monitoring/datadog-env.ts` helpers for `service`, `env`, `version`, and `site`.
+- __Logs__: Write app logs to stdout/stderr; the Datadog Agent collects container logs when `logs.enabled: true`.
+- __APM__: Ensure `apm.portEnabled: true` (already set in values files) and the agent runs on the same node/namespace.
+
+### Client (RUM)
+- Prefer `NEXT_PUBLIC_DD_*` vars. `getRUMPublicConfig()` in `src/lib/monitoring/datadog-env.ts` centralizes resolution.
+- RUM is disabled in development by default; enable only if needed with `NEXT_PUBLIC_ENABLE_RUM_IN_DEV=true`.
+
+### Secure Defaults
+- No secrets are logged. `datadog-env` emits safe mismatch warnings only.
+- RUM disabled in dev by default; enable explicitly.
+- KIND uses dummy credentials; production uses Key Vault/Secrets.
+- Favor minimal config with sensible defaults to reduce complexity.
+
+## 🗺️ Kubernetes and Infra Artifacts Map
+
+- __Agent values (KIND)__: `k8s/datadog-values-kind.yaml`
+- __Agent values (AKS)__: `k8s/datadog-values.yaml`
+- __Agent manifests (various examples)__:
+  - `k8s/datadog-daemonset.yaml`
+  - `k8s/datadog-agent-all.yaml`
+  - `k8s/datadog-agent-fixed.yaml`
+  - `k8s/datadog-simple.yaml`
+  - `k8s/datadog-rbac-complete.yaml`
+  - `datadog-agent.yaml` (root example)
+  - `infrastructure/kubernetes/monitoring/datadog-agent.yaml`
+  - `charts/vibecode-platform/templates/datadog-agent.yaml`
+- __Secrets__:
+  - `k8s/datadog-secret.yaml` (local/dev example)
+  - `helm/vibecode-platform/templates/datadog-secret-hook.yaml` (Helm hook)
+- __Database Monitoring (DBM)__:
+  - `kubernetes/datadog/datadog-dbm-config.yaml`
+  - `kubernetes/datadog/datadog-db-secret.yaml`
+
+## 🧱 Monitoring IaC (Dashboards, Synthetics, Policies)
+
+- `infrastructure/monitoring/terraform/main.tf`
+- `infrastructure/monitoring/terraform/datadog-synthetics.tf`
+- `infrastructure/monitoring/terraform/security-tests.tf`
+- `infrastructure/monitoring/datadog-dashboard.tf`
+
 ## 🚀 Deployment Process
 
 ### Automated Deployment
@@ -375,6 +420,6 @@ helm upgrade datadog datadog/datadog -n datadog
 
 ---
 
-**Last Updated**: August 11, 2025  
+**Last Updated**: August 21, 2025  
 **Environment**: dev/stg/prd parity achieved ✅  
 **Status**: Production ready with comprehensive monitoring
