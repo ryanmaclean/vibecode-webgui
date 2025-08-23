@@ -425,7 +425,7 @@ See [package.json](package.json) for complete dependency list.
 
 1. Copy environment template:
    ```bash
-   cp .env.example .env.local
+   cp .env.example .env
    ```
 
 2. Configure required environment variables:
@@ -488,7 +488,7 @@ Required environment variables for production:
 - `NEXTAUTH_SECRET` - Authentication secret key
 - `OPENAI_API_KEY` - OpenAI API key
 - `ANTHROPIC_API_KEY` - Anthropic API key
-- `DD_API_KEY` - Datadog API key (optional)
+- `DD_API_KEY` - Datadog API key (prefer `DD_*`; legacy `DATADOG_API_KEY` is supported as a fallback)
 
 #### Health Checks
 

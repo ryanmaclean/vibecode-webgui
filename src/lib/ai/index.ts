@@ -6,6 +6,18 @@ export * from './prompts/templates';
 export * from './search/vector-search';
 export * from './analytics';
 
+// Enhanced AI capabilities
+export * from './agents/multi-agent-workflow';
+export * from './vector-stores/pgvector-client';
+export * from './local/ollama-client';
+export * from './enhanced-ai-manager';
+export * from './automated-test-generator';
+export * from './smart-code-completion';
+export * from './natural-language-to-code';
+export * from './code-review-automation';
+export * from './performance-optimization';
+export * from './integration-testing';
+
 // Types
 export type { Prompt } from './prompts/manager';
 export type { SearchResult } from './search/vector-search';

@@ -51,6 +51,63 @@ NEXT_PUBLIC_DD_SITE=datadoghq.com
 NEXT_PUBLIC_ENABLE_RUM_IN_DEV=false
 ```
 
+### Environment Variables Summary
+
+- __Core (server)__
+  - `DD_API_KEY` (fallback: `DATADOG_API_KEY`)
+  - `DD_APP_KEY` (fallback: `DATADOG_APP_KEY`)
+  - `DD_SITE` default `datadoghq.com` (fallback: `DATADOG_SITE`)
+  - `DD_ENV` default maps from `NODE_ENV` if unset (fallback: `DATADOG_ENV`)
+  - `DD_SERVICE` default `vibecode-webgui` (fallback: `DATADOG_SERVICE`)
+  - `DD_VERSION` default `npm_package_version` or `1.0.0` (fallback: `DATADOG_VERSION`)
+
+- __RUM (client, public)__
+  - `NEXT_PUBLIC_DD_APPLICATION_ID` (fallbacks: `NEXT_PUBLIC_DATADOG_APPLICATION_ID`, `NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID`)
+  - `NEXT_PUBLIC_DD_CLIENT_TOKEN` (fallbacks: `NEXT_PUBLIC_DATADOG_CLIENT_TOKEN`, `NEXT_PUBLIC_DATADOG_RUM_CLIENT_TOKEN`)
+  - `NEXT_PUBLIC_DD_SITE` default `datadoghq.com` (fallback: `NEXT_PUBLIC_DATADOG_SITE`)
+  - `NEXT_PUBLIC_APP_VERSION` optional, default `1.0.0`
+  - `NEXT_PUBLIC_ENABLE_RUM_IN_DEV` gate, default `false`
+
+- __DB Monitoring (server)__
+  - `DD_POSTGRES_USER` default `datadog`
+  - `DD_POSTGRES_PASSWORD` (fallback: `DATADOG_POSTGRES_PASSWORD`)
+
+- __Optional toggles__ (server and/or client gating used by code):
+  - `OTEL_ENABLED` (default off)
+  - `DD_ENABLED` (set to `false` to fully disable Datadog init)
+  - `DD_ENABLE_GET_RUM_DATA` (experimental dd-trace getRumData)
+  - `SKIP_MONITORING` (force-disable all monitoring)
+  - `DOCKER_BUILD` (disable monitoring during image builds)
+
+All resolution is centralized in `src/lib/monitoring/datadog-env.ts` and emits safe warnings when DD_* and DATADOG_* are both set and differ.
+
+### Client-side RUM initialization and gating
+
+- __Primary entry points__:
+  - `src/components/monitoring/DatadogRUM.tsx` uses `getRUMPublicConfig()` and guards with `NODE_ENV==='production'` or `NEXT_PUBLIC_ENABLE_RUM_IN_DEV==='true'` before `datadogRum.init()`.
+  - `src/app/providers.tsx` initializes RUM via `RUMMonitoring.initializeWithTracking()` and `@datadog/browser-logs` with the same gating.
+- __PII-safe defaults__: `defaultPrivacyLevel: 'mask-user-input'`, production `sessionReplaySampleRate=20` (100 in dev).
+- __Verification__:
+  - Open browser console and confirm "Datadog RUM initialized." or 🐕 log from `providers.tsx`.
+  - Run `datadogRum.getInternalContext()` in DevTools; expect `application_id` present when initialized.
+
+### Server-side tracing initialization and gating
+
+- __Where it's initialized__: `src/instrument.ts` dynamically requires `dd-trace`, resolves `{ env, service, version }` via `getServiceEnvVersion()` from `src/lib/monitoring/datadog-env.ts`, and calls `tracer.init({ ... })`.
+- __Enabled by default__: Monitoring is enabled in production and development by default. It is only disabled when one of these explicit flags/contexts is set:
+  - `DOCKER_BUILD==='true'`
+  - `SKIP_MONITORING==='true'`
+  - `CI==='true'` or `GITHUB_ACTIONS==='true'`
+  - `OTEL_ENABLED==='false'`
+  - `DD_ENABLED==='false'`
+- __OpenTelemetry__: If `OTEL_ENABLED==='true'` and `NODE_ENV!=='test'`, `initializeOpenTelemetry()` from `src/lib/monitoring/opentelemetry.ts` runs before `dd-trace` initialization.
+- __Sampling__: `sampleRate` is `0.1` in production and `1.0` otherwise.
+- __Tags__: Global tags include `deployment.environment`, `service.name`, `service.version`, `git.commit.sha`, and `git.repository.url`.
+- __Verification__:
+  - Check the agent locally: `curl -f http://localhost:8126/info` (when running with a local agent).
+  - Review application logs for tracer initialization.
+  - In Datadog APM, filter by `service:vibecode-webgui` and appropriate `env`.
+
 ## 🏗️ Architecture Overview
 
 ```
@@ -191,6 +248,38 @@ kubectl logs -l app=datadog-agent -n datadog
 kubectl top nodes
 kubectl top pods -n vibecode
 ```
+
+## ✅ CI/CD Validation
+
+- __Workflow__: `.github/workflows/ci.yml`
+  - Job: "Monitoring & Health Validation" builds and starts the app, then probes:
+    - `GET /api/monitoring/dashboard` and checks `.health`
+    - `GET /api/monitoring/metrics?config=true` and checks `.monitoring`
+    - `GET /api/monitoring/otel-config` and `...action=health`
+  - Also asserts existence of key files:
+    - `src/lib/monitoring/enhanced-datadog-integration.ts`
+    - `src/lib/monitoring/advanced-datadog-dashboards.ts`
+    - `src/lib/monitoring/alerts-configuration.ts`
+    - `scripts/setup-datadog-monitoring.ts`
+    - `docs/DATADOG_MONITORING.md`
+
+- __Synthetic tests__: `.github/workflows/synthetic-test.yml`
+  - Runs Datadog Synthetic suite via `datadog-ci synthetics run-tests`.
+  - Env vars required by datadog-ci: `DATADOG_API_KEY` and `DATADOG_APP_KEY` (secrets may be stored as `DD_*` and mapped), site `datadoghq.com`.
+
+- __Production deployment__: `.github/workflows/production-deployment.yml`
+  - Invokes `scripts/deploy-monitoring.sh -m kubernetes`.
+  - Env: passes Datadog API key; script prefers `DD_API_KEY` with `DATADOG_API_KEY` as fallback.
+
+- __Kubernetes rollout__: `.github/workflows/k8s-deploy.yml`
+  - Uses `kubectl set image` and `kubectl rollout status` in `vibecode-staging` and `vibecode-platform` namespaces.
+  - Health check curls `http://vibecode-service.vibecode-platform.svc.cluster.local:3000/api/health`.
+
+### CI tips
+
+- Ensure `.env` exists (CI auto-copies from `.env.example` when missing).
+- Prefer setting `DD_*` secrets in repo/org settings; legacy `DATADOG_*` still work via fallback.
+- For RUM in Playwright/E2E, set `NEXT_PUBLIC_ENABLE_RUM_IN_DEV=true` only if you need RUM during tests.
 
 ## 📈 Monitoring Dashboards
 
@@ -354,6 +443,6 @@ helm upgrade datadog datadog/datadog -n datadog
 
 ---
 
-**Last Updated**: August 11, 2025  
+**Last Updated**: August 13, 2025  
 **Environment**: dev/stg/prd parity achieved ✅  
 **Status**: Production ready with comprehensive monitoring
