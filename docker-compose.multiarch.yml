@@ -115,16 +115,17 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
+  # Valkey Cache (BSD-licensed Redis fork for legal compliance)
+  # Uses Valkey instead of Redis to avoid RSAL/SSPL licensing issues
+  valkey:
+    image: valkey/valkey:7-alpine
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     ports:
       - "6379:6379"
     volumes:
-      - redis-data:/data
+      - valkey-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "valkey-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -163,7 +164,7 @@ services:
 
 volumes:
   postgres-data:
-  redis-data:
+  valkey-data:
   prometheus-data:
   code-server-data:
   mcp-models:
