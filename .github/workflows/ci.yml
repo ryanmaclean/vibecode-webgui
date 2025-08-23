@@ -9,6 +9,9 @@ on:
     branches:
       - main
       - develop
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: '20.11.0'
@@ -18,6 +21,7 @@ jobs:
   code-quality:
     runs-on: ubuntu-latest
     name: Code Quality & Security
+    timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -176,6 +180,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Test Suite
     needs: code-quality
+    timeout-minutes: 30
     strategy:
       matrix:
         test-type: [unit, integration]
@@ -245,6 +250,7 @@ jobs:
     runs-on: ubuntu-latest
     name: End-to-End Tests
     needs: test-suite
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -268,8 +274,13 @@ jobs:
 
       - name: Start application for E2E tests
         run: |
+          set -euo pipefail
           npm run start &
-          sleep 30
+          APP_PID=$!
+          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
+          echo "Waiting for app on http://localhost:3000 ..."
+          timeout 90 bash -c 'until curl -fsS http://localhost:3000/api/health || curl -fsS http://localhost:3000; do sleep 2; done'
+          echo "App is up"
         env:
           NODE_ENV: test
           PORT: 3000
@@ -288,11 +299,20 @@ jobs:
             playwright-report/
             test-results/
 
+      - name: Stop application
+        if: always()
+        run: |
+          if [ -n "${APP_PID:-}" ] && ps -p "${APP_PID}" > /dev/null 2>&1; then
+            kill "${APP_PID}" || true
+            timeout 10 bash -c "while kill -0 ${APP_PID:-0} 2>/dev/null; do sleep 1; done" || true
+          fi
+
   # Monitoring Validation
   monitoring-validation:
     runs-on: ubuntu-latest
     name: Monitoring & Health Validation
     needs: test-suite
+    timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -325,9 +345,14 @@ jobs:
 
       - name: Build and test monitoring endpoints
         run: |
+          set -euo pipefail
           npm run build
           npm run start &
-          sleep 30
+          APP_PID=$!
+          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
+          echo "Waiting for app on http://localhost:3000 ..."
+          timeout 90 bash -c 'until curl -fsS http://localhost:3000/api/health || curl -fsS http://localhost:3000; do sleep 2; done'
+          echo "App is up"
           
           # Test monitoring endpoints
           echo "Testing monitoring dashboard endpoint..."
@@ -350,11 +375,20 @@ jobs:
           # Test OpenTelemetry setup script
           npx tsx scripts/setup-opentelemetry.ts || echo "✅ OpenTelemetry setup script validation complete"
 
+      - name: Stop application
+        if: always()
+        run: |
+          if [ -n "${APP_PID:-}" ] && ps -p "${APP_PID}" > /dev/null 2>&1; then
+            kill "${APP_PID}" || true
+            timeout 10 bash -c "while kill -0 ${APP_PID:-0} 2>/dev/null; do sleep 1; done" || true
+          fi
+
   # Security Testing
   security-tests:
     runs-on: ubuntu-latest
     name: Security Testing
     needs: test-suite
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:15
@@ -405,8 +439,13 @@ jobs:
 
       - name: Start application for security tests
         run: |
+          set -euo pipefail
           npm run start &
-          sleep 30
+          APP_PID=$!
+          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
+          echo "Waiting for app on http://localhost:3000 ..."
+          timeout 90 bash -c 'until curl -fsS http://localhost:3000/api/health || curl -fsS http://localhost:3000; do sleep 2; done'
+          echo "App is up"
         env:
           NODE_ENV: production
           PORT: 3000
@@ -450,11 +489,20 @@ jobs:
           # Check CORS configuration
           grep -r "cors" src/ --include="*.ts" --include="*.js" && echo "✅ CORS configuration found" || echo "⚠️ CORS configuration not found"
 
+      - name: Stop application
+        if: always()
+        run: |
+          if [ -n "${APP_PID:-}" ] && ps -p "${APP_PID}" > /dev/null 2>&1; then
+            kill "${APP_PID}" || true
+            timeout 10 bash -c "while kill -0 ${APP_PID:-0} 2>/dev/null; do sleep 1; done" || true
+          fi
+
   # Build & Performance
   build-and-performance:
     runs-on: ubuntu-latest
     name: Build & Performance Tests
     needs: [code-quality, test-suite]
+    timeout-minutes: 40
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -475,8 +523,13 @@ jobs:
 
       - name: Start application for performance testing
         run: |
+          set -euo pipefail
           npm run start &
-          sleep 30
+          APP_PID=$!
+          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
+          echo "Waiting for app on http://localhost:3000 ..."
+          timeout 90 bash -c 'until curl -fsS http://localhost:3000/api/health || curl -fsS http://localhost:3000; do sleep 2; done'
+          echo "App is up"
         env:
           NODE_ENV: production
           PORT: 3000
@@ -527,12 +580,21 @@ jobs:
             lighthouse-results/
             .lighthouseci/
 
+      - name: Stop application
+        if: always()
+        run: |
+          if [ -n "${APP_PID:-}" ] && ps -p "${APP_PID}" > /dev/null 2>&1; then
+            kill "${APP_PID}" || true
+            timeout 10 bash -c "while kill -0 ${APP_PID:-0} 2>/dev/null; do sleep 1; done" || true
+          fi
+
   # Final Validation
   validation-complete:
     runs-on: ubuntu-latest
     name: CI/CD Validation Complete
     needs: [e2e-tests, monitoring-validation, security-tests, build-and-performance]
     if: always()
+    timeout-minutes: 10
     steps:
       - name: Check all jobs status
         run: |
