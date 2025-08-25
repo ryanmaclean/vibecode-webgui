@@ -192,15 +192,16 @@ export class TemplateMarketplace {
         description: template.description || '',
         category: 'frontend',
         complexity: 'intermediate',
-        tags: template.marketplace?.category ? [template.marketplace.category] : [],
+        tags: [],
         files: [],
         dependencies: {},
         scripts: {},
         envVars: [],
         documentation: {
           readme: 'Template documentation',
-          setup: 'Setup instructions',
-          deployment: 'Deployment guide'
+          setup: ['Setup instructions'],
+          usage: ['Usage instructions'],
+          deployment: ['Deployment guide']
         },
         ...template,
         marketplaceId: template.marketplaceId || `mp-${index}`,

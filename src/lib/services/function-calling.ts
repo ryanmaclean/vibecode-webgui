@@ -478,7 +478,7 @@ export class FunctionCallingService {
 export const functionCallingService = new FunctionCallingService()
 
 // Store function definitions separately for registration
-const functionDefinitions = [
+const functionDefinitions: FunctionDefinition[] = [
   {
     name: 'web_search',
     description: 'Search the web for current information on a given topic',
