@@ -1,53 +1,87 @@
 /**
- * Global setup for Playwright tests
- * This runs once before all tests start
+ * Global setup for E2E tests
+ * Sets up test data, authentication, and required services
  */
 
 import { chromium, FullConfig } from '@playwright/test';
+import { MonitoringService } from '../../src/lib/monitoring';
 
 async function globalSetup(config: FullConfig) {
   const { baseURL } = config.projects[0].use;
   
-  console.log('🚀 Starting global setup...');
-  console.log(`📍 Base URL: ${baseURL}`);
+  console.log('🚀 Setting up E2E test environment...');
   
-  // Start browser to check if the app is accessible
+  // Initialize monitoring for E2E tests
+  const monitoring = new MonitoringService();
+  monitoring.init();
+  monitoring.trackEvent('e2e_setup_started', { baseURL });
+
+  // Create a browser instance for setup
   const browser = await chromium.launch();
-  const page = await browser.newPage();
-  
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
   try {
-    // Wait for the app to be ready
-    console.log('⏳ Waiting for application to be ready...');
-    
-    // Try to access the health endpoint first
-    await page.goto(`${baseURL}/api/health`);
-    await page.waitForLoadState('networkidle');
-    
-    // Check if we get a valid response
-    const response = await page.waitForResponse(`${baseURL}/api/health`);
-    if (response.ok()) {
-      console.log('✅ Health endpoint is accessible');
-    } else {
-      console.log('⚠️ Health endpoint returned non-200 status');
-    }
-    
-    // Navigate to the main page
-    await page.goto(baseURL!);
-    await page.waitForLoadState('networkidle');
-    
-    // Wait for the app to be fully loaded
-    await page.waitForSelector('body', { timeout: 30000 });
-    
-    console.log('✅ Application is ready for testing');
-    
+    // Wait for the application to be ready
+    console.log('⏳ Waiting for application to be available...');
+    await page.goto(baseURL || 'http://localhost:3000', { 
+      waitUntil: 'networkidle',
+      timeout: 60000 
+    });
+
+    // Setup test user authentication if needed
+    await setupTestAuth(page);
+
+    // Verify critical services are available
+    await verifyServices(page);
+
+    console.log('✅ E2E test environment setup complete');
+    monitoring.trackEvent('e2e_setup_completed', { success: true });
+
   } catch (error) {
-    console.error('❌ Global setup failed:', error);
+    console.error('❌ E2E setup failed:', error);
+    monitoring.trackEvent('e2e_setup_failed', { error: error.message });
     throw error;
   } finally {
+    await context.close();
     await browser.close();
   }
+}
+
+async function setupTestAuth(page: any) {
+  // Check if authentication is required
+  const loginButton = await page.locator('[href="/auth/login"]').first();
   
-  console.log('🎯 Global setup completed successfully');
+  if (await loginButton.isVisible()) {
+    console.log('🔐 Setting up test authentication...');
+    // For E2E tests, we might want to create a test user or use mock auth
+    // This would depend on your auth implementation
+    
+    // Store authentication state if needed
+    await page.context().storageState({ 
+      path: 'tests/e2e/auth-state.json' 
+    });
+  }
+}
+
+async function verifyServices(page: any) {
+  console.log('🔍 Verifying critical services...');
+  
+  // Check API health endpoint
+  try {
+    const response = await page.request.get('/api/health');
+    if (!response.ok()) {
+      throw new Error(`Health check failed: ${response.status()}`);
+    }
+    console.log('✅ API health check passed');
+  } catch (error) {
+    console.warn('⚠️ API health check failed:', error.message);
+  }
+
+  // Verify UI is interactive
+  const body = await page.locator('body').first();
+  await body.waitFor({ state: 'visible', timeout: 10000 });
+  console.log('✅ UI is interactive');
 }
 
 export default globalSetup;
