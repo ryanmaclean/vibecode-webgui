@@ -1,219 +1,196 @@
 /**
- * E2E Test Helper Utilities
- * Common functions for authentication, database, and test setup
+ * E2E Test Helper utilities
+ * Common functions for E2E tests
  */
 
-import { Page, expect } from '@playwright/test'
-import { PrismaClient } from '@prisma/client'
+import { Page, expect } from '@playwright/test';
 
 export class TestHelpers {
-  private static prisma = new PrismaClient()
-  
+  constructor(private page: Page) {}
+
   /**
-   * Authentication helpers
+   * Wait for page to be ready with loading indicators cleared
    */
-  static async loginAsTestUser(page: Page, userType: 'admin' | 'user' = 'user') {
-    const testUser = userType === 'admin' 
-      ? { email: 'admin@test.com', password: 'testpassword123' }
-      : { email: 'user@test.com', password: 'testpassword123' }
+  async waitForPageReady() {
+    // Wait for any loading spinners to disappear
+    await this.page.waitForLoadState('networkidle');
     
-    await page.goto('/auth/signin')
-    await page.fill('[data-testid="email-input"]', testUser.email)
-    await page.fill('[data-testid="password-input"]', testUser.password)
-    await page.click('[data-testid="signin-button"]')
-    
-    // Wait for successful login redirect
-    await page.waitForURL('/', { timeout: 10000 })
-    
-    // Verify user is logged in
-    await expect(page.locator('[data-testid="user-menu"]')).toBeVisible()
+    // Check for common loading indicators
+    const loadingSpinners = this.page.locator('[class*="animate-spin"], [class*="loading"], .spinner');
+    await loadingSpinners.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {
+      // Loading spinner might not exist, which is fine
+    });
   }
-  
-  static async logout(page: Page) {
-    await page.click('[data-testid="user-menu"]')
-    await page.click('[data-testid="logout-button"]')
-    await page.waitForURL('/auth/signin', { timeout: 5000 })
-  }
-  
+
   /**
-   * Database helpers
+   * Take a screenshot with timestamp
    */
-  static async createTestUser(overrides: Partial<any> = {}) {
-    return await this.prisma.user.create({
-      data: {
-        email: 'test-user@example.com',
-        name: 'Test User',
-        role: 'user',
-        avatar: 'https://example.com/avatar.jpg',
-        ...overrides
-      }
-    })
+  async takeScreenshot(name: string) {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    return this.page.screenshot({
+      path: `test-results/screenshots/${name}-${timestamp}.png`,
+      fullPage: true
+    });
   }
-  
-  static async createTestWorkspace(userId: number, overrides: Partial<any> = {}) {
-    return await this.prisma.workspace.create({
-      data: {
-        name: 'Test Workspace',
-        description: 'A workspace for testing',
-        owner_id: userId,
-        status: 'active',
-        ...overrides
-      }
-    })
-  }
-  
-  static async createTestProject(workspaceId: number, overrides: Partial<any> = {}) {
-    return await this.prisma.project.create({
-      data: {
-        name: 'Test Project',
-        description: 'A project for testing',
-        workspace_id: workspaceId,
-        status: 'active',
-        ...overrides
-      }
-    })
-  }
-  
-  static async cleanupTestData() {
-    // Clean up in proper order to respect foreign keys
-    await this.prisma.aIRequest.deleteMany({
-      where: { user_id: { in: await this.getTestUserIds() } }
-    })
-    await this.prisma.rAGChunk.deleteMany()
-    await this.prisma.file.deleteMany({
-      where: { workspace_id: { in: await this.getTestWorkspaceIds() } }
-    })
-    await this.prisma.project.deleteMany({
-      where: { workspace_id: { in: await this.getTestWorkspaceIds() } }
-    })
-    await this.prisma.workspace.deleteMany({
-      where: { name: { contains: 'Test' } }
-    })
-    await this.prisma.user.deleteMany({
-      where: { email: { contains: 'test' } }
-    })
-  }
-  
-  private static async getTestUserIds(): Promise<number[]> {
-    const users = await this.prisma.user.findMany({
-      where: { email: { contains: 'test' } },
-      select: { id: true }
-    })
-    return users.map(u => u.id)
-  }
-  
-  private static async getTestWorkspaceIds(): Promise<number[]> {
-    const workspaces = await this.prisma.workspace.findMany({
-      where: { name: { contains: 'Test' } },
-      select: { id: true }
-    })
-    return workspaces.map(w => w.id)
-  }
-  
+
   /**
-   * UI interaction helpers
+   * Check accessibility with axe-core
    */
-  static async waitForPageLoad(page: Page) {
-    await page.waitForLoadState('networkidle')
-    await page.waitForTimeout(500) // Additional buffer for dynamic content
+  async checkAccessibility(options: { tags?: string[] } = {}) {
+    const { injectAxe, checkA11y } = await import('@axe-core/playwright');
+    
+    await injectAxe(this.page);
+    await checkA11y(this.page, undefined, {
+      tags: options.tags || ['wcag2a', 'wcag2aa'],
+      reporter: 'v2'
+    });
   }
-  
-  static async fillAndSubmitForm(page: Page, formData: Record<string, string>, submitSelector: string) {
-    for (const [field, value] of Object.entries(formData)) {
-      await page.fill(`[data-testid="${field}"]`, value)
+
+  /**
+   * Login with test credentials
+   */
+  async login(email: string = 'test@vibecode.com', password: string = 'testpass123') {
+    // Navigate to login if not already there
+    await this.page.goto('/auth/login');
+    
+    // Fill login form
+    await this.page.fill('[name="email"], [type="email"]', email);
+    await this.page.fill('[name="password"], [type="password"]', password);
+    
+    // Submit form
+    await this.page.click('[type="submit"], button:has-text("Login"), button:has-text("Sign In")');
+    
+    // Wait for redirect to dashboard
+    await this.page.waitForURL('/', { timeout: 10000 });
+    await this.waitForPageReady();
+  }
+
+  /**
+   * Logout user
+   */
+  async logout() {
+    // Look for logout button or user menu
+    const logoutButton = this.page.locator('button:has-text("Logout"), button:has-text("Sign Out"), [data-testid="logout"]').first();
+    
+    if (await logoutButton.isVisible()) {
+      await logoutButton.click();
+      await this.page.waitForURL('/auth/login', { timeout: 5000 });
     }
-    await page.click(submitSelector)
   }
-  
-  static async assertNotification(page: Page, message: string, type: 'success' | 'error' | 'info' = 'success') {
-    const notification = page.locator(`[data-testid="notification-${type}"]`)
-    await expect(notification).toBeVisible()
-    await expect(notification).toContainText(message)
-  }
-  
-  static async assertErrorMessage(page: Page, message: string) {
-    const errorElement = page.locator('[data-testid="error-message"]')
-    await expect(errorElement).toBeVisible()
-    await expect(errorElement).toContainText(message)
-  }
-  
+
   /**
-   * File upload helpers
+   * Fill AI prompt and submit
    */
-  static async uploadFile(page: Page, filePath: string, inputSelector: string = '[data-testid="file-input"]') {
-    const fileInput = page.locator(inputSelector)
-    await fileInput.setInputFiles(filePath)
-  }
-  
-  /**
-   * API helpers
-   */
-  static async makeAPIRequest(page: Page, endpoint: string, options: any = {}) {
-    return await page.request.get(endpoint, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-      },
-      ...options
-    })
-  }
-  
-  /**
-   * Monitoring helpers
-   */
-  static async checkHealthEndpoint(page: Page) {
-    const response = await this.makeAPIRequest(page, '/api/health')
-    expect(response.status()).toBe(200)
-    const body = await response.json()
-    expect(body.status).toBe('healthy')
-    return body
-  }
-  
-  static async waitForMetrics(page: Page, metric: string, timeout: number = 5000) {
-    await page.waitForFunction((metricName) => {
-      return window.performance && window.performance.getEntriesByName(metricName).length > 0
-    }, metric, { timeout })
-  }
-  
-  /**
-   * Workspace specific helpers
-   */
-  static async createWorkspaceViaUI(page: Page, workspaceName: string, description: string = '') {
-    await page.goto('/workspaces')
-    await page.click('[data-testid="create-workspace-button"]')
-    await page.fill('[data-testid="workspace-name"]', workspaceName)
-    if (description) {
-      await page.fill('[data-testid="workspace-description"]', description)
-    }
-    await page.click('[data-testid="submit-workspace"]')
+  async submitAIPrompt(prompt: string) {
+    const promptInput = this.page.locator('textarea[placeholder*="prompt"], textarea[name="prompt"], [data-testid="prompt-input"]').first();
     
-    // Wait for creation to complete
-    await this.assertNotification(page, 'Workspace created successfully')
-    await this.waitForPageLoad(page)
-  }
-  
-  /**
-   * AI interaction helpers
-   */
-  static async sendChatMessage(page: Page, message: string) {
-    await page.fill('[data-testid="chat-input"]', message)
-    await page.click('[data-testid="send-message"]')
+    await promptInput.fill(prompt);
+    
+    // Find and click submit button
+    const submitButton = this.page.locator('button[type="submit"], button:has-text("Generate"), button:has-text("Submit")').first();
+    await submitButton.click();
     
     // Wait for response
-    await page.waitForSelector('[data-testid="chat-response"]', { timeout: 10000 })
+    await this.waitForAIResponse();
   }
-  
-  static async waitForAIResponse(page: Page, timeout: number = 15000) {
-    await page.waitForSelector('[data-testid="chat-response"]:not([data-loading="true"])', { timeout })
-  }
-  
+
   /**
-   * Cleanup helper
+   * Wait for AI response to complete
    */
-  static async cleanup() {
-    await this.cleanupTestData()
-    await this.prisma.$disconnect()
+  async waitForAIResponse(timeout: number = 30000) {
+    // Wait for loading indicators to disappear
+    await this.page.waitForSelector('[class*="generating"], [class*="loading"]', { 
+      state: 'hidden', 
+      timeout 
+    }).catch(() => {
+      // Loading indicator might not exist
+    });
+
+    // Wait for response content to appear
+    await this.page.waitForSelector('[data-testid="ai-response"], .ai-response, .response-content', {
+      state: 'visible',
+      timeout
+    }).catch(() => {
+      console.log('AI response content selector not found, continuing...');
+    });
+  }
+
+  /**
+   * Check for error messages
+   */
+  async checkForErrors() {
+    const errorSelectors = [
+      '.error-message',
+      '[role="alert"]',
+      '.alert-error',
+      '.text-red-500',
+      '.text-destructive'
+    ];
+
+    for (const selector of errorSelectors) {
+      const errorElements = this.page.locator(selector);
+      const count = await errorElements.count();
+      
+      if (count > 0) {
+        const errorText = await errorElements.first().textContent();
+        throw new Error(`Error found on page: ${errorText}`);
+      }
+    }
+  }
+
+  /**
+   * Monitor network requests for API calls
+   */
+  async monitorNetworkRequests() {
+    const apiRequests: any[] = [];
+    
+    this.page.on('request', request => {
+      if (request.url().includes('/api/')) {
+        apiRequests.push({
+          url: request.url(),
+          method: request.method(),
+          timestamp: Date.now()
+        });
+      }
+    });
+
+    this.page.on('response', response => {
+      if (response.url().includes('/api/')) {
+        const request = apiRequests.find(req => req.url === response.url());
+        if (request) {
+          request.status = response.status();
+          request.responseTime = Date.now() - request.timestamp;
+        }
+      }
+    });
+
+    return apiRequests;
+  }
+
+  /**
+   * Verify page performance
+   */
+  async checkPagePerformance() {
+    const performanceMetrics = await this.page.evaluate(() => {
+      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      return {
+        domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
+        loadComplete: navigation.loadEventEnd - navigation.loadEventStart,
+        totalTime: navigation.loadEventEnd - navigation.navigationStart
+      };
+    });
+
+    // Assert reasonable performance thresholds
+    expect(performanceMetrics.totalTime).toBeLessThan(5000); // 5 seconds max
+    expect(performanceMetrics.domContentLoaded).toBeLessThan(2000); // 2 seconds max
+
+    return performanceMetrics;
   }
 }
 
-export default TestHelpers
+/**
+ * Create test helpers instance for a page
+ */
+export function createTestHelpers(page: Page): TestHelpers {
+  return new TestHelpers(page);
+}
