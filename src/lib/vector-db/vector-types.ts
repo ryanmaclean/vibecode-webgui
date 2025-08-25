@@ -48,7 +48,8 @@ export enum VectorDatabaseProvider {
   POSTGRES = 'postgres',
   SQLSERVER = 'sqlserver',
   COSMOSDB = 'cosmosdb',
-  REDIS = 'redis'
+  REDIS = 'redis',
+  AZURE_SEARCH = 'azure-search'
 }
 
 /**
