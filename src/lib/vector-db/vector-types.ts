@@ -76,4 +76,28 @@ export interface VectorDatabaseConfig {
   enableLogging?: boolean
   maxPoolSize?: number
   minPoolSize?: number
+  
+  /**
+   * Enable connection pooling
+   * Default: false
+   */
+  connectionPooling?: boolean;
+  
+  /**
+   * Acquire timeout in milliseconds for connection pool
+   * Default: 30000 (30 seconds)
+   */
+  connectionAcquireTimeoutMs?: number;
+  
+  /**
+   * Maximum lifetime of a connection in milliseconds
+   * Default: 3600000 (1 hour)
+   */
+  connectionMaxLifetimeMs?: number;
+  
+  /**
+   * Idle timeout for connections in milliseconds
+   * Default: 300000 (5 minutes)
+   */
+  connectionIdleTimeoutMs?: number;
 }
