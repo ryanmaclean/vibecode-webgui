@@ -39,6 +39,7 @@ export interface SearchOptions {
   useCache?: boolean
   language?: string
   contentTypes?: string[]
+  queryText?: string  // Original query text for fallback text search
 }
 
 /**
