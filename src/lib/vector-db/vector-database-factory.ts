@@ -9,6 +9,7 @@ import { PostgresVectorDatabaseAdapter, PostgresVectorDatabaseConfig } from './p
 import { SqlServerVectorDatabaseAdapter, SqlServerVectorDatabaseConfig } from './sqlserver-vector-database-adapter';
 import { CosmosDbVectorDatabaseAdapter, CosmosDbVectorDatabaseConfig } from './cosmosdb-vector-database-adapter';
 import { RedisVectorDatabaseAdapter, RedisVectorDatabaseConfig } from './redis-vector-database-adapter';
+import { CognitiveSearchVectorDatabaseAdapter, CognitiveSearchVectorDatabaseConfig } from './cognitive-search-vector-database-adapter';
 
 /**
  * Factory class for creating vector database adapters
@@ -41,6 +42,10 @@ export class VectorDatabaseFactory {
 
         case VectorDatabaseProvider.REDIS:
           adapter = new RedisVectorDatabaseAdapter(config as RedisVectorDatabaseConfig);
+          break;
+
+        case VectorDatabaseProvider.COGNITIVE_SEARCH:
+          adapter = new CognitiveSearchVectorDatabaseAdapter(config as CognitiveSearchVectorDatabaseConfig);
           break;
 
         default:
@@ -97,6 +102,11 @@ export class VectorDatabaseFactory {
         case 'redis':
         case 'valkey':
           provider = VectorDatabaseProvider.REDIS;
+          break;
+        case 'cognitive_search':
+        case 'azure_search':
+        case 'azure_cognitive_search':
+          provider = VectorDatabaseProvider.COGNITIVE_SEARCH;
           break;
         default:
           provider = VectorDatabaseProvider.POSTGRES;
