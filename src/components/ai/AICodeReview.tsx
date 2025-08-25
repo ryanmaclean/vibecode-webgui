@@ -86,14 +86,14 @@ export default function AICodeReview({
     return results.find(result => result.stepId === stepId);
   };
 
-  const getSeverityColor = (stepId: string) => {
+  const getSeverityColor = (stepId: string): 'default' | 'destructive' | 'outline' | 'secondary' => {
     const result = getReviewSection(stepId);
     if (!result) return 'default';
     
     const output = result.output.toLowerCase();
     if (output.includes('critical') || output.includes('high risk')) return 'destructive';
-    if (output.includes('warning') || output.includes('medium risk')) return 'warning';
-    if (output.includes('suggestion') || output.includes('low risk')) return 'default';
+    if (output.includes('warning') || output.includes('medium risk')) return 'secondary';
+    if (output.includes('suggestion') || output.includes('low risk')) return 'outline';
     return 'default';
   };
 

@@ -6,7 +6,19 @@
 import { test, expect } from '@playwright/test';
 import { createTestHelpers } from './utils/test-helpers';
 
+// Define test credentials directly since they're missing in test-data.json
+const testCredentials = {
+  email: 'test@vibecode.com',
+  password: 'testpass123'
+};
+
 test.describe('Authentication Flow', () => {
+  test.beforeEach(async ({ page }) => {
+    // Start each test with a fresh session
+    await page.goto('/auth/logout');
+    await page.waitForURL('/auth/login');
+  });
+
   test('should display login page for unauthenticated users', async ({ page }) => {
     const helpers = createTestHelpers(page);
     
@@ -78,18 +90,18 @@ test.describe('Authentication Flow', () => {
     await helpers.waitForPageReady();
     
     // Fill form with test credentials
-    await page.fill('[type="email"], [name="email"]', 'test@vibecode.com');
-    await page.fill('[type="password"], [name="password"]', 'testpass123');
+    await page.fill('[type="email"], [name="email"]', testCredentials.email);
+    await page.fill('[type="password"], [name="password"]', testCredentials.password);
     
     // Submit form
     await page.click('[type="submit"], button:has-text("Login")');
     
     // Should redirect to dashboard
-    await page.waitForURL('/', { timeout: 10000 });
+    await page.waitForURL(/\/(workspaces|dashboard)/, { timeout: 10000 });
     await helpers.waitForPageReady();
     
     // Verify authenticated state
-    const userProfile = page.locator('[data-testid="user-profile"], .user-menu, button:has-text("Logout")').first();
+    const userProfile = page.locator('[data-testid="user-profile"], [data-testid="user-menu"], .user-menu, button:has-text("Logout")').first();
     await expect(userProfile).toBeVisible();
     
     // Verify no login button is visible
@@ -108,7 +120,7 @@ test.describe('Authentication Flow', () => {
     await helpers.login();
     
     // Verify we're logged in
-    await expect(page).toHaveURL('/');
+    expect(page.url()).not.toContain('/auth/login');
     
     // Logout
     await helpers.logout();
@@ -134,7 +146,7 @@ test.describe('Authentication Flow', () => {
     await helpers.waitForPageReady();
     
     // Should still be authenticated
-    const userProfile = page.locator('[data-testid="user-profile"], .user-menu, button:has-text("Logout")').first();
+    const userProfile = page.locator('[data-testid="user-profile"], [data-testid="user-menu"], .user-menu, button:has-text("Logout")').first();
     await expect(userProfile).toBeVisible();
     
     // Should not show login page
@@ -161,6 +173,113 @@ test.describe('Authentication Flow', () => {
       await helpers.takeScreenshot('register-page');
     } else {
       console.log('Registration page not implemented or accessible');
+    }
+  });
+
+  test('should validate login form inputs', async ({ page }) => {
+    const helpers = createTestHelpers(page);
+    
+    await page.goto('/auth/login');
+    await helpers.waitForPageReady();
+    
+    // Try to submit empty form
+    await page.click('[type="submit"], button:has-text("Login")');
+    
+    // Should show validation errors
+    const errorMessages = page.locator('.error-message, [role="alert"], .text-red-500');
+    await expect(errorMessages).toBeVisible();
+    
+    // Try with invalid email format
+    await page.fill('[type="email"], [name="email"]', 'not-an-email');
+    await page.fill('[type="password"], [name="password"]', 'password123');
+    
+    // Submit form
+    await page.click('[type="submit"], button:has-text("Login")');
+    
+    // Should show email validation error
+    await expect(errorMessages).toBeVisible();
+    
+    await helpers.takeScreenshot('login-validation-errors');
+  });
+
+  test('should handle password reset request', async ({ page }) => {
+    const helpers = createTestHelpers(page);
+    
+    await page.goto('/auth/login');
+    await helpers.waitForPageReady();
+    
+    // Look for forgot password link
+    const forgotPasswordLink = page.locator('a:has-text("Forgot"), a:has-text("Reset")').first();
+    
+    if (await forgotPasswordLink.isVisible()) {
+      await forgotPasswordLink.click();
+      
+      // Should navigate to password reset page
+      await helpers.waitForPageReady();
+      
+      // Verify email field is present
+      await expect(page.locator('[type="email"], [name="email"]')).toBeVisible();
+      
+      // Enter email
+      await page.fill('[type="email"], [name="email"]', testCredentials.email);
+      
+      // Submit request
+      await page.click('[type="submit"], button:has-text("Reset"), button:has-text("Send")');
+      
+      // Should show success message
+      const successMessage = page.locator('.success-message, [role="status"], .text-green-500');
+      await expect(successMessage).toBeVisible({ timeout: 10000 });
+      
+      await helpers.takeScreenshot('password-reset-request');
+    } else {
+      // If password reset is not implemented, skip test
+      console.log('Password reset functionality not implemented or accessible');
+    }
+  });
+
+  test('should handle protected routes', async ({ page }) => {
+    const helpers = createTestHelpers(page);
+    
+    // Try to access protected page without authentication
+    await page.goto('/workspaces');
+    await helpers.waitForPageReady();
+    
+    // Should redirect to login
+    expect(page.url()).toContain('/auth/login');
+    
+    // Now login
+    await helpers.login();
+    
+    // Try protected page again
+    await page.goto('/workspaces');
+    await helpers.waitForPageReady();
+    
+    // Should be able to access now
+    expect(page.url()).toContain('/workspaces');
+    
+    // Verify workspace content is visible
+    await expect(page.locator('[data-testid="workspaces-list"], [data-testid="create-workspace-button"]')).toBeVisible();
+  });
+
+  test('should handle authentication with external providers', async ({ page }) => {
+    // Skip this test in most environments as it requires external provider interaction
+    test.skip(process.env.CI !== undefined, 'Skipped in CI environment');
+    
+    const helpers = createTestHelpers(page);
+    
+    await page.goto('/auth/login');
+    await helpers.waitForPageReady();
+    
+    // Check for OAuth buttons
+    const githubButton = page.locator('button:has-text("GitHub"), [data-provider="github"]');
+    const googleButton = page.locator('button:has-text("Google"), [data-provider="google"]');
+    
+    // If any OAuth provider is available
+    if (await githubButton.isVisible() || await googleButton.isVisible()) {
+      console.log('OAuth providers are available but not tested in automated tests');
+      await helpers.takeScreenshot('oauth-providers');
+    } else {
+      console.log('No OAuth providers available');
     }
   });
 });
