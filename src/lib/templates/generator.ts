@@ -26,6 +26,8 @@ export interface GeneratedProject {
   category: string
   complexity: 'beginner' | 'intermediate' | 'advanced'
   tags: string[]
+  language: string[]
+  frameworks: string[]
   files: TemplateFile[]
   scripts: Record<string, string>
   dependencies: Record<string, string>
@@ -81,13 +83,27 @@ export async function generateFromTemplate(
   const setupInstructions = generateSetupInstructions(template, projectName)
 
   return {
+    id: template.id,
     name: projectName,
     description: options.customizations?.description || template.description,
+    category: template.category,
+    tags: template.tags,
+    language: template.language,
+    frameworks: template.frameworks,
+    complexity: template.complexity,
     files,
     scripts: { ...template.scripts },
     dependencies: { ...template.dependencies },
     devDependencies: template.devDependencies ? { ...template.devDependencies } : undefined,
     envVars,
+    documentation: {
+      readme: `# ${projectName}\n\n${template.description}`,
+      setup: template.documentation.setup.join('\n'),
+      deployment: template.documentation.deployment.join('\n')
+    },
+    createdAt: new Date(),
+    estimatedTime: 30,
+    features: template.features,
     setupInstructions
   }
 }

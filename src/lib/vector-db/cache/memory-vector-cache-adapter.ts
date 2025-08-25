@@ -280,10 +280,10 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
       let count = 0;
       
       // Delete all keys in the namespace
-      for (const key of keys) {
+      keys.forEach(key => {
         this.cache.delete(key);
         count++;
-      }
+      });
       
       // Clear the namespace
       this.namespaces.delete(namespace);
@@ -401,13 +401,13 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
     const now = Date.now();
     let prunedCount = 0;
     
-    for (const [key, entry] of this.cache.entries()) {
+    this.cache.forEach((entry, key) => {
       if (entry.expires <= now) {
         this.cache.delete(key);
         prunedCount++;
         
         // Remove from all namespaces
-        for (const [namespace, keys] of this.namespaces.entries()) {
+        this.namespaces.forEach((keys, namespace) => {
           if (keys.has(key)) {
             keys.delete(key);
             
@@ -416,9 +416,9 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
               this.namespaces.delete(namespace);
             }
           }
-        }
+        });
       }
-    }
+    });
     
     if (prunedCount > 0 && this.config.enableLogging) {
       logger.debug(`Pruned ${prunedCount} expired entries from memory cache`, {
@@ -450,7 +450,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
       this.cache.delete(key);
       
       // Remove from all namespaces
-      for (const [namespace, keys] of this.namespaces.entries()) {
+      this.namespaces.forEach((keys, namespace) => {
         if (keys.has(key)) {
           keys.delete(key);
           
@@ -459,7 +459,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
             this.namespaces.delete(namespace);
           }
         }
-      }
+      });
     }
     
     if (this.config.enableLogging) {

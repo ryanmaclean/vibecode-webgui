@@ -4,7 +4,6 @@
  */
 
 
-import winston from 'winston';
 import { createLogger, format, transports } from 'winston';
 import tracer from 'dd-trace';
 
@@ -473,6 +472,71 @@ class ApplicationLogger {
         event,
         feature: context.feature || 'unknown'
       })
+    }
+  }
+
+  /**
+   * Log vector database operations
+   */
+  logVectorDB(event: string, context: {
+    provider?: string
+    operation?: string
+    duration?: number
+    results?: number
+    embedding?: boolean
+    cacheHit?: boolean
+    pooled?: boolean
+    error?: string
+    details?: Record<string, any>
+  }): void {
+    const level = context.error ? 'error' : 'info';
+    
+    if (level === 'error') {
+      logger.error(`VectorDB: ${event}`, {
+        category: 'vectordb',
+        ...context
+      });
+    } else {
+      logger.info(`VectorDB: ${event}`, {
+        category: 'vectordb',
+        ...context
+      });
+    }
+    
+    // Track operation durations
+    if (context.duration) {
+      metrics.histogram('vectordb.operation.duration', context.duration, {
+        provider: context.provider || 'unknown',
+        operation: context.operation || 'unknown',
+        cache: context.cacheHit ? 'hit' : 'miss',
+        pooled: context.pooled ? 'true' : 'false'
+      });
+    }
+    
+    // Track result counts
+    if (context.results !== undefined) {
+      metrics.histogram('vectordb.results.count', context.results, {
+        provider: context.provider || 'unknown',
+        operation: context.operation || 'unknown'
+      });
+    }
+    
+    // Track operations by type
+    metrics.increment('vectordb.operations', {
+      event,
+      provider: context.provider || 'unknown',
+      operation: context.operation || 'unknown',
+      cache: context.cacheHit ? 'hit' : 'miss',
+      embedding: context.embedding ? 'true' : 'false',
+      pooled: context.pooled ? 'true' : 'false'
+    });
+    
+    // Track errors if any
+    if (context.error) {
+      metrics.increment('vectordb.errors', {
+        provider: context.provider || 'unknown',
+        operation: context.operation || 'unknown'
+      });
     }
   }
 
