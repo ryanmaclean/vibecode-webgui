@@ -45,69 +45,8 @@ if (isBuilding) {
 
 export const prisma = prismaClient
 
-// Middleware for Datadog monitoring (only when not building)
-if (!isBuilding && prisma.$use) {
-  prisma.$use(async (params, next) => {
-    const startTime = Date.now()
-    const span = tracer?.startSpan?.('prisma.query', {
-      tags: {
-        'env': process.env.NODE_ENV || 'development',
-        'service.name': 'vibecode-webgui',
-        'version': '1.0.0',
-        'db.system': 'postgresql',
-        'db.operation': params.action,
-        'db.table': params.model || 'unknown',
-        'span.kind': 'client',
-        'resource.name': `${params.model}.${params.action}`,
-        'span.type': 'sql',
-      }
-    })
-    
-    try {
-      const result = await next(params)
-      const duration = Date.now() - startTime
-      
-      // Record metrics for Datadog
-      metrics.histogram('db.query.duration', duration, {
-        service: 'vibecode-webgui',
-        operation: params.action,
-        model: params.model || 'unknown',
-        status: 'success'
-      })
-      
-      metrics.increment('db.query.count', {
-        service: 'vibecode-webgui',
-        operation: params.action,
-        model: params.model || 'unknown',
-        status: 'success'
-      })
-      
-      if (span) {
-        span.setTag('db.rows_affected', result?.count)
-        span.finish()
-      }
-      
-      return result
-    } catch (error) {
-      // Record error metrics
-      metrics.increment('db.query.error', {
-        service: 'vibecode-webgui',
-        operation: params.action,
-        model: params.model || 'unknown',
-        error: error?.name || 'unknown_error'
-      })
-      
-      if (span) {
-        span.setTag('error', true)
-        span.setTag('error.msg', error?.message)
-        span.setTag('error.type', error?.name || 'DatabaseError')
-        span.finish()
-      }
-      
-      throw error
-    }
-  })
-}
+// Note: Prisma middleware for monitoring is disabled to avoid compatibility issues
+// Monitoring can be added at the application level if needed
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 

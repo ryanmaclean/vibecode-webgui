@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useCollaboration } from '@/hooks/useCollaboration'
 import { TemplateMarketplace } from '@/components/marketplace/TemplateMarketplace'
+import { type MarketplaceTemplate } from '@/lib/marketplace/template-marketplace'
 import { GitHubDeploymentWorkflow } from '@/components/deployment/GitHubDeploymentWorkflow'
 import CollaborativeChatInterface from '@/components/chat/CollaborativeChatInterface'
 import { 
@@ -54,13 +55,21 @@ interface CollaborativeWorkspaceProps {
   className?: string
 }
 
+interface WorkspaceActivityData {
+  templateId?: string
+  projectName?: string
+  message?: string
+  deploymentUrl?: string
+  userRole?: string
+}
+
 interface WorkspaceActivity {
   id: string
   type: 'template_selected' | 'project_generated' | 'deployment_started' | 'user_joined' | 'message_sent'
   userId: string
   userName: string
   timestamp: Date
-  data?: any
+  data?: WorkspaceActivityData
 }
 
 interface TeamMember {
@@ -119,14 +128,15 @@ export function CollaborativeWorkspace({
       name: user.name,
       color: user.color,
       isActive: user.isActive,
-      role: user.id === userId ? 'owner' : 'collaborator' as const,
+      role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'collaborator' | 'viewer',
       joinedAt: new Date()
     }))
     setTeamMembers(members)
   }, [activeUsers, userId])
 
   // Handle template selection and project generation
-  const handleTemplateSelect = async (templateId: string) => {
+  const handleTemplateSelect = async (template: MarketplaceTemplate) => {
+    const templateId = template.id
     setIsGeneratingProject(true)
     
     try {
@@ -401,7 +411,7 @@ export function CollaborativeWorkspace({
 
       {/* Content Tabs */}
       <div className="flex-1 bg-gray-50">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="h-full">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="h-full">
           <TabsList className="border-b border-gray-200 bg-white">
             <TabsTrigger value="templates" className="flex items-center space-x-2">
               <FolderOpenIcon className="w-4 h-4" />
@@ -441,8 +451,7 @@ export function CollaborativeWorkspace({
               </div>
             ) : (
               <TemplateMarketplace
-                onTemplateSelect={handleTemplateSelect}
-                selectedProject={selectedProject}
+                onSelectTemplate={handleTemplateSelect}
               />
             )}
           </TabsContent>

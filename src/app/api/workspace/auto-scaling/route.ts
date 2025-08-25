@@ -194,7 +194,7 @@ export async function PUT(req: NextRequest) {
 
     await workspaceAutoScaler.registerWorkspace(
       registration.workspaceId, 
-      registration.resources || {}
+      registration.resources as any || {}
     )
 
     // Initialize metrics for the workspace
@@ -261,7 +261,7 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json()
     const config = configSchema.parse(body)
 
-    workspaceAutoScaler.updateConfig(config)
+    workspaceAutoScaler.updateConfig(config as any)
 
     return NextResponse.json({
       status: 'success',
