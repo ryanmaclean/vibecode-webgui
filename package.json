@@ -88,7 +88,7 @@
     "@browserbasehq/stagehand": "1.14.0",
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-python": "^6.2.1",
-    "@datadog/browser-logs": "6.18.0",
+    "@datadog/browser-logs": "6.18.1",
     "@datadog/datadog-api-client": "1.40.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
