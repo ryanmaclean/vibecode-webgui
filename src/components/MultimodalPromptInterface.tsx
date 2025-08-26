@@ -4,7 +4,6 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { 
   Send, 
   Mic, 
@@ -13,23 +12,37 @@ import {
   Upload,
   FileCode,
   Image,
-  Zap,
   Bot,
   User,
   Volume2,
-  VolumeX,
   Settings,
   Sparkles,
   Play,
-  Pause,
-  Download,
-  Eye,
   Code,
   Wand2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { MultimodalAgent, MultimodalInput, AgentMessage } from '../lib/multimodal-agent';
 import { MultimodalSampleGenerator, SampleScenario } from '../samples/multimodal-agent-samples';
+
+// Declare global window interfaces
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}
+
+// Helper type for speech recognition event
+type SpeechRecognitionEvent = {
+  results: {
+    item(index: number): any;
+    [index: number]: {
+      [index: number]: {
+        transcript: string;
+      };
+    };
+  };
+};
 
 interface MultimodalPromptInterfaceProps {
   agent: MultimodalAgent;
@@ -69,7 +82,7 @@ export default function MultimodalPromptInterface({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   
   // Initialize sample generator
@@ -79,30 +92,32 @@ export default function MultimodalPromptInterface({
   // Initialize speech recognition
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'en-US';
-      
-      recognitionRef.current.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map(result => result[0])
-          .map(result => result.transcript)
-          .join('');
-          
-        setInput(transcript);
-      };
-      
-      recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-      };
-      
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognitionAPI) {
+        recognitionRef.current = new SpeechRecognitionAPI();
+        
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+        recognitionRef.current.lang = 'en-US';
+        
+        recognitionRef.current.onresult = (event: any) => {
+          const transcript = Array.from(event.results)
+            .map((result: any) => result[0])
+            .map((result: any) => result.transcript)
+            .join('');
+            
+          setInput(transcript);
+        };
+        
+        recognitionRef.current.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+        };
+        
+        recognitionRef.current.onend = () => {
+          setIsListening(false);
+        };
+      }
     }
   }, []);
 
@@ -550,7 +565,7 @@ export default function MultimodalPromptInterface({
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Type, speak, or upload files to start coding..."
                     className="flex-1"
-                    onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                   />
                   
                   {/* Send */}
@@ -664,9 +679,9 @@ export default function MultimodalPromptInterface({
                     <span className="text-gray-500">
                       Confidence: {(capability.confidence * 100).toFixed(0)}%
                     </span>
-                    <Badge variant="outline" className="text-xs">
-                      {capability.inputs.length} inputs
-                    </Badge>
+                          <Badge variant="outline">
+                            {capability.inputs.length} inputs
+                          </Badge>
                   </div>
                 </div>
               )) || (
