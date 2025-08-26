@@ -46,19 +46,21 @@ export function TemplateDeploymentIntegration({
       category: template.category,
       complexity: template.complexity,
       tags: template.tags,
+      language: template.language || [],
+      frameworks: template.frameworks || [],
       files: template.files || [],
       dependencies: template.dependencies || {},
       devDependencies: {},
       scripts: template.scripts || {},
-      envVars: template.envVars || [],
+      envVars: template.envVars?.map(v => ({ name: v.name, value: v.defaultValue || '', description: v.description })) || [],
       setupInstructions: [
         'npm install',
         'npm run dev'
       ],
-      documentation: template.documentation || {
+      documentation: {
         readme: 'Template documentation',
-        setup: 'Setup instructions',
-        deployment: 'Deployment guide'
+        setup: template.documentation?.setup?.join('\n') || 'Setup instructions',
+        deployment: template.documentation?.deployment?.join('\n') || 'Deployment guide'
       },
       createdAt: new Date(),
       estimatedTime: 15,
@@ -83,7 +85,7 @@ export function TemplateDeploymentIntegration({
   }
 
   const renderStars = (rating: number, size = 4) => {
-    const stars = []
+    const stars: React.ReactNode[] = []
     const fullStars = Math.floor(rating)
     const hasHalfStar = rating % 1 >= 0.5
 

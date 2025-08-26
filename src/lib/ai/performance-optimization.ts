@@ -340,12 +340,13 @@ export class PerformanceOptimization {
         Return your analysis in a structured format.
       `);
 
-      const response = await this.llm.invoke(
-        prompt.format({
-          language,
-          code: content.substring(0, 4000),
-        })
-      );
+      // Create a formatted prompt for the LLM
+      const formattedPrompt = await prompt.format({
+        language,
+        code: content.substring(0, 4000),
+      });
+      
+      const response = await this.llm.invoke(formattedPrompt);
 
       const aiIssues = this.parseAIResponse(response.content as string);
       issues.push(...aiIssues);

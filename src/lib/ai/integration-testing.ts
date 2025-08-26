@@ -261,13 +261,14 @@ export class IntegrationTesting {
         Return a structured test suite with realistic test scenarios.
       `);
 
-      const response = await this.llm.invoke(
-        prompt.format({
-          systemDescription,
-          components: components.join(', '),
-          endpoints: endpoints?.join(', ') || 'N/A',
-        })
-      );
+      // Create a formatted prompt for the LLM
+      const formattedPrompt = await prompt.format({
+        systemDescription,
+        components: components.join(', '),
+        endpoints: endpoints?.join(', ') || 'N/A',
+      });
+
+      const response = await this.llm.invoke(formattedPrompt);
 
       // Parse AI response and create test suite
       const testSuite = this.parseTestSuiteResponse(response.content as string, systemDescription);
