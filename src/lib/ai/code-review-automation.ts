@@ -296,12 +296,13 @@ export class CodeReviewAutomation {
         Return your analysis in a structured format.
       `);
 
-      const response = await this.llm.invoke(
-        prompt.format({
-          language,
-          code: content.substring(0, 4000), // Limit content length
-        })
-      );
+      // Create a formatted prompt for the LLM
+      const formattedPrompt = await prompt.format({
+        language,
+        code: content.substring(0, 4000), // Limit content length
+      });
+
+      const response = await this.llm.invoke(formattedPrompt);
 
       // Parse AI response and convert to structured results
       const aiIssues = this.parseAIResponse(response.content as string, rules);
