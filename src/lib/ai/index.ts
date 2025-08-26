@@ -90,9 +90,9 @@ export class AIIntegration {
       const validatedPrompt = validatePrompt(rawPrompt);
       
       // Process the validated prompt
-      const processedPrompt = await this.prompts.processPrompt(
+      const relevantPrompts = await this.prompts.findRelevantPrompts(
         validatedPrompt.content,
-        validatedPrompt.variables
+        5
       );
 
       if (this.config.enableAnalytics) {
@@ -103,7 +103,7 @@ export class AIIntegration {
         });
       }
 
-      return processedPrompt;
+      return relevantPrompts;
     } catch (error) {
       AISecurityLogger.logValidationFailure(
         userId,
@@ -172,7 +172,7 @@ export class AIIntegration {
           this.prompts.addPrompt({
             name: name.replace(/_/g, ' '),
             description: `Generated from ${name}`,
-            template: template.template,
+            template: typeof template.template === 'string' ? template.template : JSON.stringify(template.template),
             tags: ['system', 'default'],
             version: '1.0.0',
             metadata: { source: 'system', type: 'prompt_template' }
