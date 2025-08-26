@@ -22,6 +22,13 @@ import {
   Settings
 } from 'lucide-react'
 
+// Add global Window interface declaration for gtag
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}
+
 // Deployment platform configurations
 const DEPLOYMENT_PLATFORMS = [
   {
