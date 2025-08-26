@@ -261,7 +261,7 @@ export class CachedQueries {
       });
     },
     (workspaceId: number, query: string, limit: number = 20) => 
-      `search:files:${workspaceId}:${Buffer.from(query).toString('base64')}:${limit}`,
+      `search:files:${workspaceId}:${Buffer.from ? Buffer.from(query).toString('base64') : btoa(query)}:${limit}`,
     CacheTTL.SHORT
   );
 }
@@ -280,7 +280,7 @@ export class BulkOperations {
   ): Promise<void> {
     if (data.length === 0) return;
 
-    const batches = [];
+    const batches: T[][] = [];
     for (let i = 0; i < data.length; i += batchSize) {
       batches.push(data.slice(i, i + batchSize));
     }
@@ -303,14 +303,14 @@ export class BulkOperations {
   ): Promise<void> {
     if (updates.length === 0) return;
 
-    const batches = [];
+    const batches: T[][] = [];
     for (let i = 0; i < updates.length; i += batchSize) {
       batches.push(updates.slice(i, i + batchSize));
     }
 
     for (const batch of batches) {
       const { prisma } = await import('../prisma');
-      const transaction = batch.map(update => 
+      const transaction = batch.map((update: T) => 
         model.update({
           where: { id: update.id },
           data: update
@@ -331,7 +331,7 @@ export class BulkOperations {
   ): Promise<void> {
     if (ids.length === 0) return;
 
-    const batches = [];
+    const batches: number[][] = [];
     for (let i = 0; i < ids.length; i += batchSize) {
       batches.push(ids.slice(i, i + batchSize));
     }
@@ -352,7 +352,8 @@ export class BulkOperations {
  * Query performance analyzer
  */
 export class QueryAnalyzer {
-  private static queryLog: Array<{
+  // Changed from private to protected static to allow access via bracket notation
+  protected static queryLog: Array<{
     query: string;
     duration: number;
     timestamp: number;
@@ -422,6 +423,13 @@ export class QueryAnalyzer {
   }
 
   /**
+   * Get the query log (added accessor method)
+   */
+  static getQueryLog() {
+    return this.queryLog;
+  }
+
+  /**
    * Clear query log
    */
   static clearLog() {
@@ -429,81 +437,81 @@ export class QueryAnalyzer {
   }
 }
 
-/**
- * Database health monitor
- */
-export class DatabaseHealthMonitor {
   /**
-   * Check database connectivity and performance
+   * Database health monitor
    */
-  static async healthCheck(): Promise<{
-    connected: boolean;
-    responseTime: number;
-    activeConnections?: number;
-    errorRate: number;
-    recommendations: string[];
-  }> {
-    const startTime = Date.now();
-    const recommendations: string[] = [];
+  export class DatabaseHealthMonitor {
+    /**
+     * Check database connectivity and performance
+     */
+    static async healthCheck(): Promise<{
+      connected: boolean;
+      responseTime: number;
+      activeConnections?: number;
+      errorRate: number;
+      recommendations: string[];
+    }> {
+      const startTime = Date.now();
+      const recommendations: string[] = [];
 
-    try {
-      const { prisma } = await import('../prisma');
-      
-      // Simple connectivity test
-      await prisma.$queryRaw`SELECT 1`;
-      const responseTime = Date.now() - startTime;
-
-      // Get connection info if available
-      let activeConnections: number | undefined;
       try {
-        const result = await prisma.$queryRaw<Array<{ count: bigint }>>`
-          SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()
-        `;
-        activeConnections = Number(result[0]?.count || 0);
-      } catch {
-        // Connection info not available
+        const { prisma } = await import('../prisma');
+        
+        // Simple connectivity test
+        await prisma.$queryRaw`SELECT 1`;
+        const responseTime = Date.now() - startTime;
+
+        // Get connection info if available
+        let activeConnections: number | undefined;
+        try {
+          const result = await prisma.$queryRaw<Array<{ count: bigint }>>`
+            SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()
+          `;
+          activeConnections = Number(result[0]?.count || 0);
+        } catch {
+          // Connection info not available
+        }
+
+        // Calculate error rate from recent queries
+        const recentQueries = QueryAnalyzer.getQueryLog().slice(-100);
+        const errors = recentQueries.filter(q => q.duration < 0); // Assuming negative duration indicates error
+        const errorRate = recentQueries.length > 0 ? (errors.length / recentQueries.length) * 100 : 0;
+
+        // Generate recommendations
+        if (responseTime > 500) {
+          recommendations.push('Database response time is slow - consider optimizing queries');
+        }
+
+        if (activeConnections && activeConnections > 80) {
+          recommendations.push('High number of database connections - consider connection pooling');
+        }
+
+        if (errorRate > 5) {
+          recommendations.push('High database error rate - check logs for issues');
+        }
+
+        const slowQueries = QueryAnalyzer.getSlowQueries(1000, 5);
+        if (slowQueries.length > 0) {
+          recommendations.push(`${slowQueries.length} slow queries detected - consider adding indexes`);
+        }
+
+        return {
+          connected: true,
+          responseTime,
+          activeConnections,
+          errorRate,
+          recommendations
+        };
+
+      } catch (error: any) {
+        return {
+          connected: false,
+          responseTime: Date.now() - startTime,
+          errorRate: 100,
+          recommendations: ['Database connection failed - check connection string and database status']
+        };
       }
-
-      // Calculate error rate from recent queries
-      const recentQueries = QueryAnalyzer.queryLog.slice(-100);
-      const errors = recentQueries.filter(q => q.duration < 0); // Assuming negative duration indicates error
-      const errorRate = recentQueries.length > 0 ? (errors.length / recentQueries.length) * 100 : 0;
-
-      // Generate recommendations
-      if (responseTime > 500) {
-        recommendations.push('Database response time is slow - consider optimizing queries');
-      }
-
-      if (activeConnections && activeConnections > 80) {
-        recommendations.push('High number of database connections - consider connection pooling');
-      }
-
-      if (errorRate > 5) {
-        recommendations.push('High database error rate - check logs for issues');
-      }
-
-      const slowQueries = QueryAnalyzer.getSlowQueries(1000, 5);
-      if (slowQueries.length > 0) {
-        recommendations.push(`${slowQueries.length} slow queries detected - consider adding indexes`);
-      }
-
-      return {
-        connected: true,
-        responseTime,
-        activeConnections,
-        errorRate,
-        recommendations
-      };
-
-    } catch (error) {
-      return {
-        connected: false,
-        responseTime: Date.now() - startTime,
-        errorRate: 100,
-        recommendations: ['Database connection failed - check connection string and database status']
-      };
     }
-  }
 
   /**
    * Get database performance metrics
