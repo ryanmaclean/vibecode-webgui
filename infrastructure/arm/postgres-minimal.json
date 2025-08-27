@@ -1,0 +1,85 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "projectName": {
+      "type": "string",
+      "defaultValue": "vibecode",
+      "minLength": 3,
+      "maxLength": 20
+    },
+    "administratorLogin": {
+      "type": "string",
+      "defaultValue": "vibecodeusr"
+    },
+    "administratorPassword": {
+      "type": "securestring",
+      "minLength": 8
+    }
+  },
+  "variables": {
+    "resourcePrefix": "[concat(parameters('projectName'), '-demo')]",
+    "postgresServerName": "[concat(variables('resourcePrefix'), '-postgresql-', uniqueString(resourceGroup().id))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers",
+      "apiVersion": "2023-06-01-preview",
+      "name": "[variables('postgresServerName')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "Standard_B1ms",
+        "tier": "Burstable"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('administratorLogin')]",
+        "administratorLoginPassword": "[parameters('administratorPassword')]",
+        "version": "15",
+        "storage": {
+          "storageSizeGB": 32
+        },
+        "backup": {
+          "backupRetentionDays": 7,
+          "geoRedundantBackup": "Disabled"
+        },
+        "highAvailability": {
+          "mode": "Disabled"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/configurations",
+      "apiVersion": "2023-06-01-preview",
+      "name": "[concat(variables('postgresServerName'), '/azure.extensions')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', variables('postgresServerName'))]"
+      ],
+      "properties": {
+        "value": "vector",
+        "source": "user-override"
+      }
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules",
+      "apiVersion": "2023-06-01-preview",
+      "name": "[concat(variables('postgresServerName'), '/AllowAllAzureIps')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', variables('postgresServerName'))]"
+      ],
+      "properties": {
+        "startIpAddress": "0.0.0.0",
+        "endIpAddress": "0.0.0.0"
+      }
+    }
+  ],
+  "outputs": {
+    "postgresServerName": {
+      "type": "string",
+      "value": "[variables('postgresServerName')]"
+    },
+    "postgresConnectionString": {
+      "type": "string",
+      "value": "[concat('postgresql://', parameters('administratorLogin'), '@', variables('postgresServerName'), '.postgres.database.azure.com:5432/postgres?sslmode=require')]"
+    }
+  }
+}

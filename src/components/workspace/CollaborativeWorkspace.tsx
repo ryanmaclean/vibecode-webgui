@@ -126,7 +126,7 @@ export function CollaborativeWorkspace({
     const members = activeUsers.map(user => ({
       id: user.id,
       name: user.name,
-      color: user.color,
+      color: user.color || '#1f75cb', // Provide a default color if undefined
       isActive: user.isActive,
       role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'collaborator' | 'viewer',
       joinedAt: new Date()
@@ -156,7 +156,7 @@ export function CollaborativeWorkspace({
         ...project,
         id: `${workspaceId}-${templateId}-${Date.now()}`,
         createdAt: new Date(),
-        category: templateId.split('-')[0] || 'general',
+        category: (templateId.split('-')[0] || 'data') as 'frontend' | 'backend' | 'fullstack' | 'mobile' | 'data' | 'infrastructure',
         complexity: 'intermediate' as const,
         tags: [templateId, 'collaborative'],
         estimatedTime: 30,

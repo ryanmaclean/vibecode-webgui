@@ -6,7 +6,7 @@
 import { VectorDatabaseInterface } from './vector-database-interface';
 import { VectorDatabaseConfig, SearchOptions, SearchResult } from './vector-types';
 import { RetryHandler, RetryConfig } from './vector-retry-handler';
-import { VectorDBError, VectorDBErrorType, handleVectorDBError } from './vector-db-error-handler';
+import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler-new';
 import { logger } from '../logger';
 
 /**
@@ -17,6 +17,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
   private adapter: VectorDatabaseInterface;
   private retryHandler: RetryHandler;
   private adapterName: string;
+  private errorHandler: VectorDbErrorHandler;
 
   /**
    * Create a new enhanced vector database adapter
@@ -32,6 +33,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
     this.adapter = adapter;
     this.retryHandler = new RetryHandler(retryConfig);
     this.adapterName = `${config.provider}-adapter`;
+    this.errorHandler = new VectorDbErrorHandler(this.adapterName);
   }
 
   /**
@@ -54,19 +56,18 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
         'search',
         (error) => {
           // Connection errors and query timeouts are retryable
-          if (error instanceof VectorDBError) {
-            return error.type === VectorDBErrorType.CONNECTION_FAILED ||
-                  (error.type === VectorDBErrorType.QUERY_FAILED && 
+          if (error instanceof VectorDbError) {
+            return error.type === VectorDbErrorType.CONNECTION ||
+                  (error.type === VectorDbErrorType.QUERY_FAILED && 
                    error.message.toLowerCase().includes('timeout'));
           }
           return false;
         }
       );
     } catch (error) {
-      const enhancedError = handleVectorDBError(
+      const enhancedError = this.errorHandler.handleError(
         error, 
-        'search', 
-        this.adapterName
+        'search'
       );
       
       // Log detailed search context
@@ -97,10 +98,9 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
         'searchWithText'
       );
     } catch (error) {
-      const enhancedError = handleVectorDBError(
+      const enhancedError = this.errorHandler.handleError(
         error, 
-        'searchWithText', 
-        this.adapterName
+        'searchWithText'
       );
       
       logger.error('Vector text search failed after retries', {
@@ -138,19 +138,18 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
         'storeChunks',
         (error) => {
           // Only retry connection issues and certain query failures
-          if (error instanceof VectorDBError) {
-            return error.type === VectorDBErrorType.CONNECTION_FAILED ||
-                  (error.type === VectorDBErrorType.VECTOR_CREATION_FAILED && 
+          if (error instanceof VectorDbError) {
+            return error.type === VectorDbErrorType.CONNECTION ||
+                  (error.type === VectorDbErrorType.VECTOR_CREATION_FAILED && 
                    !error.message.toLowerCase().includes('duplicate'));
           }
           return false;
         }
       );
     } catch (error) {
-      const enhancedError = handleVectorDBError(
+      const enhancedError = this.errorHandler.handleError(
         error, 
-        'storeChunks', 
-        this.adapterName
+        'storeChunks'
       );
       
       // Log detailed context
@@ -176,18 +175,17 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
         'deleteFileChunks',
         (error) => {
           // Only retry connection issues
-          if (error instanceof VectorDBError) {
-            return error.type === VectorDBErrorType.CONNECTION_FAILED ||
-                  error.type === VectorDBErrorType.VECTOR_DELETION_FAILED;
+          if (error instanceof VectorDbError) {
+            return error.type === VectorDbErrorType.CONNECTION ||
+                  error.type === VectorDbErrorType.VECTOR_CREATION_FAILED;
           }
           return false;
         }
       );
     } catch (error) {
-      const enhancedError = handleVectorDBError(
+      const enhancedError = this.errorHandler.handleError(
         error, 
-        'deleteFileChunks', 
-        this.adapterName
+        'deleteFileChunks'
       );
       
       logger.error('Failed to delete vector chunks after retries', {
@@ -260,10 +258,9 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
         'generateEmbedding'
       );
     } catch (error) {
-      const enhancedError = handleVectorDBError(
+      const enhancedError = this.errorHandler.handleError(
         error,
-        'generateEmbedding',
-        this.adapterName
+        'generateEmbedding'
       );
       
       logger.error('Failed to generate embedding after retries', {
