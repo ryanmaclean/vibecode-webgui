@@ -1,202 +1,171 @@
-# Vector Database Migration Patterns
+# Vector Database Migration Utility
 
-This directory contains scripts and patterns for managing PostgreSQL databases with pgvector, with a focus on Azure PostgreSQL Flexible Server. These examples showcase best practices for maintaining, migrating, and optimizing vector databases for GenAI applications.
-
-## Table of Contents
-
-1. [Overview](#overview)
-2. [Migration Patterns](#migration-patterns)
-3. [Script Usage](#script-usage)
-4. [Azure PostgreSQL Considerations](#azure-postgresql-considerations)
-5. [Monitoring During Migrations](#monitoring-during-migrations)
+This directory contains tools for managing vector database schema migrations and data migrations for vector embeddings.
 
 ## Overview
 
-Vector databases using pgvector require special care during migrations due to:
+The vector database migration utility provides a structured way to:
 
-- Large data volumes typical in GenAI applications
-- Performance sensitivity of vector similarity operations
-- Importance of maintaining index efficiency
-- Zero-downtime requirements for production systems
+1. **Apply schema changes** to vector databases
+2. **Migrate vector data** between schemas or databases
+3. **Track migration history** for audit and rollback purposes
+4. **Handle large datasets** with batching and error recovery
+5. **Safely perform zero-downtime migrations**
 
-The scripts in this directory implement proven patterns for safely migrating vector databases while maintaining performance and availability.
+## Directory Structure
 
-## Migration Patterns
-
-### 1. Embedding Dimension Upgrade
-
-**Script:** [upgrade-embedding-dimensions.js](./upgrade-embedding-dimensions.js)
-
-This pattern handles the migration from one embedding model to another with different dimensions (e.g., upgrading from OpenAI's text-embedding-ada-002 to text-embedding-3-small).
-
-**Key Features:**
-- Safe dimension upgrade with backups
-- Batch processing to avoid memory issues
-- Progress tracking with detailed metrics
-- Support for Azure Managed Identity
-
-**When to Use:**
-- When changing embedding models with different dimensions
-- When upgrading pgvector to support higher dimensions
-- After initial experimentation with lower-dimension models
-
-### 2. Vector Index Migration
-
-**Script:** [migrate-vector-index.ts](./migrate-vector-index.ts)
-
-This pattern demonstrates how to migrate between different vector index types (e.g., IVFFlat to HNSW) with minimal downtime.
-
-**Key Features:**
-- Shadow index creation to avoid blocking reads
-- Atomic index swap with minimal locking
-- Detailed progress monitoring
-- Performance comparison between index types
-
-**When to Use:**
-- When scaling up vector operations (HNSW typically performs better for large datasets)
-- When scaling down (IVFFlat uses less memory)
-- When optimizing for specific query patterns
-
-### 3. Zero-Downtime Schema Migration
-
-**Script:** [zero-downtime-schema-migration.js](./zero-downtime-schema-migration.js)
-
-This pattern shows how to perform schema changes on tables containing vector data with minimal downtime.
-
-**Key Features:**
-- Staging table approach avoids long locks
-- Handles vector columns and indexes properly
-- Preserves data integrity with validation
-- Creates automatic backups
-
-**When to Use:**
-- When adding new columns to vector tables
-- When changing column types or constraints
-- When reorganizing table structure
-
-## Script Usage
-
-### Embedding Dimension Upgrade
-
-```bash
-# With username/password
-node upgrade-embedding-dimensions.js
-
-# With environment variables
-export POSTGRES_HOST="your-server.postgres.database.azure.com"
-export POSTGRES_DATABASE="your-database"
-export POSTGRES_USER="your-username"
-export POSTGRES_PASSWORD="your-password"
-export TARGET_DIMENSIONS=1536
-node upgrade-embedding-dimensions.js
-
-# With Azure Managed Identity
-export POSTGRES_HOST="your-server.postgres.database.azure.com"
-export POSTGRES_DATABASE="your-database"
-export POSTGRES_USER="your-username"
-export USE_MANAGED_IDENTITY=true
-node upgrade-embedding-dimensions.js
+```
+vector-db-migrations/
+├── migrations/           # Migration scripts
+│   ├── YYYYMMDDHHMMSS_description.js   # Timestamp-based migrations
+├── migrate-vector-data.js              # Tool for vector data migration
+├── migrate-vector-index.ts             # Tool for vector index migration
+├── vector-schema-migrator.js           # Core migration engine
+├── zero-downtime-schema-migration.js   # Zero-downtime migration utility
+└── README.md                           # This documentation
 ```
 
-### Vector Index Migration
+## Migration Format
 
-```bash
-# Install TypeScript if needed
-npm install -g typescript
+Each migration is a JavaScript module with the following structure:
 
-# Compile TypeScript
-tsc migrate-vector-index.ts
+```javascript
+/**
+ * Migration: <description>
+ * <detailed description>
+ */
 
-# Basic usage
-node migrate-vector-index.js --host=your-server.postgres.database.azure.com --database=your-database --user=your-username --password=your-password --table-name=rag_chunks --column-name=embedding --target-index-type=hnsw
+/**
+ * Apply the migration (up)
+ * @param {object} client - Database client
+ * @returns {Promise<void>}
+ */
+exports.up = async (client) => {
+  // Schema changes to apply
+  await client.query(`
+    -- SQL statements for schema changes
+  `);
+};
 
-# With Azure Managed Identity
-node migrate-vector-index.js --host=your-server.postgres.database.azure.com --database=your-database --user=your-username --managed-identity --table-name=rag_chunks --column-name=embedding --target-index-type=hnsw
+/**
+ * Revert the migration (down)
+ * @param {object} client - Database client
+ * @returns {Promise<void>}
+ */
+exports.down = async (client) => {
+  // SQL statements to undo schema changes
+  await client.query(`
+    -- SQL statements to revert changes
+  `);
+};
 ```
 
-### Zero-Downtime Schema Migration
+## Usage
 
-```bash
-# Edit the schemaMigration object in the script to define your schema changes
+### Creating a New Migration
 
-# Basic usage
-node zero-downtime-schema-migration.js
+1. Generate a timestamped migration file name:
+   ```
+   node scripts/vector-db-migrations/create-migration.js add_vector_index
+   ```
 
-# With environment variables
-export POSTGRES_HOST="your-server.postgres.database.azure.com"
-export POSTGRES_DATABASE="your-database"
-export POSTGRES_USER="your-username"
-export POSTGRES_PASSWORD="your-password"
-export TABLE_NAME="rag_chunks"
-export SCHEMA_NAME="public"
-node zero-downtime-schema-migration.js
+2. Edit the generated file with your schema changes in the `up` and `down` functions.
 
-# Dry run mode
-export DRY_RUN=true
-node zero-downtime-schema-migration.js
+### Running Migrations
+
+To apply all pending migrations:
+
+```
+node scripts/vector-db-migrations/run-migrations.js
 ```
 
-## Azure PostgreSQL Considerations
+Options:
+- `--env=<environment>`: Environment to run migrations on (default: development)
+- `--dry-run`: Show what would be executed without applying changes
+- `--verbose`: Show detailed output
 
-When running these migrations on Azure PostgreSQL Flexible Server, keep in mind:
+### Rolling Back Migrations
 
-1. **Authentication**
-   - All scripts support both username/password and Azure Managed Identity
-   - Using Managed Identity is recommended for security
+To roll back the most recent migration:
 
-2. **Resource Constraints**
-   - Set batch sizes appropriate for your server tier
-   - Monitor CPU and memory during migrations
-   - Consider scheduling migrations during off-peak hours
+```
+node scripts/vector-db-migrations/rollback-migration.js
+```
 
-3. **Maintenance Window**
-   - Coordinate with Azure maintenance windows
-   - Avoid migrations during automated backups
+To roll back multiple migrations:
 
-4. **Networking**
-   - If using private endpoints, ensure your migration scripts run from a connected network
-   - Consider running migration scripts in Azure (e.g., from Azure Functions or VMs)
+```
+node scripts/vector-db-migrations/rollback-migration.js --steps=3
+```
 
-5. **Monitoring**
-   - Enable Query Store before migrations to capture performance changes
-   - Use Azure Monitor alerts to detect issues during migration
-   - Set up Datadog monitors to track vector query performance
+## Large Dataset Migrations
 
-## Monitoring During Migrations
+For large datasets, the utility provides batching support:
 
-During vector database migrations, monitor these key metrics:
+```javascript
+exports.up = async (client) => {
+  // Set batch size
+  const batchSize = 1000;
+  
+  // Get total count
+  const countResult = await client.query('SELECT COUNT(*) FROM source_table');
+  const totalRecords = parseInt(countResult.rows[0].count);
+  
+  // Process in batches
+  for (let offset = 0; offset < totalRecords; offset += batchSize) {
+    await client.query('BEGIN');
+    try {
+      // Process batch
+      await client.query(`
+        INSERT INTO target_table (...)
+        SELECT ...
+        FROM source_table
+        ORDER BY id
+        LIMIT $1 OFFSET $2
+      `, [batchSize, offset]);
+      
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    }
+  }
+};
+```
 
-1. **Performance Metrics**
-   - Query latency for vector similarity searches
-   - Database CPU and memory utilization
-   - Transaction rate and active connections
+## Zero-Downtime Migrations
 
-2. **Vector-Specific Metrics**
-   - Index scan vs. sequential scan rates
-   - Index size and growth rate
-   - Cache hit rates for vector queries
+For production environments, use the zero-downtime migration pattern:
 
-3. **Application Impact**
-   - End-to-end latency for vector search operations
-   - Error rates for vector operations
-   - Overall application throughput
-
-Use Datadog or Azure Monitor to create dashboards for these metrics before starting migrations.
+```
+node scripts/vector-db-migrations/zero-downtime-schema-migration.js \
+  --table=document_embeddings \
+  --operation=add-column \
+  --column-name=embedding_model \
+  --column-type="VARCHAR(100)"
+```
 
 ## Best Practices
 
-1. **Always create backups before migrations**
-   - These scripts include backup mechanisms, but additional backups are recommended
+1. **Always include both `up` and `down` methods** for reversibility
+2. **Use transactions** for data consistency
+3. **Handle errors gracefully** with appropriate rollbacks
+4. **Batch large operations** to avoid memory issues
+5. **Add comments** to explain complex migrations
+6. **Test migrations** in development before applying to production
+7. **Validate data integrity** after migrations
+8. **Back up data** before running migrations in production
 
-2. **Start with a dry run**
-   - All scripts support a dry run mode to show what changes would be made
+## Testing
 
-3. **Test in staging first**
-   - Validate migration scripts in a non-production environment before production use
+To test the migration system:
 
-4. **Monitor and validate results**
-   - After migration, validate that vector queries return expected results
-   - Compare performance before and after migration
+```
+./scripts/test-vector-migration-utility.sh
+```
 
-5. **Keep original data until validation is complete**
-   - The scripts create backup tables that can be kept until you're confident in the migration
+This script runs a comprehensive test suite covering:
+- Basic migration functionality
+- Rollback capability
+- Large dataset handling
+- Edge case handling
