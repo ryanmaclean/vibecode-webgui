@@ -13,7 +13,7 @@ import {
 import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { VectorChunk, SearchResult, SearchOptions, VectorDatabaseConfig } from './vector-types';
 import { metrics } from '../server-monitoring';
-import { VectorDBErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
+import { VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
 
 /**
  * Azure Cognitive Search Vector Database Configuration
@@ -50,15 +50,15 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
   protected async initializeProvider(): Promise<void> {
     try {
       if (!this.searchConfig.endpoint) {
-        throw new Error('Azure Cognitive Search endpoint is required');
+        throw this.errorHandler.handleError(new Error('Azure Cognitive Search endpoint is required'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
       }
 
       if (!this.searchConfig.apiKey) {
-        throw new Error('Azure Cognitive Search API key is required');
+        throw this.errorHandler.handleError(new Error('Azure Cognitive Search API key is required'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
       }
 
       if (!this.searchConfig.indexName) {
-        throw new Error('Azure Cognitive Search index name is required');
+        throw this.errorHandler.handleError(new Error('Azure Cognitive Search index name is required'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
       }
 
       // Create credential
@@ -80,7 +80,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
       // Verify connection by checking if index exists
       const indexExists = await this.checkIndexExists(this.searchConfig.indexName);
       if (!indexExists) {
-        throw new Error(`Index ${this.searchConfig.indexName} does not exist`);
+        throw this.errorHandler.handleError(new Error(`Index ${this.searchConfig.indexName} does not exist`), 'unknown', VectorDbErrorType.SEARCH, false);
       }
 
       if (this.config.enableLogging) {
@@ -90,7 +90,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
       throw this.errorHandler.handleError(
         error,
         'initialize',
-        VectorDBErrorType.INITIALIZATION,
+        VectorDbErrorType.INITIALIZATION,
         false,
         { endpoint: this.searchConfig.endpoint, indexName: this.searchConfig.indexName }
       );
@@ -103,59 +103,36 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
    * @returns Promise<boolean> indicating if the index exists
    * @throws Error if the client is not initialized or if there's a critical error
    */
-  private async checkIndexExists(indexName: string): Promise<boolean> {
+  protected async checkIndexExists(indexName: string): Promise<boolean> {
     if (!this.searchIndexClient) {
       throw this.errorHandler.handleError(
         new Error('Search index client not initialized'),
         'checkIndexExists',
-        VectorDBErrorType.INITIALIZATION,
+        VectorDbErrorType.INITIALIZATION,
         false
       );
     }
 
     try {
-      await this.searchIndexClient.getIndex(indexName);
-      return true;
+      const indexes = await this.searchIndexClient.listIndexes();
+      for await (const index of indexes) {
+        if (index.name === indexName) {
+          return true;
+        }
+      }
+      return false;
     } catch (error) {
-      // If it's a 404 error, the index doesn't exist, which is a valid state
-      if ((error as any).statusCode === 404) {
-        return false;
+      // Log error without throwing to allow initialization to continue
+      // and make a decision about the missing index
+      if (this.config.enableLogging) {
+        console.error('Error checking if index exists:', error);
       }
       
-      // For other errors, determine if they're critical or can be handled gracefully
-      const isAuthError = this.errorHandler.isAuthError(error);
-      const isNetworkError = this.errorHandler.isNetworkError(error);
-      
-      if (isAuthError) {
-        // Authentication errors are critical and should bubble up
-        throw this.errorHandler.handleError(
-          error,
-          'checkIndexExists',
-          VectorDBErrorType.AUTHENTICATION,
-          false,
-          { indexName }
-        );
-      } else if (isNetworkError) {
-        // Log network errors but don't fail initialization (will retry later)
-        if (this.config.enableLogging) {
-          console.error('Network error checking if index exists:', error);
-        }
-        
-        if (this.config.enableMetrics) {
-          metrics.increment('vector_db.check_index.error');
-        }
-        
-        return false;
+      if (this.config.enableMetrics) {
+        metrics.increment('vector_db.check_index.error');
       }
       
-      // For other error types, rethrow with more context
-      throw this.errorHandler.handleError(
-        error,
-        'checkIndexExists',
-        VectorDBErrorType.INDEX_OPERATION_FAILED,
-        false,
-        { indexName }
-      );
+      return false;
     }
   }
 
@@ -201,7 +178,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
       throw this.errorHandler.handleError(
         new Error('Search client not initialized'),
         'storeChunks',
-        VectorDBErrorType.INITIALIZATION,
+        VectorDbErrorType.INITIALIZATION,
         false
       );
     }
@@ -251,13 +228,13 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
         console.error(`Error storing chunks for file ${fileId}:`, error);
       }
       
-      throw this.errorHandler.handleError(
-        error, 
-        'storeChunks', 
-        VectorDBErrorType.VECTOR_CREATION_FAILED,
-        false, 
-        { fileId }
-      );
+        throw this.errorHandler.handleError(
+          error, 
+          'storeChunks', 
+          VectorDbErrorType.VECTOR_CREATION_FAILED,
+          false, 
+          { fileId }
+        );
     }
   }
 
@@ -269,7 +246,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
       throw this.errorHandler.handleError(
         new Error('Azure Cognitive Search adapter not initialized'),
         'search',
-        VectorDBErrorType.INITIALIZATION,
+        VectorDbErrorType.INITIALIZATION,
         false
       );
     }
@@ -361,7 +338,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
           throw this.errorHandler.handleError(
             error,
             'search',
-            VectorDBErrorType.SEARCH,
+            VectorDbErrorType.SEARCH,
             false
           );
         }
@@ -371,7 +348,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
       throw this.errorHandler.handleError(
         error,
         'search',
-        VectorDBErrorType.SEARCH,
+        VectorDbErrorType.SEARCH,
         false
       );
     }
@@ -385,7 +362,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
       throw this.errorHandler.handleError(
         new Error('Search client not initialized'),
         'deleteFileChunks',
-        VectorDBErrorType.INITIALIZATION,
+        VectorDbErrorType.INITIALIZATION,
         false
       );
     }
@@ -435,13 +412,13 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
         console.error(`Error deleting chunks for file ${fileId}:`, error);
       }
       
-      throw this.errorHandler.handleError(
-        error, 
-        'deleteFileChunks', 
-        VectorDBErrorType.VECTOR_DELETION_FAILED,
-        false, 
-        { fileId }
-      );
+        throw this.errorHandler.handleError(
+          error, 
+          'deleteFileChunks', 
+          VectorDbErrorType.VECTOR_DELETION_FAILED,
+          false, 
+          { fileId }
+        );
     }
   }
 
@@ -457,7 +434,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
       throw this.errorHandler.handleError(
         new Error('Search client not initialized'),
         'getStats',
-        VectorDBErrorType.INITIALIZATION,
+        VectorDbErrorType.INITIALIZATION,
         false
       );
     }
@@ -561,7 +538,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
       throw this.errorHandler.handleError(
         new Error('Search client not initialized'),
         'fallbackTextSearch',
-        VectorDBErrorType.INITIALIZATION,
+        VectorDbErrorType.INITIALIZATION,
         false
       );
     }

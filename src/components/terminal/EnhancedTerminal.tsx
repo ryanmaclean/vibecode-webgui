@@ -6,6 +6,8 @@
 
 'use client'
 
+/// <reference path="../../../types/@xterm/addon-webgl/index.d.ts" />
+
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'

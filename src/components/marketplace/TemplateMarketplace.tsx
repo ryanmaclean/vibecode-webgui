@@ -14,7 +14,6 @@ import {
   EyeIcon,
   CodeBracketIcon,
   UserIcon,
-  TagIcon,
   FunnelIcon,
   SparklesIcon,
   RocketLaunchIcon
@@ -86,7 +85,7 @@ export function TemplateMarketplace({ onSelectTemplate, selectedCategory }: Temp
   }
 
   const handleSortChange = (sortBy: string) => {
-    setSearchOptions(prev => ({ ...prev, sortBy: sortBy as any, offset: 0 }))
+    setSearchOptions(prev => ({ ...prev, sortBy: sortBy as MarketplaceSearchOptions['sortBy'], offset: 0 }))
   }
 
   const handleDownload = async (template: MarketplaceTemplate) => {
@@ -104,31 +103,31 @@ export function TemplateMarketplace({ onSelectTemplate, selectedCategory }: Temp
     return num.toString()
   }
 
-  const renderStars = (rating: number, size = 4) => {
-    const stars = []
-    const fullStars = Math.floor(rating)
-    const hasHalfStar = rating % 1 >= 0.5
+  const renderStars = (rating: number, size = 4): React.ReactNode[] => {
+    const stars: React.ReactNode[] = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
 
     for (let i = 0; i < 5; i++) {
       if (i < fullStars) {
         stars.push(
           <StarIconSolid key={i} className={`h-${size} w-${size} text-yellow-400`} />
-        )
+        );
       } else if (i === fullStars && hasHalfStar) {
         stars.push(
           <div key={i} className="relative">
             <StarIcon className={`h-${size} w-${size} text-gray-300`} />
             <StarIconSolid className={`h-${size} w-${size} text-yellow-400 absolute top-0 left-0`} style={{ clipPath: 'inset(0 50% 0 0)' }} />
           </div>
-        )
+        );
       } else {
         stars.push(
           <StarIcon key={i} className={`h-${size} w-${size} text-gray-300`} />
-        )
+        );
       }
     }
 
-    return stars
+    return stars;
   }
 
   const TemplateCard = ({ template }: { template: MarketplaceTemplate }) => (
@@ -305,7 +304,7 @@ export function TemplateMarketplace({ onSelectTemplate, selectedCategory }: Temp
               <label className="block text-sm font-medium text-gray-700 mb-2">Pricing</label>
               <select
                 value={searchOptions.pricing || 'all'}
-                onChange={(e) => setSearchOptions(prev => ({ ...prev, pricing: e.target.value as any }))}
+                onChange={(e) => setSearchOptions(prev => ({ ...prev, pricing: e.target.value as 'free' | 'paid' | 'all' | undefined }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All</option>

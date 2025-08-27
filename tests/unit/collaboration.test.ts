@@ -7,9 +7,7 @@
  * Staff Engineer Implementation - Comprehensive collaboration testing
  */
 
-const { describe, test, expect, beforeEach, afterEach } = require('@jest/globals')
-
-// Mock Yjs and related dependencies
+// Jest mocks must be at the top before any imports
 jest.mock('yjs', () => ({
   Doc: jest.fn().mockImplementation(() => ({
     getText: jest.fn().mockReturnValue({
@@ -17,13 +15,22 @@ jest.mock('yjs', () => ({
       insert: jest.fn(),
       delete: jest.fn(),
       observe: jest.fn(),
+      unobserve: jest.fn(),
       length: 0
     }),
     getMap: jest.fn().mockReturnValue({
       get: jest.fn(),
-      set: jest.fn()
-    })
-  }))}))
+      set: jest.fn(),
+      delete: jest.fn(),
+      has: jest.fn(),
+      observe: jest.fn(),
+      unobserve: jest.fn()
+    }),
+    destroy: jest.fn(),
+    on: jest.fn(),
+    off: jest.fn()
+  }))
+}))
 
 jest.mock('y-websocket', () => ({
   WebsocketProvider: jest.fn().mockImplementation(() => ({
@@ -32,24 +39,48 @@ jest.mock('y-websocket', () => ({
       getLocalState: jest.fn().mockReturnValue({}),
       getStates: jest.fn().mockReturnValue(new Map()),
       on: jest.fn(),
-      off: jest.fn()
+      off: jest.fn(),
+      destroy: jest.fn()
     },
     on: jest.fn(),
-    destroy: jest.fn()
-  }))}))
+    off: jest.fn(),
+    destroy: jest.fn().mockImplementation(() => {
+      console.log('MockWebsocketProvider.destroy called')
+    }),
+    connect: jest.fn(),
+    disconnect: jest.fn()
+  }))
+}))
 
 jest.mock('y-indexeddb', () => ({
   IndexeddbPersistence: jest.fn().mockImplementation(() => ({
-    destroy: jest.fn()
-  }))}))
+    destroy: jest.fn().mockImplementation(() => {
+      console.log('MockIndexeddbPersistence.destroy called')
+    }),
+    on: jest.fn(),
+    off: jest.fn()
+  }))
+}))
 
-const { CollaborationManager, CollaborationUser } = require('../../src/lib/collaboration')
+const { describe, test, expect, beforeEach, afterEach } = require('@jest/globals')
 
 describe('CollaborationManager', () => {
   let collaborationManager
   let mockUser
+  let CollaborationManager, CollaborationUser
 
   beforeEach(() => {
+    // Clear require cache to ensure fresh imports with mocks
+    delete require.cache[require.resolve('../../src/lib/collaboration')]
+    delete require.cache[require.resolve('yjs')]
+    delete require.cache[require.resolve('y-websocket')]
+    delete require.cache[require.resolve('y-indexeddb')]
+    
+    // Import after mocks are set up
+    const collaboration = require('../../src/lib/collaboration')
+    CollaborationManager = collaboration.CollaborationManager
+    CollaborationUser = collaboration.CollaborationUser
+    
     collaborationManager = new CollaborationManager('ws://test-server')
     mockUser = {
       id: 'user123',
@@ -57,9 +88,7 @@ describe('CollaborationManager', () => {
       email: 'test@example.com',
       color: '#FF6B6B'
     }
-
-    // Clear all mocks
-    jest.clearAllMocks()});
+  })
 
   afterEach(async () => {
     await collaborationManager.destroy()})

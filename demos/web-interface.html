@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PostgreSQL + GenAI Vector Search Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .demo-section {
+            padding: 30px;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .search-panel {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+        }
+
+        .results-panel {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results {
+            margin-top: 20px;
+        }
+
+        .result-item {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .result-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .result-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .result-meta {
+            display: flex;
+            justify-content: between;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+        }
+
+        .similarity-score {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .category {
+            background: #ecf0f1;
+            color: #2c3e50;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-left: 10px;
+        }
+
+        .result-content {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .stats-panel {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            opacity: 0.9;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #3498db;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-panel {
+            background: #e8f6f3;
+            border: 1px solid #a2d2cc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-title {
+            color: #138d75;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 PostgreSQL + GenAI Vector Search</h1>
+            <p>Interactive demo of vector similarity search for AI applications</p>
+        </div>
+
+        <div class="demo-section">
+            <div class="info-panel">
+                <div class="info-title">🎯 How This Demo Works</div>
+                <p>This simulates PostgreSQL with pgvector extension for vector similarity search. Enter a query below and see how vector databases find relevant content for GenAI applications like ChatGPT, RAG systems, and semantic search.</p>
+            </div>
+
+            <div class="demo-grid">
+                <div class="search-panel">
+                    <h2>🔍 Vector Search Query</h2>
+                    <div class="input-group">
+                        <label for="searchQuery">What are you looking for?</label>
+                        <textarea id="searchQuery" placeholder="Example: How do I optimize database performance for AI applications?">How do I store and search vectors in databases?</textarea>
+                    </div>
+                    <div class="input-group">
+                        <label for="maxResults">Number of results:</label>
+                        <input type="text" id="maxResults" value="3">
+                    </div>
+                    <button class="btn" onclick="performSearch()">Search Vector Database</button>
+                    
+                    <div class="loading" id="loadingIndicator">
+                        <div class="spinner"></div>
+                        <p>Generating embeddings and searching vectors...</p>
+                    </div>
+                </div>
+
+                <div class="results-panel">
+                    <h2>📊 Search Results</h2>
+                    <p>Results ranked by vector similarity score:</p>
+                    <div id="searchResults" class="results">
+                        <p style="color: #666; font-style: italic;">Enter a search query to see results...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-panel">
+                <h3>📈 Database Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalDocs">5</div>
+                        <div class="stat-label">Total Documents</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="searchTime">0</div>
+                        <div class="stat-label">Last Search (ms)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="embeddingDims">1536</div>
+                        <div class="stat-label">Embedding Dimensions</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalSearches">0</div>
+                        <div class="stat-label">Total Searches</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock vector database simulation
+        class WebVectorDemo {
+            constructor() {
+                this.documents = [
+                    {
+                        id: 1,
+                        title: 'Introduction to PostgreSQL',
+                        content: 'PostgreSQL is a powerful, open source object-relational database system that uses and extends the SQL language combined with many features that safely store and scale the most complicated data workloads.',
+                        category: 'database',
+                        keywords: ['postgresql', 'database', 'sql', 'relational', 'open source']
+                    },
+                    {
+                        id: 2,
+                        title: 'Vector Databases for AI',
+                        content: 'Vector databases are specialized databases designed to store and query high-dimensional vectors efficiently. They are essential for AI applications that work with embeddings from machine learning models.',
+                        category: 'ai',
+                        keywords: ['vector', 'ai', 'embeddings', 'machine learning', 'similarity search']
+                    },
+                    {
+                        id: 3,
+                        title: 'Building GenAI Applications',
+                        content: 'Modern GenAI applications require efficient storage and retrieval of vector embeddings. PostgreSQL with pgvector extension provides a robust solution for vector similarity search in production environments.',
+                        category: 'genai',
+                        keywords: ['genai', 'applications', 'pgvector', 'embeddings', 'production']
+                    },
+                    {
+                        id: 4,
+                        title: 'Database Monitoring with Datadog',
+                        content: 'Effective database monitoring involves tracking key metrics like connection counts, query performance, and resource utilization. Datadog provides comprehensive monitoring solutions for PostgreSQL databases.',
+                        category: 'monitoring',
+                        keywords: ['monitoring', 'datadog', 'metrics', 'performance', 'postgresql']
+                    },
+                    {
+                        id: 5,
+                        title: 'Scaling PostgreSQL in Production',
+                        content: 'Production PostgreSQL deployments require careful consideration of connection pooling, replication, backup strategies, and performance optimization. Vector workloads add additional complexity to scaling considerations.',
+                        category: 'scaling',
+                        keywords: ['scaling', 'production', 'performance', 'optimization', 'replication']
+                    }
+                ];
+                this.searchCount = 0;
+            }
+
+            // Simple keyword-based similarity simulation
+            calculateSimilarity(query, document) {
+                const queryWords = query.toLowerCase().split(/\W+/).filter(w => w.length > 2);
+                const docText = (document.title + ' ' + document.content + ' ' + document.keywords.join(' ')).toLowerCase();
+                
+                let score = 0;
+                let totalWords = queryWords.length;
+                
+                queryWords.forEach(word => {
+                    if (docText.includes(word)) {
+                        score += 1;
+                        // Boost score for exact matches in title or keywords
+                        if (document.title.toLowerCase().includes(word) || 
+                            document.keywords.some(k => k.includes(word))) {
+                            score += 0.5;
+                        }
+                    }
+                });
+                
+                // Normalize and add some randomization to simulate real embeddings
+                const normalized = score / Math.max(totalWords, 1);
+                const noise = (Math.random() - 0.5) * 0.1; // Small random component
+                return Math.max(0, Math.min(1, normalized + noise));
+            }
+
+            search(query, maxResults = 5) {
+                const startTime = Date.now();
+                
+                const results = this.documents.map(doc => ({
+                    ...doc,
+                    similarity: this.calculateSimilarity(query, doc)
+                })).sort((a, b) => b.similarity - a.similarity)
+                  .slice(0, maxResults);
+
+                this.searchCount++;
+                const searchTime = Date.now() - startTime;
+                
+                return {
+                    results,
+                    searchTime,
+                    totalSearches: this.searchCount
+                };
+            }
+        }
+
+        // Initialize demo
+        const vectorDemo = new WebVectorDemo();
+
+        function performSearch() {
+            const query = document.getElementById('searchQuery').value.trim();
+            const maxResults = parseInt(document.getElementById('maxResults').value) || 3;
+            
+            if (!query) {
+                alert('Please enter a search query');
+                return;
+            }
+
+            // Show loading indicator
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('searchResults').style.opacity = '0.5';
+
+            // Simulate API call delay
+            setTimeout(() => {
+                const searchResult = vectorDemo.search(query, maxResults);
+                displayResults(searchResult.results);
+                updateStats(searchResult.searchTime, searchResult.totalSearches);
+                
+                // Hide loading indicator
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('searchResults').style.opacity = '1';
+            }, 1200); // Simulate realistic search time
+        }
+
+        function displayResults(results) {
+            const resultsContainer = document.getElementById('searchResults');
+            
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<p style="color: #666;">No results found. Try a different search query.</p>';
+                return;
+            }
+
+            const resultsHTML = results.map(result => `
+                <div class="result-item">
+                    <div class="result-title">${result.title}</div>
+                    <div class="result-meta">
+                        <span class="similarity-score">${(result.similarity * 100).toFixed(1)}% match</span>
+                        <span class="category">${result.category}</span>
+                    </div>
+                    <div class="result-content">${result.content}</div>
+                </div>
+            `).join('');
+
+            resultsContainer.innerHTML = resultsHTML;
+        }
+
+        function updateStats(searchTime, totalSearches) {
+            document.getElementById('searchTime').textContent = searchTime;
+            document.getElementById('totalSearches').textContent = totalSearches;
+        }
+
+        // Allow Enter key to search
+        document.getElementById('searchQuery').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                performSearch();
+            }
+        });
+
+        // Initial example search on page load
+        setTimeout(() => {
+            performSearch();
+        }, 1000);
+    </script>
+</body>
+</html>
