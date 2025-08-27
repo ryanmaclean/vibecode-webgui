@@ -1,6 +1,27 @@
 # Default values for vibecode-platform
 # This is a YAML-formatted file.
 
+# MongoDB configuration
+mongodb:
+  enabled: true
+  auth:
+    enabled: true
+    rootPassword: "vibecode-root"
+    username: "vibecode"
+    password: "vibecode-password"
+    database: "vibecode-db"
+  architecture: "standalone"
+  persistence:
+    enabled: true
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+
 # Global configuration
 global:
   namespace: vibecode-platform
