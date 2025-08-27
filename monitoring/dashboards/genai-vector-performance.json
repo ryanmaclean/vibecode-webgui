@@ -1,0 +1,799 @@
+{
+  "title": "GenAI PostgreSQL Performance on Azure",
+  "description": "Comprehensive monitoring of PostgreSQL vector operations for AI workloads on Azure",
+  "layout_type": "ordered",
+  "template_variables": [
+    {
+      "name": "environment",
+      "default": "*",
+      "prefix": "env",
+      "available_values": [
+        "production",
+        "staging",
+        "development"
+      ]
+    },
+    {
+      "name": "database",
+      "default": "*",
+      "prefix": "database"
+    }
+  ],
+  "widgets": [
+    {
+      "id": 0,
+      "definition": {
+        "title": "GenAI Database Performance Overview",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 1,
+            "definition": {
+              "title": "Vector Database Health",
+              "type": "note",
+              "content": "## PostgreSQL Vector Database Health\n\nThis dashboard provides comprehensive monitoring for GenAI applications using PostgreSQL with pgvector on Azure. Monitor the performance of your vector similarity searches, embedding storage, and query patterns to optimize your RAG system performance.\n\n### Key Metrics to Watch\n- Vector search latency\n- Query patterns\n- Connection utilization\n- Vector index performance",
+              "background_color": "blue",
+              "font_size": "14",
+              "text_align": "left",
+              "vertical_align": "center",
+              "show_tick": true,
+              "tick_pos": "50%",
+              "tick_edge": "bottom"
+            }
+          },
+          {
+            "id": 2,
+            "definition": {
+              "title": "Database Status",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "avg:postgresql.connections.active{$environment} / avg:postgresql.settings.max_connections{$environment} * 100",
+                  "aggregator": "avg",
+                  "conditional_formats": [
+                    {
+                      "comparator": "<",
+                      "value": 50,
+                      "palette": "white_on_green"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 80,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 80,
+                      "palette": "white_on_red"
+                    }
+                  ]
+                }
+              ],
+              "custom_unit": "%",
+              "precision": 1,
+              "title_size": "16",
+              "title_align": "center",
+              "time": {
+                "live_span": "10m"
+              }
+            }
+          },
+          {
+            "id": 3,
+            "definition": {
+              "title": "GenAI Vector Operations",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "sum:database.vector.operations{$environment,$database} / 60",
+                  "aggregator": "avg",
+                  "conditional_formats": []
+                }
+              ],
+              "custom_unit": "ops/sec",
+              "precision": 1,
+              "title_size": "16",
+              "title_align": "center",
+              "time": {
+                "live_span": "10m"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "title": "Connection Metrics",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 5,
+            "definition": {
+              "title": "Active Connections",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:postgresql.connections.active{$environment,$database}",
+                  "display_type": "line"
+                },
+                {
+                  "q": "avg:postgresql.connections.total{$environment,$database}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "warm"
+                  }
+                }
+              ],
+              "time": {
+                "live_span": "1h"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "label": "Connections",
+                "scale": "linear"
+              }
+            }
+          },
+          {
+            "id": 6,
+            "definition": {
+              "title": "Connection Utilization",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:postgresql.connections.active{$environment,$database} / avg:postgresql.settings.max_connections{$environment,$database} * 100",
+                  "display_type": "line"
+                }
+              ],
+              "time": {
+                "live_span": "1h"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "label": "% Used",
+                "max": "100",
+                "scale": "linear"
+              },
+              "markers": [
+                {
+                  "value": "y = 80",
+                  "display_type": "error dashed",
+                  "label": "Critical (80%)"
+                },
+                {
+                  "value": "y = 50",
+                  "display_type": "warning dashed",
+                  "label": "Warning (50%)"
+                }
+              ]
+            }
+          },
+          {
+            "id": 7,
+            "definition": {
+              "title": "Connection States",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:postgresql.connections.active{$environment,$database}",
+                  "display_type": "area",
+                  "style": {
+                    "palette": "dog_classic"
+                  }
+                },
+                {
+                  "q": "avg:postgresql.connections.idle{$environment,$database}",
+                  "display_type": "area",
+                  "style": {
+                    "palette": "cool"
+                  }
+                },
+                {
+                  "q": "avg:postgresql.connections.idle_in_transaction{$environment,$database}",
+                  "display_type": "area",
+                  "style": {
+                    "palette": "warm"
+                  }
+                }
+              ],
+              "time": {
+                "live_span": "1h"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "label": "Connections",
+                "scale": "linear"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "title": "Vector Database Performance",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 9,
+            "definition": {
+              "title": "Vector Search Latency",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:database.vector.search.latency.avg{$environment,$database}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic"
+                  }
+                },
+                {
+                  "q": "avg:database.vector.search.latency.p95{$environment,$database}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "warm"
+                  }
+                },
+                {
+                  "q": "avg:database.vector.search.latency.max{$environment,$database}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "orange"
+                  }
+                }
+              ],
+              "time": {
+                "live_span": "1h"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "label": "Milliseconds",
+                "scale": "linear"
+              }
+            }
+          },
+          {
+            "id": 10,
+            "definition": {
+              "title": "Vector Index Size",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:database.vector.index_size{$environment,$database}",
+                  "display_type": "line"
+                }
+              ],
+              "time": {
+                "live_span": "1d"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "label": "Bytes",
+                "scale": "linear"
+              }
+            }
+          },
+          {
+            "id": 11,
+            "definition": {
+              "title": "Vector Count",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:database.vector.embeddings{$environment,$database}",
+                  "display_type": "line"
+                }
+              ],
+              "time": {
+                "live_span": "1d"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "label": "Embeddings",
+                "scale": "linear"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "definition": {
+        "title": "Query Performance",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 13,
+            "definition": {
+              "title": "Query Execution Time",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:postgresql.queries.avg_query_time{$environment,$database}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic"
+                  }
+                }
+              ],
+              "time": {
+                "live_span": "1h"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "label": "Milliseconds",
+                "scale": "linear"
+              }
+            }
+          },
+          {
+            "id": 14,
+            "definition": {
+              "title": "Slow Queries",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:postgresql.queries.slow{$environment,$database}",
+                  "display_type": "bars"
+                }
+              ],
+              "time": {
+                "live_span": "1h"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "label": "Count",
+                "scale": "linear"
+              }
+            }
+          },
+          {
+            "id": 15,
+            "definition": {
+              "title": "Query Rate by Type",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:postgresql.queries.count{$environment,$database,query_type:select} / 60",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic"
+                  },
+                  "metadata": [
+                    {
+                      "expression": "sum:postgresql.queries.count{$environment,$database,query_type:select} / 60",
+                      "alias_name": "SELECT"
+                    }
+                  ]
+                },
+                {
+                  "q": "sum:postgresql.queries.count{$environment,$database,query_type:insert} / 60",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "warm"
+                  },
+                  "metadata": [
+                    {
+                      "expression": "sum:postgresql.queries.count{$environment,$database,query_type:insert} / 60",
+                      "alias_name": "INSERT"
+                    }
+                  ]
+                },
+                {
+                  "q": "sum:postgresql.queries.count{$environment,$database,query_type:update} / 60",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "cool"
+                  },
+                  "metadata": [
+                    {
+                      "expression": "sum:postgresql.queries.count{$environment,$database,query_type:update} / 60",
+                      "alias_name": "UPDATE"
+                    }
+                  ]
+                },
+                {
+                  "q": "sum:postgresql.queries.count{$environment,$database,query_type:delete} / 60",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "orange"
+                  },
+                  "metadata": [
+                    {
+                      "expression": "sum:postgresql.queries.count{$environment,$database,query_type:delete} / 60",
+                      "alias_name": "DELETE"
+                    }
+                  ]
+                }
+              ],
+              "time": {
+                "live_span": "1h"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "label": "Queries/sec",
+                "scale": "linear"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 16,
+      "definition": {
+        "title": "Database Storage",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 17,
+            "definition": {
+              "title": "Database Size",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:postgresql.database_size{$environment,$database}",
+                  "display_type": "line"
+                }
+              ],
+              "time": {
+                "live_span": "1d"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "label": "Bytes",
+                "scale": "linear"
+              }
+            }
+          },
+          {
+            "id": 18,
+            "definition": {
+              "title": "Top Tables by Size",
+              "type": "toplist",
+              "requests": [
+                {
+                  "q": "top(avg:postgresql.table_size{$environment,$database} by {table}, 10, 'mean', 'desc')",
+                  "conditional_formats": [
+                    {
+                      "comparator": ">",
+                      "value": 1000000000,
+                      "palette": "white_on_red"
+                    },
+                    {
+                      "comparator": ">",
+                      "value": 100000000,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": "<=",
+                      "value": 100000000,
+                      "palette": "white_on_green"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "id": 19,
+            "definition": {
+              "title": "Top Indexes by Size",
+              "type": "toplist",
+              "requests": [
+                {
+                  "q": "top(avg:postgresql.index_size{$environment,$database} by {index}, 10, 'mean', 'desc')",
+                  "conditional_formats": [
+                    {
+                      "comparator": ">",
+                      "value": 500000000,
+                      "palette": "white_on_red"
+                    },
+                    {
+                      "comparator": ">",
+                      "value": 50000000,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": "<=",
+                      "value": 50000000,
+                      "palette": "white_on_green"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 20,
+      "definition": {
+        "title": "GenAI Specific Metrics",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 21,
+            "definition": {
+              "title": "RAG Queries - End-to-End Latency",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:genai.rag.latency.total{$environment,$database}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic"
+                  }
+                },
+                {
+                  "q": "avg:genai.rag.latency.embedding{$environment,$database}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "cool"
+                  }
+                },
+                {
+                  "q": "avg:genai.rag.latency.vector_search{$environment,$database}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "warm"
+                  }
+                },
+                {
+                  "q": "avg:genai.rag.latency.llm_response{$environment,$database}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "orange"
+                  }
+                }
+              ],
+              "time": {
+                "live_span": "1h"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "label": "Milliseconds",
+                "scale": "linear"
+              }
+            }
+          },
+          {
+            "id": 22,
+            "definition": {
+              "title": "Vector Search - Documents Retrieved",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:genai.rag.vector_search.docs_retrieved{$environment,$database}",
+                  "display_type": "line"
+                }
+              ],
+              "time": {
+                "live_span": "1h"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "label": "Documents",
+                "scale": "linear"
+              }
+            }
+          },
+          {
+            "id": 23,
+            "definition": {
+              "title": "Vector Search - Relevance Scores",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:genai.rag.vector_search.relevance_avg{$environment,$database}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic"
+                  }
+                },
+                {
+                  "q": "avg:genai.rag.vector_search.relevance_min{$environment,$database}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "warm"
+                  }
+                }
+              ],
+              "time": {
+                "live_span": "1h"
+              },
+              "yaxis": {
+                "include_zero": false,
+                "min": "0",
+                "max": "1",
+                "label": "Cosine Similarity",
+                "scale": "linear"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 24,
+      "definition": {
+        "title": "Resource Utilization",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 25,
+            "definition": {
+              "title": "CPU Utilization",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:azure.postgresql_servers.cpu_percent{$environment,$database}",
+                  "display_type": "line"
+                }
+              ],
+              "time": {
+                "live_span": "1h"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "max": "100",
+                "label": "% CPU",
+                "scale": "linear"
+              },
+              "markers": [
+                {
+                  "value": "y = 80",
+                  "display_type": "error dashed",
+                  "label": "Critical (80%)"
+                }
+              ]
+            }
+          },
+          {
+            "id": 26,
+            "definition": {
+              "title": "Memory Utilization",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:azure.postgresql_servers.memory_percent{$environment,$database}",
+                  "display_type": "line"
+                }
+              ],
+              "time": {
+                "live_span": "1h"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "max": "100",
+                "label": "% Memory",
+                "scale": "linear"
+              },
+              "markers": [
+                {
+                  "value": "y = 80",
+                  "display_type": "error dashed",
+                  "label": "Critical (80%)"
+                }
+              ]
+            }
+          },
+          {
+            "id": 27,
+            "definition": {
+              "title": "IOPS Utilization",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:azure.postgresql_servers.io_consumption_percent{$environment,$database}",
+                  "display_type": "line"
+                }
+              ],
+              "time": {
+                "live_span": "1h"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "max": "100",
+                "label": "% IOPS",
+                "scale": "linear"
+              },
+              "markers": [
+                {
+                  "value": "y = 80",
+                  "display_type": "error dashed",
+                  "label": "Critical (80%)"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 28,
+      "definition": {
+        "title": "Azure Specific Metrics",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 29,
+            "definition": {
+              "title": "Storage Utilization",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:azure.postgresql_servers.storage_percent{$environment,$database}",
+                  "display_type": "line"
+                }
+              ],
+              "time": {
+                "live_span": "1d"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "max": "100",
+                "label": "% Storage",
+                "scale": "linear"
+              },
+              "markers": [
+                {
+                  "value": "y = 80",
+                  "display_type": "error dashed",
+                  "label": "Critical (80%)"
+                }
+              ]
+            }
+          },
+          {
+            "id": 30,
+            "definition": {
+              "title": "Storage Used",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:azure.postgresql_servers.storage_used{$environment,$database}",
+                  "display_type": "line"
+                }
+              ],
+              "time": {
+                "live_span": "1d"
+              },
+              "yaxis": {
+                "include_zero": true,
+                "label": "Bytes",
+                "scale": "linear"
+              }
+            }
+          },
+          {
+            "id": 31,
+            "definition": {
+              "title": "Active Connections by Client",
+              "type": "toplist",
+              "requests": [
+                {
+                  "q": "top(sum:postgresql.connections.active{$environment,$database} by {client_addr}, 10, 'mean', 'desc')",
+                  "conditional_formats": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

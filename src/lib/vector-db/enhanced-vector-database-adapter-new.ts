@@ -152,7 +152,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
           // Only retry connection issues and certain query failures
           if (error instanceof VectorDbError) {
             return error.type === VectorDbErrorType.CONNECTION ||
-                  (error.type === VectorDbErrorType.VECTOR_OPERATION_FAILED && 
+                  (error.type === VectorDbErrorType.VECTOR_CREATION_FAILED && 
                    !error.message.toLowerCase().includes('duplicate'));
           }
           return false;
@@ -193,7 +193,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
           // Only retry connection issues
           if (error instanceof VectorDbError) {
             return error.type === VectorDbErrorType.CONNECTION ||
-                  error.type === VectorDbErrorType.VECTOR_OPERATION_FAILED;
+                  error.type === VectorDbErrorType.VECTOR_CREATION_FAILED;
           }
           return false;
         }

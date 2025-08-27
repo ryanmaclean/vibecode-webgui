@@ -2,7 +2,7 @@ export interface FunctionDefinition {
   name: string
   description: string
   parameters: {
-    type: 'object'
+    type: string  // Changed from string literal 'object' to string to allow more flexibility
     properties: Record<string, {
       type: string
       description: string
@@ -360,7 +360,12 @@ export class FunctionCallingService {
       const targetDir = path.join(workspaceDir, args.path || '')
 
       const files = await fs.readdir(targetDir, { withFileTypes: true })
-      const fileList = []
+      const fileList: Array<{
+        name: string;
+        type: string;
+        size: number;
+        modified: Date;
+      }> = [];
 
       for (const file of files) {
         const stat = await fs.stat(path.join(targetDir, file.name))

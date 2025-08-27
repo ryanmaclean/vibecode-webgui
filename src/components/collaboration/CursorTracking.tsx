@@ -11,8 +11,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { EditorView } from '@codemirror/view'
-import { EditorState } from '@codemirror/state'
+import { EditorView, ViewUpdate } from '@codemirror/view'
 import { useCollaboration } from '../../hooks/useCollaboration'
 
 export interface CursorPosition {
@@ -69,11 +68,16 @@ export default function CursorTracking({
   className = '',
   onCursorClick
 }: CursorTrackingProps) {
-  const { collaborationManager, awareness } = useCollaboration()
+  const collaboration = useCollaboration({
+    workspaceId: sessionId,
+    userId: currentUserId,
+    userName: 'Anonymous', // Should be passed from props ideally
+    enabled: true
+  })
   const [cursors, setCursors] = useState<Map<string, UserCursor>>(new Map())
   const [editorRect, setEditorRect] = useState<DOMRect | null>(null)
   const lastUpdateRef = useRef<number>(0)
-  const updateTimeoutRef = useRef<NodeJS.Timeout>()
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   /**
    * Convert editor position to screen coordinates
@@ -82,7 +86,9 @@ export default function CursorTracking({
     if (!editorView || !editorRect) return null
 
     try {
-      const pos = editorView.state.doc.line(position.line + 1).from + position.column
+      // Calculate position offset
+      const line = position.line >= 0 ? position.line + 1 : 1; // Line numbers are 1-based in editor
+      const pos = editorView.state.doc.line(line).from + position.column
       const coords = editorView.coordsAtPos(pos)
 
       if (!coords) return null
@@ -192,10 +198,10 @@ export default function CursorTracking({
     lastUpdateRef.current = now
 
     const current = getCurrentPosition()
-    if (!current || !awareness) return
+    if (!current || !collaboration.isConnected || !collaboration.socket) return
 
-    // Update awareness with cursor position
-    awareness.setLocalStateField('cursor', {
+    // Update cursor position via socket
+    collaboration.socket.emit('cursor_position', {
       userId: currentUserId,
       position: current.position,
       selection: current.selection,
@@ -205,31 +211,31 @@ export default function CursorTracking({
     })
 
     // Clear typing indicator after delay
-    if (updateTimeoutRef.current) {
+    if (updateTimeoutRef.current !== null) {
       clearTimeout(updateTimeoutRef.current)
+      updateTimeoutRef.current = null
     }
 
     updateTimeoutRef.current = setTimeout(() => {
-      const currentState = awareness.getLocalState()
-      if (currentState?.cursor) {
-        awareness.setLocalStateField('cursor', {
-          ...currentState.cursor,
+      if (collaboration.socket) {
+        collaboration.socket.emit('cursor_update', {
+          userId: currentUserId,
           isTyping: false
         })
       }
-    }, 1000)
-  }, [getCurrentPosition, awareness, currentUserId])
+    }, 1000) as NodeJS.Timeout
+  }, [getCurrentPosition, collaboration, currentUserId])
 
   /**
    * Handle typing events
    */
   const handleTyping = useCallback(() => {
-    if (!awareness) return
+    if (!collaboration.isConnected || !collaboration.socket) return
 
     const current = getCurrentPosition()
     if (!current) return
 
-    awareness.setLocalStateField('cursor', {
+    collaboration.socket.emit('cursor_position', {
       userId: currentUserId,
       position: current.position,
       selection: current.selection,
@@ -237,49 +243,52 @@ export default function CursorTracking({
       isActive: true,
       isTyping: true
     })
-  }, [awareness, currentUserId, getCurrentPosition])
+  }, [collaboration, currentUserId, getCurrentPosition])
 
   /**
-   * Handle awareness updates
+   * Handle user cursor updates
    */
   useEffect(() => {
-    if (!awareness) return
+    if (!collaboration.isConnected || !collaboration.socket) return
 
-    const handleAwarenessUpdate = () => {
-      const states = awareness.getStates()
+    const handleCursorUpdate = (data: any) => {
       const newCursors = new Map<string, UserCursor>()
 
-      states.forEach((state, clientId) => {
-        if (state.cursor && state.cursor.userId !== currentUserId) {
-          const user = state.user || {}
-          const cursor: UserCursor = {
-            userId: state.cursor.userId,
-            userName: user.name || `User ${state.cursor.userId.slice(0, 8)}`,
-            userColor: user.color || '#4ECDC4',
-            position: state.cursor.position,
-            selection: state.cursor.selection,
-            isVisible: Date.now() - state.cursor.timestamp < cursorFadeTimeout,
-            lastUpdate: state.cursor.timestamp,
-            metadata: {
-              isActive: state.cursor.isActive || false,
-              isTyping: state.cursor.isTyping || false,
-              viewportVisible: true // TODO: Check if cursor is in viewport
-            }
+      // Process cursor data from socket event
+      if (data.userId && data.userId !== currentUserId) {
+        const user = data.user || {}
+        const cursor: UserCursor = {
+          userId: data.userId,
+          userName: user.name || `User ${data.userId.slice(0, 8)}`,
+          userColor: user.color || '#4ECDC4',
+          position: data.position,
+          selection: data.selection,
+          isVisible: Date.now() - data.timestamp < cursorFadeTimeout,
+          lastUpdate: data.timestamp,
+          metadata: {
+            isActive: data.isActive || false,
+            isTyping: data.isTyping || false,
+            viewportVisible: true // TODO: Check if cursor is in viewport
           }
-          newCursors.set(state.cursor.userId, cursor)
         }
-      })
+        newCursors.set(data.userId, cursor)
+      }
 
       setCursors(newCursors)
     }
 
-    awareness.on('update', handleAwarenessUpdate)
-    handleAwarenessUpdate() // Initial load
-
-    return () => {
-      awareness.off('update', handleAwarenessUpdate)
+    // Add event listener with null check
+    if (collaboration.socket) {
+      collaboration.socket.on('cursor_position', handleCursorUpdate)
+      
+      return () => {
+        // Check again inside cleanup function
+        if (collaboration.socket) {
+          collaboration.socket.off('cursor_position', handleCursorUpdate)
+        }
+      }
     }
-  }, [awareness, currentUserId, cursorFadeTimeout])
+  }, [collaboration, currentUserId, cursorFadeTimeout])
 
   /**
    * Set up editor event listeners
@@ -293,7 +302,7 @@ export default function CursorTracking({
     updateEditorRect() // Initial measurement
 
     // Listen for cursor/selection changes
-    const updateHandler = EditorView.updateListener.of((update) => {
+    const updateListener = (update: ViewUpdate) => {
       if (update.selectionSet || update.docChanged) {
         updatePosition()
       }
@@ -301,19 +310,17 @@ export default function CursorTracking({
       if (update.docChanged) {
         handleTyping()
       }
-    })
+    };
 
-    const view = EditorView.theme({}, { priority: 'low' })
-    editorView.dispatch({
-      effects: [
-        EditorView.appendConfig.of([updateHandler, view])
-      ]
-    })
+    // Add update listener to editor view
+    editorView.dom.addEventListener('selectionchange', () => updatePosition());
+    editorView.dom.addEventListener('input', () => handleTyping());
 
     return () => {
       resizeObserver.disconnect()
-      if (updateTimeoutRef.current) {
+      if (updateTimeoutRef.current !== null) {
         clearTimeout(updateTimeoutRef.current)
+        updateTimeoutRef.current = null
       }
     }
   }, [editorView, updatePosition, handleTyping, updateEditorRect])
