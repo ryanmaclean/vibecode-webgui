@@ -9,6 +9,7 @@ import { VectorChunk, SearchResult, SearchOptions, VectorDatabaseConfig } from '
 import { metrics } from '../server-monitoring';
 import { logger } from '../logger';
 import { ConnectionPool, ConnectionPoolConfig } from './connection-pool';
+import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
 
 /**
  * Abstract base class for vector database adapters

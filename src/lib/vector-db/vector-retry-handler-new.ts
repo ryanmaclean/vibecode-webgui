@@ -220,9 +220,11 @@ export class RetryHandler {
    * @param error The error to check
    */
   private isErrorRetryable(error: Error): boolean {
-    // If it's a VectorDbError, use its retryable flag
-    if (error instanceof VectorDbError) {
-      return error.retryable;
+      // If it's a VectorDbError, check if it's retryable based on error type
+      if (error instanceof VectorDbError) {
+        return (error.details && 'retryable' in error.details && error.details.retryable === true) || 
+               error.type === VectorDbErrorType.CONNECTION ||
+               error.type === VectorDbErrorType.TIMEOUT;
     }
     
     // Otherwise, use the error handler to check if it's retryable

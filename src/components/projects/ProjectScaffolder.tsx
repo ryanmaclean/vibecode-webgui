@@ -28,7 +28,7 @@ import { ProjectTemplate, FileTemplate } from '@/lib/project-templates'
 interface ProjectScaffolderProps {
   template: ProjectTemplate
   projectName: string
-  onGenerate?: (projectData: { files: any[]; name: string }) => void
+  onGenerate?: (projectData: { files: GeneratedFile[]; name: string }) => void,
   onDownload?: (projectData: ProjectData) => void
 }
 
@@ -178,7 +178,7 @@ export function ProjectScaffolder({
     }
 
     setGeneratedFiles(files)
-    onGenerate?.(files)
+    onGenerate?.({ files: generatedFiles, name: projectName });
 
     setTimeout(() => {
       setIsGenerating(false)
