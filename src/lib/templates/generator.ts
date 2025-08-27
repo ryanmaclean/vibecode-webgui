@@ -23,11 +23,12 @@ export interface GeneratedProject {
   id: string
   name: string
   description: string
-  category: string
+  category: 'frontend' | 'backend' | 'fullstack' | 'mobile' | 'data' | 'infrastructure'
   complexity: 'beginner' | 'intermediate' | 'advanced'
   tags: string[]
-  language: string[]
-  frameworks: string[]
+  language: string[] // matches ProjectTemplate
+  frameworks: string[] // matches ProjectTemplate
+  features: string[]
   files: TemplateFile[]
   scripts: Record<string, string>
   dependencies: Record<string, string>
@@ -45,7 +46,6 @@ export interface GeneratedProject {
   }
   createdAt: Date
   estimatedTime: number
-  features: string[]
 }
 
 /**
@@ -91,6 +91,7 @@ export async function generateFromTemplate(
     language: template.language,
     frameworks: template.frameworks,
     complexity: template.complexity,
+    features: options.features || template.features,  // Use features from options if provided, otherwise from template
     files,
     scripts: { ...template.scripts },
     dependencies: { ...template.dependencies },
@@ -103,7 +104,6 @@ export async function generateFromTemplate(
     },
     createdAt: new Date(),
     estimatedTime: 30,
-    features: template.features,
     setupInstructions
   }
 }

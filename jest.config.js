@@ -1,8 +1,12 @@
 /** @type {import('jest').Config} */
 const config = {
   testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['./tests/jest.setup.js'],
-  setupFiles: ['./tests/jest.polyfills.js'],
+  setupFilesAfterEnv: [
+    '<rootDir>/tests/setupTests.ts',
+    '<rootDir>/tests/jest.setup.js',
+    '<rootDir>/tests/accessibility/jest-axe-setup.js'
+  ],
+  setupFiles: ['<rootDir>/tests/jest.polyfills.js'],
   modulePaths: ['<rootDir>'],
   
   // Increase timeout for integration tests
@@ -16,11 +20,29 @@ const config = {
     '^@/app/(.*)$': '<rootDir>/src/app/$1',
     '^@/hooks/(.*)$': '<rootDir>/src/hooks/$1',
     '^@/samples/(.*)$': '<rootDir>/src/samples/$1',
+    '^@/types/(.*)$': '<rootDir>/src/types/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/__mocks__/fileMock.js',
   },
+  
+  // Transform settings
+  transform: {
+    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', {
+      presets: [
+        ['@babel/preset-env', { targets: { node: 'current' } }],
+        ['@babel/preset-typescript', { allowNamespaces: true }],
+        ['@babel/preset-react', { runtime: 'automatic' }]
+      ],
+      plugins: [
+        ['@babel/plugin-proposal-decorators', { legacy: true }],
+        ['@babel/plugin-proposal-class-properties', { loose: true }],
+        '@babel/plugin-transform-runtime'
+      ]
+    }]
+  },
+  
   transformIgnorePatterns: [
-    '/node_modules/(?!(.*\\.mjs$))',
+    '/node_modules/(?!(.*\\.mjs$|@codemirror|@lezer|@codemirror/))',
   ],
   
   // Test environment options
@@ -28,9 +50,18 @@ const config = {
     customExportConditions: [''],
   },
   
+  // Coverage settings
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
+    '!src/**/*.stories.{js,jsx,ts,tsx}',
+    '!src/**/*.test.{js,jsx,ts,tsx}',
+    '!src/**/index.{js,jsx,ts,tsx}',
+  ],
+  
+  testMatch: [
+    '**/__tests__/**/*.[jt]s?(x)',
+    '**/?(*.)+(spec|test).[jt]s?(x)'
   ],
   
   testPathIgnorePatterns: [
@@ -38,25 +69,44 @@ const config = {
     '<rootDir>/node_modules/',
     '<rootDir>/tests/e2e/',
   ],
+  
+  moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json', 'node'],
 
   // Fix haste map collision
   haste: {
     enableSymlinks: false,
   },
-
-  // Use Babel for transformation to avoid SWC issues
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { 
-      presets: [
-        ['@babel/preset-env', { targets: { node: 'current' } }],
-        ['@babel/preset-react', { runtime: 'automatic' }],
-        '@babel/preset-typescript'
-      ]
-    }],
+  
+  // Clear mock calls and instances between tests
+  clearMocks: true,
+  resetMocks: true,
+  
+  // Module Directories
+  moduleDirectories: ['node_modules', 'src'],
+  
+  // Watch Plugins
+  watchPlugins: [
+    'jest-watch-typeahead/filename',
+    'jest-watch-typeahead/testname',
+  ],
+  
+  // Reporters
+  reporters: [
+    'default',
+    ['jest-junit', { outputDirectory: 'test-results', outputName: 'junit.xml' }],
+  ],
+  
+  // Coverage
+  coverageDirectory: 'coverage',
+  coverageReporters: ['json', 'lcov', 'text', 'clover'],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
   },
-
-  // Extensions to handle
-  moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json'],
 };
 
-module.exports = config;
+export default config;

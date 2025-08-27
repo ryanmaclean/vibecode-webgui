@@ -74,9 +74,16 @@ start_line=$(grep -n "private async checkIndexExists" "$FILE" | cut -d':' -f1)
 end_line=$(grep -n "protected async pingProvider" "$FILE" | cut -d':' -f1)
 end_line=$((end_line - 2))
 
-# Replace the method
+# Replace the method - macOS compatible version
 sed -i.tmp "${start_line},${end_line}d" "$FILE"
-sed -i.tmp "${start_line}i\\$(cat /tmp/check_index_exists.txt)" "$FILE"
+
+# On macOS, we need to insert line by line for the i command
+line_num=$start_line
+while IFS= read -r line; do
+  sed -i.tmp "${line_num}i\\
+$line" "$FILE"
+  line_num=$((line_num + 1))
+done < /tmp/check_index_exists.txt
 
 # Fix VectorDBErrorType to VectorDbErrorType throughout the file
 sed -i.tmp 's/VectorDBErrorType/VectorDbErrorType/g' "$FILE"
