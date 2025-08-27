@@ -26,3 +26,12 @@ dependencies:
     repository: "https://helm.datadoghq.com"
     alias: datadog
     condition: datadog.enabled
+    
+  - name: mongodb
+    version: "14.0.0"  # Latest stable MongoDB chart version
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: mongodb.enabled
+    tags:
+      - mongodb
+      - database
+      - nosql
