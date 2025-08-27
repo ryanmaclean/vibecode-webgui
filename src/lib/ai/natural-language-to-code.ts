@@ -8,6 +8,7 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { z } from 'zod';
+import { FunctionDefinition } from '../services/function-calling';
 
 export interface CodeGenerationRequest {
   description: string;
@@ -42,6 +43,7 @@ export interface CodeAnalysis {
   potentialChallenges: string[];
   alternatives: string[];
   bestPractices: string[];
+  complexity: 'low' | 'medium' | 'high';
 }
 
 export class NaturalLanguageToCode {
@@ -235,7 +237,7 @@ Focus on creating a clear technical specification that can be used for code gene
 
     const chain = RunnableSequence.from([
       prompt,
-      this.llm,
+      this.llm as any,
       new StringOutputParser(),
     ]);
 
@@ -297,7 +299,7 @@ Return only the code and explanations, no markdown formatting.
 
     const chain = RunnableSequence.from([
       prompt,
-      this.llm,
+      this.llm as any,
       new StringOutputParser(),
     ]);
 
@@ -346,7 +348,7 @@ Make tests readable and maintainable.
 
     const chain = RunnableSequence.from([
       prompt,
-      this.llm,
+      this.llm as any,
       new StringOutputParser(),
     ]);
 
@@ -393,7 +395,7 @@ Follow documentation best practices for the language.
 
     const chain = RunnableSequence.from([
       prompt,
-      this.llm,
+      this.llm as any,
       new StringOutputParser(),
     ]);
 
@@ -437,6 +439,16 @@ Follow documentation best practices for the language.
     const alternatives = lines.filter(line => line.includes('alternative') || line.includes('option')).map(line => line.trim());
     const bestPractices = lines.filter(line => line.includes('practice') || line.includes('pattern')).map(line => line.trim());
     
+    // Determine complexity based on content
+    let complexity: 'low' | 'medium' | 'high' = 'medium'; // Default to medium
+    
+    // Simple heuristic to determine complexity
+    if (potentialChallenges.length > 3 || requirements.length > 5) {
+      complexity = 'high';
+    } else if (potentialChallenges.length <= 1 && requirements.length <= 2) {
+      complexity = 'low';
+    }
+    
     return {
       intent,
       requirements,
@@ -444,6 +456,7 @@ Follow documentation best practices for the language.
       potentialChallenges,
       alternatives,
       bestPractices,
+      complexity
     };
   }
 
@@ -514,7 +527,7 @@ Return only the suggestions, one per line.
 
     const chain = RunnableSequence.from([
       prompt,
-      this.llm,
+      this.llm as any,
       new StringOutputParser(),
     ]);
 
@@ -560,7 +573,7 @@ Return the refactored code and explanations.
 
     const chain = RunnableSequence.from([
       prompt,
-      this.llm,
+      this.llm as any,
       new StringOutputParser(),
     ]);
 
