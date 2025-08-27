@@ -2,7 +2,16 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import io, { Socket } from 'socket.io-client'
-import { CollaborativeUser } from '@/lib/services/collaboration'
+
+// Define the interface locally instead of importing from an unavailable module
+export interface CollaborativeUser {
+  id: string
+  name: string
+  avatar?: string
+  color?: string
+  isActive: boolean
+  lastSeen?: Date
+}
 
 interface UseCollaborationProps {
   workspaceId: string
@@ -39,8 +48,8 @@ export function useCollaboration({
   const [cursors, setCursors] = useState<CursorPosition[]>([])
   const [connectionError, setConnectionError] = useState<string | null>(null)
 
-  const typingTimeoutRef = useRef<NodeJS.Timeout>()
-  const cursorThrottleRef = useRef<NodeJS.Timeout>()
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const cursorThrottleRef = useRef<NodeJS.Timeout | null>(null)
 
   // Initialize socket connection
   useEffect(() => {
@@ -150,13 +159,14 @@ export function useCollaboration({
     socket.emit('typing_start', { conversationId })
 
     // Auto-stop typing after 3 seconds of inactivity
-    if (typingTimeoutRef.current) {
+    if (typingTimeoutRef.current !== null) {
       clearTimeout(typingTimeoutRef.current)
+      typingTimeoutRef.current = null
     }
     
     typingTimeoutRef.current = setTimeout(() => {
       stopTyping(conversationId)
-    }, 3000)
+    }, 3000) as NodeJS.Timeout
   }, [socket, isConnected])
 
   const stopTyping = useCallback((conversationId: string) => {
@@ -164,8 +174,9 @@ export function useCollaboration({
 
     socket.emit('typing_stop', { conversationId })
     
-    if (typingTimeoutRef.current) {
+    if (typingTimeoutRef.current !== null) {
       clearTimeout(typingTimeoutRef.current)
+      typingTimeoutRef.current = null
     }
   }, [socket, isConnected])
 
@@ -179,8 +190,8 @@ export function useCollaboration({
     socket.emit('cursor_move', { x, y, messageId })
     
     cursorThrottleRef.current = setTimeout(() => {
-      cursorThrottleRef.current = undefined
-    }, 100) // 10 FPS max
+      cursorThrottleRef.current = null
+    }, 100) as NodeJS.Timeout // 10 FPS max
   }, [socket, isConnected])
 
   // Get user info by ID
@@ -210,7 +221,7 @@ export function useCollaboration({
       setCursors(current => 
         current.filter(c => now.getTime() - c.timestamp.getTime() < 5000)
       )
-    }, 5000)
+    }, 5000) as NodeJS.Timeout
 
     return () => clearInterval(cleanup)
   }, [])

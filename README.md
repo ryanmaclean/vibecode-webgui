@@ -14,6 +14,7 @@ A comprehensive AI-powered development platform featuring intelligent project ge
 - [Features](#features)
 - [Quick Start](#quick-start)
 - [Project Structure](#project-structure)
+- [AI Integration](#ai-integration)
 - [API Documentation](#api-documentation)
 - [Available Scripts](#available-scripts)
 - [Dependencies](#dependencies)
@@ -54,10 +55,35 @@ A comprehensive AI-powered development platform featuring intelligent project ge
 
 - Node.js >=18.18.0 <25.0.0
 - PostgreSQL 16+ with pgvector extension
+  - **Important note for Azure PostgreSQL:** There's a specific limitation when deploying on Azure PostgreSQL Flexible Server. See [docs/azure-postgresql-deployment.md](docs/azure-postgresql-deployment.md) for details on the pgvector setup workaround.
 - Redis 6+ (or Upstash account)
-- Docker & Docker Compose (optional)
+- Container runtime (choose one):
+  - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+  - [Orbstack](https://orbstack.dev/) (recommended alternative to Docker Desktop, lighter weight and faster)
 
 ### Installation
+
+#### Option 1: Using Docker Desktop
+
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+2. Start Docker Desktop
+3. Proceed with the setup below
+
+#### Option 2: Using Orbstack (Recommended)
+
+1. Download and install [Orbstack](https://orbstack.dev/)
+2. Start Orbstack (it will automatically start the Docker daemon)
+3. Verify installation by running:
+   ```bash
+   docker --version
+   docker-compose --version
+   ```
+4. (Optional) For better performance, configure Orbstack settings:
+   - Open Orbstack settings
+   - Go to Resources and allocate at least 4GB RAM and 2 CPU cores
+   - Enable Kubernetes if needed (disabled by default)
+
+#### Project Setup
 
 ```bash
 # Clone the repository
@@ -83,6 +109,34 @@ npm run dev
 ```
 
 Visit [http://localhost:3000](http://localhost:3000) to see the application.
+
+### Troubleshooting
+
+#### Orbstack Issues
+
+1. **Docker commands not found after installation**
+   - Make sure Orbstack is running in the background
+   - Restart your terminal or run `source ~/.zshrc` (or `source ~/.bashrc` if using bash)
+   - Verify the installation by running `orb version`
+
+2. **Performance issues**
+   - Open Orbstack settings and increase allocated resources (CPU/RAM)
+   - Go to Settings > Resources and allocate at least 4GB RAM and 2 CPU cores
+   - Disable Kubernetes if not needed (Settings > Kubernetes)
+
+3. **Port conflicts**
+   - Check for port conflicts with `lsof -i :<port>`
+   - Update your `.env` file to use different ports if needed
+
+4. **Volume mounting issues**
+   - Make sure the project directory is in an allowed path (check Orbstack settings > File Sharing)
+   - Try resetting file sharing permissions in Orbstack settings
+
+5. **Networking issues**
+   - Reset Orbstack networking: `orb reset-network`
+   - Restart Orbstack if you encounter network-related errors
+
+If you continue to experience issues, check the Orbstack logs at `~/Library/Logs/Orbstack/` or file an issue in our [GitHub repository](https://github.com/your-org/vibecode-webgui/issues).
 
 ## Project Structure
 
@@ -328,6 +382,17 @@ Validate database configuration
 ```bash
 npm run db:setup
 ```
+Setup database schemas and tables
+
+```bash
+npm run db:check
+```
+Check database connectivity with robust connection handling
+
+```bash
+npm run db:vector-init
+```
+Initialize vector database for AI embeddings
 
 
 

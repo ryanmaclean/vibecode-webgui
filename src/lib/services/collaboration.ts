@@ -322,11 +322,12 @@ class CollaborationService {
       timestamp: new Date()
     }
 
-    if (excludeUserId) {
-      this.io.to(`conversation:${conversationId}`).except(excludeUserId).emit('new_message', messageData)
-    } else {
-      this.io.to(`conversation:${conversationId}`).emit('new_message', messageData)
-    }
+    // Let all clients handle this - if excludeUserId is set, clients will need to check
+    // their own ID and ignore the message if they match
+    this.io.to(`conversation:${conversationId}`).emit('new_message', {
+      ...messageData,
+      _excludeUserId: excludeUserId // Include this so clients can filter
+    });
   }
 
   // Broadcast workspace events

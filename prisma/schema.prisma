@@ -96,6 +96,24 @@ model Project {
   @@map("projects")
 }
 
+// Document Embeddings for AI/ML
+model DocumentEmbedding {
+  id                      Int       @id @default(autoincrement())
+  documentId              String    @unique @map("document_id")
+  content                 String    @db.Text
+  embedding               String?   @db.Vector(1536) // For pgvector
+  metadata                Json?     @default("{}")
+  embeddingGenerationTime Int?      @map("embedding_generation_time_ms")
+  searchCount             Int       @default(0) @map("search_count")
+  lastAccessedAt          DateTime? @map("last_accessed_at")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  @@map("document_embeddings")
+  @@index([documentId])
+  @@index([embedding(ops: VectorL2Ops)], type: "ivfflat")
+}
+
 // Files and RAG System
 model File {
   id           Int      @id @default(autoincrement())

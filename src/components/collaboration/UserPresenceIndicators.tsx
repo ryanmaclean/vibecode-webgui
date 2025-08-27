@@ -11,7 +11,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, Cursor, Activity, Clock, Wifi, WifiOff } from 'lucide-react'
+import { User, Activity, Clock, Wifi, WifiOff } from 'lucide-react'
 import { useCollaboration } from '../../hooks/useCollaboration'
 
 export interface UserPresence {
@@ -74,7 +74,12 @@ export default function UserPresenceIndicators({
   className = '',
   onUserClick
 }: UserPresenceIndicatorsProps) {
-  const { collaborationManager, awareness, isConnected } = useCollaboration()
+  const collaboration = useCollaboration({
+    workspaceId: sessionId,
+    userId: currentUserId,
+    userName: 'Anonymous',
+    enabled: true
+  })
   const [presenceData, setPresenceData] = useState<Map<string, UserPresence>>(new Map())
   const [isExpanded, setIsExpanded] = useState(false)
   const [hoveredUser, setHoveredUser] = useState<string | null>(null)
@@ -89,38 +94,6 @@ export default function UserPresenceIndicators({
     }
     return USER_COLORS[Math.abs(hash) % USER_COLORS.length]
   }, [])
-
-  /**
-   * Update user presence data
-   */
-  const updatePresence = useCallback((position: { line: number; column: number }, selection?: any) => {
-    if (!awareness || !collaborationManager) return
-
-    const presence: Partial<UserPresence> = {
-      userId: currentUserId,
-      position,
-      selection,
-      isTyping: true,
-      isActive: true,
-      lastActivity: Date.now(),
-      connectionStatus: isConnected ? 'connected' : 'disconnected',
-      metadata: {
-        device: getDeviceType(),
-        browser: getBrowserInfo(),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      }
-    }
-
-    awareness.setLocalStateField('presence', presence)
-
-    // Clear typing indicator after timeout
-    setTimeout(() => {
-      const currentPresence = awareness.getLocalState()?.presence
-      if (currentPresence && currentPresence.lastActivity === presence.lastActivity) {
-        awareness.setLocalStateField('presence', { ...currentPresence, isTyping: false })
-      }
-    }, TYPING_TIMEOUT)
-  }, [awareness, collaborationManager, currentUserId, isConnected])
 
   /**
    * Get device type
@@ -145,55 +118,114 @@ export default function UserPresenceIndicators({
   }, [])
 
   /**
-   * Handle awareness updates
+   * Update user presence data
+   */
+  const updatePresence = useCallback((position: { line: number; column: number }, selection?: any) => {
+    if (!collaboration.isConnected || !collaboration.socket) return
+
+    const presence: Partial<UserPresence> = {
+      userId: currentUserId,
+      position,
+      selection,
+      isTyping: true,
+      isActive: true,
+      lastActivity: Date.now(),
+      connectionStatus: collaboration.isConnected ? 'connected' : 'disconnected',
+      metadata: {
+        device: getDeviceType(),
+        browser: getBrowserInfo(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      }
+    }
+
+    // Send presence update via socket
+    collaboration.socket.emit('presence_update', presence)
+
+    // Clear typing indicator after timeout
+    setTimeout(() => {
+      if (collaboration.socket) {
+        collaboration.socket.emit('presence_update', { 
+          userId: currentUserId,
+          isTyping: false 
+        })
+      }
+    }, TYPING_TIMEOUT)
+  }, [collaboration, currentUserId, getDeviceType, getBrowserInfo])
+
+  /**
+   * Handle user presence updates
    */
   useEffect(() => {
-    if (!awareness) return
+    if (!collaboration.isConnected || !collaboration.socket) return
 
-    const handleAwarenessUpdate = () => {
-      const states = awareness.getStates()
+    const handlePresenceUpdate = (data: any) => {
       const newPresenceData = new Map<string, UserPresence>()
 
-      states.forEach((state, clientId) => {
-        if (state.presence && state.presence.userId !== currentUserId) {
-          const user = state.user || {}
-          const presence: UserPresence = {
-            userId: state.presence.userId,
-            userName: user.name || `User ${state.presence.userId.slice(0, 8)}`,
-            userAvatar: user.avatar,
-            userColor: getUserColor(state.presence.userId),
-            position: state.presence.position || { line: 0, column: 0 },
-            selection: state.presence.selection,
-            isTyping: state.presence.isTyping || false,
-            isActive: Date.now() - (state.presence.lastActivity || 0) < ACTIVITY_THRESHOLD,
-            lastActivity: state.presence.lastActivity || 0,
-            connectionStatus: state.presence.connectionStatus || 'connected',
-            viewport: state.presence.viewport,
-            metadata: state.presence.metadata
-          }
-          newPresenceData.set(state.presence.userId, presence)
+      // Process presence data from socket event
+      if (data.userId && data.userId !== currentUserId) {
+        const user = data.user || {}
+        const presence: UserPresence = {
+          userId: data.userId,
+          userName: user.name || `User ${data.userId.slice(0, 8)}`,
+          userAvatar: user.avatar,
+          userColor: getUserColor(data.userId),
+          position: data.position || { line: 0, column: 0 },
+          selection: data.selection,
+          isTyping: data.isTyping || false,
+          isActive: Date.now() - (data.lastActivity || 0) < ACTIVITY_THRESHOLD,
+          lastActivity: data.lastActivity || 0,
+          connectionStatus: data.connectionStatus || 'connected',
+          viewport: data.viewport,
+          metadata: data.metadata
         }
-      })
+        newPresenceData.set(data.userId, presence)
+      }
 
       setPresenceData(newPresenceData)
     }
 
-    awareness.on('update', handleAwarenessUpdate)
-    handleAwarenessUpdate() // Initial load
+    // Register event listener
+    collaboration.socket.on('presence_update', handlePresenceUpdate)
+    
+    // Initial load from active users
+    const initialPresence = new Map<string, UserPresence>()
+    collaboration.activeUsers.forEach(user => {
+      if (user.id !== currentUserId) {
+        initialPresence.set(user.id, {
+          userId: user.id,
+          userName: user.name || `User ${user.id.slice(0, 8)}`,
+          userColor: getUserColor(user.id),
+          position: { line: 0, column: 0 },
+          isTyping: false,
+          isActive: true,
+          lastActivity: Date.now(),
+          connectionStatus: 'connected',
+          metadata: {
+            device: 'desktop',
+            browser: 'Unknown',
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          }
+        })
+      }
+    })
+    setPresenceData(initialPresence)
 
     return () => {
-      awareness.off('update', handleAwarenessUpdate)
+      if (collaboration.socket) {
+        collaboration.socket.off('presence_update', handlePresenceUpdate)
+      }
     }
-  }, [awareness, currentUserId, getUserColor])
+  }, [collaboration, currentUserId, getUserColor])
 
   /**
    * Expose updatePresence for parent components
    */
   useEffect(() => {
-    if (collaborationManager) {
-      (collaborationManager as any).updatePresence = updatePresence
+    if (collaboration.socket) {
+      // This is a simplified approach since we don't have collaborationManager anymore
+      (window as any).updateUserPresence = updatePresence
     }
-  }, [collaborationManager, updatePresence])
+  }, [collaboration.socket, updatePresence])
 
   /**
    * Get sorted and filtered users
@@ -350,7 +382,7 @@ export default function UserPresenceIndicators({
         {/* Connection status */}
         {showConnectionStatus && (
           <div className="flex items-center gap-1 ml-2">
-            {isConnected ? (
+            {collaboration.isConnected ? (
               <Wifi className="w-4 h-4 text-green-500" />
             ) : (
               <WifiOff className="w-4 h-4 text-red-500" />
@@ -435,7 +467,7 @@ export default function UserPresenceIndicators({
                         </>
                       ) : (
                         <>
-                          <Cursor className="w-3 h-3" />
+                          <Activity className="w-3 h-3" />
                           Line {user.position.line + 1}
                         </>
                       )}
