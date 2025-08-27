@@ -1,0 +1,51 @@
+name: Daily Standup Report
+
+on:
+  schedule:
+    # Run every weekday at 9:00 AM UTC
+    - cron: '0 9 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  generate-standup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Needed for git log
+
+      - name: Setup GitHub CLI
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Install GitHub CLI
+        run: |
+          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+          && sudo apt update \
+          && sudo apt install gh -y
+
+      - name: Generate Standup Report
+        id: standup
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Create report
+          REPORT=$(./scripts/standup-report.sh)
+          
+          # Create a GitHub issue with the standup report
+          gh issue create \
+            --title "Standup Report $(date +'%Y-%m-%d')" \
+            --body "$REPORT" \
+            --label "standup"
+          
+          # Post to Slack (if configured)
+          if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+            echo "$REPORT" | jq -Rs --arg channel "#standup" '{channel: $channel, text: .}' | \
+            curl -X POST -H 'Content-type: application/json' \
+            --data @- "${{ secrets.SLACK_WEBHOOK_URL }}"
+          fi

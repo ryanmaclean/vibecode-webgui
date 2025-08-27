@@ -16,7 +16,7 @@ import {
   Brain, 
   DollarSign, 
   Clock,
-  Tools,
+  Wrench,
   Search
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -186,7 +186,7 @@ export function EnhancedAIChatInterface({
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       sendMessage()
@@ -302,10 +302,10 @@ export function EnhancedAIChatInterface({
         {showSettings && (
           <CardContent className="pt-0 border-t">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Tools className="h-4 w-4" />
-                <label className="text-sm font-medium">Enable AI Tools</label>
-              </div>
+                <div className="flex items-center gap-2">
+                  <Wrench className="h-4 w-4" />
+                  <label className="text-sm font-medium">Enable AI Tools</label>
+                </div>
               <Switch checked={enableTools} onCheckedChange={setEnableTools} />
             </div>
             <p className="text-xs text-gray-500 mt-1">
@@ -405,7 +405,7 @@ export function EnhancedAIChatInterface({
           ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyDown}
           placeholder="Ask me about your code, request new features, or get help with debugging..."
           className="flex-1 min-h-[50px] max-h-32 resize-none"
           disabled={isLoading}

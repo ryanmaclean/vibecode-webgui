@@ -229,7 +229,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
             throw this.errorHandler.handleError(
               chunkError,
               'storeChunks.insertChunk',
-              VectorDbErrorType.VECTOR_OPERATION_FAILED,
+              VectorDbErrorType.VECTOR_CREATION_FAILED,
               this.errorHandler.isNetworkError(chunkError),
               {
                 fileId,
@@ -265,7 +265,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           error,
           'storeChunks',
-          VectorDbErrorType.VECTOR_OPERATION_FAILED,
+          VectorDbErrorType.VECTOR_CREATION_FAILED,
           this.errorHandler.isNetworkError(error) || this.errorHandler.isTimeoutError(error),
           {
             fileId,
@@ -768,7 +768,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       throw this.errorHandler.handleError(
         error,
         'deleteFileChunks',
-        VectorDbErrorType.VECTOR_OPERATION_FAILED,
+        VectorDbErrorType.VECTOR_CREATION_FAILED,
         this.errorHandler.isNetworkError(error) || this.errorHandler.isTimeoutError(error),
         { fileId }
       );

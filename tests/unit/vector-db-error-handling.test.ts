@@ -1,3 +1,5 @@
+import { VectorDbErrorHandler } from '../../src/lib/vector-db/vector-db-error-handler';
+
   describe('Performance', () => {
     test('Error handling has minimal overhead', () => {
       const errorHandler = new VectorDbErrorHandler('test-provider');

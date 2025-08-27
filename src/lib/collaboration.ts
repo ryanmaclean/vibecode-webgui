@@ -160,8 +160,8 @@ export class CollaborationManager {
   /**
    * Update cursor position for current user
    */
-  updateCursor(session: CollaborationSession, line: number, column: number): void {
-    if (!this.currentUser || !session.provider?.awareness) return
+  updateCursor(session: CollaborationSession | null, line: number, column: number): void {
+    if (!this.currentUser || !session || !session.provider?.awareness) return
 
     this.currentUser.cursor = { line, column }
     session.provider.awareness.setLocalStateField('user', {
@@ -173,7 +173,8 @@ export class CollaborationManager {
   /**
    * Get all active users in a session
    */
-  getActiveUsers(session: CollaborationSession): CollaborationUser[] {
+  getActiveUsers(session: CollaborationSession | null): CollaborationUser[] {
+    if (!session) return []
     return Array.from(session.users.values())
   }
 
