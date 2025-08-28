@@ -9,11 +9,13 @@ describe('GenAI Workflow with PostgreSQL', () => {
   let prisma: PrismaClient;
   let embeddingService: any;
   let vectorService: VectorService;
+  let factory: EmbeddingServiceFactory;
 
   beforeAll(async () => {
     prisma = new PrismaClient();
     vectorService = new VectorService(prisma);
-    embeddingService = EmbeddingServiceFactory.createEmbeddingService(prisma);
+    factory = new EmbeddingServiceFactory(prisma);
+    embeddingService = factory.createEmbeddingServiceFromEnv();
     
     // Ensure database is clean
     await prisma.$executeRaw`TRUNCATE TABLE document_embeddings CASCADE`;
@@ -57,7 +59,7 @@ describe('GenAI Workflow with PostgreSQL', () => {
       limit: 2
     });
 
-    expect(result).toHaveProperty('context');
+    expect(result).toHaveProperty('query');
     expect(result).toHaveProperty('documents');
     expect(result.documents.length).toBeGreaterThan(0);
   });

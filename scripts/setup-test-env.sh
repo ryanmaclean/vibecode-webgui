@@ -7,7 +7,7 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}🚀 Setting up test environment for GenAI webinar demo...${NC}"
+echo -e "${GREEN}🚀 Setting up test environment for GenAI demo...${NC}"
 
 # Check if Azure CLI is installed
 if ! command -v az &> /dev/null; then
