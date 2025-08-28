@@ -283,6 +283,13 @@ helm install vibecode-prod ./helm/vibecode-platform \
 - **Real API Key Integration**: Live Datadog API connectivity
 - **Production-Ready**: SSL support and enterprise configuration
 
+## 🔗 Related Documentation
+
+- **[Production Deployment Guide](./production-deployment-guide/)** - Complete production deployment workflow
+- **[PostgreSQL + pgvector Setup](./prisma-pgvector/)** - Database setup with secure credential management
+- **[Helm Deployment Guide](./helm-deployment-guide/)** - Kubernetes deployment instructions
+- **[Datadog Monitoring Configuration](./DATADOG_MONITORING_CONFIGURATION/)** - Production monitoring setup
+
 ---
 
 **SECURITY REMINDER**: All secrets are managed through automation - never commit API keys or passwords to Git. The implementation ensures secure secret handling following 2025 industry standards and enterprise best practices.

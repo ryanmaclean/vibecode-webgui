@@ -1,11 +1,13 @@
 /**
  * Azure OpenAI Embedding Service
  * Provides functionality for generating and storing text embeddings using Azure OpenAI
+ * with support for connection pooling and managed identity
  */
 
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { DefaultAzureCredential } from '@azure/identity';
+import { withVectorConnection } from '../db/vector-connection-pool';
 
 // Interface for embedding generation options
 interface EmbeddingOptions {
@@ -63,9 +65,10 @@ export class AzureEmbeddingService {
   private endpoint: string;
   private deploymentName: string;
   private apiVersion: string;
-  private prisma: PrismaClient;
+  private prisma: PrismaClient | null;
   private vectorService: any; // Will hold database vector operations
   private useManagedIdentity: boolean;
+  private useConnectionPool: boolean;
 
   /**
    * Constructor for AzureEmbeddingService
@@ -74,16 +77,18 @@ export class AzureEmbeddingService {
    * @param endpoint - Azure OpenAI endpoint URL
    * @param deploymentName - Azure OpenAI deployment name
    * @param apiVersion - Azure OpenAI API version
-   * @param prisma - PrismaClient instance for database operations
+   * @param prisma - PrismaClient instance for database operations (can be null if using connection pool)
    * @param useManagedIdentity - Whether to use Azure managed identity for authentication
+   * @param useConnectionPool - Whether to use connection pooling for database operations
    */
   constructor(
     apiKey: string,
     endpoint: string,
     deploymentName: string,
     apiVersion: string = '2023-05-15',
-    prisma: PrismaClient,
-    useManagedIdentity: boolean = false
+    prisma: PrismaClient | null = null,
+    useManagedIdentity: boolean = false,
+    useConnectionPool: boolean = false
   ) {
     this.apiKey = apiKey;
     this.endpoint = endpoint;
@@ -91,6 +96,7 @@ export class AzureEmbeddingService {
     this.apiVersion = apiVersion;
     this.prisma = prisma;
     this.useManagedIdentity = useManagedIdentity;
+    this.useConnectionPool = useConnectionPool;
     
     // Create vector service for database operations
     this.vectorService = this.createVectorService();
@@ -101,6 +107,20 @@ export class AzureEmbeddingService {
    * This allows us to abstract the database operations and replace with mock for testing
    */
   private createVectorService() {
+    // Check if we should use connection pooling
+    if (this.useConnectionPool) {
+      // Create services that use connection pooling
+      return this.createPooledVectorService();
+    } else {
+      // Use direct Prisma client
+      return this.createDirectVectorService();
+    }
+  }
+
+  /**
+   * Create vector service using connection pooling
+   */
+  private createPooledVectorService() {
     return {
       upsertEmbedding: async (params: {
         documentId: string;
@@ -111,9 +131,140 @@ export class AzureEmbeddingService {
         const { documentId, content, embedding, metadata } = params;
         const startTime = Date.now();
         
-        // Use Prisma's executeRaw to handle the pgvector type
-        // Use raw SQL query for pgvector compatibility
-        return this.prisma.$executeRawUnsafe(
+        // Use the connection pool to execute the query
+        return withVectorConnection(async (client) => {
+          // Use Prisma's executeRaw to handle the pgvector type
+          return client.$executeRawUnsafe(
+            `INSERT INTO document_embeddings (
+              document_id, 
+              content, 
+              embedding, 
+              metadata,
+              embedding_generation_time_ms
+            )
+            VALUES ($1, $2, $3::vector, $4, $5)
+            ON CONFLICT (document_id) 
+            DO UPDATE SET 
+              content = EXCLUDED.content,
+              embedding = EXCLUDED.embedding,
+              metadata = EXCLUDED.metadata,
+              embedding_generation_time_ms = $5,
+              updated_at = NOW()`,
+            documentId,
+            content,
+            JSON.stringify(embedding),
+            JSON.stringify(metadata || {}),
+            Date.now() - startTime
+          );
+        });
+      },
+      
+      findSimilarDocuments: async (params: {
+        embedding: number[];
+        threshold?: number;
+        limit?: number;
+        filter?: Record<string, any>;
+      }) => {
+        const { embedding, threshold = 0.7, limit = 5, filter } = params;
+        
+        // Use raw SQL query for pgvector compatibility and filtering
+        let query = `
+          SELECT 
+            id, 
+            document_id, 
+            content,
+            metadata,
+            1 - (embedding <=> $1::vector) as similarity
+          FROM 
+            document_embeddings
+          WHERE 
+            1 - (embedding <=> $1::vector) > $2
+        `;
+        
+        const queryParams: any[] = [JSON.stringify(embedding), threshold];
+        let paramIndex = 3;
+        
+        // Add filter conditions if provided
+        if (filter && Object.keys(filter).length > 0) {
+          for (const [key, value] of Object.entries(filter)) {
+            query += ` AND metadata->>'${key}' = $${paramIndex}`;
+            queryParams.push(String(value));
+            paramIndex++;
+          }
+        }
+        
+        // Add order by and limit
+        query += ` ORDER BY similarity DESC LIMIT $${paramIndex}`;
+        queryParams.push(limit);
+        
+        // Execute the query using connection pool
+        return withVectorConnection(async (client) => {
+          return client.$queryRawUnsafe(query, ...queryParams);
+        });
+      },
+      
+      getEmbeddingStats: async () => {
+        // Return embedding statistics from the database using connection pool
+        return withVectorConnection(async (client) => {
+          return client.$queryRawUnsafe(`
+            SELECT 
+              DATE_TRUNC('hour', created_at) AS hour_bucket,
+              COUNT(*) AS total_embeddings,
+              AVG(LENGTH(content)) AS avg_content_length,
+              AVG(embedding_generation_time_ms) AS avg_generation_time_ms,
+              SUM(search_count) AS total_searches
+            FROM 
+              document_embeddings
+            GROUP BY 
+              hour_bucket
+            ORDER BY 
+              hour_bucket DESC
+            LIMIT 24
+          `);
+        });
+      },
+      
+      cleanupOldEmbeddings: async (params: { olderThan?: Date }) => {
+        const { olderThan = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } = params;
+        
+        // Delete embeddings older than the specified date using connection pool
+        return withVectorConnection(async (client) => {
+          const query = `
+            DELETE FROM document_embeddings 
+            WHERE created_at < $1
+            RETURNING COUNT(*) as deleted_count
+          `;
+          
+          const result = await client.$queryRawUnsafe(query, olderThan);
+          const deletedCount = Array.isArray(result) && result.length > 0 ? 
+            (result[0] as any).deleted_count || 0 : 0;
+          
+          return { deletedCount };
+        });
+      }
+    };
+  }
+
+  /**
+   * Create vector service using direct Prisma client
+   */
+  private createDirectVectorService() {
+    if (!this.prisma) {
+      throw new Error('Prisma client is required when not using connection pooling');
+    }
+
+    return {
+      upsertEmbedding: async (params: {
+        documentId: string;
+        content: string;
+        embedding: number[];
+        metadata?: DocumentMetadata;
+      }) => {
+        const { documentId, content, embedding, metadata } = params;
+        const startTime = Date.now();
+        
+        // Use direct Prisma client
+        return this.prisma!.$executeRawUnsafe(
           `INSERT INTO document_embeddings (
             document_id, 
             content, 
@@ -175,13 +326,13 @@ export class AzureEmbeddingService {
         query += ` ORDER BY similarity DESC LIMIT $${paramIndex}`;
         queryParams.push(limit);
         
-        // Execute the query
-        return this.prisma.$queryRawUnsafe(query, ...queryParams);
+        // Execute the query using direct Prisma client
+        return this.prisma!.$queryRawUnsafe(query, ...queryParams);
       },
       
       getEmbeddingStats: async () => {
-        // Return embedding statistics from the database
-        return this.prisma.$queryRawUnsafe(`
+        // Return embedding statistics from the database using direct Prisma client
+        return this.prisma!.$queryRawUnsafe(`
           SELECT 
             DATE_TRUNC('hour', created_at) AS hour_bucket,
             COUNT(*) AS total_embeddings,
@@ -201,14 +352,14 @@ export class AzureEmbeddingService {
       cleanupOldEmbeddings: async (params: { olderThan?: Date }) => {
         const { olderThan = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } = params;
         
-        // Delete embeddings older than the specified date
+        // Delete embeddings older than the specified date using direct Prisma client
         const query = `
           DELETE FROM document_embeddings 
           WHERE created_at < $1
           RETURNING COUNT(*) as deleted_count
         `;
         
-        const result = await this.prisma.$queryRawUnsafe(query, olderThan);
+        const result = await this.prisma!.$queryRawUnsafe(query, olderThan);
         const deletedCount = Array.isArray(result) && result.length > 0 ? 
           (result[0] as any).deleted_count || 0 : 0;
         
