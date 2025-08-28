@@ -39,12 +39,25 @@
 
 ## Current Priorities
 
+## Current Priorities
+
 - [x] Test the vector database migration utility
   - [x] Create unit tests for the migration utility
   - [x] Test running migrations in development environment
   - [x] Validate rollback functionality 
   - [x] Test edge cases like partial migrations
   - [x] Benchmark performance with large datasets
+
+- [ ] Implement Azure embedding service integration
+  - [x] Create AzureEmbeddingService implementation
+  - [x] Create EmbeddingServiceFactory
+  - [x] Create database schema for vector embeddings
+  - [x] Test Azure embedding generation 
+  - [x] Create end-to-end tests for Azure embeddings
+  - [x] Add authentication with Azure managed identity
+  - [ ] Implement connection pooling for database operations
+  - [ ] Add monitoring for Azure API usage
+  - [ ] Create metrics dashboard for embedding operations
 
 - [ ] Create automatic connection pool monitoring tools
   - [ ] Implement health dashboard for database connections

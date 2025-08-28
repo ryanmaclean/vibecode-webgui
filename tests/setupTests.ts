@@ -65,15 +65,13 @@ window.IntersectionObserver = IntersectionObserver;
 // Mock the scrollIntoView method
 Element.prototype.scrollIntoView = jest.fn();
 
-// Mock the getComputedStyle method
+// Mock the getComputedStyle function
 const originalGetComputedStyle = window.getComputedStyle;
-window.getComputedStyle = (elt) => {
-  const style = originalGetComputedStyle(elt);
-  return {
-    ...style,
-    paddingLeft: '0',
-    paddingRight: '0',
-    marginLeft: '0',
-    marginRight: '0',
-  };
-};
+window.getComputedStyle = (elt: Element) => ({
+  getPropertyValue: jest.fn(),
+  display: 'block',
+  visibility: 'visible',
+  opacity: '1',
+  position: 'static',
+  ...originalGetComputedStyle(elt)
+});

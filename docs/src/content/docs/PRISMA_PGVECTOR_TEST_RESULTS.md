@@ -263,5 +263,5 @@ model RAGChunk {
 
 - [Datadog Compatibility Summary](./DATADOG_COMPATIBILITY_SUMMARY.md)
 - [Environment Variables Guide](./ENV_VARIABLES.md)  
-- [Deployment Guide](./docs/DEPLOYMENT.md)
+- [Helm Deployment Guide](./helm-deployment-guide.md)
 - [PostgreSQL Init Script](./infrastructure/postgres/init.sql) 

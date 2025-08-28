@@ -56,6 +56,7 @@ A comprehensive AI-powered development platform featuring intelligent project ge
 - Node.js >=18.18.0 <25.0.0
 - PostgreSQL 16+ with pgvector extension
   - **Important note for Azure PostgreSQL:** There's a specific limitation when deploying on Azure PostgreSQL Flexible Server. See [docs/azure-postgresql-deployment.md](docs/azure-postgresql-deployment.md) for details on the pgvector setup workaround.
+  - **Azure OpenAI for embeddings:** For setting up and using Azure OpenAI for embeddings, see our [Azure Embedding Service Setup Guide](docs/azure-embedding-service-setup.md).
 - Redis 6+ (or Upstash account)
 - Container runtime (choose one):
   - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
@@ -189,6 +190,48 @@ vibecode-webgui/
 - **src/hooks/** - Custom React hooks
 - **tests/** - Test files (unit, integration, E2E)
 - **docs/** - Documentation and guides
+
+## AI Integration
+
+VibeCode integrates with various AI providers to power its intelligent features. Here's how to set up and use these integrations:
+
+### Supported AI Providers
+
+- **OpenAI** - Default provider for embeddings and completions
+- **Azure OpenAI** - Microsoft's managed OpenAI service with additional security features
+- **Anthropic** - Alternative provider with Claude models
+- **Local Models** - Support for running models locally with Ollama
+
+### Vector Embeddings
+
+Vector embeddings are used throughout the platform for:
+
+- Semantic search across codebase
+- RAG (Retrieval Augmented Generation) for more accurate code generation
+- Similarity matching for intelligent recommendations
+
+For detailed setup instructions, see:
+
+- [Azure Embedding Service Setup Guide](docs/azure-embedding-service-setup.md) - Configure Azure OpenAI for embeddings
+- [PostgreSQL Vector Setup](docs/azure-postgresql-deployment.md) - Set up pgvector with PostgreSQL
+
+### Environment Configuration
+
+Configure your AI providers using environment variables:
+
+```dotenv
+# OpenAI
+OPENAI_API_KEY=your-openai-key
+
+# Azure OpenAI
+AZURE_OPENAI_API_KEY=your-azure-openai-key
+AZURE_OPENAI_ENDPOINT=https://your-service-name.openai.azure.com/
+AZURE_OPENAI_DEPLOYMENT_NAME=your-deployment-name
+AZURE_OPENAI_API_VERSION=2023-05-15
+
+# Anthropic
+ANTHROPIC_API_KEY=your-anthropic-key
+```
 
 ## API Documentation
 
