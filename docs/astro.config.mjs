@@ -27,11 +27,42 @@ export default defineConfig({
           link: '/wiki-index/'
         },
         {
-          label: 'Quick Start Guide',
-          link: '/guides/quick-start/'
+          label: 'Getting Started',
+          items: [
+            { label: 'Quick Start Guide', link: '/guides/quick-start/' },
+            { label: 'Getting Started', link: '/getting-started/' },
+            { label: 'Developer Guide', link: '/developer-guide/' },
+          ]
         },
         {
-          label: 'Documentation',
+          label: 'Production Deployment',
+          collapsed: false,
+          items: [
+            { label: 'Production Deployment Guide', link: '/production-deployment-guide/' },
+            { label: 'Kubernetes Secrets Automation', link: '/kubernetes-secrets-automation/' },
+            { label: 'Helm Deployment Guide', link: '/helm-deployment-guide/' },
+          ]
+        },
+        {
+          label: 'Database & Storage',
+          items: [
+            { label: 'PostgreSQL + pgvector', link: '/prisma-pgvector/' },
+            { label: 'PostgreSQL Test Results', link: '/PRISMA_PGVECTOR_TEST_RESULTS/' },
+            { label: 'PostgreSQL GenAI Demo', link: '/postgresql-genai-demo-guide/' },
+            { label: 'PostgreSQL Sample Queries', link: '/postgresql-sample-queries/' },
+          ]
+        },
+        {
+          label: 'Monitoring & Observability',
+          items: [
+            { label: 'Overview', link: '/monitoring/overview/' },
+            { label: 'Datadog Configuration', link: '/DATADOG_MONITORING_CONFIGURATION/' },
+            { label: 'Datadog Local Development', link: '/DATADOG_LOCAL_DEVELOPMENT/' },
+            { label: 'Datadog Compatibility', link: '/datadog-compatibility/' },
+          ]
+        },
+        {
+          label: 'All Documentation',
           autogenerate: { directory: '.' }
         }
       ],

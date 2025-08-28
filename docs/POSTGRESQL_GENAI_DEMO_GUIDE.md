@@ -1,8 +1,10 @@
-# Monitoring GenAI Applications with PostgreSQL on Azure - Webinar Preparation
+# PostgreSQL GenAI Monitoring Demo Guide
+
+This document provides comprehensive guidance for demonstrating PostgreSQL with pgvector for GenAI applications on Azure, including common challenges and solutions.
 
 ## Overview
 
-This document outlines potential challenges and their solutions when monitoring PostgreSQL databases for GenAI applications on Azure. It represents the "friction log" that will be covered during the webinar to help participants avoid common pitfalls.
+This document outlines potential challenges and their solutions when monitoring PostgreSQL databases for GenAI applications on Azure. It represents a "friction log" to help developers avoid common pitfalls.
 
 ## Setup and Configuration Pitfalls
 

@@ -1,161 +1,393 @@
-import OpenAI from 'openai';
-import { VectorService } from '../db/vector';
+/**
+ * Azure OpenAI Embedding Service
+ * Provides functionality for generating and storing text embeddings using Azure OpenAI
+ */
+
 import { PrismaClient } from '@prisma/client';
+import axios from 'axios';
+import { DefaultAzureCredential } from '@azure/identity';
 
+// Interface for embedding generation options
+interface EmbeddingOptions {
+  dimensions?: number;
+  user?: string;
+}
+
+// Interface for vector search options
+interface VectorSearchOptions {
+  threshold?: number;
+  limit?: number;
+  filter?: Record<string, any>;
+}
+
+// Interface for document metadata
+interface DocumentMetadata {
+  [key: string]: any;
+}
+
+// Interface for similar document result
+interface SimilarDocument {
+  id: number;
+  document_id: string;
+  content: string;
+  metadata?: DocumentMetadata;
+  similarity: number;
+}
+
+// Interface for RAG query result
+interface RagQueryResult {
+  provider: string;
+  query: string;
+  documents: SimilarDocument[];
+  timestamp: string;
+}
+
+// Interface for embedding statistics
+interface EmbeddingStats {
+  provider: string;
+  stats: Array<{
+    hour_bucket: string;
+    total_embeddings: number;
+    avg_content_length: number;
+    avg_generation_time_ms: number;
+    total_searches: number;
+  }>;
+}
+
+/**
+ * Azure OpenAI Embedding Service class
+ * Handles generating embeddings using Azure OpenAI and storing them in a database
+ */
 export class AzureEmbeddingService {
-  private openai: OpenAI;
-  private vectorService: VectorService;
-  private model: string;
+  private apiKey: string;
+  private endpoint: string;
+  private deploymentName: string;
+  private apiVersion: string;
+  private prisma: PrismaClient;
+  private vectorService: any; // Will hold database vector operations
+  private useManagedIdentity: boolean;
 
+  /**
+   * Constructor for AzureEmbeddingService
+   * 
+   * @param apiKey - Azure OpenAI API key (can be empty if using managed identity)
+   * @param endpoint - Azure OpenAI endpoint URL
+   * @param deploymentName - Azure OpenAI deployment name
+   * @param apiVersion - Azure OpenAI API version
+   * @param prisma - PrismaClient instance for database operations
+   * @param useManagedIdentity - Whether to use Azure managed identity for authentication
+   */
   constructor(
     apiKey: string,
     endpoint: string,
-    deploymentName: string = 'text-embedding-3-small',
+    deploymentName: string,
     apiVersion: string = '2023-05-15',
-    prismaClient: PrismaClient
+    prisma: PrismaClient,
+    useManagedIdentity: boolean = false
   ) {
-    this.openai = new OpenAI({
-      apiKey,
-      baseURL: `${endpoint}/openai/deployments/${deploymentName}`,
-      defaultQuery: { 'api-version': apiVersion },
-      defaultHeaders: { 'api-key': apiKey },
-    });
-    this.model = deploymentName;
-    this.vectorService = new VectorService(prismaClient);
+    this.apiKey = apiKey;
+    this.endpoint = endpoint;
+    this.deploymentName = deploymentName;
+    this.apiVersion = apiVersion;
+    this.prisma = prisma;
+    this.useManagedIdentity = useManagedIdentity;
+    
+    // Create vector service for database operations
+    this.vectorService = this.createVectorService();
   }
 
   /**
-   * Generate embeddings for a piece of text
+   * Create vector service for database operations
+   * This allows us to abstract the database operations and replace with mock for testing
    */
-  async generateEmbedding(text: string): Promise<number[]> {
-    try {
-      const response = await this.openai.embeddings.create({
-        model: this.model,
-        input: text
-      });
+  private createVectorService() {
+    return {
+      upsertEmbedding: async (params: {
+        documentId: string;
+        content: string;
+        embedding: number[];
+        metadata?: DocumentMetadata;
+      }) => {
+        const { documentId, content, embedding, metadata } = params;
+        const startTime = Date.now();
+        
+        // Use Prisma's executeRaw to handle the pgvector type
+        // Use raw SQL query for pgvector compatibility
+        return this.prisma.$executeRawUnsafe(
+          `INSERT INTO document_embeddings (
+            document_id, 
+            content, 
+            embedding, 
+            metadata,
+            embedding_generation_time_ms
+          )
+          VALUES ($1, $2, $3::vector, $4, $5)
+          ON CONFLICT (document_id) 
+          DO UPDATE SET 
+            content = EXCLUDED.content,
+            embedding = EXCLUDED.embedding,
+            metadata = EXCLUDED.metadata,
+            embedding_generation_time_ms = $5,
+            updated_at = NOW()`,
+          documentId,
+          content,
+          JSON.stringify(embedding),
+          JSON.stringify(metadata || {}),
+          Date.now() - startTime
+        );
+      },
+      
+      findSimilarDocuments: async (params: {
+        embedding: number[];
+        threshold?: number;
+        limit?: number;
+        filter?: Record<string, any>;
+      }) => {
+        const { embedding, threshold = 0.7, limit = 5, filter } = params;
+        
+        // Use raw SQL query for pgvector compatibility and filtering
+        let query = `
+          SELECT 
+            id, 
+            document_id, 
+            content,
+            metadata,
+            1 - (embedding <=> $1::vector) as similarity
+          FROM 
+            document_embeddings
+          WHERE 
+            1 - (embedding <=> $1::vector) > $2
+        `;
+        
+        const queryParams: any[] = [JSON.stringify(embedding), threshold];
+        let paramIndex = 3;
+        
+        // Add filter conditions if provided
+        if (filter && Object.keys(filter).length > 0) {
+          for (const [key, value] of Object.entries(filter)) {
+            query += ` AND metadata->>'${key}' = $${paramIndex}`;
+            queryParams.push(String(value));
+            paramIndex++;
+          }
+        }
+        
+        // Add order by and limit
+        query += ` ORDER BY similarity DESC LIMIT $${paramIndex}`;
+        queryParams.push(limit);
+        
+        // Execute the query
+        return this.prisma.$queryRawUnsafe(query, ...queryParams);
+      },
+      
+      getEmbeddingStats: async () => {
+        // Return embedding statistics from the database
+        return this.prisma.$queryRawUnsafe(`
+          SELECT 
+            DATE_TRUNC('hour', created_at) AS hour_bucket,
+            COUNT(*) AS total_embeddings,
+            AVG(LENGTH(content)) AS avg_content_length,
+            AVG(embedding_generation_time_ms) AS avg_generation_time_ms,
+            SUM(search_count) AS total_searches
+          FROM 
+            document_embeddings
+          GROUP BY 
+            hour_bucket
+          ORDER BY 
+            hour_bucket DESC
+          LIMIT 24
+        `);
+      },
+      
+      cleanupOldEmbeddings: async (params: { olderThan?: Date }) => {
+        const { olderThan = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } = params;
+        
+        // Delete embeddings older than the specified date
+        const query = `
+          DELETE FROM document_embeddings 
+          WHERE created_at < $1
+          RETURNING COUNT(*) as deleted_count
+        `;
+        
+        const result = await this.prisma.$queryRawUnsafe(query, olderThan);
+        const deletedCount = Array.isArray(result) && result.length > 0 ? 
+          (result[0] as any).deleted_count || 0 : 0;
+        
+        return { deletedCount };
+      }
+    };
+  }
 
-      return response.data[0].embedding;
-    } catch (error) {
-      console.error('Error generating Azure embedding:', error);
-      throw new Error('Failed to generate Azure embedding');
+  /**
+   * Generate embedding for a text using Azure OpenAI
+   * 
+   * @param text - Text to generate embedding for
+   * @param options - Optional parameters for embedding generation
+   * @returns Promise<number[]> - Vector embedding
+   */
+  public async generateEmbedding(text: string, options: EmbeddingOptions = {}): Promise<number[]> {
+    try {
+      // Construct the Azure OpenAI API URL
+      const url = `${this.endpoint}/openai/deployments/${this.deploymentName}/embeddings?api-version=${this.apiVersion}`;
+      
+      // Set up the request payload
+      const payload = {
+        input: text,
+        dimensions: options.dimensions,
+        user: options.user
+      };
+      
+      // Set up headers based on authentication method
+      let headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      
+      // Use managed identity or API key
+      if (this.useManagedIdentity) {
+        const credential = new DefaultAzureCredential();
+        const token = await credential.getToken('https://cognitiveservices.azure.com/.default');
+        headers['Authorization'] = `Bearer ${token.token}`;
+      } else {
+        headers['api-key'] = this.apiKey;
+      }
+      
+      // Make the API request
+      const response = await axios.post(url, payload, { headers });
+      
+      // Extract and return the embedding data
+      if (response.data && response.data.data && response.data.data.length > 0) {
+        return response.data.data[0].embedding;
+      } else {
+        throw new Error('No embedding data returned from Azure OpenAI API');
+      }
+    } catch (error: any) {
+      console.error('Error generating embedding:', error.message);
+      if (error.response) {
+        console.error('Azure API response:', error.response.data);
+      }
+      throw new Error(`Failed to generate embedding: ${error.message}`);
     }
   }
 
   /**
-   * Store a document and its embedding in the database
+   * Store a document with its embedding in the database
+   * 
+   * @param documentId - Unique identifier for the document
+   * @param content - Text content of the document
+   * @param metadata - Optional metadata associated with the document
+   * @returns Promise<void>
    */
-  async storeDocument(
-    documentId: string,
-    content: string,
-    metadata: Record<string, any> = {}
-  ) {
+  public async storeDocument(
+    documentId: string, 
+    content: string, 
+    metadata: DocumentMetadata = {}
+  ): Promise<void> {
     try {
+      // Generate embedding for the document content
       const embedding = await this.generateEmbedding(content);
       
-      return this.vectorService.upsertEmbedding({
+      // Store the document and its embedding in the database
+      await this.vectorService.upsertEmbedding({
         documentId,
         content,
         embedding,
-        metadata: {
-          ...metadata,
-          model: this.model,
-          provider: 'azure',
-          contentLength: content.length,
-          updatedAt: new Date().toISOString(),
-        },
+        metadata
       });
-    } catch (error) {
-      console.error('Error storing document with Azure embedding:', error);
-      throw new Error('Failed to store document with Azure embedding');
+    } catch (error: any) {
+      console.error('Error storing document:', error.message);
+      throw new Error(`Failed to store document: ${error.message}`);
     }
   }
 
   /**
-   * Find similar documents to the given query
+   * Find documents similar to a query text
+   * 
+   * @param queryText - Text to find similar documents for
+   * @param options - Search options including threshold and limit
+   * @returns Promise<SimilarDocument[]> - Array of similar documents
    */
-  async findSimilarDocuments(
-    query: string,
-    options: { threshold?: number; limit?: number } = {}
-  ) {
+  public async findSimilarDocuments(
+    queryText: string,
+    options: VectorSearchOptions = {}
+  ): Promise<SimilarDocument[]> {
     try {
-      const embedding = await this.generateEmbedding(query);
-      return await this.vectorService.findSimilarDocuments({
-        embedding,
-        threshold: options.threshold ?? 0.7, // Default threshold
-        limit: options.limit ?? 5, // Default limit
-      });
-    } catch (error) {
-      console.error('Error finding similar documents:', error);
-      throw new Error('Failed to find similar documents');
-    }
-  }
-
-  /**
-   * Perform a RAG (Retrieval-Augmented Generation) query
-   */
-  async ragQuery(
-    query: string,
-    options: { threshold?: number; limit?: number } = {}
-  ) {
-    try {
-      const similarDocs = await this.findSimilarDocuments(query, options);
+      // Generate embedding for the query text
+      const queryEmbedding = await this.generateEmbedding(queryText);
       
-      // Format context from similar documents
-      const context = similarDocs
-        .map((doc, i) => `Document ${i + 1}:\n${doc.content}`)
-        .join('\n\n');
-
-      return {
-        query,
-        context,
-        documents: similarDocs,
-        model: this.model,
-        provider: 'azure',
-        timestamp: new Date().toISOString(),
-      };
-    } catch (error) {
-      console.error('Error in Azure RAG query:', error);
-      throw new Error('Failed to process Azure RAG query');
+      // Find documents with similar embeddings
+      const similarDocuments = await this.vectorService.findSimilarDocuments({
+        embedding: queryEmbedding,
+        threshold: options.threshold,
+        limit: options.limit,
+        filter: options.filter
+      });
+      
+      return similarDocuments as SimilarDocument[];
+    } catch (error: any) {
+      console.error('Error finding similar documents:', error.message);
+      throw new Error(`Failed to find similar documents: ${error.message}`);
     }
   }
 
   /**
-   * Get statistics about embeddings
+   * Perform a RAG (Retrieval Augmented Generation) query
+   * 
+   * @param queryText - Query text
+   * @param options - Search options
+   * @returns Promise<RagQueryResult> - RAG query result
    */
-  async getStats() {
+  public async ragQuery(
+    queryText: string,
+    options: VectorSearchOptions = {}
+  ): Promise<RagQueryResult> {
     try {
+      // Find similar documents
+      const documents = await this.findSimilarDocuments(queryText, options);
+      
+      // Return the RAG query result
+      return {
+        provider: 'azure',
+        query: queryText,
+        documents,
+        timestamp: new Date().toISOString()
+      };
+    } catch (error: any) {
+      console.error('Error performing RAG query:', error.message);
+      throw new Error(`Failed to perform RAG query: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get embedding statistics
+   * 
+   * @returns Promise<EmbeddingStats> - Embedding statistics
+   */
+  public async getStats(): Promise<EmbeddingStats> {
+    try {
+      // Get embedding statistics from the database
       const stats = await this.vectorService.getEmbeddingStats();
+      
       return {
-        stats,
-        model: this.model,
         provider: 'azure',
-        timestamp: new Date().toISOString(),
+        stats
       };
-    } catch (error) {
-      console.error('Error getting Azure embedding stats:', error);
-      throw new Error('Failed to retrieve Azure embedding statistics');
+    } catch (error: any) {
+      console.error('Error getting embedding statistics:', error.message);
+      throw new Error(`Failed to get embedding statistics: ${error.message}`);
     }
   }
 
   /**
-   * Clean up old embeddings
+   * Clean up old embeddings from the database
+   * 
+   * @param olderThan - Date to clean up embeddings older than
+   * @returns Promise<{ deletedCount: number }> - Number of deleted embeddings
    */
-  async cleanupOldEmbeddings(daysToKeep: number = 30) {
-    if (daysToKeep < 1) {
-      throw new Error('daysToKeep must be at least 1');
-    }
-
+  public async cleanupOldEmbeddings(olderThan?: Date): Promise<{ deletedCount: number }> {
     try {
-      const result = await this.vectorService.cleanupOldEmbeddings(daysToKeep);
-      return {
-        deletedCount: result.deletedCount,
-        model: this.model,
-        provider: 'azure',
-        timestamp: new Date().toISOString(),
-      };
-    } catch (error) {
-      console.error('Error cleaning up old Azure embeddings:', error);
-      throw new Error('Failed to clean up old Azure embeddings');
+      return this.vectorService.cleanupOldEmbeddings({ olderThan });
+    } catch (error: any) {
+      console.error('Error cleaning up old embeddings:', error.message);
+      throw new Error(`Failed to clean up old embeddings: ${error.message}`);
     }
   }
 }

@@ -1,0 +1,551 @@
+{
+  "title": "Vector Database Performance",
+  "description": "Comprehensive monitoring of VibeCode vector database operations and performance metrics",
+  "widgets": [
+    {
+      "definition": {
+        "type": "group",
+        "title": "Database Overview",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Database Status",
+              "type": "check_status",
+              "check": "postgres.can_connect",
+              "grouping": "cluster",
+              "tags": ["service:vector-db"]
+            }
+          },
+          {
+            "definition": {
+              "title": "Total Vector Queries",
+              "type": "query_value",
+              "requests": [{
+                "q": "sum:vector_db.search.count{$env}.as_rate()",
+                "aggregator": "avg",
+                "conditional_formats": [
+                  {
+                    "comparator": ">",
+                    "value": 500,
+                    "palette": "white_on_red"
+                  },
+                  {
+                    "comparator": ">=",
+                    "value": 200,
+                    "palette": "white_on_yellow"
+                  },
+                  {
+                    "comparator": "<",
+                    "value": 200,
+                    "palette": "white_on_green"
+                  }
+                ]
+              }],
+              "autoscale": true,
+              "precision": 1
+            }
+          },
+          {
+            "definition": {
+              "title": "Database Uptime",
+              "type": "query_value",
+              "requests": [{
+                "q": "avg:postgres.uptime{$env,service:vector-db}",
+                "aggregator": "max",
+                "conditional_formats": [
+                  {
+                    "comparator": "<",
+                    "value": 3600,
+                    "palette": "white_on_red"
+                  },
+                  {
+                    "comparator": "<",
+                    "value": 86400,
+                    "palette": "white_on_yellow"
+                  },
+                  {
+                    "comparator": ">=",
+                    "value": 86400,
+                    "palette": "white_on_green"
+                  }
+                ]
+              }],
+              "custom_unit": "seconds"
+            }
+          },
+          {
+            "definition": {
+              "title": "Active Connections",
+              "type": "timeseries",
+              "requests": [{
+                "q": "avg:postgres.connections{$env,service:vector-db} by {state}",
+                "display_type": "area"
+              }],
+              "yaxis": {
+                "scale": "linear",
+                "include_zero": true,
+                "min": "auto",
+                "max": "auto"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "group",
+        "title": "Vector Search Performance",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Vector Search Latency",
+              "requests": [
+                {
+                  "q": "avg:vector_db.search.duration.avg{$env} by {collection}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                },
+                {
+                  "q": "avg:vector_db.search.duration.p95{$env} by {collection}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "dashed",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "label": "Latency (ms)",
+                "scale": "log",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": false
+              },
+              "markers": [
+                {
+                  "value": "y = 200",
+                  "display_type": "warning dashed",
+                  "label": "Warning Threshold"
+                },
+                {
+                  "value": "y = 500",
+                  "display_type": "error dashed",
+                  "label": "Critical Threshold"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "type": "toplist",
+              "title": "Slowest Vector Collections",
+              "requests": [
+                {
+                  "q": "top(avg:vector_db.search.duration.p95{$env} by {collection}, 10, 'mean', 'desc')",
+                  "conditional_formats": [
+                    {
+                      "comparator": ">",
+                      "value": 500,
+                      "palette": "white_on_red"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 200,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 200,
+                      "palette": "white_on_green"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "type": "heatmap",
+              "title": "Vector Search Latency Distribution",
+              "requests": [
+                {
+                  "q": "vector_db.search.duration{$env}"
+                }
+              ],
+              "yaxis": {
+                "label": "Latency (ms)",
+                "scale": "sqrt",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": false
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "group",
+        "title": "Embedding Generation",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Embedding Generation Rate",
+              "requests": [
+                {
+                  "q": "sum:vector_db.embedding.generation.count{$env}.as_rate()",
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "Embeddings / sec",
+                "scale": "linear",
+                "min": 0,
+                "include_zero": true
+              }
+            }
+          },
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Embedding Generation Latency",
+              "requests": [
+                {
+                  "q": "avg:vector_db.embedding.generation.duration.avg{$env}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                },
+                {
+                  "q": "avg:vector_db.embedding.generation.duration.p95{$env}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "dashed",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "label": "Latency (ms)",
+                "scale": "log",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": false
+              }
+            }
+          },
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Embedding Generation Errors",
+              "requests": [
+                {
+                  "q": "sum:vector_db.embedding.generation.errors{$env}.as_count()",
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "label": "Error Count",
+                "scale": "linear",
+                "min": 0,
+                "include_zero": true
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "group",
+        "title": "Connection Pool Metrics",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Connection Pool Utilization",
+              "requests": [
+                {
+                  "q": "avg:vector_db.pool.used{$env} by {pool_name} / avg:vector_db.pool.size{$env} by {pool_name} * 100",
+                  "display_type": "area",
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "label": "Utilization %",
+                "scale": "linear",
+                "min": 0,
+                "max": 100,
+                "include_zero": true
+              },
+              "markers": [
+                {
+                  "value": "y = 80",
+                  "display_type": "warning dashed",
+                  "label": "Warning Threshold"
+                },
+                {
+                  "value": "y = 90",
+                  "display_type": "error dashed",
+                  "label": "Critical Threshold"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Connection Acquire Time",
+              "requests": [
+                {
+                  "q": "avg:vector_db.pool.acquire_time.avg{$env} by {pool_name}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                },
+                {
+                  "q": "avg:vector_db.pool.acquire_time.p95{$env} by {pool_name}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "dashed",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "label": "Time (ms)",
+                "scale": "log",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": false
+              }
+            }
+          },
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Connection Errors",
+              "requests": [
+                {
+                  "q": "sum:vector_db.pool.errors{$env} by {error_type}.as_count()",
+                  "display_type": "bars"
+                }
+              ],
+              "yaxis": {
+                "label": "Error Count",
+                "scale": "linear",
+                "min": 0,
+                "include_zero": true
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "group",
+        "title": "Cache Performance",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Cache Hit Ratio",
+              "requests": [
+                {
+                  "q": "sum:vector_db.cache.hits{$env}.as_count() / (sum:vector_db.cache.hits{$env}.as_count() + sum:vector_db.cache.misses{$env}.as_count()) * 100",
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "Hit Ratio %",
+                "scale": "linear",
+                "min": 0,
+                "max": 100,
+                "include_zero": true
+              }
+            }
+          },
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Cache Operations",
+              "requests": [
+                {
+                  "q": "sum:vector_db.cache.gets{$env}.as_rate()",
+                  "display_type": "area",
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "name": "Gets"
+                },
+                {
+                  "q": "sum:vector_db.cache.sets{$env}.as_rate()",
+                  "display_type": "area",
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "name": "Sets"
+                },
+                {
+                  "q": "sum:vector_db.cache.invalidations{$env}.as_rate()",
+                  "display_type": "area",
+                  "style": {
+                    "palette": "grey",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "name": "Invalidations"
+                }
+              ],
+              "yaxis": {
+                "label": "Operations / sec",
+                "scale": "linear",
+                "min": 0,
+                "include_zero": true
+              }
+            }
+          },
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Cache Size",
+              "requests": [
+                {
+                  "q": "sum:vector_db.cache.size_bytes{$env}",
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "Size (bytes)",
+                "scale": "linear",
+                "min": 0,
+                "include_zero": true
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "group",
+        "title": "Database Resources",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Database CPU Usage",
+              "requests": [
+                {
+                  "q": "avg:kubernetes.cpu.usage.total{$env,pod_name:vector-db-*,container_name:postgres}",
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "CPU Usage",
+                "scale": "linear",
+                "min": 0,
+                "include_zero": true
+              }
+            }
+          },
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Database Memory Usage",
+              "requests": [
+                {
+                  "q": "avg:kubernetes.memory.usage{$env,pod_name:vector-db-*,container_name:postgres}",
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "Memory Usage",
+                "scale": "linear",
+                "min": 0,
+                "include_zero": true
+              }
+            }
+          },
+          {
+            "definition": {
+              "type": "timeseries",
+              "title": "Database Disk Usage",
+              "requests": [
+                {
+                  "q": "avg:kubernetes.volume.usage{$env,pod_name:vector-db-*} by {persistentvolumeclaim}",
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "Disk Usage",
+                "scale": "linear",
+                "min": 0,
+                "include_zero": true
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "note",
+        "content": "## Vector Database Monitoring\n\nThis dashboard provides comprehensive monitoring of the vector database performance metrics. Key metrics to watch:\n\n- **Vector Search Latency**: Should stay below 200ms for optimal user experience\n- **Embedding Generation Rate**: High rates may indicate potential token usage concerns\n- **Connection Pool Utilization**: Approaching 100% indicates need for pool expansion\n- **Cache Hit Ratio**: Low hit ratio may indicate inefficient caching strategy\n- **Resource Utilization**: Monitor for scaling needs\n\nFor detailed metrics explanation and alerting thresholds, see the [Vector DB Operations Guide](https://docs.vibecode.dev/vector-db-ops).",
+        "background_color": "gray",
+        "font_size": "14",
+        "text_align": "left",
+        "show_tick": true,
+        "tick_pos": "bottom",
+        "tick_edge": "left"
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "env",
+      "default": "production",
+      "prefix": "env",
+      "available_values": [
+        "production",
+        "staging",
+        "development"
+      ]
+    }
+  ],
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "notify_list": []
+}
