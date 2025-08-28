@@ -67,7 +67,7 @@ VibeCode is built as a modern, cloud-native application with the following archi
    ```
 
    Configure your `.env.local`:
-   ```env
+   ```bash
    # Database
    DATABASE_URL="postgresql://vibecode:password@localhost:5432/vibecode_dev"
    
@@ -291,7 +291,7 @@ export async function POST(request: NextRequest) {
    ```
 
 3. **Add configuration**
-   ```env
+   ```bash
    YOUR_PROVIDER_API_KEY="your-key-here"
    ```
 
@@ -506,7 +506,7 @@ test(auth): add unit tests for login flow
 
 Enable debug logging:
 
-```env
+```bash
 DEBUG=vibecode:*
 LOG_LEVEL=debug
 ```
