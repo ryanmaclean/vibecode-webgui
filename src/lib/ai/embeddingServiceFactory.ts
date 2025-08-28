@@ -24,6 +24,7 @@ export interface EmbeddingServiceConfig {
   dimensions?: number;
   model?: string;
   useManagedIdentity?: boolean;
+  useConnectionPool?: boolean;
 }
 
 // Type to handle both embedding service types
@@ -53,7 +54,27 @@ export class EmbeddingServiceFactory {
   public createEmbeddingService(config: EmbeddingServiceConfig): EmbeddingServiceType {
     switch (config.provider) {
       case EmbeddingProvider.AZURE:
-        if (config.useManagedIdentity) {
+        // Check for managed identity and connection pooling
+        const useManagedIdentity = config.useManagedIdentity === true;
+        const useConnectionPool = config.useConnectionPool === true;
+        
+        if (useManagedIdentity && useConnectionPool) {
+          // Managed identity with connection pooling
+          if (!config.endpoint || !config.deploymentName) {
+            throw new Error('Azure OpenAI configuration with managed identity requires endpoint and deploymentName');
+          }
+          
+          return new AzureEmbeddingService(
+            '', // Empty API key when using managed identity
+            config.endpoint,
+            config.deploymentName,
+            config.apiVersion || '2023-05-15',
+            null, // No Prisma client when using connection pool
+            true, // Use managed identity
+            true  // Use connection pool
+          );
+        } else if (useManagedIdentity) {
+          // Managed identity without connection pooling
           if (!config.endpoint || !config.deploymentName) {
             throw new Error('Azure OpenAI configuration with managed identity requires endpoint and deploymentName');
           }
@@ -64,9 +85,11 @@ export class EmbeddingServiceFactory {
             config.deploymentName,
             config.apiVersion || '2023-05-15',
             this.prisma,
-            true // Use managed identity
+            true, // Use managed identity
+            false // Don't use connection pool
           );
-        } else {
+        } else if (useConnectionPool) {
+          // API key with connection pooling
           if (!config.apiKey || !config.endpoint || !config.deploymentName) {
             throw new Error('Azure OpenAI configuration requires apiKey, endpoint, and deploymentName');
           }
@@ -76,7 +99,24 @@ export class EmbeddingServiceFactory {
             config.endpoint,
             config.deploymentName,
             config.apiVersion || '2023-05-15',
-            this.prisma
+            null, // No Prisma client when using connection pool
+            false, // Don't use managed identity
+            true  // Use connection pool
+          );
+        } else {
+          // Default: API key without connection pooling
+          if (!config.apiKey || !config.endpoint || !config.deploymentName) {
+            throw new Error('Azure OpenAI configuration requires apiKey, endpoint, and deploymentName');
+          }
+          
+          return new AzureEmbeddingService(
+            config.apiKey,
+            config.endpoint,
+            config.deploymentName,
+            config.apiVersion || '2023-05-15',
+            this.prisma,
+            false, // Don't use managed identity
+            false  // Don't use connection pool
           );
         }
         
@@ -112,6 +152,7 @@ export class EmbeddingServiceFactory {
     const azureDeploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME;
     const azureApiVersion = process.env.AZURE_OPENAI_API_VERSION || '2023-05-15';
     const useAzureManagedIdentity = process.env.USE_AZURE_MANAGED_IDENTITY === 'true';
+    const useConnectionPool = process.env.USE_CONNECTION_POOL === 'true';
     
     if (azureEndpoint && azureDeploymentName) {
       if (useAzureManagedIdentity) {
@@ -120,7 +161,8 @@ export class EmbeddingServiceFactory {
           endpoint: azureEndpoint,
           deploymentName: azureDeploymentName,
           apiVersion: azureApiVersion,
-          useManagedIdentity: true
+          useManagedIdentity: true,
+          useConnectionPool
         });
       } else if (azureApiKey) {
         return this.createEmbeddingService({
@@ -128,7 +170,8 @@ export class EmbeddingServiceFactory {
           apiKey: azureApiKey,
           endpoint: azureEndpoint,
           deploymentName: azureDeploymentName,
-          apiVersion: azureApiVersion
+          apiVersion: azureApiVersion,
+          useConnectionPool
         });
       }
     }
@@ -168,24 +211,65 @@ export class EmbeddingServiceFactory {
   /**
    * Static method to create an embedding service with robust connection handling
    * 
+   * @param useConnectionPool - Whether to use connection pooling (defaults to environment variable)
    * @returns Promise resolving to the embedding service and a release function
    */
-  public static async createEmbeddingServiceWithRobustConnection(): Promise<{ 
+  public static async createEmbeddingServiceWithRobustConnection(useConnectionPool?: boolean): Promise<{ 
     service: EmbeddingServiceType; 
     releaseConnection: () => Promise<void>;
   }> {
-    // Create a new Prisma client
-    const prisma = new PrismaClient();
+    // Check if connection pooling should be used
+    const usePool = useConnectionPool ?? (process.env.USE_CONNECTION_POOL === 'true');
     
-    // Create the embedding service
-    const service = EmbeddingServiceFactory.createEmbeddingService(prisma);
-    
-    // Return the service and a release function
-    return {
-      service,
-      releaseConnection: async () => {
-        await prisma.$disconnect();
+    if (usePool) {
+      // No need to create a Prisma client when using connection pool
+      // Create service using environment variables and connection pool
+      const factory = new EmbeddingServiceFactory(new PrismaClient());
+      
+      // Get existing environment variables
+      const azureApiKey = process.env.AZURE_OPENAI_API_KEY;
+      const azureEndpoint = process.env.AZURE_OPENAI_ENDPOINT;
+      const azureDeploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME;
+      const azureApiVersion = process.env.AZURE_OPENAI_API_VERSION || '2023-05-15';
+      const useManagedIdentity = process.env.USE_AZURE_MANAGED_IDENTITY === 'true';
+      
+      // Ensure the Azure configuration exists
+      if (!azureEndpoint || !azureDeploymentName) {
+        throw new Error('Azure OpenAI configuration required for connection pooling');
       }
-    };
+      
+      // Create service with connection pooling
+      const service = factory.createEmbeddingService({
+        provider: EmbeddingProvider.AZURE,
+        apiKey: azureApiKey,
+        endpoint: azureEndpoint,
+        deploymentName: azureDeploymentName,
+        apiVersion: azureApiVersion,
+        useManagedIdentity,
+        useConnectionPool: true
+      });
+      
+      // Return service with a no-op release function (pool handles connections)
+      return {
+        service,
+        releaseConnection: async () => {
+          // No individual connection to release when using pool
+        }
+      };
+    } else {
+      // Traditional direct Prisma client
+      const prisma = new PrismaClient();
+      
+      // Create the embedding service
+      const service = EmbeddingServiceFactory.createEmbeddingService(prisma);
+      
+      // Return the service and a release function
+      return {
+        service,
+        releaseConnection: async () => {
+          await prisma.$disconnect();
+        }
+      };
+    }
   }
 }
