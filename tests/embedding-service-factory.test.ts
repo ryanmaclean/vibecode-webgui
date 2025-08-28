@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { EmbeddingServiceFactory } from '../src/lib/ai/embeddingServiceFactory';
-import { EmbeddingService } from '../src/lib/ai/embeddingService';
+import { EmbeddingServiceFactory, EmbeddingProvider } from '../src/lib/ai/embeddingServiceFactory';
 import { AzureEmbeddingService } from '../src/lib/ai/azureEmbeddingService';
 import * as dotenv from 'dotenv';
 
@@ -8,16 +7,12 @@ dotenv.config();
 
 describe('Embedding Service Factory', () => {
   let prisma: PrismaClient;
+  let embeddingServiceFactory: EmbeddingServiceFactory;
   let originalEnv: NodeJS.ProcessEnv;
 
   beforeAll(() => {
     prisma = new PrismaClient();
     originalEnv = { ...process.env };
-  });
-
-  afterAll(async () => {
-    await prisma.$disconnect();
-    process.env = originalEnv;
   });
 
   beforeEach(() => {
@@ -26,6 +21,14 @@ describe('Embedding Service Factory', () => {
     delete process.env.AZURE_OPENAI_ENDPOINT;
     delete process.env.AZURE_OPENAI_DEPLOYMENT_NAME;
     delete process.env.OPENAI_API_KEY;
+    
+    // Create a new factory instance for each test
+    embeddingServiceFactory = new EmbeddingServiceFactory(prisma);
+  });
+
+  afterAll(async () => {
+    await prisma.$disconnect();
+    process.env = originalEnv;
   });
 
   test('should create Azure embedding service when Azure environment variables are set', () => {
@@ -34,35 +37,35 @@ describe('Embedding Service Factory', () => {
     process.env.AZURE_OPENAI_ENDPOINT = 'https://test-azure-endpoint.openai.azure.com';
     process.env.AZURE_OPENAI_DEPLOYMENT_NAME = 'text-embedding-3-small';
 
-    const service = EmbeddingServiceFactory.createEmbeddingService(prisma);
+    const service = embeddingServiceFactory.createEmbeddingServiceFromEnv();
 
     expect(service).toBeInstanceOf(AzureEmbeddingService);
   });
 
-  test('should create standard OpenAI embedding service when OpenAI API key is set', () => {
-    // Set OpenAI environment variable
-    process.env.OPENAI_API_KEY = 'test-openai-key';
-
-    const service = EmbeddingServiceFactory.createEmbeddingService(prisma);
-
-    expect(service).toBeInstanceOf(EmbeddingService);
-  });
-
-  test('should prioritize Azure when both Azure and OpenAI credentials are available', () => {
-    // Set both Azure and OpenAI environment variables
-    process.env.AZURE_OPENAI_API_KEY = 'test-azure-key';
-    process.env.AZURE_OPENAI_ENDPOINT = 'https://test-azure-endpoint.openai.azure.com';
-    process.env.AZURE_OPENAI_DEPLOYMENT_NAME = 'text-embedding-3-small';
-    process.env.OPENAI_API_KEY = 'test-openai-key';
-
-    const service = EmbeddingServiceFactory.createEmbeddingService(prisma);
+  test('should create Azure embedding service with explicit configuration', () => {
+    const service = embeddingServiceFactory.createEmbeddingService({
+      provider: EmbeddingProvider.AZURE,
+      apiKey: 'test-azure-key',
+      endpoint: 'https://test-azure-endpoint.openai.azure.com',
+      deploymentName: 'text-embedding-3-small'
+    });
 
     expect(service).toBeInstanceOf(AzureEmbeddingService);
   });
 
-  test('should throw error when no credentials are available', () => {
+  test('should throw error when Azure configuration is incomplete', () => {
     expect(() => {
-      EmbeddingServiceFactory.createEmbeddingService(prisma);
-    }).toThrow('No embedding service API keys configured');
+      embeddingServiceFactory.createEmbeddingService({
+        provider: EmbeddingProvider.AZURE,
+        apiKey: 'test-azure-key',
+        // Missing endpoint and deploymentName
+      });
+    }).toThrow('Azure OpenAI configuration requires apiKey, endpoint, and deploymentName');
+  });
+
+  test('should throw error when no credentials are available in environment', () => {
+    expect(() => {
+      embeddingServiceFactory.createEmbeddingServiceFromEnv();
+    }).toThrow('No valid embedding service configuration found in environment variables');
   });
 });

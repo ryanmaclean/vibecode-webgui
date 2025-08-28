@@ -6,7 +6,8 @@ dotenv.config();
 
 // Initialize services
 const prisma = new PrismaClient();
-const embeddingService = EmbeddingServiceFactory.createEmbeddingService(prisma);
+const factory = new EmbeddingServiceFactory(prisma);
+const embeddingService = factory.createEmbeddingServiceFromEnv();
 
 // Sample documents for demonstration
 const SAMPLE_DOCUMENTS = [
@@ -75,8 +76,13 @@ async function main() {
       { threshold: 0.6, limit: 2 }
     );
 
-    console.log('\n📚 Retrieved Context:');
-    console.log(ragResult.context);
+    console.log('\n📚 Retrieved Documents:');
+    if (ragResult.documents && ragResult.documents.length > 0) {
+      ragResult.documents.forEach((doc, i) => {
+        console.log(`\n  ${i + 1}. ${doc.document_id} (Similarity: ${(doc.similarity * 100).toFixed(1)}%)`);
+        console.log(`     ${doc.content.substring(0, 100)}...`);
+      });
+    }
 
     // 4. Show statistics
     console.log('\n📈 Retrieving statistics...');

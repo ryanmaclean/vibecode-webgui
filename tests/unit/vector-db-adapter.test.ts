@@ -17,10 +17,13 @@ type EventHandler = (...args: unknown[]) => void;
 // Define mock connection interface
 interface MockConnection {
   id: string;
-  query: jest.Mock<Promise<QueryResult>, [string, QueryParams?]>;
+  query: jest.Mock<Promise<{ rows: any[] }>, [string, any?]>;
   release: jest.Mock<Promise<void>, []>;
-  on: jest.Mock<void, [string, EventHandler]>;
-  removeListener: jest.Mock<void, [string, EventHandler]>;
+  on: jest.Mock<MockConnection, [string, EventHandler]>;
+  removeListener: jest.Mock<MockConnection, [string, EventHandler]>;
+  once: jest.Mock<MockConnection, [string, EventHandler]>;
+  removeAllListeners: jest.Mock<MockConnection, [string?]>;
+  emit: jest.Mock<boolean, [string, ...any[]]>;
   end: jest.Mock<Promise<void>, []>;
 }
 
@@ -66,6 +69,34 @@ class MockVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   // Define mock connection type
   private mockConnection: MockConnection | null = null;
   
+  // Create a mock connection with all required properties
+  private createMockConnection(): MockConnection {
+    const connection: MockConnection = {
+      id: `conn-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      query: jest.fn().mockImplementation((_query: string, _params?: any) => {
+        return Promise.resolve({ rows: [] });
+      }),
+      release: jest.fn().mockResolvedValue(undefined),
+      on: jest.fn().mockImplementation((_event: string, _handler: EventHandler) => {
+        return connection;
+      }),
+      removeListener: jest.fn().mockImplementation((_event: string, _handler: EventHandler) => {
+        return connection;
+      }),
+      once: jest.fn().mockImplementation((_event: string, _handler: EventHandler) => {
+        return connection;
+      }),
+      removeAllListeners: jest.fn().mockImplementation((_event?: string) => {
+        return connection;
+      }),
+      emit: jest.fn().mockImplementation((_event: string, ..._args: any[]) => {
+        return true;
+      }),
+      end: jest.fn().mockResolvedValue(undefined)
+    };
+    return connection;
+  }
+  
   // Override getConnection to make it public for testing
   public override async getConnection(): Promise<MockConnection> {
     if (this.shouldSimulateError) {
@@ -76,33 +107,12 @@ class MockVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     if (this.activeConnections.size >= this.maxPoolSize) {
       // Simulate a connection timeout
       await new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Connection timeout')), this.acquireTimeout)
+        setTimeout(() => reject(new Error('Connection pool timeout')), this.acquireTimeout)
       );
     }
 
     // Create a new mock connection with all required properties
-    const connectionId = Math.random().toString(36).substring(2, 9);
-    const connection: MockConnection = {
-      id: connectionId,
-      query: jest.fn().mockImplementation(async (query: string, params?: QueryParams) => {
-        // Simulate a simple query response
-        if (query.includes('SELECT 1')) {
-          return { rows: [{ '?column?': 1 }] };
-        }
-        return { rows: [] };
-      }),
-      release: jest.fn().mockImplementation(async () => {
-        await this.releaseConnection(connection);
-      }),
-      on: jest.fn((event: string, handler: EventHandler) => {
-        // Simulate event handling if needed
-        if (event === 'error') {
-          // Store error handler for later use if needed
-        }
-      }),
-      removeListener: jest.fn(),
-      end: jest.fn().mockResolvedValue(undefined)
-    };
+    const connection = this.createMockConnection();
     
     // Track the connection
     this.activeConnections.add(connection);
