@@ -5,8 +5,6 @@ template: splash
 hero:
   title: VibeCode Platform
   tagline: AI-Powered Development Platform with Intelligent Workflows
-  image:
-    alt: VibeCode Platform Logo
   actions:
     - text: Quick Start Guide
       link: /getting-started/

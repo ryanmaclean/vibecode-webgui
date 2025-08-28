@@ -82,10 +82,28 @@ async function runTest() {
     // Test setup for database tests - create pgvector extension if needed
     try {
       console.log('\n🛠️ Setting up pgvector extension if needed...');
-      await prisma.$executeRaw`CREATE EXTENSION IF NOT EXISTS vector`;
-      console.log('✅ pgvector extension ready');
+      await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS vector`);
+      
+      // Create document_embeddings table if it doesn't exist
+      console.log('🛠️ Setting up document_embeddings table if needed...');
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS document_embeddings (
+          id SERIAL PRIMARY KEY,
+          document_id VARCHAR(255) UNIQUE NOT NULL,
+          content TEXT NOT NULL,
+          embedding vector(1536),
+          metadata JSONB DEFAULT '{}',
+          embedding_generation_time_ms INTEGER DEFAULT 0,
+          search_count INTEGER DEFAULT 0,
+          last_accessed_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      
+      console.log('✅ Database schema ready');
     } catch (pgvectorError) {
-      console.error('❌ Failed to ensure pgvector extension:', pgvectorError.message);
+      console.error('❌ Failed to ensure database schema:', pgvectorError.message);
       console.log('⚠️ Skipping remaining database tests...');
       return;
     }

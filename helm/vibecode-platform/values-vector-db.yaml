@@ -1,0 +1,424 @@
+# Vector Database Helm Chart Values
+# This file configures the vector database deployment in Kubernetes
+
+replicaCount: 3
+
+image:
+  repository: ankane/pgvector
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: "vector-db"
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "vector-db-sa"
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9187"
+  ad.datadoghq.com/postgres.logs: '[{"source":"postgresql","service":"vector-db"}]'
+  ad.datadoghq.com/postgres.check_names: '["postgres"]'
+  ad.datadoghq.com/postgres.init_configs: '[{}]'
+  ad.datadoghq.com/postgres.instances: |
+    [
+      {
+        "host": "%%host%%",
+        "port": 5432,
+        "username": "datadog",
+        "password": "%%env_DD_PG_PASS%%",
+        "dbname": "postgres",
+        "tags": ["env:%%env%%", "service:vector-db"]
+      }
+    ]
+
+podSecurityContext:
+  fsGroup: 70
+
+securityContext:
+  runAsUser: 70
+  runAsNonRoot: true
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+
+service:
+  type: ClusterIP
+  port: 5432
+
+headlessService:
+  enabled: true
+
+persistence:
+  enabled: true
+  storageClass: "fast-ssd"
+  size: 100Gi
+  annotations: {}
+
+resources:
+  limits:
+    cpu: 2
+    memory: 4Gi
+  requests:
+    cpu: 500m
+    memory: 2Gi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - vector-db
+          topologyKey: kubernetes.io/hostname
+
+# Custom PostgreSQL configuration
+postgresql:
+  image:
+    repository: ankane/pgvector
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  # Authentication
+  auth:
+    username: postgres
+    password: ""
+    existingSecret: "vector-db-credentials"
+    secretKeys:
+      adminPasswordKey: "postgres-password"
+      userPasswordKey: "postgres-password"
+    database: vector_db
+  
+  # PostgreSQL configuration
+  primary:
+    configuration: |
+      listen_addresses = '*'
+      max_connections = 100
+      shared_buffers = 1GB
+      effective_cache_size = 3GB
+      maintenance_work_mem = 256MB
+      checkpoint_completion_target = 0.9
+      wal_buffers = 16MB
+      default_statistics_target = 100
+      random_page_cost = 1.1
+      effective_io_concurrency = 200
+      work_mem = 128MB
+      min_wal_size = 1GB
+      max_wal_size = 4GB
+      max_worker_processes = 8
+      max_parallel_workers_per_gather = 4
+      max_parallel_workers = 8
+      max_parallel_maintenance_workers = 4
+      
+      # Extensions
+      shared_preload_libraries = 'pg_stat_statements'
+      
+      # Logging
+      log_destination = 'stderr'
+      logging_collector = on
+      log_directory = 'log'
+      log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+      log_truncate_on_rotation = off
+      log_rotation_age = 1d
+      log_rotation_size = 0
+      log_line_prefix = '%m [%p] %q%u@%d '
+      log_timezone = 'UTC'
+      log_statement = 'none'
+      log_min_duration_statement = 1000
+      log_checkpoints = on
+      log_connections = on
+      log_disconnections = on
+      log_duration = off
+      log_error_verbosity = default
+      log_lock_waits = on
+      log_temp_files = 0
+    
+    # Health checks
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 30
+      periodSeconds: 15
+      timeoutSeconds: 5
+      failureThreshold: 3
+      successThreshold: 1
+    
+    readinessProbe:
+      enabled: true
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+      successThreshold: 1
+    
+    startupProbe:
+      enabled: true
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 5
+      failureThreshold: 12
+      successThreshold: 1
+    
+    # Resource requests and limits
+    resources:
+      limits:
+        cpu: 2
+        memory: 4Gi
+      requests:
+        cpu: 500m
+        memory: 2Gi
+    
+    # Pod disruption budget
+    pdb:
+      create: true
+      minAvailable: 1
+    
+    # Persistence
+    persistence:
+      enabled: true
+      mountPath: /var/lib/postgresql/data
+      subPath: ""
+      storageClass: "fast-ssd"
+      size: 100Gi
+      annotations: {}
+    
+    # Extra volumes
+    extraVolumes:
+      - name: init-scripts
+        configMap:
+          name: vector-db-init-scripts
+      - name: shared-memory
+        emptyDir:
+          medium: Memory
+    
+    # Extra volume mounts
+    extraVolumeMounts:
+      - name: init-scripts
+        mountPath: /docker-entrypoint-initdb.d
+      - name: shared-memory
+        mountPath: /dev/shm
+  
+  # Read replicas configuration
+  readReplicas:
+    replicaCount: 2
+    resources:
+      limits:
+        cpu: 1
+        memory: 2Gi
+      requests:
+        cpu: 250m
+        memory: 1Gi
+    
+    persistence:
+      enabled: true
+      storageClass: "fast-ssd"
+      size: 100Gi
+    
+    # Health checks - same as primary
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 30
+      periodSeconds: 15
+      timeoutSeconds: 5
+      failureThreshold: 3
+      successThreshold: 1
+    
+    readinessProbe:
+      enabled: true
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+      successThreshold: 1
+
+# Metrics exporter for PostgreSQL
+metrics:
+  enabled: true
+  image:
+    repository: prometheuscommunity/postgres-exporter
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  
+  # Service for metrics
+  service:
+    type: ClusterIP
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9187"
+  
+  # ServiceMonitor for Prometheus Operator
+  serviceMonitor:
+    enabled: true
+    namespace: monitoring
+    interval: 15s
+    scrapeTimeout: 10s
+    selector:
+      release: prometheus-operator
+  
+  # Custom queries for metrics
+  customMetrics:
+    vectorMetrics:
+      query: |
+        SELECT t.schemaname AS schema,
+               t.tablename AS table,
+               array_length(a.embedding, 1) AS vector_dimensions
+        FROM pg_catalog.pg_tables t
+        JOIN document_embeddings a ON t.tablename = 'document_embeddings'
+        LIMIT 1;
+      metrics:
+        - vector_dimensions:
+            usage: "GAUGE"
+            description: "Number of dimensions in vector embeddings"
+    
+    vectorSearchLatency:
+      query: |
+        SELECT schemaname AS schema,
+               relname AS table,
+               EXTRACT(EPOCH FROM (now() - stats_reset))/NULLIF(seq_scan, 0) AS avg_latency
+        FROM pg_stat_user_tables
+        WHERE relname = 'document_embeddings' AND seq_scan > 0;
+      metrics:
+        - avg_latency:
+            usage: "GAUGE"
+            description: "Average latency of vector search operations"
+
+# Datadog agent sidecar
+datadog:
+  enabled: true
+  image:
+    repository: datadog/agent
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  
+  env:
+    - name: DD_SITE
+      value: "datadoghq.com"
+    - name: DD_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: datadog-secrets
+          key: api_key
+    - name: DD_APP_KEY
+      valueFrom:
+        secretKeyRef:
+          name: datadog-secrets
+          key: app_key
+    - name: DD_HOSTNAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+    - name: DD_KUBELET_TLS_VERIFY
+      value: "false"
+    - name: DD_LOGS_ENABLED
+      value: "true"
+    - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+      value: "true"
+    - name: DD_APM_ENABLED
+      value: "true"
+    - name: DD_PROCESS_AGENT_ENABLED
+      value: "true"
+    - name: DD_TAGS
+      value: "env:production,service:vector-db,team:data-engineering,component:database"
+    - name: DD_PG_PASS
+      valueFrom:
+        secretKeyRef:
+          name: vector-db-credentials
+          key: datadog_password
+  
+  volumeMounts:
+    - name: socket-dir
+      mountPath: /var/run/datadog
+    - name: proc
+      mountPath: /host/proc
+      readOnly: true
+    - name: cgroup
+      mountPath: /host/sys/fs/cgroup
+      readOnly: true
+    - name: postgres-logs
+      mountPath: /var/log/postgresql
+      readOnly: true
+    - name: datadog-config
+      mountPath: /etc/datadog-agent
+
+# Initialization
+initContainers:
+  - name: init-db
+    image: "vibecode/db-init:latest"
+    imagePullPolicy: IfNotPresent
+    command: ["/scripts/init-vector-db.sh"]
+    env:
+      - name: POSTGRES_USER
+        valueFrom:
+          secretKeyRef:
+            name: vector-db-credentials
+            key: username
+      - name: POSTGRES_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: vector-db-credentials
+            key: password
+      - name: POSTGRES_DB
+        value: "vector_db"
+      - name: PGDATA
+        value: /var/lib/postgresql/data/pgdata
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    volumeMounts:
+      - name: data
+        mountPath: /var/lib/postgresql/data
+      - name: init-scripts
+        mountPath: /scripts
+      - name: tmp-dir
+        mountPath: /tmp
+
+# Extra volumes
+extraVolumes:
+  - name: init-scripts
+    configMap:
+      name: vector-db-init-scripts
+  - name: socket-dir
+    emptyDir: {}
+  - name: proc
+    hostPath:
+      path: /proc
+  - name: cgroup
+    hostPath:
+      path: /sys/fs/cgroup
+  - name: postgres-logs
+    emptyDir: {}
+  - name: tmp-dir
+    emptyDir: {}
+  - name: datadog-config
+    configMap:
+      name: datadog-agent-config
