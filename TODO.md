@@ -60,6 +60,12 @@
   - [x] Document connection pooling implementation
   - [x] Add monitoring for Azure API usage
   - [x] Create metrics dashboard for embedding operations
+  - [ ] **CRITICAL FIXES NEEDED**
+    - [ ] Fix monitoring disconnect - integrate with actual production services
+    - [ ] Fix RAG system in upload API - embeddings never generated
+    - [ ] Add authentication to monitoring endpoints (security risk)
+    - [ ] Use factory pattern in monitoring API instead of direct instantiation
+    - [ ] Implement monitoring for OpenAI/OpenRouter services actually used in production
 
 - [ ] Create automatic connection pool monitoring tools
   - [ ] Implement health dashboard for database connections
