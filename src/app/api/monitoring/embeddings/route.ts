@@ -1,23 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
 import { AzureEmbeddingService } from '@/lib/ai/azureEmbeddingService';
+import { EmbeddingService } from '@/lib/ai/embeddingService';
+import { EmbeddingServiceFactory, EmbeddingServiceType } from '@/lib/ai/embeddingServiceFactory';
 import { DatadogIntegration } from '@/lib/monitoring/datadog-integration';
+import { PrismaClient } from '@prisma/client';
 
 // Global service instance for monitoring
-let embeddingService: AzureEmbeddingService | null = null;
+let embeddingService: EmbeddingServiceType | null = null;
+let serviceReleaseFunction: (() => Promise<void>) | null = null;
 
-function getEmbeddingService(): AzureEmbeddingService {
+async function getEmbeddingService(): Promise<EmbeddingServiceType> {
   if (!embeddingService) {
-    embeddingService = new AzureEmbeddingService(
-      process.env.AZURE_OPENAI_API_KEY || '',
-      process.env.AZURE_OPENAI_ENDPOINT || '',
-      process.env.AZURE_OPENAI_DEPLOYMENT_NAME || 'text-embedding-ada-002',
-      process.env.AZURE_OPENAI_API_VERSION || '2023-05-15',
-      null,
-      process.env.AZURE_USE_MANAGED_IDENTITY === 'true',
-      process.env.USE_CONNECTION_POOL === 'true'
-    );
+    try {
+      const { service, releaseConnection } = await EmbeddingServiceFactory.createEmbeddingServiceWithRobustConnection();
+      embeddingService = service;
+      serviceReleaseFunction = releaseConnection;
+    } catch (error) {
+      console.error('Failed to create embedding service:', error);
+      throw new Error('Embedding service not available');
+    }
   }
   return embeddingService;
+}
+
+// Clean up function for graceful shutdown
+export async function cleanup() {
+  if (serviceReleaseFunction) {
+    await serviceReleaseFunction();
+    serviceReleaseFunction = null;
+  }
+  embeddingService = null;
 }
 
 /**
@@ -26,49 +40,78 @@ function getEmbeddingService(): AzureEmbeddingService {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const format = searchParams.get('format') || 'json';
     const detailed = searchParams.get('detailed') === 'true';
 
-    const service = getEmbeddingService();
+    const service = await getEmbeddingService();
     
-    if (detailed) {
-      const usageReport = service.getUsageReport();
+    // Check if service has monitoring capabilities (Azure service)
+    const hasMonitoring = 'getUsageReport' in service && 'getApiMetrics' in service;
+    
+    if (hasMonitoring) {
+      // Azure service with monitoring
+      const azureService = service as AzureEmbeddingService;
       
-      if (format === 'prometheus') {
-        // Return Prometheus format metrics
-        const prometheusMetrics = convertToPrometheusFormat(usageReport);
-        return new NextResponse(prometheusMetrics, {
-          headers: {
-            'Content-Type': 'text/plain; charset=utf-8'
-          }
+      if (detailed) {
+        const usageReport = azureService.getUsageReport();
+        
+        if (format === 'prometheus') {
+          // Return Prometheus format metrics
+          const prometheusMetrics = convertToPrometheusFormat(usageReport);
+          return new NextResponse(prometheusMetrics, {
+            headers: {
+              'Content-Type': 'text/plain; charset=utf-8'
+            }
+          });
+        }
+        
+        return NextResponse.json({
+          timestamp: new Date().toISOString(),
+          service: 'azure-embedding',
+          status: 'active',
+          monitoringEnabled: true,
+          ...usageReport
+        });
+      } else {
+        // Return basic metrics
+        const metrics = azureService.getApiMetrics();
+        const recentCalls = azureService.getRecentCalls(10);
+        
+        return NextResponse.json({
+          timestamp: new Date().toISOString(),
+          service: 'azure-embedding',
+          status: 'active',
+          monitoringEnabled: true,
+          metrics,
+          recentCalls: recentCalls.map(call => ({
+            timestamp: call.timestamp,
+            duration: call.duration,
+            success: call.success,
+            tokens: call.tokens,
+            cost: call.cost,
+            errorType: call.errorType
+          }))
         });
       }
-      
-      return NextResponse.json({
-        timestamp: new Date().toISOString(),
-        service: 'azure-embedding',
-        status: 'active',
-        ...usageReport
-      });
     } else {
-      // Return basic metrics
-      const metrics = service.getApiMetrics();
-      const recentCalls = service.getRecentCalls(10);
-      
+      // OpenAI or other service without built-in monitoring
       return NextResponse.json({
         timestamp: new Date().toISOString(),
-        service: 'azure-embedding',
+        service: 'openai-embedding',
         status: 'active',
-        metrics,
-        recentCalls: recentCalls.map(call => ({
-          timestamp: call.timestamp,
-          duration: call.duration,
-          success: call.success,
-          tokens: call.tokens,
-          cost: call.cost,
-          errorType: call.errorType
-        }))
+        monitoringEnabled: false,
+        message: 'This service does not have built-in monitoring capabilities',
+        suggestion: 'Consider switching to Azure embedding service for comprehensive monitoring'
       });
     }
   } catch (error: any) {
@@ -90,6 +133,15 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { thresholds } = body;
     
@@ -100,14 +152,24 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const service = getEmbeddingService();
-    service.updateAlertThresholds(thresholds);
+    const service = await getEmbeddingService();
     
-    return NextResponse.json({
-      message: 'Alert thresholds updated successfully',
-      thresholds,
-      timestamp: new Date().toISOString()
-    });
+    // Check if service has monitoring capabilities
+    if ('updateAlertThresholds' in service) {
+      const azureService = service as AzureEmbeddingService;
+      azureService.updateAlertThresholds(thresholds);
+      
+      return NextResponse.json({
+        message: 'Alert thresholds updated successfully',
+        thresholds,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      return NextResponse.json(
+        { error: 'Alert configuration not supported for this embedding service' },
+        { status: 400 }
+      );
+    }
   } catch (error: any) {
     console.error('Error updating alert thresholds:', error);
     return NextResponse.json(
@@ -127,13 +189,32 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE() {
   try {
-    const service = getEmbeddingService();
-    service.resetMetrics();
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const service = await getEmbeddingService();
     
-    return NextResponse.json({
-      message: 'Embedding metrics reset successfully',
-      timestamp: new Date().toISOString()
-    });
+    // Check if service has monitoring capabilities
+    if ('resetMetrics' in service) {
+      const azureService = service as AzureEmbeddingService;
+      azureService.resetMetrics();
+      
+      return NextResponse.json({
+        message: 'Embedding metrics reset successfully',
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      return NextResponse.json(
+        { error: 'Metrics reset not supported for this embedding service' },
+        { status: 400 }
+      );
+    }
   } catch (error: any) {
     console.error('Error resetting embedding metrics:', error);
     return NextResponse.json(
