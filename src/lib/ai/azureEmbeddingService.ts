@@ -1,13 +1,45 @@
 /**
  * Azure OpenAI Embedding Service
  * Provides functionality for generating and storing text embeddings using Azure OpenAI
- * with support for connection pooling and managed identity
+ * with support for connection pooling, managed identity, and comprehensive API monitoring
  */
 
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { DefaultAzureCredential } from '@azure/identity';
 import { withVectorConnection } from '../db/vector-connection-pool';
+import { DatadogIntegration } from '../monitoring/datadog-integration';
+
+// Monitoring and metrics interfaces
+interface ApiMetrics {
+  requestCount: number;
+  totalTokens: number;
+  totalCost: number;
+  avgLatency: number;
+  errorCount: number;
+  lastReset: Date;
+  requestsPerMinute: number[];
+  errorRates: number[];
+}
+
+interface ApiCall {
+  timestamp: Date;
+  duration: number;
+  tokens: number;
+  cost: number;
+  success: boolean;
+  errorType?: string;
+  inputLength: number;
+  model: string;
+}
+
+interface ApiUsageAlert {
+  type: 'token_limit' | 'cost_limit' | 'error_rate' | 'latency_high';
+  threshold: number;
+  current: number;
+  timestamp: Date;
+  message: string;
+}
 
 // Interface for embedding generation options
 interface EmbeddingOptions {
@@ -69,6 +101,26 @@ export class AzureEmbeddingService {
   private vectorService: any; // Will hold database vector operations
   private useManagedIdentity: boolean;
   private useConnectionPool: boolean;
+  
+  // Monitoring and alerting properties
+  private apiMetrics: ApiMetrics;
+  private recentCalls: ApiCall[];
+  private maxRecentCalls: number = 1000;
+  private alertThresholds: {
+    tokenLimit: number;
+    costLimit: number;
+    errorRate: number;
+    highLatency: number;
+  };
+  private alertCallbacks: ((alert: ApiUsageAlert) => void)[] = [];
+  private datadogIntegration: DatadogIntegration;
+  
+  // Pricing constants (Azure OpenAI pricing as of 2024)
+  private readonly TOKEN_COST_PER_1K = {
+    'text-embedding-ada-002': 0.0001,
+    'text-embedding-3-small': 0.00002,
+    'text-embedding-3-large': 0.00013
+  };
 
   /**
    * Constructor for AzureEmbeddingService
@@ -88,7 +140,13 @@ export class AzureEmbeddingService {
     apiVersion: string = '2023-05-15',
     prisma: PrismaClient | null = null,
     useManagedIdentity: boolean = false,
-    useConnectionPool: boolean = false
+    useConnectionPool: boolean = false,
+    alertThresholds?: {
+      tokenLimit?: number;
+      costLimit?: number; 
+      errorRate?: number;
+      highLatency?: number;
+    }
   ) {
     this.apiKey = apiKey;
     this.endpoint = endpoint;
@@ -98,8 +156,50 @@ export class AzureEmbeddingService {
     this.useManagedIdentity = useManagedIdentity;
     this.useConnectionPool = useConnectionPool;
     
+    // Initialize monitoring
+    this.initializeMonitoring(alertThresholds);
+    
+    // Initialize Datadog integration
+    this.datadogIntegration = new DatadogIntegration();
+    
     // Create vector service for database operations
     this.vectorService = this.createVectorService();
+  }
+
+  /**
+   * Initialize monitoring and alerting system
+   */
+  private initializeMonitoring(alertThresholds?: {
+    tokenLimit?: number;
+    costLimit?: number; 
+    errorRate?: number;
+    highLatency?: number;
+  }) {
+    // Initialize metrics
+    this.apiMetrics = {
+      requestCount: 0,
+      totalTokens: 0,
+      totalCost: 0,
+      avgLatency: 0,
+      errorCount: 0,
+      lastReset: new Date(),
+      requestsPerMinute: [],
+      errorRates: []
+    };
+
+    // Initialize recent calls tracking
+    this.recentCalls = [];
+
+    // Set alert thresholds with defaults
+    this.alertThresholds = {
+      tokenLimit: alertThresholds?.tokenLimit ?? 100000, // 100k tokens per hour
+      costLimit: alertThresholds?.costLimit ?? 10, // $10 per hour
+      errorRate: alertThresholds?.errorRate ?? 0.1, // 10% error rate
+      highLatency: alertThresholds?.highLatency ?? 5000 // 5 seconds
+    };
+
+    // Start periodic cleanup of old calls
+    setInterval(() => this.cleanupOldCalls(), 60000); // Every minute
   }
 
   /**
@@ -376,6 +476,11 @@ export class AzureEmbeddingService {
    * @returns Promise<number[]> - Vector embedding
    */
   public async generateEmbedding(text: string, options: EmbeddingOptions = {}): Promise<number[]> {
+    const startTime = Date.now();
+    let success = false;
+    let errorType: string | undefined;
+    let tokens = 0;
+    
     try {
       // Construct the Azure OpenAI API URL
       const url = `${this.endpoint}/openai/deployments/${this.deploymentName}/embeddings?api-version=${this.apiVersion}`;
@@ -404,13 +509,64 @@ export class AzureEmbeddingService {
       // Make the API request
       const response = await axios.post(url, payload, { headers });
       
-      // Extract and return the embedding data
+      // Extract embedding data and usage info
       if (response.data && response.data.data && response.data.data.length > 0) {
+        success = true;
+        tokens = response.data.usage?.total_tokens || this.estimateTokens(text);
+        
+        // Record successful API call
+        this.recordApiCall({
+          timestamp: new Date(startTime),
+          duration: Date.now() - startTime,
+          tokens,
+          cost: this.calculateCost(tokens),
+          success: true,
+          inputLength: text.length,
+          model: this.deploymentName
+        });
+
+        // Send metrics to Datadog
+        this.datadogIntegration.recordEmbeddingMetrics({
+          operation: 'generate',
+          duration: Date.now() - startTime,
+          tokens,
+          cost: this.calculateCost(tokens),
+          success: true,
+          model: this.deploymentName,
+          inputLength: text.length
+        });
+
         return response.data.data[0].embedding;
       } else {
         throw new Error('No embedding data returned from Azure OpenAI API');
       }
     } catch (error: any) {
+      errorType = this.categorizeError(error);
+      
+      // Record failed API call
+      this.recordApiCall({
+        timestamp: new Date(startTime),
+        duration: Date.now() - startTime,
+        tokens: 0,
+        cost: 0,
+        success: false,
+        errorType,
+        inputLength: text.length,
+        model: this.deploymentName
+      });
+
+      // Send error metrics to Datadog
+      this.datadogIntegration.recordEmbeddingMetrics({
+        operation: 'generate',
+        duration: Date.now() - startTime,
+        tokens: 0,
+        cost: 0,
+        success: false,
+        errorType,
+        model: this.deploymentName,
+        inputLength: text.length
+      });
+
       console.error('Error generating embedding:', error.message);
       if (error.response) {
         console.error('Azure API response:', error.response.data);
@@ -540,5 +696,325 @@ export class AzureEmbeddingService {
       console.error('Error cleaning up old embeddings:', error.message);
       throw new Error(`Failed to clean up old embeddings: ${error.message}`);
     }
+  }
+
+  // ========================================
+  // MONITORING AND ALERTING METHODS
+  // ========================================
+
+  /**
+   * Record an API call for monitoring and metrics
+   */
+  private recordApiCall(call: ApiCall): void {
+    // Add to recent calls
+    this.recentCalls.push(call);
+
+    // Trim old calls if we exceed the limit
+    if (this.recentCalls.length > this.maxRecentCalls) {
+      this.recentCalls = this.recentCalls.slice(-this.maxRecentCalls);
+    }
+
+    // Update metrics
+    this.updateMetrics(call);
+
+    // Check for alerts
+    this.checkAlerts();
+  }
+
+  /**
+   * Update API metrics with new call data
+   */
+  private updateMetrics(call: ApiCall): void {
+    this.apiMetrics.requestCount++;
+    this.apiMetrics.totalTokens += call.tokens;
+    this.apiMetrics.totalCost += call.cost;
+    
+    if (!call.success) {
+      this.apiMetrics.errorCount++;
+    }
+
+    // Update average latency
+    const totalLatency = this.apiMetrics.avgLatency * (this.apiMetrics.requestCount - 1) + call.duration;
+    this.apiMetrics.avgLatency = totalLatency / this.apiMetrics.requestCount;
+
+    // Update requests per minute (rolling window)
+    const currentMinute = Math.floor(Date.now() / 60000);
+    const minuteIndex = currentMinute % 60;
+    
+    if (!this.apiMetrics.requestsPerMinute[minuteIndex]) {
+      this.apiMetrics.requestsPerMinute[minuteIndex] = 0;
+    }
+    this.apiMetrics.requestsPerMinute[minuteIndex]++;
+
+    // Update error rates (rolling window)
+    const errorRate = this.apiMetrics.errorCount / this.apiMetrics.requestCount;
+    this.apiMetrics.errorRates.push(errorRate);
+    if (this.apiMetrics.errorRates.length > 60) {
+      this.apiMetrics.errorRates.shift();
+    }
+  }
+
+  /**
+   * Check for alerts based on current metrics
+   */
+  private checkAlerts(): void {
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    
+    // Get recent calls from last hour
+    const recentHourCalls = this.recentCalls.filter(call => call.timestamp >= oneHourAgo);
+    
+    // Check token limit alert
+    const hourlyTokens = recentHourCalls.reduce((sum, call) => sum + call.tokens, 0);
+    if (hourlyTokens > this.alertThresholds.tokenLimit) {
+      this.triggerAlert({
+        type: 'token_limit',
+        threshold: this.alertThresholds.tokenLimit,
+        current: hourlyTokens,
+        timestamp: now,
+        message: `Token usage exceeded threshold: ${hourlyTokens} tokens in the last hour`
+      });
+    }
+
+    // Check cost limit alert
+    const hourlyCost = recentHourCalls.reduce((sum, call) => sum + call.cost, 0);
+    if (hourlyCost > this.alertThresholds.costLimit) {
+      this.triggerAlert({
+        type: 'cost_limit',
+        threshold: this.alertThresholds.costLimit,
+        current: hourlyCost,
+        timestamp: now,
+        message: `Cost exceeded threshold: $${hourlyCost.toFixed(4)} in the last hour`
+      });
+    }
+
+    // Check error rate alert
+    const hourlyErrorRate = recentHourCalls.length > 0 ? 
+      recentHourCalls.filter(call => !call.success).length / recentHourCalls.length : 0;
+    if (hourlyErrorRate > this.alertThresholds.errorRate) {
+      this.triggerAlert({
+        type: 'error_rate',
+        threshold: this.alertThresholds.errorRate,
+        current: hourlyErrorRate,
+        timestamp: now,
+        message: `Error rate exceeded threshold: ${(hourlyErrorRate * 100).toFixed(1)}% in the last hour`
+      });
+    }
+
+    // Check high latency alert
+    const recentLatency = this.recentCalls.length > 0 ? 
+      this.recentCalls[this.recentCalls.length - 1].duration : 0;
+    if (recentLatency > this.alertThresholds.highLatency) {
+      this.triggerAlert({
+        type: 'latency_high',
+        threshold: this.alertThresholds.highLatency,
+        current: recentLatency,
+        timestamp: now,
+        message: `High latency detected: ${recentLatency}ms for last request`
+      });
+    }
+  }
+
+  /**
+   * Trigger an alert
+   */
+  private triggerAlert(alert: ApiUsageAlert): void {
+    console.warn('Azure API Alert:', alert);
+    
+    // Send alert to Datadog
+    this.datadogIntegration.sendUsageAlert({
+      type: alert.type,
+      threshold: alert.threshold,
+      current: alert.current,
+      message: alert.message
+    });
+    
+    this.alertCallbacks.forEach(callback => {
+      try {
+        callback(alert);
+      } catch (error) {
+        console.error('Error in alert callback:', error);
+      }
+    });
+  }
+
+  /**
+   * Estimate tokens for text (rough approximation)
+   */
+  private estimateTokens(text: string): number {
+    // Rough estimate: ~4 characters per token for English text
+    return Math.ceil(text.length / 4);
+  }
+
+  /**
+   * Calculate cost based on tokens and model
+   */
+  private calculateCost(tokens: number): number {
+    const costPer1K = this.TOKEN_COST_PER_1K[this.deploymentName as keyof typeof this.TOKEN_COST_PER_1K] || 
+                      this.TOKEN_COST_PER_1K['text-embedding-ada-002'];
+    return (tokens / 1000) * costPer1K;
+  }
+
+  /**
+   * Categorize error for monitoring
+   */
+  private categorizeError(error: any): string {
+    if (error.response?.status) {
+      const status = error.response.status;
+      if (status === 401) return 'authentication';
+      if (status === 403) return 'authorization';
+      if (status === 429) return 'rate_limit';
+      if (status >= 500) return 'server_error';
+      if (status >= 400) return 'client_error';
+    }
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+      return 'network_error';
+    }
+    return 'unknown';
+  }
+
+  /**
+   * Clean up old API calls from memory
+   */
+  private cleanupOldCalls(): void {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    this.recentCalls = this.recentCalls.filter(call => call.timestamp >= oneHourAgo);
+  }
+
+  // ========================================
+  // PUBLIC MONITORING API
+  // ========================================
+
+  /**
+   * Get current API usage metrics
+   */
+  public getApiMetrics(): ApiMetrics {
+    return { ...this.apiMetrics };
+  }
+
+  /**
+   * Get recent API calls
+   */
+  public getRecentCalls(limit: number = 100): ApiCall[] {
+    return this.recentCalls.slice(-limit);
+  }
+
+  /**
+   * Reset API metrics
+   */
+  public resetMetrics(): void {
+    this.apiMetrics = {
+      requestCount: 0,
+      totalTokens: 0,
+      totalCost: 0,
+      avgLatency: 0,
+      errorCount: 0,
+      lastReset: new Date(),
+      requestsPerMinute: [],
+      errorRates: []
+    };
+    this.recentCalls = [];
+  }
+
+  /**
+   * Add alert callback for monitoring
+   */
+  public onAlert(callback: (alert: ApiUsageAlert) => void): void {
+    this.alertCallbacks.push(callback);
+  }
+
+  /**
+   * Remove alert callback
+   */
+  public removeAlert(callback: (alert: ApiUsageAlert) => void): void {
+    const index = this.alertCallbacks.indexOf(callback);
+    if (index > -1) {
+      this.alertCallbacks.splice(index, 1);
+    }
+  }
+
+  /**
+   * Update alert thresholds
+   */
+  public updateAlertThresholds(thresholds: {
+    tokenLimit?: number;
+    costLimit?: number;
+    errorRate?: number;
+    highLatency?: number;
+  }): void {
+    this.alertThresholds = {
+      ...this.alertThresholds,
+      ...thresholds
+    };
+  }
+
+  /**
+   * Get detailed usage report
+   */
+  public getUsageReport(): {
+    summary: ApiMetrics;
+    hourlyBreakdown: Array<{
+      hour: string;
+      requests: number;
+      tokens: number;
+      cost: number;
+      errors: number;
+      avgLatency: number;
+    }>;
+    errorBreakdown: Record<string, number>;
+    recommendations: string[];
+  } {
+    const now = new Date();
+    const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const recent24HCalls = this.recentCalls.filter(call => call.timestamp >= last24Hours);
+
+    // Group by hour
+    const hourlyData = new Map<string, ApiCall[]>();
+    recent24HCalls.forEach(call => {
+      const hour = call.timestamp.toISOString().slice(0, 13) + ':00:00';
+      if (!hourlyData.has(hour)) {
+        hourlyData.set(hour, []);
+      }
+      hourlyData.get(hour)!.push(call);
+    });
+
+    const hourlyBreakdown = Array.from(hourlyData.entries()).map(([hour, calls]) => ({
+      hour,
+      requests: calls.length,
+      tokens: calls.reduce((sum, c) => sum + c.tokens, 0),
+      cost: calls.reduce((sum, c) => sum + c.cost, 0),
+      errors: calls.filter(c => !c.success).length,
+      avgLatency: calls.reduce((sum, c) => sum + c.duration, 0) / calls.length
+    }));
+
+    // Error breakdown
+    const errorBreakdown: Record<string, number> = {};
+    recent24HCalls.filter(call => !call.success).forEach(call => {
+      const errorType = call.errorType || 'unknown';
+      errorBreakdown[errorType] = (errorBreakdown[errorType] || 0) + 1;
+    });
+
+    // Generate recommendations
+    const recommendations: string[] = [];
+    const totalCost24h = recent24HCalls.reduce((sum, call) => sum + call.cost, 0);
+    const errorRate24h = recent24HCalls.length > 0 ? 
+      recent24HCalls.filter(call => !call.success).length / recent24HCalls.length : 0;
+
+    if (totalCost24h > 50) {
+      recommendations.push('High daily cost detected. Consider implementing caching for frequent queries.');
+    }
+    if (errorRate24h > 0.05) {
+      recommendations.push('Error rate above 5%. Check authentication and network connectivity.');
+    }
+    if (this.apiMetrics.avgLatency > 2000) {
+      recommendations.push('Average latency above 2s. Consider using smaller batch sizes or connection pooling.');
+    }
+
+    return {
+      summary: this.getApiMetrics(),
+      hourlyBreakdown: hourlyBreakdown.sort((a, b) => a.hour.localeCompare(b.hour)),
+      errorBreakdown,
+      recommendations
+    };
   }
 }
