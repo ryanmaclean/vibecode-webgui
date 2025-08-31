@@ -48,7 +48,7 @@
   - [x] Test edge cases like partial migrations
   - [x] Benchmark performance with large datasets
 
-- [ ] Implement Azure embedding service integration
+- [x] Implement Azure embedding service integration
   - [x] Create AzureEmbeddingService implementation
   - [x] Create EmbeddingServiceFactory
   - [x] Create database schema for vector embeddings
@@ -58,8 +58,8 @@
   - [x] Implement connection pooling for database operations
   - [x] Create test scripts for connection pooling
   - [x] Document connection pooling implementation
-  - [ ] Add monitoring for Azure API usage
-  - [ ] Create metrics dashboard for embedding operations
+  - [x] Add monitoring for Azure API usage
+  - [x] Create metrics dashboard for embedding operations
 
 - [ ] Create automatic connection pool monitoring tools
   - [ ] Implement health dashboard for database connections
