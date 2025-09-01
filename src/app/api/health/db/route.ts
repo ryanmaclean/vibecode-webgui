@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRobustConnection, getConnectionPoolStatus } from '@/lib/db/robust-db-connection';
 import { getDatabaseMetricsCollector } from '@/lib/db/db-metrics';
+import { adaptPoolStatus } from '@/lib/db/pool-adapter';
 
 interface DbInfo {
   db_name: string;
@@ -129,7 +130,8 @@ export async function GET(request: NextRequest) {
     const dbInfo = (dbInfoResult as DbInfo[])[0];
     
     // Get connection pool status
-    const poolStatus = getConnectionPoolStatus();
+    const rawPoolStatus = getConnectionPoolStatus();
+    const poolStatus = adaptPoolStatus(rawPoolStatus);
     
     // Get database metrics
     let metricsData: DatabaseMetrics | undefined = undefined;
