@@ -81,15 +81,11 @@ async function generateEmbeddingsForChunks(chunks: Array<{
         // Generate embedding for this chunk
         let embedding: number[];
         
-        // Check if service is Azure or OpenAI type
-        if ('generateEmbedding' in service) {
-          // Azure service
-          embedding = await service.generateEmbedding(chunk.content);
-        } else if ('generateEmbedding' in service) {
-          // OpenAI service - same method name
+        // Both Azure and OpenAI services use the same generateEmbedding method
+        if ('generateEmbedding' in service && typeof service.generateEmbedding === 'function') {
           embedding = await service.generateEmbedding(chunk.content);
         } else {
-          console.warn('Unknown embedding service type, skipping embedding generation');
+          console.warn('Service does not have generateEmbedding method, skipping embedding generation');
           continue;
         }
         
