@@ -179,7 +179,7 @@
     "marked": "^16.1.1",
     "monaco-editor": "^0.52.2",
     "mongodb": "6.18.0",
-    "next": "15.4.4",
+    "next": "15.5.2",
     "next-auth": "^4.24.11",
     "next-themes": "^0.4.6",
     "node-pty": "^1.0.0",
@@ -236,7 +236,7 @@
     "@opentelemetry/exporter-jaeger": "2.0.1",
     "@opentelemetry/winston-transport": "0.14.0",
     "@playwright/test": "1.54.1",
-    "@rollup/rollup-darwin-arm64": "4.48.1",
+
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.6.4",
     "@testing-library/react": "16.3.0",
