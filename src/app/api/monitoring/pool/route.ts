@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     
     // Return as text if requested
     if (format === 'text') {
-      let textResponse = `
+      const textResponse = `
 Connection Pool Monitoring Report
 ================================
 Timestamp: ${responseData.timestamp}
