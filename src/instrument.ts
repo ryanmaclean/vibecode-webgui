@@ -67,8 +67,17 @@ function getTracer() {
       // Enhanced sampling for better observability
       sampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
       
-      // Disable plugins that cause compatibility issues
-      plugins: false,
+      // Enable database monitoring and other essential plugins
+      plugins: {
+        // Database monitoring for PostgreSQL
+        pg: {
+          dbmPropagationMode: 'full',
+          service: 'vibecode-postgres'
+        },
+        // Disable problematic plugins that cause Next.js 15 issues
+        fs: false,
+        winston: false
+      },
       
       // Tag all traces with deployment info
       tags: {
