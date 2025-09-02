@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       
       await serviceFactory.disconnect()
       
-      var metricsData: any = realMetrics
+      let metricsData: any = realMetrics
     } catch (serviceError) {
       console.error('Failed to get production metrics, falling back to basic system metrics:', serviceError)
       
