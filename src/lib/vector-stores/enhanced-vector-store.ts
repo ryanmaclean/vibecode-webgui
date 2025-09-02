@@ -217,7 +217,7 @@ export class EnhancedVectorStore {
   }
 
   /**
-   * Intelligent provider selection
+   * Intelligent provider selection based on query patterns and performance
    */
   private selectProvider(options: UnifiedSearchOptions): 'pgvector' | 'weaviate' {
     if (options.provider && options.provider !== 'auto') {
@@ -228,6 +228,10 @@ export class EnhancedVectorStore {
     const weaviateAvailable = this.providers.get('weaviate')
     const pgvectorAvailable = this.providers.get('pgvector')
 
+    // Performance-based selection
+    const pgvectorPerf = this.getAvgMetric('pgvector_query_time', 150)
+    const weaviatePerf = this.getAvgMetric('weaviate_query_time', 100)
+
     // Prefer Weaviate for advanced features
     if (weaviateAvailable && (
       options.searchType === 'hybrid' || 
@@ -237,14 +241,31 @@ export class EnhancedVectorStore {
       return 'weaviate'
     }
 
-    // Prefer pgvector for simple semantic search (faster, more reliable)
-    if (pgvectorAvailable && options.searchType !== 'hybrid' && !options.generativePrompt) {
+    // For large datasets, prefer faster provider
+    if (options.limit && options.limit > 50) {
+      if (pgvectorAvailable && weaviateAvailable) {
+        return pgvectorPerf < weaviatePerf ? 'pgvector' : 'weaviate'
+      }
+    }
+
+    // For workspace-specific queries, prefer pgvector (better tenant isolation)
+    if (options.workspaceId && pgvectorAvailable) {
       return 'pgvector'
     }
 
+    // For file-specific queries, prefer pgvector (better filtering)
+    if (options.fileIds && options.fileIds.length > 0 && pgvectorAvailable) {
+      return 'pgvector'
+    }
+
+    // Default: prefer faster provider for simple semantic search
+    if (pgvectorAvailable && weaviateAvailable) {
+      return pgvectorPerf < weaviatePerf ? 'pgvector' : 'weaviate'
+    }
+
     // Fallback to any available provider
-    if (weaviateAvailable) return 'weaviate'
     if (pgvectorAvailable) return 'pgvector'
+    if (weaviateAvailable) return 'weaviate'
 
     throw new Error('No vector store providers available')
   }
