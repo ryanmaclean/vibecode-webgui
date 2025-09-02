@@ -8,6 +8,7 @@ import { vectorStore as pgVectorStore } from '../vector-store'
 import { weaviateStore } from './weaviate-client'
 import { mlflowClient } from '../mlflow/mlflow-client'
 import { VectorMetricsCollector } from '../vector-db/VectorMetricsCollector'
+import { vectorQueryCache } from './query-cache'
 
 export interface VectorStoreProvider {
   id: 'pgvector' | 'weaviate'
@@ -249,7 +250,7 @@ export class EnhancedVectorStore {
   }
 
   /**
-   * Unified search across providers with intelligent routing
+   * Unified search across providers with intelligent routing and caching
    */
   async search(options: UnifiedSearchOptions): Promise<UnifiedSearchResult[]> {
     const startTime = Date.now()
@@ -257,6 +258,12 @@ export class EnhancedVectorStore {
     let results: UnifiedSearchResult[] = []
 
     try {
+      // Check cache first
+      const cachedResults = vectorQueryCache.getCachedResults(options.query, options)
+      if (cachedResults) {
+        return cachedResults
+      }
+
       provider = this.selectProvider(options)
 
       if (provider === 'weaviate') {
@@ -265,12 +272,15 @@ export class EnhancedVectorStore {
         results = await this.searchPgVector(options)
       }
 
+      // Cache results for future queries
+      vectorQueryCache.cacheResults(options.query, options, results, provider)
+
       // Track performance metrics
       const queryTime = Date.now() - startTime
       this.recordMetric(`${provider}_query_time`, queryTime)
       this.recordMetric('overall_query_time', queryTime)
       
-      // Collect metrics for monitoring - simplified
+      // Collect metrics for monitoring
       try {
         this.metricsCollector.updateStorageMetrics(results.length, 0)
       } catch (e) {
