@@ -1,0 +1,150 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vector-db-metrics
+  namespace: vibecode
+  labels:
+    app: vector-db
+    component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: vector-db
+      component: database
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+    scheme: http
+    targetPort: 9187
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_pod_name]
+      targetLabel: instance
+    - sourceLabels: [__meta_kubernetes_pod_node_name]
+      targetLabel: node
+    - sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: namespace
+    metricRelabelings:
+    - sourceLabels: [__name__]
+      regex: 'pg_up|pg_database_size_bytes|pg_stat_database_.*|pg_locks_count|pg_connections|pg_stat_replication_.*'
+      action: keep
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vector-db-custom-metrics
+  namespace: vibecode
+  labels:
+    app: vector-db
+    component: custom-metrics
+spec:
+  selector:
+    matchLabels:
+      app: vibecode-webgui
+      component: vector-metrics
+  endpoints:
+  - port: http
+    interval: 15s
+    path: /api/health/vector-db
+    scheme: http
+    params:
+      format: ["prometheus"]
+    relabelings:
+    - sourceLabels: [__meta_kubernetes_service_name]
+      targetLabel: service
+    - sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: namespace
+    metricRelabelings:
+    - sourceLabels: [__name__]
+      regex: 'vector_db_.*'
+      action: keep
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vector-db-metrics
+  namespace: vibecode
+  labels:
+    app: vector-db
+    component: database
+spec:
+  ports:
+  - name: metrics
+    port: 9187
+    targetPort: 9187
+    protocol: TCP
+  selector:
+    app: vector-db
+    component: database
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vector-db-alerts
+  namespace: vibecode
+  labels:
+    app: vector-db
+    component: alerting
+spec:
+  groups:
+  - name: vector-database
+    rules:
+    - alert: VectorDatabaseDown
+      expr: pg_up == 0
+      for: 30s
+      labels:
+        severity: critical
+        component: vector-database
+      annotations:
+        summary: "Vector database instance is down"
+        description: "Vector database {{ $labels.instance }} has been down for more than 30 seconds"
+        
+    - alert: VectorDatabaseHighConnections
+      expr: pg_connections{state="active"} / pg_settings_max_connections > 0.8
+      for: 2m
+      labels:
+        severity: warning
+        component: vector-database
+      annotations:
+        summary: "Vector database has high connection usage"
+        description: "Vector database {{ $labels.instance }} is using {{ $value | humanizePercentage }} of available connections"
+        
+    - alert: VectorDatabaseSlowQueries
+      expr: rate(vector_db_query_duration_seconds{quantile="0.95"}[5m]) > 1.0
+      for: 5m
+      labels:
+        severity: warning
+        component: vector-database
+      annotations:
+        summary: "Vector database has slow queries"
+        description: "95th percentile query time is {{ $value }}s on {{ $labels.instance }}"
+        
+    - alert: VectorDatabaseHighErrorRate
+      expr: rate(vector_db_query_errors_total[5m]) / rate(vector_db_queries_total[5m]) > 0.05
+      for: 2m
+      labels:
+        severity: critical
+        component: vector-database
+      annotations:
+        summary: "Vector database has high error rate"
+        description: "Error rate is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+        
+    - alert: VectorDatabaseLowDiskSpace
+      expr: (pg_database_size_bytes / (1024^3)) > 80
+      for: 10m
+      labels:
+        severity: warning
+        component: vector-database
+      annotations:
+        summary: "Vector database disk usage is high"
+        description: "Database size is {{ $value }}GB on {{ $labels.instance }}"
+        
+    - alert: VectorEmbeddingIngestionSlow
+      expr: rate(vector_db_embedding_operations_total[10m]) < 10
+      for: 15m
+      labels:
+        severity: warning
+        component: vector-embeddings
+      annotations:
+        summary: "Vector embedding ingestion is slow"
+        description: "Embedding ingestion rate is {{ $value }} operations/second on {{ $labels.instance }}"
