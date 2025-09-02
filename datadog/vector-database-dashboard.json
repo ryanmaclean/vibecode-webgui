@@ -52,10 +52,10 @@
       "id": 2,
       "definition": {
         "type": "query_value",
-        "title": "Vector Store Performance",
+        "title": "Vector Store Performance", 
         "requests": [
           {
-            "q": "avg:vector_metrics.queries_per_second{$env}",
+            "q": "sum:http.request.count{$env,service:vibecode-webgui,resource_name:/api/health/vector-metrics}.as_rate()",
             "aggregator": "avg",
             "conditional_formats": [
               {
