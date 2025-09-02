@@ -437,7 +437,7 @@ export class EnhancedVectorStore {
       pgvector: false,
       weaviate: false,
       totalStored: 0,
-      poolMetrics: null
+      poolMetrics: null as any
     }
 
     // Store in PostgreSQL pgvector (primary store) with connection pool monitoring
@@ -467,12 +467,12 @@ export class EnhancedVectorStore {
           duration,
           batchSize: Math.ceil(documents.length / batchSize),
           documentsProcessed: documents.length
-        }
+        } as any
         
         console.log(`Stored ${documents.length} documents in ${duration}ms using ${Math.ceil(documents.length / batchSize)} batches`)
       } catch (error) {
         console.error('Failed to store in pgvector:', error)
-        results.poolMetrics = { error: error.message, operation: 'store' }
+        results.poolMetrics = { error: error.message, operation: 'store' } as any
       }
     }
 
