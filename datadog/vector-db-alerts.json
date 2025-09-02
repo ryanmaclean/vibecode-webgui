@@ -1,0 +1,96 @@
+{
+  "monitors": [
+    {
+      "name": "Vector Database - High Query Latency",
+      "type": "metric alert",
+      "query": "avg(last_5m):avg:vector_db.search.duration.p95{env:production} > 500",
+      "message": "Vector database query latency is high.\n\nP95 latency: {{value}}ms\nThreshold: 500ms\n\n@slack-alerts @pagerduty-critical",
+      "tags": ["team:platform", "service:vector-database", "severity:high"],
+      "options": {
+        "thresholds": {
+          "critical": 500,
+          "warning": 300
+        },
+        "notify_audit": true,
+        "require_full_window": false,
+        "new_host_delay": 300,
+        "include_tags": true,
+        "escalation_message": "Vector database latency remains high - immediate attention required"
+      }
+    },
+    {
+      "name": "Vector Database - Connection Pool Exhaustion",
+      "type": "metric alert", 
+      "query": "avg(last_3m):avg:vector_db.pool.utilization{env:production} > 0.9",
+      "message": "Vector database connection pool is nearly exhausted.\n\nUtilization: {{value}}%\nActive connections: {{vector_db.pool.active_connections}}\nMax connections: {{vector_db.pool.max_connections}}\n\n@slack-alerts @pagerduty-high",
+      "tags": ["team:platform", "service:vector-database", "severity:critical"],
+      "options": {
+        "thresholds": {
+          "critical": 0.9,
+          "warning": 0.8
+        },
+        "notify_audit": true,
+        "require_full_window": true
+      }
+    },
+    {
+      "name": "Vector Database - High Error Rate",
+      "type": "metric alert",
+      "query": "avg(last_5m):(sum:vector_db.query.errors{env:production}.as_rate() / sum:vector_db.query.total{env:production}.as_rate()) * 100 > 5",
+      "message": "Vector database error rate is elevated.\n\nError rate: {{value}}%\nErrors per minute: {{vector_db.query.errors.rate}}\n\n@slack-alerts @pagerduty-medium",
+      "tags": ["team:platform", "service:vector-database", "severity:medium"],
+      "options": {
+        "thresholds": {
+          "critical": 5,
+          "warning": 2
+        },
+        "notify_audit": false,
+        "require_full_window": false
+      }
+    },
+    {
+      "name": "Vector Database - Shard Unhealthy",
+      "type": "metric alert",
+      "query": "avg(last_2m):avg:vector_db.shard.healthy{env:production} < 1",
+      "message": "One or more vector database shards are unhealthy.\n\nUnhealthy shards detected on: {{host.name}}\nShard ID: {{shard_id}}\n\n@slack-alerts @pagerduty-high",
+      "tags": ["team:platform", "service:vector-database", "severity:high"],
+      "options": {
+        "thresholds": {
+          "critical": 1
+        },
+        "notify_audit": true,
+        "require_full_window": true
+      }
+    },
+    {
+      "name": "Vector Database - Embedding Generation Slow",
+      "type": "metric alert",
+      "query": "avg(last_10m):avg:vector_db.embedding.generation.duration{env:production} > 2000",
+      "message": "Vector embedding generation is slow.\n\nAverage generation time: {{value}}ms\nThreshold: 2000ms\n\n@slack-alerts",
+      "tags": ["team:platform", "service:vector-database", "severity:medium"],
+      "options": {
+        "thresholds": {
+          "critical": 2000,
+          "warning": 1000
+        },
+        "notify_audit": false
+      }
+    },
+    {
+      "name": "Vector Database - Disk Space Critical",
+      "type": "metric alert",
+      "query": "avg(last_15m):avg:vector_db.storage.used_percent{env:production} > 85",
+      "message": "Vector database disk usage is critical.\n\nDisk usage: {{value}}%\nFree space: {{vector_db.storage.free_gb}}GB\n\n@slack-alerts @pagerduty-critical",
+      "tags": ["team:platform", "service:vector-database", "severity:critical"],
+      "options": {
+        "thresholds": {
+          "critical": 85,
+          "warning": 75
+        },
+        "notify_audit": true,
+        "require_full_window": true,
+        "escalation_message": "Vector database disk space remains critical - immediate action required"
+      }
+    }
+  ]
+}
