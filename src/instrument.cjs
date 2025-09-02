@@ -24,7 +24,7 @@ function getTracer() {
 
   // Normal monitoring initialization for development/production
   try {
-    // Dynamic imports to prevent static analysis issues
+    // Import dd-trace normally in CommonJS
     const tracer = require('dd-trace');
     
     // Only import monitoring modules if not in Docker build
@@ -54,29 +54,35 @@ function getTracer() {
     // Resolve standardized env/service/version
     const { env, service, version } = getServiceEnvVersion();
 
-    // Initialize the tracer with simplified config to avoid Next.js 15 compatibility issues
+    // Initialize the tracer with Next.js 15 compatible config
     tracer.init({
       // Docs: https://docs.datadoghq.com/tracing/trace_collection/library_config/nodejs/
       logInjection: false, // Disabled to avoid stack trace issues
       profiling: false, // Disabled to avoid compatibility issues
-      runtimeMetrics: true,
+      runtimeMetrics: false, // Disabled to avoid Next.js compatibility issues
+      startupLogs: false, // Reduce startup noise
       env,
       service,
       version,
       
-      // Enhanced sampling for better observability
-      sampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+      // Conservative sampling for development
+      sampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 0.5,
       
-      // Enable database monitoring and other essential plugins
+      // Enable database monitoring with minimal plugin set for Next.js 15
       plugins: {
         // Database monitoring for PostgreSQL
         pg: {
-          dbmPropagationMode: 'full',
+          enabled: true,
+          dbmPropagationMode: 'disabled', // Disable DBM propagation for compatibility
           service: 'vibecode-postgres'
         },
-        // Disable problematic plugins that cause Next.js 15 issues
+        // Disable all other plugins that might cause issues
+        http: false,
+        dns: false,
         fs: false,
-        winston: false
+        winston: false,
+        express: false,
+        'next': false
       },
       
       // Tag all traces with deployment info
@@ -91,14 +97,20 @@ function getTracer() {
 
     return tracer;
   } catch (error) {
-    // Fallback to mock tracer if monitoring fails
+    // Log the actual error to understand why tracer failed
+    console.error('🚨 Datadog tracer initialization failed:', error);
     console.log('⚠️ Monitoring failed to initialize, using mock tracer');
     return {
       init: () => console.log('Mock tracer initialized'),
-      // Add other tracer methods as needed
+      dogstatsd: {
+        gauge: () => {},
+        increment: () => {},
+        histogram: () => {},
+        event: () => {}
+      }
     };
   }
 }
 
-// Export the tracer using ES module syntax
-export default getTracer();
+// Export the tracer using CommonJS syntax
+module.exports = getTracer();
