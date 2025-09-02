@@ -52,10 +52,10 @@
       "id": 2,
       "definition": {
         "type": "query_value",
-        "title": "Vector Embedding Generation Rate",
+        "title": "Vector Store Performance",
         "requests": [
           {
-            "q": "sum:vector_db.embedding.generation.count{$env}.as_rate()",
+            "q": "avg:vector_metrics.queries_per_second{$env}",
             "aggregator": "avg",
             "conditional_formats": [
               {
