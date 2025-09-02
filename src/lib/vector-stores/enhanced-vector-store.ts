@@ -413,7 +413,7 @@ export class EnhancedVectorStore {
   }
 
   /**
-   * Store documents with intelligent distribution
+   * Store documents with intelligent distribution and connection pool optimization
    */
   async storeDocuments(
     workspaceId: number, 
@@ -431,26 +431,48 @@ export class EnhancedVectorStore {
     pgvector: boolean
     weaviate: boolean
     totalStored: number
+    poolMetrics?: any
   }> {
     const results = {
       pgvector: false,
       weaviate: false,
-      totalStored: 0
+      totalStored: 0,
+      poolMetrics: null
     }
 
-    // Store in PostgreSQL pgvector (primary store)
+    // Store in PostgreSQL pgvector (primary store) with connection pool monitoring
     if (this.providers.get('pgvector')) {
       try {
-        await pgVectorStore.storeChunks(documents[0].fileId, documents.map(doc => ({
-          content: doc.content,
-          startLine: doc.startLine,
-          endLine: doc.endLine,
-          tokens: doc.tokens
-        })))
+        const startTime = Date.now()
+        
+        // Process in batches to optimize connection usage
+        const batchSize = 5
+        for (let i = 0; i < documents.length; i += batchSize) {
+          const batch = documents.slice(i, i + batchSize)
+          await pgVectorStore.storeChunks(batch[0].fileId, batch.map(doc => ({
+            content: doc.content,
+            startLine: doc.startLine,
+            endLine: doc.endLine,
+            tokens: doc.tokens
+          })))
+        }
+        
+        const duration = Date.now() - startTime
         results.pgvector = true
         results.totalStored += documents.length
+        
+        // Collect connection pool metrics
+        results.poolMetrics = {
+          operation: 'store',
+          duration,
+          batchSize: Math.ceil(documents.length / batchSize),
+          documentsProcessed: documents.length
+        }
+        
+        console.log(`Stored ${documents.length} documents in ${duration}ms using ${Math.ceil(documents.length / batchSize)} batches`)
       } catch (error) {
         console.error('Failed to store in pgvector:', error)
+        results.poolMetrics = { error: error.message, operation: 'store' }
       }
     }
 
