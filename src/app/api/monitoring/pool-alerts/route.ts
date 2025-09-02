@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { DatadogIntegration } from '@/lib/monitoring/datadog-integration';
+import { datadogDBM, DBMAlert } from '@/lib/monitoring/datadog-dbm';
+import { createRobustConnection } from '@/lib/db/robust-db-connection';
 
 // Alert thresholds for connection pool monitoring
 interface PoolAlertThresholds {
@@ -100,7 +101,7 @@ function checkPoolAlerts(poolStatus: any, thresholds: PoolAlertThresholds = DEFA
 
 /**
  * GET /api/monitoring/pool-alerts
- * Check current pool status and return any active alerts
+ * Check database metrics using Datadog DBM and return any active alerts
  */
 export async function GET(request: NextRequest) {
   try {
@@ -112,58 +113,96 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       );
     }
-    
-    const { searchParams } = new URL(request.url);
-    const thresholds = {
-      warningThreshold: parseInt(searchParams.get('warningThreshold') || '80'),
-      criticalThreshold: parseInt(searchParams.get('criticalThreshold') || '90'),
-      minAvailableConnections: parseInt(searchParams.get('minAvailableConnections') || '2')
-    };
-    
-    // Get current pool status from the health API
-    const healthResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/health/db?verbose=true`, {
-      method: 'GET',
-      headers: {
-        'Cookie': request.headers.get('cookie') || ''
-      }
-    });
-    
-    if (!healthResponse.ok) {
-      throw new Error('Failed to fetch database health status');
+
+    // Check if Datadog DBM is enabled
+    if (!datadogDBM.isEnabled()) {
+      return NextResponse.json({
+        error: 'Datadog Database Monitoring is not enabled. Set DD_DBM_ENABLED=true in environment.',
+        alerts: [],
+        dbmConfig: datadogDBM.getConfig(),
+        timestamp: new Date().toISOString()
+      }, { status: 503 });
     }
     
-    const healthData = await healthResponse.json();
-    
-    if (healthData.status !== 'ok') {
+    // Get real database connection metrics
+    const connection = await createRobustConnection({
+      poolKey: 'pool-alerts-monitoring',
+      enableLogging: true
+    });
+
+    if (!connection.success || !connection.prisma) {
       return NextResponse.json({
-        alerts: [{
-          poolKey: 'global',
-          severity: 'critical',
-          message: `Database health check failed: ${healthData.message}`,
-          activeConnections: 0,
-          totalConnections: 0,
-          utilizationPercent: 0,
-          availableConnections: 0,
-          timestamp: new Date().toISOString()
-        }],
-        poolStatus: healthData.poolStatus,
-        thresholds,
+        error: 'Failed to establish database connection for monitoring',
+        alerts: [],
+        timestamp: new Date().toISOString()
+      }, { status: 500 });
+    }
+
+    try {
+      // Query actual PostgreSQL connection stats
+      const connectionStatsResult = await connection.prisma.$queryRaw`
+        SELECT 
+          numbackends as active_connections,
+          (SELECT setting::int FROM pg_settings WHERE name = 'max_connections') as max_connections,
+          (SELECT count(*) FROM pg_stat_activity WHERE state = 'idle') as idle_connections,
+          (SELECT count(*) FROM pg_stat_activity WHERE state = 'idle in transaction') as idle_in_transaction,
+          (SELECT count(*) FROM pg_stat_activity WHERE wait_event_type IS NOT NULL) as waiting_connections
+        FROM pg_stat_database 
+        WHERE datname = current_database()
+      `;
+
+      const stats = (connectionStatsResult as any[])[0];
+      
+      // Calculate connection pool metrics
+      const activeConnections = Number(stats.active_connections) || 0;
+      const maxConnections = Number(stats.max_connections) || 100;
+      const idleConnections = Number(stats.idle_connections) || 0;
+      const waitingConnections = Number(stats.waiting_connections) || 0;
+      const utilizationPercent = (activeConnections / maxConnections) * 100;
+
+      // Record metrics with Datadog DBM
+      datadogDBM.recordConnectionMetrics({
+        activeConnections,
+        totalConnections: maxConnections,
+        waitingConnections,
+        idleConnections
+      });
+
+      // Generate alerts based on real metrics
+      const dbmMetrics = {
+        activeConnections,
+        totalConnections: maxConnections,
+        connectionPoolUtilization: utilizationPercent,
+        averageQueryTime: 50, // Mock for now, would come from pg_stat_statements
+        slowQueryCount: 0, // Mock for now
+        errorRate: 0, // Mock for now  
+        throughput: 100 // Mock for now
+      };
+
+      const alerts = datadogDBM.generatePoolAlerts(dbmMetrics);
+
+      return NextResponse.json({
+        alerts,
+        dbmEnabled: true,
+        connectionMetrics: {
+          activeConnections,
+          maxConnections,
+          idleConnections,
+          waitingConnections,
+          utilizationPercent: Math.round(utilizationPercent * 10) / 10
+        },
+        alertCount: alerts.length,
+        criticalAlerts: alerts.filter(a => a.severity === 'critical').length,
+        warningAlerts: alerts.filter(a => a.severity === 'warning').length,
         timestamp: new Date().toISOString()
       });
+      
+    } finally {
+      // Release database connection
+      if (connection.release) {
+        connection.release();
+      }
     }
-    
-    // Check for pool alerts
-    const alerts = checkPoolAlerts(healthData.poolStatus, thresholds);
-    
-    return NextResponse.json({
-      alerts,
-      poolStatus: healthData.poolStatus,
-      thresholds,
-      alertCount: alerts.length,
-      criticalAlerts: alerts.filter(a => a.severity === 'critical').length,
-      warningAlerts: alerts.filter(a => a.severity === 'warning').length,
-      timestamp: new Date().toISOString()
-    });
     
   } catch (error: any) {
     console.error('Error checking pool alerts:', error);
