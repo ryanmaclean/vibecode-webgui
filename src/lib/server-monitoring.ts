@@ -5,22 +5,19 @@
 
 
 import { createLogger, format, transports } from 'winston';
-import tracer from 'dd-trace';
 
-// Initialize Datadog tracer (should be done before importing other modules)
-if (process.env.DD_API_KEY) {
-  tracer.init({
-    service: 'vibecode-webgui',
-    env: process.env.NODE_ENV || 'development',
-    version: process.env.APP_VERSION || '1.0.0',
-    logInjection: true,
-    runtimeMetrics: true,
-    profiling: true,
-    appsec: true, // Application Security Management
-  })
-  console.log('🔍 Datadog APM tracer initialized')
-} else {
-  console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
+// Import tracer from instrument.ts to avoid double initialization
+let tracer: any;
+try {
+  tracer = require('dd-trace');
+} catch (e) {
+  console.log('⚠️ Datadog tracer not available, using mock');
+  tracer = {
+    init: () => {},
+    setTag: () => {},
+    addTags: () => {},
+    span: () => ({ finish: () => {} })
+  };
 }
 
 // Custom Winston formatter for structured logging
@@ -56,27 +53,29 @@ const logger = createLogger({
     new transports.Console(),
 
     // File transports for persistent logging, always in JSON format
-    new transports.File({
-      filename: 'logs/error.log',
-      level: 'error',
-      format: productionFormat,
-      maxsize: 50 * 1024 * 1024, // 50MB
-      maxFiles: 5,
-      tailable: true
-    }),
+    // Only enable in production or when explicitly requested
+    ...(process.env.NODE_ENV === 'production' || process.env.ENABLE_FILE_LOGGING === 'true' ? [
+      new transports.File({
+        filename: 'logs/error.log',
+        level: 'error',
+        format: productionFormat,
+        maxsize: 50 * 1024 * 1024, // 50MB
+        maxFiles: 5,
+        tailable: true,
+        handleExceptions: false,
+        handleRejections: false
+      }),
 
-    new transports.File({
-      filename: 'logs/combined.log',
-      maxsize: 100 * 1024 * 1024, // 100MB
-      maxFiles: 10,
-      tailable: true
-    })
-  ],
-  exceptionHandlers: [
-    new transports.File({ filename: 'logs/exceptions.log' })
-  ],
-  rejectionHandlers: [
-    new transports.File({ filename: 'logs/rejections.log' })
+      new transports.File({
+        filename: 'logs/combined.log',
+        format: productionFormat,
+        maxsize: 100 * 1024 * 1024, // 100MB
+        maxFiles: 10,
+        tailable: true,
+        handleExceptions: false,
+        handleRejections: false
+      })
+    ] : [])
   ],
   exitOnError: false
 })
