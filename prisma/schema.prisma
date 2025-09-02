@@ -101,7 +101,7 @@ model DocumentEmbedding {
   id                      Int       @id @default(autoincrement())
   documentId              String    @unique @map("document_id")
   content                 String    @db.Text
-  embedding               String?   @db.Vector(1536) // For pgvector
+  embedding               String?   @db.Text // Vector stored as text for pgvector compatibility
   metadata                Json?     @default("{}")
   embeddingGenerationTime Int?      @map("embedding_generation_time_ms")
   searchCount             Int       @default(0) @map("search_count")
@@ -111,7 +111,7 @@ model DocumentEmbedding {
 
   @@map("document_embeddings")
   @@index([documentId])
-  @@index([embedding(ops: VectorL2Ops)], type: "ivfflat")
+  @@index([embedding], map: "embedding_l2_idx")
 }
 
 // Files and RAG System
