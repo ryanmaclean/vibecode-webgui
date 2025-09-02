@@ -1,0 +1,191 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vector-db-backup
+  namespace: vibecode
+  labels:
+    app: vector-db-backup
+    component: backup
+spec:
+  schedule: "0 2 * * *" # Daily at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: vector-db-backup-job
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: backup
+            image: postgres:15-alpine
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              
+              # Create backup directory with timestamp
+              BACKUP_DIR="/backups/$(date +%Y%m%d_%H%M%S)"
+              mkdir -p "$BACKUP_DIR"
+              
+              # Set PGPASSWORD for authentication
+              export PGPASSWORD="$POSTGRES_PASSWORD"
+              
+              echo "Starting backup of vector database..."
+              
+              # Create full database backup
+              pg_dump -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                --format=custom \
+                --compress=9 \
+                --verbose \
+                --file="$BACKUP_DIR/vector_db_full.dump"
+              
+              # Create schema-only backup
+              pg_dump -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                --schema-only \
+                --format=plain \
+                --file="$BACKUP_DIR/vector_db_schema.sql"
+              
+              # Create vector embeddings backup separately (for large tables)
+              pg_dump -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+                --data-only \
+                --table=document_embeddings \
+                --format=custom \
+                --compress=9 \
+                --file="$BACKUP_DIR/vector_embeddings.dump"
+              
+              # Create metadata file
+              cat > "$BACKUP_DIR/backup_info.json" << EOF
+              {
+                "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+                "database": "$POSTGRES_DB",
+                "host": "$POSTGRES_HOST",
+                "backup_type": "full",
+                "files": [
+                  "vector_db_full.dump",
+                  "vector_db_schema.sql", 
+                  "vector_embeddings.dump"
+                ],
+                "size_bytes": $(du -sb "$BACKUP_DIR" | cut -f1)
+              }
+              EOF
+              
+              # Verify backups
+              echo "Verifying backup integrity..."
+              pg_restore --list "$BACKUP_DIR/vector_db_full.dump" > /dev/null
+              pg_restore --list "$BACKUP_DIR/vector_embeddings.dump" > /dev/null
+              
+              # Clean up old backups (keep last 30 days)
+              find /backups -type d -name "????????_??????" -mtime +30 -exec rm -rf {} \; 2>/dev/null || true
+              
+              echo "Backup completed successfully in $BACKUP_DIR"
+              echo "Backup size: $(du -sh "$BACKUP_DIR" | cut -f1)"
+              
+            env:
+            - name: POSTGRES_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: vector-db-credentials
+                  key: host
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: vector-db-credentials
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: vector-db-credentials
+                  key: password
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: vector-db-credentials
+                  key: database
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /backups
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "100m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
+          volumes:
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: vector-db-backup-pvc
+          nodeSelector:
+            node-type: backup-node
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vector-db-backup-pvc
+  namespace: vibecode
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: backup-storage
+  resources:
+    requests:
+      storage: 500Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vector-db-backup-cleanup
+  namespace: vibecode
+  labels:
+    app: vector-db-backup-cleanup
+    component: maintenance
+spec:
+  schedule: "0 4 * * 0" # Weekly on Sunday at 4 AM
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: vector-db-backup-cleanup-job
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: cleanup
+            image: alpine:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              
+              echo "Starting backup cleanup..."
+              
+              # Remove backups older than retention period
+              find /backups -type d -name "????????_??????" -mtime +30 -print -exec rm -rf {} \;
+              
+              # Log remaining backup directories
+              echo "Remaining backups:"
+              ls -la /backups/
+              
+              # Calculate total backup storage usage
+              TOTAL_SIZE=$(du -sh /backups | cut -f1)
+              echo "Total backup storage usage: $TOTAL_SIZE"
+              
+              echo "Backup cleanup completed"
+              
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /backups
+            resources:
+              requests:
+                memory: "64Mi"
+                cpu: "50m"
+              limits:
+                memory: "128Mi"
+                cpu: "100m"
+          volumes:
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: vector-db-backup-pvc

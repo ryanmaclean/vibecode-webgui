@@ -7,7 +7,7 @@
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { DefaultAzureCredential } from '@azure/identity';
-import { withVectorConnection } from '../db/vector-connection-pool';
+import { VectorConnectionPool, VectorConnectionPoolFactory } from '../db/vector-connection-pool';
 import { DatadogIntegration } from '../monitoring/datadog-integration';
 
 // Monitoring and metrics interfaces
@@ -232,7 +232,14 @@ export class AzureEmbeddingService {
         const startTime = Date.now();
         
         // Use the connection pool to execute the query
-        return withVectorConnection(async (client) => {
+        const pool = VectorConnectionPoolFactory.createPool({
+            host: process.env.DATABASE_HOST || 'localhost',
+            port: parseInt(process.env.DATABASE_PORT || '5432'),
+            database: process.env.DATABASE_NAME || 'vibecode',
+            user: process.env.DATABASE_USER || 'postgres',
+            password: process.env.DATABASE_PASSWORD || 'password'
+        });
+        return pool.withTransaction(async (client: any) => {
           // Use Prisma's executeRaw to handle the pgvector type
           return client.$executeRawUnsafe(
             `INSERT INTO document_embeddings (
@@ -298,14 +305,28 @@ export class AzureEmbeddingService {
         queryParams.push(limit);
         
         // Execute the query using connection pool
-        return withVectorConnection(async (client) => {
+        const pool = VectorConnectionPoolFactory.createPool({
+            host: process.env.DATABASE_HOST || 'localhost',
+            port: parseInt(process.env.DATABASE_PORT || '5432'),
+            database: process.env.DATABASE_NAME || 'vibecode',
+            user: process.env.DATABASE_USER || 'postgres',
+            password: process.env.DATABASE_PASSWORD || 'password'
+        });
+        return pool.withTransaction(async (client: any) => {
           return client.$queryRawUnsafe(query, ...queryParams);
         });
       },
       
       getEmbeddingStats: async () => {
         // Return embedding statistics from the database using connection pool
-        return withVectorConnection(async (client) => {
+        const pool = VectorConnectionPoolFactory.createPool({
+            host: process.env.DATABASE_HOST || 'localhost',
+            port: parseInt(process.env.DATABASE_PORT || '5432'),
+            database: process.env.DATABASE_NAME || 'vibecode',
+            user: process.env.DATABASE_USER || 'postgres',
+            password: process.env.DATABASE_PASSWORD || 'password'
+        });
+        return pool.withTransaction(async (client: any) => {
           return client.$queryRawUnsafe(`
             SELECT 
               DATE_TRUNC('hour', created_at) AS hour_bucket,
@@ -328,7 +349,14 @@ export class AzureEmbeddingService {
         const { olderThan = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } = params;
         
         // Delete embeddings older than the specified date using connection pool
-        return withVectorConnection(async (client) => {
+        const pool = VectorConnectionPoolFactory.createPool({
+            host: process.env.DATABASE_HOST || 'localhost',
+            port: parseInt(process.env.DATABASE_PORT || '5432'),
+            database: process.env.DATABASE_NAME || 'vibecode',
+            user: process.env.DATABASE_USER || 'postgres',
+            password: process.env.DATABASE_PASSWORD || 'password'
+        });
+        return pool.withTransaction(async (client: any) => {
           const query = `
             DELETE FROM document_embeddings 
             WHERE created_at < $1
