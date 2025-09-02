@@ -180,7 +180,19 @@ export async function GET(request: NextRequest) {
           WHERE datname = current_database()
         `;
         
-        dbStats = (statsResult as DbStats[])[0];
+        const rawStats = (statsResult as any[])[0];
+        dbStats = {
+          active_connections: Number(rawStats.active_connections),
+          transactions_committed: Number(rawStats.transactions_committed),
+          transactions_rolled_back: Number(rawStats.transactions_rolled_back),
+          blocks_read: Number(rawStats.blocks_read),
+          blocks_hit: Number(rawStats.blocks_hit),
+          rows_returned: Number(rawStats.rows_returned),
+          rows_fetched: Number(rawStats.rows_fetched),
+          rows_inserted: Number(rawStats.rows_inserted),
+          rows_updated: Number(rawStats.rows_updated),
+          rows_deleted: Number(rawStats.rows_deleted)
+        };
       } catch (statsError) {
         console.error('Error getting database statistics:', statsError);
       }
@@ -198,7 +210,12 @@ export async function GET(request: NextRequest) {
           FROM document_embeddings
         `;
         
-        embeddingsStats = (embedResult as EmbeddingsStats[])[0];
+        const rawStats = (embedResult as any[])[0];
+        embeddingsStats = {
+          total_embeddings: Number(rawStats.total_embeddings),
+          avg_content_size: rawStats.avg_content_size ? Number(rawStats.avg_content_size) : null,
+          latest_embedding: rawStats.latest_embedding
+        };
       } catch (embedError) {
         // This could happen if table doesn't exist yet, which is ok
         embeddingsStats = { 
