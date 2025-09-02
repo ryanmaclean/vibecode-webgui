@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       
       await serviceFactory.disconnect()
       
-      const mockMetrics = realMetrics
+      var metricsData: any = realMetrics
     } catch (serviceError) {
       console.error('Failed to get production metrics, falling back to basic system metrics:', serviceError)
       
@@ -79,19 +79,19 @@ export async function GET(request: NextRequest) {
       }
       
       await serviceFactory.disconnect()
-      const mockMetrics = fallbackMetrics
+      metricsData = fallbackMetrics
     }
 
     let filteredMetrics: Record<string, unknown> = {}
 
     if (metricType === 'all') {
-      filteredMetrics = mockMetrics
+      filteredMetrics = metricsData
     } else if (metricType === 'system') {
-      filteredMetrics = { system: mockMetrics.system }
+      filteredMetrics = { system: metricsData.system }
     } else if (metricType === 'application') {
-      filteredMetrics = { application: mockMetrics.application }
+      filteredMetrics = { application: metricsData.application }
     } else if (metricType === 'business') {
-      filteredMetrics = { business: mockMetrics.business }
+      filteredMetrics = { business: (metricsData as any).business }
     }
 
     return NextResponse.json({

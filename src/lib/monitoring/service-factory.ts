@@ -209,7 +209,7 @@ export class MonitoringServiceFactory {
     
     const openRouter = new OpenRouter(apiKey)
     // Try a minimal completion request
-    await openRouter.complete({
+    await openRouter.createChatCompletion({
       model: 'anthropic/claude-3-haiku',
       messages: [{ role: 'user', content: 'Hi' }],
       max_tokens: 1
