@@ -74,7 +74,16 @@ async function generateEmbeddingsForChunks(chunks: Array<{
     const prisma = new PrismaClient();
     const { service, releaseConnection } = await EmbeddingServiceFactory.createEmbeddingServiceWithRobustConnection();
     
-    const chunksWithEmbeddings = [];
+    const chunksWithEmbeddings: Array<{
+      id: string;
+      content: string;
+      embedding: number[];
+      metadata: {
+        startLine: number;
+        endLine: number;
+        tokens: number;
+      };
+    }> = [];
     
     for (const chunk of chunks) {
       try {
