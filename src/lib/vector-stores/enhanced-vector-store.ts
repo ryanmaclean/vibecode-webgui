@@ -7,6 +7,7 @@
 import { vectorStore as pgVectorStore } from '../vector-store'
 import { weaviateStore } from './weaviate-client'
 import { mlflowClient } from '../mlflow/mlflow-client'
+import { VectorMetricsCollector } from '../vector-db/VectorMetricsCollector'
 
 export interface VectorStoreProvider {
   id: 'pgvector' | 'weaviate'
@@ -70,8 +71,10 @@ export class EnhancedVectorStore {
   private performanceMetrics: Map<string, number[]> = new Map()
   private lastHealthCheck: number = 0
   private healthCheckInterval: number = 300000 // 5 minutes
+  private metricsCollector: VectorMetricsCollector
 
   constructor() {
+    this.metricsCollector = new VectorMetricsCollector()
     this.initializeProviders()
   }
 
@@ -266,6 +269,13 @@ export class EnhancedVectorStore {
       const queryTime = Date.now() - startTime
       this.recordMetric(`${provider}_query_time`, queryTime)
       this.recordMetric('overall_query_time', queryTime)
+      
+      // Collect metrics for monitoring - simplified
+      try {
+        this.metricsCollector.updateStorageMetrics(results.length, 0)
+      } catch (e) {
+        // Metrics collection is optional
+      }
 
       // Track with MLflow if available
       try {
