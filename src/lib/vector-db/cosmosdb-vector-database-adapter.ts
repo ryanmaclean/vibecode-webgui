@@ -6,6 +6,7 @@
 import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { metrics } from '../server-monitoring';
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
@@ -22,6 +23,8 @@ import {
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> origin/feature/general-improvements-fixed
 
 /**
  * Azure Cosmos DB specific configuration options
@@ -46,7 +49,10 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   private client: any = null; // Cosmos DB client
   private database: any = null;
   private container: any = null;
+<<<<<<< HEAD
   private errorHandler: VectorDbErrorHandler;
+=======
+>>>>>>> origin/feature/general-improvements-fixed
   protected cosmosConfig: CosmosDbVectorDatabaseConfig;
 
   /**
@@ -55,7 +61,10 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   constructor(config: CosmosDbVectorDatabaseConfig) {
     super(config);
+<<<<<<< HEAD
     this.errorHandler = new VectorDbErrorHandler('cosmosdb', this.config.enableLogging || false, this.config.enableMetrics || false);
+=======
+>>>>>>> origin/feature/general-improvements-fixed
     this.cosmosConfig = {
       cosmosEndpoint: process.env.COSMOS_ENDPOINT,
       cosmosKey: process.env.COSMOS_KEY,
@@ -92,7 +101,11 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         console.info('Cosmos DB vector database adapter initialized successfully');
       }
       
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Cosmos DB adapter not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+      throw new Error('Cosmos DB adapter not yet implemented');
+>>>>>>> origin/feature/general-improvements-fixed
     } catch (error) {
       if (this.config.enableLogging) {
         console.error('Failed to initialize Cosmos DB vector database adapter:', error);
@@ -111,7 +124,11 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     tokens: number;
   }>): Promise<void> {
     if (!this.container) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Cosmos DB adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+      throw new Error('Cosmos DB adapter not initialized');
+>>>>>>> origin/feature/general-improvements-fixed
     }
 
     try {
@@ -121,7 +138,11 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // 3. Create chunk documents with embeddings in Cosmos DB
       // 4. Ensure vector index is leveraged for new documents
       
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Cosmos DB store chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+      throw new Error('Cosmos DB store chunks not yet implemented');
+>>>>>>> origin/feature/general-improvements-fixed
     } catch (error) {
       if (this.config.enableMetrics) {
         metrics.increment('cosmosdb_vector_db.store_chunks.error');
@@ -140,7 +161,11 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   public async search(embedding: number[], options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.container) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Cosmos DB adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+      throw new Error('Cosmos DB adapter not initialized');
+>>>>>>> origin/feature/general-improvements-fixed
     }
 
     try {
@@ -166,7 +191,11 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // };
       // const { resources } = await this.container.items.query(query).fetchAll();
       
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Cosmos DB vector search not yet implemented'), 'unknown', VectorDbErrorType.SEARCH, false);
+=======
+      throw new Error('Cosmos DB vector search not yet implemented');
+>>>>>>> origin/feature/general-improvements-fixed
     } catch (error) {
       if (this.config.enableMetrics) {
         metrics.increment('cosmosdb_vector_db.search.error');
@@ -185,7 +214,11 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   public async deleteFileChunks(fileId: number): Promise<void> {
     if (!this.container) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Cosmos DB adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+      throw new Error('Cosmos DB adapter not initialized');
+>>>>>>> origin/feature/general-improvements-fixed
     }
 
     try {
@@ -199,7 +232,11 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // const { resources } = await this.container.items.query(querySpec).fetchAll();
       // For each item, delete it from the container
       
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Cosmos DB delete chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+      throw new Error('Cosmos DB delete chunks not yet implemented');
+>>>>>>> origin/feature/general-improvements-fixed
     } catch (error) {
       if (this.config.enableMetrics) {
         metrics.increment('cosmosdb_vector_db.delete_chunks.error');
@@ -222,7 +259,11 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     averageChunkSize: number;
   }> {
     if (!this.container) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Cosmos DB adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+      throw new Error('Cosmos DB adapter not initialized');
+>>>>>>> origin/feature/general-improvements-fixed
     }
 
     try {
@@ -233,7 +274,11 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // 2. Count distinct fileIds
       // 3. Average token count across all chunks
       
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Cosmos DB stats not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+      throw new Error('Cosmos DB stats not yet implemented');
+>>>>>>> origin/feature/general-improvements-fixed
     } catch (error) {
       if (this.config.enableMetrics) {
         metrics.increment('cosmosdb_vector_db.get_stats.error');
@@ -300,7 +345,11 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   protected async fallbackTextSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.container) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Cosmos DB adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+      throw new Error('Cosmos DB adapter not initialized');
+>>>>>>> origin/feature/general-improvements-fixed
     }
 
     try {
@@ -321,4 +370,8 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       return [];
     }
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> origin/feature/general-improvements-fixed
