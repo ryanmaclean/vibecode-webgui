@@ -1,30 +1,50 @@
 # API Documentation
 
+<<<<<<< Updated upstream
 *Generated on 2025-08-12T16:10:07.211Z*
+=======
+*Generated on 2025-08-25T18:53:28.136Z*
+>>>>>>> Stashed changes
 
 This documentation is automatically generated from the codebase.
 
 ## Table of Contents
 
+<<<<<<< Updated upstream
+=======
+- [/api/vector-store](#-api-vector-store)
+- [/api/test-db](#-api-test-db)
+>>>>>>> Stashed changes
 - [/api/templates](#-api-templates)
 - [/api/mongodb-test](#-api-mongodb-test)
 - [/api/health](#-api-health)
 - [/api/files](#-api-files)
 - [/api/experiments](#-api-experiments)
+<<<<<<< Updated upstream
+=======
+- [/api/workspace/auto-scaling](#-api-workspace-auto-scaling)
+>>>>>>> Stashed changes
 - [/api/terminal/ws](#-api-terminal-ws)
 - [/api/terminal/session](#-api-terminal-session)
 - [/api/projects/template](#-api-projects-template)
 - [/api/ollama/models](#-api-ollama-models)
 - [/api/monitoring/traces](#-api-monitoring-traces)
+<<<<<<< Updated upstream
 - [/api/monitoring/security](#-api-monitoring-security)
 - [/api/monitoring/performance](#-api-monitoring-performance)
 - [/api/monitoring/rum](#-api-monitoring-rum)
+=======
+- [/api/monitoring/performance](#-api-monitoring-performance)
+- [/api/monitoring/rum](#-api-monitoring-rum)
+- [/api/monitoring/security](#-api-monitoring-security)
+>>>>>>> Stashed changes
 - [/api/monitoring/otel-config](#-api-monitoring-otel-config)
 - [/api/monitoring/metrics](#-api-monitoring-metrics)
 - [/api/monitoring/dashboard](#-api-monitoring-dashboard)
 - [/api/health/simple](#-api-health-simple)
 - [/api/gradio/run](#-api-gradio-run)
 - [/api/files/sync](#-api-files-sync)
+<<<<<<< Updated upstream
 - [/api/chat/stream](#-api-chat-stream)
 - [/api/chat/mongodb-simple](#-api-chat-mongodb-simple)
 - [/api/chat/mongodb](#-api-chat-mongodb)
@@ -42,6 +62,24 @@ This documentation is automatically generated from the codebase.
 - [/api/ai/management](#-api-ai-management)
 - [/api/ai/huggingface-init](#-api-ai-huggingface-init)
 - [/api/ai/model-selection](#-api-ai-model-selection)
+=======
+- [/api/code-server/session](#-api-code-server-session)
+- [/api/chat/stream](#-api-chat-stream)
+- [/api/chat/mongodb-simple](#-api-chat-mongodb-simple)
+- [/api/chat/mongodb](#-api-chat-mongodb)
+- [/api/claude/session](#-api-claude-session)
+- [/api/claude/chat](#-api-claude-chat)
+- [/api/claude/generate](#-api-claude-generate)
+- [/api/claude/analyze](#-api-claude-analyze)
+- [/api/auth/login-tracking](#-api-auth-login-tracking)
+- [/api/ai/upload](#-api-ai-upload)
+- [/api/ai/web-search](#-api-ai-web-search)
+- [/api/ai/search](#-api-ai-search)
+- [/api/ai/model-selection](#-api-ai-model-selection)
+- [/api/ai/provider-health](#-api-ai-provider-health)
+- [/api/ai/management](#-api-ai-management)
+- [/api/ai/huggingface-init](#-api-ai-huggingface-init)
+>>>>>>> Stashed changes
 - [/api/ai/litellm](#-api-ai-litellm)
 - [/api/ai/huggingface-chat](#-api-ai-huggingface-chat)
 - [/api/ai/generate-project](#-api-ai-generate-project)
@@ -49,11 +87,135 @@ This documentation is automatically generated from the codebase.
 - [/api/ai/chat](#-api-ai-chat)
 - [/api/workspace/:id/init-goose](#-api-workspace--id-init-goose)
 - [/api/code-server/session/:sessionId](#-api-code-server-session--sessionid)
+<<<<<<< Updated upstream
 - [/api/ai/conversations/:workspaceId](#-api-ai-conversations--workspaceid)
 - [/api/ai/chat/unified](#-api-ai-chat-unified)
 - [/api/ai/chat/stream](#-api-ai-chat-stream)
 - [/api/ai/chat/enhanced](#-api-ai-chat-enhanced)
 
+=======
+- [/api/auth/saml/sso](#-api-auth-saml-sso)
+- [/api/auth/mfa/verify](#-api-auth-mfa-verify)
+- [/api/auth/saml/metadata](#-api-auth-saml-metadata)
+- [/api/auth/mfa/setup](#-api-auth-mfa-setup)
+- [/api/ai/conversations/:workspaceId](#-api-ai-conversations--workspaceid)
+- [/api/ai/chat/stream](#-api-ai-chat-stream)
+- [/api/ai/chat/unified](#-api-ai-chat-unified)
+- [/api/ai/chat/enhanced](#-api-ai-chat-enhanced)
+
+## /api/vector-store
+
+### GET /api/vector-store
+
+Enhanced Vector Store API Unified API for multiple vector database providers Supports PostgreSQL pgvector, Weaviate, and intelligent routing
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| action | string | No | action query parameter |
+
+#### Responses
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+*Source: [src/app/api/vector-store/route.ts](../src/app/api/vector-store/route.ts)*
+
+---
+
+### POST /api/vector-store
+
+Enhanced Vector Store API Unified API for multiple vector database providers Supports PostgreSQL pgvector, Weaviate, and intelligent routing
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| action | string | No | action query parameter |
+
+#### Responses
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+*Source: [src/app/api/vector-store/route.ts](../src/app/api/vector-store/route.ts)*
+
+---
+
+### PUT /api/vector-store
+
+Enhanced Vector Store API Unified API for multiple vector database providers Supports PostgreSQL pgvector, Weaviate, and intelligent routing
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| action | string | No | action query parameter |
+
+#### Responses
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+*Source: [src/app/api/vector-store/route.ts](../src/app/api/vector-store/route.ts)*
+
+---
+
+### DELETE /api/vector-store
+
+Enhanced Vector Store API Unified API for multiple vector database providers Supports PostgreSQL pgvector, Weaviate, and intelligent routing
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| action | string | No | action query parameter |
+
+#### Responses
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+*Source: [src/app/api/vector-store/route.ts](../src/app/api/vector-store/route.ts)*
+
+---
+
+## /api/test-db
+
+### GET /api/test-db
+
+GET endpoint
+
+#### Responses
+
+**200** - Successful response
+
+*Source: [src/app/api/test-db/route.ts](../src/app/api/test-db/route.ts)*
+
+---
+
+>>>>>>> Stashed changes
 ## /api/templates
 
 ### GET /api/templates
@@ -372,11 +534,195 @@ Experiments API endpoint Provides feature flag evaluation and experiment trackin
 
 ---
 
+<<<<<<< Updated upstream
+=======
+## /api/workspace/auto-scaling
+
+### GET /api/workspace/auto-scaling
+
+Workspace Auto-Scaling API Manages dynamic resource scaling for workspace instances
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| workspaceId | string | No | workspaceId query parameter |
+| action | string | No | action query parameter |
+
+#### Responses
+
+**401** - Unauthorized
+
+**403** - Forbidden
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**403** - Forbidden
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**403** - Forbidden
+
+*Source: [src/app/api/workspace/auto-scaling/route.ts](../src/app/api/workspace/auto-scaling/route.ts)*
+
+---
+
+### POST /api/workspace/auto-scaling
+
+Workspace Auto-Scaling API Manages dynamic resource scaling for workspace instances
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| workspaceId | string | No | workspaceId query parameter |
+| action | string | No | action query parameter |
+
+#### Responses
+
+**401** - Unauthorized
+
+**403** - Forbidden
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**403** - Forbidden
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**403** - Forbidden
+
+*Source: [src/app/api/workspace/auto-scaling/route.ts](../src/app/api/workspace/auto-scaling/route.ts)*
+
+---
+
+### PUT /api/workspace/auto-scaling
+
+Workspace Auto-Scaling API Manages dynamic resource scaling for workspace instances
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| workspaceId | string | No | workspaceId query parameter |
+| action | string | No | action query parameter |
+
+#### Responses
+
+**401** - Unauthorized
+
+**403** - Forbidden
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**403** - Forbidden
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**403** - Forbidden
+
+*Source: [src/app/api/workspace/auto-scaling/route.ts](../src/app/api/workspace/auto-scaling/route.ts)*
+
+---
+
+### DELETE /api/workspace/auto-scaling
+
+Workspace Auto-Scaling API Manages dynamic resource scaling for workspace instances
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| workspaceId | string | No | workspaceId query parameter |
+| action | string | No | action query parameter |
+
+#### Responses
+
+**401** - Unauthorized
+
+**403** - Forbidden
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**403** - Forbidden
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**403** - Forbidden
+
+*Source: [src/app/api/workspace/auto-scaling/route.ts](../src/app/api/workspace/auto-scaling/route.ts)*
+
+---
+
+### PATCH /api/workspace/auto-scaling
+
+Workspace Auto-Scaling API Manages dynamic resource scaling for workspace instances
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| workspaceId | string | No | workspaceId query parameter |
+| action | string | No | action query parameter |
+
+#### Responses
+
+**401** - Unauthorized
+
+**403** - Forbidden
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**403** - Forbidden
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**403** - Forbidden
+
+*Source: [src/app/api/workspace/auto-scaling/route.ts](../src/app/api/workspace/auto-scaling/route.ts)*
+
+---
+
+>>>>>>> Stashed changes
 ## /api/terminal/ws
 
 ### GET /api/terminal/ws
 
+<<<<<<< Updated upstream
 Enhanced Terminal WebSocket API Handles terminal sessions with AI integration and Claude Code CLI support Replaces simple terminal backend with AI-powered terminal
+=======
+WebSocket endpoint for terminal sessions Handles real-time terminal communication
+>>>>>>> Stashed changes
 
 **Authentication:** API key required
 
@@ -571,6 +917,87 @@ OpenTelemetry Traces API Endpoint Receives traces from client-side and forwards 
 
 ---
 
+<<<<<<< Updated upstream
+=======
+## /api/monitoring/performance
+
+### GET /api/monitoring/performance
+
+Performance Monitoring API Endpoint Provides performance metrics and optimization insights
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| action | string | No | action query parameter |
+| timeframe | string | No | timeframe query parameter |
+
+#### Responses
+
+**200** - Successful response
+
+*Source: [src/app/api/monitoring/performance/route.ts](../src/app/api/monitoring/performance/route.ts)*
+
+---
+
+### POST /api/monitoring/performance
+
+Performance Monitoring API Endpoint Provides performance metrics and optimization insights
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| action | string | No | action query parameter |
+| timeframe | string | No | timeframe query parameter |
+
+#### Responses
+
+**200** - Successful response
+
+*Source: [src/app/api/monitoring/performance/route.ts](../src/app/api/monitoring/performance/route.ts)*
+
+---
+
+## /api/monitoring/rum
+
+### GET /api/monitoring/rum
+
+Real User Monitoring (RUM) API Endpoint Provides RUM data collection and analysis
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| action | string | No | action query parameter |
+
+#### Responses
+
+**200** - Successful response
+
+*Source: [src/app/api/monitoring/rum/route.ts](../src/app/api/monitoring/rum/route.ts)*
+
+---
+
+### POST /api/monitoring/rum
+
+Real User Monitoring (RUM) API Endpoint Provides RUM data collection and analysis
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| action | string | No | action query parameter |
+
+#### Responses
+
+**200** - Successful response
+
+*Source: [src/app/api/monitoring/rum/route.ts](../src/app/api/monitoring/rum/route.ts)*
+
+---
+
+>>>>>>> Stashed changes
 ## /api/monitoring/security
 
 ### GET /api/monitoring/security
@@ -647,6 +1074,7 @@ Security Monitoring API Endpoint Provides real-time security status and metrics
 
 ---
 
+<<<<<<< Updated upstream
 ## /api/monitoring/performance
 
 ### GET /api/monitoring/performance
@@ -725,6 +1153,8 @@ RUM Monitoring API Endpoint Provides RUM configuration, health status, and sessi
 
 ---
 
+=======
+>>>>>>> Stashed changes
 ## /api/monitoring/otel-config
 
 ### GET /api/monitoring/otel-config
@@ -771,18 +1201,28 @@ OpenTelemetry Configuration API Endpoint Provides configuration information and 
 
 ### GET /api/monitoring/metrics
 
+<<<<<<< Updated upstream
 API endpoint for submitting custom metrics Allows frontend and other services to submit metrics to Datadog
+=======
+Monitoring Metrics API Endpoint Provides detailed metrics and performance data
+>>>>>>> Stashed changes
 
 #### Parameters
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
+<<<<<<< Updated upstream
 | config | string | No | config query parameter |
 | type | 'counter' | 'gauge' | 'histogram' | 'event'
   name: string
   value?: number
   tags?: string[]
   metadata?: Record<string, any> | Yes | type field in request body |
+=======
+| type | string | No | type query parameter |
+| range | string | No | range query parameter |
+| limit | string | No | limit query parameter |
+>>>>>>> Stashed changes
 
 #### Responses
 
@@ -794,18 +1234,28 @@ API endpoint for submitting custom metrics Allows frontend and other services to
 
 ### POST /api/monitoring/metrics
 
+<<<<<<< Updated upstream
 API endpoint for submitting custom metrics Allows frontend and other services to submit metrics to Datadog
+=======
+Monitoring Metrics API Endpoint Provides detailed metrics and performance data
+>>>>>>> Stashed changes
 
 #### Parameters
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
+<<<<<<< Updated upstream
 | config | string | No | config query parameter |
 | type | 'counter' | 'gauge' | 'histogram' | 'event'
   name: string
   value?: number
   tags?: string[]
   metadata?: Record<string, any> | Yes | type field in request body |
+=======
+| type | string | No | type query parameter |
+| range | string | No | range query parameter |
+| limit | string | No | limit query parameter |
+>>>>>>> Stashed changes
 
 #### Responses
 
@@ -819,7 +1269,11 @@ API endpoint for submitting custom metrics Allows frontend and other services to
 
 ### GET /api/monitoring/dashboard
 
+<<<<<<< Updated upstream
 API endpoint for monitoring dashboard data Provides real-time metrics and health information
+=======
+Monitoring Dashboard API Endpoint Provides comprehensive monitoring data and health status
+>>>>>>> Stashed changes
 
 #### Parameters
 
@@ -940,6 +1394,79 @@ Real-time File Synchronization API WebSocket-based real-time file synchronizatio
 
 ---
 
+<<<<<<< Updated upstream
+=======
+## /api/code-server/session
+
+### GET /api/code-server/session
+
+Code-server session management API Handles creation and management of code-server instances
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| workspaceId | string | No | workspaceId query parameter |
+| id | string
+  url: string
+  status: 'starting' | 'ready' | 'error' | 'stopped'
+  workspaceId: string
+  userId: string
+  containerId?: string
+  createdAt: Date
+  lastActivity: Date | Yes | id field in request body |
+
+#### Responses
+
+**401** - Unauthorized
+
+**403** - Forbidden
+
+**500** - Internal Server Error
+
+**401** - Unauthorized
+
+**500** - Internal Server Error
+
+*Source: [src/app/api/code-server/session/route.ts](../src/app/api/code-server/session/route.ts)*
+
+---
+
+### POST /api/code-server/session
+
+Code-server session management API Handles creation and management of code-server instances
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| workspaceId | string | No | workspaceId query parameter |
+| id | string
+  url: string
+  status: 'starting' | 'ready' | 'error' | 'stopped'
+  workspaceId: string
+  userId: string
+  containerId?: string
+  createdAt: Date
+  lastActivity: Date | Yes | id field in request body |
+
+#### Responses
+
+**401** - Unauthorized
+
+**403** - Forbidden
+
+**500** - Internal Server Error
+
+**401** - Unauthorized
+
+**500** - Internal Server Error
+
+*Source: [src/app/api/code-server/session/route.ts](../src/app/api/code-server/session/route.ts)*
+
+---
+
+>>>>>>> Stashed changes
 ## /api/chat/stream
 
 ### POST /api/chat/stream
@@ -1070,6 +1597,7 @@ POST endpoint
 
 ---
 
+<<<<<<< Updated upstream
 ## /api/auth/login-tracking
 
 ### GET /api/auth/login-tracking
@@ -1170,6 +1698,8 @@ Code-server session management API Handles creation and management of code-serve
 
 ---
 
+=======
+>>>>>>> Stashed changes
 ## /api/claude/session
 
 ### GET /api/claude/session
@@ -1232,6 +1762,7 @@ Claude Code Session API Route API endpoint for managing Claude Code CLI interact
 
 ---
 
+<<<<<<< Updated upstream
 ## /api/claude/generate
 
 ### POST /api/claude/generate
@@ -1252,6 +1783,8 @@ Claude Code Generate API Route API endpoint for Claude Code CLI code generation 
 
 ---
 
+=======
+>>>>>>> Stashed changes
 ## /api/claude/chat
 
 ### POST /api/claude/chat
@@ -1272,6 +1805,29 @@ Claude Code Chat API Route API endpoint for Claude Code CLI chat integration Han
 
 ---
 
+<<<<<<< Updated upstream
+=======
+## /api/claude/generate
+
+### POST /api/claude/generate
+
+Claude Code Generate API Route API endpoint for Claude Code CLI code generation Handles terminal-based Claude Code generation commands Staff Engineer Implementation - Production-ready Claude CLI API
+
+**Authentication:** API key required
+
+#### Responses
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**400** - Bad Request
+
+*Source: [src/app/api/claude/generate/route.ts](../src/app/api/claude/generate/route.ts)*
+
+---
+
+>>>>>>> Stashed changes
 ## /api/claude/analyze
 
 ### POST /api/claude/analyze
@@ -1292,6 +1848,7 @@ Claude Code Analyze API Route API endpoint for Claude Code CLI code analysis Han
 
 ---
 
+<<<<<<< Updated upstream
 ## /api/ai-cli-tools/install
 
 ### GET /api/ai-cli-tools/install
@@ -1391,6 +1948,35 @@ POST endpoint
 **200** - Successful response
 
 *Source: [src/app/api/ai/web-search/route.ts](../src/app/api/ai/web-search/route.ts)*
+=======
+## /api/auth/login-tracking
+
+### GET /api/auth/login-tracking
+
+GET endpoint
+
+#### Responses
+
+**400** - Bad Request
+
+**500** - Internal Server Error
+
+*Source: [src/app/api/auth/login-tracking/route.ts](../src/app/api/auth/login-tracking/route.ts)*
+
+---
+
+### POST /api/auth/login-tracking
+
+POST endpoint
+
+#### Responses
+
+**400** - Bad Request
+
+**500** - Internal Server Error
+
+*Source: [src/app/api/auth/login-tracking/route.ts](../src/app/api/auth/login-tracking/route.ts)*
+>>>>>>> Stashed changes
 
 ---
 
@@ -1440,6 +2026,53 @@ POST endpoint
 
 ---
 
+<<<<<<< Updated upstream
+=======
+## /api/ai/web-search
+
+### GET /api/ai/web-search
+
+GET endpoint
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| q | string | No | q query parameter |
+| query | string | No | query query parameter |
+| maxResults | string | No | maxResults query parameter |
+| includeContent | string | No | includeContent query parameter |
+
+#### Responses
+
+**200** - Successful response
+
+*Source: [src/app/api/ai/web-search/route.ts](../src/app/api/ai/web-search/route.ts)*
+
+---
+
+### POST /api/ai/web-search
+
+POST endpoint
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| q | string | No | q query parameter |
+| query | string | No | query query parameter |
+| maxResults | string | No | maxResults query parameter |
+| includeContent | string | No | includeContent query parameter |
+
+#### Responses
+
+**200** - Successful response
+
+*Source: [src/app/api/ai/web-search/route.ts](../src/app/api/ai/web-search/route.ts)*
+
+---
+
+>>>>>>> Stashed changes
 ## /api/ai/search
 
 ### GET /api/ai/search
@@ -1490,6 +2123,53 @@ Vector Search API for RAG functionality Provides semantic search across uploaded
 
 ---
 
+<<<<<<< Updated upstream
+=======
+## /api/ai/model-selection
+
+### GET /api/ai/model-selection
+
+GET endpoint
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| provider | string | No | provider query parameter |
+| details | string | No | details query parameter |
+
+#### Responses
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+*Source: [src/app/api/ai/model-selection/route.ts](../src/app/api/ai/model-selection/route.ts)*
+
+---
+
+### POST /api/ai/model-selection
+
+POST endpoint
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| provider | string | No | provider query parameter |
+| details | string | No | details query parameter |
+
+#### Responses
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+*Source: [src/app/api/ai/model-selection/route.ts](../src/app/api/ai/model-selection/route.ts)*
+
+---
+
+>>>>>>> Stashed changes
 ## /api/ai/provider-health
 
 ### GET /api/ai/provider-health
@@ -1618,6 +2298,7 @@ POST endpoint
 
 ---
 
+<<<<<<< Updated upstream
 ## /api/ai/model-selection
 
 ### GET /api/ai/model-selection
@@ -1662,6 +2343,8 @@ POST endpoint
 
 ---
 
+=======
+>>>>>>> Stashed changes
 ## /api/ai/litellm
 
 ### GET /api/ai/litellm
@@ -1846,6 +2529,20 @@ POST endpoint
 
 AI Chat API endpoint for VibeCode WebGUI Handles AI-powered code assistance using Vercel AI SDK
 
+<<<<<<< Updated upstream
+=======
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| model | string
+  provider?: string
+  messageCount?: number
+  error?: string
+  responseTime?: number
+  [key: string]: string | number | boolean | undefined | No | model field in request body |
+
+>>>>>>> Stashed changes
 #### Responses
 
 **400** - Bad Request
@@ -1858,6 +2555,20 @@ AI Chat API endpoint for VibeCode WebGUI Handles AI-powered code assistance usin
 
 AI Chat API endpoint for VibeCode WebGUI Handles AI-powered code assistance using Vercel AI SDK
 
+<<<<<<< Updated upstream
+=======
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| model | string
+  provider?: string
+  messageCount?: number
+  error?: string
+  responseTime?: number
+  [key: string]: string | number | boolean | undefined | No | model field in request body |
+
+>>>>>>> Stashed changes
 #### Responses
 
 **400** - Bad Request
@@ -2032,6 +2743,251 @@ Individual code-server session management API Handles session status, updates, a
 
 ---
 
+<<<<<<< Updated upstream
+=======
+## /api/auth/saml/sso
+
+### GET /api/auth/saml/sso
+
+SAML SSO Authentication API Handles SAML authentication requests and responses
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| provider | string | No | provider query parameter |
+
+#### Responses
+
+**404** - Not Found
+
+**404** - Not Found
+
+*Source: [src/app/api/auth/saml/sso/route.ts](../src/app/api/auth/saml/sso/route.ts)*
+
+---
+
+### POST /api/auth/saml/sso
+
+SAML SSO Authentication API Handles SAML authentication requests and responses
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| provider | string | No | provider query parameter |
+
+#### Responses
+
+**404** - Not Found
+
+**404** - Not Found
+
+*Source: [src/app/api/auth/saml/sso/route.ts](../src/app/api/auth/saml/sso/route.ts)*
+
+---
+
+### PUT /api/auth/saml/sso
+
+SAML SSO Authentication API Handles SAML authentication requests and responses
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| provider | string | No | provider query parameter |
+
+#### Responses
+
+**404** - Not Found
+
+**404** - Not Found
+
+*Source: [src/app/api/auth/saml/sso/route.ts](../src/app/api/auth/saml/sso/route.ts)*
+
+---
+
+## /api/auth/mfa/verify
+
+### GET /api/auth/mfa/verify
+
+MFA Verification API Handles multi-factor authentication challenges and verification
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| deviceId | string | No | deviceId query parameter |
+
+#### Responses
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**404** - Not Found
+
+*Source: [src/app/api/auth/mfa/verify/route.ts](../src/app/api/auth/mfa/verify/route.ts)*
+
+---
+
+### POST /api/auth/mfa/verify
+
+MFA Verification API Handles multi-factor authentication challenges and verification
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| deviceId | string | No | deviceId query parameter |
+
+#### Responses
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**404** - Not Found
+
+*Source: [src/app/api/auth/mfa/verify/route.ts](../src/app/api/auth/mfa/verify/route.ts)*
+
+---
+
+### PUT /api/auth/mfa/verify
+
+MFA Verification API Handles multi-factor authentication challenges and verification
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| deviceId | string | No | deviceId query parameter |
+
+#### Responses
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**404** - Not Found
+
+*Source: [src/app/api/auth/mfa/verify/route.ts](../src/app/api/auth/mfa/verify/route.ts)*
+
+---
+
+### DELETE /api/auth/mfa/verify
+
+MFA Verification API Handles multi-factor authentication challenges and verification
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| deviceId | string | No | deviceId query parameter |
+
+#### Responses
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**401** - Unauthorized
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**404** - Not Found
+
+*Source: [src/app/api/auth/mfa/verify/route.ts](../src/app/api/auth/mfa/verify/route.ts)*
+
+---
+
+## /api/auth/saml/metadata
+
+### GET /api/auth/saml/metadata
+
+SAML Metadata API Provides SAML service provider metadata for identity provider configuration
+
+#### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| provider | string | No | provider query parameter |
+
+#### Responses
+
+**404** - Not Found
+
+*Source: [src/app/api/auth/saml/metadata/route.ts](../src/app/api/auth/saml/metadata/route.ts)*
+
+---
+
+## /api/auth/mfa/setup
+
+### POST /api/auth/mfa/setup
+
+MFA Setup API Handles multi-factor authentication device setup
+
+#### Responses
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**400** - Bad Request
+
+**400** - Bad Request
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+*Source: [src/app/api/auth/mfa/setup/route.ts](../src/app/api/auth/mfa/setup/route.ts)*
+
+---
+
+### PUT /api/auth/mfa/setup
+
+MFA Setup API Handles multi-factor authentication device setup
+
+#### Responses
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+**400** - Bad Request
+
+**400** - Bad Request
+
+**401** - Unauthorized
+
+**400** - Bad Request
+
+*Source: [src/app/api/auth/mfa/setup/route.ts](../src/app/api/auth/mfa/setup/route.ts)*
+
+---
+
+>>>>>>> Stashed changes
 ## /api/ai/conversations/:workspaceId
 
 ### GET /api/ai/conversations/:workspaceId
@@ -2133,6 +3089,7 @@ DELETE endpoint
 
 ---
 
+<<<<<<< Updated upstream
 ## /api/ai/chat/unified
 
 ### POST /api/ai/chat/unified
@@ -2147,6 +3104,8 @@ POST endpoint
 
 ---
 
+=======
+>>>>>>> Stashed changes
 ## /api/ai/chat/stream
 
 ### POST /api/ai/chat/stream
@@ -2163,6 +3122,23 @@ POST endpoint
 
 ---
 
+<<<<<<< Updated upstream
+=======
+## /api/ai/chat/unified
+
+### POST /api/ai/chat/unified
+
+POST endpoint
+
+#### Responses
+
+**401** - Unauthorized
+
+*Source: [src/app/api/ai/chat/unified/route.ts](../src/app/api/ai/chat/unified/route.ts)*
+
+---
+
+>>>>>>> Stashed changes
 ## /api/ai/chat/enhanced
 
 ### POST /api/ai/chat/enhanced

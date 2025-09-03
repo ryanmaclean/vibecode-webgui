@@ -341,8 +341,11 @@ export default function MonitoringDashboard() {
       case 'network':
 <<<<<<< Updated upstream
         return <NetworkDiagnostics />;
+<<<<<<< Updated upstream
 =======
         return <div className="text-center p-8 bg-white rounded-lg shadow">Network diagnostics coming soon.</div>;
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
       case 'health':
         return enhancedData && (

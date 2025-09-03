@@ -12,6 +12,9 @@ import { PrismaClient } from '@prisma/client'
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
+
 interface UploadedFile {
   id: string
   name: string

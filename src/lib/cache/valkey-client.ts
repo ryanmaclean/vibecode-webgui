@@ -51,12 +51,19 @@ const getValkeyConfig = () => {
 const config = getValkeyConfig();
 
 // Create Valkey client with optimized settings (using Redis-compatible ioredis client)
+<<<<<<< Updated upstream
 let valkeyClient: any = null;
+=======
+let valkeyClient: Redis | null = null;
+>>>>>>> Stashed changes
 
 try {
   if (config.type === 'standard') {
     if ('url' in config) {
+<<<<<<< Updated upstream
       // @ts-ignore - ioredis constructor typing issue
+=======
+>>>>>>> Stashed changes
       valkeyClient = new Redis(config.url, {
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
@@ -70,7 +77,10 @@ try {
         connectTimeout: 10000,
       });
     } else {
+<<<<<<< Updated upstream
       // @ts-ignore - ioredis constructor typing issue
+=======
+>>>>>>> Stashed changes
       valkeyClient = new Redis({
         host: config.host,
         port: config.port,
@@ -138,7 +148,11 @@ export const CacheTTL = {
  * Enhanced cache operations with performance monitoring using Valkey
  */
 export class ValkeyManager {
+<<<<<<< Updated upstream
   private client: any;
+=======
+  private client: Redis | null;
+>>>>>>> Stashed changes
 
   constructor() {
     this.client = valkeyClient;
@@ -206,7 +220,11 @@ export class ValkeyManager {
       const keys = Array.isArray(key) ? key : [key];
       await this.client.del(...keys);
       
+<<<<<<< Updated upstream
       metrics.increment('cache.delete', { count: keys.length as any });
+=======
+      metrics.increment('cache.delete', { count: keys.length });
+>>>>>>> Stashed changes
       return true;
     } catch (error) {
       metrics.increment('cache.delete.error');
@@ -260,7 +278,11 @@ export class ValkeyManager {
       }
       
       await pipeline.exec();
+<<<<<<< Updated upstream
       metrics.increment('cache.mset.success', { count: pairs.length as any });
+=======
+      metrics.increment('cache.mset.success', { count: pairs.length });
+>>>>>>> Stashed changes
       return true;
     } catch (error) {
       metrics.increment('cache.mset.error');
