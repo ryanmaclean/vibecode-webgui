@@ -5,7 +5,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -18,8 +18,7 @@ import { GitHubDeploymentWorkflow } from '@/components/deployment/GitHubDeployme
 import CollaborativeChatInterface from '@/components/chat/CollaborativeChatInterface'
 import { 
   generateFromTemplate, 
-  type GeneratedProject,
-  type GenerateFromTemplateOptions
+  type GeneratedProject
 } from '@/lib/templates/generator'
 import {
   UsersIcon,
@@ -49,9 +48,9 @@ interface CollaborativeWorkspaceProps {
   userId?: string
   userName?: string
   initialProject?: GeneratedProject
-  onUserInvite?: () => void
   onCreateTerminal?: () => void
   onCreateDebugSession?: () => void
+<<<<<<< Updated upstream
   className?: string
 }
 
@@ -70,52 +69,50 @@ interface WorkspaceActivity {
   userName: string
   timestamp: Date
   data?: WorkspaceActivityData
+=======
+>>>>>>> Stashed changes
 }
 
 interface TeamMember {
   id: string
   name: string
-  avatar?: string
   color: string
   isActive: boolean
-  role: 'owner' | 'collaborator' | 'viewer'
+  role: 'owner' | 'viewer' | 'collaborator'
   joinedAt: Date
 }
 
+interface WorkspaceActivity {
+  id: string
+  type: string
+  message: string
+  userId: string
+  userName: string
+  timestamp: Date
+}
+
 export function CollaborativeWorkspace({
-  workspaceId: initialWorkspaceId,
-  userId: initialUserId,
-  userName: initialUserName,
+  workspaceId = 'default-workspace',
+  userId = 'default-user',
+  userName = 'Anonymous User',
   initialProject,
-  onUserInvite,
   onCreateTerminal,
-  onCreateDebugSession,
-  className
+  onCreateDebugSession
 }: CollaborativeWorkspaceProps) {
-  const [workspaceId] = useState(initialWorkspaceId || `workspace-${Date.now()}`)
-  const [userId] = useState(initialUserId || `user-${Math.random().toString(36).substr(2, 9)}`)
-  const [userName] = useState(initialUserName || `User-${Math.random().toString(36).substr(2, 4)}`)
-  const [activeTab, setActiveTab] = useState<'templates' | 'chat' | 'deploy' | 'users' | 'terminals' | 'debug'>('templates')
   const [selectedProject, setSelectedProject] = useState<GeneratedProject | null>(initialProject || null)
-  const [showDeployment, setShowDeployment] = useState(false)
-  const [workspaceActivity, setWorkspaceActivity] = useState<WorkspaceActivity[]>([])
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
-  const [conversationId, setConversationId] = useState<string>()
   const [isGeneratingProject, setIsGeneratingProject] = useState(false)
-  const [isVoiceConnected, setIsVoiceConnected] = useState(false)
-  const [isVideoEnabled, setIsVideoEnabled] = useState(false)
-  const [isMicEnabled, setIsMicEnabled] = useState(false)
-  const [isScreenSharing, setIsScreenSharing] = useState(false)
-  const wsRef = useRef<WebSocket | null>(null)
+  const [activeTab, setActiveTab] = useState('templates')
+  const [showDeployment, setShowDeployment] = useState(false)
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+  const [workspaceActivity, setWorkspaceActivity] = useState<WorkspaceActivity[]>([])
+  const [conversationId, setConversationId] = useState<string | null>(null)
 
   const {
-    isConnected,
-    connectionError,
     activeUsers,
+    isConnected,
     socket
   } = useCollaboration({
     workspaceId,
-    conversationId,
     userId,
     userName,
     enabled: true
@@ -128,29 +125,46 @@ export function CollaborativeWorkspace({
       name: user.name,
       color: user.color || '#1f75cb', // Provide a default color if undefined
       isActive: user.isActive,
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'collaborator' | 'viewer',
+=======
+      role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'viewer' | 'collaborator',
+>>>>>>> Stashed changes
+=======
+      role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'viewer' | 'collaborator',
+>>>>>>> Stashed changes
       joinedAt: new Date()
     }))
     setTeamMembers(members)
   }, [activeUsers, userId])
 
   // Handle template selection and project generation
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
   const handleTemplateSelect = async (template: MarketplaceTemplate) => {
     const templateId = template.id
+=======
+  const handleTemplateSelect = async (template: any) => {
+>>>>>>> Stashed changes
+=======
+  const handleTemplateSelect = async (template: any) => {
+>>>>>>> Stashed changes
     setIsGeneratingProject(true)
     
     try {
-      const options: GenerateFromTemplateOptions = {
-        projectName: `${templateId}-project`,
-        template: templateId,
-        customizations: {
-          description: `Generated from ${templateId} template in collaborative workspace`,
-          author: userName
-        }
-      }
-
-      const project = await generateFromTemplate(options)
+      // Generate project from template
+<<<<<<< Updated upstream
+      const project = await generateFromTemplate(template.id, {
+=======
+      const project = await generateProjectFromTemplate(template.id, {
+>>>>>>> Stashed changes
+        name: `project-${Date.now()}`,
+        description: template.description || 'Generated from template'
+      })
       
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
       // Add workspace-specific metadata
       const workspaceProject: GeneratedProject = {
         ...project,
@@ -160,6 +174,9 @@ export function CollaborativeWorkspace({
         complexity: 'intermediate' as const,
         tags: [templateId, 'collaborative'],
         estimatedTime: 30,
+=======
+      setSelectedProject(project)
+>>>>>>> Stashed changes
         features: [],
         documentation: {
           readme: `# ${project.name}\n\nGenerated in collaborative workspace`,
@@ -169,28 +186,27 @@ export function CollaborativeWorkspace({
       }
 
       setSelectedProject(workspaceProject)
+=======
+      setSelectedProject(project)
+>>>>>>> Stashed changes
       
-      // Broadcast to workspace
+      // Broadcast project generation to team
       if (socket) {
         socket.emit('workspace_event', {
-          type: 'template_selected',
-          templateId,
-          projectName: workspaceProject.name,
-          userId,
-          userName
+          type: 'project_generated',
+          data: { project, userId }
         })
       }
 
       // Add to activity feed
-      addActivity({
-        type: 'template_selected',
+      setWorkspaceActivity(prev => [...prev, {
+        id: `activity-${Date.now()}`,
+        type: 'project_generated',
+        message: `Generated project from ${template.name} template`,
         userId,
         userName,
-        data: { templateId, projectName: workspaceProject.name }
-      })
-
-      // Auto-switch to chat tab for collaboration
-      setActiveTab('chat')
+        timestamp: new Date()
+      }])
 
     } catch (error) {
       console.error('Failed to generate project:', error)
@@ -199,216 +215,211 @@ export function CollaborativeWorkspace({
     }
   }
 
-  const handleDeploymentStart = () => {
-    if (!selectedProject) return
-    
-    setShowDeployment(true)
-    setActiveTab('deploy')
-    
-    addActivity({
-      type: 'deployment_started',
-      userId,
-      userName,
-      data: { projectName: selectedProject.name }
-    })
-  }
-
-  const addActivity = (activity: Omit<WorkspaceActivity, 'id' | 'timestamp'>) => {
-    const newActivity: WorkspaceActivity = {
-      ...activity,
-      id: `activity-${Date.now()}`,
-      timestamp: new Date()
+  // Initialize conversation for chat
+  useEffect(() => {
+    if (!conversationId) {
+      setConversationId(`workspace-${workspaceId}-${Date.now()}`)
     }
-    setWorkspaceActivity(prev => [newActivity, ...prev].slice(0, 20))
-  }
+  }, [conversationId, workspaceId])
 
-  const createNewConversation = async () => {
-    try {
-      const response = await fetch('/api/chat/mongodb-simple', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-test-user-id': userId,
-          'x-test-user-role': 'developer'
-        },
-        body: JSON.stringify({
-          action: 'create_conversation',
-          title: `Workspace Collaboration - ${workspaceId.slice(-8)}`,
-          sessionId: `workspace-${workspaceId}`,
-          model: 'anthropic/claude-3.5-sonnet',
-          workspaceId
-        })
-      })
-
-      const data = await response.json()
-      if (data.success && data.conversation) {
-        setConversationId(data.conversation.id)
-      }
-    } catch (error) {
-      console.error('Failed to create conversation:', error)
-    }
-  }
-
-  const shareWorkspace = () => {
-    const shareUrl = `${window.location.origin}/workspace/collaborative?id=${workspaceId}`
-    navigator.clipboard.writeText(shareUrl)
-  }
-
-  const formatTimeAgo = (date: Date) => {
-    const now = new Date()
-    const diff = now.getTime() - date.getTime()
-    const minutes = Math.floor(diff / 60000)
-    const hours = Math.floor(diff / 3600000)
-    
-    if (minutes < 1) return 'just now'
-    if (minutes < 60) return `${minutes}m ago`
-    if (hours < 24) return `${hours}h ago`
-    return date.toLocaleDateString()
-  }
-
-
-  const renderSidebar = () => (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-      {/* Workspace Header */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">Workspace</h2>
-          <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'}`} />
-            <Badge variant={isConnected ? 'secondary' : 'destructive'} className="text-xs">
+  return (
+    <div className="h-full flex flex-col bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-bold text-gray-900">Collaborative Workspace</h1>
+            <Badge variant={isConnected ? "default" : "destructive"}>
               {isConnected ? 'Connected' : 'Disconnected'}
             </Badge>
           </div>
-        </div>
-        
-        <div className="text-sm text-gray-600 mb-3">
-          ID: {workspaceId.slice(-12)}
-        </div>
-
-        <Button
-          onClick={shareWorkspace}
-          variant="outline"
-          size="sm"
-          className="w-full"
-        >
-          <ShareIcon className="w-4 h-4 mr-2" />
-          Share Workspace
-        </Button>
-      </div>
-
-      {/* Team Members */}
-      <div className="p-4 border-b border-gray-200">
-        <h3 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
-          <UsersIcon className="w-4 h-4 mr-2" />
-          Team ({teamMembers.length})
-        </h3>
-        <div className="space-y-2">
-          {teamMembers.map((member) => (
-            <div key={member.id} className="flex items-center space-x-3">
-              <div 
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
-                style={{ backgroundColor: member.color }}
-              >
-                {member.name.charAt(0).toUpperCase()}
+          
+          <div className="flex items-center space-x-4">
+            {/* Team members */}
+            <div className="flex items-center space-x-2">
+              <UsersIcon className="h-5 w-5 text-gray-500" />
+              <span className="text-sm text-gray-600">{teamMembers.length} members</span>
+              <div className="flex -space-x-2">
+                {teamMembers.slice(0, 3).map((member) => (
+                  <div
+                    key={member.id}
+                    className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-medium text-white"
+                    style={{ backgroundColor: member.color }}
+                    title={member.name}
+                  >
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                ))}
+                {teamMembers.length > 3 && (
+                  <div className="w-8 h-8 rounded-full border-2 border-white bg-gray-400 flex items-center justify-center text-xs font-medium text-white">
+                    +{teamMembers.length - 3}
+                  </div>
+                )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-900 truncate">
-                  {member.name}
-                  {member.id === userId && ' (You)'}
-                </div>
-                <div className="text-xs text-gray-500 capitalize">{member.role}</div>
-              </div>
-              {member.isActive && (
-                <div className="w-2 h-2 bg-green-400 rounded-full" />
-              )}
             </div>
-          ))}
+          </div>
         </div>
       </div>
 
-      {/* Activity Feed */}
-      <div className="flex-1 p-4 overflow-y-auto">
-        <h3 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
-          <ClockIcon className="w-4 h-4 mr-2" />
-          Recent Activity
-        </h3>
-        <div className="space-y-3">
-          {workspaceActivity.length === 0 ? (
-            <div className="text-sm text-gray-500 text-center py-4">
-              No activity yet. Start by selecting a template!
+      {/* Main content */}
+      <div className="flex-1 flex">
+        {/* Sidebar */}
+        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+          <div className="p-4 border-b border-gray-200">
+            <h2 className="font-semibold text-gray-900">Activity Feed</h2>
+          </div>
+          <ScrollArea className="flex-1 p-4">
+            {workspaceActivity.length === 0 ? (
+              <p className="text-sm text-gray-500">No activity yet</p>
+            ) : (
+              <div className="space-y-3">
+                {workspaceActivity.map((activity) => (
+                  <div key={activity.id} className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900">{activity.message}</p>
+                      <p className="text-xs text-gray-500">
+                        {activity.userName} • {activity.timestamp.toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+
+        {/* Main workspace */}
+        <div className="flex-1 flex flex-col">
+          {selectedProject ? (
+            <div className="flex-1 flex flex-col">
+              {/* Project header */}
+              <div className="bg-white border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">{selectedProject.name}</h2>
+                    <p className="text-sm text-gray-600">{selectedProject.description}</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActiveTab('chat')}
+                    >
+                      <ChatBubbleLeftRightIcon className="h-4 w-4 mr-2" />
+                      Chat
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowDeployment(true)}
+                    >
+                      <RocketLaunchIcon className="h-4 w-4 mr-2" />
+                      Deploy
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Project content */}
+              <div className="flex-1 p-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <CodeBracketIcon className="h-5 w-5 mr-2" />
+                        Files
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {selectedProject.files.map((file, index) => (
+                          <div key={index} className="flex items-center space-x-2 text-sm">
+                            <FolderOpenIcon className="h-4 w-4 text-gray-400" />
+                            <span>{file.path}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <Cog6ToothIcon className="h-5 w-5 mr-2" />
+                        Actions
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={onCreateTerminal}
+                        >
+                          <CommandLineIcon className="h-4 w-4 mr-2" />
+                          Open Terminal
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={onCreateDebugSession}
+                        >
+                          <BugAntIcon className="h-4 w-4 mr-2" />
+                          Debug Session
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
             </div>
           ) : (
-            workspaceActivity.map((activity) => (
-              <div key={activity.id} className="text-sm">
-                <div className="flex items-start space-x-2">
-                  <div className="flex-shrink-0 mt-0.5">
-                    {activity.type === 'template_selected' && <FolderOpenIcon className="w-4 h-4 text-blue-500" />}
-                    {activity.type === 'deployment_started' && <RocketLaunchIcon className="w-4 h-4 text-green-500" />}
-                    {activity.type === 'user_joined' && <UsersIcon className="w-4 h-4 text-purple-500" />}
-                    {activity.type === 'message_sent' && <ChatBubbleLeftRightIcon className="w-4 h-4 text-orange-500" />}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-gray-900">
-                      <span className="font-medium">{activity.userName}</span>
-                      {activity.type === 'template_selected' && ' selected template'}
-                      {activity.type === 'deployment_started' && ' started deployment'}
-                      {activity.type === 'user_joined' && ' joined workspace'}
-                      {activity.type === 'message_sent' && ' sent a message'}
-                    </div>
-                    {activity.data && (
-                      <div className="text-gray-600 text-xs mt-1">
-                        {activity.data.templateId || activity.data.projectName || activity.data.message}
-                      </div>
-                    )}
-                    <div className="text-gray-500 text-xs mt-1">
-                      {formatTimeAgo(activity.timestamp)}
-                    </div>
-                  </div>
-                </div>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+              <div className="bg-white border-b border-gray-200 px-6">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="templates">Templates</TabsTrigger>
+                  <TabsTrigger value="chat">Chat</TabsTrigger>
+                </TabsList>
               </div>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
-  )
 
-  const renderMainContent = () => (
-    <div className="flex-1 flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Collaborative Workspace</h1>
-            <p className="text-gray-600">
-              {selectedProject ? `Working on: ${selectedProject.name}` : 'Choose a template to get started'}
-            </p>
-          </div>
-          
-          {selectedProject && (
-            <div className="flex items-center space-x-3">
-              <Button
-                onClick={handleDeploymentStart}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <RocketLaunchIcon className="w-4 h-4 mr-2" />
-                Deploy Project
-              </Button>
-              
-              {!conversationId && (
-                <Button
-                  onClick={createNewConversation}
-                  variant="outline"
-                >
-                  <ChatBubbleLeftRightIcon className="w-4 h-4 mr-2" />
-                  Start Chat
-                </Button>
-              )}
-            </div>
+              <TabsContent value="templates" className="flex-1 p-6">
+                {isGeneratingProject ? (
+                  <div className="flex items-center justify-center h-64">
+                    <div className="text-center">
+                      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                      <p className="text-gray-600">Generating project from template...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <TemplateMarketplace
+                    onSelectTemplate={handleTemplateSelect}
+                  />
+                )}
+              </TabsContent>
+
+              <TabsContent value="chat" className="flex-1">
+                {conversationId ? (
+                  <CollaborativeChatInterface
+                    conversationId={conversationId}
+                    workspaceId={workspaceId}
+                    userId={userId}
+                    userName={userName}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-64">
+                    <p className="text-gray-500">Initializing chat...</p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           )}
         </div>
       </div>
 
+<<<<<<< Updated upstream
       {/* Content Tabs */}
       <div className="flex-1 bg-gray-50">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="h-full">
@@ -617,8 +628,27 @@ export function CollaborativeWorkspace({
     <div className="h-screen flex bg-gray-50">
       {renderSidebar()}
       {renderMainContent()}
+=======
+      {/* Deployment modal */}
+      {selectedProject && showDeployment && (
+        <GitHubDeploymentWorkflow
+          project={selectedProject}
+          onClose={() => setShowDeployment(false)}
+          onSuccess={(url) => {
+            setShowDeployment(false)
+            // Add deployment success to activity
+            setWorkspaceActivity(prev => [...prev, {
+              id: `deploy-${Date.now()}`,
+              type: 'deployment_success',
+              message: `Successfully deployed ${selectedProject.name}`,
+              userId,
+              userName,
+              timestamp: new Date()
+            }])
+          }}
+        />
+      )}
+>>>>>>> Stashed changes
     </div>
   )
 }
-
-export default CollaborativeWorkspace
