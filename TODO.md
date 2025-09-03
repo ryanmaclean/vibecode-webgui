@@ -36,6 +36,14 @@
   - [x] Fix connection pooling property names
   - [x] Ensure proper type safety in test mocks
   - [x] Validate test coverage for connection handling
+
+## Upcoming Tasks
+- [ ] **Implement LangChain integration**
+- [ ] **Weaviate integration for vector DB**
+- [ ] **Local inference deployment with Ollama**
+- [ ] **MLflow integration for experiment tracking**
+- [ ] **Continue.dev integration**
+- [ ] **Add video tutorials to documentation**
 <<<<<<< HEAD
 =======
 
