@@ -14,7 +14,10 @@ A comprehensive AI-powered development platform featuring intelligent project ge
 - [Features](#features)
 - [Quick Start](#quick-start)
 - [Project Structure](#project-structure)
+<<<<<<< Updated upstream
 - [AI Integration](#ai-integration)
+=======
+>>>>>>> Stashed changes
 - [API Documentation](#api-documentation)
 - [Available Scripts](#available-scripts)
 - [Dependencies](#dependencies)
@@ -55,12 +58,17 @@ A comprehensive AI-powered development platform featuring intelligent project ge
 
 - Node.js >=18.18.0 <25.0.0
 - PostgreSQL 16+ with pgvector extension
+<<<<<<< Updated upstream
   - **Important note for Azure PostgreSQL:** There's a specific limitation when deploying on Azure PostgreSQL Flexible Server. See [docs/azure-postgresql-deployment.md](docs/azure-postgresql-deployment.md) for details on the pgvector setup workaround.
   - **Azure OpenAI for embeddings:** For setting up and using Azure OpenAI for embeddings, see our [Azure Embedding Service Setup Guide](docs/azure-embedding-service-setup.md).
 - Redis 6+ (or Upstash account)
 - Container runtime (choose one):
   - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
   - [Orbstack](https://orbstack.dev/) (recommended alternative to Docker Desktop, lighter weight and faster)
+=======
+- Redis 6+ (or Upstash account)
+- Docker & Docker Compose (optional)
+>>>>>>> Stashed changes
 
 ### Installation
 
@@ -97,6 +105,7 @@ npm install --legacy-peer-deps
 # Set up environment variables
 cp .env.example .env
 # Edit .env with your configuration
+<<<<<<< Updated upstream
 
 # Start services (optional)
 docker-compose -f docker-compose.dev.yml up -d
@@ -180,8 +189,241 @@ vibecode-webgui/
 ├── watermarkpodautoscaler/    
 ├── web-dashboard/    
 └── package.json
+=======
+
+# Start services (optional)
+docker-compose -f docker-compose.dev.yml up -d
+
+# Initialize database
+npm run db:deploy
+npm run db:generate
+
+# Start development server
+npm run dev
 ```
 
+Visit [http://localhost:3000](http://localhost:3000) to see the application.
+
+## Project Structure
+
+```
+vibecode-webgui/
+├── __mocks__/    
+├── archive/    
+├── charts/    
+├── code-server/    
+├── content/    
+├── coverage/    
+├── data/    
+├── database/    # Database schemas and migrations
+├── datadog/    
+├── docker/    
+├── docs/    # Documentation files
+├── examples/    
+├── extensions/    # VSCode extensions and tools
+├── external/    
+├── helm/    
+├── infrastructure/    
+├── k8s/    # Kubernetes deployment manifests
+├── kubernetes/    
+├── litellm/    
+├── logs/    
+├── monitoring/    
+├── packages/    
+├── playwright-report/    
+├── prisma/    
+├── public/    # Static assets
+├── scripts/    # Build and utility scripts
+├── server/    
+├── services/    
+├── src/    # Source code
+├── templates/    
+├── test-results/    
+├── tests/    # Test files and configurations
+├── tofu/    
+├── venv/    
+├── watermarkpodautoscaler/    
+├── web-dashboard/    
+└── package.json
+```
+
+### Key Directories
+
+- **src/app/** - Next.js app router pages and API routes
+- **src/components/** - Reusable React components
+- **src/lib/** - Utility functions and shared services
+- **src/hooks/** - Custom React hooks
+- **tests/** - Test files (unit, integration, E2E)
+- **docs/** - Documentation and guides
+
+## API Documentation
+
+The application provides REST API endpoints for various functionalities:
+
+### Core Endpoints
+
+#### Ai-cli-tools
+
+- `/api/ai-cli-tools/install`
+
+#### Ai
+
+- `/api/ai/chat`
+- `/api/ai/chat/enhanced`
+- `/api/ai/chat/stream`
+- `/api/ai/chat/unified`
+- `/api/ai/conversations/[workspaceId]`
+- `/api/ai/function-call`
+- `/api/ai/generate-project`
+- `/api/ai/huggingface-chat`
+- `/api/ai/huggingface-init`
+- `/api/ai/litellm`
+- `/api/ai/management`
+- `/api/ai/model-selection`
+- `/api/ai/provider-health`
+- `/api/ai/search`
+- `/api/ai/upload`
+- `/api/ai/web-search`
+
+#### Auth
+
+- `/api/auth/[...nextauth]`
+- `/api/auth/login-tracking`
+
+#### Chat
+
+- `/api/chat/mongodb`
+- `/api/chat/mongodb-simple`
+- `/api/chat/stream`
+
+#### Claude
+
+- `/api/claude/analyze`
+- `/api/claude/chat`
+- `/api/claude/generate`
+- `/api/claude/session`
+
+#### Code-server
+
+- `/api/code-server/session`
+- `/api/code-server/session/[sessionId]`
+
+#### Experiments
+
+- `/api/experiments`
+
+#### Files
+
+- `/api/files`
+- `/api/files/sync`
+
+#### Gradio
+
+- `/api/gradio/run`
+
+#### Health
+
+- `/api/health`
+- `/api/health/simple`
+
+#### Mongodb-test
+
+- `/api/mongodb-test`
+
+#### Monitoring
+
+- `/api/monitoring/dashboard`
+- `/api/monitoring/metrics`
+- `/api/monitoring/otel-config`
+- `/api/monitoring/performance`
+- `/api/monitoring/rum`
+- `/api/monitoring/security`
+- `/api/monitoring/traces`
+
+#### Ollama
+
+- `/api/ollama/models`
+
+#### Projects
+
+- `/api/projects/template`
+
+#### Templates
+
+- `/api/templates`
+
+#### Terminal
+
+- `/api/terminal/session`
+- `/api/terminal/ws`
+
+#### Workspace
+
+- `/api/workspace/[id]/init-goose`
+
+For detailed API documentation, see [docs/API.md](docs/API.md) (auto-generated).
+
+## Available Scripts
+
+### Development
+
+### Development
+
+```bash
+npm run dev
+```
+Start development server with monitoring
+
+```bash
+npm run dev:simple
+```
+Start development server without monitoring
+
+```bash
+npm run build
+```
+Build production application
+
+```bash
+npm run start
+```
+Start production server
+
+```bash
+npm run lint
+```
+Run ESLint code linting
+
+```bash
+npm run type-check
+```
+Run TypeScript type checking
+
+
+### Testing
+
+```bash
+npm run test
+```
+Run unit tests
+
+```bash
+npm run test:watch
+```
+
+
+```bash
+npm run test:e2e
+```
+Run end-to-end tests
+
+```bash
+npm run test:integration
+>>>>>>> Stashed changes
+```
+Run integration tests
+
+<<<<<<< Updated upstream
 ### Key Directories
 
 - **src/app/** - Next.js app router pages and API routes
@@ -455,6 +697,53 @@ View performance metrics
 npm run perf:monitor
 ```
 
+=======
+```bash
+npm run test:security
+```
+Run security tests
+
+
+### Database
+
+```bash
+npm run db:deploy
+```
+Deploy database migrations
+
+```bash
+npm run db:status
+```
+Check migration status
+
+```bash
+npm run db:validate
+```
+Validate database configuration
+
+```bash
+npm run db:setup
+```
+
+
+
+### Monitoring
+
+```bash
+npm run monitoring:health
+```
+Check system health
+
+```bash
+npm run monitoring:metrics
+```
+View performance metrics
+
+```bash
+npm run perf:monitor
+```
+
+>>>>>>> Stashed changes
 
 
 ### Security
