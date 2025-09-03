@@ -279,6 +279,7 @@ model RAGChunk {
 
 - **[Production Deployment Guide](./production-deployment-guide/)** - Complete production deployment with PostgreSQL + pgvector
 - **[Kubernetes Secrets Automation](./kubernetes-secrets-automation/)** - Secure database credential management
+- **[Azure OpenAI Monitoring](./azure-openai-monitoring/)** - Monitor AI operations with pgvector performance metrics
 - **[Helm Deployment Guide](./helm-deployment-guide/)** - Kubernetes deployment instructions
 - **[PostgreSQL Test Results](./PRISMA_PGVECTOR_TEST_RESULTS/)** - Detailed testing validation
 - **[PostgreSQL GenAI Demo](./postgresql-genai-demo-guide/)** - AI workflow examples
