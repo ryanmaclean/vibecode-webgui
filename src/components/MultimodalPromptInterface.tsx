@@ -83,7 +83,11 @@ export default function MultimodalPromptInterface({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   const recognitionRef = useRef<any | null>(null);
+=======
+  const recognitionRef = useRef<any>(null);
+>>>>>>> Stashed changes
 =======
   const recognitionRef = useRef<any>(null);
 >>>>>>> Stashed changes

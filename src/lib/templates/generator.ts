@@ -114,6 +114,7 @@ export async function generateFromTemplate(
     envVars,
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     documentation: {
       readme: `# ${projectName}\n\n${template.description}`,
       setup: template.documentation.setup.join('\n'),
@@ -123,6 +124,8 @@ export async function generateFromTemplate(
     estimatedTime: 30,
     setupInstructions
 =======
+=======
+>>>>>>> Stashed changes
     setupInstructions,
     documentation: {
       readme: `# ${projectName}\n\n${template.description}`,
@@ -132,9 +135,12 @@ export async function generateFromTemplate(
     createdAt: new Date(),
     estimatedTime: 30,
     features: template.features || []
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes
 =======
     setupInstructions
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   }
 }

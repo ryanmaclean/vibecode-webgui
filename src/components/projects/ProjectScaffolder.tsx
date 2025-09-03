@@ -183,7 +183,11 @@ export function ProjectScaffolder({
 
     setGeneratedFiles(files)
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     onGenerate?.({ files: generatedFiles, name: projectName });
+=======
+    onGenerate?.({ files, name: projectName })
+>>>>>>> Stashed changes
 =======
     onGenerate?.({ files, name: projectName })
 >>>>>>> Stashed changes
