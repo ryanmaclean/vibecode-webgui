@@ -1,5 +1,8 @@
+<<<<<<< Updated upstream
 import { MetricData } from './metrics-types';
 
+=======
+>>>>>>> Stashed changes
 interface DatadogTags {
   env: string
   service: string
@@ -283,7 +286,16 @@ class DatadogMetricsService {
   }
 
   // Batch metric sending for efficiency
+<<<<<<< Updated upstream
   async sendBatchMetrics(metrics: MetricData[]) {
+=======
+  async sendBatchMetrics(metrics: Array<{
+    name: string
+    value: number
+    tags: Partial<DatadogTags>
+    timestamp?: number
+  }>) {
+>>>>>>> Stashed changes
     if (!this.isEnabled) return
 
     const formattedMetrics = metrics.map(metric => ({

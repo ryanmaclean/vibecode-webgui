@@ -37,13 +37,16 @@ export class TestHelpers {
    * Check accessibility with axe-core
    */
   async checkAccessibility(options: { tags?: string[] } = {}) {
-    const { injectAxe, checkA11y } = await import('@axe-core/playwright');
+    // Import AxeBuilder for accessibility testing
+    const { default: AxeBuilder } = await import('@axe-core/playwright');
     
-    await injectAxe(this.page);
-    await checkA11y(this.page, undefined, {
-      tags: options.tags || ['wcag2a', 'wcag2aa'],
-      reporter: 'v2'
-    });
+    // Run accessibility tests with the page from this class
+    const accessibilityScanResults = await new AxeBuilder({ page: this.page as any })
+      .withTags(options.tags || ['wcag2a', 'wcag2aa'])
+      .analyze();
+    
+    // Check for violations
+    expect(accessibilityScanResults.violations).toEqual([]);
   }
 
   /**
@@ -176,7 +179,7 @@ export class TestHelpers {
       return {
         domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
         loadComplete: navigation.loadEventEnd - navigation.loadEventStart,
-        totalTime: navigation.loadEventEnd - navigation.navigationStart
+        totalTime: navigation.loadEventEnd
       };
     });
 

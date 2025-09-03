@@ -4,18 +4,12 @@
  */
 
 import { chromium, FullConfig } from '@playwright/test';
-import { MonitoringService } from '../../src/lib/monitoring';
 
 async function globalSetup(config: FullConfig) {
   const { baseURL } = config.projects[0].use;
   
   console.log('🚀 Setting up E2E test environment...');
   
-  // Initialize monitoring for E2E tests
-  const monitoring = new MonitoringService();
-  monitoring.init();
-  monitoring.trackEvent('e2e_setup_started', { baseURL });
-
   // Create a browser instance for setup
   const browser = await chromium.launch();
   const context = await browser.newContext();
@@ -36,11 +30,9 @@ async function globalSetup(config: FullConfig) {
     await verifyServices(page);
 
     console.log('✅ E2E test environment setup complete');
-    monitoring.trackEvent('e2e_setup_completed', { success: true });
 
   } catch (error) {
     console.error('❌ E2E setup failed:', error);
-    monitoring.trackEvent('e2e_setup_failed', { error: error.message });
     throw error;
   } finally {
     await context.close();

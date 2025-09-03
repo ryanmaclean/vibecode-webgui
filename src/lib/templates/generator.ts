@@ -23,12 +23,18 @@ export interface GeneratedProject {
   id: string
   name: string
   description: string
+<<<<<<< Updated upstream
   category: 'frontend' | 'backend' | 'fullstack' | 'mobile' | 'data' | 'infrastructure'
   complexity: 'beginner' | 'intermediate' | 'advanced'
   tags: string[]
   language: string[] // matches ProjectTemplate
   frameworks: string[] // matches ProjectTemplate
   features: string[]
+=======
+  category: string
+  complexity: 'beginner' | 'intermediate' | 'advanced'
+  tags: string[]
+>>>>>>> Stashed changes
   files: TemplateFile[]
   scripts: Record<string, string>
   dependencies: Record<string, string>
@@ -46,6 +52,10 @@ export interface GeneratedProject {
   }
   createdAt: Date
   estimatedTime: number
+<<<<<<< Updated upstream
+=======
+  features: string[]
+>>>>>>> Stashed changes
 }
 
 /**
@@ -83,6 +93,7 @@ export async function generateFromTemplate(
   const setupInstructions = generateSetupInstructions(template, projectName)
 
   return {
+<<<<<<< Updated upstream
     id: template.id,
     name: projectName,
     description: options.customizations?.description || template.description,
@@ -92,11 +103,16 @@ export async function generateFromTemplate(
     frameworks: template.frameworks,
     complexity: template.complexity,
     features: options.features || template.features,  // Use features from options if provided, otherwise from template
+=======
+    name: projectName,
+    description: options.customizations?.description || template.description,
+>>>>>>> Stashed changes
     files,
     scripts: { ...template.scripts },
     dependencies: { ...template.dependencies },
     devDependencies: template.devDependencies ? { ...template.devDependencies } : undefined,
     envVars,
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
     documentation: {
       readme: `# ${projectName}\n\n${template.description}`,
@@ -116,6 +132,9 @@ export async function generateFromTemplate(
     createdAt: new Date(),
     estimatedTime: 30,
     features: template.features || []
+>>>>>>> Stashed changes
+=======
+    setupInstructions
 >>>>>>> Stashed changes
   }
 }

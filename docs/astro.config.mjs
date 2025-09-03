@@ -23,10 +23,12 @@ export default defineConfig({
           link: '/'
         },
         {
-          label: 'Wiki Index',
-          link: '/wiki-index/'
+          label: 'Getting Started',
+          link: '/getting-started/',
+          badge: 'New'
         },
         {
+<<<<<<< Updated upstream
           label: 'Getting Started',
           items: [
             { label: 'Quick Start Guide', link: '/guides/quick-start/' },
@@ -62,6 +64,40 @@ export default defineConfig({
             { label: 'Datadog Local Development', link: '/DATADOG_LOCAL_DEVELOPMENT/' },
             { label: 'Datadog Compatibility', link: '/datadog-compatibility/' },
           ]
+=======
+          label: 'API Reference',
+          link: '/api-reference/',
+          badge: 'Enhanced'
+        },
+        {
+          label: 'Developer Guide',
+          link: '/developer-guide/'
+        },
+        {
+          label: 'AI Integration',
+          collapsed: true,
+          autogenerate: { directory: 'ai-integration' }
+        },
+        {
+          label: 'Deployment',
+          collapsed: true,
+          autogenerate: { directory: 'deployment' }
+        },
+        {
+          label: 'Monitoring',
+          collapsed: true,
+          autogenerate: { directory: 'monitoring' }
+        },
+        {
+          label: 'Security',
+          collapsed: true,
+          autogenerate: { directory: 'security' }
+        },
+        {
+          label: 'Reference',
+          collapsed: true,
+          autogenerate: { directory: '.' }
+>>>>>>> Stashed changes
         }
       ],
       customCss: [
