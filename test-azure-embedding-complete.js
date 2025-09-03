@@ -253,7 +253,7 @@ async function runTest() {
     try {
       console.log('\n🧹 Cleaning up test data...');
       await prisma.$executeRawUnsafe(
-        `DELETE FROM embeddings WHERE document_id LIKE 'azure-doc-%'`
+        `DELETE FROM document_embeddings WHERE document_id LIKE 'azure-doc-%'`
       );
       console.log('✅ Test data cleaned up');
     } catch (cleanupError) {

@@ -1,3 +1,5 @@
+import { MetricData } from './metrics-types';
+
 interface DatadogTags {
   env: string
   service: string
@@ -281,12 +283,7 @@ class DatadogMetricsService {
   }
 
   // Batch metric sending for efficiency
-  async sendBatchMetrics(metrics: Array<{
-    name: string
-    value: number
-    tags: Partial<DatadogTags>
-    timestamp?: number
-  }>) {
+  async sendBatchMetrics(metrics: MetricData[]) {
     if (!this.isEnabled) return
 
     const formattedMetrics = metrics.map(metric => ({
