@@ -474,11 +474,12 @@ export class EnhancedAIClient {
   ): Promise<EmbeddingResponse> {
     const finalConfig = { ...this.defaultConfig, ...config };
     
-    // Default to embedding-specific models
+    // Default to embedding-specific models with proper provider prefixes
     if (!finalConfig.model.includes('embedding')) {
       switch (finalConfig.provider) {
         case 'openrouter':
-          finalConfig.model = 'text-embedding-ada-002';
+          // OpenRouter requires the openai/ prefix for OpenAI models
+          finalConfig.model = 'openai/text-embedding-ada-002';
           break;
         case 'azure-openai':
           finalConfig.model = 'text-embedding-ada-002';
