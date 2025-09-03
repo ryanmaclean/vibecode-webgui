@@ -45,22 +45,27 @@ class VectorStore {
   }
 
   /**
-   * Generate embeddings for text content
+   * Generate embeddings for text content with performance tracking
    */
   async generateEmbedding(text: string): Promise<number[]> {
     if (!this.openai) {
       throw new Error('OpenAI client not initialized. Check OPENROUTER_API_KEY')
     }
 
+    const startTime = Date.now()
     try {
       const response = await this.openai.embeddings.create({
         model: 'text-embedding-3-small', // Using OpenAI embedding model via OpenRouter
         input: text,
       })
 
+      const duration = Date.now() - startTime
+      console.log(`Embedding generation took ${duration}ms for ${text.length} chars`)
+
       return response.data[0].embedding
     } catch (error) {
-      console.error('Error generating embedding:', error)
+      const duration = Date.now() - startTime
+      console.error(`Error generating embedding after ${duration}ms:`, error)
       // Fallback: return zero vector
       return new Array(1536).fill(0) // text-embedding-3-small returns 1536-dimensional vectors
     }
