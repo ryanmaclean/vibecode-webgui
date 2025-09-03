@@ -211,7 +211,11 @@ export function CollaborativeWorkspace({
 =======
       color: user.color,
       isActive: user.isActive,
+<<<<<<< Updated upstream
       role: user.id === userId ? 'owner' : 'collaborator' as const,
+>>>>>>> Stashed changes
+=======
+      role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'viewer' | 'collaborator',
 >>>>>>> Stashed changes
       joinedAt: new Date()
     }))
@@ -219,6 +223,7 @@ export function CollaborativeWorkspace({
   }, [activeUsers, userId])
 
   // Handle template selection and project generation
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
@@ -290,29 +295,19 @@ export function CollaborativeWorkspace({
 
 =======
   const handleTemplateSelect = async (templateId: string) => {
+=======
+  const handleTemplateSelect = async (template: any) => {
+>>>>>>> Stashed changes
     setIsGeneratingProject(true)
     
     try {
-      const options: GenerateFromTemplateOptions = {
-        projectName: `${templateId}-project`,
-        template: templateId,
-        customizations: {
-          description: `Generated from ${templateId} template in collaborative workspace`,
-          author: userName
-        }
-      }
-
-      const project = await generateFromTemplate(options)
+      // Generate project from template
+      const project = await generateProjectFromTemplate(template.id, {
+        name: `project-${Date.now()}`,
+        description: template.description || 'Generated from template'
+      })
       
-      // Add workspace-specific metadata
-      const workspaceProject: GeneratedProject = {
-        ...project,
-        id: `${workspaceId}-${templateId}-${Date.now()}`,
-        createdAt: new Date(),
-        category: templateId.split('-')[0] || 'general',
-        complexity: 'intermediate' as const,
-        tags: [templateId, 'collaborative'],
-        estimatedTime: 30,
+      setSelectedProject(project)
         features: [],
         documentation: {
           readme: `# ${project.name}\n\nGenerated in collaborative workspace`,
@@ -846,10 +841,14 @@ export function CollaborativeWorkspace({
             ) : (
               <TemplateMarketplace
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 onSelectTemplate={handleTemplateSelect}
 =======
                 onTemplateSelect={handleTemplateSelect}
                 selectedProject={selectedProject}
+>>>>>>> Stashed changes
+=======
+                onSelectTemplate={handleTemplateSelect}
 >>>>>>> Stashed changes
               />
             )}
