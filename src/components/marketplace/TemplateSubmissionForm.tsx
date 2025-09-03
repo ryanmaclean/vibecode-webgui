@@ -25,7 +25,11 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
   const [template, setTemplate] = useState<Partial<ProjectTemplate>>({
     name: '',
     description: '',
+<<<<<<< Updated upstream
     category: 'frontend',
+=======
+    category: 'fullstack',
+>>>>>>> Stashed changes
     complexity: 'beginner',
     tags: [],
     files: [],
@@ -119,7 +123,11 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           id: `template-${Date.now()}`,
           name: template.name || '',
           description: template.description || '',
+<<<<<<< Updated upstream
           category: template.category || 'frontend',
+=======
+          category: template.category || 'fullstack',
+>>>>>>> Stashed changes
           complexity: template.complexity || 'beginner',
           tags: template.tags || [],
           language: ['javascript'],
@@ -130,16 +138,32 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           dependencies: template.dependencies || {},
           scripts: template.scripts || {},
           envVars: template.envVars || [],
+<<<<<<< Updated upstream
+=======
+          documentation: {
+            setup: Array.isArray(template.documentation?.setup) ? template.documentation.setup : ['Setup instructions'],
+            usage: Array.isArray(template.documentation?.usage) ? template.documentation.usage : ['Usage instructions'],
+            deployment: Array.isArray(template.documentation?.deployment) ? template.documentation.deployment : ['Deployment guide']
+          },
+          language: ['typescript'],
+          frameworks: ['react', 'nextjs'],
+          features: ['modern-setup', 'production-ready'],
+          estimatedSetupTime: '15 minutes',
+>>>>>>> Stashed changes
           dockerSupport: false,
           kubernetesSupport: false,
           cicdTemplate: false,
           testingSetup: false,
+<<<<<<< Updated upstream
           monitoringSetup: false,
           documentation: template.documentation || {
             setup: [],
             usage: [],
             deployment: []
           }
+=======
+          monitoringSetup: false
+>>>>>>> Stashed changes
         },
         author,
         marketplace,
