@@ -10,11 +10,7 @@
   },
   "scripts": {
     "setup": "node scripts/setup-development.js",
-<<<<<<< Updated upstream
     "dev": "node --require ./src/instrument.cjs node_modules/.bin/next dev",
-=======
-    "dev": "node --require ./src/instrument.ts node_modules/.bin/next dev",
->>>>>>> Stashed changes
     "dev:simple": "next dev",
     "build": "next build",
     "start": "next start",
@@ -39,15 +35,6 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:report": "playwright show-report",
     "test:e2e:install": "playwright install",
-<<<<<<< Updated upstream
-    "test:k8s": "jest --testPathPatterns=tests/k8s",
-    "test:k8s:quick": "jest --testPathPatterns=tests/k8s/kind-cluster-validation\\.test\\.ts$ --maxWorkers=1",
-    "test:k8s:helm": "jest --testPathPatterns=tests/k8s/helm-chart-deployment\\.test\\.ts$ --maxWorkers=1",
-    "test:k8s:provisioning": "jest --testPathPatterns=tests/integration/user-provisioning-integration\\.test\\.ts$ --maxWorkers=1",
-    "test:monitoring": "jest --testPathPatterns=tests/unit/.*monitoring.*\\.test\\.(ts|js)$ --testPathPatterns=tests/integration/monitoring-api\\.test\\.(ts|js)$",
-    "test:monitoring:unit": "jest --testPathPatterns=tests/unit/.*monitoring.*\\.test\\.(ts|js)$",
-    "test:monitoring:integration": "jest --testPathPatterns=tests/integration/monitoring-api\\.test\\.(ts|js)$",
-=======
     "test:k8s": "jest --testPathPattern=tests/k8s",
     "test:k8s:quick": "jest --testPathPattern=tests/k8s/kind-cluster-validation\\.test\\.ts$ --maxWorkers=1",
     "test:k8s:helm": "jest --testPathPattern=tests/k8s/helm-chart-deployment\\.test\\.ts$ --maxWorkers=1",
@@ -55,7 +42,6 @@
     "test:monitoring": "jest --testPathPattern=tests/unit/.*monitoring.*\\.test\\.(ts|js)$ --testPathPattern=tests/integration/monitoring-api\\.test\\.(ts|js)$",
     "test:monitoring:unit": "jest --testPathPattern=tests/unit/.*monitoring.*\\.test\\.(ts|js)$",
     "test:monitoring:integration": "jest --testPathPattern=tests/integration/monitoring-api\\.test\\.(ts|js)$",
->>>>>>> Stashed changes
     "test:monitoring:e2e": "playwright test tests/e2e/monitoring-dashboard.test.ts",
     "test:monitoring:k8s": "jest --testPathPatterns=tests/k8s/monitoring-deployment\\.test\\.(ts|js)$",
     "test:monitoring:security": "jest --testPathPatterns=tests/security/monitoring-security\\.test\\.(ts|js)$",
@@ -89,12 +75,9 @@
     "otel:metrics": "curl -s http://localhost:9090/metrics",
     "otel:test": "curl -s http://localhost:3000/api/monitoring/otel-config?action=status | jq",
     "docs:validate": "node scripts/validate-documentation.js",
-<<<<<<< Updated upstream
-=======
     "docs:generate": "npx tsx scripts/generate-api-docs.ts && node scripts/enhance-docs.js",
     "docs:build": "cd docs && npm run build",
     "docs:dev": "cd docs && npm run dev",
->>>>>>> Stashed changes
     "docs:stats": "node scripts/validate-documentation.js stats",
     "docs:index": "echo 'Documentation index available at docs/DOCUMENTATION_INDEX.md'",
     "docs:consolidated": "echo 'Consolidated documentation available at docs/CONSOLIDATED_DOCUMENTATION.md'",
@@ -108,39 +91,14 @@
     "docker:logs": "docker compose logs -f",
     "health:check": "curl -s http://localhost:3000/api/health | jq .",
     "db:test": "node test-db-connection.js",
-<<<<<<< Updated upstream
-    "db:vector-test": "node test-vector-db.js",
-    "db:robust-test": "node test-robust-db-connection.js",
-    "db:embedding-test": "node test-embedding-service-robust.js",
-    "db:setup": "node -e \"require('./src/lib/db/vector-db-utils.ts').initializeVectorDatabase()\"",
-    "db:check": "node test-vector-db-connection.js",
-    "db:vector-init": "node -e \"require('./src/lib/db/robust-db-connection.ts').initializeVectorDatabaseRobust({debug:true})\"",
-    "db:health": "node test-db-health-endpoint.js",
-    "db:health:verbose": "node test-db-health-endpoint.js --verbose",
-    "db:health:text": "node test-db-health-endpoint.js --text",
-    "db:metrics": "node test-db-metrics.js",
-    "db:metrics:report": "node -e \"require('./src/lib/db/db-metrics.ts').getDatabaseMetricsCollector().reportMetrics()\"",
-=======
->>>>>>> Stashed changes
     "valkey:test": "node test-redis-connection.js"
   },
   "dependencies": {
     "@ai-sdk/openai": "1.3.23",
-<<<<<<< Updated upstream
-    "@azure/search-documents": "12.1.0",
-    "@browserbasehq/stagehand": "1.14.0",
-    "@codemirror/lang-css": "6.3.1",
-    "@codemirror/lang-html": "6.4.9",
-    "@codemirror/lang-javascript": "^6.2.4",
-    "@codemirror/lang-python": "^6.2.1",
-    "@datadog/browser-logs": "6.18.0",
-    "@datadog/browser-rum": "6.18.0",
-=======
     "@browserbasehq/stagehand": "1.14.0",
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-python": "^6.2.1",
     "@datadog/browser-logs": "6.18.1",
->>>>>>> Stashed changes
     "@datadog/datadog-api-client": "1.40.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
@@ -210,20 +168,12 @@
     "marked": "^16.1.1",
     "monaco-editor": "^0.52.2",
     "mongodb": "6.18.0",
-<<<<<<< Updated upstream
-    "next": "15.5.2",
-=======
     "next": "15.4.4",
->>>>>>> Stashed changes
     "next-auth": "^4.24.11",
     "next-themes": "^0.4.6",
     "node-pty": "^1.0.0",
     "node-statsd": "^0.1.1",
-<<<<<<< Updated upstream
-    "openai": "4.104.0",
-=======
     "openai": "^4.104.0",
->>>>>>> Stashed changes
     "pg": "8.16.3",
     "postcss": "8.5.6",
     "qrcode": "1.5.4",
@@ -242,10 +192,6 @@
     "weaviate-ts-client": "^2.2.0",
     "winston": "3.17.0",
     "ws": "^8.18.3",
-<<<<<<< Updated upstream
-    "y-indexeddb": "9.0.12",
-=======
->>>>>>> Stashed changes
     "zod": "3.25.76"
   },
   "overrides": {
@@ -266,14 +212,6 @@
     "@babel/preset-env": "7.28.0",
     "@babel/preset-react": "7.27.1",
     "@babel/preset-typescript": "7.27.1",
-<<<<<<< Updated upstream
-    "@codemirror/basic-setup": "0.20.0",
-    "@codemirror/commands": "6.8.1",
-    "@codemirror/language": "6.11.3",
-    "@codemirror/state": "6.5.2",
-    "@codemirror/view": "6.38.1",
-=======
->>>>>>> Stashed changes
     "@datadog/browser-rum": "6.18.0",
     "@datadog/datadog-ci": "3.18.0",
     "@eslint/eslintrc": "3.3.1",
@@ -281,10 +219,6 @@
     "@opentelemetry/exporter-jaeger": "2.0.1",
     "@opentelemetry/winston-transport": "0.14.0",
     "@playwright/test": "1.54.1",
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.6.4",
     "@testing-library/react": "16.3.0",
@@ -307,12 +241,6 @@
     "@vitest/ui": "3.2.4",
     "autoprefixer": "^10.4.19",
     "babel-jest": "30.0.4",
-<<<<<<< Updated upstream
-    "babel-plugin-dynamic-import-node": "2.3.3",
-    "babel-plugin-macros": "3.1.0",
-    "babel-plugin-transform-typescript-metadata": "0.3.2",
-=======
->>>>>>> Stashed changes
     "chrome-launcher": "1.2.0",
     "dotenv": "16.6.1",
     "eslint": "^9",
@@ -322,14 +250,7 @@
     "husky": "9.1.7",
     "jest": "^30.0.4",
     "jest-axe": "10.0.0",
-<<<<<<< Updated upstream
-    "jest-environment-jsdom": "30.0.5",
-    "jest-junit": "16.0.0",
-    "jest-watch-typeahead": "3.0.1",
-    "jsdom": "26.1.0",
-=======
     "jest-environment-jsdom": "^30.0.4",
->>>>>>> Stashed changes
     "lighthouse": "12.8.1",
     "msw": "^2.10.4",
     "postcss": "^8.4.38",
@@ -339,11 +260,6 @@
     "testcontainers": "^11.3.1",
     "ts-node": "10.9.2",
     "typescript": "5.8.3",
-<<<<<<< Updated upstream
-    "vitest": "3.2.4",
-    "y-codemirror.next": "0.3.5",
-=======
->>>>>>> Stashed changes
     "y-websocket": "3.0.0",
     "yjs": "13.6.27"
   }
