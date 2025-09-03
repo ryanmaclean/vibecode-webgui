@@ -56,14 +56,12 @@ export default defineConfig({
           label: 'Monitoring & Observability',
           items: [
             { label: 'Overview', link: '/monitoring/overview/' },
+            { label: 'Azure OpenAI Monitoring', link: '/azure-openai-monitoring/' },
+            { label: 'Deploy Azure OpenAI Monitoring', link: '/deploy-azure-openai-monitoring/' },
             { label: 'Datadog Configuration', link: '/DATADOG_MONITORING_CONFIGURATION/' },
             { label: 'Datadog Local Development', link: '/DATADOG_LOCAL_DEVELOPMENT/' },
             { label: 'Datadog Compatibility', link: '/datadog-compatibility/' },
           ]
-        },
-        {
-          label: 'All Documentation',
-          autogenerate: { directory: '.' }
         }
       ],
       customCss: [

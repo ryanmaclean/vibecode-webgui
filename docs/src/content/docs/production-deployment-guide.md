@@ -461,8 +461,9 @@ Your VibeCode platform now has **enterprise-grade GitOps automation** that provi
 - **[PostgreSQL + pgvector Setup](./prisma-pgvector/)** - Complete database setup with vector search capabilities
 - **[Kubernetes Secrets Automation](./kubernetes-secrets-automation/)** - Enterprise-grade secrets management
 - **[Helm Deployment Guide](./helm-deployment-guide/)** - Detailed Kubernetes deployment instructions
+- **[Azure OpenAI Monitoring](./azure-openai-monitoring/)** - Comprehensive monitoring setup for Azure OpenAI services
+- **[Deploy Azure OpenAI Monitoring](./deploy-azure-openai-monitoring/)** - Step-by-step deployment guide for Azure OpenAI monitoring
 - **[Datadog Monitoring Configuration](./DATADOG_MONITORING_CONFIGURATION/)** - Production monitoring setup
-- **[Azure Embedding Service](../AZURE_EMBEDDING_SERVICE/)** - Vector embeddings with connection pooling
 
 ---
 

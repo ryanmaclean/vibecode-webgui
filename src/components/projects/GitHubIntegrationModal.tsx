@@ -51,7 +51,11 @@ export function GitHubIntegrationModal({
     licenseTemplate: 'mit' as string | undefined
   })
 
+<<<<<<< Updated upstream
   const githubIntegration = React.useRef<GitHubIntegration | null>(null)
+=======
+  const [integration, setIntegration] = useState<GitHubIntegration | null>(null)
+>>>>>>> Stashed changes
 
   useEffect(() => {
     if (!isOpen) {
@@ -63,7 +67,7 @@ export function GitHubIntegrationModal({
       setIsConnecting(false)
       setIsCreating(false)
       setShowToken(false)
-      githubIntegration.current = null
+      setIntegration(null)
     }
   }, [isOpen])
 
@@ -77,12 +81,21 @@ export function GitHubIntegrationModal({
     setError(null)
 
     try {
+<<<<<<< Updated upstream
       const integration = new GitHubIntegration(accessToken.trim())
       const user = await integration.initialize()
       
       githubIntegration.current = integration
       setGitHubUser(user)
       setSuccess('Successfully connected to GitHub!')
+=======
+      const newIntegration = new GitHubIntegration(accessToken, 'owner')
+      const user = await newIntegration.initialize()
+      
+      setIntegration(newIntegration)
+      setFolderHubUser(user)
+      setSuccess('Successfully connected to FolderHub!')
+>>>>>>> Stashed changes
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to connect to GitHub')
     } finally {
@@ -91,8 +104,13 @@ export function GitHubIntegrationModal({
   }
 
   const handleCreateRepository = async () => {
+<<<<<<< Updated upstream
     if (!githubIntegration.current) {
       setError('Not connected to GitHub')
+=======
+    if (!integration) {
+      setError('Not connected to FolderHub')
+>>>>>>> Stashed changes
       return
     }
 
@@ -101,7 +119,7 @@ export function GitHubIntegrationModal({
 
     try {
       // Check if repository name is available
-      const isAvailable = await githubIntegration.current.isRepositoryNameAvailable(repoSettings.name)
+      const isAvailable = await integration.isRepositoryNameAvailable(repoSettings.name)
       if (!isAvailable) {
         setError(`Repository name "${repoSettings.name}" is already taken`)
         setIsCreating(false)
@@ -109,7 +127,7 @@ export function GitHubIntegrationModal({
       }
 
       // Create repository from generated project
-      const result = await githubIntegration.current.createRepositoryFromProject(
+      const result = await integration.createRepositoryFromProject(
         generatedProject,
         {
           private: repoSettings.private,
@@ -121,15 +139,23 @@ export function GitHubIntegrationModal({
       // Add GitHub Actions workflow if requested
       if (repoSettings.addWorkflow) {
         const { generateGitHubActionsWorkflow } = await import('@/lib/github/integration')
+<<<<<<< Updated upstream
         const workflowContent = generateGitHubActionsWorkflow(
+=======
+        const workflow = generateGitHubActionsWorkflow(
+>>>>>>> Stashed changes
           'node', // Default to node for most projects
           'typescript' // Default to TypeScript
         )
         
+<<<<<<< Updated upstream
         await githubIntegration.current.addGitHubActionsWorkflow(
+=======
+        await integration.addGitHubActionsWorkflow(
+>>>>>>> Stashed changes
           result.repository.name,
           'ci',
-          workflowContent
+          workflow
         )
       }
 
