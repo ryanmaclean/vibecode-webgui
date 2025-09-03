@@ -36,19 +36,13 @@
   - [x] Fix connection pooling property names
   - [x] Ensure proper type safety in test mocks
   - [x] Validate test coverage for connection handling
-
-## Current Priorities
-
-## Current Priorities
-
 - [x] Test the vector database migration utility
   - [x] Create unit tests for the migration utility
   - [x] Test running migrations in development environment
   - [x] Validate rollback functionality 
   - [x] Test edge cases like partial migrations
   - [x] Benchmark performance with large datasets
-
-- [ ] Implement Azure embedding service integration
+- [x] Implement Azure embedding service integration
   - [x] Create AzureEmbeddingService implementation
   - [x] Create EmbeddingServiceFactory
   - [x] Create database schema for vector embeddings
@@ -58,14 +52,26 @@
   - [x] Implement connection pooling for database operations
   - [x] Create test scripts for connection pooling
   - [x] Document connection pooling implementation
-  - [ ] Add monitoring for Azure API usage
-  - [ ] Create metrics dashboard for embedding operations
+- [x] Add monitoring for Azure API usage with Datadog integration
+  - [x] Create metrics types definitions
+  - [x] Fix type errors in metrics tracking code
+  - [x] Implement custom metrics for tracking API calls, tokens used, and costs
+  - [x] Add tracking for rate limiting and throttling events
+  - [x] Set up alerts for unusual usage patterns
+  - [x] Configure request distribution tracking by deployment
+- [x] Create metrics dashboard for embedding operations
+  - [x] Visualize embedding generation latency and throughput
+  - [x] Track vector search performance metrics
+  - [x] Monitor connection pool utilization and health
+  - [x] Add performance comparison between different embedding models
+
+## Current Priorities
 
 - [ ] Create automatic connection pool monitoring tools
-  - [ ] Implement health dashboard for database connections
-  - [ ] Add automatic alerting for pool exhaustion
-  - [ ] Create usage reports for capacity planning 
-  - [ ] Implement connection pool visualization
+  - [x] Implement health dashboard for database connections
+  - [x] Add automatic alerting for pool exhaustion
+  - [x] Create usage reports for capacity planning 
+  - [x] Implement connection pool visualization
   - [ ] Add resource utilization tracking
 
 - [ ] Implement database scaling enhancements
@@ -93,13 +99,13 @@
   - [ ] Add custom metrics adapters for HPA
 
 - [ ] Add Datadog metrics integration
-  - [ ] Configure custom metrics for database performance
-  - [ ] Set up Datadog dashboards for database monitoring
-  - [ ] Create alerting rules for critical database metrics
-  - [ ] Implement tracing for database operations
-  - [ ] Set up log aggregation for database events
-  - [ ] Add vector search specific metrics
-  - [ ] Create embedding performance tracking
+  - [x] Configure custom metrics for database performance
+  - [x] Set up Datadog dashboards for database monitoring
+  - [x] Create alerting rules for critical database metrics
+  - [x] Implement tracing for database operations
+  - [x] Set up log aggregation for database events
+  - [x] Add vector search specific metrics
+  - [x] Create embedding performance tracking
   - [ ] Implement anomaly detection for query patterns
   - [ ] Set up SLO/SLI monitoring
   - [ ] Add predictive alerting for resource exhaustion
@@ -678,3 +684,24 @@ The Datadog dashboard JSON configuration will include:
   "is_read_only": false,
   "notify_list": []
 }
+```
+
+### Azure Embedding Service Monitoring
+
+The Azure embedding service monitoring system provides:
+
+- Detailed metrics tracking for embedding API usage
+- Real-time monitoring of rate limits and quota consumption
+- Connection pool health monitoring with automatic alerts
+- Performance tracking for vector search and embedding operations
+- Custom Datadog dashboards for visualizing all metrics
+- Cost estimation and usage trend analysis
+- Alerting for potential performance and availability issues
+- Integration with existing database health monitoring
+
+The monitoring API endpoint at `/api/monitoring/azure-embedding` provides:
+- API usage statistics and rate limit information
+- Connection pool health and utilization metrics
+- Performance metrics for embedding operations
+- Vector search performance tracking
+- Cost estimates based on token usage
