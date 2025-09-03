@@ -6,11 +6,13 @@
 import { PrismaClient } from '@prisma/client';
 import { AzureEmbeddingService } from './azureEmbeddingService';
 import { EmbeddingService } from './embeddingService';
+import { OpenRouterBYOKEmbeddingService } from './openrouter-byok-embedding-service';
 
 // Supported embedding providers
 export enum EmbeddingProvider {
   AZURE = 'azure',
   OPENAI = 'openai',
+  OPENROUTER_BYOK = 'openrouter-byok',
   MOCK = 'mock'
 }
 
@@ -25,10 +27,14 @@ export interface EmbeddingServiceConfig {
   model?: string;
   useManagedIdentity?: boolean;
   useConnectionPool?: boolean;
+  // BYOK specific
+  openrouterApiKey?: string;
+  openaiApiKey?: string;
+  fallbackToDirect?: boolean;
 }
 
-// Type to handle both embedding service types
-export type EmbeddingServiceType = AzureEmbeddingService | EmbeddingService;
+// Type to handle all embedding service types
+export type EmbeddingServiceType = AzureEmbeddingService | EmbeddingService | OpenRouterBYOKEmbeddingService;
 
 /**
  * Factory class for creating embedding services
@@ -130,6 +136,18 @@ export class EmbeddingServiceFactory {
           config.model || 'text-embedding-3-small',
           this.prisma
         );
+
+      case EmbeddingProvider.OPENROUTER_BYOK:
+        if (!config.openrouterApiKey || !config.openaiApiKey) {
+          throw new Error('OpenRouter BYOK provider requires both openrouterApiKey and openaiApiKey');
+        }
+
+        return new OpenRouterBYOKEmbeddingService({
+          openrouterApiKey: config.openrouterApiKey,
+          openaiApiKey: config.openaiApiKey,
+          model: config.model || 'openai/text-embedding-3-small',
+          fallbackToDirect: config.fallbackToDirect
+        }, this.prisma);
         
       case EmbeddingProvider.MOCK:
         // For future implementation - Mock embedding service for testing
@@ -146,6 +164,22 @@ export class EmbeddingServiceFactory {
    * @returns The appropriate embedding service instance based on environment variables
    */
   public createEmbeddingServiceFromEnv(): EmbeddingServiceType {
+    // Check for OpenRouter BYOK configuration first (preferred)
+    const openrouterApiKey = process.env.OPENROUTER_API_KEY;
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    const embeddingModel = process.env.OPENAI_EMBEDDING_MODEL || 'openai/text-embedding-3-small';
+    const fallbackToDirect = process.env.EMBEDDING_FALLBACK_TO_DIRECT === 'true';
+    
+    if (openrouterApiKey && openaiApiKey) {
+      return this.createEmbeddingService({
+        provider: EmbeddingProvider.OPENROUTER_BYOK,
+        openrouterApiKey,
+        openaiApiKey,
+        model: embeddingModel,
+        fallbackToDirect
+      });
+    }
+    
     // Check for Azure OpenAI configuration
     const azureApiKey = process.env.AZURE_OPENAI_API_KEY;
     const azureEndpoint = process.env.AZURE_OPENAI_ENDPOINT;
@@ -176,11 +210,10 @@ export class EmbeddingServiceFactory {
       }
     }
     
-    // Check for OpenAI configuration
-    const openaiApiKey = process.env.OPENAI_API_KEY;
-    const openaiModel = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
-    
+    // Check for direct OpenAI configuration
     if (openaiApiKey) {
+      const openaiModel = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
+      
       return this.createEmbeddingService({
         provider: EmbeddingProvider.OPENAI,
         apiKey: openaiApiKey,
@@ -188,7 +221,7 @@ export class EmbeddingServiceFactory {
       });
     }
     
-    throw new Error('No valid embedding service configuration found in environment variables');
+    throw new Error('No valid embedding service configuration found in environment variables. Required: OPENAI_API_KEY and optionally OPENROUTER_API_KEY for BYOK');
   }
 
   /**

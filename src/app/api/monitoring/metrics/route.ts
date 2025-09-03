@@ -4,49 +4,94 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../lib/monitoring/auth'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  // Check authentication first
+  const authResult = await checkMonitoringAuth(request)
+  if (!authResult.isAuthorized) {
+    return getUnauthorizedResponse(authResult.error)
+  }
   try {
     const { searchParams } = new URL(request.url)
     const metricType = searchParams.get('type') || 'all'
     const timeRange = searchParams.get('range') || '1h'
     const limit = parseInt(searchParams.get('limit') || '100')
 
-    // Mock metrics data for now - replace with actual implementation
-    const mockMetrics = {
-      system: {
-        cpu_usage: Math.random() * 100,
-        memory_usage: Math.random() * 100,
-        disk_usage: Math.random() * 100,
-        network_io: Math.random() * 1000
-      },
-      application: {
-        request_count: Math.floor(Math.random() * 1000),
-        error_rate: Math.random() * 0.1,
-        response_time: Math.random() * 1000,
-        active_connections: Math.floor(Math.random() * 100)
-      },
-      business: {
-        user_sessions: Math.floor(Math.random() * 500),
-        api_calls: Math.floor(Math.random() * 2000),
-        database_queries: Math.floor(Math.random() * 5000),
-        cache_hit_rate: Math.random() * 0.9
+    // Get real production metrics using service factory
+    const { MonitoringServiceFactory } = await import('../../../../lib/monitoring/service-factory')
+    const serviceFactory = new MonitoringServiceFactory()
+    
+    try {
+      const productionMetrics = await serviceFactory.getAggregatedMetrics()
+      
+      const realMetrics = {
+        system: {
+          memory_used_mb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+          memory_total_mb: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+          memory_usage_percent: Math.round((process.memoryUsage().heapUsed / process.memoryUsage().heapTotal) * 100),
+          uptime_seconds: Math.floor(process.uptime()),
+          node_version: process.version,
+          platform: process.platform
+        },
+        application: {
+          total_services: productionMetrics.totalServices,
+          healthy_services: productionMetrics.healthyServices,
+          warning_services: productionMetrics.warningServices,
+          error_services: productionMetrics.errorServices,
+          overall_health: productionMetrics.overallHealth
+        },
+        services: productionMetrics.services.map(service => ({
+          provider: service.provider,
+          service_name: service.service,
+          is_active: service.isActive,
+          health_status: service.healthStatus,
+          last_checked: service.lastChecked,
+          avg_response_time: service.metrics?.avgResponseTime,
+          configuration_summary: Object.keys(service.configuration).length + ' settings'
+        }))
       }
+      
+      await serviceFactory.disconnect()
+      
+      let metricsData: any = realMetrics
+    } catch (serviceError) {
+      console.error('Failed to get production metrics, falling back to basic system metrics:', serviceError)
+      
+      // Fallback to basic system metrics if service factory fails
+      const fallbackMetrics = {
+        system: {
+          memory_used_mb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+          memory_total_mb: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+          memory_usage_percent: Math.round((process.memoryUsage().heapUsed / process.memoryUsage().heapTotal) * 100),
+          uptime_seconds: Math.floor(process.uptime()),
+          node_version: process.version,
+          platform: process.platform
+        },
+        application: {
+          status: 'degraded',
+          error: 'Unable to fetch production service metrics'
+        },
+        services: []
+      }
+      
+      await serviceFactory.disconnect()
+      metricsData = fallbackMetrics
     }
 
     let filteredMetrics: Record<string, unknown> = {}
 
     if (metricType === 'all') {
-      filteredMetrics = mockMetrics
+      filteredMetrics = metricsData
     } else if (metricType === 'system') {
-      filteredMetrics = { system: mockMetrics.system }
+      filteredMetrics = { system: metricsData.system }
     } else if (metricType === 'application') {
-      filteredMetrics = { application: mockMetrics.application }
+      filteredMetrics = { application: metricsData.application }
     } else if (metricType === 'business') {
-      filteredMetrics = { business: mockMetrics.business }
+      filteredMetrics = { business: (metricsData as any).business }
     }
 
     return NextResponse.json({
@@ -58,7 +103,7 @@ export async function GET(request: NextRequest) {
           time_range: timeRange,
           limit,
           timestamp: new Date().toISOString(),
-          source: 'mock_data'
+          source: 'production_services'
         }
       }
     })
@@ -79,6 +124,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Check authentication first
+  const authResult = await checkMonitoringAuth(request)
+  if (!authResult.isAuthorized) {
+    return getUnauthorizedResponse(authResult.error)
+  }
   try {
     const body = await request.json()
     const { metric_name, value, tags, timestamp } = body

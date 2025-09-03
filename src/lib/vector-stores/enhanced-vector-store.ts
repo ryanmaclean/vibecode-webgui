@@ -7,6 +7,9 @@
 import { vectorStore as pgVectorStore } from '../vector-store'
 import { weaviateStore } from './weaviate-client'
 import { mlflowClient } from '../mlflow/mlflow-client'
+import { VectorMetricsCollector } from '../vector-db/VectorMetricsCollector'
+import { vectorQueryCache } from './query-cache'
+import { getMetricsCollector } from '../db/database-metrics'
 
 export interface VectorStoreProvider {
   id: 'pgvector' | 'weaviate'
@@ -70,8 +73,11 @@ export class EnhancedVectorStore {
   private performanceMetrics: Map<string, number[]> = new Map()
   private lastHealthCheck: number = 0
   private healthCheckInterval: number = 300000 // 5 minutes
+  private metricsCollector: VectorMetricsCollector
+  private dbMetricsCollector = getMetricsCollector()
 
   constructor() {
+    this.metricsCollector = new VectorMetricsCollector()
     this.initializeProviders()
   }
 
@@ -213,7 +219,7 @@ export class EnhancedVectorStore {
   }
 
   /**
-   * Intelligent provider selection
+   * Enhanced intelligent provider selection with advanced performance analysis
    */
   private selectProvider(options: UnifiedSearchOptions): 'pgvector' | 'weaviate' {
     if (options.provider && options.provider !== 'auto') {
@@ -224,7 +230,22 @@ export class EnhancedVectorStore {
     const weaviateAvailable = this.providers.get('weaviate')
     const pgvectorAvailable = this.providers.get('pgvector')
 
-    // Prefer Weaviate for advanced features
+    // If only one provider is available, use it
+    if (!weaviateAvailable && pgvectorAvailable) return 'pgvector'
+    if (!pgvectorAvailable && weaviateAvailable) return 'weaviate'
+    if (!weaviateAvailable && !pgvectorAvailable) {
+      throw new Error('No vector store providers available')
+    }
+
+    // Performance-based selection with recent metrics weighted more heavily
+    const pgvectorPerf = this.getWeightedAvgMetric('pgvector_query_time', 150)
+    const weaviatePerf = this.getWeightedAvgMetric('weaviate_query_time', 100)
+    
+    // Error rate consideration
+    const pgvectorErrors = this.getAvgMetric('pgvector_errors', 0)
+    const weaviateErrors = this.getAvgMetric('weaviate_errors', 0)
+
+    // Prefer Weaviate for advanced features (mandatory)
     if (weaviateAvailable && (
       options.searchType === 'hybrid' || 
       options.searchType === 'generative' ||
@@ -233,20 +254,97 @@ export class EnhancedVectorStore {
       return 'weaviate'
     }
 
-    // Prefer pgvector for simple semantic search (faster, more reliable)
-    if (pgvectorAvailable && options.searchType !== 'hybrid' && !options.generativePrompt) {
-      return 'pgvector'
+    // For workspace-specific queries, prefer pgvector (better tenant isolation)
+    if (options.workspaceId && pgvectorAvailable) {
+      // But only if pgvector performance is reasonable
+      if (pgvectorPerf < weaviatePerf * 1.5 && pgvectorErrors < weaviateErrors * 2) {
+        return 'pgvector'
+      }
     }
 
-    // Fallback to any available provider
-    if (weaviateAvailable) return 'weaviate'
-    if (pgvectorAvailable) return 'pgvector'
+    // For file-specific queries, prefer pgvector (better filtering)
+    if (options.fileIds && options.fileIds.length > 0 && pgvectorAvailable) {
+      // But consider performance trade-offs
+      if (pgvectorPerf < weaviatePerf * 1.8 && pgvectorErrors < weaviateErrors * 2) {
+        return 'pgvector'
+      }
+    }
 
-    throw new Error('No vector store providers available')
+    // For large result sets, prefer the provider with better throughput
+    if (options.limit && options.limit > 50) {
+      // Consider both speed and error rates for large queries
+      const pgvectorScore = this.calculateProviderScore(pgvectorPerf, pgvectorErrors, 'large_query')
+      const weaviateScore = this.calculateProviderScore(weaviatePerf, weaviateErrors, 'large_query')
+      
+      return pgvectorScore > weaviateScore ? 'pgvector' : 'weaviate'
+    }
+
+    // For small, frequent queries, prefer the provider with lower latency
+    if (!options.limit || options.limit <= 10) {
+      const pgvectorScore = this.calculateProviderScore(pgvectorPerf, pgvectorErrors, 'small_query')
+      const weaviateScore = this.calculateProviderScore(weaviatePerf, weaviateErrors, 'small_query')
+      
+      return pgvectorScore > weaviateScore ? 'pgvector' : 'weaviate'
+    }
+
+    // Default: comprehensive provider scoring
+    const pgvectorScore = this.calculateProviderScore(pgvectorPerf, pgvectorErrors, 'default')
+    const weaviateScore = this.calculateProviderScore(weaviatePerf, weaviateErrors, 'default')
+    
+    return pgvectorScore > weaviateScore ? 'pgvector' : 'weaviate'
   }
 
   /**
-   * Unified search across providers with intelligent routing
+   * Calculate comprehensive provider performance score
+   */
+  private calculateProviderScore(avgTime: number, errorRate: number, queryType: 'large_query' | 'small_query' | 'default'): number {
+    // Base score from speed (lower time = higher score)
+    let speedScore = Math.max(0, 1000 - avgTime) / 1000
+
+    // Error penalty (fewer errors = higher score)
+    let errorScore = Math.max(0, 1 - errorRate)
+
+    // Query type specific weights
+    let speedWeight = 0.7
+    let errorWeight = 0.3
+
+    if (queryType === 'large_query') {
+      // For large queries, prioritize reliability over speed
+      speedWeight = 0.5
+      errorWeight = 0.5
+    } else if (queryType === 'small_query') {
+      // For small queries, prioritize speed
+      speedWeight = 0.8
+      errorWeight = 0.2
+    }
+
+    return (speedScore * speedWeight) + (errorScore * errorWeight)
+  }
+
+  /**
+   * Get weighted average metric (recent values weighted more heavily)
+   */
+  private getWeightedAvgMetric(key: string, defaultValue: number): number {
+    const metrics = this.performanceMetrics.get(key)
+    if (!metrics || metrics.length === 0) {
+      return defaultValue
+    }
+
+    // Apply exponential decay weighting (recent values have higher weight)
+    let weightedSum = 0
+    let totalWeight = 0
+    
+    for (let i = 0; i < metrics.length; i++) {
+      const weight = Math.pow(1.1, i) // Recent measurements weighted more heavily
+      weightedSum += metrics[i] * weight
+      totalWeight += weight
+    }
+
+    return weightedSum / totalWeight
+  }
+
+  /**
+   * Unified search across providers with intelligent routing and caching
    */
   async search(options: UnifiedSearchOptions): Promise<UnifiedSearchResult[]> {
     const startTime = Date.now()
@@ -254,6 +352,14 @@ export class EnhancedVectorStore {
     let results: UnifiedSearchResult[] = []
 
     try {
+      // Check cache first
+      const cachedResults = vectorQueryCache.getCachedResults(options.query, options)
+      if (cachedResults) {
+        // Record cache hit for monitoring
+        this.dbMetricsCollector.recordVectorSearch('pgvector', Date.now() - startTime, cachedResults.length, true)
+        return cachedResults
+      }
+
       provider = this.selectProvider(options)
 
       if (provider === 'weaviate') {
@@ -262,10 +368,23 @@ export class EnhancedVectorStore {
         results = await this.searchPgVector(options)
       }
 
+      // Cache results for future queries
+      vectorQueryCache.cacheResults(options.query, options, results, provider)
+
       // Track performance metrics
       const queryTime = Date.now() - startTime
       this.recordMetric(`${provider}_query_time`, queryTime)
       this.recordMetric('overall_query_time', queryTime)
+      
+      // Record vector search metrics for database monitoring
+      this.dbMetricsCollector.recordVectorSearch(provider, queryTime, results.length, false)
+      
+      // Collect metrics for monitoring
+      try {
+        this.metricsCollector.updateStorageMetrics(results.length, 0)
+      } catch (e) {
+        // Metrics collection is optional
+      }
 
       // Track with MLflow if available
       try {
@@ -291,11 +410,16 @@ export class EnhancedVectorStore {
       return results
     } catch (error) {
       this.recordMetric('error_rate', 1)
+      this.recordMetric(`${provider}_errors`, 1)
+      this.dbMetricsCollector.recordVectorError('search')
       
       // Try fallback provider
       const fallbackProvider = provider === 'weaviate' ? 'pgvector' : 'weaviate'
       if (this.providers.get(fallbackProvider)) {
         console.warn(`${provider} search failed, trying fallback to ${fallbackProvider}`)
+        
+        // Record provider switch for monitoring
+        this.dbMetricsCollector.recordProviderSwitch(provider || 'pgvector', fallbackProvider)
         
         try {
           if (fallbackProvider === 'weaviate') {
@@ -306,9 +430,12 @@ export class EnhancedVectorStore {
 
           const queryTime = Date.now() - startTime
           this.recordMetric(`${fallbackProvider}_query_time`, queryTime)
+          this.dbMetricsCollector.recordVectorSearch(fallbackProvider, queryTime, results.length, false)
           return results
         } catch (fallbackError) {
           console.error('Fallback search also failed:', fallbackError)
+          this.recordMetric(`${fallbackProvider}_errors`, 1)
+          this.dbMetricsCollector.recordVectorError('search')
         }
       }
 
@@ -372,7 +499,7 @@ export class EnhancedVectorStore {
   }
 
   /**
-   * Store documents with intelligent distribution
+   * Store documents with intelligent distribution and connection pool optimization
    */
   async storeDocuments(
     workspaceId: number, 
@@ -390,26 +517,52 @@ export class EnhancedVectorStore {
     pgvector: boolean
     weaviate: boolean
     totalStored: number
+    poolMetrics?: any
   }> {
     const results = {
       pgvector: false,
       weaviate: false,
-      totalStored: 0
+      totalStored: 0,
+      poolMetrics: null as any
     }
 
-    // Store in PostgreSQL pgvector (primary store)
+    // Store in PostgreSQL pgvector (primary store) with connection pool monitoring
     if (this.providers.get('pgvector')) {
       try {
-        await pgVectorStore.storeChunks(documents[0].fileId, documents.map(doc => ({
-          content: doc.content,
-          startLine: doc.startLine,
-          endLine: doc.endLine,
-          tokens: doc.tokens
-        })))
+        const startTime = Date.now()
+        
+        // Process in batches to optimize connection usage
+        const batchSize = 5
+        for (let i = 0; i < documents.length; i += batchSize) {
+          const batch = documents.slice(i, i + batchSize)
+          await pgVectorStore.storeChunks(batch[0].fileId, batch.map(doc => ({
+            content: doc.content,
+            startLine: doc.startLine,
+            endLine: doc.endLine,
+            tokens: doc.tokens
+          })))
+        }
+        
+        const duration = Date.now() - startTime
         results.pgvector = true
         results.totalStored += documents.length
+        
+        // Record vector store metrics for database monitoring
+        this.dbMetricsCollector.recordVectorStore(documents.length, 'pgvector', duration)
+        
+        // Collect connection pool metrics
+        results.poolMetrics = {
+          operation: 'store',
+          duration,
+          batchSize: Math.ceil(documents.length / batchSize),
+          documentsProcessed: documents.length
+        } as any
+        
+        console.log(`Stored ${documents.length} documents in ${duration}ms using ${Math.ceil(documents.length / batchSize)} batches`)
       } catch (error) {
         console.error('Failed to store in pgvector:', error)
+        this.dbMetricsCollector.recordVectorError('store')
+        results.poolMetrics = { error: error.message, operation: 'store' } as any
       }
     }
 
@@ -433,13 +586,20 @@ export class EnhancedVectorStore {
           }
         }))
 
+        const weaviateStartTime = Date.now()
         await weaviateStore.storeDocuments(weaviateDocuments)
+        const weaviateDuration = Date.now() - weaviateStartTime
+        
         results.weaviate = true
         if (!results.pgvector) {
           results.totalStored += documents.length
         }
+        
+        // Record Weaviate store metrics
+        this.dbMetricsCollector.recordVectorStore(documents.length, 'weaviate', weaviateDuration)
       } catch (error) {
         console.error('Failed to store in Weaviate:', error)
+        this.dbMetricsCollector.recordVectorError('store')
       }
     }
 
@@ -516,6 +676,44 @@ export class EnhancedVectorStore {
     }
 
     return metrics.reduce((sum, val) => sum + val, 0) / metrics.length
+  }
+
+  /**
+   * Get provider selection insights for monitoring
+   */
+  getProviderSelectionInsights(): {
+    pgvector: { score: number, avgTime: number, errorRate: number }
+    weaviate: { score: number, avgTime: number, errorRate: number }
+    recommendation: 'pgvector' | 'weaviate' | 'balanced'
+  } {
+    const pgvectorPerf = this.getWeightedAvgMetric('pgvector_query_time', 150)
+    const weaviatePerf = this.getWeightedAvgMetric('weaviate_query_time', 100)
+    const pgvectorErrors = this.getAvgMetric('pgvector_errors', 0)
+    const weaviateErrors = this.getAvgMetric('weaviate_errors', 0)
+
+    const pgvectorScore = this.calculateProviderScore(pgvectorPerf, pgvectorErrors, 'default')
+    const weaviateScore = this.calculateProviderScore(weaviatePerf, weaviateErrors, 'default')
+
+    let recommendation: 'pgvector' | 'weaviate' | 'balanced' = 'balanced'
+    const scoreDiff = Math.abs(pgvectorScore - weaviateScore)
+    
+    if (scoreDiff > 0.2) {
+      recommendation = pgvectorScore > weaviateScore ? 'pgvector' : 'weaviate'
+    }
+
+    return {
+      pgvector: {
+        score: Math.round(pgvectorScore * 100) / 100,
+        avgTime: Math.round(pgvectorPerf),
+        errorRate: Math.round(pgvectorErrors * 100) / 100
+      },
+      weaviate: {
+        score: Math.round(weaviateScore * 100) / 100,
+        avgTime: Math.round(weaviatePerf),
+        errorRate: Math.round(weaviateErrors * 100) / 100
+      },
+      recommendation
+    }
   }
 
   /**
