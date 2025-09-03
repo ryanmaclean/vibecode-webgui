@@ -603,3 +603,10 @@ With these principles in place, you'll have robust observability for your AI-pow
 - [Migration Script](../scripts/vector-db-migrations/migrate-vector-data.js)
 - [Benchmark Tool](../scripts/benchmark-vector-search.js)
 - [CI/CD Workflow](.github/workflows/db-monitoring-deployment.yml)
+
+## Related Documentation
+
+- **[Azure OpenAI Monitoring](./azure-openai-monitoring/)** - Complete monitoring setup for AI operations
+- **[Deploy Azure OpenAI Monitoring](./deploy-azure-openai-monitoring/)** - Automated deployment with Terraform
+- **[PostgreSQL + pgvector](./prisma-pgvector/)** - Database setup and configuration
+- **[Production Deployment Guide](./production-deployment-guide/)** - End-to-end production deployment
