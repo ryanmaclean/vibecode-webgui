@@ -7,14 +7,16 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import dynamic from 'next/dynamic'
 import { BarChart, LineChart, PieChart, XAxis, YAxis, Tooltip, Legend, Line, Bar, Pie, Cell, ResponsiveContainer } from 'recharts'
 
+<<<<<<< Updated upstream
 // Dynamically import the NetworkDiagnostics component with no SSR
 const NetworkDiagnostics = dynamic(
   () => import('@/components/NetworkDiagnostics/NetworkDiagnostics').then(mod => mod.default),
   { ssr: false }
 );
+=======
+>>>>>>> Stashed changes
 
 interface SystemMetrics {
   cpu: { usage: number; history: { time: string; usage: number }[] };
@@ -337,7 +339,11 @@ export default function MonitoringDashboard() {
       case 'security':
         return <div className="text-center p-8 bg-white rounded-lg shadow">Security monitoring coming soon.</div>;
       case 'network':
+<<<<<<< Updated upstream
         return <NetworkDiagnostics />;
+=======
+        return <div className="text-center p-8 bg-white rounded-lg shadow">Network diagnostics coming soon.</div>;
+>>>>>>> Stashed changes
       case 'health':
         return enhancedData && (
           <div className="space-y-6">
