@@ -8,6 +8,7 @@
  * Handles caching, session storage, and real-time features
  */
 
+<<<<<<< Updated upstream
 /**
  * Redis/Valkey client with enhanced type safety
  */
@@ -59,6 +60,16 @@ interface RedisConnectionOptions {
 // Valkey configuration based on environment 
 // Note: Using Redis-compatible client libraries (ioredis) to connect to Valkey server
 const getValkeyConfig = () => {
+=======
+import { Redis } from 'ioredis';
+import { metrics } from '../server-monitoring';
+
+// Valkey configuration based on environment 
+// Note: Using Redis-compatible client libraries (ioredis) to connect to Valkey server
+const getValkeyConfig = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+>>>>>>> Stashed changes
   // Upstash provides Redis-compatible API (acceptable for managed service)
   if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
     return {
@@ -89,13 +100,21 @@ const getValkeyConfig = () => {
 const config = getValkeyConfig();
 
 // Create Valkey client with optimized settings (using Redis-compatible ioredis client)
+<<<<<<< Updated upstream
 let redisClient: any = null;
+=======
+const valkeyClient: Redis | null = null;
+>>>>>>> Stashed changes
 
 try {
   if (config.type === 'standard') {
     if ('url' in config) {
+<<<<<<< Updated upstream
       // @ts-ignore - ioredis constructor typing issue
       redisClient = new Redis(config.url, {
+=======
+      redis = new Redis(config.url, {
+>>>>>>> Stashed changes
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
         maxRetriesPerRequest: 3,
@@ -108,8 +127,12 @@ try {
         connectTimeout: 10000,
       });
     } else {
+<<<<<<< Updated upstream
       // @ts-ignore - ioredis constructor typing issue
       redisClient = new Redis({
+=======
+      redis = new Redis({
+>>>>>>> Stashed changes
         host: config.host,
         port: config.port,
         password: config.password,
@@ -126,24 +149,40 @@ try {
     }
 
     // Event listeners for monitoring
+<<<<<<< Updated upstream
     redisClient.on('connect', () => {
+=======
+    redis.on('connect', () => {
+>>>>>>> Stashed changes
       console.log('Redis connected successfully');
       metrics.increment('redis.connection.success');
     });
 
+<<<<<<< Updated upstream
     redisClient.on('error', (error) => {
+=======
+    redis.on('error', (error) => {
+>>>>>>> Stashed changes
       console.error('Redis connection error:', error);
       metrics.increment('redis.connection.error');
     });
 
+<<<<<<< Updated upstream
     redisClient.on('ready', () => {
+=======
+    redis.on('ready', () => {
+>>>>>>> Stashed changes
       console.log('Redis client ready');
       metrics.increment('redis.ready');
     });
   }
 } catch (error) {
   console.warn('Redis client initialization failed:', error);
+<<<<<<< Updated upstream
   redisClient = null;
+=======
+  redis = null;
+>>>>>>> Stashed changes
 }
 
 // Cache key generators
@@ -176,10 +215,17 @@ export const CacheTTL = {
  * Enhanced cache operations with performance monitoring
  */
 export class CacheManager {
+<<<<<<< Updated upstream
   private redis: any;
 
   constructor() {
     this.redis = redisClient;
+=======
+  private redis: Redis | null;
+
+  constructor() {
+    this.redis = redis;
+>>>>>>> Stashed changes
   }
 
   /**
@@ -242,10 +288,16 @@ export class CacheManager {
 
     try {
       const keys = Array.isArray(key) ? key : [key];
+<<<<<<< Updated upstream
       // @ts-ignore - Type mismatch issue
       await this.redis.del(...keys);
       
       metrics.increment('cache.delete', { count: keys.length as any });
+=======
+      await this.redis.del(...keys);
+      
+      metrics.increment('cache.delete', { count: keys.length });
+>>>>>>> Stashed changes
       return true;
     } catch (error) {
       metrics.increment('cache.delete.error');
@@ -295,12 +347,19 @@ export class CacheManager {
       
       for (const { key, value, ttl = CacheTTL.MEDIUM } of pairs) {
         const serialized = JSON.stringify(value);
+<<<<<<< Updated upstream
         // @ts-ignore - Type mismatch issue
+=======
+>>>>>>> Stashed changes
         pipeline.setex(key, ttl, serialized);
       }
       
       await pipeline.exec();
+<<<<<<< Updated upstream
       metrics.increment('cache.mset.success', { count: pairs.length as any });
+=======
+      metrics.increment('cache.mset.success', { count: pairs.length });
+>>>>>>> Stashed changes
       return true;
     } catch (error) {
       metrics.increment('cache.mset.error');

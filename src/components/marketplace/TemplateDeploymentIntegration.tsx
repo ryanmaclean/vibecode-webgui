@@ -46,12 +46,16 @@ export function TemplateDeploymentIntegration({
       category: template.category,
       complexity: template.complexity,
       tags: template.tags,
+<<<<<<< Updated upstream
       language: template.language || [],
       frameworks: template.frameworks || [],
+=======
+>>>>>>> Stashed changes
       files: template.files || [],
       dependencies: template.dependencies || {},
       devDependencies: {},
       scripts: template.scripts || {},
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
       envVars: template.envVars?.map(v => ({ name: v.name, value: v.defaultValue || '', description: v.description })) || [],
 =======
@@ -61,10 +65,14 @@ export function TemplateDeploymentIntegration({
         description: env.description
       })),
 >>>>>>> Stashed changes
+=======
+      envVars: template.envVars || [],
+>>>>>>> Stashed changes
       setupInstructions: [
         'npm install',
         'npm run dev'
       ],
+<<<<<<< Updated upstream
       documentation: {
 <<<<<<< Updated upstream
         readme: 'Template documentation',
@@ -78,6 +86,12 @@ export function TemplateDeploymentIntegration({
         deployment: Array.isArray(template.documentation?.deployment)
           ? template.documentation.deployment.join('\n')
           : template.documentation?.deployment || 'Deployment guide'
+>>>>>>> Stashed changes
+=======
+      documentation: template.documentation || {
+        readme: 'Template documentation',
+        setup: 'Setup instructions',
+        deployment: 'Deployment guide'
 >>>>>>> Stashed changes
       },
       createdAt: new Date(),
@@ -103,7 +117,11 @@ export function TemplateDeploymentIntegration({
   }
 
   const renderStars = (rating: number, size = 4) => {
+<<<<<<< Updated upstream
     const stars: React.ReactNode[] = []
+=======
+    const stars = []
+>>>>>>> Stashed changes
     const fullStars = Math.floor(rating)
     const hasHalfStar = rating % 1 >= 0.5
 
@@ -414,4 +432,8 @@ export function TemplateDeploymentIntegration({
       </div>
     </div>
   )
+<<<<<<< Updated upstream
 }
+=======
+}
+>>>>>>> Stashed changes
