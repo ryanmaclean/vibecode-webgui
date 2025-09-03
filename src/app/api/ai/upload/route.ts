@@ -6,6 +6,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
+import { EmbeddingServiceFactory } from '@/lib/ai/embeddingServiceFactory'
+import { PrismaClient } from '@prisma/client'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -46,6 +48,83 @@ function getUploadsDir(workspaceId: string) {
 
 function getRAGIndexPath(workspaceId: string) {
   return path.join(process.cwd(), 'data', 'rag', `${workspaceId}.json`)
+}
+
+// Generate embeddings for RAG chunks
+async function generateEmbeddingsForChunks(chunks: Array<{
+  id: string;
+  content: string;
+  metadata: {
+    startLine: number;
+    endLine: number;
+    tokens: number;
+  };
+}>): Promise<Array<{
+  id: string;
+  content: string;
+  embedding: number[];
+  metadata: {
+    startLine: number;
+    endLine: number;
+    tokens: number;
+  };
+}>> {
+  try {
+    // Create embedding service using factory pattern
+    const prisma = new PrismaClient();
+    const { service, releaseConnection } = await EmbeddingServiceFactory.createEmbeddingServiceWithRobustConnection();
+    
+    const chunksWithEmbeddings: Array<{
+      id: string;
+      content: string;
+      embedding: number[];
+      metadata: {
+        startLine: number;
+        endLine: number;
+        tokens: number;
+      };
+    }> = [];
+    
+    for (const chunk of chunks) {
+      try {
+        // Generate embedding for this chunk
+        let embedding: number[];
+        
+        // Both Azure and OpenAI services use the same generateEmbedding method
+        if ('generateEmbedding' in service && typeof service.generateEmbedding === 'function') {
+          embedding = await service.generateEmbedding(chunk.content);
+        } else {
+          console.warn('Service does not have generateEmbedding method, skipping embedding generation');
+          continue;
+        }
+        
+        chunksWithEmbeddings.push({
+          ...chunk,
+          embedding
+        });
+      } catch (error) {
+        console.error(`Failed to generate embedding for chunk ${chunk.id}:`, error);
+        // Skip this chunk or add without embedding
+        chunksWithEmbeddings.push({
+          ...chunk,
+          embedding: [] // Empty array indicates no embedding
+        });
+      }
+    }
+    
+    // Clean up connection
+    await releaseConnection();
+    await prisma.$disconnect();
+    
+    return chunksWithEmbeddings;
+  } catch (error) {
+    console.error('Failed to initialize embedding service:', error);
+    // Return chunks without embeddings if service fails
+    return chunks.map(chunk => ({
+      ...chunk,
+      embedding: []
+    }));
+  }
 }
 
 // Ensure directories exist
@@ -211,23 +290,32 @@ export async function POST(request: NextRequest) {
 
         uploadedFiles.push(uploadedFile)
 
-        // Create RAG index for text files
+        // Create RAG index for text files with embeddings
         if (content && content.length > 0) {
           const chunks = chunkText(content)
+          
+          // Prepare chunks for embedding generation
+          const chunksForEmbedding = chunks.map((chunk, index) => ({
+            id: `${fileId}-chunk-${index}`,
+            content: chunk.content,
+            metadata: {
+              startLine: chunk.startLine,
+              endLine: chunk.endLine,
+              tokens: chunk.tokens
+            }
+          }));
+          
+          // Generate embeddings for all chunks
+          console.log(`Generating embeddings for ${chunksForEmbedding.length} chunks from file ${file.name}...`);
+          const chunksWithEmbeddings = await generateEmbeddingsForChunks(chunksForEmbedding);
+          
           const ragIndex: RAGIndex = {
             fileId,
-            chunks: chunks.map((chunk, index) => ({
-              id: `${fileId}-chunk-${index}`,
-              content: chunk.content,
-              metadata: {
-                startLine: chunk.startLine,
-                endLine: chunk.endLine,
-                tokens: chunk.tokens
-              }
-            }))
+            chunks: chunksWithEmbeddings
           }
 
           ragIndexes.push(ragIndex)
+          console.log(`✅ Generated embeddings for ${chunksWithEmbeddings.filter(c => c.embedding.length > 0).length}/${chunksWithEmbeddings.length} chunks`);
         }
 
       } catch (error) {
