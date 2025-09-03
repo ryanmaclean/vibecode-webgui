@@ -8,6 +8,7 @@ import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { DefaultAzureCredential } from '@azure/identity';
 import { withVectorConnection } from '../db/vector-connection-pool';
+import { azureEmbeddingMetrics } from '../monitoring/azure-embedding-metrics';
 
 // Interface for embedding generation options
 interface EmbeddingOptions {
@@ -98,13 +99,13 @@ export class AzureEmbeddingService {
     this.useManagedIdentity = useManagedIdentity;
     this.useConnectionPool = useConnectionPool;
     
-    // Create vector service for database operations
+    // Initialize vector service for database operations
     this.vectorService = this.createVectorService();
   }
-
+  
   /**
    * Create vector service for database operations
-   * This allows us to abstract the database operations and replace with mock for testing
+   * @returns The appropriate vector service based on configuration
    */
   private createVectorService() {
     // Check if we should use connection pooling
@@ -246,6 +247,14 @@ export class AzureEmbeddingService {
   }
 
   /**
+   * Gets the deployment name for this service
+   * @returns The Azure OpenAI deployment name
+   */
+  public getDeploymentName(): string {
+    return this.deploymentName;
+  }
+  
+  /**
    * Create vector service using direct Prisma client
    */
   private createDirectVectorService() {
@@ -376,6 +385,7 @@ export class AzureEmbeddingService {
    * @returns Promise<number[]> - Vector embedding
    */
   public async generateEmbedding(text: string, options: EmbeddingOptions = {}): Promise<number[]> {
+    const startTime = Date.now();
     try {
       // Construct the Azure OpenAI API URL
       const url = `${this.endpoint}/openai/deployments/${this.deploymentName}/embeddings?api-version=${this.apiVersion}`;
@@ -402,15 +412,58 @@ export class AzureEmbeddingService {
       }
       
       // Make the API request
+      const apiStartTime = Date.now();
       const response = await axios.post(url, payload, { headers });
+      const apiLatency = Date.now() - apiStartTime;
+      
+      // Process rate limit headers if available
+      // Convert headers to a standard record type for compatibility
+      const standardHeaders: Record<string, string | string[] | undefined> = {};
+      Object.entries(response.headers).forEach(([key, value]) => {
+        if (typeof value === 'string' || Array.isArray(value)) {
+          standardHeaders[key] = value;
+        } else if (value !== null) {
+          standardHeaders[key] = String(value);
+        }
+      });
+      
+      this.processRateLimitHeaders(standardHeaders);
       
       // Extract and return the embedding data
       if (response.data && response.data.data && response.data.data.length > 0) {
-        return response.data.data[0].embedding;
+        const embedding = response.data.data[0].embedding;
+        
+        // Record metrics for the embedding generation
+        try {
+          azureEmbeddingMetrics.recordEmbeddingGeneration({
+            generationTimeMs: Date.now() - startTime,
+            embeddingDimensions: embedding.length,
+            textLength: text.length,
+            modelName: this.deploymentName,
+            apiLatencyMs: apiLatency,
+            apiStatus: response.status
+          });
+        } catch (metricError) {
+          console.warn('Error recording embedding metrics:', metricError);
+        }
+        
+        return embedding;
       } else {
         throw new Error('No embedding data returned from Azure OpenAI API');
       }
     } catch (error: any) {
+      // Record error metrics
+      try {
+        azureEmbeddingMetrics.recordError(
+          error.response?.status ? 'api_error' : 'client_error',
+          'generate_embedding',
+          error.response?.status,
+          error.message
+        );
+      } catch (metricError) {
+        console.warn('Error recording error metrics:', metricError);
+      }
+      
       console.error('Error generating embedding:', error.message);
       if (error.response) {
         console.error('Azure API response:', error.response.data);
@@ -432,9 +485,13 @@ export class AzureEmbeddingService {
     content: string, 
     metadata: DocumentMetadata = {}
   ): Promise<void> {
+    const startTime = Date.now();
     try {
       // Generate embedding for the document content
       const embedding = await this.generateEmbedding(content);
+      
+      // Record the start time for DB operation
+      const dbStartTime = Date.now();
       
       // Store the document and its embedding in the database
       await this.vectorService.upsertEmbedding({
@@ -443,7 +500,55 @@ export class AzureEmbeddingService {
         embedding,
         metadata
       });
+      
+      // Record document storage metrics
+      try {
+        azureEmbeddingMetrics.recordDocumentStorage(
+          documentId,
+          content.length,
+          Date.now() - startTime,
+          embedding.length,
+          metadata.collection as string
+        );
+      } catch (metricError) {
+        console.warn('Error recording document storage metrics:', metricError);
+      }
+      
+      // Record DB operation metrics
+      if (this.useConnectionPool) {
+        try {
+          const poolMetrics = await this.getConnectionPoolMetrics();
+          if (poolMetrics) {
+            const { utilizationPercentage = 0, activeConnections = 0, totalConnections = 0 } = poolMetrics;
+            azureEmbeddingMetrics.recordEmbeddingGeneration({
+              generationTimeMs: Date.now() - startTime,
+              embeddingDimensions: embedding.length,
+              textLength: content.length,
+              modelName: this.deploymentName,
+              dbOperationMs: Date.now() - dbStartTime,
+              dbOperationType: 'upsert',
+              poolUtilization: utilizationPercentage,
+              poolActiveConnections: activeConnections,
+              poolSize: totalConnections
+            });
+          }
+        } catch (metricError) {
+          console.warn('Error recording pool metrics:', metricError);
+        }
+      }
     } catch (error: any) {
+      // Record error
+      try {
+        azureEmbeddingMetrics.recordError(
+          'database_error',
+          'store_document',
+          undefined,
+          error.message
+        );
+      } catch (metricError) {
+        console.warn('Error recording error metrics:', metricError);
+      }
+      
       console.error('Error storing document:', error.message);
       throw new Error(`Failed to store document: ${error.message}`);
     }
@@ -460,6 +565,7 @@ export class AzureEmbeddingService {
     queryText: string,
     options: VectorSearchOptions = {}
   ): Promise<SimilarDocument[]> {
+    const startTime = Date.now();
     try {
       // Generate embedding for the query text
       const queryEmbedding = await this.generateEmbedding(queryText);
@@ -467,13 +573,38 @@ export class AzureEmbeddingService {
       // Find documents with similar embeddings
       const similarDocuments = await this.vectorService.findSimilarDocuments({
         embedding: queryEmbedding,
-        threshold: options.threshold,
-        limit: options.limit,
+        threshold: options.threshold || 0.7,
+        limit: options.limit || 5,
         filter: options.filter
       });
       
+      // Record similarity search metrics
+      try {
+        azureEmbeddingMetrics.recordSimilaritySearch(
+          queryText,
+          similarDocuments.length,
+          Date.now() - startTime,
+          options.threshold || 0.7,
+          options.filter?.collection as string
+        );
+      } catch (metricError) {
+        console.warn('Error recording similarity search metrics:', metricError);
+      }
+      
       return similarDocuments as SimilarDocument[];
     } catch (error: any) {
+      // Record error
+      try {
+        azureEmbeddingMetrics.recordError(
+          'search_error',
+          'find_similar_documents',
+          undefined,
+          error.message
+        );
+      } catch (metricError) {
+        console.warn('Error recording error metrics:', metricError);
+      }
+      
       console.error('Error finding similar documents:', error.message);
       throw new Error(`Failed to find similar documents: ${error.message}`);
     }
@@ -528,17 +659,88 @@ export class AzureEmbeddingService {
   }
 
   /**
-   * Clean up old embeddings from the database
-   * 
-   * @param olderThan - Date to clean up embeddings older than
-   * @returns Promise<{ deletedCount: number }> - Number of deleted embeddings
+   * Get metrics from the connection pool if using one
+   * @returns Promise with pool metrics or null if not using pool
    */
-  public async cleanupOldEmbeddings(olderThan?: Date): Promise<{ deletedCount: number }> {
+  private async getConnectionPoolMetrics(): Promise<{
+    totalConnections: number;
+    activeConnections: number;
+    idleConnections: number;
+    utilizationPercentage: number;
+    waitingRequests: number;
+  } | null> {
+    if (!this.useConnectionPool) {
+      return null;
+    }
+
     try {
-      return this.vectorService.cleanupOldEmbeddings({ olderThan });
-    } catch (error: any) {
-      console.error('Error cleaning up old embeddings:', error.message);
-      throw new Error(`Failed to clean up old embeddings: ${error.message}`);
+      // Import the connection pool dynamically to avoid circular dependencies
+      const { getVectorConnectionPool } = await import('../db/vector-connection-pool');
+      const pool = getVectorConnectionPool();
+      const metrics = pool.getMetrics();
+
+      // Calculate utilization percentage
+      const utilizationPercentage = metrics.totalConnections > 0 
+        ? (metrics.activeConnections / metrics.totalConnections) * 100 
+        : 0;
+
+      return {
+        totalConnections: metrics.totalConnections,
+        activeConnections: metrics.activeConnections,
+        idleConnections: metrics.idleConnections,
+        utilizationPercentage,
+        waitingRequests: metrics.waitingRequests
+      };
+    } catch (error) {
+      console.error('Error getting connection pool metrics:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * Process rate limit headers from Azure API response
+   * @param headers Response headers from Azure API
+   */
+  private processRateLimitHeaders(headers: any): void {
+    try {
+      // Extract rate limit headers if they exist
+      const remainingRequests = headers['x-ratelimit-remaining-requests'] || 
+                               headers['x-ratelimit-remaining'];
+      const totalRequests = headers['x-ratelimit-limit-requests'] ||
+                           headers['x-ratelimit-limit'];
+      const resetStr = headers['x-ratelimit-reset-requests'] ||
+                       headers['x-ratelimit-reset'];
+      
+      if (remainingRequests && totalRequests) {
+        const remaining = parseInt(Array.isArray(remainingRequests) ? remainingRequests[0] : remainingRequests, 10);
+        const limit = parseInt(Array.isArray(totalRequests) ? totalRequests[0] : totalRequests, 10);
+        
+        // Parse reset date
+        let resetDate = new Date();
+        if (resetStr) {
+          const resetValue = Array.isArray(resetStr) ? resetStr[0] : resetStr;
+          
+          // Check if it's a timestamp or a duration
+          if (resetValue.includes(':') || resetValue.includes('T')) {
+            // ISO date format
+            resetDate = new Date(resetValue);
+          } else {
+            // Seconds from now
+            const seconds = parseInt(resetValue, 10);
+            resetDate = new Date(Date.now() + seconds * 1000);
+          }
+        } else {
+          // Default to 1 hour from now if not provided
+          resetDate = new Date(Date.now() + 60 * 60 * 1000);
+        }
+        
+        // Record rate limit information in metrics
+        if (!isNaN(remaining) && !isNaN(limit)) {
+          azureEmbeddingMetrics.recordRateLimitInfo(remaining, limit, resetDate);
+        }
+      }
+    } catch (error) {
+      console.error('Error processing rate limit headers:', error);
     }
   }
 }
