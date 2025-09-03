@@ -202,6 +202,17 @@ Now that you have VibeCode running:
 - **GitHub Issues**: Report bugs and request features
 - **Community**: Join discussions and get help from other users
 
+## Next Steps
+
+**🔧 Production Setup**
+- **[Production Deployment Guide](./production-deployment-guide/)** - Deploy to production with enterprise features
+- **[Azure OpenAI Monitoring](./azure-openai-monitoring/)** - Set up comprehensive monitoring for AI operations
+- **[PostgreSQL + pgvector](./prisma-pgvector/)** - Configure vector database for AI features
+
+**🚀 Advanced Features**
+- **[Kubernetes Secrets Automation](./kubernetes-secrets-automation/)** - Enterprise-grade secret management
+- **[Developer Guide](./developer-guide/)** - In-depth development workflows
+
 ---
 
 **🎉 Congratulations!** You now have VibeCode up and running. Start building amazing projects with AI assistance!
