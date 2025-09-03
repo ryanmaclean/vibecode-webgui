@@ -26,9 +26,13 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
     name: '',
     description: '',
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     category: 'frontend',
 =======
     category: 'fullstack',
+>>>>>>> Stashed changes
+=======
+    category: 'frontend',
 >>>>>>> Stashed changes
     complexity: 'beginner',
     tags: [],
@@ -124,9 +128,13 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           name: template.name || '',
           description: template.description || '',
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
           category: template.category || 'frontend',
 =======
           category: template.category || 'fullstack',
+>>>>>>> Stashed changes
+=======
+          category: template.category || 'frontend',
 >>>>>>> Stashed changes
           complexity: template.complexity || 'beginner',
           tags: template.tags || [],
@@ -139,6 +147,7 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           scripts: template.scripts || {},
           envVars: template.envVars || [],
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
           documentation: {
             setup: Array.isArray(template.documentation?.setup) ? template.documentation.setup : ['Setup instructions'],
@@ -150,19 +159,27 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           features: ['modern-setup', 'production-ready'],
           estimatedSetupTime: '15 minutes',
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
           dockerSupport: false,
           kubernetesSupport: false,
           cicdTemplate: false,
           testingSetup: false,
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
           monitoringSetup: false,
           documentation: template.documentation || {
             setup: [],
             usage: [],
             deployment: []
           }
+<<<<<<< Updated upstream
 =======
           monitoringSetup: false
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
         },
         author,

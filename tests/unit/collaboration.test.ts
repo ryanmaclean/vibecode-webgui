@@ -7,7 +7,13 @@
  * Staff Engineer Implementation - Comprehensive collaboration testing
  */
 
+<<<<<<< Updated upstream
 // Jest mocks must be at the top before any imports
+=======
+const { describe, test, expect, beforeEach, afterEach } = require('@jest/globals')
+
+// Mock Yjs and related dependencies
+>>>>>>> Stashed changes
 jest.mock('yjs', () => ({
   Doc: jest.fn().mockImplementation(() => ({
     getText: jest.fn().mockReturnValue({
