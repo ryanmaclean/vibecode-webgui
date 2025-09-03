@@ -1,0 +1,520 @@
+{
+  "title": "Azure Embedding Service Dashboard",
+  "description": "Comprehensive monitoring of Azure OpenAI embedding service operations, performance metrics, and API usage",
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "type": "group",
+        "title": "API Usage Overview",
+        "show_title": true,
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "API Calls - Last 24 Hours",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:azure.openai.embedding.request_count{$env,$deployment}.as_count().rollup(sum, 60)",
+                  "display_type": "bars",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "API Calls"
+              },
+              "markers": []
+            }
+          },
+          {
+            "definition": {
+              "title": "Token Usage - Last 24 Hours",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:azure.openai.embedding.token_count{$env,$deployment}.rollup(sum, 60)",
+                  "display_type": "area",
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "Tokens"
+              }
+            }
+          },
+          {
+            "definition": {
+              "title": "API Errors",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:azure.openai.embedding.errors{$env,$deployment}.as_count().rollup(sum, 60)",
+                  "display_type": "bars",
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "Error Count",
+                "min": "auto",
+                "max": "auto"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "type": "group",
+        "title": "Rate Limiting and Throttling",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Rate Limit Utilization",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:azure.openai.embedding.rate_limit_utilization{$env,$deployment}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "Utilization %",
+                "min": 0,
+                "max": 100
+              },
+              "markers": [
+                {
+                  "value": "y = 80",
+                  "display_type": "warning dashed",
+                  "label": "Warning"
+                },
+                {
+                  "value": "y = 90",
+                  "display_type": "error dashed",
+                  "label": "Critical"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Throttling Events",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:azure.openai.embedding.throttling.events{$env,$deployment}.as_count()",
+                  "display_type": "bars",
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "Throttling Events"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "type": "group",
+        "title": "Performance Metrics",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "API Latency",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:azure.openai.embedding.api_latency{$env,$deployment}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "Latency (ms)"
+              }
+            }
+          },
+          {
+            "definition": {
+              "title": "Embedding Generation Time",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:azure.openai.embedding.generation_time{$env,$deployment}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "Generation Time (ms)"
+              }
+            }
+          },
+          {
+            "definition": {
+              "title": "Vector Database Operations",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:azure.openai.embedding.db_operation_time{$env,$deployment} by {operation_type}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "Operation Time (ms)"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "type": "group",
+        "title": "Connection Pool Metrics",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Connection Pool Utilization",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:azure.openai.embedding.pool_utilization{$env,$deployment}",
+                  "display_type": "area",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "Utilization %",
+                "min": 0,
+                "max": 100
+              },
+              "markers": [
+                {
+                  "value": "y = 80",
+                  "display_type": "warning dashed",
+                  "label": "Warning"
+                },
+                {
+                  "value": "y = 90",
+                  "display_type": "error dashed",
+                  "label": "Critical"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Connection Pool - Active vs. Idle",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:azure.openai.embedding.pool_active_connections{$env,$deployment}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "metadata": {
+                    "expression": "avg:azure.openai.embedding.pool_active_connections{$env,$deployment}",
+                    "alias_name": "Active Connections"
+                  }
+                },
+                {
+                  "q": "avg:azure.openai.embedding.pool_idle_connections{$env,$deployment}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "metadata": {
+                    "expression": "avg:azure.openai.embedding.pool_idle_connections{$env,$deployment}",
+                    "alias_name": "Idle Connections"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "Connections"
+              }
+            }
+          },
+          {
+            "definition": {
+              "title": "Connection Acquisition Time",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:azure.openai.embedding.connection_acquire_time{$env,$deployment}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "Acquisition Time (ms)"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "type": "group",
+        "title": "Vector Search Performance",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Search Latency",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:azure.openai.embedding.search_latency{$env,$deployment}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "Latency (ms)"
+              }
+            }
+          },
+          {
+            "definition": {
+              "title": "Search Result Count",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:azure.openai.embedding.search_result_count{$env,$deployment}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "include_zero": true,
+                "scale": "linear",
+                "label": "Average Results"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "type": "group",
+        "title": "Business Metrics",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Estimated Cost (USD)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [
+                    {
+                      "formula": "query1 / 1000 * 0.0001"
+                    }
+                  ],
+                  "queries": [
+                    {
+                      "query": "sum:azure.openai.embedding.token_count{$env,$deployment}.rollup(sum)",
+                      "data_source": "metrics",
+                      "name": "query1",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "response_format": "scalar",
+                  "conditional_formats": [
+                    {
+                      "comparator": ">",
+                      "value": 10,
+                      "palette": "white_on_red"
+                    },
+                    {
+                      "comparator": ">",
+                      "value": 5,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": "<=",
+                      "value": 5,
+                      "palette": "white_on_green"
+                    }
+                  ]
+                }
+              ],
+              "autoscale": true,
+              "precision": 2,
+              "unit": "$"
+            }
+          },
+          {
+            "definition": {
+              "title": "Token Usage Distribution",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "toplist",
+              "requests": [
+                {
+                  "q": "top(sum:azure.openai.embedding.token_count{$env,$deployment} by {operation}, 10, 'sum', 'desc')",
+                  "conditional_formats": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "type": "note",
+        "content": "## Azure Embedding Service Dashboard\n\nThis dashboard provides comprehensive monitoring of Azure OpenAI embedding service operations, performance metrics, and API usage.\n\n### Key Metrics to Monitor:\n\n- **API Usage**: Track the number of API calls, token usage, and error rates\n- **Rate Limiting**: Monitor API quota utilization and throttling events\n- **Performance**: Track latency for embedding generation and vector searches\n- **Connection Pool**: Monitor utilization and connection acquisition times\n- **Cost**: Track estimated costs based on token usage\n\n### Alert Recommendations:\n\n- Set alerts when rate limit utilization exceeds 80%\n- Set alerts when error rates spike above normal baseline\n- Set alerts when connection pool utilization exceeds 90%\n- Set alerts when search or embedding latency exceeds SLA thresholds",
+        "background_color": "gray",
+        "font_size": "14",
+        "text_align": "left",
+        "show_tick": true,
+        "tick_pos": "bottom",
+        "tick_edge": "left"
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "env",
+      "default": "*",
+      "prefix": "env",
+      "available_values": [
+        "production",
+        "staging",
+        "development"
+      ]
+    },
+    {
+      "name": "deployment",
+      "default": "*",
+      "prefix": "deployment"
+    }
+  ],
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "notify_list": []
+}
