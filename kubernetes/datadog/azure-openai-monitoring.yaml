@@ -1,0 +1,52 @@
+apiVersion: datadoghq.com/v1alpha1
+kind: DatadogMonitor
+metadata:
+  name: azure-openai-monitoring
+  namespace: vibecode
+spec:
+  query: |
+    avg(last_5m):sum:azure.openai_service.api_requests_total{*} by {deployment_name,status_code} > 1000
+  message: |
+    High number of Azure OpenAI API requests detected. Check for potential issues.
+    @slack-vibecode-alerts @team-ai-engineering@vibecode.com
+  name: Azure OpenAI High Request Volume
+  priority: 2
+  type: query alert
+  options:
+    include_tags: true
+    notify_audit: false
+    notify_no_data: false
+    require_full_window: true
+    evaluation_delay: 10
+    new_group_delay: 60
+    renotify_interval: 0
+    thresholds:
+      critical: 1000
+      warning: 500
+---
+apiVersion: datadoghq.com/v1alpha1
+kind: DatadogMonitor
+metadata:
+  name: azure-openai-error-rate
+  namespace: vibecode
+spec:
+  query: |
+    sum(last_5m):
+      sum:azure.openai_service.api_errors_total{*}.as_rate()
+      / 
+      sum:azure.openai_service.api_requests_total{*}.as_rate()
+      > 0.1
+  message: |
+    High error rate detected in Azure OpenAI API.
+    @slack-vibecode-alerts @team-ai-engineering@vibecode.com
+  name: Azure OpenAI High Error Rate
+  priority: 1
+  type: query alert
+  options:
+    include_tags: true
+    notify_audit: true
+    notify_no_data: false
+    require_full_window: true
+    evaluation_delay: 10
+    new_group_delay: 60
+    renotify_interval: 60
