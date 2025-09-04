@@ -94,10 +94,22 @@
   - [x] Restore proper variable declarations
 
 ### 📦 Dependency Updates (Dependabot) - CONFLICTS DETECTED ⚠️
-- [ ] **PR #164: @langchain/openai** - Bump from 0.2.11 to 0.6.11 (CONFLICT)
-- [ ] **PR #163: dd-trace** - Bump from 5.61.1 to 5.65.0 (CONFLICT)
-- [ ] **PR #162: openai** - Bump from 4.104.0 to 5.18.1 (CONFLICT)
-- [ ] **PR #161: @ai-sdk/openai** - Bump from 1.3.23 to 2.0.23 (CONFLICT)
+- [x] **PR #167: Consolidated Dependency Updates** - All conflicting updates resolved ✅ **CREATED**
+  - [x] Update @langchain/openai from 0.2.11 to 0.6.11
+  - [x] Update dd-trace from 5.61.1 to 5.65.0
+  - [x] Update openai from 4.104.0 to 5.18.1
+  - [x] Update @ai-sdk/openai from 1.3.23 to 2.0.23
+  - [x] Update @testing-library/jest-dom from 6.6.4 to 6.8.0
+  - [x] Update @babel/preset-env from 7.28.0 to 7.28.3
+  - [x] Update @types/node from 24.1.0 to 24.3.0
+  - [x] Update @radix-ui/react-scroll-area from 1.2.9 to 1.2.10
+  - [x] Update tailwindcss from 3.4.17 to 4.1.12
+  - [x] Update @playwright/test from 1.54.1 to 1.54.2
+  - [x] Fix merge conflicts in collaboration hooks and monitoring API
+- [ ] **PR #164: @langchain/openai** - Bump from 0.2.11 to 0.6.11 (CONFLICT - RESOLVED IN PR #167)
+- [ ] **PR #163: dd-trace** - Bump from 5.61.1 to 5.65.0 (CONFLICT - RESOLVED IN PR #167)
+- [ ] **PR #162: openai** - Bump from 4.104.0 to 5.18.1 (CONFLICT - RESOLVED IN PR #167)
+- [ ] **PR #161: @ai-sdk/openai** - Bump from 1.3.23 to 2.0.23 (CONFLICT - RESOLVED IN PR #167)
 - [ ] **PR #158: @testing-library/jest-dom** - Bump testing library dependencies (CONFLICT)
 - [ ] **PR #153: @babel/preset-env** - Bump from 7.28.0 to 7.28.3 (CONFLICT)
 - [ ] **PR #144: @types/node** - Bump from 24.1.0 to 24.3.0 (CONFLICT)
