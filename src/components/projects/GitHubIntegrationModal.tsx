@@ -51,9 +51,8 @@ export function GitHubIntegrationModal({
     licenseTemplate: 'mit' as string | undefined
   })
 
-  const githubIntegration = React.useRef<GitHubIntegration | null>(null)=======
   const githubIntegration = React.useRef<GitHubIntegration | null>(null)
->>>>>>> Stashed changes
+
   useEffect(() => {
     if (!isOpen) {
       // Reset state when modal closes
@@ -64,9 +63,7 @@ export function GitHubIntegrationModal({
       setIsConnecting(false)
       setIsCreating(false)
       setShowToken(false)
-      setIntegration(null)=======
       setIntegration(null)
->>>>>>> Stashed changes
     }
   }, [isOpen])
 
@@ -80,15 +77,22 @@ export function GitHubIntegrationModal({
     setError(null)
 
     try {
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream      setIntegration(newIntegration)
-      setFolderHubUser(user)
-      setSuccess('Successfully connected to FolderHub!')
->>>>>>> Stashed changes=======
-    if (!githubIntegration.current) {
+      const newIntegration = new GitHubIntegration(accessToken)
+      const user = await newIntegration.getCurrentUser()
+      
+      setIntegration(newIntegration)
+      setGitHubUser(user)
+      setSuccess('Successfully connected to GitHub!')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to connect to GitHub')
+    } finally {
+      setIsConnecting(false)
+    }
+  }
+
+  const handleCreateRepository = async () => {
+    if (!integration) {
       setError('Not connected to GitHub')
->>>>>>> Stashed changes
       return
     }
 
@@ -97,9 +101,7 @@ export function GitHubIntegrationModal({
 
     try {
       // Check if repository name is available
-      const isAvailable = await integration.isRepositoryNameAvailable(repoSettings.name)=======
       const isAvailable = await integration.isRepositoryNameAvailable(repoSettings.name)
->>>>>>> Stashed changes
       if (!isAvailable) {
         setError(`Repository name "${repoSettings.name}" is already taken`)
         setIsCreating(false)
@@ -107,10 +109,7 @@ export function GitHubIntegrationModal({
       }
 
       // Create repository from generated project
-<<<<<<< Updated upstream
-      const result = await integration.createRepositoryFromProject(=======
       const result = await integration.createRepositoryFromProject(
->>>>>>> Stashed changes
         generatedProject,
         {
           private: repoSettings.private,
@@ -122,23 +121,15 @@ export function GitHubIntegrationModal({
       // Add GitHub Actions workflow if requested
       if (repoSettings.addWorkflow) {
         const { generateGitHubActionsWorkflow } = await import('@/lib/github/integration')
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-        const workflowContent = generateGitHubActionsWorkflow(=======
         const workflowContent = generateGitHubActionsWorkflow(
->>>>>>> Stashed changes          'node', // Default to node for most projects
+          'node', // Default to node for most projects
           'typescript' // Default to TypeScript
         )
         
-<<<<<<< Updated upstream
-        await githubIntegration.current.addGitHubActionsWorkflow(          result.repository.name,
-          'ci',
-          workflow=======
         await integration.addGitHubActionsWorkflow(
           result.repository.name,
           'ci',
-          workflow
->>>>>>> Stashed changes
+          workflowContent
         )
       }
 
