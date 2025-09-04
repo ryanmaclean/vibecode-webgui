@@ -96,7 +96,6 @@ export async function GET(request: NextRequest) {
     let filteredMetrics: Record<string, unknown> = {}
 
     if (metricType === 'all') {
-<<<<<<< Updated upstream
       filteredMetrics = metricsData
     } else if (metricType === 'system') {
       filteredMetrics = { system: metricsData.system }
