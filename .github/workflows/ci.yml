@@ -17,6 +17,27 @@ env:
   NODE_VERSION: '20.11.0'
 
 jobs:
+  # Early validation of required CI secrets/vars (non-fatal)
+  validate-ci-config:
+    runs-on: ubuntu-latest
+    name: Validate CI configuration (secrets/vars)
+    timeout-minutes: 5
+    steps:
+      - name: Check required secrets and variables
+        shell: bash
+        continue-on-error: true
+        run: |
+          missing=0
+          if [ -z "${{ secrets.DD_API_KEY }}" ]; then echo " Missing secret: DD_API_KEY"; missing=1; else echo " Found secret: DD_API_KEY"; fi
+          if [ -z "${{ secrets.DD_APP_KEY }}" ]; then echo " Missing secret: DD_APP_KEY"; missing=1; else echo " Found secret: DD_APP_KEY"; fi
+          if [ -z "${{ secrets.LHCI_GITHUB_APP_TOKEN }}" ]; then echo " Missing secret: LHCI_GITHUB_APP_TOKEN"; missing=1; else echo " Found secret: LHCI_GITHUB_APP_TOKEN"; fi
+          if [ -z "${{ vars.DD_SYNTHETIC_TEST_IDS }}" ]; then echo " Missing variable: DD_SYNTHETIC_TEST_IDS"; missing=1; else echo " Found variable: DD_SYNTHETIC_TEST_IDS"; fi
+          if [ "$missing" -eq 0 ]; then
+            echo " All required CI secrets/vars are present."
+          else
+            echo " One or more CI secrets/vars are missing. Dependent steps will be skipped."
+          fi
+
   # Code Quality & Security
   code-quality:
     runs-on: ubuntu-latest
@@ -535,6 +556,7 @@ jobs:
           PORT: 3000
 
       - name: Run Datadog Synthetic Tests
+        if: ${{ secrets.DD_API_KEY != '' && secrets.DD_APP_KEY != '' && vars.DD_SYNTHETIC_TEST_IDS != '' }}
         run: |
           echo "Running Datadog Synthetic API tests..."
           npx @datadog/datadog-ci synthetics run-tests \
@@ -547,6 +569,7 @@ jobs:
         continue-on-error: true
 
       - name: Lighthouse Performance Audit
+        if: ${{ secrets.LHCI_GITHUB_APP_TOKEN != '' }}
         uses: treosh/lighthouse-ci-action@v11
         with:
           configPath: './lighthouse-ci.json'
@@ -557,6 +580,7 @@ jobs:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
       - name: Submit Performance Metrics to Datadog
+        if: ${{ secrets.DD_API_KEY != '' }}
         run: |
           echo "Submitting performance metrics to Datadog..."
           # Submit build performance metrics
@@ -614,7 +638,7 @@ jobs:
           fi
 
       - name: Notify Datadog of CI completion
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.DD_API_KEY != ''
         run: |
           curl -X POST "https://api.datadoghq.com/api/v1/events" \
             -H "Content-Type: application/json" \

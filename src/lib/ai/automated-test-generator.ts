@@ -225,10 +225,7 @@ Please analyze:
 Focus on critical paths, edge cases, and error handling.
     `);
 
-<<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
-=======
->>>>>>> Stashed changes
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
