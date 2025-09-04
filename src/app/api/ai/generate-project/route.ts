@@ -301,6 +301,12 @@ interface ProgressData {
   progress?: number;
 }
 
+// Polyfill TransformStream for Node.js environments
+if (typeof TransformStream === 'undefined') {
+  const { TransformStream } = require('stream/web');
+  global.TransformStream = TransformStream;
+}
+
 function createStreamingResponse() {
   const stream = new TransformStream();
   const writer = stream.writable.getWriter();
