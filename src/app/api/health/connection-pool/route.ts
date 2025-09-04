@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prismaPoolOptimizer } from '@/lib/db/prisma-pool-optimizer'
+import { prismaPoolOptimizer } from '@/lib/db/connection-pool'
 
 export async function GET(request: NextRequest) {
   try {

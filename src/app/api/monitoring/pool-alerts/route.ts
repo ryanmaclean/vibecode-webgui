@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { datadogDBM, DBMAlert } from '@/lib/monitoring/datadog-dbm';
+import { datadogDBM, DBMAlert } from '@/lib/monitoring/datadog-metrics';
 import { createRobustConnection } from '@/lib/db/robust-db-connection';
 
 // Alert thresholds for connection pool monitoring
