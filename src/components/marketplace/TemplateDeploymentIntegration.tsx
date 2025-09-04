@@ -46,66 +46,29 @@ export function TemplateDeploymentIntegration({
       category: template.category,
       complexity: template.complexity,
       tags: template.tags,
-<<<<<<< Updated upstream
       language: template.language || [],
       frameworks: template.frameworks || [],
-=======
->>>>>>> Stashed changes
       files: template.files || [],
       dependencies: template.dependencies || {},
       devDependencies: {},
       scripts: template.scripts || {},
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      envVars: template.envVars?.map(v => ({ name: v.name, value: v.defaultValue || '', description: v.description })) || [],
-=======
-=======
->>>>>>> Stashed changes
       envVars: (template.envVars || []).map(env => ({
         name: env.name,
         value: env.defaultValue || '',
         description: env.description
       })),
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
-      envVars: template.envVars || [],
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       setupInstructions: [
         'npm install',
         'npm run dev'
       ],
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       documentation: {
-<<<<<<< Updated upstream
-        readme: 'Template documentation',
-        setup: template.documentation?.setup?.join('\n') || 'Setup instructions',
-        deployment: template.documentation?.deployment?.join('\n') || 'Deployment guide'
-=======
-=======
-      documentation: {
->>>>>>> Stashed changes
-        readme: (template.documentation as any)?.readme || `# ${template.name}\n\n${template.description}`,
-        setup: Array.isArray(template.documentation?.setup) 
-          ? template.documentation.setup.join('\n') 
-          : template.documentation?.setup || 'Setup instructions',
-        deployment: Array.isArray(template.documentation?.deployment)
-          ? template.documentation.deployment.join('\n')
-          : template.documentation?.deployment || 'Deployment guide'
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
-      documentation: template.documentation || {
-        readme: 'Template documentation',
-        setup: 'Setup instructions',
-        deployment: 'Deployment guide'
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+        readme: `# ${template.name}
+
+${template.description}`,
+        setup: Array.isArray(template.documentation?.setup) ? template.documentation.setup.join('
+') : 'Setup instructions',
+        deployment: Array.isArray(template.documentation?.deployment) ? template.documentation.deployment.join('
+') : 'Deployment guide'
       },
       createdAt: new Date(),
       estimatedTime: 15,
@@ -130,11 +93,7 @@ export function TemplateDeploymentIntegration({
   }
 
   const renderStars = (rating: number, size = 4) => {
-<<<<<<< Updated upstream
     const stars: React.ReactNode[] = []
-=======
-    const stars = []
->>>>>>> Stashed changes
     const fullStars = Math.floor(rating)
     const hasHalfStar = rating % 1 >= 0.5
 
@@ -445,8 +404,4 @@ export function TemplateDeploymentIntegration({
       </div>
     </div>
   )
-<<<<<<< Updated upstream
 }
-=======
-}
->>>>>>> Stashed changes
