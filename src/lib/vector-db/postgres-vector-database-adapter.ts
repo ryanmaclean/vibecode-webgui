@@ -11,16 +11,36 @@ import { metrics } from '../server-monitoring';
 import { VectorCacheInvalidator } from '../cache/vector-cache-invalidator';
 import { PgVectorSearch } from '../cache/pgvector-search';
 import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
+
+/**
+ * PostgreSQL-specific configuration options
+ */
+export interface PostgresVectorDatabaseConfig extends VectorDatabaseConfig {
+  provider: VectorDatabaseProvider.POSTGRES;
+  pgPoolSize?: number;
+  pgSchemaName?: string;
+  pgVectorExtensionName?: string;
+  pgSearchMethod?: 'cosine' | 'inner_product' | 'euclidean';
+}
+
+/**
+ * PostgreSQL Vector Database Adapter
+ * Implements vector database operations using PostgreSQL with pgVector extension
+ */
+export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
+  private prisma: PrismaClient | null = null;
+  private postgresConfig: PostgresVectorDatabaseConfig;
+  private errorHandler: VectorDbErrorHandler;
+  private cacheInvalidator: VectorCacheInvalidator | null = null;
+  private pgVectorSearch: PgVectorSearch | null = null;
+
   /**
    * Constructor for PostgreSQL adapter
    * @param config PostgreSQL-specific configuration
    */
   constructor(config: PostgresVectorDatabaseConfig) {
     super(config);
-<<<<<<< HEAD
     this.errorHandler = new VectorDbErrorHandler('postgres', config.enableLogging || false, config.enableMetrics || false);
-=======
->>>>>>> origin/feature/general-improvements-fixed
     this.postgresConfig = {
       pgPoolSize: 10,
       pgSchemaName: 'public',

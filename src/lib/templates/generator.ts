@@ -28,7 +28,8 @@ export interface GeneratedProject {
   tags: string[]
   language: string[] // matches ProjectTemplate
   frameworks: string[] // matches ProjectTemplate
-  features: string[]  files: TemplateFile[]
+  features: string[]
+  files: TemplateFile[]
   scripts: Record<string, string>
   dependencies: Record<string, string>
   devDependencies?: Record<string, string>
@@ -45,9 +46,6 @@ export interface GeneratedProject {
   }
   createdAt: Date
   estimatedTime: number
-=======
-  features: string[]
->>>>>>> Stashed changes
 }
 
 /**
@@ -85,7 +83,6 @@ export async function generateFromTemplate(
   const setupInstructions = generateSetupInstructions(template, projectName)
 
   return {
-<<<<<<< Updated upstream
     id: template.id,
     name: projectName,
     description: options.customizations?.description || template.description,
