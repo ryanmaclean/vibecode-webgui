@@ -232,12 +232,12 @@ describe('User Provisioning Integration Tests', () => {
       expect(ingress2Data.spec.rules[0].host).toBe(`${user2}.vibecode.local`)
 
       // 4. Network connectivity test - users should not be able to access each other directly
-      const networkTestPod = `;
+      const networkTestPod = `
 apiVersion: v1
 kind: Pod
 metadata:
   name: network-test-pod
-  namespace: ${NAMESPACE};
+  namespace: ${NAMESPACE}
   labels:
     vibecode.dev/user-id: network-tester
 spec:
