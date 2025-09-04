@@ -66,7 +66,13 @@ interface WorkspaceActivity {
 }
 
 export function CollaborativeWorkspace({
-  const [selectedProject, setSelectedProject] = useState<GeneratedProject | null>(initialProject || null)
+  workspaceId,
+  userId,
+  userName,
+  initialProject,
+  onCreateTerminal,
+  onCreateDebugSession
+}: CollaborativeWorkspaceProps) {
   const [isGeneratingProject, setIsGeneratingProject] = useState(false)
   const [activeTab, setActiveTab] = useState('templates')
   const [showDeployment, setShowDeployment] = useState(false)
@@ -98,22 +104,17 @@ export function CollaborativeWorkspace({
   }, [activeUsers, userId])
 
   // Handle template selection and project generation
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
   const handleTemplateSelect = async (template: MarketplaceTemplate) => {
-    const templateId = template.id=======
-  const handleTemplateSelect = async (template: any) => {
->>>>>>> Stashed changes
+    const templateId = template.id
     setIsGeneratingProject(true)
     
     try {
       // Generate project from template
-      const project = await generateFromTemplate(template.id, {        name: `project-${Date.now()}`,
+      const project = await generateFromTemplate(template.id, {
+        name: `project-${Date.now()}`,
         description: template.description || 'Generated from template'
       })
       
-<<<<<<< Updated upstream
       // Add workspace-specific metadata
       const workspaceProject: GeneratedProject = {
         ...project,
@@ -122,42 +123,7 @@ export function CollaborativeWorkspace({
         category: (templateId.split('-')[0] || 'data') as 'frontend' | 'backend' | 'fullstack' | 'mobile' | 'data' | 'infrastructure',
         complexity: 'intermediate' as const,
         tags: [templateId, 'collaborative'],
-        estimatedTime: 30,        features: [],
-        documentation: {
-          readme: `# ${project.name}\n\nGenerated in collaborative workspace`,
-          setup: 'Run npm install && npm run dev',
-          deployment: 'Deploy using the integrated GitHub workflow'
-        }
-      }
-
-      setSelectedProject(workspaceProject)      
-      // Broadcast project generation to team
-      if (socket) {
-        socket.emit('workspace_event', {
-          type: 'project_generated',
-          data: { project, userId }
-        })
-      }
-
-      // Add to activity feed
-      setWorkspaceActivity(prev => [...prev, {
-        id: `activity-${Date.now()}`,
-        type: 'project_generated',
-        message: `Generated project from ${template.name} template`,
-        userId,
-        userName,
-        timestamp: new Date()
-      }])
-    setIsGeneratingProject(true)
-    
-    try {
-      // Generate project from template
-      const project = await generateProjectFromTemplate(template.id, {
-        name: `project-${Date.now()}`,
-        description: template.description || 'Generated from template'
-      })
-      
-      setSelectedProject(project)
+        estimatedTime: 30,
         features: [],
         documentation: {
           readme: `# ${project.name}\n\nGenerated in collaborative workspace`,
@@ -189,8 +155,6 @@ export function CollaborativeWorkspace({
 
       // Auto-switch to chat tab for collaboration
       setActiveTab('chat')
-
->>>>>>> Stashed changes
     } catch (error) {
       console.error('Failed to generate project:', error)
     } finally {
@@ -443,10 +407,7 @@ export function CollaborativeWorkspace({
               </div>
             ) : (
               <TemplateMarketplace
-<<<<<<< Updated upstream
-                onSelectTemplate={handleTemplateSelect}=======
                 onSelectTemplate={handleTemplateSelect}
->>>>>>> Stashed changes
               />
             )}
           </TabsContent>

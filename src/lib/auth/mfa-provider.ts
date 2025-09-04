@@ -485,7 +485,8 @@ export class MFAProvider {
 
     // Remove the used code from the array
     const index = userCodes.indexOf(code)
-    userCodes.splice(index, 1)    return true
+    userCodes.splice(index, 1)
+    return true
   }
 
   private generateBackupCodes(): string[] {

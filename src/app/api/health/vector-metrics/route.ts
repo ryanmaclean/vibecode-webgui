@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { enhancedVectorStore } from '@/lib/vector-stores/enhanced-vector-store'
-import { prismaPoolOptimizer } from '@/lib/db/prisma-pool-optimizer'
+import { prismaPoolOptimizer } from '@/lib/db/connection-pool'
 import { vectorQueryCache } from '@/lib/vector-stores/query-cache'
 import { getMetricsCollector } from '@/lib/db/database-metrics'
 

@@ -2,7 +2,8 @@ export interface FunctionDefinition {
   name: string
   description: string
   parameters: {
-    type: string  // Changed from string literal 'object' to string to allow more flexibility    properties: Record<string, {
+    type: string  // Changed from string literal 'object' to string to allow more flexibility
+    properties: Record<string, {
       type: string
       description: string
       enum?: string[]
