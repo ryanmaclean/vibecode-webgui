@@ -15,7 +15,7 @@
     "build": "next build",
     "start": "next start",
     "start:dd": "node --require ./src/instrument.ts node_modules/.bin/next start",
-    "lint": "eslint --config .eslintrc.production.cjs src --ext .ts,.tsx --ignore-pattern '*.js'",
+    "lint": "eslint --config .eslintrc.production.cjs src --ext .ts,.tsx",
     "type-check": "tsc --noEmit",
     "test": "tsx node_modules/.bin/jest",
     "test:watch": "jest --watch",
@@ -95,7 +95,6 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "2.0.23",
-    "@browserbasehq/stagehand": "2.4.4",
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-python": "^6.2.1",
     "@datadog/browser-logs": "6.18.1",
