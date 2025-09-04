@@ -6,7 +6,6 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { OpenAIEmbeddings } from '@langchain/openai';
-<<<<<<< Updated upstream
 // Define a concrete type for recommendations
 export interface ModelRecommendation {
   name: string;
@@ -15,9 +14,7 @@ export interface ModelRecommendation {
   suitability: number; // 0-1
 }
 import { FunctionDefinition } from '../services/function-calling';
-=======
 import { SystemMessage, HumanMessage } from '@langchain/core/messages';
->>>>>>> Stashed changes
 
 export interface AIProviderConfig {
   openai?: {
