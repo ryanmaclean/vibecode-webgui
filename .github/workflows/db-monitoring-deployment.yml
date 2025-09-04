@@ -29,6 +29,13 @@ on:
           - staging
           - production
 
+permissions:
+  contents: read
+
+concurrency:
+  group: db-monitoring-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   DD_SITE: "datadoghq.com"
   ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
@@ -36,10 +43,11 @@ env:
 jobs:
   validate-ci-config:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     env:
-      DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
-      DD_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
-      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY || secrets.DATADOG_APP_KEY || '' }}
+      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
     steps:
       - name: Check required secrets
         run: |
@@ -56,8 +64,10 @@ jobs:
 
   validate-database-schema:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ env.POSTGRES_CONNECTION != '' }}
     env:
-      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING }}
+      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
     steps:
       - uses: actions/checkout@v3
       
@@ -108,8 +118,10 @@ jobs:
   validate-vector-index:
     runs-on: ubuntu-latest
     needs: validate-database-schema
+    timeout-minutes: 10
+    if: ${{ env.POSTGRES_CONNECTION != '' }}
     env:
-      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING }}
+      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
     steps:
       - uses: actions/checkout@v3
       
@@ -168,6 +180,7 @@ jobs:
   benchmark-vector-performance:
     runs-on: ubuntu-latest
     needs: validate-vector-index
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v3
       
@@ -193,12 +206,13 @@ jobs:
   verify-monitoring-prerequisites:
     runs-on: ubuntu-latest
     needs: benchmark-vector-performance
+    timeout-minutes: 10
     env:
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-      RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
-      SERVER_NAME: ${{ secrets.AZURE_POSTGRES_SERVER_NAME }}
-      DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
-      DD_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS || '' }}
+      RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP || '' }}
+      SERVER_NAME: ${{ secrets.AZURE_POSTGRES_SERVER_NAME || '' }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY || secrets.DATADOG_APP_KEY || '' }}
     steps:
       - uses: actions/checkout@v3
       
@@ -235,27 +249,31 @@ jobs:
           echo "Azure PostgreSQL server verification completed"
       
       - name: Verify Datadog API access
-        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
+        if: ${{ env.DD_API_KEY != '' }}
         run: |
-          echo "Verifying Datadog API access..."
-          
-          # Install Datadog CLI
-          npm install -g @datadog/datadog-ci
-          
-          # Validate API keys
-          datadog-ci validate --api-key ${{ env.DD_API_KEY }} --app-key ${{ env.DD_APP_KEY }}
-          
-          echo "Datadog API access verified"
+          echo "Verifying Datadog API key via Datadog /validate endpoint..."
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://api.${{ env.DD_SITE }}/api/v1/validate" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${DD_API_KEY}")
+          if [ "$CODE" != "200" ]; then
+            echo "::warning::Datadog API key validation failed with HTTP $CODE"
+            exit 1
+          fi
+          echo "Datadog API key validated"
 
   deploy-monitoring:
     runs-on: ubuntu-latest
     needs: verify-monitoring-prerequisites
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 30
     env:
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-      DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
-      DD_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
-      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING }}
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS || '' }}
+      RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP || '' }}
+      SERVER_NAME: ${{ secrets.AZURE_POSTGRES_SERVER_NAME || '' }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY || secrets.DATADOG_APP_KEY || '' }}
+      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
     steps:
       - uses: actions/checkout@v3
       
@@ -346,6 +364,10 @@ jobs:
             echo "Deploying dashboard: $dashboard_file"
             datadog-ci dashboards push "$dashboard_file" --env $ENVIRONMENT
           done
+        env:
+          DATADOG_API_KEY: ${{ env.DD_API_KEY }}
+          DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
+          DATADOG_SITE: ${{ env.DD_SITE }}
             
       - name: Deploy Datadog monitors
         if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
@@ -354,6 +376,10 @@ jobs:
           
           # Deploy vector database monitors
           datadog-ci monitors push monitoring/alerts/ --env $ENVIRONMENT
+        env:
+          DATADOG_API_KEY: ${{ env.DD_API_KEY }}
+          DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
+          DATADOG_SITE: ${{ env.DD_SITE }}
             
       - name: Set up database monitoring
         if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
@@ -364,6 +390,10 @@ jobs:
           node scripts/setup-datadog-dbm.js \
             --environment $ENVIRONMENT \
             --connection-string "$POSTGRES_CONNECTION"
+        env:
+          DATADOG_API_KEY: ${{ env.DD_API_KEY }}
+          DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
+          DATADOG_SITE: ${{ env.DD_SITE }}
       
       - name: Verify monitoring deployment
         if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
@@ -371,11 +401,16 @@ jobs:
           node scripts/verify-datadog-integration.js \
             --environment $ENVIRONMENT \
             --timeout 300
+        env:
+          DATADOG_API_KEY: ${{ env.DD_API_KEY }}
+          DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
+          DATADOG_SITE: ${{ env.DD_SITE }}
 
   generate-monitoring-report:
     runs-on: ubuntu-latest
     needs: deploy-monitoring
     if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v3
       
@@ -433,6 +468,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-monitoring, generate-monitoring-report]
     if: always()
+    timeout-minutes: 5
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
