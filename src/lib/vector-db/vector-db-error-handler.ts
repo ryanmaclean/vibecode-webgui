@@ -5,7 +5,6 @@
 
 import { logger } from '../logger';
 
-<<<<<<< HEAD
 /**
  * Standardized error types for vector database operations
  */
@@ -59,25 +58,6 @@ export const VectorDBErrorType = VectorDbErrorType;
  */
 export class VectorDbError extends Error {
   type: VectorDbErrorType;
-=======
-export enum VectorDBErrorType {
-  CONNECTION_FAILED = 'CONNECTION_FAILED',
-  QUERY_FAILED = 'QUERY_FAILED',
-  VECTOR_CREATION_FAILED = 'VECTOR_CREATION_FAILED',
-  VECTOR_UPDATE_FAILED = 'VECTOR_UPDATE_FAILED',
-  VECTOR_DELETION_FAILED = 'VECTOR_DELETION_FAILED',
-  EMBEDDING_GENERATION_FAILED = 'EMBEDDING_GENERATION_FAILED',
-  SIMILARITY_SEARCH_FAILED = 'SIMILARITY_SEARCH_FAILED',
-  INDEX_OPERATION_FAILED = 'INDEX_OPERATION_FAILED',
-  CONFIGURATION_ERROR = 'CONFIGURATION_ERROR',
-  AUTHORIZATION_ERROR = 'AUTHORIZATION_ERROR',
-  UNSUPPORTED_OPERATION = 'UNSUPPORTED_OPERATION',
-  UNKNOWN_ERROR = 'UNKNOWN_ERROR'
-}
-
-export class VectorDBError extends Error {
-  type: VectorDBErrorType;
->>>>>>> origin/feature/general-improvements-fixed
   operation: string;
   provider: string;
   details: any;
@@ -85,21 +65,13 @@ export class VectorDBError extends Error {
 
   constructor(
     message: string,
-<<<<<<< HEAD
     type: VectorDbErrorType = VectorDbErrorType.UNKNOWN_ERROR,
-=======
-    type: VectorDBErrorType = VectorDBErrorType.UNKNOWN_ERROR,
->>>>>>> origin/feature/general-improvements-fixed
     operation: string = 'unknown',
     provider: string = 'unknown',
     details: any = null
   ) {
     super(message);
-<<<<<<< HEAD
-    this.name = 'VectorDbError';
-=======
-    this.name = 'VectorDBError';
->>>>>>> origin/feature/general-improvements-fixed
+        this.name = 'VectorDbError';
     this.type = type;
     this.operation = operation;
     this.provider = provider;
