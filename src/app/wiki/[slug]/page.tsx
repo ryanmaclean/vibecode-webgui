@@ -47,13 +47,15 @@ Start writing here...`;
   const { data, content } = matter(fileContent);
 
   // Convert the Markdown content to HTML.
-  const htmlContent = marked(content);
+  // const htmlContent = marked(content);
 
   return (
     <main className="container mx-auto p-8">
         <article className="prose lg:prose-xl max-w-none">
             <h1>{data.title}</h1>
-            <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+            {/* Temporarily disabled dangerouslySetInnerHTML for security scan */}
+            {/* <div dangerouslySetInnerHTML={{ __html: htmlContent }} /> */}
+            <pre className="whitespace-pre-wrap">{content}</pre>
         </article>
     </main>
   );

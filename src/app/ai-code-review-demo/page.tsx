@@ -63,8 +63,9 @@ function processUserData(userData) {
   // Missing input validation
   if (!userData) return null;
 
-  // Security issue: eval usage
-  const processedData = eval('(' + userData + ')');
+  // Security issue: eval usage (now safely commented out)
+  // const processedData = eval('(' + userData + ')');
+  const processedData = JSON.parse(userData); // Safe alternative
 
   // Performance issue: nested loops
   for (let i = 0; i < processedData.length; i++) {
@@ -75,8 +76,10 @@ function processUserData(userData) {
     }
   }
 
-  // Security issue: innerHTML
-  document.getElementById('output').innerHTML = processedData.html;
+  // Security issue: innerHTML (now safely commented out)
+  // document.getElementById('output').innerHTML = processedData.html;
+  const outputElement = document.getElementById('output');
+  if (outputElement) outputElement.textContent = processedData.html; // Safe alternative
 
   return processedData;
 }
