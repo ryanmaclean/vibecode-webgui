@@ -62,9 +62,10 @@ interface WorkspaceActivity {
   userId: string
   userName: string
   timestamp: Date
-  data?: WorkspaceActivityData  onCreateTerminal,
-  onCreateDebugSession
-}: CollaborativeWorkspaceProps) {
+  data?: WorkspaceActivityData
+}
+
+export function CollaborativeWorkspace({
   const [selectedProject, setSelectedProject] = useState<GeneratedProject | null>(initialProject || null)
   const [isGeneratingProject, setIsGeneratingProject] = useState(false)
   const [activeTab, setActiveTab] = useState('templates')

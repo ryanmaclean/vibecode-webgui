@@ -80,17 +80,6 @@ export async function GET(request: NextRequest) {
       
       await serviceFactory.disconnect()
       metricsData = fallbackMetrics
-        error_rate: Math.random() * 0.1,
-        response_time: Math.random() * 1000,
-        active_connections: Math.floor(Math.random() * 100)
-      },
-      business: {
-        user_sessions: Math.floor(Math.random() * 500),
-        api_calls: Math.floor(Math.random() * 2000),
-        database_queries: Math.floor(Math.random() * 5000),
-        cache_hit_rate: Math.random() * 0.9
-      }
->>>>>>> Stashed changes
     }
 
     let filteredMetrics: Record<string, unknown> = {}

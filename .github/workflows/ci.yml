@@ -251,13 +251,25 @@ jobs:
           echo "NEXT_DISABLE_SWC=1" >> .env.local
           echo "NEXT_TELEMETRY_DISABLED=1" >> .env.local
 
+      - name: Configure Datadog Test Optimization
+        if: ${{ secrets.DD_API_KEY != '' }}
+        uses: DataDog/test-visibility-github-action@v2
+        with:
+          languages: js
+          api_key: ${{ secrets.DD_API_KEY }}
+          site: datadoghq.com
+
       - name: Run unit tests
         if: matrix.test-type == 'unit'
         run: NEXT_DISABLE_SWC=1 npm run test:unit
+        env:
+          NODE_OPTIONS: ${{ env.DD_TRACE_PACKAGE && format('-r {0}', env.DD_TRACE_PACKAGE) || '' }}
 
       - name: Run integration tests
         if: matrix.test-type == 'integration'
         run: NEXT_DISABLE_SWC=1 npm run test:integration
+        env:
+          NODE_OPTIONS: ${{ env.DD_TRACE_PACKAGE && format('-r {0}', env.DD_TRACE_PACKAGE) || '' }}
 
       - name: Upload test coverage
         if: matrix.test-type == 'unit'
@@ -306,9 +318,18 @@ jobs:
           NODE_ENV: test
           PORT: 3000
 
+      - name: Configure Datadog Test Optimization
+        if: ${{ secrets.DD_API_KEY != '' }}
+        uses: DataDog/test-visibility-github-action@v2
+        with:
+          languages: js
+          api_key: ${{ secrets.DD_API_KEY }}
+          site: datadoghq.com
+
       - name: Run Playwright E2E tests
         run: npm run test:e2e
         env:
+          NODE_OPTIONS: ${{ env.DD_TRACE_PACKAGE && format('-r {0}', env.DD_TRACE_PACKAGE) || '' }}
           PLAYWRIGHT_BASE_URL: http://localhost:3000
 
       - name: Upload E2E test results
