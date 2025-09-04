@@ -129,7 +129,8 @@ Focus on:
 - Performance considerations
     `);
 
-    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence    const chain = RunnableSequence.from([
+    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+    const chain = RunnableSequence.from([
       prompt,
       this.llm,
       new StringOutputParser(),
@@ -179,7 +180,8 @@ Generate a single, focused test case that:
 Return only the test case code, no explanations.
     `);
 
-    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence    const chain = RunnableSequence.from([
+    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+    const chain = RunnableSequence.from([
       prompt,
       this.llm,
       new StringOutputParser(),
@@ -187,8 +189,10 @@ Return only the test case code, no explanations.
 
     const result = await chain.invoke({
       sourceCode,
-      dataType,
+      testDescription,
+      framework: options.framework,
       language: options.language,
+      testType: options.testType,
     });
 
     return this.parseTestDataResult(result);
@@ -302,16 +306,15 @@ Focus on critical paths, edge cases, and error handling.
     return match ? match[1] : 'Generated Test';
   }
 
-  private parseTestDataResult(result: string): {
-    fixtures: any[];
-    factories: string[];
-    mockData: any;
-  } {
+  private parseTestDataResult(result: string): GeneratedTest {
     // Parse test data generation result
     return {
-      fixtures: [],
-      factories: [],
-      mockData: {},
+      testName: 'Generated Test',
+      testCode: result,
+      description: 'Generated test case',
+      testCategory: 'unit',
+      priority: 'medium',
+      estimatedTime: 5,
     };
   }
 

@@ -18,6 +18,7 @@ import { type GeneratedProject } from '@/lib/templates/generator'
 import { generateFromTemplate } from '@/lib/templates/generator'
 import { GitHubDeploymentWorkflow } from '@/components/deployment/GitHubDeploymentWorkflow'
 import { TeamChat } from '@/components/chat/TeamChat'
+import { CollaborativeChatInterface } from '@/components/chat/CollaborativeChatInterface'
 import {
   UsersIcon,
   ChatBubbleLeftRightIcon,

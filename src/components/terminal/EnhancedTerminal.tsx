@@ -11,7 +11,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
->>>>>>> Stashed changes
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import { ClaudeCliIntegration } from '@/lib/claude-cli-integration'
 import '@xterm/xterm/css/xterm.css'
