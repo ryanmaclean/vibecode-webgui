@@ -52,6 +52,11 @@
 - [ ] **Address Any Remaining Failures** - Fix any new issues that arise
 
 ### 🔧 Dependency Management
+- [x] **Resolve Datadog Version Conflict** - Fixed `@datadog/browser-rum` version mismatch ✅
+- [x] **Create Package Lockfile** - Successfully created package-lock.json with `--legacy-peer-deps` ✅
+- [x] **Fix Security Vulnerability** - Next.js moderate severity vulnerability detected ✅ **FIXED**
+  - [x] Update Next.js from 15.0.0-canary.0 to 15.5.2 to fix security issues
+  - [ ] Test application after Next.js update
 - [ ] **Resolve Dependency Conflicts** - Manual resolution required for all Dependabot PRs
 - [ ] **Create Consolidated Dependency Update** - Merge all compatible updates in one PR
 - [ ] **Test Dependency Updates** - Ensure no breaking changes after updates
