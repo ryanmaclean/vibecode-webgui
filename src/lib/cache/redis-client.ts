@@ -8,9 +8,6 @@
  * Handles caching, session storage, and real-time features
  */
 
-/**
- * Redis/Valkey client with enhanced type safety
- */
 import { Redis } from 'ioredis';
 import { metrics } from '../server-monitoring';
 
@@ -59,12 +56,6 @@ interface RedisConnectionOptions {
 // Valkey configuration based on environment 
 // Note: Using Redis-compatible client libraries (ioredis) to connect to Valkey server
 const getValkeyConfig = () => {
-import { Redis } from 'ioredis';
-import { metrics } from '../server-monitoring';
-
-// Valkey configuration based on environment 
-// Note: Using Redis-compatible client libraries (ioredis) to connect to Valkey server
-const getValkeyConfig = () => {
   const isProduction = process.env.NODE_ENV === 'production';
   
   // Upstash provides Redis-compatible API (acceptable for managed service)
@@ -97,12 +88,12 @@ const getValkeyConfig = () => {
 const config = getValkeyConfig();
 
 // Create Valkey client with optimized settings (using Redis-compatible ioredis client)
-const valkeyClient: Redis | null = null;
+let redisClient: Redis | null = null;
 
 try {
   if (config.type === 'standard') {
     if ('url' in config) {
-      redis = new Redis(config.url, {
+      redisClient = new Redis(config.url, {
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
         maxRetriesPerRequest: 3,
@@ -115,7 +106,7 @@ try {
         connectTimeout: 10000,
       });
     } else {
-      redis = new Redis({
+      redisClient = new Redis({
         host: config.host,
         port: config.port,
         password: config.password,
@@ -132,21 +123,25 @@ try {
     }
 
     // Event listeners for monitoring
-    redisClient.on('connect', () => {      console.log('Redis connected successfully');
+    redisClient.on('connect', () => {
+      console.log('Redis connected successfully');
       metrics.increment('redis.connection.success');
     });
 
-    redisClient.on('error', (error) => {      console.error('Redis connection error:', error);
+    redisClient.on('error', (error) => {
+      console.error('Redis connection error:', error);
       metrics.increment('redis.connection.error');
     });
 
-    redisClient.on('ready', () => {      console.log('Redis client ready');
+    redisClient.on('ready', () => {
+      console.log('Redis client ready');
       metrics.increment('redis.ready');
     });
   }
 } catch (error) {
   console.warn('Redis client initialization failed:', error);
-  redisClient = null;}
+  redisClient = null;
+}
 
 // Cache key generators
 export const CacheKeys = {
@@ -177,6 +172,213 @@ export const CacheTTL = {
 /**
  * Enhanced cache operations with performance monitoring
  */
+export class CacheManager {
+  private redis: any;
+
+  constructor() {
+    this.redis = redisClient;
+  }
+
+  /**
+   * Get value from cache
+   */
+  async get<T>(key: string): Promise<T | null> {
+    if (!this.redis) return null;
+
+    try {
+      const value = await this.redis.get(key);
+      if (value === null) {
+        metrics.increment('cache.miss');
+        return null;
+      }
+      
+      metrics.increment('cache.hit');
+      return JSON.parse(value);
+    } catch (error) {
+      console.error('Cache get error:', error);
+      metrics.increment('cache.error');
+      return null;
+    }
+  }
+
+  /**
+   * Set value in cache with TTL
+   */
+  async set<T>(key: string, value: T, ttl: number = CacheTTL.MEDIUM): Promise<boolean> {
+    if (!this.redis) return false;
+
+    try {
+      const serialized = JSON.stringify(value);
+      await this.redis.setex(key, ttl, serialized);
+      metrics.increment('cache.set');
+      return true;
+    } catch (error) {
+      console.error('Cache set error:', error);
+      metrics.increment('cache.error');
+      return false;
+    }
+  }
+
+  /**
+   * Delete cache entries
+   */
+  async del(...keys: string[]): Promise<number> {
+    if (!this.redis) return 0;
+
+    try {
+      const result = await this.redis.del(...keys);
+      metrics.increment('cache.delete');
+      return result;
+    } catch (error) {
+      console.error('Cache delete error:', error);
+      metrics.increment('cache.error');
+      return 0;
+    }
+  }
+
+  /**
+   * Check if key exists
+   */
+  async exists(key: string): Promise<boolean> {
+    if (!this.redis) return false;
+
+    try {
+      const result = await this.redis.exists(key);
+      return result === 1;
+    } catch (error) {
+      console.error('Cache exists error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get multiple values
+   */
+  async mget<T>(...keys: string[]): Promise<(T | null)[]> {
+    if (!this.redis) return keys.map(() => null);
+
+    try {
+      const values = await this.redis.mget(...keys);
+      return values.map(value => value ? JSON.parse(value) : null);
+    } catch (error) {
+      console.error('Cache mget error:', error);
+      return keys.map(() => null);
+    }
+  }
+
+  /**
+   * Get cache keys matching pattern
+   */
+  async keys(pattern: string): Promise<string[]> {
+    if (!this.redis) return [];
+
+    try {
+      return await this.redis.keys(pattern);
+    } catch (error) {
+      console.error('Cache keys error:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Clear all cache (use with caution)
+   */
+  async clear(): Promise<boolean> {
+    if (!this.redis) return false;
+
+    try {
+      await this.redis.flushdb();
+      metrics.increment('cache.clear');
+      return true;
+    } catch (error) {
+      console.error('Cache clear error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Health check
+   */
+  async healthCheck(): Promise<boolean> {
+    if (!this.redis) return false;
+
+    try {
+      await this.redis.ping();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+}
+
+// Export singleton instance
+export const cache = new CacheManager();
+
+/**
+ * Cache wrapper for functions with automatic key generation
+ */
+export function withCache<T extends any[], R>(
+  fn: (...args: T) => Promise<R>,
+  keyGenerator: (...args: T) => string,
+  ttl: number = CacheTTL.MEDIUM
+) {
+  return async (...args: T): Promise<R> => {
+    const key = keyGenerator(...args);
+    
+    // Try to get from cache first
+    const cached = await cache.get<R>(key);
+    if (cached !== null) {
+      return cached;
+    }
+    
+    // Execute function and cache result
+    const result = await fn(...args);
+    await cache.set(key, result, ttl);
+    
+    return result;
+  };
+}
+
+/**
+ * Cache invalidation patterns
+ */
+export class CacheInvalidation {
+  static async invalidateUser(userId: string) {
+    const patterns = [
+      CacheKeys.user(userId),
+      `workspace:*:user:${userId}`,
+      `project:*:user:${userId}`,
+    ];
+    
+    for (const pattern of patterns) {
+      const keys = await cache.keys(pattern);
+      if (keys.length > 0) {
+        await cache.del(keys);
+      }
+    }
+  }
+
+  static async invalidateWorkspace(workspaceId: string) {
+    const patterns = [
+      CacheKeys.workspace(workspaceId),
+      `project:*:workspace:${workspaceId}`,
+      `vector:search:*:${workspaceId}`,
+    ];
+    
+    for (const pattern of patterns) {
+      const keys = await cache.keys(pattern);
+      if (keys.length > 0) {
+        await cache.del(keys);
+      }
+    }
+  }
+
+  static async invalidateProject(projectId: string) {
+    await cache.del(CacheKeys.project(projectId));
+  }
+}
+
+export default cache;
 export class CacheManager {
   private redis: any;
 
