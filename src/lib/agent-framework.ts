@@ -205,7 +205,7 @@ export class AgentCoordinator {
       }
     })
 
-    // @ts-ignore - Accessing private properties is fine in this context
+    // @ts-expect-error - Accessing private properties is fine in this context
     this.agents.set(codeAgent.id, codeAgent)
     // @ts-expect-error - Accessing private properties is fine in this context
     this.agents.set(docsAgent.id, docsAgent)
