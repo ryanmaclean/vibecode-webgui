@@ -10,8 +10,6 @@ import { RunnableSequence } from '@langchain/core/runnables';
 import { z } from 'zod';
 <<<<<<< Updated upstream
 import { FunctionDefinition } from '../services/function-calling';
-=======
->>>>>>> Stashed changes
 
 export interface CodeGenerationRequest {
   description: string;
@@ -48,8 +46,6 @@ export interface CodeAnalysis {
   bestPractices: string[];
 <<<<<<< Updated upstream
   complexity: 'low' | 'medium' | 'high';
-=======
->>>>>>> Stashed changes
 }
 
 export class NaturalLanguageToCode {
@@ -245,9 +241,7 @@ Focus on creating a clear technical specification that can be used for code gene
       prompt,
 <<<<<<< Updated upstream
       this.llm as any,
-=======
       this.llm,
->>>>>>> Stashed changes
       new StringOutputParser(),
     ]);
 
@@ -311,9 +305,7 @@ Return only the code and explanations, no markdown formatting.
       prompt,
 <<<<<<< Updated upstream
       this.llm as any,
-=======
       this.llm,
->>>>>>> Stashed changes
       new StringOutputParser(),
     ]);
 
@@ -364,9 +356,7 @@ Make tests readable and maintainable.
       prompt,
 <<<<<<< Updated upstream
       this.llm as any,
-=======
       this.llm,
->>>>>>> Stashed changes
       new StringOutputParser(),
     ]);
 
@@ -415,9 +405,7 @@ Follow documentation best practices for the language.
       prompt,
 <<<<<<< Updated upstream
       this.llm as any,
-=======
       this.llm,
->>>>>>> Stashed changes
       new StringOutputParser(),
     ]);
 
@@ -472,8 +460,6 @@ Follow documentation best practices for the language.
       complexity = 'low';
     }
     
-=======
->>>>>>> Stashed changes
     return {
       intent,
       requirements,
@@ -483,8 +469,6 @@ Follow documentation best practices for the language.
       bestPractices,
 <<<<<<< Updated upstream
       complexity
-=======
->>>>>>> Stashed changes
     };
   }
 
@@ -557,9 +541,7 @@ Return only the suggestions, one per line.
       prompt,
 <<<<<<< Updated upstream
       this.llm as any,
-=======
       this.llm,
->>>>>>> Stashed changes
       new StringOutputParser(),
     ]);
 
@@ -607,9 +589,7 @@ Return the refactored code and explanations.
       prompt,
 <<<<<<< Updated upstream
       this.llm as any,
-=======
       this.llm,
->>>>>>> Stashed changes
       new StringOutputParser(),
     ]);
 

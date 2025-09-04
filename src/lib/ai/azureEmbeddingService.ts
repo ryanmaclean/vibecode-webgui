@@ -7,10 +7,8 @@
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { DefaultAzureCredential } from '@azure/identity';
-<<<<<<< HEAD
 import { withVectorConnection } from '../db/vector-connection-pool';
 import { azureEmbeddingMetrics } from '../monitoring/azure-embedding-metrics';
-=======
 import { VectorConnectionPool, VectorConnectionPoolFactory } from '../db/vector-connection-pool';
 import { DatadogIntegration } from '../monitoring/datadog-integration';
 
@@ -44,7 +42,6 @@ interface ApiUsageAlert {
   timestamp: Date;
   message: string;
 }
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
 
 // Interface for embedding generation options
 interface EmbeddingOptions {
@@ -161,9 +158,7 @@ export class AzureEmbeddingService {
     this.useManagedIdentity = useManagedIdentity;
     this.useConnectionPool = useConnectionPool;
     
-<<<<<<< HEAD
     // Initialize vector service for database operations
-=======
     // Initialize monitoring
     this.initializeMonitoring(alertThresholds);
     
@@ -171,7 +166,6 @@ export class AzureEmbeddingService {
     this.datadogIntegration = new DatadogIntegration();
     
     // Create vector service for database operations
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
     this.vectorService = this.createVectorService();
   }
   
@@ -522,13 +516,10 @@ export class AzureEmbeddingService {
    */
   public async generateEmbedding(text: string, options: EmbeddingOptions = {}): Promise<number[]> {
     const startTime = Date.now();
-<<<<<<< HEAD
-=======
     let success = false;
     let errorType: string | undefined;
     let tokens = 0;
     
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
     try {
       // Construct the Azure OpenAI API URL
       const url = `${this.endpoint}/openai/deployments/${this.deploymentName}/embeddings?api-version=${this.apiVersion}`;
@@ -574,7 +565,6 @@ export class AzureEmbeddingService {
       
       // Extract embedding data and usage info
       if (response.data && response.data.data && response.data.data.length > 0) {
-<<<<<<< HEAD
         const embedding = response.data.data[0].embedding;
         
         // Record metrics for the embedding generation
@@ -592,7 +582,6 @@ export class AzureEmbeddingService {
         }
         
         return embedding;
-=======
         success = true;
         tokens = response.data.usage?.total_tokens || this.estimateTokens(text);
         
@@ -619,12 +608,10 @@ export class AzureEmbeddingService {
         });
 
         return response.data.data[0].embedding;
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
       } else {
         throw new Error('No embedding data returned from Azure OpenAI API');
       }
     } catch (error: any) {
-<<<<<<< HEAD
       // Record error metrics
       try {
         azureEmbeddingMetrics.recordError(
@@ -637,7 +624,6 @@ export class AzureEmbeddingService {
         console.warn('Error recording error metrics:', metricError);
       }
       
-=======
       errorType = this.categorizeError(error);
       
       // Record failed API call
@@ -664,7 +650,6 @@ export class AzureEmbeddingService {
         inputLength: text.length
       });
 
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
       console.error('Error generating embedding:', error.message);
       if (error.response) {
         console.error('Azure API response:', error.response.data);
