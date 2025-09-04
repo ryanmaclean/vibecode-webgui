@@ -7,12 +7,9 @@
 import { vectorStore as pgVectorStore } from '../vector-store'
 import { weaviateStore } from './weaviate-client'
 import { mlflowClient } from '../mlflow/mlflow-client'
-<<<<<<< Updated upstream
 import { VectorMetricsCollector } from '../vector-db/VectorMetricsCollector'
 import { vectorQueryCache } from './query-cache'
 import { getMetricsCollector } from '../db/database-metrics'
-=======
->>>>>>> Stashed changes
 
 export interface VectorStoreProvider {
   id: 'pgvector' | 'weaviate'
@@ -76,16 +73,11 @@ export class EnhancedVectorStore {
   private performanceMetrics: Map<string, number[]> = new Map()
   private lastHealthCheck: number = 0
   private healthCheckInterval: number = 300000 // 5 minutes
-<<<<<<< Updated upstream
   private metricsCollector: VectorMetricsCollector
   private dbMetricsCollector = getMetricsCollector()
 
   constructor() {
     this.metricsCollector = new VectorMetricsCollector()
-=======
-
-  constructor() {
->>>>>>> Stashed changes
     this.initializeProviders()
   }
 
@@ -227,11 +219,7 @@ export class EnhancedVectorStore {
   }
 
   /**
-<<<<<<< Updated upstream
    * Enhanced intelligent provider selection with advanced performance analysis
-=======
-   * Intelligent provider selection
->>>>>>> Stashed changes
    */
   private selectProvider(options: UnifiedSearchOptions): 'pgvector' | 'weaviate' {
     if (options.provider && options.provider !== 'auto') {
@@ -242,7 +230,6 @@ export class EnhancedVectorStore {
     const weaviateAvailable = this.providers.get('weaviate')
     const pgvectorAvailable = this.providers.get('pgvector')
 
-<<<<<<< Updated upstream
     // If only one provider is available, use it
     if (!weaviateAvailable && pgvectorAvailable) return 'pgvector'
     if (!pgvectorAvailable && weaviateAvailable) return 'weaviate'
@@ -259,9 +246,6 @@ export class EnhancedVectorStore {
     const weaviateErrors = this.getAvgMetric('weaviate_errors', 0)
 
     // Prefer Weaviate for advanced features (mandatory)
-=======
-    // Prefer Weaviate for advanced features
->>>>>>> Stashed changes
     if (weaviateAvailable && (
       options.searchType === 'hybrid' || 
       options.searchType === 'generative' ||
@@ -270,7 +254,6 @@ export class EnhancedVectorStore {
       return 'weaviate'
     }
 
-<<<<<<< Updated upstream
     // For workspace-specific queries, prefer pgvector (better tenant isolation)
     if (options.workspaceId && pgvectorAvailable) {
       // But only if pgvector performance is reasonable
@@ -362,22 +345,6 @@ export class EnhancedVectorStore {
 
   /**
    * Unified search across providers with intelligent routing and caching
-=======
-    // Prefer pgvector for simple semantic search (faster, more reliable)
-    if (pgvectorAvailable && options.searchType !== 'hybrid' && !options.generativePrompt) {
-      return 'pgvector'
-    }
-
-    // Fallback to any available provider
-    if (weaviateAvailable) return 'weaviate'
-    if (pgvectorAvailable) return 'pgvector'
-
-    throw new Error('No vector store providers available')
-  }
-
-  /**
-   * Unified search across providers with intelligent routing
->>>>>>> Stashed changes
    */
   async search(options: UnifiedSearchOptions): Promise<UnifiedSearchResult[]> {
     const startTime = Date.now()
@@ -385,7 +352,6 @@ export class EnhancedVectorStore {
     let results: UnifiedSearchResult[] = []
 
     try {
-<<<<<<< Updated upstream
       // Check cache first
       const cachedResults = vectorQueryCache.getCachedResults(options.query, options)
       if (cachedResults) {
@@ -394,8 +360,6 @@ export class EnhancedVectorStore {
         return cachedResults
       }
 
-=======
->>>>>>> Stashed changes
       provider = this.selectProvider(options)
 
       if (provider === 'weaviate') {
@@ -404,17 +368,13 @@ export class EnhancedVectorStore {
         results = await this.searchPgVector(options)
       }
 
-<<<<<<< Updated upstream
       // Cache results for future queries
       vectorQueryCache.cacheResults(options.query, options, results, provider)
 
-=======
->>>>>>> Stashed changes
       // Track performance metrics
       const queryTime = Date.now() - startTime
       this.recordMetric(`${provider}_query_time`, queryTime)
       this.recordMetric('overall_query_time', queryTime)
-<<<<<<< Updated upstream
       
       // Record vector search metrics for database monitoring
       this.dbMetricsCollector.recordVectorSearch(provider, queryTime, results.length, false)
@@ -425,8 +385,6 @@ export class EnhancedVectorStore {
       } catch (e) {
         // Metrics collection is optional
       }
-=======
->>>>>>> Stashed changes
 
       // Track with MLflow if available
       try {
@@ -452,23 +410,17 @@ export class EnhancedVectorStore {
       return results
     } catch (error) {
       this.recordMetric('error_rate', 1)
-<<<<<<< Updated upstream
       this.recordMetric(`${provider}_errors`, 1)
       this.dbMetricsCollector.recordVectorError('search')
-=======
->>>>>>> Stashed changes
       
       // Try fallback provider
       const fallbackProvider = provider === 'weaviate' ? 'pgvector' : 'weaviate'
       if (this.providers.get(fallbackProvider)) {
         console.warn(`${provider} search failed, trying fallback to ${fallbackProvider}`)
         
-<<<<<<< Updated upstream
         // Record provider switch for monitoring
         this.dbMetricsCollector.recordProviderSwitch(provider || 'pgvector', fallbackProvider)
         
-=======
->>>>>>> Stashed changes
         try {
           if (fallbackProvider === 'weaviate') {
             results = await this.searchWeaviate(options)
@@ -478,18 +430,12 @@ export class EnhancedVectorStore {
 
           const queryTime = Date.now() - startTime
           this.recordMetric(`${fallbackProvider}_query_time`, queryTime)
-<<<<<<< Updated upstream
           this.dbMetricsCollector.recordVectorSearch(fallbackProvider, queryTime, results.length, false)
           return results
         } catch (fallbackError) {
           console.error('Fallback search also failed:', fallbackError)
           this.recordMetric(`${fallbackProvider}_errors`, 1)
           this.dbMetricsCollector.recordVectorError('search')
-=======
-          return results
-        } catch (fallbackError) {
-          console.error('Fallback search also failed:', fallbackError)
->>>>>>> Stashed changes
         }
       }
 
@@ -553,11 +499,7 @@ export class EnhancedVectorStore {
   }
 
   /**
-<<<<<<< Updated upstream
    * Store documents with intelligent distribution and connection pool optimization
-=======
-   * Store documents with intelligent distribution
->>>>>>> Stashed changes
    */
   async storeDocuments(
     workspaceId: number, 
@@ -575,15 +517,11 @@ export class EnhancedVectorStore {
     pgvector: boolean
     weaviate: boolean
     totalStored: number
-<<<<<<< Updated upstream
     poolMetrics?: any
-=======
->>>>>>> Stashed changes
   }> {
     const results = {
       pgvector: false,
       weaviate: false,
-<<<<<<< Updated upstream
       totalStored: 0,
       poolMetrics: null as any
     }
@@ -625,24 +563,6 @@ export class EnhancedVectorStore {
         console.error('Failed to store in pgvector:', error)
         this.dbMetricsCollector.recordVectorError('store')
         results.poolMetrics = { error: error.message, operation: 'store' } as any
-=======
-      totalStored: 0
-    }
-
-    // Store in PostgreSQL pgvector (primary store)
-    if (this.providers.get('pgvector')) {
-      try {
-        await pgVectorStore.storeChunks(documents[0].fileId, documents.map(doc => ({
-          content: doc.content,
-          startLine: doc.startLine,
-          endLine: doc.endLine,
-          tokens: doc.tokens
-        })))
-        results.pgvector = true
-        results.totalStored += documents.length
-      } catch (error) {
-        console.error('Failed to store in pgvector:', error)
->>>>>>> Stashed changes
       }
     }
 
@@ -666,29 +586,20 @@ export class EnhancedVectorStore {
           }
         }))
 
-<<<<<<< Updated upstream
         const weaviateStartTime = Date.now()
         await weaviateStore.storeDocuments(weaviateDocuments)
         const weaviateDuration = Date.now() - weaviateStartTime
         
-=======
-        await weaviateStore.storeDocuments(weaviateDocuments)
->>>>>>> Stashed changes
         results.weaviate = true
         if (!results.pgvector) {
           results.totalStored += documents.length
         }
-<<<<<<< Updated upstream
         
         // Record Weaviate store metrics
         this.dbMetricsCollector.recordVectorStore(documents.length, 'weaviate', weaviateDuration)
       } catch (error) {
         console.error('Failed to store in Weaviate:', error)
         this.dbMetricsCollector.recordVectorError('store')
-=======
-      } catch (error) {
-        console.error('Failed to store in Weaviate:', error)
->>>>>>> Stashed changes
       }
     }
 
@@ -768,7 +679,6 @@ export class EnhancedVectorStore {
   }
 
   /**
-<<<<<<< Updated upstream
    * Get provider selection insights for monitoring
    */
   getProviderSelectionInsights(): {
@@ -807,8 +717,6 @@ export class EnhancedVectorStore {
   }
 
   /**
-=======
->>>>>>> Stashed changes
    * Format file size
    */
   private formatSize(bytes: number): string {
