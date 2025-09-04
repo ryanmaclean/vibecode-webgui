@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Test script for database metrics
-import { createPrismaWithMetrics, getDatabaseMetricsCollector } from './src/lib/db/db-metrics';
+import { PrismaClient } from '@prisma/client';
+import { createQueryTrackingMiddleware, getDatabaseMetricsCollector } from './src/lib/db/db-metrics';
+import { logger } from './src/lib/logger';
 import dotenv from 'dotenv';
 import fs from 'fs';
 
@@ -20,12 +22,12 @@ async function testDatabaseMetrics() {
   try {
     // Create Prisma client with metrics collection
     console.log('\n🔌 Creating Prisma client with metrics...');
-    const prisma = createPrismaWithMetrics(undefined, {
-      enabled: true,
-      logToConsole: true,
-      slowQueryThreshold: 100, // Lower threshold for testing purposes
-      sampleRate: 1.0
-    });
+    // Create Prisma client with metrics middleware
+    const prisma = new PrismaClient();
+    
+    // Apply query tracking middleware
+    const queryTrackingMiddleware = createQueryTrackingMiddleware();
+    prisma.$use(queryTrackingMiddleware);
     
     // Get metrics collector
     const metricsCollector = getDatabaseMetricsCollector();
@@ -35,19 +37,19 @@ async function testDatabaseMetrics() {
     
     // Simple query
     console.log('   Running simple query...');
-    await prisma.$queryRaw`SELECT 1 as test`;
+    await prisma.$queryRaw`          SELECT 1 as test`;
     
     // Slow query with a deliberate delay
     console.log('   Running slow query with deliberate delay...');
     await prisma.$queryRaw`
-      SELECT pg_sleep(0.2), 
+                SELECT current_timestamp as timestamp, (SELECT pg_sleep(0.2)) as dummy 
              current_timestamp as timestamp
     `;
     
     // Query with an error (this should be tracked in metrics)
     console.log('   Running query with error (expect an error below)...');
     try {
-      await prisma.$queryRaw`SELECT * FROM nonexistent_table`;
+      await prisma.$queryRaw`          SELECT * FROM nonexistent_table`;
     } catch (error) {
       console.log(`   Expected error: ${error.message}`);
     }
@@ -56,9 +58,9 @@ async function testDatabaseMetrics() {
     console.log('   Running batch of queries...');
     for (let i = 0; i < 5; i++) {
       await prisma.$queryRaw`
-        SELECT 
+                  SELECT 
           ${i} as iteration,
-          pg_sleep(${Math.random() * 0.1}) as delay
+          (          SELECT pg_sleep(${Math.random() * 0.1})) as dummy
       `;
     }
     

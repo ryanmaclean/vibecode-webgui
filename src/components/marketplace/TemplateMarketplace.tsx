@@ -103,7 +103,6 @@ export function TemplateMarketplace({ onSelectTemplate, selectedCategory }: Temp
     return num.toString()
   }
 
-<<<<<<< Updated upstream
   const renderStars = (rating: number, size = 4): React.ReactNode[] => {
     const stars: React.ReactNode[] = [];
     const fullStars = Math.floor(rating);
@@ -112,7 +111,8 @@ export function TemplateMarketplace({ onSelectTemplate, selectedCategory }: Temp
       if (i < fullStars) {
         stars.push(
           <StarIconSolid key={i} className={`h-${size} w-${size} text-yellow-400`} />
-        );      } else if (i === fullStars && hasHalfStar) {
+        );
+      } else if (i === fullStars && hasHalfStar) {
         stars.push(
           <div key={i} className="relative">
             <StarIcon className={`h-${size} w-${size} text-gray-300`} />
@@ -126,7 +126,8 @@ export function TemplateMarketplace({ onSelectTemplate, selectedCategory }: Temp
       }
     }
 
-    return stars;  }
+    return stars;
+  }
 
   const TemplateCard = ({ template }: { template: MarketplaceTemplate }) => (
     <div className="bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-lg">

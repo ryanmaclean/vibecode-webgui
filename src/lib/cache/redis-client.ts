@@ -178,11 +178,11 @@ export const CacheTTL = {
  * Enhanced cache operations with performance monitoring
  */
 export class CacheManager {
-<<<<<<< Updated upstream
   private redis: any;
 
   constructor() {
-    this.redis = redisClient;  }
+    this.redis = redisClient;
+  }
 
   /**
    * Get value from cache with metrics
@@ -296,10 +296,7 @@ export class CacheManager {
       
       for (const { key, value, ttl = CacheTTL.MEDIUM } of pairs) {
         const serialized = JSON.stringify(value);
-<<<<<<< Updated upstream
         // @ts-ignore - Type mismatch issue
-=======
->>>>>>> Stashed changes
         pipeline.setex(key, ttl, serialized);
       }
       
