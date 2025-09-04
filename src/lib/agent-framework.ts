@@ -336,7 +336,7 @@ export class AgentWorkflow {
           throw new Error(`No suitable agent found for task: ${task.description}`)
         }
 
-        // @ts-ignore - Accessing private property is fine in this context
+        // @ts-expect-error - Accessing private property is fine in this context
         console.log(`Executing task ${task.id} with agent ${agent.name}`)
         
         const result = await agent.executeTask(task, this.context)

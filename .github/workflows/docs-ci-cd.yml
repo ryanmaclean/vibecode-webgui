@@ -447,14 +447,15 @@ jobs:
     needs: [deploy-production]
     if: always()
     env:
-      DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
+      DD_SITE: datadoghq.com
     steps:
       - name: Notify Datadog
-        if: needs.deploy-production.result == 'success' && env.DD_API_KEY != ''
+        if: ${{ needs.deploy-production.result == 'success' && env.DD_API_KEY != '' }}
         run: |
-          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+          curl -X POST "https://api.${DD_SITE}/api/v1/events" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
+            -H "DD-API-KEY: $DD_API_KEY" \
             -d '{
               "title": "Documentation Deployed",
               "text": "VibeCode documentation successfully deployed to production",
@@ -463,11 +464,11 @@ jobs:
             }'
 
       - name: Notify on failure
-        if: failure() && env.DD_API_KEY != ''
+        if: ${{ failure() && env.DD_API_KEY != '' }}
         run: |
-          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+          curl -X POST "https://api.${DD_SITE}/api/v1/events" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
+            -H "DD-API-KEY: $DD_API_KEY" \
             -d '{
               "title": "Documentation Deployment Failed",
               "text": "VibeCode documentation deployment failed",

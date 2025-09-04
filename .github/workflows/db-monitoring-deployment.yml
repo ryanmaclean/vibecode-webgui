@@ -65,7 +65,6 @@ jobs:
   validate-database-schema:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: ${{ env.POSTGRES_CONNECTION != '' }}
     env:
       POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
     steps:
@@ -81,10 +80,12 @@ jobs:
         run: npm ci
       
       - name: Validate PostgreSQL schema
+        if: ${{ env.POSTGRES_CONNECTION != '' }}
         run: |
           npm run db:validate-schema
           
       - name: Check for pgvector extension
+        if: ${{ env.POSTGRES_CONNECTION != '' }}
         run: |
           node -e "
           const { Pool } = require('pg');
@@ -119,7 +120,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: validate-database-schema
     timeout-minutes: 10
-    if: ${{ env.POSTGRES_CONNECTION != '' }}
     env:
       POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
     steps:
@@ -135,6 +135,7 @@ jobs:
         run: npm ci
       
       - name: Check vector indexes
+        if: ${{ env.POSTGRES_CONNECTION != '' }}
         run: |
           node -e "
           const { Pool } = require('pg');
@@ -286,9 +287,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
           
-      - name: Install Datadog CLI
+      - name: Datadog CLI usage
         if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
-        run: npm install -g @datadog/datadog-ci
+        run: echo "Using npx for @datadog/datadog-ci (no global install)"
       
       - name: Download benchmark results
         uses: actions/download-artifact@v3
@@ -362,7 +363,7 @@ jobs:
           # Deploy all dashboards in the monitoring/dashboards directory
           for dashboard_file in monitoring/dashboards/*.json; do
             echo "Deploying dashboard: $dashboard_file"
-            datadog-ci dashboards push "$dashboard_file" --env $ENVIRONMENT
+            npx --yes @datadog/datadog-ci dashboards push "$dashboard_file" --env $ENVIRONMENT
           done
         env:
           DATADOG_API_KEY: ${{ env.DD_API_KEY }}
@@ -375,7 +376,7 @@ jobs:
           export ENVIRONMENT=${{ env.ENVIRONMENT }}
           
           # Deploy vector database monitors
-          datadog-ci monitors push monitoring/alerts/ --env $ENVIRONMENT
+          npx --yes @datadog/datadog-ci monitors push monitoring/alerts/ --env $ENVIRONMENT
         env:
           DATADOG_API_KEY: ${{ env.DD_API_KEY }}
           DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
