@@ -47,25 +47,20 @@ export function TemplateDeploymentIntegration({
       complexity: template.complexity,
       tags: template.tags,
       language: template.language || [],
-      frameworks: template.frameworks || [],>>>>>>> Stashed changes
+      frameworks: template.frameworks || [],
       setupInstructions: [
         'npm install',
         'npm run dev'
       ],
-<<<<<<< Updated upstream
       documentation: {
-<<<<<<< Updated upstream
-        readme: 'Template documentation',
-        setup: template.documentation?.setup?.join('\n') || 'Setup instructions',
-        deployment: template.documentation?.deployment?.join('\n') || 'Deployment guide'        readme: (template.documentation as any)?.readme || `# ${template.name}\n\n${template.description}`,
+        readme: (template.documentation as any)?.readme || `# ${template.name}\n\n${template.description}`,
         setup: Array.isArray(template.documentation?.setup) 
           ? template.documentation.setup.join('\n') 
           : template.documentation?.setup || 'Setup instructions',
         deployment: Array.isArray(template.documentation?.deployment)
           ? template.documentation.deployment.join('\n')
           : template.documentation?.deployment || 'Deployment guide'
->>>>>>> Stashed changes=======
->>>>>>> Stashed changes
+      },
       },
       createdAt: new Date(),
       estimatedTime: 15,

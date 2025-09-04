@@ -94,31 +94,20 @@ export async function generateFromTemplate(
     language: template.language,
     frameworks: template.frameworks,
     complexity: template.complexity,
-    features: options.features || template.features,  // Use features from options if provided, otherwise from template    files,
+    features: options.features || template.features,
+    files,
     scripts: { ...template.scripts },
     dependencies: { ...template.dependencies },
     devDependencies: template.devDependencies ? { ...template.devDependencies } : undefined,
     envVars,
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    documentation: {
-      readme: `# ${projectName}\n\n${template.description}`,
-      setup: template.documentation.setup.join('\n'),
-      deployment: template.documentation.deployment.join('\n')
-    },
-    createdAt: new Date(),
-    estimatedTime: 30,
-    setupInstructions    setupInstructions,
+    setupInstructions,
     documentation: {
       readme: `# ${projectName}\n\n${template.description}`,
       setup: setupInstructions.join('\n'),
       deployment: 'Follow the deployment instructions in the README'
     },
     createdAt: new Date(),
-    estimatedTime: 30,
-    features: template.features || []
->>>>>>> Stashed changes=======
->>>>>>> Stashed changes
+    estimatedTime: 30
   }
 }
 
