@@ -11,12 +11,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-import { WebglAddon } from '@xterm/addon-webgl'
->>>>>>> Stashed changes
-=======
 >>>>>>> Stashed changes
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import { ClaudeCliIntegration } from '@/lib/claude-cli-integration'
@@ -122,14 +116,7 @@ export default function EnhancedTerminal({
 
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
-    // WebGL addon not available - using canvas renderer
-=======
-    if (enableWebGL) {
-      addons.current.webgl = new WebglAddon()
-      terminal.current.loadAddon(addons.current.webgl)
-    }
->>>>>>> Stashed changes
-=======
+    // WebGL addon not available - using canvas renderer=======
     // WebGL addon not available - using canvas renderer
 >>>>>>> Stashed changes
 

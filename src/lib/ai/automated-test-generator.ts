@@ -129,72 +129,7 @@ Focus on:
 - Performance considerations
     `);
 
-<<<<<<< Updated upstream
-    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
-=======
->>>>>>> Stashed changes
-    const chain = RunnableSequence.from([
-      prompt,
-      this.llm,
-      new StringOutputParser(),
-    ]);
-
-    const result = await chain.invoke({
-      sourceCode,
-      framework: options.framework,
-      language: options.language,
-      testType: options.testType,
-      coverage: options.coverage,
-    });
-
-    // Parse the result to extract structured information
-    const analysis = this.parseAnalysisResult(result);
-
-    return {
-      analysis: result,
-      suggestedTests: analysis.suggestedTests,
-      complexityScore: analysis.complexityScore,
-      testabilityScore: analysis.testabilityScore,
-    };
-  }
-
-  /**
-   * Generate comprehensive test suite
-   */
-  async generateTestSuite(
-    sourceCode: string,
-    options: TestGenerationOptions
-  ): Promise<TestSuite> {
-    const prompt = PromptTemplate.fromTemplate(`
-Generate a comprehensive test suite for the following code.
-
-Code:
-{sourceCode}
-
-Requirements:
-- Framework: {framework}
-- Language: {language}
-- Test Type: {testType}
-- Coverage: {coverage}
-- Include Mocks: {includeMocks}
-- Include Edge Cases: {includeEdgeCases}
-
-Generate:
-1. Test setup and teardown code
-2. Mock definitions if needed
-3. Individual test cases with descriptions
-4. Edge case testing
-5. Error scenario testing
-6. Performance testing if applicable
-
-Format the output as structured test code that can be directly executed.
-    `);
-
-<<<<<<< Updated upstream
-    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
-=======
->>>>>>> Stashed changes
-    const chain = RunnableSequence.from([
+    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence    const chain = RunnableSequence.from([
       prompt,
       this.llm,
       new StringOutputParser(),
@@ -244,69 +179,7 @@ Generate a single, focused test case that:
 Return only the test case code, no explanations.
     `);
 
-<<<<<<< Updated upstream
-    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
-=======
->>>>>>> Stashed changes
-    const chain = RunnableSequence.from([
-      prompt,
-      this.llm,
-      new StringOutputParser(),
-    ]);
-
-    const testCode = await chain.invoke({
-      sourceCode,
-      testDescription,
-      framework: options.framework,
-      language: options.language,
-      testType: options.testType,
-    });
-
-    return {
-      testName: this.extractTestName(testCode),
-      testCode,
-      description: testDescription,
-      testCategory: options.testType === 'all' ? 'unit' : options.testType,
-      priority: 'medium',
-      estimatedTime: 5, // Default 5 minutes
-    };
-  }
-
-  /**
-   * Generate test data and fixtures
-   */
-  async generateTestData(
-    sourceCode: string,
-    dataType: string,
-    options: TestGenerationOptions
-  ): Promise<{
-    fixtures: any[];
-    factories: string[];
-    mockData: any;
-  }> {
-    const prompt = PromptTemplate.fromTemplate(`
-Generate test data and fixtures for the following code.
-
-Code:
-{sourceCode}
-
-Data Type: {dataType}
-Language: {language}
-
-Generate:
-1. Sample data fixtures
-2. Factory functions for creating test data
-3. Mock data structures
-4. Edge case data examples
-
-Ensure the data is realistic and covers various scenarios.
-    `);
-
-<<<<<<< Updated upstream
-    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
-=======
->>>>>>> Stashed changes
-    const chain = RunnableSequence.from([
+    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence    const chain = RunnableSequence.from([
       prompt,
       this.llm,
       new StringOutputParser(),

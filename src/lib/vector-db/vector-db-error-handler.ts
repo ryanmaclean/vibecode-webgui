@@ -128,7 +128,6 @@ export class VectorDbError extends Error {
   }
 }
 
-<<<<<<< HEAD
 // Legacy alias for backward compatibility
 export const VectorDBError = VectorDbError;
 
@@ -221,27 +220,10 @@ export function getErrorType(error: any): VectorDbErrorType {
 /**
  * Legacy function-based error handler
  * @deprecated Use VectorDbErrorHandler class instead
- */
-=======
->>>>>>> origin/feature/general-improvements-fixed
-export const handleVectorDBError = (
-  error: any,
-  operation: string,
-  provider: string
-<<<<<<< HEAD
-): VectorDbError => {
-  // If already a VectorDbError, return it
-  if (error instanceof VectorDbError) {
-=======
-): VectorDBError => {
-  // If already a VectorDBError, return it
-  if (error instanceof VectorDBError) {
->>>>>>> origin/feature/general-improvements-fixed
-    return error;
+ */    return error;
   }
 
   // Map common database errors to appropriate types
-<<<<<<< HEAD
   const errorType = getErrorType(error);
   const errorMessage = error.message || 'Unknown vector database error';
   const errorDetails: Record<string, any> = {};
@@ -252,57 +234,12 @@ export const handleVectorDBError = (
   if (error.sqlMessage) errorDetails.sqlMessage = error.sqlMessage;
   if (error.stack) errorDetails.stack = error.stack;
 
-  return new VectorDbError(
-=======
-  let errorType = VectorDBErrorType.UNKNOWN_ERROR;
-  let errorMessage = error.message || 'Unknown vector database error';
-  let errorDetails = {};
-
-  // Connection errors
-  if (
-    error.code === 'ECONNREFUSED' ||
-    error.code === 'ETIMEDOUT' ||
-    error.name === 'ConnectionError' ||
-    errorMessage.includes('connect') ||
-    errorMessage.includes('connection')
-  ) {
-    errorType = VectorDBErrorType.CONNECTION_FAILED;
-  }
-  // Authentication errors
-  else if (
-    error.code === 'EAUTH' ||
-    error.code === 401 ||
-    error.code === 403 ||
-    errorMessage.includes('auth') ||
-    errorMessage.includes('credentials') ||
-    errorMessage.includes('permission')
-  ) {
-    errorType = VectorDBErrorType.AUTHORIZATION_ERROR;
-  }
-  // Query errors
-  else if (
-    error.code === 'EQUERY' ||
-    errorMessage.includes('query') ||
-    errorMessage.includes('SQL')
-  ) {
-    errorType = VectorDBErrorType.QUERY_FAILED;
-  }
-
-  // Extract useful information from the error
-  if (error.code) errorDetails = { ...errorDetails, code: error.code };
-  if (error.errno) errorDetails = { ...errorDetails, errno: error.errno };
-  if (error.sqlMessage) errorDetails = { ...errorDetails, sqlMessage: error.sqlMessage };
-  if (error.stack) errorDetails = { ...errorDetails, stack: error.stack };
-
-  return new VectorDBError(
->>>>>>> origin/feature/general-improvements-fixed
-    errorMessage,
+  return new VectorDbError(    errorMessage,
     errorType,
     operation,
     provider,
     errorDetails
   );
-<<<<<<< HEAD
 };
 
 /**
@@ -424,6 +361,3 @@ export class VectorDbErrorHandler {
     );
   }
 }
-=======
-};
->>>>>>> origin/feature/general-improvements-fixed
