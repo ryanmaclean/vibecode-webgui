@@ -90,7 +90,6 @@ export async function GET(request: NextRequest) {
         database_queries: Math.floor(Math.random() * 5000),
         cache_hit_rate: Math.random() * 0.9
       }
->>>>>>> Stashed changes
     }
 
     let filteredMetrics: Record<string, unknown> = {}

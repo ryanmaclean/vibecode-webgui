@@ -48,7 +48,6 @@ export const prisma = prismaClient
 
 // Note: Prisma middleware for monitoring is disabled to avoid compatibility issues
 // Monitoring can be added at the application level if needed
-=======
 
 if (isBuilding) {
   // Create a mock Prisma client for build time
@@ -140,7 +139,6 @@ if (!isBuilding && prisma.$use) {
     }
   })
 }
->>>>>>> Stashed changes
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 

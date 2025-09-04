@@ -270,7 +270,6 @@ export class IntegrationTesting {
       });
 
       const response = await this.llm.invoke(formattedPrompt);
-=======
       const response = await this.llm.invoke(
         prompt.format({
           systemDescription,
@@ -278,7 +277,6 @@ export class IntegrationTesting {
           endpoints: endpoints?.join(', ') || 'N/A',
         })
       );
->>>>>>> Stashed changes
 
       // Parse AI response and create test suite
       const testSuite = this.parseTestSuiteResponse(response.content as string, systemDescription);

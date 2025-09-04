@@ -565,7 +565,6 @@ export const EnhancedChatInterface = ({
                 >
                   <Send className="w-4 h-4" />
                 </Button>
-=======
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -596,7 +595,6 @@ export const EnhancedChatInterface = ({
                 <TooltipContent>
                   <p>Send message</p>
                 </TooltipContent>
->>>>>>> Stashed changes
               </Tooltip>
             </div>
           </div>
