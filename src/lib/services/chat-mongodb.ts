@@ -1,9 +1,4 @@
-<<<<<<< Updated upstream
-import { Collection } from 'mongodb'
-=======
-import { Collection, ObjectId } from 'mongodb'
->>>>>>> Stashed changes
-import { v4 as uuidv4 } from 'uuid'
+import { Collection } from 'mongodb'import { v4 as uuidv4 } from 'uuid'
 import { getDatabase } from '../mongodb'
 import { Conversation, Message, ChatSession, Assistant } from '../models/chat'
 import { logger } from '../monitoring'
@@ -314,12 +309,7 @@ export class MongoDBChatService {
   ): Promise<Conversation[]> {
     const conversations = await this.getConversationsCollection()
     
-<<<<<<< Updated upstream
-    const searchCriteria: Record<string, unknown> = {
-=======
-    const searchCriteria: any = {
->>>>>>> Stashed changes
-      userId,
+    const searchCriteria: Record<string, unknown> = {      userId,
       $text: { $search: query }
     }
     
@@ -342,12 +332,7 @@ export class MongoDBChatService {
   }> {
     const conversations = await this.getConversationsCollection()
     
-<<<<<<< Updated upstream
-    const matchCriteria: Record<string, unknown> = { userId }
-=======
-    const matchCriteria: any = { userId }
->>>>>>> Stashed changes
-    if (workspaceId) {
+    const matchCriteria: Record<string, unknown> = { userId }    if (workspaceId) {
       matchCriteria.workspaceId = workspaceId
     }
 
@@ -374,12 +359,7 @@ export class MongoDBChatService {
       }
     ]).toArray()
 
-<<<<<<< Updated upstream
-    return (stats[0] as ChatStats) || {
-=======
-    return stats[0] || {
->>>>>>> Stashed changes
-      totalConversations: 0,
+    return (stats[0] as ChatStats) || {      totalConversations: 0,
       totalMessages: 0,
       averageMessagesPerConversation: 0,
       modelsUsed: []

@@ -8,49 +8,7 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { z } from 'zod';
-<<<<<<< Updated upstream
-import { FunctionDefinition } from '../services/function-calling';
-=======
->>>>>>> Stashed changes
-
-export interface CodeGenerationRequest {
-  description: string;
-  language: string;
-  framework?: string;
-  targetFile?: string;
-  includeTests?: boolean;
-  includeDocumentation?: boolean;
-  style?: 'minimal' | 'production' | 'enterprise';
-  complexity?: 'simple' | 'moderate' | 'complex';
-}
-
-export interface GeneratedCode {
-  code: string;
-  language: string;
-  framework?: string;
-  description: string;
-  explanation: string;
-  dependencies: string[];
-  imports: string[];
-  usage: string;
-  tests?: string;
-  documentation?: string;
-  estimatedComplexity: 'low' | 'medium' | 'high';
-  estimatedTime: number; // in minutes
-}
-
-export interface CodeAnalysis {
-  intent: string;
-  requirements: string[];
-  technicalApproach: string;
-  potentialChallenges: string[];
-  alternatives: string[];
-  bestPractices: string[];
-<<<<<<< Updated upstream
-  complexity: 'low' | 'medium' | 'high';
-=======
->>>>>>> Stashed changes
-}
+import { FunctionDefinition } from '../services/function-calling';}
 
 export class NaturalLanguageToCode {
   private llm: ChatOpenAI;
@@ -243,12 +201,7 @@ Focus on creating a clear technical specification that can be used for code gene
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< Updated upstream
-      this.llm as any,
-=======
-      this.llm,
->>>>>>> Stashed changes
-      new StringOutputParser(),
+      this.llm as any,      new StringOutputParser(),
     ]);
 
     const result = await chain.invoke({
@@ -309,12 +262,7 @@ Return only the code and explanations, no markdown formatting.
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< Updated upstream
-      this.llm as any,
-=======
-      this.llm,
->>>>>>> Stashed changes
-      new StringOutputParser(),
+      this.llm as any,      new StringOutputParser(),
     ]);
 
     const result = await chain.invoke({
@@ -362,12 +310,7 @@ Make tests readable and maintainable.
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< Updated upstream
-      this.llm as any,
-=======
-      this.llm,
->>>>>>> Stashed changes
-      new StringOutputParser(),
+      this.llm as any,      new StringOutputParser(),
     ]);
 
     const result = await chain.invoke({
@@ -413,12 +356,7 @@ Follow documentation best practices for the language.
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< Updated upstream
-      this.llm as any,
-=======
-      this.llm,
->>>>>>> Stashed changes
-      new StringOutputParser(),
+      this.llm as any,      new StringOutputParser(),
     ]);
 
     const result = await chain.invoke({
@@ -461,7 +399,6 @@ Follow documentation best practices for the language.
     const alternatives = lines.filter(line => line.includes('alternative') || line.includes('option')).map(line => line.trim());
     const bestPractices = lines.filter(line => line.includes('practice') || line.includes('pattern')).map(line => line.trim());
     
-<<<<<<< Updated upstream
     // Determine complexity based on content
     let complexity: 'low' | 'medium' | 'high' = 'medium'; // Default to medium
     
@@ -471,21 +408,7 @@ Follow documentation best practices for the language.
     } else if (potentialChallenges.length <= 1 && requirements.length <= 2) {
       complexity = 'low';
     }
-    
-=======
->>>>>>> Stashed changes
-    return {
-      intent,
-      requirements,
-      technicalApproach,
-      potentialChallenges,
-      alternatives,
-      bestPractices,
-<<<<<<< Updated upstream
-      complexity
-=======
->>>>>>> Stashed changes
-    };
+        };
   }
 
   /**
@@ -555,12 +478,7 @@ Return only the suggestions, one per line.
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< Updated upstream
-      this.llm as any,
-=======
-      this.llm,
->>>>>>> Stashed changes
-      new StringOutputParser(),
+      this.llm as any,      new StringOutputParser(),
     ]);
 
     const result = await chain.invoke({
@@ -605,12 +523,7 @@ Return the refactored code and explanations.
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< Updated upstream
-      this.llm as any,
-=======
-      this.llm,
->>>>>>> Stashed changes
-      new StringOutputParser(),
+      this.llm as any,      new StringOutputParser(),
     ]);
 
     const result = await chain.invoke({
