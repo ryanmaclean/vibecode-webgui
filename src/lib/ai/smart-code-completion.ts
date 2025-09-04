@@ -345,7 +345,8 @@ Include:
 Return only the function signatures, one per line.
     `);
 
-    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence    const chain = RunnableSequence.from([
+    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+    const chain = RunnableSequence.from([
       prompt,
       this.llm,
       new StringOutputParser(),
