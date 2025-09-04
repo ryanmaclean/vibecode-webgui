@@ -8,7 +8,7 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { z } from 'zod';
-import { FunctionDefinition } from '../services/function-calling';}
+import { FunctionDefinition } from '../services/function-calling';
 
 export class NaturalLanguageToCode {
   private llm: ChatOpenAI;
@@ -408,7 +408,6 @@ Follow documentation best practices for the language.
     } else if (potentialChallenges.length <= 1 && requirements.length <= 2) {
       complexity = 'low';
     }
-        };
   }
 
   /**
@@ -478,7 +477,8 @@ Return only the suggestions, one per line.
 
     const chain = RunnableSequence.from([
       prompt,
-      this.llm as any,      new StringOutputParser(),
+      this.llm as any,
+      new StringOutputParser(),
     ]);
 
     const result = await chain.invoke({
