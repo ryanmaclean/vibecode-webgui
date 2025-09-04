@@ -523,7 +523,6 @@ export class AzureEmbeddingService {
       
       // Extract embedding data and usage info
       if (response.data && response.data.data && response.data.data.length > 0) {
-<<<<<<< HEAD
         const embedding = response.data.data[0].embedding;
         
         // Record metrics for the embedding generation

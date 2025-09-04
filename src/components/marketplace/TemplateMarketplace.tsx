@@ -14,9 +14,7 @@ import {
   EyeIcon,
   CodeBracketIcon,
   UserIcon,
-=======
   TagIcon,
->>>>>>> Stashed changes
   FunnelIcon,
   SparklesIcon,
   RocketLaunchIcon
