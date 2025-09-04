@@ -474,9 +474,9 @@ export class AzureEmbeddingService {
    */
   public async generateEmbedding(text: string, options: EmbeddingOptions = {}): Promise<number[]> {
     const startTime = Date.now();
-    let success = false;
-    let errorType: string | undefined;
-    let tokens = 0;
+    const success = false;
+    const errorType: string | undefined = undefined;
+    const tokens = 0;
     
     try {
       // Construct the Azure OpenAI API URL
@@ -490,7 +490,7 @@ export class AzureEmbeddingService {
       };
       
       // Set up headers based on authentication method
-      let headers: Record<string, string> = {
+      const headers: Record<string, string> = {
         'Content-Type': 'application/json'
       };
       
