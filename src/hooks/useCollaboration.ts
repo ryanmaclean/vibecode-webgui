@@ -55,7 +55,6 @@ interface CursorPosition {
   timestamp: Date
 }
 
->>>>>>> Stashed changes
 export function useCollaboration({
   workspaceId,
   conversationId,
@@ -70,13 +69,8 @@ export function useCollaboration({
   const [cursors, setCursors] = useState<CursorPosition[]>([])
   const [connectionError, setConnectionError] = useState<string | null>(null)
 
-<<<<<<< Updated upstream
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const cursorThrottleRef = useRef<NodeJS.Timeout | null>(null)
-=======
-  const typingTimeoutRef = useRef<NodeJS.Timeout>()
-  const cursorThrottleRef = useRef<NodeJS.Timeout>()
->>>>>>> Stashed changes
 
   // Initialize socket connection
   useEffect(() => {
@@ -186,23 +180,14 @@ export function useCollaboration({
     socket.emit('typing_start', { conversationId })
 
     // Auto-stop typing after 3 seconds of inactivity
-<<<<<<< Updated upstream
     if (typingTimeoutRef.current !== null) {
       clearTimeout(typingTimeoutRef.current)
       typingTimeoutRef.current = null
-=======
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current)
->>>>>>> Stashed changes
     }
     
     typingTimeoutRef.current = setTimeout(() => {
       stopTyping(conversationId)
-<<<<<<< Updated upstream
     }, 3000) as NodeJS.Timeout
-=======
-    }, 3000)
->>>>>>> Stashed changes
   }, [socket, isConnected])
 
   const stopTyping = useCallback((conversationId: string) => {
@@ -210,14 +195,9 @@ export function useCollaboration({
 
     socket.emit('typing_stop', { conversationId })
     
-<<<<<<< Updated upstream
     if (typingTimeoutRef.current !== null) {
       clearTimeout(typingTimeoutRef.current)
       typingTimeoutRef.current = null
-=======
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current)
->>>>>>> Stashed changes
     }
   }, [socket, isConnected])
 
@@ -231,13 +211,8 @@ export function useCollaboration({
     socket.emit('cursor_move', { x, y, messageId })
     
     cursorThrottleRef.current = setTimeout(() => {
-<<<<<<< Updated upstream
       cursorThrottleRef.current = null
     }, 100) as NodeJS.Timeout // 10 FPS max
-=======
-      cursorThrottleRef.current = undefined
-    }, 100) // 10 FPS max
->>>>>>> Stashed changes
   }, [socket, isConnected])
 
   // Get user info by ID
@@ -267,11 +242,7 @@ export function useCollaboration({
       setCursors(current => 
         current.filter(c => now.getTime() - c.timestamp.getTime() < 5000)
       )
-<<<<<<< Updated upstream
     }, 5000) as NodeJS.Timeout
-=======
-    }, 5000)
->>>>>>> Stashed changes
 
     return () => clearInterval(cleanup)
   }, [])

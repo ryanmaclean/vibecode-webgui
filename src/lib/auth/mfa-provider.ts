@@ -67,11 +67,7 @@ const verificationSchema = z.object({
 export class MFAProvider {
   private devices: Map<string, MFADevice> = new Map()
   private challenges: Map<string, MFAChallenge> = new Map()
-<<<<<<< Updated upstream
   private backupCodes: Map<string, string[]> = new Map() // userId -> codes
-=======
-  private backupCodes: Map<string, Set<string>> = new Map() // userId -> codes
->>>>>>> Stashed changes
   private failedAttempts: Map<string, { count: number, lockedUntil?: Date }> = new Map()
 
   constructor() {
@@ -99,11 +95,7 @@ export class MFAProvider {
 
     // Generate backup codes
     const backupCodes = this.generateBackupCodes()
-<<<<<<< Updated upstream
     this.backupCodes.set(userId, backupCodes)
-=======
-    this.backupCodes.set(userId, new Set(backupCodes))
->>>>>>> Stashed changes
 
     // Store device (inactive until verified)
     const device: MFADevice = {
@@ -330,11 +322,7 @@ export class MFAProvider {
       const isValidBackup = this.verifyBackupCode(challenge.userId, backupCode)
       if (isValidBackup) {
         this.challenges.delete(challengeId)
-<<<<<<< Updated upstream
         const remainingBackupCodes = this.backupCodes.get(challenge.userId)?.length || 0
-=======
-        const remainingBackupCodes = this.backupCodes.get(challenge.userId)?.size || 0
->>>>>>> Stashed changes
         
         console.log(`✅ MFA verification successful with backup code for user ${challenge.userId}`)
         
@@ -423,11 +411,7 @@ export class MFAProvider {
    */
   generateNewBackupCodes(userId: string): string[] {
     const backupCodes = this.generateBackupCodes()
-<<<<<<< Updated upstream
     this.backupCodes.set(userId, backupCodes)
-=======
-    this.backupCodes.set(userId, new Set(backupCodes))
->>>>>>> Stashed changes
     
     console.log(`🔑 New backup codes generated for user ${userId}`)
     return backupCodes
@@ -499,7 +483,6 @@ export class MFAProvider {
 
   private verifyBackupCode(userId: string, code: string): boolean {
     const userCodes = this.backupCodes.get(userId)
-<<<<<<< Updated upstream
     if (!userCodes || !userCodes.includes(code)) {
       return false
     }
@@ -507,18 +490,10 @@ export class MFAProvider {
     // Remove the used code from the array
     const index = userCodes.indexOf(code)
     userCodes.splice(index, 1)
-=======
-    if (!userCodes || !userCodes.has(code)) {
-      return false
-    }
-
-    userCodes.delete(code) // Use once
->>>>>>> Stashed changes
     return true
   }
 
   private generateBackupCodes(): string[] {
-<<<<<<< Updated upstream
     const codes: string[] = [];
     for (let i = 0; i < 10; i++) {
       codes.push(Math.random().toString(36).substring(2, 10).toUpperCase());
@@ -536,25 +511,6 @@ export class MFAProvider {
 
   private generateSetupToken(): string {
     return `setup_${Date.now()}_${Math.random().toString(36).slice(2, 18)}`
-=======
-    const codes = []
-    for (let i = 0; i < 10; i++) {
-      codes.push(Math.random().toString(36).substring(2, 10).toUpperCase())
-    }
-    return codes
-  }
-
-  private generateDeviceId(): string {
-    return `mfa_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  }
-
-  private generateChallengeId(): string {
-    return `challenge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  }
-
-  private generateSetupToken(): string {
-    return `setup_${Date.now()}_${Math.random().toString(36).substr(2, 16)}`
->>>>>>> Stashed changes
   }
 
   private generateSMSCode(): string {

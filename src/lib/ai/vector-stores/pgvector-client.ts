@@ -3,11 +3,7 @@
  * Integrates with existing PostgreSQL infrastructure using pgvector extension
  */
 
-<<<<<<< Updated upstream
 import { Pool } from 'pg';
-=======
-import { Pool, PoolClient } from 'pg';
->>>>>>> Stashed changes
 
 export interface PGVectorConfig {
   host: string;
@@ -48,15 +44,8 @@ export interface PGVectorCollectionSchema {
 
 export class PGVectorClient {
   private pool: Pool;
-<<<<<<< Updated upstream
 
   constructor(config: PGVectorConfig) {
-=======
-  private config: PGVectorConfig;
-
-  constructor(config: PGVectorConfig) {
-    this.config = config;
->>>>>>> Stashed changes
     this.pool = new Pool(config);
   }
 
@@ -318,11 +307,7 @@ export class PGVectorClient {
       `;
 
       const result = await client.query(query, values);
-<<<<<<< Updated upstream
       return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;
-=======
-      return result.rowCount > 0;
->>>>>>> Stashed changes
     } finally {
       client.release();
     }
@@ -339,11 +324,7 @@ export class PGVectorClient {
         WHERE id = $1
       `, [id]);
 
-<<<<<<< Updated upstream
       return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;
-=======
-      return result.rowCount > 0;
->>>>>>> Stashed changes
     } finally {
       client.release();
     }
@@ -360,11 +341,7 @@ export class PGVectorClient {
         WHERE name = $1
       `, [name]);
 
-<<<<<<< Updated upstream
       return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;
-=======
-      return result.rowCount > 0;
->>>>>>> Stashed changes
     } finally {
       client.release();
     }
