@@ -1,11 +1,11 @@
 import { MultiAgentWorkflow, WorkflowStep, WorkflowResult } from './agents/multi-agent-workflow';
 import { PGVectorClient, COLLECTION_SCHEMAS } from './vector-stores/pgvector-client';
 import { OllamaClient, createOllamaClient, OLLAMA_MODELS } from './local/ollama-client';
-import { ChatOpenAI } from '@langchain/openai';
-import { PromptTemplate } from '@langchain/core/prompts';
-import { RunnableSequence } from '@langchain/core/runnables';
-import { StringOutputParser } from '@langchain/core/output_parsers';
-import { OpenAIEmbeddings } from '@langchain/openai';
+// import { ChatOpenAI } from '@langchain/openai';
+// import { PromptTemplate } from '@langchain/core/prompts';
+// import { RunnableSequence } from '@langchain/core/runnables';
+// import { StringOutputParser } from '@langchain/core/output_parsers';
+// import { OpenAIEmbeddings } from '@langchain/openai';
 // Define a concrete type for recommendations
 export interface ModelRecommendation {
   name: string;
@@ -14,7 +14,7 @@ export interface ModelRecommendation {
   suitability: number; // 0-1
 }
 import { FunctionDefinition } from '../services/function-calling';
-import { SystemMessage, HumanMessage } from '@langchain/core/messages';
+// import { SystemMessage, HumanMessage } from '@langchain/core/messages';
 
 export interface AIProviderConfig {
   openai?: {
