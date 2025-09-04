@@ -294,7 +294,15 @@ export class EmbeddingServiceFactory {
       const prisma = new PrismaClient();
       
       // Create the embedding service
-      const service = EmbeddingServiceFactory.createEmbeddingService(prisma);
+      const factory = new EmbeddingServiceFactory(prisma);
+      const service = factory.createEmbeddingService({
+        provider: EmbeddingProvider.AZURE,
+        apiKey: process.env.AZURE_OPENAI_API_KEY,
+        endpoint: process.env.AZURE_OPENAI_ENDPOINT,
+        deploymentName: process.env.AZURE_OPENAI_DEPLOYMENT_NAME,
+        apiVersion: process.env.AZURE_OPENAI_API_VERSION || '2023-05-15',
+        useManagedIdentity: process.env.USE_AZURE_MANAGED_IDENTITY === 'true'
+      });
       
       // Return the service and a release function
       return {
