@@ -61,7 +61,6 @@ export function TemplateDeploymentIntegration({
           ? template.documentation.deployment.join('\n')
           : template.documentation?.deployment || 'Deployment guide'
       },
-      },
       createdAt: new Date(),
       estimatedTime: 15,
       features: [
@@ -85,7 +84,8 @@ export function TemplateDeploymentIntegration({
   }
 
   const renderStars = (rating: number, size = 4) => {
-    const stars: React.ReactNode[] = []    const fullStars = Math.floor(rating)
+    const stars: React.ReactNode[] = []
+    const fullStars = Math.floor(rating)
     const hasHalfStar = rating % 1 >= 0.5
 
     for (let i = 0; i < 5; i++) {

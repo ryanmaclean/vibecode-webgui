@@ -178,7 +178,6 @@ export function useCollaboration({
       clearTimeout(typingTimeoutRef.current)
       typingTimeoutRef.current = null
     }
-    }
   }, [socket, isConnected])
 
   // Cursor sharing
