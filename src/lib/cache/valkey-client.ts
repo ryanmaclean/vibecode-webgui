@@ -55,7 +55,7 @@ let valkeyClient: any = null;
 try {
   if (config.type === 'standard') {
     if ('url' in config) {
-      // @ts-ignore - ioredis constructor typing issue
+      // @ts-expect-error - ioredis constructor typing issue
       valkeyClient = new Redis({
         host: config.host,
         port: config.port,
