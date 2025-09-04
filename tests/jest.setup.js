@@ -72,6 +72,11 @@ if (typeof window.MediaRecorder === 'undefined') {
   });
 }
 
+// Mock URL.createObjectURL for file handling tests
+if (typeof URL.createObjectURL === 'undefined') {
+  URL.createObjectURL = jest.fn(() => 'mock-blob-url');
+}
+
 // Mock ResizeObserver and IntersectionObserver for layout-dependent components
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
