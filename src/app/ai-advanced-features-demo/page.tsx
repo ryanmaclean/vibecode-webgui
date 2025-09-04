@@ -60,7 +60,9 @@ function findMax(arr: number[]): number {
 }
 
 function processUserInput(input: string) {
-  document.getElementById('output').innerHTML = input;
+  // Security fix: use textContent instead of innerHTML
+  const outputElement = document.getElementById('output');
+  if (outputElement) outputElement.textContent = input;
   return input;
 }`);
 
