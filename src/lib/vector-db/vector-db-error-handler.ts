@@ -220,7 +220,16 @@ export function getErrorType(error: any): VectorDbErrorType {
 /**
  * Legacy function-based error handler
  * @deprecated Use VectorDbErrorHandler class instead
- */    return error;
+ */
+export function handleVectorDbError(
+  error: any,
+  operation: string,
+  provider: string,
+  shouldRetry: boolean = false
+): VectorDbError {
+  // If it's already a VectorDbError, return it
+  if (error instanceof VectorDbError) {
+    return error;
   }
 
   // Map common database errors to appropriate types
@@ -234,13 +243,14 @@ export function getErrorType(error: any): VectorDbErrorType {
   if (error.sqlMessage) errorDetails.sqlMessage = error.sqlMessage;
   if (error.stack) errorDetails.stack = error.stack;
 
-  return new VectorDbError(    errorMessage,
+  return new VectorDbError(
+    errorMessage,
     errorType,
     operation,
     provider,
     errorDetails
   );
-};
+}
 
 /**
  * Error handler class for vector database operations

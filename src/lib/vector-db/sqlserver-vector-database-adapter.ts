@@ -6,7 +6,27 @@
 import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { metrics } from '../server-monitoring';
-import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';  protected sqlServerConfig: SqlServerVectorDatabaseConfig;
+import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
+
+/**
+ * SQL Server-specific configuration options
+ */
+export interface SqlServerVectorDatabaseConfig extends VectorDatabaseConfig {
+  provider: VectorDatabaseProvider.SQLSERVER;
+  sqlServerPoolSize?: number;
+  sqlServerSchemaName?: string;
+  sqlServerVectorIndexType?: 'HNSW' | 'IVF_FLAT';
+  sqlServerSearchMethod?: 'cosine' | 'inner_product' | 'euclidean';
+}
+
+/**
+ * SQL Server Vector Database Adapter
+ * Implements vector database operations using Microsoft SQL Server with vector extensions
+ */
+export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
+  private connection: any = null; // SQL Server connection
+  private errorHandler: VectorDbErrorHandler;
+  protected sqlServerConfig: SqlServerVectorDatabaseConfig;
 
   /**
    * Constructor for SQL Server adapter
@@ -14,10 +34,7 @@ import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector
    */
   constructor(config: SqlServerVectorDatabaseConfig) {
     super(config);
-<<<<<<< HEAD
     this.errorHandler = new VectorDbErrorHandler('sqlserver', this.config.enableLogging || false, this.config.enableMetrics || false);
-=======
->>>>>>> origin/feature/general-improvements-fixed
     this.sqlServerConfig = {
       sqlServerPoolSize: 10,
       sqlServerSchemaName: 'dbo',

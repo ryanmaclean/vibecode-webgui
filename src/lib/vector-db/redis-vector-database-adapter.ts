@@ -6,7 +6,31 @@
 import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { metrics } from '../server-monitoring';
-import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';  protected redisConfig: RedisVectorDatabaseConfig;
+import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
+
+/**
+ * Redis-specific configuration options
+ */
+export interface RedisVectorDatabaseConfig extends VectorDatabaseConfig {
+  provider: VectorDatabaseProvider.REDIS;
+  redisHost?: string;
+  redisPort?: number;
+  redisPassword?: string;
+  redisDatabase?: number;
+  redisKeyPrefix?: string;
+  redisVectorIndexName?: string;
+  redisSearchMethod?: 'cosine' | 'inner_product' | 'euclidean';
+  redisMaxConnections?: number;
+}
+
+/**
+ * Redis/ValKey Vector Database Adapter
+ * Implements vector database operations using Redis with RedisSearch and vector similarity
+ */
+export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
+  private redis: any = null; // Redis client
+  private errorHandler: VectorDbErrorHandler;
+  protected redisConfig: RedisVectorDatabaseConfig;
 
   /**
    * Constructor for Redis adapter
@@ -14,10 +38,7 @@ import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector
    */
   constructor(config: RedisVectorDatabaseConfig) {
     super(config);
-<<<<<<< HEAD
     this.errorHandler = new VectorDbErrorHandler('redis', this.config.enableLogging || false, this.config.enableMetrics || false);
-=======
->>>>>>> origin/feature/general-improvements-fixed
     this.redisConfig = {
       redisHost: process.env.REDIS_HOST || 'localhost',
       redisPort: parseInt(process.env.REDIS_PORT || '6379'),
