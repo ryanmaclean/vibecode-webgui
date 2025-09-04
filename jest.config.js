@@ -1,17 +1,12 @@
 /** @type {import('jest').Config} */
 const config = {
   testEnvironment: 'jsdom',
-<<<<<<< Updated upstream
   setupFilesAfterEnv: [
     '<rootDir>/tests/setupTests.ts',
     '<rootDir>/tests/jest.setup.js',
     '<rootDir>/tests/accessibility/jest-axe-setup.js'
   ],
   setupFiles: ['<rootDir>/tests/jest.polyfills.js'],
-=======
-  setupFilesAfterEnv: ['./tests/jest.setup.js'],
-  setupFiles: ['./tests/jest.polyfills.js'],
->>>>>>> Stashed changes
   modulePaths: ['<rootDir>'],
   
   // Increase timeout for integration tests
