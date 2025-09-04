@@ -5,11 +5,7 @@
 
 'use client'
 
-<<<<<<< Updated upstream
-import React, { useState, useEffect } from 'react'
-=======
 import React, { useState, useEffect, useRef } from 'react'
->>>>>>> Stashed changes
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -17,20 +13,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useCollaboration } from '@/hooks/useCollaboration'
 import { TemplateMarketplace } from '@/components/marketplace/TemplateMarketplace'
-<<<<<<< Updated upstream
 import { type MarketplaceTemplate } from '@/lib/marketplace/template-marketplace'
-=======
->>>>>>> Stashed changes
 import { GitHubDeploymentWorkflow } from '@/components/deployment/GitHubDeploymentWorkflow'
 import CollaborativeChatInterface from '@/components/chat/CollaborativeChatInterface'
 import { 
   generateFromTemplate, 
-<<<<<<< Updated upstream
-  type GeneratedProject
-=======
   type GeneratedProject,
   type GenerateFromTemplateOptions
->>>>>>> Stashed changes
 } from '@/lib/templates/generator'
 import {
   UsersIcon,
