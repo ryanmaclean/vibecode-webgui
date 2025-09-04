@@ -47,6 +47,14 @@ next-env.d.ts
 .snyk
 .datadog/
 
+# Temporary and backup files
+*.bak
+*.backup
+*.tmp
+.backup/
+**/temp-files/
+cookies.txt
+
 # IDE
 .vscode/
 .idea/
