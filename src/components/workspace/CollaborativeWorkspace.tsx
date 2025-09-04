@@ -100,17 +100,6 @@ interface CollaborativeWorkspaceProps {
   className?: string
 }
 
-export function CollaborativeWorkspace({
-  workspaceId = 'default-workspace',
-  userId = 'default-user',
-  userName = 'Anonymous User',
-  initialProject,
-  onUserInvite,
-  onCreateTerminal,
-  onCreateDebugSession,
-  className
-}: CollaborativeWorkspaceProps)
-
 interface WorkspaceActivity {
   id: string
   type: 'template_selected' | 'project_generated' | 'deployment_started' | 'user_joined' | 'message_sent'
@@ -192,71 +181,22 @@ export function CollaborativeWorkspace({
       // Add workspace-specific metadata
       const workspaceProject: GeneratedProject = {
         ...project,
-        id: `${workspaceId}-${templateId}-${Date.now()}`,
-        createdAt: new Date(),
-        category: (templateId.split('-')[0] || 'data') as 'frontend' | 'backend' | 'fullstack' | 'mobile' | 'data' | 'infrastructure',
-        complexity: 'intermediate' as const,
-        tags: [templateId, 'collaborative'],
-        estimatedTime: 30,
         features: [],
         documentation: {
-          readme: `# ${project.name}\n\nGenerated in collaborative workspace`,
+          readme: `# ${project.name}
+
+Generated in collaborative workspace`,
           setup: 'Run npm install && npm run dev',
           deployment: 'Deploy using the integrated GitHub workflow'
         }
       }
-
-      setSelectedProject(workspaceProject)
-      setSelectedProject(project)
-      
-      // Broadcast project generation to team
-      if (socket) {
-        socket.emit('workspace_event', {
-          type: 'project_generated',
-          data: { project, userId }
-        })
-      }
-
-      // Add to activity feed
-      setWorkspaceActivity(prev => [...prev, {
-        id: `activity-${Date.now()}`,
-        type: 'project_generated',
-        message: `Generated project from ${template.name} template`,
-        userId,
-        userName,
-        timestamp: new Date()
-      }])
-
-  const handleTemplateSelect = async (templateId: string) => {
-  const handleTemplateSelect = async (template: any) => {
-    setIsGeneratingProject(true)
-    
-    try {
-      // Generate project from template
-      const project = await generateProjectFromTemplate(template.id, {
-        name: `project-${Date.now()}`,
-        description: template.description || 'Generated from template'
-      })
-      
-      setSelectedProject(project)
-        features: [],
-        documentation: {
-          readme: `# ${project.name}\n\nGenerated in collaborative workspace`,
-          setup: 'Run npm install && npm run dev',
-          deployment: 'Deploy using the integrated GitHub workflow'
-        }
-      }
-
       setSelectedProject(workspaceProject)
       
       // Broadcast to workspace
       if (socket) {
         socket.emit('workspace_event', {
           type: 'template_selected',
-          templateId,
-          projectName: workspaceProject.name,
-          userId,
-          userName
+          data: { template, userId }
         })
       }
 
@@ -686,16 +626,7 @@ export function CollaborativeWorkspace({
       </div>
     </div>
   )
-
-  return (
-    <div className="h-screen flex bg-gray-50">
-      {renderSidebar()}
-      {renderMainContent()}
-    </div>
-  )
 }
-    </div>
-  )
 }
 
 export default CollaborativeWorkspace
