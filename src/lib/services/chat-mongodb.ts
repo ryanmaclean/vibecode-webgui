@@ -4,7 +4,6 @@ import { getDatabase } from '../mongodb'
 import { Conversation, Message, ChatSession, Assistant } from '../models/chat'
 import { logger } from '../monitoring'
 
-<<<<<<< Updated upstream
 interface ChatStats {
   totalConversations: number;
   totalMessages: number;
@@ -12,8 +11,6 @@ interface ChatStats {
   modelsUsed: string[];
 }
 
-=======
->>>>>>> Stashed changes
 export class MongoDBChatService {
   private conversationsCollection?: Collection<Conversation>
   private sessionsCollection?: Collection<ChatSession>
@@ -310,7 +307,8 @@ export class MongoDBChatService {
   ): Promise<Conversation[]> {
     const conversations = await this.getConversationsCollection()
     
-    const searchCriteria: Record<string, unknown> = {      userId,
+    const searchCriteria: Record<string, unknown> = {
+      userId,
       $text: { $search: query }
     }
     
@@ -333,7 +331,8 @@ export class MongoDBChatService {
   }> {
     const conversations = await this.getConversationsCollection()
     
-    const matchCriteria: Record<string, unknown> = { userId }    if (workspaceId) {
+    const matchCriteria: Record<string, unknown> = { userId }
+    if (workspaceId) {
       matchCriteria.workspaceId = workspaceId
     }
 
