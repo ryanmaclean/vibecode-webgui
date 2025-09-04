@@ -7,29 +7,9 @@ import OpenAI from 'openai';
 import { VectorDatabaseInterface } from './vector-database-interface';
 import { VectorChunk, SearchResult, SearchOptions, VectorDatabaseConfig } from './vector-types';
 import { metrics } from '../server-monitoring';
-<<<<<<< HEAD
 import { logger } from '../logger';
 import { ConnectionPool, ConnectionPoolConfig } from './connection-pool';
 import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
-=======
->>>>>>> origin/feature/general-improvements-fixed
-
-/**
- * Abstract base class for vector database adapters
- * Implements common functionality that can be shared across providers
- */
-export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterface {
-  protected config: VectorDatabaseConfig;
-  protected openai: OpenAI | null = null;
-  protected isInitialized = false;
-  protected connectionStatus = false;
-  protected retryCount = 0;
-  protected lastError: Error | null = null;
-<<<<<<< HEAD
-  protected connectionPool: ConnectionPool<any> | null = null;
-=======
->>>>>>> origin/feature/general-improvements-fixed
-
   /**
    * Constructor for the base adapter
    * @param config Configuration for the vector database
@@ -68,149 +48,11 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       // Call provider-specific initialization
       await this.initializeProvider();
       
-<<<<<<< HEAD
       // Initialize connection pool if enabled
       if (this.config.connectionPooling) {
         await this.initializeConnectionPool();
       }
       
-=======
->>>>>>> origin/feature/general-improvements-fixed
-      this.isInitialized = true;
-      this.connectionStatus = true;
-      this.retryCount = 0;
-      
-      if (this.config.enableMetrics) {
-        metrics.histogram('vector_db.initialize.duration', Date.now() - startTime);
-        metrics.increment('vector_db.initialize.success');
-      }
-      
-      if (this.config.enableLogging) {
-<<<<<<< HEAD
-        logger.info(`Vector database adapter (${this.config.provider}) initialized successfully`);
-=======
-        console.info(`Vector database adapter (${this.config.provider}) initialized successfully`);
->>>>>>> origin/feature/general-improvements-fixed
-      }
-    } catch (error) {
-      this.connectionStatus = false;
-      this.lastError = error instanceof Error ? error : new Error(String(error));
-      
-      if (this.config.enableMetrics) {
-        metrics.increment('vector_db.initialize.error');
-      }
-      
-      if (this.config.enableLogging) {
-<<<<<<< HEAD
-        logger.error(`Failed to initialize vector database adapter (${this.config.provider}):`, error);
-=======
-        console.error(`Failed to initialize vector database adapter (${this.config.provider}):`, error);
->>>>>>> origin/feature/general-improvements-fixed
-      }
-      
-      throw error;
-    }
-  }
-<<<<<<< HEAD
-  
-  /**
-   * Initialize the connection pool if enabled in configuration
-   */
-  protected async initializeConnectionPool(): Promise<void> {
-    if (!this.config.connectionPooling) return;
-    
-    try {
-      const poolConfig: ConnectionPoolConfig = {
-        minConnections: this.config.minPoolSize || 2,
-        maxConnections: this.config.maxPoolSize || 10,
-        acquireTimeoutMs: this.config.connectionAcquireTimeoutMs || 30000,
-        maxConnectionLifetimeMs: this.config.connectionMaxLifetimeMs || 3600000,
-        idleTimeoutMs: this.config.connectionIdleTimeoutMs || 300000,
-        createConnection: async () => {
-          // Provider must implement this method to create a database connection
-          return this.createPoolConnection();
-        },
-        validateConnectionFn: async (connection) => {
-          // Provider must implement this method to validate a connection
-          return this.validatePoolConnection(connection);
-        },
-        closeConnection: async (connection) => {
-          // Provider must implement this method to close a connection
-          return this.closePoolConnection(connection);
-        }
-      };
-      
-      this.connectionPool = new ConnectionPool(poolConfig);
-      
-      logger.info(`Connection pool initialized for ${this.config.provider} adapter`, {
-        minConnections: poolConfig.minConnections,
-        maxConnections: poolConfig.maxConnections
-      });
-    } catch (error) {
-      logger.error(`Failed to initialize connection pool for ${this.config.provider}`, { error });
-      throw error;
-    }
-  }
-  
-  /**
-   * Create a new database connection for the pool
-   * Must be implemented by providers that support connection pooling
-   */
-  protected async createPoolConnection(): Promise<any> {
-    throw new Error('Connection pooling not implemented for this provider');
-  }
-  
-  /**
-   * Validate a database connection from the pool
-   * Must be implemented by providers that support connection pooling
-   */
-  protected async validatePoolConnection(connection: any): Promise<boolean> {
-    return true;
-  }
-  
-  /**
-   * Close a database connection from the pool
-   * Must be implemented by providers that support connection pooling
-   */
-  protected async closePoolConnection(connection: any): Promise<void> {
-    // Default implementation does nothing
-  }
-  
-  /**
-   * Acquire a connection from the pool
-   * @returns A promise that resolves to a connection from the pool
-   */
-  protected async acquireConnection(): Promise<any> {
-    if (!this.connectionPool || !this.config.connectionPooling) {
-      throw new Error('Connection pooling is not enabled or initialized');
-    }
-    
-    try {
-      return await this.connectionPool.acquire();
-    } catch (error) {
-      logger.error('Failed to acquire connection from pool', { error });
-      throw error;
-    }
-  }
-  
-  /**
-   * Release a connection back to the pool
-   * @param connection The connection to release
-   */
-  protected async releaseConnection(connection: any): Promise<void> {
-    if (!this.connectionPool || !this.config.connectionPooling) {
-      return;
-    }
-    
-    try {
-      await this.connectionPool.release(connection);
-    } catch (error) {
-      logger.error('Failed to release connection back to pool', { error });
-    }
-  }
-=======
->>>>>>> origin/feature/general-improvements-fixed
-
   /**
    * Provider-specific initialization
    * Must be implemented by each provider
@@ -397,24 +239,14 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
       
       if (this.config.enableLogging) {
-<<<<<<< HEAD
-        logger.info(`Vector database adapter (${this.config.provider}) closed successfully`);
-=======
-        console.info(`Vector database adapter (${this.config.provider}) closed successfully`);
->>>>>>> origin/feature/general-improvements-fixed
-      }
+        logger.info(`Vector database adapter (${this.config.provider}) closed successfully`);      }
     } catch (error) {
       if (this.config.enableMetrics) {
         metrics.increment('vector_db.close.error');
       }
       
       if (this.config.enableLogging) {
-<<<<<<< HEAD
-        logger.error(`Error closing vector database adapter (${this.config.provider}):`, error);
-=======
-        console.error(`Error closing vector database adapter (${this.config.provider}):`, error);
->>>>>>> origin/feature/general-improvements-fixed
-      }
+        logger.error(`Error closing vector database adapter (${this.config.provider}):`, error);      }
       
       throw error;
     }
@@ -445,8 +277,4 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
   }>;
   
   public abstract invalidateCache(table: string, contentType?: string): Promise<number>;
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> origin/feature/general-improvements-fixed

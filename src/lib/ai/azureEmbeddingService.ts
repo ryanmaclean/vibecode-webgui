@@ -7,45 +7,8 @@
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { DefaultAzureCredential } from '@azure/identity';
-<<<<<<< HEAD
 import { withVectorConnection } from '../db/vector-connection-pool';
 import { azureEmbeddingMetrics } from '../monitoring/azure-embedding-metrics';
-=======
-import { VectorConnectionPool, VectorConnectionPoolFactory } from '../db/vector-connection-pool';
-import { DatadogIntegration } from '../monitoring/datadog-integration';
-
-// Monitoring and metrics interfaces
-interface ApiMetrics {
-  requestCount: number;
-  totalTokens: number;
-  totalCost: number;
-  avgLatency: number;
-  errorCount: number;
-  lastReset: Date;
-  requestsPerMinute: number[];
-  errorRates: number[];
-}
-
-interface ApiCall {
-  timestamp: Date;
-  duration: number;
-  tokens: number;
-  cost: number;
-  success: boolean;
-  errorType?: string;
-  inputLength: number;
-  model: string;
-}
-
-interface ApiUsageAlert {
-  type: 'token_limit' | 'cost_limit' | 'error_rate' | 'latency_high';
-  threshold: number;
-  current: number;
-  timestamp: Date;
-  message: string;
-}
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
-
 // Interface for embedding generation options
 interface EmbeddingOptions {
   dimensions?: number;
@@ -161,18 +124,7 @@ export class AzureEmbeddingService {
     this.useManagedIdentity = useManagedIdentity;
     this.useConnectionPool = useConnectionPool;
     
-<<<<<<< HEAD
-    // Initialize vector service for database operations
-=======
-    // Initialize monitoring
-    this.initializeMonitoring(alertThresholds);
-    
-    // Initialize Datadog integration
-    this.datadogIntegration = new DatadogIntegration();
-    
-    // Create vector service for database operations
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
-    this.vectorService = this.createVectorService();
+    // Initialize vector service for database operations    this.vectorService = this.createVectorService();
   }
   
   /**
@@ -522,13 +474,10 @@ export class AzureEmbeddingService {
    */
   public async generateEmbedding(text: string, options: EmbeddingOptions = {}): Promise<number[]> {
     const startTime = Date.now();
-<<<<<<< HEAD
-=======
     let success = false;
     let errorType: string | undefined;
     let tokens = 0;
     
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
     try {
       // Construct the Azure OpenAI API URL
       const url = `${this.endpoint}/openai/deployments/${this.deploymentName}/embeddings?api-version=${this.apiVersion}`;
@@ -591,40 +540,10 @@ export class AzureEmbeddingService {
           console.warn('Error recording embedding metrics:', metricError);
         }
         
-        return embedding;
-=======
-        success = true;
-        tokens = response.data.usage?.total_tokens || this.estimateTokens(text);
-        
-        // Record successful API call
-        this.recordApiCall({
-          timestamp: new Date(startTime),
-          duration: Date.now() - startTime,
-          tokens,
-          cost: this.calculateCost(tokens),
-          success: true,
-          inputLength: text.length,
-          model: this.deploymentName
-        });
-
-        // Send metrics to Datadog
-        this.datadogIntegration.recordEmbeddingMetrics({
-          operation: 'generate',
-          duration: Date.now() - startTime,
-          tokens,
-          cost: this.calculateCost(tokens),
-          success: true,
-          model: this.deploymentName,
-          inputLength: text.length
-        });
-
-        return response.data.data[0].embedding;
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
-      } else {
+        return embedding;      } else {
         throw new Error('No embedding data returned from Azure OpenAI API');
       }
     } catch (error: any) {
-<<<<<<< HEAD
       // Record error metrics
       try {
         azureEmbeddingMetrics.recordError(
@@ -636,36 +555,7 @@ export class AzureEmbeddingService {
       } catch (metricError) {
         console.warn('Error recording error metrics:', metricError);
       }
-      
-=======
-      errorType = this.categorizeError(error);
-      
-      // Record failed API call
-      this.recordApiCall({
-        timestamp: new Date(startTime),
-        duration: Date.now() - startTime,
-        tokens: 0,
-        cost: 0,
-        success: false,
-        errorType,
-        inputLength: text.length,
-        model: this.deploymentName
-      });
-
-      // Send error metrics to Datadog
-      this.datadogIntegration.recordEmbeddingMetrics({
-        operation: 'generate',
-        duration: Date.now() - startTime,
-        tokens: 0,
-        cost: 0,
-        success: false,
-        errorType,
-        model: this.deploymentName,
-        inputLength: text.length
-      });
-
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
-      console.error('Error generating embedding:', error.message);
+            console.error('Error generating embedding:', error.message);
       if (error.response) {
         console.error('Azure API response:', error.response.data);
       }

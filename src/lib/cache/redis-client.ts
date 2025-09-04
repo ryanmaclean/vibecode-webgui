@@ -8,7 +8,6 @@
  * Handles caching, session storage, and real-time features
  */
 
-<<<<<<< Updated upstream
 /**
  * Redis/Valkey client with enhanced type safety
  */
@@ -133,41 +132,21 @@ try {
     }
 
     // Event listeners for monitoring
-<<<<<<< Updated upstream
-    redisClient.on('connect', () => {
-=======
-    redis.on('connect', () => {
->>>>>>> Stashed changes
-      console.log('Redis connected successfully');
+    redisClient.on('connect', () => {      console.log('Redis connected successfully');
       metrics.increment('redis.connection.success');
     });
 
-<<<<<<< Updated upstream
-    redisClient.on('error', (error) => {
-=======
-    redis.on('error', (error) => {
->>>>>>> Stashed changes
-      console.error('Redis connection error:', error);
+    redisClient.on('error', (error) => {      console.error('Redis connection error:', error);
       metrics.increment('redis.connection.error');
     });
 
-<<<<<<< Updated upstream
-    redisClient.on('ready', () => {
-=======
-    redis.on('ready', () => {
->>>>>>> Stashed changes
-      console.log('Redis client ready');
+    redisClient.on('ready', () => {      console.log('Redis client ready');
       metrics.increment('redis.ready');
     });
   }
 } catch (error) {
   console.warn('Redis client initialization failed:', error);
-<<<<<<< Updated upstream
-  redisClient = null;
-=======
-  redis = null;
->>>>>>> Stashed changes
-}
+  redisClient = null;}
 
 // Cache key generators
 export const CacheKeys = {
@@ -203,14 +182,7 @@ export class CacheManager {
   private redis: any;
 
   constructor() {
-    this.redis = redisClient;
-=======
-  private redis: Redis | null;
-
-  constructor() {
-    this.redis = redis;
->>>>>>> Stashed changes
-  }
+    this.redis = redisClient;  }
 
   /**
    * Get value from cache with metrics
@@ -272,17 +244,10 @@ export class CacheManager {
 
     try {
       const keys = Array.isArray(key) ? key : [key];
-<<<<<<< Updated upstream
       // @ts-ignore - Type mismatch issue
       await this.redis.del(...keys);
       
-      metrics.increment('cache.delete', { count: keys.length as any });
-=======
-      await this.redis.del(...keys);
-      
-      metrics.increment('cache.delete', { count: keys.length });
->>>>>>> Stashed changes
-      return true;
+      metrics.increment('cache.delete', { count: keys.length as any });      return true;
     } catch (error) {
       metrics.increment('cache.delete.error');
       console.error('Cache delete error:', error);
@@ -339,12 +304,7 @@ export class CacheManager {
       }
       
       await pipeline.exec();
-<<<<<<< Updated upstream
-      metrics.increment('cache.mset.success', { count: pairs.length as any });
-=======
-      metrics.increment('cache.mset.success', { count: pairs.length });
->>>>>>> Stashed changes
-      return true;
+      metrics.increment('cache.mset.success', { count: pairs.length as any });      return true;
     } catch (error) {
       metrics.increment('cache.mset.error');
       console.error('Cache mset error:', error);
