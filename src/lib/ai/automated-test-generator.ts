@@ -131,8 +131,6 @@ Focus on:
 
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
-=======
->>>>>>> Stashed changes
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -192,8 +190,6 @@ Format the output as structured test code that can be directly executed.
 
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
-=======
->>>>>>> Stashed changes
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -246,8 +242,6 @@ Return only the test case code, no explanations.
 
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
-=======
->>>>>>> Stashed changes
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -304,8 +298,6 @@ Ensure the data is realistic and covers various scenarios.
 
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
-=======
->>>>>>> Stashed changes
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -354,8 +346,6 @@ Focus on critical paths, edge cases, and error handling.
 
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
-=======
->>>>>>> Stashed changes
     const chain = RunnableSequence.from([
       prompt,
       this.llm,

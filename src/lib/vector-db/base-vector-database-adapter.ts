@@ -7,12 +7,9 @@ import OpenAI from 'openai';
 import { VectorDatabaseInterface } from './vector-database-interface';
 import { VectorChunk, SearchResult, SearchOptions, VectorDatabaseConfig } from './vector-types';
 import { metrics } from '../server-monitoring';
-<<<<<<< HEAD
 import { logger } from '../logger';
 import { ConnectionPool, ConnectionPoolConfig } from './connection-pool';
 import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
-=======
->>>>>>> origin/feature/general-improvements-fixed
 
 /**
  * Abstract base class for vector database adapters
@@ -25,10 +22,7 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
   protected connectionStatus = false;
   protected retryCount = 0;
   protected lastError: Error | null = null;
-<<<<<<< HEAD
   protected connectionPool: ConnectionPool<any> | null = null;
-=======
->>>>>>> origin/feature/general-improvements-fixed
 
   /**
    * Constructor for the base adapter
@@ -68,14 +62,11 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       // Call provider-specific initialization
       await this.initializeProvider();
       
-<<<<<<< HEAD
       // Initialize connection pool if enabled
       if (this.config.connectionPooling) {
         await this.initializeConnectionPool();
       }
       
-=======
->>>>>>> origin/feature/general-improvements-fixed
       this.isInitialized = true;
       this.connectionStatus = true;
       this.retryCount = 0;
@@ -86,11 +77,8 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
       
       if (this.config.enableLogging) {
-<<<<<<< HEAD
         logger.info(`Vector database adapter (${this.config.provider}) initialized successfully`);
-=======
         console.info(`Vector database adapter (${this.config.provider}) initialized successfully`);
->>>>>>> origin/feature/general-improvements-fixed
       }
     } catch (error) {
       this.connectionStatus = false;
@@ -101,17 +89,13 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
       
       if (this.config.enableLogging) {
-<<<<<<< HEAD
         logger.error(`Failed to initialize vector database adapter (${this.config.provider}):`, error);
-=======
         console.error(`Failed to initialize vector database adapter (${this.config.provider}):`, error);
->>>>>>> origin/feature/general-improvements-fixed
       }
       
       throw error;
     }
   }
-<<<<<<< HEAD
   
   /**
    * Initialize the connection pool if enabled in configuration
@@ -208,8 +192,6 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       logger.error('Failed to release connection back to pool', { error });
     }
   }
-=======
->>>>>>> origin/feature/general-improvements-fixed
 
   /**
    * Provider-specific initialization
@@ -376,15 +358,12 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
     try {
       const startTime = Date.now();
       
-<<<<<<< HEAD
       // Close connection pool if it exists
       if (this.connectionPool) {
         await this.connectionPool.close();
         this.connectionPool = null;
       }
       
-=======
->>>>>>> origin/feature/general-improvements-fixed
       // Call provider-specific close method
       await this.closeProvider();
       
@@ -397,11 +376,8 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
       
       if (this.config.enableLogging) {
-<<<<<<< HEAD
         logger.info(`Vector database adapter (${this.config.provider}) closed successfully`);
-=======
         console.info(`Vector database adapter (${this.config.provider}) closed successfully`);
->>>>>>> origin/feature/general-improvements-fixed
       }
     } catch (error) {
       if (this.config.enableMetrics) {
@@ -409,11 +385,8 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
       
       if (this.config.enableLogging) {
-<<<<<<< HEAD
         logger.error(`Error closing vector database adapter (${this.config.provider}):`, error);
-=======
         console.error(`Error closing vector database adapter (${this.config.provider}):`, error);
->>>>>>> origin/feature/general-improvements-fixed
       }
       
       throw error;
@@ -445,8 +418,5 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
   }>;
   
   public abstract invalidateCache(table: string, contentType?: string): Promise<number>;
-<<<<<<< HEAD
 }
-=======
 }
->>>>>>> origin/feature/general-improvements-fixed

@@ -328,11 +328,9 @@ export class EnhancedAIManager {
         const response = await this.openaiClient.invoke([
           { role: "system", content: `You are a senior ${language} developer. Generate clean, maintainable, and well-documented code.` },
           { role: "user", content: enhancedPrompt }
-=======
         const response = await this.openaiClient.invoke([
           new SystemMessage(`You are a senior ${language} developer. Generate clean, maintainable, and well-documented code.`),
           new HumanMessage(enhancedPrompt)
->>>>>>> Stashed changes
         ]);
 
         return {
@@ -381,13 +379,11 @@ export class EnhancedAIManager {
       console.error('Failed to create chain:', error);
       throw new Error('Failed to create AI chain');
     }
-=======
     return RunnableSequence.from([
       prompt,
       model,
       outputParser,
     ]);
->>>>>>> Stashed changes
   }
 
   /**
@@ -484,7 +480,6 @@ export class EnhancedAIManager {
      // Sort by suitability
      return recommendations.sort((a, b) => b.suitability - a.suitability);
    }
-=======
   /**
    * Get recommended AI models for specific tasks
    */
@@ -539,7 +534,6 @@ export class EnhancedAIManager {
     // Sort by suitability
     return recommendations.sort((a, b) => b.suitability - a.suitability);
   }
->>>>>>> Stashed changes
 }
 
 // Factory function to create enhanced AI manager

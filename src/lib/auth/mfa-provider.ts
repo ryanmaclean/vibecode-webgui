@@ -69,9 +69,7 @@ export class MFAProvider {
   private challenges: Map<string, MFAChallenge> = new Map()
 <<<<<<< Updated upstream
   private backupCodes: Map<string, string[]> = new Map() // userId -> codes
-=======
   private backupCodes: Map<string, Set<string>> = new Map() // userId -> codes
->>>>>>> Stashed changes
   private failedAttempts: Map<string, { count: number, lockedUntil?: Date }> = new Map()
 
   constructor() {
@@ -101,9 +99,7 @@ export class MFAProvider {
     const backupCodes = this.generateBackupCodes()
 <<<<<<< Updated upstream
     this.backupCodes.set(userId, backupCodes)
-=======
     this.backupCodes.set(userId, new Set(backupCodes))
->>>>>>> Stashed changes
 
     // Store device (inactive until verified)
     const device: MFADevice = {
@@ -332,9 +328,7 @@ export class MFAProvider {
         this.challenges.delete(challengeId)
 <<<<<<< Updated upstream
         const remainingBackupCodes = this.backupCodes.get(challenge.userId)?.length || 0
-=======
         const remainingBackupCodes = this.backupCodes.get(challenge.userId)?.size || 0
->>>>>>> Stashed changes
         
         console.log(`✅ MFA verification successful with backup code for user ${challenge.userId}`)
         
@@ -425,9 +419,7 @@ export class MFAProvider {
     const backupCodes = this.generateBackupCodes()
 <<<<<<< Updated upstream
     this.backupCodes.set(userId, backupCodes)
-=======
     this.backupCodes.set(userId, new Set(backupCodes))
->>>>>>> Stashed changes
     
     console.log(`🔑 New backup codes generated for user ${userId}`)
     return backupCodes
@@ -507,13 +499,11 @@ export class MFAProvider {
     // Remove the used code from the array
     const index = userCodes.indexOf(code)
     userCodes.splice(index, 1)
-=======
     if (!userCodes || !userCodes.has(code)) {
       return false
     }
 
     userCodes.delete(code) // Use once
->>>>>>> Stashed changes
     return true
   }
 
@@ -536,7 +526,6 @@ export class MFAProvider {
 
   private generateSetupToken(): string {
     return `setup_${Date.now()}_${Math.random().toString(36).slice(2, 18)}`
-=======
     const codes = []
     for (let i = 0; i < 10; i++) {
       codes.push(Math.random().toString(36).substring(2, 10).toUpperCase())
@@ -554,7 +543,6 @@ export class MFAProvider {
 
   private generateSetupToken(): string {
     return `setup_${Date.now()}_${Math.random().toString(36).substr(2, 16)}`
->>>>>>> Stashed changes
   }
 
   private generateSMSCode(): string {

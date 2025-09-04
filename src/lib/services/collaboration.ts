@@ -329,13 +329,11 @@ class CollaborationService {
       ...messageData,
       _excludeUserId: excludeUserId // Include this so clients can filter
     });
-=======
     if (excludeUserId) {
       this.io.to(`conversation:${conversationId}`).except(excludeUserId).emit('new_message', messageData)
     } else {
       this.io.to(`conversation:${conversationId}`).emit('new_message', messageData)
     }
->>>>>>> Stashed changes
   }
 
   // Broadcast workspace events
