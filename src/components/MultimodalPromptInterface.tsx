@@ -82,15 +82,7 @@ export default function MultimodalPromptInterface({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  const recognitionRef = useRef<any | null>(null);
-=======
   const recognitionRef = useRef<any>(null);
->>>>>>> Stashed changes
-=======
-  const recognitionRef = useRef<any>(null);
->>>>>>> Stashed changes
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   
   // Initialize sample generator
@@ -100,7 +92,6 @@ export default function MultimodalPromptInterface({
   // Initialize speech recognition
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-<<<<<<< Updated upstream
       const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognitionAPI) {
         recognitionRef.current = new SpeechRecognitionAPI();
@@ -127,28 +118,6 @@ export default function MultimodalPromptInterface({
           setIsListening(false);
         };
       }
-=======
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'en-US';
-      
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[event.results.length - 1][0].transcript as string;
-        setInput(transcript);
-      };
-      
-      recognitionRef.current.onerror = (_event: any) => {
-        // Speech recognition error handled
-        setIsListening(false);
-      };
-      
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
->>>>>>> Stashed changes
     }
   }, []);
 

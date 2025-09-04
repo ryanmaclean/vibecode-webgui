@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import io, { Socket } from 'socket.io-client'
-<<<<<<< Updated upstream
 
 // Define the interface locally instead of importing from an unavailable module
 export interface CollaborativeUser {
@@ -34,9 +33,6 @@ interface CursorPosition {
   y: number
   timestamp: Date
 }
-
-=======
-import { CollaborativeUser } from '@/lib/services/collaboration'
 
 interface UseCollaborationProps {
   workspaceId: string
