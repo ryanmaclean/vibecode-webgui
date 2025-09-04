@@ -49,8 +49,6 @@ export function TemplateDeploymentIntegration({
 <<<<<<< Updated upstream
       language: template.language || [],
       frameworks: template.frameworks || [],
-=======
->>>>>>> Stashed changes
       files: template.files || [],
       dependencies: template.dependencies || {},
       devDependencies: {},
@@ -59,21 +57,13 @@ export function TemplateDeploymentIntegration({
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
       envVars: template.envVars?.map(v => ({ name: v.name, value: v.defaultValue || '', description: v.description })) || [],
-=======
-=======
->>>>>>> Stashed changes
       envVars: (template.envVars || []).map(env => ({
         name: env.name,
         value: env.defaultValue || '',
         description: env.description
       })),
 <<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
       envVars: template.envVars || [],
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       setupInstructions: [
         'npm install',
         'npm run dev'
@@ -85,10 +75,7 @@ export function TemplateDeploymentIntegration({
         readme: 'Template documentation',
         setup: template.documentation?.setup?.join('\n') || 'Setup instructions',
         deployment: template.documentation?.deployment?.join('\n') || 'Deployment guide'
-=======
-=======
       documentation: {
->>>>>>> Stashed changes
         readme: (template.documentation as any)?.readme || `# ${template.name}\n\n${template.description}`,
         setup: Array.isArray(template.documentation?.setup) 
           ? template.documentation.setup.join('\n') 
@@ -97,15 +84,10 @@ export function TemplateDeploymentIntegration({
           ? template.documentation.deployment.join('\n')
           : template.documentation?.deployment || 'Deployment guide'
 <<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
       documentation: template.documentation || {
         readme: 'Template documentation',
         setup: 'Setup instructions',
         deployment: 'Deployment guide'
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
       },
       createdAt: new Date(),
       estimatedTime: 15,
@@ -132,9 +114,7 @@ export function TemplateDeploymentIntegration({
   const renderStars = (rating: number, size = 4) => {
 <<<<<<< Updated upstream
     const stars: React.ReactNode[] = []
-=======
     const stars = []
->>>>>>> Stashed changes
     const fullStars = Math.floor(rating)
     const hasHalfStar = rating % 1 >= 0.5
 
@@ -447,6 +427,4 @@ export function TemplateDeploymentIntegration({
   )
 <<<<<<< Updated upstream
 }
-=======
 }
->>>>>>> Stashed changes

@@ -86,9 +86,7 @@ export class WeaviateVectorStore {
         apiKey: apiKey,
 <<<<<<< Updated upstream
         ...(openaiApiKey ? { additionalHeaders: { 'X-OpenAI-Api-Key': openaiApiKey } } : {})
-=======
         headers: openaiApiKey ? { 'X-OpenAI-Api-Key': openaiApiKey } : undefined
->>>>>>> Stashed changes
       })
     } catch (error) {
       console.warn('Failed to initialize Weaviate client:', error)

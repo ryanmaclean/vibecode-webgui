@@ -30,11 +30,9 @@ export interface GeneratedProject {
   language: string[] // matches ProjectTemplate
   frameworks: string[] // matches ProjectTemplate
   features: string[]
-=======
   category: string
   complexity: 'beginner' | 'intermediate' | 'advanced'
   tags: string[]
->>>>>>> Stashed changes
   files: TemplateFile[]
   scripts: Record<string, string>
   dependencies: Record<string, string>
@@ -53,9 +51,7 @@ export interface GeneratedProject {
   createdAt: Date
   estimatedTime: number
 <<<<<<< Updated upstream
-=======
   features: string[]
->>>>>>> Stashed changes
 }
 
 /**
@@ -103,10 +99,8 @@ export async function generateFromTemplate(
     frameworks: template.frameworks,
     complexity: template.complexity,
     features: options.features || template.features,  // Use features from options if provided, otherwise from template
-=======
     name: projectName,
     description: options.customizations?.description || template.description,
->>>>>>> Stashed changes
     files,
     scripts: { ...template.scripts },
     dependencies: { ...template.dependencies },
@@ -123,9 +117,6 @@ export async function generateFromTemplate(
     createdAt: new Date(),
     estimatedTime: 30,
     setupInstructions
-=======
-=======
->>>>>>> Stashed changes
     setupInstructions,
     documentation: {
       readme: `# ${projectName}\n\n${template.description}`,
@@ -136,12 +127,7 @@ export async function generateFromTemplate(
     estimatedTime: 30,
     features: template.features || []
 <<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
     setupInstructions
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   }
 }
 

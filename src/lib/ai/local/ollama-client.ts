@@ -354,8 +354,6 @@ export class OllamaClient {
 
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
-=======
->>>>>>> Stashed changes
     return RunnableSequence.from([
       prompt,
       model,

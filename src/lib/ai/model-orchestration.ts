@@ -374,9 +374,7 @@ export class ModelOrchestrator {
 <<<<<<< Updated upstream
       case TaskType.CODE_REVIEW:
       case TaskType.DEBUGGING:
-=======
       case TaskType.REASONING:
->>>>>>> Stashed changes
         reasons.push(`Selected ${model.name} for superior reasoning abilities (${model.capabilities.reasoning}/10)`)
         break
       case TaskType.CREATIVE_WRITING:

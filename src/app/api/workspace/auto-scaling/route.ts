@@ -196,9 +196,7 @@ export async function PUT(req: NextRequest) {
       registration.workspaceId, 
 <<<<<<< Updated upstream
       registration.resources as any || {}
-=======
       registration.resources || {}
->>>>>>> Stashed changes
     )
 
     // Initialize metrics for the workspace
@@ -267,9 +265,7 @@ export async function PATCH(req: NextRequest) {
 
 <<<<<<< Updated upstream
     workspaceAutoScaler.updateConfig(config as any)
-=======
     workspaceAutoScaler.updateConfig(config)
->>>>>>> Stashed changes
 
     return NextResponse.json({
       status: 'success',

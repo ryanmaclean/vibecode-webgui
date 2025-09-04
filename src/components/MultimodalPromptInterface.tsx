@@ -85,12 +85,8 @@ export default function MultimodalPromptInterface({
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
   const recognitionRef = useRef<any | null>(null);
-=======
   const recognitionRef = useRef<any>(null);
->>>>>>> Stashed changes
-=======
   const recognitionRef = useRef<any>(null);
->>>>>>> Stashed changes
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   
   // Initialize sample generator
@@ -127,7 +123,6 @@ export default function MultimodalPromptInterface({
           setIsListening(false);
         };
       }
-=======
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       
@@ -148,7 +143,6 @@ export default function MultimodalPromptInterface({
       recognitionRef.current.onend = () => {
         setIsListening(false);
       };
->>>>>>> Stashed changes
     }
   }, []);
 
