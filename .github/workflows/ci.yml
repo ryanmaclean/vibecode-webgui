@@ -202,6 +202,10 @@ jobs:
     name: Test Suite
     needs: code-quality
     timeout-minutes: 30
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+      LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
     strategy:
       matrix:
         test-type: [unit, integration]
@@ -252,11 +256,11 @@ jobs:
           echo "NEXT_TELEMETRY_DISABLED=1" >> .env.local
 
       - name: Configure Datadog Test Optimization
-        if: ${{ secrets.DD_API_KEY != '' }}
+        if: ${{ env.DD_API_KEY != '' }}
         uses: DataDog/test-visibility-github-action@v2
         with:
           languages: js
-          api_key: ${{ secrets.DD_API_KEY }}
+          api_key: ${{ env.DD_API_KEY }}
           site: datadoghq.com
 
       - name: Run unit tests
@@ -284,6 +288,8 @@ jobs:
     name: End-to-End Tests
     needs: test-suite
     timeout-minutes: 30
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -319,11 +325,11 @@ jobs:
           PORT: 3000
 
       - name: Configure Datadog Test Optimization
-        if: ${{ secrets.DD_API_KEY != '' }}
+        if: ${{ env.DD_API_KEY != '' }}
         uses: DataDog/test-visibility-github-action@v2
         with:
           languages: js
-          api_key: ${{ secrets.DD_API_KEY }}
+          api_key: ${{ env.DD_API_KEY }}
           site: datadoghq.com
 
       - name: Run Playwright E2E tests
@@ -545,6 +551,11 @@ jobs:
     name: Build & Performance Tests
     needs: [code-quality, test-suite]
     timeout-minutes: 40
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+      DD_SYNTHETIC_TEST_IDS: ${{ vars.DD_SYNTHETIC_TEST_IDS }}
+      LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -577,20 +588,20 @@ jobs:
           PORT: 3000
 
       - name: Run Datadog Synthetic Tests
-        if: ${{ secrets.DD_API_KEY != '' && secrets.DD_APP_KEY != '' && vars.DD_SYNTHETIC_TEST_IDS != '' }}
+        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' && env.DD_SYNTHETIC_TEST_IDS != '' }}
         run: |
           echo "Running Datadog Synthetic API tests..."
           npx @datadog/datadog-ci synthetics run-tests \
             --config datadog-synthetics.json \
-            --apiKey ${{ secrets.DD_API_KEY }} \
-            --appKey ${{ secrets.DD_APP_KEY }} \
-            --publicIds ${{ vars.DD_SYNTHETIC_TEST_IDS }} \
+            --apiKey ${{ env.DD_API_KEY }} \
+            --appKey ${{ env.DD_APP_KEY }} \
+            --publicIds ${{ env.DD_SYNTHETIC_TEST_IDS }} \
             --variables BASE_URL=http://localhost:3000 \
             --timeout 300
         continue-on-error: true
 
       - name: Lighthouse Performance Audit
-        if: ${{ secrets.LHCI_GITHUB_APP_TOKEN != '' }}
+        if: ${{ env.LHCI_GITHUB_APP_TOKEN != '' }}
         uses: treosh/lighthouse-ci-action@v11
         with:
           configPath: './lighthouse-ci.json'
@@ -598,16 +609,16 @@ jobs:
           uploadArtifacts: true
           runs: 3
         env:
-          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+          LHCI_GITHUB_APP_TOKEN: ${{ env.LHCI_GITHUB_APP_TOKEN }}
 
       - name: Submit Performance Metrics to Datadog
-        if: ${{ secrets.DD_API_KEY != '' }}
+        if: ${{ env.DD_API_KEY != '' }}
         run: |
           echo "Submitting performance metrics to Datadog..."
           # Submit build performance metrics
           curl -X POST "https://api.datadoghq.com/api/v1/series" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
             -d '{
               "series": [{
                 "metric": "vibecode.ci.build.duration",
@@ -640,6 +651,8 @@ jobs:
     needs: [e2e-tests, monitoring-validation, security-tests, build-and-performance]
     if: always()
     timeout-minutes: 10
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
     steps:
       - name: Check all jobs status
         run: |
@@ -659,11 +672,11 @@ jobs:
           fi
 
       - name: Notify Datadog of CI completion
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.DD_API_KEY != ''
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.DD_API_KEY != ''
         run: |
           curl -X POST "https://api.datadoghq.com/api/v1/events" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
             -d '{
               "title": "VibeCode CI/CD Pipeline Complete",
               "text": "Enhanced CI/CD pipeline completed successfully with monitoring validation and performance testing",
