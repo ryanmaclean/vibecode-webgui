@@ -19,6 +19,20 @@ env:
   IMAGE_NAME: vibecode-docs
 
 jobs:
+  validate-ci-config:
+    name: Validate CI configuration (secrets/vars)
+    runs-on: ubuntu-latest
+    env:
+      DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+    steps:
+      - name: Validate Datadog keys
+        run: |
+          if [ -z "${DD_API_KEY}" ]; then
+            echo '::warning::Missing DATADOG_API_KEY; Datadog notifications will be skipped.'
+          else
+            echo 'DATADOG_API_KEY present.'
+          fi
+
   # Security and code quality scanning
   security-scan:
     name: Security Scan
@@ -112,7 +126,9 @@ jobs:
     needs: build-test
     outputs:
       image-digest: ${{ steps.build.outputs.digest }}
-      image-url: ${{ steps.build.outputs.image-url }}
+    env:
+      ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+      ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -124,8 +140,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+          username: ${{ env.ACR_USERNAME }}
+          password: ${{ env.ACR_PASSWORD }}
 
       - name: Extract metadata
         id: meta
@@ -284,6 +300,8 @@ jobs:
     needs: container-build
     if: github.ref == 'refs/heads/main'
     environment: production
+    env:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -296,7 +314,7 @@ jobs:
       - name: Configure kubectl
         run: |
           mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          echo "${KUBE_CONFIG}" | base64 -d > ~/.kube/config
 
       - name: Deploy to production
         run: |
@@ -392,13 +410,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-production]
     if: always()
+    env:
+      DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
     steps:
       - name: Notify Datadog
-        if: needs.deploy-production.result == 'success'
+        if: needs.deploy-production.result == 'success' && env.DD_API_KEY != ''
         run: |
           curl -X POST "https://api.datadoghq.com/api/v1/events" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
             -d '{
               "title": "Documentation Deployed",
               "text": "VibeCode documentation successfully deployed to production",
@@ -407,11 +427,11 @@ jobs:
             }'
 
       - name: Notify on failure
-        if: failure()
+        if: failure() && env.DD_API_KEY != ''
         run: |
           curl -X POST "https://api.datadoghq.com/api/v1/events" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
             -d '{
               "title": "Documentation Deployment Failed",
               "text": "VibeCode documentation deployment failed",
