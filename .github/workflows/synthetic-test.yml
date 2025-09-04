@@ -4,8 +4,33 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-synthetic-tests:
+  validate-ci-config:
     runs-on: ubuntu-latest
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+    steps:
+      - name: Validate CI config (Datadog secrets)
+        run: |
+          MISSING=0
+          if [ -z "${DD_API_KEY}" ]; then
+            echo "::warning::Missing secret DD_API_KEY; Datadog Synthetic Tests will be skipped."
+            MISSING=1
+          fi
+          if [ -z "${DD_APP_KEY}" ]; then
+            echo "::warning::Missing secret DD_APP_KEY; Datadog Synthetic Tests will be skipped."
+            MISSING=1
+          fi
+          if [ $MISSING -eq 0 ]; then
+            echo "All required Datadog secrets present."
+          fi
+
+  run-synthetic-tests:
+    needs: [validate-ci-config]
+    runs-on: ubuntu-latest
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -19,9 +44,10 @@ jobs:
         run: npm ci
 
       - name: Run Datadog Synthetic Tests
+        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
         run: |
           datadog-ci synthetics run-tests --search "VibeCode Critical User Journey" --failOnCriticalErrors
         env:
-          DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
-          DATADOG_APP_KEY: ${{ secrets.DD_APP_KEY }}
+          DATADOG_API_KEY: ${{ env.DD_API_KEY }}
+          DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
           DATADOG_SITE: datadoghq.com

@@ -7,7 +7,19 @@ on:
   workflow_dispatch: # Allows manual triggering
 
 jobs:
+  validate-ci-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate CI config (Datadog secrets)
+        run: |
+          if [ -z "${{ secrets.DATADOG_API_KEY }}" ]; then
+            echo "::warning::Missing secret DATADOG_API_KEY; monitoring stack deployment will be skipped."
+          else
+            echo "DATADOG_API_KEY present."
+          fi
+
   deploy:
+    needs: [validate-ci-config]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -44,6 +56,7 @@ jobs:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
 
       - name: Deploy Monitoring Stack
+        if: ${{ secrets.DATADOG_API_KEY != '' }}
         run: |
           chmod +x ./scripts/deploy-monitoring.sh
           ./scripts/deploy-monitoring.sh -m kubernetes

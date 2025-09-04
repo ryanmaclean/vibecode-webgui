@@ -10,6 +10,14 @@ import { metrics } from '../server-monitoring';
 import { logger } from '../logger';
 import { ConnectionPool, ConnectionPoolConfig } from './connection-pool';
 import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
+
+export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterface {
+  protected config: VectorDatabaseConfig;
+  protected isInitialized = false;
+  protected openai: OpenAI | null = null;
+  protected connectionPool: ConnectionPool | null = null;
+  protected errorHandler: VectorDbErrorHandler;
+
   /**
    * Constructor for the base adapter
    * @param config Configuration for the vector database
@@ -53,6 +61,19 @@ import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector
         await this.initializeConnectionPool();
       }
       
+      this.isInitialized = true;
+      
+      if (this.config.enableLogging) {
+        console.info(`Vector database adapter initialized in ${Date.now() - startTime}ms`);
+      }
+    } catch (error) {
+      if (this.config.enableLogging) {
+        console.error('Failed to initialize vector database adapter:', error);
+      }
+      throw error;
+    }
+  }
+
   /**
    * Provider-specific initialization
    * Must be implemented by each provider
@@ -218,15 +239,12 @@ import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector
     try {
       const startTime = Date.now();
       
-<<<<<<< HEAD
       // Close connection pool if it exists
       if (this.connectionPool) {
         await this.connectionPool.close();
         this.connectionPool = null;
       }
       
-=======
->>>>>>> origin/feature/general-improvements-fixed
       // Call provider-specific close method
       await this.closeProvider();
       
