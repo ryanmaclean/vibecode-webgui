@@ -192,19 +192,13 @@ export class TemplateMarketplace {
         description: template.description || '',
         category: 'frontend',
         complexity: 'intermediate',
-<<<<<<< Updated upstream
         tags: [],
         language: [],
         frameworks: [],
-        features: [],
-=======
-        tags: template.marketplace?.category ? [template.marketplace.category] : [],
->>>>>>> Stashed changes
-        files: [],
+        features: [],        files: [],
         dependencies: {},
         scripts: {},
         envVars: [],
-<<<<<<< Updated upstream
         dockerSupport: false,
         kubernetesSupport: false,
         cicdTemplate: false,
@@ -214,14 +208,7 @@ export class TemplateMarketplace {
         documentation: {
           setup: ['Setup instructions'],
           usage: ['Usage instructions', 'Template documentation'],
-          deployment: ['Deployment guide']
-=======
-        documentation: {
-          readme: 'Template documentation',
-          setup: 'Setup instructions',
-          deployment: 'Deployment guide'
->>>>>>> Stashed changes
-        },
+          deployment: ['Deployment guide']        },
         ...template,
         marketplaceId: template.marketplaceId || `mp-${index}`,
         author: template.author!,
