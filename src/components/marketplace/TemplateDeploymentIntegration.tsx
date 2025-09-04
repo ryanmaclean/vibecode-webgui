@@ -65,10 +65,8 @@ export function TemplateDeploymentIntegration({
         readme: `# ${template.name}
 
 ${template.description}`,
-        setup: Array.isArray(template.documentation?.setup) ? template.documentation.setup.join('
-') : 'Setup instructions',
-        deployment: Array.isArray(template.documentation?.deployment) ? template.documentation.deployment.join('
-') : 'Deployment guide'
+        setup: Array.isArray(template.documentation?.setup) ? template.documentation.setup.join('\n') : 'Setup instructions',
+        deployment: Array.isArray(template.documentation?.deployment) ? template.documentation.deployment.join('\n') : 'Deployment guide'
       },
       createdAt: new Date(),
       estimatedTime: 15,
