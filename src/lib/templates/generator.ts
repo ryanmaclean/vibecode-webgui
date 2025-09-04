@@ -104,17 +104,7 @@ export async function generateFromTemplate(
     },
     createdAt: new Date(),
     estimatedTime: 30,
-    setupInstructions
     setupInstructions,
-    documentation: {
-      readme: `# ${projectName}\n\n${template.description}`,
-      setup: setupInstructions.join('\n'),
-      deployment: 'Follow the deployment instructions in the README'
-    },
-    createdAt: new Date(),
-    estimatedTime: 30,
-    features: template.features || []
-    setupInstructions
   }
 }
 
