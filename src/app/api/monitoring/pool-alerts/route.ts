@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { datadogDBM, DBMAlert } from '@/lib/monitoring/datadog-dbm';
+// import { datadogDBM, DBMAlert } from '@/lib/monitoring/datadog-dbm';
 import { createRobustConnection } from '@/lib/db/robust-db-connection';
 
 // Alert thresholds for connection pool monitoring
@@ -115,11 +115,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if Datadog DBM is enabled
-    if (!datadogDBM.isEnabled()) {
+    if (true) { // datadogDBM not available
       return NextResponse.json({
         error: 'Datadog Database Monitoring is not enabled. Set DD_DBM_ENABLED=true in environment.',
         alerts: [],
-        dbmConfig: datadogDBM.getConfig(),
+        dbmConfig: null, // datadogDBM not available
         timestamp: new Date().toISOString()
       }, { status: 503 });
     }

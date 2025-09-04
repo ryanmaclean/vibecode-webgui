@@ -6,22 +6,13 @@
 import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { metrics } from '../server-monitoring';
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
-=======
-=======
->>>>>>> Stashed changes
 import { 
   CosmosClient, 
   Container, 
   Database,
   SqlQuerySpec 
 } from '../../types/azure-cosmos';
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
 /**
  * Azure Cosmos DB specific configuration options
