@@ -118,36 +118,26 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           id: `template-${Date.now()}`,
           name: template.name || '',
           description: template.description || '',
-<<<<<<< Updated upstream
-          category: template.category || 'frontend',=======
           category: template.category || 'frontend',
->>>>>>> Stashed changes          complexity: template.complexity || 'beginner',
+          complexity: template.complexity || 'beginner',
           tags: template.tags || [],
-          language: ['javascript'],
-          frameworks: [],
-          features: [],
-          estimatedSetupTime: '10 minutes',
-          files: template.files || [],
-          dependencies: template.dependencies || {},
-          scripts: template.scripts || {},
-          envVars: template.envVars || [],
-<<<<<<< Updated upstream          documentation: {
-            setup: Array.isArray(template.documentation?.setup) ? template.documentation.setup : ['Setup instructions'],
-            usage: Array.isArray(template.documentation?.usage) ? template.documentation.usage : ['Usage instructions'],
-            deployment: Array.isArray(template.documentation?.deployment) ? template.documentation.deployment : ['Deployment guide']
-          },
           language: ['typescript'],
           frameworks: ['react', 'nextjs'],
           features: ['modern-setup', 'production-ready'],
           estimatedSetupTime: '15 minutes',
-<<<<<<< Updated upstream
->>>>>>> Stashed changes          dockerSupport: false,
+          files: template.files || [],
+          dependencies: template.dependencies || {},
+          scripts: template.scripts || {},
+          envVars: template.envVars || [],
+          documentation: {
+            setup: Array.isArray(template.documentation?.setup) ? template.documentation.setup : ['Setup instructions'],
+            usage: Array.isArray(template.documentation?.usage) ? template.documentation.usage : ['Usage instructions'],
+            deployment: Array.isArray(template.documentation?.deployment) ? template.documentation.deployment : ['Deployment guide']
+          },
+          dockerSupport: false,
           kubernetesSupport: false,
           cicdTemplate: false,
-          testingSetup: false,
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream=======
->>>>>>> Stashed changes        },
+          testingSetup: false,        },
         author,
         marketplace,
         submission
