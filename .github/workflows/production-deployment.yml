@@ -9,10 +9,12 @@ on:
 jobs:
   validate-ci-config:
     runs-on: ubuntu-latest
+    env:
+      DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
     steps:
       - name: Validate CI config (Datadog secrets)
         run: |
-          if [ -z "${{ secrets.DATADOG_API_KEY }}" ]; then
+          if [ -z "${DD_API_KEY}" ]; then
             echo "::warning::Missing secret DATADOG_API_KEY; monitoring stack deployment will be skipped."
           else
             echo "DATADOG_API_KEY present."
@@ -21,6 +23,10 @@ jobs:
   deploy:
     needs: [validate-ci-config]
     runs-on: ubuntu-latest
+    env:
+      DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+      KUBECONFIG_BASE64: ${{ secrets.KUBECONFIG_BASE64 }}
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,19 +52,19 @@ jobs:
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
-          kubeconfig: ${{ secrets.KUBECONFIG_BASE64 }}
+          kubeconfig: ${{ env.KUBECONFIG_BASE64 }}
 
       - name: Deploy VibeCode Application
         run: |
           chmod +x ./scripts/production-deploy.sh
           ./scripts/production-deploy.sh
         env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_USERNAME: ${{ env.DOCKER_USERNAME }}
 
       - name: Deploy Monitoring Stack
-        if: ${{ secrets.DATADOG_API_KEY != '' }}
+        if: ${{ env.DD_API_KEY != '' }}
         run: |
           chmod +x ./scripts/deploy-monitoring.sh
           ./scripts/deploy-monitoring.sh -m kubernetes
         env:
-          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          DATADOG_API_KEY: ${{ env.DD_API_KEY }}

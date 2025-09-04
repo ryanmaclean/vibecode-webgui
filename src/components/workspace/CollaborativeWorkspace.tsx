@@ -15,6 +15,9 @@ import { useCollaboration } from '@/hooks/useCollaboration'
 import { TemplateMarketplace } from '@/components/marketplace/TemplateMarketplace'
 import { type MarketplaceTemplate } from '@/lib/marketplace/template-marketplace'
 import { type GeneratedProject } from '@/lib/templates/generator'
+import { generateFromTemplate } from '@/lib/templates/generator'
+import { GitHubDeploymentWorkflow } from '@/components/deployment/GitHubDeploymentWorkflow'
+import { TeamChat } from '@/components/chat/TeamChat'
 import {
   UsersIcon,
   ChatBubbleLeftRightIcon,
@@ -65,6 +68,15 @@ interface WorkspaceActivity {
   data?: WorkspaceActivityData
 }
 
+interface TeamMember {
+  id: string
+  name: string
+  color: string
+  isActive: boolean
+  role: 'owner' | 'collaborator' | 'viewer'
+  joinedAt: Date
+}
+
 export function CollaborativeWorkspace({
   workspaceId,
   userId,
@@ -74,6 +86,7 @@ export function CollaborativeWorkspace({
   onCreateDebugSession
 }: CollaborativeWorkspaceProps) {
   const [isGeneratingProject, setIsGeneratingProject] = useState(false)
+  const [selectedProject, setSelectedProject] = useState<GeneratedProject | null>(initialProject || null)
   const [activeTab, setActiveTab] = useState('templates')
   const [showDeployment, setShowDeployment] = useState(false)
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
@@ -160,6 +173,46 @@ export function CollaborativeWorkspace({
     } finally {
       setIsGeneratingProject(false)
     }
+  }
+
+  // Add activity to workspace feed
+  const addActivity = (activity: Omit<WorkspaceActivity, 'id' | 'timestamp'>) => {
+    const newActivity: WorkspaceActivity = {
+      ...activity,
+      id: `activity-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date()
+    }
+    setWorkspaceActivity(prev => [newActivity, ...prev])
+  }
+
+  // Create new conversation
+  const createNewConversation = async () => {
+    const newConversationId = `workspace-${workspaceId}-${Date.now()}`
+    setConversationId(newConversationId)
+    
+    // Add to activity feed
+    addActivity({
+      type: 'message_sent',
+      userId,
+      userName,
+      data: { message: 'Started a new team conversation' }
+    })
+    
+    // Switch to chat tab
+    setActiveTab('chat')
+  }
+
+  // Handle deployment start
+  const handleDeploymentStart = () => {
+    setShowDeployment(true)
+    
+    // Add to activity feed
+    addActivity({
+      type: 'deployment_started',
+      userId,
+      userName,
+      data: { projectName: selectedProject?.name }
+    })
   }
 
   // Initialize conversation for chat

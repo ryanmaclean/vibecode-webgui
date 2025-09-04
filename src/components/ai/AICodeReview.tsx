@@ -93,7 +93,7 @@ export default function AICodeReview({
     } finally {
       setIsReviewing(false);
     }
-  }, [code, language, framework, aiManager, onReviewComplete]);
+  }, [code, language, framework, onReviewComplete]);
 
   const getReviewSection = (stepId: string) => {
     return results.find(result => result.stepId === stepId);
