@@ -240,10 +240,10 @@ export class EnhancedVectorStore {
    */
   private calculateProviderScore(avgTime: number, errorRate: number, queryType: 'large_query' | 'small_query' | 'default'): number {
     // Base score from speed (lower time = higher score)
-    let speedScore = Math.max(0, 1000 - avgTime) / 1000
+    const speedScore = Math.max(0, 1000 - avgTime) / 1000
 
     // Error penalty (fewer errors = higher score)
-    let errorScore = Math.max(0, 1 - errorRate)
+    const errorScore = Math.max(0, 1 - errorRate)
 
     // Query type specific weights
     let speedWeight = 0.7

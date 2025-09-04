@@ -129,7 +129,7 @@ Focus on:
 - Performance considerations
     `);
 
-    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -180,7 +180,7 @@ Generate a single, focused test case that:
 Return only the test case code, no explanations.
     `);
 
-    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
     const chain = RunnableSequence.from([
       prompt,
       this.llm,

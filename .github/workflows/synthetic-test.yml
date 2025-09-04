@@ -3,12 +3,21 @@ name: Run Synthetic Tests
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: synthetics-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-ci-config:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     env:
-      DD_API_KEY: ${{ secrets.DD_API_KEY }}
-      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY || '' }}
+      DD_SYNTHETIC_TEST_IDS: ${{ vars.DD_SYNTHETIC_TEST_IDS || '' }}
     steps:
       - name: Validate CI config (Datadog secrets)
         run: |
@@ -21,6 +30,9 @@ jobs:
             echo "::warning::Missing secret DD_APP_KEY; Datadog Synthetic Tests will be skipped."
             MISSING=1
           fi
+          if [ -z "${DD_SYNTHETIC_TEST_IDS}" ]; then
+            echo "Note: DD_SYNTHETIC_TEST_IDS not set; will fallback to search query."
+          fi
           if [ $MISSING -eq 0 ]; then
             echo "All required Datadog secrets present."
           fi
@@ -28,9 +40,11 @@ jobs:
   run-synthetic-tests:
     needs: [validate-ci-config]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
-      DD_API_KEY: ${{ secrets.DD_API_KEY }}
-      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY || '' }}
+      DD_SYNTHETIC_TEST_IDS: ${{ vars.DD_SYNTHETIC_TEST_IDS || '' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,15 +52,23 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-
-      - name: Install dependencies
-        run: npm ci
+          node-version: '20'
 
       - name: Run Datadog Synthetic Tests
         if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
         run: |
-          datadog-ci synthetics run-tests --search "VibeCode Critical User Journey" --failOnCriticalErrors
+          set -euo pipefail
+          if [ -n "${DD_SYNTHETIC_TEST_IDS}" ]; then
+            echo "Running Datadog Synthetic tests by public IDs..."
+            npx @datadog/datadog-ci synthetics run-tests \
+              --publicIds "${DD_SYNTHETIC_TEST_IDS}" \
+              --failOnCriticalErrors
+          else
+            echo "Running Datadog Synthetic tests by search query..."
+            npx @datadog/datadog-ci synthetics run-tests \
+              --search "VibeCode Critical User Journey" \
+              --failOnCriticalErrors
+          fi
         env:
           DATADOG_API_KEY: ${{ env.DD_API_KEY }}
           DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
