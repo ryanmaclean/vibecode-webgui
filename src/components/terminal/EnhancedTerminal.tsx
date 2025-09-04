@@ -113,11 +113,7 @@ export default function EnhancedTerminal({
     addons.current.fit = new FitAddon()
     terminal.current.loadAddon(addons.current.fit)
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    // WebGL addon not available - using canvas renderer=======
     // WebGL addon not available - using canvas renderer
->>>>>>> Stashed changes
 
     addons.current.webLinks = new WebLinksAddon()
     terminal.current.loadAddon(addons.current.webLinks)
