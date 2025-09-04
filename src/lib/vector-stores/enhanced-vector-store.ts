@@ -9,7 +9,9 @@ import { weaviateStore } from './weaviate-client'
 import { mlflowClient } from '../mlflow/mlflow-client'
 import { VectorMetricsCollector } from '../vector-db/VectorMetricsCollector'
 import { vectorQueryCache } from './query-cache'
-import { getMetricsCollector } from '../db/database-metrics'    this.initializeProviders()
+import { getMetricsCollector } from '../db/database-metrics'
+
+  constructor() {
   }
 
   /**
