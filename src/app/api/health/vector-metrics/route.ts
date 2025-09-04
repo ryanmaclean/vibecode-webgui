@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { enhancedVectorStore } from '@/lib/vector-stores/enhanced-vector-store'
+// import { enhancedVectorStore } from '@/lib/vector-stores/enhanced-vector-store'
 // import { prismaPoolOptimizer } from '@/lib/db/prisma-pool-optimizer'
 import { vectorQueryCache } from '@/lib/vector-stores/query-cache'
 import { getMetricsCollector } from '@/lib/db/database-metrics'
 
 export async function GET(_request: NextRequest) {
   try {
-    const stats = await enhancedVectorStore.healthCheck()
+    // const stats = await enhancedVectorStore.healthCheck()
+    const stats = { status: 'unavailable' }
     // const poolMetrics = await prismaPoolOptimizer.collectMetrics()
     const poolMetrics = { status: 'unavailable' }
     const cacheStats = vectorQueryCache.getStats()
     const cacheAnalytics = vectorQueryCache.getAnalytics()
     const dbMetrics = getMetricsCollector()
     const vectorMetrics = dbMetrics.getVectorMetrics()
-    const providerInsights = enhancedVectorStore.getProviderSelectionInsights()
+    // const providerInsights = enhancedVectorStore.getProviderSelectionInsights()
+    const providerInsights = { status: 'unavailable' }
     
     return NextResponse.json({
       status: 'success',
