@@ -25,9 +25,7 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
   const [template, setTemplate] = useState<Partial<ProjectTemplate>>({
     name: '',
     description: '',
-    category: 'frontend',=======
-    category: 'frontend',
->>>>>>> Stashed changes    complexity: 'beginner',
+    category: 'frontend',    complexity: 'beginner',
     tags: [],
     files: [],
     dependencies: {},
