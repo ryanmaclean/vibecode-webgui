@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { datadogDBM, DBMAlert } from '@/lib/monitoring/datadog-metrics';
+import { datadogMetrics } from '@/lib/monitoring/datadog-metrics';
 import { createRobustConnection } from '@/lib/db/robust-db-connection';
 
 // Alert thresholds for connection pool monitoring
@@ -30,7 +30,7 @@ const DEFAULT_THRESHOLDS: PoolAlertThresholds = {
 };
 
 // Initialize Datadog integration
-const datadogIntegration = new DatadogIntegration();
+// const datadogIntegration = new DatadogIntegration();
 
 /**
  * Check pool status and generate alerts if thresholds are exceeded
@@ -80,16 +80,16 @@ function checkPoolAlerts(poolStatus: any, thresholds: PoolAlertThresholds = DEFA
       
       // Send metrics to Datadog
       try {
-        datadogIntegration.recordPoolAlert({
-          poolKey: pool.key,
-          severity: alert.severity,
-          utilizationPercent: alert.utilizationPercent,
-          availableConnections: alert.availableConnections,
-          activeConnections: pool.activeConnections,
-          totalConnections: pool.totalConnections
-        });
+        // datadogIntegration.recordPoolAlert({
+        //   poolKey: pool.key,
+        //   severity: alert.severity,
+        //   utilizationPercent: alert.utilizationPercent,
+        //   availableConnections: alert.availableConnections,
+        //   activeConnections: pool.activeConnections,
+        //   totalConnections: pool.totalConnections
+        // });
         
-        console.log(`📊 Sent pool alert to Datadog: ${alert.severity} for pool ${pool.key}`);
+        console.log(`📊 Pool alert: ${alert.severity} for pool ${pool.key}`);
       } catch (error) {
         console.error('Failed to send pool alert to Datadog:', error);
       }

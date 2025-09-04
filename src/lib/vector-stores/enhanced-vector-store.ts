@@ -11,6 +11,15 @@ import { VectorMetricsCollector } from '../vector-db/VectorMetricsCollector'
 import { vectorQueryCache } from './query-cache'
 import { getMetricsCollector } from '../db/database-metrics'
 
+/**
+ * Enhanced Vector Store
+ * Provides unified interface for multiple vector database providers
+ */
+export class EnhancedVectorStore {
+  private providers: Map<string, boolean> = new Map()
+  private lastHealthCheck: number = 0
+  private healthCheckInterval: number = 30000 // 30 seconds
+
   constructor() {
   }
 
@@ -177,7 +186,8 @@ import { getMetricsCollector } from '../db/database-metrics'
     const pgvectorErrors = this.getAvgMetric('pgvector_errors', 0)
     const weaviateErrors = this.getAvgMetric('weaviate_errors', 0)
 
-    // Prefer Weaviate for advanced features (mandatory)    if (weaviateAvailable && (
+    // Prefer Weaviate for advanced features (mandatory)
+    if (weaviateAvailable && (
       options.searchType === 'hybrid' || 
       options.searchType === 'generative' ||
       options.generativePrompt
@@ -275,7 +285,8 @@ import { getMetricsCollector } from '../db/database-metrics'
   }
 
   /**
-   * Unified search across providers with intelligent routing and caching   */
+   * Unified search across providers with intelligent routing and caching
+   */
   async search(options: UnifiedSearchOptions): Promise<UnifiedSearchResult[]> {
     const startTime = Date.now()
     let provider: 'pgvector' | 'weaviate' | undefined
@@ -289,6 +300,22 @@ import { getMetricsCollector } from '../db/database-metrics'
         this.dbMetricsCollector.recordVectorSearch('pgvector', Date.now() - startTime, cachedResults.length, true)
         return cachedResults
       }
+
+      // Select provider based on options and performance
+      provider = this.selectProvider(options)
+
+      // Execute search with selected provider
+      if (provider === 'pgvector') {
+        results = await this.searchPgVector(options)
+      } else if (provider === 'weaviate') {
+        results = await this.searchWeaviate(options)
+      } else {
+        throw new Error(`Unknown provider: ${provider}`)
+      }
+
+      // Cache results for future queries
+      vectorQueryCache.cacheResults(options.query, options, results)
+
       // Track performance metrics
       const queryTime = Date.now() - startTime
       this.recordMetric(`${provider}_query_time`, queryTime)
@@ -302,7 +329,10 @@ import { getMetricsCollector } from '../db/database-metrics'
         this.metricsCollector.updateStorageMetrics(results.length, 0)
       } catch (e) {
         // Metrics collection is optional
-      }      
+      }
+
+      return results
+    } catch (error) {
       // Try fallback provider
       const fallbackProvider = provider === 'weaviate' ? 'pgvector' : 'weaviate'
       if (this.providers.get(fallbackProvider)) {
@@ -310,7 +340,16 @@ import { getMetricsCollector } from '../db/database-metrics'
         
         // Record provider switch for monitoring
         this.dbMetricsCollector.recordProviderSwitch(provider || 'pgvector', fallbackProvider)
-                }
+        
+        try {
+          if (fallbackProvider === 'pgvector') {
+            return await this.searchPgVector(options)
+          } else if (fallbackProvider === 'weaviate') {
+            return await this.searchWeaviate(options)
+          }
+        } catch (fallbackError) {
+          console.error('Fallback provider also failed:', fallbackError)
+        }
       }
 
       throw error
@@ -390,8 +429,33 @@ import { getMetricsCollector } from '../db/database-metrics'
     pgvector: boolean
     weaviate: boolean
     totalStored: number
-    poolMetrics?: any      }
+    poolMetrics?: any
+  }> {
+    const results = {
+      pgvector: false,
+      weaviate: false,
+      totalStored: 0
     }
+
+    // Store in PostgreSQL pgvector (for basic vector search)
+    if (this.providers.get('pgvector')) {
+      try {
+        const pgvectorStartTime = Date.now()
+        await pgVectorStore.storeChunks(workspaceId, documents)
+        const pgvectorDuration = Date.now() - pgvectorStartTime
+        
+        results.pgvector = true
+        results.totalStored += documents.length
+        
+        // Record pgvector store metrics
+        this.dbMetricsCollector.recordVectorStore(documents.length, 'pgvector', pgvectorDuration)
+      } catch (error) {
+        console.error('Failed to store in pgvector:', error)
+        this.dbMetricsCollector.recordVectorError('store')
+      }
+    }
+
+    // Store in Weaviate (for advanced search capabilities)
 
     // Store in Weaviate (for advanced search capabilities)
     if (this.providers.get('weaviate')) {
@@ -425,7 +489,8 @@ import { getMetricsCollector } from '../db/database-metrics'
         this.dbMetricsCollector.recordVectorStore(documents.length, 'weaviate', weaviateDuration)
       } catch (error) {
         console.error('Failed to store in Weaviate:', error)
-        this.dbMetricsCollector.recordVectorError('store')      }
+        this.dbMetricsCollector.recordVectorError('store')
+      }
     }
 
     return results
@@ -504,7 +569,6 @@ import { getMetricsCollector } from '../db/database-metrics'
   }
 
   /**
-<<<<<<< Updated upstream
    * Get provider selection insights for monitoring
    */
   getProviderSelectionInsights(): {
@@ -540,24 +604,6 @@ import { getMetricsCollector } from '../db/database-metrics'
       },
       recommendation
     }
-  }
-
-  /**
-=======
->>>>>>> Stashed changes
-   * Format file size
-   */
-  private formatSize(bytes: number): string {
-    const units = ['B', 'KB', 'MB', 'GB', 'TB']
-    let size = bytes
-    let unitIndex = 0
-
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024
-      unitIndex++
-    }
-
-    return `${size.toFixed(1)} ${units[unitIndex]}`
   }
 }
 
