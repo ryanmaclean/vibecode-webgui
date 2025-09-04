@@ -9,10 +9,7 @@ import { PostgresVectorDatabaseAdapter, PostgresVectorDatabaseConfig } from './p
 import { SqlServerVectorDatabaseAdapter, SqlServerVectorDatabaseConfig } from './sqlserver-vector-database-adapter';
 import { CosmosDbVectorDatabaseAdapter, CosmosDbVectorDatabaseConfig } from './cosmosdb-vector-database-adapter';
 import { RedisVectorDatabaseAdapter, RedisVectorDatabaseConfig } from './redis-vector-database-adapter';
-<<<<<<< HEAD
 import { CognitiveSearchVectorDatabaseAdapter, CognitiveSearchVectorDatabaseConfig } from './cognitive-search-vector-database-adapter';
-=======
->>>>>>> origin/feature/general-improvements-fixed
 
 /**
  * Factory class for creating vector database adapters
@@ -47,13 +44,9 @@ export class VectorDatabaseFactory {
           adapter = new RedisVectorDatabaseAdapter(config as RedisVectorDatabaseConfig);
           break;
 
-<<<<<<< HEAD
         case VectorDatabaseProvider.COGNITIVE_SEARCH:
           adapter = new CognitiveSearchVectorDatabaseAdapter(config as CognitiveSearchVectorDatabaseConfig);
           break;
-
-=======
->>>>>>> origin/feature/general-improvements-fixed
         default:
           throw new Error(`Unsupported vector database provider: ${config.provider}`);
       }
