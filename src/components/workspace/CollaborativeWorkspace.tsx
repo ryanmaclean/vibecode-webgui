@@ -5,14 +5,16 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react'import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import React, { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useCollaboration } from '@/hooks/useCollaboration'
 import { TemplateMarketplace } from '@/components/marketplace/TemplateMarketplace'
-import { type MarketplaceTemplate } from '@/lib/marketplace/template-marketplace'} from '@/lib/templates/generator'
+import { type MarketplaceTemplate } from '@/lib/marketplace/template-marketplace'
+import { type GeneratedProject } from '@/lib/templates/generator'
 import {
   UsersIcon,
   ChatBubbleLeftRightIcon,
@@ -88,11 +90,7 @@ interface WorkspaceActivity {
       name: user.name,
       color: user.color || '#1f75cb', // Provide a default color if undefined
       isActive: user.isActive,
-      role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'collaborator' | 'viewer',=======
-      role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'viewer' | 'collaborator',
->>>>>>> Stashed changes=======
-      role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'viewer' | 'collaborator',
->>>>>>> Stashed changes
+      role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'collaborator' | 'viewer',
       joinedAt: new Date()
     }))
     setTeamMembers(members)
