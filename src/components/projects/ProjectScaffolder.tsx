@@ -177,10 +177,7 @@ export function ProjectScaffolder({
     }
 
     setGeneratedFiles(files)
-<<<<<<< Updated upstream
-    onGenerate?.({ files: generatedFiles, name: projectName });=======
     onGenerate?.({ files, name: projectName })
->>>>>>> Stashed changes
 
     setTimeout(() => {
       setIsGenerating(false)

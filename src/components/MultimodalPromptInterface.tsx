@@ -82,9 +82,7 @@ export default function MultimodalPromptInterface({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<any | null>(null);=======
   const recognitionRef = useRef<any>(null);
->>>>>>> Stashed changes
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   
   // Initialize sample generator
@@ -94,7 +92,6 @@ export default function MultimodalPromptInterface({
   // Initialize speech recognition
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-<<<<<<< Updated upstream
       const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognitionAPI) {
         recognitionRef.current = new SpeechRecognitionAPI();
@@ -120,7 +117,8 @@ export default function MultimodalPromptInterface({
         recognitionRef.current.onend = () => {
           setIsListening(false);
         };
-      }    }
+      }
+    }
   }, []);
 
   // Auto-scroll to bottom of messages
