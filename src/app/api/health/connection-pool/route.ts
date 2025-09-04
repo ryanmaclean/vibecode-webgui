@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prismaPoolOptimizer } from '@/lib/db/prisma-pool-optimizer'
+// import { prismaPoolOptimizer } from '@/lib/db/prisma-pool-optimizer'
 
 export async function GET(request: NextRequest) {
   try {
-    // Collect current metrics
-    const currentMetrics = await prismaPoolOptimizer.collectMetrics()
-    const poolStats = prismaPoolOptimizer.getPoolStats()
-    const currentConfig = prismaPoolOptimizer.getCurrentConfig()
-    const analysis = prismaPoolOptimizer.analyzeAndOptimize()
+    // Mock response for missing module
+    return NextResponse.json({
+      status: 'unavailable',
+      message: 'Connection pool optimizer not available'
+    })
 
     return NextResponse.json({
       status: 'success',
