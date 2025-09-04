@@ -60,7 +60,6 @@ interface RedisConnectionOptions {
 // Valkey configuration based on environment 
 // Note: Using Redis-compatible client libraries (ioredis) to connect to Valkey server
 const getValkeyConfig = () => {
-=======
 import { Redis } from 'ioredis';
 import { metrics } from '../server-monitoring';
 
@@ -69,7 +68,6 @@ import { metrics } from '../server-monitoring';
 const getValkeyConfig = () => {
   const isProduction = process.env.NODE_ENV === 'production';
   
->>>>>>> Stashed changes
   // Upstash provides Redis-compatible API (acceptable for managed service)
   if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
     return {
@@ -100,21 +98,12 @@ const getValkeyConfig = () => {
 const config = getValkeyConfig();
 
 // Create Valkey client with optimized settings (using Redis-compatible ioredis client)
-<<<<<<< Updated upstream
-let redisClient: any = null;
-=======
 const valkeyClient: Redis | null = null;
->>>>>>> Stashed changes
 
 try {
   if (config.type === 'standard') {
     if ('url' in config) {
-<<<<<<< Updated upstream
-      // @ts-ignore - ioredis constructor typing issue
-      redisClient = new Redis(config.url, {
-=======
       redis = new Redis(config.url, {
->>>>>>> Stashed changes
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
         maxRetriesPerRequest: 3,
@@ -127,12 +116,7 @@ try {
         connectTimeout: 10000,
       });
     } else {
-<<<<<<< Updated upstream
-      // @ts-ignore - ioredis constructor typing issue
-      redisClient = new Redis({
-=======
       redis = new Redis({
->>>>>>> Stashed changes
         host: config.host,
         port: config.port,
         password: config.password,
