@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { vectorDBService } from '@/lib/vector-db/VectorDBService';
+// import { vectorDBService } from '@/lib/vector-db/VectorDBService';
 
 export async function GET(request: NextRequest) {
     const format = request.nextUrl.searchParams.get('format') || 'json';
-    const startTime = Date.now();
-
+    
     try {
-        const healthCheck = await vectorDBService.healthCheck();
-        const latency = Date.now() - startTime;
+        // Mock response for missing module
+        return NextResponse.json({
+            status: 'unavailable',
+            message: 'Vector DB service not available'
+        })
 
         const response = {
             status: 'ok',

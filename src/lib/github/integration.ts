@@ -353,13 +353,8 @@ export class GitHubIntegration {
         description: repo.description,
         htmlUrl: repo.html_url,
         private: repo.private,
-<<<<<<< Updated upstream
         createdAt: repo.created_at || new Date().toISOString(),
         updatedAt: repo.updated_at || new Date().toISOString(),
-=======
-        createdAt: repo.created_at,
-        updatedAt: repo.updated_at,
->>>>>>> Stashed changes
         language: repo.language,
         stargazersCount: repo.stargazers_count,
         forksCount: repo.forks_count,

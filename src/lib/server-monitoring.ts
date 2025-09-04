@@ -475,7 +475,6 @@ class ApplicationLogger {
   }
 
   /**
-<<<<<<< Updated upstream
    * Log vector database operations
    */
   logVectorDB(event: string, context: {
@@ -541,8 +540,6 @@ class ApplicationLogger {
   }
 
   /**
-=======
->>>>>>> Stashed changes
    * Log API requests
    */
   logAPIRequest(method: string, endpoint: string, statusCode: number, responseTime: number, userId?: string): void {
