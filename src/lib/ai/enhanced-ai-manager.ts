@@ -323,17 +323,10 @@ export class EnhancedAIManager {
       if (this.openaiClient) {
         const enhancedPrompt = `Generate ${language} code${framework ? ` using ${framework}` : ''} for the following requirements:\n\n${prompt}\n\nProvide complete, production-ready code with proper error handling and documentation.`;
         
-<<<<<<< Updated upstream
         // @ts-ignore - Direct message format for ChatOpenAI
         const response = await this.openaiClient.invoke([
           { role: "system", content: `You are a senior ${language} developer. Generate clean, maintainable, and well-documented code.` },
-          { role: "user", content: enhancedPrompt }
-=======
-        const response = await this.openaiClient.invoke([
-          new SystemMessage(`You are a senior ${language} developer. Generate clean, maintainable, and well-documented code.`),
-          new HumanMessage(enhancedPrompt)
->>>>>>> Stashed changes
-        ]);
+          { role: "user", content: enhancedPrompt }        ]);
 
         return {
           code: response.content,
@@ -369,7 +362,6 @@ export class EnhancedAIManager {
       throw new Error('No AI provider available');
     }
 
-<<<<<<< Updated upstream
     try {
       // @ts-ignore - Type issue with RunnableSequence in current LangChain version
       return RunnableSequence.from([
@@ -380,15 +372,7 @@ export class EnhancedAIManager {
     } catch (error) {
       console.error('Failed to create chain:', error);
       throw new Error('Failed to create AI chain');
-    }
-=======
-    return RunnableSequence.from([
-      prompt,
-      model,
-      outputParser,
-    ]);
->>>>>>> Stashed changes
-  }
+    }  }
 
   /**
    * Get system status and health
@@ -432,7 +416,6 @@ export class EnhancedAIManager {
     return status;
   }
 
-<<<<<<< Updated upstream
    /**
     * Get recommended AI models for specific tasks
     */
@@ -483,64 +466,7 @@ export class EnhancedAIManager {
 
      // Sort by suitability
      return recommendations.sort((a, b) => b.suitability - a.suitability);
-   }
-=======
-  /**
-   * Get recommended AI models for specific tasks
-   */
-  getRecommendedModels(task: string): Array<{
-    name: string;
-    provider: 'ollama' | 'openai';
-    description: string;
-    suitability: number; // 0-1
-  }> {
-    const recommendations = [];
-
-    // Add Ollama models if available
-    if (this.ollamaClient) {
-      Object.entries(OLLAMA_MODELS).forEach(([key, model]) => {
-        let suitability = 0.5; // Base suitability
-
-        // Adjust based on task
-        if (task.includes('code') && model.recommendedUse.includes('code generation')) {
-          suitability = 0.9;
-        } else if (task.includes('review') && model.recommendedUse.includes('code review')) {
-          suitability = 0.8;
-        } else if (task.includes('documentation')) {
-          suitability = 0.7;
-        }
-
-        recommendations.push({
-          name: model.name,
-          provider: 'ollama',
-          description: model.description,
-          suitability
-        });
-      });
-    }
-
-    // Add OpenAI models if available
-    if (this.openaiClient) {
-      const openaiModels = [
-        { name: 'gpt-4', description: 'Most capable model for complex tasks', suitability: 0.9 },
-        { name: 'gpt-3.5-turbo', description: 'Fast and cost-effective for most tasks', suitability: 0.7 }
-      ];
-
-      openaiModels.forEach(model => {
-        recommendations.push({
-          name: model.name,
-          provider: 'openai',
-          description: model.description,
-          suitability: model.suitability
-        });
-      });
-    }
-
-    // Sort by suitability
-    return recommendations.sort((a, b) => b.suitability - a.suitability);
-  }
->>>>>>> Stashed changes
-}
+   }}
 
 // Factory function to create enhanced AI manager
 export function createEnhancedAIManager(config: AIProviderConfig): EnhancedAIManager {

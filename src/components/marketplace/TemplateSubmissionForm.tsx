@@ -25,20 +25,9 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
   const [template, setTemplate] = useState<Partial<ProjectTemplate>>({
     name: '',
     description: '',
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
+    category: 'frontend',=======
     category: 'frontend',
-=======
-    category: 'fullstack',
->>>>>>> Stashed changes
-=======
-    category: 'frontend',
->>>>>>> Stashed changes
-=======
-    category: 'fullstack',
->>>>>>> Stashed changes
-    complexity: 'beginner',
+>>>>>>> Stashed changes    complexity: 'beginner',
     tags: [],
     files: [],
     dependencies: {},
@@ -132,19 +121,9 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           name: template.name || '',
           description: template.description || '',
 <<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
+          category: template.category || 'frontend',=======
           category: template.category || 'frontend',
-=======
-          category: template.category || 'fullstack',
->>>>>>> Stashed changes
-=======
-          category: template.category || 'frontend',
->>>>>>> Stashed changes
-=======
-          category: template.category || 'fullstack',
->>>>>>> Stashed changes
-          complexity: template.complexity || 'beginner',
+>>>>>>> Stashed changes          complexity: template.complexity || 'beginner',
           tags: template.tags || [],
           language: ['javascript'],
           frameworks: [],
@@ -154,13 +133,7 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           dependencies: template.dependencies || {},
           scripts: template.scripts || {},
           envVars: template.envVars || [],
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
-          documentation: {
+<<<<<<< Updated upstream          documentation: {
             setup: Array.isArray(template.documentation?.setup) ? template.documentation.setup : ['Setup instructions'],
             usage: Array.isArray(template.documentation?.usage) ? template.documentation.usage : ['Usage instructions'],
             deployment: Array.isArray(template.documentation?.deployment) ? template.documentation.deployment : ['Deployment guide']
@@ -170,36 +143,13 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           features: ['modern-setup', 'production-ready'],
           estimatedSetupTime: '15 minutes',
 <<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-          dockerSupport: false,
+>>>>>>> Stashed changes          dockerSupport: false,
           kubernetesSupport: false,
           cicdTemplate: false,
           testingSetup: false,
 <<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
-          monitoringSetup: false,
-          documentation: template.documentation || {
-            setup: [],
-            usage: [],
-            deployment: []
-          }
-<<<<<<< Updated upstream
-=======
-          monitoringSetup: false
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
-          monitoringSetup: false
->>>>>>> Stashed changes
-        },
+<<<<<<< Updated upstream=======
+>>>>>>> Stashed changes        },
         author,
         marketplace,
         submission
