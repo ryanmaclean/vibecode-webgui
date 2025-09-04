@@ -6,15 +6,13 @@
 import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { metrics } from '../server-monitoring';
-<<<<<<< Updated upstream
-import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';import { 
+import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
+import { 
   CosmosClient, 
   Container, 
   Database,
   SqlQuerySpec 
 } from '../../types/azure-cosmos';
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
 /**
  * Azure Cosmos DB specific configuration options
  */
@@ -38,7 +36,13 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   private client: any = null; // Cosmos DB client
   private database: any = null;
   private container: any = null;
-  private errorHandler: VectorDbErrorHandler;    this.cosmosConfig = {
+  private errorHandler: VectorDbErrorHandler;
+  private cosmosConfig: CosmosDbVectorDatabaseConfig;
+
+  constructor(config: CosmosDbVectorDatabaseConfig) {
+    super(config);
+    this.errorHandler = new VectorDbErrorHandler();
+    this.cosmosConfig = {
       cosmosEndpoint: process.env.COSMOS_ENDPOINT,
       cosmosKey: process.env.COSMOS_KEY,
       cosmosDatabase: process.env.COSMOS_DATABASE || 'vibecode',

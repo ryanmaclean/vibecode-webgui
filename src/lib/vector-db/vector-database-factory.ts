@@ -102,14 +102,11 @@ export class VectorDatabaseFactory {
         case 'valkey':
           provider = VectorDatabaseProvider.REDIS;
           break;
-<<<<<<< HEAD
         case 'cognitive_search':
         case 'azure_search':
         case 'azure_cognitive_search':
           provider = VectorDatabaseProvider.COGNITIVE_SEARCH;
           break;
-=======
->>>>>>> origin/feature/general-improvements-fixed
         default:
           provider = VectorDatabaseProvider.POSTGRES;
       }
