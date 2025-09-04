@@ -5,6 +5,7 @@
 
 import { logger } from '../logger';
 
+<<<<<<< HEAD
 /**
  * Standardized error types for vector database operations
  */
@@ -58,6 +59,25 @@ export const VectorDBErrorType = VectorDbErrorType;
  */
 export class VectorDbError extends Error {
   type: VectorDbErrorType;
+=======
+export enum VectorDBErrorType {
+  CONNECTION_FAILED = 'CONNECTION_FAILED',
+  QUERY_FAILED = 'QUERY_FAILED',
+  VECTOR_CREATION_FAILED = 'VECTOR_CREATION_FAILED',
+  VECTOR_UPDATE_FAILED = 'VECTOR_UPDATE_FAILED',
+  VECTOR_DELETION_FAILED = 'VECTOR_DELETION_FAILED',
+  EMBEDDING_GENERATION_FAILED = 'EMBEDDING_GENERATION_FAILED',
+  SIMILARITY_SEARCH_FAILED = 'SIMILARITY_SEARCH_FAILED',
+  INDEX_OPERATION_FAILED = 'INDEX_OPERATION_FAILED',
+  CONFIGURATION_ERROR = 'CONFIGURATION_ERROR',
+  AUTHORIZATION_ERROR = 'AUTHORIZATION_ERROR',
+  UNSUPPORTED_OPERATION = 'UNSUPPORTED_OPERATION',
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR'
+}
+
+export class VectorDBError extends Error {
+  type: VectorDBErrorType;
+>>>>>>> origin/feature/general-improvements-fixed
   operation: string;
   provider: string;
   details: any;
@@ -65,13 +85,21 @@ export class VectorDbError extends Error {
 
   constructor(
     message: string,
+<<<<<<< HEAD
     type: VectorDbErrorType = VectorDbErrorType.UNKNOWN_ERROR,
+=======
+    type: VectorDBErrorType = VectorDBErrorType.UNKNOWN_ERROR,
+>>>>>>> origin/feature/general-improvements-fixed
     operation: string = 'unknown',
     provider: string = 'unknown',
     details: any = null
   ) {
     super(message);
+<<<<<<< HEAD
     this.name = 'VectorDbError';
+=======
+    this.name = 'VectorDBError';
+>>>>>>> origin/feature/general-improvements-fixed
     this.type = type;
     this.operation = operation;
     this.provider = provider;
@@ -128,6 +156,7 @@ export class VectorDbError extends Error {
   }
 }
 
+<<<<<<< HEAD
 // Legacy alias for backward compatibility
 export const VectorDBError = VectorDbError;
 
@@ -221,17 +250,26 @@ export function getErrorType(error: any): VectorDbErrorType {
  * Legacy function-based error handler
  * @deprecated Use VectorDbErrorHandler class instead
  */
+=======
+>>>>>>> origin/feature/general-improvements-fixed
 export const handleVectorDBError = (
   error: any,
   operation: string,
   provider: string
+<<<<<<< HEAD
 ): VectorDbError => {
   // If already a VectorDbError, return it
   if (error instanceof VectorDbError) {
+=======
+): VectorDBError => {
+  // If already a VectorDBError, return it
+  if (error instanceof VectorDBError) {
+>>>>>>> origin/feature/general-improvements-fixed
     return error;
   }
 
   // Map common database errors to appropriate types
+<<<<<<< HEAD
   const errorType = getErrorType(error);
   const errorMessage = error.message || 'Unknown vector database error';
   const errorDetails: Record<string, any> = {};
@@ -243,12 +281,56 @@ export const handleVectorDBError = (
   if (error.stack) errorDetails.stack = error.stack;
 
   return new VectorDbError(
+=======
+  let errorType = VectorDBErrorType.UNKNOWN_ERROR;
+  let errorMessage = error.message || 'Unknown vector database error';
+  let errorDetails = {};
+
+  // Connection errors
+  if (
+    error.code === 'ECONNREFUSED' ||
+    error.code === 'ETIMEDOUT' ||
+    error.name === 'ConnectionError' ||
+    errorMessage.includes('connect') ||
+    errorMessage.includes('connection')
+  ) {
+    errorType = VectorDBErrorType.CONNECTION_FAILED;
+  }
+  // Authentication errors
+  else if (
+    error.code === 'EAUTH' ||
+    error.code === 401 ||
+    error.code === 403 ||
+    errorMessage.includes('auth') ||
+    errorMessage.includes('credentials') ||
+    errorMessage.includes('permission')
+  ) {
+    errorType = VectorDBErrorType.AUTHORIZATION_ERROR;
+  }
+  // Query errors
+  else if (
+    error.code === 'EQUERY' ||
+    errorMessage.includes('query') ||
+    errorMessage.includes('SQL')
+  ) {
+    errorType = VectorDBErrorType.QUERY_FAILED;
+  }
+
+  // Extract useful information from the error
+  if (error.code) errorDetails = { ...errorDetails, code: error.code };
+  if (error.errno) errorDetails = { ...errorDetails, errno: error.errno };
+  if (error.sqlMessage) errorDetails = { ...errorDetails, sqlMessage: error.sqlMessage };
+  if (error.stack) errorDetails = { ...errorDetails, stack: error.stack };
+
+  return new VectorDBError(
+>>>>>>> origin/feature/general-improvements-fixed
     errorMessage,
     errorType,
     operation,
     provider,
     errorDetails
   );
+<<<<<<< HEAD
 };
 
 /**
@@ -370,3 +452,6 @@ export class VectorDbErrorHandler {
     );
   }
 }
+=======
+};
+>>>>>>> origin/feature/general-improvements-fixed
