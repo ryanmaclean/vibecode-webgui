@@ -4,30 +4,23 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-<<<<<<< Updated upstream
 import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../lib/monitoring/auth'
-=======
->>>>>>> Stashed changes
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
-<<<<<<< Updated upstream
   // Check authentication first
   const authResult = await checkMonitoringAuth(request)
   if (!authResult.isAuthorized) {
     return getUnauthorizedResponse(authResult.error)
   }
-=======
->>>>>>> Stashed changes
   try {
     const { searchParams } = new URL(request.url)
     const metricType = searchParams.get('type') || 'all'
     const timeRange = searchParams.get('range') || '1h'
     const limit = parseInt(searchParams.get('limit') || '100')
 
-<<<<<<< Updated upstream
     // Get real production metrics using service factory
     const { MonitoringServiceFactory } = await import('../../../../lib/monitoring/service-factory')
     const serviceFactory = new MonitoringServiceFactory()
@@ -87,34 +80,11 @@ export async function GET(request: NextRequest) {
       
       await serviceFactory.disconnect()
       metricsData = fallbackMetrics
-=======
-    // Mock metrics data for now - replace with actual implementation
-    const mockMetrics = {
-      system: {
-        cpu_usage: Math.random() * 100,
-        memory_usage: Math.random() * 100,
-        disk_usage: Math.random() * 100,
-        network_io: Math.random() * 1000
-      },
-      application: {
-        request_count: Math.floor(Math.random() * 1000),
-        error_rate: Math.random() * 0.1,
-        response_time: Math.random() * 1000,
-        active_connections: Math.floor(Math.random() * 100)
-      },
-      business: {
-        user_sessions: Math.floor(Math.random() * 500),
-        api_calls: Math.floor(Math.random() * 2000),
-        database_queries: Math.floor(Math.random() * 5000),
-        cache_hit_rate: Math.random() * 0.9
-      }
->>>>>>> Stashed changes
     }
 
     let filteredMetrics: Record<string, unknown> = {}
 
     if (metricType === 'all') {
-<<<<<<< Updated upstream
       filteredMetrics = metricsData
     } else if (metricType === 'system') {
       filteredMetrics = { system: metricsData.system }
@@ -122,15 +92,6 @@ export async function GET(request: NextRequest) {
       filteredMetrics = { application: metricsData.application }
     } else if (metricType === 'business') {
       filteredMetrics = { business: (metricsData as any).business }
-=======
-      filteredMetrics = mockMetrics
-    } else if (metricType === 'system') {
-      filteredMetrics = { system: mockMetrics.system }
-    } else if (metricType === 'application') {
-      filteredMetrics = { application: mockMetrics.application }
-    } else if (metricType === 'business') {
-      filteredMetrics = { business: mockMetrics.business }
->>>>>>> Stashed changes
     }
 
     return NextResponse.json({
@@ -142,11 +103,7 @@ export async function GET(request: NextRequest) {
           time_range: timeRange,
           limit,
           timestamp: new Date().toISOString(),
-<<<<<<< Updated upstream
           source: 'production_services'
-=======
-          source: 'mock_data'
->>>>>>> Stashed changes
         }
       }
     })
@@ -167,14 +124,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-<<<<<<< Updated upstream
   // Check authentication first
   const authResult = await checkMonitoringAuth(request)
   if (!authResult.isAuthorized) {
     return getUnauthorizedResponse(authResult.error)
   }
-=======
->>>>>>> Stashed changes
   try {
     const body = await request.json()
     const { metric_name, value, tags, timestamp } = body
