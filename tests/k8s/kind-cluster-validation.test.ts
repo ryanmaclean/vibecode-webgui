@@ -73,7 +73,7 @@ describe('KIND Cluster Validation', () => {
     const codeServerWorker = workers.find((node: any) =>
       node.metadata.labels['tier'] === 'code-server'
     );
-    const monitoringWorker = workers.find((node: any) => ;
+    const monitoringWorker = workers.find((node: any) =>
       node.metadata.labels['tier'] === 'monitoring'
     );
 
@@ -86,9 +86,7 @@ describe('KIND Cluster Validation', () => {
     const nodeData = JSON.parse(nodes);
 
     nodeData.items.forEach((node: any) => {
-      const readyCondition = node.status.conditions.find((condition: any) => ;
-        condition.type === 'Ready'
-      );
+      const readyCondition = node.status.conditions.find((condition: any) => condition.type === 'Ready');
       expect(readyCondition.status).toBe('True');
     });
   });
@@ -98,19 +96,17 @@ describe('KIND Cluster Validation', () => {
     const podData = JSON.parse(pods);
 
     // Check for essential system components
-    const essentialPods = [;
-      'kube-apiserver',
-      'kube-controller-manager',
-      'kube-scheduler',
-      'etcd',
-      'kube-proxy',
-      'kindnet'
-    ];
+const essentialPods = [
+        'kube-apiserver',
+        'kube-controller-manager',
+        'kube-scheduler',
+        'etcd',
+        'kube-proxy',
+        'kindnet'
+      ];
 
     essentialPods.forEach(podName => {
-      const pod = podData.items.find((pod: any) => ;
-        pod.metadata.name.includes(podName);
-      );
+      const pod = podData.items.find((pod: any) => pod.metadata.name.includes(podName));
       expect(pod).toBeDefined();
       expect(pod.status.phase).toBe('Running');
     });
@@ -176,9 +172,7 @@ spec:
     const pods = execSync('kubectl get pods -n ingress-nginx -o json', { encoding: 'utf8' });
     const podData = JSON.parse(pods);
 
-    const ingressPod = podData.items.find((pod: any) => ;
-      pod.metadata.name.includes('ingress-nginx-controller');
-    );
+const ingressPod = podData.items.find((pod: any) => pod.metadata.name.includes('ingress-nginx-controller'));
     expect(ingressPod).toBeDefined();
     expect(ingressPod.status.phase).toBe('Running');
 
@@ -186,9 +180,9 @@ spec:
     const services = execSync('kubectl get svc -n ingress-nginx -o json', { encoding: 'utf8' });
     const serviceData = JSON.parse(services);
 
-    const ingressService = serviceData.items.find((svc: any) => ;
-      svc.metadata.name.includes('ingress-nginx-controller');
-    );
+const ingressService = serviceData.items.find((svc: any) =>
+        svc.metadata.name.includes('ingress-nginx-controller')
+      );
     expect(ingressService).toBeDefined();
   }, TIMEOUT);
 

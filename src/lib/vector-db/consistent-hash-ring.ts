@@ -139,7 +139,7 @@ export class ConsistentHashRing {
     }
 
     // Collect shards, ensuring we don't include duplicates
-    let startIdx = idx;
+    const startIdx = idx;
     while (result.length < count && result.length < this.getShardCount()) {
       const shard = this.ring.get(this.sortedKeys[idx])!;
       
