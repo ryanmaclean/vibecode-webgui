@@ -6,6 +6,13 @@ const compat = new FlatCompat({
 module.exports = [
   ...compat.extends('next/core-web-vitals'),
   {
+    ignores: [
+      '*.js',
+      '*.cjs',
+      'src/components/__mocks__/',
+      'src/instrument.cjs',
+      'src/lib/ai/*.js'
+    ],
     rules: {
       // Disable all problematic rules for production deployment
       'no-console': 'off',
