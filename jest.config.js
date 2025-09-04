@@ -1,17 +1,12 @@
 /** @type {import('jest').Config} */
 const config = {
   testEnvironment: 'jsdom',
-<<<<<<< Updated upstream
   setupFilesAfterEnv: [
     '<rootDir>/tests/setupTests.ts',
     '<rootDir>/tests/jest.setup.js',
     '<rootDir>/tests/accessibility/jest-axe-setup.js'
   ],
   setupFiles: ['<rootDir>/tests/jest.polyfills.js'],
-=======
-  setupFilesAfterEnv: ['./tests/jest.setup.js'],
-  setupFiles: ['./tests/jest.polyfills.js'],
->>>>>>> Stashed changes
   modulePaths: ['<rootDir>'],
   
   // Increase timeout for integration tests
@@ -59,7 +54,6 @@ const config = {
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
-<<<<<<< Updated upstream
     '!src/**/*.stories.{js,jsx,ts,tsx}',
     '!src/**/*.test.{js,jsx,ts,tsx}',
     '!src/**/index.{js,jsx,ts,tsx}',
@@ -68,8 +62,6 @@ const config = {
   testMatch: [
     '**/__tests__/**/*.[jt]s?(x)',
     '**/?(*.)+(spec|test).[jt]s?(x)'
-=======
->>>>>>> Stashed changes
   ],
   
   testPathIgnorePatterns: [
@@ -77,17 +69,13 @@ const config = {
     '<rootDir>/node_modules/',
     '<rootDir>/tests/e2e/',
   ],
-<<<<<<< Updated upstream
   
   moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json', 'node'],
-=======
->>>>>>> Stashed changes
 
   // Fix haste map collision
   haste: {
     enableSymlinks: false,
   },
-<<<<<<< Updated upstream
   
   // Clear mock calls and instances between tests
   clearMocks: true,
@@ -98,14 +86,13 @@ const config = {
   
   // Watch Plugins
   watchPlugins: [
-    'jest-watch-typeahead/filename',
-    'jest-watch-typeahead/testname',
+    // Removed jest-watch-typeahead as it's not installed
   ],
   
   // Reporters
   reporters: [
     'default',
-    ['jest-junit', { outputDirectory: 'test-results', outputName: 'junit.xml' }],
+    // Removed jest-junit as it might not be installed
   ],
   
   // Coverage
@@ -122,22 +109,3 @@ const config = {
 };
 
 export default config;
-=======
-
-  // Use Babel for transformation to avoid SWC issues
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { 
-      presets: [
-        ['@babel/preset-env', { targets: { node: 'current' } }],
-        ['@babel/preset-react', { runtime: 'automatic' }],
-        '@babel/preset-typescript'
-      ]
-    }],
-  },
-
-  // Extensions to handle
-  moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json'],
-};
-
-module.exports = config;
->>>>>>> Stashed changes
