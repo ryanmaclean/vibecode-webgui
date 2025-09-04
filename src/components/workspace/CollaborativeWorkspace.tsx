@@ -7,9 +7,7 @@
 
 <<<<<<< Updated upstream
 import React, { useState, useEffect } from 'react'
-=======
 import React, { useState, useEffect, useRef } from 'react'
->>>>>>> Stashed changes
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,18 +17,14 @@ import { useCollaboration } from '@/hooks/useCollaboration'
 import { TemplateMarketplace } from '@/components/marketplace/TemplateMarketplace'
 <<<<<<< Updated upstream
 import { type MarketplaceTemplate } from '@/lib/marketplace/template-marketplace'
-=======
->>>>>>> Stashed changes
 import { GitHubDeploymentWorkflow } from '@/components/deployment/GitHubDeploymentWorkflow'
 import CollaborativeChatInterface from '@/components/chat/CollaborativeChatInterface'
 import { 
   generateFromTemplate, 
 <<<<<<< Updated upstream
   type GeneratedProject
-=======
   type GeneratedProject,
   type GenerateFromTemplateOptions
->>>>>>> Stashed changes
 } from '@/lib/templates/generator'
 import {
   UsersIcon,
@@ -82,8 +76,6 @@ interface WorkspaceActivity {
   userName: string
   timestamp: Date
   data?: WorkspaceActivityData
-=======
->>>>>>> Stashed changes
 }
 
 interface TeamMember {
@@ -109,7 +101,6 @@ export function CollaborativeWorkspace({
   userId = 'default-user',
   userName = 'Anonymous User',
   initialProject,
-=======
   onUserInvite?: () => void
   onCreateTerminal?: () => void
   onCreateDebugSession?: () => void
@@ -141,7 +132,6 @@ export function CollaborativeWorkspace({
   userName: initialUserName,
   initialProject,
   onUserInvite,
->>>>>>> Stashed changes
   onCreateTerminal,
   onCreateDebugSession
 }: CollaborativeWorkspaceProps) {
@@ -160,7 +150,6 @@ export function CollaborativeWorkspace({
     socket
   } = useCollaboration({
     workspaceId,
-=======
   const [workspaceId] = useState(initialWorkspaceId || `workspace-${Date.now()}`)
   const [userId] = useState(initialUserId || `user-${Math.random().toString(36).substr(2, 9)}`)
   const [userName] = useState(initialUserName || `User-${Math.random().toString(36).substr(2, 4)}`)
@@ -185,7 +174,6 @@ export function CollaborativeWorkspace({
   } = useCollaboration({
     workspaceId,
     conversationId,
->>>>>>> Stashed changes
     userId,
     userName,
     enabled: true
@@ -202,21 +190,13 @@ export function CollaborativeWorkspace({
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
       role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'collaborator' | 'viewer',
-=======
       role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'viewer' | 'collaborator',
->>>>>>> Stashed changes
-=======
       role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'viewer' | 'collaborator',
->>>>>>> Stashed changes
-=======
       color: user.color,
       isActive: user.isActive,
 <<<<<<< Updated upstream
       role: user.id === userId ? 'owner' : 'collaborator' as const,
->>>>>>> Stashed changes
-=======
       role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'viewer' | 'collaborator',
->>>>>>> Stashed changes
       joinedAt: new Date()
     }))
     setTeamMembers(members)
@@ -229,21 +209,15 @@ export function CollaborativeWorkspace({
 <<<<<<< Updated upstream
   const handleTemplateSelect = async (template: MarketplaceTemplate) => {
     const templateId = template.id
-=======
   const handleTemplateSelect = async (template: any) => {
->>>>>>> Stashed changes
-=======
   const handleTemplateSelect = async (template: any) => {
->>>>>>> Stashed changes
     setIsGeneratingProject(true)
     
     try {
       // Generate project from template
 <<<<<<< Updated upstream
       const project = await generateFromTemplate(template.id, {
-=======
       const project = await generateProjectFromTemplate(template.id, {
->>>>>>> Stashed changes
         name: `project-${Date.now()}`,
         description: template.description || 'Generated from template'
       })
@@ -259,9 +233,7 @@ export function CollaborativeWorkspace({
         complexity: 'intermediate' as const,
         tags: [templateId, 'collaborative'],
         estimatedTime: 30,
-=======
       setSelectedProject(project)
->>>>>>> Stashed changes
         features: [],
         documentation: {
           readme: `# ${project.name}\n\nGenerated in collaborative workspace`,
@@ -271,9 +243,7 @@ export function CollaborativeWorkspace({
       }
 
       setSelectedProject(workspaceProject)
-=======
       setSelectedProject(project)
->>>>>>> Stashed changes
       
       // Broadcast project generation to team
       if (socket) {
@@ -293,11 +263,8 @@ export function CollaborativeWorkspace({
         timestamp: new Date()
       }])
 
-=======
   const handleTemplateSelect = async (templateId: string) => {
-=======
   const handleTemplateSelect = async (template: any) => {
->>>>>>> Stashed changes
     setIsGeneratingProject(true)
     
     try {
@@ -340,7 +307,6 @@ export function CollaborativeWorkspace({
       // Auto-switch to chat tab for collaboration
       setActiveTab('chat')
 
->>>>>>> Stashed changes
     } catch (error) {
       console.error('Failed to generate project:', error)
     } finally {
@@ -586,7 +552,6 @@ export function CollaborativeWorkspace({
             </TabsTrigger>
           </TabsList>
 
-=======
   const handleDeploymentStart = () => {
     if (!selectedProject) return
     
@@ -829,7 +794,6 @@ export function CollaborativeWorkspace({
             </TabsTrigger>
           </TabsList>
 
->>>>>>> Stashed changes
           <TabsContent value="templates" className="h-full p-6">
             {isGeneratingProject ? (
               <div className="flex items-center justify-center h-64">
@@ -843,13 +807,9 @@ export function CollaborativeWorkspace({
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
                 onSelectTemplate={handleTemplateSelect}
-=======
                 onTemplateSelect={handleTemplateSelect}
                 selectedProject={selectedProject}
->>>>>>> Stashed changes
-=======
                 onSelectTemplate={handleTemplateSelect}
->>>>>>> Stashed changes
               />
             )}
           </TabsContent>
@@ -1016,7 +976,6 @@ export function CollaborativeWorkspace({
       {renderSidebar()}
       {renderMainContent()}
 <<<<<<< Updated upstream
-=======
       {/* Deployment modal */}
       {selectedProject && showDeployment && (
         <GitHubDeploymentWorkflow
@@ -1036,14 +995,11 @@ export function CollaborativeWorkspace({
           }}
         />
       )}
->>>>>>> Stashed changes
     </div>
   )
 }
-=======
     </div>
   )
 }
 
 export default CollaborativeWorkspace
->>>>>>> Stashed changes

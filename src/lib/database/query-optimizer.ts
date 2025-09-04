@@ -263,9 +263,7 @@ export class CachedQueries {
     (workspaceId: number, query: string, limit: number = 20) => 
 <<<<<<< Updated upstream
       `search:files:${workspaceId}:${Buffer.from ? Buffer.from(query).toString('base64') : btoa(query)}:${limit}`,
-=======
       `search:files:${workspaceId}:${Buffer.from(query).toString('base64')}:${limit}`,
->>>>>>> Stashed changes
     CacheTTL.SHORT
   );
 }
@@ -286,9 +284,7 @@ export class BulkOperations {
 
 <<<<<<< Updated upstream
     const batches: T[][] = [];
-=======
     const batches = [];
->>>>>>> Stashed changes
     for (let i = 0; i < data.length; i += batchSize) {
       batches.push(data.slice(i, i + batchSize));
     }
@@ -313,9 +309,7 @@ export class BulkOperations {
 
 <<<<<<< Updated upstream
     const batches: T[][] = [];
-=======
     const batches = [];
->>>>>>> Stashed changes
     for (let i = 0; i < updates.length; i += batchSize) {
       batches.push(updates.slice(i, i + batchSize));
     }
@@ -324,9 +318,7 @@ export class BulkOperations {
       const { prisma } = await import('../prisma');
 <<<<<<< Updated upstream
       const transaction = batch.map((update: T) => 
-=======
       const transaction = batch.map(update => 
->>>>>>> Stashed changes
         model.update({
           where: { id: update.id },
           data: update
@@ -349,9 +341,7 @@ export class BulkOperations {
 
 <<<<<<< Updated upstream
     const batches: number[][] = [];
-=======
     const batches = [];
->>>>>>> Stashed changes
     for (let i = 0; i < ids.length; i += batchSize) {
       batches.push(ids.slice(i, i + batchSize));
     }
@@ -375,9 +365,7 @@ export class QueryAnalyzer {
 <<<<<<< Updated upstream
   // Changed from private to protected static to allow access via bracket notation
   protected static queryLog: Array<{
-=======
   private static queryLog: Array<{
->>>>>>> Stashed changes
     query: string;
     duration: number;
     timestamp: number;
@@ -455,8 +443,6 @@ export class QueryAnalyzer {
   }
 
   /**
-=======
->>>>>>> Stashed changes
    * Clear query log
    */
   static clearLog() {
@@ -540,7 +526,6 @@ export class QueryAnalyzer {
         };
       }
     }
-=======
 /**
  * Database health monitor
  */
@@ -616,7 +601,6 @@ export class DatabaseHealthMonitor {
       };
     }
   }
->>>>>>> Stashed changes
 
   /**
    * Get database performance metrics

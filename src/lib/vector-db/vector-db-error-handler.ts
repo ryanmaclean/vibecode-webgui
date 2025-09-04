@@ -5,7 +5,6 @@
 
 import { logger } from '../logger';
 
-<<<<<<< HEAD
 /**
  * Standardized error types for vector database operations
  */
@@ -59,7 +58,6 @@ export const VectorDBErrorType = VectorDbErrorType;
  */
 export class VectorDbError extends Error {
   type: VectorDbErrorType;
-=======
 export enum VectorDBErrorType {
   CONNECTION_FAILED = 'CONNECTION_FAILED',
   QUERY_FAILED = 'QUERY_FAILED',
@@ -77,7 +75,6 @@ export enum VectorDBErrorType {
 
 export class VectorDBError extends Error {
   type: VectorDBErrorType;
->>>>>>> origin/feature/general-improvements-fixed
   operation: string;
   provider: string;
   details: any;
@@ -85,21 +82,15 @@ export class VectorDBError extends Error {
 
   constructor(
     message: string,
-<<<<<<< HEAD
     type: VectorDbErrorType = VectorDbErrorType.UNKNOWN_ERROR,
-=======
     type: VectorDBErrorType = VectorDBErrorType.UNKNOWN_ERROR,
->>>>>>> origin/feature/general-improvements-fixed
     operation: string = 'unknown',
     provider: string = 'unknown',
     details: any = null
   ) {
     super(message);
-<<<<<<< HEAD
     this.name = 'VectorDbError';
-=======
     this.name = 'VectorDBError';
->>>>>>> origin/feature/general-improvements-fixed
     this.type = type;
     this.operation = operation;
     this.provider = provider;
@@ -156,7 +147,6 @@ export class VectorDBError extends Error {
   }
 }
 
-<<<<<<< HEAD
 // Legacy alias for backward compatibility
 export const VectorDBError = VectorDbError;
 
@@ -250,26 +240,20 @@ export function getErrorType(error: any): VectorDbErrorType {
  * Legacy function-based error handler
  * @deprecated Use VectorDbErrorHandler class instead
  */
-=======
->>>>>>> origin/feature/general-improvements-fixed
 export const handleVectorDBError = (
   error: any,
   operation: string,
   provider: string
-<<<<<<< HEAD
 ): VectorDbError => {
   // If already a VectorDbError, return it
   if (error instanceof VectorDbError) {
-=======
 ): VectorDBError => {
   // If already a VectorDBError, return it
   if (error instanceof VectorDBError) {
->>>>>>> origin/feature/general-improvements-fixed
     return error;
   }
 
   // Map common database errors to appropriate types
-<<<<<<< HEAD
   const errorType = getErrorType(error);
   const errorMessage = error.message || 'Unknown vector database error';
   const errorDetails: Record<string, any> = {};
@@ -281,7 +265,6 @@ export const handleVectorDBError = (
   if (error.stack) errorDetails.stack = error.stack;
 
   return new VectorDbError(
-=======
   let errorType = VectorDBErrorType.UNKNOWN_ERROR;
   let errorMessage = error.message || 'Unknown vector database error';
   let errorDetails = {};
@@ -323,14 +306,12 @@ export const handleVectorDBError = (
   if (error.stack) errorDetails = { ...errorDetails, stack: error.stack };
 
   return new VectorDBError(
->>>>>>> origin/feature/general-improvements-fixed
     errorMessage,
     errorType,
     operation,
     provider,
     errorDetails
   );
-<<<<<<< HEAD
 };
 
 /**
@@ -452,6 +433,4 @@ export class VectorDbErrorHandler {
     );
   }
 }
-=======
 };
->>>>>>> origin/feature/general-improvements-fixed

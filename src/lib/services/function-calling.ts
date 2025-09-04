@@ -4,9 +4,7 @@ export interface FunctionDefinition {
   parameters: {
 <<<<<<< Updated upstream
     type: string  // Changed from string literal 'object' to string to allow more flexibility
-=======
     type: 'object'
->>>>>>> Stashed changes
     properties: Record<string, {
       type: string
       description: string
@@ -371,9 +369,7 @@ export class FunctionCallingService {
         size: number;
         modified: Date;
       }> = [];
-=======
       const fileList = []
->>>>>>> Stashed changes
 
       for (const file of files) {
         const stat = await fs.stat(path.join(targetDir, file.name))
@@ -493,9 +489,7 @@ export const functionCallingService = new FunctionCallingService()
 // Store function definitions separately for registration
 <<<<<<< Updated upstream
 const functionDefinitions: FunctionDefinition[] = [
-=======
 const functionDefinitions = [
->>>>>>> Stashed changes
   {
     name: 'web_search',
     description: 'Search the web for current information on a given topic',
