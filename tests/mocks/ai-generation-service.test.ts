@@ -308,7 +308,7 @@ describe('AI Generation Service Mocks', () => {
   })
 
   describe('WebSocket Mock for Real-time Updates', () => {
-    it('should mock WebSocket connection for progress updates', () => {
+    it('should mock WebSocket connection for progress updates', (done) => {
       const mockWebSocket = {
         readyState: 1, // WebSocket.OPEN
         send: jest.fn(),
@@ -324,19 +324,29 @@ describe('AI Generation Service Mocks', () => {
         { status: 'completed', progress: 100 }
       ]
 
+      // Simulate adding event listener and receiving updates
+      const messageHandler = jest.fn()
+      mockWebSocket.addEventListener('message', messageHandler)
+
+      // Verify addEventListener was called
+      expect(mockWebSocket.addEventListener).toHaveBeenCalledWith('message', messageHandler)
+
       // Simulate receiving progress updates
       progressUpdates.forEach((update, index) => {
         setTimeout(() => {
-          const messageEvent = new MessageEvent('message', {
+          const messageEvent = {
+            type: 'message',
             data: JSON.stringify(update)
-          })
-          mockWebSocket.addEventListener.mock.calls
-            .filter(call => call[0] === 'message')
-            .forEach(call => call[1](messageEvent))
-        }, index * 100)
+          }
+          messageHandler(messageEvent)
+          
+          // Check if this was the last update
+          if (index === progressUpdates.length - 1) {
+            expect(messageHandler).toHaveBeenCalledTimes(progressUpdates.length)
+            done()
+          }
+        }, index * 10) // Reduced timeout for faster test execution
       })
-
-      expect(mockWebSocket.addEventListener).toHaveBeenCalledWith('message', expect.any(Function))
     })
   })
 
