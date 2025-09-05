@@ -4,8 +4,11 @@
  */
 
 import { jest } from '@jest/globals'
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
+
+// Strongly-typed mock for getServerSession to avoid 'any' casts in tests
+const mockedGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
 
 // Mock next-auth
 jest.mock('next-auth', () => ({
@@ -13,12 +16,12 @@ jest.mock('next-auth', () => ({
 }))
 
 // Mock auth options
-jest.mock('../../../src/lib/auth', () => ({
+jest.mock('../../src/lib/auth', () => ({
   authOptions: {},
 }))
 
 // Mock server monitoring
-jest.mock('../../../src/lib/server-monitoring', () => ({
+jest.mock('../../src/lib/server-monitoring', () => ({
   getHealthCheck: jest.fn(() => Promise.resolve({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -28,7 +31,43 @@ jest.mock('../../../src/lib/server-monitoring', () => ({
   })),
 }))
 
-import { GET, POST } from '../../../src/app/api/monitoring/metrics/route'
+// Mock monitoring auth helpers to avoid edge-specific Response.json and cookie runtime
+jest.mock('@/lib/monitoring/auth', () => {
+  return {
+    checkMonitoringAuth: async (request: Request) => {
+      const { getServerSession } = await import('next-auth')
+      const session = await getServerSession()
+      if (!session || !(session as { user?: unknown }).user) {
+        return { isAuthorized: false, error: 'Unauthorized' }
+      }
+      const method = request.method || 'GET'
+      const role = (session as { user?: { role?: string } }).user?.role
+      if (method === 'GET') {
+        return role === 'admin' ? { isAuthorized: true } : { isAuthorized: false, error: 'Unauthorized' }
+      }
+      // For POST allow any authenticated user
+      return { isAuthorized: true }
+    },
+    getUnauthorizedResponse: (error?: string) =>
+      new Response(JSON.stringify({ error: error || 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+  }
+})
+
+import { GET, POST } from '../../src/app/api/monitoring/metrics/route'
+
+// Jest environment polyfill: Next's Response.json helper isn't available in Node's WHATWG Response
+// Provide a compatible shim that returns a Response with JSON body.
+const g = globalThis as unknown as { Response: typeof Response & { json?: (body: unknown, init?: ResponseInit) => Response } }
+if (!g.Response.json) {
+  g.Response.json = (body: unknown, init?: ResponseInit) =>
+    new Response(JSON.stringify(body), {
+      headers: { 'Content-Type': 'application/json' },
+      ...init,
+    })
+}
 
 describe('Monitoring API Integration', () => {
   beforeEach(() => {
@@ -38,12 +77,19 @@ describe('Monitoring API Integration', () => {
   describe('GET /api/monitoring/metrics', () => {
     test('should return metrics for admin user', async () => {
       // Mock admin session
-      ;(getServerSession as any).mockResolvedValue({
+      mockedGetServerSession.mockResolvedValue({
         user: { id: 'admin123', role: 'admin' },
       })
 
-      const request = new NextRequest('http://localhost:3000/api/monitoring/metrics');
+      const request = new Request('http://localhost:3000/api/monitoring/metrics', { headers: new Headers() }) as unknown as NextRequest;
       const response = await GET(request);
+      // Diagnostic logging for debugging in Jest environment
+      console.log('DEBUG admin GET response:', {
+        type: typeof response,
+        hasStatus: response && 'status' in (response as any),
+        status: (response as any)?.status,
+        ctor: response?.constructor?.name,
+      })
 
       expect(response.status).toBe(200);
 
@@ -61,11 +107,11 @@ describe('Monitoring API Integration', () => {
 
     test('should deny access for non-admin users', async () => {
       // Mock regular user session
-      ;(getServerSession as any).mockResolvedValue({
+      mockedGetServerSession.mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       })
 
-      const request = new NextRequest('http://localhost:3000/api/monitoring/metrics');
+      const request = new Request('http://localhost:3000/api/monitoring/metrics', { headers: new Headers() }) as unknown as NextRequest;
       const response = await GET(request);
 
       expect(response.status).toBe(401);
@@ -75,9 +121,8 @@ describe('Monitoring API Integration', () => {
 
     test('should deny access for unauthenticated users', async () => {
       // Mock no session
-      ;(getServerSession as any).mockResolvedValue(null)
-
-      const request = new NextRequest('http://localhost:3000/api/monitoring/metrics');
+      mockedGetServerSession.mockResolvedValue(null)
+      const request = new Request('http://localhost:3000/api/monitoring/metrics', { headers: new Headers() }) as unknown as NextRequest;
       const response = await GET(request);
 
       expect(response.status).toBe(401);
@@ -87,19 +132,19 @@ describe('Monitoring API Integration', () => {
 
     test('should handle internal server errors gracefully', async () => {
       // Mock admin session
-      ;(getServerSession as any).mockResolvedValue({
+      mockedGetServerSession.mockResolvedValue({
         user: { id: 'admin123', role: 'admin' },
       })
 
       // Mock console.error to avoid test output noise
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
 
       // Force an error by corrupting the metrics calculation
       const originalCpuUsage = process.cpuUsage
       process.cpuUsage = jest.fn(() => {
         throw new Error('CPU usage failed')})
 
-      const request = new NextRequest('http://localhost:3000/api/monitoring/metrics');
+      const request = new Request('http://localhost:3000/api/monitoring/metrics', { headers: new Headers() }) as unknown as NextRequest;
       const response = await GET(request);
 
       expect(response.status).toBe(500);
@@ -114,7 +159,7 @@ describe('Monitoring API Integration', () => {
   describe('POST /api/monitoring/metrics', () => {
     test('should accept response time metrics from authenticated users', async () => {
       // Mock authenticated session
-      ;(getServerSession as any).mockResolvedValue({
+      mockedGetServerSession.mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       })
 
@@ -122,11 +167,11 @@ describe('Monitoring API Integration', () => {
         type: 'response_time',
         data: { duration: 250 },
       }
-      const request = new NextRequest('http://localhost:3000/api/monitoring/metrics', {
+      const request = new Request('http://localhost:3000/api/monitoring/metrics', {
         method: 'POST',
         body: JSON.stringify(requestBody),
-        headers: { 'Content-Type': 'application/json' },
-      });
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+      }) as unknown as NextRequest;
 
       const response = await POST(request);
 
@@ -137,7 +182,7 @@ describe('Monitoring API Integration', () => {
 
     test('should accept error metrics from authenticated users', async () => {
       // Mock authenticated session
-      ;(getServerSession as any).mockResolvedValue({
+      mockedGetServerSession.mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       })
 
@@ -145,11 +190,11 @@ describe('Monitoring API Integration', () => {
         type: 'error',
         data: {},
       }
-      const request = new NextRequest('http://localhost:3000/api/monitoring/metrics', {
+      const request = new Request('http://localhost:3000/api/monitoring/metrics', {
         method: 'POST',
         body: JSON.stringify(requestBody),
-        headers: { 'Content-Type': 'application/json' },
-      });
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+      }) as unknown as NextRequest;
 
       const response = await POST(request);
 
@@ -160,7 +205,7 @@ describe('Monitoring API Integration', () => {
 
     test('should accept user activity metrics from authenticated users', async () => {
       // Mock authenticated session
-      ;(getServerSession as any).mockResolvedValue({
+      mockedGetServerSession.mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       })
 
@@ -168,11 +213,11 @@ describe('Monitoring API Integration', () => {
         type: 'user_activity',
         data: { userId: 'user123', workspaceId: 'workspace456' },
       }
-      const request = new NextRequest('http://localhost:3000/api/monitoring/metrics', {
+      const request = new Request('http://localhost:3000/api/monitoring/metrics', {
         method: 'POST',
         body: JSON.stringify(requestBody),
-        headers: { 'Content-Type': 'application/json' },
-      });
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+      }) as unknown as NextRequest;
 
       const response = await POST(request);
 
@@ -183,7 +228,7 @@ describe('Monitoring API Integration', () => {
 
     test('should accept network I/O metrics from authenticated users', async () => {
       // Mock authenticated session
-      ;(getServerSession as any).mockResolvedValue({
+      mockedGetServerSession.mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       })
 
@@ -191,11 +236,11 @@ describe('Monitoring API Integration', () => {
         type: 'network_io',
         data: { bytesIn: 1024, bytesOut: 2048 },
       }
-      const request = new NextRequest('http://localhost:3000/api/monitoring/metrics', {
+      const request = new Request('http://localhost:3000/api/monitoring/metrics', {
         method: 'POST',
         body: JSON.stringify(requestBody),
-        headers: { 'Content-Type': 'application/json' },
-      });
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+      }) as unknown as NextRequest;
 
       const response = await POST(request);
 
@@ -206,7 +251,7 @@ describe('Monitoring API Integration', () => {
 
     test('should reject unknown metric types', async () => {
       // Mock authenticated session
-      ;(getServerSession as any).mockResolvedValue({
+      mockedGetServerSession.mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       })
 
@@ -214,11 +259,11 @@ describe('Monitoring API Integration', () => {
         type: 'unknown_metric',
         data: {},
       }
-      const request = new NextRequest('http://localhost:3000/api/monitoring/metrics', {
+      const request = new Request('http://localhost:3000/api/monitoring/metrics', {
         method: 'POST',
         body: JSON.stringify(requestBody),
-        headers: { 'Content-Type': 'application/json' },
-      });
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+      }) as unknown as NextRequest;
 
       const response = await POST(request);
 
@@ -229,17 +274,17 @@ describe('Monitoring API Integration', () => {
 
     test('should deny access for unauthenticated users', async () => {
       // Mock no session
-      ;(getServerSession as any).mockResolvedValue(null)
+      mockedGetServerSession.mockResolvedValue(null as any)
 
       const requestBody = {
         type: 'response_time',
         data: { duration: 250 },
       }
-      const request = new NextRequest('http://localhost:3000/api/monitoring/metrics', {
+      const request = new Request('http://localhost:3000/api/monitoring/metrics', {
         method: 'POST',
         body: JSON.stringify(requestBody),
-        headers: { 'Content-Type': 'application/json' },
-      });
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+      }) as unknown as NextRequest;
 
       const response = await POST(request);
 
@@ -250,18 +295,18 @@ describe('Monitoring API Integration', () => {
 
     test('should handle malformed JSON gracefully', async () => {
       // Mock authenticated session
-      ;(getServerSession as any).mockResolvedValue({
+      mockedGetServerSession.mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       })
 
       // Mock console.error to avoid test output noise
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined)
 
-      const request = new NextRequest('http://localhost:3000/api/monitoring/metrics', {
+      const request = new Request('http://localhost:3000/api/monitoring/metrics', {
         method: 'POST',
         body: 'invalid json',
-        headers: { 'Content-Type': 'application/json' },
-      });
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+      }) as unknown as NextRequest;
 
       const response = await POST(request);
 
@@ -275,30 +320,30 @@ describe('Monitoring API Integration', () => {
   describe('Metrics Storage and Limits', () => {
     test('should maintain response time array size limit', async () => {
       // Mock authenticated session
-      ;(getServerSession as any).mockResolvedValue({
+      mockedGetServerSession.mockResolvedValue({
         user: { id: 'user123', role: 'user' },
       });
 
       // Add many response times to test the limit
-      for (let i = 0; i < 150 i++) {
+      for (let i = 0; i < 150; i++) {
         const requestBody = {
           type: 'response_time',
           data: { duration: i },
         }
-        const request = new NextRequest('http://localhost:3000/api/monitoring/metrics', {
+        const request = new Request('http://localhost:3000/api/monitoring/metrics', {
           method: 'POST',
           body: JSON.stringify(requestBody),
-          headers: { 'Content-Type': 'application/json' },
-        });
+          headers: new Headers({ 'Content-Type': 'application/json' }),
+        }) as unknown as NextRequest;
 
         await POST(request)}
 
       // Get metrics to verify limit
-      ;(getServerSession as any).mockResolvedValue({
+      mockedGetServerSession.mockResolvedValue({
         user: { id: 'admin123', role: 'admin' },
       })
 
-      const getRequest = new NextRequest('http://localhost:3000/api/monitoring/metrics');
+      const getRequest = new Request('http://localhost:3000/api/monitoring/metrics', { headers: new Headers() }) as unknown as NextRequest;
       const getResponse = await GET(getRequest);
 
       expect(getResponse.status).toBe(200);

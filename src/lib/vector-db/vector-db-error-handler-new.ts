@@ -37,12 +37,12 @@ export class VectorDbErrorHandler extends BaseErrorHandler {
         pgvectorError: true,
         requiresAdminAction: true
       };
-      // @ts-ignore - Accessing private property from parent class
+      // @ts-expect-error - Accessing private property from parent class
       return new VectorDbError(
         message,
         VectorDbErrorType.INITIALIZATION,
         operation,
-        // @ts-ignore - Accessing private property from parent class
+        // @ts-expect-error - Accessing private property from parent class
         this.provider as string,
         additionalContext
       );
@@ -60,7 +60,7 @@ export class VectorDbErrorHandler extends BaseErrorHandler {
    */
   private getProviderSpecificErrorType(error: any): VectorDbErrorType {
     // Access provider property through "this"
-    // @ts-ignore - Accessing private property from parent class
+    // @ts-expect-error - Accessing private property from parent class
     const provider = this.provider as string;
     return categorizeErrorWithProvider(error, provider);
   }
