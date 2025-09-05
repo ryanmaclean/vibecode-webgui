@@ -409,7 +409,7 @@ test('should have no broken or empty internal links', () => {
 
   // Persist a machine-readable report for CI artifacts
   try {
-    const outDir = path.join(__dirname, '../../.test-results');
+    const outDir = path.join(process.cwd(), '.test-results');
     fs.mkdirSync(outDir, { recursive: true });
     const report = {
       timestamp: new Date().toISOString(),
