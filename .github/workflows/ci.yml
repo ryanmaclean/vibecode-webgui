@@ -76,6 +76,10 @@ jobs:
       NEXTAUTH_SECRET: test-secret-key-for-ci
       # Datadog CI Visibility
       DD_CI_VISIBILITY_ENABLED: true
+      # Use agentless to ensure results even without a local agent
+      DD_CIVISIBILITY_AGENTLESS_ENABLED: true
+      # Inject tracer for test visibility
+      NODE_OPTIONS: -r dd-trace/ci/init
       DD_SERVICE: vibecode-webgui
       DD_ENV: ci
       DD_VERSION: ${{ github.sha }}
@@ -180,6 +184,10 @@ jobs:
           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
 
+      - name: Sanitize artifacts (redact secrets)
+        if: always()
+        run: npm run sanitize:artifacts --if-present
+
       - name: Upload root test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -252,6 +260,16 @@ jobs:
           NEXT_DISABLE_SWC: '1'
           CI: 'true'
           JEST_INCLUDE_DOCS: '1'
+          # Datadog Test Visibility (agentless)
+          DD_CIVISIBILITY_AGENTLESS_ENABLED: 'true'
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: ${{ secrets.DD_SITE || 'datadoghq.com' }}
+          NODE_OPTIONS: '-r dd-trace/ci/init'
+          # Git metadata for Datadog CI Visibility
+          DD_GIT_COMMIT_SHA: ${{ github.sha }}
+          DD_GIT_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+          DD_GIT_BRANCH: ${{ github.ref_name }}
+          DD_GIT_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: bash -lc "set -o pipefail; npm run test:docs | tee .test-results/docs-tests.log"
 
       - name: Collect docs dist snapshot
@@ -285,6 +303,10 @@ jobs:
               cat .test-results/docs-link-report.json >> $GITHUB_STEP_SUMMARY || true
             fi
           fi
+
+      - name: Sanitize artifacts (redact secrets)
+        if: always()
+        run: npm run sanitize:artifacts --if-present
 
       - name: Upload docs test results
         uses: actions/upload-artifact@v4
