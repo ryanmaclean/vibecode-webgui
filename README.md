@@ -102,6 +102,22 @@ Required environment variables:
 - **Health Checks**: `npm run monitoring:health`
 - **Monitoring**: `http://localhost:3000/api/monitoring/performance`
 
+## 🚀 CI/CD Pipeline Status
+
+### ✅ **WORKING COMPONENTS**
+- **Code Quality & Security** - ESLint, TypeScript checks ✅
+- **Build Test** - Next.js production build ✅  
+- **Root Integration Tests** - Core infrastructure tests ✅
+- **Datadog CI Visibility** - Test monitoring and observability ✅
+
+### 🔧 **IN PROGRESS**
+- **Astro Docs Tests** - Documentation build tests (Rollup dependency fix applied)
+
+### 📊 **Test Coverage**
+- **Core Application**: ✅ All tests passing
+- **Infrastructure**: ✅ Database, Redis, API connectivity verified
+- **Documentation**: 🔧 Rollup optional dependencies fix applied
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -109,6 +125,8 @@ Required environment variables:
 3. Make changes with tests: `npm run test && npm run test:e2e`
 4. Check code quality: `npm run lint && npm run type-check`
 5. Submit a pull request
+
+**Note**: Core CI pipeline is stable. Documentation tests are being resolved.
 
 ## 📄 License
 
