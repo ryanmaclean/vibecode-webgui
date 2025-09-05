@@ -6,7 +6,10 @@ export default (api) => {
   // For builds, use Next.js built-in Babel config
   if (!isTest) {
     return {
-      presets: ['next/babel']
+      presets: ['next/babel'],
+      ignore: [
+        'node_modules/camelcase/**'
+      ]
     };
   }
 

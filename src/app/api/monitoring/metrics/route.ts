@@ -3,8 +3,8 @@
  * Provides detailed metrics and performance data
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../lib/monitoring/auth'
+import type { NextRequest } from 'next/server'
+import { checkMonitoringAuth, getUnauthorizedResponse } from '@/lib/monitoring/auth'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -56,15 +56,19 @@ export async function GET(request: NextRequest) {
     const cpuUsageRaw = process.cpuUsage()
 
     // Get real production metrics using service factory (best-effort)
-    const { MonitoringServiceFactory } = await import('../../../../lib/monitoring/service-factory')
-    const serviceFactory = new MonitoringServiceFactory()
     try {
-      // Best-effort warmup/fetch for potential future use; not strictly required for response shape
-      await serviceFactory.getAggregatedMetrics().catch((e: unknown) => {
-        console.error('Service factory metrics fetch failed (non-fatal):', e)
-      })
-    } finally {
-      await serviceFactory.disconnect()
+      const { MonitoringServiceFactory } = await import('@/lib/monitoring/service-factory')
+      const serviceFactory = new MonitoringServiceFactory()
+      try {
+        // Best-effort warmup/fetch for potential future use; not strictly required for response shape
+        await serviceFactory.getAggregatedMetrics().catch((e: unknown) => {
+          console.error('Service factory metrics fetch failed (non-fatal):', e)
+        })
+      } finally {
+        await serviceFactory.disconnect()
+      }
+    } catch (e) {
+      console.error('Service factory import/init failed (non-fatal):', e)
     }
 
     // Compute top-level metrics expected by integration tests
@@ -103,12 +107,17 @@ export async function GET(request: NextRequest) {
       uptime: uptimeSeconds,
     }
 
-    return NextResponse.json(response)
+    return new Response(JSON.stringify(response), {
+      headers: { 'Content-Type': 'application/json' },
+    })
 
   } catch (error) {
     console.error('Error fetching metrics:', error)
     // Align with integration test expectations
-    return NextResponse.json({ error: 'Failed to fetch metrics' }, { status: 500 })
+    return new Response(JSON.stringify({ error: 'Failed to fetch metrics' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 }
 
@@ -128,19 +137,28 @@ export async function POST(request: NextRequest) {
         if (data && typeof data.duration === 'number') {
           incrementRequest()
           recordResponseTime(data.duration)
-          return NextResponse.json({ success: true })
+          return new Response(JSON.stringify({ success: true }), {
+            headers: { 'Content-Type': 'application/json' },
+          })
         }
-        return NextResponse.json({ error: 'Invalid response_time payload' }, { status: 400 })
+        return new Response(JSON.stringify({ error: 'Invalid response_time payload' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        })
       }
       case 'error': {
         incrementRequest()
         incrementError()
-        return NextResponse.json({ success: true })
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { 'Content-Type': 'application/json' },
+        })
       }
       case 'user_activity': {
         incrementRequest()
         // no-op store for now
-        return NextResponse.json({ success: true })
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { 'Content-Type': 'application/json' },
+        })
       }
       case 'network_io': {
         incrementRequest()
@@ -148,15 +166,23 @@ export async function POST(request: NextRequest) {
           metricsStore.network.bytesIn = typeof data.bytesIn === 'number' ? data.bytesIn : metricsStore.network.bytesIn
           metricsStore.network.bytesOut = typeof data.bytesOut === 'number' ? data.bytesOut : metricsStore.network.bytesOut
         }
-        return NextResponse.json({ success: true })
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { 'Content-Type': 'application/json' },
+        })
       }
       default:
-        return NextResponse.json({ error: 'Unknown metric type' }, { status: 400 })
+        return new Response(JSON.stringify({ error: 'Unknown metric type' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        })
     }
 
   } catch (error) {
     console.error('Error submitting metric:', error)
     // Align with integration test expectations
-    return NextResponse.json({ error: 'Failed to update metrics' }, { status: 500 })
+    return new Response(JSON.stringify({ error: 'Failed to update metrics' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 }

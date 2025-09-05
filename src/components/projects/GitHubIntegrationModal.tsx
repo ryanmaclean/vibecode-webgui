@@ -97,11 +97,7 @@ export function GitHubIntegrationModal({
   }
 
   const handleCreateRepository = async () => {
-    if (!githubIntegration.current) {
-      setError('Not connected to GitHub')
     if (!integration) {
-      setError('Not connected to FolderHub')
-    if (!githubIntegration.current) {
       setError('Not connected to GitHub')
       return
     }
@@ -121,38 +117,27 @@ export function GitHubIntegrationModal({
 
       // Create repository from generated project
       const result = await integration.createRepositoryFromProject(
-      const result = await integration.createRepositoryFromProject(
         generatedProject,
         {
           private: repoSettings.private,
           description: repoSettings.description,
           licenseTemplate: repoSettings.licenseTemplate
         }
-      )
+      );
 
       // Add GitHub Actions workflow if requested
       if (repoSettings.addWorkflow) {
-        const { generateGitHubActionsWorkflow } = await import('@/lib/github/integration')
-        const workflowContent = generateGitHubActionsWorkflow(
-        const workflowContent = generateGitHubActionsWorkflow(
+        const { generateGitHubActionsWorkflow } = await import('@/lib/github/integration');
         const workflow = generateGitHubActionsWorkflow(
           'node', // Default to node for most projects
           'typescript' // Default to TypeScript
-        )
+        );
         
-        await githubIntegration.current.addGitHubActionsWorkflow(
-          result.repository.name,
-          'ci',
-          workflow
-        await githubIntegration.current.addGitHubActionsWorkflow(
-          result.repository.name,
-          'ci',
-          workflowContent
         await integration.addGitHubActionsWorkflow(
           result.repository.name,
           'ci',
           workflow
-        )
+        );
       }
 
       setSuccess(`Repository created successfully! View it at ${result.repository.htmlUrl}`)
@@ -431,3 +416,5 @@ export function GitHubIntegrationModal({
     </div>
   )
 }
+
+export default GitHubIntegrationModal
