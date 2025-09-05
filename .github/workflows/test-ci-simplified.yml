@@ -30,7 +30,7 @@ jobs:
       DD_VERSION: ${{ github.sha }}
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
       DD_SITE: datadoghq.com
-      NODE_OPTIONS: -r dd-trace/ci/init
+      # NODE_OPTIONS: -r dd-trace/ci/init  # Removed - dd-trace not installed in CI
       # Git metadata for Datadog CI Visibility
       DD_GIT_COMMIT_SHA: ${{ github.sha }}
       DD_GIT_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
