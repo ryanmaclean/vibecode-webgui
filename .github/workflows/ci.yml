@@ -79,7 +79,7 @@ jobs:
       # Use agentless to ensure results even without a local agent
       DD_CIVISIBILITY_AGENTLESS_ENABLED: true
       # Inject tracer for test visibility
-      NODE_OPTIONS: -r dd-trace/ci/init
+      # NODE_OPTIONS: -r dd-trace/ci/init  # Removed - dd-trace not installed in CI
       DD_SERVICE: vibecode-webgui
       DD_ENV: ci
       DD_VERSION: ${{ github.sha }}
