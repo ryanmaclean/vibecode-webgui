@@ -235,6 +235,7 @@ export const AIChatInterface = ({
               size="sm"
               onClick={() => setShowSettings(!showSettings)}
               title="Settings"
+              aria-label="Settings"
             >
               <Settings className="w-4 h-4" />
             </Button>
@@ -394,6 +395,7 @@ export const AIChatInterface = ({
               onClick={handleSendMessage}
               disabled={!input.trim() || isStreaming}
               size="sm"
+              aria-label="Send"
             >
               <Send className="w-4 h-4" />
             </Button>
@@ -419,3 +421,5 @@ export const AIChatInterface = ({
     </div>
   )
 }
+
+export default AIChatInterface

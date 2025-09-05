@@ -33,15 +33,47 @@ global.AbortSignal = {
 // Minimal Headers implementation (non-mocked)
 global.Headers = class Headers {
   constructor(init) {
-    this._headers = {};
-    if (init && typeof init === 'object') {
-      Object.entries(init).forEach(([k, v]) => {
-        const keyLower = String(k).toLowerCase();
-        const val = String(v);
-        this._headers[keyLower] = val;
-        // Also expose original-cased keys as enumerable properties for test expectations
-        this[k] = val;
-      });
+    // Make internal map non-enumerable to avoid being copied/overwritten during initialization
+    Object.defineProperty(this, '_headers', {
+      value: {},
+      writable: true,
+      configurable: true,
+      enumerable: false,
+    });
+    if (init) {
+      // If initialized with another Headers instance, copy its entries
+      if (init instanceof Headers || (typeof init.forEach === 'function' && typeof init.get === 'function')) {
+        // Use forEach(value, key) signature
+        init.forEach((value, key) => {
+          const keyOrig = String(key);
+          const keyLower = keyOrig.toLowerCase();
+          const val = String(value);
+          this._headers[keyLower] = val;
+          this[keyOrig] = val;
+        });
+      } else if (Array.isArray(init)) {
+        // Array of [key, value] tuples
+        init.forEach((pair) => {
+          if (!pair || pair.length < 2) return;
+          const [k, v] = pair;
+          const keyOrig = String(k);
+          const keyLower = keyOrig.toLowerCase();
+          const val = String(v);
+          this._headers[keyLower] = val;
+          this[keyOrig] = val;
+        });
+      } else if (typeof init === 'object') {
+        // Plain object map
+        Object.entries(init).forEach(([k, v]) => {
+          // Skip internal/private props
+          if (String(k).startsWith('_')) return;
+          const keyOrig = String(k);
+          const keyLower = keyOrig.toLowerCase();
+          const val = String(v);
+          this._headers[keyLower] = val;
+          this[keyOrig] = val;
+        });
+      }
     }
   }
   get(name) {

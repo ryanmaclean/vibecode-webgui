@@ -1,0 +1,37 @@
+title = "Vibecode Secrets Policy"
+
+[extend]
+# Extend with default gitleaks rules
+useDefault = true
+
+[allowlist]
+# Allow common test fixture directories
+paths = [
+  "docs/",
+  "archive/",
+  "code-server/",
+  "services/ai-gateway/node_modules/",
+  "extensions/vibecode-ai-assistant/node_modules/",
+  "docs/node_modules/",
+]
+
+# Custom rules
+[[rules]]
+id = "datadog-api-key-pattern"
+# Datadog API keys often start with dapi_ and are long
+regex = '''dapi_[A-Za-z0-9]{20,}'''
+secretGroup = 0
+entropy = 0.0
+keywords = ["dapi_"]
+
+[[rules]]
+id = "generic-32-char-token"
+regex = '''(?i)(?<![A-Za-z0-9])[A-Za-z0-9]{32}(?![A-Za-z0-9])'''
+secretGroup = 0
+entropy = 0.0
+
+[[rules]]
+id = "env-var-datadog-keys"
+regex = '''(?i)(DD_API_KEY|DATADOG_API_KEY|DD_APP_KEY|DATADOG_APP_KEY)\s*[:=]\s*['\"]?[A-Za-z0-9_\-]{16,}['\"]?'''
+secretGroup = 0
+entropy = 0.0
