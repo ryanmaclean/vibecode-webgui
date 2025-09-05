@@ -245,6 +245,36 @@ jobs:
           directory: ./coverage/
           fail_ci_if_error: false
 
+  # Documentation Tests (Astro)
+  docs-tests:
+    runs-on: ubuntu-latest
+    name: Documentation (Astro) Tests
+    needs: code-quality
+    timeout-minutes: 25
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci --legacy-peer-deps --omit=optional
+
+      - name: Install docs dependencies
+        run: npm ci --legacy-peer-deps --omit=optional --prefix docs
+
+      - name: Run docs tests (Astro preview)
+        env:
+          ASTRO_USE_PREVIEW: '1'
+          NEXT_DISABLE_SWC: '1'
+          CI: 'true'
+          JEST_INCLUDE_DOCS: '1'
+        run: npm run test:docs
+
   # E2E Testing
   e2e-tests:
     runs-on: ubuntu-latest
@@ -306,6 +336,113 @@ jobs:
             kill "${APP_PID}" || true
             timeout 10 bash -c "while kill -0 ${APP_PID:-0} 2>/dev/null; do sleep 1; done" || true
           fi
+
+  # Root Tests (Integration & Validation)
+  root-tests:
+    runs-on: ubuntu-latest
+    name: Root Integration Tests
+    needs: test-suite
+    timeout-minutes: 25
+            env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/testdb
+          REDIS_URL: redis://localhost:6379
+          NEXTAUTH_SECRET: test-secret-key-for-ci
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          # Datadog CI Visibility
+          DD_CI_VISIBILITY_ENABLED: true
+          DD_SERVICE: vibecode-webgui
+          DD_ENV: ci
+          DD_VERSION: ${{ github.sha }}
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: ${{ secrets.DD_SITE || 'datadoghq.com' }}
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_USER: test
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --omit=optional
+
+      - name: Setup test environment
+        run: |
+          echo "DATABASE_URL=postgresql://test:test@localhost:5432/testdb" >> .env
+          echo "REDIS_URL=redis://localhost:6379" >> .env
+          echo "NEXTAUTH_SECRET=test-secret-key-for-ci" >> .env
+          echo "NODE_ENV=test" >> .env
+
+      - name: Wait for services
+        run: |
+          echo "Waiting for PostgreSQL..."
+          timeout 30 bash -c 'until pg_isready -h localhost -p 5432 -U test; do sleep 1; done'
+          echo "Waiting for Redis..."
+          timeout 30 bash -c 'until redis-cli -h localhost -p 6379 ping; do sleep 1; done'
+
+      - name: Run infrastructure tests
+        run: npm run test:root:infrastructure
+        continue-on-error: true
+
+      - name: Run database tests
+        run: npm run test:root:database
+        continue-on-error: true
+
+      - name: Run credentials tests
+        run: npm run test:root:credentials
+        continue-on-error: true
+
+      - name: Run AI/Embedding tests (if API keys available)
+        if: env.OPENAI_API_KEY != ''
+        run: npm run test:root:ai
+        continue-on-error: true
+
+      - name: Run Azure Embedding tests (if API keys available)
+        if: env.AZURE_OPENAI_API_KEY != ''
+        run: npm run test:root:azure
+        continue-on-error: true
+
+      - name: Run workflow tests
+        run: npm run test:root:workflow
+        continue-on-error: true
+
+      - name: Upload root test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: root-test-results
+          path: |
+            test-results/
+            logs/
 
   # Monitoring Validation
   monitoring-validation:
@@ -592,7 +729,7 @@ jobs:
   validation-complete:
     runs-on: ubuntu-latest
     name: CI/CD Validation Complete
-    needs: [e2e-tests, monitoring-validation, security-tests, build-and-performance]
+    needs: [e2e-tests, monitoring-validation, security-tests, build-and-performance, docs-tests]
     if: always()
     timeout-minutes: 10
     steps:

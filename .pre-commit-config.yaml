@@ -77,3 +77,10 @@ repos:
         language: node
         types: [file]
         files: \.(js|jsx|ts|tsx)$
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+        name: Gitleaks Secret Scan (staged)
+        args: ["protect", "--staged", "--redact", "--config=.gitleaks.toml"]
