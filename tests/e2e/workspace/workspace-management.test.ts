@@ -164,7 +164,7 @@ test.describe('Workspace Management', () => {
       const file = new File([content], fileName, { type: 'text/plain' })
       dataTransfer.items.add(file)
       
-      const fileInput = document.querySelector('[data-testid="file-upload-input"]')
+      const fileInput = document.querySelector('[data-testid="file-upload-input"]') as HTMLInputElement | null
       if (fileInput) {
         fileInput.files = dataTransfer.files
         fileInput.dispatchEvent(new Event('change', { bubbles: true }))
