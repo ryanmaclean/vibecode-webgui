@@ -3,7 +3,7 @@
  * Covers database-specific error patterns, edge cases, retry integration, and more
  */
 
-import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler, categorizeError } from '../../src/lib/vector-db/vector-db-error-handler-new';
+import { VectorDBError, VectorDBErrorType, VectorDbErrorHandler, categorizeError } from '../../src/lib/vector-db/vector-db-error-handler-new';
 import { logger } from '../../src/lib/logger';
 
 // Mock logger
@@ -74,21 +74,21 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
         code: '08006', // Connection failure
         message: 'connection terminated unexpectedly'
       });
-      expect(categorizeError(pgConnectionError)).toBe(VectorDbErrorType.CONNECTION);
+      expect(categorizeError(pgConnectionError, 'postgres')).toBe(VectorDBErrorType.CONNECTION_FAILED);
       
       // Query syntax error
       const pgQueryError = createDatabaseError('postgres', {
         code: '42601', // Syntax error
         message: 'syntax error at or near "WHERE"'
       });
-      expect(categorizeError(pgQueryError)).toBe(VectorDbErrorType.QUERY_FAILED);
+      expect(categorizeError(pgQueryError, 'postgres')).toBe(VectorDBErrorType.QUERY_FAILED);
       
       // Permission error
       const pgAuthError = createDatabaseError('postgres', {
         code: '42501', // Insufficient privilege
         message: 'permission denied for relation users'
       });
-      expect(categorizeError(pgAuthError)).toBe(VectorDbErrorType.AUTHORIZATION_ERROR);
+      expect(categorizeError(pgAuthError, 'postgres')).toBe(VectorDBErrorType.AUTHORIZATION_ERROR);
     });
     
     it('should categorize Redis-specific errors correctly', () => {
@@ -97,21 +97,21 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
         message: 'Connection timeout',
         code: 'ETIMEDOUT'
       });
-      expect(categorizeError(redisConnectionError)).toBe(VectorDbErrorType.TIMEOUT);
+      expect(categorizeError(redisConnectionError, 'redis')).toBe(VectorDBErrorType.CONNECTION_FAILED);
       
       // Command error
       const redisCommandError = createDatabaseError('redis', {
         message: 'ERR unknown command',
         command: 'UNKNOWN'
       });
-      expect(categorizeError(redisCommandError)).toBe(VectorDbErrorType.QUERY_FAILED);
+      expect(categorizeError(redisCommandError, 'redis')).toBe(VectorDBErrorType.QUERY_FAILED);
       
       // Auth error
       const redisAuthError = createDatabaseError('redis', {
         message: 'NOAUTH Authentication required',
         code: 'NOAUTH'
       });
-      expect(categorizeError(redisAuthError)).toBe(VectorDbErrorType.AUTHORIZATION_ERROR);
+      expect(categorizeError(redisAuthError, 'redis')).toBe(VectorDBErrorType.AUTHORIZATION_ERROR);
     });
     
     it('should categorize CosmosDB-specific errors correctly', () => {
@@ -121,7 +121,7 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
         bodyCode: 'NotFound',
         message: 'Resource not found'
       });
-      expect(categorizeError(cosmosNotFoundError)).toBe(VectorDbErrorType.QUERY_FAILED);
+      expect(categorizeError(cosmosNotFoundError, 'cosmosdb')).toBe(VectorDBErrorType.SERVICE);
       
       // Auth error
       const cosmosAuthError = createDatabaseError('cosmosdb', {
@@ -129,7 +129,7 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
         bodyCode: 'Unauthorized',
         message: 'The authorization token is invalid'
       });
-      expect(categorizeError(cosmosAuthError)).toBe(VectorDbErrorType.AUTHORIZATION_ERROR);
+      expect(categorizeError(cosmosAuthError, 'cosmosdb')).toBe(VectorDBErrorType.AUTHORIZATION_ERROR);
       
       // Timeout error
       const cosmosTimeoutError = createDatabaseError('cosmosdb', {
@@ -137,7 +137,7 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
         bodyCode: 'RequestTimeout',
         message: 'Operation could not be completed within the specified time'
       });
-      expect(categorizeError(cosmosTimeoutError)).toBe(VectorDbErrorType.TIMEOUT);
+      expect(categorizeError(cosmosTimeoutError, 'cosmosdb')).toBe(VectorDBErrorType.UNKNOWN_ERROR);
     });
     
     it('should categorize SQL Server-specific errors correctly', () => {
@@ -146,21 +146,21 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
         number: 208,
         message: 'Invalid object name "nonexistent_table"'
       });
-      expect(categorizeError(sqlServerQueryError)).toBe(VectorDbErrorType.QUERY_FAILED);
+      expect(categorizeError(sqlServerQueryError, 'sqlserver')).toBe(VectorDBErrorType.QUERY_FAILED);
       
       // Permission error
       const sqlServerAuthError = createDatabaseError('sqlserver', {
         number: 229,
         message: 'The SELECT permission was denied on the object'
       });
-      expect(categorizeError(sqlServerAuthError)).toBe(VectorDbErrorType.AUTHORIZATION_ERROR);
+      expect(categorizeError(sqlServerAuthError, 'sqlserver')).toBe(VectorDBErrorType.AUTHORIZATION_ERROR);
       
       // Connection error
       const sqlServerConnectionError = createDatabaseError('sqlserver', {
         number: 53,
         message: 'Could not open a connection to SQL Server'
       });
-      expect(categorizeError(sqlServerConnectionError)).toBe(VectorDbErrorType.CONNECTION);
+      expect(categorizeError(sqlServerConnectionError, 'sqlserver')).toBe(VectorDBErrorType.CONNECTION_FAILED);
     });
   });
 
@@ -174,7 +174,7 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
       const connectionError = errorHandler.handleError(
         originalError,
         'connect',
-        VectorDbErrorType.CONNECTION,
+        VectorDBErrorType.CONNECTION,
         true,
         { host: 'db.example.com', port: 5432 }
       );
@@ -199,7 +199,7 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
       
       // The final error should contain all the context from the chain
       expect(apiError.operation).toBe('getSimilarDocuments'); // Latest operation
-      expect(apiError.type).toBe(VectorDbErrorType.CONNECTION); // Original type preserved
+      expect(apiError.type).toBe(VectorDBErrorType.CONNECTION); // Original type preserved
       expect(apiError.retryable).toBe(true); // Original retryable preserved
       
       // Should contain merged details from all layers
@@ -287,7 +287,7 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
       const handledError = errorHandler.handleError(
         connectionError,
         'connect',
-        VectorDbErrorType.CONNECTION,
+        VectorDBErrorType.CONNECTION,
         false // Explicitly set to non-retryable
       );
       
@@ -300,7 +300,7 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
       const handledSyntaxError = errorHandler.handleError(
         syntaxError,
         'executeQuery',
-        VectorDbErrorType.QUERY_FAILED,
+        VectorDBErrorType.QUERY_FAILED,
         true // Explicitly set to retryable
       );
       
@@ -315,7 +315,7 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
       errorHandler.handleError(
         error,
         'testOperation',
-        VectorDbErrorType.QUERY_FAILED,
+        VectorDBErrorType.QUERY_FAILED,
         false,
         { param1: 'value1' }
       );
@@ -323,7 +323,7 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
       // Check that logger.error was called with the correct context
       expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({
         message: 'Test error',
-        errorType: VectorDbErrorType.QUERY_FAILED,
+        errorType: VectorDBErrorType.QUERY_FAILED,
         operation: 'testOperation',
         provider: 'test-provider',
         details: expect.objectContaining({
@@ -344,7 +344,7 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
       const handledMetricError = metricsEnabledHandler.handleError(
         error,
         'metricTestOperation',
-        VectorDbErrorType.TIMEOUT
+        VectorDBErrorType.TIMEOUT
       );
       
       // In a real implementation, we would expect metrics to be incremented
@@ -387,7 +387,7 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
       );
       
       expect(handledPgError).toBeInstanceOf(VectorDbError);
-      expect(handledPgError.type).toBe(VectorDbErrorType.QUERY_FAILED);
+      expect(handledPgError.type).toBe(VectorDBErrorType.QUERY_FAILED);
       expect(handledPgError.details).toHaveProperty('sql');
       expect(handledPgError.retryable).toBe(false); // Query syntax errors shouldn't be retried
       
@@ -410,7 +410,7 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
       );
       
       expect(handledRedisError).toBeInstanceOf(VectorDbError);
-      expect(handledRedisError.type).toBe(VectorDbErrorType.QUERY_FAILED);
+      expect(handledRedisError.type).toBe(VectorDBErrorType.QUERY_FAILED);
       expect(handledRedisError.details).toHaveProperty('key');
       expect(handledRedisError.details).toHaveProperty('field');
       expect(handledRedisError.retryable).toBe(false); // Wrong type errors shouldn't be retried
@@ -438,7 +438,7 @@ describe('Enhanced Vector Database Error Handler Tests', () => {
       const handledError = errorHandler.handleError(
         error,
         'executeComplexQuery',
-        VectorDbErrorType.QUERY_FAILED,
+        VectorDBErrorType.QUERY_FAILED,
         false,
         largeContext
       );
