@@ -156,3 +156,134 @@ export const handleVectorDBError = (
     errorDetails
   );
 };
+
+/**
+ * Backward/alternate naming compatibility for imports expecting VectorDb* symbols
+ */
+export { VectorDBErrorType as VectorDbErrorType };
+export { VectorDBError as VectorDbError };
+
+/**
+ * Enhanced handler class providing provider-aware categorization and retryability helpers.
+ * Many adapters import this class from './vector-db-error-handler'.
+ */
+export class VectorDbErrorHandler {
+  private provider: string;
+  private enableLogging: boolean;
+  private enableMetrics: boolean;
+
+  constructor(provider: string, enableLogging: boolean = false, enableMetrics: boolean = false) {
+    this.provider = provider;
+    this.enableLogging = enableLogging;
+    this.enableMetrics = enableMetrics;
+  }
+
+  /**
+   * Normalize and enrich an error with consistent formatting.
+   */
+  public handleError(
+    error: any,
+    operation: string,
+    errorType?: VectorDBErrorType,
+    retryable?: boolean,
+    additionalContext: Record<string, any> = {}
+  ): VectorDBError {
+    // Categorize if no explicit type provided (use local fallback to avoid circular imports)
+    const resolvedType = errorType ?? this.categorizeFallback(error);
+
+    // Attach context (including retryable if provided)
+    const context = {
+      ...additionalContext,
+      ...(typeof retryable === 'boolean' ? { retryable } : {}),
+    };
+
+    // Delegate to base normalizer for consistency
+    const normalized = handleVectorDBError(
+      error instanceof Error ? error : new Error(String(error)),
+      operation,
+      this.provider
+    );
+
+    // Override type if we resolved a more specific one
+    if (resolvedType && normalized.type !== resolvedType) {
+      normalized.type = resolvedType;
+    }
+
+    // Merge context into details
+    normalized.details = { ...(normalized.details || {}), ...context };
+
+    // Optional logging hook
+    if (this.enableLogging) {
+      logger.error('Vector DB operation error', {
+        provider: this.provider,
+        operation,
+        type: normalized.type,
+        message: normalized.message,
+        context,
+      });
+    }
+
+    return normalized;
+  }
+
+  /**
+   * Determine if an error is retryable using provider-aware patterns.
+   */
+  public isRetryableError(error: any): boolean {
+    const t = this.categorizeFallback(error);
+    return (
+      t === VectorDBErrorType.CONNECTION_FAILED ||
+      t === VectorDBErrorType.TIMEOUT ||
+      t === VectorDBErrorType.SERVICE ||
+      t === VectorDBErrorType.UNKNOWN_ERROR
+    );
+  }
+
+  /**
+   * Fallback categorization to avoid importing database-error-patterns (prevents circular deps).
+   */
+  private categorizeFallback(error: any): VectorDBErrorType {
+    if (!error) return VectorDBErrorType.UNKNOWN_ERROR;
+    const msg = String(error.message || '').toLowerCase();
+    const code = String((error as any).code ?? '');
+    const status = (error as any).status ?? (error as any).statusCode ?? 0;
+
+    // Connection
+    if (
+      code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ETIMEDOUT' ||
+      msg.includes('connection') || msg.includes('connect') || msg.includes('network')
+    ) return VectorDBErrorType.CONNECTION_FAILED;
+
+    // Auth
+    if (
+      code === 'EAUTH' || status === 401 || status === 403 ||
+      msg.includes('auth') || msg.includes('unauthorized') || msg.includes('forbidden') || msg.includes('credentials') || msg.includes('permission')
+    ) return VectorDBErrorType.AUTHORIZATION_ERROR;
+
+    // Timeout
+    if (
+      code === 'ETIMEDOUT' || status === 408 || status === 504 ||
+      msg.includes('timeout') || msg.includes('timed out')
+    ) return VectorDBErrorType.TIMEOUT;
+
+    // Rate limiting / service
+    if (
+      status === 429 || status === 503 ||
+      msg.includes('rate limit') || msg.includes('throttl') || msg.includes('service unavailable')
+    ) return VectorDBErrorType.SERVICE;
+
+    // Query / syntax
+    if (
+      msg.includes('query') || msg.includes('syntax') || msg.includes('sql') || msg.includes('malformed')
+    ) return VectorDBErrorType.QUERY_FAILED;
+
+    // Vector specific
+    if (msg.includes('vector')) return VectorDBErrorType.VECTOR_CREATION_FAILED;
+
+    // Initialization / configuration
+    if (msg.includes('not initialized') || msg.includes('initialize') || msg.includes('configuration'))
+      return VectorDBErrorType.INITIALIZATION;
+
+    return VectorDBErrorType.UNKNOWN_ERROR;
+  }
+}

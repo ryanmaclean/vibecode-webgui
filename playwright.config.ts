@@ -74,10 +74,12 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: process.env.USE_BUILD ? 'bash -c "npm run build && node .next/standalone/server.js"' : 'npm run dev:simple',
+    command: process.env.USE_BUILD
+      ? 'bash -c "BUILDING=true NODE_ENV=production PORT=3000 npm run build && PORT=3000 node .next/standalone/server.js"'
+      : 'npm run dev:simple',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    timeout: 300 * 1000,
   },
 
   /* Global setup and teardown */
