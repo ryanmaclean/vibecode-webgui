@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRobustConnection, getConnectionPoolStatus } from '@/lib/db/robust-db-connection';
-import { getDatabaseMetricsCollector } from '@/lib/db/db-metrics';
-import { adaptPoolStatus } from '@/lib/db/pool-adapter';
+// Defer heavy or circular-prone imports to runtime to avoid build-time evaluation cycles
+// that caused "Cannot access 't' before initialization" during route module evaluation.
 
 interface DbInfo {
   db_name: string;
@@ -96,6 +95,15 @@ interface DbStats {
  * - latency: Connection latency in ms
  */
 export async function GET(request: NextRequest) {
+  // Defer imports to runtime to avoid circular-init build issues
+  const [dbMod, metricsMod, poolMod] = await Promise.all([
+    import('@/lib/db/robust-db-connection'),
+    import('@/lib/db/db-metrics'),
+    import('@/lib/db/pool-adapter'),
+  ]);
+  const { createRobustConnection, getConnectionPoolStatus } = dbMod as any;
+  const { getDatabaseMetricsCollector } = metricsMod as any;
+  const { adaptPoolStatus } = poolMod as any;
   const startTime = Date.now();
   const format = request.nextUrl.searchParams.get('format') || 'json';
   const verbose = request.nextUrl.searchParams.get('verbose') === 'true';
@@ -213,7 +221,7 @@ export async function GET(request: NextRequest) {
         const rawStats = (embedResult as any[])[0];
         embeddingsStats = {
           total_embeddings: Number(rawStats.total_embeddings),
-          avg_content_size: rawStats.avg_content_size ? Number(rawStats.avg_content_size) : null,
+          avg_content_size: rawStats.avg_content_size != null ? Number(rawStats.avg_content_size) : undefined,
           latest_embedding: rawStats.latest_embedding
         };
       } catch (embedError) {
