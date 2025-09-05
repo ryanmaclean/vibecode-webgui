@@ -15,29 +15,32 @@ jest.mock('dd-trace', () => ({
   wrap: jest.fn(),
 }));
 
-// Mock winston
+// Mock winston with factory pattern
+let mockLogger: any;
+
 jest.mock('winston', () => {
-  const mockLogger = {
+  mockLogger = {
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
     debug: jest.fn(),
   };
+  
   return {
     createLogger: jest.fn(() => mockLogger),
-  format: {
-    combine: jest.fn(() => jest.fn()),
-    timestamp: jest.fn(() => jest.fn()),
-    errors: jest.fn(() => jest.fn()),
-    json: jest.fn(() => jest.fn()),
-    printf: jest.fn(() => jest.fn()),
-    colorize: jest.fn(() => jest.fn()),
-    simple: jest.fn(() => jest.fn()),
-  },
-  transports: {
-    Console: jest.fn(),
-    File: jest.fn(),
-  },
+    format: {
+      combine: jest.fn(() => jest.fn()),
+      timestamp: jest.fn(() => jest.fn()),
+      errors: jest.fn(() => jest.fn()),
+      json: jest.fn(() => jest.fn()),
+      printf: jest.fn(() => jest.fn()),
+      colorize: jest.fn(() => jest.fn()),
+      simple: jest.fn(() => jest.fn()),
+    },
+    transports: {
+      Console: jest.fn(),
+      File: jest.fn(),
+    },
   };
 });
 
