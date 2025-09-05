@@ -137,6 +137,11 @@ jobs:
           echo "NEXTAUTH_SECRET=test-secret-key-for-ci" >> .env
           echo "NODE_ENV=test" >> .env
 
+      - name: Install Redis CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y redis-tools
+
       - name: Wait for services
         run: |
           echo "Waiting for PostgreSQL..."
@@ -262,6 +267,23 @@ jobs:
           else
             echo "docs/dist not found" > .test-results/docs-dist-indexes.txt
             echo "docs/dist not found" > .test-results/docs-dist-tree.txt
+          fi
+
+      - name: Publish docs link validation summary
+        if: always()
+        run: |
+          if [ -f .test-results/docs-link-report.json ]; then
+            echo "## Docs Link Validation" >> $GITHUB_STEP_SUMMARY
+            if command -v jq >/dev/null 2>&1; then
+              jq -r '"- Pages checked: \(.pagesChecked)\n- Empty links: \(.emptyLinks)\n- Broken links: \(.brokenCount)"' .test-results/docs-link-report.json >> $GITHUB_STEP_SUMMARY || true
+              if [ "$(jq -r '.brokenCount' .test-results/docs-link-report.json)" != "0" ]; then
+                echo "\n### Examples" >> $GITHUB_STEP_SUMMARY
+                jq -r '.brokenLinks[:10][] | "- \(.from) -> \(.to)"' .test-results/docs-link-report.json >> $GITHUB_STEP_SUMMARY || true
+              fi
+            else
+              echo "(jq not available) Raw report:" >> $GITHUB_STEP_SUMMARY
+              cat .test-results/docs-link-report.json >> $GITHUB_STEP_SUMMARY || true
+            fi
           fi
 
       - name: Upload docs test results
