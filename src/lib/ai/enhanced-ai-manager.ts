@@ -322,7 +322,7 @@ export class EnhancedAIManager {
       if (this.openaiClient) {
         const enhancedPrompt = `Generate ${language} code${framework ? ` using ${framework}` : ''} for the following requirements:\n\n${prompt}\n\nProvide complete, production-ready code with proper error handling and documentation.`;
         
-        // @ts-ignore - Direct message format for ChatOpenAI
+        // @ts-expect-error - Direct message format for ChatOpenAI
         const response = await this.openaiClient.invoke([
           { role: "system", content: `You are a senior ${language} developer. Generate clean, maintainable, and well-documented code.` },
           { role: "user", content: enhancedPrompt }
@@ -363,7 +363,7 @@ export class EnhancedAIManager {
     }
 
     try {
-      // @ts-ignore - Type issue with RunnableSequence in current LangChain version
+      // @ts-expect-error - Type issue with RunnableSequence in current LangChain version
       return RunnableSequence.from([
         prompt,
         model,
@@ -425,7 +425,7 @@ export class EnhancedAIManager {
 
      // Add Ollama models if available
      if (this.ollamaClient) {
-       // @ts-ignore - Handle potential 'never' type issues with OLLAMA_MODELS
+       // @ts-expect-error - Handle potential 'never' type issues with OLLAMA_MODELS
        Object.entries(OLLAMA_MODELS).forEach(([_key, model]) => {
          let suitability = 0.5; // Base suitability
 
@@ -455,7 +455,7 @@ export class EnhancedAIManager {
        ];
 
        openaiModels.forEach(model => {
-         // @ts-ignore - Handle potential 'never' type issues
+         // @ts-expect-error - Handle potential 'never' type issues
          recommendations.push({
            name: model.name,
            provider: 'openai',
