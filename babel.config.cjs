@@ -16,19 +16,19 @@ module.exports = function (api) {
   // For Jest testing, use comprehensive config
   return {
     presets: [
-      ['@babel/preset-env', { 
+      ['@babel/preset-env', {
         targets: { node: 'current' },
         modules: 'commonjs'
       }],
-      ['@babel/preset-typescript', { 
+      ['@babel/preset-typescript', {
         allowNamespaces: true,
         allExtensions: true,
         isTSX: true
       }],
-      ['@babel/preset-react', { 
+      ['@babel/preset-react', {
         runtime: 'automatic'
       }]
-    },
+    ],
     plugins: [
       '@babel/plugin-transform-modules-commonjs',
       'babel-plugin-dynamic-import-node'
