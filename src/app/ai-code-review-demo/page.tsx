@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import AICodeReview from '@/components/ai/AICodeReview';
+// Temporarily disabled to fix build issues - TODO: Fix LangChain compatibility
+// import AICodeReview from '@/components/ai/AICodeReview';
 
 const SAMPLE_CODES = {
   typescript: `// Sample TypeScript code with potential issues
@@ -248,16 +249,23 @@ export default function AICodeReviewDemo() {
           </CardContent>
         </Card>
 
-        {/* AI Code Review Section */}
+        {/* AI Code Review Section - Temporarily disabled */}
         <div className="space-y-4">
-          <AICodeReview
+          <div className="p-6 border border-yellow-300 bg-yellow-50 rounded-lg">
+            <h3 className="text-lg font-semibold text-yellow-800 mb-2">Feature Temporarily Disabled</h3>
+            <p className="text-yellow-700">
+              The AI Code Review feature is temporarily disabled while we fix compatibility issues. 
+              This will be restored in the next update.
+            </p>
+          </div>
+          {/* <AICodeReview
             code={currentSampleCode}
             language={selectedLanguage}
             framework={selectedFramework}
             onReviewComplete={(results) => {
               console.log('Code review completed:', results);
             }}
-          />
+          /> */}
         </div>
       </div>
 

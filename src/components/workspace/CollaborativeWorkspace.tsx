@@ -62,6 +62,14 @@ interface WorkspaceActivityData {
   userRole?: string
 }
 
+interface WorkspaceActivityData {
+  templateId?: string
+  projectName?: string
+  message?: string
+  deploymentUrl?: string
+  userRole?: string
+}
+
 interface WorkspaceActivity {
   id: string
   type: 'template_selected' | 'project_generated' | 'deployment_started' | 'user_joined' | 'message_sent'
@@ -69,44 +77,6 @@ interface WorkspaceActivity {
   userName: string
   timestamp: Date
   data?: WorkspaceActivityData
-}
-
-interface TeamMember {
-  id: string
-  name: string
-  color: string
-  isActive: boolean
-  role: 'owner' | 'viewer' | 'collaborator'
-  joinedAt: Date
-}
-
-interface WorkspaceActivity {
-  id: string
-  type: string
-  message: string
-  userId: string
-  userName: string
-  timestamp: Date
-}
-
-interface CollaborativeWorkspaceProps {
-  workspaceId?: string
-  userId?: string
-  userName?: string
-  initialProject?: any
-  onUserInvite?: () => void
-  onCreateTerminal?: () => void
-  onCreateDebugSession?: () => void
-  className?: string
-}
-
-interface WorkspaceActivity {
-  id: string
-  type: 'template_selected' | 'project_generated' | 'deployment_started' | 'user_joined' | 'message_sent'
-  userId: string
-  userName: string
-  timestamp: Date
-  data?: any
 }
 
 interface TeamMember {
@@ -128,6 +98,11 @@ export function CollaborativeWorkspace({
   onCreateTerminal,
   onCreateDebugSession
 }: CollaborativeWorkspaceProps) {
+  // Use provided values or defaults
+  const workspaceId = initialWorkspaceId || 'default-workspace'
+  const userId = initialUserId || 'demo-user'
+  const userName = initialUserName || 'Demo User'
+
   const [selectedProject, setSelectedProject] = useState<GeneratedProject | null>(initialProject || null)
   const [isGeneratingProject, setIsGeneratingProject] = useState(false)
   const [activeTab, setActiveTab] = useState('templates')
@@ -152,14 +127,9 @@ export function CollaborativeWorkspace({
     const members = activeUsers.map(user => ({
       id: user.id,
       name: user.name,
-      color: user.color || '#1f75cb', // Provide a default color if undefined
+      color: user.color || '#1f75cb',
       isActive: user.isActive,
       role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'collaborator' | 'viewer',
-      role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'viewer' | 'collaborator',
-      color: user.color,
-      isActive: user.isActive,
-      role: user.id === userId ? 'owner' : 'collaborator' as const,
-      role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'viewer' | 'collaborator',
       joinedAt: new Date()
     }))
     setTeamMembers(members)
@@ -168,7 +138,6 @@ export function CollaborativeWorkspace({
   // Handle template selection and project generation
   const handleTemplateSelect = async (template: MarketplaceTemplate) => {
     const templateId = template.id
-  const handleTemplateSelect = async (template: any) => {
     setIsGeneratingProject(true)
     
     try {
@@ -201,12 +170,15 @@ Generated in collaborative workspace`,
       }
 
       // Add to activity feed
-      addActivity({
+      const newActivity: WorkspaceActivity = {
+        id: `activity-${Date.now()}`,
         type: 'template_selected',
         userId,
         userName,
+        timestamp: new Date(),
         data: { templateId, projectName: workspaceProject.name }
-      })
+      }
+      setWorkspaceActivity(prev => [newActivity, ...prev])
 
       // Auto-switch to chat tab for collaboration
       setActiveTab('chat')
@@ -224,6 +196,15 @@ Generated in collaborative workspace`,
       setConversationId(`workspace-${workspaceId}-${Date.now()}`)
     }
   }, [conversationId, workspaceId])
+
+  // Helper functions
+  const createNewConversation = () => {
+    setConversationId(`workspace-${workspaceId}-${Date.now()}`)
+  }
+
+  const handleDeploymentStart = () => {
+    setShowDeployment(true)
+  }
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
@@ -261,164 +242,6 @@ Generated in collaborative workspace`,
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="flex-1 flex">
-        {/* Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="font-semibold text-gray-900">Activity Feed</h2>
-          </div>
-          <ScrollArea className="flex-1 p-4">
-            {workspaceActivity.length === 0 ? (
-              <p className="text-sm text-gray-500">No activity yet</p>
-            ) : (
-              <div className="space-y-3">
-                {workspaceActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900">{activity.message}</p>
-                      <p className="text-xs text-gray-500">
-                        {activity.userName} • {activity.timestamp.toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-        </div>
-
-        {/* Main workspace */}
-        <div className="flex-1 flex flex-col">
-          {selectedProject ? (
-            <div className="flex-1 flex flex-col">
-              {/* Project header */}
-              <div className="bg-white border-b border-gray-200 px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">{selectedProject.name}</h2>
-                    <p className="text-sm text-gray-600">{selectedProject.description}</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setActiveTab('chat')}
-                    >
-                      <ChatBubbleLeftRightIcon className="h-4 w-4 mr-2" />
-                      Chat
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowDeployment(true)}
-                    >
-                      <RocketLaunchIcon className="h-4 w-4 mr-2" />
-                      Deploy
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Project content */}
-              <div className="flex-1 p-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center">
-                        <CodeBracketIcon className="h-5 w-5 mr-2" />
-                        Files
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {selectedProject.files.map((file, index) => (
-                          <div key={index} className="flex items-center space-x-2 text-sm">
-                            <FolderOpenIcon className="h-4 w-4 text-gray-400" />
-                            <span>{file.path}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center">
-                        <Cog6ToothIcon className="h-5 w-5 mr-2" />
-                        Actions
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full justify-start"
-                          onClick={onCreateTerminal}
-                        >
-                          <CommandLineIcon className="h-4 w-4 mr-2" />
-                          Open Terminal
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full justify-start"
-                          onClick={onCreateDebugSession}
-                        >
-                          <BugAntIcon className="h-4 w-4 mr-2" />
-                          Debug Session
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-              <div className="bg-white border-b border-gray-200 px-6">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="templates">Templates</TabsTrigger>
-                  <TabsTrigger value="chat">Chat</TabsTrigger>
-                </TabsList>
-              </div>
-
-              <TabsContent value="templates" className="flex-1 p-6">
-                {isGeneratingProject ? (
-                  <div className="flex items-center justify-center h-64">
-                    <div className="text-center">
-                      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                      <p className="text-gray-600">Generating project from template...</p>
-                    </div>
-                  </div>
-                ) : (
-                  <TemplateMarketplace
-                    onSelectTemplate={handleTemplateSelect}
-                  />
-                )}
-              </TabsContent>
-
-              <TabsContent value="chat" className="flex-1">
-                {conversationId ? (
-                  <CollaborativeChatInterface
-                    conversationId={conversationId}
-                    workspaceId={workspaceId}
-                    userId={userId}
-                    userName={userName}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-64">
-                    <p className="text-gray-500">Initializing chat...</p>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          )}
         </div>
       </div>
 
@@ -464,7 +287,6 @@ Generated in collaborative workspace`,
               </div>
             ) : (
               <TemplateMarketplace
-                onSelectTemplate={handleTemplateSelect}
                 onSelectTemplate={handleTemplateSelect}
               />
             )}
@@ -626,7 +448,6 @@ Generated in collaborative workspace`,
       </div>
     </div>
   )
-}
 }
 
 export default CollaborativeWorkspace

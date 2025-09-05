@@ -5,21 +5,24 @@
 global.setImmediate = global.setImmediate || ((fn, ...args) => setTimeout(fn, 0, ...args));
 global.clearImmediate = global.clearImmediate || clearTimeout;
 
-// Mock fetch API for tests
-global.fetch = jest.fn();
+// Do not define a default fetch here; jest.setup.js provides a default mock and restores it per-test.
 
-// Mock TextEncoder/TextDecoder for streaming tests
-global.TextEncoder = jest.fn().mockImplementation(() => ({
-  encode: jest.fn((text) => new Uint8Array(Buffer.from(text, 'utf8')))
-}));
+// Minimal TextEncoder/TextDecoder implementations (non-mocked)
+global.TextEncoder = class TextEncoder {
+  encode(text) {
+    return new Uint8Array(Buffer.from(String(text), 'utf8'));
+  }
+};
 
-global.TextDecoder = jest.fn().mockImplementation(() => ({
-  decode: jest.fn((buffer) => Buffer.from(buffer).toString('utf8'))
-}));
+global.TextDecoder = class TextDecoder {
+  decode(buffer) {
+    return Buffer.from(buffer).toString('utf8');
+  }
+};
 
 // Mock AbortSignal for timeout tests
 global.AbortSignal = {
-  timeout: jest.fn((ms) => ({
+  timeout: jest.fn((_ms) => ({
     aborted: false,
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
@@ -33,7 +36,11 @@ global.Headers = class Headers {
     this._headers = {};
     if (init && typeof init === 'object') {
       Object.entries(init).forEach(([k, v]) => {
-        this._headers[String(k).toLowerCase()] = String(v);
+        const keyLower = String(k).toLowerCase();
+        const val = String(v);
+        this._headers[keyLower] = val;
+        // Also expose original-cased keys as enumerable properties for test expectations
+        this[k] = val;
       });
     }
   }
@@ -41,20 +48,28 @@ global.Headers = class Headers {
     return this._headers[String(name).toLowerCase()] ?? null;
   }
   set(name, value) {
-    this._headers[String(name).toLowerCase()] = String(value);
+    const keyLower = String(name).toLowerCase();
+    const val = String(value);
+    this._headers[keyLower] = val;
+    this[name] = val;
   }
   has(name) {
     return Object.prototype.hasOwnProperty.call(this._headers, String(name).toLowerCase());
   }
   delete(name) {
     delete this._headers[String(name).toLowerCase()];
+    delete this[name];
   }
   append(name, value) {
-    const key = String(name).toLowerCase();
-    if (this._headers[key]) {
-      this._headers[key] = `${this._headers[key]}, ${String(value)}`;
+    const keyLower = String(name).toLowerCase();
+    const keyOrig = String(name);
+    const val = String(value);
+    if (this._headers[keyLower]) {
+      this._headers[keyLower] = `${this._headers[keyLower]}, ${val}`;
+      this[keyOrig] = `${this[keyOrig]}, ${val}`;
     } else {
-      this._headers[key] = String(value);
+      this._headers[keyLower] = val;
+      this[keyOrig] = val;
     }
   }
   forEach(callback) {
