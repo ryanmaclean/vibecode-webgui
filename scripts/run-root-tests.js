@@ -125,12 +125,16 @@ function sendDatadogTestResult(testName, category, success, duration, error = nu
     version: DD_VERSION,
     test_name: testName,
     test_category: category,
+    test_suite: `root-tests-${category}`,
+    test_session_name: `root-tests-${category}`,
     status: success ? 'pass' : 'fail',
     duration_ms: duration,
     timestamp: new Date().toISOString(),
     tags: [
       `test.name:${testName}`,
       `test.category:${category}`,
+      `test.suite:root-tests-${category}`,
+      `test.session:root-tests-${category}`,
       `test.status:${success ? 'pass' : 'fail'}`,
       `service:${DD_SERVICE}`,
       `env:${DD_ENV}`,
@@ -197,7 +201,9 @@ function runTestFile(filePath) {
       DD_CI_VISIBILITY_ENABLED: DD_CI_VISIBILITY_ENABLED.toString(),
       DD_SERVICE: DD_SERVICE,
       DD_ENV: DD_ENV,
-      DD_VERSION: DD_VERSION
+      DD_VERSION: DD_VERSION,
+      // Stabilize test session fingerprint
+      DD_TEST_SESSION_NAME: `root-tests-${category}`
     };
     
     execSync(`node "${filePath}"`, { 
