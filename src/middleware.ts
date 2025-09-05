@@ -17,42 +17,35 @@ const BOT_PROTECTION_CONFIG = {
   ],
 };
 
-// Initialize Redis/ValKey only in non-test environments
+// Initialize Upstash Redis/Rate limiters only when credentials are present and not in test/CI
 let redis: any = null;
 let ratelimit: any = null;
 
-if (!isTestEnvironment) {
+const hasUpstashCreds = Boolean(
+  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+);
+
+if (!isTestEnvironment && hasUpstashCreds) {
   try {
     const { Ratelimit } = require('@upstash/ratelimit');
     const { Redis } = require('@upstash/redis');
-    
+
     redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL || process.env.REDIS_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.REDIS_PASSWORD,
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
     });
-    
+
     ratelimit = new Ratelimit({
-      redis: redis,
+      redis,
       limiter: Ratelimit.slidingWindow(100, '1 m'),
       analytics: true,
+      prefix: '@upstash/ratelimit',
     });
-  } catch (error) {
-    console.warn('Redis/ValKey not available for middleware:', error.message);
+  } catch (error: any) {
+    console.warn('Upstash Redis not initialized, proceeding without rate limiting:', error?.message || error);
+    redis = null;
+    ratelimit = null;
   }
-}
-
-if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-  redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
-  });
-
-  ratelimit = new Ratelimit({
-    redis: redis,
-    limiter: Ratelimit.slidingWindow(10, '10 s'),
-    analytics: true,
-    prefix: '@upstash/ratelimit',
-  });
 }
 
 function logToDatadog(
