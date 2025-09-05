@@ -253,18 +253,18 @@ Your role is to:
       
       messages.push(new SystemMessage(`\n\n${formatInstructions}`));
       
-      // @ts-ignore - Type incompatibility with LangChain's RunnableSequence for agent type
+      // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence for agent type
       const chain = RunnableSequence.from([
-        // @ts-ignore
+        // @ts-expect-error
         agent,
         parser
       ]);
       
-      // @ts-ignore - Type incompatibility with LangChain message format
+      // @ts-expect-error - Type incompatibility with LangChain message format
       return await chain.invoke(messages);
     } else {
       // Use simple text output
-      // @ts-ignore - Type incompatibility with LangChain message format
+      // @ts-expect-error - Type incompatibility with LangChain message format
       const response = await agent.invoke(messages);
       return response.content;
     }

@@ -94,7 +94,7 @@ let redisClient: any = null;
 try {
   if (config.type === 'standard') {
     if ('url' in config) {
-      // @ts-ignore - ioredis constructor typing issue
+      // @ts-expect-error - ioredis constructor typing issue
       redisClient = new Redis(config.url, {
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
@@ -108,7 +108,7 @@ try {
         connectTimeout: 10000,
       });
     } else {
-      // @ts-ignore - ioredis constructor typing issue
+      // @ts-expect-error - ioredis constructor typing issue
       redisClient = new Redis({
         host: config.host,
         port: config.port,
@@ -242,7 +242,7 @@ export class CacheManager {
 
     try {
       const keys = Array.isArray(key) ? key : [key];
-      // @ts-ignore - Type mismatch issue
+      // @ts-expect-error - Type mismatch issue
       await this.redis.del(...keys);
       
       metrics.increment('cache.delete', { count: keys.length as any });
@@ -295,7 +295,7 @@ export class CacheManager {
       
       for (const { key, value, ttl = CacheTTL.MEDIUM } of pairs) {
         const serialized = JSON.stringify(value);
-        // @ts-ignore - Type mismatch issue
+        // @ts-expect-error - Type mismatch issue
         pipeline.setex(key, ttl, serialized);
       }
       
