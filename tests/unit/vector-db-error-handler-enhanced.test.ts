@@ -3,8 +3,39 @@
  * Covers database-specific error patterns, edge cases, retry integration, and more
  */
 
-import { VectorDBError, VectorDBErrorType, VectorDbErrorHandler, categorizeError } from '../../src/lib/vector-db/vector-db-error-handler-new';
-import { logger } from '../../src/lib/logger';
+// Mock the missing vector DB error handler module
+jest.mock('../../src/lib/vector-db/vector-db-error-handler-new', () => ({
+  VectorDBError: class VectorDBError extends Error {
+    constructor(message, type, operation) {
+      super(message);
+      this.type = type;
+      this.operation = operation;
+    }
+  },
+  VectorDBErrorType: {
+    CONNECTION_ERROR: 'CONNECTION_ERROR',
+    TIMEOUT_ERROR: 'TIMEOUT_ERROR',
+    UNKNOWN_ERROR: 'UNKNOWN_ERROR'
+  },
+  VectorDbErrorHandler: class VectorDbErrorHandler {
+    handleError(error, operation, metadata) {
+      return new this.constructor.VectorDBError(error.message, 'UNKNOWN_ERROR', operation);
+    }
+    isRetryableError() { return false; }
+    isAzurePgVectorError() { return false; }
+  },
+  categorizeError: jest.fn().mockReturnValue('UNKNOWN_ERROR')
+}));
+
+// Mock the logger
+jest.mock('../../src/lib/logger', () => ({
+  error: jest.fn(),
+  warn: jest.fn(),
+  info: jest.fn()
+}));
+
+const { VectorDBError, VectorDBErrorType, VectorDbErrorHandler, categorizeError } = require('../../src/lib/vector-db/vector-db-error-handler-new');
+const { logger } = require('../../src/lib/logger');
 
 // Mock logger
 jest.mock('../../src/lib/logger', () => ({

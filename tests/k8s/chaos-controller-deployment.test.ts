@@ -4,10 +4,16 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { describeWithInfrastructure } from '../utils/infrastructure-detection.js';
 
 const execAsync = promisify(exec);
 
-describe('Chaos Controller Deployment Tests', () => {
+describeWithInfrastructure('Chaos Controller Deployment Tests', 
+  { 
+    kubernetes: true, 
+    kind: true, 
+    helm: true 
+  }, () => {
   const namespace = 'chaos-engineering';
   const timeout = 300000; // 5 minutes
 
