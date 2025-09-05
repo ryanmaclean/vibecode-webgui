@@ -3,10 +3,10 @@ const { Server } = require('socket.io');
 const http = require('http');
 
 describe('WebSocket Server Integration', () => {
-  let ioServer, server, clientSocket;
+  let ioServer, httpServer, clientSocket;
 
   beforeAll((done) => {
-    const httpServer = http.createServer();
+    httpServer = http.createServer();
     ioServer = new Server(httpServer);
 
     ioServer.on('connection', (socket) => {
@@ -34,18 +34,27 @@ describe('WebSocket Server Integration', () => {
         forceNew: true,
         reconnection: false
       });
-      done();
+      // Ensure the client is fully connected before tests run
+      clientSocket.on('connect', () => done());
     });
   });
 
+  beforeEach(() => {
+    // Clear previous error listeners to prevent cross-test interference
+    if (clientSocket) {
+      clientSocket.off('error');
+    }
+  });
+
   afterAll(() => {
-    ioServer.close();
     if (clientSocket) clientSocket.close();
+    if (ioServer) ioServer.close();
+    if (httpServer) httpServer.close();
   });
 
   describe('Error Handling', () => {
     it('should handle malformed data gracefully', (done) => {
-      clientSocket.on('error', (error) => {
+      clientSocket.once('error', (error) => {
         expect(error.message).toBe('Invalid input format');
         done();
       });
@@ -55,7 +64,7 @@ describe('WebSocket Server Integration', () => {
     });
 
     it('should handle invalid cursor position', (done) => {
-      clientSocket.on('error', (error) => {
+      clientSocket.once('error', (error) => {
         expect(error.message).toBe('Invalid cursor position');
         done();
       });
