@@ -407,6 +407,24 @@ test('should have no broken or empty internal links', () => {
     console.log(`Examples of broken links: ${examples}`);
   }
 
+  // Persist a machine-readable report for CI artifacts
+  try {
+    const outDir = path.join(__dirname, '../../.test-results');
+    fs.mkdirSync(outDir, { recursive: true });
+    const report = {
+      timestamp: new Date().toISOString(),
+      baseSegment,
+      pagesChecked: sample.length,
+      emptyLinks,
+      brokenCount: brokenLinks.length,
+      brokenLinks,
+    };
+    fs.writeFileSync(path.join(outDir, 'docs-link-report.json'), JSON.stringify(report, null, 2));
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn(`Unable to write docs link report: ${e?.message || e}`);
+  }
+
   expect(emptyLinks).toBe(0);
   expect(brokenLinks.length).toBe(0);
   });
