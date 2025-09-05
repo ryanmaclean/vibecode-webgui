@@ -86,8 +86,7 @@ describe('Monitoring API Integration', () => {
       // Diagnostic logging for debugging in Jest environment
       console.log('DEBUG admin GET response:', {
         type: typeof response,
-        hasStatus: response && 'status' in (response as any),
-        status: (response as any)?.status,
+        status: response.status,
         ctor: response?.constructor?.name,
       })
 
@@ -274,7 +273,7 @@ describe('Monitoring API Integration', () => {
 
     test('should deny access for unauthenticated users', async () => {
       // Mock no session
-      mockedGetServerSession.mockResolvedValue(null as any)
+      mockedGetServerSession.mockResolvedValue(null)
 
       const requestBody = {
         type: 'response_time',

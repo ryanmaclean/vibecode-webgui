@@ -524,6 +524,9 @@ const CollaborativeEditor = forwardRef<EditorHandle, CollaborativeEditorProps>((
   )
 });
 
+// Add display name for React DevTools
+CollaborativeEditor.displayName = 'CollaborativeEditor';
+
 // Export the component as the default export
 export default CollaborativeEditor;
 
