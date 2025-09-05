@@ -46,6 +46,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install Redis CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y redis-tools
+
       - name: Initialize containers
         run: |
           echo "Starting PostgreSQL and Redis containers..."
