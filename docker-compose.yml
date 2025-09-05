@@ -43,6 +43,8 @@ services:
     container_name: vibecode-app
     ports:
       - "3000:3000"
+    env_file:
+      - .env.docker
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://vibecode:password@db:5432/vibecode

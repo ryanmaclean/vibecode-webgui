@@ -116,3 +116,4 @@ env/
 venv.bak/
 venv*/
 
+code-server/
