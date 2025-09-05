@@ -1,4 +1,4 @@
-module.exports = (api) => {
+export default (api) => {
   api.cache.using(() => process.env.NODE_ENV);
 
   const isTest = process.env.NODE_ENV === 'test';
