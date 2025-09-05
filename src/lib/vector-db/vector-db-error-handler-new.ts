@@ -3,19 +3,25 @@
  */
 
 import { 
-  VectorDbErrorType, 
-  VectorDbError, 
-  VectorDbErrorHandler as BaseErrorHandler 
+  VectorDBErrorType, 
+  VectorDBError, 
+  handleVectorDBError
 } from './vector-db-error-handler';
 import { categorizeErrorWithProvider } from './database-error-patterns';
 
 /**
  * Enhanced error handler class for vector database operations
- * This extends the base error handler with provider-specific categorization
+ * This provides provider-specific categorization for vector database errors
  */
-export class VectorDbErrorHandler extends BaseErrorHandler {
+export class VectorDbErrorHandler {
+  private provider: string;
+  private enableLogging: boolean;
+  private enableMetrics: boolean;
+
   constructor(provider: string, enableLogging: boolean = false, enableMetrics: boolean = false) {
-    super(provider, enableLogging, enableMetrics);
+    this.provider = provider;
+    this.enableLogging = enableLogging;
+    this.enableMetrics = enableMetrics;
   }
 
   /**
@@ -24,10 +30,10 @@ export class VectorDbErrorHandler extends BaseErrorHandler {
   public handleError(
     error: any,
     operation: string,
-    errorType?: VectorDbErrorType,
+    errorType?: VectorDBErrorType,
     retryable?: boolean,
     additionalContext: any = {}
-  ): VectorDbError {
+  ): VectorDBError {
     // Check for Azure PostgreSQL specific pgvector errors
     if (this.isAzurePgVectorError(error)) {
       const message = error.message || 'Azure PostgreSQL pgvector extension error';
@@ -37,13 +43,11 @@ export class VectorDbErrorHandler extends BaseErrorHandler {
         pgvectorError: true,
         requiresAdminAction: true
       };
-      // @ts-expect-error - Accessing private property from parent class
-      return new VectorDbError(
+      return new VectorDBError(
         message,
-        VectorDbErrorType.INITIALIZATION,
+        VectorDBErrorType.INITIALIZATION,
         operation,
-        // @ts-expect-error - Accessing private property from parent class
-        this.provider as string,
+        this.provider,
         additionalContext
       );
     }
@@ -51,18 +55,32 @@ export class VectorDbErrorHandler extends BaseErrorHandler {
     // If error type is not provided, use provider-specific categorization
     const resolvedErrorType = errorType || this.getProviderSpecificErrorType(error);
     
-    // Call parent handleError with the resolved error type
-    return super.handleError(error, operation, resolvedErrorType, retryable, additionalContext);
+    // Use the handleVectorDBError function from the base module
+    return handleVectorDBError(error, operation, this.provider);
   }
 
   /**
    * Use provider-specific error categorization 
    */
-  private getProviderSpecificErrorType(error: any): VectorDbErrorType {
-    // Access provider property through "this"
-    // @ts-expect-error - Accessing private property from parent class
-    const provider = this.provider as string;
-    return categorizeErrorWithProvider(error, provider);
+  private getProviderSpecificErrorType(error: any): VectorDBErrorType {
+    return categorizeErrorWithProvider(error, this.provider);
+  }
+
+  /**
+   * Check if an error is retryable based on error type and provider
+   */
+  public isRetryableError(error: any): boolean {
+    const errorType = this.getProviderSpecificErrorType(error);
+    
+    // Generally retryable error types
+    const retryableTypes = [
+      VectorDBErrorType.CONNECTION_FAILED,
+      VectorDBErrorType.TIMEOUT,
+      VectorDBErrorType.SERVICE,
+      VectorDBErrorType.UNKNOWN_ERROR
+    ];
+    
+    return retryableTypes.includes(errorType);
   }
   
   /**
@@ -91,4 +109,4 @@ export class VectorDbErrorHandler extends BaseErrorHandler {
 }
 
 // Re-export types from the original error handler
-export { VectorDbErrorType, VectorDbError };
+export { VectorDBErrorType, VectorDBError, categorizeErrorWithProvider as categorizeError };
