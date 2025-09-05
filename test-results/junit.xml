@@ -1,11 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="3" failures="0" errors="0" time="3.013">
-  <testsuite name="Azure Embedding Service E2E Tests" errors="0" failures="0" skipped="0" timestamp="2025-08-28T16:01:58" time="2.457" tests="3">
-    <testcase classname="Azure Embedding Service E2E Tests should generate embeddings for text" name="Azure Embedding Service E2E Tests should generate embeddings for text" time="0.983">
+<testsuites name="jest tests" tests="12" failures="0" errors="0" time="1.336">
+  <testsuite name="Monitoring API Integration" errors="0" failures="0" skipped="0" timestamp="2025-09-05T01:12:00" time="0.712" tests="12">
+    <testcase classname="Monitoring API Integration GET /api/monitoring/metrics should return metrics for admin user" name="Monitoring API Integration GET /api/monitoring/metrics should return metrics for admin user" time="0.069">
     </testcase>
-    <testcase classname="Azure Embedding Service E2E Tests should store and retrieve documents with embeddings" name="Azure Embedding Service E2E Tests should store and retrieve documents with embeddings" time="0.038">
+    <testcase classname="Monitoring API Integration GET /api/monitoring/metrics should deny access for non-admin users" name="Monitoring API Integration GET /api/monitoring/metrics should deny access for non-admin users" time="0.001">
     </testcase>
-    <testcase classname="Azure Embedding Service E2E Tests should perform a RAG query" name="Azure Embedding Service E2E Tests should perform a RAG query" time="0.012">
+    <testcase classname="Monitoring API Integration GET /api/monitoring/metrics should deny access for unauthenticated users" name="Monitoring API Integration GET /api/monitoring/metrics should deny access for unauthenticated users" time="0">
+    </testcase>
+    <testcase classname="Monitoring API Integration GET /api/monitoring/metrics should handle internal server errors gracefully" name="Monitoring API Integration GET /api/monitoring/metrics should handle internal server errors gracefully" time="0">
+    </testcase>
+    <testcase classname="Monitoring API Integration POST /api/monitoring/metrics should accept response time metrics from authenticated users" name="Monitoring API Integration POST /api/monitoring/metrics should accept response time metrics from authenticated users" time="0">
+    </testcase>
+    <testcase classname="Monitoring API Integration POST /api/monitoring/metrics should accept error metrics from authenticated users" name="Monitoring API Integration POST /api/monitoring/metrics should accept error metrics from authenticated users" time="0">
+    </testcase>
+    <testcase classname="Monitoring API Integration POST /api/monitoring/metrics should accept user activity metrics from authenticated users" name="Monitoring API Integration POST /api/monitoring/metrics should accept user activity metrics from authenticated users" time="0">
+    </testcase>
+    <testcase classname="Monitoring API Integration POST /api/monitoring/metrics should accept network I/O metrics from authenticated users" name="Monitoring API Integration POST /api/monitoring/metrics should accept network I/O metrics from authenticated users" time="0">
+    </testcase>
+    <testcase classname="Monitoring API Integration POST /api/monitoring/metrics should reject unknown metric types" name="Monitoring API Integration POST /api/monitoring/metrics should reject unknown metric types" time="0">
+    </testcase>
+    <testcase classname="Monitoring API Integration POST /api/monitoring/metrics should deny access for unauthenticated users" name="Monitoring API Integration POST /api/monitoring/metrics should deny access for unauthenticated users" time="0">
+    </testcase>
+    <testcase classname="Monitoring API Integration POST /api/monitoring/metrics should handle malformed JSON gracefully" name="Monitoring API Integration POST /api/monitoring/metrics should handle malformed JSON gracefully" time="0">
+    </testcase>
+    <testcase classname="Monitoring API Integration Metrics Storage and Limits should maintain response time array size limit" name="Monitoring API Integration Metrics Storage and Limits should maintain response time array size limit" time="0.005">
     </testcase>
   </testsuite>
 </testsuites>
