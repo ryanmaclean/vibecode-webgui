@@ -29,7 +29,15 @@ jest.mock('../../../lib/collaboration', () => ({
 
 // Mock CodeMirror
 jest.mock('@codemirror/view', () => {
-  const mockDiv = document.createElement('div');
+  // Use mock-prefixed variable to avoid scope issues
+  const mockDocument = { 
+    createElement: jest.fn().mockReturnValue({ 
+      setAttribute: jest.fn(),
+      style: {},
+      classList: { add: jest.fn(), remove: jest.fn() }
+    }) 
+  };
+  const mockDiv = mockDocument.createElement('div');
   mockDiv.setAttribute('role', 'textbox');
   
   return {
