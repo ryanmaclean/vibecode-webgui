@@ -40,7 +40,11 @@ interface TestSession {
   expiresAt: Date
 }
 
-describe('Chat-UI MongoDB Integration', () => {
+// Only run this suite when explicitly enabled (CI or local env provides MongoDB)
+const RUN_MONGO_TESTS = process.env.RUN_MONGO_TESTS === 'true'
+const describeIf = RUN_MONGO_TESTS ? describe : describe.skip
+
+describeIf('Chat-UI MongoDB Integration', () => {
   let mongoClient: MongoClient
   let db: Db
   let conversationsCollection: Collection<TestConversation>
