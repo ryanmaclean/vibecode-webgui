@@ -197,3 +197,6 @@ export class TestHelpers {
 export function createTestHelpers(page: Page): TestHelpers {
   return new TestHelpers(page);
 }
+
+// Default export for compatibility with tests importing default
+export default TestHelpers;

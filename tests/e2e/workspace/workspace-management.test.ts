@@ -5,7 +5,7 @@
 
 import { test, expect } from '@playwright/test'
 import TestHelpers from '../utils/test-helpers'
-import testData from '../fixtures/test-data.json'
+import testData from '../fixtures/test-data.json' assert { type: 'json' }
 
 test.describe('Workspace Management', () => {
   let testUser: any
