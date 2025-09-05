@@ -4,9 +4,9 @@
  * without requiring containerized services
  */
 
-const baseConfig = require('./jest.config.js')
+import baseConfig from './jest.config.js'
 
-module.exports = {
+const config = {
   ...baseConfig,
   
   // Test environment optimized for API testing
@@ -77,7 +77,7 @@ module.exports = {
   reporters: [
     'default',
     ['jest-junit', {
-      outputDirectory: 'test-results',
+      outputDirectory: '.test-results',
       outputName: 'no-docker-results.xml',
       suiteNameTemplate: '{filepath}',
       classNameTemplate: '{classname}',
@@ -122,3 +122,5 @@ module.exports = {
     '<rootDir>/tests/integration/collaboration-*.test.{ts,tsx}'
   ]
 }
+
+export default config

@@ -1,4 +1,5 @@
 /** @type {import('jest').Config} */
+const includeDocs = process.env.JEST_INCLUDE_DOCS === '1';
 const config = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: [
@@ -68,6 +69,7 @@ const config = {
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
     '<rootDir>/tests/e2e/',
+    ...(includeDocs ? [] : ['<rootDir>/tests/docs/']),
   ],
   
   moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json', 'node'],
@@ -93,7 +95,8 @@ const config = {
   // Reporters
   reporters: [
     'default',
-    ['jest-junit', { outputDirectory: 'test-results', outputName: 'junit.xml' }],
+    // Write JUnit to a hidden, ignored folder to avoid accidental commits
+    ['jest-junit', { outputDirectory: '.test-results', outputName: 'junit.xml' }],
   ],
   
   // Coverage

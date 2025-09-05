@@ -13,6 +13,9 @@
 # testing
 /coverage
 /playwright-report/
+/test-results/
+/.test-results/
+/blob/
 
 # next.js
 /.next/
@@ -112,3 +115,4 @@ ENV/
 env/
 venv.bak/
 venv*/
+

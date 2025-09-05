@@ -1,5 +1,14 @@
 #!/bin/sh
 
+# Block committing JUnit reports and other test artifacts
+BLOCKED_FILES=$(git diff --cached --name-only | grep -E '(^|/)test-results/.*\.xml$|(^|/)\.test-results/.*\.xml$|(^|/)junit\.xml$' || true)
+if [ ! -z "$BLOCKED_FILES" ]; then
+  echo "❌ Blocking commit: test result report files must not be committed:"
+  echo "$BLOCKED_FILES" | sed 's/^/ - /'
+  echo "Ensure test-results/ and .test-results/ are in .gitignore (already done) and remove these files from staging."
+  exit 1
+fi
+
 # Documentation validation and auto-fixing
 echo "🔍 Validating documentation..."
 
