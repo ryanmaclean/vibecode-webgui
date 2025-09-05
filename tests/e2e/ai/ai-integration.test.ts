@@ -187,7 +187,7 @@ test.describe('AI Integration', () => {
       const file = new File(['const x = 1;'], 'test.js', { type: 'text/javascript' })
       dataTransfer.items.add(file)
       
-      const fileInput = document.querySelector('[data-testid="chat-file-input"]')
+      const fileInput = document.querySelector('[data-testid="chat-file-input"]') as HTMLInputElement | null
       if (fileInput) {
         fileInput.files = dataTransfer.files
         fileInput.dispatchEvent(new Event('change', { bubbles: true }))
