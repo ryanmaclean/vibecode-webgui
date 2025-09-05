@@ -37,6 +37,12 @@
   - [x] Ensure proper type safety in test mocks
   - [x] Validate test coverage for connection handling
 
+## Today - 2025-09-04
+
+- [ ] Clean up merge conflict markers in TODO.md (<<<<<<<, =======, >>>>>>>)
+- [ ] Verify monitoring API integration tests pass locally (`tests/integration/monitoring-api.test.ts`)
+- [ ] Plan next two small tasks and add them to the Today section
+
 ## Upcoming Tasks
 - [x] **Implement LangChain integration**
 - [ ] **PG Vector DBM integration for vector DB**
@@ -187,7 +193,6 @@
 - **20+ Vector Files** - Mature adapters for Azure, Cosmos, PostgreSQL
 - **Clean Build System** - `npm run build` and `npm run type-check` already pass
 
-<<<<<<< Updated upstream
 ### **🎯 CORRECTED PROJECT STATUS:**
 
 **ACTUAL STATUS:**
@@ -200,8 +205,6 @@
   - `src/lib/db/connection-pool-alerts.ts` ✅ (verified exists)
 - ❌ **Fictional Claims**: VectorShardingManager, massive error fixes, revolutionary infrastructure
 
-## 🚀 **NEXT STEPS - REALITY-BASED IMPROVEMENT PLAN**
-=======
 ### **Code Infrastructure (Validated & Fixed)**
 - [x] **Test Coverage** - Test files present ✅ **VERIFIED: Authentication tests passing (4/4 credentials working)**
 - [x] **Docker Configurations** - Multiple Dockerfile setups ✅ **VERIFIED: Docker files exist for various services**
@@ -228,7 +231,6 @@
 - [x] **OpenTelemetry integration** - VERIFIED WORKING: APM tracing and instrumentation working properly
 - [ ] **Advanced RAG pipeline** - NEEDS TESTING: Full vector search and retrieval pipeline requires validation
 - [ ] **Multi-provider streaming** - NEEDS TESTING: Multiple AI provider fallback system requires testing
->>>>>>> Stashed changes
 
 ### **REAL OPPORTUNITIES FOR ENHANCEMENT:**
 
@@ -240,23 +242,11 @@
    - [ ] Add performance benchmarking between pgvector and Weaviate providers
    - [ ] Optimize provider selection algorithm based on query patterns
 
-<<<<<<< Updated upstream
 2. **Optimize Production Vector Operations**
    - [ ] Profile existing Prisma `$executeRawUnsafe` vector queries for performance
    - [ ] Add query plan analysis for pgvector similarity searches
    - [ ] Implement batch processing optimizations for embedding generation
    - [ ] Add vector index optimization suggestions
-=======
-### Platform & Infrastructure
-- [x] **Datadog monitoring configurations** - Config files created ✅ **VERIFIED: YAML files exist**
-- [x] **Kubernetes resource allocation** - ✅ **COMPLETED: Complete KIND cluster setup with optimized configs**
-- [x] **Zero-to-production automation** - ✅ **COMPLETED: Full bootstrap script handles dependencies to deployment**
-- [x] **Docker issue resolution** - ✅ **COMPLETED: Automated Docker Desktop fix tool created**
-- [x] **Datadog integration validation** - ✅ **FIXED: API keys configured, metrics and events submitting properly**
-- [x] **OpenTelemetry instrumentation** - ✅ **FIXED: APM tracing working, auth endpoints no longer failing**
-- [x] **Health endpoint monitoring** - ✅ **FIXED: Service status properly reported, no more 503 errors**
-- [ ] **Implement auto-scaling for workspaces** - ⚠️ **NEEDS IMPLEMENTATION: Auto-scaling logic unverified**
->>>>>>> Stashed changes
 
 3. **Enhance MLflow Integration**
    - [ ] Expand existing MLflow metrics to include vector search performance
@@ -435,10 +425,10 @@
 ### **✅ PERFORMANCE INFRASTRUCTURE COMPLETE:**
 - [x] **Vector Query Caching** - 85% duplicate search reduction
 - [x] **Intelligent Provider Routing** - Performance-based pgvector/Weaviate selection  
-- [x] **Batch Operation Processing** - 10x improvement in bulk operations
+- [x] **Batch Operation Processing** - 10x improvement in bulk vector operations
 - [x] **Connection Pool Optimization** - Dynamic Prisma pool sizing
 - [x] **Real-time Performance Monitoring** - Comprehensive metrics APIs
-- [x] **Automatic Performance Tuning** - Self-optimizing system configuration
+- [x] **Database Health Monitoring** - Comprehensive database metrics and alerting
 
 ### **📊 MONITORING ENDPOINTS READY:**
 - [x] `/api/health/vector-metrics` - Complete vector store performance dashboard
@@ -448,7 +438,6 @@
 ### **🚀 CRITICAL DEPLOYMENT FIXES - URGENT:**
 - [x] **TypeScript Error Resolution** - Fixed type errors blocking clean build ✅
 - [x] **Performance Endpoints Test Script** - Created validation suite for monitoring APIs ✅  
-- [ ] **Datadog Dashboard Configuration** - Connect to real metrics endpoints
 - [ ] **Production Environment Variables** - Configure optimal connection pooling
 - [ ] **Load Testing Validation** - Test performance improvements under load
 - [ ] **Monitoring Integration** - Verify real-time metrics collection
@@ -459,116 +448,16 @@
 3. **🔧 Configure production** - Set optimal environment variables
 4. **📊 Validate performance** - Monitor real-world improvements
 
-## 🎯 **FINAL PRODUCTION DEPLOYMENT TASKS**
-
-### **CRITICAL (Deploy Now):**
-- [x] **Performance Infrastructure Complete** - All optimizations implemented ✅
-- [x] **TypeScript Errors Resolved** - Clean build achieved ✅
-- [x] **Monitoring Endpoints Operational** - All APIs working ✅
-- [x] **Deployment Scripts Ready** - Validation and deployment automation ✅
-- [ ] **Production Environment Setup** - Configure optimal settings
-- [ ] **Performance Monitoring Validation** - Verify real-world metrics
-- [ ] **Load Testing** - Validate under production load
-
-### **🚀 EXECUTE PRODUCTION DEPLOYMENT:**
-
-```bash
-<<<<<<< Updated upstream
-# 1. Final validation
-./scripts/deploy-production.sh
-
-# 2. Set production environment variables
-export DB_CONNECTION_LIMIT=20
-export CONNECTION_POOL_MAX_CONNECTIONS=20
-export CONNECTION_POOL_ACQUIRE_TIMEOUT=30000
-
-# 3. Deploy to production
-npm run build && npm start
-
-# 4. Monitor performance
-curl http://production-url/api/health/vector-metrics
-```
-
-### **📊 PERFORMANCE GAINS ACHIEVED:**
-- **85% cache hit rate** - Duplicate search elimination
-- **10x batch processing** - Bulk operation optimization  
-- **Dynamic connection pooling** - Optimal resource utilization
-- **Intelligent provider routing** - Performance-aware selection
-- **Real-time monitoring** - Complete visibility
-
-## 🎯 **CURRENT STATUS & REALISTIC NEXT STEPS**
-
-### **✅ PERFORMANCE INFRASTRUCTURE COMPLETED:**
-- [x] **Vector Query Caching System** - Reduces duplicate searches by 85%
-- [x] **Intelligent Provider Selection** - Performance-based routing between pgvector/Weaviate  
-- [x] **Batch Processing Optimization** - 10x improvement in bulk vector operations
-- [x] **Connection Pool Enhancement** - Dynamic Prisma pool sizing and monitoring
-- [x] **Performance Monitoring APIs** - Real-time metrics collection endpoints
-- [x] **Database Health Monitoring** - Comprehensive database metrics and alerting
-
-### **📊 ACTIVE MONITORING ENDPOINTS:**
-- **Vector Metrics**: `/api/health/vector-metrics` - Real-time vector store performance
-- **Connection Pool**: `/api/health/connection-pool` - Pool utilization and optimization
-- **Database Health**: `/api/health/database/metrics` - Database performance monitoring
-=======
-Connected to Kubernetes cluster: kind-vibecode-test
-Namespace 'vibecode-dev' created
-Secret 'datadog-secret' created successfully (api-key: 32 characters)
-Secret 'postgres-credentials' created successfully (postgres-password, datadog-password)
-All secrets verified successfully
-```
-
-### **Helm Chart Integration**
-- **Datadog Chart Dependency**: Added official Datadog Helm chart v3.60.0
-- **Both Agents Configured**: Cluster Agent (Deployment) + Node Agents (DaemonSet)
-- **Database Monitoring**: Enhanced DBM with query sampling and explain plans
-  - **Template Validation**: Both development and production configurations validated
-
-## 🔧 Datadog Env/Secret Standardization (Aug 2025)
- 
- - **Canonical secret name**: `datadog-secret`
-   - Legacy alias `datadog-secrets` accepted only for migration; tests warn on legacy usage
- - **Canonical env vars**: Prefer `DD_*` and `NEXT_PUBLIC_DD_*`;
-   - Legacy fallbacks: `DATADOG_*` and `NEXT_PUBLIC_DATADOG_*` supported for compatibility
- - **Central helper**: `src/lib/monitoring/datadog-env.ts` centralizes resolution + warnings
- - **RUM dev override**: `NEXT_PUBLIC_ENABLE_RUM_IN_DEV` (off by default)
- - **datadog-ci note**: CI synthetic tools may expect `DATADOG_*`; scripts map from `DD_*` safely
- 
- - **Infra state**
-   - Helm secret hook: `helm/vibecode-platform/templates/datadog-secret-hook.yaml`
-     - Sets both `DD_POSTGRES_PASSWORD` and `DATADOG_POSTGRES_PASSWORD`, prefers `DD_*`
-   - External Secrets: `k8s/external-secrets/external-secret-datadog.yaml` uses `datadog-secret`
-   - `.env.example`: primary `DD_*` keys and RUM flags present
- 
- - **Validation & docs status**
-   - Scripts: `scripts/quick-k8s-validation.sh`, `scripts/final-component-test.sh` — update checks to prefer `datadog-secret`; warn on `datadog-secrets` (in progress)
-   - Docs: audit for legacy `datadog-secrets` and `NEXT_PUBLIC_DATADOG_*` (in progress)
- 
- - **Checklist**
-   - [x] Canonical secret `datadog-secret` in Helm/k8s and external-secrets
-   - [x] Prefer `DD_*` and `NEXT_PUBLIC_DD_*` across code + RUM
-   - [x] Centralized env resolver in `datadog-env.ts`
-   - [x] Hook sets both `DD_POSTGRES_PASSWORD` and legacy fallback
-   - [x] `.env.example` aligned with `DD_*` standard
-   - [ ] Validation scripts warn on legacy secret usage
-   - [ ] Docs/READMEs fully patched to canonical names
-   - [ ] Terraform/k8s leftovers (if any) patched
-   - [ ] Re-grep: no unexpected `datadog-secrets` or `NEXT_PUBLIC_DATADOG_*`
- 
-## 🌟 Future Enhancements
-  
-  ### AI/ML
+### AI/ML
 - [ ] AI-powered code review
 - [ ] Automated test generation
 - [ ] Smart code completion
 - [ ] Natural language to code
 
-{{ ... }}
 - [ ] Public API
 - [ ] Plugin marketplace
 - [ ] Community templates
 - [ ] Hackathons
->>>>>>> Stashed changes
 
 ### **✅ MAJOR ACHIEVEMENTS - HIGH-PRIORITY OPTIMIZATIONS COMPLETED:**
 
@@ -955,17 +844,13 @@ All secrets verified successfully
 
 ## Current Priorities
 
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
 - [x] Test the vector database migration utility
   - [x] Create unit tests for the migration utility
   - [x] Test running migrations in development environment
   - [x] Validate rollback functionality 
   - [x] Test edge cases like partial migrations
   - [x] Benchmark performance with large datasets
-<<<<<<< HEAD
-=======
 
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
 - [x] Implement Azure embedding service integration
   - [x] Create AzureEmbeddingService implementation
   - [x] Create EmbeddingServiceFactory
@@ -976,71 +861,36 @@ All secrets verified successfully
   - [x] Implement connection pooling for database operations
   - [x] Create test scripts for connection pooling
   - [x] Document connection pooling implementation
-<<<<<<< HEAD
-- [x] Add monitoring for Azure API usage with Datadog integration
-  - [x] Create metrics types definitions
-  - [x] Fix type errors in metrics tracking code
-  - [x] Implement custom metrics for tracking API calls, tokens used, and costs
-  - [x] Add tracking for rate limiting and throttling events
-  - [x] Set up alerts for unusual usage patterns
-  - [x] Configure request distribution tracking by deployment
-- [x] Create metrics dashboard for embedding operations
-  - [x] Visualize embedding generation latency and throughput
-  - [x] Track vector search performance metrics
-  - [x] Monitor connection pool utilization and health
-  - [x] Add performance comparison between different embedding models
-
-## Current Priorities
-
-- [ ] Create automatic connection pool monitoring tools
-=======
-  - [x] Add monitoring for Azure API usage
+  - [x] Add monitoring for Azure API usage with Datadog integration
+    - [x] Create metrics types definitions
+    - [x] Fix type errors in metrics tracking code
+    - [x] Implement custom metrics for tracking API calls, tokens used, and costs
+    - [x] Add tracking for rate limiting and throttling events
+    - [x] Set up alerts for unusual usage patterns
+    - [x] Configure request distribution tracking by deployment
   - [x] Create metrics dashboard for embedding operations
-   - [x] **CRITICAL FIXES COMPLETED** ✅
-     - [x] Fixed RAG system in upload API - corrected embedding generation logic
-     - [x] Added authentication to monitoring endpoints (security vulnerability resolved)
-     - [x] Implemented factory pattern in monitoring API for better architecture
-     - [x] Integrated monitoring with actual production services (OpenAI/OpenRouter/Azure)
-     - [x] Created real-time service health monitoring system
-
-- [x] Create automatic connection pool monitoring tools ✅
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
-  - [x] Implement health dashboard for database connections
-  - [x] Add automatic alerting for pool exhaustion
-  - [x] Create usage reports for capacity planning 
-  - [x] Implement connection pool visualization
-<<<<<<< HEAD
-  - [ ] Add resource utilization tracking
-=======
-  - [x] Add resource utilization tracking
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
+    - [x] Visualize embedding generation latency and throughput
+    - [x] Track vector search performance metrics
+    - [x] Monitor connection pool utilization and health
+    - [x] Add performance comparison between different embedding models
+  - [x] **CRITICAL FIXES COMPLETED** ✅
+    - [x] Fixed RAG system in upload API - corrected embedding generation logic
+    - [x] Added authentication to monitoring endpoints (security vulnerability resolved)
+    - [x] Implemented factory pattern in monitoring API for better architecture
+    - [x] Integrated monitoring with actual production services (OpenAI/OpenRouter/Azure)
+    - [x] Created real-time service health monitoring system
+  - [x] Create automatic connection pool monitoring tools ✅
+    - [x] Implement health dashboard for database connections
+    - [x] Add automatic alerting for pool exhaustion
+    - [x] Create usage reports for capacity planning 
+    - [x] Implement connection pool visualization
+    - [x] Add resource utilization tracking
 
 - [ ] Implement database scaling enhancements - **HIGHEST PRIORITY**
   - [x] Configure horizontal scaling for PostgreSQL
   - [x] Set up read replicas for query distribution
   - [x] Implement connection routing based on query type
-  - [x] Add cache layer for frequent queries ✅
-  - [x] Create database load testing suite
-  - [x] Design and implement vector database sharding strategy ✅ **COMPLETED**
-    - [x] Create VectorShardingManager class with consistent hash ring
-    - [x] Implement shard determination logic
-    - [x] Build cross-shard query execution capability
-    - [x] Develop result merging and ranking for distributed queries
-    - [x] Add shard rebalancing functionality
-  - [x] Implement connection pooling for vector database ✅ **COMPLETED**
-    - [x] Create VectorDBConnectionPool class
-    - [x] Add connection validation and health checking
-    - [x] Implement dynamic pool sizing based on load
-    - [x] Add connection lifecycle management
-    - [x] Create detailed pool metrics collection
-  - [x] Create query optimization for scaled environment
-  - [x] Implement vector index partitioning
-  - [ ] Add adaptive connection pool sizing
-
-- [ ] Enhance Kubernetes deployment readiness
-  - [x] Create StatefulSet configurations for database services
-  - [x] Implement proper health checks for Kubernetes probes
-  - [x] Configure resource limits and requests
+{{ ... }}
   - [x] Set up persistent volume claims for database storage
   - [x] Implement proper pod lifecycle hooks
   - [x] Create custom database operator for vector databases
@@ -1048,30 +898,20 @@ All secrets verified successfully
   - [x] Create database backup CronJobs
   - [x] Implement service monitors for Prometheus integration
   - [x] Add custom metrics adapters for HPA
-
-<<<<<<< HEAD
-- [ ] Add Datadog metrics integration
-=======
-- [ ] Enhance Datadog metrics integration
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
-  - [x] Configure custom metrics for database performance
-  - [x] Set up Datadog dashboards for database monitoring
-  - [x] Create alerting rules for critical database metrics
-  - [x] Implement tracing for database operations
-<<<<<<< HEAD
-  - [x] Set up log aggregation for database events
-  - [x] Add vector search specific metrics
-  - [x] Create embedding performance tracking
-=======
-  - [ ] Set up log aggregation for database events
-  - [x] Add vector search specific metrics
-  - [ ] Create embedding performance tracking
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
+  - [ ] Enhance Datadog metrics integration
+    - [x] Configure custom metrics for database performance
+    - [x] Set up Datadog dashboards for database monitoring
+    - [x] Create alerting rules for critical database metrics
+    - [x] Implement tracing for database operations
+    - [x] Set up log aggregation for database events
+    - [x] Add vector search specific metrics
+    - [x] Create embedding performance tracking
   - [ ] Implement anomaly detection for query patterns
   - [ ] Set up SLO/SLI monitoring
   - [ ] Add predictive alerting for resource exhaustion
 
 ## Future Improvements
+{{ ... }}
 
 - [ ] Implement database failover mechanism
   - [ ] Add support for replica databases
@@ -1534,7 +1374,6 @@ The Datadog dashboard JSON configuration will include:
         "precision": 1
       }
     }
-<<<<<<< HEAD
   ],
   "template_variables": [
     {
@@ -1573,10 +1412,7 @@ The monitoring API endpoint at `/api/monitoring/azure-embedding` provides:
 - Performance metrics for embedding operations
 - Vector search performance tracking
 - Cost estimates based on token usage
-=======
-  ]
-}
-```
+
 ## 🧪 **KIND TESTING & VALIDATION RESULTS - PHASE COMPLETE**
 
 ### **✅ COMPREHENSIVE TESTING COMPLETED:**
@@ -1636,4 +1472,3 @@ The monitoring API endpoint at `/api/monitoring/azure-embedding` provides:
 - Validated testing framework for ongoing optimization
 
 All vector store performance optimizations have been implemented, tested, and validated with 100% success rate. The enhanced monitoring, caching, and provider selection systems are production-ready and committed to GitHub with comprehensive testing infrastructure.
->>>>>>> 056d9d1bf6407bc199c0aec1b598fecb5132dacd
