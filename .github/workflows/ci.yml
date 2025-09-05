@@ -249,7 +249,7 @@ jobs:
         run: npm ci --legacy-peer-deps --omit=optional
 
       - name: Install docs dependencies
-        run: npm ci --legacy-peer-deps --omit=optional --prefix docs
+        run: npm ci --legacy-peer-deps --prefix docs
 
       - name: Prepare test results directory
         run: mkdir -p .test-results
