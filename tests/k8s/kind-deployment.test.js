@@ -6,12 +6,47 @@ const { promisify } = require('util')
 
 const execAsync = promisify(exec)
 
-describe('KIND Deployment Tests', () => {
+// Check if required tools are available
+async function checkKindAvailable() {
+  try {
+    await execAsync('kind version')
+    await execAsync('kubectl version --client')
+    await execAsync('docker version')
+    return true
+  } catch (error) {
+    return false
+  }
+}
+
+// Helper function to skip tests when KIND is not available
+function skipIfKindUnavailable(testName, testFn) {
+  return async function(...args) {
+    if (this.parent?.skipTests) {
+      console.log(`Skipping "${testName}" - KIND environment not available`)
+      return
+    }
+    return await testFn.apply(this, args)
+  }
+}
+
+// Check if KIND environment should be tested
+const shouldTestKind = process.env.TEST_KIND === 'true' || process.env.CI !== 'true'
+
+const describeKind = shouldTestKind ? describe : describe.skip
+
+describeKind('KIND Deployment Tests', () => {
   const CLUSTER_NAME = 'vibecode-test'
   const NAMESPACE = 'vibecode-webgui'
   const timeout = 120000 // 2 minutes
 
   beforeAll(async () => {
+    // Check if required tools are available
+    const kindAvailable = await checkKindAvailable()
+    
+    if (!kindAvailable) {
+      throw new Error('KIND deployment tests require Docker, kubectl, and kind to be installed and available')
+    }
+
     console.log('Setting up KIND cluster for testing...')
 
     try {
