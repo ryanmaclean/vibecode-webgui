@@ -5,4 +5,4 @@ const config = {
     autoprefixer: {},
   },
 };
-module.exports = config;
+export default config;

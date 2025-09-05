@@ -1,9 +1,9 @@
-module.exports = (api) => {
+export default function (api) {
   api.cache.using(() => process.env.NODE_ENV);
 
   const isTest = process.env.NODE_ENV === 'test';
 
-  // For builds, use Next.js built-in Babel config
+  // For builds and dev, use Next.js built-in Babel config
   if (!isTest) {
     return {
       presets: ['next/babel'],
