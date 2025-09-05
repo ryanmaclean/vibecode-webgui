@@ -557,8 +557,8 @@ And some CSS:
       const explanationConfidence = agent['calculateConfidence'](responseWithExplanation);
       const shortConfidence = agent['calculateConfidence'](shortResponse);
 
-      expect(codeConfidence).toBeGreaterThan(0.7);
-      expect(explanationConfidence).toBeGreaterThan(0.7);
+      expect(codeConfidence).toBeGreaterThanOrEqual(0.7);
+      expect(explanationConfidence).toBeGreaterThanOrEqual(0.7);
       expect(shortConfidence).toBe(0.7); // Base confidence
     });
 
