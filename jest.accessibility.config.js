@@ -3,7 +3,7 @@
  * Specialized configuration for WCAG 2.1 AA compliance testing
  */
 
-const nextJest = require('next/jest')
+import nextJest from 'next/jest.js'
 
 const createJestConfig = nextJest({
   // Provide the path to your Next.js app to load next.config.js and .env files
@@ -79,7 +79,7 @@ const customJestConfig = {
     [
       'jest-html-reporters',
       {
-        publicPath: './tests/accessibility/reports',
+        publicPath: '.test-results/accessibility/html',
         filename: 'accessibility-jest-report.html',
         pageTitle: 'WCAG 2.1 AA Accessibility Test Results',
         logoImgPath: './docs/assets/vibecode-logo.png',
@@ -91,7 +91,7 @@ const customJestConfig = {
     [
       'jest-junit',
       {
-        outputDirectory: './tests/accessibility/reports',
+        outputDirectory: '.test-results/accessibility',
         outputName: 'accessibility-junit.xml',
         classNameTemplate: '{classname}',
         titleTemplate: '{title}',
@@ -118,4 +118,4 @@ const customJestConfig = {
 }
 
 // Create and export the Jest configuration
-module.exports = createJestConfig(customJestConfig)
+export default createJestConfig(customJestConfig)
