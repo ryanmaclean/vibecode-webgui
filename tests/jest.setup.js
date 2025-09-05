@@ -1,19 +1,69 @@
 import '@testing-library/jest-dom';
 
 // Mock scrollIntoView for components that use it
-
-// Global fetch mock for API tests
-global.fetch = jest.fn(() => Promise.resolve({
-  ok: true,
-  status: 200,
-  headers: {
-    get: () => null,
-    has: () => false
-  },
-  json: () => Promise.resolve({}),
-  text: () => Promise.resolve('')
-}));
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
+
+// Stable default fetch mock across tests (resetMocks is enabled)
+beforeEach(() => {
+  const defaultImpl = (url) => {
+    const nowIso = new Date().toISOString();
+    // AI LiteLLM route requires auth by default
+    if (typeof url === 'string' && url.includes('/api/ai/litellm')) {
+      return Promise.resolve({
+        ok: false,
+        status: 401,
+        headers: new Headers(),
+        json: async () => ({ error: 'Unauthorized' }),
+        text: async () => 'Unauthorized'
+      });
+    }
+    // Health endpoint stub
+    if (typeof url === 'string' && url.includes('/api/monitoring/health')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({
+          status: 'healthy',
+          timestamp: nowIso,
+          uptime: 12345,
+          checks: {}
+        }),
+        text: async () => ''
+      });
+    }
+    // Metrics endpoint stub
+    if (typeof url === 'string' && url.includes('/api/monitoring/metrics')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({
+          timestamp: nowIso,
+          system: { cpu: 10, memory: 20, disk: 30 },
+          performance: { responseTime: 100, errorRate: 0.01 },
+          users: { activeUsers: 5, activeWorkspaces: 3 },
+          requests: { total: 100, failed: 0 }
+        }),
+        text: async () => ''
+      });
+    }
+    // Generic OK response
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      json: async () => ({}),
+      text: async () => ''
+    });
+  };
+
+  if (!global.fetch || typeof global.fetch !== 'function' || !('mockImplementation' in global.fetch)) {
+    global.fetch = jest.fn(defaultImpl);
+  } else {
+    global.fetch.mockImplementation(defaultImpl);
+  }
+});
 
 
 
