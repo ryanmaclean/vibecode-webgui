@@ -177,7 +177,14 @@ if [[ -n "$staged_ts_files" ]] && [[ "$SKIP_EXPENSIVE_TESTS" != "true" ]]; then
     jobs+=("build-check")
 fi
 
-# 7. Helm linting (only if Helm files changed)
+# 7. Root integration tests (quick subset - always run for critical validation)
+run_in_background "root-infrastructure" "npm run test:root:infrastructure"
+jobs+=("root-infrastructure")
+
+run_in_background "root-credentials" "npm run test:root:credentials"
+jobs+=("root-credentials")
+
+# 8. Helm linting (only if Helm files changed)
 if [[ -n "$staged_helm_files" ]] && command -v helm > /dev/null 2>&1; then
     run_in_background "helm-lint" "helm lint helm/vibecode-platform"
     jobs+=("helm-lint")
