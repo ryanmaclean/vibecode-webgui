@@ -322,7 +322,7 @@ test('should have no broken or empty internal links', () => {
   };
 
   const allHtml = walk(distDir);
-  const sample = allHtml.slice(0, 60); // Limit to first 60 pages to keep runtime reasonable
+  const sample = allHtml.slice(0, 100); // Increased sample size to include more pages
   if (sample.length === 0) {
     console.warn('No HTML pages available for link validation; soft-skipping link validation.');
     return;
@@ -404,8 +404,13 @@ test('should have no broken or empty internal links', () => {
       }
 
       if (href.startsWith('/')) {
-        const exists = candidatePaths(href.replace(/^\//, '')).some((p) => fs.existsSync(p));
-        if (!exists) brokenLinks.push({ from: filePath, to: rawHref });
+        const cleanPath = href.replace(/^\//, '');
+        const candidates = candidatePaths(cleanPath);
+        const exists = candidates.some((p) => fs.existsSync(p));
+        if (!exists) {
+          console.log(`DEBUG: Broken link ${rawHref} -> cleanPath: ${cleanPath}, candidates: ${candidates.join(', ')}`);
+          brokenLinks.push({ from: filePath, to: rawHref });
+        }
       } else {
         const relPath = path.join(currentDir, href);
         const relIndex = path.join(relPath, 'index.html');
