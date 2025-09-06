@@ -227,9 +227,9 @@ describeOrSkip('Astro Documentation Functionality Tests', () => {
 
   test('should serve documentation pages', async () => {
     const candidates = [
-      ['datadog-local-development', 'datadog_local_development'],
-      ['comprehensive-testing-guide', 'comprehensive_testing_guide', 'comprehensive-testing'],
-      ['kind-troubleshooting-guide', 'kind_troubleshooting_guide', 'kind-troubleshooting'],
+      ['datadog_local_development', 'datadog-local-development'],
+      ['comprehensive_testing_guide', 'comprehensive_testing_guide', 'comprehensive-testing'],
+      ['kind_troubleshooting_guide', 'kind_troubleshooting_guide', 'kind-troubleshooting'],
       ['ai-cli-tools']
     ];
 
