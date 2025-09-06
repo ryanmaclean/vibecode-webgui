@@ -406,7 +406,11 @@ test('should have no broken or empty internal links', () => {
       const placeholderPatterns = [
         '/ai-integration/', '/development/', '/architecture/', '/deployment/',
         '/monitoring/datadog/', '/monitoring/prometheus/', '/monitoring/vector/',
-        '/monitoring/opentelemetry/', '/wiki/home', '/wiki/some-page', '/wiki/my-new-page'
+        '/monitoring/opentelemetry/', '/wiki/home', '/wiki/some-page', '/wiki/my-new-page',
+        // CI-specific patterns with base path prefix
+        '/vibecode-webgui/PRISMA_PGVECTOR_TEST_RESULTS/', '/vibecode-webgui/DATADOG_MONITORING_CONFIGURATION/',
+        '/vibecode-webgui/DATADOG_LOCAL_DEVELOPMENT/', '/vibecode-webgui/PRISMA_PGVECTOR_TEST_RESULTS',
+        '/vibecode-webgui/DATADOG_MONITORING_CONFIGURATION', '/vibecode-webgui/DATADOG_LOCAL_DEVELOPMENT'
       ];
       if (placeholderPatterns.some(pattern => href.includes(pattern))) continue;
       
