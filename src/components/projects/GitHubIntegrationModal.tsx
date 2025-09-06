@@ -51,11 +51,6 @@ export function GitHubIntegrationModal({
     licenseTemplate: 'mit' as string | undefined
   })
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  const githubIntegration = React.useRef<GitHubIntegration | null>(null)
-  const [integration, setIntegration] = useState<GitHubIntegration | null>(null)
   const githubIntegration = React.useRef<GitHubIntegration | null>(null)
   const [integration, setIntegration] = useState<GitHubIntegration | null>(null)
 
