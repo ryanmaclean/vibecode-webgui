@@ -207,8 +207,20 @@ describe('Astro Content Validation Tests', () => {
       // Check one fragment file for content
       if (fragmentFiles.length > 0) {
         const fragmentPath = path.join(searchDir, fragmentFiles[0]);
-        const fragmentContent = fs.readFileSync(fragmentPath);
-        expect(fragmentContent.length).toBeGreaterThan(100); // Should have substantial content
+        // Check if it's a directory (newer pagefind versions)
+        if (fs.statSync(fragmentPath).isDirectory()) {
+          const fragmentDirFiles = fs.readdirSync(fragmentPath);
+          const actualFragmentFiles = fragmentDirFiles.filter(file => file.endsWith('.pf_fragment'));
+          expect(actualFragmentFiles.length).toBeGreaterThan(0);
+          if (actualFragmentFiles.length > 0) {
+            const actualFragmentPath = path.join(fragmentPath, actualFragmentFiles[0]);
+            const fragmentContent = fs.readFileSync(actualFragmentPath);
+            expect(fragmentContent.length).toBeGreaterThan(100); // Should have substantial content
+          }
+        } else {
+          const fragmentContent = fs.readFileSync(fragmentPath);
+          expect(fragmentContent.length).toBeGreaterThan(100); // Should have substantial content
+        }
       }
     }
   });
@@ -345,9 +357,8 @@ test('should have no broken or empty internal links', () => {
       } else if (cleanPath === baseSegment || cleanPath === baseSegment + '/') {
         // Link points to the base segment itself; treat as site root
         tryRoots('');
-      } else if (!cleanPath.startsWith(baseSegment + '/')) {
-        tryRoots(path.join(baseSegment, cleanPath));
-      } else {
+      } else if (cleanPath.startsWith(baseSegment + '/')) {
+        // Remove base segment from path since Astro doesn't include it in file paths
         const withoutBase = cleanPath.slice(baseSegment.length + 1);
         if (withoutBase) {
           tryRoots(withoutBase);
@@ -355,6 +366,9 @@ test('should have no broken or empty internal links', () => {
           // Exactly the base segment with trailing slash -> site root
           tryRoots('');
         }
+      } else {
+        // Path doesn't start with base segment, try as-is
+        tryRoots(cleanPath);
       }
     }
     return Array.from(out);
@@ -371,6 +385,9 @@ test('should have no broken or empty internal links', () => {
       if (isExternal(rawHref)) continue; // ignore external links/schemes
       // Skip known asset buckets even if extension missing in the href match
       if (href.includes('/_astro/') || href.includes('/pagefind/')) continue;
+      
+      // Skip API endpoints - these are external to the docs
+      if (href.startsWith('/api/')) continue;
 
       // Ignore non-HTML assets
       const ext = path.extname(href);
