@@ -106,19 +106,12 @@ export const HuggingFaceChatInterface = ({
   ]
 
   const huggingFaceModels = [
-<<<<<<< Updated upstream
     { id: 'microsoft/DialoGPT-medium', name: 'DialoGPT Medium', provider: 'Microsoft', context: '1K', type: 'conversational' },
     { id: 'microsoft/DialoGPT-large', name: 'DialoGPT Large', provider: 'Microsoft', context: '1K', type: 'conversational' },
     { id: 'facebook/blenderbot-400M-distill', name: 'BlenderBot 400M', provider: 'Facebook', context: '1K', type: 'conversational' },
     { id: 'microsoft/GODEL-v1_1-large-seq2seq', name: 'GODEL Large', provider: 'Microsoft', context: '1K', type: 'conversational' },
     { id: 'google/flan-t5-large', name: 'FLAN-T5 Large', provider: 'Google', context: '512', type: 'text-generation' },
     { id: 'bigscience/bloom-560m', name: 'BLOOM 560M', provider: 'BigScience', context: '2K', type: 'text-generation' }
-    { id: 'microsoft/DialoGPT-medium', name: 'DialoGPT Medium', provider: 'Microsoft', type: 'conversational' },
-    { id: 'microsoft/DialoGPT-large', name: 'DialoGPT Large', provider: 'Microsoft', type: 'conversational' },
-    { id: 'facebook/blenderbot-400M-distill', name: 'BlenderBot 400M', provider: 'Facebook', type: 'conversational' },
-    { id: 'microsoft/GODEL-v1_1-large-seq2seq', name: 'GODEL Large', provider: 'Microsoft', type: 'conversational' },
-    { id: 'google/flan-t5-large', name: 'FLAN-T5 Large', provider: 'Google', type: 'text-generation' },
-    { id: 'bigscience/bloom-560m', name: 'BLOOM 560M', provider: 'BigScience', type: 'text-generation' }
   ]
 
   useEffect(() => {
@@ -845,7 +838,6 @@ export const HuggingFaceChatInterface = ({
                 className="hidden"
               />
               
-<<<<<<< Updated upstream
               <Tooltip content="Attach files">
                 <Button
                   variant="outline"
@@ -866,36 +858,6 @@ export const HuggingFaceChatInterface = ({
                 >
                   <Send className="w-4 h-4" />
                 </Button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isStreaming}
-                  >
-                    <Paperclip className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Attach files</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={sendMessage}
-                    disabled={isStreaming || (!input.trim() && attachedFiles.length === 0)}
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Send message</p>
-                </TooltipContent>
               </Tooltip>
             </div>
           </div>
