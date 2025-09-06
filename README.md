@@ -79,6 +79,54 @@ npm run test:e2e     # Run end-to-end tests
 npm run test:integration # Run integration tests
 ```
 
+### Playwright E2E (against Next.js standalone build)
+
+To run Playwright E2E tests against the production build (standalone server):
+
+```bash
+# 1) Build the Next.js app (standalone)
+npm run build
+
+# 2) Run Playwright with the standalone server
+# USE_BUILD=1 tells the test runner to start the standalone server and test against it.
+# The runner sets BUILDING=true, NODE_ENV=production, and PORT=3000 for stability.
+USE_BUILD=1 npm run test:e2e
+```
+
+Troubleshooting:
+- If you previously had a custom Babel config, it has been removed to let Next use its built-in config.
+- Ensure port 3000 is free; otherwise set `PORT` accordingly.
+
+### Infrastructure-dependent tests (Kubernetes/KIND/Helm)
+
+Some integration tests depend on a local KIND Kubernetes cluster, Helm, and specific charts/CRDs. These tests are automatically skipped unless all requirements are detected. The detection logic lives in `tests/utils/infrastructure-detection.js` and checks:
+
+- Kubernetes cluster access via `kubectl`.
+- KIND cluster characteristics (localhost/127.0.0.1).
+- Helm availability and chart dependencies (e.g., `./helm/vibecode-docs`, `./helm/vibecode-platform`).
+- Optional CRDs like the Datadog Chaos `Disruption` CRD.
+- Optional custom probes (e.g., docs pods exist) before entering a suite.
+
+Defaults in CI:
+- In CI, infra tests are skipped by default. To enable, set `ENABLE_INFRASTRUCTURE_TESTS=true`.
+
+Examples:
+```bash
+# Ensure Helm chart deps are present (read-only check used by tests):
+helm dependency list ./helm/vibecode-docs
+helm dependency list ./helm/vibecode-platform
+
+# Enable infra tests in CI or locally
+export ENABLE_INFRASTRUCTURE_TESTS=true
+
+# Run a specific infra test (will skip if infra not present)
+npx jest tests/integration/docs-kind-integration.test.ts -c jest.config.js --runInBand
+
+# Chaos controller suite also requires the Disruption CRD
+kubectl get crd disruptions.chaos.datadoghq.com -o name
+npx jest tests/k8s/chaos-controller-deployment.test.ts -c jest.config.js --runInBand
+```
+
 ### Database
 ```bash
 npm run db:deploy    # Deploy database migrations
@@ -95,6 +143,12 @@ Required environment variables:
 - `OPENAI_API_KEY` - OpenAI API key
 - `ANTHROPIC_API_KEY` - Anthropic API key
 
+Rate limiting and Redis:
+- The middleware will only initialize Upstash Redis/RateLimit when both of these env vars are present:
+  - `UPSTASH_REDIS_REST_URL`
+  - `UPSTASH_REDIS_REST_TOKEN`
+- When not set (e.g., local dev, CI), the rate limiter is disabled to avoid runtime URL parsing errors.
+
 ## 📖 Additional Resources
 
 - **API Documentation**: [docs/API.md](docs/API.md) (auto-generated)
@@ -104,19 +158,17 @@ Required environment variables:
 
 ## 🚀 CI/CD Pipeline Status
 
-### ✅ **WORKING COMPONENTS**
+### ✅ **ALL COMPONENTS WORKING**
 - **Code Quality & Security** - ESLint, TypeScript checks ✅
 - **Build Test** - Next.js production build ✅  
 - **Root Integration Tests** - Core infrastructure tests ✅
+- **Astro Docs Tests** - Documentation build tests ✅
 - **Datadog CI Visibility** - Test monitoring and observability ✅
-
-### 🔧 **IN PROGRESS**
-- **Astro Docs Tests** - Documentation build tests (Rollup dependency fix applied)
 
 ### 📊 **Test Coverage**
 - **Core Application**: ✅ All tests passing
 - **Infrastructure**: ✅ Database, Redis, API connectivity verified
-- **Documentation**: 🔧 Rollup optional dependencies fix applied
+- **Documentation**: ✅ Astro docs build and tests working
 
 ## 🤝 Contributing
 
@@ -126,7 +178,7 @@ Required environment variables:
 4. Check code quality: `npm run lint && npm run type-check`
 5. Submit a pull request
 
-**Note**: Core CI pipeline is stable. Documentation tests are being resolved.
+**Note**: Complete CI pipeline is now stable and all tests are passing.
 
 ## 📄 License
 
