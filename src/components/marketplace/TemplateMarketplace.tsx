@@ -14,7 +14,6 @@ import {
   EyeIcon,
   CodeBracketIcon,
   UserIcon,
-<<<<<<< Updated upstream
   TagIcon,
   FunnelIcon,
   SparklesIcon,

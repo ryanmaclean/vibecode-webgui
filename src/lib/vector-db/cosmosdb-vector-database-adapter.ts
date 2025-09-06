@@ -6,15 +6,13 @@
 import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { metrics } from '../server-monitoring';
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
-import { 
-  CosmosClient, 
-  Container, 
-  Database,
-  SqlQuerySpec 
-} from '../../types/azure-cosmos';
+// import { 
+//   CosmosClient, 
+//   Container, 
+//   Database,
+//   SqlQuerySpec 
+// } from '@azure/cosmos';
 
 /**
  * Azure Cosmos DB specific configuration options
@@ -321,5 +319,4 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       return [];
     }
   }
-}
 }

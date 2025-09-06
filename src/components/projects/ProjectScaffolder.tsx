@@ -28,9 +28,7 @@ import { ProjectTemplate, FileTemplate } from '@/lib/project-templates'
 interface ProjectScaffolderProps {
   template: ProjectTemplate
   projectName: string
-<<<<<<< Updated upstream
-  onGenerate?: (projectData: { files: GeneratedFile[]; name: string }) => void,
-  onGenerate?: (projectData: { files: any[]; name: string }) => void
+  onGenerate?: (projectData: { files: GeneratedFile[]; name: string }) => void
   onDownload?: (projectData: ProjectData) => void
 }
 
