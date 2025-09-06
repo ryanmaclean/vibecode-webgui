@@ -46,7 +46,6 @@ export function TemplateDeploymentIntegration({
       category: template.category,
       complexity: template.complexity,
       tags: template.tags,
-<<<<<<< Updated upstream
       language: template.language || [],
       frameworks: template.frameworks || [],
       files: template.files || [],

@@ -5,8 +5,6 @@
 
 'use client'
 
-<<<<<<< Updated upstream
-import React, { useState, useEffect } from 'react'
 import React, { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -15,14 +13,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useCollaboration } from '@/hooks/useCollaboration'
 import { TemplateMarketplace } from '@/components/marketplace/TemplateMarketplace'
-<<<<<<< Updated upstream
 import { type MarketplaceTemplate } from '@/lib/marketplace/template-marketplace'
 import { GitHubDeploymentWorkflow } from '@/components/deployment/GitHubDeploymentWorkflow'
 import CollaborativeChatInterface from '@/components/chat/CollaborativeChatInterface'
 import { 
   generateFromTemplate, 
-<<<<<<< Updated upstream
-  type GeneratedProject
   type GeneratedProject,
   type GenerateFromTemplateOptions
 } from '@/lib/templates/generator'
@@ -54,10 +49,8 @@ interface CollaborativeWorkspaceProps {
   userId?: string
   userName?: string
   initialProject?: GeneratedProject
-<<<<<<< Updated upstream
   onCreateTerminal?: () => void
   onCreateDebugSession?: () => void
-<<<<<<< Updated upstream
   className?: string
 }
 
@@ -101,11 +94,10 @@ export function CollaborativeWorkspace({
   userId = 'default-user',
   userName = 'Anonymous User',
   initialProject,
-  onUserInvite?: () => void
-  onCreateTerminal?: () => void
-  onCreateDebugSession?: () => void
-  className?: string
-}
+  onCreateTerminal,
+  onCreateDebugSession,
+  className
+}: CollaborativeWorkspaceProps) {
 
 interface WorkspaceActivity {
   id: string
@@ -135,10 +127,9 @@ export function CollaborativeWorkspace({
   onCreateTerminal,
   onCreateDebugSession
 }: CollaborativeWorkspaceProps) {
-<<<<<<< Updated upstream
   const [selectedProject, setSelectedProject] = useState<GeneratedProject | null>(initialProject || null)
   const [isGeneratingProject, setIsGeneratingProject] = useState(false)
-  const [activeTab, setActiveTab] = useState('templates')
+  const [activeTab, setActiveTab] = useState<'templates' | 'chat' | 'deploy' | 'users' | 'terminals' | 'debug'>('templates')
   const [showDeployment, setShowDeployment] = useState(false)
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [workspaceActivity, setWorkspaceActivity] = useState<WorkspaceActivity[]>([])
@@ -150,63 +141,35 @@ export function CollaborativeWorkspace({
     socket
   } = useCollaboration({
     workspaceId,
-  const [workspaceId] = useState(initialWorkspaceId || `workspace-${Date.now()}`)
-  const [userId] = useState(initialUserId || `user-${Math.random().toString(36).substr(2, 9)}`)
-  const [userName] = useState(initialUserName || `User-${Math.random().toString(36).substr(2, 4)}`)
-  const [activeTab, setActiveTab] = useState<'templates' | 'chat' | 'deploy' | 'users' | 'terminals' | 'debug'>('templates')
-  const [selectedProject, setSelectedProject] = useState<GeneratedProject | null>(initialProject || null)
-  const [showDeployment, setShowDeployment] = useState(false)
+    userId,
+    userName
+  })
+
   const [workspaceActivity, setWorkspaceActivity] = useState<WorkspaceActivity[]>([])
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
-  const [conversationId, setConversationId] = useState<string>()
+  const [conversationId, setConversationId] = useState<string | null>(null)
   const [isGeneratingProject, setIsGeneratingProject] = useState(false)
   const [isVoiceConnected, setIsVoiceConnected] = useState(false)
   const [isVideoEnabled, setIsVideoEnabled] = useState(false)
   const [isMicEnabled, setIsMicEnabled] = useState(false)
   const [isScreenSharing, setIsScreenSharing] = useState(false)
-  const wsRef = useRef<WebSocket | null>(null)
 
-  const {
-    isConnected,
-    connectionError,
-    activeUsers,
-    socket
-  } = useCollaboration({
-    workspaceId,
-    conversationId,
-    userId,
-    userName,
-    enabled: true
-  })
+  const wsRef = useRef<WebSocket | null>(null)
 
   // Initialize team members from active users
   useEffect(() => {
     const members = activeUsers.map(user => ({
       id: user.id,
       name: user.name,
-<<<<<<< Updated upstream
       color: user.color || '#1f75cb', // Provide a default color if undefined
       isActive: user.isActive,
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'collaborator' | 'viewer',
-      role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'viewer' | 'collaborator',
-      role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'viewer' | 'collaborator',
-      color: user.color,
-      isActive: user.isActive,
-<<<<<<< Updated upstream
-      role: user.id === userId ? 'owner' : 'collaborator' as const,
-      role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'viewer' | 'collaborator',
-      joinedAt: new Date()
+      role: (user.id === userId ? 'owner' : 'collaborator') as 'owner' | 'collaborator' | 'viewer'
     }))
     setTeamMembers(members)
   }, [activeUsers, userId])
 
   // Handle template selection and project generation
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
+  const handleTemplateSelect = async (template: MarketplaceTemplate) => {
   const handleTemplateSelect = async (template: MarketplaceTemplate) => {
     const templateId = template.id
   const handleTemplateSelect = async (template: any) => {
