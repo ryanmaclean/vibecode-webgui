@@ -1,3 +1,8 @@
+---
+title: CODE OF CONDUCT
+description: CODE OF CONDUCT documentation
+---
+
 # VibeCode Community Code of Conduct
 
 ## 🌟 Our Pledge

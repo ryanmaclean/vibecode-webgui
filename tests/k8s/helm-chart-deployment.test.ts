@@ -14,7 +14,18 @@ const HELM_RELEASE = 'vibecode-platform';
 const CHART_PATH = 'helm/vibecode-platform';
 const TIMEOUT = 300000; // 5 minutes;
 
-describe('VibeCode Platform Helm Chart Deployment', () => {
+// Only run this heavy suite when explicitly enabled and tooling is present
+const SHOULD_RUN_K8S = process.env.RUN_K8S_TESTS === 'true';
+const HAS_HELM = (() => {
+  try { execSync('helm version --short', { stdio: 'pipe' }); return true; } catch { return false; }
+})();
+const HAS_KUBECTL = (() => {
+  try { execSync('kubectl version --client --short', { stdio: 'pipe' }); return true; } catch { return false; }
+})();
+
+const maybeDescribe = (SHOULD_RUN_K8S && HAS_HELM && HAS_KUBECTL) ? describe : describe.skip;
+
+maybeDescribe('VibeCode Platform Helm Chart Deployment', () => {
   beforeAll(async () => {
     console.log('Setting up KIND cluster for Helm chart testing...');
 

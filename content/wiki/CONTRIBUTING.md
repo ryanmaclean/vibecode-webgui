@@ -1,3 +1,8 @@
+---
+title: contributing
+description: contributing documentation
+---
+
 # Contributing to VibeCode
 
 Thank you for your interest in contributing to VibeCode! We welcome contributions from everyone, regardless of experience level. This document will guide you through the process of contributing to our project.
