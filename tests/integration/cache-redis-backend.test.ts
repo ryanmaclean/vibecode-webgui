@@ -17,6 +17,83 @@ jest.mock('../../src/lib/server-monitoring', () => ({
 let mockRedisClient: any = null;
 let realRedisAvailable = false;
 
+// Initialize mock Redis client upfront
+function createMockRedisClient() {
+  const mockCacheStore = new Map<string, string>();
+  
+  return {
+    get: (key: string) => Promise.resolve(mockCacheStore.get(key) || null),
+    set: () => Promise.resolve('OK'),
+    setex: (key: string, ttl: number, value: string) => {
+      mockCacheStore.set(key, value);
+      return Promise.resolve('OK');
+    },
+    del: (key: string) => {
+      const deleted = mockCacheStore.delete(key) ? 1 : 0;
+      return Promise.resolve(deleted);
+    },
+    exists: (key: string) => Promise.resolve(mockCacheStore.has(key) ? 1 : 0),
+    keys: (pattern: string) => {
+      const allKeys = Array.from(mockCacheStore.keys());
+      
+      if (pattern === '*') return Promise.resolve(allKeys);
+      
+      // Convert Redis pattern to regex
+      const regex = new RegExp(pattern.replace(/\*/g, '.*').replace(/\?/g, '.'));
+      return Promise.resolve(allKeys.filter(key => regex.test(key)));
+    },
+    mget: (...keys: string[]) => {
+      return Promise.resolve(keys.map(key => mockCacheStore.get(key) || null));
+    },
+    flushdb: () => {
+      mockCacheStore.clear();
+      return Promise.resolve('OK');
+    },
+    pipeline: () => {
+      // Return a new instance of mock pipeline for each call
+      const commands: Array<{type: 'setex' | 'del', key: string, value?: string, ttl?: number}> = [];
+      
+      return {
+        commands,
+        setex: function(key: string, ttl: number, value: string) {
+          commands.push({type: 'setex', key, value, ttl});
+          return this;
+        },
+        del: function(key: string) {
+          commands.push({type: 'del', key});
+          return this;
+        },
+        exec: async function() {
+          const results = [];
+          
+          for (const command of commands) {
+            try {
+              if (command.type === 'setex' && command.value) {
+                mockCacheStore.set(command.key, command.value);
+                results.push([null, 'OK']);
+              } else if (command.type === 'del') {
+                const deleted = mockCacheStore.delete(command.key) ? 1 : 0;
+                results.push([null, deleted]);
+              }
+            } catch (error) {
+              results.push([error, null]);
+            }
+          }
+          
+          commands.length = 0; // Clear commands after execution
+          return results;
+        }
+      };
+    },
+    flushdb: () => {
+      mockCacheStore.clear();
+      return Promise.resolve('OK');
+    },
+    ping: () => Promise.resolve('PONG'),
+    disconnect: () => Promise.resolve(undefined)
+  };
+}
+
 // Try to import real Redis client
 try {
   const { Redis } = require('ioredis');
@@ -44,87 +121,7 @@ try {
     } catch (error) {
       console.warn('⚠️ Redis/Valkey not available - using mock for cache backend tests');
       realRedisAvailable = false;
-      
-      // Create stateful mock Redis client that simulates actual Redis behavior
-      const mockCacheStore = new Map<string, string>();
-      
-      const mockPipeline = {
-        commands: [] as Array<{type: 'setex' | 'del', key: string, value?: string, ttl?: number}>,
-        
-        setex: jest.fn().mockImplementation(function(key: string, ttl: number, value: string) {
-          this.commands.push({type: 'setex', key, value, ttl});
-          return this;
-        }),
-        
-        del: jest.fn().mockImplementation(function(key: string) {
-          this.commands.push({type: 'del', key});
-          return this;
-        }),
-        
-        exec: jest.fn().mockImplementation(async function() {
-          const results = [];
-          
-          for (const command of this.commands) {
-            try {
-              if (command.type === 'setex' && command.value) {
-                mockCacheStore.set(command.key, command.value);
-                results.push([null, 'OK']);
-              } else if (command.type === 'del') {
-                const deleted = mockCacheStore.delete(command.key) ? 1 : 0;
-                results.push([null, deleted]);
-              }
-            } catch (error) {
-              results.push([error, null]);
-            }
-          }
-          
-          this.commands = []; // Clear commands after execution
-          return results;
-        })
-      };
-
-      mockRedisClient = {
-        get: jest.fn().mockImplementation((key: string) => Promise.resolve(mockCacheStore.get(key) || null)),
-        set: jest.fn().mockResolvedValue('OK'),
-        setex: jest.fn().mockImplementation((key: string, ttl: number, value: string) => {
-          mockCacheStore.set(key, value);
-          return Promise.resolve('OK');
-        }),
-        del: jest.fn().mockImplementation((key: string) => {
-          const deleted = mockCacheStore.delete(key) ? 1 : 0;
-          return Promise.resolve(deleted);
-        }),
-        exists: jest.fn().mockImplementation((key: string) => 
-          Promise.resolve(mockCacheStore.has(key) ? 1 : 0)
-        ),
-        keys: jest.fn().mockImplementation((pattern: string) => {
-          const allKeys = Array.from(mockCacheStore.keys());
-          
-          if (pattern === '*') return Promise.resolve(allKeys);
-          
-          // Convert Redis pattern to regex
-          const regex = new RegExp(pattern.replace(/\*/g, '.*').replace(/\?/g, '.'));
-          return Promise.resolve(allKeys.filter(key => regex.test(key)));
-        }),
-        mget: jest.fn().mockImplementation((...keys: string[]) => {
-          return Promise.resolve(keys.map(key => mockCacheStore.get(key) || null));
-        }),
-        pipeline: jest.fn().mockImplementation(() => {
-          // Return a new instance of mock pipeline for each call
-          return {
-            commands: [],
-            setex: mockPipeline.setex.bind({commands: []}),
-            del: mockPipeline.del.bind({commands: []}),
-            exec: mockPipeline.exec.bind({commands: []})
-          };
-        }),
-        flushdb: jest.fn().mockImplementation(() => {
-          mockCacheStore.clear();
-          return Promise.resolve('OK');
-        }),
-        ping: jest.fn().mockResolvedValue('PONG'),
-        disconnect: jest.fn().mockResolvedValue(undefined)
-      };
+      mockRedisClient = createMockRedisClient();
     }
   });
 
@@ -138,6 +135,7 @@ try {
 } catch (importError) {
   console.warn('Redis client not available - using comprehensive mocks');
   realRedisAvailable = false;
+  mockRedisClient = createMockRedisClient();
 }
 
 /**
@@ -182,6 +180,7 @@ class RedisIntegratedCacheInvalidator extends ProductionVectorCacheInvalidator {
     if (!this.redis) return;
 
     const pipeline = this.redis.pipeline();
+
     
     for (const [key, value] of Object.entries(data)) {
       pipeline.setex(key, ttl, value);
@@ -226,6 +225,7 @@ describe('Cache Invalidation with Redis/Valkey Backend', () => {
       await redisClient.flushdb();
     } else {
       redisClient = mockRedisClient;
+
     }
 
     invalidator = new RedisIntegratedCacheInvalidator(redisClient, {
@@ -240,6 +240,9 @@ describe('Cache Invalidation with Redis/Valkey Backend', () => {
     if (realRedisAvailable && redisClient) {
       await redisClient.flushdb();
       await redisClient.disconnect();
+    } else if (mockRedisClient) {
+      // Clear mock cache between tests
+      await mockRedisClient.flushdb();
     }
   });
 
@@ -414,7 +417,7 @@ describe('Cache Invalidation with Redis/Valkey Backend', () => {
 
         await expect(
           failingInvalidator.invalidateCache(['test:key'], 'high', 'failure-test')
-        ).rejects.toThrow('Redis invalidation failed');
+        ).rejects.toThrow(/Redis invalidation failed/);
       } else {
         // For real Redis tests, disconnect and test resilience
         await redisClient.disconnect();

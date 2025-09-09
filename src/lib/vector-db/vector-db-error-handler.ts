@@ -31,6 +31,8 @@ export class VectorDBError extends Error {
   provider: string;
   details: any;
   timestamp: string;
+  // Whether the error is considered retryable (optional; set by handlers)
+  retryable?: boolean;
 
   constructor(
     message: string,
@@ -107,16 +109,38 @@ export const handleVectorDBError = (
     return error;
   }
 
+  // Normalize incoming error value
+  // - undefined/null -> Unknown error
+  // - string -> message = string
+  // - object without string message -> Unknown error
+  // - Error -> use as-is
+  let baseError: Error;
+  const originalError: unknown = error;
+  if (error instanceof Error) {
+    baseError = error;
+  } else if (error == null) {
+    baseError = new Error('Unknown error');
+  } else if (typeof error === 'string') {
+    baseError = new Error(error);
+  } else if (typeof (error as any).message === 'string') {
+    baseError = new Error((error as any).message);
+  } else if ((error as any).message && typeof (error as any).message !== 'string') {
+    // Non-string message (e.g., object)
+    baseError = new Error(String((error as any).message?.text || 'Unknown error'));
+  } else {
+    baseError = new Error('Unknown error');
+  }
+
   // Map common database errors to appropriate types
   let errorType = VectorDBErrorType.UNKNOWN_ERROR;
-  let errorMessage = error.message || 'Unknown vector database error';
-  let errorDetails = {};
+  const errorMessage = baseError.message || 'Unknown vector database error';
+  let errorDetails: Record<string, unknown> = {};
 
   // Connection errors
   if (
-    error.code === 'ECONNREFUSED' ||
-    error.code === 'ETIMEDOUT' ||
-    error.name === 'ConnectionError' ||
+    (error as any)?.code === 'ECONNREFUSED' ||
+    (error as any)?.code === 'ETIMEDOUT' ||
+    baseError.name === 'ConnectionError' ||
     errorMessage.includes('connect') ||
     errorMessage.includes('connection')
   ) {
@@ -124,9 +148,9 @@ export const handleVectorDBError = (
   }
   // Authentication errors
   else if (
-    error.code === 'EAUTH' ||
-    error.code === 401 ||
-    error.code === 403 ||
+    (error as any)?.code === 'EAUTH' ||
+    (error as any)?.code === 401 ||
+    (error as any)?.code === 403 ||
     errorMessage.includes('auth') ||
     errorMessage.includes('credentials') ||
     errorMessage.includes('permission')
@@ -135,7 +159,7 @@ export const handleVectorDBError = (
   }
   // Query errors
   else if (
-    error.code === 'EQUERY' ||
+    (error as any)?.code === 'EQUERY' ||
     errorMessage.includes('query') ||
     errorMessage.includes('SQL')
   ) {
@@ -143,10 +167,14 @@ export const handleVectorDBError = (
   }
 
   // Extract useful information from the error
-  if (error.code) errorDetails = { ...errorDetails, code: error.code };
-  if (error.errno) errorDetails = { ...errorDetails, errno: error.errno };
-  if (error.sqlMessage) errorDetails = { ...errorDetails, sqlMessage: error.sqlMessage };
-  if (error.stack) errorDetails = { ...errorDetails, stack: error.stack };
+  if ((error as any)?.code) errorDetails = { ...errorDetails, code: (error as any).code };
+  if ((error as any)?.errno) errorDetails = { ...errorDetails, errno: (error as any).errno };
+  if ((error as any)?.sqlMessage) errorDetails = { ...errorDetails, sqlMessage: (error as any).sqlMessage };
+  if ((baseError as any)?.stack) errorDetails = { ...errorDetails, stack: (baseError as any).stack };
+  // Preserve original error for diagnostics (redacted later by toJSON)
+  if (!(error instanceof Error)) {
+    errorDetails = { ...errorDetails, originalError };
+  }
 
   return new VectorDBError(
     errorMessage,
@@ -199,7 +227,7 @@ export class VectorDbErrorHandler {
 
     // Delegate to base normalizer for consistency
     const normalized = handleVectorDBError(
-      error instanceof Error ? error : new Error(String(error)),
+      error,
       operation,
       this.provider
     );
@@ -209,8 +237,11 @@ export class VectorDbErrorHandler {
       normalized.type = resolvedType;
     }
 
-    // Merge context into details
+    // Merge context into details and set top-level retryable property when provided
     normalized.details = { ...(normalized.details || {}), ...context };
+    if (typeof retryable === 'boolean') {
+      (normalized as any).retryable = retryable;
+    }
 
     // Optional logging hook
     if (this.enableLogging) {

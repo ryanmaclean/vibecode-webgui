@@ -49,6 +49,7 @@ interface CollaborativeWorkspaceProps {
   userId?: string
   userName?: string
   initialProject?: GeneratedProject
+  onUserInvite?: () => void
   onCreateTerminal?: () => void
   onCreateDebugSession?: () => void
   className?: string
@@ -142,9 +143,12 @@ export function CollaborativeWorkspace({
     
     try {
       // Generate project from template
-      const project = await generateFromTemplate(template.id, {
-        name: `project-${Date.now()}`,
-        description: template.description || 'Generated from template'
+      const project = await generateFromTemplate({
+        projectName: `project-${Date.now()}`,
+        template: template.id,
+        customizations: {
+          description: template.description || 'Generated from template'
+        }
       })
       
       // Add workspace-specific metadata

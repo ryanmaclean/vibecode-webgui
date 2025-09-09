@@ -223,7 +223,7 @@ export class RetryHandler {
       // If it's a VectorDbError, check if it's retryable based on error type
       if (error instanceof VectorDbError) {
         return (error.details && 'retryable' in error.details && error.details.retryable === true) || 
-               error.type === VectorDbErrorType.CONNECTION ||
+               error.type === VectorDbErrorType.CONNECTION_FAILED ||
                error.type === VectorDbErrorType.TIMEOUT;
     }
     

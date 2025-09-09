@@ -29,8 +29,8 @@ function skipIfKindUnavailable(testName, testFn) {
   }
 }
 
-// Check if KIND environment should be tested
-const shouldTestKind = process.env.TEST_KIND === 'true' || process.env.CI !== 'true'
+// Check if KIND environment should be tested (opt-in only to avoid heavy local runs)
+const shouldTestKind = process.env.TEST_KIND === 'true'
 
 const describeKind = shouldTestKind ? describe : describe.skip
 
