@@ -7,15 +7,35 @@ import { getMetricsCollector } from '@/lib/db/database-metrics'
 export async function GET(_request: NextRequest) {
   try {
     // const stats = await enhancedVectorStore.healthCheck()
-    const stats = { status: 'unavailable' }
+    const stats = {
+      status: 'unavailable',
+      providers: [] as Array<{ id: string; available: boolean }>,
+      totalDocuments: 0,
+      performance: {
+        avgQueryTime: 0,
+        queriesPerSecond: 0,
+        errorRate: '0%'
+      }
+    }
     // const poolMetrics = await prismaPoolOptimizer.collectMetrics()
-    const poolMetrics = { status: 'unavailable' }
+    const poolMetrics = {
+      status: 'unavailable',
+      activeConnections: 0,
+      connectionUtilization: 0,
+      avgQueryTime: 0,
+      pendingRequests: 0
+    }
     const cacheStats = vectorQueryCache.getStats()
     const cacheAnalytics = vectorQueryCache.getAnalytics()
     const dbMetrics = getMetricsCollector()
     const vectorMetrics = dbMetrics.getVectorMetrics()
     // const providerInsights = enhancedVectorStore.getProviderSelectionInsights()
-    const providerInsights = { status: 'unavailable' }
+    const providerInsights = {
+      status: 'unavailable',
+      recommendation: 'none',
+      pgvector: { score: 0, avgTime: 0, errorRate: 0 },
+      weaviate: { score: 0, avgTime: 0, errorRate: 0 }
+    }
     
     return NextResponse.json({
       status: 'success',
