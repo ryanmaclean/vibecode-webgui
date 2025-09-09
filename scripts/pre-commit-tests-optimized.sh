@@ -164,7 +164,7 @@ fi
 if [[ -n "$staged_ts_files" ]] || [[ "$test_files_changed" == "true" ]]; then
     if [[ "$SKIP_EXPENSIVE_TESTS" != "true" ]]; then
         # Run tests with related files if available, otherwise run all tests
-        run_in_background "jest-tests" "npm test -- --passWithNoTests --silent --cache"
+        run_in_background "jest-tests" "npm test -- --silent --cache"
         jobs+=("jest-tests")
     else
         echo "Skipping Jest tests (SKIP_EXPENSIVE_TESTS=true)"

@@ -1,33 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 // import { prismaPoolOptimizer } from '@/lib/db/prisma-pool-optimizer'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Mock response for missing module
     return NextResponse.json({
       status: 'unavailable',
       message: 'Connection pool optimizer not available'
-    })
-
-    return NextResponse.json({
-      status: 'success',
-      timestamp: new Date().toISOString(),
-      connectionPool: {
-        current: currentMetrics,
-        configuration: currentConfig,
-        statistics: poolStats,
-        optimization: {
-          recommendation: analysis.recommendation,
-          suggestedChanges: analysis.suggestedConfig,
-          reasoning: analysis.reasoning
-        },
-        performance: {
-          utilizationRate: currentMetrics.connectionUtilization,
-          avgQueryTime: currentMetrics.avgQueryTime,
-          pendingRequests: currentMetrics.pendingRequests,
-          efficiency: currentMetrics.connectionUtilization < 0.8 ? 'good' : 'needs_optimization'
-        }
-      }
     })
   } catch (error) {
     console.error('Connection pool metrics error:', error)
@@ -42,53 +21,12 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
-    const body = await request.json()
-    const { action, config } = body
-
-    if (action === 'optimize') {
-      const analysis = prismaPoolOptimizer.analyzeAndOptimize()
-      if (analysis.recommendation === 'optimize') {
-        prismaPoolOptimizer.applyConfig(analysis.suggestedConfig)
-        
-        return NextResponse.json({
-          status: 'success',
-          message: 'Connection pool optimized',
-          appliedConfig: analysis.suggestedConfig,
-          reasoning: analysis.reasoning
-        })
-      } else {
-        return NextResponse.json({
-          status: 'no_change',
-          message: 'No optimization needed',
-          recommendation: analysis.recommendation
-        })
-      }
-    }
-
-    if (action === 'configure' && config) {
-      prismaPoolOptimizer.applyConfig(config)
-      
-      return NextResponse.json({
-        status: 'success',
-        message: 'Configuration applied',
-        newConfig: prismaPoolOptimizer.getCurrentConfig()
-      })
-    }
-
-    if (action === 'reset') {
-      prismaPoolOptimizer.reset()
-      
-      return NextResponse.json({
-        status: 'success',
-        message: 'Pool optimizer reset to defaults'
-      })
-    }
-
+    // Optimizer not available in this build; return a clear message
     return NextResponse.json(
-      { status: 'error', error: 'Invalid action' },
-      { status: 400 }
+      { status: 'unavailable', error: 'Connection pool optimizer not available in this environment' },
+      { status: 503 }
     )
   } catch (error) {
     console.error('Connection pool configuration error:', error)

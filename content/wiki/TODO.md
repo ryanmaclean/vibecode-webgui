@@ -258,6 +258,18 @@ grep -r "process\.cwd();" tests/
 - [ ] Mock configuration standardization across test types
 
 ### Next Actions 📋
+
+#### Option A: Complex Test Fixes (Current Approach)
+1. **Fix useCollaboration.test.ts socket mocking** - Properly implement socket.io-client event simulation
+2. **Fix other complex async/socket tests** - Real-time collaboration, WebSocket, integration tests
+
+#### Option B: Systematic Mechanical Test Fixes (Alternative Approach)
+1. **Identify tests failing due to syntax errors** - Search for bracket corruption, semicolon issues
+2. **Fix import/module resolution errors** - Missing dependencies, wrong paths, type imports
+3. **Fix simple mocking configuration issues** - Consistent patterns across test files
+4. **Fix TypeScript compilation errors in tests** - Type mismatches, interface issues
+
+#### Coverage Gap Priorities
 1. **Add unit tests for zero-coverage hooks** - useAuth, useCollaboration, useModelOrchestrator
 2. **Add unit tests for core library modules** - auth.ts, api.ts, ai-providers.ts
 3. **Fix existing failing unit tests** - security-input-validator, vector-db-adapter, ai-project-generator
@@ -286,13 +298,13 @@ grep -r "process\.cwd();" tests/
 - [x] Deduplicate helpers and tighten types in `vector-db-error-handler-new.ts`
 - [x] Fix health-check connectionPool mapping from robust status
 - [x] Fix pool metrics references in Azure embedding monitoring/service
-- [ ] TemplateSubmissionForm: fix duplicate object property keys and shape
-- [ ] MonitoringDashboard: add missing `next/dynamic` import
-- [ ] ConnectionPoolAlerts: align with `connection-pool-alerts` API
-- [ ] CollaborativeEditor: lazy-load `@codemirror/lang-html` and `@codemirror/lang-css` to avoid TS2307
-- [ ] GitHubIntegrationModal: fix variable redeclarations and missing setters
-- [ ] CollaborativeWorkspace: adjust props to include `onUserInvite` or remove usage
-- [ ] redis-client: remove unused `@ts-expect-error` directives
+- [x] TemplateSubmissionForm: fix duplicate object property keys and shape
+- [x] MonitoringDashboard: add missing `next/dynamic` import
+- [x] ConnectionPoolAlerts: align with `connection-pool-alerts` API (export shapes + methods)
+- [x] CollaborativeEditor: remove missing lang imports and gracefully fallback to base extensions
+- [x] GitHubIntegrationModal: fix variable redeclarations and missing setters
+- [x] CollaborativeWorkspace: adjust props/calls (e.g., `onUserInvite`, `generateFromTemplate` options)
+- [x] redis-client: remove unused `@ts-expect-error` directives
 - [ ] Tighten remaining `any` types in `vector-cache.ts` and `sharding-manager.ts`
 
 ### Next Up
