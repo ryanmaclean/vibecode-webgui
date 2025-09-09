@@ -245,12 +245,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_set',
           0,
-          {
-            id,
-            dimension: vector.length,
-            ttl,
-            compressed: this.compressionEnabled
-          }
+          true,
+          { type: 'CACHE', table: this.namespace }
         );
       }
     } catch (error) {
@@ -261,8 +257,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_set',
           0,
-          { id, error: true },
-          error as Error
+          false,
+          { type: 'CACHE', table: this.namespace, error: (error as Error).message }
         );
       }
     }
@@ -323,12 +319,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_get',
           duration,
-          {
-            id,
-            dimension: vector.length,
-            hit: true,
-            compressed: metadata.compressed
-          }
+          true,
+          { type: 'CACHE', table: this.namespace }
         );
       }
       
@@ -345,8 +337,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_get',
           0,
-          { id, error: true },
-          error as Error
+          false,
+          { type: 'CACHE', table: this.namespace, error: (error as Error).message }
         );
       }
       
@@ -411,7 +403,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_invalidate',
           0,
-          { id, deleted }
+          true,
+          { type: 'CACHE', table: this.namespace }
         );
       }
       
@@ -424,8 +417,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_invalidate',
           0,
-          { id, error: true },
-          error as Error
+          false,
+          { type: 'CACHE', table: this.namespace, error: (error as Error).message }
         );
       }
       
@@ -459,7 +452,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_invalidate_collection',
           0,
-          { collectionId, count: deleted }
+          true,
+          { type: 'CACHE', table: this.namespace }
         );
       }
       
@@ -474,8 +468,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_invalidate_collection',
           0,
-          { collectionId, error: true },
-          error as Error
+          false,
+          { type: 'CACHE', table: this.namespace, error: (error as Error).message }
         );
       }
       
@@ -592,10 +586,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_revalidation',
           0,
-          {
-            keysProcessed,
-            keysInvalidated
-          }
+          true,
+          { type: 'CACHE', table: this.namespace }
         );
       }
     } catch (error) {
@@ -606,8 +598,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_revalidation',
           0,
-          { error: true },
-          error as Error
+          false,
+          { type: 'CACHE', table: this.namespace, error: (error as Error).message }
         );
       }
     }
@@ -701,7 +693,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_clear',
           0,
-          { count: deleted }
+          true,
+          { type: 'CACHE', table: this.namespace }
         );
       }
       
@@ -714,8 +707,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_clear',
           0,
-          { error: true },
-          error as Error
+          false,
+          { type: 'CACHE', table: this.namespace, error: (error as Error).message }
         );
       }
       

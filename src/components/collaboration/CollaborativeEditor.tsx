@@ -13,8 +13,6 @@ import DOMPurify from 'dompurify'
 import { EditorView } from '@codemirror/view'
 import { EditorState, type Extension } from '@codemirror/state'
 import { javascript } from '@codemirror/lang-javascript'
-import { html } from '@codemirror/lang-html'
-import { css } from '@codemirror/lang-css'
 
 type AwarenessState = {
   user: CollaborationUser;
@@ -221,34 +219,16 @@ const CollaborativeEditor = forwardRef<EditorHandle, CollaborativeEditorProps>((
     
     if (!language) return baseExtensions;
     
-    try {
-      const lang = language.toLowerCase();
-      
-      // Handle JavaScript/TypeScript variants
-      if (lang === 'javascript' || lang === 'js') {
-        return [...baseExtensions, javascript({ jsx: true })];
-      }
-      
-      if (lang === 'typescript' || lang === 'ts' || lang === 'typescriptreact' || lang === 'tsx') {
-        return [...baseExtensions, javascript({ typescript: true, jsx: true })];
-      }
-      
-      // Handle HTML variants
-      if (lang === 'html' || lang === 'htmlmixed' || lang.endsWith('.html')) {
-        return [...baseExtensions, html()];
-      }
-      
-      // Handle CSS variants
-      if (['css', 'scss', 'sass', 'less'].includes(lang) || lang.endsWith('.css') || lang.endsWith('.scss') || lang.endsWith('.less')) {
-        return [...baseExtensions, css()];
-      }
-      
-      // For unsupported languages, return base extensions
-      return baseExtensions;
-    } catch (error) {
-      console.error(`Error loading language extension for ${language}:`, error);
-      return [];
+    const lang = language.toLowerCase();
+    // Handle JavaScript/TypeScript variants
+    if (lang === 'javascript' || lang === 'js') {
+      return [...baseExtensions, javascript({ jsx: true })];
     }
+    if (lang === 'typescript' || lang === 'ts' || lang === 'typescriptreact' || lang === 'tsx') {
+      return [...baseExtensions, javascript({ typescript: true, jsx: true })];
+    }
+    // For HTML/CSS and other languages, gracefully fall back to base extensions
+    return baseExtensions;
   }, [language])
 
   // Handles editor changes when the user types

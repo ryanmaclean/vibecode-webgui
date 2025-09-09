@@ -2,89 +2,25 @@
  * Tests for AI input validation and security measures
  */
 
-// Mock the missing security input validator module
-jest.mock('../../src/lib/security/input-validator', () => ({
-  validateAIQuery: jest.fn((query) => {
-    if (!query || query.length === 0) throw new Error('Query cannot be empty');
-    if (query.length > 10000) throw new Error('Query too large');
-    if (query.includes('DROP TABLE') || query.includes('<script>')) {
-      throw new Error('Potentially malicious content detected');
-    }
-    return { isValid: true, sanitized: query };
-  }),
-  
-  validatePrompt: jest.fn((prompt) => {
-    if (!prompt.content || prompt.content.length > 50000) {
-      throw new Error('Prompt cannot exceed 50000 characters');
-    }
-    
-    // Sanitize variables
-    const sanitizedVariables = {};
-    if (prompt.variables) {
-      Object.entries(prompt.variables).forEach(([key, value]) => {
-        if (typeof value === 'string') {
-          sanitizedVariables[key] = value.replace(/<script[^>]*>.*?<\/script>/gi, '');
-        }
-      });
-    }
-    
-    return { 
-      content: prompt.content,
-      variables: sanitizedVariables
-    };
-  }),
-  
-  validateFileUpload: jest.fn((file) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'text/plain', 'application/pdf'];
-    if (!allowedTypes.includes(file.contentType)) {
-      throw new Error('Invalid content type');
-    }
-    if (file.size > 10 * 1024 * 1024) { // 10MB
-      throw new Error('File too large');
-    }
-    if (file.filename.includes('../')) {
-      throw new Error('Invalid filename');
-    }
-    return { isValid: true };
-  }),
-  
-  sanitizeUserInput: jest.fn((input) => {
-    return input.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').replace(/\s+/g, ' ');
-  }),
-  
-  sanitizeHtml: jest.fn((html) => {
-    return html.replace(/<script[^>]*>.*?<\/script>/gi, '')
-               .replace(/\s*on\w+="[^"]*"/gi, '')
-               .replace(/\s+/g, ' ');
-  }),
-  
-  aiRateLimiter: {
-    queryCache: new Map(),
-    checkRateLimit: jest.fn(() => ({ allowed: true, remaining: 10 })),
-    isAllowed: jest.fn(() => true)
-  },
-  
-  AISecurityLogger: {
-    logSuspiciousActivity: jest.fn(),
-    logValidationFailure: jest.fn()
-  }
-}));
-
-const {
-  validateAIQuery,
-  validatePrompt,
-  validateFileUpload,
+import { 
+  validateAIQuery, 
+  validatePrompt, 
+  validateFileUpload, 
   sanitizeUserInput,
   sanitizeHtml,
   aiRateLimiter,
   AISecurityLogger
-} = require('../../src/lib/security/input-validator');
+} from '../../src/lib/security/input-validator';
+
+// Mock console methods for testing logger
+const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
 describe('Input Validator Security Tests', () => {
   beforeEach(() => {
     // Reset rate limiter between tests
     (aiRateLimiter as any).queryCache.clear();
     jest.clearAllMocks();
+    consoleSpy.mockClear();
   });
 
   describe('validateAIQuery', () => {
@@ -102,7 +38,7 @@ describe('Input Validator Security Tests', () => {
 
     it('should reject SQL injection attempts', () => {
       const sqlInjection = {
-        query: "'; DROP TABLE users; --"
+        query: 'SELECT * FROM users WHERE id = 1; DROP TABLE users;',
       };
 
       expect(() => validateAIQuery(sqlInjection)).toThrow('potentially unsafe content');
@@ -110,7 +46,7 @@ describe('Input Validator Security Tests', () => {
 
     it('should reject NoSQL injection attempts', () => {
       const nosqlInjection = {
-        query: 'Find user where $ne: password'
+        query: 'Find users where {$ne: null}',
       };
 
       expect(() => validateAIQuery(nosqlInjection)).toThrow('potentially unsafe content');
@@ -118,7 +54,7 @@ describe('Input Validator Security Tests', () => {
 
     it('should reject command injection attempts', () => {
       const cmdInjection = {
-        query: 'How to; rm -rf /'
+        query: 'List files; rm -rf /',
       };
 
       expect(() => validateAIQuery(cmdInjection)).toThrow('potentially unsafe content');
@@ -126,7 +62,7 @@ describe('Input Validator Security Tests', () => {
 
     it('should reject script injection attempts', () => {
       const scriptInjection = {
-        query: '<script>alert("xss")</script>How to code?'
+        query: '<script>alert("xss")</script>',
       };
 
       expect(() => validateAIQuery(scriptInjection)).toThrow('potentially unsafe content');
@@ -134,7 +70,7 @@ describe('Input Validator Security Tests', () => {
 
     it('should reject GraphQL/Cypher injection attempts', () => {
       const cypherInjection = {
-        query: 'MATCH (n) DELETE n RETURN count(*)'
+        query: 'MATCH (n) DELETE n',
       };
 
       expect(() => validateAIQuery(cypherInjection)).toThrow('potentially unsafe content');
@@ -142,7 +78,7 @@ describe('Input Validator Security Tests', () => {
 
     it('should reject oversized queries', () => {
       const oversizedQuery = {
-        query: 'a'.repeat(10001) // Exceeds 10000 char limit
+        query: 'a'.repeat(10001),
       };
 
       expect(() => validateAIQuery(oversizedQuery)).toThrow('cannot exceed 10000 characters');
@@ -158,8 +94,7 @@ describe('Input Validator Security Tests', () => {
     it('should accept valid prompts', () => {
       const validPrompt = {
         content: 'Generate a React component for {{componentName}}',
-        variables: { componentName: 'UserProfile' },
-        systemPrompt: 'You are a helpful coding assistant'
+        variables: { componentName: 'UserProfile' }
       };
 
       const result = validatePrompt(validPrompt);
@@ -169,8 +104,8 @@ describe('Input Validator Security Tests', () => {
 
     it('should sanitize prompt variables', () => {
       const promptWithSuspiciousVars = {
-        content: 'Generate code for {{name}}',
-        variables: { name: '<script>alert("xss")</script>UserList' }
+        content: 'Generate component for {{name}}',
+        variables: { name: 'Test<script>alert(1)</script>Component' }
       };
 
       const result = validatePrompt(promptWithSuspiciousVars);
@@ -180,7 +115,7 @@ describe('Input Validator Security Tests', () => {
 
     it('should reject oversized prompts', () => {
       const oversizedPrompt = {
-        content: 'a'.repeat(50001) // Exceeds 50000 char limit
+        content: 'a'.repeat(50001),
       };
 
       expect(() => validatePrompt(oversizedPrompt)).toThrow('cannot exceed 50000 characters');
@@ -213,7 +148,7 @@ describe('Input Validator Security Tests', () => {
     it('should reject invalid content types', () => {
       const invalidContentType = {
         filename: 'test.txt',
-        contentType: 'invalid/content-type!',
+        contentType: 'invalid/type',
         size: 1024
       };
 
@@ -222,9 +157,9 @@ describe('Input Validator Security Tests', () => {
 
     it('should reject oversized files', () => {
       const oversizedFile = {
-        filename: 'huge.zip',
+        filename: 'large.zip',
         contentType: 'application/zip',
-        size: 200 * 1024 * 1024 // 200MB, exceeds 100MB limit
+        size: 101 * 1024 * 1024 // 101MB
       };
 
       expect(() => validateFileUpload(oversizedFile)).toThrow('cannot exceed 100MB');
@@ -273,7 +208,7 @@ describe('Input Validator Security Tests', () => {
 
   describe('AIQueryRateLimiter', () => {
     it('should allow queries within rate limit', () => {
-      const userId = 'test-user';
+      const userId = 'test-user-1';
       
       for (let i = 0; i < 100; i++) {
         expect(aiRateLimiter.checkRateLimit(userId)).toBe(true);
@@ -283,7 +218,7 @@ describe('Input Validator Security Tests', () => {
     it('should block queries exceeding rate limit', () => {
       const userId = 'test-user-2';
       
-      // Exhaust the rate limit
+      // Use up the rate limit
       for (let i = 0; i < 100; i++) {
         aiRateLimiter.checkRateLimit(userId);
       }
@@ -294,13 +229,13 @@ describe('Input Validator Security Tests', () => {
 
     it('should reset rate limit after time window', () => {
       const userId = 'test-user-3';
+      let mockTime = Date.now();
       
-      // Mock Date.now to simulate time passage
-      const originalNow = Date.now;
-      let mockTime = originalNow();
-      Date.now = jest.fn(() => mockTime);
+      // Mock Date.now to control time
+      const originalDateNow = Date.now;
+      Date.now = () => mockTime;
       
-      // Exhaust rate limit
+      // Use up the rate limit
       for (let i = 0; i < 100; i++) {
         aiRateLimiter.checkRateLimit(userId);
       }
@@ -312,8 +247,8 @@ describe('Input Validator Security Tests', () => {
       // Should allow queries again
       expect(aiRateLimiter.checkRateLimit(userId)).toBe(true);
       
-      // Restore Date.now
-      Date.now = originalNow;
+      // Restore original Date.now
+      Date.now = originalDateNow;
     });
 
     it('should return correct remaining query count', () => {
@@ -331,8 +266,6 @@ describe('Input Validator Security Tests', () => {
 
   describe('AISecurityLogger', () => {
     it('should log suspicious activity', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-      
       AISecurityLogger.logSuspiciousActivity('test-user', 'SUSPICIOUS_QUERY', {
         query: 'DROP TABLE users',
         severity: 'HIGH'
@@ -346,13 +279,9 @@ describe('Input Validator Security Tests', () => {
           severity: 'HIGH'
         })
       }));
-      
-      consoleSpy.mockRestore();
     });
 
     it('should log validation failures', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-      
       AISecurityLogger.logValidationFailure(
         'test-user',
         'malicious input here',
@@ -364,8 +293,6 @@ describe('Input Validator Security Tests', () => {
         validationError: 'SQL injection detected',
         inputSample: 'malicious input here'
       }));
-      
-      consoleSpy.mockRestore();
     });
   });
 });

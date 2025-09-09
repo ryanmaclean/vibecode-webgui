@@ -75,8 +75,8 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: process.env.USE_BUILD
-      ? 'bash -c "BUILDING=true NODE_ENV=production PORT=3000 npm run build && PORT=3000 node .next/standalone/server.js"'
-      : 'npm run dev:simple',
+      ? 'bash -c "BUILDING=true NODE_ENV=production PLAYWRIGHT_TEST=true PORT=3000 npm run build && PORT=3000 PLAYWRIGHT_TEST=true node .next/standalone/server.js"'
+      : 'PLAYWRIGHT_TEST=true npm run dev:simple',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 300 * 1000,

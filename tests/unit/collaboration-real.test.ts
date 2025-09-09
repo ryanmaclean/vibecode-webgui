@@ -283,14 +283,14 @@ describe('Real Y.js Collaboration', () => {
       
       text.insert(0, 'Valid content');
       
-      // Try to apply malformed update (should not crash)
+      // Try to apply malformed update (should throw error for invalid data)
       const malformedUpdate = new Uint8Array([1, 2, 3, 4, 5]);
       
       expect(() => {
         Y.applyUpdate(doc, malformedUpdate);
-      }).not.toThrow();
+      }).toThrow();
       
-      // Document should still be valid
+      // Document should still be valid (error should not corrupt state)
       expect(text.toString()).toBe('Valid content');
       
       doc.destroy();

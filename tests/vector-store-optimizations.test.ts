@@ -3,11 +3,7 @@
  * Tests the enhanced provider selection, caching, and monitoring features
  */
 
-import { EnhancedVectorStore } from '../src/lib/vector-stores/enhanced-vector-store'
-import { VectorQueryCache } from '../src/lib/vector-stores/query-cache'
-import { getMetricsCollector } from '../src/lib/db/database-metrics'
-
-// Mock the dependencies
+// Mock the dependencies BEFORE importing the module under test
 jest.mock('../src/lib/vector-store', () => ({
   vectorStore: {
     search: jest.fn().mockResolvedValue([
@@ -45,11 +41,9 @@ jest.mock('../src/lib/mlflow/mlflow-client', () => ({
   }
 }))
 
-jest.mock('../src/lib/vector-db/VectorMetricsCollector', () => ({
-  VectorMetricsCollector: jest.fn().mockImplementation(() => ({
-    updateStorageMetrics: jest.fn()
-  }))
-}))
+import { EnhancedVectorStore } from '../src/lib/vector-stores/enhanced-vector-store'
+import { VectorQueryCache } from '../src/lib/vector-stores/query-cache'
+import { getMetricsCollector } from '../src/lib/db/database-metrics'
 
 describe('Enhanced Vector Store Optimizations', () => {
   let vectorStore: EnhancedVectorStore

@@ -57,7 +57,7 @@ describe('Anti-Fake Implementation Validation', () => {
         suspiciousPatterns.forEach(pattern => {
           if (pattern.test(content)) {
             const lines = content.split('\n');
-            const matchingLines = lines.filter(line => pattern.test(line);
+            const matchingLines = lines.filter(line => pattern.test(line));
             throw new Error(`File ${filePath} contains fake implementation indicators:\n${matchingLines.join('\n')}`);
           }
         });
@@ -106,7 +106,7 @@ describe('Anti-Fake Implementation Validation', () => {
   });
 
   test('should not have over-mocked unit tests', () => {
-    const testFiles = [;
+    const testFiles = [
       'tests/unit/monitoring.test.ts',
       'tests/unit/server-monitoring.test.ts'
     ]
@@ -157,7 +157,7 @@ describe('Anti-Fake Implementation Validation', () => {
           if (cpuValues.length >= 2) {
             // Check if values are suspiciously in the 10-40 range (indicates fake Math.random() * 30 + 10);
             const allInRange = cpuValues.every(cpu => cpu >= 10 && cpu <= 40);
-            const allVeryDifferent = cpuValues.every((cpu, i) => ;
+            const allVeryDifferent = cpuValues.every((cpu, i) =>
               i === 0 || Math.abs(cpu - cpuValues[i-1]) > 5
             );
 
@@ -178,14 +178,14 @@ describe('Anti-Fake Implementation Validation', () => {
   test('should validate database schema is actually used', () => {
     // Check if database initialization file exists but is not used in code
     const schemaFile = 'infrastructure/postgres/init.sql';
-    const codeFiles = [;
+    const codeFiles = [
       'src/lib/prisma.ts',
       'src/app/api/monitoring/health/route.ts'
     ]
 
     if (fs.existsSync(schemaFile)) {
       const schemaContent = fs.readFileSync(schemaFile, 'utf8');
-      const tableNames = (schemaContent.match(/CREATE TABLE (\w+)/g) || []);
+      const tableNames = (schemaContent.match(/CREATE TABLE (\w+)/g) || [])
         .map(match => match.replace('CREATE TABLE ', ''));
 
       if (tableNames.length > 0) {
@@ -221,14 +221,14 @@ describe('Anti-Fake Implementation Validation', () => {
         // Check if flags are hardcoded or come from real storage
         if (Array.isArray(flagsData.flags)) {
           // Check for suspicious hardcoded flag names
-          const suspiciousFlagNames = [;
+          const suspiciousFlagNames = [
             'ai_assistant_v2',
             'editor_theme_dark_plus',
             'test_flag'
           ]
 
-          const hardcodedFlags = flagsData.flags.filter((flag: any) => ;
-            suspiciousFlagNames.includes(flag.key);
+          const hardcodedFlags = flagsData.flags.filter((flag: any) =>
+            suspiciousFlagNames.includes(flag.key)
           );
 
           if (hardcodedFlags.length === flagsData.flags.length) {
@@ -251,7 +251,7 @@ describe('Anti-Fake Implementation Validation', () => {
       const content = fs.readFileSync(metaplaneFile, 'utf8');
 
       // Check for signs of cosmetic implementation
-      const suspiciousPatterns = [;
+      const suspiciousPatterns = [
         /process\.env\.METAPLANE_AI_ENDPOINT.*undefined/,
         /placeholder.*endpoint/i,
         /fake.*data/i,
@@ -261,7 +261,7 @@ describe('Anti-Fake Implementation Validation', () => {
       suspiciousPatterns.forEach(pattern => {
         if (pattern.test(content)) {
           const lines = content.split('\n');
-          const matchingLines = lines.filter(line => pattern.test(line);
+          const matchingLines = lines.filter(line => pattern.test(line));
           console.warn(`Warning: Metaplane integration may be cosmetic:\n${matchingLines.join('\n')}`);
         }
       });
@@ -277,7 +277,7 @@ describe('Anti-Fake Implementation Validation', () => {
 
 describe('Code Quality Validation', () => {
   test('should not have TODO comments in critical production code', () => {
-    const productionFiles = [;
+    const productionFiles = [
       'src/app/api/monitoring/health/route.ts',
       'src/lib/monitoring.ts'
     ]
@@ -289,7 +289,7 @@ describe('Code Quality Validation', () => {
 
         if (todoMatches.length > 2) {
           const lines = content.split('\n');
-          const todoLines = lines.filter(line => line.includes('TODO:');
+          const todoLines = lines.filter(line => line.includes('TODO:'));
           console.warn(`Warning: ${filePath} has ${todoMatches.length} TODO comments:\n${todoLines.slice(0, 3).join('\n')}`);
         }
       }

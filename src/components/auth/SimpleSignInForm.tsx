@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -14,10 +14,38 @@ export default function SimpleSignInForm() {
   const [password, setPassword] = useState('dev123')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [csrfToken, setCsrfToken] = useState('')
   const router = useRouter()
+
+  // Debug: Verify component is mounted and form is ready
+  useEffect(() => {
+    console.log('🔧 SimpleSignInForm mounted');
+    const form = document.querySelector('form');
+    if (form) {
+      console.log('📋 Form found:', form.outerHTML.substring(0, 100));
+    } else {
+      console.log('❌ Form not found');
+    }
+  }, []);
+
+  // Fetch CSRF token for traditional form submission
+  useEffect(() => {
+    const fetchCsrfToken = async () => {
+      try {
+        const response = await fetch('/api/auth/csrf')
+        const data = await response.json()
+        console.log('🔐 CSRF token fetched:', data.csrfToken)
+        setCsrfToken(data.csrfToken)
+      } catch (err) {
+        console.error('Failed to fetch CSRF token:', err)
+      }
+    }
+    fetchCsrfToken()
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('🚀 Form submitted with:', { email, password })
     setError(null)
     setIsSubmitting(true)
 
@@ -28,18 +56,26 @@ export default function SimpleSignInForm() {
         redirect: false,
       })
 
+      console.log('📋 NextAuth signIn result:', result)
+
       if (result?.error) {
+        console.log('❌ NextAuth error:', result.error)
         setError(result.error)
       } else if (result?.ok) {
+        console.log('✅ NextAuth success, checking session...')
         // Check if we have a session
         const session = await getSession()
+        console.log('📋 Session result:', session)
         if (session) {
+          console.log('✅ Session created successfully')
           router.push('/')
         } else {
+          console.log('❌ No session created')
           setError('Authentication failed - no session created')
         }
       }
     } catch (_err) {
+      console.log('❌ Unexpected error:', _err)
       setError('An unexpected error occurred')
     } finally {
       setIsSubmitting(false)
@@ -74,7 +110,12 @@ export default function SimpleSignInForm() {
             Simple sign-in for development environment
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form 
+          className="mt-8 space-y-6" 
+          onSubmit={handleSubmit}
+          action="/api/auth/signin/credentials"
+          method="post"
+        >
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
               <strong className="font-bold">Error: </strong>
@@ -82,6 +123,7 @@ export default function SimpleSignInForm() {
             </div>
           )}
           <input type="hidden" name="remember" defaultValue="true" />
+          <input type="hidden" name="csrfToken" value={csrfToken} />
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="email-address" className="sr-only">
