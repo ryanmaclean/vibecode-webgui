@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
-import { exec } from 'child_process';
+import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import fetch from 'node-fetch';
 import { describeWithInfrastructure } from '../utils/infrastructure-detection.js';
@@ -9,10 +9,13 @@ const execAsync = promisify(exec);
 describeWithInfrastructure('VibeCode Docs KIND Integration Tests', 
   { 
     kubernetes: true, 
-    kind: true 
+    kind: true,
+    helm: true,
+    helmDependenciesChartPath: './helm/vibecode-docs',
+    probeCommand: 'kubectl get pods -n vibecode -l app=vibecode-docs -o jsonpath="{.items[*].status.phase}"'
   }, 
   () => {
-    let portForwardProcess: any;
+    let portForwardProcess: import('child_process').ChildProcess | null;
     const TEST_PORT = 8091;
     const BASE_URL = `http://localhost:${TEST_PORT}`;
 
@@ -24,7 +27,6 @@ describeWithInfrastructure('VibeCode Docs KIND Integration Tests',
       expect(podStatus).toContain('Running');
 
       // Start port forwarding for tests
-      const { spawn } = require('child_process');
       portForwardProcess = spawn('kubectl', [
         'port-forward',
         '-n', 'vibecode',
@@ -38,7 +40,8 @@ describeWithInfrastructure('VibeCode Docs KIND Integration Tests',
 
     afterAll(() => {
       if (portForwardProcess) {
-        portForwardProcess.kill();
+        try { portForwardProcess.kill(); } catch {}
+        portForwardProcess = null;
       }
     });
 
@@ -163,7 +166,7 @@ describeWithInfrastructure('VibeCode Docs KIND Integration Tests',
       test('should serve custom 404 page', async () => {
         const response = await fetch(`${BASE_URL}/non-existent-page`);
         const html = await response.text();
-        expect(html).toContain('404') || expect(html).toContain('Not Found');
+        expect(html.match(/(404|Not Found)/)).toBeTruthy();
       }, 10000);
     });
   }

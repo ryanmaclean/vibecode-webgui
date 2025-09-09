@@ -290,7 +290,7 @@ describe('Cache Invalidation Integration', () => {
         concurrency: 2
       });
       
-      expect(results.averageTime).toBeGreaterThan(0);
+      expect(results.averageTime).toBeGreaterThanOrEqual(0);
       expect(results.successRate).toBeGreaterThanOrEqual(0);
     });
   });

@@ -83,13 +83,13 @@ describe('Load Testing - Production Scenarios', () => {
       const startTime = Date.now();
 
       const healthPromises = Array.from({ length: requestsPerEndpoint }, () =>
-        fetch(HEALTH_ENDPOINT);
+        fetch(HEALTH_ENDPOINT)
       );
       const metricsPromises = Array.from({ length: requestsPerEndpoint }, () =>
-        fetch(METRICS_ENDPOINT);
+        fetch(METRICS_ENDPOINT)
       );
       const experimentsPromises = Array.from({ length: requestsPerEndpoint }, () =>
-        fetch(`${EXPERIMENTS_ENDPOINT}?action=list`);
+        fetch(`${EXPERIMENTS_ENDPOINT}?action=list`)
       );
 
       const allPromises = [...healthPromises, ...metricsPromises, ...experimentsPromises];
@@ -325,7 +325,7 @@ describe('Load Testing - Production Scenarios', () => {
           new Promise(async (resolve) => {
             await new Promise(r => setTimeout(r, i * interval));
             return resolve(fetch(HEALTH_ENDPOINT));
-          });
+          })
         );
       }
 
@@ -350,7 +350,7 @@ describe('Load Testing - Production Scenarios', () => {
       const startTime = Date.now();
 
       const promises = Array.from({ length: concurrentDbRequests }, () =>
-        fetch(HEALTH_ENDPOINT);
+        fetch(HEALTH_ENDPOINT)
       );
 
       const responses = await Promise.all(promises);

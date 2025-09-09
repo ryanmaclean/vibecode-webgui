@@ -388,7 +388,7 @@ spec:
     const pods = execSync('kubectl get pods -n cert-manager -o json', { encoding: 'utf8' });
     const podData = JSON.parse(pods);
 
-    const certManagerPods = podData.items.filter((pod: any) => ;
+    const certManagerPods = podData.items.filter((pod: any) =>
       pod.metadata.namespace === 'cert-manager'
     );
     expect(certManagerPods.length).toBeGreaterThan(0);

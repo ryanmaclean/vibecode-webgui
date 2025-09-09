@@ -22,6 +22,12 @@ const eslintConfig = [
       // Allow React hooks dependencies to be handled manually
       "react-hooks/exhaustive-deps": "warn"
     }
+  },
+  {
+    files: ["scripts/vector-db-migrations/**/*.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off"
+    }
   }
 ];
 
