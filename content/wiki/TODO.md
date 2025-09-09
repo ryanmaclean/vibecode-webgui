@@ -305,7 +305,14 @@ grep -r "process\.cwd();" tests/
 - [x] GitHubIntegrationModal: fix variable redeclarations and missing setters
 - [x] CollaborativeWorkspace: adjust props/calls (e.g., `onUserInvite`, `generateFromTemplate` options)
 - [x] redis-client: remove unused `@ts-expect-error` directives
-- [ ] Tighten remaining `any` types in `vector-cache.ts` and `sharding-manager.ts`
+- [x] Tighten remaining `any` types in `vector-cache.ts` and `sharding-manager.ts`
+- [x] ConnectionPoolAlerts: add integration tests for Start/Stop Monitoring and Dismiss
+- [x] ConnectionPoolAlerts: add integration test for Acknowledge and label rendering
+- [ ] ConnectionPoolAlerts: add integration test to validate updateConfig() threshold changes
+- [ ] Patch Next.js dynamic route handler signatures (validator):
+  - [ ] `src/app/api/code-server/session/[sessionId]/route.ts`
+  - [ ] `src/app/api/workspace/[id]/init-goose/route.ts`
+- [ ] Fix markdownlint warnings in `content/wiki/TODO.md` (blank lines around headings/lists)
 
 ### Next Up
 1. Fix TemplateSubmissionForm duplicate keys
