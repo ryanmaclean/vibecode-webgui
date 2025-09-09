@@ -24,16 +24,10 @@ class MonitoringService {
   private baseUrl: string
 
   constructor() {
-    // Only initialize on server-side
-    if (typeof window === 'undefined') {
-      this.datadogApiKey = getDatadogApiKey()
-      this.datadogSite = getDatadogSite()
-      this.baseUrl = `https://api.${this.datadogSite}/api/v1`
-    } else {
-      this.datadogApiKey = undefined
-      this.datadogSite = 'datadoghq.com'
-      this.baseUrl = `https://api.${this.datadogSite}/api/v1`
-    }
+    // Initialize using Node/process context (works in server and test environments)
+    this.datadogApiKey = getDatadogApiKey()
+    this.datadogSite = getDatadogSite()
+    this.baseUrl = `https://api.${this.datadogSite}/api/v1`
   }
 
   /**
@@ -114,8 +108,9 @@ class MonitoringService {
    * Real database health check with connection pooling
    */
   async checkDatabase(): Promise<HealthCheck> {
-    // Server-side only check
-    if (typeof window !== 'undefined') {
+    // Treat Node/Jest environments as server-side
+    const isNode = typeof process !== 'undefined' && !!((process as NodeJS.Process).versions?.node)
+    if (!isNode) {
       return {
         status: 'healthy',
         details: 'Database check skipped (client-side)'
@@ -199,8 +194,9 @@ class MonitoringService {
    * Real Redis health check with connection
    */
   async checkValkey(): Promise<HealthCheck> {
-    // Server-side only check
-    if (typeof window !== 'undefined') {
+    // Treat Node/Jest environments as server-side
+    const isNode = typeof process !== 'undefined' && !!((process as NodeJS.Process).versions?.node)
+    if (!isNode) {
       return {
         status: 'healthy',
         details: 'Redis check skipped (client-side)'

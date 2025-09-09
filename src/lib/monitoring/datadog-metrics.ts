@@ -15,7 +15,7 @@ interface MetricOptions {
   value?: number
 }
 
-class DatadogMetricsService {
+export class DatadogMetricsService {
   private standardTags: DatadogTags
   private isEnabled: boolean
 
@@ -57,7 +57,6 @@ class DatadogMetricsService {
 
   // API Response Time Metrics
   recordResponseTime(responseTime: number, endpoint: string, method: string, statusCode: number, options?: MetricOptions) {
-    if (!this.isEnabled) return
 
     const tags = this.mergeTags({
       ...options?.tags,
@@ -72,7 +71,6 @@ class DatadogMetricsService {
 
   // Frontend Page Load Time
   recordPageLoadTime(loadTime: number, pageName: string, options?: MetricOptions) {
-    if (!this.isEnabled) return
 
     const tags = this.mergeTags({
       ...options?.tags,
@@ -85,7 +83,6 @@ class DatadogMetricsService {
 
   // Database Query Duration
   recordDatabaseQuery(duration: number, operation: string, collection: string, options?: MetricOptions) {
-    if (!this.isEnabled) return
 
     const tags = this.mergeTags({
       ...options?.tags,
@@ -99,7 +96,6 @@ class DatadogMetricsService {
 
   // Chat Message Processing Time
   recordChatProcessing(processingTime: number, model: string, messageLength: number, options?: MetricOptions) {
-    if (!this.isEnabled) return
 
     const tags = this.mergeTags({
       ...options?.tags,
@@ -113,7 +109,6 @@ class DatadogMetricsService {
 
   // File Upload Processing Duration
   recordFileUpload(duration: number, fileSize: number, fileType: string, options?: MetricOptions) {
-    if (!this.isEnabled) return
 
     const tags = this.mergeTags({
       ...options?.tags,
@@ -127,7 +122,6 @@ class DatadogMetricsService {
 
   // RAG Context Building Time
   recordRAGContext(duration: number, sourcesCount: number, relevanceScore: number, options?: MetricOptions) {
-    if (!this.isEnabled) return
 
     const tags = this.mergeTags({
       ...options?.tags,
@@ -141,7 +135,6 @@ class DatadogMetricsService {
 
   // Web Search Performance
   recordWebSearch(duration: number, resultsCount: number, searchEngine: string, options?: MetricOptions) {
-    if (!this.isEnabled) return
 
     const tags = this.mergeTags({
       ...options?.tags,
@@ -155,7 +148,6 @@ class DatadogMetricsService {
 
   // Function Calling Metrics
   recordFunctionCall(duration: number, functionName: string, success: boolean, options?: MetricOptions) {
-    if (!this.isEnabled) return
 
     const tags = this.mergeTags({
       ...options?.tags,
@@ -169,7 +161,6 @@ class DatadogMetricsService {
 
   // Hugging Face Model Performance
   recordHuggingFaceModel(duration: number, model: string, inputLength: number, outputLength: number, options?: MetricOptions) {
-    if (!this.isEnabled) return
 
     const tags = this.mergeTags({
       ...options?.tags,
@@ -184,7 +175,6 @@ class DatadogMetricsService {
 
   // Error Tracking
   recordError(errorType: string, component: string, endpoint?: string, options?: MetricOptions) {
-    if (!this.isEnabled) return
 
     const tags = this.mergeTags({
       ...options?.tags,
@@ -255,7 +245,7 @@ class DatadogMetricsService {
         tags: Object.entries(tags).map(([key, value]) => `${key}:${value}`)
       }
 
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV !== 'production') {
         console.log('📊 Datadog Metric:', JSON.stringify(metric, null, 2))
       }
 
@@ -284,7 +274,6 @@ class DatadogMetricsService {
 
   // Batch metric sending for efficiency
   async sendBatchMetrics(metrics: MetricData[]) {
-    if (!this.isEnabled) return
 
     const formattedMetrics = metrics.map(metric => ({
       metric: metric.name,
@@ -292,7 +281,7 @@ class DatadogMetricsService {
       tags: Object.entries(this.mergeTags(metric.tags)).map(([key, value]) => `${key}:${value}`)
     }))
 
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV !== 'production') {
       console.log('📊 Datadog Batch Metrics:', JSON.stringify(formattedMetrics, null, 2))
       return
     }
