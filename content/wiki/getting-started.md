@@ -1,106 +1,218 @@
 ---
-title: Getting Started
-slug: getting-started
+title: "Quick Start Guide"
+description: "Get up and running with VibeCode in minutes"
+sidebar:
+  order: 1
 ---
 
-# Getting Started with VibeCode
+# Quick Start Guide
 
-Welcome to VibeCode, a comprehensive AI-powered development platform featuring intelligent project generation, multi-model orchestration, cloud deployment automation, and GitHub integration.
+Get up and running with VibeCode in minutes! This guide will help you set up your first workspace and generate your first AI-powered project.
 
 ## Prerequisites
 
-- Node.js >=18.18.0 <25.0.0
-- PostgreSQL 16+ with pgvector extension
-- Redis 6+ (or Upstash account)
-- Container runtime (choose one):
-  - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-  - [Orbstack](https://orbstack.dev/) (recommended alternative to Docker Desktop, lighter weight and faster)
+Before you begin, ensure you have:
 
-### Important Notes
-
-- **Azure PostgreSQL:** There's a specific limitation when deploying on Azure PostgreSQL Flexible Server. See [Azure PostgreSQL Deployment Guide](/docs/azure-postgresql-deployment.md) for details on the pgvector setup workaround.
-- **Azure OpenAI for embeddings:** For setting up and using Azure OpenAI for embeddings, see our [Azure Embedding Service Setup Guide](/docs/azure-embedding-service-setup.md).
+- **Node.js** ≥18.18.0 (recommend using Node 25.x for best performance)
+- **PostgreSQL** 16+ with pgvector extension
+- **Redis** 6+ (or Upstash account for managed Redis)
+- **Docker** and **Docker Compose** (optional, for containerized setup)
 
 ## Installation
 
-### Option 1: Using Docker Desktop
+### Option 1: Local Development Setup
 
-1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-2. Start Docker Desktop
-3. Proceed with the setup below
-
-### Option 2: Using Orbstack (Recommended)
-
-1. Download and install [Orbstack](https://orbstack.dev/)
-2. Start Orbstack (it will automatically start the Docker daemon)
-3. Verify installation by running:
+1. **Clone the repository**
    ```bash
-   docker --version
-   docker-compose --version
+   git clone https://github.com/ryanmaclean/vibecode-webgui.git
+   cd vibecode-webgui
    ```
-4. (Optional) For better performance, configure Orbstack settings:
-   - Open Orbstack settings
-   - Go to Resources and allocate at least 4GB RAM and 2 CPU cores
-   - Enable Kubernetes if needed (disabled by default)
 
-### Project Setup
+2. **Install dependencies**
+   ```bash
+   npm install --legacy-peer-deps
+   ```
 
-```bash
-# Clone the repository
-git clone <repository-url>
-cd vibecode-webgui
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   ```
 
-# Install dependencies
-npm install --legacy-peer-deps
+   Edit `.env` with your configuration:
+   ```bash
+   # Database
+   DATABASE_URL="postgresql://username:password@localhost:5432/vibecode"
+   
+   # Redis
+   REDIS_URL="redis://localhost:6379"
+   
+   # Authentication
+   NEXTAUTH_SECRET="your-secret-key-here"
+   NEXTAUTH_URL="http://localhost:3000"
+   
+   # AI Services
+   OPENAI_API_KEY="your-openai-key"
+   ANTHROPIC_API_KEY="your-anthropic-key"
+   ```
 
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
+4. **Initialize the database**
+   ```bash
+   npm run db:deploy
+   npm run db:generate
+   ```
 
-# Start services (optional)
-docker-compose -f docker-compose.dev.yml up -d
+5. **Start the development server**
+   ```bash
+   npm run dev
+   ```
 
-# Initialize database
-npm run db:deploy
-npm run db:generate
+   Visit [http://localhost:3000](http://localhost:3000) to see your VibeCode instance!
 
-# Start development server
-npm run dev
-```
+### Option 2: Docker Setup
 
-Visit [http://localhost:3000](http://localhost:3000) to see the application.
+1. **Clone and navigate to the repository**
+   ```bash
+   git clone https://github.com/ryanmaclean/vibecode-webgui.git
+   cd vibecode-webgui
+   ```
 
-## Troubleshooting
+2. **Start with Docker Compose**
+   ```bash
+   docker-compose -f docker-compose.dev.yml up -d
+   ```
 
-### Orbstack Issues
+3. **Initialize the database**
+   ```bash
+   docker-compose exec app npm run db:deploy
+   ```
 
-1. **Docker commands not found after installation**
-   - Make sure Orbstack is running in the background
-   - Restart your terminal or run `source ~/.zshrc` (or `source ~/.bashrc` if using bash)
-   - Verify the installation by running `orb version`
+## Your First AI Project
 
-2. **Performance issues**
-   - Open Orbstack settings and increase allocated resources (CPU/RAM)
-   - Go to Settings > Resources and allocate at least 4GB RAM and 2 CPU cores
-   - Disable Kubernetes if not needed (Settings > Kubernetes)
+### 1. Access the Platform
 
-3. **Port conflicts**
-   - Check for port conflicts with `lsof -i :<port>`
-   - Update your `.env` file to use different ports if needed
+Navigate to [http://localhost:3000](http://localhost:3000) and sign in with your preferred authentication method.
 
-4. **Volume mounting issues**
-   - Make sure the project directory is in an allowed path (check Orbstack settings > File Sharing)
-   - Try resetting file sharing permissions in Orbstack settings
+### 2. Create a New Project
 
-5. **Networking issues**
-   - Reset Orbstack networking: `orb reset-network`
-   - Restart Orbstack if you encounter network-related errors
+1. Click **"Generate New Project"** on the dashboard
+2. Describe your project in natural language:
+   
+   *Example prompts:*
+   - "Create a React todo app with TypeScript and Tailwind CSS"
+   - "Build a Next.js blog with Markdown support and dark mode"
+   - "Generate a Python FastAPI backend with PostgreSQL"
 
-If you continue to experience issues, check the Orbstack logs at `~/Library/Logs/Orbstack/` or file an issue in our [GitHub repository](https://github.com/your-org/vibecode-webgui/issues).
+3. Choose a template or let AI select the best one
+4. Click **"Generate Project"**
+
+### 3. Explore Your Generated Project
+
+- **Code Editor**: Full VS Code experience in your browser
+- **Terminal**: Integrated terminal for running commands
+- **File Explorer**: Navigate and edit your project files
+- **AI Assistant**: Get help and suggestions as you code
+
+### 4. Deploy Your Project
+
+Once you're happy with your project, deploy it with one click:
+
+1. Go to the **Deploy** tab
+2. Choose your deployment target (Vercel, Netlify, Railway, etc.)
+3. Click **"Deploy Now"**
+
+## Essential Features
+
+### AI Code Generation
+- **Natural Language**: Describe what you want to build
+- **Context Aware**: AI understands your project structure
+- **Multiple Models**: Choose between OpenAI, Claude, and others
+
+### Real-time Collaboration
+- **Live Editing**: See changes from team members in real-time
+- **Conflict Resolution**: Automatic handling of simultaneous edits
+- **Chat Integration**: Discuss changes without leaving the editor
+
+### Integrated Development Environment
+- **VS Code Experience**: Full-featured editor with extensions
+- **Terminal Access**: Run any command or script
+- **Git Integration**: Built-in version control
+
+### Cloud Deployment
+- **One-Click Deploy**: Deploy to major platforms instantly
+- **Environment Management**: Separate dev, staging, and production
+- **Monitoring**: Built-in observability and metrics
+
+## Common Use Cases
+
+### 1. Rapid Prototyping
+Generate a working prototype in minutes:
+- Describe your idea to the AI
+- Get a functional application
+- Iterate and refine quickly
+
+### 2. Learning New Technologies
+Explore frameworks and tools:
+- Ask AI to create examples
+- Learn from generated code
+- Experiment safely
+
+### 3. Team Collaboration
+Work together effectively:
+- Share workspaces with team members
+- Real-time editing and discussion
+- Version control and deployment
+
+### 4. Enterprise Development
+Build production applications:
+- Use enterprise templates
+- Implement security best practices
+- Deploy with confidence
 
 ## Next Steps
 
-- [Features Overview](/wiki/features) - Learn about VibeCode's capabilities
-- [API Reference](/wiki/api-reference) - Explore available endpoints
-- [Development Scripts](/wiki/development-scripts) - Available npm commands
-- [Project Structure](/wiki/project-structure) - Understanding the codebase
+Now that you have VibeCode running:
+
+1. **[Explore AI Features](/ai-integration/)** - Learn about advanced AI capabilities
+2. **[Read the Developer Guide](/development/)** - Understand the architecture and contribute
+3. **[Check the API Reference](/api-reference/)** - Integrate with external services
+4. **[Set up Monitoring](/monitoring/)** - Add observability to your deployment
+
+## Troubleshooting
+
+### Common Issues
+
+**Database connection errors**
+- Ensure PostgreSQL is running and accessible
+- Verify DATABASE_URL is correct
+- Check that the database exists
+
+**Redis connection issues**
+- Confirm Redis is running
+- Verify REDIS_URL configuration
+- Check firewall settings
+
+**AI features not working**
+- Verify API keys are set correctly
+- Check API key permissions and quotas
+- Review logs for specific error messages
+
+### Getting Help
+
+- **Documentation**: Search these docs for answers
+- **GitHub Issues**: Report bugs and request features
+- **Community**: Join discussions and get help from other users
+
+## Next Steps
+
+**🔧 Production Setup**
+- **[Production Deployment Guide](./production-deployment-guide/)** - Deploy to production with enterprise features
+- **[Azure OpenAI Monitoring](./azure-openai-monitoring/)** - Set up comprehensive monitoring for AI operations
+- **[PostgreSQL + pgvector](./prisma-pgvector/)** - Configure vector database for AI features
+
+**🚀 Advanced Features**
+- **[Kubernetes Secrets Automation](./kubernetes-secrets-automation/)** - Enterprise-grade secret management
+- **[Developer Guide](./developer-guide/)** - In-depth development workflows
+
+---
+
+**🎉 Congratulations!** You now have VibeCode up and running. Start building amazing projects with AI assistance!
