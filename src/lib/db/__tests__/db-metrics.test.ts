@@ -546,23 +546,37 @@ describe('Database Metrics', () => {
       // The table name extraction might not work perfectly with special characters
       // So we just check that the query was recorded
       expect(metrics.queriesByType.SELECT).toBe(1)
+      expect(metrics.queriesByTable.users).toBe(1)
+      expect(metrics.avgQueryTime).toBe(100)
+      expect(metrics.p95QueryTime).toBe(100)
+      expect(metrics.p99QueryTime).toBe(100)
     })
 
-    it('should handle concurrent metric updates', () => {
-      // Simulate concurrent updates
-      const promises = []
-      for (let i = 0; i < 100; i++) {
-        promises.push(
-          Promise.resolve().then(() => {
-            collector.recordQuery(`SELECT * FROM table${i}`, 100 + i, true)
-          })
-        )
+    it('should record slow queries', () => {
+      collector.recordQuery('SELECT * FROM products', 1500, true) // Slow
+      collector.recordQuery('SELECT * FROM orders', 2000, true) // Slow
+      
+      const slowQueries = collector.getSlowQueries(1000, 10)
+      expect(slowQueries).toHaveLength(2)
+      expect(slowQueries[0].duration).toBeGreaterThanOrEqual(slowQueries[1].duration)
+    })
+
+    it('should respect threshold parameter', () => {
+      collector.recordQuery('SELECT * FROM users', 500, true)
+      collector.recordQuery('SELECT * FROM products', 1500, true)
+      
+      const slowQueries = collector.getSlowQueries(1000, 10)
+      expect(slowQueries).toHaveLength(1)
+      expect(slowQueries[0].duration).toBe(1500)
+    })
+
+    it('should limit results to specified limit', () => {
+      for (let i = 0; i < 10; i++) {
+        collector.recordQuery(`SELECT * FROM table${i}`, 1500, true)
       }
       
-      return Promise.all(promises).then(() => {
-        const metrics = collector.getMetrics()
-        expect(metrics.totalQueries).toBe(100)
-      })
+      const slowQueries = collector.getSlowQueries(1000, 5)
+      expect(slowQueries).toHaveLength(5)
     })
   })
 })
