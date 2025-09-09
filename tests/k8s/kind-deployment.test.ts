@@ -185,7 +185,7 @@ describe('KIND Deployment Tests', () => {
       // Test PostgreSQL connection through port forwarding
       try {
         // Start port forward in background
-        const portForwardProcess = execSync('kubectl port-forward service/postgres-service 5433:5432 -n vibecode &', { ;
+        const portForwardProcess = execSync('kubectl port-forward service/postgres-service 5433:5432 -n vibecode &', {
           encoding: 'utf8',
           timeout: 1000
         });
@@ -194,7 +194,7 @@ describe('KIND Deployment Tests', () => {
 
         // Test connection (requires psql to be available);
         try {
-          const testResult = execSync('pg_isready -h localhost -p 5433 -U vibecode', { ;
+          const testResult = execSync('pg_isready -h localhost -p 5433 -U vibecode', {
             encoding: 'utf8',
             timeout: 5000
           });
