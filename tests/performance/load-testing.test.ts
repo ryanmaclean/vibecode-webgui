@@ -358,7 +358,7 @@ describe('Load Testing - Production Scenarios', () => {
 
       // Check that database connections are handled properly
       const successfulResponses = responses.filter(r => r.ok);
-      const dbHealthyCount = await Promise.all(;
+      const dbHealthyCount = await Promise.all(
         successfulResponses.map(async (response) => {
           try {
             const data = await response.json();
@@ -366,7 +366,7 @@ describe('Load Testing - Production Scenarios', () => {
           } catch {
             return 0
           }
-        });
+        })
       ).then(results => results.reduce((sum, val) => sum + val, 0));
 
       expect(successfulResponses.length).toBeGreaterThan(concurrentDbRequests * 0.8);
