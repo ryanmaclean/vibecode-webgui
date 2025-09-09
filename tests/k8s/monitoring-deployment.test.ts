@@ -255,7 +255,7 @@ describe('Monitoring Infrastructure Deployment', () => {
   describe('Cleanup and Rollback', () => {
     test('should be able to delete monitoring components cleanly', async () => {
       // Delete deployments (but don't actually clean up in test);
-      const deleteCommands = [;
+      const deleteCommands = [
         'kubectl delete -f infrastructure/monitoring/kubehound-config.yaml --dry-run=client',
         'kubectl delete -f infrastructure/monitoring/vector-deployment.yaml --dry-run=client',
         'kubectl delete -f infrastructure/monitoring/datadog-agent.yaml --dry-run=client',

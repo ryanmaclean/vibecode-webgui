@@ -52,16 +52,16 @@ export class TestHelpers {
   /**
    * Login with test credentials
    */
-  async login(email: string = 'test@vibecode.com', password: string = 'testpass123') {
-    // Navigate to login if not already there
-    await this.page.goto('/auth/login');
+  async login(email: string = 'developer@vibecode.dev', password: string = 'dev123') {
+    // Navigate to signin if not already there
+    await this.page.goto('/auth/signin');
     
-    // Fill login form
-    await this.page.fill('[name="email"], [type="email"]', email);
-    await this.page.fill('[name="password"], [type="password"]', password);
+    // Fill login form using data-testid selectors
+    await this.page.fill('[data-testid="email-input"]', email);
+    await this.page.fill('[data-testid="password-input"]', password);
     
     // Submit form
-    await this.page.click('[type="submit"], button:has-text("Login"), button:has-text("Sign In")');
+    await this.page.click('[data-testid="signin-button"]');
     
     // Wait for redirect to dashboard
     await this.page.waitForURL('/', { timeout: 10000 });
@@ -77,7 +77,7 @@ export class TestHelpers {
     
     if (await logoutButton.isVisible()) {
       await logoutButton.click();
-      await this.page.waitForURL('/auth/login', { timeout: 5000 });
+      await this.page.waitForURL('/auth/signin', { timeout: 5000 });
     }
   }
 
@@ -212,9 +212,9 @@ export class TestHelpers {
   static async loginAsTestUser(page: Page, _role: string = 'user') {
     // Best-effort UI login; assumes a test user may already exist
     await page.goto('/auth/signin');
-    await page.fill('[data-testid="email-input"], [name="email"], [type="email"]', 'test@example.com');
-    await page.fill('[data-testid="password-input"], [name="password"], [type="password"]', 'testpassword123');
-    await page.click('[data-testid="signin-button"], [type="submit"], button:has-text("Sign In"), button:has-text("Login")');
+    await page.fill('[data-testid="email-input"]', 'developer@vibecode.dev');
+    await page.fill('[data-testid="password-input"]', 'dev123');
+    await page.click('[data-testid="signin-button"]');
     await page.waitForURL(/\/?(workspaces|$)/, { timeout: 10000 }).catch(() => {});
     await this.waitForPageLoad(page);
   }

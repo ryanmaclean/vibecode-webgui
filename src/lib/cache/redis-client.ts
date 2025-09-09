@@ -242,7 +242,6 @@ export class CacheManager {
 
     try {
       const keys = Array.isArray(key) ? key : [key];
-      // @ts-expect-error - Type mismatch issue
       await this.redis.del(...keys);
       
       metrics.increment('cache.delete', { count: keys.length as any });
@@ -295,7 +294,6 @@ export class CacheManager {
       
       for (const { key, value, ttl = CacheTTL.MEDIUM } of pairs) {
         const serialized = JSON.stringify(value);
-        // @ts-expect-error - Type mismatch issue
         pipeline.setex(key, ttl, serialized);
       }
       

@@ -31,7 +31,13 @@ describe('File Operations Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    fileOps = new SecureFileSystemOperations(testWorkspacePath, testUserId);
+    fileOps = new SecureFileSystemOperations({
+      workspaceId: 'test-workspace',
+      userId: testUserId,
+      workingDirectory: testWorkspacePath,
+      enableRealTimeSync: true,
+      conflictResolution: 'create-backup'
+    });
     lazyLoader = new LazyFileLoader({
       chunkSize: 50,
       maxCachedChunks: 5,

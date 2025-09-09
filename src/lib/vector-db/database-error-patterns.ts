@@ -500,11 +500,26 @@ export function categorizeErrorWithProvider(error: any, provider: string): Vecto
     return VectorDBErrorType.UNKNOWN_ERROR;
   }
 
-  const message = (error?.message || '').toLowerCase();
-  const code = (error?.code || '').toString();
-  const name = (error?.name || '').toLowerCase();
-  const status = error?.status || error?.statusCode || 0;
-  const sqlState = error?.sqlState || '';
+  const rawMessage = (error as any)?.message;
+  const message = String(rawMessage ?? '').toLowerCase();
+  const code = String((error as any)?.code ?? '');
+  const name = String((error as any)?.name ?? '').toLowerCase();
+  const status = (error as any)?.status ?? (error as any)?.statusCode ?? 0;
+  const numericCode = Number.isFinite((error as any)?.code) ? Number((error as any)?.code) : (
+    Number.isFinite((error as any)?.statusCode) ? Number((error as any)?.statusCode) : NaN
+  );
+  const sqlState = (error as any)?.sqlState ?? '';
+  const bodyCode = String((error as any)?.body?.code ?? '').toLowerCase();
+
+  // Simple provider heuristics before pattern matching
+  if (provider === 'cosmosdb') {
+    if (
+      status === 408 || numericCode === 408 ||
+      bodyCode.includes('requesttimeout')
+    ) {
+      return VectorDBErrorType.TIMEOUT;
+    }
+  }
 
   // Get provider-specific patterns
   const providerPatterns = DB_ERROR_PATTERNS[provider] || {};
@@ -512,7 +527,7 @@ export function categorizeErrorWithProvider(error: any, provider: string): Vecto
   // Check each pattern category for the provider
   for (const [_category, pattern] of Object.entries(providerPatterns)) {
     // Check status codes
-    if (pattern.statusCodes && pattern.statusCodes.includes(status)) {
+    if (pattern.statusCodes && (pattern.statusCodes.includes(status) || (Number.isFinite(numericCode) && pattern.statusCodes.includes(numericCode)))) {
       return pattern.types?.[0] || VectorDBErrorType.UNKNOWN_ERROR;
     }
 
@@ -527,7 +542,7 @@ export function categorizeErrorWithProvider(error: any, provider: string): Vecto
     }
 
     // Check error messages
-    if (pattern.messages && pattern.messages.some(m => message.includes(m.toLowerCase()))) {
+    if (pattern.messages && message && pattern.messages.some(m => message.includes(m.toLowerCase()))) {
       return pattern.types?.[0] || VectorDBErrorType.UNKNOWN_ERROR;
     }
 
@@ -545,6 +560,11 @@ export function categorizeErrorWithProvider(error: any, provider: string): Vecto
   // If no specific pattern matches, fall back to generic categorization
   if (message.includes('not implemented') || message.includes('unsupported')) {
     return VectorDBErrorType.UNSUPPORTED_OPERATION;
+  }
+
+  // Minimal global fallback for common SQL query error patterns
+  if (message.includes('does not exist') || code.startsWith('42')) {
+    return VectorDBErrorType.QUERY_FAILED;
   }
 
   return VectorDBErrorType.UNKNOWN_ERROR;
