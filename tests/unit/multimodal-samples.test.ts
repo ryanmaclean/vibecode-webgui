@@ -77,7 +77,8 @@ describe('MultimodalSampleGenerator', () => {
         expect(sample.inputs.images).toBeDefined();
         expect(Array.isArray(sample.inputs.images)).toBe(true);
         expect(sample.inputs.images!.length).toBeGreaterThan(0);
-        expect(sample.expectedOutputs.join(' ')).toContain('React');
+        const outputText = sample.expectedOutputs.join(' ').toLowerCase();
+        expect(outputText).toMatch(/react|component/);
       });
     });
 

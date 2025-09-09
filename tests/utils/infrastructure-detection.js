@@ -82,11 +82,42 @@ function hasHelm() {
 }
 
 /**
+ * Check if Helm chart dependencies are available (no 'missing' status)
+ * @param {string} chartPath - Path to the Helm chart directory
+ * @returns {boolean}
+ */
+function hasHelmDependencies(chartPath) {
+  try {
+    // 'helm dependency list' is read-only and safe; detect missing deps without mutating state
+    const output = execSync(`helm dependency list ${chartPath}`, {
+      encoding: 'utf8', stdio: 'pipe', timeout: 10000,
+    });
+    return !output.toLowerCase().includes('missing');
+  } catch (_err) {
+    return false;
+  }
+}
+
+/**
  * Check if Docker is available and running
  * @returns {boolean}
  */
 function hasDocker() {
   return checkCommand('docker version');
+}
+
+/**
+ * Check if Datadog Chaos Disruption CRD is installed
+ * @returns {boolean}
+ */
+function hasChaosCRDInstalled() {
+  if (!hasKubectl()) return false;
+  try {
+    execSync('kubectl get crd disruptions.chaos.datadoghq.com -o name', { stdio: 'ignore', timeout: 5000 });
+    return true;
+  } catch (_err) {
+    return false;
+  }
 }
 
 /**
@@ -112,6 +143,16 @@ function skipIfInfrastructureUnavailable(requirements, testName = 'test') {
   if (requirements.helm && !hasHelm()) {
     missing.push('Helm');
   }
+
+  // Optional: ensure Helm chart dependencies are present
+  if (requirements.helmDependenciesChartPath && !hasHelmDependencies(requirements.helmDependenciesChartPath)) {
+    missing.push(`Helm chart dependencies missing for ${requirements.helmDependenciesChartPath}`);
+  }
+  
+  // Optional: require Chaos Disruption CRD availability
+  if (requirements.chaosCRD && !hasChaosCRDInstalled()) {
+    missing.push('Datadog Chaos Disruption CRD');
+  }
   
   if (requirements.docker && !hasDocker()) {
     missing.push('Docker');
@@ -120,6 +161,18 @@ function skipIfInfrastructureUnavailable(requirements, testName = 'test') {
   // Always skip infrastructure tests in CI unless explicitly enabled
   if (isCiEnvironment() && !process.env.ENABLE_INFRASTRUCTURE_TESTS) {
     missing.push('CI infrastructure tests disabled (set ENABLE_INFRASTRUCTURE_TESTS=true to enable)');
+  }
+
+  // Optional: run a custom probe command that must return non-empty output
+  if (requirements.probeCommand) {
+    try {
+      const out = execSync(requirements.probeCommand, { encoding: 'utf8', stdio: 'pipe', timeout: 8000 });
+      if (!out || out.trim().length === 0) {
+        missing.push('environment probe');
+      }
+    } catch (_err) {
+      missing.push('environment probe');
+    }
   }
   
   if (missing.length > 0) {
@@ -158,7 +211,9 @@ module.exports = {
   hasKindCluster,
   isCiEnvironment,
   hasHelm,
+  hasHelmDependencies,
   hasDocker,
+  hasChaosCRDInstalled,
   skipIfInfrastructureUnavailable,
   describeWithInfrastructure
 };

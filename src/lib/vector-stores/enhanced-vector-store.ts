@@ -6,8 +6,8 @@
 
 import { vectorStore as pgVectorStore } from '../vector-store'
 import { weaviateStore } from './weaviate-client'
+import type { WeaviateSearchOptions } from './weaviate-client'
 import { mlflowClient } from '../mlflow/mlflow-client'
-import { VectorMetricsCollector } from '../vector-db/VectorMetricsCollector'
 import { vectorQueryCache } from './query-cache'
 import { getMetricsCollector } from '../db/database-metrics'
 
@@ -73,11 +73,9 @@ export class EnhancedVectorStore {
   private performanceMetrics: Map<string, number[]> = new Map()
   private lastHealthCheck: number = 0
   private healthCheckInterval: number = 300000 // 5 minutes
-  private metricsCollector: VectorMetricsCollector
   private dbMetricsCollector = getMetricsCollector()
 
   constructor() {
-    this.metricsCollector = new VectorMetricsCollector()
     this.initializeProviders()
   }
 
@@ -141,7 +139,7 @@ export class EnhancedVectorStore {
           }
         })
         totalDocuments += pgStats.totalChunks
-      } catch (error) {
+      } catch {
         providers.push({
           id: 'pgvector',
           name: 'PostgreSQL pgvector',
@@ -184,7 +182,7 @@ export class EnhancedVectorStore {
           }
         })
         totalDocuments += weaviateStats.totalObjects
-      } catch (error) {
+      } catch {
         providers.push({
           id: 'weaviate',
           name: 'Weaviate',
@@ -234,7 +232,8 @@ export class EnhancedVectorStore {
     if (!weaviateAvailable && pgvectorAvailable) return 'pgvector'
     if (!pgvectorAvailable && weaviateAvailable) return 'weaviate'
     if (!weaviateAvailable && !pgvectorAvailable) {
-      throw new Error('No vector store providers available')
+      // Default to pgvector to maintain basic functionality when availability is unknown
+      return 'pgvector'
     }
 
     // Performance-based selection with recent metrics weighted more heavily
@@ -299,10 +298,10 @@ export class EnhancedVectorStore {
    */
   private calculateProviderScore(avgTime: number, errorRate: number, queryType: 'large_query' | 'small_query' | 'default'): number {
     // Base score from speed (lower time = higher score)
-    let speedScore = Math.max(0, 1000 - avgTime) / 1000
+    const speedScore = Math.max(0, 1000 - avgTime) / 1000
 
     // Error penalty (fewer errors = higher score)
-    let errorScore = Math.max(0, 1 - errorRate)
+    const errorScore = Math.max(0, 1 - errorRate)
 
     // Query type specific weights
     let speedWeight = 0.7
@@ -352,6 +351,12 @@ export class EnhancedVectorStore {
     let results: UnifiedSearchResult[] = []
 
     try {
+      // Ensure providers are initialized at first use
+      if (!this.providers.has('pgvector') && !this.providers.has('weaviate')) {
+        await this.initializeProviders()
+        this.lastHealthCheck = Date.now()
+      }
+
       // Check cache first
       const cachedResults = vectorQueryCache.getCachedResults(options.query, options)
       if (cachedResults) {
@@ -379,12 +384,7 @@ export class EnhancedVectorStore {
       // Record vector search metrics for database monitoring
       this.dbMetricsCollector.recordVectorSearch(provider, queryTime, results.length, false)
       
-      // Collect metrics for monitoring
-      try {
-        this.metricsCollector.updateStorageMetrics(results.length, 0)
-      } catch (e) {
-        // Metrics collection is optional
-      }
+      // Optional external metrics collector removed to simplify dependencies
 
       // Track with MLflow if available
       try {
@@ -403,7 +403,7 @@ export class EnhancedVectorStore {
           costEstimate: 0.001,
           timestamp: Date.now()
         })
-      } catch (mlflowError) {
+      } catch {
         // MLflow tracking is optional
       }
 
@@ -447,12 +447,12 @@ export class EnhancedVectorStore {
    * Search using PostgreSQL pgvector
    */
   private async searchPgVector(options: UnifiedSearchOptions): Promise<UnifiedSearchResult[]> {
-    const searchResults = await pgVectorStore.search(options.query, {
+    const searchResults = (await pgVectorStore.search(options.query, {
       workspaceId: options.workspaceId,
       fileIds: options.fileIds,
       limit: options.limit,
       threshold: options.threshold
-    })
+    })) || []
 
     return searchResults.map(result => ({
       id: result.chunk.id,
@@ -469,7 +469,7 @@ export class EnhancedVectorStore {
    * Search using Weaviate
    */
   private async searchWeaviate(options: UnifiedSearchOptions): Promise<UnifiedSearchResult[]> {
-    const searchOptions: any = {
+    const searchOptions: WeaviateSearchOptions = {
       query: options.query,
       limit: options.limit,
       certainty: options.threshold,
@@ -484,7 +484,7 @@ export class EnhancedVectorStore {
       }
     }
 
-    const searchResults = await weaviateStore.search(searchOptions)
+    const searchResults = (await weaviateStore.search(searchOptions)) || []
 
     return searchResults.map(result => ({
       id: result.id,
@@ -517,13 +517,13 @@ export class EnhancedVectorStore {
     pgvector: boolean
     weaviate: boolean
     totalStored: number
-    poolMetrics?: any
+    poolMetrics?: Record<string, unknown> | null
   }> {
     const results = {
       pgvector: false,
       weaviate: false,
       totalStored: 0,
-      poolMetrics: null as any
+      poolMetrics: null as Record<string, unknown> | null
     }
 
     // Store in PostgreSQL pgvector (primary store) with connection pool monitoring
@@ -556,13 +556,13 @@ export class EnhancedVectorStore {
           duration,
           batchSize: Math.ceil(documents.length / batchSize),
           documentsProcessed: documents.length
-        } as any
+        }
         
         console.log(`Stored ${documents.length} documents in ${duration}ms using ${Math.ceil(documents.length / batchSize)} batches`)
       } catch (error) {
         console.error('Failed to store in pgvector:', error)
         this.dbMetricsCollector.recordVectorError('store')
-        results.poolMetrics = { error: error.message, operation: 'store' } as any
+        results.poolMetrics = { error: (error as Error).message, operation: 'store' }
       }
     }
 

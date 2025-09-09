@@ -63,7 +63,7 @@ export const fileUploadSchema = z.object({
       'Invalid filename format'
     ),
   contentType: z.string().refine(
-    (type) => /^[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_.]*$/.test(type),
+    (type) => /^(application|text|image|audio|video|multipart)\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_.+]*$/.test(type),
     'Invalid content type'
   ),
   size: z.number().positive().max(100 * 1024 * 1024, 'File size cannot exceed 100MB'),
@@ -85,11 +85,12 @@ export function sanitizeHtml(input: string): string {
   // Basic HTML sanitization for server-side use
   return input
     .replace(/<script[^>]*>.*?<\/script>/gi, '')
-    .replace(/on\w+="[^"]*"/gi, '')
+    .replace(/\s*on\w+="[^"]*"/gi, '')
     .replace(/javascript:/gi, '')
     .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '')
     .replace(/<object[^>]*>.*?<\/object>/gi, '')
     .replace(/<embed[^>]*>/gi, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -97,8 +98,8 @@ export function sanitizeHtml(input: string): string {
  * Sanitize user input for AI processing
  */
 export function sanitizeUserInput(input: string): string {
-  // Remove null bytes and control characters
-  let sanitized = input.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  // Remove null bytes and control characters, preserve word boundaries
+  let sanitized = input.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ');
   
   // Normalize whitespace
   sanitized = sanitized.replace(/\s+/g, ' ').trim();
@@ -140,7 +141,7 @@ export function validatePrompt(input: unknown): { content: string; variables?: R
     ? Object.fromEntries(
         Object.entries(result.data.variables).map(([key, value]) => [
           key,
-          sanitizeUserInput(value)
+          sanitizeHtml(sanitizeUserInput(value))
         ])
       )
     : undefined;
