@@ -126,10 +126,12 @@ export function ProjectGenerator({
               className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
               disabled={isGenerating}
               onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+              data-testid="prompt-input"
             />
             <Button 
               onClick={handleGenerate}
               disabled={isGenerating || !prompt.trim()}
+              data-testid="generate-button"
             >
               {isGenerating ? 'Generating...' : 'Generate'}
             </Button>

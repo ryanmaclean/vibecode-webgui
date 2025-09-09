@@ -12,7 +12,9 @@ describeWithInfrastructure('Chaos Controller Deployment Tests',
   { 
     kubernetes: true, 
     kind: true, 
-    helm: true 
+    helm: true,
+    helmDependenciesChartPath: './helm/vibecode-platform',
+    chaosCRD: true
   }, () => {
   const namespace = 'chaos-engineering';
   const timeout = 300000; // 5 minutes

@@ -15,8 +15,20 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 
-export function AIProjectGenerator() {
-  const [prompt, setPrompt] = useState('')
+interface AIProjectGeneratorProps {
+  className?: string;
+  initialPrompt?: string;
+  autoStart?: boolean;
+  onProjectGenerated?: (projectData: any) => void;
+}
+
+export function AIProjectGenerator({ 
+  className = '',
+  initialPrompt = '',
+  autoStart = false,
+  onProjectGenerated
+}: AIProjectGeneratorProps) {
+  const [prompt, setPrompt] = useState(initialPrompt)
   const [projectName, setProjectName] = useState('')
   const [language, setLanguage] = useState('')
   const [framework, setFramework] = useState('')
@@ -137,6 +149,7 @@ export function AIProjectGenerator() {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 rows={4}
+                data-testid="prompt-input"
               />
             </div>
 
@@ -200,7 +213,7 @@ export function AIProjectGenerator() {
             </div>
 
             {isGenerating && (
-              <div className="space-y-2">
+              <div className="space-y-2" data-testid="loading-state">
                 <div className="flex items-center gap-2">
                   <span>Generating Project...</span>
                 </div>
@@ -213,9 +226,15 @@ export function AIProjectGenerator() {
               onClick={handleGenerate}
               disabled={!prompt.trim() || isGenerating}
               className="w-full"
+              data-testid="generate-button"
             >
               {isGenerating ? 'Generating Project...' : 'Generate Project'}
             </Button>
+          </div>
+
+          <div className="mt-4 text-xs text-muted-foreground text-center">
+            <p>AI-powered code generation</p>
+            <p className="mt-1">Powered by <span className="font-medium">VibeCode AI</span></p>
           </div>
 
           <div className="mt-8 pt-6 border-t">

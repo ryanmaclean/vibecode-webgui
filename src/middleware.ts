@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { apiSecurityMiddleware, addSecurityHeaders } from './middleware/security-middleware';
 
 // Skip Redis/ValKey initialization in test environment
-const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.CI === 'true';
+const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.CI === 'true' || process.env.PLAYWRIGHT_TEST === 'true';
 
 const BOT_PROTECTION_CONFIG = {
   suspiciousPatterns: [

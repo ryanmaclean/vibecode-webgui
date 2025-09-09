@@ -89,7 +89,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       }
     } catch (error) {
       if (this.config.enableLogging) {
-        logger.error('Failed to initialize PostgreSQL vector database adapter:', error);
+        logger.error('Failed to initialize PostgreSQL vector database adapter:', { error });
       }
       
       // Create standardized error
@@ -320,15 +320,15 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         } catch (cacheError) {
           // Log cache retrieval error but continue with direct query
           if (this.config.enableLogging) {
-            logger.warn('Cache retrieval failed, falling back to direct query:', 
-              this.errorHandler.handleError(
+            logger.warn('Cache retrieval failed, falling back to direct query:', {
+              error: this.errorHandler.handleError(
                 cacheError,
                 'search.cacheRetrieval',
                 VectorDbErrorType.QUERY_FAILED,
                 true,
                 { embeddingSize: embedding.length }
               )
-            );
+            });
           }
           // Continue with direct query if cache fails
         }
@@ -481,26 +481,26 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
             useCache: true
           }, results).catch(err => {
             if (this.config.enableLogging) {
-              logger.warn('Background cache storage failed:', 
-                this.errorHandler.handleError(
+              logger.warn('Background cache storage failed:', {
+                error: this.errorHandler.handleError(
                   err,
                   'search.cacheStorage',
                   VectorDbErrorType.QUERY_FAILED,
                   true
                 )
-              );
+              });
             }
           });
         } catch (cacheError) {
           if (this.config.enableLogging) {
-            logger.warn('Failed to cache results:', 
-              this.errorHandler.handleError(
+            logger.warn('Failed to cache results:', {
+              error: this.errorHandler.handleError(
                 cacheError,
                 'search.cacheStorage',
                 VectorDbErrorType.QUERY_FAILED,
                 true
               )
-            );
+            });
           }
           // Continue without caching if it fails
         }
@@ -714,8 +714,8 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       }));
     } catch (error) {
       // Handle fallback search errors but don't throw - return empty results
-      logger.error('Error in fallback text search:', 
-        this.errorHandler.handleError(
+      logger.error('Error in fallback text search:', {
+        error: this.errorHandler.handleError(
           error,
           'fallbackTextSearch',
           VectorDbErrorType.QUERY_FAILED,
@@ -726,7 +726,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
             fileCount: options.fileIds?.length
           }
         )
-      );
+      });
       return [];
     }
   }
@@ -824,14 +824,14 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         metrics.increment('postgres_vector_db.get_stats.error');
       }
       
-      logger.error('Error getting vector store stats:', 
-        this.errorHandler.handleError(
+      logger.error('Error getting vector store stats:', {
+        error: this.errorHandler.handleError(
           error,
           'getStats',
           VectorDbErrorType.QUERY_FAILED,
           false
         )
-      );
+      });
       
       // Return empty stats on error
       return {
@@ -870,15 +870,15 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         metrics.increment('postgres_vector_db.invalidate_cache.error');
       }
       
-      logger.error('Error invalidating cache:', 
-        this.errorHandler.handleError(
+      logger.error('Error invalidating cache:', {
+        error: this.errorHandler.handleError(
           error,
           'invalidateCache',
           VectorDbErrorType.QUERY_FAILED,
           true,
           { table, contentType }
         )
-      );
+      });
       
       return 0;
     }
@@ -898,14 +898,14 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       return true;
     } catch (error) {
       if (this.config.enableLogging) {
-        logger.error('PostgreSQL ping failed:', 
-          this.errorHandler.handleError(
+        logger.error('PostgreSQL ping failed:', {
+          error: this.errorHandler.handleError(
             error,
             'pingProvider',
-            VectorDbErrorType.CONNECTION,
+            VectorDbErrorType.CONNECTION_FAILED,
             true
           )
-        );
+        });
       }
       return false;
     }
@@ -920,14 +920,14 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         await this.prisma.$disconnect();
         this.prisma = null;
       } catch (error) {
-        logger.warn('Error disconnecting from PostgreSQL:', 
-          this.errorHandler.handleError(
+        logger.warn('Error disconnecting from PostgreSQL:', {
+          error: this.errorHandler.handleError(
             error,
             'closeProvider',
-            VectorDbErrorType.CONNECTION,
+            VectorDbErrorType.CONNECTION_FAILED,
             false
           )
-        );
+        });
       }
     }
   }

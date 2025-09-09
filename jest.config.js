@@ -69,6 +69,11 @@ const config = {
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
     '<rootDir>/tests/e2e/',
+    '<rootDir>/tests/comprehensive/', 
+    '<rootDir>/docs/e2e/', 
+    '<rootDir>/code-server/', 
+    '<rootDir>/packages/vibecode-cli/src/__tests__/', 
+    '/__mocks__/', 
     ...(includeDocs ? [] : ['<rootDir>/tests/docs/']),
   ],
   

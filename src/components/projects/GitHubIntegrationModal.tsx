@@ -52,7 +52,6 @@ export function GitHubIntegrationModal({
   })
 
   const githubIntegration = React.useRef<GitHubIntegration | null>(null)
-  const githubIntegration = React.useRef<GitHubIntegration | null>(null)
   const [integration, setIntegration] = useState<GitHubIntegration | null>(null)
 
   useEffect(() => {
@@ -65,7 +64,6 @@ export function GitHubIntegrationModal({
       setIsConnecting(false)
       setIsCreating(false)
       setShowToken(false)
-      setIntegration(null)
       setIntegration(null)
     }
   }, [isOpen])
@@ -80,15 +78,13 @@ export function GitHubIntegrationModal({
     setError(null)
 
     try {
-      const integration = new GitHubIntegration(accessToken.trim())
-      const user = await integration.initialize()
+      const integrationInstance = new GitHubIntegration(accessToken.trim())
+      const user = await integrationInstance.initialize()
       
-      githubIntegration.current = integration
+      githubIntegration.current = integrationInstance
       setGitHubUser(user)
       setSuccess('Successfully connected to GitHub!')
-      setIntegration(newIntegration)
-      setFolderHubUser(user)
-      setSuccess('Successfully connected to FolderHub!')
+      setIntegration(integrationInstance)
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to connect to GitHub')
     } finally {
@@ -107,7 +103,6 @@ export function GitHubIntegrationModal({
 
     try {
       // Check if repository name is available
-      const isAvailable = await integration.isRepositoryNameAvailable(repoSettings.name)
       const isAvailable = await integration.isRepositoryNameAvailable(repoSettings.name)
       if (!isAvailable) {
         setError(`Repository name "${repoSettings.name}" is already taken`)

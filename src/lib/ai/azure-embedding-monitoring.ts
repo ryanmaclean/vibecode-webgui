@@ -5,7 +5,7 @@
  * and metrics collection to track performance, usage, and errors.
  */
 
-import { getVectorConnectionPool } from '../db/vector-connection-pool';
+import { VectorConnectionPoolFactory } from '../db/vector-connection-pool';
 import { azureEmbeddingMetrics } from '../monitoring/azure-embedding-metrics';
 import { type AzureEmbeddingService } from './azureEmbeddingService';
 
@@ -141,15 +141,25 @@ function startConnectionPoolMonitoring(): void {
   // Sample connection pool metrics every 30 seconds
   setInterval(() => {
     try {
-      const pool = getVectorConnectionPool();
+      // Try to get an existing default pool; if none, lazily create one from env
+      let pool = VectorConnectionPoolFactory.getPool('default');
+      if (!pool) {
+        pool = VectorConnectionPoolFactory.createPool({
+          host: process.env.DATABASE_HOST || 'localhost',
+          port: parseInt(process.env.DATABASE_PORT || '5432', 10),
+          database: process.env.DATABASE_NAME || 'vibecode',
+          user: process.env.DATABASE_USER || 'postgres',
+          password: process.env.DATABASE_PASSWORD || 'password'
+        }, {}, 'default');
+      }
       const metrics = pool.getMetrics();
       
       // Record pool metrics
       azureEmbeddingMetrics.recordPoolMetrics(
-        metrics.totalConnections,
+        metrics.poolSize,
         metrics.activeConnections,
-        metrics.idleConnections,
-        metrics.waitingRequests
+        metrics.availableConnections,
+        metrics.waitingClients
       );
     } catch (error) {
       console.error('Error recording connection pool metrics:', error);
