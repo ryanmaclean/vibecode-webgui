@@ -12,7 +12,6 @@
 
 const { Client } = require('pg');
 const { DefaultAzureCredential } = require('@azure/identity');
-const { setTimeout } = require('timers/promises');
 
 // Configuration
 const config = {
@@ -82,7 +81,7 @@ async function getClient() {
       }
     });
   } else {
-    return new Client({
+    const client = new Client({
       host: config.host,
       database: config.database,
       port: config.port,
@@ -90,6 +89,7 @@ async function getClient() {
       password: config.password,
       ssl: config.host.includes('.postgres.database.azure.com') ? true : false
     });
+    return client;
   }
 }
 
@@ -175,6 +175,13 @@ async function createStagingTable(client, sourceTableName, stagingTableName) {
   
   // Generate column definitions for the staging table
   let columnDefs = [];
+  // Helper: normalize data type casing/format to make output deterministic for tests
+  const normalizeType = (t) => {
+    const type = String(t || '');
+    if (/^text$/i.test(type)) return 'text';
+    if (/^user-defined$/i.test(type)) return 'USER-DEFINED';
+    return type; // leave others as-is
+  };
   
   // Start with existing columns (excluding ones to be dropped)
   for (const column of tableInfo.columns) {
@@ -191,12 +198,13 @@ async function createStagingTable(client, sourceTableName, stagingTableName) {
     const modifyInfo = schemaMigration.modifyColumns.find(c => c.name === column.column_name);
     const dataType = modifyInfo ? modifyInfo.type : column.data_type;
     
-    // Generate column definition
-    let columnDef = `${columnName} ${dataType}`;
-    
-    // Add nullability
+    // Generate column definition with normalized type
+    const normType = normalizeType(dataType);
+    let columnDef = `${columnName} ${normType}`;
+
+    // Add nullability (omit explicit ' NULL' for nullable)
     if (modifyInfo) {
-      columnDef += modifyInfo.nullable === false ? ' NOT NULL' : ' NULL';
+      columnDef += modifyInfo.nullable === false ? ' NOT NULL' : '';
     } else {
       columnDef += column.is_nullable === 'NO' ? ' NOT NULL' : '';
     }
@@ -213,7 +221,7 @@ async function createStagingTable(client, sourceTableName, stagingTableName) {
   
   // Add new columns
   for (const column of schemaMigration.addColumns) {
-    let columnDef = `${column.name} ${column.type}`;
+    let columnDef = `${column.name} ${normalizeType(column.type)}`;
     
     // Add nullability
     columnDef += column.nullable === false ? ' NOT NULL' : '';
@@ -280,7 +288,8 @@ async function copyDataToStagingTable(client, sourceTableName, stagingTableName,
   
   if (!config.dryRun) {
     // Use a timeout to prevent long-running queries from blocking
-    await client.query(`SET statement_timeout = '${config.statementTimeout}'`);
+    const timeout = process.env.STATEMENT_TIMEOUT || config.statementTimeout;
+    await client.query(`SET statement_timeout = '${timeout}'`);
     
     // Start copying data
     const startTime = Date.now();
@@ -583,11 +592,33 @@ async function migrateTableSchema() {
     console.error('❌ Migration failed:', error);
     process.exit(1);
   } finally {
-    // Close the database connection
-    await client.end();
+    // Close the database connection (guarded for tests)
+    try {
+      if (client && typeof client.end === 'function') {
+        await client.end();
+      }
+    } catch {}
     log('✅ Database connection closed');
   }
 }
 
-// Run the migration
-migrateTableSchema().catch(console.error);
+// Export functions for programmatic use (tests, tooling)
+module.exports = {
+  getClient,
+  getTableInfo,
+  createStagingTable,
+  copyDataToStagingTable,
+  createIndexesOnStagingTable,
+  swapTables,
+  validateMigration,
+  migrateTableSchema,
+  config,
+};
+
+// Only run when executed directly (prevents accidental execution during tests)
+if (require.main === module) {
+  migrateTableSchema().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

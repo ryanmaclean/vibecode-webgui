@@ -66,7 +66,10 @@ const options = program.opts();
 const connectionString = options.connection || process.env.POSTGRES_CONNECTION;
 if (!connectionString) {
   console.error('Error: Connection string not provided. Use --connection or set POSTGRES_CONNECTION environment variable.');
-  process.exit(1);
+  // Do not exit when running under Jest or when imported as a module
+  if (require.main === module && !process.env.JEST_WORKER_ID) {
+    process.exit(1);
+  }
 }
 
 // Initialize Datadog if monitoring enabled
@@ -639,7 +642,21 @@ async function runMigration() {
   }
 }
 
-// Run migration
-runMigration().then(success => {
-  process.exit(success ? 0 : 1);
-});
+// Export for programmatic usage in tests and tooling
+module.exports = {
+  createTargetTable,
+  countRows,
+  createSavepoint,
+  migrateData,
+  createVectorIndex,
+  validateMigration,
+  runMigration,
+  migrationState,
+};
+
+// Only execute when run directly from the CLI
+if (require.main === module && !process.env.JEST_WORKER_ID) {
+  runMigration().then(success => {
+    process.exit(success ? 0 : 1);
+  });
+}

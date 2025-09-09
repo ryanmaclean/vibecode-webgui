@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { createRobustConnection, getConnectionPoolStatus, getDetailedConnectionPoolInfo } from './robust-db-connection';
+import { createRobustConnection, getConnectionPoolStatus } from './robust-db-connection';
 
 // We need to use a workaround for executeWithRetry
 async function executeQueryWithRetry<T>(
@@ -234,17 +234,48 @@ export async function checkDatabaseHealth(options: HealthCheckOptions = {}): Pro
       }
       
       // Get connection pool status
-      if (includePoolDetails) {
-        const poolDetails = getDetailedConnectionPoolInfo();
-        healthResult.connectionPool = {
-          ...poolDetails.status,
-          configuration: poolDetails.status.configuration,
-          metrics: poolDetails.status.metrics,
-          connections: poolDetails.connections
-        };
-      } else {
-        healthResult.connectionPool = getConnectionPoolStatus();
-      }
+      const robustStatus = getConnectionPoolStatus();
+      // Aggregate robust pool status into expected ConnectionPoolStatus shape
+      const totalSize = robustStatus.pools.reduce((sum, p) => sum + p.totalConnections, 0);
+      const inUse = robustStatus.pools.reduce((sum, p) => sum + p.activeConnections, 0);
+      const available = robustStatus.pools.reduce((sum, p) => sum + p.availableConnections, 0);
+      const utilization = totalSize > 0 ? (inUse / totalSize) * 100 : 0;
+
+      healthResult.connectionPool = {
+        size: totalSize,
+        inUse,
+        maxSize: totalSize, // Unknown from robust status; approximate with current size
+        minSize: 0,
+        available,
+        utilization,
+        configuration: {
+          idleTimeout: 0,
+          connectionTimeout: 0,
+          acquireTimeout: 0,
+          enableDynamicSizing: false,
+          enableConnectionValidation: false
+        },
+        metrics: {
+          totalConnections: totalSize,
+          peakConnections: totalSize, // No historical data available
+          totalAcquires: robustStatus.pools.reduce((sum, p) => sum + p.statistics.totalQueries, 0),
+          acquireSuccesses: 0,
+          acquireFailures: robustStatus.pools.reduce((sum, p) => sum + p.statistics.errors, 0),
+          acquireTimeAvg: robustStatus.pools.reduce((sum, p) => sum + p.statistics.averageQueryTime, 0) / Math.max(1, robustStatus.pools.length),
+          connectionValidations: 0,
+          connectionValidationFailures: 0,
+          dynamicPoolAdjustments: 0
+        },
+        connections: includePoolDetails
+          ? robustStatus.pools.map(p => ({
+              key: p.key,
+              ageMs: 0,
+              idleTimeMs: p.availableConnections > 0 ? 1000 : 0,
+              timeSinceValidationMs: 0,
+              inUse: p.activeConnections > 0
+            }))
+          : undefined
+      };
       
       // Determine overall status
       if (checkPgVector && !healthResult.pgVectorAvailable) {

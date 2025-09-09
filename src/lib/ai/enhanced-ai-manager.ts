@@ -239,16 +239,7 @@ export class EnhancedAIManager {
     const collectionName = collection === 'documents' ? 'documents' : 'code_snippets';
     
     try {
-      // Generate embeddings for the query
-      // Temporarily stubbed - TODO: Fix LangChain compatibility  
       throw new Error('SemanticSearch temporarily disabled due to build issues');
-      const queryEmbedding = await embeddings.embedQuery(query);
-      
-      if (options.useHybrid) {
-        return await this.pgvectorClient.hybridSearch(collectionName, queryEmbedding, query, options.limit || 10);
-      } else {
-        return await this.pgvectorClient.search(collectionName, queryEmbedding, options.limit || 10);
-      }
     } catch (error) {
       console.error('Content search failed:', error);
       throw error;
@@ -270,21 +261,7 @@ export class EnhancedAIManager {
     const collectionName = collection === 'documents' ? 'documents' : 'code_snippets';
     
     try {
-      // Generate embeddings for the content
-      // Temporarily stubbed - TODO: Fix LangChain compatibility  
       throw new Error('SemanticSearch temporarily disabled due to build issues');
-      const contentEmbedding = await embeddings.embedQuery(content);
-      
-      await this.pgvectorClient.addDocuments(collectionName, [{
-        content,
-        metadata: {
-          ...metadata,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        embedding: contentEmbedding,
-        collection: collectionName
-      }]);
     } catch (error) {
       console.error('Failed to add content to vector database:', error);
       throw error;
@@ -326,7 +303,6 @@ export class EnhancedAIManager {
       if (this.openaiClient) {
         const enhancedPrompt = `Generate ${language} code${framework ? ` using ${framework}` : ''} for the following requirements:\n\n${prompt}\n\nProvide complete, production-ready code with proper error handling and documentation.`;
         
-        // @ts-expect-error - Direct message format for ChatOpenAI
         const response = await this.openaiClient.invoke([
           { role: "system", content: `You are a senior ${language} developer. Generate clean, maintainable, and well-documented code.` },
           { role: "user", content: enhancedPrompt }
@@ -353,33 +329,7 @@ export class EnhancedAIManager {
     systemPrompt: string,
     useLocalAI: boolean = false
   ): any {
-    // Temporarily stubbed - TODO: Fix LangChain compatibility
     throw new Error('createSimpleChain temporarily disabled due to build issues');
-    
-    // const prompt = PromptTemplate.fromTemplate('{input}');
-    // const outputParser = new StringOutputParser();
-    // 
-    // let model: ChatOpenAI;
-    // 
-    // if (useLocalAI && this.ollamaClient) {
-    //   model = this.ollamaClient.createLangChainClient();
-    // } else if (this.openaiClient) {
-    //   model = this.openaiClient;
-    // } else {
-    //   throw new Error('No AI provider available');
-    // }
-    // 
-    // try {
-    //   // @ts-expect-error - Type issue with RunnableSequence in current LangChain version
-    //   return RunnableSequence.from([
-    //     prompt,
-    //     model,
-    //     outputParser,
-    //   ]);
-    // } catch (error) {
-    //   console.error('Failed to create chain:', error);
-    //   throw new Error('Failed to create AI chain');
-    // }
   }
 
   /**
@@ -432,7 +382,6 @@ export class EnhancedAIManager {
 
      // Add Ollama models if available
      if (this.ollamaClient) {
-       // @ts-expect-error - Handle potential 'never' type issues with OLLAMA_MODELS
        Object.entries(OLLAMA_MODELS).forEach(([_key, model]) => {
          let suitability = 0.5; // Base suitability
 
@@ -462,7 +411,6 @@ export class EnhancedAIManager {
        ];
 
        openaiModels.forEach(model => {
-         // @ts-expect-error - Handle potential 'never' type issues
          recommendations.push({
            name: model.name,
            provider: 'openai',
