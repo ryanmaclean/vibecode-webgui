@@ -14,6 +14,17 @@ describe('Monitoring Infrastructure Deployment', () => {
   const timeout = 300000 // 5 minutes for cluster operations;
   let clusterAvailable = false;
 
+  // Helper function to check Docker availability
+  const checkDockerAvailable = async () => {
+    try {
+      await execAsync('docker ps');
+      return true;
+    } catch (error) {
+      console.log('Skipping test - Docker not available');
+      return false;
+    }
+  };
+
   beforeAll(async () => {
     // Check if Docker is available
     try {
@@ -53,6 +64,8 @@ describe('Monitoring Infrastructure Deployment', () => {
 
   describe('Namespace Creation', () => {
     test('should create required namespaces', async () => {
+      if (!(await checkDockerAvailable())) return;
+      
       // Create namespaces
       await execAsync('kubectl create namespace datadog --dry-run=client -o yaml | kubectl apply -f -');
       await execAsync('kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -');
