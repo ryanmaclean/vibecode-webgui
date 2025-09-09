@@ -17,8 +17,14 @@ const mockProjectGenerator = ({ onComplete, initialPrompt, autoStart }: any) => 
     setTimeout(() => {
       setIsGenerating(false)
       onComplete?.({
-        workspaceId: 'ai-project-123',
-        projectName: 'test-project'
+        workspaceUrl: '/workspace/ai-project-123',
+        projectStructure: {
+          name: 'test-project',
+          description: 'Test project description', 
+          language: 'JavaScript',
+          framework: 'React',
+          files: []
+        }
       })
     }, 100)
   }
@@ -68,21 +74,25 @@ jest.mock('next/navigation', () => ({
 }))
 
 // Mock fetch
-global.fetch = jest.fn(() =>
-  Promise.resolve({
+global.fetch = jest.fn().mockImplementation(() => {
+  return Promise.resolve({
     ok: true,
-    json: () => Promise.resolve({
-      workspaceUrl: '/workspace/ai-project-123',
-      projectStructure: {
-        name: 'test-project',
-        description: 'Test project description',
-        language: 'JavaScript',
-        framework: 'React',
-        files: []
-      }
+    json: jest.fn().mockImplementation(() => {
+      return Promise.resolve({
+        success: true,
+        workspaceUrl: '/workspace/ai-project-123',
+        projectStructure: {
+          name: 'test-project',
+          description: 'Test project description',
+          language: 'JavaScript',
+          framework: 'React',
+          files: [],
+          fileCount: 0
+        }
+      })
     }),
   })
-) as jest.Mock
+})
 
 const mockSession = {
   user: {

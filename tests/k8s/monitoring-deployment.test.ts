@@ -12,8 +12,17 @@ const execAsync = promisify(exec);
 describe('Monitoring Infrastructure Deployment', () => {
   const clusterName = 'vibecode-test';
   const timeout = 300000 // 5 minutes for cluster operations;
+  let clusterAvailable = false;
 
   beforeAll(async () => {
+    // Check if Docker is available
+    try {
+      await execAsync('docker ps');
+    } catch (error) {
+      console.log('Docker not available, skipping KIND cluster tests');
+      return;
+    }
+
     // Create KIND cluster for testing
     try {
       await execAsync(`kind create cluster --name ${clusterName}`);
@@ -23,7 +32,13 @@ describe('Monitoring Infrastructure Deployment', () => {
     }
 
     // Wait for cluster to be ready
-    await execAsync(`kubectl wait --for=condition=Ready nodes --all --timeout=120s`);
+    try {
+      await execAsync(`kubectl wait --for=condition=Ready nodes --all --timeout=120s`);
+      clusterAvailable = true;
+    } catch (error) {
+      console.log('Kubernetes cluster not ready, skipping tests');
+      clusterAvailable = false;
+    }
   }, timeout);
 
   afterAll(async () => {
