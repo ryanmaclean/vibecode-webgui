@@ -170,12 +170,12 @@ describe('auth.ts Configuration', () => {
       }
       const mockAccount = {
         provider: 'github',
-        type: 'oauth',
+        type: 'oauth' as const,
         providerAccountId: 'provider-account-id',
         access_token: 'access-token',
       }
 
-      const result = await jwtCallback!({
+      const result = await (jwtCallback as any)!({
         token: mockToken,
         user: mockUser,
         account: mockAccount,
@@ -212,7 +212,7 @@ describe('auth.ts Configuration', () => {
     it('should handle Google OAuth provider', async () => {
       const jwtCallback = authOptions.callbacks?.jwt
 
-      const mockToken = {}
+      const mockToken = { id: '', role: '' }
       const mockUser = {
         id: 'user-123',
         email: 'test@example.com',
@@ -222,12 +222,12 @@ describe('auth.ts Configuration', () => {
       }
       const mockAccount = {
         provider: 'google',
-        type: 'oauth',
+        type: 'oauth' as const,
         providerAccountId: 'provider-account-id',
         access_token: 'access-token',
       }
 
-      const result = await jwtCallback!({
+      const result = await (jwtCallback as any)!({
         token: mockToken,
         user: mockUser,
         account: mockAccount,
@@ -264,9 +264,10 @@ describe('auth.ts Configuration', () => {
         name: 'Test User',
       }
 
-      const result = await sessionCallback!({
+      const result = await (sessionCallback as any)!({
         session: mockSession,
         token: mockToken,
+        user: { id: 'user-123', email: 'test@example.com', name: 'Test User', role: 'user', emailVerified: null },
       })
 
       expect(result.user).toEqual({
@@ -292,9 +293,10 @@ describe('auth.ts Configuration', () => {
         expires: '2024-12-31T23:59:59.999Z',
       }
 
-      const result = await sessionCallback!({
+      const result = await (sessionCallback as any)!({
         session: mockSession,
         token: undefined,
+        user: { id: 'existing-id', email: 'existing@example.com', name: 'Existing User', role: 'existing-role', emailVerified: null },
       })
 
       expect(result).toEqual(mockSession)
@@ -305,12 +307,12 @@ describe('auth.ts Configuration', () => {
     it('should allow all sign-ins', async () => {
       const signInCallback = authOptions.callbacks?.signIn
 
-      const result = await signInCallback!({
-        user: { id: 'user-123' },
-        account: { provider: 'github' },
+      const result = await (signInCallback as any)!({
+        user: { id: 'user-123', email: 'test@example.com', name: 'Test User', role: 'user' },
+        account: { provider: 'github', type: 'oauth', providerAccountId: 'id' },
         profile: { name: 'Test User' },
-        email: 'test@example.com',
-        credentials: { email: 'test@example.com' },
+        email: { verificationRequest: false },
+        credentials: { password: 'x' },
       })
 
       expect(result).toBe(true)
@@ -368,7 +370,7 @@ describe('auth.ts Configuration', () => {
       
       const signInEvent = authOptions.events?.signIn
       if (signInEvent) {
-        await signInEvent({
+        await (signInEvent as any)({
           user: { email: 'test@example.com' },
           account: { provider: 'github' },
           isNewUser: false,
@@ -384,7 +386,7 @@ describe('auth.ts Configuration', () => {
       
       const signOutEvent = authOptions.events?.signOut
       if (signOutEvent) {
-        await signOutEvent({
+        await (signOutEvent as any)({
           token: { email: 'test@example.com' },
         })
       }
