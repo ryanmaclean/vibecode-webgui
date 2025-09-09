@@ -5,6 +5,12 @@ import ConnectionPoolAlertService, { AlertSeverity, AlertType } from '@/lib/db/c
 
 describe('ConnectionPoolAlerts component (integration)', () => {
   const service = ConnectionPoolAlertService.getInstance()
+  const baseline = {
+    poolUtilization: service.getPoolUtilizationConfig(),
+    acquireFailures: service.getAcquireFailuresConfig(),
+    validationFailures: service.getValidationFailuresConfig(),
+    idleConnections: service.getIdleConnectionsConfig(),
+  }
 
   beforeEach(() => {
     // Ensure a deterministic baseline: stop monitoring and clear active alerts
@@ -13,6 +19,13 @@ describe('ConnectionPoolAlerts component (integration)', () => {
       service.acknowledgeAlert(a.id)
       service.clearAlert(a.id)
     }
+    // Reset config to baseline
+    service.updateConfig({
+      poolUtilization: { ...baseline.poolUtilization },
+      acquireFailures: { ...baseline.acquireFailures },
+      validationFailures: { ...baseline.validationFailures },
+      idleConnections: { ...baseline.idleConnections },
+    })
   })
 
   it('renders no alerts initially and toggles monitoring state', async () => {
@@ -79,5 +92,30 @@ describe('ConnectionPoolAlerts component (integration)', () => {
 
     // Alert remains visible (user may still choose to Dismiss later)
     expect(screen.getByText(/Ack Test Alert/i)).toBeInTheDocument()
+  })
+
+  it('updates thresholds via UI and reflects them in service config', async () => {
+    render(<ConnectionPoolAlerts showControls={true} />)
+
+    // Open the config section
+    const toggleConfig = screen.getByRole('button', { name: /Show Config/i })
+    fireEvent.click(toggleConfig)
+
+    // Change Pool Utilization thresholds (disambiguate among multiple sections)
+    const warnCandidates = await screen.findAllByLabelText(/Warning Threshold \(%\)/i)
+    const critCandidates = screen.getAllByLabelText(/Critical Threshold \(%\)/i)
+    const warnInput = warnCandidates.find((el) => (el as HTMLInputElement).id === 'poolUtilizationWarning') as HTMLInputElement
+    const critInput = critCandidates.find((el) => (el as HTMLInputElement).id === 'poolUtilizationCritical') as HTMLInputElement
+
+    // Set new values
+    fireEvent.change(warnInput, { target: { value: '72' } })
+    fireEvent.change(critInput, { target: { value: '92' } })
+
+    // Allow state/updates to flush
+    await waitFor(() => {
+      const cfg = service.getPoolUtilizationConfig()
+      expect(cfg.warningThreshold).toBe(72)
+      expect(cfg.criticalThreshold).toBe(92)
+    })
   })
 })
