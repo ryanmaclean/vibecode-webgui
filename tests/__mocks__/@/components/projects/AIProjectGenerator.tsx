@@ -82,10 +82,10 @@ export function AIProjectGenerator({
 
       setGeneratedProject(data)
 
-      // Auto-redirect after 2 seconds
+      // Auto-redirect after brief delay
       setTimeout(() => {
-        router.push(data.workspaceUrl)
-      }, 2000)
+        router.push(data.workspaceUrl || '/workspace/ai-project-123')
+      }, 100) // Reduced timeout for testing
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -93,7 +93,7 @@ export function AIProjectGenerator({
     }
   }
 
-  if (generatedProject) {
+  if (generatedProject && generatedProject.projectStructure) {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <Card>

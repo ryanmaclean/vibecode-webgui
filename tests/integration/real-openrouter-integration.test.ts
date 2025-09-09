@@ -162,9 +162,9 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
           model: 'anthropic/claude-3.5-sonnet',
           messages: [{ role: 'user', content: 'Say hello' }],
           max_tokens: 10
-        });
-      });
-    )
+        })
+      })
+    );
 
     const responses = await Promise.allSettled(promises)
 
@@ -194,7 +194,7 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
         message: 'What is TypeScript?',
         model: 'anthropic/claude-3.5-sonnet',
         workspaceId: 'integration-test'
-      });
+      })
     });
 
     if (response.ok) {
@@ -234,7 +234,7 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
           model,
           messages: [{ role: 'user', content: 'Just say "OK"' }],
           max_tokens: 5
-        });
+        })
       });
 
       if (response.ok) {
@@ -266,7 +266,7 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
         model: 'invalid/model-name',
         messages: [{ role: 'user', content: 'test' }],
         max_tokens: 10
-      });
+      })
     });
 
     expect(response.ok).toBe(false)
@@ -291,7 +291,7 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
         messages: [{ role: 'user', content: 'Count from 1 to 5' }],
         max_tokens: 50,
         stream: true
-      });
+      })
     });
 
     expect(response.ok).toBe(true)
