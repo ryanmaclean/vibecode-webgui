@@ -2,6 +2,58 @@
  * Unit tests for VectorShardingManager
  */
 
+// Mock the dependencies before importing the module
+jest.mock('pg', () => {
+  const mockClient = {
+    query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+    release: jest.fn()
+  };
+  
+  const mockPool = {
+    connect: jest.fn().mockResolvedValue(mockClient),
+    end: jest.fn().mockResolvedValue(undefined)
+  };
+  
+  return {
+    Pool: jest.fn().mockImplementation(() => mockPool),
+    PoolClient: jest.fn(),
+    QueryResult: jest.fn()
+  };
+});
+
+jest.mock('../consistent-hash-ring', () => ({
+  ConsistentHashRing: jest.fn().mockImplementation(() => ({
+    addShard: jest.fn(),
+    removeShard: jest.fn(),
+    getShard: jest.fn().mockReturnValue({
+      id: 'shard1',
+      host: 'localhost',
+      port: 5432,
+      username: 'user1',
+      password: 'pass1',
+      database: 'db1',
+      weight: 1,
+      status: 'active'
+    }),
+    getShards: jest.fn().mockReturnValue([
+      {
+        id: 'shard1',
+        host: 'localhost',
+        port: 5432,
+        username: 'user1',
+        password: 'pass1',
+        database: 'db1',
+        weight: 1,
+        status: 'active'
+      }
+    ]),
+    getShardDistribution: jest.fn().mockReturnValue(new Map([
+      ['shard1', 500],
+      ['shard2', 500]
+    ]))
+  }))
+}));
+
 import { VectorShardingManager } from '../sharding-manager';
 import { 
   ShardInfo, 
@@ -12,18 +64,6 @@ import {
   WriteConsistency,
   QueryType 
 } from '../types';
-
-// Mock the dependencies
-jest.mock('pg', () => ({
-  Pool: jest.fn().mockImplementation(() => ({
-    connect: jest.fn().mockResolvedValue({
-      query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
-      release: jest.fn()
-    }),
-    end: jest.fn().mockResolvedValue(undefined)
-  })),
-  PoolClient: jest.fn()
-}));
 
 // Mock console methods
 const mockConsole = {
