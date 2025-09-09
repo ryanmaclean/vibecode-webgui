@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { exec } from 'child_process';
@@ -7,15 +7,15 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const workspaceId = params.id;
+  const { id: workspaceId } = await params;
   if (!workspaceId) {
     return new NextResponse('Workspace ID is required', { status: 400 });
   }

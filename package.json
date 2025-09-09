@@ -17,7 +17,7 @@
     "start:dd": "node --require ./src/instrument.ts node_modules/.bin/next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "test": "tsx node_modules/.bin/jest",
+    "test": "tsx --max-old-space-size=8192 node_modules/.bin/jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:unit": "jest --testPathPatterns=\"tests/unit\"",
