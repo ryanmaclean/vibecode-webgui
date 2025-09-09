@@ -88,7 +88,7 @@ describe('useAuth', () => {
       }
 
       mockUseSession.mockReturnValue({
-        data: mockSession,
+        data: mockSession as any,
         status: 'authenticated',
         update: jest.fn(),
       })
@@ -310,7 +310,7 @@ describe('useAuth', () => {
   describe('Logout', () => {
     it('should successfully logout user', async () => {
       mockUseSession.mockReturnValue({
-        data: { user: { id: 'user-123' } },
+        data: { user: { id: 'user-123', email: 'user@example.com', name: 'User', image: '', role: 'user' }, expires: '2099-01-01T00:00:00.000Z' },
         status: 'authenticated',
         update: jest.fn(),
       })
@@ -331,7 +331,7 @@ describe('useAuth', () => {
 
     it('should handle logout error', async () => {
       mockUseSession.mockReturnValue({
-        data: { user: { id: 'user-123' } },
+        data: { user: { id: 'user-123', email: 'user@example.com', name: 'User', image: '', role: 'user' }, expires: '2099-01-01T00:00:00.000Z' },
         status: 'authenticated',
         update: jest.fn(),
       })
@@ -369,7 +369,7 @@ describe('useAuth', () => {
 
     it('should redirect to dashboard', () => {
       mockUseSession.mockReturnValue({
-        data: { user: { id: 'user-123' } },
+        data: { user: { id: 'user-123', email: 'user@example.com', name: 'User', image: '', role: 'user' }, expires: '2099-01-01T00:00:00.000Z' },
         status: 'authenticated',
         update: jest.fn(),
       })
@@ -416,7 +416,7 @@ describe('useAuth', () => {
       }
 
       mockUseSession.mockReturnValue({
-        data: mockSession,
+        data: mockSession as any,
         status: 'authenticated',
         update: jest.fn(),
       })

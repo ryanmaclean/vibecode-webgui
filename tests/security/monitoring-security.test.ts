@@ -247,10 +247,10 @@ describe('Monitoring Security Tests', () => {
     test('should prevent XSS in log messages', () => {
       const sanitizeLogMessage = (message: string) => {
         return message
-          .replace(/</g, '&lt;');
-          .replace(/>/g, '&gt;');
-          .replace(/"/g, '&quot;');
-          .replace(/'/g, '&#x27;');
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#x27;')
           .replace(/\//g, '&#x2F;');
       }
 
