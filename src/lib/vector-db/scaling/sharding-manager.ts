@@ -24,7 +24,7 @@ export interface VectorQuery {
   embedding: number[];
   dimension?: number;
   limit?: number;
-  filter?: Record<string, any>;
+  filter?: Record<string, unknown>;
   collection?: string;
   similarityFunction?: 'cosine' | 'l2' | 'dot';
   minSimilarity?: number;
@@ -44,7 +44,7 @@ export interface VectorQueryResult {
 export interface VectorQueryMatch {
   id: string;
   similarity: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   document?: string;
 }
 
