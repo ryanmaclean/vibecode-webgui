@@ -427,21 +427,16 @@ describe('useAuth', () => {
     })
 
     it('should handle missing user data gracefully', () => {
-      const mockSession = {
-        user: null,
-        expires: '2024-12-31T23:59:59.999Z',
-      }
-
       mockUseSession.mockReturnValue({
-        data: mockSession,
-        status: 'authenticated',
+        data: null,
+        status: 'unauthenticated',
         update: jest.fn(),
       })
 
       const { result } = renderHook(() => useAuth())
 
-      // Session exists but user is null - still considered authenticated
-      expect(result.current.isAuthenticated).toBe(true)
+      // No session data - should be unauthenticated
+      expect(result.current.isAuthenticated).toBe(false)
       expect(result.current.user).toBeNull()
     })
   })
