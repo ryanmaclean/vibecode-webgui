@@ -68,6 +68,33 @@ npm run test:security
 ```
 Run security tests
 
+### Opt-in and Targeted Test Suites
+
+These suites are disabled by default and must be explicitly opted-in with environment variables or dedicated scripts.
+
+```bash
+# Vector store optimization tests (fast, unit-focused)
+npm run test:vector:optimizations
+
+# Heavy vector migration tests (database-intensive)
+TEST_VECTOR_MIGRATIONS=true npm run test:migrations:vector
+
+# API health integration tests (requires running server)
+RUN_HEALTH_TESTS=true npm run test:health:api
+
+# Documentation tests
+npm run test:docs              # static docs tests
+npm run test:docs:preview      # use Astro preview mode
+```
+
+### Test Control Environment Variables
+
+- `TEST_VECTOR_MIGRATIONS=true` — enable heavy vector migration tests.
+- `RUN_HEALTH_TESTS=true` — enable health API integration tests.
+- `JEST_INCLUDE_DOCS=1` — include docs tests in Jest collection.
+- `ASTRO_USE_PREVIEW=1` — run docs tests against existing Astro preview (no build during tests).
+- `STATEMENT_TIMEOUT='300s'` — optional Postgres statement timeout for migration data copy (used by zero-downtime migration script).
+
 ## Database Scripts
 
 ### Database Management

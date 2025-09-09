@@ -169,7 +169,7 @@ global.Response = class Response {
 // Minimal WHATWG Request implementation (non-mocked)
 global.Request = class Request {
   constructor(input, init = {}) {
-    this.url = typeof input === 'string' ? input : input.url;
+    this._url = typeof input === 'string' ? input : input.url;
     this.method = init.method || 'GET';
     this.headers = new Headers(init.headers);
     this.body = init.body;
@@ -182,6 +182,10 @@ global.Request = class Request {
     this.integrity = init.integrity || '';
     this.keepalive = init.keepalive || false;
     this.signal = init.signal;
+  }
+  
+  get url() {
+    return this._url;
   }
   clone() {
     return new Request(this.url, {
@@ -212,3 +216,16 @@ global.Request = class Request {
     return typeof this.body === 'undefined' ? '' : JSON.stringify(this.body);
   }
 };
+
+// Add Response.json polyfill for API tests
+if (!Response.json) {
+  Response.json = function(data, init = {}) {
+    return new Response(JSON.stringify(data), {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...init.headers
+      }
+    });
+  };
+}

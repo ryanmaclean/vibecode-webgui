@@ -111,7 +111,7 @@ export const HuggingFaceChatInterface = ({
     { id: 'facebook/blenderbot-400M-distill', name: 'BlenderBot 400M', provider: 'Facebook', context: '1K', type: 'conversational' },
     { id: 'microsoft/GODEL-v1_1-large-seq2seq', name: 'GODEL Large', provider: 'Microsoft', context: '1K', type: 'conversational' },
     { id: 'google/flan-t5-large', name: 'FLAN-T5 Large', provider: 'Google', context: '512', type: 'text-generation' },
-    { id: 'bigscience/bloom-560m', name: 'BLOOM 560M', provider: 'BigScience', context: 'text-generation' }
+    { id: 'bigscience/bloom-560m', name: 'BLOOM 560M', provider: 'BigScience', context: '1K', type: 'text-generation' }
   ]
 
   useEffect(() => {

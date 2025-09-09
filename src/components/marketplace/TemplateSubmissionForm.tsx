@@ -122,10 +122,6 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           category: template.category || 'frontend',
           complexity: template.complexity || 'beginner',
           tags: template.tags || [],
-          language: ['javascript'],
-          frameworks: [],
-          features: [],
-          estimatedSetupTime: '10 minutes',
           files: template.files || [],
           dependencies: template.dependencies || {},
           scripts: template.scripts || {},
@@ -238,12 +234,13 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="complexity" className="block text-sm font-medium text-gray-700 mb-2">
                   Complexity
                 </label>
                 <select
+                  id="complexity"
                   value={template.complexity}
-                  onChange={(e) => setTemplate(prev => ({ ...prev, complexity: e.target.value as any }))}
+                  onChange={(e) => setTemplate(prev => ({ ...prev, complexity: e.target.value as 'beginner' | 'intermediate' | 'advanced' }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="beginner">Beginner</option>

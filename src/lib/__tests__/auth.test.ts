@@ -157,7 +157,10 @@ describe('auth.ts Configuration', () => {
     it('should update token with user data on first login', async () => {
       const jwtCallback = authOptions.callbacks?.jwt
 
-      const mockToken = {}
+      const mockToken = {
+        id: '',
+        role: '',
+      }
       const mockUser = {
         id: 'user-123',
         email: 'test@example.com',
@@ -168,6 +171,7 @@ describe('auth.ts Configuration', () => {
       const mockAccount = {
         provider: 'github',
         type: 'oauth',
+        providerAccountId: 'provider-account-id',
         access_token: 'access-token',
       }
 
@@ -196,7 +200,7 @@ describe('auth.ts Configuration', () => {
         name: 'Test User',
       }
 
-      const result = await jwtCallback!({
+      const result = await (jwtCallback as any)!({
         token: mockToken,
         user: undefined,
         account: undefined,
@@ -219,6 +223,7 @@ describe('auth.ts Configuration', () => {
       const mockAccount = {
         provider: 'google',
         type: 'oauth',
+        providerAccountId: 'provider-account-id',
         access_token: 'access-token',
       }
 

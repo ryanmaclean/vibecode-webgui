@@ -4,6 +4,7 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals'
 import { POST } from '@/app/api/ai/chat/stream/route'
 import { NextRequest } from 'next/server'
+import { getServerSession } from 'next-auth'
 
 // Mock OpenAI SDK
 const mockOpenAI = {
@@ -17,17 +18,67 @@ jest.mock('openai', () => ({
   OpenAI: jest.fn(() => mockOpenAI)
 }))
 
-// Mock environment variables
-jest.mock('process', () => ({
-  env: {
-    OPENROUTER_API_KEY: 'test-api-key',
-    NEXTAUTH_URL: 'http://localhost:3000'
+// Mock vector store
+jest.mock('@/lib/vector-store', () => ({
+  vectorStore: {
+    query: jest.fn(() => Promise.resolve([])),
+    add: jest.fn(() => Promise.resolve()),
   }
 }))
+
+// Mock prisma
+jest.mock('@/lib/prisma', () => ({
+  prisma: {
+    user: {
+      findUnique: jest.fn(() => Promise.resolve(null))
+    }
+  }
+}))
+
+// Mock next-auth
+jest.mock('next-auth', () => ({
+  getServerSession: jest.fn()
+}))
+
+// Mock auth options
+jest.mock('@/lib/auth', () => ({
+  authOptions: {}
+}))
+
+// Mock environment variables
+const originalEnv = process.env
+beforeAll(() => {
+  process.env = {
+    ...originalEnv,
+    OPENROUTER_API_KEY: 'test-api-key',
+    OPENROUTER_API_BASE: 'https://openrouter.ai/api/v1',
+    NEXTAUTH_URL: 'http://localhost:3000'
+  }
+})
+
+afterAll(() => {
+  process.env = originalEnv
+})
 
 describe('/api/ai/chat/stream', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    
+    // Mock authentication
+    ;(getServerSession as jest.Mock).mockResolvedValue({
+      user: { id: 'test-user-id', email: 'test@example.com' }
+    })
+    
+    // Mock streaming response
+    const mockStream = {
+      [Symbol.asyncIterator]: async function* () {
+        yield { choices: [{ delta: { content: 'Test ' } }] }
+        yield { choices: [{ delta: { content: 'response' } }] }
+        yield { choices: [{ delta: {} }] } // End of stream
+      }
+    }
+    
+    mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
   })
 
   afterEach(() => {
@@ -69,6 +120,19 @@ describe('/api/ai/chat/stream', () => {
       })
 
       const response = await POST(request)
+
+      // Debug the error response
+      if (response.status !== 200) {
+        try {
+          const errorBody = await response.json()
+          console.log('API Error Status:', response.status)
+          console.log('API Error JSON:', errorBody)
+        } catch (e) {
+          const errorText = await response.text()
+          console.log('API Error Status:', response.status)
+          console.log('API Error Text:', errorText)
+        }
+      }
 
       expect(response.status).toBe(200)
       expect(response.headers.get('Content-Type')).toBe('text/event-stream')

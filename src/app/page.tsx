@@ -45,7 +45,7 @@ export default function Home() {
           </p>
           <div className="space-y-4">
             <Link
-              href="/auth/login"
+              href="/auth/signin"
               className="w-full bg-gradient-primary text-white py-2 px-4 rounded-lg hover:opacity-90 transition-opacity inline-block"
             >
               Sign In
