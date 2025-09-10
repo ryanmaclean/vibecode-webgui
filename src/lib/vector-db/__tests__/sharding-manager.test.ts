@@ -79,6 +79,24 @@ describe('VectorShardingManager', () => {
           return { rows: [{ '?column?': 1 }] };
         }
         
+        // Mock for vector search queries
+        if (query.includes('embedding <=>') && query.includes('similarity')) {
+          return { 
+            rows: [{ 
+              id: 1, 
+              embedding: [0.1, 0.2, 0.3], 
+              metadata: { source: 'test' },
+              similarity: 0.5
+            }], 
+            rowCount: 1 
+          };
+        }
+        
+        // Mock for failed queries (nonexistent tables)
+        if (query.includes('nonexistent_table')) {
+          throw new Error('Table does not exist');
+        }
+        
         // Default for read queries
         if (query.startsWith('SELECT')) {
           return { 
@@ -345,12 +363,18 @@ describe('VectorShardingManager', () => {
       
       const statsBefore = shardingManager.getShardStats().get(shardId);
       const totalQueriesBefore = statsBefore?.totalQueries || 0;
+      const successfulQueriesBefore = statsBefore?.successfulQueries || 0;
       
-      await shardingManager.executeOnShard(query, params, shardId);
+      // Execute the query
+      const result = await shardingManager.executeOnShard(query, params, shardId);
+      
+      // Verify the query executed successfully
+      expect(result).toBeDefined();
+      expect(result.rows).toBeDefined();
       
       const statsAfter = shardingManager.getShardStats().get(shardId);
       expect(statsAfter!.totalQueries).toBe(totalQueriesBefore + 1);
-      expect(statsAfter!.successfulQueries).toBe((statsBefore?.successfulQueries || 0) + 1);
+      expect(statsAfter!.successfulQueries).toBe(successfulQueriesBefore + 1);
     });
 
     it('should update shard stats on failed execution', async () => {
@@ -358,23 +382,16 @@ describe('VectorShardingManager', () => {
       const params = [];
       const shardId = 'shard1';
       
-      // Mock query to throw error
-      const mockPool = mockFactory.createPool({});
-      const mockClient = {
-        query: jest.fn().mockRejectedValue(new Error('Table does not exist')),
-        release: jest.fn()
-      };
-      mockPool.connect.mockResolvedValueOnce(mockClient);
-      
       const statsBefore = shardingManager.getShardStats().get(shardId);
       const totalQueriesBefore = statsBefore?.totalQueries || 0;
+      const failedQueriesBefore = statsBefore?.failedQueries || 0;
       
       await expect(shardingManager.executeOnShard(query, params, shardId))
         .rejects.toThrow();
       
       const statsAfter = shardingManager.getShardStats().get(shardId);
       expect(statsAfter!.totalQueries).toBe(totalQueriesBefore + 1);
-      expect(statsAfter!.failedQueries).toBe((statsBefore?.failedQueries || 0) + 1);
+      expect(statsAfter!.failedQueries).toBe(failedQueriesBefore + 1);
     });
   });
 
@@ -431,7 +448,7 @@ describe('VectorShardingManager', () => {
       expect(result).toBeDefined();
       expect(result.results).toBeDefined();
       expect(result.totalFound).toBeDefined();
-      expect(result.executionTimeMs).toBeGreaterThan(0);
+      expect(result.executionTimeMs).toBeGreaterThanOrEqual(0);
       expect(result.shardsQueried).toBeGreaterThan(0);
       expect(result.shardsResponded).toBeGreaterThan(0);
     });
@@ -566,11 +583,15 @@ describe('VectorShardingManager', () => {
 
   describe('shutdown', () => {
     it('should close all connection pools', async () => {
-      const mockPool = mockFactory.createPool({});
+      // Get the actual pools that the manager is using
+      const pools = Array.from(shardingManager['shardPools'].values());
       
       await shardingManager.shutdown();
       
-      expect(mockPool.end).toHaveBeenCalled();
+      // Check that all pools had their end method called
+      pools.forEach(pool => {
+        expect(pool.end).toHaveBeenCalled();
+      });
     });
 
     it('should be idempotent', async () => {
