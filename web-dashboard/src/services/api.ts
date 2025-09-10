@@ -32,9 +32,10 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('api_key')
-      window.location.href = '/login'
+      // Prevent open redirect by using a fixed, relative URL
+      const loginPath = '/login';
+      const redirectParams = new URLSearchParams({ session: 'expired' });
+      window.location.href = `${loginPath}?${redirectParams.toString()}`;
     }
     return Promise.reject(error)
   }
