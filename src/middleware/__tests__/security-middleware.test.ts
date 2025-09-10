@@ -21,6 +21,15 @@ jest.mock('next/server', () => ({
   NextResponse: jest.fn()
 }))
 
+// Type for auth token
+type AuthToken = {
+  sub?: string;
+  id?: string;
+  role?: string;
+  email?: string;
+  name?: string;
+}
+
 // Mock next-auth/jwt
 const mockGetToken = jest.fn()
 jest.mock('next-auth/jwt', () => ({
@@ -406,6 +415,7 @@ describe('Security Middleware Module', () => {
         return null
       })
 
+      // @ts-ignore - Mocking JWT token
       mockGetToken.mockResolvedValue(null)
 
       const result = await apiSecurityMiddleware(mockRequest)
@@ -422,12 +432,13 @@ describe('Security Middleware Module', () => {
         return null
       })
 
+      // @ts-ignore - Mocking JWT token
       mockGetToken.mockResolvedValue({
         sub: 'user123',
         id: 'user123',
         role: 'user',
         email: 'user@example.com'
-      })
+      } as any)
 
       const result = await apiSecurityMiddleware(mockRequest)
       expect(result).toBeDefined()
@@ -467,12 +478,13 @@ describe('Security Middleware Module', () => {
         return null
       })
 
+      // @ts-ignore - Mocking JWT token
       mockGetToken.mockResolvedValue({
         sub: 'user123',
         id: 'user123',
         role: 'user',
         email: 'user@example.com'
-      })
+      } as any)
 
       mockValidateAIQuery.mockImplementation(() => {
         throw new Error('Invalid AI query')
@@ -493,12 +505,13 @@ describe('Security Middleware Module', () => {
         return null
       })
 
+      // @ts-ignore - Mocking JWT token
       mockGetToken.mockResolvedValue({
         sub: 'user123',
         id: 'user123',
         role: 'user',
         email: 'user@example.com'
-      })
+      } as any)
 
       mockValidateAIQuery.mockReturnValue({ query: 'test query' })
       mockAiRateLimiter.checkRateLimit.mockReturnValue(false)
