@@ -85,7 +85,7 @@ export SCHEMA_NAME=public
 export LOGGING=true
 
 # Run the schema migration
-node $SCRIPT_DIR/vector-db-migrations/zero-downtime-schema-migration.js
+node $SCRIPT_DIR/vector-db-migrations/zero-downtime-schema-migration.cjs
 
 # Verify the migration
 echo -e "${YELLOW}Verifying migration results...${NC}"
