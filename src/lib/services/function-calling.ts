@@ -321,7 +321,7 @@ export class FunctionCallingService {
           // Cleanup
           await fs.rm(tempDir, { recursive: true, force: true })
           
-          resolve({
+          const result: FunctionResult = {
             success: code === 0,
             result: {
               stdout: stdout.trim(),
@@ -332,7 +332,14 @@ export class FunctionCallingService {
               language: args.language,
               executionTime: Date.now()
             }
-          })
+          }
+          
+          // Add error property if the execution failed
+          if (code !== 0) {
+            result.error = stderr.trim() || 'Execution failed with non-zero exit code';
+          }
+          
+          resolve(result)
         })
 
         child.on('error', async (error) => {

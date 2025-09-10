@@ -1,10 +1,10 @@
-import { MongoDBChatService } from '../chat-mongodb';
-import { Conversation, Message, ChatSession, Assistant } from '../../models/chat';
-
 // Mock uuid before importing the service
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'test-uuid-123')
 }));
+
+import { MongoDBChatService } from '../chat-mongodb';
+import { Conversation, Message, ChatSession, Assistant } from '../../models/chat';
 
 // Mock external dependencies
 jest.mock('../../mongodb', () => ({
@@ -27,6 +27,10 @@ describe('MongoDBChatService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Reset uuid mock
+    const { v4 } = require('uuid');
+    v4.mockReturnValue('test-uuid-123');
     
     // Setup mock collections
     mockConversationsCollection = {
@@ -589,8 +593,29 @@ describe('MongoDBChatService', () => {
 
   describe('Collection Initialization', () => {
     it('should initialize collections with proper indexes', async () => {
-      // Trigger collection initialization by calling a method
+      // Setup mocks for all collections
+      mockSessionsCollection.insertOne.mockResolvedValue({
+        insertedId: 'session-id-123',
+        acknowledged: true,
+        insertedCount: 1
+      });
+      
+      mockConversationsCollection.insertOne.mockResolvedValue({
+        insertedId: 'conversation-id-123',
+        acknowledged: true,
+        insertedCount: 1
+      });
+      
+      mockAssistantsCollection.insertOne.mockResolvedValue({
+        insertedId: 'assistant-id-123',
+        acknowledged: true,
+        insertedCount: 1
+      });
+      
+      // Trigger collection initialization by calling methods that use each collection
       await service.createSession('user123');
+      await service.createConversation('session-123', 'user123', 'workspace-123', 'Test Conversation', 'gpt-4');
+      await service.createAssistant('user123', 'Test Assistant', 'A test assistant', 'You are a helpful assistant');
 
       expect(mockConversationsCollection.createIndex).toHaveBeenCalledWith({ sessionId: 1 });
       expect(mockConversationsCollection.createIndex).toHaveBeenCalledWith({ userId: 1 });
