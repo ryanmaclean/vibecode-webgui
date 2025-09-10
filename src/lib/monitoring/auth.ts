@@ -67,7 +67,7 @@ export async function checkMonitoringAuth(request: NextRequest): Promise<AuthRes
     return {
       isAuthorized: true,
       user: {
-        id: token.id,
+        id: token.id as string,
         email: token.email as string,
         role: token.role
       }
