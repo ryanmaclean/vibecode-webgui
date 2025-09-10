@@ -83,24 +83,24 @@ export class AzureEmbeddingMetrics {
     if (metrics.errorType) tags.error_type = metrics.errorType;
     if (metrics.apiStatus) tags.status_code = metrics.apiStatus.toString();
     
-     // Send core metrics
-     datadogMetrics.sendBatchMetrics([
-       {
-         name: 'azure.openai.embedding.generation_time',
-         value: metrics.generationTimeMs,
-         tags
-       },
-       {
-         name: 'azure.openai.embedding.text_length',
-         value: metrics.textLength,
-         tags
-       },
-       {
-         name: 'azure.openai.embedding.request_count',
-         value: 1,
-         tags
-       }
-     ] as MetricData[]);
+    // Send core metrics
+    datadogMetrics.sendBatchMetrics([
+      {
+        name: 'azure.openai.embedding.generation_time',
+        value: metrics.generationTimeMs,
+        tags
+      },
+      {
+        name: 'azure.openai.embedding.text_length',
+        value: metrics.textLength,
+        tags
+      },
+      {
+        name: 'azure.openai.embedding.request_count',
+        value: 1,
+        tags
+      }
+    ] as any[]);
     
        // Send API metrics if available
        if (metrics.tokenCount || metrics.apiLatencyMs) {
