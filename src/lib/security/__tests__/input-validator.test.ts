@@ -490,7 +490,7 @@ describe('Input Validator Module', () => {
         AISecurityLogger.logSuspiciousActivity('user1', 'test_activity', {})
 
         const logCall = consoleSpy.mock.calls[0]
-        const logData = logCall[1]
+        const logData = logCall[1] as { timestamp: string }
         expect(logData.timestamp).toBeDefined()
         expect(new Date(logData.timestamp)).toBeInstanceOf(Date)
       })
@@ -528,7 +528,7 @@ describe('Input Validator Module', () => {
         AISecurityLogger.logValidationFailure('user1', 'test', 'test error')
 
         const logCall = consoleSpy.mock.calls[0]
-        const logData = logCall[1]
+        const logData = logCall[1] as { timestamp: string }
         expect(logData.timestamp).toBeDefined()
         expect(new Date(logData.timestamp)).toBeInstanceOf(Date)
       })
