@@ -286,22 +286,16 @@ async function validateRequestSecurity(
       
       // Validate request body for AI queries (but not uploads)
       if (!isUploadEndpoint) {
-        try {
-          if (request.body && validateAIQuery) {
-            const bodyText = await request.text();
-            const body = JSON.parse(bodyText);
-            validateAIQuery(body);
-          
-          // Reconstruct request with validated body
-          const newRequest = new NextRequest(request.url, {
-            method: request.method,
-            headers: request.headers,
-            body: bodyText
-          });
-          
-            return { valid: true };
-          }
-        } catch (error) {
+          try {
+            if (request.body && validateAIQuery) {
+              const bodyText = await request.text();
+              const body = JSON.parse(bodyText);
+              validateAIQuery(body);
+              
+              // No need to reconstruct request since we've already processed it
+              return { valid: true };
+            }
+          } catch (error) {
           AISecurityLogger?.logValidationFailure(
             token.sub || 'unknown',
             'Invalid AI query format',
@@ -369,7 +363,7 @@ export async function apiSecurityMiddleware(request: NextRequest): Promise<NextR
   const corsValidation = validateCORS(request);
   if (!corsValidation.valid) {
     if (AISecurityLogger) {
-      AISecurityLogger?.logSuspiciousActivity('unknown', 'cors_violation', {
+      AISecurityLogger.logSuspiciousActivity('unknown', 'cors_violation', {
         pathname,
         origin: request.headers.get('origin'),
         ip: getClientIP(request)
