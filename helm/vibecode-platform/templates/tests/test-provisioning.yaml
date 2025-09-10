@@ -37,9 +37,13 @@ spec:
     args:
     - |
       set -e
+      # Force kubectl to use in-cluster auth explicitly
+      SA_TOKEN_PATH="/var/run/secrets/kubernetes.io/serviceaccount/token"
+      SA_CA_PATH="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+      KCTL="kubectl --server=https://kubernetes.default.svc:443 --certificate-authority=${SA_CA_PATH} --token=$(cat ${SA_TOKEN_PATH})"
       echo "Waiting for Kubernetes API to become reachable..."
       for i in $(seq 1 120); do
-        if kubectl get --raw=/version >/dev/null 2>&1; then
+        if ${KCTL} get --raw=/version >/dev/null 2>&1; then
           echo "✓ Kubernetes API reachable"
           break
         fi
@@ -63,10 +67,6 @@ spec:
         done
         return 1
       }
-      # Force kubectl to use in-cluster auth explicitly
-      SA_TOKEN_PATH="/var/run/secrets/kubernetes.io/serviceaccount/token"
-      SA_CA_PATH="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-      KCTL="kubectl --server=https://kubernetes.default.svc:443 --certificate-authority=${SA_CA_PATH} --token=$(cat ${SA_TOKEN_PATH})"
       echo "Testing VibeCode Platform provisioning capabilities..."
 
 
