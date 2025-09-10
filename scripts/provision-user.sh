@@ -72,24 +72,24 @@ create_user_workspace() {
   local user_id="$1"
   local password="$2"
 
-    log_info "Creating workspace for user: $user_id"
+  log_info "Creating workspace for user: $user_id"
 
-    # Create user-specific secret
-    kubectl create secret generic "code-server-$user_id-config" \
-        --namespace="$NAMESPACE" \
-        --from-literal=password="$password" \
-        --dry-run=client -o yaml | kubectl apply -f -
+  # Create user-specific secret
+  kubectl create secret generic "code-server-$user_id-config" \
+      --namespace="$NAMESPACE" \
+      --from-literal=password="$password" \
+      --dry-run=client -o yaml | kubectl apply -f -
 
-    # Label the secret
-    kubectl label secret "code-server-$user_id-config" \
-        --namespace="$NAMESPACE" \
-        app.kubernetes.io/name=vibecode-platform \
-        app.kubernetes.io/instance="$HELM_RELEASE" \
-        app.kubernetes.io/component=code-server \
-        vibecode.dev/user-id="$user_id" \
-        --overwrite
+  # Label the secret
+  kubectl label secret "code-server-$user_id-config" \
+      --namespace="$NAMESPACE" \
+      app.kubernetes.io/name=vibecode-platform \
+      app.kubernetes.io/instance="$HELM_RELEASE" \
+      app.kubernetes.io/component=code-server \
+      vibecode.dev/user-id="$user_id" \
+      --overwrite
 
-    # Detect cluster storageClass to ensure PVC creation succeeds on KIND/minikube
+  # Detect cluster storageClass to ensure PVC creation succeeds on KIND/minikube
   local detected_sc
   detected_sc=$(kubectl get storageclass -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
   if [ -n "$detected_sc" ]; then
