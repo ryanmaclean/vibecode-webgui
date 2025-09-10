@@ -12,10 +12,25 @@ metadata:
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   restartPolicy: Never
+  automountServiceAccountToken: true
   containers:
   - name: test-connection
     image: busybox:1.36
     command: ['sh', '-c']
+    env:
+    - name: KUBERNETES_SERVICE_HOST
+      value: "kubernetes.default.svc"
+    - name: KUBERNETES_SERVICE_PORT
+      value: "443"
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+      runAsGroup: 65534
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
     resources:
       requests:
         cpu: "10m"
@@ -51,12 +66,3 @@ spec:
       {{- end }}
 
       echo "✅ All connectivity tests passed!"
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 65534
-    runAsGroup: 65534
-    capabilities:
-      drop:
-        - ALL
-    readOnlyRootFilesystem: true
-    allowPrivilegeEscalation: false
