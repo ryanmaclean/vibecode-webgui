@@ -4,7 +4,6 @@ jest.mock('uuid', () => ({
 }));
 
 import { MongoDBChatService } from '../chat-mongodb';
-import { Conversation, Message, ChatSession, Assistant } from '../../models/chat';
 
 // Mock external dependencies
 jest.mock('../../mongodb', () => ({
@@ -92,15 +91,6 @@ describe('MongoDBChatService', () => {
   describe('Session Management', () => {
     describe('createSession', () => {
       it('should create a new chat session', async () => {
-        const mockSession = {
-          sessionId: 'test-uuid-123',
-          userId: 'user123',
-          userAgent: 'Mozilla/5.0',
-          ip: '192.168.1.1',
-          createdAt: new Date(),
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
-        };
-
         mockSessionsCollection.insertOne.mockResolvedValue({
           insertedId: 'session-id-123',
           acknowledged: true,
@@ -211,18 +201,6 @@ describe('MongoDBChatService', () => {
   describe('Conversation Management', () => {
     describe('createConversation', () => {
       it('should create a new conversation', async () => {
-        const mockConversation = {
-          id: 'test-uuid-123',
-          title: 'Test Conversation',
-          sessionId: 'session-123',
-          model: 'gpt-4',
-          userId: 'user123',
-          workspaceId: 'workspace-123',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          messages: []
-        };
-
         mockConversationsCollection.insertOne.mockResolvedValue({
           insertedId: 'conversation-id-123'
         });
@@ -260,17 +238,19 @@ describe('MongoDBChatService', () => {
 
     describe('getConversation', () => {
       it('should retrieve an existing conversation', async () => {
-        const mockConversation = {
+        mockConversationsCollection.findOne.mockResolvedValue({
           id: 'conversation-123',
           title: 'Test Conversation',
           messages: []
-        };
-
-        mockConversationsCollection.findOne.mockResolvedValue(mockConversation);
+        });
 
         const result = await service.getConversation('conversation-123');
 
-        expect(result).toEqual(mockConversation);
+        expect(result).toEqual({
+          id: 'conversation-123',
+          title: 'Test Conversation',
+          messages: []
+        });
         expect(mockConversationsCollection.findOne).toHaveBeenCalledWith({ id: 'conversation-123' });
       });
 
@@ -614,8 +594,24 @@ describe('MongoDBChatService', () => {
       
       // Trigger collection initialization by calling methods that use each collection
       await service.createSession('user123');
-      await service.createConversation('session-123', 'user123', 'workspace-123', 'Test Conversation', 'gpt-4');
-      await service.createAssistant('user123', 'Test Assistant', 'A test assistant', 'You are a helpful assistant');
+      
+      // Fix the order of parameters to match the implementation
+      await service.createConversation(
+        'Test Conversation',
+        'session-123',
+        'gpt-4',
+        'user123',
+        'workspace-123'
+      );
+      
+      // Fix the order of parameters to match the implementation
+      await service.createAssistant(
+        'Test Assistant',
+        'A test assistant',
+        'You are a helpful assistant',
+        'gpt-4',
+        'user123'
+      );
 
       expect(mockConversationsCollection.createIndex).toHaveBeenCalledWith({ sessionId: 1 });
       expect(mockConversationsCollection.createIndex).toHaveBeenCalledWith({ userId: 1 });

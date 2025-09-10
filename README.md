@@ -31,7 +31,7 @@ Visit [http://localhost:3000](http://localhost:3000)
 ## Prerequisites
 - Node.js >=18.18.0
 - PostgreSQL 16+ with pgvector (optional)
-- Redis 6+ (optional)
+- Valkey 7+ (Redis-compatible, BSD licensed)
 
 ## Key Scripts
 
