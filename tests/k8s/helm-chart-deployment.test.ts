@@ -51,6 +51,23 @@ const getClusters = (): string[] => {
 const nsExists = (ns: string): boolean => {
   try { execSync(`kubectl get ns ${ns}`, { stdio: 'pipe' }); return true; } catch { return false; }
 };
+const waitForDeploymentAvailable = (namespace: string, name: string, timeoutMs = 300000) => {
+  const started = Date.now();
+  while (true) {
+    try {
+      const out = execSync(`kubectl get deploy ${name} -n ${namespace} -o json`, { encoding: 'utf8' });
+      const data = JSON.parse(out) as { status?: { availableReplicas?: number } };
+      const available = data.status?.availableReplicas ?? 0;
+      if (available > 0) return;
+    } catch {
+      // ignore and retry
+    }
+    if (Date.now() - started > timeoutMs) {
+      throw new Error(`Deployment ${namespace}/${name} not available after ${timeoutMs}ms`);
+    }
+    execSync('sleep 3');
+  }
+};
 
 describe('VibeCode Platform Helm Chart Deployment', () => {
   beforeAll(async () => {
@@ -81,8 +98,8 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
     if (!nsExists('ingress-nginx')) {
       execSync(`kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml`, { stdio: 'inherit' });
     }
-    // Wait for ingress controller to be ready
-    execSync(`kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=180s`, { stdio: 'inherit' });
+    // Wait for ingress controller deployment to have available replicas
+    waitForDeploymentAvailable('ingress-nginx', 'ingress-nginx-controller', 300000);
 
     // Create namespace
     execSync(`kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -`, {
