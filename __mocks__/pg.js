@@ -54,5 +54,7 @@ const MockPool = jest.fn().mockImplementation(() => ({
 
 module.exports = {
   Pool: MockPool,
-  PoolClient: MockPoolClient
+  PoolClient: MockPoolClient,
+  Client: MockPoolClient, // Use same mock for Client as PoolClient
+  // Add other exports if needed by the pg module
 };

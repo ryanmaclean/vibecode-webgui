@@ -2,24 +2,8 @@
  * Unit tests for VectorShardingManager
  */
 
-// Mock the dependencies before importing the module
-jest.mock('pg', () => {
-  const mockClient = {
-    query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
-    release: jest.fn()
-  };
-  
-  const mockPool = {
-    connect: jest.fn().mockResolvedValue(mockClient),
-    end: jest.fn().mockResolvedValue(undefined)
-  };
-  
-  return {
-    Pool: jest.fn().mockImplementation(() => mockPool),
-    PoolClient: jest.fn(),
-    QueryResult: jest.fn()
-  };
-});
+// Use manual mock for pg module
+jest.mock('pg');
 
 jest.mock('../consistent-hash-ring', () => ({
   ConsistentHashRing: jest.fn().mockImplementation(() => ({
