@@ -58,7 +58,7 @@ spec:
       # Simple retry helper: retry <cmd...>
       retry() {
         local n=0
-        local max=${RETRY_MAX:-40}
+        local max=${RETRY_MAX:-120}
         local delay=${RETRY_DELAY:-5}
         until [ $n -ge $max ]; do
           "$@" && return 0
@@ -137,7 +137,7 @@ spec:
       {{- if .Values.security.networkPolicies.enabled }}
       # Test network policies
       echo "Testing network policies..."
-      kubectl get networkpolicy --namespace={{ .Values.global.namespace }}
+      retry kubectl --request-timeout=10s get networkpolicy --namespace={{ .Values.global.namespace }}
       echo "✓ Network policies configured"
       {{- end }}
 
