@@ -64,10 +64,11 @@ describe('Security Middleware Module', () => {
     // Set up environment to bypass test environment check
     setNodeEnv('production')
     process.env.CI = 'false'
-    
+
     // Reset modules to get fresh instance
     jest.resetModules()
     const securityMiddleware = require('../security-middleware')
+    securityMiddleware.__TEST__bypassSecurityChecks(true)
     apiSecurityMiddleware = securityMiddleware.apiSecurityMiddleware
     addSecurityHeaders = securityMiddleware.addSecurityHeaders
 

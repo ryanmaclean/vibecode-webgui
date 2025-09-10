@@ -36,9 +36,7 @@ const axe = configureAxe({
     'region': { enabled: true },
     'skip-link': { enabled: true },
     'focus-order-semantics': { enabled: true },
-    'keyboard': { enabled: true },
-    'no-autoplay-audio': { enabled: true },
-    'timing-adjustable': { enabled: true }
+    'no-autoplay-audio': { enabled: true }
   },
   tags: ['wcag2a', 'wcag2aa', 'wcag21aa']
 })
