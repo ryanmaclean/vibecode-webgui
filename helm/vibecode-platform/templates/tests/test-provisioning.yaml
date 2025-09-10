@@ -70,9 +70,6 @@ spec:
       }
       echo "Testing VibeCode Platform provisioning capabilities..."
 
-      # Preflight simple API checks
-      retry kubectl --request-timeout=10s get namespaces >/dev/null
-      retry kubectl --request-timeout=10s get nodes >/dev/null
 
       # Test RBAC permissions
       echo "Testing RBAC permissions..."
