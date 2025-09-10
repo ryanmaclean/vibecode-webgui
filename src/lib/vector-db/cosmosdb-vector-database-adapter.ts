@@ -79,10 +79,6 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // Check if container exists, if not create it with vector index
       // Create vector index for vector search capability
 
-      if (this.config.enableLogging) {
-        console.info('Cosmos DB vector database adapter initialized successfully');
-      }
-      
       throw handleVectorDBError(new Error('Cosmos DB adapter not yet implemented'), 'unknown', 'cosmosdb');
     } catch (error) {
       if (this.config.enableLogging) {
