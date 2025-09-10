@@ -117,3 +117,9 @@ venv.bak/
 venv*/
 
 code-server/
+
+# Web dashboard
+web-dashboard/node_modules/
+web-dashboard/dist/
+web-dashboard/.vite/
+web-dashboard/package-lock.json
