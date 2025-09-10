@@ -29,6 +29,16 @@ jest.mock('../consistent-hash-ring', () => ({
         database: 'db1',
         weight: 1,
         status: 'active'
+      },
+      {
+        id: 'shard2',
+        host: 'localhost',
+        port: 5433,
+        username: 'user2',
+        password: 'pass2',
+        database: 'db2',
+        weight: 1,
+        status: 'active'
       }
     ]),
     getShardDistribution: jest.fn().mockReturnValue(new Map([
@@ -39,6 +49,7 @@ jest.mock('../consistent-hash-ring', () => ({
 }));
 
 import { VectorShardingManager } from '../sharding-manager';
+import { DatabasePoolFactory, DatabasePool, DatabasePoolClient } from '../connection-router';
 import { 
   ShardInfo, 
   ShardStatus, 
@@ -61,12 +72,61 @@ const mockConsole = {
 Object.assign(console, mockConsole);
 
 describe('VectorShardingManager', () => {
+  // Mock factory for testing
+  class MockDatabasePoolFactory implements DatabasePoolFactory {
+    createPool(config: any): DatabasePool {
+      const mockQuery = jest.fn().mockImplementation(async (query: string, params?: any[]) => {
+        if (query === 'SELECT 1') {
+          return { rows: [{ '?column?': 1 }] };
+        }
+        
+        // Default for read queries
+        if (query.startsWith('SELECT')) {
+          return { 
+            rows: [{ id: 1, name: 'test', vector: [0.1, 0.2, 0.3] }], 
+            rowCount: 1 
+          };
+        }
+        
+        // Default for write queries
+        if (query.startsWith('INSERT') || query.startsWith('UPDATE') || query.startsWith('DELETE')) {
+          return { 
+            rows: [], 
+            rowCount: 1, 
+            command: query.split(' ')[0].toUpperCase(), 
+            oid: 0,
+            fields: [] 
+          };
+        }
+        
+        return { rows: [], rowCount: 0 };
+      }, mockFactory);
+
+      const mockRelease = jest.fn();
+
+      return {
+        query: mockQuery,
+        connect: jest.fn().mockResolvedValue({
+          query: mockQuery,
+          release: mockRelease
+        }),
+        end: jest.fn().mockResolvedValue(undefined),
+        totalCount: 5,
+        idleCount: 3
+      };
+    }
+  }
+
+  let mockFactory: MockDatabasePoolFactory;
   let shardingManager: VectorShardingManager;
   let mockShards: ShardInfo[];
   let config: Partial<ShardingConfig>;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Initialize mock factory
+    mockFactory = new MockDatabasePoolFactory();
     
     mockShards = [
       {
@@ -101,7 +161,7 @@ describe('VectorShardingManager', () => {
       retryDelay: 100
     };
 
-    shardingManager = new VectorShardingManager(config);
+    shardingManager = new VectorShardingManager(config, mockFactory);
   });
 
   afterEach(async () => {
@@ -114,7 +174,7 @@ describe('VectorShardingManager', () => {
     });
 
     it('should use default configuration when none provided', () => {
-      const defaultManager = new VectorShardingManager();
+      const defaultManager = new VectorShardingManager({}, mockFactory);
       expect(defaultManager).toBeDefined();
       defaultManager.shutdown();
     });
@@ -125,7 +185,7 @@ describe('VectorShardingManager', () => {
         readConsistency: ReadConsistency.QUORUM
       };
       
-      const partialManager = new VectorShardingManager(partialConfig);
+      const partialManager = new VectorShardingManager(partialConfig, mockFactory);
       expect(partialManager).toBeDefined();
       partialManager.shutdown();
     });
@@ -214,7 +274,7 @@ describe('VectorShardingManager', () => {
     });
 
     it('should return undefined when no shards available', () => {
-      const emptyManager = new VectorShardingManager({ shards: [] });
+      const emptyManager = new VectorShardingManager({ shards: [] }, mockFactory);
       const shard = emptyManager.getShardForVector('vector-123');
       
       expect(shard).toBeUndefined();
@@ -305,7 +365,7 @@ describe('VectorShardingManager', () => {
       mockPool.connect.mockResolvedValueOnce({
         query: jest.fn().mockRejectedValue(new Error('Table does not exist')),
         release: jest.fn()
-      });
+      }, mockFactory);
       
       const statsBefore = shardingManager.getShardStats().get(shardId);
       const totalQueriesBefore = statsBefore?.totalQueries || 0;
@@ -378,7 +438,7 @@ describe('VectorShardingManager', () => {
     });
 
     it('should throw error when no active shards available', async () => {
-      const emptyManager = new VectorShardingManager({ shards: [] });
+      const emptyManager = new VectorShardingManager({ shards: [] }, mockFactory);
       
       const vectorQuery: VectorQuery = {
         embedding: [0.1, 0.2, 0.3],
@@ -440,7 +500,7 @@ describe('VectorShardingManager', () => {
     });
 
     it('should return empty map when no shards', () => {
-      const emptyManager = new VectorShardingManager({ shards: [] });
+      const emptyManager = new VectorShardingManager({ shards: [] }, mockFactory);
       const stats = emptyManager.getShardStats();
       
       expect(stats).toBeInstanceOf(Map);
@@ -460,7 +520,7 @@ describe('VectorShardingManager', () => {
     });
 
     it('should return empty array when no shards', () => {
-      const emptyManager = new VectorShardingManager({ shards: [] });
+      const emptyManager = new VectorShardingManager({ shards: [] }, mockFactory);
       const shardInfo = emptyManager.getShardInfo();
       
       expect(shardInfo).toHaveLength(0);
@@ -488,7 +548,7 @@ describe('VectorShardingManager', () => {
     });
 
     it('should return empty map when no shards', () => {
-      const emptyManager = new VectorShardingManager({ shards: [] });
+      const emptyManager = new VectorShardingManager({ shards: [] }, mockFactory);
       const distribution = emptyManager.getShardDistribution(100);
       
       expect(distribution).toBeInstanceOf(Map);
@@ -534,7 +594,7 @@ describe('VectorShardingManager', () => {
       const oneReadManager = new VectorShardingManager({
         ...config,
         readConsistency: ReadConsistency.ONE
-      });
+      }, mockFactory);
       
       const query = 'SELECT * FROM users';
       const result = await oneReadManager.executeQuery(query);
@@ -548,7 +608,7 @@ describe('VectorShardingManager', () => {
       const quorumReadManager = new VectorShardingManager({
         ...config,
         readConsistency: ReadConsistency.QUORUM
-      });
+      }, mockFactory);
       
       const query = 'SELECT * FROM users';
       const result = await quorumReadManager.executeQuery(query);
@@ -562,7 +622,7 @@ describe('VectorShardingManager', () => {
       const allReadManager = new VectorShardingManager({
         ...config,
         readConsistency: ReadConsistency.ALL
-      });
+      }, mockFactory);
       
       const query = 'SELECT * FROM users';
       const result = await allReadManager.executeQuery(query);
@@ -576,7 +636,7 @@ describe('VectorShardingManager', () => {
       const oneWriteManager = new VectorShardingManager({
         ...config,
         writeConsistency: WriteConsistency.ONE
-      });
+      }, mockFactory);
       
       const query = 'INSERT INTO users (name) VALUES ($1)';
       const result = await oneWriteManager.executeQuery(query, ['John']);
@@ -590,7 +650,7 @@ describe('VectorShardingManager', () => {
       const quorumWriteManager = new VectorShardingManager({
         ...config,
         writeConsistency: WriteConsistency.QUORUM
-      });
+      }, mockFactory);
       
       const query = 'INSERT INTO users (name) VALUES ($1)';
       const result = await quorumWriteManager.executeQuery(query, ['John']);
@@ -604,7 +664,7 @@ describe('VectorShardingManager', () => {
       const allWriteManager = new VectorShardingManager({
         ...config,
         writeConsistency: WriteConsistency.ALL
-      });
+      }, mockFactory);
       
       const query = 'INSERT INTO users (name) VALUES ($1)';
       const result = await allWriteManager.executeQuery(query, ['John']);
