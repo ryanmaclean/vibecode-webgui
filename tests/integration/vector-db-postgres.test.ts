@@ -160,7 +160,7 @@ describe('PostgresVectorDatabaseAdapter Integration Tests', () => {
   });
 
   describe('Error Handling', () => {
-    it.skipIf(skipTests)('should handle invalid queries gracefully', async () => {
+    (skipTests ? it.skip : it)('should handle invalid queries gracefully', async () => {
       const invalidFileId = -1;
       const embedding = await adapter.generateEmbedding('Invalid query');
 
@@ -169,7 +169,7 @@ describe('PostgresVectorDatabaseAdapter Integration Tests', () => {
       })).resolves.toEqual([]);
     });
 
-    it.skipIf(skipTests)('should handle connection interruptions', async () => {
+    (skipTests ? it.skip : it)('should handle connection interruptions', async () => {
       // Force a connection error
       const oldConnection = (adapter as any).pool;
       (adapter as any).pool = null;
@@ -185,7 +185,7 @@ describe('PostgresVectorDatabaseAdapter Integration Tests', () => {
   });
 
   describe('Performance', () => {
-    it.skipIf(skipTests)('should perform well under load', async () => {
+    (skipTests ? it.skip : it)('should perform well under load', async () => {
       const startTime = Date.now();
       const embedding = await adapter.generateEmbedding('Performance test');
 
