@@ -12,6 +12,49 @@ import type {
   ApiError
 } from '../types'
 
+// Simple client-side rate limiter
+class RateLimiter {
+  private requestCounts: Map<string, number[]> = new Map();
+  private readonly limit: number;
+  private readonly windowMs: number;
+
+  constructor(limit: number = 60, windowMs: number = 60000) {
+    this.limit = limit;
+    this.windowMs = windowMs;
+  }
+
+  // Check if the request is allowed based on the endpoint
+  canMakeRequest(endpoint: string): boolean {
+    const now = Date.now();
+    
+    // Get or initialize the timestamps array for this endpoint
+    if (!this.requestCounts.has(endpoint)) {
+      this.requestCounts.set(endpoint, []);
+    }
+    
+    // Filter out timestamps that are outside the current window
+    const timestamps = this.requestCounts.get(endpoint)!.filter(
+      timestamp => now - timestamp < this.windowMs
+    );
+    
+    // Update timestamps for this endpoint
+    this.requestCounts.set(endpoint, timestamps);
+    
+    // Check if we're under the limit
+    return timestamps.length < this.limit;
+  }
+
+  // Record a request to the given endpoint
+  recordRequest(endpoint: string): void {
+    const timestamps = this.requestCounts.get(endpoint) || [];
+    timestamps.push(Date.now());
+    this.requestCounts.set(endpoint, timestamps);
+  }
+}
+
+// Create rate limiter instance
+const rateLimiter = new RateLimiter();
+
 const api = axios.create({
   baseURL: '/api/v1',
   timeout: 30000,
@@ -20,24 +63,73 @@ const api = axios.create({
   },
 })
 
-// Request interceptor for auth
+// Function to get CSRF token from meta tag
+const getCsrfToken = (): string | null => {
+  const metaTag = document.querySelector('meta[name="csrf-token"]');
+  return metaTag ? metaTag.getAttribute('content') : null;
+};
+
+// Request interceptor for auth, CSRF protection, and rate limiting
 api.interceptors.request.use((config) => {
-  // Authentication is now handled via HTTP-only cookies
-  // No need to manually attach tokens from localStorage
-  return config
+  // Authentication is handled via HTTP-only cookies
+  
+  // Add CSRF token to headers for non-GET requests
+  if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken;
+    }
+  }
+  
+  // Apply rate limiting
+  const endpoint = config.url || '';
+  if (!rateLimiter.canMakeRequest(endpoint)) {
+    // If rate limited, reject the request
+    return Promise.reject(new Error('Too many requests. Please try again later.'));
+  }
+  
+  // Record this request for rate limiting
+  rateLimiter.recordRequest(endpoint);
+  
+  return config;
 })
 
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Rate limiting error from our interceptor
+    if (error.message === 'Too many requests. Please try again later.') {
+      // You could show a toast notification or other UI feedback here
+      console.error('Rate limit exceeded. Please wait before making more requests.');
+      
+      // Return a standardized error response
+      return Promise.reject({
+        response: {
+          status: 429,
+          data: {
+            error: 'Too Many Requests',
+            message: 'Rate limit exceeded. Please try again later.'
+          }
+        }
+      });
+    }
+    
+    // Handle authentication errors
     if (error.response?.status === 401) {
       // Prevent open redirect by using a fixed, relative URL
       const loginPath = '/login';
       const redirectParams = new URLSearchParams({ session: 'expired' });
       window.location.href = `${loginPath}?${redirectParams.toString()}`;
     }
-    return Promise.reject(error)
+    
+    // Handle server rate limiting responses (if the server has its own rate limiting)
+    if (error.response?.status === 429) {
+      console.error('Server rate limit exceeded. Please wait before making more requests.');
+      // You could show a toast notification or other UI feedback here
+    }
+    
+    return Promise.reject(error);
   }
 )
 
