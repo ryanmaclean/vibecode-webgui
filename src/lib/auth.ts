@@ -34,12 +34,12 @@ declare module 'next-auth' {
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    id: string
-    role: string
-    githubId?: string
-    googleId?: string
-    email?: string
-    name?: string
+    id?: string | null;
+    role?: string | null;
+    githubId?: string;
+    googleId?: string;
+    email?: string | null;
+    name?: string | null;
   }
 }
 
@@ -162,8 +162,8 @@ export const authOptions: NextAuthOptions = {
       })
 
       if (token) {
-        session.user.id = token.id
-        session.user.role = token.role
+        session.user.id = token.id as string
+        session.user.role = token.role as string
         session.user.email = token.email as string
         session.user.name = token.name as string
         console.log('✅ Session updated with token:', { id: session.user.id, role: session.user.role })
