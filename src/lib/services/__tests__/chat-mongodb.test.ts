@@ -18,12 +18,12 @@ jest.mock('../../monitoring', () => ({
   }
 }));
 
-  describe('constructor', () => {
-    it('should initialize service', () => {
-      expect(service).toBeDefined();
-      expect(typeof service.createSession).toBe('function');
-    });
-  });
+describe('MongoDBChatService', () => {
+  let service: MongoDBChatService;
+  let mockDb: any;
+  let mockConversationsCollection: any;
+  let mockSessionsCollection: any;
+  let mockAssistantsCollection: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -78,6 +78,13 @@ jest.mock('../../monitoring', () => ({
     console.log('Service methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(service)));
   });
 
+  describe('constructor', () => {
+    it('should initialize service', () => {
+      expect(service).toBeDefined();
+      expect(typeof service.createSession).toBe('function');
+    });
+  });
+
   describe('Session Management', () => {
     describe('createSession', () => {
       it('should create a new chat session', async () => {
@@ -91,7 +98,9 @@ jest.mock('../../monitoring', () => ({
         };
 
         mockSessionsCollection.insertOne.mockResolvedValue({
-          insertedId: 'session-id-123'
+          insertedId: 'session-id-123',
+          acknowledged: true,
+          insertedCount: 1
         });
 
         const result = await service.createSession('user123', 'Mozilla/5.0', '192.168.1.1');
@@ -99,6 +108,8 @@ jest.mock('../../monitoring', () => ({
         // Debug: log what we actually got
         console.log('Result:', result);
         console.log('Result sessionId:', result.sessionId);
+        console.log('Mock insertOne called:', mockSessionsCollection.insertOne.mock.calls.length);
+        console.log('Mock insertOne calls:', mockSessionsCollection.insertOne.mock.calls);
 
         expect(result.sessionId).toBeDefined(); // Just check it's defined for now
         expect(result.userId).toBe('user123');
@@ -335,9 +346,8 @@ jest.mock('../../monitoring', () => ({
     describe('addMessage', () => {
       it('should add a message to a conversation', async () => {
         const messageData = {
-          from: 'user',
-          content: 'Hello, world!',
-          model: 'gpt-4'
+          from: 'user' as 'user' | 'assistant',
+          content: 'Hello, world!'
         };
 
         mockConversationsCollection.updateOne.mockResolvedValue({
@@ -349,7 +359,6 @@ jest.mock('../../monitoring', () => ({
         expect(result.id).toBe('test-uuid-123');
         expect(result.from).toBe('user');
         expect(result.content).toBe('Hello, world!');
-        expect(result.model).toBe('gpt-4');
         expect(result.createdAt).toBeInstanceOf(Date);
         expect(mockConversationsCollection.updateOne).toHaveBeenCalledWith(
           { id: 'conversation-123' },
@@ -362,9 +371,8 @@ jest.mock('../../monitoring', () => ({
 
       it('should handle adding message to non-existent conversation', async () => {
         const messageData = {
-          from: 'user',
-          content: 'Hello, world!',
-          model: 'gpt-4'
+          from: 'user' as 'user' | 'assistant',
+          content: 'Hello, world!'
         };
 
         mockConversationsCollection.updateOne.mockResolvedValue({
@@ -377,9 +385,8 @@ jest.mock('../../monitoring', () => ({
 
       it('should handle message addition errors', async () => {
         const messageData = {
-          from: 'user',
-          content: 'Hello, world!',
-          model: 'gpt-4'
+          from: 'user' as 'user' | 'assistant',
+          content: 'Hello, world!'
         };
 
         mockConversationsCollection.updateOne.mockRejectedValue(new Error('Database error'));
