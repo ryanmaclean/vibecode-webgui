@@ -35,7 +35,7 @@ export interface CollaborationEvent {
   timestamp: Date
 }
 
-class CollaborationService {
+export class CollaborationService {
   private io: SocketIOServer | null = null
   private workspaces: Map<string, WorkspaceState> = new Map()
   private userColors = [
