@@ -101,8 +101,8 @@ export FORCE_MIGRATION_ERROR=true  # This will cause the migration to fail
 
 # Run the modified migration script for testing rollback
 cat > /tmp/rollback_test_migration.js << 'EOF'
-// Modified version of zero-downtime-schema-migration.js for testing rollback
-const originalScript = require('../scripts/vector-db-migrations/zero-downtime-schema-migration.js');
+// Modified version of zero-downtime-schema-migration.cjs for testing rollback
+const originalScript = require('../scripts/vector-db-migrations/zero-downtime-schema-migration.cjs');
 
 // Override the swapTables function to inject an error
 const originalSwapTables = originalScript.swapTables;
