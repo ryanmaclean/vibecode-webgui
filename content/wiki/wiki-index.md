@@ -39,7 +39,7 @@ Welcome to the comprehensive VibeCode documentation. This wiki provides complete
 - **[Storage Sizing Analysis](./storage-sizing-analysis)** - Right-sized storage allocation for cost optimization
 - **[Helm Scaling Analysis](./helm-scaling-analysis)** - Complete resource scaling strategy
 - **[Azure Infrastructure](AZURE_INFRASTRUCTURE_SUMMARY.md)** - Cloud deployment
-- **[Production Status](PRODUCTION_STATUS_REPORT.md)** - Current production state
+- **[Production Status](production-status.md)** - Current production state
 - **[Comprehensive Testing](COMPREHENSIVE_TESTING_ASSESSMENT.md)** - Test coverage analysis
 - **[Container Manifest](CONTAINER_MANIFEST.md)** - Container configurations
 
@@ -112,7 +112,7 @@ cd docs && npm run build
 
 - **Issues:** [GitHub Issues](https://github.com/vibecode/webgui/issues)
 - **Documentation:** This wiki
-- **Status:** [Production Status](PRODUCTION_STATUS_REPORT.md)
+- **Status:** [Production Status](production-status.md)
 
 ---
 
