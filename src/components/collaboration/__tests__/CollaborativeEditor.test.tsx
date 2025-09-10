@@ -112,13 +112,7 @@ jest.mock('@codemirror/lang-javascript', () => ({
   javascript: jest.fn().mockReturnValue({})
 }));
 
-jest.mock('@codemirror/lang-html', () => ({
-  html: jest.fn().mockReturnValue({})
-}));
-
-jest.mock('@codemirror/lang-css', () => ({
-  css: jest.fn().mockReturnValue({})
-}));
+// Note: @codemirror/lang-html and @codemirror/lang-css not installed in this project
 
 // Mock DOMPurify
 jest.mock('dompurify', () => ({
