@@ -109,7 +109,7 @@ function SidebarContent() {
                 <li key={item.name}>
                   <NavLink
                     to={item.href}
-                    className={({ isActive }) =>
+                    className={({ isActive }: { isActive: boolean }) =>
                       `group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold transition-colors ${
                         isActive
                           ? 'bg-primary-50 text-primary-700'
@@ -117,7 +117,7 @@ function SidebarContent() {
                       }`
                     }
                   >
-                    {({ isActive }) => (
+                    {({ isActive }: { isActive: boolean }) => (
                       <>
                         <item.icon
                           className={`h-6 w-6 shrink-0 transition-colors ${
