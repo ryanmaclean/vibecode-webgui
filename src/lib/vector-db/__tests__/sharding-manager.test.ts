@@ -2,10 +2,9 @@
  * Unit tests for VectorShardingManager
  */
 
-// Use manual mock for pg module
+// Mock the dependencies before importing the module
 jest.mock('pg');
-
-jest.mock('../consistent-hash-ring', () => ({
+jest.doMock('../consistent-hash-ring', () => ({
   ConsistentHashRing: jest.fn().mockImplementation(() => ({
     addShard: jest.fn(),
     removeShard: jest.fn(),
@@ -360,12 +359,12 @@ describe('VectorShardingManager', () => {
       const shardId = 'shard1';
       
       // Mock query to throw error
-      const { Pool } = require('pg');
-      const mockPool = new Pool();
-      mockPool.connect.mockResolvedValueOnce({
+      const mockPool = mockFactory.createPool({});
+      const mockClient = {
         query: jest.fn().mockRejectedValue(new Error('Table does not exist')),
         release: jest.fn()
-      }, mockFactory);
+      };
+      mockPool.connect.mockResolvedValueOnce(mockClient);
       
       const statsBefore = shardingManager.getShardStats().get(shardId);
       const totalQueriesBefore = statsBefore?.totalQueries || 0;
@@ -567,8 +566,7 @@ describe('VectorShardingManager', () => {
 
   describe('shutdown', () => {
     it('should close all connection pools', async () => {
-      const { Pool } = require('pg');
-      const mockPool = new Pool();
+      const mockPool = mockFactory.createPool({});
       
       await shardingManager.shutdown();
       
@@ -581,8 +579,7 @@ describe('VectorShardingManager', () => {
     });
 
     it('should handle shutdown errors gracefully', async () => {
-      const { Pool } = require('pg');
-      const mockPool = new Pool();
+      const mockPool = mockFactory.createPool({});
       mockPool.end.mockRejectedValue(new Error('Shutdown error'));
       
       await expect(shardingManager.shutdown()).resolves.not.toThrow();
