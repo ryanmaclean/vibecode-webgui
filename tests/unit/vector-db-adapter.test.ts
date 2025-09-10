@@ -14,15 +14,15 @@ type QueryParams = (string | number | boolean | null)[];
 
 type EventHandler = (...args: unknown[]) => void;
 
-// Define mock connection interface
+// Define mock connection interface - corrected type definitions
 interface MockConnection {
   id: string;
   query: jest.Mock<Promise<{ rows: any[] }>, [string, any?]>;
   release: jest.Mock<Promise<void>, []>;
-  on: jest.Mock<MockConnection, [string, EventHandler]>;
-  removeListener: jest.Mock<MockConnection, [string, EventHandler]>;
-  once: jest.Mock<MockConnection, [string, EventHandler]>;
-  removeAllListeners: jest.Mock<MockConnection, [string?]>;
+  on: jest.Mock<any, [string, EventHandler]>;
+  removeListener: jest.Mock<any, [string, EventHandler]>;
+  once: jest.Mock<any, [string, EventHandler]>;
+  removeAllListeners: jest.Mock<any, [string?]>;
   emit: jest.Mock<boolean, [string, ...any[]]>;
   end: jest.Mock<Promise<void>, []>;
 }
