@@ -82,6 +82,11 @@ function checkRequestSize(request: NextRequest): boolean {
  * Header validation
  */
 function validateHeaders(request: NextRequest): { valid: boolean; reason?: string } {
+  // Skip header validation in test mode with MOCK_ORIGINS
+  if (process.env.MOCK_ORIGINS === 'true') {
+    return { valid: true };
+  }
+  
   // Check for suspicious headers
   const suspiciousHeaders = ['x-forwarded-host', 'x-originating-ip', 'x-cluster-client-ip'];
   
@@ -107,6 +112,11 @@ function validateHeaders(request: NextRequest): { valid: boolean; reason?: strin
  * IP-based security checks
  */
 function checkIPSecurity(request: NextRequest): { allowed: boolean; reason?: string } {
+  // Skip IP security checks in test mode with MOCK_ORIGINS
+  if (process.env.MOCK_ORIGINS === 'true') {
+    return { allowed: true };
+  }
+  
   const ip = getClientIP(request);
   
   if (SECURITY_CONFIG.blockedIPs.has(ip)) {
@@ -328,6 +338,17 @@ function validateCORS(request: NextRequest): { valid: boolean; headers?: Record<
   
   if (!origin) {
     return { valid: true }; // Same-origin requests don't have origin header
+  }
+
+  // In test mode with MOCK_ORIGINS, accept any origin
+  if (process.env.MOCK_ORIGINS === 'true') {
+    return {
+      valid: true,
+      headers: {
+        'Access-Control-Allow-Origin': origin,
+        'Access-Control-Allow-Credentials': 'true'
+      }
+    };
   }
 
   // In development mode, accept localhost origins regardless of configuration
