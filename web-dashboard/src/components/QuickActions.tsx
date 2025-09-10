@@ -107,6 +107,10 @@ function CreateWorkspaceModal({ onClose }: { onClose: () => void }) {
     memory: '2Gi',
     storage: '5Gi'
   })
+  const [formErrors, setFormErrors] = useState({
+    username: '',
+    email: ''
+  })
 
   const queryClient = useQueryClient()
 
@@ -120,6 +124,35 @@ function CreateWorkspaceModal({ onClose }: { onClose: () => void }) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate form data
+    const errors = {
+      username: '',
+      email: ''
+    }
+    
+    // Username validation
+    if (!formData.username) {
+      errors.username = 'Username is required'
+    } else if (!/^[a-z0-9-]+$/.test(formData.username)) {
+      errors.username = 'Username can only contain lowercase letters, numbers, and hyphens'
+    }
+    
+    // Email validation
+    if (!formData.email) {
+      errors.email = 'Email is required'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address'
+    }
+    
+    // Check if there are errors
+    if (errors.username || errors.email) {
+      setFormErrors(errors)
+      return
+    }
+    
+    // Clear errors and submit form
+    setFormErrors({ username: '', email: '' })
     createWorkspaceMutation.mutate(formData)
   }
 
@@ -136,9 +169,12 @@ function CreateWorkspaceModal({ onClose }: { onClose: () => void }) {
                 type="text"
                 value={formData.username}
                 onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                className="input"
+                className={`input ${formErrors.username ? 'border-red-500' : ''}`}
                 required
               />
+              {formErrors.username && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.username}</p>
+              )}
             </div>
             <div>
               <label className="label">Email</label>
@@ -146,9 +182,12 @@ function CreateWorkspaceModal({ onClose }: { onClose: () => void }) {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                className="input"
+                className={`input ${formErrors.email ? 'border-red-500' : ''}`}
                 required
               />
+              {formErrors.email && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>
+              )}
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
