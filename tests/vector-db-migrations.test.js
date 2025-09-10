@@ -2,20 +2,8 @@ import { jest } from '@jest/globals';
 import { Client } from 'pg';
 import { DefaultAzureCredential } from '@azure/identity';
 
-// Mock modules
-jest.mock('pg', () => {
-  const mockQuery = jest.fn();
-  const mockConnect = jest.fn();
-  const mockEnd = jest.fn();
-  
-  const MockClient = jest.fn().mockImplementation(() => ({
-    query: mockQuery,
-    connect: mockConnect,
-    end: mockEnd
-  }));
-  
-  return { Client: MockClient };
-});
+// Use manual mock for pg module
+jest.mock('pg');
 
 jest.mock('@azure/identity', () => {
   return {
