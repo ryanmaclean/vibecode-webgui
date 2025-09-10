@@ -29,16 +29,16 @@ export async function GET(request: NextRequest) {
 
     switch (action) {
       case 'overview':
-        return handleOverview(token.sub, timeframe);
+        return handleOverview(token.sub || undefined, timeframe);
 
       case 'models':
         return handleModels();
 
       case 'usage':
-        return handleUsageStats(token.sub, token.role === 'admin' ? undefined : token.sub, timeframe);
+        return handleUsageStats(token.sub || undefined, token.role === 'admin' ? undefined : (token.sub || undefined), timeframe);
 
       case 'costs':
-        return handleCostAnalysis(token.sub, token.role === 'admin' ? undefined : token.sub, timeframe);
+        return handleCostAnalysis(token.sub || undefined, token.role === 'admin' ? undefined : (token.sub || undefined), timeframe);
 
       case 'health':
         return handleHealthCheck();

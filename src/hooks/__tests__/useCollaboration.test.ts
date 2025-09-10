@@ -26,18 +26,19 @@ const mockSocket = {
   }
 }
 
-jest.mock('socket.io-client', () => jest.fn(() => {
-  console.log('io() mock called - returning socket')
-  return mockSocket
-}))
-
-// Now import and mock the io function directly
-import io from 'socket.io-client'
-const mockedIo = io as jest.MockedFunction<typeof io>
-mockedIo.mockImplementation(() => {
-  console.log('Direct io() mock called - returning socket')
-  return mockSocket as any
+jest.mock('socket.io-client', () => {
+  const mockIo = jest.fn((options?: any) => {
+    console.log('io() factory mock called with options:', options, '- returning mockSocket')
+    console.log('mockSocket has on method:', typeof mockSocket.on)
+    return mockSocket
+  })
+  mockIo.default = mockIo // For ES modules
+  return mockIo
 })
+
+// Import after mocking
+import io from 'socket.io-client'
+console.log('Imported io function type:', typeof io)
 
 // Mock fetch
 global.fetch = jest.fn()
