@@ -179,7 +179,7 @@ async function createStagingTable(client, sourceTableName, stagingTableName) {
   const normalizeType = (t) => {
     const type = String(t || '');
     if (/^text$/i.test(type)) return 'text';
-    if (/^user-defined$/i.test(type)) return 'USER-DEFINED';
+    if (/^user-defined$/i.test(type)) return 'vector'; // pgvector type
     return type; // leave others as-is
   };
   

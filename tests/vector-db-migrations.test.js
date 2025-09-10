@@ -27,10 +27,10 @@ jest.mock('@azure/identity', () => {
 
 // Import the migration scripts
 // Note: We'll need to use require() since they're CommonJS modules
-const zeroDowntimeMigration = require('../scripts/vector-db-migrations/zero-downtime-schema-migration');
+const zeroDowntimeMigration = require('../scripts/vector-db-migrations/zero-downtime-schema-migration.cjs');
 const migrateVectorIndex = require('../scripts/vector-db-migrations/migrate-vector-index.ts');
 
-// Test suite for zero-downtime-schema-migration.js
+// Test suite for zero-downtime-schema-migration.cjs
 describe('Zero Downtime Schema Migration', () => {
   let mockClient;
   
