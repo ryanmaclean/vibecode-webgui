@@ -78,7 +78,7 @@ spec:
       {{- if .Values.codeServer.persistence.enabled }}
       # Test storage class
       echo "Testing storage class..."
-      kubectl get storageclass {{ .Values.codeServer.persistence.storageClass }}
+      kubectl get storageclass {{ default .Values.global.storageClass .Values.codeServer.persistence.storageClass }}
       echo "✓ Storage class exists"
       {{- end }}
 
@@ -99,9 +99,7 @@ spec:
         resources:
           requests:
             storage: 1Gi
-        {{- if .Values.codeServer.persistence.storageClass }}
-        storageClassName: {{ .Values.codeServer.persistence.storageClass }}
-        {{- end }}
+        storageClassName: {{ default .Values.global.storageClass .Values.codeServer.persistence.storageClass }}
       EOF
       echo "✓ PVC creation successful"
 
