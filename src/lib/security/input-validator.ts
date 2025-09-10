@@ -14,7 +14,7 @@ const SUSPICIOUS_PATTERNS = [
   // NoSQL injection patterns
   /(\$where|\$ne|\$gt|\$lt|\$in|\$nin|\$regex|\$exists)/gi,
   // Command injection patterns
-  /(;.*rm\s|;\s*rm\s|\|\s*rm\s|&&\s*rm\s|`.*rm\s|\$\(.*rm|\bexec\s*\(|\beval\s*\(|\bsystem\s*\(|\bshell_exec\s*\()/gi,
+  /(;.*rm\s|;\s*rm\s|\|\s*rm\s|&&\s*rm\s|`.*rm\s|\$\(.*rm|(?:^|\s)rm\s+-[rf]+|\bexec\s*\(|\beval\s*\(|\bsystem\s*\(|\bshell_exec\s*\()/gi,
   // Script injection patterns
   /(<script|javascript:|data:text\/html|vbscript:|onload\s*=|onerror\s*=)/gi,
   // Path traversal patterns
@@ -74,7 +74,11 @@ export const fileUploadSchema = z.object({
  */
 function containsSuspiciousPatterns(input: string): boolean {
   const normalizedInput = input.toLowerCase();
-  return SUSPICIOUS_PATTERNS.some(pattern => pattern.test(normalizedInput));
+  return SUSPICIOUS_PATTERNS.some(pattern => {
+    // Reset regex state for global patterns to avoid state persistence bug
+    pattern.lastIndex = 0;
+    return pattern.test(normalizedInput);
+  });
 }
 
 /**
