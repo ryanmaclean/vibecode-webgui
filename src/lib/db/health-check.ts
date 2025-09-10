@@ -259,7 +259,7 @@ export async function checkDatabaseHealth(options: HealthCheckOptions = {}): Pro
           totalConnections: totalSize,
           peakConnections: totalSize, // No historical data available
           totalAcquires: robustStatus.pools.reduce((sum, p) => sum + p.statistics.totalQueries, 0),
-          acquireSuccesses: 0,
+          acquireSuccesses: robustStatus.pools.reduce((sum, p) => sum + p.statistics.totalQueries - p.statistics.errors, 0),
           acquireFailures: robustStatus.pools.reduce((sum, p) => sum + p.statistics.errors, 0),
           acquireTimeAvg: robustStatus.pools.reduce((sum, p) => sum + p.statistics.averageQueryTime, 0) / Math.max(1, robustStatus.pools.length),
           connectionValidations: 0,

@@ -167,8 +167,10 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
     const configMap = execSync(`kubectl get configmap ${HELM_RELEASE}-config --namespace ${NAMESPACE} -o json`, {
       encoding: 'utf8'
     });
-    expect(JSON.parse(configMap).data).toHaveProperty('code-server-config');
-    expect(JSON.parse(configMap).data).toHaveProperty('ai-config.json');
+    const cfg = JSON.parse(configMap) as { data: Record<string, string> };
+    const cfgKeys = Object.keys(cfg.data || {});
+    expect(cfgKeys).toContain('code-server-config');
+    expect(cfgKeys).toContain('ai-config.json');
 
     // Check Secret
     const secret = execSync(`kubectl get secret ${HELM_RELEASE}-config --namespace ${NAMESPACE} -o json`, {
@@ -209,8 +211,9 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
       item.metadata.name === `${HELM_RELEASE}-global`
     );
     expect(globalQuota).toBeDefined();
-    expect(globalQuota!.spec.hard).toHaveProperty('requests.cpu');
-    expect(globalQuota!.spec.hard).toHaveProperty('requests.memory');
+    const hardKeys = Object.keys(globalQuota!.spec.hard);
+    expect(hardKeys).toContain('requests.cpu');
+    expect(hardKeys).toContain('requests.memory');
   });
 
   test('Priority classes should be created', () => {
