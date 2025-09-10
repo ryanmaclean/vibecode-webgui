@@ -6,39 +6,11 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useCollaboration, CollaborativeUser } from '../useCollaboration'
 
-// Mock socket.io-client BEFORE importing
-const eventHandlers = new Map<string, Function>()
-
-const mockSocket = {
-  on: jest.fn((event: string, handler: Function) => {
-    eventHandlers.set(event, handler)
-    return mockSocket // Return itself for chaining
-  }),
-  emit: jest.fn(),
-  disconnect: jest.fn(),
-  connected: false,
-  // Test utility to trigger events
-  _triggerEvent: (event: string, ...args: any[]) => {
-    const handler = eventHandlers.get(event)
-    if (handler) {
-      handler(...args)
-    }
-  }
-}
-
-jest.mock('socket.io-client', () => {
-  const mockIo = jest.fn((options?: any) => {
-    console.log('io() factory mock called with options:', options, '- returning mockSocket')
-    console.log('mockSocket has on method:', typeof mockSocket.on)
-    return mockSocket
-  })
-  mockIo.default = mockIo // For ES modules
-  return mockIo
-})
+// Use automatic mock from __mocks__ directory
+jest.mock('socket.io-client')
 
 // Import after mocking
 import io from 'socket.io-client'
-console.log('Imported io function type:', typeof io)
 
 // Mock fetch
 global.fetch = jest.fn()
@@ -46,6 +18,17 @@ global.fetch = jest.fn()
 describe('useCollaboration', () => {
   const mockIo = io as jest.MockedFunction<typeof io>
   const mockFetch = fetch as jest.MockedFunction<typeof fetch>
+
+  // Test mock functionality first
+  it('should verify mock is working', () => {
+    console.log('Testing direct io() call')
+    const result = io({ test: true })
+    console.log('io() returned:', result)
+    console.log('result type:', typeof result)
+    console.log('result has on method:', typeof result?.on)
+    expect(result).toBeDefined()
+    expect(result.on).toBeDefined()
+  })
 
   const defaultProps = {
     workspaceId: 'workspace-123',
