@@ -9,20 +9,20 @@ import { z } from 'zod';
 
 // Common patterns for potential security threats
 const SUSPICIOUS_PATTERNS = [
-  // SQL injection patterns
-  /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b)/gi,
+  // SQL injection patterns - more specific contexts
+  /(\b(SELECT\s+\*|DROP\s+TABLE|ALTER\s+TABLE|INSERT\s+INTO|DELETE\s+FROM|UNION\s+SELECT)\b)/gi,
   // NoSQL injection patterns
   /(\$where|\$ne|\$gt|\$lt|\$in|\$nin|\$regex|\$exists)/gi,
   // Command injection patterns
-  /(;|\||&|`|\$\(|exec|eval|system|shell_exec)/gi,
+  /(;.*rm\s|;\s*rm\s|\|\s*rm\s|&&\s*rm\s|`.*rm\s|\$\(.*rm|\bexec\s*\(|\beval\s*\(|\bsystem\s*\(|\bshell_exec\s*\()/gi,
   // Script injection patterns
-  /(<script|javascript:|data:text\/html|vbscript:|onload=|onerror=)/gi,
+  /(<script|javascript:|data:text\/html|vbscript:|onload\s*=|onerror\s*=)/gi,
   // Path traversal patterns
   /(\.\.\/|\.\.\\|%2e%2e%2f|%2e%2e%5c)/gi,
-  // GraphQL/Cypher injection patterns
-  /(MATCH|RETURN|WHERE|CREATE|DELETE|SET|REMOVE|MERGE|OPTIONAL)/gi,
-  // LDAP injection patterns
-  /(\*|\(|\)|\\|\||&|!|=|<|>|~|;)/g,
+  // GraphQL/Cypher injection patterns - specific attack patterns
+  /(\bMATCH\s*\([^)]*\)\s*DELETE|\bDROP\s+CONSTRAINT|\bMERGE.*DELETE)/gi,
+  // LDAP injection patterns - more specific
+  /(\)\s*\(|\*\s*\)|\(\s*\*)/g,
 ];
 
 // Maximum input lengths for different types
@@ -101,11 +101,11 @@ export function sanitizeUserInput(input: string): string {
   // Remove null bytes and control characters, preserve word boundaries
   let sanitized = input.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ');
   
-  // Normalize whitespace
-  sanitized = sanitized.replace(/\s+/g, ' ').trim();
-  
   // Remove potentially dangerous Unicode characters
   sanitized = sanitized.replace(/[\u200B-\u200D\uFEFF]/g, '');
+  
+  // Normalize whitespace (must be last to handle multiple spaces from previous replacements)
+  sanitized = sanitized.replace(/\s+/g, ' ').trim();
   
   return sanitized;
 }
