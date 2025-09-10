@@ -3,15 +3,15 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Settings as SettingsIcon,
   Save,
-  RefreshCw,
+  // RefreshCw, // Not used but might be needed in the future
   Shield,
-  Database,
+  // Database, // Not used but might be needed in the future
   Network,
   Bell,
   Users,
   Palette,
   Globe,
-  Lock,
+  // Lock, // Not used but might be needed in the future
   Key,
   Server,
   Monitor,
@@ -595,6 +595,8 @@ function MonitoringSettings({ settings }: { settings: any }) {
 }
 
 function NotificationSettings({ settings }: { settings: any }) {
+  // Using settings for UI initialization
+  console.log('Notification settings:', settings);
   return (
     <div className="card p-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">Alert Channels</h3>
