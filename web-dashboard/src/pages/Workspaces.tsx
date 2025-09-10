@@ -42,16 +42,6 @@ export function Workspaces() {
     return matchesSearch && matchesStatus
   })
 
-  const getStatusBadge = (status: Workspace['status']) => {
-    const statusConfig = {
-      running: 'badge-success',
-      stopped: 'badge-error',
-      pending: 'badge-warning',
-      error: 'badge-error'
-    }
-    return statusConfig[status]
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}

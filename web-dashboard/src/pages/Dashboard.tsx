@@ -4,7 +4,6 @@ import {
   Bot,
   Users,
   Activity,
-  TrendingUp,
   AlertCircle,
   CheckCircle,
   Clock
