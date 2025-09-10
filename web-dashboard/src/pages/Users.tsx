@@ -7,8 +7,7 @@ import {
   MoreVertical,
   Shield,
   ShieldCheck,
-  User,
-  Mail,
+  UserIcon,
   Calendar,
   Clock,
   CheckCircle,
@@ -21,6 +20,21 @@ import {
 import { k8sApi } from '../services/api'
 import { formatDistanceToNow } from 'date-fns'
 import type { User } from '../types'
+
+// Define badge types for user status and roles
+interface StatusBadgeMap {
+  active: { class: string; icon: React.ComponentType<any> };
+  inactive: { class: string; icon: React.ComponentType<any> };
+  pending: { class: string; icon: React.ComponentType<any> };
+  suspended: { class: string; icon: React.ComponentType<any> };
+}
+
+interface RoleBadgeMap {
+  admin: { class: string; icon: React.ComponentType<any> };
+  developer: { class: string; icon: React.ComponentType<any> };
+  viewer: { class: string; icon: React.ComponentType<any> };
+  user: { class: string; icon: React.ComponentType<any> };
+}
 
 export function Users() {
   const [searchTerm, setSearchTerm] = useState('')
