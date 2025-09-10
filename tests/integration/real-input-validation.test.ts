@@ -39,10 +39,20 @@ describe('Real Input Validation Integration', () => {
         query: 'list files && rm -rf / --no-preserve-root'
       };
 
+      const directCommandInjection = {
+        query: 'rm -rf /'
+      };
+
+      const shellCommandInjection = {
+        query: '$(rm -rf /)'
+      };
+
       // Test real validation catches these
       expect(() => validateAIQuery(sqlInjection)).toThrow('potentially unsafe content');
       expect(() => validateAIQuery(xssAttempt)).toThrow('potentially unsafe content');  
       expect(() => validateAIQuery(commandInjection)).toThrow('potentially unsafe content');
+      expect(() => validateAIQuery(directCommandInjection)).toThrow('potentially unsafe content');
+      expect(() => validateAIQuery(shellCommandInjection)).toThrow('potentially unsafe content');
     });
 
     it('should sanitize user input preserving functionality', () => {
@@ -103,9 +113,9 @@ describe('Real Input Validation Integration', () => {
         { query: undefined }, // Undefined input
         { query: 123 }, // Wrong type
         {}, // Missing query
-      ];
+      ] as unknown as Array<any>;
 
-      edgeCases.forEach((testCase, index) => {
+      edgeCases.forEach((testCase) => {
         try {
           validateAIQuery(testCase);
         } catch (error) {
