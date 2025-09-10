@@ -48,9 +48,6 @@ const getCurrentContext = (): string | null => {
 const getClusters = (): string[] => {
   try { return execSync('kind get clusters', { encoding: 'utf8' }).split('\n').map(s => s.trim()).filter(Boolean); } catch { return []; }
 };
-const nsExists = (ns: string): boolean => {
-  try { execSync(`kubectl get ns ${ns}`, { stdio: 'pipe' }); return true; } catch { return false; }
-};
 const waitForDeploymentAvailable = (namespace: string, name: string, timeoutMs = 300000) => {
   const started = Date.now();
   while (true) {
@@ -94,10 +91,8 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
     // Wait for cluster to be ready
     waitForNodesReady(180000);
 
-    // Ensure NGINX Ingress Controller (required for Helm chart)
-    if (!nsExists('ingress-nginx')) {
-      execSync(`kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml`, { stdio: 'inherit' });
-    }
+    // Ensure NGINX Ingress Controller (required for Helm chart) - idempotent apply
+    execSync(`kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml`, { stdio: 'inherit' });
     // Wait for ingress controller deployment to have available replicas
     waitForDeploymentAvailable('ingress-nginx', 'ingress-nginx-controller', 300000);
 
@@ -248,7 +243,7 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
 
   test('Helm tests should pass', async () => {
     // Run Helm tests
-    const result = execSync(`helm test ${HELM_RELEASE} --namespace ${NAMESPACE} --timeout=600s --logs`, {
+    const result = execSync(`helm test ${HELM_RELEASE} --namespace ${NAMESPACE} --timeout=600s`, {
       encoding: 'utf8'
     });
 
@@ -446,6 +441,10 @@ security:
   }, TIMEOUT);
 
   test('Chart uninstall should clean up resources', async () => {
+    if (process.env.KEEP_CLUSTER) {
+      console.log('Skipping uninstall for debugging (KEEP_CLUSTER=true)');
+      return;
+    }
     // Uninstall the chart
     execSync(`helm uninstall ${HELM_RELEASE} --namespace ${NAMESPACE} --wait --timeout=600s`, {
       stdio: 'inherit'
