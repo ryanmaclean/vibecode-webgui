@@ -9,7 +9,7 @@ jest.mock('socket.io', () => ({
   }))
 }));
 
-jest.mock('./chat-mongodb', () => ({
+jest.mock('../chat-mongodb', () => ({
   mongodbChatService: {
     getConversation: jest.fn(),
     addMessage: jest.fn()
@@ -88,7 +88,7 @@ describe('CollaborationService', () => {
     });
 
     it('should start cleanup interval', () => {
-      jest.spyOn(global, 'setInterval').mockImplementation(() => {} as any);
+      jest.spyOn(global, 'setInterval').mockImplementation(() => ({} as any));
       
       service.initialize(mockHttpServer);
 
@@ -480,7 +480,7 @@ describe('CollaborationService', () => {
 
   describe('Cleanup', () => {
     it('should start cleanup interval on initialization', () => {
-      jest.spyOn(global, 'setInterval').mockImplementation(() => {} as any);
+      jest.spyOn(global, 'setInterval').mockImplementation(() => ({} as any));
       
       service.initialize(mockHttpServer);
 
