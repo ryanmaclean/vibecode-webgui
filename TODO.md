@@ -5,15 +5,22 @@ description: Active project tasks and priorities
 
 # VibeCode Active Tasks
 
+## ✅ Recently Completed
+- [x] Fixed accessibility tests in tests/accessibility/automated-a11y.test.ts
+- [x] Fixed TypeScript errors in tests/integration/cache-redis-backend.test.ts
+- [x] Verified all accessibility and Redis cache tests pass (24 tests)
+
 ## 🔥 Current Priority Tasks
 
 ### Critical Issues
-- [ ] Fix remaining TypeScript errors in src/middleware/__tests__/security-middleware.test.ts
 - [ ] Investigate GitHub security vulnerabilities (1 high, 1 moderate, 3 low)
 - [ ] Verify new ESLint configuration works for web-dashboard
 - [ ] Test the web application to ensure functionality
 
 ### New Features
+- [ ] Implement MCP Sequential Thinking for complex problem-solving
+- [ ] Set up MCP Context7 for enhanced context management
+- [ ] Configure MCP Playwright for UI testing automation
 - [ ] Implement Serena MCP for code-server integration
 - [ ] Complete vector database sharding implementation (VectorShardingManager)
 - [ ] Deploy KIND testing infrastructure for validation
@@ -36,10 +43,38 @@ description: Active project tasks and priorities
 - [ ] **MLflow Integration** - AI experiment tracking and model versioning
 
 ### Testing & Quality Assurance
-- [ ] Add unit tests for services modules - chat-mongodb (needs UUID mock fixes), collaboration (0% coverage)
-- [ ] Fix existing failing tests - vector-db-adapter, ai-project-generator
+- [x] Fix remaining TypeScript errors in src/middleware/__tests__/security-middleware.test.ts
+- [x] Fix TypeScript errors in src/lib/services/__tests__/chat-mongodb.test.ts
+- [x] Set up continuous integration to run tests automatically
+- [x] Document the testing strategy, especially for accessibility testing
+- [x] Fix chat-mongodb UUID mocking issues - 35/35 tests now passing
+- [x] Fix accessibility test configuration - axe-core rule errors resolved
+- [ ] **CRITICAL: Fix vector database tests** - 52+ tests failing due to pool mocking issues
+- [ ] **CRITICAL: Fix Datadog integration tests** - Real API tests not running
+- [ ] **CRITICAL: Fix Jest configuration issues** - it.skipIf not a function, worker crashes
+- [ ] **CRITICAL: Fix migration script ES module errors** - require() in ES modules
+- [ ] Add unit tests for services modules - collaboration (0% coverage)
 - [ ] Add E2E tests for critical user journeys - workspace management, AI features, monitoring dashboard
 - [ ] Add integration tests for API endpoints - auth, AI chat, file operations, vector search
+
+### 🚨 CRITICAL TEST COVERAGE GAPS (0.98% overall coverage - Target: 80%)
+- [ ] **API Routes (0% coverage)** - 50+ endpoints completely untested
+  - [ ] `/api/ai/*` - All AI endpoints (chat, generate-project, search, etc.)
+  - [ ] `/api/auth/*` - Authentication endpoints (MFA, SAML, login tracking)
+  - [ ] `/api/health/*` - Health check endpoints
+  - [ ] `/api/monitoring/*` - Monitoring endpoints
+  - [ ] `/api/vector-store/*` - Vector database endpoints
+- [ ] **Core Library Functions (0% coverage)**
+  - [ ] Vector Database: All adapters, connection pools, sharding
+  - [ ] AI Services: Embedding services, model orchestration, RAG
+  - [ ] Monitoring: Datadog integration, metrics collection
+  - [ ] Security: Input validation, middleware
+  - [ ] Collaboration: Real-time editing, workspace management
+- [ ] **Components (0% coverage)**
+  - [ ] AI Interfaces: Chat interfaces, model selectors, code assistants
+  - [ ] Monitoring Dashboards: Connection pool monitoring, performance dashboards
+  - [ ] Collaboration Tools: Real-time editing, user presence
+  - [ ] Project Management: Template generators, workspace management
 
 ### Implementation Fixes
 - [ ] Fix vector database implementation issues - PostgreSQL adapter needs DATABASE_URL/connectionString, SQL Server/Cosmos DB/Redis adapters not implemented, sharding-manager needs proper mocking
