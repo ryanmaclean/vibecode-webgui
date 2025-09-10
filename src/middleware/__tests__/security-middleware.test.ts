@@ -454,6 +454,7 @@ describe('Security Middleware Module', () => {
         return null
       })
 
+      // @ts-ignore - Mocking JWT token
       mockGetToken.mockResolvedValue({
         sub: 'admin123',
         id: 'admin123',
