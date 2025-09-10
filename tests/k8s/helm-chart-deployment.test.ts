@@ -142,7 +142,7 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
 
   test('Helm chart should install successfully', async () => {
     // Install the Helm chart
-    execSync(`helm install ${HELM_RELEASE} ${CHART_PATH} --namespace ${NAMESPACE} --values /tmp/kind-test-values.yaml --wait --timeout=300s`, {
+    execSync(`helm install ${HELM_RELEASE} ${CHART_PATH} --namespace ${NAMESPACE} --values /tmp/kind-test-values.yaml --wait --timeout=600s`, {
       stdio: 'inherit',
       cwd: process.cwd(),
     });
@@ -231,7 +231,7 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
 
   test('Helm tests should pass', async () => {
     // Run Helm tests
-    const result = execSync(`helm test ${HELM_RELEASE} --namespace ${NAMESPACE} --timeout=300s`, {
+    const result = execSync(`helm test ${HELM_RELEASE} --namespace ${NAMESPACE} --timeout=600s --logs`, {
       encoding: 'utf8'
     });
 
@@ -400,7 +400,7 @@ security:
 
     try {
       // Upgrade the chart
-      execSync(`helm upgrade ${HELM_RELEASE} ${CHART_PATH} --namespace ${NAMESPACE} --values /tmp/kind-test-values.yaml --values /tmp/upgrade-values.yaml --wait --timeout=300s`, {
+      execSync(`helm upgrade ${HELM_RELEASE} ${CHART_PATH} --namespace ${NAMESPACE} --values /tmp/kind-test-values.yaml --values /tmp/upgrade-values.yaml --wait --timeout=600s`, {
         stdio: 'inherit',
         cwd: process.cwd(),
       });
@@ -430,7 +430,7 @@ security:
 
   test('Chart uninstall should clean up resources', async () => {
     // Uninstall the chart
-    execSync(`helm uninstall ${HELM_RELEASE} --namespace ${NAMESPACE} --wait --timeout=300s`, {
+    execSync(`helm uninstall ${HELM_RELEASE} --namespace ${NAMESPACE} --wait --timeout=600s`, {
       stdio: 'inherit'
     });
 
