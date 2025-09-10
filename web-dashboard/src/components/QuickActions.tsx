@@ -52,7 +52,12 @@ export function QuickActions() {
       color: 'text-orange-600 bg-orange-50 hover:bg-orange-100',
       action: () => {
         // In a real implementation, this would open a web terminal
-        window.open('/terminal', '_blank')
+        // Safely open terminal in a new tab with noopener
+        const terminalUrl = '/terminal';
+        const terminalWindow = window.open(terminalUrl, '_blank', 'noopener,noreferrer');
+        if (terminalWindow) {
+          terminalWindow.opener = null;
+        }
       }
     },
     {
@@ -61,8 +66,9 @@ export function QuickActions() {
       icon: Settings,
       color: 'text-gray-600 bg-gray-50 hover:bg-gray-100',
       action: () => {
-        // Navigate to settings
-        window.location.href = '/settings'
+        // Safely navigate to a fixed URL
+        const settingsUrl = '/settings';
+        window.location.href = settingsUrl;
       }
     }
   ]
