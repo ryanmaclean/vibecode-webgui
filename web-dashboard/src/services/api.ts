@@ -8,8 +8,8 @@ import type {
   ClusterMetrics,
   ModelRecommendation,
   ModelSelectionCriteria,
-  ChatCompletionRequest,
-  ApiError
+  ChatCompletionRequest
+  // ApiError - Not used but might be needed in the future
 } from '../types'
 
 // Simple client-side rate limiter
@@ -334,6 +334,7 @@ export const k8sApi = {
 
   deleteWorkspace: async (workspaceId: string): Promise<{ success: boolean }> => {
     // Mock response - would actually delete K8s resources
+    console.log(`Deleting workspace: ${workspaceId}`);
     return { success: true }
   },
 
@@ -371,6 +372,27 @@ export const k8sApi = {
         status: 'active'
       }
     ]
+  },
+  
+  deleteUser: async (userId: string): Promise<{ success: boolean }> => {
+    // Mock response - would actually delete user
+    console.log(`Deleting user: ${userId}`);
+    return { success: true }
+  },
+  
+  createUser: async (userData: any): Promise<{ success: boolean; user: User }> => {
+    // Mock response - would actually create user
+    const user: User = {
+      id: userData.username,
+      username: userData.username,
+      email: userData.email,
+      role: userData.role || 'user',
+      groups: userData.groups || ['users'],
+      createdAt: new Date().toISOString(),
+      lastActive: new Date().toISOString(),
+      status: 'active'
+    }
+    return { success: true, user }
   }
 }
 
@@ -406,6 +428,26 @@ export const metricsApi = {
 
   getCostMetrics: async (days: number = 7) => {
     const { data } = await axios.get(`/metrics/costs?days=${days}`)
+    return data
+  },
+  
+  getSettings: async () => {
+    const { data } = await axios.get('/settings')
+    return data
+  },
+  
+  updateSettings: async (settings: any) => {
+    const { data } = await axios.put('/settings', settings)
+    return data
+  },
+  
+  getSystemMetrics: async () => {
+    const { data } = await axios.get('/metrics/system')
+    return data
+  },
+  
+  getAlerts: async () => {
+    const { data } = await axios.get('/alerts')
     return data
   }
 }
