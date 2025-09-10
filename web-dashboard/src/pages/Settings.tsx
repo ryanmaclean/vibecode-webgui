@@ -435,8 +435,11 @@ function AISettings({ settings }: { settings: any }) {
               <div className="relative">
                 <input
                   type="password"
-                  defaultValue="sk-or-v1-****************"
+                  defaultValue={settings?.ai?.apiKey ? "••••••••••••••••••" : ""}
+                  placeholder="Enter API key"
                   className="input"
+                  autoComplete="off"
+                  aria-autocomplete="none"
                 />
                 <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               </div>
@@ -567,8 +570,11 @@ function MonitoringSettings({ settings }: { settings: any }) {
               <div className="relative">
                 <input
                   type="password"
-                  defaultValue="****************"
+                  defaultValue={settings?.monitoring?.datadog?.apiKey ? "••••••••••••••••••" : ""}
+                  placeholder="Enter Datadog API key"
                   className="input"
+                  autoComplete="off"
+                  aria-autocomplete="none"
                 />
                 <Key className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               </div>

@@ -22,15 +22,8 @@ const api = axios.create({
 
 // Request interceptor for auth
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token')
-  const apiKey = localStorage.getItem('api_key')
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  } else if (apiKey) {
-    config.headers['X-API-Key'] = apiKey
-  }
-
+  // Authentication is now handled via HTTP-only cookies
+  // No need to manually attach tokens from localStorage
   return config
 })
 
