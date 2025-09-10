@@ -34,11 +34,11 @@ spec:
       allowPrivilegeEscalation: false
     resources:
       requests:
-        cpu: "10m"
-        memory: "64Mi"
-      limits:
-        cpu: "100m"
+        cpu: "50m"
         memory: "128Mi"
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
     args:
     - |
       set -e
@@ -54,49 +54,67 @@ spec:
           exit 1
         fi
       done
+
+      # Simple retry helper: retry <cmd...>
+      retry() {
+        local n=0
+        local max=${RETRY_MAX:-40}
+        local delay=${RETRY_DELAY:-5}
+        until [ $n -ge $max ]; do
+          "$@" && return 0
+          n=$((n+1))
+          echo "Retry $n/$max: $*" >&2
+          sleep $delay
+        done
+        return 1
+      }
       echo "Testing VibeCode Platform provisioning capabilities..."
+
+      # Preflight simple API checks
+      retry kubectl --request-timeout=10s get namespaces >/dev/null
+      retry kubectl --request-timeout=10s get nodes >/dev/null
 
       # Test RBAC permissions
       echo "Testing RBAC permissions..."
-      kubectl auth can-i get pods --namespace={{ .Values.global.namespace }}
-      kubectl auth can-i create deployments --namespace={{ .Values.global.namespace }}
-      kubectl auth can-i create services --namespace={{ .Values.global.namespace }}
-      kubectl auth can-i create persistentvolumeclaims --namespace={{ .Values.global.namespace }}
+      retry kubectl --request-timeout=10s auth can-i get pods --namespace={{ .Values.global.namespace }}
+      retry kubectl --request-timeout=10s auth can-i create deployments --namespace={{ .Values.global.namespace }}
+      retry kubectl --request-timeout=10s auth can-i create services --namespace={{ .Values.global.namespace }}
+      retry kubectl --request-timeout=10s auth can-i create persistentvolumeclaims --namespace={{ .Values.global.namespace }}
       echo "✓ RBAC permissions verified"
 
       # Test ConfigMap access
       echo "Testing ConfigMap access..."
-      kubectl get configmap {{ include "vibecode-platform.configMapName" . }} --namespace={{ .Values.global.namespace }}
+      retry kubectl --request-timeout=10s get configmap {{ include "vibecode-platform.configMapName" . }} --namespace={{ .Values.global.namespace }}
       echo "✓ ConfigMap accessible"
 
       # Test Secret access
       echo "Testing Secret access..."
-      kubectl get secret {{ include "vibecode-platform.secretName" . }} --namespace={{ .Values.global.namespace }}
+      retry kubectl --request-timeout=10s get secret {{ include "vibecode-platform.secretName" . }} --namespace={{ .Values.global.namespace }}
       echo "✓ Secret accessible"
 
       # Test ServiceAccount
       echo "Testing ServiceAccount..."
-      kubectl get serviceaccount {{ include "vibecode-platform.serviceAccountName" . }} --namespace={{ .Values.global.namespace }}
+      retry kubectl --request-timeout=10s get serviceaccount {{ include "vibecode-platform.serviceAccountName" . }} --namespace={{ .Values.global.namespace }}
       echo "✓ ServiceAccount exists"
 
       {{- if .Values.security.rbac.enabled }}
       # Test RBAC resources
       echo "Testing RBAC resources..."
-      kubectl get role {{ include "vibecode-platform.rbacName" . }}-workspace --namespace={{ .Values.global.namespace }}
-      kubectl get rolebinding {{ include "vibecode-platform.rbacName" . }}-workspace --namespace={{ .Values.global.namespace }}
+      retry kubectl --request-timeout=10s get role {{ include "vibecode-platform.rbacName" . }}-workspace --namespace={{ .Values.global.namespace }}
+      retry kubectl --request-timeout=10s get rolebinding {{ include "vibecode-platform.rbacName" . }}-workspace --namespace={{ .Values.global.namespace }}
       echo "✓ RBAC resources exist"
       {{- end }}
 
       {{- if .Values.codeServer.persistence.enabled }}
       # Test storage class
       echo "Testing storage class..."
-      kubectl get storageclass {{ default .Values.global.storageClass .Values.codeServer.persistence.storageClass }}
+      retry kubectl --request-timeout=10s get storageclass {{ default .Values.global.storageClass .Values.codeServer.persistence.storageClass }}
       echo "✓ Storage class exists"
       {{- end }}
 
       # Test that we can create a test PVC
       echo "Testing PVC creation..."
-      cat <<EOF | kubectl apply -f -
+      cat <<EOF | retry kubectl --request-timeout=10s apply -f -
       apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
@@ -116,7 +134,7 @@ spec:
       echo "✓ PVC creation successful"
 
       # Cleanup test PVC
-      kubectl delete pvc -l app.kubernetes.io/component=test --namespace={{ .Values.global.namespace }}
+      retry kubectl --request-timeout=10s delete pvc -l app.kubernetes.io/component=test --namespace={{ .Values.global.namespace }}
       echo "✓ Test PVC cleaned up"
 
       {{- if .Values.security.networkPolicies.enabled }}
