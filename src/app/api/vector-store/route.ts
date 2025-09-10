@@ -6,8 +6,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-// import { enhancedVectorStore } from '@/lib/vector-stores/enhanced-vector-store'
+import { authOptions } from '../../../lib/auth'
+// import { enhancedVectorStore } from '../../../lib/vector-stores/enhanced-vector-store'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
