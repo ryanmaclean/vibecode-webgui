@@ -16,7 +16,7 @@ jest.mock('../chat-mongodb', () => ({
   }
 }));
 
-jest.mock('../monitoring/datadog-metrics', () => ({
+jest.mock('../../monitoring/datadog-metrics', () => ({
   datadogMetrics: {
     recordUserAction: jest.fn()
   }
