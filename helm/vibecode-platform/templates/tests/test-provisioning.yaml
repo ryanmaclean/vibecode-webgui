@@ -14,6 +14,9 @@ spec:
   restartPolicy: Never
   serviceAccountName: {{ include "vibecode-platform.serviceAccountName" . }}
   automountServiceAccountToken: true
+  volumes:
+  - name: tmp
+    emptyDir: {}
   containers:
   - name: test-provisioning
     image: bitnami/kubectl:1.34
@@ -33,9 +36,6 @@ spec:
     volumeMounts:
     - name: tmp
       mountPath: /tmp
-    volumes:
-  - name: tmp
-    emptyDir: {}
     resources:
       requests:
         cpu: "50m"
