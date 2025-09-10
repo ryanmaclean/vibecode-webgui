@@ -13,10 +13,25 @@ metadata:
 spec:
   restartPolicy: Never
   serviceAccountName: {{ include "vibecode-platform.serviceAccountName" . }}
+  automountServiceAccountToken: true
   containers:
   - name: test-provisioning
     image: bitnami/kubectl:latest
     command: ['sh', '-c']
+    env:
+    - name: KUBERNETES_SERVICE_HOST
+      value: "kubernetes.default.svc"
+    - name: KUBERNETES_SERVICE_PORT
+      value: "443"
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 65534
+      runAsGroup: 65534
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
     resources:
       requests:
         cpu: "10m"
@@ -102,12 +117,3 @@ spec:
       {{- end }}
 
       echo "✅ All provisioning tests passed!"
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 65534
-    runAsGroup: 65534
-    capabilities:
-      drop:
-        - ALL
-    readOnlyRootFilesystem: true
-    allowPrivilegeEscalation: false
