@@ -3,6 +3,7 @@
  * @module serena
  */
 
+// Re-export interfaces and core implementation
 export * from './interfaces';
 export * from './project-manager';
 export * from './code-server-client';
