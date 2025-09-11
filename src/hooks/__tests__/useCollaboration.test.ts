@@ -11,12 +11,26 @@ jest.mock('socket.io-client')
 
 import io from 'socket.io-client'
 
-// Create the mock objects
+// Create the mock objects with event handler storage
+const eventHandlers = new Map<string, Function>()
+
 const mockSocket = {
-  on: jest.fn(),
+  on: jest.fn((event: string, handler: Function) => {
+    console.log(`mockSocket.on called with event: ${event}`)
+    eventHandlers.set(event, handler)
+    return mockSocket // Return for chaining
+  }),
   emit: jest.fn(), 
   disconnect: jest.fn(),
   connected: false,
+  // Helper method to trigger events in tests
+  _trigger: (event: string, ...args: any[]) => {
+    console.log(`_trigger called for event: ${event}, handler exists: ${eventHandlers.has(event)}`)
+    const handler = eventHandlers.get(event)
+    if (handler) {
+      handler(...args)
+    }
+  }
 }
 
 // Immediately set up the mock implementation
@@ -27,7 +41,7 @@ mockIo.mockImplementation((options) => {
 })
 
 global.mockSocket = mockSocket  
-global.eventHandlers = new Map()
+global.eventHandlers = eventHandlers
 
 // Mock fetch
 global.fetch = jest.fn()
@@ -74,13 +88,20 @@ describe('useCollaboration', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     // Clear event handlers for each test
-    global.eventHandlers.clear()
+    eventHandlers.clear()
     
     // Re-setup the io mock implementation after clearAllMocks
     const mockIo = io as jest.MockedFunction<typeof io>
     mockIo.mockImplementation((options) => {
       console.log('beforeEach mockImplementation called with:', options)
       return mockSocket as any
+    })
+    
+    // Re-setup the mockSocket.on implementation after clearAllMocks
+    ;(mockSocket.on as jest.MockedFunction<any>).mockImplementation((event: string, handler: Function) => {
+      console.log(`beforeEach mockSocket.on called with event: ${event}`)
+      eventHandlers.set(event, handler)
+      return mockSocket // Return for chaining
     })
     
     mockFetch.mockImplementation(async (url) => {
@@ -155,27 +176,21 @@ describe('useCollaboration', () => {
       
       const { result } = renderHook(() => useCollaboration(defaultProps))
 
-      // First connect
-      const connectHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'connect'
-      )?.[1]
-      
-      if (connectHandler) {
-        act(() => {
-          connectHandler()
-        })
-      }
+      // Wait for initial setup, then trigger connect and disconnect events
+      await waitFor(() => {
+        expect(eventHandlers.has('connect')).toBe(true)
+        expect(eventHandlers.has('disconnect')).toBe(true)
+      })
 
-      // Then disconnect
-      const disconnectHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'disconnect'
-      )?.[1]
-      
-      if (disconnectHandler) {
-        act(() => {
-          disconnectHandler()
-        })
-      }
+      // First connect
+      act(() => {
+        mockSocket._trigger('connect')
+      })
+
+      // Then disconnect  
+      act(() => {
+        mockSocket._trigger('disconnect')
+      })
 
       await waitFor(() => {
         expect(result.current.isConnected).toBe(false)
