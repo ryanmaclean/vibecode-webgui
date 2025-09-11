@@ -11,7 +11,7 @@ let CLUSTER_NAME = process.env.KIND_CLUSTER_NAME || 'vibecode-test';
 const NAMESPACE = 'vibecode-platform';
 const HELM_RELEASE = 'vibecode-platform';
 const CHART_PATH = 'helm/vibecode-platform';
-const TIMEOUT = 600000; // 10 minutes; give KIND + Ingress time to stabilize
+const TIMEOUT = 900000; // 15 minutes; give KIND + Ingress and provisioning time to stabilize
 
 // Helper runners and setup for Helm dependencies and cluster
 const run = (cmd: string) => execSync(cmd, { stdio: 'inherit', cwd: process.cwd() });
@@ -251,7 +251,7 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
       if (result.includes('Phase: Succeeded')) {
         passedViaHelm = true;
       }
-    } catch (e) {
+    } catch {
       // fall through to manual verification
     }
 
