@@ -113,7 +113,7 @@ spec:
 
       # Test that we can create a test PVC
       echo "Testing PVC creation..."
-      cat <<EOF | retry ${KCTL} apply -f -
+      cat <<EOF | retry ${KCTL} create --raw "/api/v1/namespaces/{{ .Values.global.namespace }}/persistentvolumeclaims" -f -
       apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
