@@ -206,15 +206,15 @@ describe('useCollaboration', () => {
       
       const { result } = renderHook(() => useCollaboration(defaultProps))
 
-      const errorHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'connect_error'
-      )?.[1]
-      
-      if (errorHandler) {
-        act(() => {
-          errorHandler({ message: 'Connection failed' })
-        })
-      }
+      // Wait for event handlers to be registered
+      await waitFor(() => {
+        expect(eventHandlers.has('connect_error')).toBe(true)
+      })
+
+      // Trigger connection error event
+      act(() => {
+        mockSocket._trigger('connect_error', { message: 'Connection failed' })
+      })
 
       await waitFor(() => {
         expect(result.current.isConnected).toBe(false)
@@ -228,9 +228,10 @@ describe('useCollaboration', () => {
     it('should handle workspace state update', async () => {
       const { result } = renderHook(() => useCollaboration(defaultProps))
 
-      const workspaceStateHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'workspace_state'
-      )?.[1]
+      // Wait for event handlers to be registered
+      await waitFor(() => {
+        expect(eventHandlers.has('workspace_state')).toBe(true)
+      })
       
       const mockUsers: CollaborativeUser[] = [
         {
@@ -251,11 +252,10 @@ describe('useCollaboration', () => {
         },
       ]
 
-      if (workspaceStateHandler) {
-        act(() => {
-          workspaceStateHandler({ activeUsers: mockUsers })
-        })
-      }
+      // Trigger workspace state update event
+      act(() => {
+        mockSocket._trigger('workspace_state', { activeUsers: mockUsers })
+      })
 
       await waitFor(() => {
         expect(result.current.activeUsers).toEqual(mockUsers)
@@ -267,9 +267,10 @@ describe('useCollaboration', () => {
       
       const { result } = renderHook(() => useCollaboration(defaultProps))
 
-      const userJoinedHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'user_joined'
-      )?.[1]
+      // Wait for event handlers to be registered
+      await waitFor(() => {
+        expect(eventHandlers.has('user_joined')).toBe(true)
+      })
       
       const mockUsers: CollaborativeUser[] = [
         {
@@ -282,14 +283,13 @@ describe('useCollaboration', () => {
         },
       ]
 
-      if (userJoinedHandler) {
-        act(() => {
-          userJoinedHandler({ 
-            user: { name: 'New User' },
-            activeUsers: mockUsers 
-          })
+      // Trigger user joined event
+      act(() => {
+        mockSocket._trigger('user_joined', { 
+          user: { name: 'New User' },
+          activeUsers: mockUsers 
         })
-      }
+      })
 
       await waitFor(() => {
         expect(result.current.activeUsers).toEqual(mockUsers)
