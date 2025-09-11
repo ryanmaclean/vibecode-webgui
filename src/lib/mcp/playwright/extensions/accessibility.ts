@@ -59,7 +59,7 @@ export function createAccessibilityTest(options?: AccessibilityTestOptions) {
           return false; // Mock: no issues found
         });
         
-        expect(hasAccessibilityIssues).toBe(false, 'Accessibility issues found');
+        expect(hasAccessibilityIssues).toBe(false);
       };
       
       await use(enhancedPage);
