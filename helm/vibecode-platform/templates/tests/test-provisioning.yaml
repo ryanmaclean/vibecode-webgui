@@ -83,37 +83,37 @@ spec:
 
       # Test ConfigMap access
       echo "Testing ConfigMap access..."
-      retry ${KCTL} get configmap {{ include "vibecode-platform.configMapName" . }} --namespace={{ .Values.global.namespace }}
+      retry ${KCTL} get --raw "/api/v1/namespaces/{{ .Values.global.namespace }}/configmaps/{{ include "vibecode-platform.configMapName" . }}"
       echo "✓ ConfigMap accessible"
 
       # Test Secret access
       echo "Testing Secret access..."
-      retry ${KCTL} get secret {{ include "vibecode-platform.secretName" . }} --namespace={{ .Values.global.namespace }}
+      retry ${KCTL} get --raw "/api/v1/namespaces/{{ .Values.global.namespace }}/secrets/{{ include "vibecode-platform.secretName" . }}"
       echo "✓ Secret accessible"
 
       # Test ServiceAccount
       echo "Testing ServiceAccount..."
-      retry ${KCTL} get serviceaccount {{ include "vibecode-platform.serviceAccountName" . }} --namespace={{ .Values.global.namespace }}
+      retry ${KCTL} get --raw "/api/v1/namespaces/{{ .Values.global.namespace }}/serviceaccounts/{{ include "vibecode-platform.serviceAccountName" . }}"
       echo "✓ ServiceAccount exists"
 
       {{- if .Values.security.rbac.enabled }}
       # Test RBAC resources
       echo "Testing RBAC resources..."
-      retry ${KCTL} get role {{ include "vibecode-platform.rbacName" . }}-workspace --namespace={{ .Values.global.namespace }}
-      retry ${KCTL} get rolebinding {{ include "vibecode-platform.rbacName" . }}-workspace --namespace={{ .Values.global.namespace }}
+      retry ${KCTL} get --raw "/apis/rbac.authorization.k8s.io/v1/namespaces/{{ .Values.global.namespace }}/roles/{{ include "vibecode-platform.rbacName" . }}-workspace"
+      retry ${KCTL} get --raw "/apis/rbac.authorization.k8s.io/v1/namespaces/{{ .Values.global.namespace }}/rolebindings/{{ include "vibecode-platform.rbacName" . }}-workspace"
       echo "✓ RBAC resources exist"
       {{- end }}
 
       {{- if .Values.codeServer.persistence.enabled }}
       # Test storage class
       echo "Testing storage class..."
-      retry ${KCTL} get storageclass {{ default .Values.global.storageClass .Values.codeServer.persistence.storageClass }}
+      retry ${KCTL} get --raw "/apis/storage.k8s.io/v1/storageclasses/{{ default .Values.global.storageClass .Values.codeServer.persistence.storageClass }}"
       echo "✓ Storage class exists"
       {{- end }}
 
       # Test that we can create a test PVC
       echo "Testing PVC creation..."
-      cat <<EOF | retry ${KCTL} apply -f -
+      cat <<EOF | retry ${KCTL} create --raw "/api/v1/namespaces/{{ .Values.global.namespace }}/persistentvolumeclaims" -f -
       apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
