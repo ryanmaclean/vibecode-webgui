@@ -202,3 +202,15 @@ export interface IContext7Manager {
   serialize(): string;
   deserialize(serialized: string): boolean;
 }
+
+/**
+ * AI Service interface for Context7
+ */
+export interface Context7AIService {
+  /**
+   * Processes the full context with an AI service to get insights or actions.
+   * @param context - The full context from the Context7Manager.
+   * @returns A promise that resolves to an AI-generated response.
+   */
+  processContext(context: Context7InitOptions): Promise<any>;
+}
