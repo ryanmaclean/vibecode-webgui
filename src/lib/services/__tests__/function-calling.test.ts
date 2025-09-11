@@ -11,6 +11,12 @@ describe('FunctionCallingService', () => {
     service = new FunctionCallingService();
   });
 
+  afterEach(() => {
+    // Clean up any pending timers or async operations
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
   describe('constructor', () => {
     it('should initialize with builtin functions registered', () => {
       expect(service).toBeDefined();
@@ -100,7 +106,7 @@ describe('FunctionCallingService', () => {
       expect(result).toHaveProperty('success');
       expect(result).toHaveProperty('result');
       expect(result.success).toBe(true);
-    });
+    }, 10000); // 10 second timeout for web search
 
     it('should handle function execution errors', async () => {
       const functionCall: FunctionCall = {
@@ -127,7 +133,7 @@ describe('FunctionCallingService', () => {
 
       expect(result.success).toBe(true);
       expect(result.result).toBeDefined();
-    });
+    }, 10000); // 10 second timeout for web search
   });
 
   describe('Builtin Functions', () => {
@@ -146,7 +152,7 @@ describe('FunctionCallingService', () => {
         expect(result.success).toBe(true);
         expect(result.result).toBeDefined();
         expect(Array.isArray(result.result)).toBe(true);
-      });
+      }, 10000); // 10 second timeout for web search
 
       it('should handle web search errors gracefully', async () => {
         const functionCall: FunctionCall = {
@@ -162,7 +168,7 @@ describe('FunctionCallingService', () => {
         // Web search might succeed or fail depending on external service
         expect(result).toHaveProperty('success');
         expect(result).toHaveProperty('result');
-      });
+      }, 10000); // 10 second timeout for web search
     });
 
     describe('create_file', () => {
@@ -213,7 +219,7 @@ describe('FunctionCallingService', () => {
 
         expect(result.success).toBe(true);
         expect(result.result).toBeDefined();
-      });
+      }, 15000); // 15 second timeout for code execution
 
       it('should handle code execution errors gracefully', async () => {
         const functionCall: FunctionCall = {
@@ -231,7 +237,7 @@ describe('FunctionCallingService', () => {
         if (!result.success) {
           expect(result.error).toBeDefined();
         }
-      });
+      }, 15000); // 15 second timeout for code execution
     });
   });
 
@@ -299,5 +305,87 @@ describe('FunctionCallingService', () => {
       // This test documents the expected behavior
       expect(Array.isArray(functions)).toBe(true);
     });
+  });
+
+  describe('Additional Integration Scenarios', () => {
+    it('should handle multiple function calls in sequence', async () => {
+      // Test creating a file and then listing files
+      const createFileCall: FunctionCall = {
+        name: 'create_file',
+        arguments: {
+          filename: 'integration-test.txt',
+          content: 'Integration test content',
+          workspaceId: 'test-workspace'
+        }
+      };
+
+      const listFilesCall: FunctionCall = {
+        name: 'list_files',
+        arguments: {
+          workspaceId: 'test-workspace'
+        }
+      };
+
+      const createResult = await service.executeFunction(createFileCall);
+      expect(createResult.success).toBe(true);
+
+      const listResult = await service.executeFunction(listFilesCall);
+      expect(listResult.success).toBe(true);
+      expect(Array.isArray(listResult.result)).toBe(true);
+    }, 20000); // 20 second timeout for multiple operations
+
+    it('should handle concurrent function calls', async () => {
+      const calls = [
+        {
+          name: 'web_search',
+          arguments: { query: 'test query 1', maxResults: 2 }
+        },
+        {
+          name: 'web_search', 
+          arguments: { query: 'test query 2', maxResults: 2 }
+        }
+      ];
+
+      const results = await Promise.all(
+        calls.map(call => service.executeFunction(call))
+      );
+
+      results.forEach(result => {
+        expect(result).toHaveProperty('success');
+        expect(result).toHaveProperty('result');
+      });
+    }, 15000); // 15 second timeout for concurrent calls
+
+    it('should handle edge cases in function arguments', async () => {
+      // Test with empty query
+      const emptyQueryCall: FunctionCall = {
+        name: 'web_search',
+        arguments: {
+          query: '',
+          maxResults: 1
+        }
+      };
+
+      const result = await service.executeFunction(emptyQueryCall);
+      // Should handle gracefully - either succeed with empty results or fail gracefully
+      expect(result).toHaveProperty('success');
+      if (!result.success) {
+        expect(result.error).toBeDefined();
+      }
+    }, 10000); // 10 second timeout
+
+    it('should handle very large function arguments', async () => {
+      const largeContentCall: FunctionCall = {
+        name: 'create_file',
+        arguments: {
+          filename: 'large-file.txt',
+          content: 'x'.repeat(10000), // 10KB of content
+          workspaceId: 'test-workspace'
+        }
+      };
+
+      const result = await service.executeFunction(largeContentCall);
+      expect(result.success).toBe(true);
+    }, 15000); // 15 second timeout for large content
   });
 });
