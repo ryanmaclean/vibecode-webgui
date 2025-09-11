@@ -19,7 +19,7 @@ spec:
     emptyDir: {}
   containers:
   - name: test-provisioning
-    image: bitnami/kubectl:1.34
+    image: bitnami/kubectl:latest
     command: ['sh', '-c']
     env:
     - name: HOME
