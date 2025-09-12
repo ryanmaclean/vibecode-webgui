@@ -12,7 +12,8 @@ import {
   EnvironmentalContext,
   Context7InitOptions,
   IContext7Manager,
-  Context7StorageProvider
+  Context7StorageProvider,
+  Context7AIService
 } from './interfaces';
 
 /**
@@ -27,15 +28,18 @@ export class Context7Manager implements IContext7Manager {
   private taskContext: TaskContext;
   private environmentalContext: EnvironmentalContext;
   private storageProvider?: Context7StorageProvider;
+  private aiService?: Context7AIService;
   
   /**
    * Creates a new Context7Manager
    * @param initialContext Initial context values (optional)
    * @param storageProvider Storage provider for persistence (optional)
+   * @param aiService AI service for context processing (optional)
    */
   constructor(
     initialContext?: Context7InitOptions,
-    storageProvider?: Context7StorageProvider
+    storageProvider?: Context7StorageProvider,
+    aiService?: Context7AIService
   ) {
     // Initialize with defaults and any provided values
     this.temporalContext = {
@@ -130,6 +134,7 @@ export class Context7Manager implements IContext7Manager {
     };
     
     this.storageProvider = storageProvider;
+    this.aiService = aiService;
   }
   
   /**
@@ -359,5 +364,18 @@ export class Context7Manager implements IContext7Manager {
       console.error('Failed to deserialize context:', error);
       return new Context7Manager();
     }
+  }
+  
+  /**
+   * Process the current context with the AI service
+   * @returns AI-generated response
+   */
+  async processWithAI(): Promise<any> {
+    if (!this.aiService) {
+      throw new Error('AI service is not configured');
+    }
+    
+    const context = this.getFullContext();
+    return this.aiService.processContext(context);
   }
 }
