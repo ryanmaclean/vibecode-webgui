@@ -6,7 +6,7 @@
 import { describe, test, expect, beforeAll, afterAll, beforeEach } from '@jest/globals'
 import WebSocket from 'ws'
 import { spawn } from 'child_process'
-import { ClaudeCliIntegration } from '@/src/lib/claude-cli-integration'
+import { ClaudeCliIntegration } from '@/lib/claude-cli-integration'
 
 // Only run these tests if AI integration is enabled
 const shouldRunAITests = process.env.ENABLE_AI_INTEGRATION_TESTS === 'true'

@@ -235,34 +235,48 @@ describe('CollaborationService', () => {
     });
 
     describe('handleTypingStart', () => {
-      it('should handle typing start event', () => {
+      it('should handle typing start event', async () => {
         const connectionHandler = mockSocketIO.on.mock.calls.find(call => call[0] === 'connection')[1];
         connectionHandler(mockSocket);
 
-        const typingStartHandler = mockSocket.on.mock.calls.find(call => call[0] === 'typing_start')[1];
-        typingStartHandler({
+        // First join workspace to set socket properties
+        const joinWorkspaceHandler = mockSocket.on.mock.calls.find(call => call[0] === 'join_workspace')[1];
+        await joinWorkspaceHandler({
           workspaceId: 'workspace-123',
           userId: 'user-123',
+          userName: 'Test User',
           conversationId: 'conversation-123'
         });
 
-        expect(mockSocket.to).toHaveBeenCalledWith('workspace:workspace-123');
+        const typingStartHandler = mockSocket.on.mock.calls.find(call => call[0] === 'typing_start')[1];
+        typingStartHandler({
+          conversationId: 'conversation-123'
+        });
+
+        expect(mockSocket.to).toHaveBeenCalledWith('conversation:conversation-123');
       });
     });
 
     describe('handleTypingStop', () => {
-      it('should handle typing stop event', () => {
+      it('should handle typing stop event', async () => {
         const connectionHandler = mockSocketIO.on.mock.calls.find(call => call[0] === 'connection')[1];
         connectionHandler(mockSocket);
 
-        const typingStopHandler = mockSocket.on.mock.calls.find(call => call[0] === 'typing_stop')[1];
-        typingStopHandler({
+        // First join workspace to set socket properties
+        const joinWorkspaceHandler = mockSocket.on.mock.calls.find(call => call[0] === 'join_workspace')[1];
+        await joinWorkspaceHandler({
           workspaceId: 'workspace-123',
           userId: 'user-123',
+          userName: 'Test User',
           conversationId: 'conversation-123'
         });
 
-        expect(mockSocket.to).toHaveBeenCalledWith('workspace:workspace-123');
+        const typingStopHandler = mockSocket.on.mock.calls.find(call => call[0] === 'typing_stop')[1];
+        typingStopHandler({
+          conversationId: 'conversation-123'
+        });
+
+        expect(mockSocket.to).toHaveBeenCalledWith('conversation:conversation-123');
       });
     });
   });
@@ -273,14 +287,21 @@ describe('CollaborationService', () => {
     });
 
     describe('handleCursorMove', () => {
-      it('should handle cursor move event', () => {
+      it('should handle cursor move event', async () => {
         const connectionHandler = mockSocketIO.on.mock.calls.find(call => call[0] === 'connection')[1];
         connectionHandler(mockSocket);
 
-        const cursorMoveHandler = mockSocket.on.mock.calls.find(call => call[0] === 'cursor_move')[1];
-        cursorMoveHandler({
+        // First join workspace to set socket properties
+        const joinWorkspaceHandler = mockSocket.on.mock.calls.find(call => call[0] === 'join_workspace')[1];
+        await joinWorkspaceHandler({
           workspaceId: 'workspace-123',
           userId: 'user-123',
+          userName: 'Test User',
+          conversationId: 'conversation-123'
+        });
+
+        const cursorMoveHandler = mockSocket.on.mock.calls.find(call => call[0] === 'cursor_move')[1];
+        cursorMoveHandler({
           x: 100,
           y: 200,
           messageId: 'message-123'
@@ -333,7 +354,7 @@ describe('CollaborationService', () => {
           fileSize: 1024
         });
 
-        expect(mockSocket.to).toHaveBeenCalledWith('workspace:workspace-123');
+        expect(mockSocket.to).toHaveBeenCalledWith('conversation:conversation-123');
       });
 
       it('should handle file share errors gracefully', async () => {
@@ -364,9 +385,18 @@ describe('CollaborationService', () => {
     });
 
     describe('handleDisconnect', () => {
-      it('should handle user disconnect', () => {
+      it('should handle user disconnect', async () => {
         const connectionHandler = mockSocketIO.on.mock.calls.find(call => call[0] === 'connection')[1];
         connectionHandler(mockSocket);
+
+        // First join workspace to set socket properties
+        const joinWorkspaceHandler = mockSocket.on.mock.calls.find(call => call[0] === 'join_workspace')[1];
+        await joinWorkspaceHandler({
+          workspaceId: 'workspace-123',
+          userId: 'user-123',
+          userName: 'Test User',
+          conversationId: 'conversation-123'
+        });
 
         const disconnectHandler = mockSocket.on.mock.calls.find(call => call[0] === 'disconnect')[1];
         disconnectHandler();
@@ -426,7 +456,7 @@ describe('CollaborationService', () => {
     });
 
     it('should record collaboration metrics', async () => {
-      const { datadogMetrics } = require('../monitoring/datadog-metrics');
+      const { datadogMetrics } = require('../../monitoring/datadog-metrics');
       
       const connectionHandler = mockSocketIO.on.mock.calls.find(call => call[0] === 'connection')[1];
       connectionHandler(mockSocket);
