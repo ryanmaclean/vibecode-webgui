@@ -7,7 +7,7 @@
  * Staff Engineer Implementation - Production-ready collaboration testing
  */
 
-const { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach, jest } = require('@jest/globals');
+const { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } = require('@jest/globals');
 
 // Mock WebSocket and Yjs for integration testing
 global.WebSocket = jest.fn().mockImplementation(() => ({

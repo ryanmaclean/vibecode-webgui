@@ -18,6 +18,15 @@ jest.mock('@/lib/monitoring', () => ({
   }
 }));
 
+// Mock fs/promises module used by checkDiskSpace
+jest.mock('fs/promises', () => ({
+  stat: jest.fn().mockResolvedValue({
+    isDirectory: () => true,
+    isFile: () => false,
+    size: 1024
+  })
+}));
+
 describe('/api/health', () => {
   let mockRequest: NextRequest;
 
@@ -46,13 +55,15 @@ describe('/api/health', () => {
         console.log('Response status:', response.status);
         
         let data;
+        let responseText;
         try {
-          data = await response.json();
+          responseText = await response.text();
+          console.log('Response text:', responseText);
+          data = JSON.parse(responseText);
           console.log('Response data:', data);
-        } catch (jsonError) {
-          console.log('JSON parse error:', jsonError);
-          const text = await response.text();
-          console.log('Response text:', text);
+        } catch (parseError) {
+          console.log('Parse error:', parseError);
+          console.log('Raw response text:', responseText);
         }
 
         expect(response.status).toBe(200);
