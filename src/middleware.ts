@@ -96,9 +96,34 @@ function detectBot(request: NextRequest): {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip middleware in test environment
+  // Skip ALL middleware logic in test environment
   if (isTestEnvironment) {
     return NextResponse.next();
+  }
+
+  // Handle authentication redirects for all environments
+  const isAuthPage = pathname.startsWith('/auth/');
+  const isApiRoute = pathname.startsWith('/api/');
+  const isPublicRoute = pathname.startsWith('/_next/') || 
+                       pathname.startsWith('/favicon.ico') || 
+                       pathname.startsWith('/public');
+
+  // Check for authentication token in cookies
+  const sessionToken = request.cookies.get('next-auth.session-token') || 
+                      request.cookies.get('__Secure-next-auth.session-token');
+  
+  const isAuthenticated = !!sessionToken;
+
+  // Redirect unauthenticated users to signin (except for auth pages and public routes)
+  if (!isAuthenticated && !isAuthPage && !isPublicRoute && !isApiRoute) {
+    const signInUrl = new URL('/auth/signin', request.url);
+    signInUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(signInUrl);
+  }
+
+  // Redirect authenticated users away from auth pages
+  if (isAuthenticated && isAuthPage && pathname !== '/auth/signout') {
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
   if (

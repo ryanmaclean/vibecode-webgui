@@ -69,6 +69,7 @@ export function useCollaboration({
   const [cursors, setCursors] = useState<CursorPosition[]>([])
   const [connectionError, setConnectionError] = useState<string | null>(null)
 
+  const socketRef = useRef<Socket | null>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const cursorThrottleRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -156,6 +157,7 @@ export function useCollaboration({
         })
 
         setSocket(socketInstance)
+        socketRef.current = socketInstance
 
       } catch (error) {
         console.error('Failed to initialize collaboration:', error)
@@ -166,9 +168,11 @@ export function useCollaboration({
     initializeSocket()
 
     return () => {
-      if (socket) {
-        socket.emit('leave_workspace', { workspaceId, userId })
-        socket.disconnect()
+      // Use ref for reliable cleanup
+      if (socketRef.current) {
+        socketRef.current.emit('leave_workspace', { workspaceId, userId })
+        socketRef.current.disconnect()
+        socketRef.current = null
       }
     }
   }, [enabled, workspaceId, conversationId, userId, userName])

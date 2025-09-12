@@ -132,9 +132,18 @@ export class CollaborationManager {
     const session = this.sessions.get(documentId)
     if (!session) return
 
-    // Clean up providers
-    session.provider?.destroy()
-    session.persistence?.destroy?.()
+    // Clean up providers safely
+    try {
+      session.provider?.destroy()
+    } catch (error) {
+      console.warn('Error destroying provider:', error)
+    }
+    
+    try {
+      session.persistence?.destroy?.()
+    } catch (error) {
+      console.warn('Error destroying persistence:', error)
+    }
 
     // Remove session
     this.sessions.delete(documentId)
