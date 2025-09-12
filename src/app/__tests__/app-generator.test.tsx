@@ -20,6 +20,8 @@ jest.mock('@/lib/analytics', () => ({
 
 // Mock the ProjectGenerator component to test the integration
 jest.mock('@/components/ProjectGenerator', () => {
+  const mockReact = require('react');
+  
   const MockProjectGenerator = ({
     initialPrompt = '',
     onComplete,
@@ -29,7 +31,7 @@ jest.mock('@/components/ProjectGenerator', () => {
     onComplete?: (data: { workspaceId: string; projectName: string }) => void;
     autoStart?: boolean;
   }) => {
-    React.useEffect(() => {
+    mockReact.useEffect(() => {
       if (autoStart && initialPrompt) {
         // Simulate completion after a short delay
         const timer = setTimeout(() => {
@@ -63,7 +65,8 @@ jest.mock('@/components/ProjectGenerator', () => {
       </div>
     );
   };
-  return MockProjectGenerator;
+  
+  return { ProjectGenerator: MockProjectGenerator };
 });
 
 describe('App Generator Integration', () => {
