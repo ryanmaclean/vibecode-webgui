@@ -117,26 +117,65 @@ spec:
       # Test that we can create a test PVC
       echo "Testing PVC creation..."
       PVC_NAME="test-pvc-$RANDOM"
-      cat <<EOF | retry ${KCTL} apply -f -
-      apiVersion: v1
-      kind: PersistentVolumeClaim
-      metadata:
-        name: ${PVC_NAME}
-        namespace: {{ .Values.global.namespace }}
-        labels:
-          app.kubernetes.io/name: {{ include "vibecode-platform.name" . }}
-          app.kubernetes.io/component: test
-      spec:
-        accessModes:
-          - {{ .Values.codeServer.persistence.accessMode }}
-        resources:
-          requests:
-            storage: 1Gi
-        storageClassName: {{ default .Values.global.storageClass .Values.codeServer.persistence.storageClass }}
-      EOF
+      PVC_MANIFEST="/tmp/${PVC_NAME}.yaml"
+      printf '%s\n' \
+        'apiVersion: v1' \
+        'kind: PersistentVolumeClaim' \
+        'metadata:' \
+        "  name: ${PVC_NAME}" \
+        "  namespace: {{ .Values.global.namespace }}" \
+        '  labels:' \
+        "    app.kubernetes.io/name: {{ include "vibecode-platform.name" . }}" \
+        '    app.kubernetes.io/component: test' \
+        'spec:' \
+        '  accessModes:' \
+        "  - {{ .Values.codeServer.persistence.accessMode }}" \
+        '  resources:' \
+        '    requests:' \
+        '      storage: 1Gi' \
+        "  storageClassName: {{ default .Values.global.storageClass .Values.codeServer.persistence.storageClass }}" \
+        > "${PVC_MANIFEST}"
+      retry ${KCTL} apply -f "${PVC_MANIFEST}"
       echo "✓ PVC creation submitted"
 
-      # Wait for PVC to reach Bound
+      # Create a tiny pod that mounts the PVC to trigger binding in WaitForFirstConsumer modes
+      echo "Creating PVC binder pod to trigger binding..."
+      BINDER_NAME="pvc-binder-$RANDOM"
+      BINDER_MANIFEST="/tmp/${BINDER_NAME}.yaml"
+      printf '%s\n' \
+        'apiVersion: v1' \
+        'kind: Pod' \
+        'metadata:' \
+        "  name: ${BINDER_NAME}" \
+        "  namespace: {{ .Values.global.namespace }}" \
+        '  labels:' \
+        "    app.kubernetes.io/name: {{ include "vibecode-platform.name" . }}" \
+        '    app.kubernetes.io/component: test' \
+        'spec:' \
+        '  restartPolicy: Never' \
+        '  containers:' \
+        '  - name: pause' \
+        '    image: busybox:1.36' \
+        '    command: ["sh","-lc","sleep 300"]' \
+        '    resources:' \
+        '      requests:' \
+        '        cpu: "10m"' \
+        '        memory: "16Mi"' \
+        '      limits:' \
+        '        cpu: "50m"' \
+        '        memory: "32Mi"' \
+        '    volumeMounts:' \
+        '    - mountPath: /data' \
+        '      name: data' \
+        '      readOnly: false' \
+        '  volumes:' \
+        '  - name: data' \
+        '    persistentVolumeClaim:' \
+        "      claimName: ${PVC_NAME}" \
+        > "${BINDER_MANIFEST}"
+      retry ${KCTL} apply -f "${BINDER_MANIFEST}"
+
+      # Wait for PVC to reach Bound now that a consumer exists
       echo "Waiting for PVC ${PVC_NAME} to become Bound..."
       for i in $(seq 1 60); do
         PHASE=$(${KCTL} get pvc ${PVC_NAME} --namespace={{ .Values.global.namespace }} -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
@@ -147,11 +186,15 @@ spec:
         sleep 5
         if [ "$i" -eq 60 ]; then
           echo "❌ PVC ${PVC_NAME} did not reach Bound state in time (phase='$PHASE')" >&2
+          # Cleanup binder pod before exit
+          ${KCTL} delete pod ${BINDER_NAME} --namespace={{ .Values.global.namespace }} || true
           exit 1
         fi
       done
 
       # Cleanup test PVC
+      # Cleanup binder pod and PVC
+      retry ${KCTL} delete pod ${BINDER_NAME} --namespace={{ .Values.global.namespace }} || true
       retry ${KCTL} delete pvc ${PVC_NAME} --namespace={{ .Values.global.namespace }} || true
       # Also cleanup any leftover test-labeled PVCs from prior runs
       retry ${KCTL} delete pvc -l app.kubernetes.io/component=test --namespace={{ .Values.global.namespace }} || true
