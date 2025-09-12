@@ -47,7 +47,7 @@ describe('WebSocket Server Integration', () => {
   });
 
   afterAll(() => {
-    if (clientSocket) clientSocket.close();
+    if (clientSocket) clientSocket.disconnect();
     if (ioServer) ioServer.close();
     if (httpServer) httpServer.close();
   });
