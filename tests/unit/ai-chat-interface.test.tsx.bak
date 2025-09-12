@@ -112,8 +112,8 @@ describe('AIChatInterface', () => {
       const settingsButton = screen.getByRole('button', { name: /settings/i })
       fireEvent.click(settingsButton)
 
-      expect(screen.getByText('Select AI Model:')).toBeInTheDocument()
-      expect(screen.getByRole('combobox')).toHaveValue('anthropic/claude-3-sonnet')
+      expect(screen.getByText('AI Model')).toBeInTheDocument()
+      expect(screen.getByDisplayValue('anthropic/claude-3-sonnet')).toBeInTheDocument()
     })
 
     it('allows model selection change', async () => {
@@ -124,7 +124,7 @@ describe('AIChatInterface', () => {
       fireEvent.click(settingsButton)
 
       // Change model
-      const modelSelect = screen.getByRole('combobox')
+      const modelSelect = screen.getByDisplayValue('anthropic/claude-3-sonnet')
       fireEvent.change(modelSelect, { target: { value: 'openai/gpt-4' } })
 
       expect(modelSelect).toHaveValue('openai/gpt-4')
@@ -339,7 +339,7 @@ describe('AIChatInterface', () => {
       const { container } = render(<AIChatInterface {...defaultProps} />)
 
       // Test that component has responsive classes
-      expect(container.firstChild).toHaveClass('test-class')
+      expect(container.querySelector('.max-w-\\[80%\\]')).toBeInTheDocument()
     })
   })
 })
