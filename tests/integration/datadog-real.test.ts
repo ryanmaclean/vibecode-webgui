@@ -4,6 +4,9 @@
  * Only runs when ENABLE_DATADOG_INTEGRATION_TESTS=true
  */
 
+
+jest.unmock('node-fetch');
+
 import { describe, test, expect, beforeAll } from '@jest/globals'
 
 // Only run these tests when explicitly enabled with real API key
