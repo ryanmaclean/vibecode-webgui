@@ -257,7 +257,8 @@ spec:
       })
 
       // Test that users can access their own services but not each other's
-      // (This would require proper network policies to be fully tested)} finally {
+      // (This would require proper network policies to be fully tested)
+    } finally {
       // Cleanup users and test pod
       try {
         execSync(`scripts/provision-user.sh delete ${user1} --delete-storage --namespace ${NAMESPACE}`, {
@@ -270,8 +271,10 @@ spec:
         });
         execSync(`kubectl delete pod network-test-pod --namespace ${NAMESPACE} --ignore-not-found=true`, {
           stdio: 'inherit'
-        })} catch (error) {
-        console.error('Failed to cleanup test resources:', error)}
+        });
+      } catch (error) {
+        console.error('Failed to cleanup test resources:', error);
+      }
     }
   }, TIMEOUT)
 

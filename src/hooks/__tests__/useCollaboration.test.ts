@@ -16,7 +16,6 @@ const eventHandlers = new Map<string, Function>()
 
 const mockSocket = {
   on: jest.fn((event: string, handler: Function) => {
-    console.log(`mockSocket.on called with event: ${event}`)
     eventHandlers.set(event, handler)
     return mockSocket // Return for chaining
   }),
@@ -25,7 +24,6 @@ const mockSocket = {
   connected: false,
   // Helper method to trigger events in tests
   _trigger: (event: string, ...args: any[]) => {
-    console.log(`_trigger called for event: ${event}, handler exists: ${eventHandlers.has(event)}`)
     const handler = eventHandlers.get(event)
     if (handler) {
       handler(...args)
@@ -36,7 +34,6 @@ const mockSocket = {
 // Immediately set up the mock implementation
 const mockIo = io as jest.MockedFunction<typeof io>
 mockIo.mockImplementation((options) => {
-  console.log('Top-level mockImplementation called with:', options)
   return mockSocket as any
 })
 
@@ -93,19 +90,16 @@ describe('useCollaboration', () => {
     // Re-setup the io mock implementation after clearAllMocks
     const mockIo = io as jest.MockedFunction<typeof io>
     mockIo.mockImplementation((options) => {
-      console.log('beforeEach mockImplementation called with:', options)
       return mockSocket as any
     })
     
     // Re-setup the mockSocket.on implementation after clearAllMocks
     ;(mockSocket.on as jest.MockedFunction<any>).mockImplementation((event: string, handler: Function) => {
-      console.log(`beforeEach mockSocket.on called with event: ${event}`)
       eventHandlers.set(event, handler)
       return mockSocket // Return for chaining
     })
     
     mockFetch.mockImplementation(async (url) => {
-      console.log(`Fetch mock called with: ${url}`)
       return {
         ok: true,
         status: 200,
@@ -304,20 +298,20 @@ describe('useCollaboration', () => {
       
       const { result } = renderHook(() => useCollaboration(defaultProps))
 
-      const userLeftHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'user_left'
-      )?.[1]
+      // Wait for event handlers to be registered
+      await waitFor(() => {
+        expect(eventHandlers.has('user_left')).toBe(true)
+      })
       
       const mockUsers: CollaborativeUser[] = []
 
-      if (userLeftHandler) {
-        act(() => {
-          userLeftHandler({ 
-            userId: 'user-123',
-            activeUsers: mockUsers 
-          })
+      // Trigger user left event
+      act(() => {
+        mockSocket._trigger('user_left', { 
+          userId: 'user-123',
+          activeUsers: mockUsers 
         })
-      }
+      })
 
       await waitFor(() => {
         expect(result.current.activeUsers).toEqual(mockUsers)
@@ -332,19 +326,32 @@ describe('useCollaboration', () => {
     it('should handle user typing event', async () => {
       const { result } = renderHook(() => useCollaboration(defaultProps))
 
-      const userTypingHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'user_typing'
-      )?.[1]
-      
-      if (userTypingHandler) {
-        act(() => {
-          userTypingHandler({
-            userId: 'user-123',
-            conversationId: 'conversation-456',
-            isTyping: true,
-          })
+      // Wait for event handlers to be registered
+      await waitFor(() => {
+        expect(eventHandlers.has('user_typing')).toBe(true)
+        expect(eventHandlers.has('workspace_state')).toBe(true)
+      })
+
+      // First, populate activeUsers so getUserById can find the typing user
+      act(() => {
+        mockSocket._trigger('workspace_state', {
+          activeUsers: [{
+            id: 'user-123',
+            name: 'Test User',
+            isActive: true,
+            lastSeen: new Date()
+          }]
         })
-      }
+      })
+
+      // Then trigger user typing event
+      act(() => {
+        mockSocket._trigger('user_typing', {
+          userId: 'user-123',
+          conversationId: 'conversation-456',
+          isTyping: true,
+        })
+      })
 
       await waitFor(() => {
         const typingUsers = result.current.typingUsers('conversation-456')
@@ -356,16 +363,15 @@ describe('useCollaboration', () => {
     it('should start typing', async () => {
       const { result } = renderHook(() => useCollaboration(defaultProps))
 
+      // Wait for event handlers to be registered
+      await waitFor(() => {
+        expect(eventHandlers.has('connect')).toBe(true)
+      })
+
       // First connect
-      const connectHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'connect'
-      )?.[1]
-      
-      if (connectHandler) {
-        act(() => {
-          connectHandler()
-        })
-      }
+      act(() => {
+        mockSocket._trigger('connect')
+      })
 
       await waitFor(() => {
         expect(result.current.isConnected).toBe(true)
@@ -383,16 +389,15 @@ describe('useCollaboration', () => {
     it('should stop typing', async () => {
       const { result } = renderHook(() => useCollaboration(defaultProps))
 
+      // Wait for event handlers to be registered
+      await waitFor(() => {
+        expect(eventHandlers.has('connect')).toBe(true)
+      })
+
       // First connect
-      const connectHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'connect'
-      )?.[1]
-      
-      if (connectHandler) {
-        act(() => {
-          connectHandler()
-        })
-      }
+      act(() => {
+        mockSocket._trigger('connect')
+      })
 
       await waitFor(() => {
         expect(result.current.isConnected).toBe(true)
@@ -423,19 +428,19 @@ describe('useCollaboration', () => {
     it('should handle cursor moved event', async () => {
       const { result } = renderHook(() => useCollaboration(defaultProps))
 
-      const cursorMovedHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'cursor_moved'
-      )?.[1]
-      
-      if (cursorMovedHandler) {
-        act(() => {
-          cursorMovedHandler({
-            userId: 'user-123',
-            cursor: { x: 100, y: 200 },
-            timestamp: new Date().toISOString(),
-          })
+      // Wait for event handlers to be registered
+      await waitFor(() => {
+        expect(eventHandlers.has('cursor_moved')).toBe(true)
+      })
+
+      // Trigger cursor moved event
+      act(() => {
+        mockSocket._trigger('cursor_moved', {
+          userId: 'user-123',
+          cursor: { x: 100, y: 200 },
+          timestamp: new Date().toISOString(),
         })
-      }
+      })
 
       await waitFor(() => {
         expect(result.current.cursors).toHaveLength(1)
@@ -451,16 +456,15 @@ describe('useCollaboration', () => {
     it('should update cursor position', async () => {
       const { result } = renderHook(() => useCollaboration(defaultProps))
 
+      // Wait for event handlers to be registered
+      await waitFor(() => {
+        expect(eventHandlers.has('connect')).toBe(true)
+      })
+
       // First connect
-      const connectHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'connect'
-      )?.[1]
-      
-      if (connectHandler) {
-        act(() => {
-          connectHandler()
-        })
-      }
+      act(() => {
+        mockSocket._trigger('connect')
+      })
 
       await waitFor(() => {
         expect(result.current.isConnected).toBe(true)
@@ -480,16 +484,15 @@ describe('useCollaboration', () => {
     it('should throttle cursor updates', async () => {
       const { result } = renderHook(() => useCollaboration(defaultProps))
 
+      // Wait for event handlers to be registered
+      await waitFor(() => {
+        expect(eventHandlers.has('connect')).toBe(true)
+      })
+
       // First connect
-      const connectHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'connect'
-      )?.[1]
-      
-      if (connectHandler) {
-        act(() => {
-          connectHandler()
-        })
-      }
+      act(() => {
+        mockSocket._trigger('connect')
+      })
 
       await waitFor(() => {
         expect(result.current.isConnected).toBe(true)
@@ -502,8 +505,11 @@ describe('useCollaboration', () => {
         result.current.updateCursor(102, 202)
       })
 
-      // Should only emit once due to throttling
-      expect(global.mockSocket.emit).toHaveBeenCalledTimes(1)
+      // Should only emit once for cursor_move due to throttling (plus join_workspace on connect)
+      // First cursor update should emit, subsequent ones should be throttled
+      expect(global.mockSocket.emit).toHaveBeenCalledWith('cursor_move', { x: 100, y: 200 })
+      expect(global.mockSocket.emit).not.toHaveBeenCalledWith('cursor_move', { x: 101, y: 201 })
+      expect(global.mockSocket.emit).not.toHaveBeenCalledWith('cursor_move', { x: 102, y: 202 })
     })
 
     it('should not emit cursor updates when disconnected', () => {
@@ -540,15 +546,15 @@ describe('useCollaboration', () => {
         },
       ]
 
-      const workspaceStateHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'workspace_state'
-      )?.[1]
-      
-      if (workspaceStateHandler) {
-        act(() => {
-          workspaceStateHandler({ activeUsers: mockUsers })
-        })
-      }
+      // Wait for event handlers to be registered
+      await waitFor(() => {
+        expect(eventHandlers.has('workspace_state')).toBe(true)
+      })
+
+      // Set active users using _trigger pattern
+      act(() => {
+        mockSocket._trigger('workspace_state', { activeUsers: mockUsers })
+      })
 
       await waitFor(() => {
         const user = result.current.getUserById('user-1')
@@ -581,31 +587,25 @@ describe('useCollaboration', () => {
         },
       ]
 
-      // Set active users
-      const workspaceStateHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'workspace_state'
-      )?.[1]
-      
-      if (workspaceStateHandler) {
-        act(() => {
-          workspaceStateHandler({ activeUsers: mockUsers })
-        })
-      }
+      // Wait for event handlers to be registered
+      await waitFor(() => {
+        expect(eventHandlers.has('workspace_state')).toBe(true)
+        expect(eventHandlers.has('user_typing')).toBe(true)
+      })
 
-      // Set typing users
-      const userTypingHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'user_typing'
-      )?.[1]
-      
-      if (userTypingHandler) {
-        act(() => {
-          userTypingHandler({
-            userId: 'user-1',
-            conversationId: 'conversation-456',
-            isTyping: true,
-          })
+      // Set active users using _trigger pattern
+      act(() => {
+        mockSocket._trigger('workspace_state', { activeUsers: mockUsers })
+      })
+
+      // Set typing user using _trigger pattern
+      act(() => {
+        mockSocket._trigger('user_typing', {
+          userId: 'user-1',
+          conversationId: 'conversation-456',
+          isTyping: true,
         })
-      }
+      })
 
       await waitFor(() => {
         const typingUsers = result.current.typingUsers('conversation-456')
@@ -617,11 +617,30 @@ describe('useCollaboration', () => {
   })
 
   describe('Cleanup', () => {
-    it('should cleanup on unmount', () => {
-      const { unmount } = renderHook(() => useCollaboration(defaultProps))
+    it('should cleanup on unmount', async () => {
+      const { result, unmount } = renderHook(() => useCollaboration(defaultProps))
 
+      // Wait for socket initialization
+      await waitFor(() => {
+        expect(eventHandlers.has('connect')).toBe(true)
+      })
+
+      // Connect to set up socket reference
+      act(() => {
+        mockSocket._trigger('connect')
+      })
+
+      await waitFor(() => {
+        expect(result.current.isConnected).toBe(true)
+      })
+
+      // Store the current call count to verify cleanup calls
+      const previousCallCount = global.mockSocket.emit.mock.calls.length
+
+      // Now unmount to trigger cleanup
       unmount()
 
+      // Check that cleanup calls were made
       expect(global.mockSocket.emit).toHaveBeenCalledWith('leave_workspace', {
         workspaceId: 'workspace-123',
         userId: 'user-789',
@@ -634,34 +653,20 @@ describe('useCollaboration', () => {
       
       const { result } = renderHook(() => useCollaboration(defaultProps))
 
-      // Add old typing indicator and cursor
-      const userTypingHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'user_typing'
-      )?.[1]
-      
-      const cursorMovedHandler = global.mockSocket.on.mock.calls.find(
-        call => call[0] === 'cursor_moved'
-      )?.[1]
-      
-      if (userTypingHandler) {
-        act(() => {
-          userTypingHandler({
-            userId: 'user-123',
-            conversationId: 'conversation-456',
-            isTyping: true,
-          })
-        })
-      }
+      // Wait for event handlers to be registered
+      await waitFor(() => {
+        expect(eventHandlers.has('user_typing')).toBe(true)
+        expect(eventHandlers.has('cursor_moved')).toBe(true)
+      })
 
-      if (cursorMovedHandler) {
-        act(() => {
-          cursorMovedHandler({
-            userId: 'user-123',
-            cursor: { x: 100, y: 200 },
-            timestamp: new Date(Date.now() - 6000).toISOString(), // 6 seconds ago
-          })
+      // Add cursor using _trigger pattern
+      act(() => {
+        mockSocket._trigger('cursor_moved', {
+          userId: 'user-123',
+          cursor: { x: 100, y: 200 },
+          timestamp: new Date(Date.now() - 6000).toISOString(), // 6 seconds ago
         })
-      }
+      })
 
       await waitFor(() => {
         expect(result.current.cursors).toHaveLength(1)
