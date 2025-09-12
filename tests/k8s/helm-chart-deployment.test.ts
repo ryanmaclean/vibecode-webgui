@@ -20,6 +20,33 @@ const ensureHelmRepos = () => {
   try { run('helm repo add bitnami https://charts.bitnami.com/bitnami'); } catch {}
   run('helm repo update');
 };
+
+// Ensure a dynamic storage provisioner exists (local-path) for KIND environments
+const ensureStorageProvisioner = () => {
+  // Check if any StorageClass exists; if not, install Rancher's local-path-provisioner
+  let scList = '';
+  try {
+    scList = execSync('kubectl get storageclass -o name', { encoding: 'utf8' }).trim();
+  } catch {
+    scList = '';
+  }
+  if (!scList) {
+    // Install local-path-provisioner
+    try {
+      execSync('kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml', { stdio: 'inherit' });
+    } catch {
+      // Best effort; continue to wait below
+    }
+    // Wait for controller to be available
+    try {
+      waitForDeploymentAvailable('kube-system', 'local-path-provisioner', 180000);
+    } catch {}
+    // Mark local-path as default
+    try {
+      execSync(`kubectl patch storageclass local-path -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'`, { stdio: 'inherit' });
+    } catch {}
+  }
+};
 const ensureHelmDeps = () => {
   run(`helm dependency update ${CHART_PATH}`);
 };
@@ -96,6 +123,9 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
     // Wait for ingress controller deployment to have available replicas
     waitForDeploymentAvailable('ingress-nginx', 'ingress-nginx-controller', 300000);
 
+    // Ensure a dynamic storage provisioner exists (local-path) before we detect StorageClass
+    ensureStorageProvisioner();
+
     // Create namespace
     execSync(`kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -`, {
       stdio: 'inherit'
@@ -108,8 +138,13 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
     // Prepare KIND-specific values overrides
     let storageClass = 'local-path';
     try {
-      const sc = execSync('kubectl get storageclass -o jsonpath={.items[0].metadata.name}', { encoding: 'utf8' }).trim();
-      if (sc) storageClass = sc;
+      const sc = execSync('kubectl get storageclass -o jsonpath={.items[?(@.metadata.annotations.storageclass\\.kubernetes\\.io/is-default-class=="true")].metadata.name}', { encoding: 'utf8' }).trim();
+      if (sc) {
+        storageClass = sc;
+      } else {
+        const scAny = execSync('kubectl get storageclass -o jsonpath={.items[0].metadata.name}', { encoding: 'utf8' }).trim();
+        if (scAny) storageClass = scAny;
+      }
     } catch {}
 
     const kindValues = `global:\n  storageClass: ${storageClass}\ncodeServer:\n  persistence:\n    storageClass: ${storageClass}\nuserManagement:\n  workspace:\n    storageClass: ${storageClass}\nmonitoring:\n  enabled: false\nmongodb:\n  enabled: false\ndatadog:\n  enabled: false\nsecurity:\n  networkPolicies:\n    enabled: false\n`;
