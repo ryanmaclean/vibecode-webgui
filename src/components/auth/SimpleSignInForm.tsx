@@ -50,34 +50,16 @@ export default function SimpleSignInForm() {
     setIsSubmitting(true)
 
     try {
-      const result = await signIn('credentials', {
+      // Use redirect: true to let NextAuth handle the redirect
+      await signIn('credentials', {
         email,
         password,
-        redirect: false,
+        redirect: true,
+        callbackUrl: '/'
       })
-
-      console.log('📋 NextAuth signIn result:', result)
-
-      if (result?.error) {
-        console.log('❌ NextAuth error:', result.error)
-        setError(result.error)
-      } else if (result?.ok) {
-        console.log('✅ NextAuth success, checking session...')
-        // Check if we have a session
-        const session = await getSession()
-        console.log('📋 Session result:', session)
-        if (session) {
-          console.log('✅ Session created successfully')
-          router.push('/')
-        } else {
-          console.log('❌ No session created')
-          setError('Authentication failed - no session created')
-        }
-      }
-    } catch (_err) {
-      console.log('❌ Unexpected error:', _err)
+    } catch (err) {
+      console.log('❌ Unexpected error:', err)
       setError('An unexpected error occurred')
-    } finally {
       setIsSubmitting(false)
     }
   }
@@ -113,8 +95,6 @@ export default function SimpleSignInForm() {
         <form 
           className="mt-8 space-y-6" 
           onSubmit={handleSubmit}
-          action="/api/auth/signin/credentials"
-          method="post"
         >
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">

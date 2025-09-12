@@ -54,11 +54,14 @@ test.describe('Authentication Flow', () => {
   test('should navigate to login page', async ({ page }) => {
     const helpers = createTestHelpers(page);
     
-    // Clear any existing session first
-    await page.goto('/auth/logout');
+    // Clear any existing session by clearing cookies
+    await page.context().clearCookies();
+    
+    // Navigate to homepage - should redirect to signin
+    await page.goto('/');
     await helpers.waitForPageReady();
     
-    // Wait for logout to complete and redirect to signin
+    // Wait for redirect to signin page
     await page.waitForURL(/\/auth\/signin/, { timeout: 10000 });
     
     // Verify we're on the signin page
@@ -126,14 +129,8 @@ test.describe('Authentication Flow', () => {
     });
     console.log('Form debug info:', formInfo);
     
-    // Submit the form by directly triggering the React event handler
-    await page.evaluate(() => {
-      const form = document.querySelector('form');
-      if (form) {
-        const event = new Event('submit', { bubbles: true, cancelable: true });
-        form.dispatchEvent(event);
-      }
-    });
+    // Submit the form by clicking the submit button
+    await page.click('[data-testid="signin-button"]');
     
     // Wait for any navigation or response
     await page.waitForTimeout(2000);
