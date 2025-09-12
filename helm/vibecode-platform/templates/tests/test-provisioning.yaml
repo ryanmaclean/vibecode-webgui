@@ -116,11 +116,12 @@ spec:
 
       # Test that we can create a test PVC
       echo "Testing PVC creation..."
+      PVC_NAME="test-pvc-$RANDOM"
       cat <<EOF | retry ${KCTL} apply -f -
       apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
-        name: test-pvc-$RANDOM
+        name: ${PVC_NAME}
         namespace: {{ .Values.global.namespace }}
         labels:
           app.kubernetes.io/name: {{ include "vibecode-platform.name" . }}
@@ -133,10 +134,27 @@ spec:
             storage: 1Gi
         storageClassName: {{ default .Values.global.storageClass .Values.codeServer.persistence.storageClass }}
       EOF
-      echo "✓ PVC creation successful"
+      echo "✓ PVC creation submitted"
+
+      # Wait for PVC to reach Bound
+      echo "Waiting for PVC ${PVC_NAME} to become Bound..."
+      for i in $(seq 1 60); do
+        PHASE=$(${KCTL} get pvc ${PVC_NAME} --namespace={{ .Values.global.namespace }} -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
+        if [ "$PHASE" = "Bound" ]; then
+          echo "✓ PVC ${PVC_NAME} is Bound"
+          break
+        fi
+        sleep 5
+        if [ "$i" -eq 60 ]; then
+          echo "❌ PVC ${PVC_NAME} did not reach Bound state in time (phase='$PHASE')" >&2
+          exit 1
+        fi
+      done
 
       # Cleanup test PVC
-      retry ${KCTL} delete pvc -l app.kubernetes.io/component=test --namespace={{ .Values.global.namespace }}
+      retry ${KCTL} delete pvc ${PVC_NAME} --namespace={{ .Values.global.namespace }} || true
+      # Also cleanup any leftover test-labeled PVCs from prior runs
+      retry ${KCTL} delete pvc -l app.kubernetes.io/component=test --namespace={{ .Values.global.namespace }} || true
       echo "✓ Test PVC cleaned up"
 
       {{- if .Values.security.networkPolicies.enabled }}
