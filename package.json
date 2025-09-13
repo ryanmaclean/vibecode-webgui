@@ -160,7 +160,7 @@
     "ai": "^4.3.19",
     "async-mutex": "0.5.0",
     "autoprefixer": "10.4.21",
-    "axios": "^1.10.0",
+    "axios": "^1.12.1",
     "bcryptjs": "^3.0.2",
     "chokidar": "^4.0.3",
     "chroma-js": "^2.4.2",
