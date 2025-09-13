@@ -21,7 +21,6 @@ export const dynamic = 'force-dynamic'
 
 interface WebSocketMessage {
   type: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   payload?: any; // To be refined in future implementations
 }
 

@@ -62,6 +62,7 @@ export function createAccessibilityTest(options?: AccessibilityTestOptions) {
         expect(hasAccessibilityIssues).toBe(false);
       };
       
+      // eslint-disable-next-line react-hooks/rules-of-hooks
       await use(enhancedPage);
     }
   });
