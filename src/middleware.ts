@@ -96,12 +96,12 @@ function detectBot(request: NextRequest): {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip ALL middleware logic in test environment
+  // Skip authentication and ALL middleware logic in E2E test environment FIRST
   if (isTestEnvironment) {
     return NextResponse.next();
   }
 
-  // Handle authentication redirects for all environments
+  // Handle authentication redirects for production environments only
   const isAuthPage = pathname.startsWith('/auth/');
   const isApiRoute = pathname.startsWith('/api/');
   const isPublicRoute = pathname.startsWith('/_next/') || 
