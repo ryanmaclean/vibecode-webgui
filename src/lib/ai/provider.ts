@@ -6,9 +6,12 @@
 import { EnhancedAIManager, AIProviderConfig } from './enhanced-ai-manager';
 
 export interface AIProvider {
-  createChatCompletion: (messages: any[], options?: any) => Promise<ReadableStream>;
+  createChatCompletion: (
+    messages: Array<{ role: string; content: string }>,
+    options?: AIProviderOptions
+  ) => Promise<ReadableStream<Uint8Array>>;
   createEmbedding?: (text: string) => Promise<number[]>;
-  getModelInfo?: (model: string) => any;
+  getModelInfo?: (model: string) => Record<string, unknown>;
 }
 
 export interface AIProviderOptions {
@@ -16,73 +19,76 @@ export interface AIProviderOptions {
   temperature?: number;
   maxTokens?: number;
   stream?: boolean;
+  workflowType?: 'code-generation' | 'code-review' | 'documentation' | 'custom';
 }
 
-// Default AI provider configuration
+const textEncoder = new TextEncoder();
+
+// Default AI provider configuration aligned with EnhancedAIManager
 const defaultConfig: AIProviderConfig = {
-  primaryProvider: 'openrouter',
-  fallbackProviders: ['azure-openai', 'anthropic'],
-  models: {
-    'openrouter': ['openai/gpt-4o', 'openai/gpt-4o-mini'],
-    'azure-openai': ['gpt-4o', 'gpt-4o-mini'],
-    'anthropic': ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022']
-  },
-  apiKeys: {
-    openrouter: process.env.OPENROUTER_API_KEY || '',
-    azureOpenai: process.env.AZURE_OPENAI_API_KEY || '',
-    anthropic: process.env.ANTHROPIC_API_KEY || ''
+  openai: {
+    apiKey:
+      process.env.OPENAI_API_KEY ||
+      process.env.OPENROUTER_API_KEY ||
+      '',
+    model: 'gpt-4o-mini',
+    temperature: 0.7
   }
 };
 
 let aiManagerInstance: EnhancedAIManager | null = null;
 
-/**
- * Get or create AI provider instance
- */
-export function getAIProvider(options: AIProviderOptions = {}): AIProvider {
+function ensureManager(): EnhancedAIManager {
   if (!aiManagerInstance) {
     aiManagerInstance = new EnhancedAIManager(defaultConfig);
   }
 
-  return {
-    createChatCompletion: async (messages: any[], opts: any = {}) => {
-      const response = await aiManagerInstance.executeWorkflow({
-        messages,
-        model: options.model || 'openai/gpt-4o-mini',
-        temperature: options.temperature || 0.7,
-        maxTokens: options.maxTokens || 1000,
-        stream: options.stream || true,
-        ...opts
-      });
+  return aiManagerInstance;
+}
 
-      if (response.error) {
-        throw new Error(response.error);
+/**
+ * Get or create AI provider instance
+ */
+export function getAIProvider(baseOptions: AIProviderOptions = {}): AIProvider {
+  return {
+    createChatCompletion: async (messages, overrides = {}) => {
+      const manager = ensureManager();
+      const request = {
+        type: overrides.workflowType || baseOptions.workflowType || 'custom',
+        requirements: JSON.stringify({ messages }),
+        customSteps: [],
+        useLocalAI: false,
+        outputFormat: 'text' as const
+      };
+
+      const response = await manager.executeWorkflow(request);
+
+      if (!response.success) {
+        throw new Error(response.error || 'AI workflow execution failed');
       }
 
-      // Convert response to ReadableStream
-      return new ReadableStream({
+      return new ReadableStream<Uint8Array>({
         start(controller) {
-          if (response.content) {
-            controller.enqueue(response.content);
-          }
+          const payload = {
+            metadata: response.metadata,
+            results: response.results
+          };
+          controller.enqueue(textEncoder.encode(JSON.stringify(payload)));
           controller.close();
         }
       });
     },
 
-    createEmbedding: async (text: string) => {
-      // Implementation would depend on the embedding service
-      return []; // Placeholder
+    createEmbedding: async () => {
+      return [];
     },
 
-    getModelInfo: (model: string) => {
-      return {
-        model,
-        provider: 'openrouter',
-        maxTokens: 4000,
-        supportsStreaming: true
-      };
-    }
+    getModelInfo: (model: string) => ({
+      model,
+      provider: 'openai',
+      maxTokens: baseOptions.maxTokens || 4000,
+      supportsStreaming: true
+    })
   };
 }
 
@@ -91,44 +97,45 @@ export function getAIProvider(options: AIProviderOptions = {}): AIProvider {
  */
 export function createAIProvider(config: AIProviderConfig): AIProvider {
   const manager = new EnhancedAIManager(config);
-  
-  return {
-    createChatCompletion: async (messages: any[], opts: any = {}) => {
-      const response = await manager.executeWorkflow({
-        messages,
-        model: opts.model || 'openai/gpt-4o-mini',
-        temperature: opts.temperature || 0.7,
-        maxTokens: opts.maxTokens || 1000,
-        stream: opts.stream || true,
-        ...opts
-      });
 
-      if (response.error) {
-        throw new Error(response.error);
+  return {
+    createChatCompletion: async (messages, overrides = {}) => {
+      const request = {
+        type: overrides.workflowType || 'custom',
+        requirements: JSON.stringify({ messages }),
+        customSteps: [],
+        useLocalAI: false,
+        outputFormat: 'text' as const
+      };
+
+      const response = await manager.executeWorkflow(request);
+
+      if (!response.success) {
+        throw new Error(response.error || 'AI workflow execution failed');
       }
 
-      return new ReadableStream({
+      return new ReadableStream<Uint8Array>({
         start(controller) {
-          if (response.content) {
-            controller.enqueue(response.content);
-          }
+          const payload = {
+            metadata: response.metadata,
+            results: response.results
+          };
+          controller.enqueue(textEncoder.encode(JSON.stringify(payload)));
           controller.close();
         }
       });
     },
 
-    createEmbedding: async (text: string) => {
-      return []; // Placeholder
+    createEmbedding: async () => {
+      return [];
     },
 
-    getModelInfo: (model: string) => {
-      return {
-        model,
-        provider: 'openrouter',
-        maxTokens: 4000,
-        supportsStreaming: true
-      };
-    }
+    getModelInfo: (model: string) => ({
+      model,
+      provider: 'openai',
+      maxTokens: 4000,
+      supportsStreaming: true
+    })
   };
 }
 

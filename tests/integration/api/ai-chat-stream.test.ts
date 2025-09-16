@@ -28,8 +28,11 @@ jest.mock('@/lib/prisma', () => ({
   prisma: {
     workspace: {
       findFirst: jest.fn().mockResolvedValue({
+        id: 1,
         workspace_id: 'test-workspace',
-        user_id: 1
+        user_id: 1,
+        name: 'Test Workspace',
+        status: 'active'
       })
     }
   }
@@ -37,7 +40,8 @@ jest.mock('@/lib/prisma', () => ({
 
 jest.mock('@/lib/vector-store', () => ({
   vectorStore: {
-    similaritySearch: jest.fn().mockResolvedValue([])
+    similaritySearch: jest.fn().mockResolvedValue([]),
+    getContext: jest.fn().mockResolvedValue('Mock context for testing')
   }
 }));
 
@@ -55,7 +59,7 @@ describe('Integration: /api/ai/chat/stream', () => {
   });
 
   it('should return a 200 OK and stream back SSE events', async () => {
-    // Create a mock NextRequest
+    // Create a mock NextRequest with minimal data
     const mockRequest = new NextRequest('http://localhost:3000/api/ai/chat/stream', {
       method: 'POST',
       body: JSON.stringify({

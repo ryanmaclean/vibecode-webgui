@@ -6,6 +6,7 @@ description: Active project tasks and priorities
 # VibeCode Active Tasks
 
 ## ✅ Recently Completed
+- [x] Patched npm audit findings by upgrading axios (1.12.2), Vite 7, Astro 5.13.7, and ai 5.0.44
 - [x] Fixed accessibility tests in tests/accessibility/automated-a11y.test.ts
 - [x] Fixed TypeScript errors in tests/integration/cache-redis-backend.test.ts
 - [x] Verified all accessibility and Redis cache tests pass (24 tests)
@@ -349,7 +350,7 @@ Based on systematic improvements achieved and **ACTUAL E2E BASELINE MEASUREMENT*
 - [ ] **Target Result**: Reduce failure rate from 25% → 15% (handle remaining through environment setup)
 
 ### Other Critical Issues  
-- [x] Investigate GitHub security vulnerabilities (1 high, 1 moderate, 3 low) - see wiki/SECURITY_VULNERABILITY_AUDIT.md for current advisories
+- [x] Investigate GitHub security vulnerabilities (1 high, 1 moderate, 3 low) - resolved via dependency upgrades; see wiki/SECURITY_VULNERABILITY_AUDIT.md
 - [x] Verify new ESLint configuration works for web-dashboard (local lint passes with warnings using web-dashboard/eslint.config.js)
 - [ ] Test the web application to ensure functionality
 
