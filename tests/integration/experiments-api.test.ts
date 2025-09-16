@@ -326,4 +326,7 @@ describe('Experiments API', () => {
       expect(responseData.success).toBe(true)
 
       // The context should be built correctly (we can't directly test it,
-      // but we know it worked if the evaluation succeeded)})})});
+      // but we know it worked if the evaluation succeeded)
+    });
+  });
+});
