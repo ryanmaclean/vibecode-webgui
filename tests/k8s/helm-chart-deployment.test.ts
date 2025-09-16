@@ -109,7 +109,7 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
         console.log(`Cluster ${CLUSTER_NAME} already exists, switching context`);
       } else {
         // Create KIND cluster using our configuration
-        execSync(`kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-simple-config.yaml`, { stdio: 'inherit' });
+        execSync(`kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-test-config.yaml`, { stdio: 'inherit' });
       }
       // Set kubectl context
       execSync(`kubectl config use-context kind-${CLUSTER_NAME}`, { stdio: 'inherit' });
