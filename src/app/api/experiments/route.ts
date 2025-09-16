@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
           context?.defaultValue
         )
 
-        appLogger.logBusiness('flag_evaluated_api', {
+        appLogger?.logBusiness?.('flag_evaluated_api', {
           userId: session.user.id,
           feature: 'experimentation',
           metadata: {
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
           experimentContext
         )
 
-        appLogger.logBusiness('metric_tracked_api', {
+        appLogger?.logBusiness?.('metric_tracked_api', {
           userId: session.user.id,
           feature: 'experimentation',
           value,
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
           })
         )
 
-        appLogger.logBusiness('multiple_flags_evaluated_api', {
+        appLogger?.logBusiness?.('multiple_flags_evaluated_api', {
           userId: session.user.id,
           feature: 'experimentation',
           metadata: {
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    appLogger.logSecurity('experiment_api_error', {
+    appLogger?.logSecurity?.('experiment_api_error', {
       severity: 'medium',
       details: { error: (error as Error).message }
     })
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
 
         const experimentResults = await featureFlagEngine.getExperimentResults(flagKey)
 
-        appLogger.logBusiness('experiment_results_viewed', {
+        appLogger?.logBusiness?.('experiment_results_viewed', {
           userId: session.user.id,
           feature: 'experimentation',
           metadata: {
@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    appLogger.logSecurity('experiment_api_error', {
+    appLogger?.logSecurity?.('experiment_api_error', {
       severity: 'medium',
       details: { error: (error as Error).message }
     })
