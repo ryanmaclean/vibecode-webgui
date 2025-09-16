@@ -21,7 +21,7 @@ describe('User Provisioning Integration Tests', () => {
     try {
       execSync(`kind get clusters | grep -q "^${CLUSTER_NAME}$"`, { stdio: 'pipe' });
       console.log(`Cluster ${CLUSTER_NAME} already exists, using it`)} catch {
-      execSync(`kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-simple-config.yaml`, {
+      execSync(`kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-test-config.yaml`, {
         stdio: 'inherit'
       })}
 
