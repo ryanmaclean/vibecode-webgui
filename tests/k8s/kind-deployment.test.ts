@@ -11,13 +11,13 @@ const { describe, test, expect, beforeAll, afterAll } = require('@jest/globals')
 const { execSync } = require('child_process');
 
 describe('KIND Deployment Tests', () => {
-  const NAMESPACE = 'vibecode';
+  const NAMESPACE = 'vibecode-platform';
   const TIMEOUT = 30000;
 
   beforeAll(async () => {
     // Ensure we're using the correct kubectl context
     try {
-      execSync('kubectl config use-context kind-vibecode-test', { stdio: 'pipe' });
+      execSync('kubectl config use-context kind-vibecode-test-validation', { stdio: 'pipe' });
     } catch (error) {
       console.warn('Could not set kubectl context - may already be set');
     }
@@ -26,14 +26,14 @@ describe('KIND Deployment Tests', () => {
   describe('Cluster Validation', () => {
     test('should have KIND cluster running', () => {
       const output = execSync('kind get clusters', { encoding: 'utf8' });
-      expect(output).toContain('vibecode-test');
+      expect(output).toContain('vibecode-test-validation');
     });
 
     test('should have cluster nodes ready', () => {
       const output = execSync('kubectl get nodes -o json', { encoding: 'utf8' });
       const nodes = JSON.parse(output);
 
-      expect(nodes.items).toHaveLength(1);
+      expect(nodes.items).toHaveLength(3); // KIND cluster has 1 control-plane + 2 workers
 
       const node = nodes.items[0];
       expect(node.metadata.name).toContain('vibecode-test');
