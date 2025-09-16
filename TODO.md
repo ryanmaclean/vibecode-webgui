@@ -169,12 +169,24 @@ description: Active project tasks and priorities
 - ✅ **Vector database connection pool** - All connection management working (22/22 tests passing)
 - ✅ **Core unit test infrastructure** - Systematic mocking and dependency injection patterns established
 
-**📋 SYSTEMATIC DEBUGGING APPROACH IN PROGRESS:**
+**🎯 NEXT LOGICAL SYSTEMATIC TARGETS:**
 
-**Test Debugging Method (Promising Results, Work Continues):**
-1. **Identify the mismatch** - Find where test expectations don't match implementation reality
-2. **Examine actual behavior** - Read implementation code to understand what really happens
-3. **Fix mocking issues** - Remove blocking mocks, fix interface mismatches
+Based on systematic improvements achieved, the most promising next targets for continued debugging success:
+
+1. **E2E Test Infrastructure** - Apply systematic approach to critical user journey failures
+   - **Known Issue**: Authentication flows and workspace creation E2E tests failing
+   - **Pattern**: Likely environment setup, service dependency, or async timing issues
+   - **Approach**: Same systematic debugging - examine failures, fix mocks/timing, measure improvement
+
+2. **Kubernetes Test Suite** - Address infrastructure test failures  
+   - **Known Issue**: KIND cluster and Helm deployment tests need bounded timeouts and proper provisioning
+   - **Status**: Foundation work already done on provisioning readiness and local-path provisioner
+   - **Next**: Apply systematic approach to remaining cluster setup and validation issues
+
+3. **External Project Integration Tests** - Magic code generation and external module failures
+   - **Known Issue**: External magic-code-gen and other modules have test infrastructure problems
+   - **Pattern**: Likely similar mock/dependency issues as fixed in main project
+   - **Approach**: Same systematic root cause → targeted fix → measurement methodology
 4. **Align test expectations** - Update assertions to match actual implementation behavior
 5. **Measure improvement** - Document concrete before/after test counts
 
