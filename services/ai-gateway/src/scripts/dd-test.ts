@@ -1,5 +1,17 @@
 import { datadogMetrics } from '../services/datadog-metrics';
 import { logger } from '../utils/logger';
+import path from 'path';
+import fs from 'fs';
+import dotenv from 'dotenv';
+
+// Load env from local service .env.local first, then fall back to repo root .env.local
+const localEnv = path.resolve(__dirname, '../../.env.local');
+const rootEnv = path.resolve(__dirname, '../../../../.env.local');
+if (fs.existsSync(localEnv)) dotenv.config({ path: localEnv });
+if (fs.existsSync(rootEnv)) dotenv.config({ path: rootEnv });
+
+// Force standard tags per request: env:development
+process.env.DD_ENV = 'development';
 
 (async () => {
   const metricName = 'vibecode.ai_gateway.test';

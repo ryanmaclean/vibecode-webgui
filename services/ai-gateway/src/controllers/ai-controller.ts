@@ -126,6 +126,18 @@ export class AIController {
                 cost: cost.toFixed(6)
             });
 
+            // Emit Datadog operational metrics (best-effort)
+            const latencyMs = Date.now() - startTime;
+            datadogMetrics.submitMetric('vibecode.ai_gateway.latency_ms', latencyMs, [
+                `model:${response.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => {});
+            datadogMetrics.submitMetric('vibecode.ai_gateway.tokens_total', response.usage.total_tokens, [
+                `model:${response.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => {});
+            datadogMetrics.submitMetric('vibecode.ai_gateway.cost_usd', cost, [
+                `model:${response.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => {});
+
             res.json(response);
         } catch (error) {
             performanceLogger.logError('chat_completion', startTime, error, {
@@ -253,6 +265,18 @@ export class AIController {
                 estimatedTokens: promptTokens + totalTokens,
                 estimatedCost: cost.toFixed(6)
             });
+
+            // Emit Datadog operational metrics (best-effort)
+            const latencyMs = Date.now() - startTime;
+            datadogMetrics.submitMetric('vibecode.ai_gateway.latency_ms', latencyMs, [
+                `model:${requestData.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => {});
+            datadogMetrics.submitMetric('vibecode.ai_gateway.tokens_total', promptTokens + totalTokens, [
+                `model:${requestData.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => {});
+            datadogMetrics.submitMetric('vibecode.ai_gateway.cost_usd', cost, [
+                `model:${requestData.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => {});
         } catch (error) {
             performanceLogger.logError('stream_chat_completion', startTime, error, {
                 model: requestData.model,
