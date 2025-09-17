@@ -72,6 +72,16 @@ if [ -f "./servers/web-search/server.js" ]; then
     echo "Web Search MCP Server started with PID $WEBSEARCH_PID"
 fi
 
+# Start Sequential Thinking MCP Server
+echo "Starting Sequential Thinking MCP Server..."
+if [ -f "./servers/sequential_thinking/server.js" ]; then
+    MODEL_RUNNER_URL="http://model-runner.docker.internal/engines/v1" \
+    MCP_SERVER_PORT=3004 \
+    node ./servers/sequential_thinking/server.js &
+    SEQTHINKING_PID=$!
+    echo "Sequential Thinking MCP Server started with PID $SEQTHINKING_PID"
+fi
+
 # Create a simple health check server
 echo "Starting MCP Health Monitor..."
 cat > health-monitor.js << 'EOF'
@@ -80,16 +90,17 @@ const http = require('http');
 const server = http.createServer((req, res) => {
   if (req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      status: 'healthy',
-      services: {
-        filesystem: 'running',
-        database: 'running', 
-        webSearch: 'running'
-      },
-      modelRunner: process.env.MODEL_RUNNER_URL || 'http://model-runner.docker.internal/engines/v1',
-      timestamp: new Date().toISOString()
-    }));
+  res.end(JSON.stringify({
+    status: 'healthy',
+    services: {
+      filesystem: 'running',
+      database: 'running', 
+      webSearch: 'running',
+      sequentialThinking: 'running'
+    },
+    modelRunner: process.env.MODEL_RUNNER_URL || 'http://model-runner.docker.internal/engines/v1',
+    timestamp: new Date().toISOString()
+  }));
   } else {
     res.writeHead(404);
     res.end('Not Found');
@@ -108,7 +119,7 @@ echo "Health Monitor started with PID $HEALTH_PID"
 # Function to cleanup processes on exit
 cleanup() {
     echo "Shutting down MCP servers..."
-    kill $FILESYSTEM_PID $DATABASE_PID $WEBSEARCH_PID $HEALTH_PID 2>/dev/null || true
+    kill $FILESYSTEM_PID $DATABASE_PID $WEBSEARCH_PID $SEQTHINKING_PID $HEALTH_PID 2>/dev/null || true
     exit 0
 }
 
@@ -120,6 +131,7 @@ echo "Services available:"
 echo "  - File System MCP: Port 3001"
 echo "  - Database MCP: Port 3002" 
 echo "  - Web Search MCP: Port 3003"
+echo "  - Sequential Thinking MCP: Port 3004"
 echo "  - Health Monitor: Port 3001/health"
 echo "  - Model Runner: $MODEL_RUNNER_URL"
 
