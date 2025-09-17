@@ -27,8 +27,8 @@ export default (api) => {
       }]
     ],
     plugins: [
-      '@babel/plugin-transform-modules-commonjs',
-      'babel-plugin-dynamic-import-node'
+      '@babel/plugin-transform-modules-commonjs'
+      // Removed 'babel-plugin-dynamic-import-node' - not installed
     ]
   };
 };
