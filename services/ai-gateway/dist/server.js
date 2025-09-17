@@ -9,6 +9,7 @@ const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const environment_1 = require("./config/environment");
 const logger_1 = require("./utils/logger");
+const api_1 = require("@opentelemetry/api");
 const error_handler_1 = require("./middleware/error-handler");
 const auth_1 = require("./middleware/auth");
 const ai_routes_1 = require("./routes/ai-routes");
@@ -64,17 +65,51 @@ class AIGatewayServer {
         this.app.use(limiter);
         this.app.use(express_1.default.json({ limit: '10mb' }));
         this.app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
-        this.app.use((req, _res, next) => {
+        this.app.use((req, res, next) => {
+            const tracer = api_1.trace.getTracer('ai-gateway');
             const requestId = req.headers['x-request-id'] || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             req.requestId = requestId;
-            logger_1.logger.info('Incoming request', {
-                requestId,
-                method: req.method,
-                url: req.url,
-                userAgent: req.get('User-Agent'),
-                ip: req.ip
+            res.setHeader('X-Request-ID', requestId);
+            tracer.startActiveSpan(`HTTP ${req.method} ${req.path}`, (span) => {
+                try {
+                    const ua = req.get('User-Agent') || '';
+                    span.setAttribute('http.method', String(req.method || ''));
+                    span.setAttribute('http.target', String(req.originalUrl || req.url || ''));
+                    span.setAttribute('http.route', String(req.path || ''));
+                    span.setAttribute('http.client_ip', String(req.ip || ''));
+                    span.setAttribute('user_agent', ua);
+                    span.setAttribute('request_id', requestId);
+                    const ctx = span.spanContext();
+                    if (ctx && ctx.traceId && ctx.spanId) {
+                        const sampled = (ctx.traceFlags & 0x01) === 0x01 ? '01' : '00';
+                        const traceparent = `00-${ctx.traceId}-${ctx.spanId}-${sampled}`;
+                        res.setHeader('traceparent', traceparent);
+                    }
+                    logger_1.logger.info('Incoming request', {
+                        requestId,
+                        method: req.method,
+                        url: req.url,
+                        userAgent: ua,
+                        ip: req.ip,
+                        trace_id: ctx?.traceId,
+                        span_id: ctx?.spanId
+                    });
+                    res.on('finish', () => {
+                        span.setAttribute('http.status_code', res.statusCode);
+                        if (res.statusCode >= 500) {
+                            span.setStatus({ code: api_1.SpanStatusCode.ERROR, message: `HTTP ${res.statusCode}` });
+                        }
+                        span.end();
+                    });
+                    next();
+                }
+                catch (err) {
+                    span.recordException(err);
+                    span.setStatus({ code: api_1.SpanStatusCode.ERROR, message: 'middleware error' });
+                    span.end();
+                    next(err);
+                }
             });
-            next();
         });
     }
     initializeRoutes() {

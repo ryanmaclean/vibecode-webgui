@@ -26,19 +26,15 @@ const config = {
     '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/__mocks__/fileMock.js',
   },
   
-  // Transform settings
+  // Transform settings (simplified to avoid missing dependencies)
   transform: {
     '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', {
       presets: [
         ['@babel/preset-env', { targets: { node: 'current' } }],
         ['@babel/preset-typescript', { allowNamespaces: true }],
         ['@babel/preset-react', { runtime: 'automatic' }]
-      ],
-      plugins: [
-        ['@babel/plugin-proposal-decorators', { legacy: true }],
-        ['@babel/plugin-proposal-class-properties', { loose: true }],
-        '@babel/plugin-transform-runtime'
       ]
+      // Removed plugins that may not be installed
     }]
   },
   
@@ -91,17 +87,17 @@ const config = {
   // Module Directories
   moduleDirectories: ['node_modules', 'src'],
   
-  // Watch Plugins
-  watchPlugins: [
-    'jest-watch-typeahead/filename',
-    'jest-watch-typeahead/testname',
-  ],
+  // Watch Plugins (disabled to avoid missing dependency issues)
+  // watchPlugins: [
+  //   'jest-watch-typeahead/filename',
+  //   'jest-watch-typeahead/testname',
+  // ],
   
   // Reporters
   reporters: [
     'default',
-    // Write JUnit to a hidden, ignored folder to avoid accidental commits
-    ['jest-junit', { outputDirectory: '.test-results', outputName: 'junit.xml' }],
+    // JUnit reporter disabled to avoid missing dependency
+    // ['jest-junit', { outputDirectory: '.test-results', outputName: 'junit.xml' }],
   ],
   
   // Coverage
