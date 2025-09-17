@@ -141,6 +141,8 @@ describe('File Operations Integration Tests', () => {
         text: () => Promise.resolve(updatedContent.split('\n').slice(0, 50).join('\n'))}))
 
       const searchResults = await lazyLoader.searchInFile('string', { maxResults: 5 });
+      console.log('Search results:', searchResults);
+      console.log('Updated content preview:', updatedContent.substring(0, 200));
       expect(searchResults.length).toBeGreaterThan(0)
       expect(searchResults.some(result => result.content.includes('value: number | string'))).toBe(true)
 
