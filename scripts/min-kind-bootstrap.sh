@@ -47,8 +47,12 @@ fi
 
 NEXTAUTH_SECRET_VALUE=${NEXTAUTH_SECRET_VALUE:-${NEXTAUTH_SECRET:-$(openssl rand -base64 32)}}
 
-log "building application image using $DOCKERFILE"
-docker build -f "$DOCKERFILE" -t "$APP_IMAGE" .
+if [ "${SKIP_BUILD:-0}" = "1" ]; then
+  log "SKIP_BUILD=1 set; skipping application image build"
+else
+  log "building application image using $DOCKERFILE"
+  docker build -f "$DOCKERFILE" -t "$APP_IMAGE" .
+fi
 
 if kind get clusters | grep -q "^${CLUSTER}$"; then
   if [ "$DELETE_EXISTING" = "true" ]; then
@@ -235,27 +239,54 @@ kubectl -n "$NAMESPACE" wait --for=condition=complete job/vibecode-migrations --
 wait_rc=$?
 set -e
 if [ $wait_rc -ne 0 ]; then
+  log "prisma migrations job did not complete within timeout; inspecting status"
+
+  get_job_field() {
+    local field="$1"
+    local value
+    value=$(kubectl -n "$NAMESPACE" get job vibecode-migrations -o jsonpath="{$field}" 2>/dev/null || echo "")
+    if [ -z "$value" ]; then
+      echo 0
+    else
+      echo "$value"
+    fi
+  }
+
+  job_failed=$(get_job_field '.status.failed')
+  job_succeeded=$(get_job_field '.status.succeeded')
+  job_active=$(get_job_field '.status.active')
+
   job_logs=""
   for attempt in 1 2 3 4 5 6 7 8 9 10; do
     job_logs=$(kubectl -n "$NAMESPACE" logs job/vibecode-migrations 2>/dev/null || true)
     if [ -n "$job_logs" ]; then
       break
     fi
-    sleep 2
-  done
-
-  if [ -z "$job_logs" ]; then
     pod_name=$(kubectl -n "$NAMESPACE" get pods -l job-name=vibecode-migrations -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
     if [ -n "$pod_name" ]; then
       job_logs=$(kubectl -n "$NAMESPACE" logs "$pod_name" 2>/dev/null || true)
+      if [ -n "$job_logs" ]; then
+        break
+      fi
     fi
-  fi
+    sleep 2
+  done
 
-  if echo "$job_logs" | grep -q "P3005"; then
+  if [ "$job_succeeded" -gt 0 ]; then
+    log "prisma migrations job reported completion despite timeout"
+  elif echo "$job_logs" | grep -q "P3005"; then
     log "prisma migrations detected existing schema; skipping baseline (P3005)"
     kubectl -n "$NAMESPACE" delete job vibecode-migrations --ignore-not-found >/dev/null 2>&1 || true
-  else
+  elif [ "$job_failed" -gt 0 ]; then
     log "prisma migrations job failed"
+    printf '%s\n' "$job_logs"
+    exit 1
+  elif [ "$job_active" -gt 0 ]; then
+    log "prisma migrations job still active after timeout; deleting job to continue"
+    printf '%s\n' "$job_logs"
+    kubectl -n "$NAMESPACE" delete job vibecode-migrations --ignore-not-found >/dev/null 2>&1 || true
+  else
+    log "prisma migrations job status indeterminate"
     printf '%s\n' "$job_logs"
     exit 1
   fi
