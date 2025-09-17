@@ -50,13 +50,33 @@ export default function SimpleSignInForm() {
     setIsSubmitting(true)
 
     try {
-      // Use redirect: true to let NextAuth handle the redirect
-      await signIn('credentials', {
+      // Use redirect: false to handle the response manually
+      const result = await signIn('credentials', {
         email,
         password,
-        redirect: true,
+        redirect: false,
         callbackUrl: '/'
       })
+
+      console.log('🔐 SignIn result:', result)
+
+      if (result?.error) {
+        console.log('❌ Authentication failed:', result.error)
+        if (result.error === 'CredentialsSignin') {
+          setError('Invalid credentials')
+        } else {
+          setError('Authentication failed')
+        }
+        setIsSubmitting(false)
+      } else if (result?.ok) {
+        console.log('✅ Authentication successful')
+        // Redirect manually after successful login
+        window.location.href = '/'
+      } else {
+        console.log('❌ Unexpected result:', result)
+        setError('An unexpected error occurred')
+        setIsSubmitting(false)
+      }
     } catch (err) {
       console.log('❌ Unexpected error:', err)
       setError('An unexpected error occurred')
@@ -97,7 +117,7 @@ export default function SimpleSignInForm() {
           onSubmit={handleSubmit}
         >
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert" data-testid="error-message">
               <strong className="font-bold">Error: </strong>
               <span className="block sm:inline">{error}</span>
             </div>
