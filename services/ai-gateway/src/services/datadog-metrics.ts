@@ -21,7 +21,12 @@ export class DatadogMetricsService {
     this.version = process.env.DD_VERSION || (pkg as any).version || '1.0.0';
   }
 
-  public async submitMetric(metric: string, value: number, tags: string[] = []): Promise<boolean> {
+  public async submitMetric(
+    metric: string,
+    value: number,
+    tags: string[] = [],
+    type: 'gauge' | 'count' | 'rate' = 'gauge'
+  ): Promise<boolean> {
     if (!this.apiKey) {
       logger.warn('Datadog API key not set; skipping metric submission', { metric });
       return false;
@@ -39,7 +44,7 @@ export class DatadogMetricsService {
       series: [
         {
           metric,
-          type: 'gauge',
+          type,
           points: [[ts, value]],
           tags: [...baseTags, ...tags]
         }
@@ -71,7 +76,7 @@ export class DatadogMetricsService {
       `model:${model.replace(/[:/]/g, '_')}`,
       ...(userId ? [`user:${userId}`] : [])
     ];
-    return this.submitMetric('vibecode.ai_gateway.selection', 1, tags);
+    return this.submitMetric('vibecode.ai_gateway.selection', 1, tags, 'count');
   }
 }
 
