@@ -40,9 +40,9 @@ datadog:
   networkMonitoring:
     enabled: false
     
-  # Disable database monitoring for local development
+  # Enable database monitoring for PostgreSQL
   dbm:
-    enabled: false
+    enabled: true
     
   # Basic orchestrator explorer
   orchestratorExplorer:
