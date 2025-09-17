@@ -40,7 +40,6 @@ function debounce<T extends (...args: any[]) => void>(fn: T, wait: number, optio
     }
     startTime = null
     // Execute immediately with no args
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(fn as any)()
   }
   wrapper.cancel = () => {

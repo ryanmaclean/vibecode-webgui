@@ -25,13 +25,13 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
   const [template, setTemplate] = useState<Partial<ProjectTemplate>>({
     name: '',
     description: '',
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
     category: 'frontend',
+<<<<<<< HEAD
     category: 'fullstack',
     category: 'frontend',
     category: 'fullstack',
+=======
+>>>>>>> main
     complexity: 'beginner',
     tags: [],
     files: [],
@@ -125,26 +125,25 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           id: `template-${Date.now()}`,
           name: template.name || '',
           description: template.description || '',
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
           category: template.category || 'frontend',
+<<<<<<< HEAD
           category: template.category || 'fullstack',
           category: template.category || 'frontend',
           category: template.category || 'fullstack',
+=======
+>>>>>>> main
           complexity: template.complexity || 'beginner',
           tags: template.tags || [],
-          language: ['javascript'],
-          frameworks: [],
-          features: [],
-          estimatedSetupTime: '10 minutes',
           files: template.files || [],
           dependencies: template.dependencies || {},
           scripts: template.scripts || {},
           envVars: template.envVars || [],
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+=======
+>>>>>>> main
           documentation: {
             setup: Array.isArray(template.documentation?.setup) ? template.documentation.setup : ['Setup instructions'],
             usage: Array.isArray(template.documentation?.usage) ? template.documentation.usage : ['Usage instructions'],
@@ -154,11 +153,15 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           frameworks: ['react', 'nextjs'],
           features: ['modern-setup', 'production-ready'],
           estimatedSetupTime: '15 minutes',
+<<<<<<< HEAD
 <<<<<<< Updated upstream
+=======
+>>>>>>> main
           dockerSupport: false,
           kubernetesSupport: false,
           cicdTemplate: false,
           testingSetup: false,
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
@@ -171,6 +174,9 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
 <<<<<<< Updated upstream
           monitoringSetup: false
           monitoringSetup: false
+=======
+          monitoringSetup: false
+>>>>>>> main
         },
         author,
         marketplace,
@@ -265,12 +271,13 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="complexity" className="block text-sm font-medium text-gray-700 mb-2">
                   Complexity
                 </label>
                 <select
+                  id="complexity"
                   value={template.complexity}
-                  onChange={(e) => setTemplate(prev => ({ ...prev, complexity: e.target.value as any }))}
+                  onChange={(e) => setTemplate(prev => ({ ...prev, complexity: e.target.value as 'beginner' | 'intermediate' | 'advanced' }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="beginner">Beginner</option>

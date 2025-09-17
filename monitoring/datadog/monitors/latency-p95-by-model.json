@@ -1,0 +1,22 @@
+{
+  "name": "AI Gateway latency p95 by model is high",
+  "type": "query alert",
+  "query": "p95(last_5m):avg:vibecode.ai_gateway.latency_ms{service:vibecode-ai-gateway,env:production} by {model} > 3000",
+  "message": "p95 latency high for AI Gateway model {{model.name}} in env=production. Investigate OpenRouter provider health and recent deploys.\n\n- Dashboard: AI Gateway Observability\n- Runbook: monitoring/runbooks/ai-gateway-latency.md",
+  "tags": ["service:vibecode-ai-gateway", "team:ai-platform", "env:production"],
+  "options": {
+    "thresholds": {
+      "critical": 3000,
+      "warning": 2000
+    },
+    "notify_audit": false,
+    "require_full_window": true,
+    "new_group_delay": 60,
+    "include_tags": true,
+    "escalation_message": "Sustained latency issues may indicate provider degradation or throttling. Consider failing over to fallback models.",
+    "groupby_simple_monitor": true,
+    "evaluation_delay": 120
+  },
+  "priority": null,
+  "restricted_roles": null
+}

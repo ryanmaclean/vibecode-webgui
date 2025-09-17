@@ -69,64 +69,39 @@ generate_password() {
 
 # Create user workspace using Helm template
 create_user_workspace() {
-    local user_id="$1"
-    local password="$2"
+  local user_id="$1"
+  local password="$2"
 
-    log_info "Creating workspace for user: $user_id"
+  log_info "Creating workspace for user: $user_id"
 
-    # Create user-specific secret
-    kubectl create secret generic "code-server-$user_id-config" \
-        --namespace="$NAMESPACE" \
-        --from-literal=password="$password" \
-        --dry-run=client -o yaml | kubectl apply -f -
+  # Create user-specific secret
+  kubectl create secret generic "code-server-$user_id-config" \
+      --namespace="$NAMESPACE" \
+      --from-literal=password="$password" \
+      --dry-run=client -o yaml | kubectl apply -f -
 
-    # Label the secret
-    kubectl label secret "code-server-$user_id-config" \
-        --namespace="$NAMESPACE" \
-        app.kubernetes.io/name=vibecode-platform \
-        app.kubernetes.io/instance="$HELM_RELEASE" \
-        app.kubernetes.io/component=code-server \
-        vibecode.dev/user-id="$user_id" \
-        --overwrite
+  # Label the secret
+  kubectl label secret "code-server-$user_id-config" \
+      --namespace="$NAMESPACE" \
+      app.kubernetes.io/name=vibecode-platform \
+      app.kubernetes.io/instance="$HELM_RELEASE" \
+      app.kubernetes.io/component=code-server \
+      vibecode.dev/user-id="$user_id" \
+      --overwrite
 
-    # Create temporary values file for this user
-    local temp_values=$(mktemp)
-    cat > "$temp_values" <<EOF
-examples:
-  createSampleUser: true
+  # Detect cluster storageClass to ensure PVC creation succeeds on KIND/minikube
+  local detected_sc
+  detected_sc=$(kubectl get storageclass -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+  if [ -n "$detected_sc" ]; then
+    log_info "Detected storageClass: $detected_sc"
+  else
+    log_warning "Could not detect storageClass, defaulting to local-path"
+    detected_sc="local-path"
+  fi
 
-# Override for this specific user
-userOverride:
-  userId: "$user_id"
-  password: "$password"
-EOF
-
-    # Generate manifests using Helm template
-    local temp_manifests=$(mktemp)
-    helm template "$HELM_RELEASE" "$CHART_PATH" \
-        --values "$CHART_PATH/values.yaml" \
-        --values "$temp_values" \
-        --set "examples.createSampleUser=true" \
-        --namespace "$NAMESPACE" > "$temp_manifests"
-
-    # Filter and customize manifests for this user
-    local user_manifests=$(mktemp)
-
-    # Extract only the user-specific resources and replace sample-user with actual user ID
-    sed "s/sample-user/$user_id/g" "$temp_manifests" | \
-    grep -A 1000 "name: code-server-$user_id" | \
-    grep -B 1000 "^---$" > "$user_manifests" || true
-
-    # Apply the manifests
-    if [ -s "$user_manifests" ]; then
-        kubectl apply -f "$user_manifests"
-    else
-        log_warning "No user-specific manifests generated, creating manually..."
-        create_user_resources_manually "$user_id" "$password"
-    fi
-
-    # Cleanup temp files
-    rm -f "$temp_values" "$temp_manifests" "$user_manifests"
+  # Use robust manual creation path to avoid brittle helm-template filtering
+  export VIBECODE_DETECTED_SC="$detected_sc"
+  create_user_resources_manually "$user_id" "$password"
 }
 
 # Fallback: Create user resources manually
@@ -134,9 +109,9 @@ create_user_resources_manually() {
     local user_id="$1"
     local password="$2"
 
-    # Get values from the Helm chart
-    local storage_size=$(helm template "$HELM_RELEASE" "$CHART_PATH" --show-only templates/configmap.yaml | grep -o "10Gi" | head -1 || echo "10Gi")
-    local storage_class=$(helm template "$HELM_RELEASE" "$CHART_PATH" --show-only templates/configmap.yaml | grep -o "vibecode-local-storage" | head -1 || echo "vibecode-local-storage")
+    # Get values (size from chart default, storageClass from cluster detection)
+  local storage_size=$(helm template "$HELM_RELEASE" "$CHART_PATH" --show-only templates/configmap.yaml | grep -o "10Gi" | head -1 || echo "10Gi")
+  local storage_class=${VIBECODE_DETECTED_SC:-$(kubectl get storageclass -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "local-path")}
 
     # Create PVC
     kubectl apply -f - <<EOF

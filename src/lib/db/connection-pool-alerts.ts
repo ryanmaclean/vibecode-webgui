@@ -3,12 +3,27 @@
  * 
  * Provides alerting functionality for database connection pool monitoring
  */
+import { VectorConnectionPoolFactory } from './vector-connection-pool';
 
 // Alert severity levels
 export enum AlertSeverity {
   INFO = 'info',
   WARNING = 'warning',
   CRITICAL = 'critical'
+}
+
+// Configuration structures used by UI components
+export interface ThresholdConfig {
+  enabled: boolean;
+  warningThreshold: number;
+  criticalThreshold: number;
+}
+
+export interface AlertConfig {
+  poolUtilization: ThresholdConfig;
+  acquireFailures: ThresholdConfig;
+  validationFailures: ThresholdConfig;
+  idleConnections: ThresholdConfig;
 }
 
 // Alert types
@@ -31,7 +46,7 @@ export interface Alert {
   message: string;
   timestamp: Date;
   acknowledged: boolean;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 // Alert listener function type
@@ -49,33 +64,73 @@ export default class ConnectionPoolAlertService {
   private isMonitoringActive = false;
   private monitoringInterval: NodeJS.Timeout | null = null;
   private alertThresholds = {
-    poolUtilization: {
-      warning: 70, // 70% utilization
-      critical: 90 // 90% utilization
-    },
-    acquireTime: {
-      warning: 500, // 500ms
-      critical: 2000 // 2 seconds
-    },
-    failedAcquires: {
-      warning: 5, // 5 failures in monitoring interval
-      critical: 20 // 20 failures in monitoring interval
-    },
-    idleConnections: {
-      warning: 80, // 80% idle connections
-      critical: 90 // 90% idle connections
-    }
+    poolUtilization: { enabled: true, warning: 70, critical: 90 },
+    acquireTime:     { enabled: true, warning: 500, critical: 2000 },
+    failedAcquires:  { enabled: true, warning: 5, critical: 20 },
+    idleConnections: { enabled: true, warning: 80, critical: 90 },
+    validationFailures: { enabled: false, warning: 10, critical: 25 } // placeholder; metric not yet wired
   };
   private lastAlertTimes: Map<string, number> = new Map();
   private alertSuppression = 60000; // 1 minute between similar alerts
   private lastCheckTime = Date.now();
-  private failedAcquiresCount = 0;
+  private lastTimeoutCount = 0;
 
   /**
    * Private constructor to enforce singleton pattern
    */
   private constructor() {
     // Initialize alert service
+  }
+
+  // Configuration API for UI consumption
+  public getPoolUtilizationConfig(): ThresholdConfig {
+    return {
+      enabled: this.alertThresholds.poolUtilization.enabled,
+      warningThreshold: this.alertThresholds.poolUtilization.warning,
+      criticalThreshold: this.alertThresholds.poolUtilization.critical,
+    };
+  }
+
+  public getAcquireFailuresConfig(): ThresholdConfig {
+    return {
+      enabled: this.alertThresholds.failedAcquires.enabled,
+      warningThreshold: this.alertThresholds.failedAcquires.warning,
+      criticalThreshold: this.alertThresholds.failedAcquires.critical,
+    };
+  }
+
+  public getValidationFailuresConfig(): ThresholdConfig {
+    return {
+      enabled: this.alertThresholds.validationFailures.enabled,
+      warningThreshold: this.alertThresholds.validationFailures.warning,
+      criticalThreshold: this.alertThresholds.validationFailures.critical,
+    };
+  }
+
+  public getIdleConnectionsConfig(): ThresholdConfig {
+    return {
+      enabled: this.alertThresholds.idleConnections.enabled,
+      warningThreshold: this.alertThresholds.idleConnections.warning,
+      criticalThreshold: this.alertThresholds.idleConnections.critical,
+    };
+  }
+
+  public updateConfig(newConfig: AlertConfig): void {
+    this.alertThresholds.poolUtilization.enabled = newConfig.poolUtilization.enabled;
+    this.alertThresholds.poolUtilization.warning = newConfig.poolUtilization.warningThreshold;
+    this.alertThresholds.poolUtilization.critical = newConfig.poolUtilization.criticalThreshold;
+
+    this.alertThresholds.failedAcquires.enabled = newConfig.acquireFailures.enabled;
+    this.alertThresholds.failedAcquires.warning = newConfig.acquireFailures.warningThreshold;
+    this.alertThresholds.failedAcquires.critical = newConfig.acquireFailures.criticalThreshold;
+
+    this.alertThresholds.validationFailures.enabled = newConfig.validationFailures.enabled;
+    this.alertThresholds.validationFailures.warning = newConfig.validationFailures.warningThreshold;
+    this.alertThresholds.validationFailures.critical = newConfig.validationFailures.criticalThreshold;
+
+    this.alertThresholds.idleConnections.enabled = newConfig.idleConnections.enabled;
+    this.alertThresholds.idleConnections.warning = newConfig.idleConnections.warningThreshold;
+    this.alertThresholds.idleConnections.critical = newConfig.idleConnections.criticalThreshold;
   }
 
   /**
@@ -135,41 +190,49 @@ export default class ConnectionPoolAlertService {
    */
   private checkConnectionPool(): void {
     try {
-      // Import dynamically to avoid circular dependencies
-      const { getVectorConnectionPool } = require('./vector-connection-pool');
-      const pool = getVectorConnectionPool();
+      // Use pool factory to avoid circular deps and ensure availability
+      let pool = VectorConnectionPoolFactory.getPool('default');
+      if (!pool) {
+        pool = VectorConnectionPoolFactory.createPool({
+          host: process.env.DATABASE_HOST || 'localhost',
+          port: parseInt(process.env.DATABASE_PORT || '5432', 10),
+          database: process.env.DATABASE_NAME || 'vibecode',
+          user: process.env.DATABASE_USER || 'postgres',
+          password: process.env.DATABASE_PASSWORD || 'password'
+        }, {}, 'default');
+      }
       const metrics = pool.getMetrics();
       
       // Check pool utilization
-      const utilization = metrics.activeConnections / metrics.totalConnections;
-      if (utilization >= this.alertThresholds.poolUtilization.critical / 100) {
+      const utilization = metrics.poolSize > 0 ? (metrics.activeConnections / metrics.poolSize) * 100 : 0;
+      if (this.alertThresholds.poolUtilization.enabled && utilization >= this.alertThresholds.poolUtilization.critical) {
         this.addAlert({
           severity: AlertSeverity.CRITICAL,
           type: AlertType.POOL_UTILIZATION,
           message: 'Critical: Connection pool utilization exceeds threshold',
           details: {
-            currentUtilization: utilization * 100,
+            currentUtilization: utilization,
             activeConnections: metrics.activeConnections,
-            totalConnections: metrics.totalConnections,
+            totalConnections: metrics.poolSize,
             criticalThreshold: this.alertThresholds.poolUtilization.critical
           }
         });
-      } else if (utilization >= this.alertThresholds.poolUtilization.warning / 100) {
+      } else if (this.alertThresholds.poolUtilization.enabled && utilization >= this.alertThresholds.poolUtilization.warning) {
         this.addAlert({
           severity: AlertSeverity.WARNING,
           type: AlertType.POOL_UTILIZATION,
           message: 'Warning: Connection pool utilization approaching threshold',
           details: {
-            currentUtilization: utilization * 100,
+            currentUtilization: utilization,
             activeConnections: metrics.activeConnections,
-            totalConnections: metrics.totalConnections,
+            totalConnections: metrics.poolSize,
             warningThreshold: this.alertThresholds.poolUtilization.warning
           }
         });
       }
       
       // Check acquire time
-      if (metrics.avgAcquireTime >= this.alertThresholds.acquireTime.critical) {
+      if (this.alertThresholds.acquireTime.enabled && metrics.avgAcquireTime >= this.alertThresholds.acquireTime.critical) {
         this.addAlert({
           severity: AlertSeverity.CRITICAL,
           type: AlertType.CONNECTION_TIMEOUT,
@@ -179,7 +242,7 @@ export default class ConnectionPoolAlertService {
             criticalThreshold: this.alertThresholds.acquireTime.critical
           }
         });
-      } else if (metrics.avgAcquireTime >= this.alertThresholds.acquireTime.warning) {
+      } else if (this.alertThresholds.acquireTime.enabled && metrics.avgAcquireTime >= this.alertThresholds.acquireTime.warning) {
         this.addAlert({
           severity: AlertSeverity.WARNING,
           type: AlertType.CONNECTION_TIMEOUT,
@@ -192,9 +255,9 @@ export default class ConnectionPoolAlertService {
       }
       
       // Check failed acquires
-      if (metrics.failedAcquireCount > this.failedAcquiresCount) {
-        const newFailures = metrics.failedAcquireCount - this.failedAcquiresCount;
-        this.failedAcquiresCount = metrics.failedAcquireCount;
+      if (this.alertThresholds.failedAcquires.enabled && metrics.totalTimeouts > this.lastTimeoutCount) {
+        const newFailures = metrics.totalTimeouts - this.lastTimeoutCount;
+        this.lastTimeoutCount = metrics.totalTimeouts;
         
         if (newFailures >= this.alertThresholds.failedAcquires.critical) {
           this.addAlert({
@@ -203,7 +266,7 @@ export default class ConnectionPoolAlertService {
             message: 'Critical: Multiple connection acquisition failures',
             details: {
               recentFailures: newFailures,
-              totalFailures: metrics.failedAcquireCount,
+              totalFailures: metrics.totalTimeouts,
               criticalThreshold: this.alertThresholds.failedAcquires.critical
             }
           });
@@ -214,7 +277,7 @@ export default class ConnectionPoolAlertService {
             message: 'Warning: Connection acquisition failures detected',
             details: {
               recentFailures: newFailures,
-              totalFailures: metrics.failedAcquireCount,
+              totalFailures: metrics.totalTimeouts,
               warningThreshold: this.alertThresholds.failedAcquires.warning
             }
           });
@@ -222,8 +285,8 @@ export default class ConnectionPoolAlertService {
       }
       
       // Check idle connections ratio
-      if (metrics.totalConnections > 0) {
-        const idleRatio = (metrics.idleConnections / metrics.totalConnections) * 100;
+      if (this.alertThresholds.idleConnections.enabled && metrics.poolSize > 0) {
+        const idleRatio = (metrics.availableConnections / metrics.poolSize) * 100;
         if (idleRatio >= this.alertThresholds.idleConnections.critical) {
           this.addAlert({
             severity: AlertSeverity.WARNING,
@@ -231,8 +294,8 @@ export default class ConnectionPoolAlertService {
             message: 'Warning: High number of idle connections',
             details: {
               idleRatio: idleRatio,
-              idleConnections: metrics.idleConnections,
-              totalConnections: metrics.totalConnections,
+              idleConnections: metrics.availableConnections,
+              totalConnections: metrics.poolSize,
               criticalThreshold: this.alertThresholds.idleConnections.critical
             }
           });
@@ -240,15 +303,15 @@ export default class ConnectionPoolAlertService {
       }
       
       // Check waiting requests
-      if (metrics.waitingRequests > 0) {
+      if (metrics.waitingClients > 0) {
         this.addAlert({
           severity: AlertSeverity.WARNING,
           type: AlertType.POOL_EXHAUSTION,
           message: 'Warning: Connection requests are queued',
           details: {
-            waitingRequests: metrics.waitingRequests,
+            waitingRequests: metrics.waitingClients,
             activeConnections: metrics.activeConnections,
-            totalConnections: metrics.totalConnections
+            totalConnections: metrics.poolSize
           }
         });
       }

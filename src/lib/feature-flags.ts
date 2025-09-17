@@ -226,7 +226,7 @@ class FeatureFlagEngine {
       })
 
       // Send to Datadog as custom metric
-      logger.info('Experiment metric tracked', {
+      logger?.info?.('Experiment metric tracked', {
         category: 'experimentation',
         flagKey,
         metricName,
@@ -236,7 +236,7 @@ class FeatureFlagEngine {
       })
 
     } catch (error) {
-      logger.error('Failed to track experiment metric', {
+      logger?.error?.('Failed to track experiment metric', {
         flagKey,
         metricName,
         value,
@@ -268,7 +268,7 @@ class FeatureFlagEngine {
       }
     })
 
-    logger.info('Feature flag created', {
+    logger?.info?.('Feature flag created', {
       category: 'feature_flags',
       flagKey: flag.key,
       enabled: flag.enabled,

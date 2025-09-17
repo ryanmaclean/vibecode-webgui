@@ -11,7 +11,7 @@ const router = (0, express_1.Router)();
 exports.aiRoutes = router;
 const aiController = new ai_controller_1.AIController();
 router.post('/chat/completions', (0, auth_1.requirePermission)('ai:access'), [
-    (0, express_validator_1.body)('model').isString().notEmpty().withMessage('Model is required'),
+    (0, express_validator_1.body)('model').optional().isString().withMessage('Model must be a string'),
     (0, express_validator_1.body)('messages').isArray({ min: 1 }).withMessage('Messages array is required'),
     (0, express_validator_1.body)('messages.*.role').isIn(['system', 'user', 'assistant']).withMessage('Invalid message role'),
     (0, express_validator_1.body)('messages.*.content').isString().notEmpty().withMessage('Message content is required'),
@@ -25,7 +25,7 @@ router.post('/chat/completions', (0, auth_1.requirePermission)('ai:access'), [
     (0, express_validator_1.body)('user').optional().isString().withMessage('User must be a string')
 ], validation_1.validationMiddleware, (0, error_handler_1.asyncHandler)(aiController.chatCompletion.bind(aiController)));
 router.post('/chat/completions/stream', (0, auth_1.requirePermission)('ai:access'), [
-    (0, express_validator_1.body)('model').isString().notEmpty().withMessage('Model is required'),
+    (0, express_validator_1.body)('model').optional().isString().withMessage('Model must be a string'),
     (0, express_validator_1.body)('messages').isArray({ min: 1 }).withMessage('Messages array is required'),
     (0, express_validator_1.body)('messages.*.role').isIn(['system', 'user', 'assistant']).withMessage('Invalid message role'),
     (0, express_validator_1.body)('messages.*.content').isString().notEmpty().withMessage('Message content is required'),
@@ -53,6 +53,10 @@ router.post('/models/recommend', (0, auth_1.requirePermission)('ai:access'), [
     (0, express_validator_1.body)('require_features').optional().isArray().withMessage('Required features must be an array'),
     (0, express_validator_1.body)('limit').optional().isInt({ min: 1, max: 10 }).withMessage('Limit must be between 1 and 10')
 ], validation_1.validationMiddleware, (0, error_handler_1.asyncHandler)(aiController.getModelRecommendations.bind(aiController)));
+router.post('/models/select', (0, auth_1.requirePermission)('ai:access'), [
+    (0, express_validator_1.body)('messages').isArray({ min: 1 }).withMessage('Messages array is required'),
+    (0, express_validator_1.body)('model').optional().isString().withMessage('Model must be a string')
+], validation_1.validationMiddleware, (0, error_handler_1.asyncHandler)(aiController.selectModel.bind(aiController)));
 router.get('/models/:modelId/metrics', (0, auth_1.requirePermission)('ai:access'), [
     (0, express_validator_1.param)('modelId').isString().notEmpty().withMessage('Model ID is required')
 ], validation_1.validationMiddleware, (0, error_handler_1.asyncHandler)(aiController.getModelMetrics.bind(aiController)));

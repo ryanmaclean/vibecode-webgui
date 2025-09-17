@@ -9,7 +9,7 @@
 
 import * as Y from 'yjs'
 import { WebsocketProvider } from 'y-websocket'
-import { IndexeddbPersistence } from 'y-indexeddb'
+// IndexeddbPersistence not available in this project - using alternative storage
 
 export interface CollaborationUser {
   id: string
@@ -29,7 +29,7 @@ export interface CollaborationSession {
   users: Map<string, CollaborationUser>
   doc: Y.Doc
   provider?: WebsocketProvider
-  persistence?: IndexeddbPersistence
+  persistence?: any // IndexeddbPersistence not available
 }
 
 export class CollaborationManager {
@@ -81,11 +81,8 @@ export class CollaborationManager {
       }
     )
 
-    // Set up IndexedDB persistence for offline support
-    const persistence = new IndexeddbPersistence(
-      `vibecode-doc-${documentId}`,
-      doc
-    )
+    // IndexedDB persistence not available - using in-memory only
+    const persistence = null
 
     // Create session
     const session: CollaborationSession = {
@@ -135,9 +132,18 @@ export class CollaborationManager {
     const session = this.sessions.get(documentId)
     if (!session) return
 
-    // Clean up providers
-    session.provider?.destroy()
-    session.persistence?.destroy()
+    // Clean up providers safely
+    try {
+      session.provider?.destroy()
+    } catch (error) {
+      console.warn('Error destroying provider:', error)
+    }
+    
+    try {
+      session.persistence?.destroy?.()
+    } catch (error) {
+      console.warn('Error destroying persistence:', error)
+    }
 
     // Remove session
     this.sessions.delete(documentId)

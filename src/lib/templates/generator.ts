@@ -23,16 +23,18 @@ export interface GeneratedProject {
   id: string
   name: string
   description: string
-<<<<<<< Updated upstream
   category: 'frontend' | 'backend' | 'fullstack' | 'mobile' | 'data' | 'infrastructure'
   complexity: 'beginner' | 'intermediate' | 'advanced'
   tags: string[]
   language: string[] // matches ProjectTemplate
   frameworks: string[] // matches ProjectTemplate
   features: string[]
+<<<<<<< HEAD
   category: string
   complexity: 'beginner' | 'intermediate' | 'advanced'
   tags: string[]
+=======
+>>>>>>> main
   files: TemplateFile[]
   scripts: Record<string, string>
   dependencies: Record<string, string>
@@ -50,8 +52,11 @@ export interface GeneratedProject {
   }
   createdAt: Date
   estimatedTime: number
+<<<<<<< HEAD
 <<<<<<< Updated upstream
   features: string[]
+=======
+>>>>>>> main
 }
 
 /**
@@ -89,7 +94,6 @@ export async function generateFromTemplate(
   const setupInstructions = generateSetupInstructions(template, projectName)
 
   return {
-<<<<<<< Updated upstream
     id: template.id,
     name: projectName,
     description: options.customizations?.description || template.description,
@@ -99,16 +103,16 @@ export async function generateFromTemplate(
     frameworks: template.frameworks,
     complexity: template.complexity,
     features: options.features || template.features,  // Use features from options if provided, otherwise from template
+<<<<<<< HEAD
     name: projectName,
     description: options.customizations?.description || template.description,
+=======
+>>>>>>> main
     files,
     scripts: { ...template.scripts },
     dependencies: { ...template.dependencies },
     devDependencies: template.devDependencies ? { ...template.devDependencies } : undefined,
     envVars,
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
     documentation: {
       readme: `# ${projectName}\n\n${template.description}`,
       setup: template.documentation.setup.join('\n'),
@@ -116,6 +120,7 @@ export async function generateFromTemplate(
     },
     createdAt: new Date(),
     estimatedTime: 30,
+<<<<<<< HEAD
     setupInstructions
     setupInstructions,
     documentation: {
@@ -128,6 +133,9 @@ export async function generateFromTemplate(
     features: template.features || []
 <<<<<<< Updated upstream
     setupInstructions
+=======
+    setupInstructions,
+>>>>>>> main
   }
 }
 

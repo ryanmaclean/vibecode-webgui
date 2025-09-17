@@ -2,6 +2,61 @@ import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { getDatabaseLogger } from '../db/database-logger';
 
 /**
+ * Interface for database pool operations
+ * This allows for dependency injection and easier testing
+ */
+export interface DatabasePool {
+  query<T extends QueryResultRow = any>(query: string, params?: any[]): Promise<QueryResult<T>>;
+  connect(): Promise<DatabasePoolClient>;
+  end(): Promise<void>;
+  totalCount: number;
+  idleCount: number;
+}
+
+/**
+ * Interface for database pool client operations
+ */
+export interface DatabasePoolClient {
+  query<T extends QueryResultRow = any>(query: string, params?: any[]): Promise<QueryResult<T>>;
+  release(): void;
+}
+
+/**
+ * Factory interface for creating database pools
+ */
+export interface DatabasePoolFactory {
+  createPool(config: ConnectionPoolSettings): DatabasePool;
+}
+
+/**
+ * Default implementation of DatabasePoolFactory using pg Pool
+ */
+export class DefaultDatabasePoolFactory implements DatabasePoolFactory {
+  createPool(config: ConnectionPoolSettings): DatabasePool {
+    const pool = new Pool({
+      ...config,
+      max: config.max || 10,
+      idleTimeoutMillis: config.idleTimeoutMillis || 30000,
+      connectionTimeoutMillis: config.connectionTimeoutMillis || 5000
+    });
+
+    return {
+      query: pool.query.bind(pool),
+      connect: async () => {
+        const client = await pool.connect();
+        return {
+          query: client.query.bind(client),
+          release: client.release.bind(client)
+        };
+      },
+      end: pool.end.bind(pool),
+      totalCount: pool.totalCount,
+      idleCount: pool.idleCount
+    };
+  }
+}
+
+/**
  * Query types for routing decisions
  */
 export enum QueryType {
@@ -163,14 +218,14 @@ interface ReplicaHealthStatus {
  * VectorDBConnectionRouter class for routing database queries to appropriate connections
  */
 export class VectorDBConnectionRouter {
-  private primaryPool: Pool;
-  private replicaPools: Pool[] = [];
+  private primaryPool: DatabasePool;
+  private replicaPools: DatabasePool[] = [];
   private queryAnalyzer: QueryAnalyzer;
   private replicaHealth: Map<string, ReplicaHealthStatus> = new Map();
   private logger = getDatabaseLogger();
   
   private inTransaction = false;
-  private transactionClient: PoolClient | null = null;
+  private transactionClient: DatabasePoolClient | null = null;
   private _primaryPoolSettings: ConnectionPoolSettings;
   private replicaPoolSettings: ConnectionPoolSettings[];
   
@@ -179,28 +234,30 @@ export class VectorDBConnectionRouter {
    * @param primarySettings Primary database connection pool settings
    * @param replicaSettings Array of read replica connection pool settings
    * @param analyzerOptions Options for the query analyzer
+   * @param poolFactory Factory for creating database pools (optional, uses default if not provided)
    */
   constructor(
     primarySettings: ConnectionPoolSettings,
     replicaSettings: ConnectionPoolSettings[] = [],
-    analyzerOptions: QueryAnalyzerOptions = {}
+    analyzerOptions: QueryAnalyzerOptions = {},
+    poolFactory: DatabasePoolFactory = new DefaultDatabasePoolFactory()
   ) {
     this._primaryPoolSettings = primarySettings;
     this.replicaPoolSettings = replicaSettings;
     this.queryAnalyzer = new QueryAnalyzer(analyzerOptions);
     
-    // Initialize primary pool
-    this.primaryPool = new Pool({
+    // Initialize primary pool using factory
+    this.primaryPool = poolFactory.createPool({
       ...primarySettings,
       max: primarySettings.max || 10,
       idleTimeoutMillis: primarySettings.idleTimeoutMillis || 30000,
       connectionTimeoutMillis: primarySettings.connectionTimeoutMillis || 5000
     });
     
-    // Initialize replica pools
+    // Initialize replica pools using factory
     if (replicaSettings.length > 0) {
       this.replicaPools = replicaSettings.map((settings, index) => {
-        const pool = new Pool({
+        const pool = poolFactory.createPool({
           ...settings,
           max: settings.max || 20,
           idleTimeoutMillis: settings.idleTimeoutMillis || 30000,

@@ -1,17 +1,13 @@
 /** @type {import('jest').Config} */
+const includeDocs = process.env.JEST_INCLUDE_DOCS === '1';
 const config = {
   testEnvironment: 'jsdom',
-<<<<<<< Updated upstream
   setupFilesAfterEnv: [
     '<rootDir>/tests/setupTests.ts',
     '<rootDir>/tests/jest.setup.js',
     '<rootDir>/tests/accessibility/jest-axe-setup.js'
   ],
   setupFiles: ['<rootDir>/tests/jest.polyfills.js'],
-=======
-  setupFilesAfterEnv: ['./tests/jest.setup.js'],
-  setupFiles: ['./tests/jest.polyfills.js'],
->>>>>>> Stashed changes
   modulePaths: ['<rootDir>'],
   
   // Increase timeout for integration tests
@@ -26,7 +22,7 @@ const config = {
     '^@/hooks/(.*)$': '<rootDir>/src/hooks/$1',
     '^@/samples/(.*)$': '<rootDir>/src/samples/$1',
     '^@/types/(.*)$': '<rootDir>/src/types/$1',
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '\\.(css|less|scss|sass)$': '<rootDir>/__mocks__/cssModule.js',
     '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/__mocks__/fileMock.js',
   },
   
@@ -59,7 +55,6 @@ const config = {
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
-<<<<<<< Updated upstream
     '!src/**/*.stories.{js,jsx,ts,tsx}',
     '!src/**/*.test.{js,jsx,ts,tsx}',
     '!src/**/index.{js,jsx,ts,tsx}',
@@ -68,26 +63,26 @@ const config = {
   testMatch: [
     '**/__tests__/**/*.[jt]s?(x)',
     '**/?(*.)+(spec|test).[jt]s?(x)'
-=======
->>>>>>> Stashed changes
   ],
   
   testPathIgnorePatterns: [
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
     '<rootDir>/tests/e2e/',
+    '<rootDir>/tests/comprehensive/', 
+    '<rootDir>/docs/e2e/', 
+    '<rootDir>/code-server/', 
+    '<rootDir>/packages/vibecode-cli/src/__tests__/', 
+    '/__mocks__/', 
+    ...(includeDocs ? [] : ['<rootDir>/tests/docs/']),
   ],
-<<<<<<< Updated upstream
   
   moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json', 'node'],
-=======
->>>>>>> Stashed changes
 
   // Fix haste map collision
   haste: {
     enableSymlinks: false,
   },
-<<<<<<< Updated upstream
   
   // Clear mock calls and instances between tests
   clearMocks: true,
@@ -105,7 +100,8 @@ const config = {
   // Reporters
   reporters: [
     'default',
-    ['jest-junit', { outputDirectory: 'test-results', outputName: 'junit.xml' }],
+    // Write JUnit to a hidden, ignored folder to avoid accidental commits
+    ['jest-junit', { outputDirectory: '.test-results', outputName: 'junit.xml' }],
   ],
   
   // Coverage
@@ -122,22 +118,3 @@ const config = {
 };
 
 export default config;
-=======
-
-  // Use Babel for transformation to avoid SWC issues
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { 
-      presets: [
-        ['@babel/preset-env', { targets: { node: 'current' } }],
-        ['@babel/preset-react', { runtime: 'automatic' }],
-        '@babel/preset-typescript'
-      ]
-    }],
-  },
-
-  // Extensions to handle
-  moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json'],
-};
-
-module.exports = config;
->>>>>>> Stashed changes
