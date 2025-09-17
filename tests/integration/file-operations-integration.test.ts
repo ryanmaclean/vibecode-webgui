@@ -62,7 +62,7 @@ describe('File Operations Integration Tests', () => {
   afterAll(async () => {
     // Clean up test workspace
     try {
-      await fs.rmdir(testWorkspacePath, { recursive: true })} catch (error) {
+      await fs.rm(testWorkspacePath, { recursive: true })} catch (error) {
       // Directory cleanup might fail, that's okay
     }
   });
@@ -140,7 +140,7 @@ describe('File Operations Integration Tests', () => {
         ok: true,
         text: () => Promise.resolve(updatedContent.split('\n').slice(0, 50).join('\n'))}))
 
-      const searchResults = await lazyLoader.searchInFile('string', { maxResults: 5 });
+      const searchResults = await lazyLoader.searchInFile('value', { maxResults: 5 });
       expect(searchResults.length).toBeGreaterThan(0)
       expect(searchResults.some(result => result.content.includes('value: number | string'))).toBe(true)
 
