@@ -191,12 +191,6 @@ export class AIController {
         const requestData: ChatCompletionRequest = { ...req.body, stream: true };
 
         try {
-            // Validate model exists
-            const model = this.modelRegistry.getModel(requestData.model);
-            if (!model) {
-                throw new ValidationError(`Model '${requestData.model}' not found`);
-            }
-
             // Ensure model registry has data for auto-selection and validation
             await this.ensureModelsReady();
 
@@ -216,6 +210,12 @@ export class AIController {
 
                 // Emit Datadog metric (best-effort)
                 datadogMetrics.submitSelectionMetric(inferred.task, requestData.model, userId).catch(() => {});
+            }
+
+            // Validate model exists (after potential auto-selection)
+            const model = this.modelRegistry.getModel(requestData.model);
+            if (!model) {
+                throw new ValidationError(`Model '${requestData.model}' not found`);
             }
 
             // Set up SSE headers
@@ -291,12 +291,11 @@ export class AIController {
                 : (error instanceof NotFoundError) ? 404
                 : (error instanceof ExternalServiceError) ? 502
                 : 500;
-            const modelTag = `model:${String(requestData.model || 'unknown').replace(/[:/]/g, '_')}`;
-            datadogMetrics.submitMetric('vibecode.ai_gateway.error', 1, [
-                `error_class:${errorClass}`,
-                `http_status:${httpStatus}`,
-                modelTag
-            ], 'count').catch(() => {});
+            const errorTags = buildMetricTags(
+                { model: requestData.model, operation: 'stream_chat_completion' },
+                [kvTag('error_class', errorClass), kvTag('http_status', httpStatus)]
+            );
+            datadogMetrics.submitMetric('vibecode.ai_gateway.error', 1, errorTags, 'count').catch(() => {});
 
             if (!res.headersSent) {
                 res.status(500).json({ error: error instanceof Error ? error.message : String(error) });

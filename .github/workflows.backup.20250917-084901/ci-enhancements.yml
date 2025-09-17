@@ -1,0 +1,152 @@
+name: Enhanced CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  lint-and-test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci --legacy-peer-deps
+
+    - name: Lint
+      run: npm run lint
+
+    - name: Run tests with coverage
+      run: npm test -- --coverage --coverageReporters=json-summary
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage/coverage-summary.json
+        fail_ci_if_error: true
+
+    - name: Check test coverage
+      run: |
+        COVERAGE=$(jq -r ".total.lines.pct" < coverage/coverage-summary.json)
+        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+          echo "Coverage is below 80% (${COVERAGE}%)"
+          exit 1
+        else
+          echo "Coverage is good: ${COVERAGE}%"
+        fi
+
+  build-and-audit:
+    name: Build and Audit
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+
+    - name: Install dependencies
+      run: npm ci --legacy-peer-deps
+
+    - name: Run production build
+      run: npm run build
+
+    - name: Audit npm packages
+      run: npm audit --production
+
+    - name: Check for outdated dependencies
+      run: |
+        npx npm-check-updates --error-level=2
+
+  e2e-tests:
+    name: E2E Tests
+    needs: build-and-audit
+    runs-on: ubuntu-latest
+    
+    services:
+      # Start a local PostgreSQL container for testing
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run E2E tests
+      env:
+        DATABASE_URL: postgresql://test:test@localhost:5432/testdb
+      run: |
+        npm run test:e2e
+
+  deploy-preview:
+    name: Deploy Preview
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+    needs: [lint-and-test, build-and-audit, e2e-tests]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+
+    - name: Deploy to Vercel
+      uses: amondnet/vercel-action@v20
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod'
+        working-directory: ./
+        vercel-extra-args: '--scope ${{ secrets.VERCEL_SCOPE }}'
+
+    - name: Comment PR with Preview URL
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { data: comment } = await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `🚀 Preview available at: ${{ steps.vercel-action.outputs.preview-url }}`
+          })
