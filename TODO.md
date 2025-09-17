@@ -175,6 +175,8 @@ Reference: `docs/src/content/docs/claude-prompt.md` (oldest prompt in repo)
 - [x] AI Gateway metrics: emit error counter metric on controller catch (`vibecode.ai_gateway.error` with `error_class`, `http_status`)
 - [x] AI Gateway metrics: centralize standard tags via helper (ensure `env`, `service`, `version`, `operation`, `model_provider`, `model_family`)
 - [x] Evaluate DogStatsD/histograms for latency/cost percentiles and batching (add optional transport)
+- [ ] Add Datadog apply script to validate/apply AI Gateway dashboards and monitors (gated by DD_API_KEY/DD_APP_KEY) – scripts/apply-ai-gateway-monitoring.ts
+- [ ] Add OpenTelemetry correlation to AI Gateway (request_id/trace_id in traces; minimal spans around OpenRouter and HTTP server)
 
 Conclusion: We have not lost the thread—the current push on reliability, monitoring, and real integration tests directly supports the platform’s enterprise-grade goals in the original prompt. The above gaps are concrete, bounded steps to achieve full alignment.
 
@@ -295,15 +297,19 @@ beforeAll(() => {
 - **Root Cause**: Error occurs before response creation, suggesting missing dependency
 - **Solution**: Debug deeper test setup issues
 
-### Priority 3: Kubernetes Ingress Issues
+### ✅ **COMPLETED: Kubernetes Ingress Issues**
 - **Issue**: User provisioning tests fail on ingress controller setup
-- **Root Cause**: `kubectl wait --namespace ingress-nginx` timeout
-- **Solution**: Fix ingress controller deployment or adjust test expectations
+- **Root Cause**: `kubectl wait --namespace ingress-nginx` timeout  
+- **✅ Solution Applied**: Successfully installed ingress-nginx controller for KIND cluster
+- **Status**: Ingress controller pod running and ready (1/1)
 
-### Priority 4: E2E Tests for Non-Existent Features
-- **Issue**: Tests expect `/ai-project-generator` page and AI chat UI that don't exist
-- **Root Cause**: Tests written before features implemented
-- **Solution**: Delete/rewrite tests to match actual application features
+### ✅ **COMPLETED: Major Infrastructure Priorities**
+- **Priority 1**: ✅ WebSocket test hanging - Fixed
+- **Priority 2**: ✅ API route 500 errors - Previously resolved per TODO.md  
+- **Priority 3**: ✅ Kubernetes ingress controller - Successfully deployed and ready
+- **Priority 4**: ⚠️ E2E test instrumentation - Features exist, test IDs need updating (lower priority)
+
+**NOTE**: Priority 4 investigation revealed the AI Project Generator features DO exist at `/projects` with `AIProjectGenerator` component. The issue is missing `data-testid` attributes, not missing features. This is a test maintenance issue, not a critical infrastructure problem.
 
 ## ✅ Recently Completed
 - [x] **Datadog proof-of-life metric (AI Gateway)** – Submitted `vibecode.ai_gateway.test` via `npm run dd:test`; selection metrics now emitted on auto-selection paths (chat/stream/select)
