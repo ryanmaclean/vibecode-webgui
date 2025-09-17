@@ -81,6 +81,8 @@ spec:
           value: "false"  # Using containerd in KIND
         - name: DD_CONTAINERD_ENABLED
           value: "true"
+        - name: DD_ORCHESTRATOR_EXPLORER_ENABLED
+          value: "false"
         
         # Database Monitoring
         - name: DD_DATABASE_MONITORING_ENABLED
@@ -129,11 +131,6 @@ spec:
           value: "env:local,cluster:kind,platform:kubernetes,service:vibecode"
         
         volumeMounts:
-        # Configuration (read-only)
-        - name: config-volume
-          mountPath: /etc/datadog-agent
-          readOnly: true
-        
         # Writable directories for runtime files
         - name: tmp-volume
           mountPath: /tmp
@@ -178,12 +175,6 @@ spec:
           timeoutSeconds: 3
 
       volumes:
-      # Configuration
-      - name: config-volume
-        configMap:
-          name: datadog-config
-          optional: true
-      
       # Writable volumes
       - name: tmp-volume
         emptyDir: {}
