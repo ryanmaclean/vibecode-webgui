@@ -61,6 +61,7 @@ describe('DatadogMetricsService', () => {
         const tags = series?.tags || [];
         return (
           series?.metric === 'vibecode.ai_gateway.selection' &&
+          series?.type === 'count' &&
           tags.includes('task:code') &&
           tags.includes('model:openai_gpt-4o') &&
           tags.includes('env:development')

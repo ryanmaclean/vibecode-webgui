@@ -1,4 +1,3 @@
-import { datadogMetrics } from '../services/datadog-metrics';
 import { logger } from '../utils/logger';
 import path from 'path';
 import fs from 'fs';
@@ -14,11 +13,14 @@ if (fs.existsSync(rootEnv)) dotenv.config({ path: rootEnv });
 process.env.DD_ENV = 'development';
 
 (async () => {
+  // Dynamically import AFTER env is loaded so constructor sees DD_API_KEY
+  const { DatadogMetricsService } = await import('../services/datadog-metrics');
+  const svc = new DatadogMetricsService();
   const metricName = 'vibecode.ai_gateway.test';
   const tags = ['component:ai-gateway', 'kind:test', `ts:${Date.now()}`];
 
   try {
-    const ok = await datadogMetrics.submitMetric(metricName, 1, tags);
+    const ok = await svc.submitMetric(metricName, 1, tags);
     if (ok) {
       // eslint-disable-next-line no-console
       console.log(`Datadog metric submitted: ${metricName} tags=${tags.join(',')}`);
