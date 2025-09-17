@@ -640,6 +640,7 @@ export const HuggingFaceChatInterface = ({
                   size="sm"
                   onClick={() => setLastModelSuggestion(null)}
                   className="text-amber-600 hover:bg-amber-100"
+                  aria-label="Dismiss model suggestion"
                 >
                   ×
                 </Button>
