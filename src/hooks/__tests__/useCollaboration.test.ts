@@ -60,7 +60,7 @@ describe('useCollaboration', () => {
     console.log('io function:', io.toString())
     console.log('io mock calls before calling:', (io as jest.MockedFunction<typeof io>).mock?.calls?.length || 'no mock calls')
     
-    const result = io({ test: true })
+    const result = io()
     
     console.log('io() returned:', result)
     console.log('result type:', typeof result)

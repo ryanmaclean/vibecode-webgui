@@ -12,37 +12,46 @@ jest.mock('@/lib/analytics', () => ({
   trackError: jest.fn()
 }));
 
-// Mock fetch globally
-const mockFetch = jest.fn();
-global.fetch = mockFetch;
-
-// Mock setTimeout and clearTimeout for testing delays
-const mockSetTimeout = jest.fn();
-const mockClearTimeout = jest.fn();
-global.setTimeout = mockSetTimeout;
-global.clearTimeout = mockClearTimeout;
+// Mock fetch globally with proper typing
+const mockFetch = jest.fn<typeof fetch>();
+global.fetch = mockFetch as unknown as typeof fetch;
 
 // Import the function after mocking
 import { fetchWithRetry } from '../fetch';
 
+const createResponse = (status: number, body?: Record<string, unknown>) =>
+  new Response(body ? JSON.stringify(body) : null, {
+    status,
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+  });
+
 describe('fetchWithRetry', () => {
+  let setTimeoutSpy: jest.SpiedFunction<typeof setTimeout>;
+  let clearTimeoutSpy: jest.SpiedFunction<typeof clearTimeout>;
+
   beforeEach(() => {
     jest.clearAllMocks();
-    mockSetTimeout.mockImplementation((fn: Function, delay: number) => {
-      // Execute immediately for testing
-      fn();
-      return 123; // Mock timer ID
-    });
-    mockClearTimeout.mockImplementation(() => {});
+
+    setTimeoutSpy = jest.spyOn(global, 'setTimeout');
+    setTimeoutSpy.mockImplementation(((handler: TimerHandler, timeout?: number, ...args: any[]) => {
+      if (typeof handler === 'function') {
+        handler(...args);
+      }
+      return 123 as unknown as ReturnType<typeof setTimeout>;
+    }) as typeof setTimeout);
+
+    clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
+    clearTimeoutSpy.mockImplementation((() => undefined) as typeof clearTimeout);
+  });
+
+  afterEach(() => {
+    setTimeoutSpy.mockRestore();
+    clearTimeoutSpy.mockRestore();
   });
 
   describe('Basic Functionality', () => {
     it('should make a successful request on first attempt', async () => {
-      const mockResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers()
-      };
+      const mockResponse = createResponse(200);
       mockFetch.mockResolvedValueOnce(mockResponse);
 
       const result = await fetchWithRetry('https://api.example.com/test');
@@ -55,11 +64,7 @@ describe('fetchWithRetry', () => {
     });
 
     it('should pass through fetch options correctly', async () => {
-      const mockResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers()
-      };
+      const mockResponse = createResponse(200);
       mockFetch.mockResolvedValueOnce(mockResponse);
 
       const options = {
@@ -77,11 +82,7 @@ describe('fetchWithRetry', () => {
     });
 
     it('should handle URL objects correctly', async () => {
-      const mockResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers()
-      };
+      const mockResponse = createResponse(200);
       mockFetch.mockResolvedValueOnce(mockResponse);
 
       const url = new URL('https://api.example.com/test');
@@ -95,16 +96,8 @@ describe('fetchWithRetry', () => {
 
   describe('Retry Logic', () => {
     it('should retry on 500 error and succeed on second attempt', async () => {
-      const errorResponse = {
-        ok: false,
-        status: 500,
-        headers: new Headers()
-      };
-      const successResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers()
-      };
+      const errorResponse = createResponse(500);
+      const successResponse = createResponse(200);
 
       mockFetch
         .mockResolvedValueOnce(errorResponse)
@@ -117,16 +110,8 @@ describe('fetchWithRetry', () => {
     });
 
     it('should retry on 503 error and succeed on third attempt', async () => {
-      const errorResponse = {
-        ok: false,
-        status: 503,
-        headers: new Headers()
-      };
-      const successResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers()
-      };
+      const errorResponse = createResponse(503);
+      const successResponse = createResponse(200);
 
       mockFetch
         .mockResolvedValueOnce(errorResponse)
@@ -140,11 +125,7 @@ describe('fetchWithRetry', () => {
     });
 
     it('should not retry on 400 error (client error)', async () => {
-      const errorResponse = {
-        ok: false,
-        status: 400,
-        headers: new Headers()
-      };
+      const errorResponse = createResponse(400);
 
       mockFetch.mockResolvedValue(errorResponse);
 
@@ -153,16 +134,8 @@ describe('fetchWithRetry', () => {
     });
 
     it('should retry on 408 error (timeout)', async () => {
-      const errorResponse = {
-        ok: false,
-        status: 408,
-        headers: new Headers()
-      };
-      const successResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers()
-      };
+      const errorResponse = createResponse(408);
+      const successResponse = createResponse(200);
 
       mockFetch
         .mockResolvedValueOnce(errorResponse)
@@ -175,16 +148,8 @@ describe('fetchWithRetry', () => {
     });
 
     it('should retry on 429 error (rate limit)', async () => {
-      const errorResponse = {
-        ok: false,
-        status: 429,
-        headers: new Headers()
-      };
-      const successResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers()
-      };
+      const errorResponse = createResponse(429);
+      const successResponse = createResponse(200);
 
       mockFetch
         .mockResolvedValueOnce(errorResponse)
@@ -199,11 +164,7 @@ describe('fetchWithRetry', () => {
 
   describe('Retry Configuration', () => {
     it('should respect custom retry count', async () => {
-      const errorResponse = {
-        ok: false,
-        status: 500,
-        headers: new Headers()
-      };
+      const errorResponse = createResponse(500);
 
       mockFetch.mockResolvedValue(errorResponse);
 
@@ -212,11 +173,7 @@ describe('fetchWithRetry', () => {
     });
 
     it('should respect custom retry status codes for 4xx errors', async () => {
-      const errorResponse = {
-        ok: false,
-        status: 408, // 4xx error that should be retried
-        headers: new Headers()
-      };
+      const errorResponse = createResponse(408);
 
       mockFetch.mockResolvedValue(errorResponse);
 
@@ -228,15 +185,13 @@ describe('fetchWithRetry', () => {
     });
 
     it('should use custom shouldRetry function', async () => {
-      const errorResponse = {
-        ok: false,
-        status: 500,
-        headers: new Headers()
-      };
+      const errorResponse = createResponse(500);
 
       mockFetch.mockResolvedValue(errorResponse);
 
-      const customShouldRetry = jest.fn().mockReturnValue(false);
+      const customShouldRetry = jest
+        .fn<(error: Error, response: Response | null, attempt: number) => boolean>()
+        .mockReturnValue(false);
 
       await expect(fetchWithRetry('https://api.example.com/test', { 
         shouldRetry: customShouldRetry 
@@ -247,16 +202,8 @@ describe('fetchWithRetry', () => {
     });
 
     it('should call onRetry callback for each retry attempt', async () => {
-      const errorResponse = {
-        ok: false,
-        status: 500,
-        headers: new Headers()
-      };
-      const successResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers()
-      };
+      const errorResponse = createResponse(500);
+      const successResponse = createResponse(200);
 
       mockFetch
         .mockResolvedValueOnce(errorResponse)
@@ -275,11 +222,7 @@ describe('fetchWithRetry', () => {
 
   describe('Error Handling', () => {
     it('should throw error after exhausting retries', async () => {
-      const errorResponse = {
-        ok: false,
-        status: 500,
-        headers: new Headers()
-      };
+      const errorResponse = createResponse(500);
 
       mockFetch.mockResolvedValue(errorResponse);
 
@@ -288,11 +231,7 @@ describe('fetchWithRetry', () => {
     });
 
     it('should enhance error with context information', async () => {
-      const errorResponse = {
-        ok: false,
-        status: 500,
-        headers: new Headers()
-      };
+      const errorResponse = createResponse(500);
 
       mockFetch.mockResolvedValue(errorResponse);
 
@@ -308,11 +247,7 @@ describe('fetchWithRetry', () => {
 
     it('should handle network errors and retry', async () => {
       const networkError = new Error('Network error');
-      const successResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers()
-      };
+      const successResponse = createResponse(200);
 
       mockFetch
         .mockRejectedValueOnce(networkError)
@@ -337,45 +272,29 @@ describe('fetchWithRetry', () => {
 
   describe('Timeout Handling', () => {
     it('should set up timeout correctly', async () => {
-      const mockResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers()
-      };
+      const mockResponse = createResponse(200);
       mockFetch.mockResolvedValueOnce(mockResponse);
 
       await fetchWithRetry('https://api.example.com/test', { timeout: 5000 });
 
-      expect(mockSetTimeout).toHaveBeenCalledWith(expect.any(Function), 5000);
-      expect(mockClearTimeout).toHaveBeenCalledWith(123);
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 5000);
+      expect(clearTimeoutSpy).toHaveBeenCalledWith(123);
     });
 
     it('should use default timeout when not specified', async () => {
-      const mockResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers()
-      };
+      const mockResponse = createResponse(200);
       mockFetch.mockResolvedValueOnce(mockResponse);
 
       await fetchWithRetry('https://api.example.com/test');
 
-      expect(mockSetTimeout).toHaveBeenCalledWith(expect.any(Function), 30000); // Default 30s
+      expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 30000); // Default 30s
     });
   });
 
   describe('Exponential Backoff', () => {
     it('should implement exponential backoff with jitter', async () => {
-      const errorResponse = {
-        ok: false,
-        status: 500,
-        headers: new Headers()
-      };
-      const successResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers()
-      };
+      const errorResponse = createResponse(500);
+      const successResponse = createResponse(200);
 
       mockFetch
         .mockResolvedValueOnce(errorResponse)
@@ -403,11 +322,7 @@ describe('fetchWithRetry', () => {
     });
 
     it('should cap delay at 30 seconds', async () => {
-      const errorResponse = {
-        ok: false,
-        status: 500,
-        headers: new Headers()
-      };
+      const errorResponse = createResponse(500);
 
       mockFetch.mockResolvedValue(errorResponse);
 
@@ -433,11 +348,7 @@ describe('fetchWithRetry', () => {
 
   describe('Edge Cases', () => {
     it('should handle empty URL', async () => {
-      const mockResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers()
-      };
+      const mockResponse = createResponse(200);
       mockFetch.mockResolvedValueOnce(mockResponse);
 
       await fetchWithRetry('');
@@ -448,11 +359,7 @@ describe('fetchWithRetry', () => {
     });
 
     it('should handle undefined options', async () => {
-      const mockResponse = {
-        ok: true,
-        status: 200,
-        headers: new Headers()
-      };
+      const mockResponse = createResponse(200);
       mockFetch.mockResolvedValueOnce(mockResponse);
 
       await fetchWithRetry('https://api.example.com/test', undefined);
@@ -463,11 +370,7 @@ describe('fetchWithRetry', () => {
     });
 
     it('should handle zero retries', async () => {
-      const errorResponse = {
-        ok: false,
-        status: 500,
-        headers: new Headers()
-      };
+      const errorResponse = createResponse(500);
 
       mockFetch.mockResolvedValue(errorResponse);
 

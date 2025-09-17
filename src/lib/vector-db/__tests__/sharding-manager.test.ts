@@ -117,7 +117,7 @@ describe('VectorShardingManager', () => {
         }
         
         return { rows: [], rowCount: 0 };
-      }, mockFactory);
+      });
 
       const mockRelease = jest.fn();
 
@@ -600,8 +600,8 @@ describe('VectorShardingManager', () => {
     });
 
     it('should handle shutdown errors gracefully', async () => {
-      const mockPool = mockFactory.createPool({});
-      mockPool.end.mockRejectedValue(new Error('Shutdown error'));
+      const mockPool = mockFactory.createPool({}) as any;
+      (mockPool.end as jest.Mock).mockRejectedValue(new Error('Shutdown error'));
       
       await expect(shardingManager.shutdown()).resolves.not.toThrow();
     });
