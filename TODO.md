@@ -778,7 +778,7 @@ The systematic E2E methodology has been successfully **validated across multiple
 - [x] external/magic-code-gen: Fix Vite/esbuild/security bypass advisories (multiple GHSA)
   - Action: bump `vite` to `^5.4.21`; add overrides: `{ "esbuild": "^0.24.4", "brace-expansion": "^2.0.2", "nanoid": "^3.3.8" }`
   - Verify: run `npm ci && npm audit` in `external/magic-code-gen/`
-- [ ] Verify audits are clean post-fix (all affected workspaces)
+- [x] Verify audits are clean post-fix (all affected workspaces)
   - Commands:
     - `npm ci && npm audit` in `services/ai-gateway/`
     - `npm ci && npm audit` in `extensions/vibecode-ai-assistant/`
