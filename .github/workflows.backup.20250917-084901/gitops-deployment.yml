@@ -1,0 +1,637 @@
+name: GitOps Deployment Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'Dockerfile'
+      - 'infrastructure/**'
+      - '.github/workflows/gitops-deployment.yml'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      force_deploy:
+        description: 'Force deployment even if tests fail'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+ 
+  
+jobs:
+  # Early validation of required secrets/vars (non-fatal)
+  validate-ci-config:
+    name: Validate CI configuration (secrets/vars)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check required secrets and variables
+        shell: bash
+        continue-on-error: true
+        run: |
+          missing=0
+          if [ -z "${{ secrets.DD_API_KEY }}" ]; then echo " Missing secret: DD_API_KEY"; missing=1; else echo " Found secret: DD_API_KEY"; fi
+          if [ -z "${{ secrets.DD_APP_KEY }}" ]; then echo " Missing secret: DD_APP_KEY"; missing=1; else echo " Found secret: DD_APP_KEY"; fi
+          if [ "$missing" -eq 0 ]; then
+            echo " All required Datadog secrets are present."
+          else
+            echo " One or more secrets are missing. Datadog-dependent steps will be skipped."
+          fi
+
+  # Security and Quality Gates
+  security-scan:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || inputs.force_deploy == false
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      - name: Notify Datadog of security scan
+        if: always() && env.DD_API_KEY != ''
+        run: |
+          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
+            -d @- << 'EOF'
+          {
+            "title": "Security Scan Completed",
+            "text": "Security scan completed for commit ${{ github.sha }}",
+            "priority": "normal",
+            "tags": ["environment:ci", "service:vibecode-webgui", "scan:security"],
+            "alert_type": "info",
+            "source_type_name": "github"
+          }
+          EOF
+
+  # Build and Test
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    needs: [security-scan, validate-ci-config]
+    if: always() && (needs.security-scan.result == 'success' || github.event.inputs.force_deploy == 'true')
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+    
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run type checking
+        run: npm run type-check
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Build application
+        run: npm run build
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Datadog CI Test Visibility
+        if: ${{ env.DD_API_KEY != '' }}
+        run: |
+          npm install -g @datadog/datadog-ci
+          datadog-ci junit upload --service vibecode-webgui test-results.xml
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.meta.outputs.tags }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Upload SBOM to Datadog
+        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
+        run: |
+          curl -X POST "https://api.datadoghq.com/api/v2/software_composition_analysis/sboms" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
+            -H "DD-APPLICATION-KEY: ${{ env.DD_APP_KEY }}" \
+            -d @sbom.spdx.json
+
+  # Infrastructure Validation
+  infrastructure-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    needs: [build-and-test]
+    if: always() && needs.build-and-test.result == 'success'
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+    
+    outputs:
+      plan-file: terraform.tfplan
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Terraform Init
+        working-directory: infrastructure/terraform
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: infrastructure/terraform
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: infrastructure/terraform
+        run: |
+          terraform plan \
+            -var="environment=${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}" \
+            -var="app_version=${{ needs.build-and-test.outputs.image-tag }}" \
+            -var="database_password=${{ secrets.DATABASE_PASSWORD }}" \
+            -var="nextauth_secret=${{ secrets.NEXTAUTH_SECRET }}" \
+            -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
+            -var="anthropic_api_key=${{ secrets.ANTHROPIC_API_KEY }}" \
+            -var="datadog_api_key=${{ env.DD_API_KEY }}" \
+            -var="datadog_app_key=${{ env.DD_APP_KEY }}" \
+            -out=terraform.tfplan
+
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: infrastructure/terraform/terraform.tfplan
+          retention-days: 5
+
+  # E2E Testing in Staging
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [infrastructure-plan]
+    if: github.ref != 'refs/heads/main' && needs.infrastructure-plan.result == 'success'
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+        env:
+          BASE_URL: https://vibecode-webgui-staging.yourdomain.com
+          PLAYWRIGHT_TEST_BASE_URL: https://vibecode-webgui-staging.yourdomain.com
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 10
+
+      - name: Send E2E results to Datadog
+        if: always() && env.DD_API_KEY != ''
+        run: |
+          datadog-ci junit upload --service vibecode-webgui-e2e test-results/junit.xml
+
+  # Staging Deployment
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [infrastructure-plan, build-and-test, validate-ci-config]
+    if: github.ref == 'refs/heads/develop' && needs.build-and-test.result == 'success'
+    environment:
+      name: staging
+      url: https://vibecode-webgui-staging.yourdomain.com
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Download Terraform Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan
+          path: infrastructure/terraform/
+
+      - name: Terraform Apply
+        working-directory: infrastructure/terraform
+        run: |
+          terraform init
+          terraform apply \
+            -var="environment=staging" \
+            -var="app_version=${{ needs.build-and-test.outputs.image-tag }}" \
+            -var="replicas=2" \
+            -var="database_password=${{ secrets.DATABASE_PASSWORD_STAGING }}" \
+            -var="nextauth_secret=${{ secrets.NEXTAUTH_SECRET_STAGING }}" \
+            -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
+            -var="anthropic_api_key=${{ secrets.ANTHROPIC_API_KEY }}" \
+            -var="datadog_api_key=${{ env.DD_API_KEY }}" \
+            -var="datadog_app_key=${{ env.DD_APP_KEY }}" \
+            -auto-approve
+
+      - name: Wait for deployment
+        run: |
+          kubectl rollout status deployment/vibecode-webgui \
+            -n vibecode-webgui-staging \
+            --timeout=600s
+
+      - name: Run database migrations
+        run: |
+          kubectl exec -n vibecode-webgui-staging \
+            deployment/vibecode-webgui -- \
+            npm run db:deploy
+
+      - name: Verify deployment health
+        run: |
+          sleep 30
+          curl -f https://vibecode-webgui-staging.yourdomain.com/api/health || exit 1
+
+      - name: Create Datadog deployment marker
+        if: ${{ env.DD_API_KEY != '' }}
+        run: |
+          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
+            -d @- << 'EOF'
+          {
+            "title": "Staging Deployment",
+            "text": "Deployed ${{ needs.build-and-test.outputs.image-tag }} to staging",
+            "priority": "normal",
+            "tags": ["environment:staging", "service:vibecode-webgui", "deployment:success"],
+            "alert_type": "success",
+            "source_type_name": "github"
+          }
+          EOF
+
+  # Production Deployment
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [infrastructure-plan, build-and-test, e2e-tests, validate-ci-config]
+    if: github.ref == 'refs/heads/main' && (needs.e2e-tests.result == 'success' || github.event.inputs.force_deploy == 'true')
+    environment:
+      name: production
+      url: https://vibecode-webgui.yourdomain.com
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.6
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_PRODUCTION }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Download Terraform Plan
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan
+          path: infrastructure/terraform/
+
+      - name: Terraform Apply Production
+        working-directory: infrastructure/terraform
+        run: |
+          terraform init
+          terraform apply \
+            -var="environment=production" \
+            -var="app_version=${{ needs.build-and-test.outputs.image-tag }}" \
+            -var="replicas=5" \
+            -var="database_storage_size=100Gi" \
+            -var="redis_memory_limit=2Gi" \
+            -var="database_password=${{ secrets.DATABASE_PASSWORD_PRODUCTION }}" \
+            -var="nextauth_secret=${{ secrets.NEXTAUTH_SECRET_PRODUCTION }}" \
+            -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
+            -var="anthropic_api_key=${{ secrets.ANTHROPIC_API_KEY }}" \
+            -var="datadog_api_key=${{ env.DD_API_KEY }}" \
+            -var="datadog_app_key=${{ env.DD_APP_KEY }}" \
+            -auto-approve
+
+      - name: Blue-Green Deployment Strategy
+        run: |
+          # Create new deployment with different name
+          kubectl patch deployment vibecode-webgui \
+            -n vibecode-webgui-production \
+            -p '{"spec":{"template":{"spec":{"containers":[{"name":"vibecode-webgui","image":"${{ needs.build-and-test.outputs.image-tag }}"}]}}}}'
+          
+          # Wait for new pods to be ready
+          kubectl rollout status deployment/vibecode-webgui \
+            -n vibecode-webgui-production \
+            --timeout=900s
+
+      - name: Run database migrations
+        run: |
+          kubectl exec -n vibecode-webgui-production \
+            deployment/vibecode-webgui -- \
+            npm run db:deploy
+
+      - name: Health check with retry
+        run: |
+          for i in {1..10}; do
+            if curl -f https://vibecode-webgui.yourdomain.com/api/health; then
+              echo "Health check passed"
+              break
+            else
+              echo "Health check failed, attempt $i/10"
+              sleep 30
+            fi
+            
+            if [ $i -eq 10 ]; then
+              echo "Health check failed after 10 attempts"
+              exit 1
+            fi
+          done
+
+      - name: Run smoke tests
+        run: |
+          curl -f https://vibecode-webgui.yourdomain.com/api/health/simple
+          curl -f https://vibecode-webgui.yourdomain.com/api/ai/management?action=health
+          curl -f https://vibecode-webgui.yourdomain.com/api/monitoring/performance?action=health
+
+      - name: Create Datadog deployment marker
+        if: ${{ env.DD_API_KEY != '' }}
+        run: |
+          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
+            -d @- << 'EOF'
+          {
+            "title": "Production Deployment",
+            "text": "Successfully deployed ${{ needs.build-and-test.outputs.image-tag }} to production",
+            "priority": "normal",
+            "tags": ["environment:production", "service:vibecode-webgui", "deployment:success"],
+            "alert_type": "success",
+            "source_type_name": "github"
+          }
+          EOF
+
+  # Post-Deployment Monitoring
+  post-deployment-monitoring:
+    name: Post-Deployment Monitoring
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: always() && needs.deploy-production.result == 'success'
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+    
+    steps:
+      - name: Setup Datadog monitors
+        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
+        run: |
+          curl -X POST "https://api.datadoghq.com/api/v1/monitor" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
+            -H "DD-APPLICATION-KEY: ${{ env.DD_APP_KEY }}" \
+            -d @- << 'EOF'
+          {
+            "type": "metric alert",
+            "query": "avg(last_5m):avg:kubernetes.cpu.usage.total{service:vibecode-webgui,environment:production} > 0.8",
+            "name": "High CPU Usage - VibeCode Production",
+            "message": "CPU usage is above 80% for VibeCode production @slack-alerts",
+            "tags": ["service:vibecode-webgui", "environment:production"],
+            "priority": 2
+          }
+          EOF
+
+      - name: Setup synthetic tests
+        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
+        run: |
+          curl -X POST "https://api.datadoghq.com/api/v1/synthetics/tests" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
+            -H "DD-APPLICATION-KEY: ${{ env.DD_APP_KEY }}" \
+            -d @- << 'EOF'
+          {
+            "type": "api",
+            "subtype": "http",
+            "config": {
+              "request": {
+                "method": "GET",
+                "url": "https://vibecode-webgui.yourdomain.com/api/health"
+              },
+              "assertions": [
+                {
+                  "type": "statusCode",
+                  "operator": "is",
+                  "target": 200
+                },
+                {
+                  "type": "responseTime",
+                  "operator": "lessThan",
+                  "target": 1000
+                }
+              ]
+            },
+            "locations": ["aws:us-east-1", "aws:eu-west-1"],
+            "options": {
+              "tick_every": 60,
+              "min_failure_duration": 180
+            },
+            "name": "VibeCode Production Health Check",
+            "message": "VibeCode health check failed @slack-alerts",
+            "tags": ["service:vibecode-webgui", "environment:production"]
+          }
+          EOF
+
+      - name: Wait and verify metrics
+        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
+        run: |
+          sleep 300  # Wait 5 minutes for metrics to populate
+          
+          # Check deployment metrics
+          curl -X POST "https://api.datadoghq.com/api/v1/query" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
+            -H "DD-APPLICATION-KEY: ${{ env.DD_APP_KEY }}" \
+            -d '{"query":"avg:kubernetes.pods.running{service:vibecode-webgui,environment:production}"}'
+
+  # Rollback capability
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: failure() && github.ref == 'refs/heads/main'
+    needs: [deploy-production]
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+    
+    steps:
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_PRODUCTION }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Rollback deployment
+        run: |
+          kubectl rollout undo deployment/vibecode-webgui \
+            -n vibecode-webgui-production
+
+      - name: Wait for rollback
+        run: |
+          kubectl rollout status deployment/vibecode-webgui \
+            -n vibecode-webgui-production \
+            --timeout=600s
+
+      - name: Verify rollback
+        run: |
+          curl -f https://vibecode-webgui.yourdomain.com/api/health
+
+      - name: Notify Datadog of rollback
+        if: ${{ env.DD_API_KEY != '' }}
+        run: |
+          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
+            -d @- << 'EOF'
+          {
+            "title": "Production Rollback",
+            "text": "Production deployment rolled back due to failure",
+            "priority": "high",
+            "tags": ["environment:production", "service:vibecode-webgui", "deployment:rollback"],
+            "alert_type": "error",
+            "source_type_name": "github"
+          }
+          EOF
