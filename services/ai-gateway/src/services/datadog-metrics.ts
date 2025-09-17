@@ -8,7 +8,7 @@ export class DatadogMetricsService {
   private env: string;
 
   constructor() {
-    this.apiKey = process.env.DATADOG_API_KEY;
+    this.apiKey = process.env.DATADOG_API_KEY || process.env.DD_API_KEY;
     this.site = process.env.DATADOG_SITE || 'datadoghq.com';
     this.service = process.env.DD_SERVICE || 'vibecode-ai-gateway';
     this.env = process.env.DD_ENV || process.env.NODE_ENV || 'development';
