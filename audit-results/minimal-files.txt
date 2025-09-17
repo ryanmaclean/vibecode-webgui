@@ -1,7 +1,0 @@
-       8 ./.pytest_cache/README.md
-       6 ./archive/CLAUDE.md
-       9 ./code-server/docs/ios.md
-       5 ./code-server/docs/upgrade.md
-       8 ./docs/src/content/docs/wiki-archive/AI_PROVIDER_NOTES.md
-       4 ./playwright-report/data/28ef858c5f48ba3e54e3ee23e92a1c34d9eebd16.md
-       9 ./playwright-report/data/f828e5d793d89fb0261938b9531fb7c0b8ed7b5d.md
