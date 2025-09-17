@@ -567,27 +567,13 @@ describe('File Operations Integration Tests', () => {
 
         // Should have batched events efficiently
         const stats = fastWatcher.getStats();
-        console.log('Event batching stats:', stats);
-        console.log('Batch events captured:', batchEvents.length);
-        console.log('Batch sizes:', batchEvents.map(batch => batch.events?.length || 'no events property'));
         
         expect(stats.totalEvents).toBeGreaterThan(0);
         expect(stats.batchesProcessed).toBeGreaterThan(0);
-        
-        // Debug the batching issue
-        if (stats.averageBatchSize <= 1) {
-          console.log('Batching not working. Debug info:');
-          console.log('- Total events:', stats.totalEvents);
-          console.log('- Batches processed:', stats.batchesProcessed);
-          console.log('- Average batch size:', stats.averageBatchSize);
-          console.log('- Throttle delay:', 25, 'ms');
-          console.log('- Update delay:', 10, 'ms');
-        }
-        
-        expect(stats.averageBatchSize).toBeGreaterThan(1) // Events should be batched
+        expect(stats.averageBatchSize).toBeGreaterThan(1); // Events should be batched
 
-        // Batch count should be less than total events (proving batching works);
-        expect(stats.batchesProcessed).toBeLessThan(stats.totalEvents)} finally {
+        // Batch count should be less than total events (proving batching works)
+        expect(stats.batchesProcessed).toBeLessThan(stats.totalEvents);} finally {
         await fastWatcher.destroy();
         await fileOps.deleteFile(filePath)}
     })})});

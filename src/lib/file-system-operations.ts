@@ -314,6 +314,10 @@ export class SecureFileSystemOperations extends EventEmitter {
     return crypto.createHash('sha256').update(content).digest('hex')
   }
 
+  private getFullPath(filePath: string): string {
+    return path.resolve(this.workspacePath, filePath)
+  }
+
   /**
    * Detect file conflicts
    */
