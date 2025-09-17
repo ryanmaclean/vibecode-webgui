@@ -2,6 +2,7 @@ import axios from 'axios';
 import { logger } from '../utils/logger';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import pkg from '../../package.json';
+import { sanitizeTagValue } from './metrics-tags';
 
 export class DatadogMetricsService {
   private apiKey: string | undefined;
@@ -73,7 +74,7 @@ export class DatadogMetricsService {
   public async submitSelectionMetric(task: string, model: string, userId?: string): Promise<boolean> {
     const tags = [
       `task:${task}`,
-      `model:${model.replace(/[:/]/g, '_')}`,
+      `model:${sanitizeTagValue(model)}`,
       ...(userId ? [`user:${userId}`] : [])
     ];
     return this.submitMetric('vibecode.ai_gateway.selection', 1, tags, 'count');
