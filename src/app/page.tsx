@@ -97,15 +97,22 @@ export default function Home() {
               >
                 Template Marketplace
               </Link>
-              <span className="text-sm text-muted-foreground">
-                Welcome, {user?.name || user?.email}
-              </span>
-              <button
-                onClick={logout}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Sign Out
-              </button>
+              
+              {/* User Menu */}
+              <div className="relative" data-testid="user-menu">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Welcome, {user?.name || user?.email}
+                  </span>
+                  <button
+                    onClick={logout}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    data-testid="logout-button"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </header>
