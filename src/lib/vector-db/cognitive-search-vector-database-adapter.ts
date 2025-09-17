@@ -13,7 +13,7 @@ import {
 import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { VectorChunk, SearchResult, SearchOptions, VectorDatabaseConfig } from './vector-types';
 import { metrics } from '../server-monitoring';
-import { VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
+import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
 
 /**
  * Azure Cognitive Search Vector Database Configuration
@@ -50,15 +50,15 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
   protected async initializeProvider(): Promise<void> {
     try {
       if (!this.searchConfig.endpoint) {
-        throw this.errorHandler.handleError(new Error('Azure Cognitive Search endpoint is required'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+        throw new Error('Azure Cognitive Search endpoint is required');
       }
 
       if (!this.searchConfig.apiKey) {
-        throw this.errorHandler.handleError(new Error('Azure Cognitive Search API key is required'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+        throw new Error('Azure Cognitive Search API key is required');
       }
 
       if (!this.searchConfig.indexName) {
-        throw this.errorHandler.handleError(new Error('Azure Cognitive Search index name is required'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+        throw new Error('Azure Cognitive Search index name is required');
       }
 
       // Create credential
@@ -80,37 +80,51 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
       // Verify connection by checking if index exists
       const indexExists = await this.checkIndexExists(this.searchConfig.indexName);
       if (!indexExists) {
-        throw this.errorHandler.handleError(new Error(`Index ${this.searchConfig.indexName} does not exist`), 'unknown', VectorDbErrorType.SEARCH, false);
+        throw new Error(`Index ${this.searchConfig.indexName} does not exist`);
       }
 
       if (this.config.enableLogging) {
         console.info(`Connected to Azure Cognitive Search at ${this.searchConfig.endpoint}`);
       }
     } catch (error) {
+      // Determine error type based on error characteristics
+      let errorType = VectorDbErrorType.INITIALIZATION;
+      let retryable = false;
+      
+      if (this.errorHandler.isAuthError(error)) {
+        errorType = VectorDbErrorType.AUTHENTICATION;
+        retryable = false;
+      } else if (this.errorHandler.isNetworkError(error)) {
+        errorType = VectorDbErrorType.CONNECTION;
+        retryable = true;
+      } else if (this.errorHandler.isTimeoutError(error)) {
+        errorType = VectorDbErrorType.TIMEOUT;
+        retryable = true;
+      }
+      
+      // Include additional context in error data
+      const errorData = {
+        endpoint: this.searchConfig.endpoint,
+        indexName: this.searchConfig.indexName
+      };
+      
+      // Handle the error with consistent formatting and logging
       throw this.errorHandler.handleError(
         error,
         'initialize',
-        VectorDbErrorType.INITIALIZATION,
-        false,
-        { endpoint: this.searchConfig.endpoint, indexName: this.searchConfig.indexName }
+        errorType,
+        retryable,
+        errorData
       );
     }
   }
 
   /**
    * Check if an index exists in Azure Cognitive Search
-   * @param indexName The name of the index to check
-   * @returns Promise<boolean> indicating if the index exists
-   * @throws Error if the client is not initialized or if there's a critical error
    */
-  protected async checkIndexExists(indexName: string): Promise<boolean> {
+  private async checkIndexExists(indexName: string): Promise<boolean> {
     if (!this.searchIndexClient) {
-      throw this.errorHandler.handleError(
-        new Error('Search index client not initialized'),
-        'checkIndexExists',
-        VectorDbErrorType.INITIALIZATION,
-        false
-      );
+      throw new Error('Search index client not initialized');
     }
 
     try {
@@ -122,22 +136,15 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
       }
       return false;
     } catch (error) {
-      // Log error without throwing to allow initialization to continue
-      // and make a decision about the missing index
       if (this.config.enableLogging) {
         console.error('Error checking if index exists:', error);
       }
-      
-      if (this.config.enableMetrics) {
-        metrics.increment('vector_db.check_index.error');
-      }
-      
       return false;
     }
   }
 
   /**
-   * Ping the provider to check connectivity
+   * Check if Azure Cognitive Search is responsive
    */
   protected async pingProvider(): Promise<boolean> {
     if (!this.searchClient) {
@@ -175,12 +182,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
     tokens: number;
   }>): Promise<void> {
     if (!this.searchClient) {
-      throw this.errorHandler.handleError(
-        new Error('Search client not initialized'),
-        'storeChunks',
-        VectorDbErrorType.INITIALIZATION,
-        false
-      );
+      throw new Error('Search client not initialized');
     }
 
     try {
@@ -228,13 +230,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
         console.error(`Error storing chunks for file ${fileId}:`, error);
       }
       
-        throw this.errorHandler.handleError(
-          error, 
-          'storeChunks', 
-          VectorDbErrorType.VECTOR_CREATION_FAILED,
-          false, 
-          { fileId }
-        );
+      throw error;
     }
   }
 
@@ -329,27 +325,47 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
 
       return results;
     } catch (error) {
+      // Determine if this is a network/timeout error (retryable) or other error
+      const isRetryable = this.errorHandler.isNetworkError(error) || 
+                          this.errorHandler.isTimeoutError(error);
+      
+      // Include search context in error data
+      const errorData = {
+        vectorDimensions: embedding.length,
+        options: {
+          fileIds: options.fileIds,
+          workspaceId: options.workspaceId,
+          limit: options.limit,
+          threshold: options.threshold
+        }
+      };
+      
       // For vector search errors, try fallback to text search if query text is available
       if (options.queryText) {
         try {
           return this.fallbackTextSearch(options.queryText, options);
-        } catch {
-          // If fallback also fails, throw the original error
+        } catch (fallbackError) {
+          // If fallback also fails, throw the original error with enhanced context
           throw this.errorHandler.handleError(
             error,
             'search',
             VectorDbErrorType.SEARCH,
-            false
+            isRetryable,
+            {
+              ...errorData,
+              fallbackError: fallbackError instanceof Error ? fallbackError.message : fallbackError
+            }
           );
         }
       }
       
-      // No fallback available, throw error
+      // No fallback available, throw enhanced error
       throw this.errorHandler.handleError(
         error,
         'search',
         VectorDbErrorType.SEARCH,
-        false
+        isRetryable,
+        errorData
       );
     }
   }
@@ -359,12 +375,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
    */
   public async deleteFileChunks(fileId: number): Promise<void> {
     if (!this.searchClient) {
-      throw this.errorHandler.handleError(
-        new Error('Search client not initialized'),
-        'deleteFileChunks',
-        VectorDbErrorType.INITIALIZATION,
-        false
-      );
+      throw new Error('Search client not initialized');
     }
 
     try {
@@ -412,13 +423,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
         console.error(`Error deleting chunks for file ${fileId}:`, error);
       }
       
-        throw this.errorHandler.handleError(
-          error, 
-          'deleteFileChunks', 
-          VectorDbErrorType.VECTOR_DELETION_FAILED,
-          false, 
-          { fileId }
-        );
+      throw error;
     }
   }
 
@@ -431,12 +436,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
     averageChunkSize: number;
   }> {
     if (!this.searchClient) {
-      throw this.errorHandler.handleError(
-        new Error('Search client not initialized'),
-        'getStats',
-        VectorDbErrorType.INITIALIZATION,
-        false
-      );
+      throw new Error('Search client not initialized');
     }
 
     try {
@@ -458,35 +458,8 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
         totalFiles = Object.keys(facetResult.facets.fileId).length;
       }
       
-      // Calculate average chunk size from a sample of documents if possible
-      let averageChunkSize = 0;
-      try {
-        const sampleQuery = await this.searchClient.search(null, {
-          top: 10,
-          select: ['content']
-        });
-        
-        let totalContentLength = 0;
-        let documentCount = 0;
-        
-        for await (const result of sampleQuery.results) {
-          if (result.document.content) {
-            totalContentLength += String(result.document.content).length;
-            documentCount++;
-          }
-        }
-        
-        averageChunkSize = documentCount > 0 
-          ? Math.round(totalContentLength / documentCount)
-          : 500; // Fallback to reasonable default if no data
-      } catch (error) {
-        // Fallback to reasonable default if calculation fails
-        averageChunkSize = 500;
-        
-        if (this.config.enableLogging) {
-          console.warn('Error calculating average chunk size:', error);
-        }
-      }
+      // Azure doesn't provide easy way to get average size, so we estimate
+      const averageChunkSize = 500; // Rough estimate
       
       if (this.config.enableMetrics) {
         metrics.histogram('vector_db.get_stats.duration', Date.now() - startTime);
@@ -535,12 +508,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
    */
   protected async fallbackTextSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.searchClient) {
-      throw this.errorHandler.handleError(
-        new Error('Search client not initialized'),
-        'fallbackTextSearch',
-        VectorDbErrorType.INITIALIZATION,
-        false
-      );
+      throw new Error('Search client not initialized');
     }
 
     try {
