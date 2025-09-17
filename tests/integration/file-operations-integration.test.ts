@@ -338,6 +338,9 @@ describe('File Operations Integration Tests', () => {
       const content = 'console.log("Hello from notification test");';
       await fileOps.createFile(filePath, content)
 
+      // Wait for file watcher to detect the file creation
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       // Simulate WebSocket message about the file change
       const notificationMessage = {
         type: 'file-change',
