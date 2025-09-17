@@ -5,16 +5,16 @@ template: splash
 hero:
   tagline: Cloud-Native Development Platform with AI-Powered Workflows
   actions:
-    - text: Documentation Wiki
-      link: /wiki-index/
-      icon: document
-      variant: primary
-    - text: KIND Setup Guide
-      link: /kind-troubleshooting/
+    - text: Latest Features
+      link: /new-features/
       icon: rocket
+      variant: primary
+    - text: Getting Started
+      link: /getting-started/
+      icon: document
       variant: secondary
     - text: View on GitHub
-      link: https://github.com/vibecode/vibecode-webgui
+      link: https://github.com/ryanmaclean/vibecode-webgui
       icon: external
       variant: minimal
 ---
@@ -26,27 +26,28 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 VibeCode is an **infrastructure-first** cloud-native development platform that combines the power of AI-driven project generation with enterprise-grade security and observability. Built on Kubernetes with a complete VS Code experience in the cloud.
 
 <CardGrid>
-  <Card title="🚀 AI Project Generation" icon="rocket">
-    Transform natural language prompts into production-ready codebases using Claude-3.5-Sonnet and multiple AI providers.
+  <Card title="🤖 Enhanced AI System" icon="rocket">
+    **12+ AI models** across 5 providers with dynamic switching, RAG integration, and real-time analytics. GPT-4, Claude-3, Gemini, and more.
   </Card>
-  <Card title="🖥️ Live VS Code Experience" icon="laptop">
-    Full IDE via code-server with real-time collaboration, not a limited web editor.
+  <Card title="🔍 Vector Database & Search" icon="magnifier">
+    **pgvector integration** with semantic search, automatic embeddings, and intelligent context retrieval for AI workflows.
   </Card>
-  <Card title="📊 Multi-Platform Observability" icon="chart">
-    Hybrid monitoring stack: Datadog + Prometheus + Vector + OpenTelemetry support.
+  <Card title="📊 Complete Observability" icon="chart">
+    **Datadog LLM monitoring** + database performance tracking + comprehensive metrics for AI operations and infrastructure.
   </Card>
-  <Card title="🔐 Enterprise Security" icon="shield">
-    Authelia 2FA/SSO, hardware keys, TOTP, integrated security scanning with Kubehound.
+  <Card title="🏗️ Production Ready Infrastructure" icon="shield">
+    **KIND automation**, Docker diagnostics, comprehensive testing (80%+ coverage), and enterprise-grade deployment.
   </Card>
 </CardGrid>
 
 ## Key Features
 
-- **Infrastructure-First**: KIND (Kubernetes in Docker) orchestration eliminates 60-80% custom development
-- **Multi-AI Provider Support**: Avoid vendor lock-in with intelligent routing across 6+ AI models
-- **Production-Ready**: NGINX Ingress, cert-manager, Helm charts, persistent storage
-- **Accessibility Compliance**: WCAG 2.1 AA compliant with comprehensive testing
-- **Open Source**: MIT license with permissive dependencies (Apache 2.0, BSD, MPL-2.0)
+- **Enhanced AI System**: 12+ models across OpenAI, Anthropic, Google, Meta, and Mistral with dynamic switching
+- **Vector Database**: pgvector integration with semantic search and automatic embeddings
+- **Complete Monitoring**: Datadog LLM observability + database performance + infrastructure metrics
+- **Production Infrastructure**: KIND automation, Docker diagnostics, 80%+ test coverage
+- **Multi-Agent Framework**: Orchestrated AI workflows with agent-to-agent communication
+- **Open Source**: MIT license with comprehensive documentation and enterprise features
 
 ## Architecture Overview
 
@@ -68,9 +69,11 @@ VibeCode leverages a **hybrid observability stack** that provides both enterpris
 
 ## Quick Links
 
-- [📋 Documentation Wiki](/wiki-index/) - Complete documentation index
-- [🚀 KIND Setup Guide](/kind-troubleshooting/) - Local Kubernetes environment
-- [🐳 Docker Doctor](/docker-troubleshooting/) - Interactive Docker troubleshooting
-- [🤖 Enhanced AI Features](/enhanced-ai-features/) - Latest AI capabilities
-- [🏗️ Production Status](/production-status/) - Current deployment status
-- [🔧 Repository Scan](/repository-scan/) - Project health overview
+- [🚀 **Latest Features**](/new-features/) - New AI system, vector database, and infrastructure updates
+- [📚 **Getting Started**](/getting-started/) - Quick setup and development guide
+- [🤖 **Enhanced AI Features**](/enhanced-ai-features/) - Multi-provider AI system with 12+ models
+- [🔍 **Vector Database**](/prisma-pgvector/) - Semantic search and pgvector integration
+- [📊 **Monitoring Setup**](/monitoring/overview/) - Complete observability stack
+- [🏗️ **Production Deployment**](/production-deployment-guide/) - Enterprise deployment guide
+- [🐳 **Docker Diagnostics**](/docker-troubleshooting/) - Interactive troubleshooting tools
+- [⚙️ **API Reference**](/api-reference/) - Complete API documentation

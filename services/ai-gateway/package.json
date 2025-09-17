@@ -8,6 +8,7 @@
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "test": "jest",
+    "test:metrics": "jest --testPathPattern src/__tests__/datadog-metrics\\.test\\.ts",
     "test:watch": "jest --watch",
     "lint": "eslint src --ext .ts",
     "docker:build": "docker build -t vibecode-ai-gateway .",

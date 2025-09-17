@@ -413,8 +413,22 @@ export class PGVectorClient {
    * Close the connection pool
    */
   async close(): Promise<void> {
-    await this.pool.end();
+    try {
+      if (this.pool && typeof this.pool.end === 'function') {
+        await this.pool.end();
+      }
+    } catch (error) {
+      // Ignore errors during cleanup
+      console.warn('Error closing PGVector client pool:', error);
+    }
   }
+}
+
+/**
+ * Factory function to create a PGVector client instance
+ */
+export function createPGVectorClient(config: PGVectorConfig): PGVectorClient {
+  return new PGVectorClient(config);
 }
 
 /**
@@ -463,9 +477,3 @@ export const COLLECTION_SCHEMAS: Record<string, PGVectorCollectionSchema> = {
   },
 };
 
-/**
- * Factory function to create PGVector client
- */
-export function createPGVectorClient(config: PGVectorConfig): PGVectorClient {
-  return new PGVectorClient(config);
-}

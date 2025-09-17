@@ -144,6 +144,18 @@ export class AIController {
                 model: requestData.model,
                 userId
             });
+            // Emit error counter metric (best-effort)
+            const errorClass = error instanceof Error ? error.name : typeof error;
+            const httpStatus = (error instanceof ValidationError) ? 400
+                : (error instanceof NotFoundError) ? 404
+                : (error instanceof ExternalServiceError) ? 502
+                : 500;
+            const modelTag = `model:${String(requestData.model || 'unknown').replace(/[:/]/g, '_')}`;
+            datadogMetrics.submitMetric('vibecode.ai_gateway.error', 1, [
+                `error_class:${errorClass}`,
+                `http_status:${httpStatus}`,
+                modelTag
+            ], 'count').catch(() => {});
             throw error;
         }
     }
@@ -282,6 +294,19 @@ export class AIController {
                 model: requestData.model,
                 userId
             });
+
+            // Emit error counter metric (best-effort)
+            const errorClass = error instanceof Error ? error.name : typeof error;
+            const httpStatus = (error instanceof ValidationError) ? 400
+                : (error instanceof NotFoundError) ? 404
+                : (error instanceof ExternalServiceError) ? 502
+                : 500;
+            const modelTag = `model:${String(requestData.model || 'unknown').replace(/[:/]/g, '_')}`;
+            datadogMetrics.submitMetric('vibecode.ai_gateway.error', 1, [
+                `error_class:${errorClass}`,
+                `http_status:${httpStatus}`,
+                modelTag
+            ], 'count').catch(() => {});
 
             if (!res.headersSent) {
                 res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
