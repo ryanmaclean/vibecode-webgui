@@ -33,7 +33,8 @@ export default defineConfig({
             { label: 'Complete Wiki Index', link: '/wiki-index/' },
             { label: 'Getting Started', link: '/getting-started/' },
             { label: 'Developer Guide', link: '/developer-guide/' },
-            { label: 'Consolidated Docs', link: '/consolidated-documentation/' },
+            { label: 'Documentation Status', link: '/documentation-status/' },
+            { label: 'Testing Strategy', link: '/testing-strategy/' },
           ]
         },
         {
@@ -41,6 +42,8 @@ export default defineConfig({
           collapsed: false,
           items: [
             { label: 'Production Deployment Guide', link: '/production-deployment-guide/' },
+            { label: 'Production Readiness', link: '/production-readiness/' },
+            { label: 'Kubernetes Secrets Setup', link: '/kubernetes-secrets-setup/' },
             { label: 'Kubernetes Secrets Automation', link: '/kubernetes-secrets-automation/' },
             { label: 'Helm Deployment Guide', link: '/helm-deployment-guide/' },
           ]
@@ -78,6 +81,44 @@ export default defineConfig({
             { label: 'AI CLI Tools', link: '/ai-cli-tools/' },
             { label: 'GenAI Integration', link: '/genai-integration/' },
             { label: 'Missing AI Libraries', link: '/missing-ai-libraries/' },
+          ]
+        },
+        {
+          label: 'MCP Framework',
+          collapsed: true,
+          items: [
+            { label: 'Implementation Roadmap', link: '/mcp-implementation/' },
+            { label: 'Context7 Framework', link: '/mcp-context7/' },
+            { label: 'Sequential Thinking', link: '/mcp-sequential/' },
+            { label: 'Playwright Integration', link: '/mcp-playwright/' },
+            { label: 'Serena Framework', link: '/mcp-serena/' },
+          ]
+        },
+        {
+          label: 'Testing & Quality',
+          collapsed: true,
+          items: [
+            { label: 'Testing Strategy', link: '/testing-strategy/' },
+            { label: 'Test Failure Analysis', link: '/test-failure-analysis/' },
+            { label: 'Test Fixes Summary', link: '/test-fixes-summary/' },
+            { label: 'Systematic Debugging', link: '/systematic-debugging-guide/' },
+          ]
+        },
+        {
+          label: 'Security & Compliance',
+          collapsed: true,
+          items: [
+            { label: 'Security Assessment', link: '/security-assessment/' },
+            { label: 'Repository Guidelines', link: '/agents/' },
+            { label: 'CI/CD Fixes', link: '/ci-cd-fixes/' },
+          ]
+        },
+        {
+          label: 'Project Management',
+          collapsed: true,
+          items: [
+            { label: 'Changelog', link: '/changelog/' },
+            { label: 'Documentation Status', link: '/documentation-status/' },
           ]
         },
         {

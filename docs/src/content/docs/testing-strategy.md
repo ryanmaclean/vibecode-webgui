@@ -1,3 +1,8 @@
+---
+title: VibeCode Testing Strategy
+description: Comprehensive testing approach and methodology for VibeCode platform
+---
+
 # VibeCode Testing Strategy
 
 This document outlines the testing strategy for the VibeCode WebGUI project, detailing the different types of tests, their purpose, and how they fit into the development workflow.
