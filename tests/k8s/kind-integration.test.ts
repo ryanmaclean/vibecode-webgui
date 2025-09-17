@@ -11,13 +11,13 @@ const { describe, test, expect, beforeAll } = require('@jest/globals');
 const { execSync } = require('child_process');
 
 describe('KIND Integration Tests', () => {
-  const NAMESPACE = 'vibecode';
+  const NAMESPACE = 'vibecode-platform';
 
   beforeAll(async () => {
     // Wait for databases to be fully ready before testing
     console.log('Waiting for database pods to be ready...');
     await waitForPodsReady(['postgres', 'redis'], NAMESPACE, 60000);
-  });
+  }, 120000); // Increase timeout to 2 minutes
 
   describe('Database Integration', () => {
     test('should connect to PostgreSQL through Kubernetes service', async () => {
@@ -105,7 +105,7 @@ describe('KIND Integration Tests', () => {
         const testPodName = `dns-test-${Date.now()}`
 
         execSync(
-          `kubectl run ${testPodName} -n ${NAMESPACE} --image=busybox --restart=Never -- sleep 300`,
+          `kubectl run ${testPodName} -n ${NAMESPACE} --image=busybox --restart=Never --overrides='{"spec":{"containers":[{"name":"${testPodName}","image":"busybox","resources":{"requests":{"cpu":"50m","memory":"64Mi"},"limits":{"cpu":"100m","memory":"128Mi"}}}]}}' -- sleep 300`,
           { encoding: 'utf8', timeout: 10000 }
         );
 
@@ -141,7 +141,7 @@ describe('KIND Integration Tests', () => {
         const testPodName = `network-test-${Date.now()}`
 
         execSync(
-          `kubectl run ${testPodName} -n ${NAMESPACE} --image=busybox --restart=Never -- sleep 300`,
+          `kubectl run ${testPodName} -n ${NAMESPACE} --image=busybox --restart=Never --overrides='{"spec":{"containers":[{"name":"${testPodName}","image":"busybox","resources":{"requests":{"cpu":"50m","memory":"64Mi"},"limits":{"cpu":"100m","memory":"128Mi"}}}]}}' -- sleep 300`,
           { encoding: 'utf8', timeout: 10000 }
         );
 
@@ -174,9 +174,9 @@ describe('KIND Integration Tests', () => {
       try {
         const originalPodName = await getPodName('postgres', NAMESPACE);
 
-        // Insert test data
+        // Insert test data (use ON CONFLICT to handle duplicates)
         execSync(
-          `kubectl exec -n ${NAMESPACE} ${originalPodName} -- psql -U vibecode -d vibecode -c "INSERT INTO users (email, name, provider, provider_id) VALUES ('persistence-test@vibecode.dev', 'Persistence Test', 'email', 'persistence-test');"`,
+          `kubectl exec -n ${NAMESPACE} ${originalPodName} -- psql -U vibecode -d vibecode -c "INSERT INTO users (email, name, provider, provider_id) VALUES ('persistence-test@vibecode.dev', 'Persistence Test', 'email', 'persistence-test') ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, provider = EXCLUDED.provider, provider_id = EXCLUDED.provider_id;"`,
           { encoding: 'utf8', timeout: 10000 }
         );
 

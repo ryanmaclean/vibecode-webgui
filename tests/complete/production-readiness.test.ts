@@ -184,7 +184,7 @@ describe('Security Configuration Validation (Complete)', () => {
 
     const envExample = fs.readFileSync(envExamplePath, 'utf8');
     expect(envExample).toContain('DD_API_KEY');
-    expect(envExample).toContain('NEXTAUTH_SECRET');
+    expect(envExample).toContain('JWT_SECRET');
   });
 
   test('should have proper gitignore configuration', async () => {

@@ -64,6 +64,13 @@ spec:
           mountPath: /var/lib/postgresql/data
         - name: init-db
           mountPath: /docker-entrypoint-initdb.d
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
         readinessProbe:
           exec:
             command:

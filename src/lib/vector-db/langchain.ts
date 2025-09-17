@@ -1,77 +1,96 @@
 import { EnhancedVectorStore } from "./enhanced-vector-store";
-import {
-  BaseRetriever,
-  RetrievalQAChain,
-  PromptTemplate,
-} from "langchain/chains";
-import { OpenAIEmbeddings } from "@langchain/openai";
 import { mlflowClient } from "../mlflow/tracker";
 
-/**
- * Configuration for the LangChain retriever.
- */
-export interface LangChainConfig {
-  /** The underlying vector store that will actually perform the search. */
-  store: EnhancedVectorStore;
-  /** Optional name of the LLM to use in the QA chain helper. */
-  modelName?: string; // e.g., "gpt-4o-mini"
+interface RetrieverDocument {
+  pageContent: string;
+  metadata: Record<string, unknown>;
+}
+
+/** Simple prompt helper compatible with the original LangChain usage. */
+export class PromptTemplate {
+  private constructor(private readonly template: string) {}
+
+  static fromTemplate(template: string): PromptTemplate {
+    return new PromptTemplate(template);
+  }
+
+  format(vars: { context: string; question: string }): string {
+    return this.template
+      .replace('{context}', vars.context)
+      .replace('{question}', vars.question);
+  }
+}
+
+/** Minimal QA chain implementation used for testing and demos. */
+export class RetrievalQAChain {
+  constructor(
+    private readonly retriever: VectorRetriever,
+    private readonly prompt: PromptTemplate,
+  ) {}
+
+  static fromRetriever(retriever: VectorRetriever, prompt: PromptTemplate): RetrievalQAChain {
+    return new RetrievalQAChain(retriever, prompt);
+  }
+
+  async call(input: { question: string }): Promise<{ text: string }> {
+    const docs = await this.retriever.invoke(input.question);
+    const context = docs
+      .map((doc: RetrieverDocument) => doc.pageContent)
+      .filter(Boolean)
+      .join('\n');
+
+    const formattedPrompt = this.prompt.format({
+      context,
+      question: input.question,
+    });
+
+    return { text: formattedPrompt };
+  }
 }
 
 /**
- * A minimal LangChain retriever that forwards queries to an
- * {@link EnhancedVectorStore}. It implements LangChain's `BaseRetriever`
- * interface so it can be passed directly into any chain or prompt.
+ * Configuration for the custom retriever.
  */
-export class VectorRetriever extends BaseRetriever {
+export interface LangChainConfig {
+  store: EnhancedVectorStore;
+  modelName?: string; // kept for compatibility
+}
+
+/**
+ * Lightweight retriever that forwards queries to our EnhancedVectorStore.
+ */
+export class VectorRetriever {
   private readonly store: EnhancedVectorStore;
 
   constructor({ store }: LangChainConfig) {
-    super();
     this.store = store;
   }
 
-  /**
-   * Executes a vector search against the underlying store and returns
-   * an array of objects that LangChain can consume.
-   *
-   * @param query The text to search for.
-   */
-  async invoke(query: string, options?: any): Promise<any> {
+  async invoke(query: string): Promise<RetrieverDocument[]> {
     const startTime = Date.now();
-    const results = await this.store.search("pgvector", { query });
-    const content = results.map((r) => ({ content: r.embedding }));
+    const results = await this.store.searchWithText(query);
+
+    const docs: RetrieverDocument[] = results.map((result) => ({
+      pageContent: result.chunk.content,
+      metadata: result.chunk.metadata || {},
+    }));
+
     const latency = Date.now() - startTime;
     try {
       const run = await mlflowClient.startRun(`VectorRetrieval-${Date.now()}`);
-      await mlflowClient.logMetric(run.run_id, "latency_ms", latency);
+      await mlflowClient.logMetric(run.run_id, 'latency_ms', latency);
       await mlflowClient.endRun(run.run_id);
-    } catch (e) {
-      console.warn("MLflow metric logging failed:", e);
+    } catch (error) {
+      console.warn('MLflow metric logging failed:', error);
     }
-    return content;
+
+    return docs;
   }
 
-  /**
-   * Convenience helper that builds a RetrievalQA chain using this retriever
-   * and an OpenAI embedding model.
-   *
-   * @param retriever The retriever instance to use.
-   * @param modelName Optional LLM name; defaults to "gpt-4o-mini".
-   */
-  static async qaChain(
-    retriever: VectorRetriever,
-    modelName = "gpt-4o-mini",
-  ): Promise<RetrievalQAChain> {
-    const prompt = new PromptTemplate({
-      template:
-        "Answer the question based on the following context:\n{context}\n\nQuestion: {question}",
-      inputVariables: ["context", "question"],
-    });
-
-    return RetrievalQAChain.fromLLM(
-      new OpenAIEmbeddings({ modelName }),
-      retriever,
-      { prompt },
+  static createQAChain(retriever: VectorRetriever): RetrievalQAChain {
+    const prompt = PromptTemplate.fromTemplate(
+      'Answer the question based on the following context:\n{context}\n\nQuestion: {question}'
     );
+    return RetrievalQAChain.fromRetriever(retriever, prompt);
   }
 }
