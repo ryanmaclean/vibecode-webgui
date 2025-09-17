@@ -81,7 +81,7 @@ describe('AI Project Generation Integration', () => {
   const mockCodeServerResponse = {
     id: 'cs-123',
     workspaceId: 'ai-project-123',
-    url: 'http://localhost:8080',
+    url: 'http://localhost:3000',
     status: 'starting',
   }
 

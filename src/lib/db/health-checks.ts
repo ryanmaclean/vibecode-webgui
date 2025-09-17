@@ -1,6 +1,6 @@
 // vibecode-webgui/src/lib/db/health-checks.ts
 
-import { prisma } from "@/lib/prisma/client";
+import { prisma } from "@/lib/prisma";
 import weaviateClient from "@/lib/weaviate/client";
 
 /**
@@ -28,9 +28,7 @@ export async function checkPostgresHealth(): Promise<boolean> {
  */
 export async function checkWeaviateHealth(): Promise<boolean> {
   try {
-    const resp = await weaviateClient.health.check();
-    // The client returns an object with `healthy` boolean property
-    return !!resp?.healthy;
+    return await weaviateClient.healthCheck();
   } catch (err) {
     console.error("Weaviate health check failed:", err);
     return false;

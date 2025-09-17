@@ -393,7 +393,11 @@ export async function apiSecurityMiddleware(request: NextRequest): Promise<NextR
   }
 
   // Skip security checks for NextAuth and monitoring health endpoints
-  if (pathname.startsWith('/api/auth/') || pathname === '/api/monitoring/health') {
+  if (
+    pathname.startsWith('/api/auth/') ||
+    pathname === '/api/monitoring/health' ||
+    pathname === '/api/health/simple'
+  ) {
     return null;
   }
 

@@ -145,7 +145,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "1.2.5",
     "@radix-ui/react-tabs": "1.1.12",
-    "@tremor/react": "^3.18.7",
+    "@tremor/react": "4.0.0-beta-tremor-v4.4",
     "@types/mongodb": "4.0.6",
     "@types/qrcode": "1.5.5",
     "@types/speakeasy": "2.0.10",

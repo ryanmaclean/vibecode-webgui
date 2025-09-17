@@ -1,4 +1,4 @@
-import { Pool, PoolClient, QueryResult } from 'pg';
+import type { QueryResult } from 'pg';
 import { 
   ShardInfo, 
   ShardStatus, 
@@ -162,7 +162,7 @@ export class VectorShardingManager {
    * @param shardId The ID of the shard
    * @returns A client from the connection pool
    */
-  private async getShardClient(shardId: string): Promise<PoolClient> {
+  private async getShardClient(shardId: string): Promise<DatabasePoolClient> {
     await this.ensureInitialized();
     
     const pool = this.shardPools.get(shardId);
