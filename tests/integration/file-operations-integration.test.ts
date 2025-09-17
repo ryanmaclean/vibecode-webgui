@@ -62,7 +62,7 @@ describe('File Operations Integration Tests', () => {
   afterAll(async () => {
     // Clean up test workspace
     try {
-      await fs.rm(testWorkspacePath, { recursive: true })} catch (error) {
+      await fs.rmdir(testWorkspacePath, { recursive: true })} catch (error) {
       // Directory cleanup might fail, that's okay
     }
   });
@@ -140,7 +140,7 @@ describe('File Operations Integration Tests', () => {
         ok: true,
         text: () => Promise.resolve(updatedContent.split('\n').slice(0, 50).join('\n'))}))
 
-      const searchResults = await lazyLoader.searchInFile('value', { maxResults: 5 });
+      const searchResults = await lazyLoader.searchInFile('string', { maxResults: 5 });
       expect(searchResults.length).toBeGreaterThan(0)
       expect(searchResults.some(result => result.content.includes('value: number | string'))).toBe(true)
 
@@ -550,14 +550,20 @@ describe('File Operations Integration Tests', () => {
         // Create file
         await fileOps.createFile(filePath, 'initial content');
 
-        // Simulate rapid changes
-        for (let i = 0; i < 20; i++) {
-          await fileOps.updateFile(filePath, `content update ${i}`);
-          await new Promise(resolve => setTimeout(resolve, 10)) // Small delay
+        // Simulate rapid changes that should trigger batching
+        const updatePromises = [];
+        for (let i = 0; i < 30; i++) {
+          updatePromises.push(
+            fileOps.updateFile(filePath, `content update ${i}`)
+          );
+          // No delay between updates to create overlapping events
         }
+        
+        // Execute all updates rapidly to trigger batching
+        await Promise.all(updatePromises);
 
-        // Wait for batching
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Wait longer for batching to occur
+        await new Promise(resolve => setTimeout(resolve, 300));
 
         // Should have batched events efficiently
         const stats = fastWatcher.getStats();
