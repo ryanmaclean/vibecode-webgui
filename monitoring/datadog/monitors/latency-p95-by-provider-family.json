@@ -1,0 +1,19 @@
+{
+  "name": "AI Gateway latency p95 high (by provider/family)",
+  "type": "query alert",
+  "query": "p95(last_5m):avg:vibecode.ai_gateway.latency_ms{service:vibecode-ai-gateway,env:production} by {model_provider,model_family} > 3000",
+  "message": "p95 latency high for {{model_provider.name}}/{{model_family.name}} in env=production. Investigate provider health and recent deploys.\n\n- Dashboard: AI Gateway Observability (Provider/Family)\n- Runbook: monitoring/runbooks/ai-gateway-latency.md",
+  "tags": ["service:vibecode-ai-gateway", "team:ai-platform", "env:production"],
+  "options": {
+    "thresholds": {
+      "critical": 3000,
+      "warning": 2000
+    },
+    "notify_audit": false,
+    "require_full_window": true,
+    "new_group_delay": 60,
+    "include_tags": true,
+    "groupby_simple_monitor": true,
+    "evaluation_delay": 120
+  }
+}

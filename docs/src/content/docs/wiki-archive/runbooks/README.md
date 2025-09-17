@@ -160,8 +160,6 @@ WHERE (now() - pg_stat_activity.query_start) > interval '10 minutes';
 # Main application health
 curl -s http://localhost:3000/api/monitoring/health | jq
 
-<<<<<<< HEAD
-=======
 # AI project generation health
 curl -s http://localhost:3000/api/ai/generate-project -X POST \
   -H "Content-Type: application/json" \
@@ -170,7 +168,6 @@ curl -s http://localhost:3000/api/ai/generate-project -X POST \
 # Code-server session health
 curl -s http://localhost:3000/api/code-server/session | jq
 
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 # WebSocket server health
 curl -s http://localhost:3001/health | jq
 
