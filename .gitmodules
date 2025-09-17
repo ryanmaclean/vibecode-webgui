@@ -4,3 +4,8 @@
 [submodule "external/magic-code-gen"]
 	path = external/magic-code-gen
 	url = https://github.com/ryanmaclean/magic-code-gen.git
+
+[submodule "code-server"]
+	path = code-server
+	url = https://github.com/coder/code-server.git
+	ignore = dirty
