@@ -134,6 +134,13 @@ const nextConfig = {
       net: false,
       tls: false,
       fsevents: false,
+      // OpenTelemetry modules causing static build issues
+      '@opentelemetry/sdk-node': false,
+      '@opentelemetry/auto-instrumentations-node': false,
+      '@opentelemetry/exporter-otlp-http': false,
+      '@opentelemetry/exporter-prometheus': false,
+      '@opentelemetry/resources': false,
+      '@opentelemetry/semantic-conventions': false,
     };
 
     // Explicitly handle path aliases
