@@ -1,5 +1,5 @@
-// VibeCode Database Schema - Test Version (without pgvector)
-// Simplified schema for testing without vector extensions
+// VibeCode Database Schema
+// Complete data model for the AI-powered development platform
 
 generator client {
   provider = "prisma-client-js"
@@ -96,7 +96,25 @@ model Project {
   @@map("projects")
 }
 
-// Files and RAG System (simplified without vector embeddings)
+// Document Embeddings for AI/ML
+model DocumentEmbedding {
+  id                      Int       @id @default(autoincrement())
+  documentId              String    @unique @map("document_id")
+  content                 String    @db.Text
+  embedding               String?   @db.Text // Vector stored as text for pgvector compatibility
+  metadata                Json?     @default("{}")
+  embeddingGenerationTime Int?      @map("embedding_generation_time_ms")
+  searchCount             Int       @default(0) @map("search_count")
+  lastAccessedAt          DateTime? @map("last_accessed_at")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  @@map("document_embeddings")
+  @@index([documentId])
+  @@index([embedding], map: "embedding_l2_idx")
+}
+
+// Files and RAG System
 model File {
   id           Int      @id @default(autoincrement())
   name         String
@@ -117,6 +135,7 @@ model File {
   user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
   workspace  Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
   project    Project?   @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  rag_chunks RAGChunk[]
 
   @@index([user_id])
   @@index([workspace_id])
@@ -146,6 +165,27 @@ model Upload {
   @@index([workspace_id])
   @@index([stored_name])
   @@map("uploads")
+}
+
+// RAG and Vector Search with pgvector
+model RAGChunk {
+  id         Int                          @id @default(autoincrement())
+  file_id    Int
+  chunk_id   String                       @unique // file_id + chunk index
+  content    String
+  start_line Int?
+  end_line   Int?
+  tokens     Int?
+  embedding  Unsupported("vector(1536)")? // pgvector embedding for semantic search
+  metadata   Json?                        // Additional chunk metadata
+  created_at DateTime                     @default(now())
+
+  // Relations
+  file File @relation(fields: [file_id], references: [id], onDelete: Cascade)
+
+  @@index([file_id])
+  @@index([chunk_id])
+  @@map("rag_chunks")
 }
 
 // AI Integration and Requests

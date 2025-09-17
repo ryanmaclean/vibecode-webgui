@@ -132,10 +132,15 @@ test.describe('Authentication Flow', () => {
     // Submit the form by clicking the submit button
     await page.click('[data-testid="signin-button"]');
     
-    // Wait for any navigation or response
-    await page.waitForTimeout(2000);
+    // Wait for navigation to complete with proper timeout
+    try {
+      // Wait for either redirect to homepage or stay on signin page
+      await page.waitForURL(url => url.pathname === '/' || url.pathname === '/auth/signin', { timeout: 10000 });
+    } catch (error) {
+      console.log('Navigation timeout, checking current URL');
+    }
     
-    // Wait for navigation to complete
+    // Wait for any remaining network activity
     await page.waitForLoadState('networkidle');
     
     // Check what URL we're on after form submission
@@ -162,6 +167,8 @@ test.describe('Authentication Flow', () => {
       console.log('Login failed - still on signin page');
       await expect(page.locator('[data-testid="signin-button"]')).toBeVisible();
       return; // Exit early since login failed
+    } else {
+      console.log('Login appears successful - redirected away from signin page');
     }
     
     // Navigate to homepage to verify authenticated state
