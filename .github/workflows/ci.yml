@@ -257,6 +257,14 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps --omit=optional
 
+      - name: Detect path changes (AI Gateway)
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            ai_gateway:
+              - 'services/ai-gateway/**'
+
       - name: AI Gateway - Install deps and run Datadog metrics tests
         run: |
           if [ -d "services/ai-gateway" ]; then
@@ -265,6 +273,25 @@ jobs:
           else
             echo "services/ai-gateway not found; skipping metrics tests"
           fi
+
+      - name: AI Gateway - Route-level metrics tests (conditional, non-blocking)
+        if: steps.filter.outputs.ai_gateway == 'true'
+        run: |
+          if [ -d "services/ai-gateway" ]; then
+            set -o pipefail
+            npm --prefix services/ai-gateway run test:metrics:routes 2>&1 | tee ai-gateway-route-metrics.log || true
+          else
+            echo "services/ai-gateway not found; skipping route metrics tests"
+          fi
+        continue-on-error: true
+
+      - name: Upload AI Gateway route metrics logs
+        if: steps.filter.outputs.ai_gateway == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-gateway-route-metrics
+          path: ai-gateway-route-metrics.log
+          if-no-files-found: ignore
 
       - name: Setup test environment
         run: |
