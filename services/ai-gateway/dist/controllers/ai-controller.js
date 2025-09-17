@@ -87,6 +87,16 @@ class AIController {
                 totalTokens: response.usage.total_tokens,
                 cost: cost.toFixed(6)
             });
+            const latencyMs = Date.now() - startTime;
+            datadog_metrics_1.datadogMetrics.submitMetric('vibecode.ai_gateway.latency_ms', latencyMs, [
+                `model:${response.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => { });
+            datadog_metrics_1.datadogMetrics.submitMetric('vibecode.ai_gateway.tokens_total', response.usage.total_tokens, [
+                `model:${response.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => { });
+            datadog_metrics_1.datadogMetrics.submitMetric('vibecode.ai_gateway.cost_usd', cost, [
+                `model:${response.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => { });
             res.json(response);
         }
         catch (error) {
@@ -106,8 +116,10 @@ class AIController {
                 task: inferred.task
             });
             const top = this.modelRegistry.getModelRecommendations({ task: inferred.task }, 3);
+            const selectedModel = recommendation?.model || environment_1.config.models.defaultModel;
+            datadog_metrics_1.datadogMetrics.submitSelectionMetric(inferred.task, selectedModel, req.user?.id).catch(() => { });
             res.json({
-                selected: recommendation?.model || environment_1.config.models.defaultModel,
+                selected: selectedModel,
                 reason: recommendation?.reason,
                 confidence: recommendation?.confidence,
                 task: inferred.task,
@@ -171,6 +183,16 @@ class AIController {
                 estimatedTokens: promptTokens + totalTokens,
                 estimatedCost: cost.toFixed(6)
             });
+            const latencyMs = Date.now() - startTime;
+            datadog_metrics_1.datadogMetrics.submitMetric('vibecode.ai_gateway.latency_ms', latencyMs, [
+                `model:${requestData.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => { });
+            datadog_metrics_1.datadogMetrics.submitMetric('vibecode.ai_gateway.tokens_total', promptTokens + totalTokens, [
+                `model:${requestData.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => { });
+            datadog_metrics_1.datadogMetrics.submitMetric('vibecode.ai_gateway.cost_usd', cost, [
+                `model:${requestData.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => { });
         }
         catch (error) {
             logger_1.performanceLogger.logError('stream_chat_completion', startTime, error, {
