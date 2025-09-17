@@ -4,12 +4,12 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { createTestHelpers, TestHelpers } from './utils/test-helpers';
+import { createTestHelpers } from './utils/test-helpers';
 
 test.describe('Workspace Management', () => {
   test.beforeEach(async ({ page }) => {
-    // Use systematic E2E authentication bypass (same as AI tests)
-    await TestHelpers.loginAsTestUser(page, 'user');
+    const helpers = createTestHelpers(page);
+    await helpers.login();
   });
 
   test('should display workspace interface', async ({ page }) => {
