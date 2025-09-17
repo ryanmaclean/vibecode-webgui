@@ -6,9 +6,48 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Mock the EnhancedAIManager
+const mockExecuteWorkflow = jest.fn();
+
 jest.mock('@/lib/ai/enhanced-ai-manager', () => ({
-  EnhancedAIManager: jest.fn().mockImplementation(() => ({
-    executeWorkflow: jest.fn().mockResolvedValue({
+  EnhancedAIManager: class MockEnhancedAIManager {
+    constructor() {}
+    executeWorkflow = mockExecuteWorkflow;
+  }
+}));
+
+describe('AICodeReview', () => {
+  const mockCode = `interface User {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+}
+
+class UserService {
+  private users: User[] = [];
+
+  async createUser(userData: Partial<User>): Promise<User> {
+    const user: User = {
+      id: Math.random().toString(),
+      name: userData.name || '',
+      email: userData.email || '',
+      password: userData.password || ''
+    };
+    this.users.push(user);
+    return user;
+  }
+}`;
+
+  const defaultProps = {
+    code: mockCode,
+    language: 'typescript',
+    framework: 'react',
+    onReviewComplete: jest.fn()
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockExecuteWorkflow.mockResolvedValue({
       success: true,
       results: [
         {
@@ -48,50 +87,15 @@ jest.mock('@/lib/ai/enhanced-ai-manager', () => ({
           stepId: 'comprehensive-review',
           agentRole: 'code-reviewer',
           input: 'Provide comprehensive code review summary',
-          output: 'Comprehensive review: Multiple security, performance, and quality issues identified. Prioritize security fixes.',
+          output: 'AI analysis completed in 1500ms using gpt-4',
           metadata: {
             model: 'gpt-4',
-            duration: 800,
+            duration: 1500,
             timestamp: new Date().toISOString()
           }
         }
       ]
-    })
-  }))
-}));
-
-describe('AICodeReview', () => {
-  const mockCode = `interface User {
-  id: string;
-  name: string;
-  email: string;
-  password: string;
-}
-
-class UserService {
-  private users: User[] = [];
-
-  async createUser(userData: Partial<User>): Promise<User> {
-    const user: User = {
-      id: Math.random().toString(),
-      name: userData.name || '',
-      email: userData.email || '',
-      password: userData.password || ''
-    };
-    this.users.push(user);
-    return user;
-  }
-}`;
-
-  const defaultProps = {
-    code: mockCode,
-    language: 'typescript',
-    framework: 'react',
-    onReviewComplete: jest.fn()
-  };
-
-  beforeEach(() => {
-    jest.clearAllMocks();
+    });
   });
 
   it('renders the component with correct title and description', () => {

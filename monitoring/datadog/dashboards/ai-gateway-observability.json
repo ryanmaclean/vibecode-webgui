@@ -1,0 +1,93 @@
+{
+  "title": "AI Gateway Observability",
+  "description": "Operational metrics for VibeCode AI Gateway: latency, errors, and selection volume",
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "notify_list": [],
+  "template_variables": [
+    { "name": "env", "prefix": "env", "default": "*" },
+    { "name": "service", "prefix": "service", "default": "vibecode-ai-gateway" },
+    { "name": "model", "prefix": "model", "default": "*" },
+    { "name": "task", "prefix": "task", "default": "*" }
+  ],
+  "widgets": [
+    {
+      "definition": {
+        "title": "Latency p95 by model (ms)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "p95:avg:vibecode.ai_gateway.latency_ms{service:$service,env:$env,model:$model}",
+            "display_type": "line",
+            "style": { "palette": "dog_classic", "line_type": "solid", "line_width": "normal" },
+            "name": "latency_p95"
+          }
+        ],
+        "yaxis": { "scale": "linear", "include_zero": false }
+      }
+    },
+    {
+      "definition": {
+        "title": "Error count by model",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.error{service:$service,env:$env,model:$model}.rollup(sum, 60)",
+            "display_type": "bars",
+            "style": { "palette": "warm", "line_type": "solid", "line_width": "normal" },
+            "name": "errors"
+          }
+        ],
+        "yaxis": { "scale": "linear", "include_zero": true }
+      }
+    },
+    {
+      "definition": {
+        "title": "Selection events by task",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.selection{service:$service,env:$env,task:$task}.rollup(sum, 60)",
+            "display_type": "line",
+            "style": { "palette": "purple", "line_type": "solid", "line_width": "normal" },
+            "name": "selections"
+          }
+        ],
+        "yaxis": { "scale": "linear", "include_zero": true }
+      }
+    },
+    {
+      "definition": {
+        "title": "Tokens and cost (stacked)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.tokens_total{service:$service,env:$env,model:$model}.rollup(sum,60)",
+            "display_type": "area",
+            "style": { "palette": "cool", "line_type": "solid", "line_width": "normal" },
+            "name": "tokens_total"
+          },
+          {
+            "q": "sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env,model:$model}.rollup(sum,60)",
+            "display_type": "line",
+            "style": { "palette": "grey", "line_type": "dashed", "line_width": "thin" },
+            "name": "cost_usd"
+          }
+        ],
+        "yaxis": { "scale": "linear", "include_zero": true }
+      }
+    }
+  ]
+}

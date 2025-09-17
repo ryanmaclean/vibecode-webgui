@@ -1,9 +1,10 @@
-import { ChatOpenAI } from '@langchain/openai';
-import { HumanMessage, SystemMessage, AIMessage } from '@langchain/core/messages';
-import { PromptTemplate } from '@langchain/core/prompts';
-import { RunnableSequence } from '@langchain/core/runnables';
-import { StringOutputParser } from '@langchain/core/output_parsers';
-import { StructuredOutputParser } from '@langchain/core/output_parsers';
+// Minimal agent client interface used by this orchestrator
+export interface AgentClient {
+  invoke(messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>): Promise<{ content: string }>;
+}
+
+// LangChain imports are intentionally omitted to avoid hard build-time dependency issues.
+// We provide a lightweight interface and defer model wiring to higher-level services.
 import { z } from 'zod';
 
 // Agent role definitions
@@ -40,7 +41,7 @@ export interface WorkflowResult {
 
 // Multi-agent workflow orchestrator
 export class MultiAgentWorkflow {
-  private agents: Map<string, ChatOpenAI> = new Map();
+  private agents: Map<string, AgentClient> = new Map();
   private agentRoles: Map<string, AgentRole> = new Map();
   private results: Map<string, WorkflowResult> = new Map();
 
@@ -157,14 +158,13 @@ Your role is to:
   addAgentRole(role: AgentRole): void {
     this.agentRoles.set(role.name, role);
     
-    // Create the agent instance
-    const agent = new ChatOpenAI({
-      modelName: role.model,
-      temperature: role.temperature || 0.1,
-      openAIApiKey: process.env.OPENAI_API_KEY,
-    });
-    
-    this.agents.set(role.name, agent);
+    // Register a placeholder agent that throws until a real provider wires in
+    const placeholder: AgentClient = {
+      async invoke(_messages) {
+        throw new Error(`Agent provider for role "${role.name}" is not configured`);
+      }
+    };
+    this.agents.set(role.name, placeholder);
   }
 
   async executeWorkflow(steps: WorkflowStep[]): Promise<WorkflowResult[]> {
@@ -236,17 +236,21 @@ Your role is to:
   }
 
   private async executeStep(
-    agent: ChatOpenAI, 
-    role: AgentRole, 
-    input: string, 
+    agent: AgentClient,
+    role: AgentRole,
+    input: string,
     outputSchema?: z.ZodSchema<any>
   ): Promise<any> {
     const messages = [
-      new SystemMessage(role.systemPrompt),
-      new HumanMessage(input)
+      { role: 'system' as const, content: role.systemPrompt },
+      { role: 'user' as const, content: input }
     ];
 
+    const response = await agent.invoke(messages);
+    const content = response?.content ?? '';
+
     if (outputSchema) {
+<<<<<<< HEAD
       // Use structured output for schema-defined responses
       const parser = StructuredOutputParser.fromZodSchema(outputSchema);
       const formatInstructions = parser.getFormatInstructions();
@@ -273,7 +277,18 @@ Your role is to:
       // Use simple text output
       const response = await agent.invoke(messages);
       return response.content;
+=======
+      // Attempt to parse JSON when a schema is provided
+      try {
+        const parsed = JSON.parse(content);
+        return outputSchema.parse(parsed);
+      } catch {
+        // Fallback to raw content if not valid JSON
+        return content;
+      }
+>>>>>>> main
     }
+    return content;
   }
 
   // Predefined workflow templates

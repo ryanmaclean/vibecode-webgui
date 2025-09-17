@@ -1,0 +1,54 @@
+# Datadog Test Monitoring Configuration
+# This file configures Datadog to monitor our test execution and results
+
+init_config:
+
+instances:
+  - name: "vibecode-test-monitoring"
+    # Test execution metrics
+    test_execution_enabled: true
+    test_result_tracking: true
+    
+    # Test categories to monitor
+    test_categories:
+      - "infrastructure"
+      - "database" 
+      - "ai-embedding"
+      - "azure-embedding"
+      - "workflow"
+      - "credentials"
+    
+    # Test result thresholds
+    thresholds:
+      pass_rate_minimum: 80  # Alert if pass rate drops below 80%
+      max_duration_ms: 30000  # Alert if tests take longer than 30s
+      failure_threshold: 3  # Alert if more than 3 tests fail
+    
+    # Datadog integration settings
+    dd_api_key: "${DD_API_KEY}"
+    dd_site: "${DD_SITE:-datadoghq.com}"
+    dd_service: "vibecode-webgui"
+    dd_env: "${DD_ENV:-test}"
+    dd_version: "${DD_VERSION:-1.0.0}"
+    
+    # Test result tags
+    tags:
+      - "service:vibecode-webgui"
+      - "env:${DD_ENV:-test}"
+      - "version:${DD_VERSION:-1.0.0}"
+      - "test.type:integration"
+      - "test.framework:custom"
+    
+    # Log collection for test results
+    logs_enabled: true
+    log_patterns:
+      - "\\[DD_TEST_RESULT\\]"
+      - "\\[DD_TRACE\\]"
+    
+    # Metrics collection
+    metrics_enabled: true
+    custom_metrics:
+      - "test.execution.duration"
+      - "test.result.pass_rate"
+      - "test.result.failure_count"
+      - "test.category.success_rate"

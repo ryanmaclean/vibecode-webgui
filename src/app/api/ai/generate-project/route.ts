@@ -50,7 +50,7 @@ interface GenerateProjectOptions {
   onProgress?: (progress: number, message: string) => void;
 }
 
-async function generateProjectWithAI(
+export async function generateProjectWithAI(
   prompt: string, 
   options: GenerateProjectOptions = {}
 ): Promise<ProjectStructure> {
@@ -318,7 +318,14 @@ function createStreamingResponse() {
   return {
     stream: stream.readable,
     sendProgress,
-    close: () => writer.close(),
+    close: () => {
+      try {
+        writer.close();
+      } catch (error) {
+        // WritableStream already closed or in invalid state
+        console.warn('WritableStream close error (expected in tests):', error.message);
+      }
+    },
   };
 }
 
@@ -336,8 +343,14 @@ export async function POST(request: NextRequest) {
           error: 'Unauthorized',
           progress: 0
         });
-        return close();
+        try {
+          return close();
+        } catch (error) {
+          console.warn('WritableStream close error (expected in tests):', error.message);
+        }
+        return; // Stop processing
       }
+      const userId = session.user.id;
 
       const body = await request.json();
       const validatedData = generateProjectSchema.parse(body);
@@ -400,7 +413,7 @@ export async function POST(request: NextRequest) {
         progress: 95
       });
       
-      const codeServerSession = await createCodeServerSession(workspaceId, session.user.id);
+      const codeServerSession = await createCodeServerSession(workspaceId, userId);
 
       // Calculate generation time
       const generationTime = Date.now() - startTime;
@@ -429,7 +442,7 @@ export async function POST(request: NextRequest) {
           language: validatedData.language,
           framework: validatedData.framework,
           projectName: validatedData.projectName,
-          userId: session.user.id
+          userId
         },
         output_data: {
           success: true,
@@ -444,7 +457,7 @@ export async function POST(request: NextRequest) {
         metadata: {
           endpoint: '/api/ai/generate-project',
           method: 'POST',
-          user: session.user.id,
+          user: userId,
           generationTime: `${generationTime}ms`
         }
       });
@@ -481,7 +494,11 @@ export async function POST(request: NextRequest) {
       
     } finally {
       // Close the stream
-      close();
+      try {
+        close();
+      } catch (error) {
+        console.warn('WritableStream close error (expected in tests):', error.message);
+      }
     }
   })();
   

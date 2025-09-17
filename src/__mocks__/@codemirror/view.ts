@@ -1,4 +1,5 @@
-import { vi } from 'vitest';
+import { jest } from '@jest/globals';
+const vi = jest as unknown as typeof jest;
 
 // Create a mock EditorView constructor
 const EditorView = vi.fn().mockImplementation((props: any) => {

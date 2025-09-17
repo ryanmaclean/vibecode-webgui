@@ -13,6 +13,9 @@
 # testing
 /coverage
 /playwright-report/
+/test-results/
+/.test-results/
+/blob/
 
 # next.js
 /.next/
@@ -100,8 +103,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -120,3 +123,11 @@ ENV/
 env/
 venv.bak/
 venv*/
+
+code-server/
+
+# Web dashboard
+web-dashboard/node_modules/
+web-dashboard/dist/
+web-dashboard/.vite/
+web-dashboard/package-lock.json

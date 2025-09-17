@@ -82,11 +82,15 @@ export default function MultimodalPromptInterface({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
   const recognitionRef = useRef<any | null>(null);
   const recognitionRef = useRef<any>(null);
   const recognitionRef = useRef<any>(null);
+=======
+  const recognitionRef = useRef<any>(null);
+>>>>>>> main
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   
   // Initialize sample generator
@@ -96,7 +100,6 @@ export default function MultimodalPromptInterface({
   // Initialize speech recognition
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-<<<<<<< Updated upstream
       const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognitionAPI) {
         recognitionRef.current = new SpeechRecognitionAPI();
@@ -123,6 +126,7 @@ export default function MultimodalPromptInterface({
           setIsListening(false);
         };
       }
+<<<<<<< HEAD
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       
@@ -143,6 +147,8 @@ export default function MultimodalPromptInterface({
       recognitionRef.current.onend = () => {
         setIsListening(false);
       };
+=======
+>>>>>>> main
     }
   }, []);
 

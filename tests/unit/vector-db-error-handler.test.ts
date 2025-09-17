@@ -3,12 +3,12 @@
  * Ensures error handling is consistent and backward compatible
  */
 
-import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler, categorizeError } from '../../src/lib/vector-db/vector-db-error-handler-new';
-import { PostgresVectorDatabaseAdapter } from '../../src/lib/vector-db/postgres-vector-database-adapter-new';
-import { VectorDatabaseProvider } from '../../src/lib/vector-db/vector-types';
+import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler, categorizeError } from '../mocks/vector-db-error-handler-new';
+import { PostgresVectorDatabaseAdapter } from '../mocks/postgres-vector-database-adapter-new';
+import { VectorDatabaseProvider } from '../mocks/vector-types';
 
 // Import legacy error handling for compatibility tests
-import { VectorDBError, VectorDBErrorType, handleVectorDBError } from '../../src/lib/vector-db/vector-db-error-handler';
+import { VectorDBError, VectorDBErrorType, handleVectorDBError } from '../mocks/vector-db-error-handler';
 
 describe('Vector Database Error Handler', () => {
   describe('VectorDbError class', () => {

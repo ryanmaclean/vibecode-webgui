@@ -86,7 +86,11 @@ export default function AICodeReview({
     return results.find(result => result.stepId === stepId);
   };
 
+<<<<<<< HEAD
   const getSeverityColor = (stepId: string) => {
+=======
+  const getSeverityColor = (stepId: string): 'default' | 'destructive' | 'outline' | 'secondary' => {
+>>>>>>> main
     const result = getReviewSection(stepId);
     if (!result) return 'default';
     

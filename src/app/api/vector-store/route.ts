@@ -6,8 +6,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { enhancedVectorStore } from '@/lib/vector-stores/enhanced-vector-store'
+import { authOptions } from '../../../lib/auth'
+// import { enhancedVectorStore } from '../../../lib/vector-stores/enhanced-vector-store'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
@@ -49,6 +49,10 @@ const deleteSchema = z.object({
  * GET /api/vector-store - Health check and statistics
  */
 export async function GET(req: NextRequest) {
+  return NextResponse.json({ status: 'unavailable', message: 'Vector store temporarily unavailable' })
+  
+  // Original function below (disabled)
+  /*
   try {
     const session = await getServerSession(authOptions)
     if (!session || !session.user || !session.user.id) {
@@ -100,12 +104,18 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     )
   }
+  */
 }
 
 /**
  * POST /api/vector-store - Search documents
  */
+
 export async function POST(req: NextRequest) {
+  return NextResponse.json({ status: 'unavailable', message: 'Vector store temporarily unavailable' })
+  
+  // Original function below (disabled)
+  /*
   try {
     const session = await getServerSession(authOptions)
     if (!session || !session.user || !session.user.id) {
@@ -156,12 +166,17 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     )
   }
+  */
 }
 
 /**
  * PUT /api/vector-store - Store documents
  */
 export async function PUT(req: NextRequest) {
+  return NextResponse.json({ status: 'unavailable', message: 'Vector store temporarily unavailable' })
+  
+  // Original function below (disabled)
+  /*
   try {
     const session = await getServerSession(authOptions)
     if (!session || !session.user || !session.user.id) {
@@ -213,12 +228,17 @@ export async function PUT(req: NextRequest) {
       { status: 500 }
     )
   }
+  */
 }
 
 /**
  * DELETE /api/vector-store - Delete documents
  */
 export async function DELETE(req: NextRequest) {
+  return NextResponse.json({ status: 'unavailable', message: 'Vector store temporarily unavailable' })
+  
+  // Original function below (disabled)
+  /*
   try {
     const session = await getServerSession(authOptions)
     if (!session || !session.user || !session.user.id) {
@@ -266,6 +286,7 @@ export async function DELETE(req: NextRequest) {
       { status: 500 }
     )
   }
+  */
 }
 
 /**

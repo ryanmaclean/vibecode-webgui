@@ -7,9 +7,12 @@ import OpenAI from 'openai';
 import { VectorDatabaseInterface } from './vector-database-interface';
 import { VectorChunk, SearchResult, SearchOptions, VectorDatabaseConfig } from './vector-types';
 import { metrics } from '../server-monitoring';
+<<<<<<< HEAD
 import { logger } from '../logger';
 import { ConnectionPool, ConnectionPoolConfig } from './connection-pool';
 import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
+=======
+>>>>>>> main
 
 /**
  * Abstract base class for vector database adapters
@@ -22,7 +25,10 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
   protected connectionStatus = false;
   protected retryCount = 0;
   protected lastError: Error | null = null;
+<<<<<<< HEAD
   protected connectionPool: ConnectionPool<any> | null = null;
+=======
+>>>>>>> main
 
   /**
    * Constructor for the base adapter
@@ -62,11 +68,14 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       // Call provider-specific initialization
       await this.initializeProvider();
       
+<<<<<<< HEAD
       // Initialize connection pool if enabled
       if (this.config.connectionPooling) {
         await this.initializeConnectionPool();
       }
       
+=======
+>>>>>>> main
       this.isInitialized = true;
       this.connectionStatus = true;
       this.retryCount = 0;
@@ -77,7 +86,10 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
       
       if (this.config.enableLogging) {
+<<<<<<< HEAD
         logger.info(`Vector database adapter (${this.config.provider}) initialized successfully`);
+=======
+>>>>>>> main
         console.info(`Vector database adapter (${this.config.provider}) initialized successfully`);
       }
     } catch (error) {
@@ -89,13 +101,17 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
       
       if (this.config.enableLogging) {
+<<<<<<< HEAD
         logger.error(`Failed to initialize vector database adapter (${this.config.provider}):`, error);
+=======
+>>>>>>> main
         console.error(`Failed to initialize vector database adapter (${this.config.provider}):`, error);
       }
       
       throw error;
     }
   }
+<<<<<<< HEAD
   
   /**
    * Initialize the connection pool if enabled in configuration
@@ -192,6 +208,8 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       logger.error('Failed to release connection back to pool', { error });
     }
   }
+=======
+>>>>>>> main
 
   /**
    * Provider-specific initialization
@@ -358,12 +376,15 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
     try {
       const startTime = Date.now();
       
+<<<<<<< HEAD
       // Close connection pool if it exists
       if (this.connectionPool) {
         await this.connectionPool.close();
         this.connectionPool = null;
       }
       
+=======
+>>>>>>> main
       // Call provider-specific close method
       await this.closeProvider();
       
@@ -376,7 +397,10 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
       
       if (this.config.enableLogging) {
+<<<<<<< HEAD
         logger.info(`Vector database adapter (${this.config.provider}) closed successfully`);
+=======
+>>>>>>> main
         console.info(`Vector database adapter (${this.config.provider}) closed successfully`);
       }
     } catch (error) {
@@ -385,7 +409,10 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
       
       if (this.config.enableLogging) {
+<<<<<<< HEAD
         logger.error(`Error closing vector database adapter (${this.config.provider}):`, error);
+=======
+>>>>>>> main
         console.error(`Error closing vector database adapter (${this.config.provider}):`, error);
       }
       
@@ -419,4 +446,7 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
   
   public abstract invalidateCache(table: string, contentType?: string): Promise<number>;
 }
+<<<<<<< HEAD
 }
+=======
+>>>>>>> main
