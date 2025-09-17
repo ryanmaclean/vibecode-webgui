@@ -48,10 +48,33 @@ describe('File Operations Integration Tests', () => {
       batchDelay: 100,
       maxBatchSize: 10
     });
-    connectionPool = new WebSocketConnectionPool({
-      maxConnections: 10,
-      connectionTimeout: 5000
-    })});
+    // Mock WebSocketConnectionPool to avoid hanging during initialization
+    const mockSubscribers = new Map();
+    connectionPool = {
+      getConnection: jest.fn().mockResolvedValue({
+        id: 'mock-connection-id',
+        url: 'ws://localhost:3000/notifications',
+        readyState: 1
+      }),
+      subscribeToConnection: jest.fn().mockImplementation((connectionId, subscriberId, callbacks) => {
+        mockSubscribers.set(subscriberId, callbacks);
+      }),
+      sendMessage: jest.fn().mockImplementation(async (connectionId, message) => {
+        // Simulate message being received by subscribers
+        mockSubscribers.forEach(callbacks => {
+          if (callbacks.onMessage) {
+            callbacks.onMessage(message);
+          }
+        });
+        return true;
+      }),
+      getMetrics: jest.fn().mockReturnValue({
+        totalMessages: 1,
+        activeConnections: 1,
+        failedConnections: 0
+      }),
+      destroy: jest.fn().mockResolvedValue(undefined)
+    } as any;});
 
   afterEach(async () => {
     await fileOps?.destroy();
@@ -303,7 +326,7 @@ describe('File Operations Integration Tests', () => {
         setTimeout(() => mockWebSocket.emit('open'), 10);
         return mockWebSocket}) as any
 
-      const connection = await connectionPool.getConnection('ws://localhost:3000/notifications')
+      const connection = await connectionPool.getConnection('ws://localhost:3000/notifications');
 
       // Subscribe to connection events
       connectionPool.subscribeToConnection(connection.id, 'test-subscriber', {

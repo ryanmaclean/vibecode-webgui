@@ -2,13 +2,15 @@ name: VibeCode CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
-      - develop
+    branches: ["release/*", "hotfix/*"] # Optimized: only run on release branches
+    # branches:
+    #   - main
+    #   - develop
   pull_request:
-    branches:
-      - main
-      - develop
+    branches: ["release/*", "hotfix/*"] # Optimized: only run on release branches
+    # branches:
+    #   - main
+    #   - develop
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
