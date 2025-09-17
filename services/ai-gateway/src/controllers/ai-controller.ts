@@ -5,18 +5,22 @@ import { RedisService } from '../services/redis-service';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { logger, performanceLogger } from '../utils/logger';
 import { ValidationError, ExternalServiceError, NotFoundError } from '../middleware/error-handler';
-// import { config } from '../config/environment';
+import { config } from '../config/environment';
+import { PromptAnalyzer } from '../services/prompt-analyzer';
+import { datadogMetrics } from '../services/datadog-metrics';
 import crypto from 'crypto';
 
 export class AIController {
     private openRouterClient: OpenRouterClient;
     private modelRegistry: ModelRegistry;
     private redisService: RedisService;
+    private promptAnalyzer: PromptAnalyzer;
 
     constructor() {
         this.openRouterClient = new OpenRouterClient();
         this.modelRegistry = new ModelRegistry();
         this.redisService = new RedisService();
+        this.promptAnalyzer = new PromptAnalyzer();
     }
 
     public async chatCompletion(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -25,7 +29,28 @@ export class AIController {
         const requestData: ChatCompletionRequest = req.body;
 
         try {
+            // Ensure model registry has data for auto-selection and validation
+            await this.ensureModelsReady();
+
             // Validate model exists
+            if (!requestData.model || requestData.model.toLowerCase() === 'auto') {
+                const inferred = this.promptAnalyzer.analyze(requestData);
+                const recommendation = this.modelRegistry.getBestModelForTask({
+                    task: inferred.task
+                } as ModelSelectionCriteria);
+
+                requestData.model = recommendation?.model || config.models.defaultModel;
+
+                logger.info('Auto-selected model', {
+                    selectedModel: requestData.model,
+                    task: inferred.task,
+                    userId
+                });
+
+                // Emit Datadog metric (best-effort)
+                datadogMetrics.submitSelectionMetric(inferred.task, requestData.model, userId).catch(() => {});
+            }
+
             const model = this.modelRegistry.getModel(requestData.model);
             if (!model) {
                 throw new ValidationError(`Model '${requestData.model}' not found`);
@@ -111,6 +136,36 @@ export class AIController {
         }
     }
 
+    public async selectModel(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const requestData: ChatCompletionRequest = req.body;
+            await this.ensureModelsReady();
+
+            const inferred = this.promptAnalyzer.analyze(requestData);
+            const recommendation = this.modelRegistry.getBestModelForTask({
+                task: inferred.task
+            } as ModelSelectionCriteria);
+
+            const top = this.modelRegistry.getModelRecommendations({ task: inferred.task } as ModelSelectionCriteria, 3);
+
+            // Emit Datadog metric (best-effort) for preview as well
+            const selectedModel = recommendation?.model || config.models.defaultModel;
+            datadogMetrics.submitSelectionMetric(inferred.task, selectedModel, req.user?.id).catch(() => {});
+
+            res.json({
+                selected: selectedModel,
+                reason: recommendation?.reason,
+                confidence: recommendation?.confidence,
+                task: inferred.task,
+                top,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            logger.error('Failed to select model', { error: error instanceof Error ? error.message : String(error) });
+            throw new ExternalServiceError('Failed to select model');
+        }
+    }
+
     public async streamChatCompletion(req: AuthenticatedRequest, res: Response): Promise<void> {
         const startTime = Date.now();
         const userId = req.user?.id || 'anonymous';
@@ -121,6 +176,27 @@ export class AIController {
             const model = this.modelRegistry.getModel(requestData.model);
             if (!model) {
                 throw new ValidationError(`Model '${requestData.model}' not found`);
+            }
+
+            // Ensure model registry has data for auto-selection and validation
+            await this.ensureModelsReady();
+
+            if (!requestData.model || requestData.model.toLowerCase() === 'auto') {
+                const inferred = this.promptAnalyzer.analyze(requestData);
+                const recommendation = this.modelRegistry.getBestModelForTask({
+                    task: inferred.task
+                } as ModelSelectionCriteria);
+
+                requestData.model = recommendation?.model || config.models.defaultModel;
+
+                logger.info('Auto-selected model (stream)', {
+                    selectedModel: requestData.model,
+                    task: inferred.task,
+                    userId
+                });
+
+                // Emit Datadog metric (best-effort)
+                datadogMetrics.submitSelectionMetric(inferred.task, requestData.model, userId).catch(() => {});
             }
 
             // Set up SSE headers
@@ -434,5 +510,20 @@ export class AIController {
             .digest('hex');
 
         return `cache:completion:${hash}`;
+    }
+
+    private async ensureModelsReady(): Promise<void> {
+        // If registry is empty or due for refresh, attempt to refresh
+        const models = this.modelRegistry.getModels();
+        if (!models || models.length === 0 || this.modelRegistry.shouldRefresh()) {
+            try {
+                await this.modelRegistry.refreshModels();
+            } catch (err) {
+                // Best-effort: proceed; callers will fallback to config defaultModel
+                logger.warn('Model registry refresh failed, proceeding with defaults', {
+                    error: err instanceof Error ? err.message : String(err)
+                });
+            }
+        }
     }
 }
