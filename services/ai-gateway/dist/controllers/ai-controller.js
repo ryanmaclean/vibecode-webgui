@@ -104,6 +104,17 @@ class AIController {
                 model: requestData.model,
                 userId
             });
+            const errorClass = error instanceof Error ? error.name : typeof error;
+            const httpStatus = (error instanceof error_handler_1.ValidationError) ? 400
+                : (error instanceof error_handler_1.NotFoundError) ? 404
+                    : (error instanceof error_handler_1.ExternalServiceError) ? 502
+                        : 500;
+            const modelTag = `model:${String(requestData.model || 'unknown').replace(/[:/]/g, '_')}`;
+            datadog_metrics_1.datadogMetrics.submitMetric('vibecode.ai_gateway.error', 1, [
+                `error_class:${errorClass}`,
+                `http_status:${httpStatus}`,
+                modelTag
+            ], 'count').catch(() => { });
             throw error;
         }
     }
@@ -199,6 +210,17 @@ class AIController {
                 model: requestData.model,
                 userId
             });
+            const errorClass = error instanceof Error ? error.name : typeof error;
+            const httpStatus = (error instanceof error_handler_1.ValidationError) ? 400
+                : (error instanceof error_handler_1.NotFoundError) ? 404
+                    : (error instanceof error_handler_1.ExternalServiceError) ? 502
+                        : 500;
+            const modelTag = `model:${String(requestData.model || 'unknown').replace(/[:/]/g, '_')}`;
+            datadog_metrics_1.datadogMetrics.submitMetric('vibecode.ai_gateway.error', 1, [
+                `error_class:${errorClass}`,
+                `http_status:${httpStatus}`,
+                modelTag
+            ], 'count').catch(() => { });
             if (!res.headersSent) {
                 res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
             }

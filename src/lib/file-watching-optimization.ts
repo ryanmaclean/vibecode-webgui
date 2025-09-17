@@ -113,6 +113,7 @@ interface WatcherStats {
   eventsPerSecond: number
   filteredEvents: number
   lastBatchTime: number
+  totalBatchedEvents: number // Track actual events in batches (after optimization)
 }
 
 export class OptimizedFileWatcher extends EventEmitter {
@@ -148,7 +149,8 @@ export class OptimizedFileWatcher extends EventEmitter {
       averageBatchSize: 0,
       eventsPerSecond: 0,
       filteredEvents: 0,
-      lastBatchTime: 0
+      lastBatchTime: 0,
+      totalBatchedEvents: 0
     }
 
     this.batchProcessor = debounce(
@@ -451,10 +453,11 @@ export class OptimizedFileWatcher extends EventEmitter {
   private updateStats(batch: BatchedChanges): void {
     this.stats.batchesProcessed++
     this.stats.lastBatchTime = batch.timestamp
+    this.stats.totalBatchedEvents += batch.events.length
 
-    // Calculate average batch size
+    // Calculate average batch size based on actual batched events (after optimization)
     this.stats.averageBatchSize = Math.round(
-      this.stats.totalEvents / this.stats.batchesProcessed
+      this.stats.totalBatchedEvents / this.stats.batchesProcessed
     )
 
     // Calculate events per second
