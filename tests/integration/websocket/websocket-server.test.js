@@ -1,12 +1,22 @@
-const { io } = require('socket.io-client');
-const { Server } = require('socket.io');
 const http = require('http');
 
-describe('WebSocket Server Integration', () => {
-  let ioServer, server, clientSocket;
+// Disable mocks for real integration testing
+jest.unmock('socket.io-client');
+jest.unmock('socket.io');
 
-  beforeAll((done) => {
-    const httpServer = http.createServer();
+describe('WebSocket Server Integration', () => {
+  let io, Server;
+  let ioServer, httpServer, clientSocket;
+
+  beforeAll(async () => {
+    // Dynamic import to bypass mocks
+    const socketIoClient = await import('socket.io-client');
+    const socketIoServer = await import('socket.io');
+
+    io = socketIoClient.io;
+    Server = socketIoServer.Server;
+
+    httpServer = http.createServer();
     ioServer = new Server(httpServer);
 
     ioServer.on('connection', (socket) => {
@@ -27,25 +37,53 @@ describe('WebSocket Server Integration', () => {
       });
     });
 
-    httpServer.listen(() => {
-      const port = httpServer.address().port;
-      clientSocket = io(`http://localhost:${port}`, {
-        transports: ['websocket'],
-        forceNew: true,
-        reconnection: false
+    // Return a promise that resolves when connection is established
+    return new Promise((resolve, reject) => {
+      httpServer.listen(() => {
+        const port = httpServer.address().port;
+        clientSocket = io(`http://localhost:${port}`, {
+          transports: ['websocket'],
+          forceNew: true,
+          reconnection: false,
+          timeout: 5000 // Add timeout
+        });
+
+        // Add timeout to prevent hanging
+        const timeout = setTimeout(() => {
+          console.error('WebSocket connection timeout');
+          reject(new Error('Connection timeout'));
+        }, 10000);
+
+        // Ensure the client is fully connected before tests run
+        clientSocket.on('connect', () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+
+        clientSocket.on('connect_error', (error) => {
+          clearTimeout(timeout);
+          reject(error);
+        });
       });
-      done();
     });
+  }, 15000); // Increase timeout for beforeAll
+
+  beforeEach(() => {
+    // Clear previous error listeners to prevent cross-test interference
+    if (clientSocket) {
+      clientSocket.off('error');
+    }
   });
 
   afterAll(() => {
-    ioServer.close();
-    if (clientSocket) clientSocket.close();
+    if (clientSocket) clientSocket.disconnect();
+    if (ioServer) ioServer.close();
+    if (httpServer) httpServer.close();
   });
 
   describe('Error Handling', () => {
     it('should handle malformed data gracefully', (done) => {
-      clientSocket.on('error', (error) => {
+      clientSocket.once('error', (error) => {
         expect(error.message).toBe('Invalid input format');
         done();
       });
@@ -55,7 +93,7 @@ describe('WebSocket Server Integration', () => {
     });
 
     it('should handle invalid cursor position', (done) => {
-      clientSocket.on('error', (error) => {
+      clientSocket.once('error', (error) => {
         expect(error.message).toBe('Invalid cursor position');
         done();
       });

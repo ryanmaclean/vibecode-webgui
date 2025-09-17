@@ -51,19 +51,31 @@ class DatabaseMetricsCollector {
   /**
    * Record a database query for metrics collection
    */
-  public recordQuery(query: string, duration: number, success: boolean, options: {
-    type?: string;
-    table?: string;
-    error?: string;
-  } = {}): void {
+  public recordQuery(
+    query: string,
+    duration: number,
+    successOrOptions: boolean | Record<string, unknown> = true,
+    maybeOptions?: Record<string, unknown> | Error
+  ): void {
+    const success = typeof successOrOptions === 'boolean' ? successOrOptions : true;
+    let options: Record<string, unknown> = {};
+    if (typeof successOrOptions === 'object' && successOrOptions !== null && typeof successOrOptions !== 'boolean') {
+      options = successOrOptions as Record<string, unknown>;
+    }
+    if (maybeOptions instanceof Error) {
+      options = { ...options, error: maybeOptions.message };
+    } else if (maybeOptions && typeof maybeOptions === 'object') {
+      options = { ...options, ...(maybeOptions as Record<string, unknown>) };
+    }
+
     const timing: QueryTiming = {
       query: query.substring(0, 200), // Truncate long queries
       duration,
       success,
       timestamp: Date.now(),
-      type: options.type || this.extractQueryType(query),
-      table: options.table || this.extractTableName(query),
-      error: options.error
+      type: typeof options.type === 'string' ? (options.type as string) : this.extractQueryType(query),
+      table: typeof options.table === 'string' ? (options.table as string) : this.extractTableName(query),
+      error: typeof options.error === 'string' ? (options.error as string) : undefined
     };
     
     this.queryTimings.push(timing);

@@ -193,8 +193,12 @@ Please analyze:
 Focus on providing actionable insights for code completion.
     `);
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -291,8 +295,12 @@ For each suggestion, provide:
 Format as structured suggestions that can be directly used.
     `);
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -444,8 +452,12 @@ Include:
 Return only the function signatures, one per line.
     `);
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -489,8 +501,12 @@ Consider:
 Return only the import statements, one per line.
     `);
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
     const chain = RunnableSequence.from([
       prompt,
       this.llm,

@@ -6,7 +6,10 @@
 import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { metrics } from '../server-monitoring';
+<<<<<<< HEAD
 import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
+=======
+>>>>>>> main
 
 /**
  * Redis specific configuration options
@@ -29,7 +32,10 @@ export interface RedisVectorDatabaseConfig extends VectorDatabaseConfig {
  */
 export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   private redis: any = null; // Redis client
+<<<<<<< HEAD
   private errorHandler: VectorDbErrorHandler;
+=======
+>>>>>>> main
   protected redisConfig: RedisVectorDatabaseConfig;
 
   /**
@@ -38,7 +44,10 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   constructor(config: RedisVectorDatabaseConfig) {
     super(config);
+<<<<<<< HEAD
     this.errorHandler = new VectorDbErrorHandler('redis', this.config.enableLogging || false, this.config.enableMetrics || false);
+=======
+>>>>>>> main
     this.redisConfig = {
       redisHost: process.env.REDIS_HOST || 'localhost',
       redisPort: parseInt(process.env.REDIS_PORT || '6379'),
@@ -73,11 +82,14 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // Check if Redis Search module is available
       // Create vector index if it doesn't exist
       
+<<<<<<< HEAD
       if (this.config.enableLogging) {
         console.info('Redis vector database adapter initialized successfully');
       }
       
       throw this.errorHandler.handleError(new Error('Redis adapter not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+>>>>>>> main
       throw new Error('Redis adapter not yet implemented');
     } catch (error) {
       if (this.config.enableLogging) {
@@ -97,7 +109,10 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     tokens: number;
   }>): Promise<void> {
     if (!this.redis) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
       throw new Error('Redis adapter not initialized');
     }
 
@@ -134,7 +149,10 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       //
       // await pipeline.exec();
       
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Redis store chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+>>>>>>> main
       throw new Error('Redis store chunks not yet implemented');
     } catch (error) {
       if (this.config.enableMetrics) {
@@ -154,7 +172,10 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   public async search(embedding: number[], options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.redis) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
       throw new Error('Redis adapter not initialized');
     }
 
@@ -187,7 +208,10 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       //   'LIMIT', 0, limit
       // );
       
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Redis vector search not yet implemented'), 'unknown', VectorDbErrorType.SEARCH, false);
+=======
+>>>>>>> main
       throw new Error('Redis vector search not yet implemented');
     } catch (error) {
       if (this.config.enableMetrics) {
@@ -207,7 +231,10 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   public async deleteFileChunks(fileId: number): Promise<void> {
     if (!this.redis) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
       throw new Error('Redis adapter not initialized');
     }
 
@@ -220,7 +247,10 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       //   await this.redis.del(...chunkKeys);
       // }
       
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Redis delete chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+>>>>>>> main
       throw new Error('Redis delete chunks not yet implemented');
     } catch (error) {
       if (this.config.enableMetrics) {
@@ -244,7 +274,10 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     averageChunkSize: number;
   }> {
     if (!this.redis) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
       throw new Error('Redis adapter not initialized');
     }
 
@@ -267,7 +300,10 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       //   'REDUCE', 'COUNT', 0, 'AS', 'count'
       // );
       
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Redis stats not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+>>>>>>> main
       throw new Error('Redis stats not yet implemented');
     } catch (error) {
       if (this.config.enableMetrics) {
@@ -331,7 +367,10 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   protected async fallbackTextSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.redis) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
       throw new Error('Redis adapter not initialized');
     }
 
@@ -357,4 +396,7 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     }
   }
 }
+<<<<<<< HEAD
 }
+=======
+>>>>>>> main

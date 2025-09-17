@@ -7,7 +7,7 @@
  * Staff Engineer Implementation - Production-ready collaboration testing
  */
 
-const { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach, jest } = require('@jest/globals');
+const { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } = require('@jest/globals');
 
 // Mock WebSocket and Yjs for integration testing
 global.WebSocket = jest.fn().mockImplementation(() => ({
@@ -131,7 +131,7 @@ describe('Collaboration Integration Tests', () => {
       expect(stats.userCount).toBeGreaterThan(0);
       expect(stats.documentSize).toBeGreaterThanOrEqual(0);
       expect(stats.conflicts).toBeGreaterThanOrEqual(0);
-      expect(stats.lastActivity).toBeInstanceOf(Number)})})
+      expect(typeof stats.lastActivity).toBe('number')})})
 
   describe('Conflict Resolution', () => {
     test('should handle simultaneous edits without conflicts', async () => {
@@ -264,13 +264,14 @@ describe('Collaboration Integration Tests', () => {
 
       const text = manager1.getText(session);
 
-      // Perform multiple operations rapidly
+      // Perform multiple operations rapidly at the end of the document
       for (let i = 0; i < 10; i++) {
-        text.insert(i * 10, `// Comment ${i}\n`)}
+        text.insert(text.length, `// Comment ${i}\n`)}
 
       // All operations should complete successfully
-      expect(text.toString()).toContain('Comment 0')
-      expect(text.toString()).toContain('Comment 9')})})
+      const textContent = text.toString()
+      expect(textContent).toContain('Comment 0')
+      expect(textContent).toContain('Comment 9')})})
 
   describe('Error Handling and Recovery', () => {
     test('should handle WebSocket connection failures gracefully', async () => {

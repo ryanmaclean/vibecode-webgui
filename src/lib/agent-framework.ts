@@ -205,16 +205,16 @@ export class AgentCoordinator {
       }
     })
 
-    // @ts-ignore - Accessing private properties is fine in this context
+    // @ts-expect-error - Accessing private properties is fine in this context
     this.agents.set(codeAgent.id, codeAgent)
-    // @ts-ignore - Accessing private properties is fine in this context
+    // @ts-expect-error - Accessing private properties is fine in this context
     this.agents.set(docsAgent.id, docsAgent)
-    // @ts-ignore - Accessing private properties is fine in this context
+    // @ts-expect-error - Accessing private properties is fine in this context
     this.agents.set(testAgent.id, testAgent)
   }
 
   registerAgent(agent: Agent): void {
-    // @ts-ignore - Accessing private property is fine in this context
+    // @ts-expect-error - Accessing private property is fine in this context
     this.agents.set(agent.id, agent)
   }
 
@@ -225,7 +225,7 @@ Goal: ${goal}
 
 Available agents and their capabilities:
 ${Array.from(this.agents.values()).map(agent => 
-  // @ts-ignore - Accessing private property is fine in this context
+  // @ts-expect-error - Accessing private property is fine in this context
   `- ${agent.name}: ${agent.getCapabilities().join(', ')}`
 ).join('\n')}
 
@@ -336,7 +336,7 @@ export class AgentWorkflow {
           throw new Error(`No suitable agent found for task: ${task.description}`)
         }
 
-        // @ts-ignore - Accessing private property is fine in this context
+        // @ts-expect-error - Accessing private property is fine in this context
         console.log(`Executing task ${task.id} with agent ${agent.name}`)
         
         const result = await agent.executeTask(task, this.context)

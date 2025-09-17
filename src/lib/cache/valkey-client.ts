@@ -51,11 +51,19 @@ const getValkeyConfig = () => {
 const config = getValkeyConfig();
 
 // Create Valkey client with optimized settings (using Redis-compatible ioredis client)
+<<<<<<< HEAD
 let valkeyClient: Redis | null = null;
+=======
+let valkeyClient: any = null;
+>>>>>>> main
 
 try {
   if (config.type === 'standard') {
     if ('url' in config) {
+<<<<<<< HEAD
+=======
+      // @ts-expect-error - ioredis constructor typing issue
+>>>>>>> main
       valkeyClient = new Redis(config.url, {
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
@@ -69,6 +77,10 @@ try {
         connectTimeout: 10000,
       });
     } else {
+<<<<<<< HEAD
+=======
+      // @ts-expect-error - ioredis constructor typing issue
+>>>>>>> main
       valkeyClient = new Redis({
         host: config.host,
         port: config.port,
@@ -204,7 +216,11 @@ export class ValkeyManager {
       const keys = Array.isArray(key) ? key : [key];
       await this.client.del(...keys);
       
+<<<<<<< HEAD
       metrics.increment('cache.delete', { count: keys.length.toString() });
+=======
+      metrics.increment('cache.delete', { count: keys.length as any });
+>>>>>>> main
       return true;
     } catch (error) {
       metrics.increment('cache.delete.error');
@@ -258,7 +274,11 @@ export class ValkeyManager {
       }
       
       await pipeline.exec();
+<<<<<<< HEAD
       metrics.increment('cache.mset.success', { count: pairs.length.toString() });
+=======
+      metrics.increment('cache.mset.success', { count: pairs.length as any });
+>>>>>>> main
       return true;
     } catch (error) {
       metrics.increment('cache.mset.error');

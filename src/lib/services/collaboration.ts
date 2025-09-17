@@ -35,7 +35,7 @@ export interface CollaborationEvent {
   timestamp: Date
 }
 
-class CollaborationService {
+export class CollaborationService {
   private io: SocketIOServer | null = null
   private workspaces: Map<string, WorkspaceState> = new Map()
   private userColors = [
@@ -291,18 +291,22 @@ class CollaborationService {
     const { fileName, fileSize, conversationId } = data
     const { userId, workspaceId } = socket
 
-    // Notify users in the conversation about file share
-    socket.to(`conversation:${conversationId}`).emit('file_shared', {
-      userId,
-      fileName,
-      fileSize,
-      conversationId,
-      timestamp: new Date()
-    })
+    try {
+      // Notify users in the conversation about file share
+      socket.to(`conversation:${conversationId}`).emit('file_shared', {
+        userId,
+        fileName,
+        fileSize,
+        conversationId,
+        timestamp: new Date()
+      })
 
-    datadogMetrics.recordUserAction('file_share', userId, workspaceId, {
-      tags: { file_size: fileSize > 1024*1024 ? 'large' : 'small' }
-    })
+      datadogMetrics.recordUserAction('file_share', userId, workspaceId, {
+        tags: { file_size: fileSize > 1024*1024 ? 'large' : 'small' }
+      })
+    } catch (error) {
+      console.error('Error broadcasting file share:', error)
+    }
   }
 
   private handleDisconnect(socket: any) {
@@ -322,18 +326,20 @@ class CollaborationService {
       timestamp: new Date()
     }
 
-<<<<<<< Updated upstream
     // Let all clients handle this - if excludeUserId is set, clients will need to check
     // their own ID and ignore the message if they match
     this.io.to(`conversation:${conversationId}`).emit('new_message', {
       ...messageData,
       _excludeUserId: excludeUserId // Include this so clients can filter
     });
+<<<<<<< HEAD
     if (excludeUserId) {
       this.io.to(`conversation:${conversationId}`).except(excludeUserId).emit('new_message', messageData)
     } else {
       this.io.to(`conversation:${conversationId}`).emit('new_message', messageData)
     }
+=======
+>>>>>>> main
   }
 
   // Broadcast workspace events
@@ -396,7 +402,7 @@ class CollaborationService {
           console.log(`🧹 Cleaned up inactive workspace: ${workspaceId}`)
         }
       }
-    }, 60000) // Run cleanup every minute
+    }, 30000) // Run cleanup every 30 seconds
   }
 }
 

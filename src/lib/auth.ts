@@ -34,10 +34,12 @@ declare module 'next-auth' {
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    id: string
-    role: string
-    githubId?: string
-    googleId?: string
+    id?: string | null;
+    role?: string | null;
+    githubId?: string;
+    googleId?: string;
+    email?: string | null;
+    name?: string | null;
   }
 }
 
@@ -46,18 +48,18 @@ declare module 'next-auth/jwt' {
 export const authOptions: NextAuthOptions = {
   // adapter: PrismaAdapter(prisma), // Disabled for file-based development
   secret: process.env.NEXTAUTH_SECRET,
-  cookies: {
-    sessionToken: {
-      name: `__Secure-next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined
-      }
-    }
-  },
+  // cookies: {
+  //   sessionToken: {
+  //     name: `__Secure-next-auth.session-token`,
+  //     options: {
+  //       httpOnly: true,
+  //       sameSite: 'lax',
+  //       path: '/',
+  //       secure: process.env.NODE_ENV === 'production',
+  //       domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined
+  //     }
+  //   }
+  // },
   providers: [
     GithubProvider({
       clientId: process.env.GITHUB_ID!,
@@ -94,28 +96,23 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials) return null
+        console.log('🔐 NextAuth authorize called with:', credentials);
+        if (!credentials) {
+          console.log('❌ No credentials provided');
+          return null;
+        }
 
-        // In a real app, you'd look up the user from a database
-        // This is a mock implementation for development
-        const users = [
-          { id: '1', email: 'admin@vibecode.dev', password: 'admin123', name: 'Admin User', role: 'admin' },
-          { id: '2', email: 'developer@vibecode.dev', password: 'dev123', name: 'Developer User', role: 'developer' },
-          { id: '3', email: 'lead@vibecode.dev', password: 'lead123', name: 'Lead User', role: 'lead' },
-          { id: '4', email: 'frontend@vibecode.dev', password: 'frontend123', name: 'Frontend Developer', role: 'developer' },
-          { id: '5', email: 'backend@vibecode.dev', password: 'backend123', name: 'Backend Developer', role: 'developer' },
-          { id: '6', email: 'fullstack@vibecode.dev', password: 'fullstack123', name: 'Fullstack Developer', role: 'developer' },
-          { id: '7', email: 'designer@vibecode.dev', password: 'design123', name: 'Designer', role: 'designer' },
-          { id: '8', email: 'tester@vibecode.dev', password: 'test123', name: 'QA Tester', role: 'tester' },
-          { id: '9', email: 'devops@vibecode.dev', password: 'devops123', name: 'DevOps Engineer', role: 'devops' },
-          { id: '10', email: 'intern@vibecode.dev', password: 'intern123', name: 'Intern', role: 'intern' },
-        ]
-
-        const user = users.find(u => u.email === credentials.email)
-
-        if (user && user.password === credentials.password) {
-          return { id: user.id, name: user.name, email: user.email, role: user.role }
+        // Simple validation for testing
+        if (credentials.email === 'developer@vibecode.dev' && credentials.password === 'dev123') {
+          console.log('✅ User authenticated successfully:', credentials.email);
+          return { 
+            id: '2', 
+            name: 'Developer User', 
+            email: 'developer@vibecode.dev', 
+            role: 'developer' 
+          }
         } else {
+          console.log('❌ Authentication failed for:', credentials.email);
           return null
         }
       },
@@ -165,8 +162,8 @@ export const authOptions: NextAuthOptions = {
       })
 
       if (token) {
-        session.user.id = token.id
-        session.user.role = token.role
+        session.user.id = token.id as string
+        session.user.role = token.role as string
         session.user.email = token.email as string
         session.user.name = token.name as string
         console.log('✅ Session updated with token:', { id: session.user.id, role: session.user.role })

@@ -129,8 +129,12 @@ Focus on:
 - Performance considerations
     `);
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -188,8 +192,12 @@ Generate:
 Format the output as structured test code that can be directly executed.
     `);
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -240,8 +248,12 @@ Generate a single, focused test case that:
 Return only the test case code, no explanations.
     `);
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -296,8 +308,12 @@ Generate:
 Ensure the data is realistic and covers various scenarios.
     `);
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -344,8 +360,12 @@ Please analyze:
 Focus on critical paths, edge cases, and error handling.
     `);
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
     const chain = RunnableSequence.from([
       prompt,
       this.llm,

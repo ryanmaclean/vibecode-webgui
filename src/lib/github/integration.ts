@@ -353,11 +353,13 @@ export class GitHubIntegration {
         description: repo.description,
         htmlUrl: repo.html_url,
         private: repo.private,
-<<<<<<< Updated upstream
         createdAt: repo.created_at || new Date().toISOString(),
         updatedAt: repo.updated_at || new Date().toISOString(),
+<<<<<<< HEAD
         createdAt: repo.created_at,
         updatedAt: repo.updated_at,
+=======
+>>>>>>> main
         language: repo.language,
         stargazersCount: repo.stargazers_count,
         forksCount: repo.forks_count,

@@ -106,12 +106,27 @@ export function useAuth() {
 
     if (!session && !isAuthPage) {
       // Not authenticated and not on auth page - redirect to login
+      console.log('🔄 Redirecting unauthenticated user to login')
       redirectToLogin()
     } else if (session && isAuthPage) {
       // Authenticated but on auth page - redirect to dashboard
+      console.log('🔄 Redirecting authenticated user to dashboard')
       redirectToDashboard()
     }
   }, [session, status, redirectToLogin, redirectToDashboard])
+
+  // Additional redirect logic for better browser compatibility
+  useEffect(() => {
+    if (status === 'unauthenticated' && typeof window !== 'undefined') {
+      const pathname = window.location.pathname
+      const isAuthPage = pathname.startsWith('/auth/')
+      
+      if (!isAuthPage) {
+        console.log('🔄 Force redirecting unauthenticated user to login')
+        window.location.href = '/auth/signin'
+      }
+    }
+  }, [status])
 
   return {
     ...authState,

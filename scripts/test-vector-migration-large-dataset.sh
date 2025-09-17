@@ -132,7 +132,7 @@ export LOGGING=true
 start_time=$(date +%s.%N)
 
 # Run the schema migration
-node $SCRIPT_DIR/vector-db-migrations/zero-downtime-schema-migration.js
+node $SCRIPT_DIR/vector-db-migrations/zero-downtime-schema-migration.cjs
 
 # Calculate elapsed time
 end_time=$(date +%s.%N)

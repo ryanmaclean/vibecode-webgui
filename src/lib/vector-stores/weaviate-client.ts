@@ -84,9 +84,11 @@ export class WeaviateVectorStore {
         scheme: host.startsWith('https') ? 'https' : 'http',
         host: host.replace(/^https?:\/\//, ''),
         apiKey: apiKey,
-<<<<<<< Updated upstream
         ...(openaiApiKey ? { additionalHeaders: { 'X-OpenAI-Api-Key': openaiApiKey } } : {})
+<<<<<<< HEAD
         headers: openaiApiKey ? { 'X-OpenAI-Api-Key': openaiApiKey } : undefined
+=======
+>>>>>>> main
       })
     } catch (error) {
       console.warn('Failed to initialize Weaviate client:', error)

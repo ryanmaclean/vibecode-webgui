@@ -5,21 +5,24 @@
 global.setImmediate = global.setImmediate || ((fn, ...args) => setTimeout(fn, 0, ...args));
 global.clearImmediate = global.clearImmediate || clearTimeout;
 
-// Mock fetch API for tests
-global.fetch = jest.fn();
+// Do not define a default fetch here; jest.setup.js provides a default mock and restores it per-test.
 
-// Mock TextEncoder/TextDecoder for streaming tests
-global.TextEncoder = jest.fn().mockImplementation(() => ({
-  encode: jest.fn((text) => new Uint8Array(Buffer.from(text, 'utf8')))
-}));
+// Minimal TextEncoder/TextDecoder implementations (non-mocked)
+global.TextEncoder = class TextEncoder {
+  encode(text) {
+    return new Uint8Array(Buffer.from(String(text), 'utf8'));
+  }
+};
 
-global.TextDecoder = jest.fn().mockImplementation(() => ({
-  decode: jest.fn((buffer) => Buffer.from(buffer).toString('utf8'))
-}));
+global.TextDecoder = class TextDecoder {
+  decode(buffer) {
+    return Buffer.from(buffer).toString('utf8');
+  }
+};
 
 // Mock AbortSignal for timeout tests
 global.AbortSignal = {
-  timeout: jest.fn((ms) => ({
+  timeout: jest.fn((_ms) => ({
     aborted: false,
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
@@ -27,80 +30,202 @@ global.AbortSignal = {
   }))
 };
 
-// Mock Headers for request headers
-global.Headers = jest.fn().mockImplementation((init) => {
-  const headers = {};
-  if (init) {
-    if (typeof init === 'object') {
-      Object.assign(headers, init);
+// Minimal Headers implementation (non-mocked)
+global.Headers = class Headers {
+  constructor(init) {
+    // Make internal map non-enumerable to avoid being copied/overwritten during initialization
+    Object.defineProperty(this, '_headers', {
+      value: {},
+      writable: true,
+      configurable: true,
+      enumerable: false,
+    });
+    if (init) {
+      // If initialized with another Headers instance, copy its entries
+      if (init instanceof Headers || (typeof init.forEach === 'function' && typeof init.get === 'function')) {
+        // Use forEach(value, key) signature
+        init.forEach((value, key) => {
+          const keyOrig = String(key);
+          const keyLower = keyOrig.toLowerCase();
+          const val = String(value);
+          this._headers[keyLower] = val;
+          this[keyOrig] = val;
+        });
+      } else if (Array.isArray(init)) {
+        // Array of [key, value] tuples
+        init.forEach((pair) => {
+          if (!pair || pair.length < 2) return;
+          const [k, v] = pair;
+          const keyOrig = String(k);
+          const keyLower = keyOrig.toLowerCase();
+          const val = String(v);
+          this._headers[keyLower] = val;
+          this[keyOrig] = val;
+        });
+      } else if (typeof init === 'object') {
+        // Plain object map
+        Object.entries(init).forEach(([k, v]) => {
+          // Skip internal/private props
+          if (String(k).startsWith('_')) return;
+          const keyOrig = String(k);
+          const keyLower = keyOrig.toLowerCase();
+          const val = String(v);
+          this._headers[keyLower] = val;
+          this[keyOrig] = val;
+        });
+      }
     }
   }
-  return {
-    ...headers,
-    get: jest.fn((name) => headers[name]),
-    set: jest.fn((name, value) => { headers[name] = value; }),
-    has: jest.fn((name) => name in headers),
-    delete: jest.fn((name) => { delete headers[name]; }),
-    append: jest.fn((name, value) => { 
-      headers[name] = headers[name] ? `${headers[name]}, ${value}` : value;
-    }),
-    forEach: jest.fn((callback) => {
-      Object.entries(headers).forEach(([key, value]) => callback(value, key));
-    }),
-    entries: jest.fn(() => Object.entries(headers)),
-    keys: jest.fn(() => Object.keys(headers)),
-    values: jest.fn(() => Object.values(headers))
-  };
-});
+  get(name) {
+    return this._headers[String(name).toLowerCase()] ?? null;
+  }
+  set(name, value) {
+    const keyLower = String(name).toLowerCase();
+    const val = String(value);
+    this._headers[keyLower] = val;
+    this[name] = val;
+  }
+  has(name) {
+    return Object.prototype.hasOwnProperty.call(this._headers, String(name).toLowerCase());
+  }
+  delete(name) {
+    delete this._headers[String(name).toLowerCase()];
+    delete this[name];
+  }
+  append(name, value) {
+    const keyLower = String(name).toLowerCase();
+    const keyOrig = String(name);
+    const val = String(value);
+    if (this._headers[keyLower]) {
+      this._headers[keyLower] = `${this._headers[keyLower]}, ${val}`;
+      this[keyOrig] = `${this[keyOrig]}, ${val}`;
+    } else {
+      this._headers[keyLower] = val;
+      this[keyOrig] = val;
+    }
+  }
+  forEach(callback) {
+    Object.entries(this._headers).forEach(([k, v]) => callback(v, k));
+  }
+  entries() {
+    return Object.entries(this._headers);
+  }
+  keys() {
+    return Object.keys(this._headers);
+  }
+  values() {
+    return Object.values(this._headers);
+  }
+};
 
-// Mock ReadableStream for streaming responses
-global.ReadableStream = jest.fn().mockImplementation((underlyingSource) => {
+// Minimal ReadableStream stub (non-mocked)
+global.ReadableStream = function ReadableStream() {
   return {
-    getReader: jest.fn(() => ({
-      read: jest.fn().mockResolvedValue({ done: true, value: undefined }),
-      cancel: jest.fn(),
-      releaseLock: jest.fn()
-    })),
-    cancel: jest.fn(),
+    getReader: () => ({
+      read: async () => ({ done: true, value: undefined }),
+      cancel: () => {},
+      releaseLock: () => {},
+    }),
+    cancel: () => {},
     locked: false,
-    pipeTo: jest.fn(),
-    pipeThrough: jest.fn(),
-    tee: jest.fn()
+    pipeTo: () => {},
+    pipeThrough: () => {},
+    tee: () => {},
   };
-});
+};
 
-// Mock Response for fetch responses
-global.Response = jest.fn().mockImplementation((body, init = {}) => ({
-  ok: init.status >= 200 && init.status < 300,
-  status: init.status || 200,
-  statusText: init.statusText || 'OK',
-  headers: new Headers(init.headers),
-  body: body,
-  text: jest.fn().mockResolvedValue(typeof body === 'string' ? body : JSON.stringify(body)),
-  json: jest.fn().mockResolvedValue(typeof body === 'string' ? JSON.parse(body) : body),
-  blob: jest.fn().mockResolvedValue(new Blob([body])),
-  arrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(0)),
-  formData: jest.fn().mockResolvedValue(new FormData()),
-  clone: jest.fn().mockReturnThis(),
-  url: '',
-  redirected: false,
-  type: 'basic'
-}));
+// Minimal WHATWG Response implementation (non-mocked)
+global.Response = class Response {
+  constructor(body, init = {}) {
+    this.ok = typeof init.status === 'number' ? init.status >= 200 && init.status < 300 : true;
+    this.status = typeof init.status === 'number' ? init.status : 200;
+    this.statusText = init.statusText || 'OK';
+    this.headers = new Headers(init.headers);
+    this._body = body;
+    this.url = '';
+    this.redirected = false;
+    this.type = 'basic';
+  }
+  async text() {
+    return typeof this._body === 'string' ? this._body : JSON.stringify(this._body);
+  }
+  async json() {
+    return typeof this._body === 'string' ? JSON.parse(this._body) : this._body;
+  }
+  async blob() {
+    return new Blob([await this.text()]);
+  }
+  async arrayBuffer() {
+    return new ArrayBuffer(0);
+  }
+  async formData() {
+    return new FormData();
+  }
+  clone() {
+    return new Response(this._body, { status: this.status, statusText: this.statusText, headers: this.headers });
+  }
+};
 
-// Mock Request for fetch requests
-global.Request = jest.fn().mockImplementation((input, init = {}) => ({
-  url: typeof input === 'string' ? input : input.url,
-  method: init.method || 'GET',
-  headers: new Headers(init.headers),
-  body: init.body,
-  mode: init.mode || 'cors',
-  credentials: init.credentials || 'same-origin',
-  cache: init.cache || 'default',
-  redirect: init.redirect || 'follow',
-  referrer: init.referrer || 'about:client',
-  referrerPolicy: init.referrerPolicy || '',
-  integrity: init.integrity || '',
-  keepalive: init.keepalive || false,
-  signal: init.signal,
-  clone: jest.fn().mockReturnThis()
-})); 
+// Minimal WHATWG Request implementation (non-mocked)
+global.Request = class Request {
+  constructor(input, init = {}) {
+    this._url = typeof input === 'string' ? input : input.url;
+    this.method = init.method || 'GET';
+    this.headers = new Headers(init.headers);
+    this.body = init.body;
+    this.mode = init.mode || 'cors';
+    this.credentials = init.credentials || 'same-origin';
+    this.cache = init.cache || 'default';
+    this.redirect = init.redirect || 'follow';
+    this.referrer = init.referrer || 'about:client';
+    this.referrerPolicy = init.referrerPolicy || '';
+    this.integrity = init.integrity || '';
+    this.keepalive = init.keepalive || false;
+    this.signal = init.signal;
+  }
+  
+  get url() {
+    return this._url;
+  }
+  clone() {
+    return new Request(this.url, {
+      method: this.method,
+      headers: this.headers,
+      body: this.body,
+      mode: this.mode,
+      credentials: this.credentials,
+      cache: this.cache,
+      redirect: this.redirect,
+      referrer: this.referrer,
+      referrerPolicy: this.referrerPolicy,
+      integrity: this.integrity,
+      keepalive: this.keepalive,
+      signal: this.signal,
+    });
+  }
+  async json() {
+    if (typeof this.body === 'string') {
+      return JSON.parse(this.body);
+    }
+    return this.body;
+  }
+  async text() {
+    if (typeof this.body === 'string') {
+      return this.body;
+    }
+    return typeof this.body === 'undefined' ? '' : JSON.stringify(this.body);
+  }
+};
+
+// Add Response.json polyfill for API tests
+if (!Response.json) {
+  Response.json = function(data, init = {}) {
+    return new Response(JSON.stringify(data), {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...init.headers
+      }
+    });
+  };
+}

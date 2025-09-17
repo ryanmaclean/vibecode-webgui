@@ -7,8 +7,7 @@ import {
   MoreVertical,
   Shield,
   ShieldCheck,
-  User,
-  Mail,
+  UserIcon,
   Calendar,
   Clock,
   CheckCircle,
@@ -21,6 +20,25 @@ import {
 import { k8sApi } from '../services/api'
 import { formatDistanceToNow } from 'date-fns'
 import type { User } from '../types'
+
+// Extended User interface with additional fields for the UI
+interface ExtendedUser extends User {
+  displayName?: string;
+  lastLoginAt?: string;
+}
+
+// Define badge types for user status and roles
+interface StatusBadgeConfig {
+  active: { class: string; icon: React.ComponentType<any> };
+  inactive: { class: string; icon: React.ComponentType<any> };
+  pending: { class: string; icon: React.ComponentType<any> };
+}
+
+interface RoleBadgeConfig {
+  admin: { class: string; icon: React.ComponentType<any> };
+  developer: { class: string; icon: React.ComponentType<any> };
+  viewer: { class: string; icon: React.ComponentType<any> };
+}
 
 export function Users() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -45,29 +63,11 @@ export function Users() {
   const filteredUsers = users?.filter(user => {
     const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.displayName.toLowerCase().includes(searchTerm.toLowerCase())
+                         ((user as ExtendedUser).displayName || '').toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === 'all' || user.status === statusFilter
     const matchesRole = roleFilter === 'all' || user.role === roleFilter
     return matchesSearch && matchesStatus && matchesRole
   })
-
-  const getStatusBadge = (status: User['status']) => {
-    const statusConfig = {
-      active: { class: 'badge-success', icon: CheckCircle },
-      inactive: { class: 'badge-error', icon: XCircle },
-      pending: { class: 'badge-warning', icon: AlertCircle }
-    }
-    return statusConfig[status]
-  }
-
-  const getRoleBadge = (role: User['role']) => {
-    const roleConfig = {
-      admin: { class: 'bg-red-100 text-red-800', icon: ShieldCheck },
-      developer: { class: 'bg-blue-100 text-blue-800', icon: Shield },
-      viewer: { class: 'bg-gray-100 text-gray-800', icon: User }
-    }
-    return roleConfig[role]
-  }
 
   return (
     <div className="space-y-6">
@@ -92,7 +92,7 @@ export function Users() {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="card p-4">
           <div className="flex items-center">
-            <User className="h-8 w-8 text-blue-600" />
+            <UserIcon className="h-8 w-8 text-blue-600" />
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-500">Total Users</p>
               <p className="text-2xl font-semibold text-gray-900">{users?.length || 0}</p>
@@ -212,7 +212,7 @@ export function Users() {
                 filteredUsers?.map((user) => (
                   <UserRow
                     key={user.id}
-                    user={user}
+                    user={user as ExtendedUser}
                     onDelete={() => deleteUserMutation.mutate(user.id)}
                   />
                 ))
@@ -224,7 +224,7 @@ export function Users() {
 
       {filteredUsers?.length === 0 && !isLoading && (
         <div className="text-center py-12">
-          <User className="mx-auto h-12 w-12 text-gray-400" />
+          <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">No users found</h3>
           <p className="mt-1 text-sm text-gray-500">
             {searchTerm || statusFilter !== 'all' || roleFilter !== 'all'
@@ -247,23 +247,36 @@ function UserRow({
   user,
   onDelete
 }: {
-  user: User
+  user: ExtendedUser
   onDelete: () => void
 }) {
   const [showActions, setShowActions] = useState(false)
-  const statusConfig = {
+  
+  // Define status configurations
+  const statusConfig: StatusBadgeConfig = {
     active: { class: 'badge-success', icon: CheckCircle },
     inactive: { class: 'badge-error', icon: XCircle },
     pending: { class: 'badge-warning', icon: AlertCircle }
   }
-  const roleConfig = {
+  
+  // Define role configurations
+  const roleConfig: RoleBadgeConfig = {
     admin: { class: 'bg-red-100 text-red-800', icon: ShieldCheck },
     developer: { class: 'bg-blue-100 text-blue-800', icon: Shield },
-    viewer: { class: 'bg-gray-100 text-gray-800', icon: User }
+    viewer: { class: 'bg-gray-100 text-gray-800', icon: UserIcon }
   }
 
-  const StatusIcon = statusConfig[user.status].icon
-  const RoleIcon = roleConfig[user.role].icon
+  // Safely handle unknown status values
+  const statusValue = user.status as keyof StatusBadgeConfig;
+  const StatusIcon = statusConfig[statusValue] ? 
+    statusConfig[statusValue].icon : 
+    AlertCircle;
+  
+  // Safely handle unknown role values
+  const roleValue = (user.role === 'user' ? 'viewer' : user.role) as keyof RoleBadgeConfig;
+  const RoleIcon = roleConfig[roleValue] ? 
+    roleConfig[roleValue].icon : 
+    UserIcon;
 
   return (
     <tr className="hover:bg-gray-50">
@@ -271,24 +284,28 @@ function UserRow({
         <div className="flex items-center">
           <div className="flex-shrink-0 h-10 w-10">
             <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-              <User className="h-5 w-5 text-gray-500" />
+              <UserIcon className="h-5 w-5 text-gray-500" />
             </div>
           </div>
           <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900">{user.displayName}</div>
+            <div className="text-sm font-medium text-gray-900">{user.displayName || user.username}</div>
             <div className="text-sm text-gray-500">{user.email}</div>
             <div className="text-xs text-gray-400 font-mono">@{user.username}</div>
           </div>
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${roleConfig[user.role].class}`}>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          roleConfig[roleValue]?.class || 'bg-gray-100 text-gray-800'
+        }`}>
           <RoleIcon className="h-3 w-3 mr-1" />
           {user.role}
         </span>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`badge ${statusConfig[user.status].class}`}>
+        <span className={`badge ${
+          statusConfig[statusValue]?.class || 'badge-warning'
+        }`}>
           <StatusIcon className="h-3 w-3 mr-1" />
           {user.status}
         </span>
@@ -344,12 +361,21 @@ function UserRow({
   )
 }
 
+// Interface for create user form data
+interface CreateUserFormData {
+  username: string;
+  email: string;
+  displayName: string;
+  role: User['role'];
+  password: string;
+}
+
 function CreateUserModal({ onClose }: { onClose: () => void }) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateUserFormData>({
     username: '',
     email: '',
     displayName: '',
-    role: 'developer' as User['role'],
+    role: 'developer',
     password: ''
   })
 
@@ -412,9 +438,9 @@ function CreateUserModal({ onClose }: { onClose: () => void }) {
                 onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value as User['role'] }))}
                 className="input"
               >
-                <option value="viewer">Viewer</option>
                 <option value="developer">Developer</option>
                 <option value="admin">Admin</option>
+                <option value="user">User</option>
               </select>
             </div>
             <div>

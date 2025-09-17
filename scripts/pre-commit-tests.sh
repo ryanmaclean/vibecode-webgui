@@ -54,6 +54,20 @@ npm test || {
     exit 1
 }
 
+# Run root integration tests (quick subset)
+echo "🔧 Running root integration tests..."
+if npm run test:root:infrastructure; then
+    echo "✅ Infrastructure tests passed"
+else
+    echo "⚠️  Infrastructure tests failed - continuing with commit"
+fi
+
+if npm run test:root:credentials; then
+    echo "✅ Credentials tests passed"
+else
+    echo "⚠️  Credentials tests failed - continuing with commit"
+fi
+
 # Check if KIND cluster exists and is healthy
 if kind get clusters | grep -q "vibecode-test"; then
     echo "🎯 Validating KIND cluster health..."

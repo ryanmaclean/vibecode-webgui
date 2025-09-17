@@ -429,19 +429,40 @@ describe('Monitoring Test Quality Validation', () => {
     const fs = require('fs')
     const testFileContent = fs.readFileSync(__filename, 'utf8')
 
-    // Count mock usage
-    const mockCount = (testFileContent.match(/jest\.mock/g) || []).length
-    const mockFnCount = (testFileContent.match(/jest\.fn/g) || []).length
+    // Count ACTUAL mock usage (excluding this validator's own checks)
+    const lines = testFileContent.split('\n')
+    const actualMocks = lines.filter(line =>
+      (line.includes('jest.mock') || line.includes('jest.fn')) &&
+      !line.includes('expect(') &&
+      !line.includes('match(/jest\\.mock/g)') &&
+      !line.includes('.not.toContain(') &&
+      !line.includes('// Count') &&
+      !line.includes('line.includes(') &&
+      !line.trim().startsWith('//') &&
+      (line.trim().startsWith('jest.mock') || line.includes('jest.fn()'))
+    )
 
-    // Integration tests should have minimal mocking
-    expect(mockCount).toBeLessThanOrEqual(1)
-    expect(mockFnCount).toBeLessThanOrEqual(2)
+    // Integration tests should have minimal ACTUAL mocking (validator code excluded)
+    expect(actualMocks.length).toBeLessThanOrEqual(1)
 
-    // Should not mock critical monitoring components
-    expect(testFileContent).not.toContain("jest.mock('@datadog/browser-rum')")
-    expect(testFileContent).not.toContain("jest.mock('@datadog/browser-logs')")
-    expect(testFileContent).not.toContain("jest.mock('pg')")
-    expect(testFileContent).not.toContain("jest.mock('redis')")
+    // Should not mock critical monitoring components in actual code
+    const hasDatadogRumMock = lines.some(line =>
+      line.includes("jest.mock('@datadog/browser-rum')") && !line.includes('expect(')
+    )
+    const hasDatadogLogsMock = lines.some(line =>
+      line.includes("jest.mock('@datadog/browser-logs')") && !line.includes('expect(')
+    )
+    const hasPgMock = lines.some(line =>
+      line.includes("jest.mock('pg')") && !line.includes('expect(')
+    )
+    const hasRedisMock = lines.some(line =>
+      line.includes("jest.mock('redis')") && !line.includes('expect(')
+    )
+
+    expect(hasDatadogRumMock).toBe(false)
+    expect(hasDatadogLogsMock).toBe(false)
+    expect(hasPgMock).toBe(false)
+    expect(hasRedisMock).toBe(false)
   });
 
   test('should validate environment has real monitoring configuration', () => {

@@ -36,11 +36,12 @@ export async function GET(req: NextRequest) {
     // Get rate limit information
     const rateLimitInfo = azureEmbeddingMetrics.getRateLimitInfo();
     
-    // Get connection pool information
-    const pools = connectionPoolMonitor.getAllPools().filter(
-      pool => pool.type === 'api' && pool.id.includes('azure')
-    );
-    const poolsSummary = connectionPoolMonitor.getHealthSummary();
+    // Get connection pool information from the monitor's current API
+    const metrics = connectionPoolMonitor.getAllPoolMetrics();
+    const pools = metrics.filter(m => m.pool_name.toLowerCase().includes('azure'));
+    const overview = connectionPoolMonitor.getSystemOverview();
+    const overallStatus: 'healthy' | 'warning' | 'critical' =
+      overview.critical_pools > 0 ? 'critical' : (overview.warning_pools > 0 ? 'warning' : 'healthy');
     
     // Check if rate limit is approaching critical
     const isRateLimitCritical = azureEmbeddingMetrics.isRateLimitCritical(80);
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
     // Build response data
     const responseData: any = {
       timestamp: new Date().toISOString(),
-      status: isRateLimitCritical || poolsSummary.overallStatus !== 'healthy' ? 'warning' : 'ok',
+      status: isRateLimitCritical || overallStatus !== 'healthy' ? 'warning' : 'ok',
       service: 'azure_embedding',
     };
     
@@ -65,23 +66,19 @@ export async function GET(req: NextRequest) {
     if (include === 'all' || include === 'pools') {
       responseData.connectionPools = {
         total: pools.length,
-        healthy: pools.filter(p => p.healthStatus === 'healthy').length,
-        warning: pools.filter(p => p.healthStatus === 'warning').length,
-        critical: pools.filter(p => p.healthStatus === 'critical').length,
-        overallStatus: poolsSummary.overallStatus,
+        healthy: pools.filter(p => p.health_status === 'healthy').length,
+        warning: pools.filter(p => p.health_status === 'warning').length,
+        critical: pools.filter(p => p.health_status === 'critical').length,
+        overallStatus,
         pools: pools.map(pool => ({
-          id: pool.id,
-          activeConnections: pool.activeConnections,
-          idleConnections: pool.idleConnections,
-          totalConnections: pool.size,
-          waitingRequests: pool.waitingRequests,
-          utilization: pool.utilizationPercentage,
-          status: pool.healthStatus,
-          lastError: pool.lastError ? {
-            message: pool.lastError.message,
-            time: pool.lastError.time.toISOString(),
-            count: pool.lastError.count
-          } : null
+          id: pool.pool_name,
+          activeConnections: pool.active_connections,
+          idleConnections: pool.idle_connections,
+          totalConnections: pool.total_connections,
+          waitingRequests: pool.waiting_count,
+          utilization: pool.utilization_percent,
+          status: pool.health_status,
+          lastError: null
         }))
       };
     }

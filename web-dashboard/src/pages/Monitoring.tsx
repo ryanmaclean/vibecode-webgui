@@ -11,7 +11,6 @@ import {
   Network,
   RefreshCw,
   Server,
-  Zap,
   TrendingUp,
   TrendingDown,
   Minus,
@@ -22,9 +21,32 @@ import { metricsApi } from '../services/api'
 import { MetricsChart } from '../components/MetricsChart'
 import { formatDistanceToNow } from 'date-fns'
 
+// Define interfaces for our data types
+interface Alert {
+  id: string
+  status: string
+  severity: string
+  summary: string
+  description: string
+  startsAt: string
+}
+
+interface Service {
+  name: string
+  status: string
+  responseTime?: number
+}
+
+interface Event {
+  type: string
+  message: string
+  source: string
+  timestamp: string
+}
+
 export function Monitoring() {
   const [timeRange, setTimeRange] = useState<'1h' | '24h' | '7d' | '30d'>('24h')
-  const [refreshInterval, setRefreshInterval] = useState(30000)
+  const [refreshInterval] = useState(30000)
 
   const { data: systemMetrics, isLoading: loadingSystem } = useQuery({
     queryKey: ['monitoring', 'system'],
@@ -32,7 +54,7 @@ export function Monitoring() {
     refetchInterval: refreshInterval
   })
 
-  const { data: alerts, isLoading: loadingAlerts } = useQuery({
+  const { data: alerts, isLoading: _ } = useQuery({
     queryKey: ['monitoring', 'alerts'],
     queryFn: metricsApi.getAlerts,
     refetchInterval: refreshInterval
@@ -40,13 +62,13 @@ export function Monitoring() {
 
   const { data: performance, isLoading: loadingPerformance } = useQuery({
     queryKey: ['monitoring', 'performance', timeRange],
-    queryFn: () => metricsApi.getPerformanceMetrics(timeRange),
+    queryFn: () => metricsApi.getPerformanceMetrics(),
     refetchInterval: refreshInterval
   })
 
-  const activeAlerts = alerts?.filter(alert => alert.status === 'firing') || []
-  const criticalAlerts = activeAlerts.filter(alert => alert.severity === 'critical')
-  const warningAlerts = activeAlerts.filter(alert => alert.severity === 'warning')
+  const activeAlerts = alerts?.filter((alert: Alert) => alert.status === 'firing') || []
+  const criticalAlerts = activeAlerts.filter((alert: Alert) => alert.severity === 'critical')
+  const warningAlerts = activeAlerts.filter((alert: Alert) => alert.severity === 'warning')
 
   return (
     <div className="space-y-6">
@@ -102,7 +124,7 @@ export function Monitoring() {
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-500">Services Up</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {systemMetrics?.services.filter(s => s.status === 'healthy').length || 0}
+                {systemMetrics?.services.filter((s: Service) => s.status === 'healthy').length || 0}
               </p>
             </div>
           </div>
@@ -125,7 +147,7 @@ export function Monitoring() {
         <div className="card p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Active Alerts</h3>
           <div className="space-y-3">
-            {activeAlerts.slice(0, 5).map((alert) => (
+            {activeAlerts.slice(0, 5).map((alert: Alert) => (
               <div
                 key={alert.id}
                 className={`flex items-center justify-between p-3 rounded-lg border ${
@@ -217,7 +239,7 @@ export function Monitoring() {
                 </div>
               ))
             ) : (
-              systemMetrics?.services.map((service) => (
+              systemMetrics?.services.map((service: Service) => (
                 <div key={service.name} className="flex items-center justify-between">
                   <div className="flex items-center">
                     <Server className="h-4 w-4 text-gray-400 mr-2" />
@@ -301,7 +323,7 @@ export function Monitoring() {
           </button>
         </div>
         <div className="space-y-3">
-          {systemMetrics?.events?.slice(0, 8).map((event, index) => (
+          {systemMetrics?.events?.slice(0, 8).map((event: Event, index: number) => (
             <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
               <div className="flex items-center">
                 <EventIcon type={event.type} />
@@ -337,7 +359,7 @@ function ResourceBar({
   value: number
   total: number
   icon: any
-  color: string
+  color: 'blue' | 'green' | 'purple' | 'orange'
   unit?: string
 }) {
   const percentage = Math.min((value / total) * 100, 100)
@@ -384,6 +406,8 @@ function TrendIcon({ value }: { value: number }) {
 }
 
 function EventIcon({ type }: { type: string }) {
+  type IconType = 'info' | 'warning' | 'error' | 'success';
+  
   const iconMap = {
     info: { icon: Eye, color: 'text-blue-500' },
     warning: { icon: AlertTriangle, color: 'text-yellow-500' },
@@ -391,7 +415,9 @@ function EventIcon({ type }: { type: string }) {
     success: { icon: CheckCircle, color: 'text-green-500' }
   }
 
-  const config = iconMap[type] || iconMap.info
+  // Default to info if type doesn't match any defined types
+  const validType: IconType = (Object.keys(iconMap).includes(type) ? type : 'info') as IconType;
+  const config = iconMap[validType]
   const IconComponent = config.icon
 
   return <IconComponent className={`h-4 w-4 ${config.color}`} />

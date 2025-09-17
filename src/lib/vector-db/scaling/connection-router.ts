@@ -184,9 +184,13 @@ export class VectorDBConnectionRouter {
       // Record metrics
       if (this.enableMetrics) {
         this.metricsCollector.recordQuery(
-          query, 
-          duration, 
-          params.length > 0 ? { params } : undefined
+          query,
+          duration,
+          true,
+          {
+            type: this.queryAnalyzer.analyzeQueryType(query),
+            table: undefined
+          }
         );
       }
       

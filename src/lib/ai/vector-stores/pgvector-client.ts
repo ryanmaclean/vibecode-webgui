@@ -3,9 +3,11 @@
  * Integrates with existing PostgreSQL infrastructure using pgvector extension
  */
 
-<<<<<<< Updated upstream
 import { Pool } from 'pg';
+<<<<<<< HEAD
 import { Pool, PoolClient } from 'pg';
+=======
+>>>>>>> main
 
 export interface PGVectorConfig {
   host: string;
@@ -46,13 +48,15 @@ export interface PGVectorCollectionSchema {
 
 export class PGVectorClient {
   private pool: Pool;
-<<<<<<< Updated upstream
 
   constructor(config: PGVectorConfig) {
+<<<<<<< HEAD
   private config: PGVectorConfig;
 
   constructor(config: PGVectorConfig) {
     this.config = config;
+=======
+>>>>>>> main
     this.pool = new Pool(config);
   }
 
@@ -314,9 +318,11 @@ export class PGVectorClient {
       `;
 
       const result = await client.query(query, values);
-<<<<<<< Updated upstream
       return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;
+<<<<<<< HEAD
       return result.rowCount > 0;
+=======
+>>>>>>> main
     } finally {
       client.release();
     }
@@ -333,9 +339,11 @@ export class PGVectorClient {
         WHERE id = $1
       `, [id]);
 
-<<<<<<< Updated upstream
       return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;
+<<<<<<< HEAD
       return result.rowCount > 0;
+=======
+>>>>>>> main
     } finally {
       client.release();
     }
@@ -352,9 +360,11 @@ export class PGVectorClient {
         WHERE name = $1
       `, [name]);
 
-<<<<<<< Updated upstream
       return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;
+<<<<<<< HEAD
       return result.rowCount > 0;
+=======
+>>>>>>> main
     } finally {
       client.release();
     }
@@ -426,8 +436,22 @@ export class PGVectorClient {
    * Close the connection pool
    */
   async close(): Promise<void> {
-    await this.pool.end();
+    try {
+      if (this.pool && typeof this.pool.end === 'function') {
+        await this.pool.end();
+      }
+    } catch (error) {
+      // Ignore errors during cleanup
+      console.warn('Error closing PGVector client pool:', error);
+    }
   }
+}
+
+/**
+ * Factory function to create a PGVector client instance
+ */
+export function createPGVectorClient(config: PGVectorConfig): PGVectorClient {
+  return new PGVectorClient(config);
 }
 
 /**
@@ -476,9 +500,3 @@ export const COLLECTION_SCHEMAS: Record<string, PGVectorCollectionSchema> = {
   },
 };
 
-/**
- * Factory function to create PGVector client
- */
-export function createPGVectorClient(config: PGVectorConfig): PGVectorClient {
-  return new PGVectorClient(config);
-}
