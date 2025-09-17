@@ -257,6 +257,15 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps --omit=optional
 
+      - name: AI Gateway - Install deps and run Datadog metrics tests
+        run: |
+          if [ -d "services/ai-gateway" ]; then
+            npm --prefix services/ai-gateway ci --legacy-peer-deps --omit=optional
+            npm --prefix services/ai-gateway run test:metrics
+          else
+            echo "services/ai-gateway not found; skipping metrics tests"
+          fi
+
       - name: Setup test environment
         run: |
           echo "DATABASE_URL=postgresql://test:test@localhost:5432/testdb" >> .env.local
@@ -264,6 +273,18 @@ jobs:
           # Disable SWC for tests to avoid binary loading issues
           echo "NEXT_DISABLE_SWC=1" >> .env.local
           echo "NEXT_TELEMETRY_DISABLED=1" >> .env.local
+          
+          # Add Git metadata for Datadog Test Visibility
+          echo "DD_GIT_REPOSITORY_URL=${{ github.server_url }}/${{ github.repository }}" >> .env.local
+          echo "DD_GIT_COMMIT_SHA=${{ github.sha }}" >> .env.local
+          echo "DD_GIT_BRANCH=${{ github.ref_name }}" >> .env.local
+          echo "DD_GIT_COMMIT_MESSAGE=$(git log -1 --pretty=%B)" >> .env.local
+          echo "DD_GIT_COMMIT_AUTHOR_NAME=$(git log -1 --pretty=%an)" >> .env.local
+          echo "DD_GIT_COMMIT_AUTHOR_EMAIL=$(git log -1 --pretty=%ae)" >> .env.local
+          echo "DD_GIT_COMMIT_AUTHOR_DATE=$(git log -1 --pretty=%aI)" >> .env.local
+          echo "DD_GIT_COMMIT_COMMITTER_NAME=$(git log -1 --pretty=%cn)" >> .env.local
+          echo "DD_GIT_COMMIT_COMMITTER_EMAIL=$(git log -1 --pretty=%ce)" >> .env.local
+          echo "DD_GIT_COMMIT_COMMITTER_DATE=$(git log -1 --pretty=%cI)" >> .env.local
 
       - name: Configure Datadog Test Optimization
         if: ${{ env.DD_API_KEY != '' }}
@@ -277,12 +298,22 @@ jobs:
         run: NEXT_DISABLE_SWC=1 npm run test:unit
         env:
           NODE_OPTIONS: ${{ env.DD_TRACE_PACKAGE && format('-r {0}', env.DD_TRACE_PACKAGE) || '' }}
+          DD_GIT_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+          DD_GIT_COMMIT_SHA: ${{ github.sha }}
+          DD_GIT_BRANCH: ${{ github.ref_name }}
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
 
       - name: Run integration tests
         if: matrix.test-type == 'integration'
         run: NEXT_DISABLE_SWC=1 npm run test:integration
         env:
           NODE_OPTIONS: ${{ env.DD_TRACE_PACKAGE && format('-r {0}', env.DD_TRACE_PACKAGE) || '' }}
+          DD_GIT_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+          DD_GIT_COMMIT_SHA: ${{ github.sha }}
+          DD_GIT_BRANCH: ${{ github.ref_name }}
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
 
       - name: Upload test coverage
         if: matrix.test-type == 'unit'
@@ -339,6 +370,11 @@ jobs:
         run: |
           echo "Datadog Test Visibility would be configured (languages=js, site=datadoghq.com)."
           echo "Skipping external action to avoid unresolved action lint; gating preserved."
+          
+          # Set Git metadata for Datadog Test Visibility
+          echo "DD_GIT_REPOSITORY_URL=${{ github.server_url }}/${{ github.repository }}" >> $GITHUB_ENV
+          echo "DD_GIT_COMMIT_SHA=${{ github.sha }}" >> $GITHUB_ENV
+          echo "DD_GIT_BRANCH=${{ github.ref_name }}" >> $GITHUB_ENV
         shell: bash
 
       - name: Run Playwright E2E tests
