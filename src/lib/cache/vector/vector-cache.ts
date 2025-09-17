@@ -3,6 +3,11 @@ import { LogCategory } from '../../db/db-types';
 import { getDatabaseMetricsCollector } from '../../db/db-metrics';
 
 // Mock Redis client interface - you would use a real Redis client in production
+interface ScanOptions {
+  match?: string;
+  count?: number;
+}
+
 interface RedisClient {
   get(key: string): Promise<string | null>;
   set(key: string, value: string, flag?: string, expiration?: number): Promise<'OK' | null>;
@@ -13,7 +18,18 @@ interface RedisClient {
   hgetall(key: string): Promise<Record<string, string>>;
   hincrby(key: string, field: string, increment: number): Promise<number>;
   expire(key: string, seconds: number): Promise<number>;
-  scan(cursor: string, options?: any): Promise<[string, string[]]>;
+  scan(cursor: string, options?: ScanOptions): Promise<[string, string[]]>;
+}
+
+// Metadata stored alongside cached vectors
+export interface VectorMetadata {
+  ttl?: number;
+  last_accessed?: string;
+  access_count?: number;
+  volatility?: 'high' | 'low' | 'medium' | string;
+  compressed?: boolean;
+  cached_at?: string;
+  [key: string]: unknown;
 }
 
 /**
@@ -25,7 +41,7 @@ export interface TTLStrategy {
    * @param metadata Vector metadata
    * @returns TTL in seconds
    */
-  calculateTTL(metadata: any): number;
+  calculateTTL(metadata: VectorMetadata): number;
 }
 
 /**
@@ -49,13 +65,13 @@ export class DefaultTTLStrategy implements TTLStrategy {
   /**
    * Calculate TTL based on metadata
    */
-  public calculateTTL(metadata: any): number {
+  public calculateTTL(metadata: VectorMetadata): number {
     if (!metadata) {
       return this.defaultTTL;
     }
     
     // Use explicit ttl if provided
-    if (metadata.ttl && typeof metadata.ttl === 'number') {
+    if (typeof metadata.ttl === 'number') {
       return Math.max(this.minTTL, Math.min(metadata.ttl, this.maxTTL));
     }
     
@@ -77,7 +93,7 @@ export class DefaultTTLStrategy implements TTLStrategy {
     }
     
     // Use frequency to adjust TTL if available
-    if (metadata.access_count && typeof metadata.access_count === 'number') {
+    if (typeof metadata.access_count === 'number') {
       if (metadata.access_count > 100) {
         return this.maxTTL;
       }
@@ -205,7 +221,7 @@ export class VectorCache {
   public async cacheVector(
     id: string,
     vector: number[],
-    metadata: any = {}
+    metadata: VectorMetadata = {}
   ): Promise<void> {
     try {
       const key = this.buildCacheKey(id);
@@ -226,7 +242,7 @@ export class VectorCache {
       );
       
       // Store metadata separately
-      const metadataWithTimestamp = {
+      const metadataWithTimestamp: VectorMetadata = {
         ...metadata,
         cached_at: new Date().toISOString(),
         ttl: ttl,
@@ -245,12 +261,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_set',
           0,
-          {
-            id,
-            dimension: vector.length,
-            ttl,
-            compressed: this.compressionEnabled
-          }
+          true,
+          { type: 'CACHE', table: this.namespace }
         );
       }
     } catch (error) {
@@ -261,8 +273,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_set',
           0,
-          { id, error: true },
-          error as Error
+          false,
+          { type: 'CACHE', table: this.namespace, error: (error as Error).message }
         );
       }
     }
@@ -273,7 +285,7 @@ export class VectorCache {
    */
   public async getVector(id: string): Promise<{
     vector: number[] | null;
-    metadata: any;
+    metadata: VectorMetadata;
     fromCache: boolean;
   }> {
     try {
@@ -306,7 +318,7 @@ export class VectorCache {
         compressedVector;
       
       // Update metadata with access info
-      const updatedMetadata = {
+      const updatedMetadata: VectorMetadata = {
         ...metadata,
         last_accessed: new Date().toISOString(),
         access_count: (metadata.access_count || 0) + 1
@@ -323,12 +335,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_get',
           duration,
-          {
-            id,
-            dimension: vector.length,
-            hit: true,
-            compressed: metadata.compressed
-          }
+          true,
+          { type: 'CACHE', table: this.namespace }
         );
       }
       
@@ -345,8 +353,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_get',
           0,
-          { id, error: true },
-          error as Error
+          false,
+          { type: 'CACHE', table: this.namespace, error: (error as Error).message }
         );
       }
       
@@ -361,7 +369,7 @@ export class VectorCache {
   /**
    * Update vector metadata without changing the vector itself
    */
-  private async updateVectorMetadata(id: string, metadata: any): Promise<void> {
+  private async updateVectorMetadata(id: string, metadata: VectorMetadata): Promise<void> {
     try {
       const metaKey = this.buildMetadataKey(id);
       
@@ -411,7 +419,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_invalidate',
           0,
-          { id, deleted }
+          true,
+          { type: 'CACHE', table: this.namespace }
         );
       }
       
@@ -424,8 +433,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_invalidate',
           0,
-          { id, error: true },
-          error as Error
+          false,
+          { type: 'CACHE', table: this.namespace, error: (error as Error).message }
         );
       }
       
@@ -459,7 +468,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_invalidate_collection',
           0,
-          { collectionId, count: deleted }
+          true,
+          { type: 'CACHE', table: this.namespace }
         );
       }
       
@@ -474,8 +484,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_invalidate_collection',
           0,
-          { collectionId, error: true },
-          error as Error
+          false,
+          { type: 'CACHE', table: this.namespace, error: (error as Error).message }
         );
       }
       
@@ -592,10 +602,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_revalidation',
           0,
-          {
-            keysProcessed,
-            keysInvalidated
-          }
+          true,
+          { type: 'CACHE', table: this.namespace }
         );
       }
     } catch (error) {
@@ -606,8 +614,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_revalidation',
           0,
-          { error: true },
-          error as Error
+          false,
+          { type: 'CACHE', table: this.namespace, error: (error as Error).message }
         );
       }
     }
@@ -701,7 +709,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_clear',
           0,
-          { count: deleted }
+          true,
+          { type: 'CACHE', table: this.namespace }
         );
       }
       
@@ -714,8 +723,8 @@ export class VectorCache {
         this.metricsCollector.recordQuery(
           'vector_cache_clear',
           0,
-          { error: true },
-          error as Error
+          false,
+          { type: 'CACHE', table: this.namespace, error: (error as Error).message }
         );
       }
       

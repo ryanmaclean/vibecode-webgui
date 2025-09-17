@@ -170,7 +170,7 @@ export class AzurePostgresConnection {
         throw this.errorHandler.handleError(
           error instanceof Error ? error : new Error(String(error)),
           'getClient',
-          VectorDbErrorType.CONNECTION,
+          VectorDbErrorType.CONNECTION_FAILED,
           true
         );
       }
@@ -180,7 +180,7 @@ export class AzurePostgresConnection {
       throw this.errorHandler.handleError(
         new Error('Pool is not initialized'),
         'getClient',
-        VectorDbErrorType.CONNECTION,
+        VectorDbErrorType.CONNECTION_FAILED,
         true
       );
     }
@@ -209,7 +209,7 @@ export class AzurePostgresConnection {
       throw this.errorHandler.handleError(
         error instanceof Error ? error : new Error(String(error)),
         'getClient',
-        VectorDbErrorType.CONNECTION,
+        VectorDbErrorType.CONNECTION_FAILED,
         true
       );
     }

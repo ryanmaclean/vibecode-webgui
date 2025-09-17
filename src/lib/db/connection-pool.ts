@@ -248,16 +248,12 @@ export class ConnectionPool {
     // Record metrics if collector is available
     const collector = getDatabaseMetricsCollector();
     if (collector) {
-      // Record a custom query with pool metrics
+      // Record a simple marker for pool metrics update
       collector.recordQuery(
-        `CONNECTION_POOL_METRICS`, 
-        0, 
-        { 
-          size: this.metrics.size,
-          inUse: this.metrics.inUse,
-          available: this.metrics.available,
-          utilization: this.metrics.utilization
-        }
+        `CONNECTION_POOL_METRICS`,
+        0,
+        true,
+        { type: 'POOL', table: 'connection-pool' }
       );
     }
   }

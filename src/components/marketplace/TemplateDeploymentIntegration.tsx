@@ -52,24 +52,29 @@ export function TemplateDeploymentIntegration({
       dependencies: template.dependencies || {},
       devDependencies: {},
       scripts: template.scripts || {},
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
       envVars: template.envVars?.map(v => ({ name: v.name, value: v.defaultValue || '', description: v.description })) || [],
+=======
+>>>>>>> main
       envVars: (template.envVars || []).map(env => ({
         name: env.name,
         value: env.defaultValue || '',
         description: env.description
       })),
+<<<<<<< HEAD
 <<<<<<< Updated upstream
       envVars: template.envVars || [],
+=======
+>>>>>>> main
       setupInstructions: [
         'npm install',
         'npm run dev'
       ],
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       documentation: {
+<<<<<<< HEAD
 <<<<<<< Updated upstream
         readme: 'Template documentation',
         setup: template.documentation?.setup?.join('\n') || 'Setup instructions',
@@ -87,6 +92,13 @@ export function TemplateDeploymentIntegration({
         readme: 'Template documentation',
         setup: 'Setup instructions',
         deployment: 'Deployment guide'
+=======
+        readme: `# ${template.name}
+
+${template.description}`,
+        setup: Array.isArray(template.documentation?.setup) ? template.documentation.setup.join('\n') : 'Setup instructions',
+        deployment: Array.isArray(template.documentation?.deployment) ? template.documentation.deployment.join('\n') : 'Deployment guide'
+>>>>>>> main
       },
       createdAt: new Date(),
       estimatedTime: 15,
@@ -111,9 +123,11 @@ export function TemplateDeploymentIntegration({
   }
 
   const renderStars = (rating: number, size = 4) => {
-<<<<<<< Updated upstream
     const stars: React.ReactNode[] = []
+<<<<<<< HEAD
     const stars = []
+=======
+>>>>>>> main
     const fullStars = Math.floor(rating)
     const hasHalfStar = rating % 1 >= 0.5
 
@@ -424,6 +438,8 @@ export function TemplateDeploymentIntegration({
       </div>
     </div>
   )
-<<<<<<< Updated upstream
 }
+<<<<<<< HEAD
 }
+=======
+>>>>>>> main

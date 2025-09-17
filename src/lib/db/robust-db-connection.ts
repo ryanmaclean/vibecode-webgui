@@ -21,6 +21,9 @@ interface RobustConnectionConfig {
   poolKey?: string;
   enableLogging?: boolean;
   timeout?: number;
+  // Optional retry settings accepted for compatibility; not currently used internally
+  maxRetries?: number;
+  retryDelay?: number;
 }
 
 // Connection result interface

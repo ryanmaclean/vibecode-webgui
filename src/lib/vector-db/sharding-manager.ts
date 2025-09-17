@@ -1,4 +1,4 @@
-import { Pool, PoolClient, QueryResult } from 'pg';
+import type { QueryResult } from 'pg';
 import { 
   ShardInfo, 
   ShardStatus, 
@@ -13,6 +13,7 @@ import {
 } from './types';
 import { ConsistentHashRing } from './consistent-hash-ring';
 import { QueryAnalyzer } from './query-analyzer';
+import { DatabasePool, DatabasePoolClient, DatabasePoolFactory, DefaultDatabasePoolFactory } from './connection-router';
 // Use a simple logger implementation as fallback
 const createLogger = (name: string) => ({
   info: (message: string, ...args: any[]) => console.log(`[${name}] INFO: ${message}`, ...args),
@@ -41,42 +42,45 @@ export class VectorShardingManager {
   private readonly consistentHashRing: ConsistentHashRing;
   private readonly queryAnalyzer: QueryAnalyzer;
   private readonly config: ShardingConfig;
-  private readonly shardPools: Map<string, Pool>;
+  private readonly shardPools: Map<string, DatabasePool>;
   private readonly shardStats: Map<string, ShardStats>;
   // Map to track which shards contain which vector IDs
   private readonly vectorIdToShardMap: Map<string, Set<string>> = new Map();
   private initialized: boolean = false;
   private readonly initPromise: Promise<void>;
+  private readonly poolFactory: DatabasePoolFactory;
 
   /**
    * Creates a new VectorShardingManager
    * @param config Configuration for the sharding system
+   * @param poolFactory Factory for creating database pools (optional, uses default if not provided)
    */
-  constructor(config: Partial<ShardingConfig> = {}) {
+  constructor(config: Partial<ShardingConfig> = {}, poolFactory: DatabasePoolFactory = new DefaultDatabasePoolFactory()) {
     this.config = { ...DEFAULT_CONFIG, ...config };
+    this.poolFactory = poolFactory;
     this.consistentHashRing = new ConsistentHashRing(
       this.config.shards,
       this.config.virtualNodeCount
     );
     this.queryAnalyzer = new QueryAnalyzer();
-    this.shardPools = new Map<string, Pool>();
+    this.shardPools = new Map<string, DatabasePool>();
     this.shardStats = new Map<string, ShardStats>();
     this.vectorIdToShardMap = new Map<string, Set<string>>();
     
     // Initialize shard connections and pools
-    this.initPromise = this.initialize();
+    this.initPromise = this.initialize(poolFactory);
   }
 
   /**
    * Initializes the sharding manager, connecting to all shards
    */
-  private async initialize(): Promise<void> {
+  private async initialize(poolFactory: DatabasePoolFactory): Promise<void> {
     try {
       this.logger.info(`Initializing VectorShardingManager with ${this.config.shards.length} shards`);
       
       // Create connection pools for each shard
       for (const shard of this.config.shards) {
-        await this.initializeShard(shard);
+        await this.initializeShard(shard, poolFactory);
       }
       
       // Initialize stats for each shard
@@ -104,13 +108,14 @@ export class VectorShardingManager {
   /**
    * Initializes a single shard
    * @param shard The shard to initialize
+   * @param poolFactory Factory for creating database pools
    */
-  private async initializeShard(shard: ShardInfo): Promise<void> {
+  private async initializeShard(shard: ShardInfo, poolFactory: DatabasePoolFactory): Promise<void> {
     try {
       this.logger.info(`Initializing shard ${shard.id}`);
       
-      // Create a connection pool for this shard
-      const pool = new Pool({
+      // Create a connection pool for this shard using the factory
+      const pool = poolFactory.createPool({
         host: shard.host,
         port: shard.port,
         database: shard.database,
@@ -157,7 +162,7 @@ export class VectorShardingManager {
    * @param shardId The ID of the shard
    * @returns A client from the connection pool
    */
-  private async getShardClient(shardId: string): Promise<PoolClient> {
+  private async getShardClient(shardId: string): Promise<DatabasePoolClient> {
     await this.ensureInitialized();
     
     const pool = this.shardPools.get(shardId);
@@ -178,7 +183,7 @@ export class VectorShardingManager {
     this.logger.info(`Adding shard ${shard.id}`);
     
     // Initialize the new shard
-    await this.initializeShard(shard);
+    await this.initializeShard(shard, this.poolFactory);
     
     // Add to the consistent hash ring
     this.consistentHashRing.addShard(shard);

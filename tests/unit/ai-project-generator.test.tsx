@@ -17,8 +17,14 @@ const mockProjectGenerator = ({ onComplete, initialPrompt, autoStart }: any) => 
     setTimeout(() => {
       setIsGenerating(false)
       onComplete?.({
-        workspaceId: 'ai-project-123',
-        projectName: 'test-project'
+        workspaceUrl: '/workspace/ai-project-123',
+        projectStructure: {
+          name: 'test-project',
+          description: 'Test project description', 
+          language: 'JavaScript',
+          framework: 'React',
+          files: []
+        }
       })
     }, 100)
   }
@@ -67,9 +73,39 @@ jest.mock('next/navigation', () => ({
   }),
 }))
 
+// Mock fetch
+global.fetch = jest.fn().mockImplementation(() => {
+  return Promise.resolve({
+    ok: true,
+    json: jest.fn().mockImplementation(() => {
+      return Promise.resolve({
+        success: true,
+        workspaceUrl: '/workspace/ai-project-123',
+        projectStructure: {
+          name: 'test-project',
+          description: 'Test project description',
+          language: 'JavaScript',
+          framework: 'React',
+          files: [],
+          fileCount: 0
+        }
+      })
+    }),
+  })
+})
+
+const mockSession = {
+  user: {
+    id: 'test-user-id',
+    email: 'test@example.com',
+    name: 'Test User'
+  }
+}
+
 describe('AIProjectGenerator Component', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockPush.mockClear()
   })
 
   it('renders the component with title and description', () => {
@@ -96,7 +132,7 @@ describe('AIProjectGenerator Component', () => {
 
   it('handles project generation completion', async () => {
     render(
-      <SessionProvider session={null}>
+      <SessionProvider session={mockSession}>
         <AIProjectGenerator />
       </SessionProvider>
     )
@@ -118,7 +154,7 @@ describe('AIProjectGenerator Component', () => {
 
   it('handles initial prompt and auto-start', () => {
     render(
-      <SessionProvider session={null}>
+      <SessionProvider session={mockSession}>
         <AIProjectGenerator initialPrompt="Create a blog" autoStart={true} />
       </SessionProvider>
     )

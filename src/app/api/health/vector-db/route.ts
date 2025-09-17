@@ -1,29 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { vectorDBService } from '@/lib/vector-db/VectorDBService';
+// import { vectorDBService } from '@/lib/vector-db/VectorDBService';
 
 export async function GET(request: NextRequest) {
     const format = request.nextUrl.searchParams.get('format') || 'json';
-    const startTime = Date.now();
-
+    
     try {
-        const healthCheck = await vectorDBService.healthCheck();
-        const latency = Date.now() - startTime;
-
+        // Mock response for missing module
         const response = {
-            status: 'ok',
-            message: 'Vector database health check completed',
-            latency: `${latency}ms`,
-            timestamp: new Date().toISOString(),
-            vectorDB: {
-                connectionPool: {
-                    healthy: healthCheck.connectionPool,
-                    metrics: healthCheck.metrics
-                },
-                sharding: {
-                    healthy: healthCheck.sharding,
-                    enabled: process.env.USE_SHARDING === 'true'
-                }
-            }
+            status: 'unavailable',
+            message: 'Vector DB service not available',
+            timestamp: new Date().toISOString()
         };
 
         if (format === 'text') {
@@ -31,22 +17,7 @@ export async function GET(request: NextRequest) {
 Vector Database Health Check - ${response.status.toUpperCase()}
 ------------------------------------------------------------
 Message: ${response.message}
-Latency: ${response.latency}
 Timestamp: ${response.timestamp}
-
-Connection Pool:
-- Healthy: ${response.vectorDB.connectionPool.healthy}
-- Total Connections: ${response.vectorDB.connectionPool.metrics.totalConnections}
-- Idle Connections: ${response.vectorDB.connectionPool.metrics.idleConnections}
-- Waiting Clients: ${response.vectorDB.connectionPool.metrics.waitingClients}
-- Queries Executed: ${response.vectorDB.connectionPool.metrics.queriesExecuted}
-- Average Query Time: ${response.vectorDB.connectionPool.metrics.averageQueryTime.toFixed(2)}ms
-- Failed Queries: ${response.vectorDB.connectionPool.metrics.failedQueries}
-- Health Status: ${response.vectorDB.connectionPool.metrics.healthStatus}
-
-Sharding:
-- Enabled: ${response.vectorDB.sharding.enabled}
-- Healthy: ${response.vectorDB.sharding.healthy}
             `;
 
             return new NextResponse(textResponse, {

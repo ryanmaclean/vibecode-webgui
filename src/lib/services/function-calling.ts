@@ -2,9 +2,11 @@ export interface FunctionDefinition {
   name: string
   description: string
   parameters: {
-<<<<<<< Updated upstream
     type: string  // Changed from string literal 'object' to string to allow more flexibility
+<<<<<<< HEAD
     type: 'object'
+=======
+>>>>>>> main
     properties: Record<string, {
       type: string
       description: string
@@ -323,7 +325,7 @@ export class FunctionCallingService {
           // Cleanup
           await fs.rm(tempDir, { recursive: true, force: true })
           
-          resolve({
+          const result: FunctionResult = {
             success: code === 0,
             result: {
               stdout: stdout.trim(),
@@ -334,7 +336,14 @@ export class FunctionCallingService {
               language: args.language,
               executionTime: Date.now()
             }
-          })
+          }
+          
+          // Add error property if the execution failed
+          if (code !== 0) {
+            result.error = stderr.trim() || 'Execution failed with non-zero exit code';
+          }
+          
+          resolve(result)
         })
 
         child.on('error', async (error) => {
@@ -362,14 +371,16 @@ export class FunctionCallingService {
       const targetDir = path.join(workspaceDir, args.path || '')
 
       const files = await fs.readdir(targetDir, { withFileTypes: true })
-<<<<<<< Updated upstream
       const fileList: Array<{
         name: string;
         type: string;
         size: number;
         modified: Date;
       }> = [];
+<<<<<<< HEAD
       const fileList = []
+=======
+>>>>>>> main
 
       for (const file of files) {
         const stat = await fs.stat(path.join(targetDir, file.name))
@@ -487,9 +498,11 @@ export class FunctionCallingService {
 export const functionCallingService = new FunctionCallingService()
 
 // Store function definitions separately for registration
-<<<<<<< Updated upstream
 const functionDefinitions: FunctionDefinition[] = [
+<<<<<<< HEAD
 const functionDefinitions = [
+=======
+>>>>>>> main
   {
     name: 'web_search',
     description: 'Search the web for current information on a given topic',

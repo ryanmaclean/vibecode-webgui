@@ -11,28 +11,99 @@
 
 import { Client, ClientConfig } from 'pg';
 import { DefaultAzureCredential } from '@azure/identity';
-import { setTimeout } from 'timers/promises';
 import { parseArgs } from 'node:util';
 
-// Parse command line arguments
-const { values } = parseArgs({
-  options: {
-    host: { type: 'string', default: process.env.POSTGRES_HOST || 'localhost' },
-    database: { type: 'string', default: process.env.POSTGRES_DATABASE || 'vibecode' },
-    port: { type: 'string', default: process.env.POSTGRES_PORT || '5432' },
-    user: { type: 'string', default: process.env.POSTGRES_USER || 'postgres' },
-    password: { type: 'string', default: process.env.POSTGRES_PASSWORD },
-    'managed-identity': { type: 'boolean', default: process.env.USE_MANAGED_IDENTITY === 'true' },
-    'table-name': { type: 'string', default: 'rag_chunks' },
-    'column-name': { type: 'string', default: 'embedding' },
-    'target-index-type': { type: 'string', default: 'hnsw' },
-    'dry-run': { type: 'boolean', default: process.env.DRY_RUN === 'true' },
-    verbose: { type: 'boolean', default: process.env.VERBOSE === 'true' }
+// Strong types for script configuration and query results
+type TargetIndexType = 'hnsw' | 'ivfflat';
+
+interface Values {
+  host: string;
+  database: string;
+  port: string;
+  user: string;
+  password?: string;
+  'managed-identity': boolean;
+  'table-name': string;
+  'column-name': string;
+  'target-index-type': TargetIndexType;
+  'dry-run': boolean;
+  verbose: boolean;
+}
+
+interface Config {
+  host: string;
+  database: string;
+  port: number;
+  user: string;
+  password?: string;
+  useManagedIdentity: boolean;
+  tableName: string;
+  columnName: string;
+  targetIndexType: TargetIndexType;
+  dryRun: boolean;
+  verbose: boolean;
+}
+
+interface IndexConfig {
+  createSql: (tableName: string, columnName: string, indexName: string) => string;
+  description: string;
+  pros: string;
+  cons: string;
+}
+
+interface IndexInfo {
+  indexname: string;
+  indexdef: string;
+}
+
+interface IndexUsageStats {
+  idx_scan: number;
+  idx_tup_read: number;
+  idx_tup_fetch: number;
+}
+
+// Build argument values. Avoid parsing CLI flags during tests or when imported.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const isMain = (require as any)?.main === module;
+const isJest = !!process.env.JEST_WORKER_ID;
+const values = (() => {
+  if (isMain && !isJest) {
+    const parsed = parseArgs({
+      options: {
+        host: { type: 'string', default: process.env.POSTGRES_HOST || 'localhost' },
+        database: { type: 'string', default: process.env.POSTGRES_DATABASE || 'vibecode' },
+        port: { type: 'string', default: process.env.POSTGRES_PORT || '5432' },
+        user: { type: 'string', default: process.env.POSTGRES_USER || 'postgres' },
+        password: { type: 'string', default: process.env.POSTGRES_PASSWORD },
+        'managed-identity': { type: 'boolean', default: process.env.USE_MANAGED_IDENTITY === 'true' },
+        'table-name': { type: 'string', default: 'rag_chunks' },
+        'column-name': { type: 'string', default: 'embedding' },
+        'target-index-type': { type: 'string', default: 'hnsw' },
+        'dry-run': { type: 'boolean', default: process.env.DRY_RUN === 'true' },
+        verbose: { type: 'boolean', default: process.env.VERBOSE === 'true' }
+      },
+      allowPositionals: true,
+    });
+    return parsed.values as Values;
   }
-});
+  // Defaults for tests/imports
+  return {
+    host: process.env.POSTGRES_HOST || 'localhost',
+    database: process.env.POSTGRES_DATABASE || 'vibecode',
+    port: process.env.POSTGRES_PORT || '5432',
+    user: process.env.POSTGRES_USER || 'postgres',
+    password: process.env.POSTGRES_PASSWORD,
+    'managed-identity': process.env.USE_MANAGED_IDENTITY === 'true',
+    'table-name': 'rag_chunks',
+    'column-name': 'embedding',
+    'target-index-type': 'hnsw',
+    'dry-run': process.env.DRY_RUN === 'true',
+    verbose: process.env.VERBOSE === 'true',
+  } as Values;
+})();
 
 // Configuration
-const config = {
+const config: Config = {
   host: values.host,
   database: values.database,
   port: parseInt(values.port),
@@ -47,7 +118,7 @@ const config = {
 };
 
 // Index configurations
-const indexConfigs = {
+const indexConfigs: Record<TargetIndexType, IndexConfig> = {
   hnsw: {
     createSql: (tableName, columnName, indexName) =>
       `CREATE INDEX CONCURRENTLY ${indexName} ON ${tableName} 
@@ -120,11 +191,9 @@ async function checkPgVectorExtension(client: Client): Promise<boolean> {
 /**
  * Find existing vector indexes on the table
  */
-async function findExistingVectorIndexes(client: Client): Promise<any[]> {
+async function findExistingVectorIndexes(client: Client): Promise<IndexInfo[]> {
   const result = await client.query(`
-    SELECT indexname, indexdef 
-    FROM pg_indexes 
-    WHERE tablename = $1
+    SELECT indexname, indexdef FROM pg_indexes WHERE tablename = $1
       AND indexdef LIKE '%' || $2 || '%'
       AND (indexdef LIKE '%vector_cosine_ops%' OR 
            indexdef LIKE '%vector_ip_ops%' OR 
@@ -168,70 +237,13 @@ async function createShadowIndex(client: Client): Promise<string> {
   );
   
   log(`SQL: ${createIndexSql}`, true);
-  
-  // Check index build progress using pg_stat_progress_create_index in a separate client
-  const monitorClient = await getClient();
-  await monitorClient.connect();
-  
-  // Start index creation
-  const indexPromise = client.query(createIndexSql);
-  
-  // Monitor progress
-  let monitoringActive = true;
-  
-  const monitorProgress = async () => {
-    while (monitoringActive) {
-      try {
-        const progressResult = await monitorClient.query(`
-          SELECT
-            pid,
-            phase,
-            lockers_total,
-            lockers_done,
-            blocks_total,
-            blocks_done,
-            tuples_total,
-            tuples_done,
-            round(100.0 * blocks_done / nullif(blocks_total, 0), 2) AS blocks_percent,
-            round(100.0 * tuples_done / nullif(tuples_total, 0), 2) AS tuples_percent
-          FROM pg_stat_progress_create_index
-          WHERE index_relid = (
-            SELECT c.relfilenode
-            FROM pg_class c
-            JOIN pg_namespace n ON n.oid = c.relnamespace
-            WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname != 'information_schema'
-            ORDER BY c.relfilenode DESC
-            LIMIT 1
-          )
-        `);
-        
-        if (progressResult.rows.length > 0) {
-          const progress = progressResult.rows[0];
-          log(`Index build progress: Phase ${progress.phase} | Blocks: ${progress.blocks_percent}% | Tuples: ${progress.tuples_percent}%`);
-        }
-      } catch (err) {
-        log(`Error monitoring index progress: ${err}`, true);
-      }
-      
-      await setTimeout(5000); // Check every 5 seconds
-    }
-  };
-  
-  // Start monitoring in background
-  const monitorPromise = monitorProgress();
-  
-  // Wait for index creation to complete
+
   try {
-    await indexPromise;
+    await client.query(createIndexSql);
     log(`✅ Shadow index created successfully: ${shadowIndexName}`);
   } catch (err) {
     log(`❌ Error creating shadow index: ${err}`);
     throw err;
-  } finally {
-    // Stop monitoring
-    monitoringActive = false;
-    await monitorPromise;
-    await monitorClient.end();
   }
   
   return shadowIndexName;
@@ -255,7 +267,7 @@ async function analyzeIndex(client: Client, indexName: string): Promise<void> {
 /**
  * Get index usage statistics
  */
-async function getIndexUsageStats(client: Client, indexName: string): Promise<any> {
+async function getIndexUsageStats(client: Client, indexName: string): Promise<IndexUsageStats> {
   const result = await client.query(`
     SELECT
       idx_scan,
@@ -265,7 +277,7 @@ async function getIndexUsageStats(client: Client, indexName: string): Promise<an
     WHERE indexrelname = $1
   `, [indexName]);
   
-  return result.rows.length > 0 ? result.rows[0] : { idx_scan: 0, idx_tup_read: 0, idx_tup_fetch: 0 };
+  return result.rows.length > 0 ? (result.rows[0] as IndexUsageStats) : { idx_scan: 0, idx_tup_read: 0, idx_tup_fetch: 0 };
 }
 
 /**
@@ -425,5 +437,24 @@ async function migrateVectorIndex(): Promise<void> {
   }
 }
 
-// Run the migration
-migrateVectorIndex().catch(console.error);
+// Export for programmatic usage (tests, tooling)
+export {
+  getClient,
+  checkPgVectorExtension,
+  findExistingVectorIndexes,
+  getIndexTypeFromDefinition,
+  createShadowIndex,
+  analyzeIndex,
+  swapIndexes,
+  setSearchPath,
+  migrateVectorIndex,
+  config,
+};
+
+// Only execute when run directly (prevents running during tests)
+if ((require as any)?.main === module) {
+  migrateVectorIndex().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

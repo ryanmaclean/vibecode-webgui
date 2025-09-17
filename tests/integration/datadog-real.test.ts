@@ -4,6 +4,14 @@
  * Only runs when ENABLE_DATADOG_INTEGRATION_TESTS=true
  */
 
+
+jest.unmock('node-fetch');
+// @ts-ignore
+global.fetch = require('node-fetch');
+
+import fetch from 'node-fetch';
+global.fetch = fetch as any;
+
 import { describe, test, expect, beforeAll } from '@jest/globals'
 
 // Only run these tests when explicitly enabled with real API key
@@ -210,7 +218,7 @@ conditionalDescribe('Real Datadog Integration Tests', () => {
 
   describe('Health Check Integration', () => {
     test('should validate health check endpoint with real Datadog API', async () => {
-      const response = await fetch('/api/monitoring/health', {
+      const response = await fetch('http://localhost:3000/api/monitoring/health', {
         headers: {
           'Authorization': 'Bearer admin-token' // Mock admin auth
         }

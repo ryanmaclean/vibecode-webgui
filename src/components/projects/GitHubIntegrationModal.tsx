@@ -64,11 +64,12 @@ export function GitHubIntegrationModal({
       setIsConnecting(false)
       setIsCreating(false)
       setShowToken(false)
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       setIntegration(null)
+<<<<<<< HEAD
       githubIntegration.current = null
       setIntegration(null)
+=======
+>>>>>>> main
     }
   }, [isOpen])
 
@@ -82,15 +83,21 @@ export function GitHubIntegrationModal({
     setError(null)
 
     try {
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
       const integration = new GitHubIntegration(accessToken.trim())
       const user = await integration.initialize()
+=======
+      const integrationInstance = new GitHubIntegration(accessToken.trim())
+      const user = await integrationInstance.initialize()
+>>>>>>> main
       
-      githubIntegration.current = integration
+      githubIntegration.current = integrationInstance
       setGitHubUser(user)
       setSuccess('Successfully connected to GitHub!')
+<<<<<<< HEAD
 <<<<<<< Updated upstream
       const newIntegration = new GitHubIntegration(accessToken, 'owner')
       const user = await newIntegration.initialize()
@@ -101,6 +108,9 @@ export function GitHubIntegrationModal({
       setIntegration(newIntegration)
       setFolderHubUser(user)
       setSuccess('Successfully connected to FolderHub!')
+=======
+      setIntegration(integrationInstance)
+>>>>>>> main
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to connect to GitHub')
     } finally {
@@ -109,6 +119,7 @@ export function GitHubIntegrationModal({
   }
 
   const handleCreateRepository = async () => {
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
@@ -117,6 +128,9 @@ export function GitHubIntegrationModal({
     if (!integration) {
       setError('Not connected to FolderHub')
     if (!githubIntegration.current) {
+=======
+    if (!integration) {
+>>>>>>> main
       setError('Not connected to GitHub')
       return
     }
@@ -126,11 +140,12 @@ export function GitHubIntegrationModal({
 
     try {
       // Check if repository name is available
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       const isAvailable = await integration.isRepositoryNameAvailable(repoSettings.name)
+<<<<<<< HEAD
       const isAvailable = await githubIntegration.current.isRepositoryNameAvailable(repoSettings.name)
       const isAvailable = await integration.isRepositoryNameAvailable(repoSettings.name)
+=======
+>>>>>>> main
       if (!isAvailable) {
         setError(`Repository name "${repoSettings.name}" is already taken`)
         setIsCreating(false)
@@ -138,21 +153,23 @@ export function GitHubIntegrationModal({
       }
 
       // Create repository from generated project
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
       const result = await integration.createRepositoryFromProject(
+<<<<<<< HEAD
       const result = await githubIntegration.current.createRepositoryFromProject(
       const result = await integration.createRepositoryFromProject(
+=======
+>>>>>>> main
         generatedProject,
         {
           private: repoSettings.private,
           description: repoSettings.description,
           licenseTemplate: repoSettings.licenseTemplate
         }
-      )
+      );
 
       // Add GitHub Actions workflow if requested
       if (repoSettings.addWorkflow) {
+<<<<<<< HEAD
         const { generateGitHubActionsWorkflow } = await import('@/lib/github/integration')
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
@@ -161,10 +178,15 @@ export function GitHubIntegrationModal({
         const workflow = generateGitHubActionsWorkflow(
         const workflowContent = generateGitHubActionsWorkflow(
         const workflow = generateGitHubActionsWorkflow(
+=======
+        const { generateGitHubActionsWorkflow } = await import('@/lib/github/integration');
+        const workflow = generateGitHubActionsWorkflow(
+>>>>>>> main
           'node', // Default to node for most projects
           'typescript' // Default to TypeScript
-        )
+        );
         
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
@@ -177,11 +199,17 @@ export function GitHubIntegrationModal({
           result.repository.name,
           'ci',
           workflowContent
+=======
+>>>>>>> main
         await integration.addGitHubActionsWorkflow(
           result.repository.name,
           'ci',
           workflow
+<<<<<<< HEAD
         )
+=======
+        );
+>>>>>>> main
       }
 
       setSuccess(`Repository created successfully! View it at ${result.repository.htmlUrl}`)
@@ -460,3 +488,5 @@ export function GitHubIntegrationModal({
     </div>
   )
 }
+
+export default GitHubIntegrationModal

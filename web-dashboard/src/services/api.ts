@@ -8,9 +8,52 @@ import type {
   ClusterMetrics,
   ModelRecommendation,
   ModelSelectionCriteria,
-  ChatCompletionRequest,
-  ApiError
+  ChatCompletionRequest
+  // ApiError - Not used but might be needed in the future
 } from '../types'
+
+// Simple client-side rate limiter
+class RateLimiter {
+  private requestCounts: Map<string, number[]> = new Map();
+  private readonly limit: number;
+  private readonly windowMs: number;
+
+  constructor(limit: number = 60, windowMs: number = 60000) {
+    this.limit = limit;
+    this.windowMs = windowMs;
+  }
+
+  // Check if the request is allowed based on the endpoint
+  canMakeRequest(endpoint: string): boolean {
+    const now = Date.now();
+    
+    // Get or initialize the timestamps array for this endpoint
+    if (!this.requestCounts.has(endpoint)) {
+      this.requestCounts.set(endpoint, []);
+    }
+    
+    // Filter out timestamps that are outside the current window
+    const timestamps = this.requestCounts.get(endpoint)!.filter(
+      timestamp => now - timestamp < this.windowMs
+    );
+    
+    // Update timestamps for this endpoint
+    this.requestCounts.set(endpoint, timestamps);
+    
+    // Check if we're under the limit
+    return timestamps.length < this.limit;
+  }
+
+  // Record a request to the given endpoint
+  recordRequest(endpoint: string): void {
+    const timestamps = this.requestCounts.get(endpoint) || [];
+    timestamps.push(Date.now());
+    this.requestCounts.set(endpoint, timestamps);
+  }
+}
+
+// Create rate limiter instance
+const rateLimiter = new RateLimiter();
 
 const api = axios.create({
   baseURL: '/api/v1',
@@ -20,30 +63,73 @@ const api = axios.create({
   },
 })
 
-// Request interceptor for auth
+// Function to get CSRF token from meta tag
+const getCsrfToken = (): string | null => {
+  const metaTag = document.querySelector('meta[name="csrf-token"]');
+  return metaTag ? metaTag.getAttribute('content') : null;
+};
+
+// Request interceptor for auth, CSRF protection, and rate limiting
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token')
-  const apiKey = localStorage.getItem('api_key')
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  } else if (apiKey) {
-    config.headers['X-API-Key'] = apiKey
+  // Authentication is handled via HTTP-only cookies
+  
+  // Add CSRF token to headers for non-GET requests
+  if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      config.headers['X-CSRF-Token'] = csrfToken;
+    }
   }
-
-  return config
+  
+  // Apply rate limiting
+  const endpoint = config.url || '';
+  if (!rateLimiter.canMakeRequest(endpoint)) {
+    // If rate limited, reject the request
+    return Promise.reject(new Error('Too many requests. Please try again later.'));
+  }
+  
+  // Record this request for rate limiting
+  rateLimiter.recordRequest(endpoint);
+  
+  return config;
 })
 
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('api_key')
-      window.location.href = '/login'
+    // Rate limiting error from our interceptor
+    if (error.message === 'Too many requests. Please try again later.') {
+      // You could show a toast notification or other UI feedback here
+      console.error('Rate limit exceeded. Please wait before making more requests.');
+      
+      // Return a standardized error response
+      return Promise.reject({
+        response: {
+          status: 429,
+          data: {
+            error: 'Too Many Requests',
+            message: 'Rate limit exceeded. Please try again later.'
+          }
+        }
+      });
     }
-    return Promise.reject(error)
+    
+    // Handle authentication errors
+    if (error.response?.status === 401) {
+      // Prevent open redirect by using a fixed, relative URL
+      const loginPath = '/login';
+      const redirectParams = new URLSearchParams({ session: 'expired' });
+      window.location.href = `${loginPath}?${redirectParams.toString()}`;
+    }
+    
+    // Handle server rate limiting responses (if the server has its own rate limiting)
+    if (error.response?.status === 429) {
+      console.error('Server rate limit exceeded. Please wait before making more requests.');
+      // You could show a toast notification or other UI feedback here
+    }
+    
+    return Promise.reject(error);
   }
 )
 
@@ -248,6 +334,7 @@ export const k8sApi = {
 
   deleteWorkspace: async (workspaceId: string): Promise<{ success: boolean }> => {
     // Mock response - would actually delete K8s resources
+    console.log(`Deleting workspace: ${workspaceId}`);
     return { success: true }
   },
 
@@ -285,6 +372,27 @@ export const k8sApi = {
         status: 'active'
       }
     ]
+  },
+  
+  deleteUser: async (userId: string): Promise<{ success: boolean }> => {
+    // Mock response - would actually delete user
+    console.log(`Deleting user: ${userId}`);
+    return { success: true }
+  },
+  
+  createUser: async (userData: any): Promise<{ success: boolean; user: User }> => {
+    // Mock response - would actually create user
+    const user: User = {
+      id: userData.username,
+      username: userData.username,
+      email: userData.email,
+      role: userData.role || 'user',
+      groups: userData.groups || ['users'],
+      createdAt: new Date().toISOString(),
+      lastActive: new Date().toISOString(),
+      status: 'active'
+    }
+    return { success: true, user }
   }
 }
 
@@ -320,6 +428,26 @@ export const metricsApi = {
 
   getCostMetrics: async (days: number = 7) => {
     const { data } = await axios.get(`/metrics/costs?days=${days}`)
+    return data
+  },
+  
+  getSettings: async () => {
+    const { data } = await axios.get('/settings')
+    return data
+  },
+  
+  updateSettings: async (settings: any) => {
+    const { data } = await axios.put('/settings', settings)
+    return data
+  },
+  
+  getSystemMetrics: async () => {
+    const { data } = await axios.get('/metrics/system')
+    return data
+  },
+  
+  getAlerts: async () => {
+    const { data } = await axios.get('/alerts')
     return data
   }
 }

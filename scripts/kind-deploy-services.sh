@@ -5,7 +5,7 @@ set -e
 echo "🏗️  Deploying VibeCode services to KIND cluster"
 echo "=============================================="
 
-CLUSTER_NAME="vibecode-test"
+CLUSTER_NAME="vibecode-cluster"
 NAMESPACE="vibecode-platform"
 
 # Verify cluster exists and is accessible
@@ -36,14 +36,20 @@ else
 fi
 
 echo ""
-echo "📦 Step 2: Deploying Redis cache..."
-if [ -f "k8s/redis-deployment.yaml" ]; then
+echo "📦 Step 2: Deploying Valkey cache..."
+if [ -f "k8s/valkey-deployment.yaml" ]; then
+    kubectl apply -f k8s/valkey-deployment.yaml
+    echo "⏱️  Waiting for Valkey to be ready (timeout: 1min)..."
+    kubectl wait --for=condition=ready pod -l app=valkey -n "$NAMESPACE" --timeout=60s
+    echo "✅ Valkey is ready"
+elif [ -f "k8s/redis-deployment.yaml" ]; then
+    echo "⚠️  Valkey manifest not found, falling back to Redis"
     kubectl apply -f k8s/redis-deployment.yaml
     echo "⏱️  Waiting for Redis to be ready (timeout: 1min)..."
     kubectl wait --for=condition=ready pod -l app=redis -n "$NAMESPACE" --timeout=60s
     echo "✅ Redis is ready"
 else
-    echo "❌ Redis deployment file not found: k8s/redis-deployment.yaml"
+    echo "❌ Neither Valkey nor Redis deployment files found"
     exit 1
 fi
 
@@ -63,7 +69,7 @@ kind load docker-image vibecode-webgui:latest --name="$CLUSTER_NAME"
 echo "✅ Image loaded successfully"
 
 echo ""
-echo "📦 Step 4: Deploying VibeCode application..."
+echo "📦 Step 4: Deploying VibeCode application (prebuilt image)..."
 if [ -f "k8s/vibecode-deployment.yaml" ]; then
     kubectl apply -f k8s/vibecode-deployment.yaml
     echo "⏱️  Waiting for application to be ready (timeout: 3min)..."

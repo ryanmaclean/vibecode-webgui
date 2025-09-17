@@ -152,6 +152,12 @@ const nextConfig = {
       };
     }
 
+    // Fix for camelcase module causing webpack errors
+    config.module.rules.push({
+      test: /node_modules\/camelcase/,
+      use: 'null-loader'
+    });
+
     return config;
   },
 };

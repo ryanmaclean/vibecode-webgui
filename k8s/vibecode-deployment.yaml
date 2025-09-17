@@ -60,16 +60,8 @@ spec:
             echo "Valkey is ready!"
       containers:
       - name: vibecode-webgui
-        image: node:20-alpine
+        image: vibecode-webgui:latest
         imagePullPolicy: IfNotPresent
-        workingDir: /app
-        command: ["sh", "-c"]
-        args:
-          - |
-            apk add --no-cache git &&
-            git clone https://github.com/ryanmaclean/vibecode-webgui.git . &&
-            npm install &&
-            npm run dev
         ports:
         - containerPort: 3000
         env:
@@ -204,7 +196,7 @@ spec:
               key: NEXTAUTH_SECRET
         startupProbe:
           httpGet:
-            path: /
+            path: /vibecode-webgui/api/health/simple
             port: 3000
             scheme: HTTP
           failureThreshold: 30  # Allow up to 5 minutes for startup (30 * 10s)
@@ -212,7 +204,7 @@ spec:
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
-            path: /api/health/simple
+            path: /vibecode-webgui/api/health/simple
             port: 3000
             scheme: HTTP
           initialDelaySeconds: 5
@@ -222,7 +214,7 @@ spec:
           failureThreshold: 3
         livenessProbe:
           httpGet:
-            path: /api/health/simple
+            path: /vibecode-webgui/api/health/simple
             port: 3000
             scheme: HTTP
           initialDelaySeconds: 30

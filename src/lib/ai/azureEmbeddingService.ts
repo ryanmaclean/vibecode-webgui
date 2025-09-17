@@ -7,7 +7,11 @@
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { DefaultAzureCredential } from '@azure/identity';
+<<<<<<< HEAD
 import { withVectorConnection } from '../db/vector-connection-pool';
+=======
+// Removed nonexistent withVectorConnection; use VectorConnectionPoolFactory directly
+>>>>>>> main
 import { azureEmbeddingMetrics } from '../monitoring/azure-embedding-metrics';
 import { VectorConnectionPool, VectorConnectionPoolFactory } from '../db/vector-connection-pool';
 import { DatadogIntegration } from '../monitoring/datadog-integration';
@@ -532,6 +536,7 @@ export class AzureEmbeddingService {
       };
       
       // Set up headers based on authentication method
+      // eslint-disable-next-line prefer-const
       let headers: Record<string, string> = {
         'Content-Type': 'application/json'
       };
@@ -860,22 +865,30 @@ export class AzureEmbeddingService {
     }
 
     try {
-      // Import the connection pool dynamically to avoid circular dependencies
-      const { getVectorConnectionPool } = await import('../db/vector-connection-pool');
-      const pool = getVectorConnectionPool();
+      // Use the pool factory; lazily create a default pool if needed
+      let pool = VectorConnectionPoolFactory.getPool('default');
+      if (!pool) {
+        pool = VectorConnectionPoolFactory.createPool({
+          host: process.env.DATABASE_HOST || 'localhost',
+          port: parseInt(process.env.DATABASE_PORT || '5432', 10),
+          database: process.env.DATABASE_NAME || 'vibecode',
+          user: process.env.DATABASE_USER || 'postgres',
+          password: process.env.DATABASE_PASSWORD || 'password'
+        }, {}, 'default');
+      }
       const metrics = pool.getMetrics();
 
       // Calculate utilization percentage
-      const utilizationPercentage = metrics.totalConnections > 0 
-        ? (metrics.activeConnections / metrics.totalConnections) * 100 
+      const utilizationPercentage = metrics.poolSize > 0 
+        ? (metrics.activeConnections / metrics.poolSize) * 100 
         : 0;
 
       return {
-        totalConnections: metrics.totalConnections,
+        totalConnections: metrics.poolSize,
         activeConnections: metrics.activeConnections,
-        idleConnections: metrics.idleConnections,
+        idleConnections: metrics.availableConnections,
         utilizationPercentage,
-        waitingRequests: metrics.waitingRequests
+        waitingRequests: metrics.waitingClients
       };
     } catch (error) {
       console.error('Error getting connection pool metrics:', error);
@@ -930,9 +943,7 @@ export class AzureEmbeddingService {
     }
   }
 
-  // ========================================
   // MONITORING AND ALERTING METHODS
-  // ========================================
 
   /**
    * Record an API call for monitoring and metrics
@@ -1113,9 +1124,7 @@ export class AzureEmbeddingService {
     this.recentCalls = this.recentCalls.filter(call => call.timestamp >= oneHourAgo);
   }
 
-  // ========================================
   // PUBLIC MONITORING API
-  // ========================================
 
   /**
    * Get current API usage metrics
