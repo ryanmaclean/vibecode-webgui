@@ -175,7 +175,7 @@ Reference: `docs/src/content/docs/claude-prompt.md` (oldest prompt in repo)
 - [x] AI Gateway metrics: emit error counter metric on controller catch (`vibecode.ai_gateway.error` with `error_class`, `http_status`)
 - [x] AI Gateway metrics: centralize standard tags via helper (ensure `env`, `service`, `version`, `operation`, `model_provider`, `model_family`)
 - [x] Evaluate DogStatsD/histograms for latency/cost percentiles and batching (add optional transport)
-- [ ] Add Datadog apply script to validate/apply AI Gateway dashboards and monitors (gated by DD_API_KEY/DD_APP_KEY) – scripts/apply-ai-gateway-monitoring.ts
+- [x] Add Datadog apply script to validate/apply AI Gateway dashboards and monitors (gated by DD_API_KEY/DD_APP_KEY) – scripts/apply-ai-gateway-monitoring.ts
 - [ ] Add OpenTelemetry correlation to AI Gateway (request_id/trace_id in traces; minimal spans around OpenRouter and HTTP server)
 
 Conclusion: We have not lost the thread—the current push on reliability, monitoring, and real integration tests directly supports the platform’s enterprise-grade goals in the original prompt. The above gaps are concrete, bounded steps to achieve full alignment.
