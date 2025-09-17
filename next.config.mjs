@@ -134,6 +134,16 @@ const nextConfig = {
       net: false,
       tls: false,
       fsevents: false,
+      // OpenTelemetry modules causing static build issues
+      '@opentelemetry/sdk-node': false,
+      '@opentelemetry/auto-instrumentations-node': false,
+      '@opentelemetry/exporter-otlp-http': false,
+      '@opentelemetry/exporter-prometheus': false,
+      '@opentelemetry/resources': false,
+      '@opentelemetry/semantic-conventions': false,
+      '@opentelemetry/core': false,
+      '@opentelemetry/api': false,
+      '@opentelemetry/instrumentation': false,
     };
 
     // Explicitly handle path aliases
@@ -151,6 +161,28 @@ const nextConfig = {
         redis: false,
       };
     }
+
+    // Exclude OpenTelemetry modules from bundling entirely
+    config.externals = config.externals || [];
+    if (Array.isArray(config.externals)) {
+      config.externals.push(
+        '@opentelemetry/sdk-node',
+        '@opentelemetry/auto-instrumentations-node',
+        '@opentelemetry/exporter-otlp-http',
+        '@opentelemetry/exporter-prometheus',
+        '@opentelemetry/resources',
+        '@opentelemetry/semantic-conventions',
+        '@opentelemetry/core',
+        '@opentelemetry/api',
+        '@opentelemetry/instrumentation'
+      );
+    }
+
+    // Fix for camelcase module causing webpack errors
+    config.module.rules.push({
+      test: /node_modules\/camelcase/,
+      use: 'null-loader'
+    });
 
     return config;
   },
