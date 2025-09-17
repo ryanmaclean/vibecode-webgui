@@ -9,7 +9,7 @@
 
 import * as chokidar from 'chokidar'
 import { EventEmitter } from 'events'
-import path from 'path'
+import * as path from 'path'
 
 // Minimal utilities to avoid lodash dependency
 type Debounced<T extends (...args: any[]) => void> = ((...args: Parameters<T>) => void) & { flush: () => void; cancel: () => void }

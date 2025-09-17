@@ -547,20 +547,24 @@ describe('File Operations Integration Tests', () => {
 
         await fastWatcher.start()
 
-        // Create file
-        await fileOps.createFile(filePath, 'initial content');
+        // Create file using real file system (not SecureFileSystemOperations)
+        // since OptimizedFileWatcher watches the actual file system
+        const fs = require('fs').promises;
+        await fs.writeFile(filePath, 'initial content');
+        console.log('Created file at:', filePath);
 
-        // Simulate rapid changes that should trigger batching
+        // Simulate rapid changes using real file system operations
         const updatePromises = [];
         for (let i = 0; i < 30; i++) {
           updatePromises.push(
-            fileOps.updateFile(filePath, `content update ${i}`)
+            fs.writeFile(filePath, `content update ${i}`)
           );
           // No delay between updates to create overlapping events
         }
         
         // Execute all updates rapidly to trigger batching
         await Promise.all(updatePromises);
+        console.log('Completed 30 rapid file updates');
 
         // Wait longer for batching to occur
         await new Promise(resolve => setTimeout(resolve, 300));
