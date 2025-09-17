@@ -179,9 +179,18 @@ kubectl -n "$NAMESPACE" wait --for=condition=complete job/vibecode-migrations --
 wait_rc=$?
 set -e
 if [ $wait_rc -ne 0 ]; then
-  job_logs=$(kubectl -n "$NAMESPACE" logs job/vibecode-migrations 2>/dev/null || true)
+  job_logs=""
+  for attempt in 1 2 3 4 5; do
+    job_logs=$(kubectl -n "$NAMESPACE" logs job/vibecode-migrations 2>/dev/null || true)
+    if [ -n "$job_logs" ]; then
+      break
+    fi
+    sleep 2
+  done
+
   if echo "$job_logs" | grep -q "P3005"; then
     log "prisma migrations detected existing schema; skipping baseline (P3005)"
+    kubectl -n "$NAMESPACE" delete job vibecode-migrations --ignore-not-found >/dev/null 2>&1 || true
   else
     log "prisma migrations job failed"
     printf '%s\n' "$job_logs"
