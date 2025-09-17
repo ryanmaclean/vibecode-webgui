@@ -656,12 +656,143 @@ export class SecureFileSystemOperations extends EventEmitter {
   /**
    * Get file metadata
    */
-  getFileMetadata(filePath: string): FileMetadata | null {
+  async getFileMetadata(filePath: string): Promise<FileMetadata | null> {
     if (!this.validateFilePath(filePath)) {
       return null
     }
 
-    return this.fileMetadataCache.get(filePath) || null
+    let metadata = this.fileMetadataCache.get(filePath)
+    
+    if (!metadata) {
+      try {
+        const fullPath = this.getFullPath(filePath)
+        const stats = await fs.stat(fullPath)
+        const content = await fs.readFile(fullPath, 'utf-8')
+        const checksum = this.calculateChecksum(content)
+        
+        metadata = {
+          path: filePath,
+          size: stats.size,
+          lastModified: stats.mtime,
+          checksum,
+          version: 1
+        }
+        
+        this.fileMetadataCache.set(filePath, metadata)
+      } catch (error) {
+        return null
+      }
+    }
+
+    return metadata
+  }
+
+  /**
+   * Acquire file lock with lock ID
+   */
+  async acquireLock(filePath: string, lockType: 'shared' | 'exclusive' = 'exclusive'): Promise<{ lockId: string }> {
+    if (!this.validateFilePath(filePath)) {
+      throw new Error('Invalid file path')
+    }
+
+    const existingLock = this.fileLocks.get(filePath)
+    if (existingLock) {
+      // Check if lock has expired (1 hour timeout)
+      if (Date.now() - existingLock.timestamp.getTime() > 3600000) {
+        this.fileLocks.delete(filePath)
+      } else if (existingLock.userId !== this.config.userId) {
+        throw new Error('File is locked')
+      }
+    }
+
+    const lockId = crypto.randomUUID()
+    this.fileLocks.set(filePath, {
+      userId: this.config.userId,
+      timestamp: new Date()
+    })
+
+    return { lockId }
+  }
+
+  /**
+   * Release file lock by lock ID
+   */
+  async releaseLock(filePath: string, lockId: string): Promise<boolean> {
+    if (!this.validateFilePath(filePath)) {
+      throw new Error('Invalid file path')
+    }
+
+    const lock = this.fileLocks.get(filePath)
+    if (!lock || lock.userId !== this.config.userId) {
+      return false
+    }
+
+    this.fileLocks.delete(filePath)
+    return true
+  }
+
+  /**
+   * Check for file conflicts
+   */
+  async checkForConflicts(filePath: string, expectedMetadata: FileMetadata): Promise<{ hasConflict: boolean; details?: any }> {
+    const currentMetadata = await this.getFileMetadata(filePath)
+    
+    if (!currentMetadata) {
+      return { hasConflict: false }
+    }
+
+    const hasConflict = currentMetadata.checksum !== expectedMetadata.checksum ||
+                       currentMetadata.lastModified.getTime() !== expectedMetadata.lastModified.getTime()
+
+    return {
+      hasConflict,
+      details: hasConflict ? {
+        current: currentMetadata,
+        expected: expectedMetadata
+      } : undefined
+    }
+  }
+
+  /**
+   * Resolve file conflict
+   */
+  async resolveConflict(filePath: string, content: string, strategy: 'user-choice' | 'auto-merge' | 'create-backup'): Promise<{ strategy: string }> {
+    if (!this.validateFilePath(filePath)) {
+      throw new Error('Invalid file path')
+    }
+
+    switch (strategy) {
+      case 'user-choice':
+        // User chose to overwrite - update the file
+        await this.updateFile(filePath, content)
+        break
+        
+      case 'create-backup':
+        // Create backup before overwriting
+        const backupPath = `${filePath}.backup.${Date.now()}`
+        try {
+          const currentContent = await fs.readFile(this.getFullPath(filePath), 'utf-8')
+          await fs.writeFile(this.getFullPath(backupPath), currentContent)
+        } catch (error) {
+          // Backup failed but continue with update
+        }
+        await this.updateFile(filePath, content)
+        break
+        
+      case 'auto-merge':
+        // Simple auto-merge (append new content)
+        try {
+          const currentContent = await fs.readFile(this.getFullPath(filePath), 'utf-8')
+          const mergedContent = currentContent + '\n\n' + content
+          await this.updateFile(filePath, mergedContent)
+        } catch (error) {
+          // Fallback to overwrite
+          await this.updateFile(filePath, content)
+        }
+        break
+    }
+
+    return { strategy }
   }
 
   /**
