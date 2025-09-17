@@ -535,9 +535,9 @@ describe('File Operations Integration Tests', () => {
       // Configure watcher for high-frequency events
       const fastWatcher = new OptimizedFileWatcher({
         watchPath: testWorkspacePath,
-        batchDelay: 50,
-        maxBatchSize: 5,
-        throttleDelay: 25
+        batchDelay: 100, // Longer batch delay to accumulate events
+        maxBatchSize: 20, // Higher max batch size
+        throttleDelay: 10  // Shorter throttle to allow rapid events through
       });
 
       try {
