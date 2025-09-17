@@ -131,3 +131,4 @@ web-dashboard/node_modules/
 web-dashboard/dist/
 web-dashboard/.vite/
 web-dashboard/package-lock.json
+test-workspace/
