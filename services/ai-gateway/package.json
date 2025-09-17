@@ -9,6 +9,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "test": "jest",
     "test:metrics": "jest --testPathPattern src/__tests__/datadog-metrics\\.test\\.ts",
+    "test:metrics:routes": "jest --testPathPattern src/__tests__/routes-metrics\\.int\\.test\\.ts",
     "test:watch": "jest --watch",
     "lint": "eslint src --ext .ts",
     "docker:build": "docker build -t vibecode-ai-gateway .",
@@ -38,7 +39,8 @@
     "jsonwebtoken": "^9.0.2",
     "node-cron": "^3.0.3",
     "redis": "^4.6.10",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "@opentelemetry/api": "^1.8.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
