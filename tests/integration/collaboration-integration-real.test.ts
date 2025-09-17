@@ -6,14 +6,7 @@
  * Following the established real integration testing methodology
  */
 
-const { describe, test, expect, beforeAll(async () => {
-    if (!shouldRunRealTests) return;
-    
-    // Clear all global mocks to enable real WebSocket connections
-    jest.restoreAllMocks();
-    console.log('🌐 Real collaboration testing enabled - all mocks cleared');
-    console.log('📡 Using existing development server on localhost:3000');
-  }, 10000);, afterAll, beforeEach, afterEach } = require('@jest/globals');
+const { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } = require('@jest/globals');
 
 // Check if real integration tests should run
 const shouldRunRealTests = process.env.ENABLE_REAL_INTEGRATION_TESTS === 'true';
@@ -23,6 +16,15 @@ const describeReal = shouldRunRealTests ? describe : describe.skip;
 
 describeReal('Real Collaboration Integration Tests', () => {
   const TEST_TIMEOUT = 30000; // 30 seconds for real network operations
+  
+  beforeAll(async () => {
+    if (!shouldRunRealTests) return;
+    
+    // Clear all global mocks to enable real WebSocket connections
+    jest.restoreAllMocks();
+    console.log('🌐 Real collaboration testing enabled - all mocks cleared');
+    console.log('📡 Using existing development server on localhost:3000');
+  }, 10000);
   
 
   
