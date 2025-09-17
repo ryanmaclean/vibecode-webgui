@@ -4,7 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { createTestHelpers } from './utils/test-helpers';
+import { createTestHelpers, TestHelpers } from './utils/test-helpers';
 
 // Define test credentials directly since they're missing in test-data.json
 const testCredentials = {
@@ -197,7 +197,7 @@ test.describe('Authentication Flow', () => {
     const helpers = createTestHelpers(page);
     
     // First login
-    await helpers.login();
+    await TestHelpers.loginAsTestUser(page, 'user');
     
     // Verify we're logged in
     expect(page.url()).not.toContain('/auth/signin');
@@ -219,7 +219,7 @@ test.describe('Authentication Flow', () => {
     const helpers = createTestHelpers(page);
     
     // Login
-    await helpers.login();
+    await TestHelpers.loginAsTestUser(page, 'user');
     
     // Refresh page
     await page.reload();
@@ -388,7 +388,7 @@ test.describe('Authentication Flow', () => {
     }
     
     // Now login
-    await helpers.login();
+    await TestHelpers.loginAsTestUser(page, 'user');
     
     // Try protected page again
     await page.goto('/projects');

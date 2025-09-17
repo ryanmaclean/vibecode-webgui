@@ -8,9 +8,45 @@ const mockSocket = {
     this._handlers.set(event, handler)
     // Also store globally for test access
     eventHandlers.set(event, handler)
+    
+    // Simulate connection for 'connect' event
+    if (event === 'connect') {
+      setTimeout(() => {
+        this.connected = true
+        handler()
+      }, 100) // Small delay to simulate connection
+    }
+    
     return this // Return for chaining
   }),
-  emit: jest.fn(),
+  emit: jest.fn(function(event, data) {
+    // Simulate server-side error handling for malformed data
+    if (event === 'terminal-input' && (!data || typeof data !== 'object' || !data.input)) {
+      setTimeout(() => {
+        const errorHandler = this._handlers?.get('error')
+        if (errorHandler) {
+          errorHandler({ message: 'Invalid input format' })
+        }
+      }, 50)
+    } else if (event === 'cursor-position' && (!data || typeof data !== 'object' || 
+               typeof data.x !== 'number' || typeof data.y !== 'number')) {
+      setTimeout(() => {
+        const errorHandler = this._handlers?.get('error')
+        if (errorHandler) {
+          errorHandler({ message: 'Invalid cursor position' })
+        }
+      }, 50)
+    }
+  }),
+  off: jest.fn(),
+  once: jest.fn(function(event, handler) {
+    // Store handlers for test triggering
+    if (!this._handlers) this._handlers = new Map()
+    this._handlers.set(event, handler)
+    // Also store globally for test access
+    eventHandlers.set(event, handler)
+    return this // Return for chaining
+  }),
   disconnect: jest.fn(),
   connected: false,
   _triggerEvent: function(event, ...args) {

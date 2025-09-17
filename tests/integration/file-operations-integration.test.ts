@@ -307,7 +307,7 @@ describe('File Operations Integration Tests', () => {
         setTimeout(() => mockWebSocket.emit('open'), 10);
         return mockWebSocket}) as any
 
-      const connection = await connectionPool.getConnection('ws://localhost:8080/notifications')
+      const connection = await connectionPool.getConnection('ws://localhost:3000/notifications')
 
       // Subscribe to connection events
       connectionPool.subscribeToConnection(connection.id, 'test-subscriber', {

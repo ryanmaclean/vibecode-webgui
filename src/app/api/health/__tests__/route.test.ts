@@ -39,9 +39,9 @@ describe('/api/health', () => {
       nextUrl: new URL('http://localhost:3000/api/health')
     } as NextRequest;
 
-    // Reset environment variables
-    process.env.NODE_ENV = 'test';
-    process.env.npm_package_version = '1.0.0';
+    // Reset environment variables in a type-safe way
+    Reflect.set(process.env, 'NODE_ENV', 'test');
+    Reflect.set(process.env, 'npm_package_version', '1.0.0');
   });
 
   afterEach(() => {
@@ -110,7 +110,7 @@ describe('/api/health', () => {
     });
 
     it('should use default version when npm_package_version is not set', async () => {
-      delete process.env.npm_package_version;
+      Reflect.deleteProperty(process.env, 'npm_package_version');
       
       const response = await GET(mockRequest);
       const data = await response.json();
@@ -119,7 +119,7 @@ describe('/api/health', () => {
     });
 
     it('should use default environment when NODE_ENV is not set', async () => {
-      delete process.env.NODE_ENV;
+      Reflect.deleteProperty(process.env, 'NODE_ENV');
       
       const response = await GET(mockRequest);
       const data = await response.json();
