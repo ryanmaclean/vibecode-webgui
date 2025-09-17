@@ -1,30 +1,38 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `src/app/` hosts Next.js routes/layouts, with shared UI in `src/components/`, domain utilities in `src/lib/`, and client providers in `src/providers/`.
-- `server/` exposes the lightweight Node entrypoint for standalone API scenarios; `services/` encapsulates integrations (vector stores, auth, monitoring); `packages/vibecode-cli/` delivers the developer CLI.
-- `tests/` groups Jest suites by domain (unit, integration, k8s, security) alongside Playwright journeys in `tests/e2e/`; fixtures live under `tests/__mocks__`.
-- Assets and reference material live in `public/`, `docs/`, and `wiki/`, while deployment manifests sit in `docker/`, `helm/`, and `k8s/`.
+- `src/app/` holds Next.js pages, layouts, and API routes; prefer co-locating route-specific assets here.
+- `src/components/` stores reusable UI in PascalCase files; keep shared Tailwind patterns inside components.
+- `src/lib/` contains hooks, services, and helpers in camelCase filenames such as `fetchData.util.ts`.
+- `src/providers/` defines client-side context providers; add `'use client';` when a provider touches browser APIs.
+- `server/services/` implements standalone API integrations; mock these in tests when stubbing external calls.
+- `packages/vibecode-cli/` is the developer CLI; align CLI utilities with the web app contracts.
+- `tests/` mirrors the source tree, with `tests/e2e/` hosting Playwright flows and fixtures.
 
 ## Build, Test, and Development Commands
-- `npm run setup` primes local services (database seeds, telemetry stubs) before first boot.
-- `npm run dev` starts the instrumentation-enabled Next.js server; use `npm run dev:docker` for the Compose stack, or `npm run dev:simple` when tracing is unnecessary.
-- `npm run build` creates the production bundle and `npm start` serves it.
-- Quality gates run via `npm run lint`, `npm run type-check`, and `npm run test`; `npm run test:e2e` triggers Playwright UI flows, and `npm run test:pre-commit` mirrors the CI smoke suite.
+- `npm run setup` seeds local dependencies and tooling.
+- `npm run dev` starts the tracing-enabled Next.js dev server; use `npm run dev:simple` when instrumentation is unnecessary.
+- `npm run dev:docker` launches the Compose stack for integration work.
+- `npm run build` creates the production bundle; follow with `npm start` to verify.
+- `npm run lint` runs ESLint + Prettier; append `-- --fix` to auto-format.
+- `npm run type-check` executes TypeScript validation.
+- `npm run test` (or `npm run test:coverage`) runs Jest suites; `npm run test:e2e` triggers Playwright.
 
 ## Coding Style & Naming Conventions
-- Write TypeScript-first React components; server components stay in `src/app/` and opt in to client mode with the `'use client';` directive.
-- Follow `eslint.config.mjs` (Next.js + a11y rules) with 2-space indentation; prefer `npm run lint -- --fix` for formatting, and run Tailwind via `tailwind:restore` scripts after branch switches if styles drift.
-- Use PascalCase for components/directories (e.g., `DatabaseConnectionMetrics.tsx`), camelCase for hooks/utilities, and suffix Jest specs with `.test.ts`.
-- Keep Tailwind utility classes inline; promote shared patterns into composable components instead of global CSS.
+- Use 2-space indentation across TS/JS/TSX files with consistent semicolons and trailing commas where Prettier applies.
+- Components follow PascalCase (`src/components/UserMenu.tsx`); hooks and utilities use camelCase with `.hook.ts` or `.util.ts` suffixes.
+- Keep Tailwind classes inline; extract to components if reused.
 
 ## Testing Guidelines
-- Use Jest for unit/integration coverage, structuring files beside source or within `tests/<domain>/` mirroring the module tree.
-- Share fixtures through `tests/__mocks__` and extend the environment in `tests/setupTests.ts`.
-- Maintain the enforced 80% global coverage thresholds (`npm run test:coverage`) before shipping core changes.
-- Exercise Playwright journeys in `tests/e2e/*`; prefer `npm run test:e2e:headed` for debugging regressions and capture screenshots for PR context.
+- Jest powers unit/integration tests; Playwright covers end-to-end journeys.
+- Maintain ≥80% global coverage via `npm run test:coverage` and enforce module-specific mocks under `tests/__mocks__/`.
+- Mirror source filenames: `src/lib/useAuth.hook.ts` → `tests/lib/useAuth.hook.test.ts`.
 
 ## Commit & Pull Request Guidelines
-- Follow Conventional Commits (`feat:`, `fix(scope):`, `docs:`) as seen in recent history; keep commits scoped and self-testing.
-- Before pushing, document validation commands in the PR description and link tracking issues or work items.
-- For UI or monitoring updates, attach screenshots, logs, or dashboard URLs, and call out any new environment variables or feature flags.
+- Follow Conventional Commits (`feat: add search filters`, `fix(auth): handle token refresh`).
+- PRs must describe scope, link issues, list validation commands (e.g., `npm run build && npm run test`), and include screenshots or clips for UI updates.
+- Note required environment variables in `.env.local` and mention secrets stay outside the repo.
+
+## Security & Configuration Tips
+- Stub outbound network calls via `server/services/` or Jest mocks; local dev blocks direct calls.
+- Document new env vars within the PR and update onboarding docs when adding sensitive integrations.
