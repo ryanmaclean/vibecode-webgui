@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -14,34 +14,72 @@ export default function SimpleSignInForm() {
   const [password, setPassword] = useState('dev123')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [csrfToken, setCsrfToken] = useState('')
   const router = useRouter()
+
+  // Debug: Verify component is mounted and form is ready
+  useEffect(() => {
+    console.log('🔧 SimpleSignInForm mounted');
+    const form = document.querySelector('form');
+    if (form) {
+      console.log('📋 Form found:', form.outerHTML.substring(0, 100));
+    } else {
+      console.log('❌ Form not found');
+    }
+  }, []);
+
+  // Fetch CSRF token for traditional form submission
+  useEffect(() => {
+    const fetchCsrfToken = async () => {
+      try {
+        const response = await fetch('/api/auth/csrf')
+        const data = await response.json()
+        console.log('🔐 CSRF token fetched:', data.csrfToken)
+        setCsrfToken(data.csrfToken)
+      } catch (err) {
+        console.error('Failed to fetch CSRF token:', err)
+      }
+    }
+    fetchCsrfToken()
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('🚀 Form submitted with:', { email, password })
     setError(null)
     setIsSubmitting(true)
 
     try {
+      // Use redirect: false to handle the response manually
       const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
+        callbackUrl: '/'
       })
 
+      console.log('🔐 SignIn result:', result)
+
       if (result?.error) {
-        setError(result.error)
-      } else if (result?.ok) {
-        // Check if we have a session
-        const session = await getSession()
-        if (session) {
-          router.push('/')
+        console.log('❌ Authentication failed:', result.error)
+        if (result.error === 'CredentialsSignin') {
+          setError('Invalid credentials')
         } else {
-          setError('Authentication failed - no session created')
+          setError('Authentication failed')
         }
+        setIsSubmitting(false)
+      } else if (result?.ok) {
+        console.log('✅ Authentication successful')
+        // Redirect manually after successful login
+        window.location.href = '/'
+      } else {
+        console.log('❌ Unexpected result:', result)
+        setError('An unexpected error occurred')
+        setIsSubmitting(false)
       }
-    } catch (_err) {
+    } catch (err) {
+      console.log('❌ Unexpected error:', err)
       setError('An unexpected error occurred')
-    } finally {
       setIsSubmitting(false)
     }
   }
@@ -50,6 +88,8 @@ export default function SimpleSignInForm() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
+          {/* Heading for E2E compatibility */}
+          <h1 className="text-2xl font-bold text-center text-gray-900">Sign In</h1>
           <div className="mx-auto h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center">
             <svg
               className="h-8 w-8 text-white"
@@ -72,14 +112,18 @@ export default function SimpleSignInForm() {
             Simple sign-in for development environment
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form 
+          className="mt-8 space-y-6" 
+          onSubmit={handleSubmit}
+        >
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert" data-testid="error-message">
               <strong className="font-bold">Error: </strong>
               <span className="block sm:inline">{error}</span>
             </div>
           )}
           <input type="hidden" name="remember" defaultValue="true" />
+          <input type="hidden" name="csrfToken" value={csrfToken} />
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="email-address" className="sr-only">
@@ -93,6 +137,7 @@ export default function SimpleSignInForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                data-testid="email-input"
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
               />
@@ -109,6 +154,7 @@ export default function SimpleSignInForm() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                data-testid="password-input"
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
               />
@@ -119,6 +165,7 @@ export default function SimpleSignInForm() {
             <button
               type="submit"
               disabled={isSubmitting}
+              data-testid="signin-button"
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (

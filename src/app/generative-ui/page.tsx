@@ -1,6 +1,6 @@
 'use client'
 
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
 
 export default function GenerativeUIChat() {
   const { messages, input, handleInputChange, handleSubmit } = useChat({

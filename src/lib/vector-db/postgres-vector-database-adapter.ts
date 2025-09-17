@@ -10,7 +10,10 @@ import { VectorCacheManager } from '../cache/vector-cache-strategy';
 import { metrics } from '../server-monitoring';
 import { VectorCacheInvalidator } from '../cache/vector-cache-invalidator';
 import { PgVectorSearch } from '../cache/pgvector-search';
+<<<<<<< HEAD
 import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
+=======
+>>>>>>> main
 
 /**
  * PostgreSQL specific configuration options
@@ -31,7 +34,10 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   private prisma: PrismaClient | null = null;
   protected postgresConfig: PostgresVectorDatabaseConfig;
   private cacheInvalidator: VectorCacheInvalidator | null = null;
+<<<<<<< HEAD
   private errorHandler: VectorDbErrorHandler;
+=======
+>>>>>>> main
 
   /**
    * Constructor for PostgreSQL adapter
@@ -39,7 +45,10 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   constructor(config: PostgresVectorDatabaseConfig) {
     super(config);
+<<<<<<< HEAD
     this.errorHandler = new VectorDbErrorHandler('postgres', config.enableLogging || false, config.enableMetrics || false);
+=======
+>>>>>>> main
     this.postgresConfig = {
       pgPoolSize: 10,
       pgSchemaName: 'public',
@@ -93,7 +102,10 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   private async verifyPgVectorExtension(): Promise<void> {
     if (!this.prisma) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('Prisma client not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
       throw new Error('Prisma client not initialized');
     }
 
@@ -104,7 +116,10 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       `;
 
       if (!Array.isArray(extensionResult) || extensionResult.length === 0) {
+<<<<<<< HEAD
         throw this.errorHandler.handleError(new Error('pgVector extension is not installed in the database'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+>>>>>>> main
         throw new Error('pgVector extension is not installed in the database');
       }
 
@@ -114,7 +129,10 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       `;
 
       if (!Array.isArray(typeResult) || typeResult.length === 0) {
+<<<<<<< HEAD
         throw this.errorHandler.handleError(new Error('Vector data type not found, pgVector extension may be incorrectly installed'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+>>>>>>> main
         throw new Error('Vector data type not found, pgVector extension may be incorrectly installed');
       }
 
@@ -125,7 +143,10 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       if (this.config.enableLogging) {
         console.error('pgVector extension verification failed:', error);
       }
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error(`pgVector extension verification failed: ${error instanceof Error ? error.message : String(error)}`), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+>>>>>>> main
       throw new Error(`pgVector extension verification failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
@@ -140,7 +161,10 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     tokens: number;
   }>): Promise<void> {
     if (!this.prisma) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
       throw new Error('PostgreSQL adapter not initialized');
     }
 
@@ -213,7 +237,10 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   public async search(embedding: number[], options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.prisma) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
       throw new Error('PostgreSQL adapter not initialized');
     }
 
@@ -513,7 +540,10 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   protected async fallbackTextSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.prisma) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
       throw new Error('PostgreSQL adapter not initialized');
     }
 
@@ -581,7 +611,10 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   public async deleteFileChunks(fileId: number): Promise<void> {
     if (!this.prisma) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
       throw new Error('PostgreSQL adapter not initialized');
     }
 
@@ -623,7 +656,10 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     averageChunkSize: number;
   }> {
     if (!this.prisma) {
+<<<<<<< HEAD
       throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
       throw new Error('PostgreSQL adapter not initialized');
     }
 

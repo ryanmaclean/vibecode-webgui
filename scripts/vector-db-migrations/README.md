@@ -21,7 +21,7 @@ vector-db-migrations/
 ├── migrate-vector-data.js              # Tool for vector data migration
 ├── migrate-vector-index.ts             # Tool for vector index migration
 ├── vector-schema-migrator.js           # Core migration engine
-├── zero-downtime-schema-migration.js   # Zero-downtime migration utility
+├── zero-downtime-schema-migration.cjs   # Zero-downtime migration utility
 └── README.md                           # This documentation
 ```
 
@@ -138,7 +138,7 @@ exports.up = async (client) => {
 For production environments, use the zero-downtime migration pattern:
 
 ```
-node scripts/vector-db-migrations/zero-downtime-schema-migration.js \
+node scripts/vector-db-migrations/zero-downtime-schema-migration.cjs \
   --table=document_embeddings \
   --operation=add-column \
   --column-name=embedding_model \

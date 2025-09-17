@@ -76,7 +76,7 @@ export LOGGING=true
 
 # Run the schema migration
 echo -e "${YELLOW}Running migration on empty table...${NC}"
-node $SCRIPT_DIR/vector-db-migrations/zero-downtime-schema-migration.js
+node $SCRIPT_DIR/vector-db-migrations/zero-downtime-schema-migration.cjs
 
 # Verify the migration
 docker exec $CONTAINER_NAME psql -U $POSTGRES_USER -d $POSTGRES_DB -c "
@@ -116,7 +116,7 @@ export TABLE_NAME=null_values_table
 
 # Run the schema migration
 echo -e "${YELLOW}Running migration on table with NULL values...${NC}"
-node $SCRIPT_DIR/vector-db-migrations/zero-downtime-schema-migration.js
+node $SCRIPT_DIR/vector-db-migrations/zero-downtime-schema-migration.cjs
 
 # Verify the migration
 docker exec $CONTAINER_NAME psql -U $POSTGRES_USER -d $POSTGRES_DB -c "
@@ -157,8 +157,8 @@ export COLUMN_MAPPINGS='{"Document ID":"document_id","Content-Data":"content","e
 
 # Create a custom migration script for this case
 cat > /tmp/unusual_columns_migration.js << 'EOF'
-// Modified version of zero-downtime-schema-migration.js for unusual column names
-const originalScript = require('../scripts/vector-db-migrations/zero-downtime-schema-migration.js');
+// Modified version of zero-downtime-schema-migration.cjs for unusual column names
+const originalScript = require('../scripts/vector-db-migrations/zero-downtime-schema-migration.cjs');
 
 // Override the schemaMigration object to handle unusual column names
 originalScript.schemaMigration = {
@@ -238,7 +238,7 @@ export TABLE_NAME=partial_migration
 # Create a custom migration script for partial migration
 cat > /tmp/partial_migration.js << 'EOF'
 // Modified version for partial migration
-const originalScript = require('../scripts/vector-db-migrations/zero-downtime-schema-migration.js');
+const originalScript = require('../scripts/vector-db-migrations/zero-downtime-schema-migration.cjs');
 
 // Override the schemaMigration object to handle partial migration
 originalScript.schemaMigration = {
@@ -327,7 +327,7 @@ export TABLE_NAME=interrupted_migration
 # Create a custom migration script for interrupted migration
 cat > /tmp/interrupted_migration.js << 'EOF'
 // Modified version for interrupted migration
-const originalScript = require('../scripts/vector-db-migrations/zero-downtime-schema-migration.js');
+const originalScript = require('../scripts/vector-db-migrations/zero-downtime-schema-migration.cjs');
 
 // Override the migrateTableSchema function to handle existing staging table
 const originalMigrateTableSchema = originalScript.migrateTableSchema;

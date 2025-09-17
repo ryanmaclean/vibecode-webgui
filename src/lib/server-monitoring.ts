@@ -475,7 +475,6 @@ class ApplicationLogger {
   }
 
   /**
-<<<<<<< Updated upstream
    * Log vector database operations
    */
   logVectorDB(event: string, context: {

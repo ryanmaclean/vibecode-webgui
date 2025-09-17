@@ -261,9 +261,11 @@ export class CachedQueries {
       });
     },
     (workspaceId: number, query: string, limit: number = 20) => 
-<<<<<<< Updated upstream
       `search:files:${workspaceId}:${Buffer.from ? Buffer.from(query).toString('base64') : btoa(query)}:${limit}`,
+<<<<<<< HEAD
       `search:files:${workspaceId}:${Buffer.from(query).toString('base64')}:${limit}`,
+=======
+>>>>>>> main
     CacheTTL.SHORT
   );
 }
@@ -282,9 +284,11 @@ export class BulkOperations {
   ): Promise<void> {
     if (data.length === 0) return;
 
-<<<<<<< Updated upstream
     const batches: T[][] = [];
+<<<<<<< HEAD
     const batches = [];
+=======
+>>>>>>> main
     for (let i = 0; i < data.length; i += batchSize) {
       batches.push(data.slice(i, i + batchSize));
     }
@@ -307,18 +311,22 @@ export class BulkOperations {
   ): Promise<void> {
     if (updates.length === 0) return;
 
-<<<<<<< Updated upstream
     const batches: T[][] = [];
+<<<<<<< HEAD
     const batches = [];
+=======
+>>>>>>> main
     for (let i = 0; i < updates.length; i += batchSize) {
       batches.push(updates.slice(i, i + batchSize));
     }
 
     for (const batch of batches) {
       const { prisma } = await import('../prisma');
-<<<<<<< Updated upstream
       const transaction = batch.map((update: T) => 
+<<<<<<< HEAD
       const transaction = batch.map(update => 
+=======
+>>>>>>> main
         model.update({
           where: { id: update.id },
           data: update
@@ -339,9 +347,11 @@ export class BulkOperations {
   ): Promise<void> {
     if (ids.length === 0) return;
 
-<<<<<<< Updated upstream
     const batches: number[][] = [];
+<<<<<<< HEAD
     const batches = [];
+=======
+>>>>>>> main
     for (let i = 0; i < ids.length; i += batchSize) {
       batches.push(ids.slice(i, i + batchSize));
     }
@@ -362,10 +372,12 @@ export class BulkOperations {
  * Query performance analyzer
  */
 export class QueryAnalyzer {
-<<<<<<< Updated upstream
   // Changed from private to protected static to allow access via bracket notation
   protected static queryLog: Array<{
+<<<<<<< HEAD
   private static queryLog: Array<{
+=======
+>>>>>>> main
     query: string;
     duration: number;
     timestamp: number;
@@ -435,7 +447,6 @@ export class QueryAnalyzer {
   }
 
   /**
-<<<<<<< Updated upstream
    * Get the query log (added accessor method)
    */
   static getQueryLog() {
@@ -450,7 +461,6 @@ export class QueryAnalyzer {
   }
 }
 
-<<<<<<< Updated upstream
   /**
    * Database health monitor
    */
@@ -526,6 +536,7 @@ export class QueryAnalyzer {
         };
       }
     }
+<<<<<<< HEAD
 /**
  * Database health monitor
  */
@@ -601,6 +612,8 @@ export class DatabaseHealthMonitor {
       };
     }
   }
+=======
+>>>>>>> main
 
   /**
    * Get database performance metrics

@@ -75,13 +75,24 @@ spec:
           value: "true"
         - name: DD_PROCESS_AGENT_ENABLED
           value: "true"
-        - name: DD_SYSTEM_PROBE_ENABLED
-          value: "false"
         - name: DD_DOCKER_ENABLED
           value: "false"  # Using containerd in KIND
         - name: DD_CONTAINERD_ENABLED
           value: "true"
-        
+        - name: DD_CLUSTER_AGENT_ENABLED
+          value: "true"
+        - name: DD_CLUSTER_AGENT_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: datadog-cluster-agent-token
+              key: token
+        - name: DD_CLUSTER_AGENT_URL
+          value: "http://datadog-cluster-agent.datadog.svc.cluster.local:5005"
+        - name: DD_CLUSTER_AGENT_USE_TLS
+          value: "false"
+        - name: DD_ORCHESTRATOR_EXPLORER_ENABLED
+          value: "true"
+
         # Database Monitoring
         - name: DD_DATABASE_MONITORING_ENABLED
           value: "true"
@@ -123,17 +134,14 @@ spec:
           value: "false"
         - name: DD_RUNTIME_SECURITY_CONFIG_ENABLED
           value: "false"
-        
+        - name: DD_SYSTEM_PROBE_ENABLED
+          value: "false"
+
         # Tags
         - name: DD_TAGS
           value: "env:local,cluster:kind,platform:kubernetes,service:vibecode"
         
         volumeMounts:
-        # Configuration (read-only)
-        - name: config-volume
-          mountPath: /etc/datadog-agent
-          readOnly: true
-        
         # Writable directories for runtime files
         - name: tmp-volume
           mountPath: /tmp
@@ -178,12 +186,6 @@ spec:
           timeoutSeconds: 3
 
       volumes:
-      # Configuration
-      - name: config-volume
-        configMap:
-          name: datadog-config
-          optional: true
-      
       # Writable volumes
       - name: tmp-volume
         emptyDir: {}

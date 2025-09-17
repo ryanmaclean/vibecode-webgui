@@ -8,7 +8,6 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { z } from 'zod';
-<<<<<<< Updated upstream
 import { FunctionDefinition } from '../services/function-calling';
 
 export interface CodeGenerationRequest {
@@ -44,7 +43,6 @@ export interface CodeAnalysis {
   potentialChallenges: string[];
   alternatives: string[];
   bestPractices: string[];
-<<<<<<< Updated upstream
   complexity: 'low' | 'medium' | 'high';
 }
 
@@ -239,9 +237,11 @@ Focus on creating a clear technical specification that can be used for code gene
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< Updated upstream
       this.llm as any,
+<<<<<<< HEAD
       this.llm,
+=======
+>>>>>>> main
       new StringOutputParser(),
     ]);
 
@@ -303,9 +303,11 @@ Return only the code and explanations, no markdown formatting.
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< Updated upstream
       this.llm as any,
+<<<<<<< HEAD
       this.llm,
+=======
+>>>>>>> main
       new StringOutputParser(),
     ]);
 
@@ -354,9 +356,11 @@ Make tests readable and maintainable.
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< Updated upstream
       this.llm as any,
+<<<<<<< HEAD
       this.llm,
+=======
+>>>>>>> main
       new StringOutputParser(),
     ]);
 
@@ -403,9 +407,11 @@ Follow documentation best practices for the language.
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< Updated upstream
       this.llm as any,
+<<<<<<< HEAD
       this.llm,
+=======
+>>>>>>> main
       new StringOutputParser(),
     ]);
 
@@ -449,7 +455,6 @@ Follow documentation best practices for the language.
     const alternatives = lines.filter(line => line.includes('alternative') || line.includes('option')).map(line => line.trim());
     const bestPractices = lines.filter(line => line.includes('practice') || line.includes('pattern')).map(line => line.trim());
     
-<<<<<<< Updated upstream
     // Determine complexity based on content
     let complexity: 'low' | 'medium' | 'high' = 'medium'; // Default to medium
     
@@ -467,7 +472,6 @@ Follow documentation best practices for the language.
       potentialChallenges,
       alternatives,
       bestPractices,
-<<<<<<< Updated upstream
       complexity
     };
   }
@@ -539,9 +543,11 @@ Return only the suggestions, one per line.
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< Updated upstream
       this.llm as any,
+<<<<<<< HEAD
       this.llm,
+=======
+>>>>>>> main
       new StringOutputParser(),
     ]);
 
@@ -587,9 +593,11 @@ Return the refactored code and explanations.
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< Updated upstream
       this.llm as any,
+<<<<<<< HEAD
       this.llm,
+=======
+>>>>>>> main
       new StringOutputParser(),
     ]);
 

@@ -13,6 +13,7 @@ const AUTH_ERRORS = {
   Configuration: 'There is a problem with the server configuration.',
   AccessDenied: 'You do not have permission to sign in.',
   Verification: 'The verification token has expired or has already been used.',
+  CredentialsSignin: 'Invalid credentials',
   Default: 'An error occurred during authentication.',
 }
 
@@ -43,7 +44,7 @@ function ErrorContent() {
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             Authentication Error
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-gray-600" data-testid="error-message">
             {errorMessage}
           </p>
         </div>

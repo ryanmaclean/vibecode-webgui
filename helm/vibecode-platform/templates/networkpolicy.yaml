@@ -109,4 +109,32 @@ spec:
     ports:
     - protocol: TCP
       port: 22
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "vibecode-platform.fullname" . }}-allow-test-egress
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: test
+  policyTypes:
+  - Egress
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Allow HTTPS to Kubernetes API and external endpoints as needed by tests
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
 {{- end }}

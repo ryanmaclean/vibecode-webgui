@@ -61,7 +61,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
         (error) => {
           // Connection errors and query timeouts are retryable
           if (error instanceof VectorDbError) {
-            return error.type === VectorDbErrorType.CONNECTION ||
+            return error.type === VectorDbErrorType.CONNECTION_FAILED ||
                   (error.type === VectorDbErrorType.QUERY_FAILED && 
                    error.message.toLowerCase().includes('timeout'));
           }
@@ -151,7 +151,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
         (error) => {
           // Only retry connection issues and certain query failures
           if (error instanceof VectorDbError) {
-            return error.type === VectorDbErrorType.CONNECTION ||
+            return error.type === VectorDbErrorType.CONNECTION_FAILED ||
                   (error.type === VectorDbErrorType.VECTOR_CREATION_FAILED && 
                    !error.message.toLowerCase().includes('duplicate'));
           }
@@ -192,7 +192,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
         (error) => {
           // Only retry connection issues
           if (error instanceof VectorDbError) {
-            return error.type === VectorDbErrorType.CONNECTION ||
+            return error.type === VectorDbErrorType.CONNECTION_FAILED ||
                   error.type === VectorDbErrorType.VECTOR_CREATION_FAILED;
           }
           return false;

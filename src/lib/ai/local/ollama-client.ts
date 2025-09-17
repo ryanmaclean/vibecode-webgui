@@ -352,8 +352,12 @@ export class OllamaClient {
     const model = this.createLangChainClient();
     const outputParser = new StringOutputParser();
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
     return RunnableSequence.from([
       prompt,
       model,

@@ -24,7 +24,7 @@ export interface VectorQuery {
   embedding: number[];
   dimension?: number;
   limit?: number;
-  filter?: Record<string, any>;
+  filter?: Record<string, unknown>;
   collection?: string;
   similarityFunction?: 'cosine' | 'l2' | 'dot';
   minSimilarity?: number;
@@ -44,7 +44,7 @@ export interface VectorQueryResult {
 export interface VectorQueryMatch {
   id: string;
   similarity: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   document?: string;
 }
 
@@ -502,15 +502,8 @@ export class VectorShardingManager {
         this.metricsCollector.recordQuery(
           'vector_search',
           totalTime,
-          {
-            dimension: query.dimension,
-            limit: query.limit,
-            collection: query.collection,
-            similarityFunction: query.similarityFunction,
-            totalShards: targetShards.length,
-            activeShards: result.stats.activeShards,
-            resultCount: result.results.length
-          }
+          true,
+          { type: 'VECTOR', table: query.collection || 'default' }
         );
       }
       
@@ -525,8 +518,8 @@ export class VectorShardingManager {
         this.metricsCollector.recordQuery(
           'vector_search',
           totalTime,
-          { error: true },
-          error as Error
+          false,
+          { type: 'VECTOR', table: query.collection || 'default', error: (error as Error).message }
         );
       }
       
