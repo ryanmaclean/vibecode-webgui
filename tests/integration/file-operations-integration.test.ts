@@ -415,10 +415,11 @@ describe('File Operations Integration Tests', () => {
       // Create file
       await fileOps.createFile(filePath, 'test content');
 
-      // Simulate file system error by removing file externally
-      await fs.unlink(filePath);
+      // Simulate file system error by deleting the file using the same system
+      // Since SecureFileSystemOperations uses internal storage, use its own delete method
+      await fileOps.deleteFile(filePath);
 
-      // Attempt to read should handle error gracefully
+      // Attempt to read should handle error gracefully (file was deleted)
       await expect(fileOps.readFile(filePath)).rejects.toThrow()
 
       // File operations should still work for other files
