@@ -1,17 +1,24 @@
 import axios from 'axios';
 import { logger } from '../utils/logger';
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import pkg from '../../package.json';
 
 export class DatadogMetricsService {
   private apiKey: string | undefined;
   private site: string;
   private service: string;
   private env: string;
+  private version: string;
 
   constructor() {
     this.apiKey = process.env.DATADOG_API_KEY || process.env.DD_API_KEY;
-    this.site = process.env.DATADOG_SITE || 'datadoghq.com';
+    // Default to us1 site as requested
+    this.site = process.env.DATADOG_SITE || 'us1.datadoghq.com';
     this.service = process.env.DD_SERVICE || 'vibecode-ai-gateway';
-    this.env = process.env.DD_ENV || process.env.NODE_ENV || 'development';
+    // Force development by default if undefined
+    this.env = process.env.DD_ENV || 'development';
+    // Standard tag version from env or package.json
+    this.version = process.env.DD_VERSION || (pkg as any).version || '1.0.0';
   }
 
   public async submitMetric(metric: string, value: number, tags: string[] = []): Promise<boolean> {
@@ -25,6 +32,7 @@ export class DatadogMetricsService {
     const baseTags = [
       `env:${this.env}`,
       `service:${this.service}`,
+      `version:${this.version}`,
     ];
 
     const body = {

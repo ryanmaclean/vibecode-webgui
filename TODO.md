@@ -41,6 +41,7 @@ Reference: `docs/src/content/docs/claude-prompt.md` (oldest prompt in repo)
 - [ ] GitHub Repo Automation: endpoint/CLI to create repos + scaffold CI
 - [ ] Cloud Deploy Adapters: Vercel/Netlify/Railway one-click paths with env wiring
 - [ ] Model Selection Service: finalize policies, tests, and telemetry
+- [ ] Datadog dashboards & monitors: latency, selection rate, cost, tokens
 
 Conclusion: We have not lost the thread—the current push on reliability, monitoring, and real integration tests directly supports the platform’s enterprise-grade goals in the original prompt. The above gaps are concrete, bounded steps to achieve full alignment.
 
@@ -153,6 +154,8 @@ beforeAll(() => {
 - **Solution**: Delete/rewrite tests to match actual application features
 
 ## ✅ Recently Completed
+- [x] **Datadog proof-of-life metric (AI Gateway)** – Submitted `vibecode.ai_gateway.test` via `npm run dd:test`; selection metrics now emitted on auto-selection paths (chat/stream/select)
+- [x] **Unit tests for Datadog metrics** – Added `services/ai-gateway/src/__tests__/datadog-metrics.test.ts` with nock to validate gauge shape, standard tags (`env`, `service`, `version`), and model tag sanitization
 - [x] **CRITICAL: Fixed API route 500 errors** - Systematic debugging revealed Jest module caching issue. Solution: Dynamic import with `jest.resetModules()` ensures mocks are properly applied to imported API routes. `/api/ai/chat/stream` integration tests now 2/2 passing (100%)
 - [x] Upgraded @tremor/react to the React 19-compatible 4.0 beta to clear peer dependency overrides (see wiki/FRONTEND_DEPENDENCY_NOTES.md)
 - [x] Restored `npm run type-check` by fixing tests and vector DB typings (see wiki/TYPECHECK_STATUS.md)
@@ -215,6 +218,7 @@ beforeAll(() => {
 - [x] Run `scripts/min-kind-bootstrap.sh` end-to-end (auto-falls back to no host-port KIND config, skips Prisma baseline on P3005)
 - [x] **Datadog first-class in bootstrap** – script now loads `.env.local`, creates `datadog` namespace + secret/configmap, applies RBAC, and waits for `daemonset/datadog-agent` before any app resources
 - [x] **Datadog verification** – current cluster: `daemonset/datadog-agent` (3/3 ready), pods running on every node, config map `datadog-config` applied, logs free of errors (`kubectl logs -l app=datadog-agent -n datadog --tail=50` → no `error`/`fatal`)
+- [ ] **Extend monitoring to full Datadog stack** – install Cluster Agent (Deployment + service account), enable orchestrator explorer/state metrics, and teach the bootstrap to wait on both DaemonSet and Cluster Agent before app rollout
 - [x] **Replace placeholder credentials** in `k8s/vibecode-secrets.yaml` and `k8s/oauth-secrets.yaml` before sharing artifacts externally
   - ✅ **COMPLETED**: Added security warnings to existing secret files
   - ✅ **COMPLETED**: Created `k8s/SECRETS-SETUP.md` comprehensive guide
