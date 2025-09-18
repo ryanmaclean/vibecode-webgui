@@ -1,8 +1,7 @@
 // PostCSS config for Docker environment with Tailwind v3
-const config = {
+module.exports = {
   plugins: {
     tailwindcss: {},
     autoprefixer: {},
   },
 };
-export default config;
