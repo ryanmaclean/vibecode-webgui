@@ -129,6 +129,11 @@ const nextConfig = {
     ];
   },
   webpack: (config, { isServer }) => {
+    // Disable minification to fix webpack error with zod v4
+    config.optimization = {
+      ...config.optimization,
+      minimize: false,
+    };
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
