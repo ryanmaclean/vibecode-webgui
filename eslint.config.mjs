@@ -9,26 +9,24 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
-  {
-    rules: {
-      // Allow unused parameters prefixed with underscore
-      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
-      // Allow any type for now (can be gradually improved)
-      "@typescript-eslint/no-explicit-any": "warn",
-      // Allow require imports where needed
-      "@typescript-eslint/no-require-imports": "warn",
-      // Allow React hooks dependencies to be handled manually
-      "react-hooks/exhaustive-deps": "warn"
-    }
-  },
-  {
-    files: ["scripts/vector-db-migrations/**/*.js"],
-    rules: {
-      "@typescript-eslint/no-require-imports": "off"
-    }
+const eslintConfig = [{
+  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts"]
+}, ...compat.extends("next/core-web-vitals", "next/typescript"), {
+  rules: {
+    // Allow unused parameters prefixed with underscore
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    // Allow any type for now (can be gradually improved)
+    "@typescript-eslint/no-explicit-any": "warn",
+    // Allow require imports where needed
+    "@typescript-eslint/no-require-imports": "warn",
+    // Allow React hooks dependencies to be handled manually
+    "react-hooks/exhaustive-deps": "warn"
   }
-];
+}, {
+  files: ["scripts/vector-db-migrations/**/*.js"],
+  rules: {
+    "@typescript-eslint/no-require-imports": "off"
+  }
+}];
 
 export default eslintConfig;

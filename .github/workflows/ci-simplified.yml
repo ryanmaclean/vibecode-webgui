@@ -238,3 +238,48 @@ jobs:
               "tags": ["source:github", "env:ci", "service:vibecode-webgui", "event:ci-complete"],
               "alert_type": "success"
             }' || echo "Datadog notification skipped (no API key)"
+
+  # AI Gateway Service Tests
+  ai-gateway-tests:
+    runs-on: ubuntu-latest
+    name: AI Gateway Metrics and E2E (conditional)
+    needs: code-quality
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install AI Gateway dependencies
+        run: npm --prefix services/ai-gateway ci
+
+      - name: Build AI Gateway
+        run: npm --prefix services/ai-gateway run build
+
+      - name: Run AI Gateway route-level metrics tests
+        run: npm --prefix services/ai-gateway run test:metrics:routes
+        env:
+          NODE_ENV: test
+
+      - name: Run AI Gateway OpenRouter E2E (if OPENROUTER_API_KEY present)
+        if: env.OPENROUTER_API_KEY != ''
+        run: npm --prefix services/ai-gateway run test:e2e:openrouter
+        env:
+          NODE_ENV: test
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          JWT_SECRET: test_jwt_secret
+          API_KEYS: vbai_test_key
+
+      - name: Upload AI Gateway test logs (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-gateway-test-logs
+          path: |
+            services/ai-gateway/.jest-cache/
+            services/ai-gateway/test-results/
