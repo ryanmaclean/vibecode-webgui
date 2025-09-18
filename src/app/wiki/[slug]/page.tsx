@@ -18,8 +18,8 @@ import { marked } from 'marked';
 // }
 
 // This is the main page component for a single wiki page.
-export default function WikiPage({ params }: { params: { slug: string } }) {
-  const { slug } = params;
+export default async function WikiPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const filePath = path.join(process.cwd(), 'content/wiki', `${slug}.md`);
 
   // Check if the markdown file exists.

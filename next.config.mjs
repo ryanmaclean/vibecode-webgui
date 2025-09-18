@@ -150,6 +150,10 @@ const nextConfig = {
       '@opentelemetry/core': false,
       '@opentelemetry/api': false,
       '@opentelemetry/instrumentation': false,
+      '@opentelemetry/sdk-trace-web': false,
+      '@opentelemetry/auto-instrumentations-web': false,
+      '@opentelemetry/sdk-trace-base': false,
+      '@opentelemetry/sdk-metrics': false,
     };
 
     // Explicitly handle path aliases
@@ -180,13 +184,23 @@ const nextConfig = {
         '@opentelemetry/semantic-conventions',
         '@opentelemetry/core',
         '@opentelemetry/api',
-        '@opentelemetry/instrumentation'
+        '@opentelemetry/instrumentation',
+        '@opentelemetry/sdk-trace-web',
+        '@opentelemetry/auto-instrumentations-web',
+        '@opentelemetry/sdk-trace-base',
+        '@opentelemetry/sdk-metrics'
       );
     }
 
     // Fix for camelcase module causing webpack errors
     config.module.rules.push({
       test: /node_modules\/camelcase/,
+      use: 'null-loader'
+    });
+
+    // Ignore OpenTelemetry vendor chunks
+    config.module.rules.push({
+      test: /vendor-chunks\/@opentelemetry/,
       use: 'null-loader'
     });
 

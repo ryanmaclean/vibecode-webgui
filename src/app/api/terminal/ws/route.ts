@@ -10,32 +10,10 @@ import { WebSocketServer } from 'ws'
 import { spawn, IPty } from 'node-pty'
 import { ClaudeCliIntegration } from '@/lib/claude-cli-integration'
 import { datadogMonitoring } from '@/lib/monitoring/enhanced-datadog-integration'
+import { terminalSessions, generateSessionId } from '@/lib/terminal/session-manager'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
-
-// Terminal session management
-const terminalSessions = new Map<string, {
-  pty: IPty
-  workspaceId: string
-  userId: string
-  claude?: ClaudeCliIntegration
-  aiContext: string[]
-  lastActivity: Date
-}>()
-
-// Cleanup inactive sessions every 30 minutes
-setInterval(() => {
-  const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000)
-  
-  for (const [sessionId, session] of terminalSessions.entries()) {
-    if (session.lastActivity < thirtyMinutesAgo) {
-      console.log(`Cleaning up inactive terminal session: ${sessionId}`)
-      session.pty.kill()
-      terminalSessions.delete(sessionId)
-    }
-  }
-}, 30 * 60 * 1000)
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -397,10 +375,3 @@ const webSocketHandler = (ws: any, request: any) => {
   }
 }
 
-// Generate unique session ID
-function generateSessionId(): string {
-  return `term_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-}
-
-// Export for use in WebSocket server setup
-export { terminalSessions }

@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { LiteLLMClient } from '@/lib/ai-clients/litellm-client';
+import { litellmClient } from '@/lib/ai-clients/litellm-instance';
 import rateLimit from '@/lib/rate-limiting';
 
 // Create rate limiter for AI endpoints
@@ -15,15 +15,6 @@ const aiRateLimit = rateLimit({
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
-
-// Initialize LiteLLM client
-const litellmClient = new LiteLLMClient({
-  baseUrl: process.env.LITELLM_BASE_URL || 'http://localhost:4000',
-  apiKey: process.env.LITELLM_MASTER_KEY || 'sk-vibecode-master-key-12345',
-  defaultModel: 'gpt-4o-mini',
-  enableLogging: true,
-  enableCaching: true
-});
 
 // Rate limiting configuration
 const _ratelimit = rateLimit({
@@ -343,7 +334,4 @@ async function handleStreamingChat(requestData: any, session: any) {
 // Utility functions
 function generateRequestId(): string {
   return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
-
-// Export for external use
-export { litellmClient }; 
+} 
