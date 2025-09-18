@@ -17,8 +17,8 @@ class OpenRouterClient {
             timeout: environment_1.config.openrouter.timeout,
             headers: {
                 'Authorization': `Bearer ${environment_1.config.openrouter.apiKey}`,
-                'HTTP-Referer': 'https://vibecode.dev',
-                'X-Title': 'VibeCode AI Gateway',
+                'HTTP-Referer': environment_1.config.openrouter.referrer || 'https://vibecode.dev',
+                'X-Title': environment_1.config.openrouter.title || 'VibeCode AI Gateway',
                 'Content-Type': 'application/json'
             }
         });
