@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Invalid request parameters',
-        details: error.errors
+        details: error.issues
       }, { status: 400 })
     }
 
@@ -117,7 +117,7 @@ export async function PUT(req: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Invalid request parameters',
-        details: error.errors
+        details: error.issues
       }, { status: 400 })
     }
 
