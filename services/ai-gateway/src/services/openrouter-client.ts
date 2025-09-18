@@ -97,8 +97,8 @@ export class OpenRouterClient {
             timeout: config.openrouter.timeout,
             headers: {
                 'Authorization': `Bearer ${config.openrouter.apiKey}`,
-                'HTTP-Referer': 'https://vibecode.dev',
-                'X-Title': 'VibeCode AI Gateway',
+                'HTTP-Referer': config.openrouter.referrer || 'https://vibecode.dev',
+                'X-Title': config.openrouter.title || 'VibeCode AI Gateway',
                 'Content-Type': 'application/json'
             }
         });
