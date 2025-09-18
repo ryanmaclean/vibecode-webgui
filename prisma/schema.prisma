@@ -140,6 +140,10 @@ model RAGChunk {
   project_id  Int?
   chunk_index Int?     // Position within file
   token_count Int?     // Number of tokens
+  start_line  Int?     // Start line in file
+  end_line    Int?     // End line in file
+  tokens      Int?     // Token count (alias for token_count)
+  chunk_id    String?  // External chunk identifier
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
