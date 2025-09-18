@@ -466,7 +466,7 @@ export async function POST(request: NextRequest) {
       console.error('AI project generation error:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const errorDetails = error instanceof z.ZodError ? error.errors : undefined;
+      const errorDetails = error instanceof z.ZodError ? error.issues : undefined;
       
       sendProgress('error', {
         error: 'Failed to generate project',

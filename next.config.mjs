@@ -29,6 +29,7 @@ const nextConfig = {
     // Disable ISR completely
     isrFlushToDisk: false,
   },
+
   
   trailingSlash: false,
   generateBuildId: () => 'build',

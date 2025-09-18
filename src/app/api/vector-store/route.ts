@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
         {
           status: 'error',
           message: 'Invalid request parameters',
-          errors: error.errors
+          errors: error.issues
         },
         { status: 400 }
       )
@@ -213,7 +213,7 @@ export async function PUT(req: NextRequest) {
         {
           status: 'error',
           message: 'Invalid request parameters',
-          errors: error.errors
+          errors: error.issues
         },
         { status: 400 }
       )
@@ -271,7 +271,7 @@ export async function DELETE(req: NextRequest) {
         {
           status: 'error',
           message: 'Invalid request parameters',
-          errors: error.errors
+          errors: error.issues
         },
         { status: 400 }
       )
