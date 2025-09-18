@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
         {
           status: 'error',
           message: 'Invalid metrics data',
-          errors: error.errors
+          errors: error.issues
         },
         { status: 400 }
       )
@@ -226,7 +226,7 @@ export async function PUT(req: NextRequest) {
         {
           status: 'error',
           message: 'Invalid registration data',
-          errors: error.errors
+          errors: error.issues
         },
         { status: 400 }
       )
@@ -279,7 +279,7 @@ export async function PATCH(req: NextRequest) {
         {
           status: 'error',
           message: 'Invalid configuration data',
-          errors: error.errors
+          errors: error.issues
         },
         { status: 400 }
       )
