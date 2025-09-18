@@ -23,7 +23,8 @@ description: Active project tasks and priorities
 - [x] **✅ MERGE CONFLICT CLEANUP COMPLETE** - TODO.md conflicts resolved
 - [x] **✅ OpenTelemetry Module Error Fixed** - Enhanced webpack configuration with fallbacks + externals + environment variables prevent static build issues
 - [x] **✅ Datadog SDK Warnings Resolved** - Enhanced webpack configuration eliminates multiple load warnings
-- [x] **✅ Major TypeScript Compilation Errors Fixed** - RAGChunk model added to Prisma schema, health API tests fixed, vector DB types fixed → 67% error reduction (30+ → 10 errors)
+- [x] **✅ ALL TypeScript Compilation Errors Fixed** - RAGChunk model added to Prisma schema, health API tests fixed, vector DB types fixed, file-system-operations fileLocks property fixed → 100% error reduction (30+ → 0 errors) ✅ COMPLETE
+- [x] **✅ CRITICAL CI Build Failures Fixed** - babel.config.js ES6 export syntax converted to CommonJS (module.exports), preventing Babel configuration loading errors → Resolves zod 4.1.9 upgrade CI failures ✅ COMPLETE
 - [ ] **Monitor Latest Pipeline** - Watch for successful completion of latest CI run
 - [ ] **Address Any Remaining Failures** - Fix any new issues that arise
 
@@ -178,6 +179,8 @@ Reference: `docs/src/content/docs/claude-prompt.md` (oldest prompt in repo)
 - [x] Evaluate DogStatsD/histograms for latency/cost percentiles and batching (add optional transport)
 - [x] Add Datadog apply script to validate/apply AI Gateway dashboards and monitors (gated by DD_API_KEY/DD_APP_KEY) – scripts/apply-ai-gateway-monitoring.ts
 - [x] Add OpenTelemetry correlation to AI Gateway (request_id/trace_id in traces; minimal spans around OpenRouter and HTTP server)
+ - [x] AI Gateway: wire route-level metrics test into CI (job "ai-gateway-tests" in .github/workflows/ci-simplified.yml)
+ - [x] AI Gateway: add real OpenRouter E2E test (guarded by OPENROUTER_API_KEY) asserting response and tracing headers – services/ai-gateway/src/__tests__/openrouter-e2e.int.test.ts
 
 Conclusion: We have not lost the thread—the current push on reliability, monitoring, and real integration tests directly supports the platform’s enterprise-grade goals in the original prompt. The above gaps are concrete, bounded steps to achieve full alignment.
 
