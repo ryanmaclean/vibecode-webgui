@@ -23,6 +23,7 @@ description: Active project tasks and priorities
 - [x] **✅ MERGE CONFLICT CLEANUP COMPLETE** - TODO.md conflicts resolved
 - [x] **✅ OpenTelemetry Module Error Fixed** - Enhanced webpack configuration with fallbacks + externals + environment variables prevent static build issues
 - [x] **✅ Datadog SDK Warnings Resolved** - Enhanced webpack configuration eliminates multiple load warnings
+- [x] **✅ Major TypeScript Compilation Errors Fixed** - RAGChunk model added to Prisma schema, health API tests fixed, vector DB types fixed → 67% error reduction (30+ → 10 errors)
 - [ ] **Monitor Latest Pipeline** - Watch for successful completion of latest CI run
 - [ ] **Address Any Remaining Failures** - Fix any new issues that arise
 
@@ -176,7 +177,7 @@ Reference: `docs/src/content/docs/claude-prompt.md` (oldest prompt in repo)
 - [x] AI Gateway metrics: centralize standard tags via helper (ensure `env`, `service`, `version`, `operation`, `model_provider`, `model_family`)
 - [x] Evaluate DogStatsD/histograms for latency/cost percentiles and batching (add optional transport)
 - [x] Add Datadog apply script to validate/apply AI Gateway dashboards and monitors (gated by DD_API_KEY/DD_APP_KEY) – scripts/apply-ai-gateway-monitoring.ts
-- [ ] Add OpenTelemetry correlation to AI Gateway (request_id/trace_id in traces; minimal spans around OpenRouter and HTTP server)
+- [x] Add OpenTelemetry correlation to AI Gateway (request_id/trace_id in traces; minimal spans around OpenRouter and HTTP server)
 
 Conclusion: We have not lost the thread—the current push on reliability, monitoring, and real integration tests directly supports the platform’s enterprise-grade goals in the original prompt. The above gaps are concrete, bounded steps to achieve full alignment.
 
