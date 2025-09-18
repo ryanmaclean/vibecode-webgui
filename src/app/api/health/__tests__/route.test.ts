@@ -51,7 +51,7 @@ describe('/api/health', () => {
   describe('GET /api/health', () => {
     it('should return healthy status with basic information', async () => {
       try {
-        const response = await GET(mockRequest);
+        const response = await GET();
         console.log('Response status:', response.status);
         
         let data;
@@ -95,14 +95,14 @@ describe('/api/health', () => {
     });
 
     it('should include timestamp in ISO format', async () => {
-      const response = await GET(mockRequest);
+      const response = await GET();
       const data = await response.json();
 
       expect(data.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     });
 
     it('should include uptime as a number', async () => {
-      const response = await GET(mockRequest);
+      const response = await GET();
       const data = await response.json();
 
       expect(typeof data.uptime).toBe('number');
@@ -112,7 +112,7 @@ describe('/api/health', () => {
     it('should use default version when npm_package_version is not set', async () => {
       Reflect.deleteProperty(process.env, 'npm_package_version');
       
-      const response = await GET(mockRequest);
+      const response = await GET();
       const data = await response.json();
 
       expect(data.version).toBe('1.0.0');
@@ -121,14 +121,14 @@ describe('/api/health', () => {
     it('should use default environment when NODE_ENV is not set', async () => {
       Reflect.deleteProperty(process.env, 'NODE_ENV');
       
-      const response = await GET(mockRequest);
+      const response = await GET();
       const data = await response.json();
 
       expect(data.environment).toBe('development');
     });
 
     it('should include performance metrics', async () => {
-      const response = await GET(mockRequest);
+      const response = await GET();
       const data = await response.json();
 
       expect(data.performance).toEqual({
@@ -144,14 +144,14 @@ describe('/api/health', () => {
     });
 
     it('should have response time greater than 0', async () => {
-      const response = await GET(mockRequest);
+      const response = await GET();
       const data = await response.json();
 
       expect(data.performance.responseTime).toBeGreaterThan(0);
     });
 
     it('should include memory usage information', async () => {
-      const response = await GET(mockRequest);
+      const response = await GET();
       const data = await response.json();
 
       expect(data.performance.memoryUsage.rss).toBeGreaterThan(0);
