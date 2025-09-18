@@ -22,7 +22,10 @@ export enum VectorDBErrorType {
   INITIALIZATION = 'INITIALIZATION',
   SERVICE = 'SERVICE',
   TIMEOUT = 'TIMEOUT',
-  SEARCH = 'SEARCH'
+  SEARCH = 'SEARCH',
+  // Aliases for backward compatibility
+  AUTHENTICATION = 'AUTHORIZATION_ERROR',
+  CONNECTION = 'CONNECTION_FAILED'
 }
 
 export class VectorDBError extends Error {
@@ -267,6 +270,48 @@ export class VectorDbErrorHandler {
       t === VectorDBErrorType.TIMEOUT ||
       t === VectorDBErrorType.SERVICE ||
       t === VectorDBErrorType.UNKNOWN_ERROR
+    );
+  }
+
+  /**
+   * Check if error is authentication related
+   */
+  public isAuthError(error: any): boolean {
+    const msg = String(error?.message || '').toLowerCase();
+    const code = String((error as any)?.code ?? '');
+    const status = (error as any)?.status ?? (error as any)?.statusCode ?? 0;
+
+    return (
+      code === 'EAUTH' || status === 401 || status === 403 ||
+      msg.includes('auth') || msg.includes('unauthorized') || msg.includes('forbidden') ||
+      msg.includes('credentials') || msg.includes('permission')
+    );
+  }
+
+  /**
+   * Check if error is network/connection related
+   */
+  public isNetworkError(error: any): boolean {
+    const msg = String(error?.message || '').toLowerCase();
+    const code = String((error as any)?.code ?? '');
+
+    return (
+      code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ENETWORK' ||
+      msg.includes('connection') || msg.includes('connect') || msg.includes('network')
+    );
+  }
+
+  /**
+   * Check if error is timeout related
+   */
+  public isTimeoutError(error: any): boolean {
+    const msg = String(error?.message || '').toLowerCase();
+    const code = String((error as any)?.code ?? '');
+    const status = (error as any)?.status ?? (error as any)?.statusCode ?? 0;
+
+    return (
+      code === 'ETIMEDOUT' || status === 408 || status === 504 ||
+      msg.includes('timeout') || msg.includes('timed out')
     );
   }
 

@@ -10,6 +10,7 @@
     "test": "jest",
     "test:metrics": "jest --testPathPattern src/__tests__/datadog-metrics\\.test\\.ts",
     "test:metrics:routes": "jest --testPathPattern src/__tests__/routes-metrics\\.int\\.test\\.ts",
+    "test:e2e:openrouter": "jest --testPathPattern src/__tests__/openrouter-e2e\\.int\\.test\\.ts",
     "test:watch": "jest --watch",
     "lint": "eslint src --ext .ts",
     "docker:build": "docker build -t vibecode-ai-gateway .",

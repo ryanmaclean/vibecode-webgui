@@ -1,146 +1,16 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-require("./tracing");
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const helmet_1 = __importDefault(require("helmet"));
-const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
+const app_1 = require("./app");
 const environment_1 = require("./config/environment");
 const logger_1 = require("./utils/logger");
-const api_1 = require("@opentelemetry/api");
-const error_handler_1 = require("./middleware/error-handler");
-const auth_1 = require("./middleware/auth");
-const ai_routes_1 = require("./routes/ai-routes");
-const health_routes_1 = require("./routes/health-routes");
-const metrics_routes_1 = require("./routes/metrics-routes");
 const redis_service_1 = require("./services/redis-service");
 const model_registry_1 = require("./services/model-registry");
 const cron_jobs_1 = require("./utils/cron-jobs");
 class AIGatewayServer {
     constructor() {
-        this.app = (0, express_1.default)();
+        this.app = (0, app_1.createApp)();
         this.redisService = new redis_service_1.RedisService();
         this.modelRegistry = new model_registry_1.ModelRegistry();
-        this.initializeMiddleware();
-        this.initializeRoutes();
-        this.initializeErrorHandling();
-    }
-    initializeMiddleware() {
-        this.app.use((0, helmet_1.default)({
-            contentSecurityPolicy: {
-                directives: {
-                    defaultSrc: ["'self'"],
-                    scriptSrc: ["'self'"],
-                    styleSrc: ["'self'", "'unsafe-inline'"],
-                    imgSrc: ["'self'", "data:", "https:"],
-                    connectSrc: ["'self'", "https://openrouter.ai"],
-                    fontSrc: ["'self'"],
-                    objectSrc: ["'none'"],
-                    mediaSrc: ["'self'"],
-                    frameSrc: ["'none'"],
-                }
-            }
-        }));
-        this.app.use((0, cors_1.default)({
-            origin: environment_1.config.cors.allowedOrigins,
-            credentials: true,
-            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-            allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Request-ID']
-        }));
-        const limiter = (0, express_rate_limit_1.default)({
-            windowMs: 15 * 60 * 1000,
-            max: environment_1.config.rateLimit.requestsPerWindow,
-            message: {
-                error: 'Too many requests',
-                retryAfter: '15 minutes'
-            },
-            standardHeaders: true,
-            legacyHeaders: false,
-            skip: (req) => {
-                return req.path === '/health' || req.path === '/metrics';
-            }
-        });
-        this.app.use(limiter);
-        this.app.use(express_1.default.json({ limit: '10mb' }));
-        this.app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
-        this.app.use((req, res, next) => {
-            const tracer = api_1.trace.getTracer('ai-gateway');
-            const requestId = req.headers['x-request-id'] || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            req.requestId = requestId;
-            res.setHeader('X-Request-ID', requestId);
-            tracer.startActiveSpan(`HTTP ${req.method} ${req.path}`, (span) => {
-                try {
-                    const ua = req.get('User-Agent') || '';
-                    span.setAttribute('http.method', String(req.method || ''));
-                    span.setAttribute('http.target', String(req.originalUrl || req.url || ''));
-                    span.setAttribute('http.route', String(req.path || ''));
-                    span.setAttribute('http.client_ip', String(req.ip || ''));
-                    span.setAttribute('user_agent', ua);
-                    span.setAttribute('request_id', requestId);
-                    const ctx = span.spanContext();
-                    if (ctx && ctx.traceId && ctx.spanId) {
-                        const sampled = (ctx.traceFlags & 0x01) === 0x01 ? '01' : '00';
-                        const traceparent = `00-${ctx.traceId}-${ctx.spanId}-${sampled}`;
-                        res.setHeader('traceparent', traceparent);
-                    }
-                    logger_1.logger.info('Incoming request', {
-                        requestId,
-                        method: req.method,
-                        url: req.url,
-                        userAgent: ua,
-                        ip: req.ip,
-                        trace_id: ctx?.traceId,
-                        span_id: ctx?.spanId
-                    });
-                    res.on('finish', () => {
-                        span.setAttribute('http.status_code', res.statusCode);
-                        if (res.statusCode >= 500) {
-                            span.setStatus({ code: api_1.SpanStatusCode.ERROR, message: `HTTP ${res.statusCode}` });
-                        }
-                        span.end();
-                    });
-                    next();
-                }
-                catch (err) {
-                    span.recordException(err);
-                    span.setStatus({ code: api_1.SpanStatusCode.ERROR, message: 'middleware error' });
-                    span.end();
-                    next(err);
-                }
-            });
-        });
-    }
-    initializeRoutes() {
-        this.app.use('/health', health_routes_1.healthRoutes);
-        this.app.use('/metrics', metrics_routes_1.metricsRoutes);
-        this.app.use('/api/v1', auth_1.authMiddleware, ai_routes_1.aiRoutes);
-        this.app.get('/', (_req, res) => {
-            res.json({
-                service: 'VibeCode AI Gateway',
-                version: '1.0.0',
-                status: 'running',
-                timestamp: new Date().toISOString(),
-                endpoints: {
-                    health: '/health',
-                    metrics: '/metrics',
-                    api: '/api/v1'
-                }
-            });
-        });
-        this.app.use('*', (req, res) => {
-            res.status(404).json({
-                error: 'Endpoint not found',
-                path: req.originalUrl,
-                method: req.method,
-                timestamp: new Date().toISOString()
-            });
-        });
-    }
-    initializeErrorHandling() {
-        this.app.use(error_handler_1.errorHandler);
     }
     async start() {
         try {
