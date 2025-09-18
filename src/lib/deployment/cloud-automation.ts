@@ -50,14 +50,14 @@ const vercelConfigSchema = z.object({
   buildCommand: z.string().optional(),
   outputDirectory: z.string().optional(),
   installCommand: z.string().optional(),
-  environmentVariables: z.record(z.string()).optional()
+  environmentVariables: z.record(z.string(), z.string()).optional()
 })
 
 const netlifyConfigSchema = z.object({
   buildCommand: z.string().optional(),
   publishDir: z.string().optional(),
   functions: z.string().optional(),
-  environmentVariables: z.record(z.string()).optional()
+  environmentVariables: z.record(z.string(), z.string()).optional()
 })
 
 const awsConfigSchema = z.object({
@@ -65,7 +65,7 @@ const awsConfigSchema = z.object({
   runtime: z.string().optional(),
   memorySize: z.number().optional(),
   timeout: z.number().optional(),
-  environmentVariables: z.record(z.string()).optional()
+  environmentVariables: z.record(z.string(), z.string()).optional()
 })
 
 /**
