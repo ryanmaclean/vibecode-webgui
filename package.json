@@ -14,7 +14,7 @@
     "build": "next build",
     "start": "next start",
     "start:dd": "node --require ./src/instrument.ts node_modules/.bin/next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",

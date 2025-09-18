@@ -14,6 +14,9 @@ import * as fs from 'fs/promises'
 import crypto from 'crypto'
 import { Mutex } from 'async-mutex'
 
+// Global file locks manager - shared across all instances within a workspace
+const globalFileLocks = new Map<string, Map<string, { userId: string; timestamp: Date; lockId: string }>>()
+
 // Security constants
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const MAX_FILES_PER_WORKSPACE = 10000
@@ -75,7 +78,6 @@ export class SecureFileSystemOperations extends EventEmitter {
   private watcher: ReturnType<typeof chokidar.watch> | null = null
   private fileMetadataCache: Map<string, FileMetadata> = new Map()
   private operationQueue: Map<string, FileOperation[]> = new Map()
-  private fileLocks: Map<string, { userId: string; timestamp: Date }> = new Map()
   private operationMutex = new Mutex()
   private syncInProgress = new Set<string>()
 
@@ -83,6 +85,18 @@ export class SecureFileSystemOperations extends EventEmitter {
     super()
     this.config = this.validateConfig(config)
     this.setupFileWatcher()
+    
+    // Initialize workspace locks if not exists
+    if (!globalFileLocks.has(this.config.workspaceId)) {
+      globalFileLocks.set(this.config.workspaceId, new Map())
+    }
+  }
+
+  /**
+   * Get the file locks map for this workspace
+   */
+  private getWorkspaceLocks(): Map<string, { userId: string; timestamp: Date; lockId: string }> {
+    return globalFileLocks.get(this.config.workspaceId)!
   }
 
   /**
@@ -249,7 +263,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       } else {
         // File deleted
         this.fileMetadataCache.delete(filePath)
-        this.fileLocks.delete(filePath)
+        this.getWorkspaceLocks().delete(filePath)
       }
 
       // Create operation record
@@ -315,7 +329,7 @@ export class SecureFileSystemOperations extends EventEmitter {
   }
 
   private getFullPath(filePath: string): string {
-    return path.resolve(this.workspacePath, filePath)
+    return path.resolve(this.config.workingDirectory, filePath)
   }
 
   /**
@@ -482,7 +496,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       const fullPath = path.resolve(this.config.workingDirectory, filePath)
 
       // Check if file is locked
-      const lock = this.fileLocks.get(filePath)
+      const lock = this.getWorkspaceLocks().get(filePath)
       if (lock && lock.userId !== this.config.userId) {
         throw new Error(`File is locked by another user: ${lock.userId}`)
       }
@@ -542,7 +556,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       const fullPath = path.resolve(this.config.workingDirectory, filePath)
 
       // Check if file is locked
-      const lock = this.fileLocks.get(filePath)
+      const lock = this.getWorkspaceLocks().get(filePath)
       if (lock && lock.userId !== this.config.userId) {
         throw new Error(`File is locked by another user: ${lock.userId}`)
       }
@@ -553,7 +567,7 @@ export class SecureFileSystemOperations extends EventEmitter {
 
         // Clean up metadata and locks
         this.fileMetadataCache.delete(filePath)
-        this.fileLocks.delete(filePath)
+        this.getWorkspaceLocks().delete(filePath)
 
         // Record operation
         const operation: FileOperation = {
@@ -622,19 +636,22 @@ export class SecureFileSystemOperations extends EventEmitter {
       throw new Error('Invalid file path')
     }
 
-    const existingLock = this.fileLocks.get(filePath)
+    const workspaceLocks = this.getWorkspaceLocks()
+    const existingLock = workspaceLocks.get(filePath)
+    
     if (existingLock) {
       // Check if lock has expired (1 hour timeout)
       if (Date.now() - existingLock.timestamp.getTime() > 3600000) {
-        this.fileLocks.delete(filePath)
+        workspaceLocks.delete(filePath)
       } else if (existingLock.userId !== this.config.userId) {
         return false
       }
     }
 
-    this.fileLocks.set(filePath, {
+    workspaceLocks.set(filePath, {
       userId: this.config.userId,
-      timestamp: new Date()
+      timestamp: new Date(),
+      lockId: crypto.randomUUID()
     })
 
     return true
@@ -648,12 +665,14 @@ export class SecureFileSystemOperations extends EventEmitter {
       throw new Error('Invalid file path')
     }
 
-    const lock = this.fileLocks.get(filePath)
+    const workspaceLocks = this.getWorkspaceLocks()
+    const lock = workspaceLocks.get(filePath)
+    
     if (!lock || lock.userId !== this.config.userId) {
       return false
     }
 
-    this.fileLocks.delete(filePath)
+    workspaceLocks.delete(filePath)
     return true
   }
 
@@ -699,20 +718,23 @@ export class SecureFileSystemOperations extends EventEmitter {
       throw new Error('Invalid file path')
     }
 
-    const existingLock = this.fileLocks.get(filePath)
+    const workspaceLocks = this.getWorkspaceLocks()
+    const existingLock = workspaceLocks.get(filePath)
+    
     if (existingLock) {
       // Check if lock has expired (1 hour timeout)
       if (Date.now() - existingLock.timestamp.getTime() > 3600000) {
-        this.fileLocks.delete(filePath)
+        workspaceLocks.delete(filePath)
       } else if (existingLock.userId !== this.config.userId) {
         throw new Error('File is locked')
       }
     }
 
     const lockId = crypto.randomUUID()
-    this.fileLocks.set(filePath, {
+    workspaceLocks.set(filePath, {
       userId: this.config.userId,
-      timestamp: new Date()
+      timestamp: new Date(),
+      lockId
     })
 
     return { lockId }
@@ -726,12 +748,14 @@ export class SecureFileSystemOperations extends EventEmitter {
       throw new Error('Invalid file path')
     }
 
-    const lock = this.fileLocks.get(filePath)
-    if (!lock || lock.userId !== this.config.userId) {
+    const workspaceLocks = this.getWorkspaceLocks()
+    const lock = workspaceLocks.get(filePath)
+    
+    if (!lock || lock.userId !== this.config.userId || lock.lockId !== lockId) {
       return false
     }
 
-    this.fileLocks.delete(filePath)
+    workspaceLocks.delete(filePath)
     return true
   }
 
@@ -810,9 +834,22 @@ export class SecureFileSystemOperations extends EventEmitter {
 
     this.fileMetadataCache.clear()
     this.operationQueue.clear()
-    this.fileLocks.clear()
     this.syncInProgress.clear()
     this.removeAllListeners()
+    
+    // Clean up any locks held by this user
+    const workspaceLocks = this.getWorkspaceLocks()
+    const locksToRemove: string[] = []
+    
+    for (const [filePath, lock] of workspaceLocks.entries()) {
+      if (lock.userId === this.config.userId) {
+        locksToRemove.push(filePath)
+      }
+    }
+    
+    for (const filePath of locksToRemove) {
+      workspaceLocks.delete(filePath)
+    }
   }
 }
 

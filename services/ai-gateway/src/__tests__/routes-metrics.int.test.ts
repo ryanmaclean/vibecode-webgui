@@ -1,8 +1,5 @@
 /// <reference types="jest" />
 import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import request from 'supertest';
 
 // Ensure required env are set for config validation
@@ -24,76 +21,19 @@ afterAll(() => {
 });
 
 async function buildApp() {
-  const app = express();
-
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'", 'https://openrouter.ai'],
-        fontSrc: ["'self'"],
-        objectSrc: ["'none'"],
-        mediaSrc: ["'self'"],
-        frameSrc: ["'none'"],
-      }
-    }
-  }));
-
-  // Avoid early import of config/environment; use env var directly for CORS if provided
-  const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:8090')
-    .split(',');
-  app.use(cors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Request-ID']
-  }));
-
-  const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: parseInt(process.env.RATE_LIMIT_REQUESTS || '1000', 10),
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: (req) => req.path === '/health' || req.path === '/metrics'
-  });
-  app.use(limiter);
-
-  app.use(express.json({ limit: '5mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '5mb' }));
-
-  // Dynamically import modules that rely on config/environment after env is set
-  let authMiddleware: any;
-  let errorHandler: any;
-  let aiRoutes: any;
-  let healthRoutes: any;
-  let metricsRoutes: any;
-
+  let createApp: (() => express.Express) | undefined;
   await new Promise<void>((resolve) => {
     jest.isolateModules(() => {
+      // Avoid early import to ensure env is set
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      authMiddleware = require('../middleware/auth').authMiddleware;
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      errorHandler = require('../middleware/error-handler').errorHandler;
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      aiRoutes = require('../routes/ai-routes').aiRoutes;
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      healthRoutes = require('../routes/health-routes').healthRoutes;
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      metricsRoutes = require('../routes/metrics-routes').metricsRoutes;
+      createApp = require('../app').createApp as () => express.Express;
       resolve();
     });
   });
-
-  // Mount routes (same structure as server.ts)
-  app.use('/health', healthRoutes);
-  app.use('/metrics', metricsRoutes);
-  app.use('/api/v1', authMiddleware, aiRoutes);
-
-  app.use(errorHandler);
-  return app;
+  if (!createApp) {
+    throw new Error('Failed to load createApp from ../app');
+  }
+  return createApp();
 }
 
 describe('AI Gateway route-level metrics integration', () => {
@@ -108,6 +48,9 @@ describe('AI Gateway route-level metrics integration', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('status', 'healthy');
     expect(res.body).toHaveProperty('service', 'vibecode-ai-gateway');
+    // Inbound tracing middleware should set headers
+    expect(res.headers['x-request-id']).toBeTruthy();
+    expect(res.headers['traceparent']).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/);
   });
 
   test('GET /metrics returns basic metrics shape', async () => {
@@ -134,6 +77,9 @@ describe('AI Gateway route-level metrics integration', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('selected');
     expect(typeof res.body.selected).toBe('string');
+    // Tracing headers present
+    expect(res.headers['x-request-id']).toBeTruthy();
+    expect(res.headers['traceparent']).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/);
   });
 
   test('POST /api/v1/models/select without API key is unauthorized', async () => {
