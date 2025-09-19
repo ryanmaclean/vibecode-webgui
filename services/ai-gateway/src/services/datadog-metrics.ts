@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { logger } from '../utils/logger';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+ 
 import pkg from '../../package.json';
 
 export class DatadogMetricsService {
