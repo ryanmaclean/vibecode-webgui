@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     // Perform security checks
     const checks = {
       authentication: !!process.env.NEXTAUTH_SECRET,
-      rateLimit: !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN),
+      rateLimit: process.env.MIDDLEWARE_RATE_LIMIT_ENABLED !== 'false',
       inputValidation: true, // Always enabled
       cors: true, // Configured in Next.js config
       headers: true, // Configured in Next.js config
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     }
     
     if (!checks.rateLimit) {
-      recommendations.push('Configure Upstash Redis for rate limiting');
+      recommendations.push('Enable middleware rate limiting (set MIDDLEWARE_RATE_LIMIT_ENABLED=true and configure Redis/Valkey if needed)');
     }
 
     if (securityStats.blockedIPs > 100) {

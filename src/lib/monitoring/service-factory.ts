@@ -126,14 +126,15 @@ export class MonitoringServiceFactory {
     }
 
     // Check Redis/Valkey services
-    const redisUrl = process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL
-    if (redisUrl) {
+    const redisUrl = process.env.VALKEY_URL || process.env.REDIS_URL
+    const hasRedisHost = process.env.VALKEY_HOST || process.env.REDIS_HOST
+    if (redisUrl || hasRedisHost) {
       services.push({
         provider: 'Redis/Valkey',
         service: 'Caching Service',
         isActive: true,
         configuration: {
-          type: process.env.UPSTASH_REDIS_REST_URL ? 'Upstash' : 'Local Redis'
+          endpoint: redisUrl || `${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || '6379'}`
         },
         healthStatus: 'healthy',
         lastChecked: new Date().toISOString()
@@ -233,9 +234,10 @@ export class MonitoringServiceFactory {
   private async checkRedisHealth(): Promise<void> {
     // This would need to be implemented based on your Redis client
     // For now, just check if the URL is configured
-    const redisUrl = process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL
-    if (!redisUrl) {
-      throw new Error('Redis URL not configured')
+    const redisUrl = process.env.VALKEY_URL || process.env.REDIS_URL
+    const hasRedisHost = process.env.VALKEY_HOST || process.env.REDIS_HOST
+    if (!redisUrl && !hasRedisHost) {
+      throw new Error('Redis/Valkey endpoint not configured')
     }
   }
 

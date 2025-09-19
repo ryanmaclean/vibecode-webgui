@@ -15,7 +15,7 @@ Before you begin, ensure you have:
 
 - **Node.js** ≥18.18.0 (recommend using Node 25.x for best performance)
 - **PostgreSQL** 16+ with pgvector extension
-- **Redis** 6+ (or Upstash account for managed Redis)
+- **Redis/Valkey** 6+ (self-hosted or community-managed)
 - **Docker** and **Docker Compose** (optional, for containerized setup)
 
 ## Installation

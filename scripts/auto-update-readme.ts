@@ -266,7 +266,7 @@ class ReadmeUpdater {
 
 - Node.js ${this.packageJson.engines?.node || '18.18+'}
 - PostgreSQL 16+ with pgvector extension
-- Redis 6+ (or Upstash account)
+- Redis/Valkey 6+ (self-hosted or community-managed)
 - Docker & Docker Compose (optional)
 
 ### Installation

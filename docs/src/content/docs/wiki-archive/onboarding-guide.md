@@ -10,7 +10,7 @@ Before you begin, ensure you have:
 
 - [ ] **Node.js 20+** installed ([Download here](https://nodejs.org/))
 - [ ] **PostgreSQL 16+** with pgvector extension
-- [ ] **Redis 6+** or Upstash account
+- [ ] **Redis/Valkey 6+** (self-hosted or community-managed service)
 - [ ] **Docker & Docker Compose** for local services
 - [ ] **Git** configured with your credentials
 - [ ] **VSCode** with recommended extensions (see below)
