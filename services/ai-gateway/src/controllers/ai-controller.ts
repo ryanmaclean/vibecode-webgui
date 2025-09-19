@@ -1,5 +1,7 @@
 import { Response } from 'express';
 import { OpenRouterClient, ChatCompletionRequest } from '../services/openrouter-client';
+import { ProviderRouter } from '../services/provider-router';
+import { ChatRequest as UnifiedChatRequest, ChatResponse as UnifiedChatResponse } from '../providers/provider';
 import { ModelRegistry, ModelSelectionCriteria } from '../services/model-registry';
 import { RedisService } from '../services/redis-service';
 import { AuthenticatedRequest } from '../middleware/auth';
@@ -15,12 +17,14 @@ export class AIController {
     private modelRegistry: ModelRegistry;
     private redisService: RedisService;
     private promptAnalyzer: PromptAnalyzer;
+    private providerRouter: ProviderRouter;
 
     constructor() {
         this.openRouterClient = new OpenRouterClient();
         this.modelRegistry = new ModelRegistry();
         this.redisService = new RedisService();
         this.promptAnalyzer = new PromptAnalyzer();
+        this.providerRouter = new ProviderRouter();
     }
 
     public async chatCompletion(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -93,15 +97,47 @@ export class AIController {
                 }
             }
 
-            // Make API request
-            const response = await this.openRouterClient.chatCompletion(requestData, userId);
+            // Route: use provider router if provider is indicated via model prefix or req.provider
+            const providerHint = (req.body?.provider as string | undefined)?.toLowerCase();
+            const modelHasPrefix = typeof requestData.model === 'string' && requestData.model.includes(':');
+            let response: UnifiedChatResponse;
+
+            if (providerHint || modelHasPrefix) {
+                const unifiedReq: UnifiedChatRequest = {
+                    model: requestData.model,
+                    messages: requestData.messages.map(m => ({ role: m.role as any, content: (m as any).content })),
+                    max_tokens: requestData.max_tokens,
+                    temperature: requestData.temperature,
+                    top_p: requestData.top_p,
+                    stream: requestData.stream,
+                    stop: requestData.stop,
+                    user: userId,
+                    provider: providerHint as any
+                };
+                response = await this.providerRouter.chatCompletion(unifiedReq, userId);
+            } else {
+                // Fallback to existing OpenRouter path
+                const orResp = await this.openRouterClient.chatCompletion(requestData, userId);
+                response = {
+                    id: (orResp as any).id,
+                    model: orResp.model,
+                    choices: orResp.choices as any,
+                    usage: orResp.usage as any
+                };
+            }
 
             // Calculate cost
-            const cost = this.openRouterClient.calculateCost(
-                response.model,
-                response.usage.prompt_tokens,
-                response.usage.completion_tokens
-            );
+            // Cost calculation is exact for OpenRouter models. For other providers, this may be approximate or 0 for now.
+            let cost = 0;
+            try {
+                cost = this.openRouterClient.calculateCost(
+                    response.model,
+                    response.usage.prompt_tokens,
+                    response.usage.completion_tokens
+                );
+            } catch {
+                // Best-effort: skip cost if model/pricing unknown
+            }
 
             // Track usage
             await this.redisService.trackUsage(
@@ -138,7 +174,7 @@ export class AIController {
                 `model:${response.model.replace(/[:/]/g, '_')}`
             ]).catch(() => {});
 
-            res.json(response);
+            res.json(response as any);
         } catch (error) {
             performanceLogger.logError('chat_completion', startTime, error, {
                 model: requestData.model,

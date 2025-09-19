@@ -8,7 +8,8 @@ This implementation provides the same functionality as our AKS-based doc search 
 |-----------|----------------------|-------------------|-------------|
 | **Compute** | $400-800/month | $0-2/month | **99% reduction** |
 | **Database** | $200-300/month | $25-35/month | **85% reduction** |
-| **Total** | **$650-1300/month** | **$40-90/month** | **~$600/month** |
+| **Monitoring** | $50-100/month (App Insights) | $0/month (Free Datadog) | **100% reduction** |
+| **Total** | **$650-1300/month** | **$30-80/month** | **~$620/month** |
 
 ## 🏗️ **Architecture**
 
@@ -176,18 +177,28 @@ async function getDbConnection(): Promise<Pool> {
 
 ## 🔍 **Monitoring & Troubleshooting**
 
-### **Application Insights Queries**
-```kusto
-// Function execution times
-requests
-| where name contains "SearchFunction"
-| summarize avg(duration), count() by bin(timestamp, 1h)
+### **Datadog Monitoring Queries**
+```sql
+-- Function execution times
+SELECT avg(duration), count(*) 
+FROM traces 
+WHERE service = 'vibecode-docs-search' 
+  AND operation_name = 'docs.search.request'
+GROUP BY time(1h)
 
-// Error analysis  
-exceptions
-| where type contains "SearchFunction"
-| summarize count() by problemId, outerMessage
+-- Error analysis
+SELECT count(*) 
+FROM traces 
+WHERE service = 'vibecode-docs-search' 
+  AND error = true
+GROUP BY error_type, error_message
 ```
+
+### **Datadog Dashboard Metrics**
+- **Request Rate**: `azure.functions.invocations{service:vibecode-docs-search}`
+- **Response Time**: `trace.docs.search.request{service:vibecode-docs-search}`
+- **Error Rate**: `trace.docs.search.request{service:vibecode-docs-search,error:true}`
+- **Database Performance**: Custom metrics from pgvector queries
 
 ### **Database Monitoring**
 ```sql

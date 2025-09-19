@@ -15,7 +15,8 @@
     "lint": "eslint src --ext .ts",
     "docker:build": "docker build -t vibecode-ai-gateway .",
     "docker:run": "docker run -p 3001:3001 vibecode-ai-gateway",
-    "dd:test": "npm run build && node dist/scripts/dd-test.js"
+    "dd:test": "npm run build && node dist/scripts/dd-test.js",
+    "apm:smoke": "node scripts/apm-smoke.js --build"
   },
   "keywords": [
     "ai",

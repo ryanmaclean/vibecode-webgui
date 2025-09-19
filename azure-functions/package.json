@@ -16,7 +16,9 @@
     "pg": "^8.11.3",
     "openai": "^4.52.7",
     "gray-matter": "^4.0.3",
-    "crypto": "^1.0.1"
+    "crypto": "^1.0.1",
+    "dd-trace": "^5.0.0",
+    "datadog-lambda-js": "^8.0.0"
   },
   "devDependencies": {
     "@types/node": "^18.19.39",
