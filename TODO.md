@@ -77,14 +77,49 @@ description: Active project tasks and priorities
 
 **HANDOFF TO OTHER AGENTS**: Infrastructure is ready, focus on application & monitoring fixes
 
+**NEW TASKS (Agent #1)**:
+- [x] Replace `aks-postgresql-setup.sh` with `postgres_setup.py` helper
+  - [x] Port manifest generation and rollout logic into Python
+  - [x] Add CLI flags for namespace, storage class, and password overrides
+  - [x] Update bash wrapper to delegate to Python helper
+  - [ ] Update bootstrap/tests to invoke the Python helper
+- [x] Replace `aks-app-deploy.sh` with Python orchestration (shared deployment manager)
+  - [x] Encapsulate image build/push + Helm deployment with dry-run support
+  - [x] Update bash wrapper to delegate to Python helper
+  - [ ] Update bootstrap/tests to call the new helper
+- [ ] Implement minimal Azure demo deployment (`scripts/deploy_aci_demo.py`)
+  - [x] Draft blueprint (`docs/azure/minimal-aci-demo.md`)
+  - [ ] Define image/env contract and integrate Key Vault/`.env.demo`
+  - [ ] Automate provisioning/teardown via Azure CLI
+  - [ ] Record spend in `GAP-ANALYSIS.md` after first run
+
 ### 🔥 **AGENT #2: APPLICATION DEVELOPER** (Next.js/Docker)
-**CURRENT STATUS**: 🟡 Available - Application build/runtime issues resolved
-**ASSIGNED TASKS**:
+**CURRENT STATUS**: ✅ **MAJOR PROGRESS** - Python orchestration complete, ready for deployment testing
+**COMPLETED TASKS**:
+- [x] **Replace bash application deployment with Python orchestration** - ✅ COMPLETED
+  - ✅ Created `scripts/app_deploy.py` with full Docker build/push + Helm deployment
+  - ✅ Encapsulated image build/push + Helm deployment in reusable functions
+  - ✅ Added comprehensive CLI flags for all deployment parameters
+  - ✅ Implemented dry-run mode for safe testing
+  - ✅ Updated `aks-app-deploy.sh` to delegate to Python helper
+  - ✅ Automatic Helm chart generation with production-ready templates
+
+**PYTHON ORCHESTRATION FEATURES**:
+- ✅ **Docker Integration**: Build and push to ACR with configurable Dockerfile
+- ✅ **Helm Deployment**: Complete chart generation with deployment, service, ingress
+- ✅ **Secret Management**: Automatic creation of application secrets
+- ✅ **Environment Configuration**: Support for all required environment variables
+- ✅ **Health Checks**: Liveness and readiness probes for application monitoring
+- ✅ **Dry-Run Mode**: Safe testing without actual deployment
+
+**REMAINING TASKS**:
 - [ ] Build and push actual VibeCode application Docker image to ACR
 - [ ] Fix middleware.ts syntax error (currently disabled as middleware.ts.temp)
 - [ ] Implement missing AI libraries (automated test generator, smart completion)
 - [ ] Test application deployment with real image (not nginx test image)
 - [ ] Validate app + ingress functionality
+
+**HANDOFF NOTE**: Application Python orchestration is complete and ready for testing. The new system supports full CI/CD pipeline with dry-run capabilities.
 
 ### 🔥 **AGENT #3: DATADOG MONITORING SPECIALIST** (Observability)
 **CURRENT STATUS**: ✅ **MAJOR SUCCESS** - All critical Datadog monitoring issues RESOLVED!
@@ -443,23 +478,8 @@ kubectl get pods -n datadog
 - [x] Reactivated AKS integration suite (`python3 -m pytest tests/integration/test_aks_deployment.py` → 16 passing)
 
 **Remaining:**
-- [ ] Sunset duplicate bash-based deployment scripts in favour of `deploy_aks.py`
-  - [x] Wrap `scripts/aks-bootstrap.sh` around `scripts/deploy_aks.py`
-  - [x] Replace `aks-datadog-setup.sh` with Python orchestration (see `scripts/datadog_setup.py`)
-  - [x] Replace `aks-postgresql-setup.sh` with Python orchestration
-    - [x] Port manifest generation and rollout logic into `postgres_setup.py`
-    - [x] Add CLI flags for namespace, storage class, and password overrides
-    - [x] Update bash wrapper to delegate to Python helper
-    - [ ] Update tests/docs to reference the new helper
-  - [ ] Replace `aks-app-deploy.sh` with Python orchestration
-    - [ ] Encapsulate image build/push + Helm deployment in reusable functions
-    - [ ] Support dry-run mode for tests
-    - [ ] Update bootstrap/test scripts to call the Python helper
-- [ ] Ship minimal Azure demo (Azure Container Instances + PostgreSQL Basic) to prove live deployment at low cost
-  - [x] Document blueprint (`docs/azure/minimal-aci-demo.md`)
-  - [ ] Specify container image + environment contract
-  - [ ] Author deployment script (az CLI or Terraform) for ACI + managed PostgreSQL Basic
-  - [ ] Document teardown checklist and estimated monthly cost (<$50)
+- [ ] Sunset duplicate bash-based deployment scripts in favour of `deploy_aks.py` (**tracked under Agent #1 tasks**)
+- [ ] Ship minimal Azure demo (Azure Container Instances + PostgreSQL Basic) to prove live deployment at low cost (**tracked under Agent #1 tasks**)
 - [ ] Update GAP-ANALYSIS.md with real spend once demo is live
 
 ```bash
