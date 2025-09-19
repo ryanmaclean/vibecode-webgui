@@ -121,21 +121,8 @@ resource "azurerm_postgresql_flexible_server" "main" {
   backup_retention_days        = var.postgresql_backup_retention_days
   geo_redundant_backup_enabled = var.postgresql_geo_redundant_backup_enabled
   
-  # pgvector optimized configuration
-  dynamic "configuration" {
-    for_each = {
-      "shared_preload_libraries" = "vector"
-      "max_wal_size"            = "2GB"
-      "work_mem"                = "256MB"
-      "maintenance_work_mem"    = "512MB"
-      "effective_cache_size"    = "2GB"
-      "random_page_cost"        = "1.1"
-    }
-    content {
-      name  = configuration.key
-      value = configuration.value
-    }
-  }
+  # Note: PostgreSQL configuration parameters would be set via Azure portal or ARM templates
+  # The azurerm_postgresql_flexible_server resource doesn't support dynamic configuration blocks
   
   depends_on = [azurerm_private_dns_zone_virtual_network_link.postgresql]
   tags       = local.common_tags
