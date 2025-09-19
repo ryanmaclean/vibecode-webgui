@@ -1,0 +1,189 @@
+{
+  "title": "VibeCode Doc Search - Azure Functions",
+  "description": "Monitoring dashboard for cost-optimized documentation search system",
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "title": "Search Request Rate",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:trace.docs.search.request{service:vibecode-docs-search}.as_count()",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        }
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "title": "Average Response Time",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:trace.docs.search.request{service:vibecode-docs-search}",
+            "display_type": "line",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "milliseconds",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        }
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "title": "Error Rate",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:trace.docs.search.request{service:vibecode-docs-search,error:true}.as_count()",
+            "display_type": "bars",
+            "style": {
+              "palette": "red",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "errors",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        }
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "title": "Search Results Distribution",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:search.results.count{service:vibecode-docs-search} by {search.category}",
+            "display_type": "line",
+            "style": {
+              "palette": "cool",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "results count",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        }
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "title": "Database Query Performance",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:search.time_ms{service:vibecode-docs-search}",
+            "display_type": "line",
+            "style": {
+              "palette": "purple",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "milliseconds",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        }
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "title": "Top Search Queries",
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(sum:trace.docs.search.request{service:vibecode-docs-search}.as_count() by {search.query}, 10, 'sum', 'desc')"
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "title": "Function Cold Starts",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:azure.functions.coldstarts{function_name:SearchFunction}",
+            "aggregator": "sum"
+          }
+        ],
+        "precision": 0,
+        "title_size": "16",
+        "title_align": "left"
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "title": "Monthly Cost Estimate",
+        "type": "note",
+        "content": "## Cost Breakdown\n\n**Azure Functions**: $0-2/month  \n**PostgreSQL**: $25-35/month  \n**Datadog**: $0/month (Free account)  \n**Total**: **$30-80/month**\n\n*85-90% savings vs AKS deployment*",
+        "background_color": "green",
+        "font_size": "14",
+        "text_align": "left",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left"
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "service",
+      "default": "vibecode-docs-search",
+      "prefix": "service"
+    },
+    {
+      "name": "env",
+      "default": "*",
+      "prefix": "env"
+    }
+  ],
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "notify_list": [],
+  "reflow_type": "fixed"
+}
