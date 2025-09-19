@@ -61,12 +61,20 @@ validate_claim "Datadog Python helper exists" \
   "[ -x scripts/datadog_setup.py ]" \
   "pass"
 
-validate_claim "PostgreSQL setup script has ~330 lines" \
-  "lines=\$(wc -l < scripts/aks-postgresql-setup.sh); [ \$lines -ge 297 ] && [ \$lines -le 363 ]" \
+validate_claim "PostgreSQL wrapper delegates to Python helper" \
+  "grep -q 'postgres_setup.py' scripts/aks-postgresql-setup.sh" \
   "pass"
 
-validate_claim "App deployment script has ~241 lines" \
-  "lines=\$(wc -l < scripts/aks-app-deploy.sh); [ \$lines -ge 217 ] && [ \$lines -le 265 ]" \
+validate_claim "PostgreSQL Python helper exists" \
+  "[ -x scripts/postgres_setup.py ]" \
+  "pass"
+
+validate_claim "App deployment wrapper delegates to Python helper" \
+  "grep -q 'app_deploy.py' scripts/aks-app-deploy.sh" \
+  "pass"
+
+validate_claim "App deployment Python helper exists" \
+  "[ -x scripts/app_deploy.py ]" \
   "pass"
 
 # Claim 3: Scripts have proper function counts
@@ -78,12 +86,12 @@ validate_claim "Datadog setup wrapper is minimal" \
   "lines=\$(wc -l < scripts/aks-datadog-setup.sh); [ \$lines -le 80 ]" \
   "pass"
 
-validate_claim "PostgreSQL setup has 5 functions" \
-  "func_count=\$(grep -c '^[a-zA-Z_][a-zA-Z0-9_]*() {' scripts/aks-postgresql-setup.sh); [ \$func_count -eq 5 ]" \
+validate_claim "PostgreSQL wrapper is minimal" \
+  "lines=\$(wc -l < scripts/aks-postgresql-setup.sh); [ \$lines -le 60 ]" \
   "pass"
 
-validate_claim "App deployment has 2 functions" \
-  "func_count=\$(grep -c '^[a-zA-Z_][a-zA-Z0-9_]*() {' scripts/aks-app-deploy.sh); [ \$func_count -eq 2 ]" \
+validate_claim "App deployment wrapper is minimal" \
+  "lines=\$(wc -l < scripts/aks-app-deploy.sh); [ \$lines -le 160 ]" \
   "pass"
 
 echo ""
