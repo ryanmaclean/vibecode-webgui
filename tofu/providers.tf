@@ -54,7 +54,10 @@ provider "azurerm" {
 
 # Configure the Kubernetes Provider
 provider "kubernetes" {
-  config_path = "~/.kube/config"
+  host                   = azurerm_kubernetes_cluster.main.kube_config.0.host
+  client_certificate     = base64decode(azurerm_kubernetes_cluster.main.kube_config.0.client_certificate)
+  client_key             = base64decode(azurerm_kubernetes_cluster.main.kube_config.0.client_key)
+  cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.main.kube_config.0.cluster_ca_certificate)
 }
 
 # Configure the Random Provider
@@ -73,6 +76,9 @@ provider "datadog" {
 # Configure the Helm Provider
 provider "helm" {
   kubernetes {
-    config_path = "~/.kube/config"
+    host                   = azurerm_kubernetes_cluster.main.kube_config.0.host
+    client_certificate     = base64decode(azurerm_kubernetes_cluster.main.kube_config.0.client_certificate)
+    client_key             = base64decode(azurerm_kubernetes_cluster.main.kube_config.0.client_key)
+    cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.main.kube_config.0.cluster_ca_certificate)
   }
 }

@@ -40,9 +40,9 @@ locals {
   project_name = var.project_name
   environment  = var.environment
   location     = var.azure_region
-  
+
   name_prefix = "${local.project_name}-${local.environment}"
-  
+
   common_tags = {
     Project     = local.project_name
     Environment = local.environment
@@ -81,7 +81,7 @@ resource "azurerm_subnet" "postgresql" {
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.2.0/24"]
-  
+
   delegation {
     name = "postgresql-delegation"
     service_delegation {
@@ -96,34 +96,34 @@ resource "azurerm_postgresql_flexible_server" "main" {
   name                = "${local.name_prefix}-postgresql"
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
-  
+
   # Performance tier for vector operations
   sku_name = var.postgresql_sku_name
   version  = "16"
-  
+
   # Storage configuration
   storage_mb = var.postgresql_storage_mb
-  
-  # High availability for production
-  high_availability {
-    mode = "ZoneRedundant"
-  }
-  
+
   # Network configuration
   delegated_subnet_id = azurerm_subnet.postgresql.id
   private_dns_zone_id = azurerm_private_dns_zone.postgresql.id
-  
+
+  # Optional high availability toggle (defaults to disabled to keep costs down)
+  dynamic "high_availability" {
+    for_each = var.postgresql_high_availability_enabled ? [var.postgresql_high_availability_mode] : []
+    content {
+      mode = high_availability.value
+    }
+  }
+
   # Security configuration
   administrator_login    = var.postgresql_admin_username
   administrator_password = random_password.postgresql_password.result
-  
+
   # Backup configuration
   backup_retention_days        = var.postgresql_backup_retention_days
   geo_redundant_backup_enabled = var.postgresql_geo_redundant_backup_enabled
-  
-  # Note: PostgreSQL configuration parameters would be set via Azure portal or ARM templates
-  # The azurerm_postgresql_flexible_server resource doesn't support dynamic configuration blocks
-  
+
   depends_on = [azurerm_private_dns_zone_virtual_network_link.postgresql]
   tags       = local.common_tags
 }
@@ -171,7 +171,7 @@ resource "azurerm_cognitive_account" "openai" {
   resource_group_name = azurerm_resource_group.main.name
   kind                = "OpenAI"
   sku_name            = var.azure_openai_sku_name
-  
+
   tags = local.common_tags
 }
 
@@ -179,13 +179,13 @@ resource "azurerm_cognitive_account" "openai" {
 resource "azurerm_cognitive_deployment" "gpt4" {
   name                 = "gpt-4-turbo"
   cognitive_account_id = azurerm_cognitive_account.openai.id
-  
+
   model {
     format  = "OpenAI"
     name    = "gpt-4"
     version = "turbo-2024-04-09"
   }
-  
+
   scale {
     type     = "Standard"
     capacity = 30
@@ -195,13 +195,13 @@ resource "azurerm_cognitive_deployment" "gpt4" {
 resource "azurerm_cognitive_deployment" "embeddings" {
   name                 = "text-embedding-ada-002"
   cognitive_account_id = azurerm_cognitive_account.openai.id
-  
+
   model {
     format  = "OpenAI"
     name    = "text-embedding-ada-002"
     version = "2"
   }
-  
+
   scale {
     type     = "Standard"
     capacity = 120
@@ -222,7 +222,7 @@ resource "azurerm_kubernetes_cluster" "main" {
   resource_group_name = azurerm_resource_group.main.name
   dns_prefix          = "${local.name_prefix}-aks"
   kubernetes_version  = var.aks_kubernetes_version
-  
+
   # System node pool (equivalent to Vercel's edge runtime)
   default_node_pool {
     name                = "system"
@@ -233,33 +233,33 @@ resource "azurerm_kubernetes_cluster" "main" {
     min_count           = 1
     max_count           = 5
     max_pods            = 30
-    
+
     only_critical_addons_enabled = true
-    
+
     upgrade_settings {
       max_surge = "10%"
     }
   }
-  
+
   # User node pool for application workloads
   # This will be created separately for better control
-  
+
   identity {
     type         = "UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.aks_identity.id]
   }
-  
+
   network_profile {
     network_plugin = "azure"
     network_policy = "azure"
     dns_service_ip = "10.0.10.10"
     service_cidr   = "10.0.10.0/24"
   }
-  
+
   # Enable workload identity (Azure equivalent of Vercel's edge functions)
   workload_identity_enabled = true
-  oidc_issuer_enabled      = true
-  
+  oidc_issuer_enabled       = true
+
   tags = local.common_tags
 }
 
@@ -270,16 +270,16 @@ resource "azurerm_kubernetes_cluster_node_pool" "user" {
   vm_size               = var.aks_user_node_vm_size
   node_count            = var.aks_user_node_count
   vnet_subnet_id        = azurerm_subnet.aks.id
-  
+
   enable_auto_scaling = true
   min_count           = var.aks_user_node_min_count
   max_count           = var.aks_user_node_max_count
   max_pods            = 30
-  
+
   upgrade_settings {
     max_surge = "33%"
   }
-  
+
   tags = local.common_tags
 }
 
@@ -290,15 +290,15 @@ resource "azurerm_key_vault" "main" {
   resource_group_name = azurerm_resource_group.main.name
   tenant_id           = data.azurerm_client_config.current.tenant_id
   sku_name            = "standard"
-  
+
   # Enable for Azure Kubernetes Service
   enabled_for_deployment          = true
   enabled_for_disk_encryption     = true
   enabled_for_template_deployment = true
-  
+
   # Purge protection for production
   purge_protection_enabled = var.environment == "prod"
-  
+
   tags = local.common_tags
 }
 
@@ -307,7 +307,7 @@ resource "azurerm_key_vault_access_policy" "aks" {
   key_vault_id = azurerm_key_vault.main.id
   tenant_id    = data.azurerm_client_config.current.tenant_id
   object_id    = azurerm_user_assigned_identity.aks_identity.principal_id
-  
+
   secret_permissions = ["Get", "List"]
 }
 
@@ -316,7 +316,7 @@ resource "azurerm_key_vault_secret" "database_url" {
   name         = "database-url"
   value        = "postgresql://${var.postgresql_admin_username}:${random_password.postgresql_password.result}@${azurerm_postgresql_flexible_server.main.fqdn}:5432/${var.database_name}?sslmode=require"
   key_vault_id = azurerm_key_vault.main.id
-  
+
   depends_on = [azurerm_key_vault_access_policy.current_user]
 }
 
@@ -325,7 +325,7 @@ resource "azurerm_key_vault_secret" "openai_api_key" {
   name         = "azure-openai-api-key"
   value        = azurerm_cognitive_account.openai.primary_access_key
   key_vault_id = azurerm_key_vault.main.id
-  
+
   depends_on = [azurerm_key_vault_access_policy.current_user]
 }
 
@@ -334,7 +334,7 @@ resource "azurerm_key_vault_secret" "openai_endpoint" {
   name         = "azure-openai-endpoint"
   value        = azurerm_cognitive_account.openai.endpoint
   key_vault_id = azurerm_key_vault.main.id
-  
+
   depends_on = [azurerm_key_vault_access_policy.current_user]
 }
 
@@ -343,7 +343,7 @@ resource "azurerm_key_vault_access_policy" "current_user" {
   key_vault_id = azurerm_key_vault.main.id
   tenant_id    = data.azurerm_client_config.current.tenant_id
   object_id    = data.azurerm_client_config.current.object_id
-  
+
   secret_permissions = [
     "Get", "List", "Set", "Delete", "Recover", "Backup", "Restore", "Purge"
   ]
@@ -359,7 +359,7 @@ resource "azurerm_container_registry" "main" {
   location            = azurerm_resource_group.main.location
   sku                 = "Standard"
   admin_enabled       = false
-  
+
   tags = local.common_tags
 }
 
