@@ -74,15 +74,18 @@ The gateway will be available at `http://localhost:3001`
 | `JWT_SECRET` | JWT signing secret (required) | - |
 | `RATE_LIMIT_REQUESTS` | Requests per window | `100` |
 | `DEFAULT_MODEL` | Default AI model | `anthropic/claude-3-sonnet-20240229` |
+| `PROVIDERS_ENABLED` | Comma-separated list of enabled providers | `openrouter,openai,azure,hf,ollama` |
 
 See `.env.example` for complete configuration options.
 
-#### OpenRouter Account Headers
+### Providers (Unified Abstraction)
 
-Some OpenRouter accounts require specific identifying headers. You can configure them via env vars:
+The gateway supports multiple providers behind a unified API. Enable providers via `PROVIDERS_ENABLED` (comma-separated): `azure,openai,hf,openrouter,ollama`.
 
-```bash
-OPENROUTER_REFERRER=https://your.site.example
+- Azure OpenAI
+  - `AZURE_OPENAI_ENDPOINT` (e.g., https://<resource>.openai.azure.com)
+  - `AZURE_OPENAI_API_KEY`
+  - `AZURE_OPENAI_DEPLOYMENTS` JSON map of friendly names to deployment names, e.g. `{ "gpt4o": "gpt-4o" }`
 OPENROUTER_TITLE=Your App Name
 ```
 
