@@ -51,7 +51,7 @@ next-env.d.ts
 .datadog/
 
 # IDE
-.vscode/
+
 .idea/
 *.swp
 *.swo
