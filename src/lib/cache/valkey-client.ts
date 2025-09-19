@@ -21,31 +21,20 @@ import { metrics } from '../server-monitoring';
 // Valkey configuration based on environment 
 // Note: Using Redis-compatible client libraries (ioredis) to connect to Valkey server
 const getValkeyConfig = () => {
-  // Upstash provides Redis-compatible API as managed service (acceptable for SaaS)
-  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    return {
-      type: 'upstash' as const,
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN
-    };
-  }
-  
   // Standard Valkey for development/self-hosted (Redis-compatible protocol)  
   if (process.env.VALKEY_URL || process.env.REDIS_URL) {
     return {
-      type: 'standard' as const,
       url: process.env.VALKEY_URL || process.env.REDIS_URL // Prefer VALKEY_URL
-    };
+    } as const;
   }
   
   // Fallback configuration for Valkey
   return {
-    type: 'standard' as const,
     host: process.env.VALKEY_HOST || process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.VALKEY_PORT || process.env.REDIS_PORT || '6379'),
     password: process.env.VALKEY_PASSWORD || process.env.REDIS_PASSWORD,
     db: parseInt(process.env.VALKEY_DB || process.env.REDIS_DB || '0')
-  };
+  } as const;
 };
 
 const config = getValkeyConfig();
@@ -54,55 +43,53 @@ const config = getValkeyConfig();
 let valkeyClient: any = null;
 
 try {
-  if (config.type === 'standard') {
-    if ('url' in config) {
-      // @ts-expect-error - ioredis constructor typing issue
-      valkeyClient = new Redis(config.url, {
-        retryDelayOnFailover: 100,
-        enableReadyCheck: false,
-        maxRetriesPerRequest: 3,
-        lazyConnect: true,
-        keepAlive: 30000,
-        // Connection pool settings
-        family: 4,
-        // Performance optimizations
-        commandTimeout: 5000,
-        connectTimeout: 10000,
-      });
-    } else {
-      // @ts-expect-error - ioredis constructor typing issue
-      valkeyClient = new Redis({
-        host: config.host,
-        port: config.port,
-        password: config.password,
-        db: config.db,
-        retryDelayOnFailover: 100,
-        enableReadyCheck: false,
-        maxRetriesPerRequest: 3,
-        lazyConnect: true,
-        keepAlive: 30000,
-        family: 4,
-        commandTimeout: 5000,
-        connectTimeout: 10000,
-      });
-    }
-
-    // Event listeners for monitoring
-    valkeyClient.on('connect', () => {
-      console.log('Valkey connected successfully');
-      metrics.increment('valkey.connection.success');
+  if ('url' in config) {
+    // @ts-expect-error - ioredis constructor typing issue
+    valkeyClient = new Redis(config.url, {
+      retryDelayOnFailover: 100,
+      enableReadyCheck: false,
+      maxRetriesPerRequest: 3,
+      lazyConnect: true,
+      keepAlive: 30000,
+      // Connection pool settings
+      family: 4,
+      // Performance optimizations
+      commandTimeout: 5000,
+      connectTimeout: 10000,
     });
-
-    valkeyClient.on('error', (error) => {
-      console.error('Valkey connection error:', error);
-      metrics.increment('valkey.connection.error');
-    });
-
-    valkeyClient.on('ready', () => {
-      console.log('Valkey client ready');
-      metrics.increment('valkey.ready');
+  } else {
+    // @ts-expect-error - ioredis constructor typing issue
+    valkeyClient = new Redis({
+      host: config.host,
+      port: config.port,
+      password: config.password,
+      db: config.db,
+      retryDelayOnFailover: 100,
+      enableReadyCheck: false,
+      maxRetriesPerRequest: 3,
+      lazyConnect: true,
+      keepAlive: 30000,
+      family: 4,
+      commandTimeout: 5000,
+      connectTimeout: 10000,
     });
   }
+
+  // Event listeners for monitoring
+  valkeyClient.on('connect', () => {
+    console.log('Valkey connected successfully');
+    metrics.increment('valkey.connection.success');
+  });
+
+  valkeyClient.on('error', (error) => {
+    console.error('Valkey connection error:', error);
+    metrics.increment('valkey.connection.error');
+  });
+
+  valkeyClient.on('ready', () => {
+    console.log('Valkey client ready');
+    metrics.increment('valkey.ready');
+  });
 } catch (error) {
   console.warn('Valkey client initialization failed:', error);
   valkeyClient = null;
