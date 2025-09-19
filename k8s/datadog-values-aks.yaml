@@ -1,271 +1,188 @@
-# Datadog Helm values for AKS production deployment
+# Datadog Helm Values for AKS Production Deployment
 # Production-grade configuration with Azure-specific optimizations
 
 datadog:
-  # Core configuration
-  site: datadoghq.com
+  # Use existing secrets created by OpenTofu
+  apiKeyExistingSecret: datadog-secret
+  appKeyExistingSecret: datadog-secret
   
-  # Kubernetes integration
-  kubeStateMetricsEnabled: true
-  kubeStateMetricsCore:
-    enabled: true
+  # Datadog site configuration
+  site: "datadoghq.com"
   
-  # Container runtime
-  criSocketPath: /run/containerd/containerd.sock
+  # Cluster name for identification (set by OpenTofu)
+  clusterName: "vibecode-aks"
   
-  # Azure-specific node labels as tags
-  nodeLabelsAsTags:
-    kubernetes.azure.com/cluster: cluster
-    kubernetes.azure.com/instance-type: instance_type
-    kubernetes.azure.com/os: os
-    kubernetes.azure.com/arch: arch
-    kubernetes.azure.com/scalesetpriority: scalesetpriority
-    node.kubernetes.io/instance-type: instance_type
+  # Production resource configuration
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
   
-  # Pod labels as tags
-  podLabelsAsTags:
-    app: app
-    version: version
-    component: component
-    tier: tier
-  
-  # Logs collection
+  # Enable comprehensive monitoring features
   logs:
     enabled: true
     containerCollectAll: true
-    containerExclude: "image:datadog/agent"
-    containerExcludeByName:
-      - datadog-agent
-      - datadog-cluster-agent
+    configMapName: "datadog-logs"
   
-  # APM and tracing
+  # Enable APM for application tracing with Dynamic Instrumentation
   apm:
-    enabled: true
     portEnabled: true
     socketEnabled: true
-    hostSocketPath: /var/run/datadog/apm.socket
+    hostSocketPath: /var/run/datadog
   
-  # Process monitoring
+  # Enable process monitoring
   processAgent:
     enabled: true
-    processCollection: true
-  
-  # Network monitoring  
+    
+  # Enable network monitoring for AKS
   networkMonitoring:
     enabled: true
-  
-  # Security monitoring
-  securityAgent:
+    
+  # Enable database monitoring for PostgreSQL
+  dbm:
     enabled: true
-  
-  # Database monitoring
-  databaseMonitoring:
+    
+  # Enable orchestrator explorer for AKS
+  orchestratorExplorer:
     enabled: true
-  
-  # Service discovery
-  serviceDiscovery:
-    enabled: true
-  
-  # Environment tags
+    
+  # Production tags for AKS
   tags:
-    - env:production
-    - provider:aks
-    - platform:kubernetes
-    - monitoring:datadog
+    - "env:production"
+    - "provider:azure"
+    - "cluster:aks"
+    - "project:vibecode"
+    - "region:eastus2"
 
-# Cluster Agent configuration
+# Cluster Agent configuration for AKS
 clusterAgent:
   enabled: true
-  
-  # Image configuration
   image:
-    tag: latest
+    tag: "1.24.0"
   
-  # Resources for AKS
+  # Production resources for Cluster Agent
   resources:
     requests:
-      cpu: 200m
-      memory: 256Mi
+      cpu: "200m"
+      memory: "256Mi"
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: "500m"
+      memory: "512Mi"
   
-  # External metrics for HPA
+  # Enable metrics provider for HPA
   metricsProvider:
     enabled: true
-    useDatadogMetrics: true
-    wpaController: true
-  
-  # Admission controller
-  admissionController:
-    enabled: true
-    mutateUnlabelled: true
-    serviceName: datadog-admission-controller
-  
-  # Cluster checks
+    
+  # Enable cluster checks
   clusterChecks:
     enabled: true
-  
-  # Node selector for Linux nodes
-  nodeSelector:
-    kubernetes.io/os: linux
-  
-  # Azure-specific tolerations
+    
+  # Enable external metrics for autoscaling
+  externalMetrics:
+    enabled: true
+    
+  # Azure-specific configurations
   tolerations:
-    - key: CriticalAddonsOnly
-      operator: Exists
-    - key: node-role.kubernetes.io/master
-      operator: Exists
-      effect: NoSchedule
-    - key: kubernetes.azure.com/scalesetpriority
-      operator: Equal
-      value: spot
-      effect: NoSchedule
+    - key: "kubernetes.azure.com/scalesetpriority"
+      operator: "Equal"
+      value: "spot"
+      effect: "NoSchedule"
+    - key: "CriticalAddonsOnly"
+      operator: "Exists"
 
-# Agent DaemonSet configuration
+# Node Agent configuration for AKS
 agents:
-  # Image configuration
   image:
-    tag: latest
-  
-  # Resource requirements optimized for AKS
+    tag: "7.66.1"
+    
+  # Production resources for Node Agents
   resources:
     requests:
-      cpu: 200m
-      memory: 256Mi
+      cpu: "200m"
+      memory: "512Mi"
     limits:
-      cpu: 500m
-      memory: 512Mi
-  
-  # Node selector for Linux nodes only
-  nodeSelector:
-    kubernetes.io/os: linux
-  
-  # Tolerations for AKS system nodes and spot instances
+      cpu: "1000m"
+      memory: "2Gi"
+      
+  # Azure-specific configurations
   tolerations:
-    - key: CriticalAddonsOnly
-      operator: Exists
-    - key: node-role.kubernetes.io/master
-      operator: Exists
-      effect: NoSchedule
-    - key: kubernetes.azure.com/scalesetpriority
-      operator: Equal
-      value: spot
-      effect: NoSchedule
-  
-  # Use host networking for proper metrics collection
+    - key: "kubernetes.azure.com/scalesetpriority"
+      operator: "Equal"
+      value: "spot"
+      effect: "NoSchedule"
+    - key: "CriticalAddonsOnly"
+      operator: "Exists"
+      
+  # Use host network for better performance on AKS
   useHostNetwork: true
-  useHostPID: true
-  useHostPort: true
   
-  # Azure-specific volume mounts
-  volumes:
-    # Docker socket
-    - name: dockersocket
-      hostPath:
-        path: /var/run/docker.sock
-    # Containerd socket
-    - name: containerdsocket
-      hostPath:
-        path: /run/containerd/containerd.sock
-    # Host proc filesystem
-    - name: procdir
-      hostPath:
-        path: /proc
-    # Host sys filesystem  
-    - name: cgroups
-      hostPath:
-        path: /sys/fs/cgroup
-    # Host passwd for user resolution
-    - name: passwd
-      hostPath:
-        path: /etc/passwd
-  
+  # Azure Disk mounts for persistent data
   volumeMounts:
-    - name: dockersocket
-      mountPath: /var/run/docker.sock
-      readOnly: true
-    - name: containerdsocket
-      mountPath: /run/containerd/containerd.sock
-      readOnly: true
-    - name: procdir
+    - name: datadog-agent-storage
+      mountPath: /opt/datadog-agent/run
+    - name: proc
       mountPath: /host/proc
       readOnly: true
-    - name: cgroups
+    - name: cgroup
       mountPath: /host/sys/fs/cgroup
       readOnly: true
-    - name: passwd
-      mountPath: /etc/passwd
-      readOnly: true
+      
+  volumes:
+    - name: datadog-agent-storage
+      persistentVolumeClaim:
+        claimName: datadog-agent-storage
+    - name: proc
+      hostPath:
+        path: /proc
+    - name: cgroup
+      hostPath:
+        path: /sys/fs/cgroup
 
-# RBAC configuration
-rbac:
-  create: true
-  serviceAccountName: datadog-agent
-
-# Service account
-serviceAccount:
-  create: true
-  name: datadog-agent
-
-# Windows node support (disabled for now)
-winAgent:
-  enabled: false
-
-# System probe for network monitoring
+# System Probe for network monitoring (AKS-optimized)
 systemProbe:
   enabled: true
-  debugPort: 0
-  enableConntrack: true
-  bpfDebug: false
-  apparmor: unconfined
-  seccomp: unconfined
+  # Enable network security monitoring
+  seccomp: "runtime/default"
+  appArmor: "runtime/default"
   
-  # Security context for system probe
-  securityContext:
-    capabilities:
-      add:
-        - SYS_ADMIN
-        - SYS_RESOURCE
-        - SYS_PTRACE
-        - NET_ADMIN
-        - NET_BROADCAST
-        - NET_RAW
-        - IPC_LOCK
-        - CHOWN
-
-# Kube state metrics configuration
-kubeStateMetricsCore:
+# Security Agent for runtime security
+securityAgent:
   enabled: true
-  useClusterRole: true
-  labelsAsTags:
-    pod:
-      app: app
-      version: version
-    deployment:
-      app: app
-      version: version
-    service:
-      app: app
+  runtime:
+    enabled: true
+    
+# Additional AKS-specific configurations
+nodeSelector:
+  kubernetes.io/os: linux
 
-# Cluster checks runner
-clusterChecksRunner:
+# Pod Disruption Budget for high availability
+podDisruptionBudget:
   enabled: true
-  replicas: 2
+  minAvailable: 1
+
+# Service Account with Azure RBAC
+serviceAccount:
+  create: true
+  annotations:
+    azure.workload.identity/client-id: "" # Will be set by OpenTofu
+    
+# Azure-specific storage class for persistent volumes
+persistence:
+  enabled: true
+  storageClass: "managed-csi"
+  size: "10Gi"
   
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 200m
-      memory: 256Mi
-  
-  nodeSelector:
-    kubernetes.io/os: linux
-  
-  tolerations:
-    - key: kubernetes.azure.com/scalesetpriority
-      operator: Equal
-      value: spot
-      effect: NoSchedule
+# Ingress for Datadog Agent (if needed)
+ingress:
+  enabled: false # Typically not needed for agents
+
+# Azure Monitor integration
+azureMonitor:
+  enabled: true
+  workspace:
+    # Will be configured by OpenTofu
+    id: ""
+    key: ""
