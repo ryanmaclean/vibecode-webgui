@@ -53,7 +53,7 @@ graph TB
 | **Frontend** | Next.js 15 + React 19 + TypeScript | Modern web application framework |
 | **Backend** | Next.js API Routes + Prisma ORM | Server-side API and database operations |
 | **Database** | PostgreSQL 16 + pgvector | Relational database with vector search |
-| **Caching** | Redis/Upstash | High-performance caching layer |
+| **Caching** | Redis/Valkey | High-performance caching layer |
 | **AI Gateway** | LiteLLM Proxy | Unified AI model access and management |
 | **Security** | Custom middleware + NextAuth | Authentication and security hardening |
 | **Monitoring** | Datadog + Custom metrics | Comprehensive observability |
@@ -65,7 +65,7 @@ graph TB
 
 - Node.js 18.18+ (20+ recommended)
 - PostgreSQL 16+ with pgvector extension
-- Redis 6+ (or Upstash account)
+- Redis/Valkey 6+ (self-hosted or community-managed)
 - Docker & Docker Compose (for local services)
 
 ### Installation

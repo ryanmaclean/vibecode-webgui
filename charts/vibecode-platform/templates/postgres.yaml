@@ -61,6 +61,15 @@ spec:
       - name: postgres
         image: "{{ .Values.postgresql.image.repository }}:{{ .Values.postgresql.image.tag }}"
         imagePullPolicy: IfNotPresent
+        args:
+        - -c
+        - shared_preload_libraries=pg_stat_statements,vector
+        - -c
+        - pg_stat_statements.max={{ .Values.postgresql.pgStatStatements.max | default 5000 }}
+        - -c
+        - pg_stat_statements.track={{ .Values.postgresql.pgStatStatements.track | default "all" }}
+        - -c
+        - track_activity_query_size={{ .Values.postgresql.pgStatStatements.trackActivityQuerySize | default 2048 }}
         ports:
         - containerPort: 5432
         env:
@@ -70,6 +79,8 @@ spec:
           value: "vibecode"
         - name: POSTGRES_PASSWORD
           value: "changeme-in-production"
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
         volumeMounts:
         - name: postgres-storage
           mountPath: /var/lib/postgresql/data
