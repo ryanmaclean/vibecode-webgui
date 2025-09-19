@@ -174,7 +174,7 @@ resource "kubernetes_config_map" "datadog_config" {
 
   data = {
     "datadog.yaml" = yamlencode({
-      api_key = "ENC[k8s_secret@default/datadog-secret/api-key]"
+      api_key = "ENC[k8s_secret@${kubernetes_namespace.vibecode_platform.metadata[0].name}/datadog-secret/api-key]"
       site    = "datadoghq.com"
 
       # Cluster configuration
@@ -271,7 +271,7 @@ resource "kubernetes_config_map" "datadog_config" {
       init_config = {}
       instances = [
         {
-          url = "http://vibecode-service.${kubernetes_namespace.vibecode_platform.metadata[0].name}.svc.cluster.local:3000/api/health"
+          url = "http://vibecode-app-vibecode.${kubernetes_namespace.vibecode_platform.metadata[0].name}.svc.cluster.local:80/api/health"
           name = "vibecode-health"
           tags = [
             "environment:${var.environment}",
@@ -373,7 +373,7 @@ resource "kubernetes_daemonset" "datadog_agent" {
           }
           env {
             name  = "DD_CLUSTER_AGENT_URL"
-            value = "http://datadog-cluster-agent.${kubernetes_namespace.vibecode_platform.metadata[0].name}.svc.cluster.local:5005"
+            value = "http://datadog-cluster-agent:5005"
           }
           env {
             name  = "DD_CLUSTER_AGENT_USE_TLS"
