@@ -20,10 +20,21 @@ describe('User Provisioning Integration Tests', () => {
     // Create KIND cluster
     try {
       execSync(`kind get clusters | grep -q "^${CLUSTER_NAME}$"`, { stdio: 'pipe' });
-      console.log(`Cluster ${CLUSTER_NAME} already exists, using it`)} catch {
+      console.log(`Cluster ${CLUSTER_NAME} already exists, using it`)
+    } catch {
+      // Clean up any existing clusters that might be using conflicting ports
+      try {
+        console.log('Cleaning up any existing kind clusters...');
+        execSync('kind get clusters | xargs -I {} kind delete cluster --name {}', { stdio: 'pipe' });
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+      
+      console.log(`Creating new cluster ${CLUSTER_NAME}...`);
       execSync(`kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-test-config.yaml`, {
         stdio: 'inherit'
-      })}
+      });
+    }
 
     // Set kubectl context
     execSync(`kubectl config use-context kind-${CLUSTER_NAME}`, { stdio: 'inherit' })
