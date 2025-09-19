@@ -41,66 +41,22 @@ DD_API_KEY=
 DD_SITE=datadoghq.com
 ```
 
-## Deployment Script Skeleton (`scripts/deploy_aci_demo.py`)
-```python
-#!/usr/bin/env python3
-"""Provision the minimal Azure demo using Azure CLI."""
-import argparse
-import subprocess
-import sys
+## Deployment Script (`scripts/deploy_aci_demo.py`)
 
-RESOURCE_GROUP = "rg-vibecode-demo"
-LOCATION = "eastus2"
-ACI_NAME = "aci-vibecode-demo"
+Use the helper committed in `scripts/deploy_aci_demo.py` to provision the environment:
 
-
-def run(cmd):
-    subprocess.run(cmd, check=True)
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--image", required=True)
-    parser.add_argument("--env-file", default=".env.demo")
-    parser.add_argument("--postgres-password", required=True)
-    args = parser.parse_args()
-
-    run(["az", "group", "create", "--name", RESOURCE_GROUP, "--location", LOCATION])
-
-    # Provision Postgres Flexible Server (basic tier)
-    run([
-        "az", "postgres", "flexible-server", "create",
-        "--name", "vibecode-demo",
-        "--resource-group", RESOURCE_GROUP,
-        "--tier", "Burstable",
-        "--sku-name", "Standard_B1ms",
-        "--storage-size", "32",
-        "--admin-user", "aci_user",
-        "--admin-password", args.postgres_password,
-        "--public-access", "0.0.0.0",
-    ])
-
-    # Deploy ACI
-    run([
-        "az", "container", "create",
-        "--name", ACI_NAME,
-        "--resource-group", RESOURCE_GROUP,
-        "--image", args.image,
-        "--restart-policy", "OnFailure",
-        "--cpu", "1",
-        "--memory", "2",
-        "--ports", "3000",
-        "--environment-variables",
-        f"PORT=3000",
-        # Additional env vars will be loaded from args.env_file
-    ])
-
-    print("Deployment kick-off complete.")
-
-if __name__ == "__main__":
-    sys.exit(main())
+```bash
+python3 scripts/deploy_aci_demo.py \
+  --image vibecodecr84859296.azurecr.io/vibecode-webgui:demo \
+  --env-file .env.demo.example \
+  --postgres-password "$(python3 -c 'import secrets;print(secrets.token_urlsafe(16))')" \
+  --dry-run   # remove this flag for a real deployment
 ```
-_Add support for reading `.env.demo`, populating secure variables from Key Vault, and injecting Datadog sidecars as future enhancements._
+
+- `--dry-run` prints the Azure CLI commands without executing them. Drop the flag to provision resources.
+- The script ensures the resource group, PostgreSQL flexible server, and Container Instance are created with the chosen image and environment variables.
+- Before running for real, copy `.env.demo.example` to `.env.demo` and populate secrets locally (avoid committing the populated file).
+- After validation, run the teardown commands below to avoid ongoing charges.
 
 ## Teardown Checklist
 ```

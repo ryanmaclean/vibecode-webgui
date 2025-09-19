@@ -37,6 +37,24 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@langchain/openai": [
+        "./src/lib/ai/stubs/langchain-openai"
+      ],
+      "@langchain/core/prompts": [
+        "./src/lib/ai/stubs/langchain-prompts"
+      ],
+      "@langchain/core/output_parsers": [
+        "./src/lib/ai/stubs/langchain-output-parsers"
+      ],
+      "@langchain/core/runnables": [
+        "./src/lib/ai/stubs/langchain-runnables"
+      ],
+      "@langchain/core/messages": [
+        "./src/lib/ai/stubs/langchain-messages"
+      ],
+      "@langchain/core/documents": [
+        "./src/lib/ai/stubs/langchain-documents"
       ]
     },
     "moduleDetection": "force",

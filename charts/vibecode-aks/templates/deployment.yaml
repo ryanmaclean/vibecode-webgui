@@ -12,7 +12,7 @@ metadata:
     {{- end }}
   annotations:
     {{- range $key, $value := .Values.annotations }}
-    {{ $key }}: {{ $value }}
+    {{ $key }}: {{ $value | quote }}
     {{- end }}
 spec:
   replicas: {{ .Values.deployment.replicaCount }}
@@ -46,7 +46,7 @@ spec:
         # Restart pods when config changes
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         {{- range $key, $value := .Values.annotations }}
-        {{ $key }}: {{ $value }}
+        {{ $key }}: {{ $value | quote }}
         {{- end }}
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
@@ -106,7 +106,7 @@ spec:
         - name: DD_ENV
           value: {{ .Values.env.NODE_ENV }}
         - name: DD_SERVICE
-          value: {{ .Values.app.name }}
+          value: vibecode-webgui
         - name: DD_VERSION
           value: {{ .Values.app.version }}
         - name: DD_DYNAMIC_INSTRUMENTATION_ENABLED

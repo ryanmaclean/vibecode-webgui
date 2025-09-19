@@ -21,10 +21,19 @@ error() { echo -e "${RED}❌${NC} $1"; }
 
 # Configuration (override via environment)
 NAMESPACE="${NAMESPACE:-vibecode-platform}"
-POSTGRES_SERVICE="${POSTGRES_SERVICE:-}"
+POSTGRES_SERVICE="${POSTGRES_SERVICE:-postgres-service}"
 DATADOG_AGENT_NAMESPACE="${DATADOG_AGENT_NAMESPACE:-datadog}"
 DB_NAME="${DB_NAME:-vibecode}"
 DB_USER="${DB_USER:-datadog}"
+
+DB_ADMIN_USER="${DB_ADMIN_USER:-vibecode}"
+# Optional settings
+# Use MONITORING_PASSWORD if provided; otherwise fall back to DD_POSTGRES_PASSWORD, else default
+MONITORING_PASSWORD="${MONITORING_PASSWORD:-${DD_POSTGRES_PASSWORD:-datadog_monitoring_password}}"
+# SSL mode for Datadog Postgres integration: disable|require|verify-ca|verify-full
+SSL_MODE="${SSL_MODE:-disable}"
+# If true, store password in a Kubernetes Secret and reference via env in Datadog Agent
+USE_SECRET_PASSWORD="${USE_SECRET_PASSWORD:-false}"
 
 # Check if kubectl is available
 if ! command -v kubectl &> /dev/null; then
@@ -50,34 +59,60 @@ else
   PG_LABEL_VALUE="postgres"
 fi
 
+# Detect workload kind/name
+DEPLOY_KIND=""
+DEPLOY_NAME=""
 if kubectl get statefulset postgresql -n $NAMESPACE &> /dev/null; then
+  DEPLOY_KIND="statefulset"
+  DEPLOY_NAME="postgresql"
   success "PostgreSQL StatefulSet found"
   kubectl -n $NAMESPACE rollout status statefulset/postgresql --timeout=60s || true
 elif kubectl get deployment postgres -n $NAMESPACE &> /dev/null; then
+  DEPLOY_KIND="deployment"
+  DEPLOY_NAME="postgres"
   success "PostgreSQL Deployment found"
-  kubectl -n $NAMESPACE rollout status deployment/postgres --timeout=60s || true
+  kubectl -n $NAMESPACE rollout status deployment/postgres --timeout=120s || true
 else
-  error "PostgreSQL workload not found in namespace $NAMESPACE"
-  exit 1
+  # Fallback: detect any workload containing 'postgres' in its name
+  SS_CAND=$(kubectl -n $NAMESPACE get statefulset -o name 2>/dev/null | grep -E "postgres|postgresql" | head -n1 || true)
+  DEP_CAND=$(kubectl -n $NAMESPACE get deployment -o name 2>/dev/null | grep -E "postgres|postgresql" | head -n1 || true)
+  if [ -n "$SS_CAND" ]; then
+    DEPLOY_KIND="statefulset"
+    DEPLOY_NAME="${SS_CAND#statefulset.apps/}"
+    success "Detected PostgreSQL StatefulSet: $DEPLOY_NAME"
+    kubectl -n $NAMESPACE rollout status statefulset/$DEPLOY_NAME --timeout=120s || true
+  elif [ -n "$DEP_CAND" ]; then
+    DEPLOY_KIND="deployment"
+    DEPLOY_NAME="${DEP_CAND#deployment.apps/}"
+    success "Detected PostgreSQL Deployment: $DEPLOY_NAME"
+    kubectl -n $NAMESPACE rollout status deployment/$DEPLOY_NAME --timeout=120s || true
+  else
+    warning "PostgreSQL Deployment/StatefulSet not found in namespace $NAMESPACE; will try to find a pod directly"
+  fi
 fi
 
 # 2. Check Datadog agent deployment
 log "2. Checking Datadog agent deployment..."
+DS_NAME=""
 if kubectl get daemonset datadog-agent -n $DATADOG_AGENT_NAMESPACE &> /dev/null; then
-    success "Datadog agent daemonset found"
-    
+    DS_NAME="datadog-agent"
+elif kubectl get daemonset datadog -n $DATADOG_AGENT_NAMESPACE &> /dev/null; then
+    DS_NAME="datadog"
+fi
+
+if [ -n "$DS_NAME" ]; then
+    success "Datadog agent daemonset found: $DS_NAME"
     # Check agent status
-    DESIRED_AGENTS=$(kubectl get daemonset datadog-agent -n $DATADOG_AGENT_NAMESPACE -o jsonpath='{.status.desiredNumberScheduled}')
-    READY_AGENTS=$(kubectl get daemonset datadog-agent -n $DATADOG_AGENT_NAMESPACE -o jsonpath='{.status.numberReady}')
-    
+    DESIRED_AGENTS=$(kubectl get daemonset "$DS_NAME" -n $DATADOG_AGENT_NAMESPACE -o jsonpath='{.status.desiredNumberScheduled}')
+    READY_AGENTS=$(kubectl get daemonset "$DS_NAME" -n $DATADOG_AGENT_NAMESPACE -o jsonpath='{.status.numberReady}')
     if [ "$READY_AGENTS" = "$DESIRED_AGENTS" ]; then
         success "Datadog agents are ready ($READY_AGENTS/$DESIRED_AGENTS)"
     else
         warning "Datadog agents are not fully ready ($READY_AGENTS/$DESIRED_AGENTS)"
     fi
 else
-    error "Datadog agent not found. Installing Datadog agent with DBM..."
-    ./scripts/setup-postgres-datadog-monitoring.sh
+    error "Datadog agent DaemonSet not found in namespace $DATADOG_AGENT_NAMESPACE"
+    warning "Skipping automatic install. Ensure the Datadog Agent with DBM is deployed."
 fi
 
 # 2b. Check Datadog Cluster Agent
@@ -116,7 +151,11 @@ fi
 log "3. Checking PostgreSQL extensions and DBM configuration..."
 
 # Get PostgreSQL pod
-POSTGRES_POD=$(kubectl get pods -n $NAMESPACE -l app=$PG_LABEL_VALUE -o jsonpath='{.items[0].metadata.name}')
+POSTGRES_POD=$(kubectl get pods -n $NAMESPACE -l app=$PG_LABEL_VALUE -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+if [ -z "$POSTGRES_POD" ]; then
+  # Fallback: match by pod name containing postgres
+  POSTGRES_POD=$(kubectl get pods -n $NAMESPACE -o name 2>/dev/null | grep -E "postgres|postgresql" | head -n1 | sed 's#pod/##' || true)
+fi
 
 if [ -z "$POSTGRES_POD" ]; then
     error "No PostgreSQL pod found"
@@ -127,129 +166,197 @@ success "Found PostgreSQL pod: $POSTGRES_POD"
 
 # Check pgvector extension
 log "Checking pgvector extension..."
-PGVECTOR_CHECK=$(kubectl exec -n $NAMESPACE $POSTGRES_POD -- psql -U postgres -d $DB_NAME -t -c "SELECT 1 FROM pg_extension WHERE extname='vector';" 2>/dev/null || echo "0")
+## Detect the correct main container name in the pod
+PG_CONTAINER_NAME=$(kubectl get pod -n $NAMESPACE $POSTGRES_POD -o jsonpath='{.spec.containers[0].name}' 2>/dev/null || echo "")
+if [ -z "$PG_CONTAINER_NAME" ]; then
+    PG_CONTAINER_NAME="postgres"
+fi
+success "Using PostgreSQL container: $PG_CONTAINER_NAME"
 
-if [ "$PGVECTOR_CHECK" = " 1" ]; then
+PGVECTOR_AVAILABLE=1
+PGVECTOR_CHECK=$(kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -t -c "SELECT 1 FROM pg_extension WHERE extname='vector';" 2>/dev/null | tr -d '[:space:]')
+
+if [ "$PGVECTOR_CHECK" = "1" ]; then
     success "pgvector extension is installed"
 else
-    warning "pgvector extension not found. Installing..."
-    kubectl exec -n $NAMESPACE $POSTGRES_POD -- psql -U postgres -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS vector;"
-    success "pgvector extension installed"
+    warning "pgvector extension not found. Attempting to install..."
+    kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS vector;" || true
+    PGVECTOR_CHECK=$(kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -t -c "SELECT 1 FROM pg_extension WHERE extname='vector';" 2>/dev/null | tr -d '[:space:]')
+    if [ "$PGVECTOR_CHECK" = "1" ]; then
+        success "pgvector extension installed"
+    else
+        PGVECTOR_AVAILABLE=0
+        warning "pgvector extension not available on this image. Skipping vector-specific steps."
+    fi
 fi
 
 # Check pg_stat_statements extension
 log "Checking pg_stat_statements extension..."
-PGSTAT_CHECK=$(kubectl exec -n $NAMESPACE $POSTGRES_POD -- psql -U postgres -d $DB_NAME -t -c "SELECT 1 FROM pg_extension WHERE extname='pg_stat_statements';" 2>/dev/null || echo "0")
+PGSTAT_CHECK=$(kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -t -c "SELECT 1 FROM pg_extension WHERE extname='pg_stat_statements';" 2>/dev/null | tr -d '[:space:]')
 
-if [ "$PGSTAT_CHECK" = " 1" ]; then
+if [ "$PGSTAT_CHECK" = "1" ]; then
     success "pg_stat_statements extension is installed"
 else
     warning "pg_stat_statements extension not found. Installing..."
-    kubectl exec -n $NAMESPACE $POSTGRES_POD -- psql -U postgres -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
+    kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
     success "pg_stat_statements extension installed"
 fi
 
 # 4. Check/Create Datadog monitoring user
 log "4. Checking Datadog monitoring user..."
-DATADOG_USER_CHECK=$(kubectl exec -n $NAMESPACE $POSTGRES_POD -- psql -U postgres -d $DB_NAME -t -c "SELECT 1 FROM pg_user WHERE usename='$DB_USER';" 2>/dev/null || echo "0")
+DATADOG_USER_CHECK=$(kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -t -c "SELECT 1 FROM pg_user WHERE usename='$DB_USER';" 2>/dev/null | tr -d '[:space:]')
 
-if [ "$DATADOG_USER_CHECK" = " 1" ]; then
+if [ "$DATADOG_USER_CHECK" = "1" ]; then
     success "Datadog user '$DB_USER' exists"
 else
     warning "Datadog user not found. Creating..."
-    
-    # Create datadog user with proper permissions
-    kubectl exec -n $NAMESPACE $POSTGRES_POD -- psql -U postgres -d $DB_NAME -c "
-    CREATE USER $DB_USER WITH PASSWORD 'datadog_monitoring_password';
-    GRANT pg_monitor TO $DB_USER;
-    GRANT pg_read_all_stats TO $DB_USER;
-    GRANT pg_read_all_settings TO $DB_USER;
-    GRANT SELECT ON pg_stat_database TO $DB_USER;
-    "
-    success "Datadog user created with monitoring permissions"
+
+    # Create datadog user with proper permissions (idempotent)
+    kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$DB_USER') THEN CREATE ROLE $DB_USER LOGIN PASSWORD '${MONITORING_PASSWORD}'; END IF; END \$\$;" || true
+    kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -v ON_ERROR_STOP=1 -c "GRANT pg_monitor TO $DB_USER; GRANT pg_read_all_stats TO $DB_USER; GRANT pg_read_all_settings TO $DB_USER; GRANT SELECT ON pg_stat_database TO $DB_USER;" || true
+    success "Datadog user ensured with monitoring permissions"
+fi
+
+# Ensure password matches expected value
+kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -v ON_ERROR_STOP=1 -c "ALTER ROLE $DB_USER WITH PASSWORD '${MONITORING_PASSWORD}';" || warning "Unable to reset password for $DB_USER"
+
+# 4b. Annotate Postgres for Datadog Autodiscovery (DBM)
+log "4b. Ensuring Datadog Autodiscovery annotations on Postgres workload..."
+if [ -n "$DEPLOY_KIND" ] && [ -n "$DEPLOY_NAME" ]; then
+  kubectl annotate -n $NAMESPACE $DEPLOY_KIND/$DEPLOY_NAME \
+    "ad.datadoghq.com/postgres.check_names=[\"postgres\"]" \
+    "ad.datadoghq.com/postgres.init_configs=[{}]" \
+    "ad.datadoghq.com/postgres.instances=[{\"host\":\"%%host%%\",\"port\":5432,\"username\":\"$DB_USER\",\"password\":\"${MONITORING_PASSWORD}\",\"dbname\":\"$DB_NAME\",\"dbm\":true,\"ssl\":\"${SSL_MODE}\",\"query_metrics\":{\"enabled\":true},\"query_activity\":{\"enabled\":false},\"query_samples\":{\"enabled\":false}}]" \
+    --overwrite || true
+  kubectl rollout restart -n $NAMESPACE $DEPLOY_KIND/$DEPLOY_NAME || true
+  kubectl -n $NAMESPACE rollout status $DEPLOY_KIND/$DEPLOY_NAME --timeout=180s || true
+  # Refresh the Postgres pod reference after rollout
+  POSTGRES_POD=$(kubectl get pods -n $NAMESPACE -l app=$PG_LABEL_VALUE --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[*].metadata.name}' 2>/dev/null | awk '{print $NF}')
+  if [ -z "$POSTGRES_POD" ]; then
+    POSTGRES_POD=$(kubectl get pods -n $NAMESPACE -o name 2>/dev/null | grep -E "postgres|postgresql" | tail -n1 | sed 's#pod/##' || true)
+  fi
+  if [ -n "$POSTGRES_POD" ]; then
+    success "Updated PostgreSQL pod reference: $POSTGRES_POD"
+    kubectl wait --for=condition=Ready pod/$POSTGRES_POD -n $NAMESPACE --timeout=180s || warning "PostgreSQL pod not ready after restart"
+  else
+    warning "Unable to refresh PostgreSQL pod reference after restart"
+  fi
+else
+  warning "Could not determine workload kind/name for annotations; attempting to annotate Pod directly"
+  if [ -n "$POSTGRES_POD" ]; then
+    kubectl annotate -n $NAMESPACE pod/$POSTGRES_POD \
+      "ad.datadoghq.com/postgres.check_names=[\"postgres\"]" \
+      "ad.datadoghq.com/postgres.init_configs=[{}]" \
+      "ad.datadoghq.com/postgres.instances=[{\"host\":\"%%host%%\",\"port\":5432,\"username\":\"$DB_USER\",\"password\":\"${MONITORING_PASSWORD}\",\"dbname\":\"$DB_NAME\",\"dbm\":true,\"ssl\":\"${SSL_MODE}\",\"query_metrics\":{\"enabled\":true},\"query_activity\":{\"enabled\":false},\"query_samples\":{\"enabled\":false}}]" \
+      --overwrite || true
+  fi
 fi
 
 # 5. Create/verify pgvector monitoring tables and data
 log "5. Setting up pgvector monitoring tables..."
 
-# Create document_embeddings table if it doesn't exist
-kubectl exec -n $NAMESPACE $POSTGRES_POD -- psql -U postgres -d $DB_NAME -c "
-CREATE TABLE IF NOT EXISTS document_embeddings (
-    id SERIAL PRIMARY KEY,
-    document_id VARCHAR(255) UNIQUE NOT NULL,
-    title VARCHAR(500),
-    content TEXT NOT NULL,
-    embedding vector(1536),
-    metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+if [ "$PGVECTOR_AVAILABLE" = "1" ]; then
+  # Create document_embeddings table if it doesn't exist
+  kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -c "
+  CREATE TABLE IF NOT EXISTS document_embeddings (
+      id SERIAL PRIMARY KEY,
+      document_id VARCHAR(255) UNIQUE NOT NULL,
+      title VARCHAR(500),
+      content TEXT NOT NULL,
+      embedding vector(5),
+      metadata JSONB DEFAULT '{}',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
 
--- Create vector index for similarity search
-CREATE INDEX IF NOT EXISTS idx_document_embeddings_vector 
-ON document_embeddings USING ivfflat (embedding vector_cosine_ops) 
-WITH (lists = 100);
+  -- Create vector index for similarity search
+  CREATE INDEX IF NOT EXISTS idx_document_embeddings_vector 
+  ON document_embeddings USING ivfflat (embedding vector_cosine_ops) 
+  WITH (lists = 10);
 
--- Grant permissions to datadog user
-GRANT SELECT ON document_embeddings TO $DB_USER;
-GRANT SELECT ON pg_stat_user_tables TO $DB_USER;
-GRANT SELECT ON pg_stat_user_indexes TO $DB_USER;
-"
+  -- Grant permissions to datadog user
+  GRANT SELECT ON document_embeddings TO $DB_USER;
+  GRANT SELECT ON pg_stat_user_tables TO $DB_USER;
+  GRANT SELECT ON pg_stat_user_indexes TO $DB_USER;
+  "
 
-success "pgvector tables and indexes created"
+  success "pgvector tables and indexes created"
 
-# Insert sample data if table is empty
-RECORD_COUNT=$(kubectl exec -n $NAMESPACE $POSTGRES_POD -- psql -U postgres -d $DB_NAME -t -c "SELECT COUNT(*) FROM document_embeddings;" | tr -d ' ')
+  # Insert sample data if table is empty
+RECORD_COUNT=$(kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -t -c "SELECT COUNT(*) FROM document_embeddings;" | tr -d '[:space:]')
 
 if [ "$RECORD_COUNT" = "0" ]; then
     log "Inserting sample vector data for monitoring..."
-    kubectl exec -n $NAMESPACE $POSTGRES_POD -- psql -U postgres -d $DB_NAME -c "
+    kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -c "
     INSERT INTO document_embeddings (document_id, title, content, embedding) VALUES
-    ('doc1', 'Sample Document 1', 'This is a sample document for testing pgvector monitoring', '[0.1,0.2,0.3,0.4,0.5]'::vector),
-    ('doc2', 'Sample Document 2', 'Another sample document with vector embeddings', '[0.2,0.3,0.4,0.5,0.6]'::vector),
-    ('doc3', 'Sample Document 3', 'Third sample document for Datadog monitoring demo', '[0.3,0.4,0.5,0.6,0.7]'::vector)
-    ON CONFLICT (document_id) DO NOTHING;
-    "
-    success "Sample vector data inserted"
+      ('doc1', 'Sample Document 1', 'This is a sample document for testing pgvector monitoring', '[0.1,0.2,0.3,0.4,0.5]'::vector),
+      ('doc2', 'Sample Document 2', 'Another sample document with vector embeddings', '[0.2,0.3,0.4,0.5,0.6]'::vector),
+      ('doc3', 'Sample Document 3', 'Third sample document for Datadog monitoring demo', '[0.3,0.4,0.5,0.6,0.7]'::vector)
+      ON CONFLICT (document_id) DO NOTHING;
+      "
+      success "Sample vector data inserted"
+  else
+      success "Found $RECORD_COUNT existing records in document_embeddings table"
+  fi
 else
-    success "Found $RECORD_COUNT existing records in document_embeddings table"
+  warning "Skipping vector table/index setup because pgvector is not available"
+  RECORD_COUNT=0
 fi
 
 # 6. Check Datadog agent configuration
 log "6. Checking Datadog agent configuration for PostgreSQL..."
 
 # Check if PostgreSQL integration is configured
-DATADOG_POD=$(kubectl get pods -n $DATADOG_AGENT_NAMESPACE -l app=datadog-agent -o jsonpath='{.items[0].metadata.name}')
+DATADOG_POD=$(kubectl get pods -n $DATADOG_AGENT_NAMESPACE -l app=datadog-agent -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+if [ -z "$DATADOG_POD" ]; then
+    DATADOG_POD=$(kubectl get pods -n $DATADOG_AGENT_NAMESPACE -l app=datadog -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+fi
 
 if [ -n "$DATADOG_POD" ]; then
     success "Found Datadog agent pod: $DATADOG_POD"
     
     # Check PostgreSQL configuration
     log "Checking PostgreSQL integration configuration..."
-    kubectl exec -n $DATADOG_AGENT_NAMESPACE $DATADOG_POD -- ls -la /etc/datadog-agent/conf.d/postgres.d/ 2>/dev/null || {
-        warning "PostgreSQL configuration not found. Creating configuration..."
-        
-        # Create PostgreSQL configuration
-        kubectl create configmap datadog-postgres-config -n $DATADOG_AGENT_NAMESPACE --from-literal=conf.yaml="
+    if ! kubectl exec -n $DATADOG_AGENT_NAMESPACE $DATADOG_POD -- ls -la /etc/datadog-agent/conf.d/postgres.d/ >/dev/null 2>&1; then
+        if [ "$PGVECTOR_AVAILABLE" = "1" ]; then
+          warning "PostgreSQL configuration directory missing on agent. It will be created with pgvector support."
+        else
+          warning "PostgreSQL configuration directory missing on agent. It will be created."
+        fi
+    fi
+
+    # Optional: store password in a Secret and expose to Datadog Agent as env var
+    if [ "$USE_SECRET_PASSWORD" = "true" ]; then
+      kubectl -n $DATADOG_AGENT_NAMESPACE create secret generic dd-postgres-creds \
+        --from-literal=DD_POSTGRES_PASSWORD="$MONITORING_PASSWORD" \
+        --dry-run=client -o yaml | kubectl apply -f -
+      if [ -n "$DS_NAME" ]; then
+        kubectl -n $DATADOG_AGENT_NAMESPACE set env daemonset/$DS_NAME --from=secret/dd-postgres-creds --keys=DD_POSTGRES_PASSWORD --containers=agent --overwrite || true
+      fi
+      CONF_PASSWORD_VALUE="%%env_DD_POSTGRES_PASSWORD%%"
+    else
+      CONF_PASSWORD_VALUE="$MONITORING_PASSWORD"
+    fi
+
+    cat <<EOF >/tmp/datadog-postgres-conf.yaml
 init_config:
 
 instances:
-  - host: postgres.$NAMESPACE.svc.cluster.local
+  - host: ${POSTGRES_SERVICE}.${NAMESPACE}.svc.cluster.local
     port: 5432
-    username: $DB_USER
-    password: datadog_monitoring_password
-    dbname: $DB_NAME
-    ssl: false
+    username: ${DB_USER}
+    password: "${CONF_PASSWORD_VALUE}"
+    dbname: ${DB_NAME}
+    ssl: '${SSL_MODE}'
     dbm: true
     query_metrics:
       enabled: true
       run_sync: true
       collection_interval: 10
     query_samples:
-      enabled: true
+      enabled: false
     query_activity:
-      enabled: true
-      collection_interval: 10
+      enabled: false
     collect_schemas:
       enabled: true
       collection_interval: 600
@@ -259,71 +366,21 @@ instances:
     collect_settings:
       enabled: true
       collection_interval: 600
-    relations:
-      - relation_regex: '.*'
-        relkind:
-          - r  # tables
-          - i  # indexes
-          - S  # sequences
-    custom_queries:
-      - metric_prefix: 'postgresql.pgvector'
-        query: |
-          SELECT 
-            schemaname,
-            tablename,
-            n_live_tup as vector_count,
-            pg_relation_size(schemaname||'.'||tablename) as table_size
-          FROM pg_stat_user_tables 
-          WHERE tablename = 'document_embeddings'
-        columns:
-          - name: schema
-            type: tag
-          - name: table
-            type: tag  
-          - name: vector_count
-            type: gauge
-          - name: table_size
-            type: gauge
-        tags:
-          - env:kubernetes
-          - service:vibecode
-          - database:postgresql
-          - vector_db:pgvector
-      - metric_prefix: 'postgresql.pgvector.index'
-        query: |
-          SELECT 
-            schemaname,
-            indexname,
-            idx_tup_read,
-            idx_tup_fetch,
-            pg_relation_size(indexrelid) as index_size
-          FROM pg_stat_user_indexes 
-          WHERE relname = 'document_embeddings'
-        columns:
-          - name: schema
-            type: tag
-          - name: index
-            type: tag
-          - name: tuples_read
-            type: gauge
-          - name: tuples_fetched
-            type: gauge
-          - name: index_size
-            type: gauge
-        tags:
-          - env:kubernetes
-          - service:vibecode
-          - database:postgresql
-          - vector_db:pgvector
     tags:
       - env:kubernetes
       - service:vibecode
       - database:postgresql
       - vector_db:pgvector
-" --dry-run=client -o yaml | kubectl apply -f -
+EOF
 
-        success "Datadog PostgreSQL configuration created"
-    }
+    kubectl create configmap datadog-postgres-config -n $DATADOG_AGENT_NAMESPACE \
+      --from-file=conf.yaml=/tmp/datadog-postgres-conf.yaml \
+      --dry-run=client -o yaml | kubectl apply -f -
+
+    success "Datadog PostgreSQL configuration applied"
+
+    kubectl rollout restart daemonset/datadog -n $DATADOG_AGENT_NAMESPACE || true
+    kubectl rollout status daemonset/datadog -n $DATADOG_AGENT_NAMESPACE --timeout=180s || true
 else
     error "Datadog agent pod not found"
 fi
@@ -331,38 +388,66 @@ fi
 # 7. Test vector search operations to generate metrics
 log "7. Testing vector search operations to generate metrics..."
 
-# Perform some vector searches to generate activity
-kubectl exec -n $NAMESPACE $POSTGRES_POD -- psql -U postgres -d $DB_NAME -c "
--- Perform vector similarity searches to generate metrics
-SELECT document_id, title, embedding <-> '[0.1,0.2,0.3,0.4,0.5]'::vector as distance
-FROM document_embeddings 
-ORDER BY embedding <-> '[0.1,0.2,0.3,0.4,0.5]'::vector 
-LIMIT 3;
+# Refresh pod/container before activity to avoid stale references
+POSTGRES_POD=$(kubectl get pods -n $NAMESPACE -l app=$PG_LABEL_VALUE --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[*].metadata.name}' 2>/dev/null | awk '{print $NF}')
+if [ -z "$POSTGRES_POD" ]; then
+  POSTGRES_POD=$(kubectl get pods -n $NAMESPACE -o name 2>/dev/null | grep -E "postgres|postgresql" | tail -n1 | sed 's#pod/##' || true)
+fi
+if [ -n "$POSTGRES_POD" ]; then
+  kubectl wait --for=condition=Ready pod/$POSTGRES_POD -n $NAMESPACE --timeout=120s || warning "PostgreSQL pod not ready for activity"
+fi
+PG_CONTAINER_NAME=$(kubectl get pod -n $NAMESPACE $POSTGRES_POD -o jsonpath='{.spec.containers[0].name}' 2>/dev/null || echo "$PG_CONTAINER_NAME")
+success "Using PostgreSQL pod for activity: $POSTGRES_POD (container: $PG_CONTAINER_NAME)"
 
-SELECT document_id, title, embedding <=> '[0.2,0.3,0.4,0.5,0.6]'::vector as cosine_distance
-FROM document_embeddings 
-ORDER BY embedding <=> '[0.2,0.3,0.4,0.5,0.6]'::vector 
-LIMIT 3;
+# Perform activity to generate metrics
+if [ "$PGVECTOR_AVAILABLE" = "1" ]; then
+  kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -c "
+  -- Perform vector similarity searches to generate metrics
+  SELECT document_id, title, embedding <-> '[0.1,0.2,0.3,0.4,0.5]'::vector as distance
+  FROM document_embeddings 
+  ORDER BY embedding <-> '[0.1,0.2,0.3,0.4,0.5]'::vector 
+  LIMIT 3;
 
--- Generate some index usage statistics
-SELECT * FROM pg_stat_user_indexes WHERE relname = 'document_embeddings';
-"
+  SELECT document_id, title, embedding <=> '[0.2,0.3,0.4,0.5,0.6]'::vector as cosine_distance
+  FROM document_embeddings 
+  ORDER BY embedding <=> '[0.2,0.3,0.4,0.5,0.6]'::vector 
+  LIMIT 3;
+
+  -- Generate some index usage statistics
+  SELECT * FROM pg_stat_user_indexes WHERE relname = 'document_embeddings';
+  "
+else
+  kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -c "
+  -- Generate general DB activity (non-vector)
+  SELECT now();
+  SELECT datname FROM pg_database LIMIT 3;
+  SELECT schemaname, relname FROM pg_stat_user_tables LIMIT 5;
+  "
+fi
 
 success "Vector search operations completed"
 
 # 8. Verify metrics collection
 log "8. Verifying metrics collection..."
 
-# Check pg_stat_statements for vector queries
-VECTOR_QUERIES=$(kubectl exec -n $NAMESPACE $POSTGRES_POD -- psql -U postgres -d $DB_NAME -t -c "
-SELECT COUNT(*) 
-FROM pg_stat_statements 
-WHERE query LIKE '%embedding%' OR query LIKE '%vector%';" 2>/dev/null || echo "0")
-
-if [ "$VECTOR_QUERIES" != "0" ]; then
-    success "Found $VECTOR_QUERIES vector-related queries in pg_stat_statements"
+# Check pg_stat_statements for recent queries
+if [ "$PGVECTOR_AVAILABLE" = "1" ]; then
+  VECTOR_QUERIES=$(kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -t -c "
+  SELECT COUNT(*) 
+  FROM pg_stat_statements 
+  WHERE query LIKE '%embedding%' OR query LIKE '%vector%';" 2>/dev/null || echo "0")
+  if [ "$VECTOR_QUERIES" != "0" ]; then
+      success "Found $VECTOR_QUERIES vector-related queries in pg_stat_statements"
+  else
+      warning "No vector queries found in pg_stat_statements yet"
+  fi
 else
-    warning "No vector queries found in pg_stat_statements yet"
+  TOTAL_QUERIES=$(kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -t -c "SELECT COUNT(*) FROM pg_stat_statements;" 2>/dev/null || echo "0")
+  if [ "$TOTAL_QUERIES" != "0" ]; then
+      success "Found $TOTAL_QUERIES statements tracked in pg_stat_statements"
+  else
+      warning "No statements found in pg_stat_statements yet"
+  fi
 fi
 
 # 9. Check Datadog agent logs for PostgreSQL integration
@@ -384,18 +469,18 @@ echo "📋 Manual Verification Steps:"
 echo "=============================="
 echo ""
 echo "1. PostgreSQL Connection:"
-echo "   Host: postgres.$NAMESPACE.svc.cluster.local"
+echo "   Host: postgres-service.$NAMESPACE.svc.cluster.local"
 echo "   Port: 5432"
 echo "   Database: $DB_NAME"
 echo "   User: $DB_USER"
-echo "   Password: datadog_monitoring_password"
+echo "   Password: ${MONITORING_PASSWORD}"
 echo ""
 echo "2. Test vector queries:"
 echo "   kubectl exec -n $NAMESPACE $POSTGRES_POD -- psql -U $DB_USER -d $DB_NAME -c \"SELECT COUNT(*) FROM document_embeddings;\""
 echo ""
 echo "3. Check Datadog Dashboard:"
 echo "   - Go to Datadog → Database Monitoring"
-echo "   - Look for host: postgres.$NAMESPACE.svc.cluster.local"
+echo "   - Look for host: ${POSTGRES_SERVICE}.$NAMESPACE.svc.cluster.local"
 echo "   - Check for custom metrics: postgresql.pgvector.*"
 echo ""
 echo "4. Expected Datadog Metrics:"
@@ -516,12 +601,20 @@ echo "3. Check Datadog agent logs for errors"
 echo ""
 
 # Final status
-if [ "$VECTOR_QUERIES" != "0" ] && [ "$RECORD_COUNT" != "0" ]; then
-    success "✅ pgvector monitoring setup appears successful!"
-    echo "   - PostgreSQL with pgvector: ✅"
-    echo "   - Sample vector data: ✅ ($RECORD_COUNT records)"
-    echo "   - Datadog agent: ✅"
-    echo "   - Vector queries tracked: ✅ ($VECTOR_QUERIES queries)"
+if [ "$PGVECTOR_AVAILABLE" = "1" ]; then
+  if [ "${VECTOR_QUERIES:-0}" != "0" ] && [ "${RECORD_COUNT:-0}" != "0" ]; then
+      success "✅ pgvector monitoring setup appears successful!"
+      echo "   - PostgreSQL with pgvector: ✅"
+      echo "   - Sample vector data: ✅ ($RECORD_COUNT records)"
+      echo "   - Datadog agent: ✅"
+      echo "   - Vector queries tracked: ✅ ($VECTOR_QUERIES queries)"
+  else
+      warning "⚠️ Setup completed but may need time to generate pgvector metrics"
+  fi
 else
-    warning "⚠️ Setup completed but may need time to generate metrics"
+  if [ "${TOTAL_QUERIES:-0}" != "0" ]; then
+      success "✅ DBM baseline active without pgvector (statements tracked: $TOTAL_QUERIES). Consider upgrading Postgres image to include pgvector."
+  else
+      warning "⚠️ Setup completed but may need time to generate metrics"
+  fi
 fi
