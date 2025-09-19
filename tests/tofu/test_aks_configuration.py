@@ -256,10 +256,18 @@ class TofuPlanTests(unittest.TestCase):
             "location": "East US 2",
             "datadog_api_key": "test-key-123",
             "datadog_app_key": "test-app-key-456",
+            "datadog_site": "datadoghq.com",
             "postgres_storage_size_gb": 20,
             "system_node_count": 1,
             "user_node_count": 1,
-            "enable_datadog_monitoring": True
+            "enable_datadog_monitoring": True,
+            "postgresql_admin_password": "test-password-123",
+            "nextauth_secret": "test-secret-key-for-validation",
+            "app_image_tag": "test",
+            "openrouter_api_key": "",
+            "azure_openai_api_key": "",
+            "azure_openai_endpoint": "",
+            "ingress_hostname": "vibecode-test.eastus2.cloudapp.azure.com"
         }
 
         json.dump(test_vars, self.test_vars_file)

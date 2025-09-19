@@ -80,6 +80,38 @@ else
     ./scripts/setup-postgres-datadog-monitoring.sh
 fi
 
+# 2b. Check Datadog Cluster Agent
+log "2b. Checking Datadog Cluster Agent..."
+if kubectl get deployment datadog-cluster-agent -n $DATADOG_AGENT_NAMESPACE &> /dev/null; then
+    kubectl -n $DATADOG_AGENT_NAMESPACE rollout status deployment/datadog-cluster-agent --timeout=120s || true
+    DCA_DESIRED=$(kubectl get deployment datadog-cluster-agent -n $DATADOG_AGENT_NAMESPACE -o jsonpath='{.status.replicas}' 2>/dev/null || echo "0")
+    DCA_READY=$(kubectl get deployment datadog-cluster-agent -n $DATADOG_AGENT_NAMESPACE -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
+    if [ -z "$DCA_DESIRED" ] || [ "$DCA_DESIRED" = "" ]; then DCA_DESIRED=0; fi
+    if [ -z "$DCA_READY" ] || [ "$DCA_READY" = "" ]; then DCA_READY=0; fi
+
+    if [ "$DCA_READY" = "$DCA_DESIRED" ] && [ "$DCA_READY" != "0" ]; then
+        success "Datadog Cluster Agent is ready ($DCA_READY/$DCA_DESIRED)"
+    else
+        warning "Datadog Cluster Agent not fully ready yet ($DCA_READY/$DCA_DESIRED)"
+        # Basic diagnostics: check pod status and logs for crash loops
+        DCA_PODS=$(kubectl get pods -n $DATADOG_AGENT_NAMESPACE -l app=datadog-cluster-agent -o jsonpath='{.items[*].metadata.name}')
+        if [ -n "$DCA_PODS" ]; then
+            for p in $DCA_PODS; do
+                state=$(kubectl get pod "$p" -n $DATADOG_AGENT_NAMESPACE -o jsonpath='{.status.containerStatuses[0].state.waiting.reason}' 2>/dev/null || echo "")
+                restarts=$(kubectl get pod "$p" -n $DATADOG_AGENT_NAMESPACE -o jsonpath='{.status.containerStatuses[0].restartCount}' 2>/dev/null || echo "0")
+                if [ -n "$state" ] || [ "$restarts" -gt 0 ]; then
+                    warning "Cluster Agent pod $p state=$state restarts=$restarts"
+                    log "Last 50 logs from $p:"
+                    kubectl logs -n $DATADOG_AGENT_NAMESPACE "$p" --tail=50 || true
+                fi
+            done
+        fi
+        log "Tip: Ensure DD_CLUSTER_AGENT_AUTH_TOKEN matches, and RBAC/leader election permissions are configured."
+    fi
+else
+    warning "Datadog Cluster Agent deployment not found in namespace $DATADOG_AGENT_NAMESPACE"
+fi
+
 # 3. Check PostgreSQL extensions and configuration
 log "3. Checking PostgreSQL extensions and DBM configuration..."
 

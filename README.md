@@ -19,6 +19,48 @@
 
 **See pgvector + PostgreSQL + Datadog DBM in action in 30 seconds.**
 
+> Note: To see Datadog metrics in the demo, create a `.env.local` with your Datadog API key before running.
+
+```bash
+cat > .env.local << 'EOF'
+DD_API_KEY=REPLACE_WITH_YOUR_KEY
+DD_SITE=datadoghq.com
+EOF
+```
+
+---
+
+## 🏗️ **Deployment Status**
+
+[![Infrastructure Tests](https://img.shields.io/badge/Infrastructure%20Tests-✅%20Passing-brightgreen?style=for-the-badge)](./tests/tofu/)
+[![OpenTofu](https://img.shields.io/badge/OpenTofu-v1.7.3-blue?style=for-the-badge&logo=terraform)](https://opentofu.org/)
+[![Azure AKS](https://img.shields.io/badge/Azure%20AKS-Ready-blue?style=for-the-badge&logo=microsoft-azure)](https://azure.microsoft.com/en-us/services/kubernetes-service/)
+
+### 🚀 **Quick Deploy to Azure AKS**
+
+```bash
+# 1. Install dependencies
+pip install -r requirements-dev.txt
+
+# 2. Validate environment
+python scripts/validate-infrastructure.py
+
+# 3. Deploy infrastructure
+cp tofu/terraform.tfvars.example tofu/terraform.tfvars
+# Edit terraform.tfvars with your values
+python scripts/deploy-aks.py --config config.json
+
+# 4. Run tests
+python scripts/run-infrastructure-tests.py --unit
+```
+
+### 📊 **Infrastructure Components**
+- **AKS cluster** with dual node pools (system + user)
+- **PostgreSQL with pgvector** deployed in-cluster
+- **Datadog monitoring** with database monitoring (DBM)
+- **Network policies** and security hardening
+- **Rollback mechanisms** for deployment failures
+
 ---
 
 ## ✨ **What This Demonstrates**

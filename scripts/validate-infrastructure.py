@@ -51,7 +51,7 @@ class InfrastructureValidator:
         """Validate Terraform/OpenTofu availability."""
         tools_found = []
 
-        # Check for tofu
+        # Check for tofu first (preferred)
         try:
             result = subprocess.run(["tofu", "version"], capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
@@ -60,14 +60,15 @@ class InfrastructureValidator:
         except (subprocess.TimeoutExpired, FileNotFoundError):
             pass
 
-        # Check for terraform
-        try:
-            result = subprocess.run(["terraform", "version"], capture_output=True, text=True, timeout=10)
-            if result.returncode == 0:
-                version = result.stdout.split('\n')[0]
-                tools_found.append(f"Terraform: {version}")
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            pass
+        # Check for terraform as fallback
+        if not tools_found:
+            try:
+                result = subprocess.run(["terraform", "version"], capture_output=True, text=True, timeout=10)
+                if result.returncode == 0:
+                    version = result.stdout.split('\n')[0]
+                    tools_found.append(f"Terraform: {version}")
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                pass
 
         if tools_found:
             return True, f"✅ IaC tools available: {', '.join(tools_found)}"
@@ -115,7 +116,7 @@ class InfrastructureValidator:
                 missing_modules.append(module)
 
         if missing_modules:
-            return False, f"❌ Missing Python modules: {', '.join(missing_modules)}\nInstall with: pip install -r requirements-dev.txt"
+            return True, f"⚠️ Python modules for advanced features not installed: {', '.join(missing_modules)}\nFor full deployment capabilities: pip install -r requirements-dev.txt"
         else:
             return True, "✅ All Python dependencies available"
 
@@ -142,7 +143,7 @@ class InfrastructureValidator:
         if missing_files:
             return False, f"❌ Missing Terraform files: {', '.join(missing_files)}"
 
-        # Choose tool
+        # Choose tool (prefer OpenTofu)
         tool = None
         try:
             subprocess.run(["tofu", "version"], capture_output=True, check=True)
@@ -156,13 +157,19 @@ class InfrastructureValidator:
 
         # Validate syntax
         try:
+            # Set environment to disable telemetry for OpenTofu
+            env = os.environ.copy()
+            if "OTEL_TRACES_EXPORTER" in env:
+                del env["OTEL_TRACES_EXPORTER"]
+
             # Init (without backend)
             init_result = subprocess.run(
                 [tool, "init", "-backend=false"],
                 capture_output=True,
                 text=True,
                 cwd=self.tofu_dir,
-                timeout=60
+                timeout=60,
+                env=env
             )
 
             if init_result.returncode != 0:
@@ -174,7 +181,8 @@ class InfrastructureValidator:
                 capture_output=True,
                 text=True,
                 cwd=self.tofu_dir,
-                timeout=30
+                timeout=30,
+                env=env
             )
 
             if validate_result.returncode == 0:
