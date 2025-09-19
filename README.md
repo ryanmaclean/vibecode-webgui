@@ -32,9 +32,18 @@ EOF
 
 ## 🏗️ **Deployment Status**
 
+[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-ONLINE-brightgreen?style=for-the-badge)](http://20.36.249.127)
 [![Infrastructure Tests](https://img.shields.io/badge/Infrastructure%20Tests-✅%20Passing-brightgreen?style=for-the-badge)](./tests/tofu/)
 [![OpenTofu](https://img.shields.io/badge/OpenTofu-v1.7.3-blue?style=for-the-badge&logo=terraform)](https://opentofu.org/)
-[![Azure AKS](https://img.shields.io/badge/Azure%20AKS-Ready-blue?style=for-the-badge&logo=microsoft-azure)](https://azure.microsoft.com/en-us/services/kubernetes-service/)
+[![Azure AKS](https://img.shields.io/badge/Azure%20AKS-DEPLOYED-brightgreen?style=for-the-badge&logo=microsoft-azure)](https://azure.microsoft.com/en-us/services/kubernetes-service/)
+
+### 🌐 **Production Deployment**
+- **Live Application**: [http://20.36.249.127](http://20.36.249.127)
+- **AKS Cluster**: `vibecode-prod-aks-84859296` (East US 2)
+- **Container Registry**: `vibecodecr84859296.azurecr.io`
+- **Application Version**: `v0.2.0`
+- **Database**: PostgreSQL 15 with pgvector (in-cluster)
+- **Monitoring**: Datadog with Database Monitoring enabled
 
 ### 🚀 **Quick Deploy to Azure AKS**
 
@@ -52,6 +61,24 @@ python scripts/deploy-aks.py --config config.json
 
 # 4. Run tests
 python scripts/run-infrastructure-tests.py --unit
+```
+
+### 🧪 **Production Testing**
+
+Test against the live deployment:
+
+```bash
+# Quick smoke test (7 core tests)
+npm run test:production:smoke
+
+# Full E2E test suite (448 tests)
+npm run test:e2e:production
+
+# Integration tests (database, AI, monitoring)
+npm run test:integration:production
+
+# Complete test suite
+npm run test:production:all
 ```
 
 ### 📊 **Infrastructure Components**

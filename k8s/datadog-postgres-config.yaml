@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datadog-postgres-config
+  namespace: datadog
+data:
+  postgres.yaml: |
+    init_config: {}
+
+    instances:
+      - host: postgres-service.vibecode-platform.svc.cluster.local
+        port: 5432
+        username: datadog
+        password: datadog_monitoring_password
+        dbname: vibecode
+        ssl: 'disable'
+        dbm: true
+        query_metrics:
+          enabled: true
+          run_sync: true
+          collection_interval: 10
+        query_samples:
+          enabled: false
+        query_activity:
+          enabled: false
+        collect_schemas:
+          enabled: true
+          collection_interval: 600
+        collect_activity:
+          enabled: true
+          collection_interval: 10
+        collect_settings:
+          enabled: true
+          collection_interval: 600
+        tags:
+          - env:kubernetes
+          - service:vibecode
+          - database:postgresql

@@ -33,7 +33,7 @@ class RUMMonitoring {
 
     // Additional check: Don't initialize if Datadog RUM is already running
     try {
-      // @ts-ignore - accessing internal context to check if already initialized
+      // @ts-expect-error - accessing internal context to check if already initialized
       if (datadogRum.getInternalContext?.()?.application_id) {
         console.log('[RUM] Datadog RUM already initialized, skipping duplicate initialization');
         this.initialized = true;

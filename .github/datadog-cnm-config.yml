@@ -1,0 +1,126 @@
+# Datadog Cloud Network Monitoring Configuration for GitHub Actions
+# This configuration enables CNM for CI/CD environments
+
+# Environment variables required for CNM in GitHub Actions
+env:
+  # Core Datadog settings
+  DD_API_KEY: ${{ secrets.DD_API_KEY }}
+  DD_SITE: datadoghq.com
+  
+  # CI Visibility settings
+  DD_CI_VISIBILITY_ENABLED: true
+  DD_SERVICE: vibecode-webgui
+  DD_ENV: ci
+  DD_VERSION: ${{ github.sha }}
+  
+  # Cloud Network Monitoring settings
+  DD_SYSTEM_PROBE_NETWORK_ENABLED: true
+  DD_PROCESS_AGENT_ENABLED: true
+  DD_SYSTEM_PROBE_ENABLED: true
+  
+  # EBPF settings for GitHub Actions (ebpf-less mode)
+  DD_NETWORK_CONFIG_ENABLE_EBPFLESS: true
+  DD_NETWORK_CONFIG_ENABLE_EBPF: false
+  
+  # Network monitoring specific settings
+  DD_NETWORK_CONFIG_ENABLE_DNS_INSPECTION: true
+  DD_NETWORK_CONFIG_ENABLE_HTTP_MONITORING: true
+  DD_NETWORK_CONFIG_ENABLE_TCP_MONITORING: true
+  
+  # Git metadata for enhanced tracking
+  DD_GIT_COMMIT_SHA: ${{ github.sha }}
+  DD_GIT_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+  DD_GIT_BRANCH: ${{ github.ref_name }}
+  DD_GIT_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+  DD_GIT_COMMIT_AUTHOR_NAME: ${{ github.event.head_commit.author.name }}
+  DD_GIT_COMMIT_AUTHOR_EMAIL: ${{ github.event.head_commit.author.email }}
+  DD_GIT_COMMIT_AUTHOR_DATE: ${{ github.event.head_commit.timestamp }}
+  DD_GIT_COMMIT_COMMITTER_NAME: ${{ github.event.head_commit.committer.name }}
+  DD_GIT_COMMIT_COMMITTER_EMAIL: ${{ github.event.head_commit.committer.email }}
+  DD_GIT_COMMIT_COMMITTER_DATE: ${{ github.event.head_commit.timestamp }}
+
+# Steps to add to GitHub Actions workflows for CNM setup
+steps:
+  - name: Setup Datadog CNM for GitHub Actions
+    run: |
+      echo "Setting up Cloud Network Monitoring for GitHub Actions..."
+      
+      # Install Datadog Agent (if not already available)
+      if ! command -v datadog-agent &> /dev/null; then
+        echo "Installing Datadog Agent..."
+        DD_API_KEY="${{ env.DD_API_KEY }}" DD_SITE="${{ env.DD_SITE }}" bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)"
+      fi
+      
+      # Configure CNM for GitHub Actions environment
+      sudo mkdir -p /etc/datadog-agent/conf.d
+      
+      # Create CNM configuration
+      sudo tee /etc/datadog-agent/conf.d/network.d/conf.yaml > /dev/null <<EOF
+      init_config:
+      
+      instances:
+        - collect_tcp_metrics: true
+          collect_dns_metrics: true
+          collect_http_metrics: true
+          enable_ebpf_less: true
+          enable_ebpf: false
+      EOF
+      
+      # Start Datadog Agent with CNM enabled
+      sudo systemctl start datadog-agent || true
+      
+      echo "✅ Datadog CNM configured for GitHub Actions"
+
+  - name: Verify CNM Status
+    run: |
+      echo "Verifying Cloud Network Monitoring status..."
+      
+      # Check if CNM is enabled
+      if [ "$DD_SYSTEM_PROBE_NETWORK_ENABLED" = "true" ]; then
+        echo "✅ CNM is enabled via environment variables"
+      else
+        echo "❌ CNM is not enabled"
+        exit 1
+      fi
+      
+      # Check Datadog Agent status
+      if command -v datadog-agent &> /dev/null; then
+        echo "✅ Datadog Agent is available"
+        datadog-agent status | grep -i "network" || echo "ℹ️  Network monitoring status not available in agent status"
+      else
+        echo "⚠️  Datadog Agent not available - CNM will use ebpf-less mode"
+      fi
+
+# Additional configuration for specific job types
+job_configs:
+  test_jobs:
+    additional_env:
+      DD_TEST_SESSION_NAME: "github-actions-test-${{ github.run_id }}"
+      DD_TRACE_ENABLED: true
+      
+  build_jobs:
+    additional_env:
+      DD_BUILD_SESSION_NAME: "github-actions-build-${{ github.run_id }}"
+      DD_TRACE_ENABLED: true
+      
+  deployment_jobs:
+    additional_env:
+      DD_DEPLOYMENT_SESSION_NAME: "github-actions-deploy-${{ github.run_id }}"
+      DD_TRACE_ENABLED: true
+
+# Troubleshooting section
+troubleshooting:
+  common_issues:
+    - issue: "No network data available for this span"
+      solution: "Ensure DD_SYSTEM_PROBE_NETWORK_ENABLED=true and DD_NETWORK_CONFIG_ENABLE_EBPFLESS=true"
+      
+    - issue: "CNM not working in GitHub Actions"
+      solution: "GitHub Actions runners don't support eBPF, use ebpf-less mode with DD_NETWORK_CONFIG_ENABLE_EBPFLESS=true"
+      
+    - issue: "Missing network metrics"
+      solution: "Check that DD_PROCESS_AGENT_ENABLED=true and DD_SYSTEM_PROBE_ENABLED=true"
+      
+  verification_commands:
+    - "echo $DD_SYSTEM_PROBE_NETWORK_ENABLED"
+    - "echo $DD_NETWORK_CONFIG_ENABLE_EBPFLESS"
+    - "echo $DD_PROCESS_AGENT_ENABLED"

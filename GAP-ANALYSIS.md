@@ -64,10 +64,14 @@
 - AI Services: $100/month
 - Other: $120/month
 
-### **Actual Azure Spending**: $0/month
-- **No Azure resources deployed**
-- **No production infrastructure**
-- **All demos run locally**
+- ### **Actual Azure Spending**: $16.00 (2025-09-19 portal snapshot)
+- **Minimal demo deployed** (2025-09-19 06:28 UTC)
+  - Resource Group: `rg-vibecode-demo`
+  - PostgreSQL Flexible Server: `vibecode-demo-demo001` (Standard_B1ms)
+  - Azure Container Instance: `aci-vibecode-demo` (Public IP `20.7.248.184`, Linux)
+- **Actual cost (first run)**: USD $16.00 (Azure Cost Analysis)
+- **Projected cost (DD CCM)**: align with ~$45–$50/month target
+- **Action**: Tear down demo resources once validation completes to halt further spend
 
 ### **Alternative Built**: Azure Functions ($30-80/month)
 - 85-90% cost savings vs planned AKS

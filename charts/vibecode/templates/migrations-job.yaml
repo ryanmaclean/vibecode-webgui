@@ -1,0 +1,40 @@
+{{- if .Values.migrations.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "vibecode.fullname" . }}-migrations
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode.labels" . | nindent 4 }}
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "vibecode.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: {{ .Values.migrations.restartPolicy }}
+      containers:
+        - name: migrations
+          image: "{{ .Values.migrations.image.repository }}:{{ .Values.migrations.image.tag }}"
+          imagePullPolicy: {{ .Values.migrations.image.pullPolicy }}
+          {{- if .Values.migrations.command }}
+          command:
+{{ toYaml .Values.migrations.command | indent 12 }}
+          {{- end }}
+          {{- if .Values.migrations.args }}
+          args:
+{{ toYaml .Values.migrations.args | indent 12 }}
+          {{- end }}
+          {{- if .Values.migrations.env }}
+          env:
+{{ toYaml .Values.migrations.env | indent 12 }}
+          {{- end }}
+          {{- if .Values.migrations.resources }}
+          resources:
+{{ toYaml .Values.migrations.resources | indent 12 }}
+          {{- end }}
+      {{- if .Values.migrations.activeDeadlineSeconds }}
+      activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds }}
+      {{- end }}
+{{- end }}

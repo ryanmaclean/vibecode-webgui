@@ -1,0 +1,63 @@
+schema-version: v2.1
+dd-service: vibecode-webgui
+team: platform-engineering
+application: vibecode-platform
+tier: tier1
+lifecycle: production
+contacts:
+  - type: slack
+    contact: https://vibecode.slack.com/archives/platform-engineering
+  - type: email
+    contact: platform-engineering@vibecode.com
+links:
+  - name: Production Dashboard
+    type: dashboard
+    url: https://app.datadoghq.com/dashboard/vibecode-prod
+  - name: Source Repository
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui
+    type: repo
+  - name: Deployment Chart
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui/tree/main/charts/vibecode-aks
+    type: repo
+  - name: AKS Infrastructure
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui/tree/main/infrastructure/opentofu
+    type: repo
+  - name: Production Runbook
+    type: runbook
+    url: https://docs.vibecode.com/runbooks/production
+  - name: API Documentation
+    type: doc
+    url: https://docs.vibecode.com/api
+docs:
+  - name: Architecture Documentation
+    provider: confluence
+    url: https://vibecode.atlassian.net/wiki/spaces/ARCH/pages/vibecode-webgui
+  - name: Deployment Guide
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui/blob/main/docs/azure-aks-deployment.md
+tags:
+  - "env:production"
+  - "platform:aks"
+  - "language:typescript"
+  - "framework:nextjs"
+  - "database:postgresql"
+  - "monitoring:datadog"
+  - "business-unit:platform"
+  - "cost-center:engineering"
+integrations:
+  pagerduty:
+    service-url: https://vibecode.pagerduty.com/service-directory/vibecode-webgui
+extensions:
+  datadoghq.com/dora-metrics:
+    repository: "vibecode/vibecode-webgui"
+    source_patterns:
+      - "src/**"
+      - "charts/**"
+      - "infrastructure/**"
+  datadoghq.com/cd-visibility:
+    deployment_patterns:
+      - "Deploy to AKS"
+      - "Helm upgrade"
