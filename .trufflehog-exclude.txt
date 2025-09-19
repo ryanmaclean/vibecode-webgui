@@ -1,0 +1,12 @@
+node_modules
+\.next
+\.turbo
+\.vercel
+docs/node_modules
+docs/dist
+docs/.astro
+playwright-report
+playwright-output
+performance-results
+dist
+public/docs-index.json
