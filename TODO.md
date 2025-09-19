@@ -112,13 +112,31 @@ description: Active project tasks and priorities
 **HANDOFF NOTE**: Core Datadog monitoring infrastructure is fully operational and sending data to Datadog cloud. Ready for production with real API keys.
 
 ### 🔥 **AGENT #4: DATABASE SPECIALIST** (PostgreSQL/pgvector)
-**CURRENT STATUS**: 🟡 Available - PostgreSQL running but missing pgvector
-**ASSIGNED TASKS**:
-- [ ] Add pgvector extension to PostgreSQL (switch from postgres:15-alpine to pgvector/pgvector image)
-- [ ] Verify PostgreSQL + pgvector (`SELECT extname FROM pg_extension WHERE extname='vector'` returns `vector`)
+**CURRENT STATUS**: ✅ **MAJOR PROGRESS** - Python orchestration complete, ready for deployment testing
+**COMPLETED TASKS**:
+- [x] **Replace bash PostgreSQL setup with Python orchestration** - ✅ COMPLETED
+  - ✅ Created `scripts/postgres_setup.py` with full PostgreSQL + pgvector setup
+  - ✅ Ported manifest generation (StatefulSet, Service, ConfigMap, Secrets)
+  - ✅ Added CLI flags for namespace, storage class, password overrides
+  - ✅ Updated `aks-postgresql-setup.sh` to delegate to Python helper
+  - ✅ Included pgvector/pgvector:pg16 image with automatic extension installation
+  - ✅ Added verification and connectivity testing capabilities
+
+**PYTHON ORCHESTRATION FEATURES**:
+- ✅ **pgvector Extension**: Automatic installation via pgvector/pgvector:pg16 image
+- ✅ **Datadog Integration**: Creates datadog user with proper permissions
+- ✅ **Azure Disk Storage**: Configurable storage class and size
+- ✅ **Security**: Auto-generated passwords, proper secret management
+- ✅ **Monitoring**: Health checks, liveness/readiness probes
+- ✅ **Configuration**: Optimized PostgreSQL 16 settings for pgvector workloads
+
+**REMAINING TASKS**:
+- [ ] Test deployment in AKS cluster (`python scripts/postgres_setup.py --wait --verify`)
 - [ ] Fix app DB wiring and network policy (DATABASE_URL points to postgres-service)
 - [ ] Test database connectivity from application pods
 - [ ] Implement database backup and restore procedures
+
+**HANDOFF NOTE**: PostgreSQL Python orchestration is complete and ready for testing. The new system supports pgvector out-of-the-box and includes comprehensive verification.
 
 ## 📋 **SHARED COORDINATION NOTES**:
 - **Infrastructure Details**: Resource Group `rg-vibecode-aks-prod`, AKS `vibecode-prod-aks-84859296`, ACR `vibecodecr84859296.azurecr.io`
@@ -412,9 +430,9 @@ kubectl get pods -n datadog
 - ❌ **Missed the real problem**: Nothing is actually deployed to Azure (per GAP-ANALYSIS.md)
 
 #### **✅ WHAT ACTUALLY EXISTS AND SHOULD BE USED**:
-1. **infrastructure/opentofu/vercel-style-deployment/** - Complete AKS infrastructure
-2. **scripts/deploy-aks.py** - Robust Python deployment with error handling
-3. **tests/integration/test_aks_deployment.py** - Real integration tests (453 lines)
+1. **infrastructure/opentofu/vercel-style-deployment/** - Complete AKS infrastructure (validated, HA toggle optional)
+2. **scripts/deploy_aks.py** / `deploy-aks.py` shim – Primary deployment path with robust error handling
+3. **tests/integration/test_aks_deployment.py** - Real integration tests (453 lines, 16 passing)
 4. **GAP-ANALYSIS.md** - Documents the real issue: No Azure deployment exists
 5. **docs/azure-aks-deployment.md** - Complete deployment documentation
 
@@ -426,7 +444,22 @@ kubectl get pods -n datadog
 
 **Remaining:**
 - [ ] Sunset duplicate bash-based deployment scripts in favour of `deploy_aks.py`
+  - [x] Wrap `scripts/aks-bootstrap.sh` around `scripts/deploy_aks.py`
+  - [x] Replace `aks-datadog-setup.sh` with Python orchestration (see `scripts/datadog_setup.py`)
+  - [x] Replace `aks-postgresql-setup.sh` with Python orchestration
+    - [x] Port manifest generation and rollout logic into `postgres_setup.py`
+    - [x] Add CLI flags for namespace, storage class, and password overrides
+    - [x] Update bash wrapper to delegate to Python helper
+    - [ ] Update tests/docs to reference the new helper
+  - [ ] Replace `aks-app-deploy.sh` with Python orchestration
+    - [ ] Encapsulate image build/push + Helm deployment in reusable functions
+    - [ ] Support dry-run mode for tests
+    - [ ] Update bootstrap/test scripts to call the Python helper
 - [ ] Ship minimal Azure demo (Azure Container Instances + PostgreSQL Basic) to prove live deployment at low cost
+  - [x] Document blueprint (`docs/azure/minimal-aci-demo.md`)
+  - [ ] Specify container image + environment contract
+  - [ ] Author deployment script (az CLI or Terraform) for ACI + managed PostgreSQL Basic
+  - [ ] Document teardown checklist and estimated monthly cost (<$50)
 - [ ] Update GAP-ANALYSIS.md with real spend once demo is live
 
 ```bash
@@ -475,21 +508,9 @@ python3 -m pytest tests/integration/test_aks_deployment.py -v
 - [ ] Deploy minimal demo – Azure Container Instances + PostgreSQL Basic target
 
 #### **Corrective Actions Required**:
-```bash
-# Fix OpenTofu PostgreSQL configuration
-cd infrastructure/opentofu/vercel-style-deployment/
-# Remove lines 125-138 (invalid configuration block)
-tofu validate
-
-# Test existing Python deployment with proper timeout
-python scripts/deploy-aks.py --dry-run --timeout 300 --resource-group test-rg --environment dev
-
-# Fix and run existing integration tests  
-python -m pytest tests/integration/test_aks_deployment.py -v
-
-# Deploy minimal Azure demo (not full AKS)
-# Use Azure Container Instances + PostgreSQL Basic = $45/month vs $1,570/month
-```
+- Outline minimal Azure demo (Azure Container Instances + PostgreSQL Basic) with deployment + teardown steps.
+- Update the remaining shell orchestration scripts to depend on `scripts/deploy_aks.py` instead of duplicating logic.
+- Record live Azure spend in GAP-ANALYSIS.md once the demo is exercised.
 
 #### **Key Insight**: 
 The real problem isn't lack of infrastructure code - it's **analysis paralysis**. Complete, production-ready infrastructure exists but nothing is deployed because it's overengineered for demo purposes. The solution is to deploy a minimal working demo, not create more infrastructure code.
@@ -505,7 +526,7 @@ The real problem isn't lack of infrastructure code - it's **analysis paralysis**
 
 #### **✅ DEPLOYMENT SYSTEM COMPONENTS**:
 - ✅ **scripts/aks-bootstrap.sh** - Main orchestration (146 lines, 7 functions)
-- ✅ **scripts/aks-datadog-setup.sh** - Monitoring & observability (117 lines, 2 functions)
+- ✅ **scripts/datadog_setup.py** (via `aks-datadog-setup.sh`) - Monitoring & observability helper
 - ✅ **scripts/aks-postgresql-setup.sh** - Database & pgvector setup (330 lines, 5 functions)
 - ✅ **scripts/aks-app-deploy.sh** - Application deployment (241 lines, 2 functions)
 
