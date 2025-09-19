@@ -53,8 +53,12 @@ validate_claim "Main bootstrap script has ~146 lines" \
   "lines=\$(wc -l < scripts/aks-bootstrap.sh); [ \$lines -ge 131 ] && [ \$lines -le 161 ]" \
   "pass"
 
-validate_claim "Datadog setup script has ~117 lines" \
-  "lines=\$(wc -l < scripts/aks-datadog-setup.sh); [ \$lines -ge 105 ] && [ \$lines -le 129 ]" \
+validate_claim "Datadog wrapper delegates to Python helper" \
+  "grep -q 'datadog_setup.py' scripts/aks-datadog-setup.sh" \
+  "pass"
+
+validate_claim "Datadog Python helper exists" \
+  "[ -x scripts/datadog_setup.py ]" \
   "pass"
 
 validate_claim "PostgreSQL setup script has ~330 lines" \
@@ -70,8 +74,8 @@ validate_claim "Main bootstrap has 7 functions" \
   "func_count=\$(grep -c '^[a-zA-Z_][a-zA-Z0-9_]*() {' scripts/aks-bootstrap.sh); [ \$func_count -eq 7 ]" \
   "pass"
 
-validate_claim "Datadog setup has 2 functions" \
-  "func_count=\$(grep -c '^[a-zA-Z_][a-zA-Z0-9_]*() {' scripts/aks-datadog-setup.sh); [ \$func_count -eq 2 ]" \
+validate_claim "Datadog setup wrapper is minimal" \
+  "lines=\$(wc -l < scripts/aks-datadog-setup.sh); [ \$lines -le 80 ]" \
   "pass"
 
 validate_claim "PostgreSQL setup has 5 functions" \

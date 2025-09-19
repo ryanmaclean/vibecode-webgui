@@ -79,13 +79,13 @@ graph TD
 - Calls modular setup scripts in sequence
 - Provides deployment summary and next steps
 
-### Datadog Setup (`aks-datadog-setup.sh`)
+### Datadog Setup (`datadog_setup.py` via `aks-datadog-setup.sh`)
 **Purpose**: Deploys comprehensive monitoring and observability
-- Creates Datadog namespace and secrets
-- Deploys Datadog agent with AKS-specific configuration
+- Creates the Datadog namespace and secrets using kubectl
+- Installs the Datadog Helm chart with AKS-specific configuration
 - Configures logs, APM, process monitoring, and network monitoring
-- Sets up proper tolerations for Azure spot instances
-- Validates deployment and provides status information
+- Supports chart version pinning and rollout waiting from the CLI
+- Legacy `aks-datadog-setup.sh` now acts as a thin wrapper around the Python helper
 
 ### PostgreSQL Setup (`aks-postgresql-setup.sh`)
 **Purpose**: Deploys production-grade PostgreSQL with pgvector
