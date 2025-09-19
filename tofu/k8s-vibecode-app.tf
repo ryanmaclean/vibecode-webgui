@@ -9,7 +9,7 @@ resource "kubernetes_secret" "vibecode_app_secrets" {
   }
 
   data = {
-    DATABASE_URL    = "postgresql://postgres:${var.postgresql_admin_password}@postgresql.${kubernetes_namespace.vibecode_platform.metadata[0].name}.svc.cluster.local:5432/vibecode"
+    DATABASE_URL    = "postgresql://vibecode:${random_password.postgres_password.result}@postgres-service.${kubernetes_namespace.vibecode_platform.metadata[0].name}.svc.cluster.local:5432/vibecode"
     NEXTAUTH_SECRET = var.nextauth_secret
     NODE_ENV        = var.environment
     
@@ -213,7 +213,7 @@ resource "kubernetes_network_policy" "vibecode_app" {
       to {
         pod_selector {
           match_labels = {
-            app = "postgresql"
+            app = "postgres"
           }
         }
       }
@@ -224,11 +224,11 @@ resource "kubernetes_network_policy" "vibecode_app" {
     }
     
     egress {
-      # Allow Datadog agent
+      # Allow Datadog agent (DogStatsD/APM) in the same namespace
       to {
-        namespace_selector {
+        pod_selector {
           match_labels = {
-            name = "datadog"
+            app = "datadog-agent"
           }
         }
       }

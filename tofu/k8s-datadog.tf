@@ -17,6 +17,27 @@ resource "kubernetes_secret" "datadog_secret" {
   depends_on = [kubernetes_namespace.vibecode_platform]
 }
 
+# Auth token for Agent <-> Cluster Agent communication
+resource "random_password" "datadog_cluster_agent_token" {
+  length  = 64
+  special = false
+}
+
+resource "kubernetes_secret" "datadog_cluster_agent_token" {
+  metadata {
+    name      = "datadog-cluster-agent-token"
+    namespace = kubernetes_namespace.vibecode_platform.metadata[0].name
+  }
+
+  data = {
+    token = random_password.datadog_cluster_agent_token.result
+  }
+
+  type = "Opaque"
+
+  depends_on = [kubernetes_namespace.vibecode_platform]
+}
+
 # Datadog Agent ServiceAccount
 resource "kubernetes_service_account" "datadog_agent" {
   metadata {
@@ -336,6 +357,33 @@ resource "kubernetes_daemonset" "datadog_agent" {
             value = local.aks_cluster_name
           }
 
+          # Enable Cluster Agent + Orchestrator Explorer
+          env {
+            name  = "DD_CLUSTER_AGENT_ENABLED"
+            value = "true"
+          }
+          env {
+            name = "DD_CLUSTER_AGENT_AUTH_TOKEN"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.datadog_cluster_agent_token.metadata[0].name
+                key  = "token"
+              }
+            }
+          }
+          env {
+            name  = "DD_CLUSTER_AGENT_URL"
+            value = "http://datadog-cluster-agent.${kubernetes_namespace.vibecode_platform.metadata[0].name}.svc.cluster.local:5005"
+          }
+          env {
+            name  = "DD_CLUSTER_AGENT_USE_TLS"
+            value = "false"
+          }
+          env {
+            name  = "DD_ORCHESTRATOR_EXPLORER_ENABLED"
+            value = "true"
+          }
+
           env {
             name = "DD_KUBERNETES_KUBELET_HOST"
             value_from {
@@ -651,9 +699,19 @@ resource "kubernetes_deployment" "datadog_cluster_agent" {
             value = "true"
           }
 
+          # Leader election + auth token for Agents
           env {
-            name  = "DD_LEADER_ELECTION"
+            name  = "DD_CLUSTER_AGENT_LEADER_ELECTION"
             value = "true"
+          }
+          env {
+            name = "DD_CLUSTER_AGENT_AUTH_TOKEN"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.datadog_cluster_agent_token.metadata[0].name
+                key  = "token"
+              }
+            }
           }
 
           port {
