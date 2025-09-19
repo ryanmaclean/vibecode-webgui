@@ -75,25 +75,19 @@ az functionapp config appsettings set \
         "FUNCTIONS_EXTENSION_VERSION=~4" \
         "WEBSITE_RUN_FROM_PACKAGE=1"
 
-# Enable Application Insights for monitoring
-echo "📊 Enabling Application Insights..."
-az monitor app-insights component create \
-    --app $FUNCTION_APP_NAME \
-    --location $LOCATION \
-    --resource-group $RESOURCE_GROUP \
-    --application-type web
-
-# Get Application Insights key
-APPINSIGHTS_KEY=$(az monitor app-insights component show \
-    --app $FUNCTION_APP_NAME \
-    --resource-group $RESOURCE_GROUP \
-    --query instrumentationKey -o tsv)
-
-# Set Application Insights key
+# Configure for Datadog monitoring (skip Application Insights for cost savings)
+echo "📊 Configuring for Datadog monitoring..."
 az functionapp config appsettings set \
     --name $FUNCTION_APP_NAME \
     --resource-group $RESOURCE_GROUP \
-    --settings "APPINSIGHTS_INSTRUMENTATIONKEY=$APPINSIGHTS_KEY"
+    --settings \
+        "DD_SITE=datadoghq.com" \
+        "DD_SERVICE=vibecode-docs-search" \
+        "DD_ENV=production" \
+        "DD_VERSION=1.0.0" \
+        "DD_LOGS_ENABLED=true" \
+        "DD_TRACE_ENABLED=true" \
+        "DD_SERVERLESS_LOGS_ENABLED=true"
 
 echo "✅ Azure Functions infrastructure created successfully!"
 
@@ -127,10 +121,10 @@ echo "🔗 Function Endpoints:"
 echo "├── Search API: $SEARCH_URL"
 echo "└── Embedding Generator: Timer-triggered (runs daily at 2 AM)"
 echo ""
-echo "💰 Estimated Monthly Cost: $40-90"
+echo "💰 Estimated Monthly Cost: $30-80 (even cheaper without App Insights!)"
 echo "   ├── Functions: $0-2 (1M free executions)"
 echo "   ├── Storage: $1-2"
-echo "   ├── App Insights: $0-5"
+echo "   ├── Datadog: $0 (using existing free account)"
 echo "   └── PostgreSQL: $25-35 (separate)"
 echo ""
 echo "⚙️ Next Steps:"
@@ -140,8 +134,10 @@ echo "   - DATABASE_URL"
 echo "   - AZURE_OPENAI_API_KEY"
 echo "   - AZURE_OPENAI_ENDPOINT"
 echo "   - EMBEDDINGS_DEPLOYMENT_NAME"
+echo "   - DD_API_KEY (your Datadog API key)"
 echo "3. Run initial embedding generation"
 echo "4. Test search functionality"
+echo "5. View logs and metrics in your existing Datadog dashboard"
 echo ""
 echo "🔧 Configuration Commands:"
 echo "az functionapp config appsettings set \\"
@@ -151,4 +147,5 @@ echo "    --settings \\"
 echo "        'DATABASE_URL=postgresql://user:pass@host:5432/db?sslmode=require' \\"
 echo "        'AZURE_OPENAI_API_KEY=your-key' \\"
 echo "        'AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com' \\"
-echo "        'EMBEDDINGS_DEPLOYMENT_NAME=text-embedding-ada-002'"
+echo "        'EMBEDDINGS_DEPLOYMENT_NAME=text-embedding-ada-002' \\"
+echo "        'DD_API_KEY=your-datadog-api-key'"
