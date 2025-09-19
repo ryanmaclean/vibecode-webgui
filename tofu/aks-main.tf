@@ -137,17 +137,6 @@ resource "azurerm_container_registry" "main" {
 
   # Network access rules
   public_network_access_enabled = true
-  
-  # Retention policy for untagged manifests
-  retention_policy {
-    days    = 7
-    enabled = true
-  }
-
-  # Trust policy
-  trust_policy {
-    enabled = false
-  }
 }
 
 # Role assignment for AKS identity (Network Contributor)

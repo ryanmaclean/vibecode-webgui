@@ -55,7 +55,11 @@ resource "kubernetes_config_map" "postgres_init" {
   }
 
   data = {
-    "init.sql" = file("${path.module}/../k8s/postgres-init-configmap.yaml")
+    "init.sql" = <<-SQL
+      -- Initial database setup
+      -- Ensure pgvector extension is available for embeddings
+      CREATE EXTENSION IF NOT EXISTS vector;
+    SQL
     "datadog-user.sql" = <<-EOT
       -- Create Datadog monitoring user
       CREATE USER datadog WITH PASSWORD '${random_password.postgres_datadog_password.result}';
@@ -419,7 +423,7 @@ resource "kubernetes_network_policy" "postgres_network_policy" {
       from {
         pod_selector {
           match_labels = {
-            app = "vibecode"
+            app = "vibecode-webgui"
           }
         }
       }

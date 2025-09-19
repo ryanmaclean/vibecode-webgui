@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning'
+import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 import { z } from 'zod'
 
 const CreateWorkspaceRequestSchema = z.object({

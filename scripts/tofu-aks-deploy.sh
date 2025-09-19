@@ -103,11 +103,12 @@ log "retrieving OpenTofu outputs"
 CLUSTER_NAME=$(tofu output -raw aks_cluster_name)
 RESOURCE_GROUP=$(tofu output -raw resource_group_name)
 ACR_NAME=$(tofu output -raw acr_name)
-KUBE_CONFIG=$(tofu output -raw kube_config)
+KUBE_CONFIG_RAW=$(tofu output -raw aks_kube_config_raw)
 
 # Configure kubectl using OpenTofu output
 log "configuring kubectl from OpenTofu output"
-echo "$KUBE_CONFIG" | base64 -d > ~/.kube/config-aks
+mkdir -p ~/.kube
+printf "%s" "$KUBE_CONFIG_RAW" > ~/.kube/config-aks
 export KUBECONFIG=~/.kube/config-aks
 
 # Verify cluster connectivity
