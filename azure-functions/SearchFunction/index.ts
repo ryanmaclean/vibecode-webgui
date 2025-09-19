@@ -1,6 +1,15 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions";
 import { Pool } from 'pg';
 import { OpenAIApi, Configuration } from 'openai';
+import tracer from 'dd-trace';
+
+// Initialize Datadog tracing for Azure Functions
+tracer.init({
+  service: 'vibecode-docs-search',
+  env: process.env.DD_ENV || 'production',
+  version: process.env.DD_VERSION || '1.0.0',
+  logInjection: true,
+});
 
 // Cached connections for performance
 let cachedDbConnection: Pool;
@@ -204,6 +213,9 @@ async function performSearch(
 }
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
+  // Create Datadog span for request tracing
+  const span = tracer.startSpan('docs.search.request');
+  
   context.log('Documentation search request received');
   
   try {
@@ -214,6 +226,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     
     // Validate input
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
+      span.setTag('error', true);
+      span.setTag('error.type', 'validation');
+      span.finish();
+      
       context.res = {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -235,8 +251,18 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
       return;
     }
     
+    // Add Datadog tags for monitoring
+    span.setTag('search.query', query.trim());
+    span.setTag('search.category', category || 'all');
+    span.setTag('search.limit', limit);
+    
     // Perform search
     const searchResults = await performSearch(query.trim(), category, limit);
+    
+    // Add result metrics to span
+    span.setTag('search.results.count', searchResults.results.length);
+    span.setTag('search.results.total', searchResults.total);
+    span.setTag('search.time_ms', searchResults.metadata.searchTime);
     
     // Return results
     context.res = {
@@ -249,8 +275,15 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     };
     
     context.log(`Search completed: "${query}" returned ${searchResults.results.length} results in ${searchResults.metadata.searchTime}ms`);
+    span.finish();
     
   } catch (error) {
+    // Log error to Datadog
+    span.setTag('error', true);
+    span.setTag('error.type', error.constructor.name);
+    span.setTag('error.message', error.message);
+    span.finish();
+    
     context.log.error('Search function error:', error);
     
     context.res = {
