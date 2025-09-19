@@ -1,0 +1,24 @@
+{{- if and .Values.monitoring.prometheus.enabled .Values.monitoring.prometheus.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "vibecode.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode.labels" . | nindent 4 }}
+    {{- if .Values.monitoring.prometheus.serviceMonitor.additionalLabels }}
+    {{- toYaml .Values.monitoring.prometheus.serviceMonitor.additionalLabels | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "vibecode.selectorLabels" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: metrics
+      interval: {{ .Values.monitoring.prometheus.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.monitoring.prometheus.serviceMonitor.scrapeTimeout }}
+      path: {{ .Values.monitoring.prometheus.path }}
+{{- end }}

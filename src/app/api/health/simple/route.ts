@@ -1,33 +1,23 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic' // Ensure we get fresh data on every request
-
+/**
+ * Simple health check endpoint for E2E testing
+ * Returns basic status without external dependencies
+ */
 export async function GET() {
   try {
-    // Safe system metric collection with fallbacks
-    let uptime: number;
-    try {
-      uptime = process.uptime();
-    } catch {
-      uptime = -1; // Indicate unavailable
-    }
-
     return NextResponse.json({
-      status: 'ok',
+      status: 'healthy',
       timestamp: new Date().toISOString(),
-      uptime,
       environment: process.env.NODE_ENV || 'development',
-      version: process.env.npm_package_version || '1.0.0',
+      service: 'VibeCode',
+      version: '0.2.0'
     });
   } catch (error) {
-    // Fallback error response
     return NextResponse.json({
       status: 'error',
       timestamp: new Date().toISOString(),
-      error: 'Health check failed',
-      uptime: -1,
-      environment: 'unknown',
-      version: 'unknown'
+      error: 'Health check failed'
     }, { status: 500 });
   }
 }

@@ -4,8 +4,8 @@ description: Development guidelines and AI agent orchestration
 ---
 
 # Multi-Agent Coordination
-- You are one of several agents actively modifying this repository; always check the local workspace (e.g., `git status`, `git diff`) before drafting or executing a plan to catch work in progress or unexpected changes.
-- Treat `TODO.md` as the shared source of truth—review it before picking up a task, update it when you start or finish work, and back off if another agent is already handling the item.
+- You are one of several agents actively modifying this repository; always check for local changes (run `git status`, `git diff`, etc.) before drafting or executing a plan so you notice when another agent has updated the workspace or claimed the same task.
+- Treat `TODO.md` as the shared source of truth—review it before picking up a task, update it when you start or finish work, and back off if another agent is already handling the item to avoid conflicts.
 - When local files differ from expectations, pause and reconcile the discrepancies (sync with TODO.md, clarify ownership, or adjust your plan) instead of proceeding blindly.
 - Prefer incremental plans that account for other agents' context, and document coordination decisions in TODO.md to avoid conflicting edits.
 

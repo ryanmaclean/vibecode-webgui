@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/component: application
   annotations:
     {{- range $key, $value := .Values.service.annotations }}
-    {{ $key }}: {{ $value }}
+    {{ $key }}: {{ $value | quote }}
     {{- end }}
 spec:
   type: {{ .Values.service.type }}

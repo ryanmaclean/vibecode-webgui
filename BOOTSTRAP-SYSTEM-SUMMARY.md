@@ -87,21 +87,21 @@ graph TD
 - Supports chart version pinning and rollout waiting from the CLI
 - Legacy `aks-datadog-setup.sh` now acts as a thin wrapper around the Python helper
 
-### PostgreSQL Setup (`aks-postgresql-setup.sh`)
+### PostgreSQL Setup (`postgres_setup.py` via `aks-postgresql-setup.sh`)
 **Purpose**: Deploys production-grade PostgreSQL with pgvector
-- Creates PostgreSQL StatefulSet with Azure Disk storage
-- Installs and configures pgvector extension
-- Sets up proper security (TLS, authentication)
-- Configures monitoring and health checks
-- Handles backup and recovery configurations
+- Renders StatefulSet/Service manifests with Azure Disk storage
+- Installs and configures pgvector extension automatically
+- Generates Kubernetes secrets and ConfigMaps via Python helper
+- Supports CLI overrides (namespace, storage class, passwords)
+- Legacy wrapper script delegates to the Python implementation
 
-### Application Deployment (`aks-app-deploy.sh`)
+### Application Deployment (`app_deploy.py` via `aks-app-deploy.sh`)
 **Purpose**: Deploys VibeCode WebGUI application
-- Creates application secrets and configuration
-- Builds and pushes Docker image to ACR (if Dockerfile exists)
-- Generates Helm chart if not present
-- Deploys application with production-ready configuration
-- Sets up ingress, autoscaling, and health checks
+- Builds/pushes the container image to ACR (optional dry-run)
+- Invokes Helm upgrade with image overrides and optional values files
+- Supports `--set` overrides sourced from `.env` files
+- Wraps wait/timeout logic for post-deploy verification
+- Bash wrapper remains for backward compatibility
 
 ## 🔧 Configuration
 
