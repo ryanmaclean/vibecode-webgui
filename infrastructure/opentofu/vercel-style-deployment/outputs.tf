@@ -144,13 +144,13 @@ output "docker_login_command" {
 output "application_environment_variables" {
   description = "Environment variables for the Next.js application"
   value = {
-    DATABASE_URL           = "postgresql://${var.postgresql_admin_username}:${random_password.postgresql_password.result}@${azurerm_postgresql_flexible_server.main.fqdn}:5432/${var.database_name}?sslmode=require"
-    AZURE_OPENAI_ENDPOINT  = azurerm_cognitive_account.openai.endpoint
-    AZURE_OPENAI_API_KEY   = azurerm_cognitive_account.openai.primary_access_key
-    GPT4_DEPLOYMENT_NAME   = azurerm_cognitive_deployment.gpt4.name
+    DATABASE_URL               = "postgresql://${var.postgresql_admin_username}:${random_password.postgresql_password.result}@${azurerm_postgresql_flexible_server.main.fqdn}:5432/${var.database_name}?sslmode=require"
+    AZURE_OPENAI_ENDPOINT      = azurerm_cognitive_account.openai.endpoint
+    AZURE_OPENAI_API_KEY       = azurerm_cognitive_account.openai.primary_access_key
+    GPT4_DEPLOYMENT_NAME       = azurerm_cognitive_deployment.gpt4.name
     EMBEDDINGS_DEPLOYMENT_NAME = azurerm_cognitive_deployment.embeddings.name
-    NEXTAUTH_URL          = "https://docs.${var.project_name}.com"
-    NODE_ENV              = var.environment == "prod" ? "production" : "development"
+    NEXTAUTH_URL               = "https://docs.${var.project_name}.com"
+    NODE_ENV                   = var.environment == "prod" ? "production" : "development"
   }
   sensitive = true
 }
