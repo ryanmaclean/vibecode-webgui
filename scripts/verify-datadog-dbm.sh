@@ -19,12 +19,12 @@ success() { echo -e "${GREEN}✅${NC} $1"; }
 warning() { echo -e "${YELLOW}⚠️${NC} $1"; }
 error() { echo -e "${RED}❌${NC} $1"; }
 
-# Configuration
-NAMESPACE="vibecode"
-POSTGRES_SERVICE="postgres"
-DATADOG_AGENT_NAMESPACE="datadog"
-DB_NAME="vibecode"
-DB_USER="datadog"
+# Configuration (override via environment)
+NAMESPACE="${NAMESPACE:-vibecode-platform}"
+POSTGRES_SERVICE="${POSTGRES_SERVICE:-}"
+DATADOG_AGENT_NAMESPACE="${DATADOG_AGENT_NAMESPACE:-datadog}"
+DB_NAME="${DB_NAME:-vibecode}"
+DB_USER="${DB_USER:-datadog}"
 
 # Check if kubectl is available
 if ! command -v kubectl &> /dev/null; then
@@ -41,22 +41,24 @@ fi
 log "Starting Datadog DBM verification..."
 
 # 1. Check PostgreSQL deployment
-log "1. Checking PostgreSQL deployment..."
-if kubectl get deployment postgres -n $NAMESPACE &> /dev/null; then
-    success "PostgreSQL deployment found"
-    
-    # Check if PostgreSQL is ready
-    READY_REPLICAS=$(kubectl get deployment postgres -n $NAMESPACE -o jsonpath='{.status.readyReplicas}')
-    DESIRED_REPLICAS=$(kubectl get deployment postgres -n $NAMESPACE -o jsonpath='{.spec.replicas}')
-    
-    if [ "$READY_REPLICAS" = "$DESIRED_REPLICAS" ]; then
-        success "PostgreSQL is ready ($READY_REPLICAS/$DESIRED_REPLICAS replicas)"
-    else
-        warning "PostgreSQL is not fully ready ($READY_REPLICAS/$DESIRED_REPLICAS replicas)"
-    fi
+log "1. Checking PostgreSQL workload..."
+# Autodetect app label and resource type (StatefulSet vs Deployment)
+PG_APP_LABEL=$(kubectl get pods -n $NAMESPACE -l app=postgresql --no-headers 2>/dev/null | head -n1)
+if [ -n "$PG_APP_LABEL" ]; then
+  PG_LABEL_VALUE="postgresql"
 else
-    error "PostgreSQL deployment not found in namespace $NAMESPACE"
-    exit 1
+  PG_LABEL_VALUE="postgres"
+fi
+
+if kubectl get statefulset postgresql -n $NAMESPACE &> /dev/null; then
+  success "PostgreSQL StatefulSet found"
+  kubectl -n $NAMESPACE rollout status statefulset/postgresql --timeout=60s || true
+elif kubectl get deployment postgres -n $NAMESPACE &> /dev/null; then
+  success "PostgreSQL Deployment found"
+  kubectl -n $NAMESPACE rollout status deployment/postgres --timeout=60s || true
+else
+  error "PostgreSQL workload not found in namespace $NAMESPACE"
+  exit 1
 fi
 
 # 2. Check Datadog agent deployment
@@ -82,7 +84,7 @@ fi
 log "3. Checking PostgreSQL extensions and DBM configuration..."
 
 # Get PostgreSQL pod
-POSTGRES_POD=$(kubectl get pods -n $NAMESPACE -l app=postgres -o jsonpath='{.items[0].metadata.name}')
+POSTGRES_POD=$(kubectl get pods -n $NAMESPACE -l app=$PG_LABEL_VALUE -o jsonpath='{.items[0].metadata.name}')
 
 if [ -z "$POSTGRES_POD" ]; then
     error "No PostgreSQL pod found"
