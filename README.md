@@ -1,153 +1,149 @@
-# vibecode-webgui
+<div align="center">
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
-![Node](https://img.shields.io/badge/node-18.18.0+-brightgreen.svg)
-![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)
+# 🐘 VibeCode Platform
 
-AI-powered development platform with intelligent project generation, multi-model orchestration, and automated deployment.
+**pgvector on PostgreSQL + Kubernetes + Datadog Database Monitoring**
 
-## Quick Start
+[![Demo](https://img.shields.io/badge/Demo-Live-brightgreen?style=for-the-badge&logo=play)](./DEMO.sh)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-blue?style=for-the-badge&logo=kubernetes)](https://kubernetes.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-336791?style=for-the-badge&logo=postgresql)](https://github.com/pgvector/pgvector)
+[![Datadog](https://img.shields.io/badge/Datadog-DBM-632CA6?style=for-the-badge&logo=datadog)](https://www.datadoghq.com/)
 
-```bash
-# Clone and install
-git clone <repository-url>
-cd vibecode-webgui
-npm install --legacy-peer-deps
+</div>
 
-# Configure environment
-cp .env.example .env
-# Edit .env with your settings
-
-# Setup database (optional)
-npm run db:deploy
-
-# Start development
-npm run dev
-```
-
-Visit [http://localhost:3000](http://localhost:3000)
-
-## Prerequisites
-- Node.js >=18.18.0
-- PostgreSQL 16+ with pgvector (optional)
-- Valkey 7+ (Redis-compatible, BSD licensed)
-
-## Key Scripts
+## 🚀 **One-Click Demo**
 
 ```bash
-npm run dev          # Development server
-npm run build        # Production build
-npm run test         # Run tests
-npm run lint         # Code quality (3717 issues tracked)
-npm run type-check   # TypeScript check
+./DEMO.sh
 ```
 
-## Infrastructure Hygiene
+**See pgvector + PostgreSQL + Datadog DBM in action in 30 seconds.**
 
-The project maintains high code quality standards with systematic issue tracking:
+---
 
-- **Current Status**: 77 ESLint errors, 3640 warnings (down from 85 errors)
-- **Backup Files**: `.backup/**` directories excluded from linting via `eslint.config.mjs`
-- **Quality Target**: Auto-fix applied where safe, remaining issues represent real code to address
+## ✨ **What This Demonstrates**
 
-### Checking Code Quality
+<table>
+<tr>
+<td width="50%">
 
-```bash
-# Get current lint status
-npm run lint 2>&1 | tail -1
+### 🎯 **Core Demo**
+- **pgvector** for semantic search
+- **PostgreSQL** on Kubernetes  
+- **Datadog Database Monitoring**
+- **Real-time vector metrics**
+- **Query performance analysis**
 
-# Auto-fix safe issues
-npm run lint -- --fix
+</td>
+<td width="50%">
 
-# Verify TypeScript compilation
-npm run type-check
+### 📊 **What You'll See**
+- 120 documents with embeddings
+- Vector similarity searches
+- Custom Datadog metrics
+- Query samples & explain plans
+- Performance dashboards
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🎮 **Quick Start Options**
+
+| Method | Command | Description |
+|--------|---------|-------------|
+| **🚀 Interactive Demo** | `./DEMO.sh` | Full TUI experience |
+| **⚡ Direct Setup** | `make setup` | Setup pgvector + DBM |
+| **🎯 Generate Activity** | `make vector` | Create vector data |
+| **📊 View Dashboard** | `make dashboard` | Open Datadog |
+
+---
+
+## 🏗️ **Architecture**
+
+```mermaid
+graph TB
+    subgraph "Kubernetes Cluster"
+        A[VibeCode App] --> B[PostgreSQL + pgvector]
+        B --> C[Datadog Agent]
+    end
+    C --> D[Datadog Dashboard]
+    D --> E[Query Samples]
+    D --> F[Performance Metrics]
+    D --> G[Custom pgvector Metrics]
 ```
 
-## Documentation
+---
 
-- **Architecture & Development**: See [wiki/](./wiki/) directory
-- **API Documentation**: Available in docs/ after `npm run docs:build`
-- **Testing Strategy**: [wiki/TEST_INFRASTRUCTURE_SUCCESS_REPORT.md](./wiki/TEST_INFRASTRUCTURE_SUCCESS_REPORT.md)
+## 📈 **Monitoring Capabilities**
 
-## Key Features
+<details>
+<summary><b>🔍 Click to see what gets monitored</b></summary>
 
-- **AI Development**: 20+ templates, multi-model orchestration
-- **Cloud Deployment**: One-click deployment, GitHub integration
-- **Security**: WCAG 2.1 AA compliance, security middleware
-- **Modern Stack**: Next.js 15, React 19, TypeScript
-- **Observability**: Datadog integration with optional tracing
+### Vector-Specific Metrics
+- `postgresql.pgvector.vector_count` - Total embeddings stored
+- `postgresql.pgvector.table_size` - Storage utilization  
+- `postgresql.pgvector.index.*` - IVFFLAT index performance
 
-## Vector Database Error Handling
+### Database Performance
+- Query execution times and explain plans
+- Index usage and efficiency
+- Connection pool monitoring
+- Lock contention analysis
 
-The project uses a standardized error taxonomy for vector operations:
+### Custom Queries Tracked
+```sql
+-- Vector similarity search
+SELECT embedding <=> '[0.1,0.2,0.3]'::vector FROM documents;
 
-```typescript
-// All vector DB errors use unique enum values
-VectorDBErrorType.CONNECTION_FAILED    // Network issues
-VectorDBErrorType.AUTHORIZATION_ERROR  // Auth failures
-VectorDBErrorType.QUERY_FAILED         // Search operations
-VectorDBErrorType.TIMEOUT              // Performance issues
+-- Hybrid search (vector + text)
+SELECT * FROM documents WHERE content @@ 'query' 
+ORDER BY embedding <=> '[...]'::vector;
 ```
 
-**Guidelines**: When extending error handling, ensure enum values remain unique and descriptive.
+</details>
 
-## Observability Stack
+---
 
-### Datadog Metrics & Tracing (Optional)
+## 🎯 **Perfect For**
 
-```bash
-# Required environment variables
-export DD_API_KEY="your-datadog-api-key"
-export DD_APP_KEY="your-datadog-app-key"
-export DD_SITE="us1.datadoghq.com"
+- **Database Teams**: Monitoring pgvector in production
+- **ML Engineers**: Vector database performance optimization  
+- **DevOps**: Kubernetes + PostgreSQL + monitoring stack
+- **Datadog Users**: Custom DBM metrics and dashboards
 
-# Enable OpenTelemetry tracing
-export ENABLE_TRACING=true
-export OTEL_EXPORTER_OTLP_ENDPOINT="https://api.datadoghq.com"
-```
+---
 
-Services automatically emit metrics when configured. See `services/ai-gateway/` for implementation details.
+## 🔧 **Requirements**
 
-## Contributing
+- Kubernetes cluster (Docker Desktop, KIND, minikube)
+- `kubectl` configured
+- Optional: Datadog API key for full monitoring
 
-1. Fork repository
-2. Create feature branch
-3. Make changes with tests: `npm test`
-4. Check quality: `npm run lint && npm run type-check`
-5. Submit pull request
+---
 
-## License
+## 📋 **What Happens in the Demo**
 
-MIT License - see [LICENSE](LICENSE) file for details.
-## 🚀 GitHub Actions Cost Optimization
+1. **🔍 Verification**: Checks PostgreSQL + pgvector setup
+2. **⚙️ Configuration**: Sets up Datadog DBM monitoring
+3. **🎯 Data Generation**: Creates 120 sample documents with embeddings
+4. **🔄 Activity Simulation**: Runs vector similarity searches
+5. **📊 Monitoring**: Shows real metrics in Datadog dashboard
 
-**Status**: ✅ **DEPLOYED** - 70-80% cost reduction achieved ($100 → $20-30/month)
+---
 
-We use a two-tier CI/CD strategy to control costs:
+<div align="center">
 
-### Main Branch (Lightweight)
-- Fast linting and basic unit tests only
-- Skips expensive E2E and integration tests
-- No deployment pipelines
-- ~$0.05 per run
+**🚀 Ready to see pgvector monitoring in action?**
 
-### Release Branches (Comprehensive)
-- Full test suite (unit, integration, E2E)
-- Security scans and performance testing
-- Production deployment pipelines
-- ~$4 per run
+### [`./DEMO.sh`](./DEMO.sh)
 
-### Helper Scripts
-```bash
-# Create release branch for full testing
-./create-release-branch.sh v1.2.0
+*Supports both interactive TUI and simple menu modes*
 
-# Apply cost optimizations (already applied)
-./optimize-github-actions.sh
-```
+---
 
-**Workflow Files**:
-- `.github/workflows/main-branch-ci.yml` - Lightweight CI for main
-- `.github/workflows/release-branch-ci.yml` - Comprehensive CI for releases
-- `ci.yml` - Now only runs on release/* branches
+<sub>Built with ❤️ for the Datadog + PostgreSQL + Kubernetes community</sub>
+
+</div>

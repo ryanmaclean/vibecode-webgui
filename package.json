@@ -40,6 +40,8 @@
     "deploy:comparison": "scripts/deploy-comparison-environments.sh",
     "verify:datadog-dbm": "scripts/verify-datadog-dbm.sh",
     "generate:vector-activity": "scripts/generate-vector-activity.sh",
+    "demo": "make demo",
+    "demo:setup": "make setup",
     "test:synthetics": "datadog-ci synthetics run-tests -c datadog-synthetics.json",
     "test:monitoring:production": "jest --testPathPatterns=tests/production/.*monitoring.*\\.test\\.(ts|js)$",
     "test:monitoring:health": "jest --testPathPatterns=tests/unit/health-check.test.ts",
