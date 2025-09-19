@@ -83,6 +83,8 @@ cp terraform.tfvars.example terraform.tfvars
 nano terraform.tfvars
 ```
 
+> ℹ️ **Cost control tip:** leave `postgresql_high_availability_enabled = false` for dev/test runs. Enable it only when you need zone-redundant capacity in production.
+
 ### Step 2: Deploy Infrastructure
 
 ```bash
@@ -148,7 +150,7 @@ kubectl exec -it deployment/vibecode-docs -- npm run embeddings:generate
 ## 🎯 Architecture Benefits
 
 ### **Enterprise Features**
-- ✅ **High Availability**: Multi-zone PostgreSQL with geo-redundant backups
+- 🔄 **Optional High Availability**: Toggle `postgresql_high_availability_enabled` for multi-zone PostgreSQL when the workload justifies the cost
 - ✅ **Security**: Private networking, Key Vault, workload identity
 - ✅ **Monitoring**: Azure Monitor with Container Insights
 - ✅ **Compliance**: Azure compliance certifications

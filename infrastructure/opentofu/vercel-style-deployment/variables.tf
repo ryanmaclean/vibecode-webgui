@@ -12,7 +12,7 @@ variable "environment" {
   description = "Environment name (dev, staging, prod)"
   type        = string
   default     = "dev"
-  
+
   validation {
     condition     = contains(["dev", "staging", "prod"], var.environment)
     error_message = "Environment must be one of: dev, staging, prod."
@@ -78,7 +78,24 @@ variable "postgresql_sku_name" {
 variable "postgresql_storage_mb" {
   description = "Storage size in MB for PostgreSQL"
   type        = number
-  default     = 65536  # 64GB
+  default     = 65536 # 64GB
+}
+
+variable "postgresql_high_availability_enabled" {
+  description = "Enable high availability for PostgreSQL flexible server"
+  type        = bool
+  default     = false
+}
+
+variable "postgresql_high_availability_mode" {
+  description = "High availability mode for PostgreSQL flexible server"
+  type        = string
+  default     = "ZoneRedundant"
+
+  validation {
+    condition     = contains(["ZoneRedundant", "SameZone"], var.postgresql_high_availability_mode)
+    error_message = "High availability mode must be either ZoneRedundant or SameZone."
+  }
 }
 
 variable "postgresql_backup_retention_days" {
@@ -97,7 +114,7 @@ variable "postgresql_admin_username" {
   description = "Administrator username for PostgreSQL"
   type        = string
   default     = "vibecodeusr"
-  
+
   validation {
     condition     = can(regex("^[a-zA-Z][a-zA-Z0-9_]{2,62}$", var.postgresql_admin_username))
     error_message = "PostgreSQL admin username must start with a letter and be 3-63 characters long."
