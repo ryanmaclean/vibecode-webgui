@@ -22,17 +22,17 @@ process.env.DD_ENV = 'development';
   try {
     const ok = await svc.submitMetric(metricName, 1, tags);
     if (ok) {
-      // eslint-disable-next-line no-console
+       
       console.log(`Datadog metric submitted: ${metricName} tags=${tags.join(',')}`);
       logger.info('Datadog test metric submitted', { metric: metricName, tags });
       process.exit(0);
     } else {
-      // eslint-disable-next-line no-console
+       
       console.error('Datadog test metric NOT submitted (check API key/site)');
       process.exit(2);
     }
   } catch (err) {
-    // eslint-disable-next-line no-console
+     
     console.error('Error submitting Datadog test metric', err);
     process.exit(1);
   }

@@ -260,7 +260,7 @@ describe('Collaboration Performance Tests', () => {
       
       // Initial sync
       text1.insert(0, 'Shared initial content. ');
-      let state1 = Y.encodeStateAsUpdate(doc1);
+      const state1 = Y.encodeStateAsUpdate(doc1);
       Y.applyUpdate(doc2, state1);
       Y.applyUpdate(doc3, state1);
       

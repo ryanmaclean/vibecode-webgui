@@ -1,5 +1,5 @@
-/* eslint-disable import/no-commonjs */
-/* eslint-disable @typescript-eslint/no-var-requires */
+ 
+ 
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');

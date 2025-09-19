@@ -21,7 +21,7 @@ const conditionalDescribe = shouldRunRealTests ? describe : describe.skip
 
 conditionalDescribe('Real Experiments API Integration (NO MOCKING)', () => {
   const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000'
-  let testCookies: string = ''
+  const testCookies: string = ''
 
   beforeAll(async () => {
     if (!process.env.DATABASE_URL) {

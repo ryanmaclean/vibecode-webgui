@@ -22,7 +22,7 @@ spec:
     {{- include "vibecode-platform.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: monitoring
 ---
-{{- if .Values.monitoring.prometheus.enabled }}
+{{- if and .Values.monitoring.prometheus.enabled .Values.monitoring.prometheus.serviceMonitor.enabled }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -41,6 +41,7 @@ spec:
     interval: {{ .Values.monitoring.resources.interval }}
 ---
 # ServiceMonitor for user code-server instances
+{{- if and .Values.monitoring.prometheus.enabled .Values.monitoring.prometheus.serviceMonitor.enabled }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -58,6 +59,7 @@ spec:
   - port: metrics
     path: {{ .Values.monitoring.prometheus.path }}
     interval: {{ .Values.monitoring.resources.interval }}
+{{- end }}
 {{- end }}
 ---
 {{- if .Values.monitoring.grafana.enabled }}
