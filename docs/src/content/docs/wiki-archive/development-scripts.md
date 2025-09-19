@@ -207,7 +207,7 @@ Before running any scripts, ensure you have:
 
 1. **Environment Variables**: Copy and configure `.env.example`
 2. **Database**: PostgreSQL with pgvector extension
-3. **Redis**: Redis server or Upstash account
+3. **Redis/Valkey**: Self-hosted Redis-compatible service (Valkey recommended)
 4. **Dependencies**: Run `npm install --legacy-peer-deps`
 
 ### Quick Setup

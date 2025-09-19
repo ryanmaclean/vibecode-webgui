@@ -19,6 +19,43 @@ success() { echo -e "${GREEN}✅${NC} $1"; }
 warning() { echo -e "${YELLOW}⚠️${NC} $1"; }
 error() { echo -e "${RED}❌${NC} $1"; }
 
+decode_base64_portable() {
+    local encoded_value="$1"
+    if [ -z "$encoded_value" ]; then
+        return 1
+    fi
+
+    if command -v base64 >/dev/null 2>&1; then
+        if echo "dGVzdA==" | base64 --decode >/dev/null 2>&1; then
+            printf "%s" "$encoded_value" | base64 --decode 2>/dev/null
+            return $?
+        elif echo "dGVzdA==" | base64 -D >/dev/null 2>&1; then
+            printf "%s" "$encoded_value" | base64 -D 2>/dev/null
+            return $?
+        fi
+    fi
+
+    if command -v python3 >/dev/null 2>&1; then
+        SECRET_DATA="$encoded_value" python3 - <<'PYCODE' 2>/dev/null
+import base64
+import os
+import sys
+import binascii
+
+data = os.environ.get("SECRET_DATA", "")
+if not data:
+    sys.exit(1)
+try:
+    sys.stdout.write(base64.b64decode(data).decode())
+except (binascii.Error, UnicodeDecodeError):
+    sys.exit(1)
+PYCODE
+        return $?
+    fi
+
+    return 1
+}
+
 # Configuration (override via environment)
 NAMESPACE="${NAMESPACE:-vibecode-platform}"
 POSTGRES_SERVICE="${POSTGRES_SERVICE:-postgres-service}"
@@ -28,12 +65,27 @@ DB_USER="${DB_USER:-datadog}"
 
 DB_ADMIN_USER="${DB_ADMIN_USER:-vibecode}"
 # Optional settings
-# Use MONITORING_PASSWORD if provided; otherwise fall back to DD_POSTGRES_PASSWORD, else default
-MONITORING_PASSWORD="${MONITORING_PASSWORD:-${DD_POSTGRES_PASSWORD:-datadog_monitoring_password}}"
-# SSL mode for Datadog Postgres integration: disable|require|verify-ca|verify-full
-SSL_MODE="${SSL_MODE:-disable}"
 # If true, store password in a Kubernetes Secret and reference via env in Datadog Agent
 USE_SECRET_PASSWORD="${USE_SECRET_PASSWORD:-false}"
+MONITORING_SECRET_NAME="${MONITORING_SECRET_NAME:-postgres-datadog-secret}"
+MONITORING_SECRET_KEY="${MONITORING_SECRET_KEY:-password}"
+# Search both the Datadog namespace and the Postgres namespace for the secret by default
+MONITORING_SECRET_NAMESPACES="${MONITORING_SECRET_NAMESPACES:-$DATADOG_AGENT_NAMESPACE $NAMESPACE}"
+
+# Track where the monitoring password comes from for logging/debugging
+MONITORING_PASSWORD_SOURCE=""
+if [ -n "${MONITORING_PASSWORD:-}" ]; then
+    MONITORING_PASSWORD="${MONITORING_PASSWORD}"
+    MONITORING_PASSWORD_SOURCE="MONITORING_PASSWORD env"
+elif [ -n "${DD_POSTGRES_PASSWORD:-}" ]; then
+    MONITORING_PASSWORD="${DD_POSTGRES_PASSWORD}"
+    MONITORING_PASSWORD_SOURCE="DD_POSTGRES_PASSWORD env"
+else
+    MONITORING_PASSWORD=""
+fi
+DEFAULT_MONITORING_PASSWORD="datadog_monitoring_password"
+# SSL mode for Datadog Postgres integration: disable|require|verify-ca|verify-full
+SSL_MODE="${SSL_MODE:-disable}"
 
 # Check if kubectl is available
 if ! command -v kubectl &> /dev/null; then
@@ -47,16 +99,60 @@ if ! kubectl cluster-info &> /dev/null; then
     exit 1
 fi
 
+# Resolve monitoring password source after confirming cluster access
+SECRET_SOURCE_NAME=""
+SECRET_SOURCE_NAMESPACE=""
+if [ "$USE_SECRET_PASSWORD" = "true" ] && [ -z "$MONITORING_PASSWORD" ]; then
+    for secret_name in $MONITORING_SECRET_NAME; do
+        for secret_ns in $MONITORING_SECRET_NAMESPACES; do
+            if [ -z "$secret_ns" ]; then
+                continue
+            fi
+            if kubectl get secret "$secret_name" -n "$secret_ns" >/dev/null 2>&1; then
+                SECRET_BASE64=$(kubectl get secret "$secret_name" -n "$secret_ns" -o jsonpath="{.data['${MONITORING_SECRET_KEY}']}" 2>/dev/null || echo "")
+                if [ -n "$SECRET_BASE64" ]; then
+                    SECRET_VALUE=$(decode_base64_portable "$SECRET_BASE64" || true)
+                    if [ -n "$SECRET_VALUE" ]; then
+                        MONITORING_PASSWORD="$SECRET_VALUE"
+                        MONITORING_PASSWORD_SOURCE="secret:$secret_ns/$secret_name:$MONITORING_SECRET_KEY"
+                        SECRET_SOURCE_NAME="$secret_name"
+                        SECRET_SOURCE_NAMESPACE="$secret_ns"
+                        break 2
+                    fi
+                fi
+            fi
+        done
+    done
+
+    if [ -z "$MONITORING_PASSWORD" ]; then
+        warning "Unable to load monitoring password from secret '$MONITORING_SECRET_NAME' (namespaces: $MONITORING_SECRET_NAMESPACES)."
+    fi
+fi
+
+if [ -z "$MONITORING_PASSWORD" ]; then
+    MONITORING_PASSWORD="$DEFAULT_MONITORING_PASSWORD"
+    if [ -z "$MONITORING_PASSWORD_SOURCE" ]; then
+        MONITORING_PASSWORD_SOURCE="default value"
+    fi
+fi
+
+if [ -n "$MONITORING_PASSWORD_SOURCE" ]; then
+    log "Using monitoring password from: $MONITORING_PASSWORD_SOURCE"
+fi
+
+# Escape password for SQL statements (single quotes -> doubled)
+SQL_MONITORING_PASSWORD=$(printf "%s" "$MONITORING_PASSWORD" | sed "s/'/''/g")
+
 log "Starting Datadog DBM verification..."
 
 # 1. Check PostgreSQL deployment
 log "1. Checking PostgreSQL workload..."
 # Autodetect app label and resource type (StatefulSet vs Deployment)
-PG_APP_LABEL=$(kubectl get pods -n $NAMESPACE -l app=postgresql --no-headers 2>/dev/null | head -n1)
-if [ -n "$PG_APP_LABEL" ]; then
+PG_LABEL_VALUE="postgres"
+if kubectl get pods -n $NAMESPACE -l app=postgresql --no-headers >/dev/null 2>&1; then
   PG_LABEL_VALUE="postgresql"
-else
-  PG_LABEL_VALUE="postgres"
+elif kubectl get pods -n $NAMESPACE -l app=postgres-simple --no-headers >/dev/null 2>&1; then
+  PG_LABEL_VALUE="postgres-simple"
 fi
 
 # Detect workload kind/name
@@ -75,7 +171,7 @@ elif kubectl get deployment postgres -n $NAMESPACE &> /dev/null; then
 else
   # Fallback: detect any workload containing 'postgres' in its name
   SS_CAND=$(kubectl -n $NAMESPACE get statefulset -o name 2>/dev/null | grep -E "postgres|postgresql" | head -n1 || true)
-  DEP_CAND=$(kubectl -n $NAMESPACE get deployment -o name 2>/dev/null | grep -E "postgres|postgresql" | head -n1 || true)
+  DEP_CAND=$(kubectl -n $NAMESPACE get deployment -o name 2>/dev/null | grep -E "postgres|postgresql|postgres-simple" | head -n1 || true)
   if [ -n "$SS_CAND" ]; then
     DEPLOY_KIND="statefulset"
     DEPLOY_NAME="${SS_CAND#statefulset.apps/}"
@@ -190,16 +286,30 @@ else
     fi
 fi
 
-# Check pg_stat_statements extension
+# Check pg_stat_statements extension in primary database
 log "Checking pg_stat_statements extension..."
 PGSTAT_CHECK=$(kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -t -c "SELECT 1 FROM pg_extension WHERE extname='pg_stat_statements';" 2>/dev/null | tr -d '[:space:]')
 
 if [ "$PGSTAT_CHECK" = "1" ]; then
-    success "pg_stat_statements extension is installed"
+    success "pg_stat_statements extension is installed in $DB_NAME"
 else
-    warning "pg_stat_statements extension not found. Installing..."
+    warning "pg_stat_statements extension not found in $DB_NAME. Installing..."
     kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
-    success "pg_stat_statements extension installed"
+    success "pg_stat_statements extension installed in $DB_NAME"
+fi
+
+# Ensure pg_stat_statements is installed in the postgres database for Datadog's default connection
+if [ "$DB_NAME" != "postgres" ]; then
+  log "Ensuring pg_stat_statements extension exists in postgres database..."
+  PGSTAT_DEFAULT=$(kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d postgres -t -c "SELECT 1 FROM pg_extension WHERE extname='pg_stat_statements';" 2>/dev/null | tr -d '[:space:]')
+  if [ "$PGSTAT_DEFAULT" = "1" ]; then
+      success "pg_stat_statements extension is installed in postgres"
+  else
+      kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d postgres -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;" >/dev/null 2>&1 && 
+        success "pg_stat_statements extension installed in postgres" || 
+        warning "Unable to install pg_stat_statements extension in postgres"
+  fi
+  kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d postgres -c "GRANT SELECT ON pg_stat_statements TO $DB_USER;" >/dev/null 2>&1 || true
 fi
 
 # 4. Check/Create Datadog monitoring user
@@ -212,21 +322,36 @@ else
     warning "Datadog user not found. Creating..."
 
     # Create datadog user with proper permissions (idempotent)
-    kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$DB_USER') THEN CREATE ROLE $DB_USER LOGIN PASSWORD '${MONITORING_PASSWORD}'; END IF; END \$\$;" || true
-    kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -v ON_ERROR_STOP=1 -c "GRANT pg_monitor TO $DB_USER; GRANT pg_read_all_stats TO $DB_USER; GRANT pg_read_all_settings TO $DB_USER; GRANT SELECT ON pg_stat_database TO $DB_USER;" || true
+    kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$DB_USER') THEN CREATE ROLE $DB_USER LOGIN PASSWORD '${SQL_MONITORING_PASSWORD}'; END IF; END \$\$;" || true
     success "Datadog user ensured with monitoring permissions"
 fi
 
+# Ensure required monitoring privileges are present (idempotent)
+kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -v ON_ERROR_STOP=1 -c "\
+  GRANT pg_monitor TO $DB_USER; \
+  GRANT pg_read_all_stats TO $DB_USER; \
+  GRANT pg_read_all_settings TO $DB_USER; \
+  GRANT SELECT ON pg_stat_database TO $DB_USER; \
+  GRANT EXECUTE ON FUNCTION pg_catalog.pg_ls_dir(text) TO $DB_USER; \
+  GRANT EXECUTE ON FUNCTION pg_catalog.pg_stat_file(text) TO $DB_USER; \
+  GRANT EXECUTE ON FUNCTION pg_catalog.pg_ls_waldir() TO $DB_USER;" || warning "Unable to grant monitoring privileges to $DB_USER"
+
 # Ensure password matches expected value
-kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -v ON_ERROR_STOP=1 -c "ALTER ROLE $DB_USER WITH PASSWORD '${MONITORING_PASSWORD}';" || warning "Unable to reset password for $DB_USER"
+kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -v ON_ERROR_STOP=1 -c "ALTER ROLE $DB_USER WITH PASSWORD '${SQL_MONITORING_PASSWORD}';" || warning "Unable to reset password for $DB_USER"
 
 # 4b. Annotate Postgres for Datadog Autodiscovery (DBM)
 log "4b. Ensuring Datadog Autodiscovery annotations on Postgres workload..."
 if [ -n "$DEPLOY_KIND" ] && [ -n "$DEPLOY_NAME" ]; then
+  # Select password source for annotations (env var if secret mode enabled)
+  if [ "$USE_SECRET_PASSWORD" = "true" ]; then
+    ANNO_PASSWORD_VALUE="%%env_DD_POSTGRES_PASSWORD%%"
+  else
+    ANNO_PASSWORD_VALUE="${MONITORING_PASSWORD}"
+  fi
   kubectl annotate -n $NAMESPACE $DEPLOY_KIND/$DEPLOY_NAME \
     "ad.datadoghq.com/postgres.check_names=[\"postgres\"]" \
     "ad.datadoghq.com/postgres.init_configs=[{}]" \
-    "ad.datadoghq.com/postgres.instances=[{\"host\":\"%%host%%\",\"port\":5432,\"username\":\"$DB_USER\",\"password\":\"${MONITORING_PASSWORD}\",\"dbname\":\"$DB_NAME\",\"dbm\":true,\"ssl\":\"${SSL_MODE}\",\"query_metrics\":{\"enabled\":true},\"query_activity\":{\"enabled\":false},\"query_samples\":{\"enabled\":false}}]" \
+    "ad.datadoghq.com/postgres.instances=[{\"host\":\"%%host%%\",\"port\":5432,\"username\":\"$DB_USER\",\"password\":\"${ANNO_PASSWORD_VALUE}\",\"dbname\":\"$DB_NAME\",\"dbm\":true,\"ssl\":\"${SSL_MODE}\",\"query_metrics\":{\"enabled\":true},\"query_activity\":{\"enabled\":false},\"query_samples\":{\"enabled\":false}}]" \
     --overwrite || true
   kubectl rollout restart -n $NAMESPACE $DEPLOY_KIND/$DEPLOY_NAME || true
   kubectl -n $NAMESPACE rollout status $DEPLOY_KIND/$DEPLOY_NAME --timeout=180s || true
@@ -244,10 +369,15 @@ if [ -n "$DEPLOY_KIND" ] && [ -n "$DEPLOY_NAME" ]; then
 else
   warning "Could not determine workload kind/name for annotations; attempting to annotate Pod directly"
   if [ -n "$POSTGRES_POD" ]; then
+    if [ "$USE_SECRET_PASSWORD" = "true" ]; then
+      ANNO_PASSWORD_VALUE="%%env_DD_POSTGRES_PASSWORD%%"
+    else
+      ANNO_PASSWORD_VALUE="${MONITORING_PASSWORD}"
+    fi
     kubectl annotate -n $NAMESPACE pod/$POSTGRES_POD \
       "ad.datadoghq.com/postgres.check_names=[\"postgres\"]" \
       "ad.datadoghq.com/postgres.init_configs=[{}]" \
-      "ad.datadoghq.com/postgres.instances=[{\"host\":\"%%host%%\",\"port\":5432,\"username\":\"$DB_USER\",\"password\":\"${MONITORING_PASSWORD}\",\"dbname\":\"$DB_NAME\",\"dbm\":true,\"ssl\":\"${SSL_MODE}\",\"query_metrics\":{\"enabled\":true},\"query_activity\":{\"enabled\":false},\"query_samples\":{\"enabled\":false}}]" \
+      "ad.datadoghq.com/postgres.instances=[{\"host\":\"%%host%%\",\"port\":5432,\"username\":\"$DB_USER\",\"password\":\"${ANNO_PASSWORD_VALUE}\",\"dbname\":\"$DB_NAME\",\"dbm\":true,\"ssl\":\"${SSL_MODE}\",\"query_metrics\":{\"enabled\":true},\"query_activity\":{\"enabled\":false},\"query_samples\":{\"enabled\":false}}]" \
       --overwrite || true
   fi
 fi
@@ -275,9 +405,15 @@ if [ "$PGVECTOR_AVAILABLE" = "1" ]; then
   WITH (lists = 10);
 
   -- Grant permissions to datadog user
-  GRANT SELECT ON document_embeddings TO $DB_USER;
-  GRANT SELECT ON pg_stat_user_tables TO $DB_USER;
-  GRANT SELECT ON pg_stat_user_indexes TO $DB_USER;
+  DO $$
+  BEGIN
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$DB_USER') THEN
+      GRANT SELECT ON document_embeddings TO $DB_USER;
+      GRANT SELECT ON pg_stat_user_tables TO $DB_USER;
+      GRANT SELECT ON pg_stat_user_indexes TO $DB_USER;
+    END IF;
+  END;
+  $$;
   "
 
   success "pgvector tables and indexes created"
@@ -331,7 +467,11 @@ if [ -n "$DATADOG_POD" ]; then
         --from-literal=DD_POSTGRES_PASSWORD="$MONITORING_PASSWORD" \
         --dry-run=client -o yaml | kubectl apply -f -
       if [ -n "$DS_NAME" ]; then
-        kubectl -n $DATADOG_AGENT_NAMESPACE set env daemonset/$DS_NAME --from=secret/dd-postgres-creds --keys=DD_POSTGRES_PASSWORD --containers=agent --overwrite || true
+        if ! kubectl -n $DATADOG_AGENT_NAMESPACE set env daemonset/$DS_NAME --from=secret/dd-postgres-creds --keys=DD_POSTGRES_PASSWORD --containers=agent --overwrite >/dev/null 2>&1; then
+          warning "Unable to set DD_POSTGRES_PASSWORD env on daemonset/$DS_NAME"
+        fi
+      else
+        warning "Datadog agent daemonset not detected; DD_POSTGRES_PASSWORD env not injected"
       fi
       CONF_PASSWORD_VALUE="%%env_DD_POSTGRES_PASSWORD%%"
     else
@@ -379,8 +519,20 @@ EOF
 
     success "Datadog PostgreSQL configuration applied"
 
-    kubectl rollout restart daemonset/datadog -n $DATADOG_AGENT_NAMESPACE || true
-    kubectl rollout status daemonset/datadog -n $DATADOG_AGENT_NAMESPACE --timeout=180s || true
+    TARGET_DAEMONSETS=""
+    if [ -n "$DS_NAME" ]; then
+      TARGET_DAEMONSETS="$DS_NAME"
+    else
+      TARGET_DAEMONSETS="datadog-agent datadog"
+    fi
+
+    for ds in $TARGET_DAEMONSETS; do
+      if kubectl get daemonset "$ds" -n $DATADOG_AGENT_NAMESPACE >/dev/null 2>&1; then
+        kubectl rollout restart daemonset/$ds -n $DATADOG_AGENT_NAMESPACE || true
+        kubectl rollout status daemonset/$ds -n $DATADOG_AGENT_NAMESPACE --timeout=180s || true
+        break
+      fi
+    done
 else
     error "Datadog agent pod not found"
 fi
@@ -473,7 +625,11 @@ echo "   Host: postgres-service.$NAMESPACE.svc.cluster.local"
 echo "   Port: 5432"
 echo "   Database: $DB_NAME"
 echo "   User: $DB_USER"
-echo "   Password: ${MONITORING_PASSWORD}"
+if [ "$USE_SECRET_PASSWORD" = "true" ]; then
+  echo "   Password: [from Secret/env: DD_POSTGRES_PASSWORD]"
+else
+  echo "   Password: ${MONITORING_PASSWORD}"
+fi
 echo ""
 echo "2. Test vector queries:"
 echo "   kubectl exec -n $NAMESPACE $POSTGRES_POD -- psql -U $DB_USER -d $DB_NAME -c \"SELECT COUNT(*) FROM document_embeddings;\""

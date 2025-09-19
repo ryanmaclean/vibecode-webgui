@@ -164,7 +164,7 @@ secrets:
 # Database configuration
 database:
   type: "postgresql"
-  host: "postgresql.vibecode-platform.svc.cluster.local"
+  host: "postgres-service.vibecode-platform.svc.cluster.local"
   port: 5432
   name: "vibecode"
   ssl: true
@@ -297,7 +297,7 @@ initContainers:
       - sh
       - -c
       - |
-        until nc -z postgresql.vibecode-platform.svc.cluster.local 5432; do
+        until nc -z postgres-service.vibecode-platform.svc.cluster.local 5432; do
           echo "Waiting for PostgreSQL..."
           sleep 2
         done
