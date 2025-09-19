@@ -1,70 +1,120 @@
-# Multi-stage Docker build for production deployment
-# Optimized for size and security
+# Multi-stage production Dockerfile for VibeCode WebGUI
+# Optimized for Azure Container Registry and AKS deployment
 
 # Build stage
 FROM node:18-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    libc6-compat \
+    git \
+    openssh-client
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY tsconfig.json ./
-COPY next.config.ts ./
-
-# Install build dependencies for native modules
-RUN apk add --no-cache python3 make g++
+COPY tsconfig*.json ./
+COPY next.config.js ./
+COPY tailwind.config.js ./
+COPY postcss.config.js ./
 
 # Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --only=production --no-audit --no-fund
 
 # Copy source code
-COPY src ./src
-COPY public ./public
-COPY .env.example ./
+COPY src/ ./src/
+COPY public/ ./public/
+COPY prisma/ ./prisma/
 
-# Build the application
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build application with source maps for Dynamic Instrumentation
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV DD_DYNAMIC_INSTRUMENTATION_ENABLED=true
+
 RUN npm run build
 
-# Production stage
-FROM node:18-alpine AS runner
+# Runtime stage
+FROM node:18-alpine AS runtime
 
-# Security: Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Install runtime dependencies and security updates
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    ca-certificates \
+    tzdata \
+    && apk upgrade --no-cache \
+    && addgroup -g 1001 -S nodejs \
+    && adduser -S nextjs -u 1001
 
 WORKDIR /app
 
 # Copy built application
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/next.config.js ./
+COPY --from=builder --chown=nextjs:nodejs /app/package*.json ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
-# Create directories for uploads and data
-RUN mkdir -p uploads rag-index conversations
-RUN chown -R nextjs:nodejs uploads rag-index conversations
+# Copy source maps for Dynamic Instrumentation
+COPY --from=builder --chown=nextjs:nodejs /app/.next/source-maps ./.next/source-maps
+
+# Install production dependencies
+RUN npm ci --only=production --no-audit --no-fund && npm cache clean --force
+
+# Generate Prisma client for runtime
+RUN npx prisma generate
+
+# Create directories for logs and temp files
+RUN mkdir -p /app/logs /app/tmp && chown -R nextjs:nodejs /app/logs /app/tmp
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+# Datadog instrumentation
+ENV DD_SERVICE=vibecode-webgui
+ENV DD_ENV=production
+ENV DD_VERSION=1.0.0
+ENV DD_TRACE_ENABLED=true
+ENV DD_LOGS_INJECTION=true
+ENV DD_RUNTIME_METRICS_ENABLED=true
+ENV DD_DYNAMIC_INSTRUMENTATION_ENABLED=true
+ENV DD_SOURCE_MAP=true
+ENV DD_PROFILING_ENABLED=true
 
 # Health check
-COPY --from=builder /app/package.json ./
-RUN echo '#!/bin/sh\ncurl -f http://localhost:3000/api/health || exit 1' > /health-check.sh
-RUN chmod +x /health-check.sh
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
 
-# Security hardening
-RUN apk add --no-cache curl && \
-    rm -rf /var/cache/apk/*
-
+# Switch to non-root user
 USER nextjs
 
+# Expose port
 EXPOSE 3000
 
-ENV PORT=3000
-ENV NODE_ENV=production
-ENV HOSTNAME="0.0.0.0"
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD /health-check.sh
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
 
 # Start the application
 CMD ["node", "server.js"]
+
+# Metadata
+LABEL maintainer="VibeCode Team" \
+      version="1.0.0" \
+      description="VibeCode WebGUI - AI-Powered Development Platform" \
+      org.opencontainers.image.title="VibeCode WebGUI" \
+      org.opencontainers.image.description="AI-Powered Development Platform" \
+      org.opencontainers.image.vendor="VibeCode" \
+      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.source="https://github.com/vibecode/webgui" \
+      org.opencontainers.image.documentation="https://docs.vibecode.dev"
