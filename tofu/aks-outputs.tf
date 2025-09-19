@@ -55,6 +55,29 @@ output "resource_group_location" {
   value       = azurerm_resource_group.main.location
 }
 
+# Container Registry Outputs
+output "acr_name" {
+  description = "The name of the Azure Container Registry"
+  value       = azurerm_container_registry.main.name
+}
+
+output "acr_login_server" {
+  description = "The login server URL for the Azure Container Registry"
+  value       = azurerm_container_registry.main.login_server
+}
+
+output "acr_admin_username" {
+  description = "The admin username for the Azure Container Registry"
+  value       = azurerm_container_registry.main.admin_username
+  sensitive   = true
+}
+
+output "acr_admin_password" {
+  description = "The admin password for the Azure Container Registry"
+  value       = azurerm_container_registry.main.admin_password
+  sensitive   = true
+}
+
 output "resource_group_id" {
   description = "The ID of the resource group"
   value       = azurerm_resource_group.main.id
@@ -172,11 +195,11 @@ output "common_tags" {
 output "deployment_validation" {
   description = "Deployment validation information"
   value = {
-    cluster_status        = azurerm_kubernetes_cluster.main.power_state[0].code
     system_node_count     = azurerm_kubernetes_cluster.main.default_node_pool[0].node_count
     user_node_count       = azurerm_kubernetes_cluster_node_pool.user_pool.node_count
     kubernetes_version    = azurerm_kubernetes_cluster.main.kubernetes_version
     location              = azurerm_resource_group.main.location
     managed_identity_type = azurerm_kubernetes_cluster.main.identity[0].type
+    cluster_fqdn          = azurerm_kubernetes_cluster.main.fqdn
   }
 }

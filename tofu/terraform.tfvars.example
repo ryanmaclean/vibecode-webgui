@@ -1,0 +1,32 @@
+# Example variable file for VibeCode AKS Infrastructure
+# Copy this file to terraform.tfvars and fill in the values
+
+# Required sensitive variables
+postgresql_admin_password = "your-postgres-password-here"
+nextauth_secret           = "your-nextauth-secret-here"
+
+# Datadog configuration (required for monitoring)
+datadog_api_key = "your-datadog-api-key"
+datadog_app_key = "your-datadog-app-key"
+datadog_site    = "datadoghq.com"
+
+# Optional external API keys
+openrouter_api_key    = ""
+azure_openai_api_key  = ""
+azure_openai_endpoint = ""
+
+# Project configuration
+project_name        = "vibecode"
+environment         = "dev"
+resource_group_name = "rg-vibecode-aks"
+location            = "East US 2"
+
+# Application configuration
+app_image_tag     = "latest"
+ingress_hostname  = "vibecode.eastus2.cloudapp.azure.com"
+
+# Feature flags
+enable_datadog_monitoring = true
+enable_backup_operator   = true
+enable_cert_manager      = true
+enable_ingress_nginx     = true

@@ -57,7 +57,7 @@ variable "postgres_subnet_address_prefix" {
 variable "kubernetes_version" {
   type        = string
   description = "Kubernetes version for the AKS cluster"
-  default     = "1.28.3"
+  default     = "1.30.14"
 }
 
 variable "aks_admin_group_object_ids" {
@@ -249,6 +249,69 @@ variable "rollback_timeout" {
   type        = string
   description = "Timeout for rollback operations"
   default     = "15m"
+}
+
+# Application Configuration
+variable "postgresql_admin_password" {
+  type        = string
+  description = "PostgreSQL admin password"
+  sensitive   = true
+}
+
+variable "nextauth_secret" {
+  type        = string
+  description = "NextAuth.js secret for JWT encryption"
+  sensitive   = true
+}
+
+variable "datadog_site" {
+  type        = string
+  description = "Datadog site (e.g., datadoghq.com, datadoghq.eu)"
+  default     = "datadoghq.com"
+}
+
+variable "app_image_tag" {
+  type        = string
+  description = "Docker image tag for the VibeCode application"
+  default     = "latest"
+}
+
+variable "openrouter_api_key" {
+  type        = string
+  description = "OpenRouter API key for AI services"
+  sensitive   = true
+  default     = ""
+}
+
+variable "azure_openai_api_key" {
+  type        = string
+  description = "Azure OpenAI API key"
+  sensitive   = true
+  default     = ""
+}
+
+variable "azure_openai_endpoint" {
+  type        = string
+  description = "Azure OpenAI endpoint URL"
+  default     = ""
+}
+
+variable "ingress_hostname" {
+  type        = string
+  description = "Hostname for the application ingress"
+  default     = "vibecode.eastus2.cloudapp.azure.com"
+}
+
+# Container Registry Configuration
+variable "acr_sku" {
+  type        = string
+  description = "Azure Container Registry SKU"
+  default     = "Premium"
+  
+  validation {
+    condition     = contains(["Basic", "Standard", "Premium"], var.acr_sku)
+    error_message = "ACR SKU must be Basic, Standard, or Premium."
+  }
 }
 
 # Feature Flags

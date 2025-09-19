@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+## Categories used across generators (global scope for reuse)
+categories=("deployment" "kubernetes" "ai-integration" "testing" "security" "monitoring")
+
 # Generate Vector Activity for Datadog DBM Demo
 # This script creates realistic pgvector activity to populate Datadog Database Monitoring
 
@@ -8,7 +11,7 @@ echo "🚀 Generating pgvector Activity for Datadog DBM Demo"
 echo "=================================================="
 
 # Configuration
-NAMESPACE="vibecode"
+NAMESPACE="${NAMESPACE:-vibecode-platform}"
 DB_NAME="vibecode"
 POSTGRES_POD=""
 
@@ -24,14 +27,19 @@ warning() { echo -e "${YELLOW}⚠️${NC} $1"; }
 
 # Get PostgreSQL pod
 get_postgres_pod() {
-    POSTGRES_POD=$(kubectl get pods -n $NAMESPACE -l app=postgres -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-    
+    # Try both common app labels: app=postgresql then app=postgres
+    POSTGRES_POD=$(kubectl get pods -n $NAMESPACE -l app=postgresql -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+    if [ -z "$POSTGRES_POD" ]; then
+        POSTGRES_POD=$(kubectl get pods -n $NAMESPACE -l app=postgres -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+    fi
+
     if [ -z "$POSTGRES_POD" ]; then
         echo "❌ No PostgreSQL pod found in namespace $NAMESPACE"
         echo "Please ensure PostgreSQL is running: kubectl get pods -n $NAMESPACE"
+        echo "Hint: verify labels 'app=postgresql' or 'app=postgres' are set on the Postgres pod"
         exit 1
     fi
-    
+
     success "Found PostgreSQL pod: $POSTGRES_POD"
 }
 
@@ -78,7 +86,6 @@ generate_sample_data() {
     "
 
     # Generate realistic documentation embeddings
-    local categories=("deployment" "kubernetes" "ai-integration" "testing" "security" "monitoring")
     local doc_count=0
 
     for category in "${categories[@]}"; do

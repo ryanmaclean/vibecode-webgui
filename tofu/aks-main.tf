@@ -126,10 +126,41 @@ resource "azurerm_user_assigned_identity" "aks_identity" {
   tags                = local.common_tags
 }
 
+# Azure Container Registry
+resource "azurerm_container_registry" "main" {
+  name                = "${var.project_name}cr${local.unique_suffix}"
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  sku                 = var.acr_sku
+  admin_enabled       = true
+  tags                = local.common_tags
+
+  # Network access rules
+  public_network_access_enabled = true
+  
+  # Retention policy for untagged manifests
+  retention_policy {
+    days    = 7
+    enabled = true
+  }
+
+  # Trust policy
+  trust_policy {
+    enabled = false
+  }
+}
+
 # Role assignment for AKS identity (Network Contributor)
 resource "azurerm_role_assignment" "aks_network_contributor" {
   scope                = azurerm_virtual_network.aks_vnet.id
   role_definition_name = "Network Contributor"
+  principal_id         = azurerm_user_assigned_identity.aks_identity.principal_id
+}
+
+# Role assignment for AKS to pull from ACR
+resource "azurerm_role_assignment" "aks_acr_pull" {
+  scope                = azurerm_container_registry.main.id
+  role_definition_name = "AcrPull"
   principal_id         = azurerm_user_assigned_identity.aks_identity.principal_id
 }
 
@@ -178,9 +209,6 @@ resource "azurerm_kubernetes_cluster" "main" {
       "workload" = "system"
     }
 
-    node_taints = [
-      "CriticalAddonsOnly=true:NoSchedule"
-    ]
   }
 
   # Identity configuration
@@ -194,7 +222,6 @@ resource "azurerm_kubernetes_cluster" "main" {
     network_plugin      = "azure"
     network_policy      = "azure"
     dns_service_ip      = "10.2.0.10"
-    docker_bridge_cidr  = "172.17.0.1/16"
     service_cidr        = "10.2.0.0/24"
     load_balancer_sku   = "standard"
     outbound_type       = "loadBalancer"
