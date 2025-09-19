@@ -1,0 +1,45 @@
+# Example configuration for Vercel-style Doc Search on AKS with OpenTofu
+# Copy this file to terraform.tfvars and update with your values
+
+# Project Configuration
+project_name = "vibecode-docs"
+environment  = "prod"  # dev, staging, prod
+azure_region = "East US 2"
+
+# Additional resource tags
+additional_tags = {
+  Owner       = "DevOps Team"
+  CostCenter  = "Engineering" 
+  Application = "VibeCode Doc Search"
+  Template    = "Vercel-Style"
+}
+
+# AKS Configuration
+aks_kubernetes_version    = "1.28"
+aks_system_node_vm_size   = "Standard_D4s_v3"
+aks_system_node_count     = 2
+aks_user_node_vm_size     = "Standard_D8s_v3"
+aks_user_node_count       = 3
+aks_user_node_min_count   = 1
+aks_user_node_max_count   = 10
+
+# PostgreSQL Configuration (replaces Supabase)
+postgresql_sku_name                        = "GP_Standard_D4s_v3"
+postgresql_storage_mb                      = 65536  # 64GB
+postgresql_backup_retention_days           = 35
+postgresql_geo_redundant_backup_enabled    = true
+postgresql_admin_username                  = "vibecodeusr"
+database_name                              = "vibecode_docs"
+
+# Azure OpenAI Configuration (replaces direct OpenAI API)
+azure_openai_sku_name = "S0"
+
+# Application Configuration
+nextjs_image_tag = "latest"
+replicas         = 3
+
+# Optional: Direct OpenAI API key for fallback (leave empty to use only Azure OpenAI)
+# openai_api_key = "sk-..."
+
+# Monitoring
+enable_monitoring = true

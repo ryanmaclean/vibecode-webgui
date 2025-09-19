@@ -14,8 +14,25 @@ class AIGatewayServer {
     }
     async start() {
         try {
-            await this.redisService.connect();
-            logger_1.logger.info('Redis connected successfully');
+            const disableRedis = String(process.env.DISABLE_REDIS || '').toLowerCase() === 'true';
+            if (disableRedis) {
+                logger_1.logger.warn('Redis is disabled by DISABLE_REDIS=true; starting without Redis');
+            }
+            else {
+                try {
+                    await this.redisService.connect();
+                    logger_1.logger.info('Redis connected successfully');
+                }
+                catch (err) {
+                    const allowNoRedis = String(process.env.ALLOW_START_WITHOUT_REDIS || '').toLowerCase() === 'true';
+                    if (allowNoRedis) {
+                        logger_1.logger.warn('Failed to connect to Redis; continuing because ALLOW_START_WITHOUT_REDIS=true', { error: err });
+                    }
+                    else {
+                        throw err;
+                    }
+                }
+            }
             await this.modelRegistry.initialize();
             logger_1.logger.info('Model registry initialized');
             (0, cron_jobs_1.startCronJobs)();

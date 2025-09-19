@@ -48,6 +48,13 @@ describe('User Provisioning Integration Tests', () => {
       stdio: 'inherit'
     });
 
+    // Install Prometheus Operator CRDs (required for ServiceMonitor resources)
+    console.log('Installing Prometheus Operator CRDs...');
+    execSync('./scripts/install-prometheus-operator-crds.sh', {
+      stdio: 'inherit',
+      cwd: process.cwd()
+    });
+
     // Install Helm chart
     execSync(`helm install ${HELM_RELEASE} ${CHART_PATH} --namespace ${NAMESPACE} --wait --timeout=300s`, {
       stdio: 'inherit',

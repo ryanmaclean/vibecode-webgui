@@ -25,7 +25,7 @@ async function buildApp() {
   await new Promise<void>((resolve) => {
     jest.isolateModules(() => {
       // Avoid early import to ensure env is set
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+       
       createApp = require('../app').createApp as () => express.Express;
       resolve();
     });
