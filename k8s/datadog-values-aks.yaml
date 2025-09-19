@@ -1,204 +1,77 @@
-# Datadog Agent Configuration for Azure Kubernetes Service (AKS)
+# Datadog Helm values for AKS production deployment
 # Production-grade configuration with Azure-specific optimizations
 
-# Global Datadog configuration
 datadog:
-  # Site and API configuration
-  site: "datadoghq.com"  # Override via --set if using EU/other sites
+  # Core configuration
+  site: datadoghq.com
   
-  # Logging configuration
+  # Kubernetes integration
+  kubeStateMetricsEnabled: true
+  kubeStateMetricsCore:
+    enabled: true
+  
+  # Container runtime
+  criSocketPath: /run/containerd/containerd.sock
+  
+  # Azure-specific node labels as tags
+  nodeLabelsAsTags:
+    kubernetes.azure.com/cluster: cluster
+    kubernetes.azure.com/instance-type: instance_type
+    kubernetes.azure.com/os: os
+    kubernetes.azure.com/arch: arch
+    kubernetes.azure.com/scalesetpriority: scalesetpriority
+    node.kubernetes.io/instance-type: instance_type
+  
+  # Pod labels as tags
+  podLabelsAsTags:
+    app: app
+    version: version
+    component: component
+    tier: tier
+  
+  # Logs collection
   logs:
     enabled: true
     containerCollectAll: true
-    containerCollectUsingFiles: true
-    
-  # APM (Application Performance Monitoring)
+    containerExclude: "image:datadog/agent"
+    containerExcludeByName:
+      - datadog-agent
+      - datadog-cluster-agent
+  
+  # APM and tracing
   apm:
     enabled: true
     portEnabled: true
     socketEnabled: true
-    
+    hostSocketPath: /var/run/datadog/apm.socket
+  
   # Process monitoring
   processAgent:
     enabled: true
     processCollection: true
-    
-  # Network monitoring
+  
+  # Network monitoring  
   networkMonitoring:
     enabled: true
-    
+  
   # Security monitoring
   securityAgent:
-    runtime:
-      enabled: true
-    compliance:
-      enabled: true
-      
-  # System probe for network monitoring
-  systemProbe:
     enabled: true
-    debugPort: 0
-    enableConntrack: true
-    bpfDebug: false
-    apparmor: ""
-    selinux: ""
-    
-  # Container image scanning
-  containerImageCollection:
-    enabled: true
-    
-  # Kubernetes events collection
-  collectEvents: true
-  leaderElection: true
   
-  # Orchestrator explorer
-  orchestratorExplorer:
+  # Database monitoring
+  databaseMonitoring:
     enabled: true
-    
-  # SBOM collection
-  sbom:
+  
+  # Service discovery
+  serviceDiscovery:
     enabled: true
-    containerImage:
-      enabled: true
-    host:
-      enabled: true
-
-# Agent configuration
-agents:
-  # Image configuration
-  image:
-    repository: "gcr.io/datadoghq/agent"
-    tag: "7.50.3"
-    pullPolicy: IfNotPresent
-    
-  # Resource allocation
-  containers:
-    agent:
-      resources:
-        requests:
-          cpu: 200m
-          memory: 256Mi
-        limits:
-          cpu: 500m
-          memory: 512Mi
-    processAgent:
-      resources:
-        requests:
-          cpu: 100m
-          memory: 128Mi
-        limits:
-          cpu: 200m
-          memory: 256Mi
-    traceAgent:
-      resources:
-        requests:
-          cpu: 100m
-          memory: 128Mi
-        limits:
-          cpu: 200m
-          memory: 256Mi
-    systemProbe:
-      resources:
-        requests:
-          cpu: 100m
-          memory: 128Mi
-        limits:
-          cpu: 200m
-          memory: 256Mi
-          
-  # Azure-specific tolerations for system nodes
-  tolerations:
-    - key: "CriticalAddonsOnly"
-      operator: "Exists"
-    - key: "node.kubernetes.io/not-ready"
-      operator: "Exists"
-      effect: "NoExecute"
-      tolerationSeconds: 300
-    - key: "node.kubernetes.io/unreachable"
-      operator: "Exists"
-      effect: "NoExecute"
-      tolerationSeconds: 300
-    - key: "kubernetes.azure.com/scalesetpriority"
-      operator: "Equal"
-      value: "spot"
-      effect: "NoSchedule"
-      
-  # Node affinity for Azure node pools
-  affinity:
-    nodeAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          preference:
-            matchExpressions:
-              - key: "agentpool"
-                operator: "In"
-                values: ["system", "monitoring"]
-                
-  # Security context
-  podSecurity:
-    securityContext:
-      runAsUser: 0
-      runAsGroup: 0
-    podSecurityContext:
-      fsGroup: 0
-      
-  # Volume mounts for Azure-specific paths
-  volumeMounts:
-    - name: proc
-      mountPath: /host/proc
-      readOnly: true
-    - name: sys
-      mountPath: /host/sys
-      readOnly: true
-    - name: var-run
-      mountPath: /host/var/run
-      readOnly: false
-    - name: azure-logs
-      mountPath: /var/log/azure
-      readOnly: true
-    - name: waagent
-      mountPath: /var/lib/waagent
-      readOnly: true
-      
-  volumes:
-    - name: proc
-      hostPath:
-        path: /proc
-    - name: sys
-      hostPath:
-        path: /sys
-    - name: var-run
-      hostPath:
-        path: /var/run
-    - name: azure-logs
-      hostPath:
-        path: /var/log/azure
-    - name: waagent
-      hostPath:
-        path: /var/lib/waagent
-        
-  # Environment variables for Azure integration
-  env:
-    - name: DD_KUBERNETES_KUBELET_HOST
-      valueFrom:
-        fieldRef:
-          fieldPath: status.hostIP
-    - name: DD_CLUSTER_NAME
-      value: "vibecode-aks"  # Override via --set
-    - name: DD_TAGS
-      value: "env:production provider:azure"
-    - name: DD_AZURE_RESOURCE_TAGS
-      value: "true"
-    - name: DD_COLLECT_KUBERNETES_EVENTS
-      value: "true"
-    - name: DD_LEADER_ELECTION
-      value: "true"
-    - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
-      value: "true"
-    - name: DD_CONTAINER_EXCLUDE_LOGS
-      value: "name:datadog-agent name:datadog-cluster-agent"
-    - name: DD_CONTAINER_EXCLUDE_METRICS
-      value: "name:datadog-agent name:datadog-cluster-agent"
+  
+  # Environment tags
+  tags:
+    - env:production
+    - provider:aks
+    - platform:kubernetes
+    - monitoring:datadog
 
 # Cluster Agent configuration
 clusterAgent:
@@ -206,14 +79,9 @@ clusterAgent:
   
   # Image configuration
   image:
-    repository: "gcr.io/datadoghq/cluster-agent"
-    tag: "7.50.3"
-    pullPolicy: IfNotPresent
-    
-  # Replica configuration
-  replicas: 2
+    tag: latest
   
-  # Resource allocation
+  # Resources for AKS
   resources:
     requests:
       cpu: 200m
@@ -221,95 +89,183 @@ clusterAgent:
     limits:
       cpu: 500m
       memory: 512Mi
-      
-  # Azure-specific tolerations
-  tolerations:
-    - key: "CriticalAddonsOnly"
-      operator: "Exists"
-    - key: "kubernetes.azure.com/scalesetpriority"
-      operator: "Equal"
-      value: "spot"
-      effect: "NoSchedule"
-      
-  # Node affinity for Azure
-  affinity:
-    nodeAffinity:
-      preferredDuringSchedulingIgnoredDuringExecution:
-        - weight: 100
-          preference:
-            matchExpressions:
-              - key: "agentpool"
-                operator: "In"
-                values: ["system", "monitoring"]
-                
-  # Pod disruption budget
-  podDisruptionBudget:
-    enabled: true
-    minAvailable: 1
-    
-  # Cluster checks
-  clusterChecks:
-    enabled: true
-    
-  # Admission controller
-  admissionController:
-    enabled: true
-    mutateUnlabelled: false
-    
-  # External metrics server
+  
+  # External metrics for HPA
   metricsProvider:
     enabled: true
     useDatadogMetrics: true
-    
-  # Environment variables
-  env:
-    - name: DD_CLUSTER_NAME
-      value: "vibecode-aks"  # Override via --set
-    - name: DD_TAGS
-      value: "env:production provider:azure"
-    - name: DD_EXTERNAL_METRICS_PROVIDER_ENABLED
-      value: "true"
-    - name: DD_EXTERNAL_METRICS_PROVIDER_USE_DATADOGMETRIC_CRD
-      value: "true"
-
-# Kube State Metrics configuration
-kubeStateMetricsCore:
-  enabled: true
+    wpaController: true
   
-# Node labeling for Azure
-targetSystem: "linux"
+  # Admission controller
+  admissionController:
+    enabled: true
+    mutateUnlabelled: true
+    serviceName: datadog-admission-controller
+  
+  # Cluster checks
+  clusterChecks:
+    enabled: true
+  
+  # Node selector for Linux nodes
+  nodeSelector:
+    kubernetes.io/os: linux
+  
+  # Azure-specific tolerations
+  tolerations:
+    - key: CriticalAddonsOnly
+      operator: Exists
+    - key: node-role.kubernetes.io/master
+      operator: Exists
+      effect: NoSchedule
+    - key: kubernetes.azure.com/scalesetpriority
+      operator: Equal
+      value: spot
+      effect: NoSchedule
+
+# Agent DaemonSet configuration
+agents:
+  # Image configuration
+  image:
+    tag: latest
+  
+  # Resource requirements optimized for AKS
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  # Node selector for Linux nodes only
+  nodeSelector:
+    kubernetes.io/os: linux
+  
+  # Tolerations for AKS system nodes and spot instances
+  tolerations:
+    - key: CriticalAddonsOnly
+      operator: Exists
+    - key: node-role.kubernetes.io/master
+      operator: Exists
+      effect: NoSchedule
+    - key: kubernetes.azure.com/scalesetpriority
+      operator: Equal
+      value: spot
+      effect: NoSchedule
+  
+  # Use host networking for proper metrics collection
+  useHostNetwork: true
+  useHostPID: true
+  useHostPort: true
+  
+  # Azure-specific volume mounts
+  volumes:
+    # Docker socket
+    - name: dockersocket
+      hostPath:
+        path: /var/run/docker.sock
+    # Containerd socket
+    - name: containerdsocket
+      hostPath:
+        path: /run/containerd/containerd.sock
+    # Host proc filesystem
+    - name: procdir
+      hostPath:
+        path: /proc
+    # Host sys filesystem  
+    - name: cgroups
+      hostPath:
+        path: /sys/fs/cgroup
+    # Host passwd for user resolution
+    - name: passwd
+      hostPath:
+        path: /etc/passwd
+  
+  volumeMounts:
+    - name: dockersocket
+      mountPath: /var/run/docker.sock
+      readOnly: true
+    - name: containerdsocket
+      mountPath: /run/containerd/containerd.sock
+      readOnly: true
+    - name: procdir
+      mountPath: /host/proc
+      readOnly: true
+    - name: cgroups
+      mountPath: /host/sys/fs/cgroup
+      readOnly: true
+    - name: passwd
+      mountPath: /etc/passwd
+      readOnly: true
 
 # RBAC configuration
 rbac:
   create: true
-  serviceAccountName: "datadog-agent"
-  
-# Service account configuration  
+  serviceAccountName: datadog-agent
+
+# Service account
 serviceAccount:
   create: true
-  name: "datadog-agent"
+  name: datadog-agent
+
+# Windows node support (disabled for now)
+winAgent:
+  enabled: false
+
+# System probe for network monitoring
+systemProbe:
+  enabled: true
+  debugPort: 0
+  enableConntrack: true
+  bpfDebug: false
+  apparmor: unconfined
+  seccomp: unconfined
   
-# Azure-specific configuration
-providers:
-  azure:
-    enabled: true
-    
-# Monitoring configuration for Azure services
-monitors:
-  # Azure VM monitoring
-  - name: "azure-vm-high-cpu"
-    type: "metric alert"
-    query: "avg(last_5m):avg:azure.vm.percentage_cpu{*} by {host} > 80"
-    message: "High CPU usage on Azure VM {{host.name}}"
-    
-  # AKS node monitoring  
-  - name: "aks-node-disk-usage"
-    type: "metric alert"
-    query: "avg(last_5m):avg:kubernetes.filesystem.usage_pct{*} by {host} > 85"
-    message: "High disk usage on AKS node {{host.name}}"
-    
-  # Pod restart monitoring
-  - name: "pod-restart-rate"
-    type: "metric alert"
-    query: "avg(last_10m):avg:kubernetes.containers.restarts{*} by {kube_namespace,pod_name} > 5"
-    message: "High pod restart rate for {{kube_namespace.name}}/{{pod_name.name}}"
+  # Security context for system probe
+  securityContext:
+    capabilities:
+      add:
+        - SYS_ADMIN
+        - SYS_RESOURCE
+        - SYS_PTRACE
+        - NET_ADMIN
+        - NET_BROADCAST
+        - NET_RAW
+        - IPC_LOCK
+        - CHOWN
+
+# Kube state metrics configuration
+kubeStateMetricsCore:
+  enabled: true
+  useClusterRole: true
+  labelsAsTags:
+    pod:
+      app: app
+      version: version
+    deployment:
+      app: app
+      version: version
+    service:
+      app: app
+
+# Cluster checks runner
+clusterChecksRunner:
+  enabled: true
+  replicas: 2
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  
+  nodeSelector:
+    kubernetes.io/os: linux
+  
+  tolerations:
+    - key: kubernetes.azure.com/scalesetpriority
+      operator: Equal
+      value: spot
+      effect: NoSchedule
