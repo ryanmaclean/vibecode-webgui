@@ -1,0 +1,315 @@
+# Datadog Agent Configuration for Azure Kubernetes Service (AKS)
+# Production-grade configuration with Azure-specific optimizations
+
+# Global Datadog configuration
+datadog:
+  # Site and API configuration
+  site: "datadoghq.com"  # Override via --set if using EU/other sites
+  
+  # Logging configuration
+  logs:
+    enabled: true
+    containerCollectAll: true
+    containerCollectUsingFiles: true
+    
+  # APM (Application Performance Monitoring)
+  apm:
+    enabled: true
+    portEnabled: true
+    socketEnabled: true
+    
+  # Process monitoring
+  processAgent:
+    enabled: true
+    processCollection: true
+    
+  # Network monitoring
+  networkMonitoring:
+    enabled: true
+    
+  # Security monitoring
+  securityAgent:
+    runtime:
+      enabled: true
+    compliance:
+      enabled: true
+      
+  # System probe for network monitoring
+  systemProbe:
+    enabled: true
+    debugPort: 0
+    enableConntrack: true
+    bpfDebug: false
+    apparmor: ""
+    selinux: ""
+    
+  # Container image scanning
+  containerImageCollection:
+    enabled: true
+    
+  # Kubernetes events collection
+  collectEvents: true
+  leaderElection: true
+  
+  # Orchestrator explorer
+  orchestratorExplorer:
+    enabled: true
+    
+  # SBOM collection
+  sbom:
+    enabled: true
+    containerImage:
+      enabled: true
+    host:
+      enabled: true
+
+# Agent configuration
+agents:
+  # Image configuration
+  image:
+    repository: "gcr.io/datadoghq/agent"
+    tag: "7.50.3"
+    pullPolicy: IfNotPresent
+    
+  # Resource allocation
+  containers:
+    agent:
+      resources:
+        requests:
+          cpu: 200m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+    processAgent:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+    traceAgent:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+    systemProbe:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+          
+  # Azure-specific tolerations for system nodes
+  tolerations:
+    - key: "CriticalAddonsOnly"
+      operator: "Exists"
+    - key: "node.kubernetes.io/not-ready"
+      operator: "Exists"
+      effect: "NoExecute"
+      tolerationSeconds: 300
+    - key: "node.kubernetes.io/unreachable"
+      operator: "Exists"
+      effect: "NoExecute"
+      tolerationSeconds: 300
+    - key: "kubernetes.azure.com/scalesetpriority"
+      operator: "Equal"
+      value: "spot"
+      effect: "NoSchedule"
+      
+  # Node affinity for Azure node pools
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: "agentpool"
+                operator: "In"
+                values: ["system", "monitoring"]
+                
+  # Security context
+  podSecurity:
+    securityContext:
+      runAsUser: 0
+      runAsGroup: 0
+    podSecurityContext:
+      fsGroup: 0
+      
+  # Volume mounts for Azure-specific paths
+  volumeMounts:
+    - name: proc
+      mountPath: /host/proc
+      readOnly: true
+    - name: sys
+      mountPath: /host/sys
+      readOnly: true
+    - name: var-run
+      mountPath: /host/var/run
+      readOnly: false
+    - name: azure-logs
+      mountPath: /var/log/azure
+      readOnly: true
+    - name: waagent
+      mountPath: /var/lib/waagent
+      readOnly: true
+      
+  volumes:
+    - name: proc
+      hostPath:
+        path: /proc
+    - name: sys
+      hostPath:
+        path: /sys
+    - name: var-run
+      hostPath:
+        path: /var/run
+    - name: azure-logs
+      hostPath:
+        path: /var/log/azure
+    - name: waagent
+      hostPath:
+        path: /var/lib/waagent
+        
+  # Environment variables for Azure integration
+  env:
+    - name: DD_KUBERNETES_KUBELET_HOST
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: DD_CLUSTER_NAME
+      value: "vibecode-aks"  # Override via --set
+    - name: DD_TAGS
+      value: "env:production provider:azure"
+    - name: DD_AZURE_RESOURCE_TAGS
+      value: "true"
+    - name: DD_COLLECT_KUBERNETES_EVENTS
+      value: "true"
+    - name: DD_LEADER_ELECTION
+      value: "true"
+    - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+      value: "true"
+    - name: DD_CONTAINER_EXCLUDE_LOGS
+      value: "name:datadog-agent name:datadog-cluster-agent"
+    - name: DD_CONTAINER_EXCLUDE_METRICS
+      value: "name:datadog-agent name:datadog-cluster-agent"
+
+# Cluster Agent configuration
+clusterAgent:
+  enabled: true
+  
+  # Image configuration
+  image:
+    repository: "gcr.io/datadoghq/cluster-agent"
+    tag: "7.50.3"
+    pullPolicy: IfNotPresent
+    
+  # Replica configuration
+  replicas: 2
+  
+  # Resource allocation
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+      
+  # Azure-specific tolerations
+  tolerations:
+    - key: "CriticalAddonsOnly"
+      operator: "Exists"
+    - key: "kubernetes.azure.com/scalesetpriority"
+      operator: "Equal"
+      value: "spot"
+      effect: "NoSchedule"
+      
+  # Node affinity for Azure
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: "agentpool"
+                operator: "In"
+                values: ["system", "monitoring"]
+                
+  # Pod disruption budget
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+    
+  # Cluster checks
+  clusterChecks:
+    enabled: true
+    
+  # Admission controller
+  admissionController:
+    enabled: true
+    mutateUnlabelled: false
+    
+  # External metrics server
+  metricsProvider:
+    enabled: true
+    useDatadogMetrics: true
+    
+  # Environment variables
+  env:
+    - name: DD_CLUSTER_NAME
+      value: "vibecode-aks"  # Override via --set
+    - name: DD_TAGS
+      value: "env:production provider:azure"
+    - name: DD_EXTERNAL_METRICS_PROVIDER_ENABLED
+      value: "true"
+    - name: DD_EXTERNAL_METRICS_PROVIDER_USE_DATADOGMETRIC_CRD
+      value: "true"
+
+# Kube State Metrics configuration
+kubeStateMetricsCore:
+  enabled: true
+  
+# Node labeling for Azure
+targetSystem: "linux"
+
+# RBAC configuration
+rbac:
+  create: true
+  serviceAccountName: "datadog-agent"
+  
+# Service account configuration  
+serviceAccount:
+  create: true
+  name: "datadog-agent"
+  
+# Azure-specific configuration
+providers:
+  azure:
+    enabled: true
+    
+# Monitoring configuration for Azure services
+monitors:
+  # Azure VM monitoring
+  - name: "azure-vm-high-cpu"
+    type: "metric alert"
+    query: "avg(last_5m):avg:azure.vm.percentage_cpu{*} by {host} > 80"
+    message: "High CPU usage on Azure VM {{host.name}}"
+    
+  # AKS node monitoring  
+  - name: "aks-node-disk-usage"
+    type: "metric alert"
+    query: "avg(last_5m):avg:kubernetes.filesystem.usage_pct{*} by {host} > 85"
+    message: "High disk usage on AKS node {{host.name}}"
+    
+  # Pod restart monitoring
+  - name: "pod-restart-rate"
+    type: "metric alert"
+    query: "avg(last_10m):avg:kubernetes.containers.restarts{*} by {kube_namespace,pod_name} > 5"
+    message: "High pod restart rate for {{kube_namespace.name}}/{{pod_name.name}}"
