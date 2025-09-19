@@ -21,8 +21,8 @@ const conditionalDescribe = shouldRunRealTests ? describe : describe.skip
 
 conditionalDescribe('Real Collaboration Integration (NO MOCKING)', () => {
   const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000'
-  let wsUrl = process.env.WS_URL || 'ws://localhost:3001'
-  let testCookies: string = ''
+  const wsUrl = process.env.WS_URL || 'ws://localhost:3001'
+  const testCookies: string = ''
 
   beforeAll(async () => {
     console.log('Setting up real collaboration integration test environment...')

@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Simple middleware that just passes through requests
-// Temporarily simplified to avoid compilation issues
 export function middleware(request: NextRequest) {
-  // Skip middleware logic for now to get the server running
-  return NextResponse.next();
+  const response = NextResponse.next();
+  
+  // Add basic security headers
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  
+  return response;
 }
 
 export const config = {
   matcher: [
-    // Skip static files and API routes that don't need middleware
-    '/((?!_next/static|_next/image|favicon.ico|api/).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };
