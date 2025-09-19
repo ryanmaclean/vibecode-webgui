@@ -9,7 +9,7 @@ async function buildApp() {
   await new Promise<void>((resolve) => {
     jest.isolateModules(() => {
       // Ensure env is set before import
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+       
       createApp = require('../app').createApp as () => express.Express;
       resolve();
     });
@@ -60,7 +60,7 @@ async function buildApp() {
     } else {
       // Otherwise, treat as a soft pass for environments without model access
       // The main value is verifying real call path and correlation headers
-      // eslint-disable-next-line no-console
+       
       console.warn(`E2E chat returned status ${res.status}; validated tracing headers`);
       expect(res.status).toBeGreaterThanOrEqual(400);
     }

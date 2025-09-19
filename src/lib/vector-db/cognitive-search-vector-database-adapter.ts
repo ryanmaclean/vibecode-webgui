@@ -92,10 +92,10 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
       let retryable = false;
       
       if (this.errorHandler.isAuthError(error)) {
-        errorType = VectorDbErrorType.AUTHENTICATION;
+        errorType = VectorDbErrorType.AUTHORIZATION_ERROR;
         retryable = false;
       } else if (this.errorHandler.isNetworkError(error)) {
-        errorType = VectorDbErrorType.CONNECTION;
+        errorType = VectorDbErrorType.CONNECTION_FAILED;
         retryable = true;
       } else if (this.errorHandler.isTimeoutError(error)) {
         errorType = VectorDbErrorType.TIMEOUT;

@@ -34,8 +34,8 @@ const nextConfig = {
   trailingSlash: false,
   generateBuildId: () => 'build',
 
-  // Remove basePath during build to avoid static generation conflicts  
-  basePath: process.env.BUILDING === 'true' ? '' : (process.env.NODE_ENV === 'production' ? '/vibecode-webgui' : ''),
+  // Disable basePath for now to fix routing issues
+  // basePath: process.env.BUILDING === 'true' ? '' : (process.env.NODE_ENV === 'production' ? '/vibecode-webgui' : ''),
 
   // Security headers configuration
   async headers() {

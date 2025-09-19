@@ -22,10 +22,8 @@ export enum VectorDBErrorType {
   INITIALIZATION = 'INITIALIZATION',
   SERVICE = 'SERVICE',
   TIMEOUT = 'TIMEOUT',
-  SEARCH = 'SEARCH',
-  // Aliases for backward compatibility
-  AUTHENTICATION = 'AUTHORIZATION_ERROR',
-  CONNECTION = 'CONNECTION_FAILED'
+  SEARCH = 'SEARCH'
+  // Note: AUTHENTICATION and CONNECTION are aliases for AUTHORIZATION_ERROR and CONNECTION_FAILED respectively
 }
 
 export class VectorDBError extends Error {

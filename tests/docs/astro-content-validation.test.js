@@ -1,4 +1,4 @@
-/* eslint-disable import/no-commonjs */
+ 
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
@@ -57,7 +57,7 @@ describe('Astro Content Validation Tests', () => {
       });
     } catch (e) {
       // Do not fail here; tests below will soft-skip if dist is still missing
-      // eslint-disable-next-line no-console
+       
       console.warn(`Docs build attempt in content-validation setup failed: ${e?.message || e}`);
     }
 
@@ -474,7 +474,7 @@ test('should have no broken or empty internal links', () => {
     };
     fs.writeFileSync(path.join(outDir, 'docs-link-report.json'), JSON.stringify(report, null, 2));
   } catch (e) {
-    // eslint-disable-next-line no-console
+     
     console.warn(`Unable to write docs link report: ${e?.message || e}`);
   }
 

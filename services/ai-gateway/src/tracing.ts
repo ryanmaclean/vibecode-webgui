@@ -45,20 +45,20 @@ if (ENABLE_TRACING) {
 
   try {
     sdk.start();
-    // eslint-disable-next-line no-console
+     
     console.log(`[OTEL] Tracing initialized (service=${serviceName}, env=${environment}, endpoint=${endpoint}, rate=${sampleRate})`);
   } catch (err: unknown) {
-    // eslint-disable-next-line no-console
+     
     console.warn('[OTEL] Failed to start tracing', err);
   }
 
   const shutdown = async () => {
     try {
       await sdk.shutdown();
-      // eslint-disable-next-line no-console
+       
       console.log('[OTEL] Tracing shut down');
     } catch (e: unknown) {
-      // eslint-disable-next-line no-console
+       
       console.warn('[OTEL] Error during tracing shutdown', e);
     }
   };
