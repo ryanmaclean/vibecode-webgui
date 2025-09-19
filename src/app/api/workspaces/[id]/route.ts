@@ -7,14 +7,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const workspaceId = params.id
+    const { id } = await params
+    const workspaceId = id
     console.log(`🔍 Getting workspace status: ${workspaceId}`)
 
     // Check if Kubernetes is available
@@ -54,7 +55,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const workspaceId = params.id
+    const { id } = await params
+    const workspaceId = id
     console.log(`🗑️ Deleting workspace: ${workspaceId}`)
 
     // Check if Kubernetes is available
@@ -89,7 +91,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const workspaceId = params.id
+    const { id } = await params
+    const workspaceId = id
     console.log(`🔄 Updating workspace: ${workspaceId}`)
 
     // For now, we'll just return the current status

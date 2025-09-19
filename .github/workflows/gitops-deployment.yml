@@ -61,6 +61,17 @@ jobs:
     env:
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
       DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+      # Cloud Network Monitoring for GitHub Actions
+      DD_SYSTEM_PROBE_NETWORK_ENABLED: true
+      DD_PROCESS_AGENT_ENABLED: true
+      DD_NETWORK_CONFIG_ENABLE_EBPFLESS: true
+      DD_NETWORK_CONFIG_ENABLE_EBPF: false
+      DD_SYSTEM_PROBE_ENABLED: true
+      DD_CI_VISIBILITY_ENABLED: true
+      DD_SERVICE: vibecode-webgui
+      DD_ENV: ci
+      DD_VERSION: ${{ github.sha }}
+      DD_SITE: datadoghq.com
     
     steps:
       - name: Checkout code
@@ -112,6 +123,17 @@ jobs:
     env:
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
       DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+      # Cloud Network Monitoring for GitHub Actions
+      DD_SYSTEM_PROBE_NETWORK_ENABLED: true
+      DD_PROCESS_AGENT_ENABLED: true
+      DD_NETWORK_CONFIG_ENABLE_EBPFLESS: true
+      DD_NETWORK_CONFIG_ENABLE_EBPF: false
+      DD_SYSTEM_PROBE_ENABLED: true
+      DD_CI_VISIBILITY_ENABLED: true
+      DD_SERVICE: vibecode-webgui
+      DD_ENV: ci
+      DD_VERSION: ${{ github.sha }}
+      DD_SITE: datadoghq.com
     
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}

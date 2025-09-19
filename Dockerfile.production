@@ -2,11 +2,11 @@
 # Optimized for AKS deployment with security best practices
 
 # ===== Build Stage =====
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 WORKDIR /app
 
 # Install dependencies needed for building
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat python3 make g++
 
 # ===== Dependencies Stage =====
 FROM base AS deps
@@ -83,7 +83,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy source maps for Dynamic Instrumentation
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./source-maps/.next
 COPY --from=builder --chown=nextjs:nodejs /app/src ./source-maps/src
-COPY --from=builder --chown=nextjs:nodejs /app/pages ./source-maps/pages
 
 # Copy production dependencies
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
@@ -164,8 +163,7 @@ req.end();
 EOF
 
 # Set proper permissions
-RUN chown -R nextjs:nodejs /app && \
-    chmod +x healthcheck.js
+RUN chmod +x healthcheck.js
 
 # Switch to non-root user
 USER nextjs
