@@ -1,100 +1,171 @@
-# Multi-stage production Dockerfile for VibeCode WebGUI
-# Optimized for Azure Container Registry and AKS deployment
+# Multi-stage production Dockerfile with source maps for Datadog Dynamic Instrumentation
+# Optimized for AKS deployment with security best practices
 
-# Build stage
-FROM node:18-alpine AS builder
-
-# Install build dependencies
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++ \
-    libc6-compat \
-    git \
-    openssh-client
-
+# ===== Build Stage =====
+FROM node:18-alpine AS base
 WORKDIR /app
+
+# Install dependencies needed for building
+RUN apk add --no-cache libc6-compat
+
+# ===== Dependencies Stage =====
+FROM base AS deps
 
 # Copy package files
-COPY package*.json ./
-COPY tsconfig*.json ./
-COPY next.config.js ./
-COPY tailwind.config.js ./
-COPY postcss.config.js ./
+COPY package.json package-lock.json* ./
 
 # Install dependencies
-RUN npm ci --only=production --no-audit --no-fund
+RUN npm ci --only=production && npm cache clean --force
+
+# ===== Builder Stage =====
+FROM base AS builder
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install all dependencies (including devDependencies for build)
+RUN npm ci
 
 # Copy source code
-COPY src/ ./src/
-COPY public/ ./public/
-COPY prisma/ ./prisma/
+COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
-
-# Build application with source maps for Dynamic Instrumentation
+# Set build environment variables
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV DD_DYNAMIC_INSTRUMENTATION_ENABLED=true
+ENV GENERATE_SOURCEMAP=true
 
+# Configure Next.js for source maps
+ENV NEXT_BUILD_SOURCEMAP=true
+
+# Build the application with source maps
 RUN npm run build
 
-# Runtime stage
-FROM node:18-alpine AS runtime
+# ===== Production Stage =====
+FROM node:18-alpine AS runner
 
-# Install runtime dependencies and security updates
-RUN apk add --no-cache \
-    dumb-init \
-    curl \
-    ca-certificates \
-    tzdata \
-    && apk upgrade --no-cache \
-    && addgroup -g 1001 -S nodejs \
-    && adduser -S nextjs -u 1001
+# Install security updates and required packages
+RUN apk update && \
+    apk upgrade && \
+    apk add --no-cache \
+        dumb-init \
+        curl \
+        tini && \
+    rm -rf /var/cache/apk/*
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
 WORKDIR /app
-
-# Copy built application
-COPY --from=builder --chown=nextjs:nodejs /app/next.config.js ./
-COPY --from=builder --chown=nextjs:nodejs /app/package*.json ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-
-# Copy source maps for Dynamic Instrumentation
-COPY --from=builder --chown=nextjs:nodejs /app/.next/source-maps ./.next/source-maps
-
-# Install production dependencies
-RUN npm ci --only=production --no-audit --no-fund && npm cache clean --force
-
-# Generate Prisma client for runtime
-RUN npx prisma generate
-
-# Create directories for logs and temp files
-RUN mkdir -p /app/logs /app/tmp && chown -R nextjs:nodejs /app/logs /app/tmp
 
 # Set environment variables
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
-ENV HOSTNAME=0.0.0.0
 
-# Datadog instrumentation
-ENV DD_SERVICE=vibecode-webgui
-ENV DD_ENV=production
-ENV DD_VERSION=1.0.0
+# Datadog APM and Dynamic Instrumentation configuration
 ENV DD_TRACE_ENABLED=true
-ENV DD_LOGS_INJECTION=true
 ENV DD_RUNTIME_METRICS_ENABLED=true
-ENV DD_DYNAMIC_INSTRUMENTATION_ENABLED=true
-ENV DD_SOURCE_MAP=true
 ENV DD_PROFILING_ENABLED=true
+ENV DD_LOGS_INJECTION=true
+ENV DD_DYNAMIC_INSTRUMENTATION_ENABLED=true
+ENV DD_SOURCE_MAP_PATH=/app/source-maps
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
+# Security headers
+ENV DD_APPSEC_ENABLED=true
+ENV DD_APPSEC_RULES_FILE=/app/appsec-rules.json
+
+# Copy built application from builder
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copy source maps for Dynamic Instrumentation
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./source-maps/.next
+COPY --from=builder --chown=nextjs:nodejs /app/src ./source-maps/src
+COPY --from=builder --chown=nextjs:nodejs /app/pages ./source-maps/pages
+
+# Copy production dependencies
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+
+# Create Datadog APM security rules file
+RUN cat > appsec-rules.json << 'EOF'
+{
+  "version": "2.2",
+  "metadata": {
+    "rules_version": "1.0.0"
+  },
+  "rules": [
+    {
+      "id": "vibecode-001",
+      "name": "Block SQL injection attempts",
+      "tags": {
+        "type": "security_scanner",
+        "category": "attack_attempt"
+      },
+      "conditions": [
+        {
+          "parameters": {
+            "inputs": [
+              {
+                "address": "server.request.query"
+              },
+              {
+                "address": "server.request.body"
+              }
+            ],
+            "regex": "(?i)(union|select|insert|update|delete|drop|create|alter)\\s"
+          },
+          "operator": "match_regex"
+        }
+      ],
+      "transformers": [],
+      "on_match": [
+        "block"
+      ]
+    }
+  ]
+}
+EOF
+
+# Create health check endpoint
+RUN cat > healthcheck.js << 'EOF'
+const http = require('http');
+
+const options = {
+  hostname: 'localhost',
+  port: 3000,
+  path: '/api/health',
+  method: 'GET',
+  timeout: 5000
+};
+
+const req = http.request(options, (res) => {
+  if (res.statusCode === 200) {
+    process.exit(0);
+  } else {
+    console.error(`Health check failed with status: ${res.statusCode}`);
+    process.exit(1);
+  }
+});
+
+req.on('error', (err) => {
+  console.error(`Health check error: ${err.message}`);
+  process.exit(1);
+});
+
+req.on('timeout', () => {
+  console.error('Health check timeout');
+  req.destroy();
+  process.exit(1);
+});
+
+req.end();
+EOF
+
+# Set proper permissions
+RUN chown -R nextjs:nodejs /app && \
+    chmod +x healthcheck.js
 
 # Switch to non-root user
 USER nextjs
@@ -102,19 +173,12 @@ USER nextjs
 # Expose port
 EXPOSE 3000
 
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["dumb-init", "--"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD node /app/healthcheck.js
+
+# Use tini as init system to handle signals properly
+ENTRYPOINT ["tini", "--"]
 
 # Start the application
 CMD ["node", "server.js"]
-
-# Metadata
-LABEL maintainer="VibeCode Team" \
-      version="1.0.0" \
-      description="VibeCode WebGUI - AI-Powered Development Platform" \
-      org.opencontainers.image.title="VibeCode WebGUI" \
-      org.opencontainers.image.description="AI-Powered Development Platform" \
-      org.opencontainers.image.vendor="VibeCode" \
-      org.opencontainers.image.version="1.0.0" \
-      org.opencontainers.image.source="https://github.com/vibecode/webgui" \
-      org.opencontainers.image.documentation="https://docs.vibecode.dev"
