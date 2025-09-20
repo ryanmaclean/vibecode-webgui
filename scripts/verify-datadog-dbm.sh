@@ -155,35 +155,42 @@ elif kubectl get pods -n $NAMESPACE -l app=postgres-simple --no-headers >/dev/nu
   PG_LABEL_VALUE="postgres-simple"
 fi
 
-# Detect workload kind/name
-DEPLOY_KIND=""
-DEPLOY_NAME=""
-if kubectl get statefulset postgresql -n $NAMESPACE &> /dev/null; then
-  DEPLOY_KIND="statefulset"
-  DEPLOY_NAME="postgresql"
-  success "PostgreSQL StatefulSet found"
-  kubectl -n $NAMESPACE rollout status statefulset/postgresql --timeout=60s || true
-elif kubectl get deployment postgres -n $NAMESPACE &> /dev/null; then
-  DEPLOY_KIND="deployment"
-  DEPLOY_NAME="postgres"
-  success "PostgreSQL Deployment found"
-  kubectl -n $NAMESPACE rollout status deployment/postgres --timeout=120s || true
+# Allow explicit override when multiple Postgres workloads exist
+DEPLOY_KIND="${POSTGRES_WORKLOAD_KIND:-}"
+DEPLOY_NAME="${POSTGRES_WORKLOAD_NAME:-}"
+
+if [ -n "$DEPLOY_KIND" ] && [ -n "$DEPLOY_NAME" ]; then
+  success "Using overridden PostgreSQL ${DEPLOY_KIND}/${DEPLOY_NAME}"
+  kubectl -n $NAMESPACE rollout status ${DEPLOY_KIND}/${DEPLOY_NAME} --timeout=120s || true
 else
-  # Fallback: detect any workload containing 'postgres' in its name
-  SS_CAND=$(kubectl -n $NAMESPACE get statefulset -o name 2>/dev/null | grep -E "postgres|postgresql" | head -n1 || true)
-  DEP_CAND=$(kubectl -n $NAMESPACE get deployment -o name 2>/dev/null | grep -E "postgres|postgresql|postgres-simple" | head -n1 || true)
-  if [ -n "$SS_CAND" ]; then
+  # Detect workload kind/name
+  if kubectl get statefulset postgresql -n $NAMESPACE &> /dev/null; then
     DEPLOY_KIND="statefulset"
-    DEPLOY_NAME="${SS_CAND#statefulset.apps/}"
-    success "Detected PostgreSQL StatefulSet: $DEPLOY_NAME"
-    kubectl -n $NAMESPACE rollout status statefulset/$DEPLOY_NAME --timeout=120s || true
-  elif [ -n "$DEP_CAND" ]; then
+    DEPLOY_NAME="postgresql"
+    success "PostgreSQL StatefulSet found"
+    kubectl -n $NAMESPACE rollout status statefulset/postgresql --timeout=60s || true
+  elif kubectl get deployment postgres -n $NAMESPACE &> /dev/null; then
     DEPLOY_KIND="deployment"
-    DEPLOY_NAME="${DEP_CAND#deployment.apps/}"
-    success "Detected PostgreSQL Deployment: $DEPLOY_NAME"
-    kubectl -n $NAMESPACE rollout status deployment/$DEPLOY_NAME --timeout=120s || true
+    DEPLOY_NAME="postgres"
+    success "PostgreSQL Deployment found"
+    kubectl -n $NAMESPACE rollout status deployment/postgres --timeout=120s || true
   else
-    warning "PostgreSQL Deployment/StatefulSet not found in namespace $NAMESPACE; will try to find a pod directly"
+    # Fallback: detect any workload containing 'postgres' in its name
+    SS_CAND=$(kubectl -n $NAMESPACE get statefulset -o name 2>/dev/null | grep -E "postgres|postgresql" | head -n1 || true)
+    DEP_CAND=$(kubectl -n $NAMESPACE get deployment -o name 2>/dev/null | grep -E "postgres|postgresql|postgres-simple" | head -n1 || true)
+    if [ -n "$SS_CAND" ]; then
+      DEPLOY_KIND="statefulset"
+      DEPLOY_NAME="${SS_CAND#statefulset.apps/}"
+      success "Detected PostgreSQL StatefulSet: $DEPLOY_NAME"
+      kubectl -n $NAMESPACE rollout status statefulset/$DEPLOY_NAME --timeout=120s || true
+    elif [ -n "$DEP_CAND" ]; then
+      DEPLOY_KIND="deployment"
+      DEPLOY_NAME="${DEP_CAND#deployment.apps/}"
+      success "Detected PostgreSQL Deployment: $DEPLOY_NAME"
+      kubectl -n $NAMESPACE rollout status deployment/$DEPLOY_NAME --timeout=120s || true
+    else
+      warning "PostgreSQL Deployment/StatefulSet not found in namespace $NAMESPACE; will try to find a pod directly"
+    fi
   fi
 fi
 
@@ -387,34 +394,34 @@ log "5. Setting up pgvector monitoring tables..."
 
 if [ "$PGVECTOR_AVAILABLE" = "1" ]; then
   # Create document_embeddings table if it doesn't exist
-  kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -c "
-  CREATE TABLE IF NOT EXISTS document_embeddings (
-      id SERIAL PRIMARY KEY,
-      document_id VARCHAR(255) UNIQUE NOT NULL,
-      title VARCHAR(500),
-      content TEXT NOT NULL,
-      embedding vector(5),
-      metadata JSONB DEFAULT '{}',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
+  kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- bash -lc "cat | psql -U '$DB_ADMIN_USER' -d '$DB_NAME'" <<'PSQLSQL'
+CREATE TABLE IF NOT EXISTS document_embeddings (
+    id SERIAL PRIMARY KEY,
+    document_id VARCHAR(255) UNIQUE NOT NULL,
+    title VARCHAR(500),
+    content TEXT NOT NULL,
+    embedding vector(5),
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-  -- Create vector index for similarity search
-  CREATE INDEX IF NOT EXISTS idx_document_embeddings_vector 
-  ON document_embeddings USING ivfflat (embedding vector_cosine_ops) 
-  WITH (lists = 10);
+-- Create vector index for similarity search
+CREATE INDEX IF NOT EXISTS idx_document_embeddings_vector 
+ON document_embeddings USING ivfflat (embedding vector_cosine_ops) 
+WITH (lists = 10);
 
-  -- Grant permissions to datadog user
-  DO $$
-  BEGIN
-    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '$DB_USER') THEN
-      GRANT SELECT ON document_embeddings TO $DB_USER;
-      GRANT SELECT ON pg_stat_user_tables TO $DB_USER;
-      GRANT SELECT ON pg_stat_user_indexes TO $DB_USER;
-    END IF;
-  END;
-  $$;
-  "
+-- Grant permissions to datadog user
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'datadog') THEN
+    GRANT SELECT ON document_embeddings TO datadog;
+    GRANT SELECT ON pg_stat_user_tables TO datadog;
+    GRANT SELECT ON pg_stat_user_indexes TO datadog;
+  END IF;
+END;
+$$;
+PSQLSQL
 
   success "pgvector tables and indexes created"
 
@@ -553,21 +560,21 @@ success "Using PostgreSQL pod for activity: $POSTGRES_POD (container: $PG_CONTAI
 
 # Perform activity to generate metrics
 if [ "$PGVECTOR_AVAILABLE" = "1" ]; then
-  kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -c "
-  -- Perform vector similarity searches to generate metrics
-  SELECT document_id, title, embedding <-> '[0.1,0.2,0.3,0.4,0.5]'::vector as distance
-  FROM document_embeddings 
-  ORDER BY embedding <-> '[0.1,0.2,0.3,0.4,0.5]'::vector 
-  LIMIT 3;
+  kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- bash -lc "cat | psql -U '$DB_ADMIN_USER' -d '$DB_NAME'" <<'PSQLSQL'
+-- Perform vector similarity searches to generate metrics
+SELECT document_id, title, embedding <-> '[0.1,0.2,0.3,0.4,0.5]'::vector as distance
+FROM document_embeddings 
+ORDER BY embedding <-> '[0.1,0.2,0.3,0.4,0.5]'::vector 
+LIMIT 3;
 
-  SELECT document_id, title, embedding <=> '[0.2,0.3,0.4,0.5,0.6]'::vector as cosine_distance
-  FROM document_embeddings 
-  ORDER BY embedding <=> '[0.2,0.3,0.4,0.5,0.6]'::vector 
-  LIMIT 3;
+SELECT document_id, title, embedding <=> '[0.2,0.3,0.4,0.5,0.6]'::vector as cosine_distance
+FROM document_embeddings 
+ORDER BY embedding <=> '[0.2,0.3,0.4,0.5,0.6]'::vector 
+LIMIT 3;
 
-  -- Generate some index usage statistics
-  SELECT * FROM pg_stat_user_indexes WHERE relname = 'document_embeddings';
-  "
+-- Generate some index usage statistics
+SELECT * FROM pg_stat_user_indexes WHERE relname = 'document_embeddings';
+PSQLSQL
 else
   kubectl exec -n $NAMESPACE $POSTGRES_POD -c "$PG_CONTAINER_NAME" -- psql -U "$DB_ADMIN_USER" -d $DB_NAME -c "
   -- Generate general DB activity (non-vector)
