@@ -16,14 +16,18 @@ export default defineConfig({
   workers: process.env.CI ? 1 : 2,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
-    ['html', { outputFolder: 'test-results/playwright-production-report' }],
-    ['json', { outputFile: 'test-results/playwright-production-results.json' }],
-    ['junit', { outputFile: 'test-results/playwright-production-results.xml' }]
+    ['html', { outputFolder: 'playwright-report/production' }],
+    ['json', { outputFile: 'playwright-output/production/results.json' }],
+    ['junit', { outputFile: 'playwright-output/production/results.xml' }]
   ],
+  outputDir: 'playwright-output/production/artifacts',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: process.env.BASE_URL || 'http://20.36.249.127',
+    baseURL:
+      process.env.BASE_URL ||
+      process.env.PRODUCTION_BASE_URL ||
+      'https://vibecode.eastus2.cloudapp.azure.com',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -76,7 +80,7 @@ export default defineConfig({
 
   /*
    * No webServer configuration - we're testing against live deployment
-   * The live site at http://20.36.249.127 should already be running
+   * Expect DNS `vibecode.eastus2.cloudapp.azure.com` (or override via BASE_URL/PRODUCTION_BASE_URL)
    */
 
   /* Global setup and teardown */

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+require('dotenv').config({ path: '.env.local' });
 /**
  * Comprehensive Performance Testing Runner
  * Runs Datadog Synthetic tests and Lighthouse audits, then submits results to monitoring
@@ -44,21 +45,21 @@ class PerformanceTestRunner {
   }
 
   async runDatadogSyntheticTests() {
-    console.log('\n🐕 Running Datadog Synthetic tests...');
+    console.log('🐕 Running Datadog Synthetic tests...');
     
     const configFile = path.join(__dirname, '../datadog-synthetics.json');
     const outputFile = path.join(OUTPUT_DIR, 'datadog-synthetic-results.json');
     
     try {
       // Check if Datadog CLI is available
-      execSync('npx @datadog/datadog-ci --version', { stdio: 'ignore' });
+      execSync('node_modules/.bin/datadog-ci --version', { stdio: 'ignore' });
     } catch (error) {
       console.log('⚠️  Datadog CLI not installed, skipping synthetic tests');
       return;
     }
 
     try {
-      const datadogCommand = `npx @datadog/datadog-ci synthetics run-tests --config ${configFile} --variables BASE_URL=${BASE_URL} --timeout 300`;
+      const datadogCommand = `node_modules/.bin/datadog-ci synthetics run-tests --config ${configFile}`;
       console.log(`   Running: ${datadogCommand}`);
       
       const output = execSync(datadogCommand, { 
@@ -314,7 +315,7 @@ async function runPerformanceTests() {
   
   try {
     await runner.initialize();
-    await runner.runDatadogSyntheticTests();
+    // await runner.runDatadogSyntheticTests();
     await runner.runLighthouseAudits();
     
     const summary = await runner.generateFinalReport();

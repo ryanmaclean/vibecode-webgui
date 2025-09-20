@@ -66,11 +66,12 @@ provider "random" {}
 # Configure the Time Provider
 provider "time" {}
 
-# Configure the Datadog Provider
+# Configure the Datadog Provider (no-op when monitoring disabled)
 provider "datadog" {
-  api_key = var.datadog_api_key
-  app_key = var.datadog_app_key
-  api_url = var.datadog_api_url
+  api_key  = var.enable_datadog_monitoring ? var.datadog_api_key : null
+  app_key  = var.enable_datadog_monitoring ? var.datadog_app_key : null
+  api_url  = var.datadog_api_url
+  validate = var.enable_datadog_monitoring
 }
 
 # Configure the Helm Provider
