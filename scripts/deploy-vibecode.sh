@@ -4,7 +4,12 @@
 set -euo pipefail
 
 # Configuration
+# INGRESS/DNS resource group is where the Public IP lives
 RESOURCE_GROUP=${RESOURCE_GROUP:-"rg-vibecode-dns"}
+# Allow separate override for ingress public IP resource group; default to RESOURCE_GROUP
+INGRESS_RESOURCE_GROUP=${INGRESS_RESOURCE_GROUP:-"${RESOURCE_GROUP}"}
+# AKS resource group is where the managed cluster lives
+AKS_RESOURCE_GROUP=${AKS_RESOURCE_GROUP:-"rg-vibecode-aks-prod"}
 CLUSTER_NAME=${CLUSTER_NAME:-"vibecode-aks-new"}
 ACR_NAME=${ACR_NAME:-"vibecodecr84859296"}
 PUBLIC_IP_NAME=${PUBLIC_IP_NAME:-"vibecode-dns-ip"}
@@ -30,7 +35,8 @@ show_help() {
   echo "Deploy the full VibeCode stack to AKS"
   echo
   echo "Options:"
-  echo "  --resource-group <name>   Resource group name (default: ${RESOURCE_GROUP})"
+  echo "  --resource-group <name>   Ingress/DNS resource group (Public IP) (default: ${RESOURCE_GROUP})"
+  echo "  --aks-resource-group <name>  AKS cluster resource group (default: ${AKS_RESOURCE_GROUP})"
   echo "  --cluster-name <name>     AKS cluster name (default: ${CLUSTER_NAME})"
   echo "  --acr-name <name>         Azure Container Registry name (default: ${ACR_NAME})"
   echo "  --public-ip <name>        Public IP resource name (default: ${PUBLIC_IP_NAME})"
@@ -48,6 +54,14 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --resource-group)
       RESOURCE_GROUP="$2"
+      shift 2
+      ;;
+    --ingress-resource-group)
+      INGRESS_RESOURCE_GROUP="$2"
+      shift 2
+      ;;
+    --aks-resource-group)
+      AKS_RESOURCE_GROUP="$2"
       shift 2
       ;;
     --cluster-name)
@@ -95,7 +109,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo -e "${YELLOW}=== VibeCode AKS Deployment ===${NC}"
-echo -e "Resource Group: ${RESOURCE_GROUP}"
+echo -e "Ingress/DNS Resource Group: ${RESOURCE_GROUP}"
+echo -e "AKS Resource Group: ${AKS_RESOURCE_GROUP}"
 echo -e "AKS Cluster: ${CLUSTER_NAME}"
 echo -e "ACR Name: ${ACR_NAME}"
 echo -e "Public IP: ${PUBLIC_IP_NAME}"
@@ -110,7 +125,7 @@ fi
 
 # Get AKS credentials
 echo -e "\n${YELLOW}Getting AKS credentials...${NC}"
-az aks get-credentials --resource-group "${RESOURCE_GROUP}" --name "${CLUSTER_NAME}" --admin --overwrite-existing
+az aks get-credentials --resource-group "${AKS_RESOURCE_GROUP}" --name "${CLUSTER_NAME}" --admin --overwrite-existing
 
 # Check kubectl access
 echo -e "\n${YELLOW}Checking kubectl access...${NC}"
@@ -160,7 +175,7 @@ if [[ "${DEPLOY_INGRESS}" == "true" ]]; then
   helm upgrade --install nginx-ingress ingress-nginx/ingress-nginx \
     --namespace "${INGRESS_NAMESPACE}" \
     --set controller.service.loadBalancerIP="${PUBLIC_IP_ADDRESS}" \
-    --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-resource-group"="${RESOURCE_GROUP}" \
+    --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-resource-group"="${INGRESS_RESOURCE_GROUP}" \
     --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-pip-name"="${PUBLIC_IP_NAME}" \
     --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-dns-label-name"="vibecode" \
     --set controller.service.externalTrafficPolicy=Local \
