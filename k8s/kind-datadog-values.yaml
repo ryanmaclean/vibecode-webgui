@@ -1,0 +1,95 @@
+datadog:
+  site: "datadoghq.com"
+  apiKeyExistingSecret: "datadog-secret"
+
+  tags:
+    - "env:kind"
+    - "service:vibecode-webgui"
+    - "application:vibecode-platform"
+    - "team:platform"
+
+  env:
+    - name: DD_ENV
+      value: "kind"
+    - name: DD_SERVICE
+      value: "vibecode-webgui"
+    - name: DD_VERSION
+      value: "kind"
+    - name: DD_HOSTNAME
+      value: "vibecode-local"
+    - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+      value: "true"
+    - name: DD_APM_ENABLED
+      value: "true"
+    - name: DD_LOGS_ENABLED
+      value: "true"
+
+  apm:
+    enabled: true
+
+  logs:
+    enabled: true
+    containerCollectAll: true
+
+  processAgent:
+    enabled: true
+    processCollection: true
+
+  databaseMonitoring:
+    enabled: true
+    postgres:
+      enabled: true
+      instances:
+        - dbm: true
+          host: vibecode-postgres-postgresql.vibecode.svc.cluster.local
+          port: 5432
+          username: datadog
+          password: ${DD_POSTGRES_PASSWORD:-${DATADOG_POSTGRES_PASSWORD}}
+          dbname: vibecode
+          ssl: false
+          tags:
+            - "env:kind"
+            - "service:vibecode-webgui"
+            - "application:vibecode-platform"
+
+  otelCollector:
+    enabled: true
+    ports:
+      - containerPort: 4317
+        hostPort: 4317
+        name: "otel-grpc"
+      - containerPort: 4318
+        hostPort: 4318
+        name: "otel-http"
+
+  networkMonitoring:
+    enabled: false
+
+clusterAgent:
+  enabled: true
+  tokenExistingSecret: "datadog-cluster-agent-secret"
+
+agents:
+  containers:
+    agent:
+      env:
+        - name: DD_APM_ENABLED
+          value: "true"
+        - name: DD_LOGS_ENABLED
+          value: "true"
+        - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+          value: "true"
+
+kubeStateMetrics:
+  enabled: true
+
+kube-state-metrics:
+  rbac:
+    create: true
+
+clusterChecksRunner:
+  enabled: true
+
+providers:
+  aks:
+    enabled: false

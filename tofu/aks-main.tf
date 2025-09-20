@@ -16,11 +16,11 @@ resource "random_id" "deployment" {
 locals {
   # Common tags for all resources
   common_tags = merge(var.tags, {
-    Environment   = var.environment
-    Application   = "vibecode"
-    ManagedBy     = "opentofu"
-    DeploymentId  = random_id.deployment.hex
-    CreatedDate   = formatdate("YYYY-MM-DD", timestamp())
+    Environment  = var.environment
+    Application  = "vibecode"
+    ManagedBy    = "opentofu"
+    DeploymentId = random_id.deployment.hex
+    CreatedDate  = formatdate("YYYY-MM-DD", timestamp())
   })
 
   # Resource naming convention
@@ -144,6 +144,7 @@ resource "azurerm_role_assignment" "aks_network_contributor" {
   scope                = azurerm_virtual_network.aks_vnet.id
   role_definition_name = "Network Contributor"
   principal_id         = azurerm_user_assigned_identity.aks_identity.principal_id
+  principal_type       = "ServicePrincipal"
 }
 
 # Role assignment for AKS to pull from ACR
@@ -151,6 +152,7 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
   scope                = azurerm_container_registry.main.id
   role_definition_name = "AcrPull"
   principal_id         = azurerm_user_assigned_identity.aks_identity.principal_id
+  principal_type       = "ServicePrincipal"
 }
 
 # Log Analytics Workspace for monitoring
@@ -165,13 +167,15 @@ resource "azurerm_log_analytics_workspace" "aks_logs" {
 
 # AKS Cluster
 resource "azurerm_kubernetes_cluster" "main" {
-  name                      = local.aks_cluster_name
-  location                  = azurerm_resource_group.main.location
-  resource_group_name       = azurerm_resource_group.main.name
-  dns_prefix                = "${local.resource_prefix}-aks-${local.unique_suffix}"
-  kubernetes_version        = var.kubernetes_version
-  automatic_channel_upgrade = "stable"
-  node_resource_group       = "${var.resource_group_name}-nodes"
+  name                              = local.aks_cluster_name
+  location                          = azurerm_resource_group.main.location
+  resource_group_name               = azurerm_resource_group.main.name
+  dns_prefix                        = "${local.resource_prefix}-aks-${local.unique_suffix}"
+  kubernetes_version                = var.kubernetes_version
+  automatic_channel_upgrade         = "stable"
+  node_resource_group               = "${var.resource_group_name}-nodes"
+  local_account_disabled            = false
+  role_based_access_control_enabled = true
 
   tags = local.common_tags
 
@@ -208,12 +212,12 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # Network configuration
   network_profile {
-    network_plugin      = "azure"
-    network_policy      = "azure"
-    dns_service_ip      = "10.2.0.10"
-    service_cidr        = "10.2.0.0/24"
-    load_balancer_sku   = "standard"
-    outbound_type       = "loadBalancer"
+    network_plugin    = "azure"
+    network_policy    = "azure"
+    dns_service_ip    = "10.2.0.10"
+    service_cidr      = "10.2.0.0/24"
+    load_balancer_sku = "standard"
+    outbound_type     = "loadBalancer"
   }
 
   # Enable monitoring
@@ -225,7 +229,7 @@ resource "azurerm_kubernetes_cluster" "main" {
   azure_active_directory_role_based_access_control {
     managed                = true
     admin_group_object_ids = var.aks_admin_group_object_ids
-    azure_rbac_enabled     = true
+    azure_rbac_enabled     = false
   }
 
   # Key Vault Secrets Provider
@@ -240,18 +244,18 @@ resource "azurerm_kubernetes_cluster" "main" {
     max_graceful_termination_sec     = 600
     max_node_provisioning_time       = "15m"
     max_unready_nodes                = 3
-    max_unready_percentage          = 45
-    new_pod_scale_up_delay          = "10s"
-    scale_down_delay_after_add      = "10m"
-    scale_down_delay_after_delete   = "10s"
-    scale_down_delay_after_failure  = "3m"
-    scan_interval                   = "10s"
-    scale_down_unneeded             = "10m"
-    scale_down_unready              = "20m"
+    max_unready_percentage           = 45
+    new_pod_scale_up_delay           = "10s"
+    scale_down_delay_after_add       = "10m"
+    scale_down_delay_after_delete    = "10s"
+    scale_down_delay_after_failure   = "3m"
+    scan_interval                    = "10s"
+    scale_down_unneeded              = "10m"
+    scale_down_unready               = "20m"
     scale_down_utilization_threshold = 0.5
-    empty_bulk_delete_max           = 10
-    skip_nodes_with_local_storage   = true
-    skip_nodes_with_system_pods     = true
+    empty_bulk_delete_max            = 10
+    skip_nodes_with_local_storage    = true
+    skip_nodes_with_system_pods      = true
   }
 
   lifecycle {

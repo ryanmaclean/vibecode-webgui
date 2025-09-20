@@ -163,6 +163,38 @@ const sentiment = await aiClient.analyzeSentiment(text);
 - **Reserved instances** recommended for predictable workloads
 - **Budget alerts** can be configured in Azure Cost Management
 
+#### 🪶 Minimum AKS Footprint Checklist
+- Keep the system node pool on the smallest supported general-purpose SKU (≥4 vCPUs, ≥4 GB RAM) with exactly two nodes and a taint so only system add-ons land there.
+- Place application pods on a separate user node pool with the autoscaler `minCount` (or manual node count) set to `0` so it drains completely when traffic is idle.
+- Use `az aks stop` / `az aks start` to hibernate the cluster during predictable downtimes; the managed control plane remains free in the AKS Free tier while nodes are stopped.
+- Stick with the AKS Free tier unless you require an uptime SLA—this keeps the control plane cost at $0 and focuses spend on the nodes you actually run.
+
+### 🚨 **Failure Mode: Local OpenTofu State Loss**
+- **What happened**: Deleting `tofu/terraform.tfstate` (or its lock file) locally while the cluster exists remotely confuses OpenTofu. Subsequent applies recreate the Azure resource groups from scratch, tearing down AKS, Postgres, and the ingress IP.
+- **Symptoms**: `az group list` shows missing `rg-vibecode-aks-prod`, DNS stops resolving, and OpenTofu plans report all infrastructure as new.
+- **Mitigation**:
+  1. Restore a recent backup (`terraform.tfstate.YYYYMMDD.backup`) before running `tofu plan` again.
+  2. Move state off the laptop: create an Azure Storage account + blob container and switch the backend (`scripts/create-remote-state-storage.sh`, then copy `tofu/backend.tf.example` ➜ `backend.tf` and run `tofu init -migrate-state`).
+  3. Require `TF_BACKEND_CONFIG` secrets in CI and protect the storage account with RBAC/soft delete so accidental removals are recoverable.
+
+```bash
+# One-time setup: provision storage account + container for remote state
+./scripts/create-remote-state-storage.sh \
+  RESOURCE_GROUP=rg-vibecode-tofu-state \
+  STORAGE_ACCOUNT_NAME=vibecodetofustate123 \
+  CONTAINER_NAME=opentofu-state
+
+# Migrate local state to Azure Blob Storage
+TF_BACKEND_RG=rg-vibecode-tofu-state \
+TF_BACKEND_STORAGE=vibecodetofustate123 \
+TF_BACKEND_CONTAINER=opentofu-state \
+tofu init -migrate-state \
+  -backend-config="resource_group_name=${TF_BACKEND_RG}" \
+  -backend-config="storage_account_name=${TF_BACKEND_STORAGE}" \
+  -backend-config="container_name=${TF_BACKEND_CONTAINER}" \
+  -backend-config="key=opentofu/terraform.tfstate"
+```
+
 ---
 
 ## 🔒 **Security and Compliance**

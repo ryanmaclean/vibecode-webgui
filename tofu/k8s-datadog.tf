@@ -1,7 +1,13 @@
 # Datadog Agent deployment for AKS with comprehensive monitoring
 
+locals {
+  datadog_enabled = var.enable_datadog_monitoring
+}
+
 # Datadog API Key secret
 resource "kubernetes_secret" "datadog_secret" {
+  count = local.datadog_enabled ? 1 : 0
+
   metadata {
     name      = "datadog-secret"
     namespace = kubernetes_namespace.vibecode_platform.metadata[0].name
@@ -19,18 +25,21 @@ resource "kubernetes_secret" "datadog_secret" {
 
 # Auth token for Agent <-> Cluster Agent communication
 resource "random_password" "datadog_cluster_agent_token" {
+  count   = local.datadog_enabled ? 1 : 0
   length  = 64
   special = false
 }
 
 resource "kubernetes_secret" "datadog_cluster_agent_token" {
+  count = local.datadog_enabled ? 1 : 0
+
   metadata {
     name      = "datadog-cluster-agent-token"
     namespace = kubernetes_namespace.vibecode_platform.metadata[0].name
   }
 
   data = {
-    token = random_password.datadog_cluster_agent_token.result
+    token = random_password.datadog_cluster_agent_token[count.index].result
   }
 
   type = "Opaque"
@@ -40,6 +49,8 @@ resource "kubernetes_secret" "datadog_cluster_agent_token" {
 
 # Datadog Agent ServiceAccount
 resource "kubernetes_service_account" "datadog_agent" {
+  count = local.datadog_enabled ? 1 : 0
+
   metadata {
     name      = "datadog-agent"
     namespace = kubernetes_namespace.vibecode_platform.metadata[0].name
@@ -54,6 +65,8 @@ resource "kubernetes_service_account" "datadog_agent" {
 
 # ClusterRole for Datadog Agent
 resource "kubernetes_cluster_role" "datadog_agent" {
+  count = local.datadog_enabled ? 1 : 0
+
   metadata {
     name = "datadog-agent"
 
@@ -119,9 +132,9 @@ resource "kubernetes_cluster_role" "datadog_agent" {
   }
 
   rule {
-    api_groups     = [""]
-    resources      = ["nodes/metrics", "nodes/spec", "nodes/proxy", "nodes/stats"]
-    verbs          = ["get"]
+    api_groups = [""]
+    resources  = ["nodes/metrics", "nodes/spec", "nodes/proxy", "nodes/stats"]
+    verbs      = ["get"]
   }
 
   # For Cluster Agent
@@ -140,6 +153,8 @@ resource "kubernetes_cluster_role" "datadog_agent" {
 
 # ClusterRoleBinding for Datadog Agent
 resource "kubernetes_cluster_role_binding" "datadog_agent" {
+  count = local.datadog_enabled ? 1 : 0
+
   metadata {
     name = "datadog-agent"
 
@@ -151,18 +166,20 @@ resource "kubernetes_cluster_role_binding" "datadog_agent" {
   role_ref {
     api_group = "rbac.authorization.k8s.io"
     kind      = "ClusterRole"
-    name      = kubernetes_cluster_role.datadog_agent.metadata[0].name
+    name      = kubernetes_cluster_role.datadog_agent[count.index].metadata[0].name
   }
 
   subject {
     kind      = "ServiceAccount"
-    name      = kubernetes_service_account.datadog_agent.metadata[0].name
+    name      = kubernetes_service_account.datadog_agent[count.index].metadata[0].name
     namespace = kubernetes_namespace.vibecode_platform.metadata[0].name
   }
 }
 
 # Datadog Agent ConfigMap
 resource "kubernetes_config_map" "datadog_config" {
+  count = local.datadog_enabled ? 1 : 0
+
   metadata {
     name      = "datadog-config"
     namespace = kubernetes_namespace.vibecode_platform.metadata[0].name
@@ -189,7 +206,7 @@ resource "kubernetes_config_map" "datadog_config" {
       ]
 
       # Log collection
-      logs_enabled                 = true
+      logs_enabled = true
       logs_config = {
         container_collect_all     = true
         auto_multi_line_detection = true
@@ -207,7 +224,7 @@ resource "kubernetes_config_map" "datadog_config" {
       }
 
       # Kubernetes configuration
-      kubernetes_kubelet_host = "status.hostIP"
+      kubernetes_kubelet_host    = "status.hostIP"
       kubernetes_kubeconfig_path = ""
 
       # Container runtime
@@ -216,13 +233,13 @@ resource "kubernetes_config_map" "datadog_config" {
       # Autodiscovery
       config_providers = [
         {
-          name = "kubelet"
+          name    = "kubelet"
           polling = true
         }
       ]
 
       # Checks
-      confd_path = "/etc/datadog-agent/conf.d"
+      confd_path         = "/etc/datadog-agent/conf.d"
       additional_checksd = "/etc/datadog-agent/checks.d"
     })
 
@@ -242,24 +259,24 @@ resource "kubernetes_config_map" "datadog_config" {
             "service:vibecode-postgres",
             "cluster:${local.aks_cluster_name}"
           ]
-          collect_count_metrics = true
-          collect_activity_metrics = true
+          collect_count_metrics         = true
+          collect_activity_metrics      = true
           collect_database_size_metrics = true
-          collect_default_db = true
-          collect_function_metrics = true
-          collect_bloat_metrics = true
+          collect_default_db            = true
+          collect_function_metrics      = true
+          collect_bloat_metrics         = true
           relations = [
             {
               relation_name = "users"
-              schemas = ["public"]
+              schemas       = ["public"]
             },
             {
               relation_name = "projects"
-              schemas = ["public"]
+              schemas       = ["public"]
             },
             {
               relation_name = "ai_interactions"
-              schemas = ["public"]
+              schemas       = ["public"]
             }
           ]
         }
@@ -271,16 +288,16 @@ resource "kubernetes_config_map" "datadog_config" {
       init_config = {}
       instances = [
         {
-          url = "http://vibecode-app-vibecode.${kubernetes_namespace.vibecode_platform.metadata[0].name}.svc.cluster.local:80/api/health"
+          url  = "http://vibecode-app-vibecode.${kubernetes_namespace.vibecode_platform.metadata[0].name}.svc.cluster.local:80/api/health"
           name = "vibecode-health"
           tags = [
             "environment:${var.environment}",
             "service:vibecode-app",
             "cluster:${local.aks_cluster_name}"
           ]
-          timeout = 5
+          timeout                   = 5
           http_response_status_code = "200"
-          content_match = "healthy"
+          content_match             = "healthy"
         }
       ]
     })
@@ -291,6 +308,8 @@ resource "kubernetes_config_map" "datadog_config" {
 
 # Datadog Agent DaemonSet
 resource "kubernetes_daemonset" "datadog_agent" {
+  count = local.datadog_enabled ? 1 : 0
+
   metadata {
     name      = "datadog-agent"
     namespace = kubernetes_namespace.vibecode_platform.metadata[0].name
@@ -319,7 +338,7 @@ resource "kubernetes_daemonset" "datadog_agent" {
       }
 
       spec {
-        service_account_name = kubernetes_service_account.datadog_agent.metadata[0].name
+        service_account_name = kubernetes_service_account.datadog_agent[count.index].metadata[0].name
         host_network         = true
         host_pid             = true
 
@@ -331,7 +350,7 @@ resource "kubernetes_daemonset" "datadog_agent" {
             name = "DD_API_KEY"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.datadog_secret.metadata[0].name
+                name = kubernetes_secret.datadog_secret[count.index].metadata[0].name
                 key  = "api-key"
               }
             }
@@ -341,7 +360,7 @@ resource "kubernetes_daemonset" "datadog_agent" {
             name = "DD_APP_KEY"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.datadog_secret.metadata[0].name
+                name = kubernetes_secret.datadog_secret[count.index].metadata[0].name
                 key  = "app-key"
               }
             }
@@ -366,7 +385,7 @@ resource "kubernetes_daemonset" "datadog_agent" {
             name = "DD_CLUSTER_AGENT_AUTH_TOKEN"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.datadog_cluster_agent_token.metadata[0].name
+                name = kubernetes_secret.datadog_cluster_agent_token[count.index].metadata[0].name
                 key  = "token"
               }
             }
@@ -433,26 +452,26 @@ resource "kubernetes_daemonset" "datadog_agent" {
           }
 
           env {
-            name = "DD_DOGSTATSD_NON_LOCAL_TRAFFIC"
+            name  = "DD_DOGSTATSD_NON_LOCAL_TRAFFIC"
             value = "true"
           }
 
           port {
             container_port = 8125
-            name          = "dogstatsdport"
-            protocol      = "UDP"
+            name           = "dogstatsdport"
+            protocol       = "UDP"
           }
 
           port {
             container_port = 8126
-            name          = "traceport"
-            protocol      = "TCP"
+            name           = "traceport"
+            protocol       = "TCP"
           }
 
           port {
             container_port = 5555
-            name          = "healthport"
-            protocol      = "TCP"
+            name           = "healthport"
+            protocol       = "TCP"
           }
 
           volume_mount {
@@ -540,8 +559,8 @@ resource "kubernetes_daemonset" "datadog_agent" {
           }
 
           security_context {
-            privileged   = true
-            run_as_user  = 0
+            privileged  = true
+            run_as_user = 0
           }
         }
 
@@ -576,7 +595,7 @@ resource "kubernetes_daemonset" "datadog_agent" {
         volume {
           name = "config"
           config_map {
-            name = kubernetes_config_map.datadog_config.metadata[0].name
+            name = kubernetes_config_map.datadog_config[count.index].metadata[0].name
           }
         }
 
@@ -620,7 +639,7 @@ resource "kubernetes_daemonset" "datadog_agent" {
 
 # Datadog Cluster Agent Deployment (for advanced features)
 resource "kubernetes_deployment" "datadog_cluster_agent" {
-  count = var.enable_datadog_monitoring ? 1 : 0
+  count = local.datadog_enabled ? 1 : 0
 
   metadata {
     name      = "datadog-cluster-agent"
@@ -648,7 +667,7 @@ resource "kubernetes_deployment" "datadog_cluster_agent" {
       }
 
       spec {
-        service_account_name = kubernetes_service_account.datadog_agent.metadata[0].name
+        service_account_name = kubernetes_service_account.datadog_agent[count.index].metadata[0].name
 
         container {
           name  = "cluster-agent"
@@ -658,7 +677,7 @@ resource "kubernetes_deployment" "datadog_cluster_agent" {
             name = "DD_API_KEY"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.datadog_secret.metadata[0].name
+                name = kubernetes_secret.datadog_secret[count.index].metadata[0].name
                 key  = "api-key"
               }
             }
@@ -668,7 +687,7 @@ resource "kubernetes_deployment" "datadog_cluster_agent" {
             name = "DD_APP_KEY"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.datadog_secret.metadata[0].name
+                name = kubernetes_secret.datadog_secret[count.index].metadata[0].name
                 key  = "app-key"
               }
             }
@@ -708,7 +727,7 @@ resource "kubernetes_deployment" "datadog_cluster_agent" {
             name = "DD_CLUSTER_AGENT_AUTH_TOKEN"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.datadog_cluster_agent_token.metadata[0].name
+                name = kubernetes_secret.datadog_cluster_agent_token[count.index].metadata[0].name
                 key  = "token"
               }
             }
@@ -716,8 +735,8 @@ resource "kubernetes_deployment" "datadog_cluster_agent" {
 
           port {
             container_port = 5005
-            name          = "agentport"
-            protocol      = "TCP"
+            name           = "agentport"
+            protocol       = "TCP"
           }
 
           resources {
@@ -766,7 +785,7 @@ resource "kubernetes_deployment" "datadog_cluster_agent" {
 
 # Service for Datadog Cluster Agent
 resource "kubernetes_service" "datadog_cluster_agent" {
-  count = var.enable_datadog_monitoring ? 1 : 0
+  count = local.datadog_enabled ? 1 : 0
 
   metadata {
     name      = "datadog-cluster-agent"

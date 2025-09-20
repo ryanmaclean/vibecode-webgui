@@ -6,6 +6,7 @@
 import OpenAI from 'openai'
 import { prisma } from './prisma'
 import { Prisma } from '@prisma/client'
+import { EmbeddingServiceFactory, EmbeddingServiceType } from './ai/embeddingServiceFactory'
 
 // Check if we're in build mode
 const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' || 
@@ -33,14 +34,36 @@ interface SearchResult {
 
 class VectorStore {
   private openai: OpenAI | null = null
+  private embeddingService: EmbeddingServiceType | null = null
+  private embeddingProviderLabel = 'unconfigured'
 
   constructor() {
-    // Initialize OpenAI client for embeddings
-    if (process.env.OPENROUTER_API_KEY) {
+    if (!isBuilding && prisma) {
+      try {
+        const factory = new EmbeddingServiceFactory(prisma)
+        this.embeddingService = factory.createEmbeddingServiceFromEnv()
+
+        if (process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_DEPLOYMENT_NAME) {
+          this.embeddingProviderLabel = 'azure-openai'
+        } else if (process.env.OPENROUTER_API_KEY && process.env.OPENAI_API_KEY) {
+          this.embeddingProviderLabel = 'openrouter-byok'
+        } else if (process.env.OPENAI_API_KEY) {
+          this.embeddingProviderLabel = 'openai'
+        } else {
+          this.embeddingProviderLabel = 'custom'
+        }
+      } catch (error) {
+        console.warn('Embedding service initialization failed; falling back to OpenRouter', error)
+        this.embeddingService = null
+      }
+    }
+
+    if (!this.embeddingService && process.env.OPENROUTER_API_KEY) {
       this.openai = new OpenAI({
         baseURL: 'https://openrouter.ai/api/v1',
         apiKey: process.env.OPENROUTER_API_KEY,
       })
+      this.embeddingProviderLabel = 'openrouter'
     }
   }
 
@@ -48,26 +71,44 @@ class VectorStore {
    * Generate embeddings for text content with performance tracking
    */
   async generateEmbedding(text: string): Promise<number[]> {
-    if (!this.openai) {
-      throw new Error('OpenAI client not initialized. Check OPENROUTER_API_KEY')
-    }
-
     const startTime = Date.now()
     try {
+      if (this.embeddingService) {
+        const embedding = await this.embeddingService.generateEmbedding(text)
+        const duration = Date.now() - startTime
+        console.log(`Embedding (${this.embeddingProviderLabel}) generated in ${duration}ms for ${text.length} chars`)
+        return embedding
+      }
+
+      if (!this.openai) {
+        throw new Error('No embedding provider configured. Configure Azure/OpenAI/OpenRouter credentials.')
+      }
+
       const response = await this.openai.embeddings.create({
-        model: 'text-embedding-3-small', // Using OpenAI embedding model via OpenRouter
+        model: 'text-embedding-3-small',
         input: text,
       })
 
       const duration = Date.now() - startTime
-      console.log(`Embedding generation took ${duration}ms for ${text.length} chars`)
+      console.log(`Embedding (openrouter) generated in ${duration}ms for ${text.length} chars`)
 
       return response.data[0].embedding
     } catch (error) {
       const duration = Date.now() - startTime
       console.error(`Error generating embedding after ${duration}ms:`, error)
-      // Fallback: return zero vector
-      return new Array(1536).fill(0) // text-embedding-3-small returns 1536-dimensional vectors
+      if (this.embeddingService && this.openai) {
+        try {
+          const response = await this.openai.embeddings.create({
+            model: 'text-embedding-3-small',
+            input: text,
+          })
+          console.warn('Primary embedding provider failed; used openrouter fallback')
+          return response.data[0].embedding
+        } catch (fallbackError) {
+          console.error('Fallback embedding generation failed:', fallbackError)
+        }
+      }
+      return new Array(1536).fill(0)
     }
   }
 
@@ -114,7 +155,21 @@ class VectorStore {
     }
     
     try {
-      // Delete existing chunks for this file
+      const fileInfo = await prisma.file.findUnique({
+        where: { id: fileId },
+        select: {
+          name: true,
+          language: true,
+          workspace_id: true,
+          workspace: {
+            select: {
+              workspace_id: true,
+              name: true
+            }
+          }
+        }
+      })
+
       await prisma.rAGChunk.deleteMany({
         where: { file_id: fileId }
       })
@@ -143,7 +198,15 @@ class VectorStore {
             chunk.endLine || null,
             chunk.tokens,
             embeddingString,
-            JSON.stringify({ generatedAt: new Date().toISOString() })
+            JSON.stringify({
+              generatedAt: new Date().toISOString(),
+              provider: this.embeddingProviderLabel,
+              workspaceSlug: fileInfo?.workspace?.workspace_id,
+              workspaceId: fileInfo?.workspace_id,
+              workspaceName: fileInfo?.workspace?.name,
+              fileName: fileInfo?.name,
+              language: fileInfo?.language
+            })
           )
         }
 

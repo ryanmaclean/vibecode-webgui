@@ -42,10 +42,15 @@ Before you begin, ensure you have:
    ```bash
    # Database
    DATABASE_URL="postgresql://username:password@localhost:5432/vibecode"
-   
+
    # Redis
    REDIS_URL="redis://localhost:6379"
-   
+
+   # Middleware rate limiting
+   MIDDLEWARE_RATE_LIMIT_ENABLED="true"
+   MIDDLEWARE_RATE_LIMIT_MAX="100"
+   MIDDLEWARE_RATE_LIMIT_WINDOW_MS="60000"
+
    # Authentication
    NEXTAUTH_SECRET="your-secret-key-here"
    NEXTAUTH_URL="http://localhost:3000"
@@ -54,6 +59,21 @@ Before you begin, ensure you have:
    OPENAI_API_KEY="your-openai-key"
    ANTHROPIC_API_KEY="your-anthropic-key"
    ```
+
+   #### Middleware Rate Limiting
+
+   VibeCode ships with an application-layer rate limiter inside `src/middleware.ts`.
+   When `MIDDLEWARE_RATE_LIMIT_ENABLED` is omitted or set to `true`, each instance
+   tracks request counts per client IP for the window defined by
+   `MIDDLEWARE_RATE_LIMIT_WINDOW_MS` (defaults to 60 seconds) and enforces the
+   ceiling configured via `MIDDLEWARE_RATE_LIMIT_MAX` (defaults to 100 requests).
+
+   The current implementation uses in-memory counters, which works well for local
+   development or single-replica deployments. If you scale Next.js horizontally,
+   either keep rate limiting disabled (`MIDDLEWARE_RATE_LIMIT_ENABLED=false`) or
+   ensure sticky sessions until the shared Redis/Valkey store is wired in an
+   upcoming release. Track progress and Redis/Valkey setup guidance in
+   [`docs/redis-valkey.md`](/redis-valkey/).
 
 4. **Initialize the database**
    ```bash
