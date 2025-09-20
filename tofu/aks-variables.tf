@@ -226,9 +226,9 @@ variable "tags" {
   type        = map(string)
   description = "Additional tags to apply to all resources"
   default = {
-    Project     = "VibeCode"
-    Owner       = "Platform Team"
-    CostCenter  = "Engineering"
+    Project    = "VibeCode"
+    Owner      = "Platform Team"
+    CostCenter = "Engineering"
   }
 }
 
@@ -307,7 +307,7 @@ variable "acr_sku" {
   type        = string
   description = "Azure Container Registry SKU"
   default     = "Premium"
-  
+
   validation {
     condition     = contains(["Basic", "Standard", "Premium"], var.acr_sku)
     error_message = "ACR SKU must be Basic, Standard, or Premium."

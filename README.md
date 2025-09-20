@@ -88,6 +88,12 @@ npm run test:production:all
 - **Network policies** and security hardening
 - **Rollback mechanisms** for deployment failures
 
+### 💸 **Minimize Your AKS Footprint**
+- Keep the system node pool at the platform minimum (two Linux nodes on a 4-vCPU, 4+ GB SKU such as `Standard_D4as_v5`) and taint it so only control-plane add-ons schedule there.
+- Run application workloads on a separate user pool with the cluster autoscaler `minCount` set to `0` so it scales to zero when idle.
+- Stop and start the cluster (`az aks stop` / `az aks start`) during predictable downtimes to avoid paying for compute while the environment is quiet.
+- Stay on the AKS Free tier unless you need an uptime SLA—the control plane remains free and you only pay for the agent nodes that are running.
+
 ---
 
 ## ✨ **What This Demonstrates**

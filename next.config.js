@@ -140,6 +140,10 @@ const nextConfig = {
   // Disable x-powered-by header
   poweredByHeader: false,
 
+  experimental: {
+    optimizeCss: true,
+  },
+
   // Custom build ID for better caching
   generateBuildId: async () => {
     // Use git commit hash if available, otherwise timestamp
