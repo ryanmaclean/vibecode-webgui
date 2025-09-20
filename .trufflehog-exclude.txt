@@ -5,6 +5,10 @@ node_modules
 docs/node_modules
 docs/dist
 docs/.astro
+tofu/providers/*
+tofu/.terraform.lock.hcl
+tofu/tfplan*
+.env.local
 playwright-report
 playwright-output
 performance-results
