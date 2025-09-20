@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Optional, opt-in pre-push secret scan using TruffleHog
+# - Disabled by default; create a toggle file to enable:
+#     touch .git/hooks/enable-security-scan
+# - Remove the toggle file to disable:
+#     rm -f .git/hooks/enable-security-scan
+# - Install TruffleHog locally, e.g.:
+#     brew install trufflehog    # macOS/Homebrew
+#
+# This hook will:
+# 1) Run a verified-only filesystem scan (fast)
+# 2) If origin/main exists, run a history scan since the merge-base (cheap incremental)
+
+TOGGLE_FILE=".git/hooks/enable-security-scan"
+if [[ ! -f "$TOGGLE_FILE" ]]; then
+  exit 0
+fi
+
+if ! command -v trufflehog >/dev/null 2>&1; then
+  echo "[pre-push] TruffleHog not installed. Install with 'brew install trufflehog' or see https://github.com/trufflesecurity/trufflehog"
+  exit 0
+fi
+
+# Filesystem scan (verified only)
+trufflehog filesystem --no-update --only-verified --fail --exclude_paths .trufflehog-exclude.txt .
+
+# Incremental git history scan relative to origin/main if available
+if git show-ref --verify --quiet refs/remotes/origin/main; then
+  base=$(git merge-base HEAD origin/main || echo "")
+  if [[ -n "$base" ]]; then
+    trufflehog git --no-update --only-verified --since-commit "$base" --fail --json file://$(pwd)
+  fi
+fi
+
+echo "[pre-push] TruffleHog scans passed. Proceeding with push."
