@@ -101,6 +101,7 @@ def helm_upgrade(
     image: str,
     values: Iterable[Path],
     set_values: list[str],
+    set_string_values: list[str],
     wait: bool,
     timeout: int,
     dry_run: bool,
@@ -126,6 +127,9 @@ def helm_upgrade(
     for item in set_values:
         cmd.extend(["--set", item])
 
+    for item in set_string_values:
+        cmd.extend(["--set-string", item])
+
     if wait:
         cmd.extend(["--wait", f"--timeout={timeout}s"])
 
@@ -144,6 +148,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--release", default=DEFAULT_RELEASE)
     parser.add_argument("--values", action="append", type=Path, default=[])
     parser.add_argument("--set", dest="set_values", action="append", default=list())
+    parser.add_argument("--set-string", dest="set_string_values", action="append", default=list())
     parser.add_argument("--fullname-override")
     parser.add_argument("--env-file", type=Path)
     parser.add_argument("--skip-build", action="store_true")
@@ -197,6 +202,7 @@ def main(argv: list[str] | None = None) -> int:
             image=image,
             values=helm_values,
             set_values=args.set_values,
+            set_string_values=args.set_string_values,
             wait=args.wait,
             timeout=args.wait_timeout,
             dry_run=args.dry_run,
