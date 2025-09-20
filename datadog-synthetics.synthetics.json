@@ -89,14 +89,5 @@
       "message": "Monitoring dashboard API failed",
       "tags": ["env:ci", "service:vibecode-webgui", "test:monitoring"]
     }
-  ],
-  "global": {
-    "variables": [
-      {
-        "name": "BASE_URL",
-        "value": "http://localhost:3000"
-      }
-    ]
-  }
+  ]
 }
-EOF < /dev/null

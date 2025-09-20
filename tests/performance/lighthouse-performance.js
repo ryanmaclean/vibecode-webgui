@@ -61,7 +61,7 @@ class PerformanceAuditor {
     };
 
     try {
-      const runnerResult = await lighthouse(url, options);
+      const runnerResult = await lighthouse.default(url, options);
       const { lhr } = runnerResult;
       
       const metrics = this.extractMetrics(lhr);

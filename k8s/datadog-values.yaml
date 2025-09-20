@@ -1,26 +1,8 @@
-# Datadog Helm Chart Values for Kubernetes Autoscaling
 datadog:
-  apiKeyExistingSecret: "datadog-secret"
-  appKey: ""  # Add your app key here if available
   site: "datadoghq.com"
-  clusterName: "vibecode-kind-test"
-
-  env:
-    - name: DD_HOSTNAME
-      valueFrom:
-        fieldRef:
-          fieldPath: spec.nodeName
-
-  # Enable Kubernetes Autoscaling (GA 2025)
-  autoscaling:
-    workload:
-      enabled: true
-
-  # Enhanced Kubernetes Events
-  kubernetesEvents:
-    unbundleEvents: true
-
-  # Core monitoring features
+  apiKeyExistingSecret: datadog-secret
+  appKeyExistingSecret: datadog-secret
+  clusterName: "vibecode-prod-aks-84859296"
   logs:
     enabled: true
     containerCollectAll: true
@@ -28,59 +10,55 @@ datadog:
     enabled: true
   processAgent:
     enabled: true
-
-  # Network monitoring
   networkMonitoring:
     enabled: true
-
-  # Security Agent
-  securityAgent:
-    runtime:
-      enabled: true
-
-  # System Probe features
-  systemProbe:
-    enableTCPQueueLength: true
-    enableOOMKill: true
-
-  # Orchestrator Explorer (Required for Pod collection)
-  orchestratorExplorer:
+  databaseMonitoring:
     enabled: true
+  env:
+    - name: DD_LLMOBS_ENABLED
+      value: "1"
+    - name: DD_LLMOBS_AGENTLESS_ENABLED
+      value: "1"
+    - name: DD_LLMOBS_ML_APP
+      value: "vibecode-ai"
+    - name: DD_SERVICE
+      value: "vibecode-webgui"
+    - name: DD_ENV
+      value: "production"
 
-# Cluster Agent Configuration (Required version >=1.18.0)
+agents:
+  image:
+    tag: "7.66.1"
+  tolerations:
+    - key: "CriticalAddonsOnly"
+      operator: "Exists"
+  useHostNetwork: false
+
 clusterAgent:
   enabled: true
-  image:
-    tag: "1.24.0"  # Ensure we meet minimum version requirement
-  
-  # Enable custom metrics for autoscaling
+  replicas: 2
   metricsProvider:
     enabled: true
     useDatadogMetrics: true
-
-  # Additional RBAC for DatadogMetric CRD
   rbac:
     create: true
-
-  # Autoscaling configuration
-  autoscaling:
-    workload:
-      enabled: true
-  
-  # Orchestrator Explorer (Required for Pod collection)
-  orchestratorExplorer:
+  admissionController:
     enabled: true
 
-# Node Agent Configuration (Required version >=7.33.0)
-agents:
+clusterChecksRunner:
   enabled: true
-  image:
-    tag: "7.66.1"  # Meets minimum version requirement
-  
-  # Orchestrator Explorer for Pod collection
-  orchestratorExplorer:
+
+orchestratorExplorer:
+  enabled: true
+
+networkMonitoring:
+  enabled: true
+
+securityAgent:
+  runtime:
     enabled: true
 
-# Target Allocator for advanced metrics
-targetAllocator:
-  enabled: false
+systemProbe:
+  enableTCPQueueLength: true
+  enableOOMKill: true
+

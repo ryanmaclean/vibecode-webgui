@@ -1,0 +1,87 @@
+name: Datadog Service Catalog Registration
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '*.datadog.yaml'
+      - 'service.datadog.yaml'
+      - 'postgres.datadog.yaml'
+      - '.github/workflows/datadog-service-catalog.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '*.datadog.yaml'
+      - 'service.datadog.yaml' 
+      - 'postgres.datadog.yaml'
+
+jobs:
+  register-services:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Register VibeCode WebGUI Service
+        uses: arcxp/datadog-service-catalog-metadata-provider@v2.3.2
+        with:
+          datadog-key: ${{ secrets.DD_API_KEY }}
+          datadog-app-key: ${{ secrets.DD_APP_KEY }}
+          datadog-url: https://api.datadoghq.com
+          service-file: service.datadog.yaml
+
+      - name: Register PostgreSQL Database Service
+        uses: arcxp/datadog-service-catalog-metadata-provider@v2.3.2
+        with:
+          datadog-key: ${{ secrets.DD_API_KEY }}
+          datadog-app-key: ${{ secrets.DD_APP_KEY }}
+          datadog-url: https://api.datadoghq.com
+          service-file: postgres.datadog.yaml
+
+  validate-definitions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate service definitions
+        run: |
+          echo "Validating service definition files..."
+          
+          # Check if service definition files exist
+          if [ ! -f "service.datadog.yaml" ]; then
+            echo "❌ service.datadog.yaml not found"
+            exit 1
+          fi
+          
+          if [ ! -f "postgres.datadog.yaml" ]; then
+            echo "❌ postgres.datadog.yaml not found"
+            exit 1
+          fi
+          
+          # Basic YAML syntax validation
+          python -c "
+          import yaml
+          import sys
+          
+          files = ['service.datadog.yaml', 'postgres.datadog.yaml']
+          
+          for file in files:
+              try:
+                  with open(file, 'r') as f:
+                      data = yaml.safe_load(f)
+                      
+                  # Check required fields
+                  required_fields = ['schema-version', 'dd-service', 'team']
+                  for field in required_fields:
+                      if field not in data:
+                          print(f'❌ {file}: Missing required field: {field}')
+                          sys.exit(1)
+                  
+                  print(f'✅ {file}: Valid service definition')
+              except Exception as e:
+                  print(f'❌ {file}: Invalid YAML - {e}')
+                  sys.exit(1)
+          
+          print('🎉 All service definitions are valid!')
+          "

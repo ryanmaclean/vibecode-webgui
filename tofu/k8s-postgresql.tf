@@ -55,7 +55,7 @@ resource "kubernetes_config_map" "postgres_init" {
   }
 
   data = {
-    "init.sql" = <<-SQL
+    "init.sql"         = <<-SQL
       -- Initial database setup
       -- Ensure pgvector extension is available for embeddings
       CREATE EXTENSION IF NOT EXISTS vector;
@@ -146,24 +146,24 @@ resource "kubernetes_deployment" "postgres" {
           "ad.datadoghq.com/postgres.check_names"  = jsonencode(["postgres"])
           "ad.datadoghq.com/postgres.init_configs" = jsonencode([{}])
           "ad.datadoghq.com/postgres.instances" = jsonencode([{
-            host                = "%%host%%"
-            port                = 5432
-            username            = "datadog"
-            password            = "%%env_POSTGRES_DATADOG_PASSWORD%%"
-            dbname              = "vibecode"
-            ssl                 = "prefer"
-            tags                = ["environment:${var.environment}", "cluster:${local.aks_cluster_name}"]
-            collect_count_metrics = true
-            collect_activity_metrics = true
+            host                          = "%%host%%"
+            port                          = 5432
+            username                      = "datadog"
+            password                      = "%%env_POSTGRES_DATADOG_PASSWORD%%"
+            dbname                        = "vibecode"
+            ssl                           = "prefer"
+            tags                          = ["environment:${var.environment}", "cluster:${local.aks_cluster_name}"]
+            collect_count_metrics         = true
+            collect_activity_metrics      = true
             collect_database_size_metrics = true
-            collect_default_db = true
+            collect_default_db            = true
           }])
 
           # Custom metrics collection
           "ad.datadoghq.com/postgres.logs" = jsonencode([{
-            source = "postgresql"
+            source  = "postgresql"
             service = "vibecode-postgres"
-            tags = ["environment:${var.environment}"]
+            tags    = ["environment:${var.environment}"]
           }])
         }
       }
@@ -175,7 +175,7 @@ resource "kubernetes_deployment" "postgres" {
 
           port {
             container_port = 5432
-            name          = "postgres"
+            name           = "postgres"
           }
 
           env {

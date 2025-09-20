@@ -8,6 +8,9 @@ docs/.astro
 tofu/providers/*
 tofu/.terraform.lock.hcl
 tofu/tfplan*
+tofu/terraform.tfstate
+tofu/terraform.tfstate.*
+tofu/.terraform.tfstate.lock.info
 .env.local
 playwright-report
 playwright-output

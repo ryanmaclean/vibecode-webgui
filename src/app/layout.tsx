@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 // Import CSS - Disabled due to Tailwind v4 ARM64 compatibility issues
 // See TAILWIND_V4_MIGRATION_NOTES.md for details
 // The application is fully functional without CSS styling
-// import "./globals.css";
+import "./globals.css";
 import Providers from './providers';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
@@ -30,6 +30,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Tailwind CSS v4 is now handled via PostCSS in Docker mode */}
+        <link rel="stylesheet" href="/globals.css" media="all" />
       </head>
       <body
         className="antialiased"
