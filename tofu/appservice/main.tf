@@ -40,6 +40,21 @@ locals {
     },
     var.tags
   )
+
+  datadog_app_settings = merge(
+    {
+      DD_API_KEY                 = var.datadog_api_key
+      DD_SITE                    = var.datadog_site
+      DD_ENV                     = var.datadog_env
+      DD_SERVICE                 = var.datadog_service
+      DD_VERSION                 = var.datadog_version
+      DD_LOGS_INJECTION          = "true"
+      DD_TRACE_ENABLED           = "true"
+      DD_RUNTIME_METRICS_ENABLED = "true"
+      NODE_OPTIONS               = "--require dd-trace/init"
+    },
+    var.appservice_additional_app_settings
+  )
 }
 
 resource "azurerm_resource_group" "main" {
@@ -107,6 +122,7 @@ module "app_service" {
   storage_account_id             = module.storage.storage_account_id
   storage_container_name         = module.storage.content_container_name
   key_vault_id                   = module.key_vault.key_vault_id
+  app_settings                   = local.datadog_app_settings
   tags                           = local.tags
 }
 

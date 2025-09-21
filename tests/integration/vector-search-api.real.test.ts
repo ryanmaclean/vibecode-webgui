@@ -13,12 +13,15 @@ jest.mock('next-auth', () => ({
 // Stub vectorStore with a direct SQL-based similarity search using pg
 jest.mock('@/lib/vector-store', () => {
   const { Client } = require('pg')
+  const actual = jest.requireActual('@/lib/vector-store') as typeof import('@/lib/vector-store')
   function unitVec(dim: number) {
     const v = Array.from({ length: dim }, () => Math.random() * 2 - 1)
     const m = Math.sqrt(v.reduce((s, x) => s + x * x, 0))
     return v.map((x) => x / m)
   }
   return {
+    __esModule: true,
+    ...actual,
     vectorStore: {
       async search(
         _query: string,

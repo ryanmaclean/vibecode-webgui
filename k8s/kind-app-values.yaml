@@ -22,7 +22,7 @@ env:
 extraEnv:
   DD_ENABLED: "true"
   OTEL_ENABLED: "true"
-  NODE_OPTIONS: "--require ./instrument.cjs"
+  NODE_OPTIONS: "--require ./src/instrument.cjs"
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "http://datadog.datadog.svc.cluster.local:4318/v1/traces"
   DD_AGENT_HOST: "datadog.datadog.svc.cluster.local"
   DD_TRACE_AGENT_PORT: "8126"

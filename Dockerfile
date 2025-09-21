@@ -59,7 +59,7 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-ENV NODE_OPTIONS="--require ./instrument.cjs"
+ENV NODE_OPTIONS="--require ./src/instrument.cjs"
 ENV DD_TRACE_AGENT_URL="http://127.0.0.1:8126"
 ENV DD_TRACE_STARTUP_LOGS=false
 ENV DD_LOGS_INJECTION=true
