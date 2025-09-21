@@ -31,6 +31,9 @@ RUN node -e "require('lightningcss'); console.log('✅ lightningcss working on x
 # Copy source files
 COPY . .
 
+# Generate Prisma client after source files are available
+RUN npx prisma generate
+
 # Configure for Docker production environment
 ENV NODE_ENV=production
 ENV DOCKER=true

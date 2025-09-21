@@ -115,6 +115,8 @@ DD_LLMOBS_AGENTLESS_ENABLED=1
 DD_LLMOBS_ML_APP=vibecode-ai
 DD_SERVICE=vibecode-webgui
 DD_ENV=production
+DD_VERSION=1.0.0
+NODE_OPTIONS=--require dd-trace/init  # ensures tracer autoloads on App Service/Functions
 
 # Database Monitoring (NEW)
 DD_DATABASE_MONITORING_ENABLED=true
