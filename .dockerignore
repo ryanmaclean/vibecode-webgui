@@ -49,6 +49,7 @@ README.md
 # Testing
 coverage/
 .nyc_output/
+playwright-report/
 
 # Temporary files
 *.tmp
