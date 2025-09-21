@@ -199,8 +199,9 @@ export async function middleware(request: NextRequest) {
 
   const userAgent = request.headers.get('user-agent');
   const botCheck = detectBot(userAgent);
+  const isBrowserAgent = !!userAgent && /mozilla|chrome|safari|firefox|edg\//i.test(userAgent);
 
-  if (botCheck.isBot && !botCheck.allowlisted && !isApiRoute) {
+  if (botCheck.isBot && !botCheck.allowlisted && !isApiRoute && !isBrowserAgent) {
     logEvent('bot_detected', {
       pathname,
       confidence: botCheck.confidence,
