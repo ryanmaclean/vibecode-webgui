@@ -1,3 +1,8 @@
+---
+title: Educational Reproducibility Guide
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Educational Reproducibility Guide
 
 **Can a developer actually follow this and reproduce the setup?**

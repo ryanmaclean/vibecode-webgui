@@ -1,3 +1,8 @@
+---
+title: Database Connection Pooling
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Database Connection Pooling Improvements
 
 This document outlines the enhanced database connection pooling system implemented in the VibeCode application.

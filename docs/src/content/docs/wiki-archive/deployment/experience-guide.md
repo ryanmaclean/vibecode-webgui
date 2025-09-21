@@ -1,3 +1,8 @@
+---
+title: Experience Guide
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Real Azure PostgreSQL + pgvector Deployment Experience
 
 > **Actual deployment attempt with real friction points encountered**

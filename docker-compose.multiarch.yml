@@ -12,6 +12,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - DD_IAST_ENABLED=true
       - DATABASE_URL=${DATABASE_URL}
       - DD_API_KEY=${DD_API_KEY}
       - DATADOG_API_KEY=${DATADOG_API_KEY}
@@ -42,6 +43,7 @@ services:
       - "3001:3001"
     environment:
       - NODE_ENV=production
+      - DD_IAST_ENABLED=true
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - CLAUDE_API_KEY=${CLAUDE_API_KEY}
       - DD_API_KEY=${DD_API_KEY}

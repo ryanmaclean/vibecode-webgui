@@ -1,3 +1,8 @@
+---
+title: Security
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Security Policy
 
 ## Supported Versions

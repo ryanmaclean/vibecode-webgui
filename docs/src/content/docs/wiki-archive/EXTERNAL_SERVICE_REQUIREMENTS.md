@@ -1,3 +1,8 @@
+---
+title: External Service Requirements
+description: Auto-generated placeholder. Update as needed.
+---
+
 # External Service Requirements for Integration Suites
 
 This guide enumerates the integration and monitoring suites that require live infrastructure. Use it when planning a local run, configuring CI, or deciding which suites to skip. Unless the toggles listed below are enabled, the tests default to `describe.skip` or early-return so you will not accidentally hit live services.

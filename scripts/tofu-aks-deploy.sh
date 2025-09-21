@@ -303,6 +303,10 @@ datadog:
   dynamicInstrumentation: true
   profiling: true
   logsInjection: true
+  site: "datadoghq.com"
+  llmObsEnabled: "1"
+  llmObsAgentless: "1"
+  mlApp: "vibecode-ai"
 
 # Security context
 securityContext:
@@ -425,12 +429,20 @@ spec:
               value: {{ .Values.datadog.profiling | quote }}
             - name: DD_LOGS_INJECTION
               value: {{ .Values.datadog.logsInjection | quote }}
+            - name: DD_SITE
+              value: {{ .Values.datadog.site | quote }}
             - name: DD_TRACE_ENABLED
               value: "true"
             - name: DD_RUNTIME_METRICS_ENABLED
               value: "true"
             - name: DD_SOURCE_MAP_PATH
               value: "/app/source-maps"
+            - name: DD_LLMOBS_ENABLED
+              value: {{ .Values.datadog.llmObsEnabled | quote }}
+            - name: DD_LLMOBS_AGENTLESS_ENABLED
+              value: {{ .Values.datadog.llmObsAgentless | quote }}
+            - name: DD_LLMOBS_ML_APP
+              value: {{ .Values.datadog.mlApp | quote }}
             {{- end }}
           {{- if .Values.healthCheck.enabled }}
           livenessProbe:

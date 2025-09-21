@@ -287,6 +287,9 @@ az network dns record-set a add-record \
 | `NEXTAUTH_URL` | Application URL | Yes |
 | `DD_API_KEY` | Datadog API key | Yes |
 | `DD_APP_KEY` | Datadog application key | No |
+| `DD_LLMOBS_ENABLED` | Turns on Datadog LLM Observability auto-tracing | Yes |
+| `DD_LLMOBS_AGENTLESS_ENABLED` | Sends LLM spans directly to Datadog intake (set to `1` when no agent) | No |
+| `DD_LLMOBS_ML_APP` | Logical ML application name shown in Datadog | No |
 | `OPENROUTER_API_KEY` | OpenRouter API key | Yes |
 | `NODE_ENV` | Environment (production) | Yes |
 
@@ -341,7 +344,12 @@ helm upgrade --install datadog-agent datadog/datadog \
 - Set `DD_DYNAMIC_INSTRUMENTATION_ENABLED=true`
 - Configure redaction rules in Datadog UI
 
-3. **Key Metrics**:
+3. **Enable LLM Observability**:
+- Terraform/Helm set `DD_LLMOBS_ENABLED=1`, `DD_LLMOBS_AGENTLESS_ENABLED=1`, and `DD_LLMOBS_ML_APP=vibecode-ai` on every application pod.
+- Check pod logs for `Datadog LLM Observability enabled for OpenAI spans` to confirm tracer registration.
+- Run `/api/ai/chat` (or trigger an AI workflow) and verify `llm.workflow.*` spans within Datadog APM under `vibecode-webgui-openai`.
+
+4. **Key Metrics**:
 - Application performance (latency, throughput)
 - Infrastructure metrics (CPU, memory, disk)
 - Custom business metrics

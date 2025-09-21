@@ -1,3 +1,8 @@
+---
+title: Postgresql Genai Demo Guide
+description: Auto-generated placeholder. Update as needed.
+---
+
 # PostgreSQL GenAI Monitoring Demo Guide
 
 This document provides comprehensive guidance for demonstrating PostgreSQL with pgvector for GenAI applications on Azure, including common challenges and solutions.

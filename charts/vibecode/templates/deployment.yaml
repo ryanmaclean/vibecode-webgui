@@ -91,6 +91,10 @@ spec:
                   name: {{ include "vibecode.fullname" . }}-secrets
                   key: openrouter-api-key
                   optional: true
+            - name: VIBECODE_DEFAULT_LLM_MODEL
+              value: {{ .Values.env.VIBECODE_DEFAULT_LLM_MODEL | quote }}
+            - name: FREE_LLM_MODELS
+              value: {{ .Values.env.FREE_LLM_MODELS | quote }}
             
             # Redis/Valkey configuration
             {{- if .Values.redis.enabled }}
@@ -105,6 +109,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "vibecode.fullname" . }}-secrets
                   key: dd-api-key
+                  optional: true
             - name: DD_ENV
               value: {{ .Values.env.DD_ENV | quote }}
             - name: DD_SERVICE
@@ -115,6 +120,8 @@ spec:
               value: {{ .Values.env.DD_TRACE_ENABLED | quote }}
             - name: DD_LOGS_INJECTION
               value: {{ .Values.env.DD_LOGS_INJECTION | quote }}
+            - name: DD_IAST_ENABLED
+              value: {{ .Values.env.DD_IAST_ENABLED | quote }}
             - name: DD_RUNTIME_METRICS_ENABLED
               value: {{ .Values.env.DD_RUNTIME_METRICS_ENABLED | quote }}
             - name: DD_DYNAMIC_INSTRUMENTATION_ENABLED
@@ -123,6 +130,22 @@ spec:
               value: {{ .Values.env.DD_SOURCE_MAP | quote }}
             - name: DD_PROFILING_ENABLED
               value: {{ .Values.env.DD_PROFILING_ENABLED | quote }}
+            - name: DD_SITE
+              value: {{ .Values.env.DD_SITE | default "datadoghq.com" | quote }}
+            - name: DD_AGENT_HOST
+              value: {{ .Values.env.DD_AGENT_HOST | default "datadog.datadog.svc.cluster.local" | quote }}
+            - name: DD_TRACE_AGENT_PORT
+              value: {{ .Values.env.DD_TRACE_AGENT_PORT | default "8126" | quote }}
+            - name: DD_DOGSTATSD_HOST
+              value: {{ .Values.env.DD_DOGSTATSD_HOST | default "datadog.datadog.svc.cluster.local" | quote }}
+            - name: DD_DOGSTATSD_PORT
+              value: {{ .Values.env.DD_DOGSTATSD_PORT | default "8125" | quote }}
+            - name: DD_LLMOBS_ENABLED
+              value: {{ .Values.env.DD_LLMOBS_ENABLED | quote }}
+            - name: DD_LLMOBS_AGENTLESS_ENABLED
+              value: {{ .Values.env.DD_LLMOBS_AGENTLESS_ENABLED | quote }}
+            - name: DD_LLMOBS_ML_APP
+              value: {{ .Values.env.DD_LLMOBS_ML_APP | default "vibecode-ai" | quote }}
             {{- end }}
             
             # Kubernetes metadata

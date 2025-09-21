@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "STORAGE_ACCOUNT_CONNECTION": "UseDevelopmentStorage=true",
+    "STORAGE_UPLOADS_CONTAINER": "uploads",
+    "STORAGE_QUEUE_NAME": "pdf-processing",
+    "DATABASE_URL": "postgresql://user:password@localhost:5432/vibecode?sslmode=disable",
+    "AZURE_OPENAI_ENDPOINT": "https://your-openai-resource.openai.azure.com",
+    "AZURE_OPENAI_API_KEY": "set-me",
+    "AZURE_OPENAI_DEPLOYMENT_EMBEDDING": "text-embedding-3-large"
+  }
+}

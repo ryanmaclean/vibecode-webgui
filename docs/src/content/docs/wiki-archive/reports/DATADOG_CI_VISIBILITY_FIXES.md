@@ -1,3 +1,8 @@
+---
+title: Datadog Ci Visibility Fixes
+description: Auto-generated placeholder. Update as needed.
+---
+
 # 🔧 **Datadog CI Visibility Fixes - Based on Official Troubleshooting Guide**
 
 ## 📚 **Reference Documentation**

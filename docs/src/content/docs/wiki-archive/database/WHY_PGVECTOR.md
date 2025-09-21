@@ -1,3 +1,8 @@
+---
+title: Why Pgvector
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Why PGVector Instead of Weaviate?
 
 ## 🎯 **Executive Summary**

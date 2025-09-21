@@ -1,3 +1,8 @@
+---
+title: Automation Analysis
+description: Auto-generated placeholder. Update as needed.
+---
+
 # VibeCode Deployment Automation Analysis
 
 ## Current Automation Status: **PARTIALLY AUTOMATED**

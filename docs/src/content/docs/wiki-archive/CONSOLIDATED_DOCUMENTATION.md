@@ -1,3 +1,8 @@
+---
+title: Consolidated Documentation
+description: Auto-generated placeholder. Update as needed.
+---
+
 # VibeCode Platform - Consolidated Documentation
 
 This document consolidates key information from various documentation sources across the VibeCode platform, providing a unified reference for developers, operators, and users.

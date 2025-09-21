@@ -1,3 +1,8 @@
+---
+title: Oss Tools Integration
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Datadog Open Source Tools Integration
 
 This document outlines the integration of Datadog's open source tools into the VibeCode platform for enhanced observability, reliability, and security.

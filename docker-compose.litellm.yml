@@ -78,6 +78,7 @@ services:
       LITELLM_SALT_KEY: "sk-vibecode-salt-2024-secure"
       UI_USERNAME: "admin"
       UI_PASSWORD: "vibecode2024"
+      DD_IAST_ENABLED: "true"
       
       # Model API Keys (will be loaded from environment)
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
@@ -126,6 +127,7 @@ services:
       LITELLM_MASTER_KEY: "sk-vibecode-master-key-12345"
       UI_USERNAME: "admin"
       UI_PASSWORD: "vibecode2024"
+      DD_IAST_ENABLED: "true"
     ports:
       - "4001:4001"
     networks:
@@ -157,6 +159,7 @@ services:
       # Process Monitoring
       DD_PROCESS_AGENT_ENABLED: "true"
       DD_SYSTEM_PROBE_ENABLED: "true"
+      DD_IAST_ENABLED: "true"
     volumes:
       # macOS compatible volume mounts
       - /var/run/docker.sock:/var/run/docker.sock:ro

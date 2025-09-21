@@ -278,7 +278,7 @@ export class VectorSearch {
     }
   }
 
-  async listCollections(): Promise<Array<{name: string; id: string; metadata: Record<string, unknown>}>> {
+  async listCollections(): Promise<{ name: string; id: string; metadata: Record<string, unknown> }[]> {
     try {
       const collections = await this.chroma.listCollections();
       return collections.map((collection: { name: string; id: string; metadata?: Record<string, unknown> }) => ({

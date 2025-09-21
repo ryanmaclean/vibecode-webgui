@@ -1,3 +1,8 @@
+---
+title: Actual Test Failures Analysis
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Actual Test Failures Analysis
 *Analysis Date: September 10, 2025*
 

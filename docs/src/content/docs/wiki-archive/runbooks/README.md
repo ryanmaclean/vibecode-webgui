@@ -1,3 +1,8 @@
+---
+title: Readme
+description: Auto-generated placeholder. Update as needed.
+---
+
 # VibeCode WebGUI - Production Runbooks
 ## Staff Engineer Documentation | Datadog | July 2025
 

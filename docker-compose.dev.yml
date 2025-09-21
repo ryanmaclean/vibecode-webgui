@@ -17,6 +17,7 @@ services:
     environment:
       - NODE_ENV=development
       - DOCKER=true
+      - DD_IAST_ENABLED=true
     stdin_open: true
     tty: true
     networks:

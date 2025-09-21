@@ -78,6 +78,10 @@ ingress:
 env:
   NODE_ENV: production
   NEXT_TELEMETRY_DISABLED: "1"
+  DD_SITE: datadoghq.com
+  DD_LLMOBS_ENABLED: "1"
+  DD_LLMOBS_AGENTLESS_ENABLED: "1"
+  DD_LLMOBS_ML_APP: "vibecode-ai"
   # Database connection will be injected by OpenTofu
   # Datadog configuration will be injected by OpenTofu
   # AI service keys will be injected by OpenTofu

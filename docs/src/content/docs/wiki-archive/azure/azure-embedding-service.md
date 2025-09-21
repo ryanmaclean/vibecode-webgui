@@ -1,3 +1,8 @@
+---
+title: Azure Embedding Service
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Azure OpenAI Embedding Service Implementation
 
 This implementation adds Azure OpenAI embedding capabilities to the VibeCode platform, enabling vector-based semantic search and RAG (Retrieval Augmented Generation) functionality.

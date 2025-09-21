@@ -1,3 +1,8 @@
+---
+title: Azure Embedding Service Setup
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Azure OpenAI Embedding Service Setup Guide
 
 This guide will walk you through setting up the Azure OpenAI embedding service for your VibeCode application. The Azure embedding service allows you to generate vector embeddings for text using Azure OpenAI models and store them in a database for similarity search.

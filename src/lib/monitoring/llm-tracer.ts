@@ -34,7 +34,14 @@ export class LLMTracer {
     options: LLMSpanOptions,
     fn: () => Promise<T>
   ): Promise<T> {
-    const span = tracer.startSpan('llm.completion', {
+    const mlApp = process.env.DD_LLMOBS_ML_APP || 'vibecode-ai';
+    const ddService = process.env.DD_SERVICE || 'vibecode-webgui';
+    const env = process.env.DD_ENV || 'development';
+
+    return tracer.trace('llm.completion', {
+      service: `${ddService}-openai`,
+      resource: options.model || operation,
+      type: 'custom',
       tags: {
         'llm.request.model': options.model,
         'llm.request.provider': options.provider,
@@ -43,68 +50,72 @@ export class LLMTracer {
         'llm.max_tokens': options.maxTokens,
         'user.id': options.userId,
         'session.id': options.sessionId,
-        'service.name': 'vibecode-ai',
-        'env': process.env.DD_ENV || 'development',
+        'service.name': `${ddService}-openai`,
+        'env': env,
+        'ml.app': mlApp,
+        'ml_app': mlApp,
+        'component': 'LLMTracer'
+      }
+    }, async span => {
+      const startTime = Date.now();
+      try {
+        if (options.input) {
+          span.setTag('llm.request.input', options.input.substring(0, 1000));
+        }
+        if (options.prompt) {
+          span.setTag('llm.request.prompt', options.prompt.substring(0, 1000));
+        }
+
+        const result = await fn();
+        const response = (result as any)?.response ?? result;
+        const modelUsed = (result as any)?.modelUsed ?? response?.model ?? options.model;
+        const providerUsed = (result as any)?.provider ?? options.provider;
+
+        const latency = Date.now() - startTime;
+
+        if (modelUsed) {
+          span.setTag('llm.response.model_used', modelUsed);
+        }
+        if (providerUsed) {
+          span.setTag('llm.response.provider', providerUsed);
+        }
+
+        span.setTag('llm.response.latency_ms', latency);
+        span.setTag('llm.status', 'success');
+
+        if (typeof response === 'object' && response !== null) {
+          const output = response.output || response.text || response.content;
+          if (typeof output === 'string') {
+            span.setTag('llm.response.output', output.substring(0, 1000));
+          }
+
+          const usage = response.usage || response.tokenUsage;
+          if (usage) {
+            const promptTokens = usage.promptTokens ?? usage.prompt_tokens;
+            const completionTokens = usage.completionTokens ?? usage.completion_tokens;
+            const totalTokens = usage.totalTokens ?? usage.total_tokens ?? (promptTokens && completionTokens ? promptTokens + completionTokens : undefined);
+
+            if (promptTokens !== undefined) span.setTag('llm.usage.prompt_tokens', promptTokens);
+            if (completionTokens !== undefined) span.setTag('llm.usage.completion_tokens', completionTokens);
+            if (totalTokens !== undefined) span.setTag('llm.usage.total_tokens', totalTokens);
+          }
+
+          if (response.cost !== undefined) {
+            span.setTag('llm.cost.total', response.cost);
+          }
+        }
+
+        return result;
+      } catch (error: any) {
+        const latency = Date.now() - startTime;
+        span.setTag('llm.response.latency_ms', latency);
+        span.setTag('llm.status', 'error');
+        span.setTag('error', true);
+        span.setTag('error.message', error?.message);
+        span.setTag('error.type', error?.constructor?.name || typeof error);
+        throw error;
       }
     });
-
-    const startTime = Date.now();
-    
-    try {
-      // Add input to span if provided
-      if (options.input) {
-        span.setTag('llm.request.input', options.input.substring(0, 1000)); // Limit to 1000 chars
-      }
-      if (options.prompt) {
-        span.setTag('llm.request.prompt', options.prompt.substring(0, 1000));
-      }
-
-      // Execute the LLM call
-      const result = await fn();
-      
-      const endTime = Date.now();
-      const latency = endTime - startTime;
-      
-      span.setTag('llm.response.latency_ms', latency);
-      span.setTag('llm.status', 'success');
-      
-      // If result has standard structure, extract metrics
-      if (typeof result === 'object' && result !== null) {
-        const response = result as any;
-        
-        if (response.output || response.text || response.content) {
-          const output = response.output || response.text || response.content;
-          span.setTag('llm.response.output', output.substring(0, 1000));
-        }
-        
-        if (response.usage || response.tokenUsage) {
-          const usage = response.usage || response.tokenUsage;
-          span.setTag('llm.usage.prompt_tokens', usage.promptTokens || usage.prompt_tokens);
-          span.setTag('llm.usage.completion_tokens', usage.completionTokens || usage.completion_tokens);
-          span.setTag('llm.usage.total_tokens', usage.totalTokens || usage.total_tokens);
-        }
-        
-        if (response.cost) {
-          span.setTag('llm.cost.total', response.cost);
-        }
-      }
-      
-      span.finish();
-      return result;
-      
-    } catch (error: any) {
-      const endTime = Date.now();
-      const latency = endTime - startTime;
-      
-      span.setTag('llm.response.latency_ms', latency);
-      span.setTag('llm.status', 'error');
-      span.setTag('error', true);
-      span.setTag('error.message', error.message);
-      span.setTag('error.type', error.constructor.name);
-      
-      span.finish();
-      throw error;
-    }
   }
 
   /**

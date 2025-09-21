@@ -1,3 +1,8 @@
+---
+title: Api
+description: Auto-generated placeholder. Update as needed.
+---
+
 # API Documentation
 
 <<<<<<< Updated upstream

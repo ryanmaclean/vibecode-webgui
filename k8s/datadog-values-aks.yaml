@@ -30,8 +30,10 @@ datadog:
   # Enable APM for application tracing with Dynamic Instrumentation
   apm:
     portEnabled: true
-    socketEnabled: true
-    hostSocketPath: /var/run/datadog
+    socketEnabled: false
+
+  dogstatsd:
+    socketEnabled: false
   
   # Enable process monitoring
   processAgent:
@@ -41,9 +43,42 @@ datadog:
   networkMonitoring:
     enabled: true
     
-  # Enable database monitoring for PostgreSQL
-  dbm:
+  # Enable Database Monitoring (modern key)
+  databaseMonitoring:
     enabled: true
+
+  # Keep AKS Postgres via Autodiscovery annotations.
+  # Add a static conf for an external Azure Flexible Server Postgres instance.
+  confd:
+    postgres.yaml: |
+      init_config:
+      instances:
+        - host: "%%env_AZURE_PG_HOST%%"
+          port: 5432
+          username: "%%env_DD_AZURE_POSTGRES_USERNAME%%"
+          password: "%%env_DD_AZURE_POSTGRES_PASSWORD%%"
+          dbname: "%%env_AZURE_PG_DB%%"
+          ssl: 'require'
+          dbm: true
+          query_metrics:
+            enabled: true
+            run_sync: true
+            collection_interval: 15
+          query_samples:
+            enabled: false
+          query_activity:
+            enabled: true
+            collection_interval: 10
+          collect_schemas:
+            enabled: true
+            collection_interval: 60
+          collect_settings:
+            enabled: true
+            collection_interval: 60
+          tags:
+            - env:production
+            - cloud:azure
+            - service:vibecode-azure-pg
     
   # Enable orchestrator explorer for AKS
   orchestratorExplorer:
@@ -57,9 +92,46 @@ datadog:
     - "project:vibecode"
     - "region:eastus2"
 
+  env:
+    - name: DD_POSTGRES_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: datadog-postgres
+          key: username
+    - name: DD_POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: datadog-postgres
+          key: password
+    # Azure Flexible Server Postgres for DBM (confd-driven)
+    - name: AZURE_PG_HOST
+      valueFrom:
+        secretKeyRef:
+          name: datadog-azure-postgres
+          key: host
+    - name: AZURE_PG_DB
+      valueFrom:
+        secretKeyRef:
+          name: datadog-azure-postgres
+          key: db
+    - name: DD_AZURE_POSTGRES_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: datadog-azure-postgres
+          key: username
+    - name: DD_AZURE_POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: datadog-azure-postgres
+          key: password
+
 # Cluster Agent configuration for AKS
 clusterAgent:
   enabled: true
+  replicas: 2
+  pdb:
+    create: true
+    minAvailable: 1
   image:
     tag: "7.66.1"
   
@@ -97,6 +169,9 @@ clusterAgent:
 agents:
   image:
     tag: "7.66.1"
+  pdb:
+    create: true
+    minAvailable: 1
     
   # Production resources for Node Agents
   resources:

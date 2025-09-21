@@ -34,6 +34,7 @@ COPY . .
 # Configure for Docker production environment
 ENV NODE_ENV=production
 ENV DOCKER=true
+ENV DD_IAST_ENABLED=true
 
 # Build the application with Tailwind v4
 RUN npm run build

@@ -1,3 +1,8 @@
+---
+title: Documentation Index
+description: Auto-generated placeholder. Update as needed.
+---
+
 # VibeCode Documentation Index
 
 This document serves as the central navigation hub for all VibeCode platform documentation.

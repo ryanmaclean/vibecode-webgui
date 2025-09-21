@@ -1,3 +1,8 @@
+---
+title: Database Connectivity
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Database Connectivity Guide
 
 This document provides a comprehensive guide to database connectivity in the VibeCode application, with a focus on the robust connection handling for vector embeddings and AI features.

@@ -1,3 +1,8 @@
+---
+title: Real Integration Testing Strategy
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Real Integration Testing Strategy
 
 ## Overview

@@ -21,6 +21,12 @@
 | **Query Performance** | 1 | 0 | 1 | ⚠️ OPTIMIZATION |
 | **TOTAL** | **18** | **17** | **1** | **✅ READY** |
 
+### 2025-09-21 Local Vector Snapshot
+- Seeded local pgvector via `scripts/seed-document-embeddings.ts` (Docker `pgvector` compose; host port 5432 — use alternate host port if already occupied)
+- `document_embeddings` rows: 3 (kubernetes, observability, ai-platform)
+- `rag_chunks` rows tagged `seed-document-embeddings`: 3
+- `scripts/verify-rag-functionality.ts` completed (Embedding tests skipped: OPENROUTER_API_KEY not set)
+
 ## ✅ Verified Components
 
 ### Database Setup

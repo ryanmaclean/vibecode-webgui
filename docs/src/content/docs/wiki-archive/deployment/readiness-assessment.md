@@ -1,3 +1,8 @@
+---
+title: Readiness Assessment
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Honest Production Readiness Assessment
 
 ## Executive Summary
