@@ -33,6 +33,21 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 - ⏳ Decide whether the hashing-based embeddings should be promoted to a shared utility (so the runtime APIs can match the ingestion flow) or replaced with a higher-quality open model (e.g., `@xenova/transformers`).
 - ⏳ Point server-side RAG calls to the new local embedding implementation (or the OpenRouter-only path) to keep runtime requests off OpenAI/Azure.
 
+## Agent Update (2025-09-21 21:55 UTC)
+
+### Summary
+- Catalogued every runnable app in the repo and captured its current deployment target:
+  - `vibecode-webgui` — Docker image published via `Dockerfile.production`, promoted to AKS through `charts/vibecode-aks` and the `build-and-push-image` workflow.
+  - `services/ai-gateway` — built from its dedicated Dockerfile and pushed to Azure App Service by `.github/workflows/azure-appservice-deploy.yml` (image hosted in ACR).
+  - `docs/` site — rendered with Astro/Next and deployed to GitHub Pages (`deploy-docs.yml`), no container build.
+  - `queue-worker/` — Azure Functions queue trigger packaged and published with `func azure functionapp publish` (no container, relies on Function App settings).
+  - `code-server/` — Helm templates and values exist inside `helm/vibecode-platform`, but the AKS cluster currently runs only `deployment/vibecode-app`; no code-server pods are present.
+- Verified AKS workload inventory (`kubectl get deployments -n vibecode-platform`) to confirm the missing `code-server` rollout before scheduling remedial work.
+
+### Blocking Work / Next Steps (updated 2025-09-21 21:55 UTC)
+- ⏳ Produce a Helm values override (or dedicated release) for `codeServer` and deploy it to `vibecode-platform`, ensuring persistence, ingress, and TLS line up with production requirements.
+- ⏳ Add operational checks for the non-AKS apps (AI Gateway App Service, Azure Functions queue worker, GitHub Pages docs) so future agents can confirm their pipelines stay green.
+
 ### Summary
 - Pulled Azure PostgreSQL Flexible Server connection strings for `vibecode-pgflex-1758422944` via `az postgres flexible-server show-connection-string`, confirming target database `vibecode` and login `pgadmin` for upcoming RAG ingestion work.
 - Checked firewall rules to ensure current public IP `64.46.2.133` is permitted; direct `psql` login still fails, so the admin password needs verification or rotation before traffic moves over.
@@ -123,7 +138,7 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 7. **Decommission AKS artifacts** — archive or delete AKS-specific scripts/manifests once migration is proven, updating README/production docs to reference App Service deployment.
 
 ### RAG & Demo Readiness (2025-09-20 19:12 UTC)
-- [ ] **Agent #3 — Vector Data Seeding**: After Postgres is reachable, run `scripts/populate-vector-db-samples.ts` (or `scripts/generate-vector-activity.sh` inside the cluster) to repopulate `document_embeddings` and `rag_chunks`; validate with `scripts/verify-rag-functionality.ts` and record row counts in `POSTGRES_MONITORING_VALIDATION_RESULTS.md`. ✅ Schema + migration ready: re-added `embedding vector(1536)` to `RAGChunk` and committed Prisma migration `20250920190000_add_rag_embedding_column` so future deploys can run `npx prisma migrate deploy` without manual SQL.
+- [x] **Agent #3 — Vector Data Seeding**: After Postgres is reachable, run `scripts/populate-vector-db-samples.ts` (or `scripts/generate-vector-activity.sh` inside the cluster) to repopulate `document_embeddings` and `rag_chunks`; validate with `scripts/verify-rag-functionality.ts` and record row counts in `POSTGRES_MONITORING_VALIDATION_RESULTS.md`. ✅ Schema + migration ready: re-added `embedding vector(1536)` to `RAGChunk` and committed Prisma migration `20250920190000_add_rag_embedding_column` so future deploys can run `npx prisma migrate deploy` without manual SQL. 2025-09-21: Seeded sample Apache libraries + full docs using OpenAI embeddings (2,311 documents, 3,036 chunks); verification logged via `scripts/run-rag-verification.ts` with Datadog tracing.
 - [x] **Agent #4 — Demo Prompt Library**: Curate lovable.ai-style prompts (`src/data/demo-prompts.ts`) and surface them in the chat UI selector so Lovable demo flows are one click away. Next step: capture API telemetry once RAG search is reconnected.
 - [ ] **Agent #6 — LLM Observability Enablement**: Set `DD_LLMOBS_ENABLED=1` + `DD_LLMOBS_AGENTLESS_ENABLED=1`, ensure `DD_API_KEY`/`DD_SITE` are exported, and verify spans from `src/lib/datadog-llm.ts` hit Datadog. ✅ Runbook now includes prerequisites and verification links; next capture screenshots/logs once connectivity is restored.
 - [x] **Agent #7 — Datadog Dashboard Refresh**: Created comprehensive monitoring setup for AKS with detailed documentation in `docs/aks-datadog-monitoring-guide.sh` and deployment script in `scripts/setup-aks-datadog-monitoring.sh`. Ready to deploy once the AKS cluster is provisioned.
