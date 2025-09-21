@@ -73,6 +73,7 @@ ENV DD_SOURCE_MAP_PATH=/app/source-maps
 
 # Security headers
 ENV DD_APPSEC_ENABLED=true
+ENV DD_IAST_ENABLED=true
 ENV DD_APPSEC_RULES_FILE=/app/appsec-rules.json
 
 # Copy built application from builder

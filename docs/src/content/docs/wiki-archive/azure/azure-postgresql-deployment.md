@@ -1,3 +1,8 @@
+---
+title: Azure Postgresql Deployment
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Azure PostgreSQL Deployment Guide
 
 This guide outlines how to deploy the VibeCode platform on Azure PostgreSQL Flexible Server, addressing common pitfalls and providing solutions for proper pgvector setup.

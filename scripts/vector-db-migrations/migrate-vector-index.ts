@@ -9,7 +9,8 @@
  * minimal downtime.
  */
 
-import { Client, ClientConfig } from 'pg';
+import { Client } from 'pg';
+import type { ClientConfig } from 'pg';
 import { DefaultAzureCredential } from '@azure/identity';
 import { parseArgs } from 'node:util';
 
@@ -64,7 +65,7 @@ interface IndexUsageStats {
 
 // Build argument values. Avoid parsing CLI flags during tests or when imported.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isMain = (require as any)?.main === module;
+const isMain = (typeof require !== 'undefined') && ((require as any)?.main === module);
 const isJest = !!process.env.JEST_WORKER_ID;
 const values = (() => {
   if (isMain && !isJest) {
@@ -452,7 +453,7 @@ export {
 };
 
 // Only execute when run directly (prevents running during tests)
-if ((require as any)?.main === module) {
+if ((typeof require !== 'undefined') && ((require as any)?.main === module)) {
   migrateVectorIndex().catch((err) => {
     console.error(err);
     process.exit(1);

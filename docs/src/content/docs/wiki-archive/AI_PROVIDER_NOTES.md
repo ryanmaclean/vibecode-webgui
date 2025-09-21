@@ -1,3 +1,8 @@
+---
+title: Ai Provider Notes
+description: Auto-generated placeholder. Update as needed.
+---
+
 # AI Provider Notes
 
 - `src/lib/ai/provider.ts` currently wraps `EnhancedAIManager` and returns a JSON payload (metadata + workflow results) via `ReadableStream<Uint8Array>`.

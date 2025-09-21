@@ -1,3 +1,8 @@
+---
+title: Openai Setup
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Azure OpenAI Setup
 
 This document outlines the Azure OpenAI integration for VibeCode's AI features.

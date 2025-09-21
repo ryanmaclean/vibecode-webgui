@@ -1,3 +1,8 @@
+---
+title: Infrastructure Overview
+description: Auto-generated placeholder. Update as needed.
+---
+
 # VibeCode Infrastructure Overview
 
 This document provides a comprehensive overview of the VibeCode platform infrastructure, deployment options, and operational procedures. It serves as the central hub for all infrastructure-related documentation.

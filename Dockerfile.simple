@@ -1,5 +1,6 @@
 FROM node:20-alpine
 WORKDIR /app
+ENV DD_IAST_ENABLED=true
 COPY package.json ./
 RUN yarn install --production
 COPY . .

@@ -2,6 +2,8 @@
 # Managed via Datadog Terraform provider to avoid installing K8s Operator CRDs
 
 resource "datadog_dashboard_json" "azuredbforpostgresqlflexserveroverview" {
+  count = var.enable_datadog_monitoring ? 1 : 0
+
   dashboard = <<-JSON
   {
     "title": "Azure DB for PostgreSQL Flex Server Overview",

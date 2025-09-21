@@ -102,7 +102,7 @@ spec:
               name: {{ .Values.secrets.name }}
               key: DD_APP_KEY
         - name: DD_SITE
-          value: "datadoghq.com"
+          value: {{ .Values.env.DD_SITE | default "datadoghq.com" | quote }}
         - name: DD_ENV
           value: {{ .Values.env.NODE_ENV }}
         - name: DD_SERVICE
@@ -111,6 +111,14 @@ spec:
           value: {{ .Values.app.version }}
         - name: DD_DYNAMIC_INSTRUMENTATION_ENABLED
           value: "true"
+        - name: DD_IAST_ENABLED
+          value: "true"
+        - name: DD_LLMOBS_ENABLED
+          value: {{ .Values.env.DD_LLMOBS_ENABLED | default "0" | quote }}
+        - name: DD_LLMOBS_AGENTLESS_ENABLED
+          value: {{ .Values.env.DD_LLMOBS_AGENTLESS_ENABLED | default "0" | quote }}
+        - name: DD_LLMOBS_ML_APP
+          value: {{ .Values.env.DD_LLMOBS_ML_APP | default "vibecode-ai" | quote }}
         # AI service configuration
         - name: OPENROUTER_API_KEY
           valueFrom:

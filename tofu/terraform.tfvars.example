@@ -30,3 +30,8 @@ enable_datadog_monitoring = true
 enable_backup_operator   = true
 enable_cert_manager      = true
 enable_ingress_nginx     = true
+
+# LLM observability configuration
+llm_observability_enabled   = true
+llm_observability_agentless = true
+llm_observability_ml_app    = "vibecode-ai"

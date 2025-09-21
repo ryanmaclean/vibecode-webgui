@@ -176,6 +176,7 @@ const sentiment = await aiClient.analyzeSentiment(text);
   1. Restore a recent backup (`terraform.tfstate.YYYYMMDD.backup`) before running `tofu plan` again.
   2. Move state off the laptop: create an Azure Storage account + blob container and switch the backend (`scripts/create-remote-state-storage.sh`, then copy `tofu/backend.tf.example` ➜ `backend.tf` and run `tofu init -migrate-state`).
   3. Require `TF_BACKEND_CONFIG` secrets in CI and protect the storage account with RBAC/soft delete so accidental removals are recoverable.
+  4. After recreating the cluster, Azure may report `provisioningState: Creating` with zero nodes. Wait for the VMSS to finish booting (5–10 minutes) before retrying Helm/`kubectl`; premature applies will fail with `No resources found`.
 
 ```bash
 # One-time setup: provision storage account + container for remote state

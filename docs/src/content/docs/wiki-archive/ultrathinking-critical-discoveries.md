@@ -1,3 +1,8 @@
+---
+title: Ultrathinking Critical Discoveries
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Critical Infrastructure Issues Discovered Through Ultrathinking
 
 **Date**: 2025-08-31  

@@ -1,3 +1,8 @@
+---
+title: Connection Pool Monitoring
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Connection Pool Monitoring System
 
 ## Overview

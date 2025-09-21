@@ -1,3 +1,8 @@
+---
+title: Accessibility Testing Guide
+description: Auto-generated placeholder. Update as needed.
+---
+
 # WCAG 2.1 AA Accessibility Testing Guide
 
 ## Overview

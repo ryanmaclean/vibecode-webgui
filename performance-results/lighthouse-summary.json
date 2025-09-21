@@ -1,37 +1,37 @@
 {
-  "timestamp": "2025-09-20T01:22:18.218Z",
+  "timestamp": "2025-09-20T04:45:16.406Z",
   "total_pages": 4,
-  "passed": 3,
-  "failed": 1,
-  "average_score": 94.5,
+  "passed": 0,
+  "failed": 4,
+  "average_score": 45.75,
   "critical_pages_status": {
     "total": 2,
-    "passed": 1,
+    "passed": 0,
     "all_passed": false
   },
   "results": [
     {
       "page": "homepage",
-      "score": 81,
+      "score": 46,
       "passed": false,
       "critical": true
     },
     {
       "page": "workspace",
-      "score": 99,
-      "passed": true,
+      "score": 45,
+      "passed": false,
       "critical": true
     },
     {
       "page": "projects",
-      "score": 99,
-      "passed": true,
+      "score": 46,
+      "passed": false,
       "critical": false
     },
     {
       "page": "monitoring",
-      "score": 99,
-      "passed": true,
+      "score": 46,
+      "passed": false,
       "critical": false
     }
   ]

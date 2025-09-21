@@ -37,6 +37,16 @@ spec:
           value: "aks-production"
         - name: DD_VERSION
           value: "1.0.0"
+        - name: DD_SITE
+          value: "datadoghq.com"
+        - name: DD_LLMOBS_ENABLED
+          value: "1"
+        - name: DD_LLMOBS_AGENTLESS_ENABLED
+          value: "1"
+        - name: DD_LLMOBS_ML_APP
+          value: "vibecode-ai"
+        - name: DD_IAST_ENABLED
+          value: "true"
         resources:
           requests:
             memory: "64Mi"

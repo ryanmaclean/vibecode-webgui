@@ -29,6 +29,7 @@ services:
       - TRACE_SAMPLE_RATE=${TRACE_SAMPLE_RATE:-0.5}
       - DD_ENV=${DD_ENV:-dev}
       - DD_SERVICE=${DD_SERVICE:-vibecode-ai-gateway}
+      - DD_IAST_ENABLED=true
       - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-vibecode-ai-gateway}
       - OTEL_RESOURCE_ATTRIBUTES=${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment=${DD_ENV:-dev}}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}

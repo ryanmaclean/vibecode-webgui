@@ -191,7 +191,7 @@ spec:
         # Datadog monitoring
         ad.datadoghq.com/postgresql.check_names: '["postgres"]'
         ad.datadoghq.com/postgresql.init_configs: '[{}]'
-        ad.datadoghq.com/postgresql.instances: '[{"host":"%%host%%","port":"5432","username":"datadog","password":"datadog_monitoring_password"}]'
+        ad.datadoghq.com/postgresql.instances: '[{"host":"%%host%%","port":5432,"username":"datadog","password":"%%env_DD_POSTGRES_PASSWORD%%","dbname":"vibecode","dbm":true}]'
     spec:
       # Security context for PostgreSQL
       securityContext:

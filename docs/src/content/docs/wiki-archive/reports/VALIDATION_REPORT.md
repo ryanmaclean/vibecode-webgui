@@ -1,3 +1,8 @@
+---
+title: Validation Report
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Documentation Validation Report
 
 *Generated on 2025-08-09T06:30:54.326Z*

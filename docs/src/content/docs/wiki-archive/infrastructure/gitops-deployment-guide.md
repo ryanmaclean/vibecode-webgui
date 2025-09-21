@@ -1,3 +1,8 @@
+---
+title: Gitops Deployment Guide
+description: Auto-generated placeholder. Update as needed.
+---
+
 # GitOps Deployment Guide
 
 This guide covers the complete GitOps automation setup for the VibeCode WebGUI platform, including infrastructure as code, multi-environment deployments, and comprehensive monitoring.

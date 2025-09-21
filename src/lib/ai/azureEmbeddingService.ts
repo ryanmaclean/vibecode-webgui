@@ -252,7 +252,7 @@ export class AzureEmbeddingService {
               metadata,
               embedding_generation_time_ms
             )
-            VALUES ($1, $2, $3::vector, $4, $5)
+            VALUES ($1, $2, $3::vector, $4::jsonb, $5)
             ON CONFLICT (document_id) 
             DO UPDATE SET 
               content = EXCLUDED.content,
@@ -411,7 +411,7 @@ export class AzureEmbeddingService {
             metadata,
             embedding_generation_time_ms
           )
-          VALUES ($1, $2, $3::vector, $4, $5)
+          VALUES ($1, $2, $3::vector, $4::jsonb, $5)
           ON CONFLICT (document_id) 
           DO UPDATE SET 
             content = EXCLUDED.content,

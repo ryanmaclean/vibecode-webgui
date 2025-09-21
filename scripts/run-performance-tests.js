@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-require('dotenv').config({ path: '.env.local' });
 /**
  * Comprehensive Performance Testing Runner
  * Runs Datadog Synthetic tests and Lighthouse audits, then submits results to monitoring
@@ -59,7 +58,7 @@ class PerformanceTestRunner {
     }
 
     try {
-      const datadogCommand = `node_modules/.bin/datadog-ci synthetics run-tests --config ${configFile}`;
+      const datadogCommand = `node_modules/.bin/datadog-ci synthetics run-tests --config ${configFile} --timeout 300`;
       console.log(`   Running: ${datadogCommand}`);
       
       const output = execSync(datadogCommand, { 
@@ -315,7 +314,7 @@ async function runPerformanceTests() {
   
   try {
     await runner.initialize();
-    // await runner.runDatadogSyntheticTests();
+    await runner.runDatadogSyntheticTests();
     await runner.runLighthouseAudits();
     
     const summary = await runner.generateFinalReport();

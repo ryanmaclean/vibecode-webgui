@@ -1,3 +1,8 @@
+---
+title: Azure Postgres Pgvector Guide
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Azure PostgreSQL Flexible Server pgvector Guide
 
 This document explains how to properly set up and use pgvector with Azure PostgreSQL Flexible Server, including common issues and their solutions.
