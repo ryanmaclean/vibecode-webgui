@@ -45,6 +45,7 @@ description: blueprint for moving vibecode webgui from aks to managed azure paas
   - `modules/function_app` – consumption plan, function app, system-assigned identity, queue trigger.
   - `modules/monitoring` – Application Insights workspace + diagnostic settings.
   - `modules/key_vault` – secrets for connection strings, OpenAI keys, webhook secrets.
+- After provisioning, install the [Datadog extension for App Service](https://learn.microsoft.com/azure/azure-monitor/app/azure-monitor-app-service#monitor-app-service-apps-with-datadog) or sidecar container so traces/logs reach Datadog (required for live APM/LLM telemetry).
 - CI/CD: reuse GitHub Actions (or Azure DevOps) to `npm run build`, zip deploy to App Service using `az webapp deploy` or the App Service Deploy action.
 
 ## 🔧 Runtime Configuration
@@ -58,6 +59,8 @@ description: blueprint for moving vibecode webgui from aks to managed azure paas
 | `CHAT_MODEL` | Chat deployment (`gpt-4o-mini`) | App settings |
 | `APPINSIGHTS_CONNECTION_STRING` | Pull from Application Insights resource | App/Function settings |
 | `RAG_NAMESPACE` | Optional schema qualifier for multi-tenant context | App settings |
+| `DD_API_KEY` / `DD_SITE` / `DD_ENV` / `DD_SERVICE` / `DD_VERSION` | Datadog tracing + LLM observability | App Service & Function App settings (use Key Vault references in production) |
+| `NODE_OPTIONS` | `--require dd-trace/init` to auto-load the tracer | App Service settings (already set by Terraform module) |
 
 Document any new secrets in `docs/src/content/docs/environment-variables.md` and mirror safe defaults in `.env.local.example`.
 
@@ -90,6 +93,8 @@ Notes:
 - **Queue processing latency** → configure max concurrency on Functions and consider Dedicated plan if backlog grows.
 - **Security posture drift** → schedule follow-up to add VNet integration/private endpoints once quotas stabilize.
 - **State migration errors** → perform `tofu init -migrate-state` with lock cleared and verified credentials; keep backup of local state until remote backend confirmed.
+- **Missing Datadog telemetry** → Terraform module now injects Datadog app settings; ensure `datadog_api_key` is populated at plan/apply time and install the Datadog extension or sidecar if additional log collection is needed.
+- **Local scripts not reporting traces** → Standardize on `ddtrace-run` (Python/Node) for CLI verification scripts (`scripts/run-rag-verification.ts`, ingestion jobs) so non-production runs still emit APM/LLM spans during smoke tests.
 
 ## ✅ Next Steps
 - [ ] Review with stakeholders (SRE, Product, Finance).

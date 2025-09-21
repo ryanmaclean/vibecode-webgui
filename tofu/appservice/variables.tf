@@ -15,6 +15,42 @@ variable "owner" {
   default     = "platform"
 }
 
+variable "datadog_api_key" {
+  description = "Datadog API key used by App Service workloads"
+  type        = string
+  sensitive   = true
+}
+
+variable "datadog_site" {
+  description = "Datadog site endpoint"
+  type        = string
+  default     = "datadoghq.com"
+}
+
+variable "datadog_service" {
+  description = "Service tag value for Datadog APM"
+  type        = string
+  default     = "vibecode-webgui"
+}
+
+variable "datadog_env" {
+  description = "Environment tag for Datadog"
+  type        = string
+  default     = "production"
+}
+
+variable "datadog_version" {
+  description = "Application version tag for Datadog"
+  type        = string
+  default     = "1.0.0"
+}
+
+variable "appservice_additional_app_settings" {
+  description = "Extra app settings to merge into the App Service configuration"
+  type        = map(string)
+  default     = {}
+}
+
 variable "location" {
   description = "Azure region for all resources"
   type        = string
