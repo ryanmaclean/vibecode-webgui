@@ -270,6 +270,24 @@ variable "datadog_site" {
   default     = "datadoghq.com"
 }
 
+variable "llm_observability_enabled" {
+  type        = bool
+  description = "Enable Datadog LLM Observability for application workloads"
+  default     = true
+}
+
+variable "llm_observability_agentless" {
+  type        = bool
+  description = "Send LLM observability telemetry directly to Datadog intake (agentless mode)"
+  default     = true
+}
+
+variable "llm_observability_ml_app" {
+  type        = string
+  description = "Identifier used by Datadog to group LLM observability spans"
+  default     = "vibecode-ai"
+}
+
 variable "app_image_tag" {
   type        = string
   description = "Docker image tag for the VibeCode application"

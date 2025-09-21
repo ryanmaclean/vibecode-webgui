@@ -1,3 +1,8 @@
+---
+title: Database Monitoring Setup
+description: Auto-generated placeholder. Update as needed.
+---
+
 # 🐘 Database Monitoring Setup - Datadog DBM Configuration
 
 **Status**: ✅ **IMPLEMENTATION COMPLETE** - Updated for 2025 best practices  

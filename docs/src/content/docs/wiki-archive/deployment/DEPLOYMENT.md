@@ -1,3 +1,8 @@
+---
+title: Deployment
+description: Auto-generated placeholder. Update as needed.
+---
+
 # VibeCode Deployment Guide
 
 This guide covers all deployment options for the VibeCode platform, from one-click cloud deployments to self-hosted Kubernetes clusters.

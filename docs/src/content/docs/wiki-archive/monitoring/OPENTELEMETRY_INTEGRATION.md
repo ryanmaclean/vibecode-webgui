@@ -1,3 +1,8 @@
+---
+title: Opentelemetry Integration
+description: Auto-generated placeholder. Update as needed.
+---
+
 # OpenTelemetry Integration
 
 This document describes the OpenTelemetry integration in VibeCode, providing vendor-neutral observability alongside our existing Datadog monitoring.

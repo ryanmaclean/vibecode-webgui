@@ -13,6 +13,7 @@ interface LiteLLMConfig {
   enableLogging?: boolean;
   enableCaching?: boolean;
   userAgent?: string;
+  extraHeaders?: Record<string, string>;
 }
 
 interface ChatMessage {
@@ -427,6 +428,7 @@ export class LiteLLMClient extends EventEmitter {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${this.config.apiKey}`,
       'User-Agent': this.config.userAgent || 'VibeCode-LiteLLM-Client/1.0.0',
+      ...((this.config.extraHeaders) || {}),
       ...((options.headers as Record<string, string>) || {})
     });
 

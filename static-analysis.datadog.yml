@@ -9,3 +9,28 @@ rulesets:
   - typescript-express
   - typescript-inclusive
   - typescript-node-security
+  - csharp-best-practices
+  - csharp-code-style
+  - csharp-security
+  - csharp-inclusive
+  - docker-best-practices
+  - go-best-practices
+  - go-security
+  - java-best-practices
+  - java-code-style
+  - java-security
+  - javascript-best-practices
+  - javascript-browser-security
+  - javascript-code-style
+  - javascript-common-security
+  - javascript-express
+  - javascript-inclusive
+  - javascript-node-security
+  - jsx-react
+  - python-best-practices
+  - python-code-style
+  - python-django
+  - python-flask
+  - python-inclusive
+  - python-pandas
+  - python-security

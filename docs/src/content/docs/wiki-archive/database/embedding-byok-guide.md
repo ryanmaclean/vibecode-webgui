@@ -1,3 +1,8 @@
+---
+title: Embedding Byok Guide
+description: Auto-generated placeholder. Update as needed.
+---
+
 # OpenRouter BYOK Embedding Service Guide
 
 ## 🎯 Overview

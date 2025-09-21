@@ -1,3 +1,8 @@
+---
+title: App Generator
+description: Auto-generated placeholder. Update as needed.
+---
+
 # App Generator Documentation
 
 ## Overview

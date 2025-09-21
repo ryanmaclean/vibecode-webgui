@@ -1,0 +1,17 @@
+project_name          = "vibecode"
+environment           = "prod"
+owner                 = "platform"
+location              = "eastus2"
+resource_group_name   = "rg-vibecode-appservice-prod"
+tenant_id             = "00000000-0000-0000-0000-000000000000"
+postgres_admin_login  = "vibecode_admin"
+postgres_admin_password = "replace-with-secure-password"
+postgres_sku_name       = "B_Standard_B1ms"
+postgres_storage_size_gb = 32
+postgres_backup_retention_days = 7
+app_service_plan_sku    = "B1"
+app_runtime_stack        = "node|20-lts"
+tags = {
+  CostCenter = "eng"
+  ManagedBy  = "terraform"
+}

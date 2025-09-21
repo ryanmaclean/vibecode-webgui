@@ -100,27 +100,25 @@ service:
 # Ingress configuration for Azure Application Gateway or NGINX
 ingress:
   enabled: true
-  className: "azure-application-gateway"  # or "nginx"
+  className: "nginx"
   annotations:
-    kubernetes.io/ingress.class: "azure-application-gateway"
-    appgw.ingress.kubernetes.io/ssl-redirect: "true"
-    appgw.ingress.kubernetes.io/connection-draining: "true"
-    appgw.ingress.kubernetes.io/connection-draining-timeout: "30"
-    appgw.ingress.kubernetes.io/backend-protocol: "http"
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: vibecode.eastus.cloudapp.azure.com
+    - host: vibecode.eastus2.cloudapp.azure.com
       paths:
         - path: /
           pathType: Prefix
   tls:
     - secretName: vibecode-tls
       hosts:
-        - vibecode.eastus.cloudapp.azure.com
+        - vibecode.eastus2.cloudapp.azure.com
 
 # Persistent storage for uploads and cache
 persistence:
-  enabled: true
+  enabled: false
   storageClass: "managed-csi"
   accessMode: ReadWriteOnce
   size: 50Gi
@@ -137,10 +135,30 @@ env:
   DD_VERSION: "1.0.0"
   DD_TRACE_ENABLED: "true"
   DD_LOGS_INJECTION: "true"
+  DD_IAST_ENABLED: "true"
   DD_RUNTIME_METRICS_ENABLED: "true"
   DD_DYNAMIC_INSTRUMENTATION_ENABLED: "true"
   DD_SOURCE_MAP: "true"
   DD_PROFILING_ENABLED: "true"
+  DD_SITE: "datadoghq.com"
+  DD_AGENT_HOST: "datadog.datadog.svc.cluster.local"
+  DD_TRACE_AGENT_PORT: "8126"
+  DD_LLMOBS_ENABLED: "1"
+  DD_LLMOBS_AGENTLESS_ENABLED: "1"
+  DD_LLMOBS_ML_APP: "vibecode-ai"
+  DD_DOGSTATSD_HOST: "datadog.datadog.svc.cluster.local"
+  VIBECODE_DEFAULT_LLM_MODEL: "mistralai/mistral-small-3.2-24b-instruct:free"
+  FREE_LLM_MODELS: |
+    mistralai/mistral-small-3.2-24b-instruct:free
+    x-ai/grok-4-fast:free
+    deepseek/deepseek-chat-v3.1:free
+    openai/gpt-oss-20b:free
+    openai/gpt-oss-120b:free
+    nvidia/nemotron-nano-9b-v2:free
+    z-ai/glm-4.5-air:free
+    google/gemma-3n-e4b-it:free
+    tencent/hunyuan-a13b-instruct:free
+    moonshotai/kimi-dev-72b:free
 
 # Secret management with Azure Key Vault
 secrets:
@@ -164,10 +182,10 @@ secrets:
 # Database configuration
 database:
   type: "postgresql"
-  host: "postgres-service.vibecode-platform.svc.cluster.local"
+  host: "postgresql.vibecode-platform.svc.cluster.local"
   port: 5432
   name: "vibecode"
-  ssl: true
+  ssl: false
   
 # Redis/Valkey configuration
 redis:
@@ -213,7 +231,7 @@ monitoring:
     port: 9090
     path: /metrics
     serviceMonitor:
-      enabled: true
+      enabled: false
       interval: 30s
       scrapeTimeout: 10s
   datadog:
@@ -245,6 +263,15 @@ networkPolicy:
           port: 5432  # PostgreSQL
         - protocol: TCP
           port: 6379  # Redis
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: datadog
+      ports:
+        - protocol: TCP
+          port: 8126  # Datadog APM trace agent
+        - protocol: UDP
+          port: 8125  # DogStatsD metrics
     - to: []
       ports:
         - protocol: TCP
@@ -297,7 +324,7 @@ initContainers:
       - sh
       - -c
       - |
-        until nc -z postgres-service.vibecode-platform.svc.cluster.local 5432; do
+        until nc -z postgresql.vibecode-platform.svc.cluster.local 5432; do
           echo "Waiting for PostgreSQL..."
           sleep 2
         done

@@ -7,6 +7,7 @@ import OpenAI from 'openai'
 import { prisma } from './prisma'
 import { Prisma } from '@prisma/client'
 import { EmbeddingServiceFactory, EmbeddingServiceType } from './ai/embeddingServiceFactory'
+import { generateLocalEmbedding } from './ai/localEmbedding'
 
 // Check if we're in build mode
 const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' || 
@@ -36,29 +37,37 @@ class VectorStore {
   private openai: OpenAI | null = null
   private embeddingService: EmbeddingServiceType | null = null
   private embeddingProviderLabel = 'unconfigured'
+  private openrouterEmbeddingModel = process.env.OPENROUTER_EMBEDDING_MODEL || 'text-embedding-3-small'
+  private useLocalEmbeddings = process.env.USE_LOCAL_EMBEDDINGS === 'true'
+  private localEmbeddingDimensions = parseInt(process.env.LOCAL_EMBEDDING_DIM || '1536', 10)
 
   constructor() {
     if (!isBuilding && prisma) {
       try {
-        const factory = new EmbeddingServiceFactory(prisma)
-        this.embeddingService = factory.createEmbeddingServiceFromEnv()
-
-        if (process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_DEPLOYMENT_NAME) {
-          this.embeddingProviderLabel = 'azure-openai'
-        } else if (process.env.OPENROUTER_API_KEY && process.env.OPENAI_API_KEY) {
-          this.embeddingProviderLabel = 'openrouter-byok'
-        } else if (process.env.OPENAI_API_KEY) {
-          this.embeddingProviderLabel = 'openai'
+        if (this.useLocalEmbeddings) {
+          this.embeddingProviderLabel = 'local-hash'
+          this.embeddingService = null
         } else {
-          this.embeddingProviderLabel = 'custom'
+          const factory = new EmbeddingServiceFactory(prisma)
+          this.embeddingService = factory.createEmbeddingServiceFromEnv()
+
+          if (process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_DEPLOYMENT_NAME) {
+            this.embeddingProviderLabel = 'azure-openai'
+          } else if (process.env.OPENROUTER_API_KEY && process.env.OPENAI_API_KEY) {
+            this.embeddingProviderLabel = 'openrouter-byok'
+          } else if (process.env.OPENAI_API_KEY) {
+            this.embeddingProviderLabel = 'openai'
+          } else {
+            this.embeddingProviderLabel = 'custom'
+          }
         }
       } catch (error) {
-        console.warn('Embedding service initialization failed; falling back to OpenRouter', error)
+        console.warn('Embedding service initialization failed; falling back to OpenRouter/local', error)
         this.embeddingService = null
       }
     }
 
-    if (!this.embeddingService && process.env.OPENROUTER_API_KEY) {
+    if (!this.useLocalEmbeddings && !this.embeddingService && process.env.OPENROUTER_API_KEY) {
       this.openai = new OpenAI({
         baseURL: 'https://openrouter.ai/api/v1',
         apiKey: process.env.OPENROUTER_API_KEY,
@@ -73,6 +82,13 @@ class VectorStore {
   async generateEmbedding(text: string): Promise<number[]> {
     const startTime = Date.now()
     try {
+      if (this.useLocalEmbeddings) {
+        const embedding = generateLocalEmbedding(text, this.localEmbeddingDimensions)
+        const duration = Date.now() - startTime
+        console.log(`Embedding (local-hash) generated in ${duration}ms for ${text.length} chars`)
+        return embedding
+      }
+
       if (this.embeddingService) {
         const embedding = await this.embeddingService.generateEmbedding(text)
         const duration = Date.now() - startTime
@@ -85,7 +101,7 @@ class VectorStore {
       }
 
       const response = await this.openai.embeddings.create({
-        model: 'text-embedding-3-small',
+        model: this.openrouterEmbeddingModel,
         input: text,
       })
 
@@ -99,7 +115,7 @@ class VectorStore {
       if (this.embeddingService && this.openai) {
         try {
           const response = await this.openai.embeddings.create({
-            model: 'text-embedding-3-small',
+            model: this.openrouterEmbeddingModel,
             input: text,
           })
           console.warn('Primary embedding provider failed; used openrouter fallback')
@@ -189,7 +205,7 @@ class VectorStore {
           // Use raw SQL to insert with pgvector embedding
           await prisma.$executeRawUnsafe(`
             INSERT INTO rag_chunks (file_id, chunk_id, content, start_line, end_line, tokens, embedding, metadata, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7::vector, $8, NOW())
+            VALUES ($1, $2, $3, $4, $5, $6, $7::vector, $8::jsonb, NOW())
           `, 
             fileId,
             chunkId,

@@ -18,9 +18,14 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { AzureEmbeddingService } from '../src/lib/ai/azureEmbeddingService';
+import { EmbeddingService } from '../src/lib/ai/embeddingService';
 import { VectorService } from '../src/lib/db/vector';
 import { PrismaClient } from '@prisma/client';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+import { datadogMetrics } from '../src/lib/monitoring/datadog-metrics';
+import type { MetricData } from '../src/lib/monitoring/metrics-types';
+import OpenAI from 'openai';
+import { generateLocalEmbedding } from '../src/lib/ai/localEmbedding';
 
 interface DocumentChunk {
   id: string;
@@ -37,26 +42,83 @@ interface DocumentChunk {
 }
 
 class DocumentationRAGIngester {
-  private embeddingService: AzureEmbeddingService;
+  private azureEmbeddingService: AzureEmbeddingService | null = null;
+  private openAIEmbeddingService: EmbeddingService | null = null;
   private vectorService: VectorService;
   private prisma: PrismaClient;
   private textSplitter: RecursiveCharacterTextSplitter;
+  private ddEnv: string;
+  private useOpenRouter: boolean;
+  private useOpenAI: boolean;
+  private openRouterClient: OpenAI | null = null;
+  private openRouterEmbeddingModel: string;
+  private useLocalEmbeddings: boolean;
+  private localEmbeddingDimensions: number;
+  private openAIEmbeddingModel: string;
   
   constructor() {
     this.prisma = new PrismaClient();
     this.vectorService = new VectorService(this.prisma);
-    this.embeddingService = new AzureEmbeddingService({
-      apiKey: process.env.AZURE_OPENAI_API_KEY!,
-      endpoint: process.env.AZURE_OPENAI_ENDPOINT!,
-      deploymentName: process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME || 'text-embedding-ada-002',
-      apiVersion: process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview'
-    });
+
+    this.useOpenRouter = process.env.USE_OPENROUTER === 'true';
+    this.useLocalEmbeddings = process.env.USE_LOCAL_EMBEDDINGS === 'true';
+    this.openAIEmbeddingModel = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
+    this.openRouterEmbeddingModel = process.env.OPENROUTER_EMBEDDING_MODEL || 'text-embedding-3-small';
+    this.localEmbeddingDimensions = parseInt(process.env.LOCAL_EMBEDDING_DIM || '1536', 10);
+    const openAIKey = process.env.OPENAI_API_KEY;
+    this.useOpenAI = !this.useLocalEmbeddings && !this.useOpenRouter && Boolean(openAIKey);
+
+    if (this.useLocalEmbeddings) {
+      console.log(`ℹ️  Using local hashing-based embeddings with dimension ${this.localEmbeddingDimensions}`);
+    } else if (this.useOpenRouter) {
+      const openRouterKey = process.env.OPENROUTER_API_KEY;
+      if (!openRouterKey) {
+        throw new Error('OPENROUTER_API_KEY is required when USE_OPENROUTER=true.');
+      }
+
+      this.openRouterClient = new OpenAI({
+        baseURL: 'https://openrouter.ai/api/v1',
+        apiKey: openRouterKey,
+        defaultHeaders: {
+          'HTTP-Referer': process.env.OPENROUTER_HTTP_REFERER || 'https://vibecode.ai',
+          'X-Title': process.env.OPENROUTER_APP_TITLE || 'VibeCode WebGUI'
+        }
+      });
+    } else if (this.useOpenAI) {
+      if (!openAIKey) {
+        throw new Error('OPENAI_API_KEY must be provided for OpenAI embedding mode.');
+      }
+
+      console.log(`ℹ️  Using OpenAI embeddings model: ${this.openAIEmbeddingModel}`);
+      this.openAIEmbeddingService = new EmbeddingService(openAIKey, this.openAIEmbeddingModel, this.prisma);
+    } else {
+      const apiKey = process.env.AZURE_OPENAI_API_KEY;
+      const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
+      const deploymentName = process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME || 'text-embedding-ada-002';
+      const apiVersion = process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview';
+
+      if (!apiKey || !endpoint) {
+        throw new Error('AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT are required when USE_OPENROUTER is not true.');
+      }
+
+      this.azureEmbeddingService = new AzureEmbeddingService(
+        apiKey,
+        endpoint,
+        deploymentName,
+        apiVersion,
+        this.prisma,
+        false,
+        false
+      );
+    }
     
     this.textSplitter = new RecursiveCharacterTextSplitter({
       chunkSize: 1000,
       chunkOverlap: 200,
       separators: ['\n\n', '\n', '. ', ' ', '']
     });
+
+    this.ddEnv = process.env.DD_ENV || process.env.NODE_ENV || 'development';
   }
 
   /**
@@ -150,52 +212,233 @@ class DocumentationRAGIngester {
    * Get all markdown files from the docs directory
    */
   private async getMarkdownFiles(): Promise<string[]> {
-    const docsDir = '/Users/ryan.maclean/vibecode-webgui/docs/src/content/docs';
+    const docsEnv = process.env.RAG_DOCS_PATH || '/Users/ryan.maclean/vibecode-webgui/docs/src/content/docs';
+    const docsTarget = path.isAbsolute(docsEnv) ? docsEnv : path.join(process.cwd(), docsEnv);
+
+    const stats = await fs.stat(docsTarget);
+
+    if (stats.isFile()) {
+      if (docsTarget.endsWith('.md') || docsTarget.endsWith('.mdx')) {
+        return [docsTarget];
+      }
+      console.warn(`⚠️  RAG_DOCS_PATH points to a non-markdown file: ${docsTarget}`);
+      return [];
+    }
+
+    const includeRegex = process.env.RAG_INCLUDE_REGEX ? new RegExp(process.env.RAG_INCLUDE_REGEX, 'i') : null;
+    const excludeRegex = process.env.RAG_EXCLUDE_REGEX ? new RegExp(process.env.RAG_EXCLUDE_REGEX, 'i') : null;
+    const docsRoot = docsTarget;
     const files: string[] = [];
-    
+
     async function walkDir(dir: string) {
       const entries = await fs.readdir(dir, { withFileTypes: true });
-      
+
       for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
-        
+
         if (entry.isDirectory()) {
           await walkDir(fullPath);
         } else if (entry.name.endsWith('.md') || entry.name.endsWith('.mdx')) {
+          const relativePath = path.relative(docsRoot, fullPath);
+          if (includeRegex && !includeRegex.test(relativePath)) {
+            continue;
+          }
+          if (excludeRegex && excludeRegex.test(relativePath)) {
+            continue;
+          }
           files.push(fullPath);
         }
       }
     }
-    
-    await walkDir(docsDir);
+
+    await walkDir(docsTarget);
     return files;
   }
 
   /**
-   * Store document chunks in the vector database
+   * Sanitize values so they are safe for Datadog tags
+   */
+  private sanitizeTagValue(value?: string): string {
+    if (!value) {
+      return 'unknown';
+    }
+    return value.replace(/[^a-zA-Z0-9-_]/g, '_').slice(0, 64) || 'unknown';
+  }
+
+  /**
+   * Emit Datadog metrics for each processed chunk so ingestion progress is observable
+   */
+  private async recordChunkMetric(
+    chunk: DocumentChunk,
+    durationMs: number,
+    success: boolean,
+    attempt: number,
+    error?: Error
+  ): Promise<void> {
+    const tags: Record<string, string> = {
+      component: 'rag_ingest',
+      env: this.ddEnv,
+      chunk_status: success ? 'success' : 'error',
+      category: this.sanitizeTagValue(chunk.metadata.category),
+      source: this.sanitizeTagValue(path.basename(chunk.metadata.source)),
+      chunk_index: String(chunk.metadata.chunkIndex),
+      total_chunks: String(chunk.metadata.totalChunks),
+      retry_count: String(Math.max(attempt - 1, 0))
+    };
+
+    if (error) {
+      tags.error_type = this.sanitizeTagValue(error.name || 'error');
+    }
+
+    const metrics: MetricData[] = [
+      {
+        name: 'rag.ingest.chunks_processed',
+        value: 1,
+        tags
+      },
+      {
+        name: 'rag.ingest.chunk_duration_ms',
+        value: durationMs,
+        tags
+      }
+    ];
+
+    try {
+      await datadogMetrics.sendBatchMetrics(metrics);
+    } catch (metricError) {
+      console.warn('⚠️  Failed to emit Datadog chunk metrics:', metricError);
+    }
+  }
+
+  private async sleep(ms: number): Promise<void> {
+    await new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private isRateLimitError(error: unknown): boolean {
+    const err = error as any;
+    if (!err) return false;
+    if (err.response?.status === 429) return true;
+    const message: string = err.message || '';
+    return message.toLowerCase().includes('rate limit');
+  }
+
+  private extractRetryAfter(error: any): number | null {
+    const retryAfter = error?.response?.headers?.['retry-after'];
+    if (!retryAfter) return null;
+    const numeric = Number(retryAfter);
+    if (!Number.isNaN(numeric)) {
+      return numeric * 1000;
+    }
+    return null;
+  }
+
+  private async createEmbedding(text: string): Promise<number[]> {
+    if (this.useLocalEmbeddings) {
+      return generateLocalEmbedding(text, this.localEmbeddingDimensions);
+    }
+
+    if (this.useOpenRouter) {
+      if (!this.openRouterClient) {
+        throw new Error('OpenRouter client not initialised');
+      }
+
+      const response = await this.openRouterClient.embeddings.create({
+        model: this.openRouterEmbeddingModel,
+        input: text,
+      });
+
+      const embedding = response.data?.[0]?.embedding;
+      if (!embedding) {
+        throw new Error('OpenRouter returned no embedding data');
+      }
+
+      return embedding;
+    }
+
+    if (this.openAIEmbeddingService) {
+      return this.openAIEmbeddingService.generateEmbedding(text);
+    }
+
+    if (!this.azureEmbeddingService) {
+      throw new Error('Azure embedding service not initialised');
+    }
+
+    return this.azureEmbeddingService.generateEmbedding(text);
+  }
+
+  private async processChunk(chunk: DocumentChunk): Promise<void> {
+    const maxAttempts = parseInt(process.env.RAG_CHUNK_MAX_ATTEMPTS || '5', 10);
+    const baseRateLimitDelayMs = parseInt(process.env.RAG_RATE_LIMIT_DELAY_MS || '8000', 10);
+    const backoffBaseMs = parseInt(process.env.RAG_RETRY_BACKOFF_MS || '2000', 10);
+
+    let attempt = 0;
+
+    while (attempt < maxAttempts) {
+      attempt += 1;
+      const chunkStart = Date.now();
+
+      try {
+        const embedding = await this.createEmbedding(chunk.content);
+
+        await this.vectorService.upsertEmbedding({
+          documentId: chunk.id,
+          content: chunk.content,
+          embedding,
+          metadata: chunk.metadata
+        });
+
+        console.log(`✅ Stored chunk: ${chunk.id}`);
+        await this.recordChunkMetric(chunk, Date.now() - chunkStart, true, attempt);
+        return;
+      } catch (error: any) {
+        const duration = Date.now() - chunkStart;
+        console.error(`❌ Failed to store chunk ${chunk.id} (attempt ${attempt}):`, error?.message || error);
+        await this.recordChunkMetric(
+          chunk,
+          duration,
+          false,
+          attempt,
+          error instanceof Error ? error : undefined
+        );
+
+        if (this.isRateLimitError(error)) {
+          const retryDelay = this.extractRetryAfter(error) ?? baseRateLimitDelayMs * attempt;
+          console.warn(`⏳ Rate limit encountered; waiting ${retryDelay}ms before retrying chunk ${chunk.id}`);
+
+          datadogMetrics.recordError('rate_limit', 'rag_ingest', 'azure_openai_embeddings', {
+            tags: {
+              component: 'rag_ingest',
+              env: this.ddEnv,
+              chunk_id: this.sanitizeTagValue(chunk.id),
+              attempt: String(attempt)
+            }
+          });
+
+          await this.sleep(retryDelay);
+          continue;
+        }
+
+        if (attempt < maxAttempts) {
+          const backoff = Math.min(backoffBaseMs * attempt * attempt, 30000);
+          console.warn(`🔄 Retrying chunk ${chunk.id} in ${backoff}ms`);
+          await this.sleep(backoff);
+        } else {
+          console.error(`🚫 Giving up on chunk ${chunk.id} after ${attempt} attempts.`);
+        }
+      }
+    }
+  }
+
+  /**
+   * Store document chunks in the vector database sequentially with rate-limit awareness
    */
   private async storeDocumentChunks(chunks: DocumentChunk[]): Promise<void> {
-    const batchSize = 10; // Process in batches to avoid overwhelming the API
-    
-    for (let i = 0; i < chunks.length; i += batchSize) {
-      const batch = chunks.slice(i, i + batchSize);
-      
-      await Promise.all(batch.map(async (chunk) => {
-        try {
-          await this.embeddingService.storeDocument(
-            chunk.id,
-            chunk.content,
-            chunk.metadata
-          );
-          console.log(`✅ Stored chunk: ${chunk.id}`);
-        } catch (error) {
-          console.error(`❌ Failed to store chunk ${chunk.id}:`, error);
-        }
-      }));
-      
-      // Add delay between batches to respect rate limits
-      if (i + batchSize < chunks.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+    const interChunkDelayMs = parseInt(process.env.RAG_INTER_CHUNK_DELAY_MS || '250', 10);
+
+    for (const chunk of chunks) {
+      await this.processChunk(chunk);
+      if (interChunkDelayMs > 0) {
+        await this.sleep(interChunkDelayMs);
       }
     }
   }
@@ -208,8 +451,13 @@ class DocumentationRAGIngester {
     
     try {
       // Get all markdown files
-      const markdownFiles = await this.getMarkdownFiles();
-      console.log(`📚 Found ${markdownFiles.length} documentation files`);
+      let markdownFiles = await this.getMarkdownFiles();
+      const maxFiles = parseInt(process.env.RAG_MAX_FILES || '0', 10);
+      if (maxFiles > 0 && markdownFiles.length > maxFiles) {
+        console.warn(`⚠️  Limiting ingestion to first ${maxFiles} file(s) out of ${markdownFiles.length}`);
+        markdownFiles = markdownFiles.slice(0, maxFiles);
+      }
+      console.log(`📚 Using ${markdownFiles.length} documentation file(s) for ingestion`);
       
       // Process all files and collect chunks
       const allChunks: DocumentChunk[] = [];
@@ -221,10 +469,17 @@ class DocumentationRAGIngester {
       }
       
       console.log(`📦 Generated ${allChunks.length} document chunks`);
+
+      const maxChunks = parseInt(process.env.RAG_MAX_CHUNKS || '0', 10);
+      let chunksToIngest = allChunks;
+      if (maxChunks > 0 && allChunks.length > maxChunks) {
+        console.warn(`⚠️  Limiting ingestion to first ${maxChunks} chunk(s) out of ${allChunks.length}`);
+        chunksToIngest = allChunks.slice(0, maxChunks);
+      }
       
       // Store chunks in vector database
       console.log('💾 Storing chunks in vector database...');
-      await this.storeDocumentChunks(allChunks);
+      await this.storeDocumentChunks(chunksToIngest);
       
       // Generate summary statistics
       const categories = [...new Set(allChunks.map(chunk => chunk.metadata.category))];
@@ -258,7 +513,7 @@ class DocumentationRAGIngester {
     console.log(`\n🔍 Testing search with query: "${query}"`);
     
     try {
-      const queryEmbedding = await this.embeddingService.generateEmbedding(query);
+      const queryEmbedding = await this.createEmbedding(query);
       const results = await this.vectorService.findSimilarDocuments({
         embedding: queryEmbedding,
         threshold: 0.7,
@@ -283,7 +538,11 @@ async function main() {
   
   try {
     await ingester.ingestDocumentation();
-    await ingester.testSearch();
+    if (process.env.RAG_SKIP_TEST_SEARCH === 'true') {
+      console.log('ℹ️  Skipping post-ingestion search validation (RAG_SKIP_TEST_SEARCH=true).');
+    } else {
+      await ingester.testSearch();
+    }
   } catch (error) {
     console.error('Script failed:', error);
     process.exit(1);

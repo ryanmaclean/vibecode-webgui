@@ -1,3 +1,8 @@
+---
+title: Final Webinar Readiness Assessment
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Final Webinar Readiness Assessment
 
 **Topic**: "Practical PostgreSQL and GenAI Observability on Azure with Datadog"

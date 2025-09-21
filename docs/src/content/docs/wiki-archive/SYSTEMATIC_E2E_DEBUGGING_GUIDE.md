@@ -1,3 +1,8 @@
+---
+title: Systematic E2e Debugging Guide
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Systematic E2E Debugging Guide
 
 **Purpose**: Comprehensive methodology for systematic E2E test debugging and infrastructure improvement

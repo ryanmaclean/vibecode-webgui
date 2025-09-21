@@ -9,7 +9,7 @@
   },
   "scripts": {
     "setup": "node scripts/setup-development.js",
-    "dev": "node --require ./src/instrument.ts node_modules/.bin/next dev",
+    "dev": "next dev",
     "dev:simple": "next dev",
     "build": "next build",
     "start": "next start",
@@ -89,6 +89,8 @@
   "dependencies": {
     "@ai-sdk/openai": "1.3.24",
     "@ai-sdk/react": "1.2.12",
+    "@azure/storage-blob": "^12.18.0",
+    "@azure/storage-queue": "^12.13.0",
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-python": "^6.2.1",
     "@datadog/browser-logs": "6.18.0",
@@ -150,6 +152,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "codemirror": "^6.0.2",
+    "critters": "0.0.19",
     "dd-trace": "5.61.1",
     "framer-motion": "12.23.12",
     "gray-matter": "^4.0.3",

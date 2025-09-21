@@ -1,3 +1,8 @@
+---
+title: Database Monitoring
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Database Monitoring with Datadog
 
 This document outlines the setup and configuration of Datadog Database Monitoring (DBM) for the VibeCode platform.

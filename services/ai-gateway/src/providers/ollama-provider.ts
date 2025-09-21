@@ -8,7 +8,7 @@ export class OllamaProvider implements Provider {
 
   private host = (process.env.OLLAMA_HOST || 'http://localhost:11434').replace(/\/$/, '');
 
-  async chatCompletion(req: ChatRequest, userId?: string): Promise<ChatResponse> {
+  async chatCompletion(req: ChatRequest, _userId?: string): Promise<ChatResponse> {
     const model = (req.model || 'llama3.2').replace(/^ollama:/, '');
     const url = `${this.host}/api/chat`;
 

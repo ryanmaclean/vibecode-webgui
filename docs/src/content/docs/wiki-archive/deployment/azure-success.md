@@ -1,3 +1,8 @@
+---
+title: Azure Success
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Azure PostgreSQL + pgvector Deployment: SUCCESSFUL
 
 ## Executive Summary

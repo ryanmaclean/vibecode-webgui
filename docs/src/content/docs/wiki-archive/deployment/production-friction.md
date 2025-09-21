@@ -1,3 +1,8 @@
+---
+title: Production Friction
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Production Friction Points Guide: PostgreSQL + GenAI on Azure
 
 > **Real-world gotchas, solutions, and lessons learned from deploying GenAI applications with PostgreSQL + pgvector**

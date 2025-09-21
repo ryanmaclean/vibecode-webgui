@@ -1,3 +1,8 @@
+---
+title: New Features
+description: Auto-generated placeholder. Update as needed.
+---
+
 # New Features (2025-07-19)
 
 This document outlines the major new features and improvements implemented in the latest VibeCode platform update.

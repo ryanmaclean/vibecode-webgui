@@ -1,3 +1,8 @@
+---
+title: Test Coverage
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Test Coverage Report
 
 ## Overview

@@ -20,7 +20,7 @@ export class HuggingFaceProvider implements Provider {
       .join('\n');
   }
 
-  async chatCompletion(req: ChatRequest, userId?: string): Promise<ChatResponse> {
+  async chatCompletion(req: ChatRequest, _userId?: string): Promise<ChatResponse> {
     if (!this.apiToken) {
       throw new Error('HUGGINGFACE_API_TOKEN is required to use Hugging Face provider');
     }

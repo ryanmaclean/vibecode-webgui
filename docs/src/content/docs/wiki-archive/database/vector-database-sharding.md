@@ -1,3 +1,8 @@
+---
+title: Vector Database Sharding
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Vector Database Sharding Architecture
 
 ## Overview

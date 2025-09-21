@@ -61,6 +61,9 @@ kind-config.yaml
 k8s/
 scripts/
 tests/
+tofu/
+infrastructure/
+azure/
 
 # Documentation
 docs/
