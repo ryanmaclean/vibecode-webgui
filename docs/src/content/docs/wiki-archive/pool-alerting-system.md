@@ -1,3 +1,8 @@
+---
+title: Pool Alerting System
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Database Pool Exhaustion Alerting System
 
 **Status**: ✅ **COMPLETED**  

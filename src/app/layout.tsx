@@ -30,7 +30,6 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Tailwind CSS v4 is now handled via PostCSS in Docker mode */}
-        <link rel="stylesheet" href="/globals.css" media="all" />
       </head>
       <body
         className="antialiased"

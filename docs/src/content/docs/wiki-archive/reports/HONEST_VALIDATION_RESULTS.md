@@ -1,3 +1,8 @@
+---
+title: Honest Validation Results
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Honest Validation Results: What's Actually Tested vs. Claimed
 
 ## 🔍 Validation Reality Check

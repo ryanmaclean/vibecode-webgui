@@ -1,3 +1,8 @@
+---
+title: Datadog Test Monitoring Summary
+description: Auto-generated placeholder. Update as needed.
+---
+
 # VibeCode Test Monitoring with Datadog - Implementation Summary
 
 ## ✅ **COMPLETED: Full Datadog CI Visibility Integration**

@@ -43,6 +43,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - NEXTAUTH_SECRET=test-secret-for-kind-testing
       - NEXTAUTH_URL=http://localhost:3003
+      - DD_IAST_ENABLED=true
       - USE_CONNECTION_POOL=true
       - CONNECTION_POOL_MAX_CONNECTIONS=10
       - CONNECTION_POOL_MIN_CONNECTIONS=2

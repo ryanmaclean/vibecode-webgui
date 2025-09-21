@@ -32,15 +32,15 @@ EOF
 
 ## 🏗️ **Deployment Status**
 
-[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-ONLINE-brightgreen?style=for-the-badge)](http://20.36.249.127)
+[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-ONLINE-brightgreen?style=for-the-badge)](https://vibecode.eastus2.cloudapp.azure.com)
 [![Infrastructure Tests](https://img.shields.io/badge/Infrastructure%20Tests-✅%20Passing-brightgreen?style=for-the-badge)](./tests/tofu/)
 [![OpenTofu](https://img.shields.io/badge/OpenTofu-v1.7.3-blue?style=for-the-badge&logo=terraform)](https://opentofu.org/)
 [![Azure AKS](https://img.shields.io/badge/Azure%20AKS-DEPLOYED-brightgreen?style=for-the-badge&logo=microsoft-azure)](https://azure.microsoft.com/en-us/services/kubernetes-service/)
 
 ### 🌐 **Production Deployment**
-- **Live Application**: [http://20.36.249.127](http://20.36.249.127)
-- **AKS Cluster**: `vibecode-prod-aks-84859296` (East US 2)
-- **Container Registry**: `vibecodecr84859296.azurecr.io`
+- **Live Application**: [https://vibecode.eastus2.cloudapp.azure.com](https://vibecode.eastus2.cloudapp.azure.com)
+- **AKS Cluster**: `vibecode-prod-aks-6c3db0e6` (East US 2)
+- **Container Registry**: `vibecodecr6c3db0e6.azurecr.io`
 - **Application Version**: `v0.2.0`
 - **Database**: PostgreSQL 15 with pgvector (in-cluster)
 - **Monitoring**: Datadog with Database Monitoring enabled
@@ -48,20 +48,97 @@ EOF
 ### 🚀 **Quick Deploy to Azure AKS**
 
 ```bash
-# 1. Install dependencies
-pip install -r requirements-dev.txt
+# 1. Create AKS cluster
+./scripts/create-aks-cluster.sh
 
-# 2. Validate environment
-python scripts/validate-infrastructure.py
+# 2. Configure DNS with Azure public IP
+./scripts/create-public-ip.sh
 
-# 3. Deploy infrastructure
-cp tofu/terraform.tfvars.example tofu/terraform.tfvars
-# Edit terraform.tfvars with your values
-python scripts/deploy-aks.py --config config.json
+# 3. Deploy full stack (ingress, app, SSL)
+./scripts/deploy-vibecode.sh
 
-# 4. Run tests
-python scripts/run-infrastructure-tests.py --unit
+# 4. Setup Datadog monitoring
+export DD_API_KEY=your_datadog_api_key
+./scripts/setup-aks-datadog-monitoring.sh
 ```
+
+For advanced options and detailed guidance, see the [AKS Deployment Guide](./docs/aks-datadog-monitoring-guide.md).
+
+> **Note:** Make sure you have Azure CLI (`az`) and kubectl installed and configured. If using OpenTofu, see the section below about remote state management.
+
+### 📈 **Datadog Monitoring Setup**
+
+The platform comes with comprehensive Datadog monitoring:
+
+```bash
+# Set your Datadog API key
+export DD_API_KEY=your_datadog_api_key
+export DD_SITE=datadoghq.com  # Optional, defaults to datadoghq.com
+
+# Deploy Datadog monitoring stack
+./scripts/setup-aks-datadog-monitoring.sh --cluster-name vibecode-prod-aks-6c3db0e6
+
+# Validate Database Monitoring (after application is deployed)
+./scripts/verify-datadog-dbm.sh
+```
+
+The monitoring stack includes:
+- Node Agent with APM, logs, and process monitoring
+- Cluster Agent for Kubernetes metrics
+- Database Monitoring (DBM) for PostgreSQL and pgvector
+- Custom dashboards for vector search monitoring
+- System Probe for network monitoring
+
+For troubleshooting and advanced configuration, see the [Datadog Monitoring Guide](./docs/aks-datadog-monitoring-guide.md).
+
+### 📚 **Seed the RAG Dataset**
+
+The `RAGChunk` Prisma model now stores embeddings directly as `vector(1536)` values, so once PostgreSQL is reachable you should:
+
+```bash
+npx prisma generate
+npx prisma migrate deploy
+./scripts/generate-vector-activity.sh           # or your preferred seeding script
+npx ts-node scripts/verify-rag-functionality.ts # optional: smoke test retrieval
+```
+
+This loads demo content into pgvector and verifies the Lovable-style chat flows before the Datadog dashboards go live.
+
+### 🗄️ **Harden OpenTofu State (Azure Storage)**
+
+To keep disaster-recovery work from deleting the local `terraform.tfstate`, migrate the stack to Azure Blob Storage:
+
+```bash
+# one-time provisioning of the remote backend
+./scripts/create-remote-state-storage.sh \
+  RESOURCE_GROUP=rg-vibecode-tofu-state \
+  STORAGE_ACCOUNT_NAME=vibecodetfstate01 \
+  CONTAINER_NAME=opentofu-state
+
+# copy the sample backend config and initialize
+cp tofu/backend.tf.example tofu/backend.tf
+tofu init -migrate-state
+```
+
+After migration, future `tofu plan/apply` runs will use the blob container (`opentofu-state`) instead of the fragile local file.
+
+### ☁️ **App Service Stack (Preview)**
+
+The new `tofu/appservice/` project provisions an Azure PaaS alternative (Storage + App Service + Function App + Postgres Flexible Server + Monitoring). To experiment locally:
+
+```bash
+cd tofu/appservice
+cp appservice.tfvars.example appservice.auto.tfvars            # customise project name, env, passwords
+tofu init                                                      # uses backend.tf.sample or local state
+tofu plan                                                      # review the PaaS resources
+```
+
+Modules currently implemented:
+- `modules/storage` – Storage account, private uploads container, ingestion queue
+- `modules/app_service` – Linux App Service Plan & Web App (managed identity, monitoring settings)
+- `modules/function_app` – Consumption plan Function App for queue-triggered PDF processing
+
+Remaining work: populate monitoring, Key Vault, and Azure OpenAI modules plus application deployment scripts (see `TODO.md` for the active follow-ups).
 
 ### 🧪 **Production Testing**
 
@@ -87,9 +164,10 @@ npm run test:production:all
 - **Datadog monitoring** with database monitoring (DBM)
 - **Network policies** and security hardening
 - **Rollback mechanisms** for deployment failures
+- **SSL/TLS** via Let's Encrypt with cert-manager
 
 ### 💸 **Minimize Your AKS Footprint**
-- Keep the system node pool at the platform minimum (two Linux nodes on a 4-vCPU, 4+ GB SKU such as `Standard_D4as_v5`) and taint it so only control-plane add-ons schedule there.
+- Keep the system node pool at the platform minimum (two Linux nodes on a 4-vCPU, 4+ GB SKU such as `Standard_D4as_v5`) and taint it so only control-plane add-ons schedule there.
 - Run application workloads on a separate user pool with the cluster autoscaler `minCount` set to `0` so it scales to zero when idle.
 - Stop and start the cluster (`az aks stop` / `az aks start`) during predictable downtimes to avoid paying for compute while the environment is quiet.
 - Stay on the AKS Free tier unless you need an uptime SLA—the control plane remains free and you only pay for the agent nodes that are running.
@@ -133,6 +211,7 @@ npm run test:production:all
 | **⚡ Direct Setup** | `make setup` | Setup pgvector + DBM |
 | **🎯 Generate Activity** | `make vector` | Create vector data |
 | **📊 View Dashboard** | `make dashboard` | Open Datadog |
+| **☁️ Deploy to AKS** | `./scripts/deploy-vibecode.sh` | Full production deployment |
 
 ---
 
@@ -140,14 +219,19 @@ npm run test:production:all
 
 ```mermaid
 graph TB
-    subgraph "Kubernetes Cluster"
+    subgraph "Azure Kubernetes Service"
         A[VibeCode App] --> B[PostgreSQL + pgvector]
         B --> C[Datadog Agent]
+        I[NGINX Ingress] --> A
+        I --> D[Let's Encrypt/cert-manager]
     end
-    C --> D[Datadog Dashboard]
-    D --> E[Query Samples]
-    D --> F[Performance Metrics]
-    D --> G[Custom pgvector Metrics]
+    C --> E[Datadog Platform]
+    E --> F[Database Monitoring]
+    E --> G[APM Traces]
+    E --> H[Logs]
+    F --> J[Query Samples]
+    F --> K[Performance Metrics]
+    F --> L[Vector Metrics]
 ```
 
 ---
@@ -178,6 +262,18 @@ SELECT * FROM documents WHERE content @@ 'query'
 ORDER BY embedding <=> '[...]'::vector;
 ```
 
+### Infrastructure Monitoring
+- Node CPU, memory, and disk usage
+- Kubernetes pod resource utilization
+- AKS cluster health metrics
+- Network traffic patterns
+
+### Application Performance
+- API response times
+- Error rates
+- Throughput metrics
+- User experience metrics
+
 </details>
 
 ---
@@ -188,13 +284,15 @@ ORDER BY embedding <=> '[...]'::vector;
 - **ML Engineers**: Vector database performance optimization  
 - **DevOps**: Kubernetes + PostgreSQL + monitoring stack
 - **Datadog Users**: Custom DBM metrics and dashboards
+- **Cloud Architects**: Azure AKS deployment patterns
 
 ---
 
 ## 🔧 **Requirements**
 
-- Kubernetes cluster (Docker Desktop, KIND, minikube)
-- `kubectl` configured
+- Kubernetes cluster (AKS, Docker Desktop, KIND, minikube)
+- `kubectl` and `az` CLI configured
+- Helm for package management
 - Optional: Datadog API key for full monitoring
 
 ---

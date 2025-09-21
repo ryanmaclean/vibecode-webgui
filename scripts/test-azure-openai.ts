@@ -17,7 +17,7 @@ if (missingVars.length > 0) {
 // Initialize Azure OpenAI client
 const client = new OpenAI({
   apiKey: process.env.AZURE_OPENAI_API_KEY,
-  baseURL: `${process.env.AZURE_OPENAI_ENDPOINT}/openai/deployments/${process.env.AZURE_OPENAI_DEPLOYMENT_NAME || 'text-embedding-3-small'}`,
+  baseURL: `${process.env.AZURE_OPENAI_ENDPOINT}/openai/deployments/${process.env.AZURE_OPENAI_DEPLOYMENT_NAME || 'text-embedding-3-small-high'}`,
   defaultQuery: { 'api-version': process.env.AZURE_OPENAI_API_VERSION || '2023-05-15' },
   defaultHeaders: { 'api-key': process.env.AZURE_OPENAI_API_KEY },
 });
@@ -27,7 +27,7 @@ async function testEmbedding() {
     console.log('🚀 Testing Azure OpenAI Embedding...');
     
     const response = await client.embeddings.create({
-      model: process.env.AZURE_OPENAI_DEPLOYMENT_NAME || 'text-embedding-3-small',
+      model: process.env.AZURE_OPENAI_DEPLOYMENT_NAME || 'text-embedding-3-small-high',
       input: 'Test embedding from VibeCode',
     });
 

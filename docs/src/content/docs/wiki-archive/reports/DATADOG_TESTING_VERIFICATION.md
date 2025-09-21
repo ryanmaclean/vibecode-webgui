@@ -1,3 +1,8 @@
+---
+title: Datadog Testing Verification
+description: Auto-generated placeholder. Update as needed.
+---
+
 # 🧪 **Datadog CI Visibility Integration - TESTED & VERIFIED**
 
 ## ✅ **What We Actually Tested (Not Just Assumed)**

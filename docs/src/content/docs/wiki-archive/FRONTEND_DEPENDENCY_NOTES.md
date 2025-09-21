@@ -1,3 +1,8 @@
+---
+title: Frontend Dependency Notes
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Frontend Dependency Notes
 
 ## @tremor/react Upgrade (September 16, 2025)

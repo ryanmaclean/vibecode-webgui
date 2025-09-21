@@ -1,3 +1,8 @@
+---
+title: Typecheck Status
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Type-Check Status (September 16, 2025)
 
 ## Current Result

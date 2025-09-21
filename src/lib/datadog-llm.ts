@@ -33,14 +33,44 @@ class LLMObservability {
 
   private constructor() {
     const { service, env } = getServiceEnvVersion()
+    const parseFlag = (value: string | undefined, defaultValue = false) => {
+      if (typeof value !== 'string') {
+        return defaultValue
+      }
+      const normalized = value.trim().toLowerCase()
+      if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+        return true
+      }
+      if (['0', 'false', 'no', 'off'].includes(normalized)) {
+        return false
+      }
+      return defaultValue
+    }
+
     this.config = {
-      enabled: process.env.DD_LLMOBS_ENABLED === '1' || false,
-      agentlessEnabled: process.env.DD_LLMOBS_AGENTLESS_ENABLED === '1' || true,
+      enabled: parseFlag(process.env.DD_LLMOBS_ENABLED, false),
+      agentlessEnabled: parseFlag(process.env.DD_LLMOBS_AGENTLESS_ENABLED, true),
       mlApp: process.env.DD_LLMOBS_ML_APP || 'vibecode-ai',
       site: getDatadogSite(),
       apiKey: getDatadogApiKey(),
       service,
       environment: env,
+    }
+
+    if (!process.env.DD_LLMOBS_AGENTLESS_ENABLED && this.config.apiKey) {
+      this.config.agentlessEnabled = true
+    }
+
+    if (!process.env.DD_LLMOBS_ENABLED && this.config.agentlessEnabled && this.config.apiKey) {
+      this.config.enabled = true
+    }
+
+    if (this.config.agentlessEnabled && !this.config.apiKey) {
+      this.config.agentlessEnabled = false
+      if (!process.env.DD_LLMOBS_ENABLED) {
+        this.config.enabled = false
+      }
+      console.warn('[DatadogLLM] Agentless requested but DD_API_KEY is missing')
     }
   }
 

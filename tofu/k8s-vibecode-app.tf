@@ -53,6 +53,10 @@ resource "kubernetes_config_map" "vibecode_app_config" {
     DD_RUNTIME_METRICS_ENABLED         = "true"
     DD_SOURCE_MAP_PATH                 = "/app/source-maps"
     DD_UPLOAD_SOURCE_MAPS              = "true"
+    DD_SITE                            = var.datadog_site
+    DD_LLMOBS_ENABLED                  = var.llm_observability_enabled ? "1" : "0"
+    DD_LLMOBS_AGENTLESS_ENABLED        = var.llm_observability_agentless ? "1" : "0"
+    DD_LLMOBS_ML_APP                   = var.llm_observability_ml_app
 
     # Security settings
     DD_REDACTION_RULES = jsonencode([

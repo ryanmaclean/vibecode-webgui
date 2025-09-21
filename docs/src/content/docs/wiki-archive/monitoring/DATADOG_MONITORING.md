@@ -1,3 +1,8 @@
+---
+title: Datadog Monitoring
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Enhanced Datadog Monitoring for VibeCode
 
 This document describes the comprehensive Datadog monitoring implementation for the VibeCode platform, including AI terminal features, Claude Code CLI usage, and OpenRouter API monitoring.

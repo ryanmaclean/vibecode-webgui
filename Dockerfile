@@ -16,6 +16,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Generate Prisma client before build so standalone output contains it
+RUN npx prisma generate
+
 # Build the application
 RUN npm run build
 
@@ -31,6 +34,17 @@ RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
 
+# Ensure Prisma schema and generated client are available at runtime
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+# Bring instrumentation helper for Datadog bootstrap
+COPY --from=builder --chown=nextjs:nodejs /app/src/instrument.cjs ./instrument.cjs
+
+# Ensure Datadog env helper is available at runtime for agentless monitoring
+RUN mkdir -p lib/monitoring
+COPY --from=builder --chown=nextjs:nodejs /app/src/lib/monitoring/datadog-env.shared.js ./lib/monitoring/datadog-env.shared.js
+
 # Set the correct permission for prerender cache
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
@@ -45,5 +59,13 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+ENV NODE_OPTIONS="--require ./instrument.cjs"
+ENV DD_TRACE_AGENT_URL="http://127.0.0.1:8126"
+ENV DD_TRACE_STARTUP_LOGS=false
+ENV DD_LOGS_INJECTION=true
+ENV DD_LLMOBS_ENABLED=true
+ENV DD_LLMOBS_ML_APP="vibechat-rag"
+ENV DD_LLMOBS_AGENTLESS_ENABLED=true
+ENV DD_IAST_ENABLED=true
 
 CMD ["node", "server.js"]

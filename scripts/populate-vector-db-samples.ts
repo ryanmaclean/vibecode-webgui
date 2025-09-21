@@ -549,6 +549,91 @@ public class RealTimeAnalytics {
   }
 ]
 
+const MAX_RETRIES = parseInt(process.env.EMBEDDING_MAX_RETRIES || '5', 10)
+const RETRY_BASE_DELAY_MS = parseInt(process.env.EMBEDDING_RETRY_BASE_DELAY_MS || '1000', 10)
+const FILE_DELAY_MS = parseInt(process.env.EMBEDDING_FILE_DELAY_MS || '500', 10)
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function withRetry<T>(operationName: string, fn: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      return await fn()
+    } catch (error: any) {
+      const status = (error?.response?.status) || (typeof error?.status === 'number' ? error.status : undefined)
+      const isRateLimited = status === 429 || /status code 429/i.test(error?.message || '')
+      const isRetryable = isRateLimited || /Temporary failure/i.test(error?.message || '')
+
+      if (!isRetryable || attempt === MAX_RETRIES - 1) {
+        throw error
+      }
+
+      const delay = RETRY_BASE_DELAY_MS * Math.pow(2, attempt)
+      console.warn(`⚠️  ${operationName} attempt ${attempt + 1} failed (${error?.message || error}); retrying in ${delay}ms`)
+      await sleep(delay)
+    }
+  }
+
+  // Should never reach here
+  throw new Error(`${operationName} failed after ${MAX_RETRIES} attempts`)
+}
+
+async function getOrCreateWorkspace(library: LibrarySample) {
+  const slug = `apache-${library.name.toLowerCase().replace(/\s+/g, '-')}`
+  const existing = await prisma.workspace.findUnique({
+    where: { workspace_id: slug }
+  })
+
+  if (existing) {
+    return existing
+  }
+
+  return prisma.workspace.create({
+    data: {
+      workspace_id: slug,
+      name: `${library.name} Examples`,
+      user_id: 1,
+      status: 'active'
+    }
+  })
+}
+
+async function upsertFile(workspaceId: number, fileName: string, filePath: string, fileContent: string, language: string) {
+  const existing = await prisma.file.findFirst({
+    where: {
+      workspace_id: workspaceId,
+      name: fileName
+    }
+  })
+
+  if (existing) {
+    return prisma.file.update({
+      where: { id: existing.id },
+      data: {
+        path: filePath,
+        content: fileContent,
+        language,
+        size: fileContent.length,
+        updated_at: new Date()
+      }
+    })
+  }
+
+  return prisma.file.create({
+    data: {
+      name: fileName,
+      path: filePath,
+      content: fileContent,
+      language,
+      size: fileContent.length,
+      user_id: 1,
+      workspace_id: workspaceId
+    }
+  })
+}
+
 async function populateVectorDatabase() {
   console.log('🚀 Populating Vector Database with Apache-Licensed Library Samples...')
   
@@ -562,15 +647,7 @@ async function populateVectorDatabase() {
     for (const library of APACHE_LIBRARIES) {
       console.log(`📦 Processing ${library.name}...`)
       
-      // Create workspace for this library
-      const workspace = await prisma.workspace.create({
-        data: {
-          workspace_id: `apache-${library.name.toLowerCase().replace(/\s+/g, '-')}`,
-          name: `${library.name} Examples`,
-          user_id: 1, // Default user
-          status: 'active'
-        }
-      })
+      const workspace = await getOrCreateWorkspace(library)
       
       // Process each code example
       for (const example of library.codeExamples) {
@@ -598,26 +675,21 @@ ${example.code}
         mkdirSync(join(samplesDir, library.name.replace(/\s+/g, '-')), { recursive: true })
         writeFileSync(filePath, fileContent)
         
-        // Create file record in database
-        const file = await prisma.file.create({
-          data: {
-            name: fileName,
-            path: filePath,
-            content: fileContent,
-            language: library.language,
-            size: fileContent.length,
-            user_id: 1,
-            workspace_id: workspace.id
-          }
-        })
+        const file = await upsertFile(workspace.id, fileName, filePath, fileContent, library.language)
         
         // Create chunks for vector search
         const chunks = createChunks(fileContent, example, library)
         
         // Store in vector database
-        await vectorStore.storeChunks(file.id, chunks)
+        await withRetry(`storeChunks:${fileName}`, async () => {
+          await vectorStore.storeChunks(file.id, chunks)
+        })
         
         console.log(`  ✅ Added ${fileName} with ${chunks.length} chunks`)
+      }
+
+      if (FILE_DELAY_MS > 0) {
+        await sleep(FILE_DELAY_MS)
       }
     }
     

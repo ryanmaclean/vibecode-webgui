@@ -1,3 +1,8 @@
+---
+title: Toto Integration
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Datadog Toto Test Observability
 
 ## Overview

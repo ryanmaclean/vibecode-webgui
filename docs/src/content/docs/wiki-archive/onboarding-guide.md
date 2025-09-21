@@ -1,3 +1,8 @@
+---
+title: Onboarding Guide
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Developer Onboarding Guide
 
 Welcome to the VibeCode WebGUI development team! This guide will help you get up and running quickly with our comprehensive AI-powered development platform.

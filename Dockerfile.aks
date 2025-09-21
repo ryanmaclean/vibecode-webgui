@@ -15,6 +15,9 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Generate Prisma client for runtime usage before building
+RUN npx prisma generate
+
 # Build application with source maps enabled
 ENV NODE_ENV=production
 ENV GENERATE_SOURCEMAP=true
@@ -39,6 +42,9 @@ WORKDIR /app
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
 # Copy source maps for Datadog Dynamic Instrumentation
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./source-maps/.next
@@ -50,6 +56,7 @@ ENV DD_PROFILING_ENABLED=true
 ENV DD_LOGS_INJECTION=true
 ENV DD_TRACE_ENABLED=true
 ENV DD_RUNTIME_METRICS_ENABLED=true
+ENV DD_IAST_ENABLED=true
 
 # Source map configuration
 ENV DD_SOURCE_MAP_PATH=/app/source-maps

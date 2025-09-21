@@ -8,19 +8,19 @@ metadata:
     app.kubernetes.io/instance: datadog
     app.kubernetes.io/component: database-monitoring
 data:
-  # PostgreSQL DBM configuration
-  postgres.d/conf.yaml: |
+  # PostgreSQL DBM configuration (Helm maps this to postgres.d/conf.yaml)
+  postgres.yaml: |
     init_config:
       min_collection_interval: 15
       use_global_custom_queries: true
     
     instances:
       - dbm: true
-        host: postgres.vibecode.svc.cluster.local
+        host: postgresql.vibecode-platform.svc.cluster.local
         port: 5432
         username: datadog
         dbname: vibecode
-        ssl: false
+        ssl: 'disable'
         tags:
           - env:production
           - service:vibecode-webgui

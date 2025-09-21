@@ -1,3 +1,8 @@
+---
+title: Postgres Vector Troubleshooting
+description: Auto-generated placeholder. Update as needed.
+---
+
 # Azure PostgreSQL with pgvector Troubleshooting Guide
 
 This document provides solutions for common issues when working with pgvector on Azure Database for PostgreSQL Flexible Server.
