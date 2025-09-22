@@ -26,11 +26,6 @@ export interface ChatCompletionFallbackResult {
   attempts: FallbackAttempt[];
 }
 
-const hasExplicitBase = Boolean(process.env.LITELLM_BASE_URL);
-const hasLiteLLMKey = Boolean(process.env.LITELLM_MASTER_KEY);
-const hasOpenRouterKey = Boolean(process.env.OPENROUTER_API_KEY);
-const hasOpenAIKey = Boolean(process.env.OPENAI_API_KEY);
-
 const DEFAULT_OPENROUTER_FREE_MODELS = [
   'mistralai/mistral-small-3.2-24b-instruct:free',
   'x-ai/grok-4-fast:free',
@@ -43,79 +38,102 @@ const DEFAULT_OPENROUTER_FREE_MODELS = [
   'tencent/hunyuan-a13b-instruct:free',
   'moonshotai/kimi-dev-72b:free'
 ];
+const openAIChatModel = process.env['OPENAI_CHAT_MODEL'] || 'gpt-4o-mini';
+const openAIBaseUrl = process.env['OPENAI_BASE_URL'] || 'https://api.openai.com/v1';
+let cachedOpenAIClient: LiteLLMClient | null = null;
 
 function parseModelList(raw?: string | null): string[] {
   if (!raw) return [];
   return raw
-    .split(/[,\n]/)
+    .split(/[\n,]/)
     .map(model => model.trim())
     .filter(Boolean);
 }
 
-const envFreeModelList = parseModelList(process.env.FREE_LLM_MODELS);
-const combinedModelSet = new Set<string>();
-for (const model of envFreeModelList) combinedModelSet.add(model);
-for (const model of DEFAULT_OPENROUTER_FREE_MODELS) combinedModelSet.add(model);
+function hasOpenRouterKey(): boolean {
+  return Boolean(process.env['OPENROUTER_API_KEY']);
+}
 
-const baseUrl = process.env.LITELLM_BASE_URL
-  || (hasOpenRouterKey ? 'https://openrouter.ai/api/v1' : undefined)
-  || (hasOpenAIKey ? 'https://api.openai.com/v1' : undefined)
-  || 'http://localhost:4000';
+function hasOpenAIKey(): boolean {
+  return Boolean(process.env['OPENAI_API_KEY']);
+}
 
-const apiKey = process.env.LITELLM_MASTER_KEY
-  || process.env.OPENROUTER_API_KEY
-  || process.env.OPENAI_API_KEY
-  || 'sk-vibecode-master-key-12345';
+function hasLiteLLMKey(): boolean {
+  return Boolean(process.env['LITELLM_MASTER_KEY']);
+}
 
-const extraHeaders: Record<string, string> | undefined = hasExplicitBase || hasLiteLLMKey
-  ? undefined
-  : hasOpenRouterKey
-    ? {
-        'HTTP-Referer': process.env.OPENROUTER_HTTP_REFERER || 'https://vibecode.ai',
-        'X-Title': process.env.OPENROUTER_APP_TITLE || 'VibeCode WebGUI'
-      }
-    : undefined;
+function hasExplicitBase(): boolean {
+  return Boolean(process.env['LITELLM_BASE_URL']);
+}
 
-const defaultModel = process.env.VIBECODE_DEFAULT_LLM_MODEL
-  || envFreeModelList[0]
-  || DEFAULT_OPENROUTER_FREE_MODELS[0]
-  || 'mistralai/mistral-small-3.2-24b-instruct:free';
-
-combinedModelSet.add(defaultModel);
-
-const freeModelPool = Array.from(combinedModelSet);
+function resolveDefaultModel(): string {
+  return process.env['VIBECODE_DEFAULT_LLM_MODEL']
+    || parseModelList(process.env['FREE_LLM_MODELS'])[0]
+    || DEFAULT_OPENROUTER_FREE_MODELS[0];
+}
 
 export function getFreeModelPool(): string[] {
-  return freeModelPool.length ? [...freeModelPool] : [defaultModel];
+  const defaults = new Set<string>(DEFAULT_OPENROUTER_FREE_MODELS);
+  const envModels = parseModelList(process.env['FREE_LLM_MODELS']);
+  for (const model of envModels) defaults.add(model);
+  defaults.add(resolveDefaultModel());
+  return Array.from(defaults);
 }
 
 export function pickFreeModel(): string {
   const pool = getFreeModelPool();
-  return pool[Math.floor(Math.random() * pool.length)] || defaultModel;
+  return pool[Math.floor(Math.random() * pool.length)] || resolveDefaultModel();
 }
 
-export const litellmClient = new LiteLLMClient({
-  baseUrl,
-  apiKey,
-  defaultModel,
-  enableLogging: process.env.NODE_ENV !== 'production',
-  enableCaching: true,
-  extraHeaders
-});
+function createLiteLLMClient(): LiteLLMClient {
+  const defaultModel = resolveDefaultModel();
+  const baseUrl = process.env['LITELLM_BASE_URL']
+    || (hasOpenRouterKey() ? 'https://openrouter.ai/api/v1' : undefined)
+    || (hasOpenAIKey() ? 'https://api.openai.com/v1' : undefined)
+    || 'http://localhost:4000';
 
-const openAIChatModel = process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini';
-const openAIBaseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
-let cachedOpenAIClient: LiteLLMClient | null = null;
+  const apiKey = process.env['LITELLM_MASTER_KEY']
+    || process.env['OPENROUTER_API_KEY']
+    || process.env['OPENAI_API_KEY']
+    || 'sk-vibecode-master-key-12345';
+
+  const extraHeaders: Record<string, string> | undefined = hasExplicitBase() || hasLiteLLMKey()
+    ? undefined
+    : hasOpenRouterKey()
+      ? {
+          'HTTP-Referer': process.env['OPENROUTER_HTTP_REFERER'] || 'https://vibecode.ai',
+          'X-Title': process.env['OPENROUTER_APP_TITLE'] || 'VibeCode WebGUI'
+        }
+      : undefined;
+
+  return new LiteLLMClient({
+    baseUrl,
+    apiKey,
+    defaultModel,
+    enableLogging: process.env.NODE_ENV !== 'production',
+    enableCaching: true,
+    extraHeaders
+  });
+}
+
+let cachedLiteLLMClient: LiteLLMClient | null = null;
+
+export function getLiteLLMClient(): LiteLLMClient {
+  if (!cachedLiteLLMClient) {
+    cachedLiteLLMClient = createLiteLLMClient();
+  }
+  return cachedLiteLLMClient;
+}
 
 function getOpenAIClient(): LiteLLMClient {
-  if (!hasOpenAIKey) {
+  if (!hasOpenAIKey()) {
     throw new Error('OPENAI_API_KEY is not configured');
   }
 
   if (!cachedOpenAIClient) {
     cachedOpenAIClient = new LiteLLMClient({
       baseUrl: openAIBaseUrl,
-      apiKey: process.env.OPENAI_API_KEY as string,
+      apiKey: process.env['OPENAI_API_KEY'] as string,
       defaultModel: openAIChatModel,
       enableLogging: process.env.NODE_ENV !== 'production',
       enableCaching: true,
@@ -138,21 +156,22 @@ function buildFallbackChain(preferredModel?: string): FallbackEntry[] {
     seen.add(key);
   };
 
-  if (hasOpenRouterKey) {
-    addEntry('openrouter', preferredModel);
-    for (const model of freeModelPool) {
-      addEntry('openrouter', model);
-    }
+  if (hasOpenAIKey()) {
+    addEntry('openai', openAIChatModel);
   }
 
-  if (hasOpenAIKey) {
-    addEntry('openai', openAIChatModel);
+  if (hasOpenRouterKey()) {
+    addEntry('openrouter', preferredModel);
+    for (const model of getFreeModelPool()) {
+      addEntry('openrouter', model);
+    }
   }
 
   return chain;
 }
 
 const RECOVERABLE_ERROR_PATTERNS = [
+  /HTTP\s*401/i,
   /HTTP\s*403/i,
   /HTTP\s*429/i,
   /key limit exceeded/i,
@@ -175,7 +194,7 @@ export async function createChatCompletionWithFallback(
   const attempts: FallbackAttempt[] = [];
 
   for (const entry of fallbackChain) {
-    const client = entry.provider === 'openrouter' ? litellmClient : getOpenAIClient();
+    const client = entry.provider === 'openrouter' ? getLiteLLMClient() : getOpenAIClient();
     try {
       const requestPayload: ChatCompletionRequest = {
         ...request,

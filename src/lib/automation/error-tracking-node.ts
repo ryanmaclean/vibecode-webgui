@@ -29,6 +29,8 @@ export interface ScriptContext {
   workingDirectory: string;
   nodeVersion: string;
   platform: string;
+  warningName?: string;
+  warningStack?: string;
 }
 
 export interface ErrorContext {

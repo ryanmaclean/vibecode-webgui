@@ -16,8 +16,11 @@ RUN apt-get update && apt-get install -y \
 # Copy package files first for better caching
 COPY package.json package-lock.json* ./
 
-# Clean install with legacy peer deps for production
-RUN npm ci --only=production --legacy-peer-deps
+# Ensure npm resolves platform-specific optional dependencies correctly
+ENV npm_config_platform=linux npm_config_arch=x64 npm_config_ignore_platform=true npm_config_force=true
+
+# Clean install with legacy peer deps for production (skip optional platform binaries)
+RUN npm install --omit=dev --legacy-peer-deps
 
 # Install Tailwind v4 dependencies for x86-64 production
 RUN npm install tailwindcss@next @tailwindcss/postcss lightningcss --legacy-peer-deps

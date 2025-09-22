@@ -50,6 +50,8 @@ README.md
 coverage/
 .nyc_output/
 playwright-report/
+queue-worker/
+samples/
 
 # Temporary files
 *.tmp

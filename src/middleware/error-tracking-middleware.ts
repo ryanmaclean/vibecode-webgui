@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { trackApiError, trackError } from '../monitoring/error-tracking';
+import { trackApiError, trackError } from '../lib/monitoring/error-tracking';
 
 export interface ErrorTrackingMiddlewareOptions {
   /**
@@ -38,8 +38,8 @@ export interface ErrorTrackingMiddlewareOptions {
 /**
  * Wrap API route handlers with error tracking
  */
-export function withErrorTracking<T = any>(
-  handler: (request: NextRequest, context?: any) => Promise<NextResponse<T>>,
+export function withErrorTracking<R extends Response = NextResponse>(
+  handler: (request: NextRequest, context?: any) => Promise<R>,
   options: ErrorTrackingMiddlewareOptions = {}
 ) {
   const {
@@ -50,7 +50,7 @@ export function withErrorTracking<T = any>(
     maxBodySize = 1024 * 10 // 10KB default
   } = options;
 
-  return async (request: NextRequest, context?: any): Promise<NextResponse<T>> => {
+  return async (request: NextRequest, context?: any): Promise<R> => {
     const startTime = Date.now();
     let requestBody: any = null;
 
@@ -278,4 +278,3 @@ export function trackRateLimitError(
 }
 
 // Export types for use in other files
-export type { ErrorTrackingMiddlewareOptions };

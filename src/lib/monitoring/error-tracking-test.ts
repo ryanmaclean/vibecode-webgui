@@ -173,7 +173,7 @@ export function testPerformanceErrorTracking(): void {
     trackPerformanceIssue('Slow database query', {
       duration: 5000,
       threshold: 1000,
-      queryComplexity: 'high'
+      queryComplexityScore: 3
     }, {
       component: 'performance-test',
       operation: 'database-query'
@@ -284,7 +284,7 @@ export function runAllErrorTrackingTests(): void {
 /**
  * Test error tracking configuration
  */
-export function testErrorTrackingConfiguration(): void {
+export function testErrorTrackingConfiguration(): boolean {
   console.log('🔧 Testing error tracking configuration...');
   
   const requiredEnvVars = [

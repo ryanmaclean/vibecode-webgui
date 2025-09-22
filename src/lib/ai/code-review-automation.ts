@@ -7,6 +7,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { StructuredOutputParser } from '@langchain/core/output_parsers';
 import { z } from 'zod';
+import { extractText } from './utils/langchain';
 
 export interface CodeReviewRule {
   id: string;
@@ -303,9 +304,10 @@ export class CodeReviewAutomation {
       });
 
       const response = await this.llm.invoke(formattedPrompt);
+      const responseText = extractText(response);
 
       // Parse AI response and convert to structured results
-      const aiIssues = this.parseAIResponse(response.content as string, rules);
+      const aiIssues = this.parseAIResponse(responseText, rules);
       results.push(...aiIssues);
 
     } catch (error) {

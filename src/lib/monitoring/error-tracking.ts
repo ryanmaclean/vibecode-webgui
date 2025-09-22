@@ -25,6 +25,7 @@ export interface ErrorContext {
   component?: string;
   action?: string;
   metadata?: Record<string, any>;
+  [key: string]: unknown;
 }
 
 export interface TrackedError {
@@ -83,7 +84,7 @@ class DatadogErrorTracker {
       });
 
       // Also log the error for additional context
-      datadogLogs.error(error.message, {
+      datadogLogs.logger.error(error.message, {
         error: {
           name: error.name,
           message: error.message,
