@@ -7,17 +7,21 @@ function buildRequest(path: string, headers: Record<string, string> = {}) {
   });
 }
 
+function setNodeEnv(value: string | undefined) {
+  (process.env as Record<string, string | undefined>).NODE_ENV = value;
+}
+
 describe('middleware', () => {
   const originalNodeEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
-    process.env.NODE_ENV = 'test';
+    setNodeEnv('test');
     delete process.env.CI;
     delete process.env.PLAYWRIGHT_TEST;
   });
 
   afterAll(() => {
-    process.env.NODE_ENV = originalNodeEnv;
+    setNodeEnv(originalNodeEnv);
   });
 
   it('allows requests through unchanged in test environment', async () => {
@@ -29,7 +33,7 @@ describe('middleware', () => {
   });
 
   it('redirects unauthenticated non-public pages to signin', async () => {
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
     const request = buildRequest('/dashboard');
     const response = await middleware(request);
 
@@ -38,7 +42,7 @@ describe('middleware', () => {
   });
 
   it('passes through when authentication cookie is present', async () => {
-    process.env.NODE_ENV = 'production';
+    setNodeEnv('production');
     const request = buildRequest('/dashboard', {
       cookie: 'next-auth.session-token=abc123',
     });
