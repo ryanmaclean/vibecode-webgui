@@ -2,11 +2,18 @@
 # Optimized for AKS deployment with security best practices
 
 # ===== Build Stage =====
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
 WORKDIR /app
 
 # Install dependencies needed for building
-RUN apk add --no-cache libc6-compat python3 make g++
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+
 
 # ===== Dependencies Stage =====
 FROM base AS deps
@@ -14,8 +21,8 @@ FROM base AS deps
 # Copy package files
 COPY package.json package-lock.json* ./
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install dependencies (production only)
+RUN npm ci --omit=dev && npm cache clean --force
 
 # ===== Builder Stage =====
 FROM base AS builder
@@ -23,7 +30,7 @@ FROM base AS builder
 # Copy package files
 COPY package.json package-lock.json* ./
 
-# Install all dependencies (including devDependencies for build)
+# Install all dependencies needed for build
 RUN npm ci
 
 # Copy source code
@@ -41,16 +48,15 @@ ENV NEXT_BUILD_SOURCEMAP=true
 RUN npm run build
 
 # ===== Production Stage =====
-FROM node:18-alpine AS runner
+FROM node:20-slim AS runner
 
 # Install security updates and required packages
-RUN apk update && \
-    apk upgrade && \
-    apk add --no-cache \
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
         dumb-init \
         curl \
         tini && \
-    rm -rf /var/cache/apk/*
+    rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \

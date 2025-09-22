@@ -6,6 +6,7 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { z } from 'zod';
+import { extractText } from './utils/langchain';
 
 export interface PerformanceIssue {
   id: string;
@@ -348,7 +349,7 @@ export class PerformanceOptimization {
       
       const response = await this.llm.invoke(formattedPrompt);
 
-      const aiIssues = this.parseAIResponse(response.content as string);
+      const aiIssues = this.parseAIResponse(extractText(response));
       issues.push(...aiIssues);
 
     } catch (error) {

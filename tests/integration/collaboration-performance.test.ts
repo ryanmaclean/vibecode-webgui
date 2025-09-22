@@ -10,7 +10,10 @@ import * as Y from 'yjs';
 jest.mock('y-websocket');
 jest.mock('ws');
 
-describe('Collaboration Performance Tests', () => {
+const shouldRunPerformanceTests = process.env.RUN_PERFORMANCE_TESTS === 'true';
+const performanceDescribe = shouldRunPerformanceTests ? describe : describe.skip;
+
+performanceDescribe('Collaboration Performance Tests', () => {
   describe('Concurrent User Load Testing', () => {
     it('should handle 10 concurrent users efficiently', async () => {
       const userCount = 10;

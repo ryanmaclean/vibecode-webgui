@@ -68,9 +68,11 @@ class VectorStore {
     }
 
     if (!this.useLocalEmbeddings && !this.embeddingService && process.env.OPENROUTER_API_KEY) {
+      const allowBrowserClient = process.env.ALLOW_TEST_OPENAI === 'true' || process.env.NODE_ENV === 'test'
       this.openai = new OpenAI({
         baseURL: 'https://openrouter.ai/api/v1',
         apiKey: process.env.OPENROUTER_API_KEY,
+        dangerouslyAllowBrowser: allowBrowserClient,
       })
       this.embeddingProviderLabel = 'openrouter'
     }
