@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { litellmClient } from '@/lib/ai-clients/litellm-instance';
+import { getLiteLLMClient } from '@/lib/ai-clients/litellm-instance';
 import rateLimit from '@/lib/rate-limiting';
 
 // Create rate limiter for AI endpoints
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     switch (action) {
       case 'health':
-        const health = await litellmClient.checkHealth();
+        const health = await getLiteLLMClient().checkHealth();
         return NextResponse.json({
           status: 'healthy',
           litellm: health,
@@ -43,19 +43,19 @@ export async function GET(request: NextRequest) {
         });
 
       case 'models':
-        const models = await litellmClient.listModels();
+        const models = await getLiteLLMClient().listModels();
         return NextResponse.json(models);
 
       case 'stats':
-        const stats = await litellmClient.getUsageStats();
+        const stats = await getLiteLLMClient().getUsageStats();
         return NextResponse.json(stats);
 
       case 'budget':
-        const budget = await litellmClient.getBudgetInfo();
+        const budget = await getLiteLLMClient().getBudgetInfo();
         return NextResponse.json(budget);
 
       case 'config':
-        const config = litellmClient.getConfig();
+        const config = getLiteLLMClient().getConfig();
         // Remove sensitive information
         const { apiKey: _apiKey, ...safeConfig } = config;
         return NextResponse.json(safeConfig);
@@ -154,11 +154,11 @@ export async function PUT(request: NextRequest) {
       enableLogging: config.enableLogging
     };
 
-    litellmClient.updateConfig(safeConfig);
+    getLiteLLMClient().updateConfig(safeConfig);
 
     return NextResponse.json({
       message: 'Configuration updated successfully',
-      config: litellmClient.getConfig()
+      config: getLiteLLMClient().getConfig()
     });
 
   } catch (error) {
@@ -205,7 +205,7 @@ async function handleChatCompletion(requestData: any, session: any) {
       ...otherParams
     };
 
-    const response = await litellmClient.createChatCompletion(chatRequest);
+    const response = await getLiteLLMClient().createChatCompletion(chatRequest);
 
     return NextResponse.json({
       ...response,
@@ -245,7 +245,7 @@ async function handleEmbedding(requestData: any, session: any) {
       user: session.user?.email || 'anonymous'
     };
 
-    const response = await litellmClient.createEmbedding(embeddingRequest);
+    const response = await getLiteLLMClient().createEmbedding(embeddingRequest);
 
     return NextResponse.json({
       ...response,
@@ -296,7 +296,7 @@ async function handleStreamingChat(requestData: any, session: any) {
           ...otherParams
         };
 
-        litellmClient.createChatCompletionStream(
+        getLiteLLMClient().createChatCompletionStream(
           chatRequest,
           (chunk) => {
             // Send chunk as Server-Sent Event

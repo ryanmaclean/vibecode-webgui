@@ -4,7 +4,7 @@
  */
 
 import { describe, test, beforeAll, afterAll, expect } from '@jest/globals'
-import { execSync } from 'child_process'
+import { execSync, spawnSync } from 'child_process'
 import * as fs from 'fs'
 
 const CLUSTER_NAME = 'vibecode-provisioning-test'
@@ -13,7 +13,31 @@ const HELM_RELEASE = 'vibecode-platform'
 const CHART_PATH = 'helm/vibecode-platform';
 const TIMEOUT = 600000; // 10 minutes
 
-describe('User Provisioning Integration Tests', () => {
+function commandAvailable(command: string): boolean {
+  const result = spawnSync(command, ['version'], { stdio: 'ignore' })
+  if (result.error && (result.error as NodeJS.ErrnoException).code === 'ENOENT') {
+    return false
+  }
+  return result.status === 0
+}
+
+const requiredCommands = ['helm', 'kubectl', 'kind']
+const missingCommands = requiredCommands.filter((command) => !commandAvailable(command))
+const shouldRunProvisioning =
+  process.env.RUN_INFRA_PROVISIONING_TESTS === 'true' &&
+  process.env.RUN_HELM_PROVISIONING_TESTS === 'true' &&
+  missingCommands.length === 0
+
+if (!shouldRunProvisioning) {
+  const reason = missingCommands.length > 0
+    ? `missing required tooling: ${missingCommands.join(', ')}`
+    : 'RUN_INFRA_PROVISIONING_TESTS and RUN_HELM_PROVISIONING_TESTS flags not set'
+  console.warn(`Skipping user provisioning integration tests: ${reason}`)
+}
+
+const describeProvisioning = shouldRunProvisioning ? describe : describe.skip
+
+describeProvisioning('User Provisioning Integration Tests', () => {
   beforeAll(async () => {
     console.log('Setting up integration test environment...');
 

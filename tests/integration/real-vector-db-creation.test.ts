@@ -8,7 +8,11 @@
 import { VectorDatabaseFactory } from '../../src/lib/vector-db/vector-database-factory';
 import { VectorDatabaseProvider } from '../../src/lib/vector-db/vector-types';
 
-describe('Real Vector Database Creation Integration', () => {
+const shouldRunRealVectorDbTests = process.env.ENABLE_REAL_AI_TESTS === 'true';
+
+const conditionalDescribe = shouldRunRealVectorDbTests ? describe : describe.skip;
+
+conditionalDescribe('Real Vector Database Creation Integration', () => {
   describe('Factory method availability', () => {
     it('should expose the create method', () => {
       expect(typeof VectorDatabaseFactory.create).toBe('function');

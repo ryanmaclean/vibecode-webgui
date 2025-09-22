@@ -6,6 +6,7 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { z } from 'zod';
+import { extractText } from './utils/langchain';
 
 export interface IntegrationTestScenario {
   id: string;
@@ -271,7 +272,7 @@ export class IntegrationTesting {
       const response = await this.llm.invoke(formattedPrompt);
 
       // Parse AI response and create test suite
-      const testSuite = this.parseTestSuiteResponse(response.content as string, systemDescription);
+      const testSuite = this.parseTestSuiteResponse(extractText(response), systemDescription);
       return testSuite;
 
     } catch (error) {

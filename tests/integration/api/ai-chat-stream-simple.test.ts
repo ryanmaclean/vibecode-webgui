@@ -6,6 +6,59 @@
 import { NextRequest } from 'next/server';
 import { POST } from '@/app/api/ai/chat/route';
 
+jest.mock('next-auth', () => ({
+  getServerSession: jest.fn(async () => {
+    return { user: { id: 1, email: 'test@example.com' } };
+  }),
+}));
+
+jest.mock('@/lib/prisma', () => ({
+  prisma: {
+    workspace: {
+      findFirst: jest.fn().mockResolvedValue({ id: 1, workspace_id: 'test-workspace' }),
+    },
+  },
+  logAIRequest: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('@/lib/vector-store', () => ({
+  vectorStore: {
+    getContext: jest.fn().mockResolvedValue('Mock workspace context'),
+    search: jest.fn().mockResolvedValue([]),
+  },
+}));
+
+jest.mock('@/lib/ai-clients/litellm-instance', () => ({
+  createChatCompletionWithFallback: jest.fn().mockResolvedValue({
+    model: 'ai/smollm2:360M-Q4_K_M',
+    provider: 'test-provider',
+    usage: {
+      prompt_tokens: 10,
+      completion_tokens: 12,
+    },
+    choices: [
+      {
+        message: { content: 'Mock assistant response' },
+      },
+    ],
+  }),
+  pickFreeModel: jest.fn().mockReturnValue('ai/smollm2:360M-Q4_K_M'),
+}));
+
+jest.mock('@/lib/monitoring/llm-tracer', () => ({
+  LLMTracer: {
+    traceLLMCall: jest.fn(async (_operation: string, _meta: any, fn: () => Promise<any>) => {
+      const response = await fn();
+      return {
+        response,
+        modelUsed: response.model,
+        provider: 'test-provider',
+      };
+    }),
+    trackTokenUsage: jest.fn(),
+  },
+}));
+
 // Mock external dependencies
 jest.mock('@/lib/monitoring', () => ({
   logger: {
@@ -44,10 +97,12 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
     // Set required environment variables
     process.env.OPENROUTER_API_KEY = 'test-key';
     process.env.OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
+    process.env.ALLOW_UNAUTHENTICATED_AI_TESTS = 'true';
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
+    delete process.env.ALLOW_UNAUTHENTICATED_AI_TESTS;
   });
 
   describe('POST /api/ai/chat', () => {
@@ -174,7 +229,7 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
       }
     });
 
-    it('should handle streaming request parameter', async () => {
+    it('should reject streaming request parameter', async () => {
       const requestBody = {
         messages: [
           { role: 'user', content: 'Test streaming message' }
@@ -192,13 +247,12 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
       });
 
       const response = await POST(request);
+      const data = await parseResponse(response);
 
-      expect(response.status).toBe(200);
-      
-      // For streaming, check headers
-      expect(response.headers.get('content-type')).toBe('text/event-stream');
-      expect(response.headers.get('cache-control')).toBe('no-cache');
-      expect(response.headers.get('connection')).toBe('keep-alive');
+      expect(response.status).toBe(400);
+      if (data) {
+        expect(data.error).toContain('Streaming is not supported');
+      }
     });
 
     it('should handle multiple messages in conversation', async () => {

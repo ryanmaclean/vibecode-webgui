@@ -57,13 +57,17 @@ export class LLMTracer {
         'component': 'LLMTracer'
       }
     }, async span => {
+      const activeSpan = span ?? tracer.scope().active();
+      if (!activeSpan) {
+        return fn();
+      }
       const startTime = Date.now();
       try {
         if (options.input) {
-          span.setTag('llm.request.input', options.input.substring(0, 1000));
+          activeSpan.setTag('llm.request.input', options.input.substring(0, 1000));
         }
         if (options.prompt) {
-          span.setTag('llm.request.prompt', options.prompt.substring(0, 1000));
+          activeSpan.setTag('llm.request.prompt', options.prompt.substring(0, 1000));
         }
 
         const result = await fn();
@@ -74,19 +78,19 @@ export class LLMTracer {
         const latency = Date.now() - startTime;
 
         if (modelUsed) {
-          span.setTag('llm.response.model_used', modelUsed);
+          activeSpan.setTag('llm.response.model_used', modelUsed);
         }
         if (providerUsed) {
-          span.setTag('llm.response.provider', providerUsed);
+          activeSpan.setTag('llm.response.provider', providerUsed);
         }
 
-        span.setTag('llm.response.latency_ms', latency);
-        span.setTag('llm.status', 'success');
+        activeSpan.setTag('llm.response.latency_ms', latency);
+        activeSpan.setTag('llm.status', 'success');
 
         if (typeof response === 'object' && response !== null) {
           const output = response.output || response.text || response.content;
           if (typeof output === 'string') {
-            span.setTag('llm.response.output', output.substring(0, 1000));
+            activeSpan.setTag('llm.response.output', output.substring(0, 1000));
           }
 
           const usage = response.usage || response.tokenUsage;
@@ -95,24 +99,24 @@ export class LLMTracer {
             const completionTokens = usage.completionTokens ?? usage.completion_tokens;
             const totalTokens = usage.totalTokens ?? usage.total_tokens ?? (promptTokens && completionTokens ? promptTokens + completionTokens : undefined);
 
-            if (promptTokens !== undefined) span.setTag('llm.usage.prompt_tokens', promptTokens);
-            if (completionTokens !== undefined) span.setTag('llm.usage.completion_tokens', completionTokens);
-            if (totalTokens !== undefined) span.setTag('llm.usage.total_tokens', totalTokens);
+            if (promptTokens !== undefined) activeSpan.setTag('llm.usage.prompt_tokens', promptTokens);
+            if (completionTokens !== undefined) activeSpan.setTag('llm.usage.completion_tokens', completionTokens);
+            if (totalTokens !== undefined) activeSpan.setTag('llm.usage.total_tokens', totalTokens);
           }
 
           if (response.cost !== undefined) {
-            span.setTag('llm.cost.total', response.cost);
+            activeSpan.setTag('llm.cost.total', response.cost);
           }
         }
 
         return result;
       } catch (error: any) {
         const latency = Date.now() - startTime;
-        span.setTag('llm.response.latency_ms', latency);
-        span.setTag('llm.status', 'error');
-        span.setTag('error', true);
-        span.setTag('error.message', error?.message);
-        span.setTag('error.type', error?.constructor?.name || typeof error);
+        activeSpan.setTag('llm.response.latency_ms', latency);
+        activeSpan.setTag('llm.status', 'error');
+        activeSpan.setTag('error', true);
+        activeSpan.setTag('error.message', error?.message);
+        activeSpan.setTag('error.type', error?.constructor?.name || typeof error);
         throw error;
       }
     });

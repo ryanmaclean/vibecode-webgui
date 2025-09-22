@@ -1,17 +1,30 @@
+type ChatOpenAIOptions = {
+  modelName?: string
+  temperature?: number
+  openAIApiKey?: string
+  configuration?: {
+    baseURL?: string
+    defaultHeaders?: Record<string, string>
+  }
+}
+
 export class ChatOpenAI {
   modelName: string
   temperature: number
-  constructor(options: { modelName?: string; temperature?: number; openAIApiKey?: string } = {}) {
+  configuration?: ChatOpenAIOptions['configuration']
+
+  constructor(options: ChatOpenAIOptions = {}) {
     this.modelName = options.modelName ?? 'stub-model'
     this.temperature = options.temperature ?? 0
+    this.configuration = options.configuration
   }
 
   async call(prompt: string): Promise<string> {
     return `Stubbed ChatOpenAI response for model ${this.modelName}: ${prompt}`
   }
 
-  async invoke(input: unknown): Promise<{ output: string }> {
-    return { output: `Stubbed ChatOpenAI invoke for model ${this.modelName}` }
+  async invoke(_input: unknown): Promise<string> {
+    return `Stubbed ChatOpenAI invoke for model ${this.modelName}`
   }
 }
 

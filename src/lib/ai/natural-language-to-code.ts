@@ -7,6 +7,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { RunnableSequence } from '@langchain/core/runnables';
+import { extractText } from './utils/langchain';
 import { z } from 'zod';
 import { FunctionDefinition } from '../services/function-calling';
 
@@ -241,13 +242,15 @@ Focus on creating a clear technical specification that can be used for code gene
       new StringOutputParser(),
     ]);
 
-    const result = await chain.invoke({
+    const rawResult = await chain.invoke({
       description: request.description,
       language: request.language,
       framework: request.framework || 'none',
       style: request.style || 'production',
       complexity: request.complexity || 'moderate',
     });
+
+    const result = extractText(rawResult);
 
     return this.parseAnalysisResult(result);
   }
@@ -303,7 +306,7 @@ Return only the code and explanations, no markdown formatting.
       new StringOutputParser(),
     ]);
 
-    const result = await chain.invoke({
+    const rawResult = await chain.invoke({
       intent: analysis.intent,
       requirements: analysis.requirements.join(', '),
       technicalApproach: analysis.technicalApproach,
@@ -314,7 +317,7 @@ Return only the code and explanations, no markdown formatting.
       complexity: request.complexity || 'moderate',
     });
 
-    return this.parseCodeResult(result);
+    return this.parseCodeResult(extractText(rawResult));
   }
 
   /**
@@ -352,14 +355,14 @@ Make tests readable and maintainable.
       new StringOutputParser(),
     ]);
 
-    const result = await chain.invoke({
+    const rawResult = await chain.invoke({
       code: code.code,
       explanation: code.explanation,
       language: request.language,
       framework: request.framework || 'none',
     });
 
-    return result;
+    return extractText(rawResult);
   }
 
   /**
@@ -399,14 +402,14 @@ Follow documentation best practices for the language.
       new StringOutputParser(),
     ]);
 
-    const result = await chain.invoke({
+    const rawResult = await chain.invoke({
       code: code.code,
       explanation: code.explanation,
       language: request.language,
       framework: request.framework || 'none',
     });
 
-    return result;
+    return extractText(rawResult);
   }
 
   /**
@@ -531,10 +534,12 @@ Return only the suggestions, one per line.
       new StringOutputParser(),
     ]);
 
-    const result = await chain.invoke({
+    const rawResult = await chain.invoke({
       partialDescription,
       language,
     });
+
+    const result = extractText(rawResult);
 
     return result.split('\n').filter(line => line.trim().length > 0);
   }
@@ -577,13 +582,13 @@ Return the refactored code and explanations.
       new StringOutputParser(),
     ]);
 
-    const result = await chain.invoke({
+    const rawResult = await chain.invoke({
       existingCode,
       refactorRequest,
       language,
     });
 
-    return this.parseRefactorResult(result);
+    return this.parseRefactorResult(extractText(rawResult));
   }
 
   /**

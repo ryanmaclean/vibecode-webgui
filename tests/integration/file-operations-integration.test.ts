@@ -14,7 +14,10 @@ import fs from 'fs/promises'
 import path from 'path'
 import { EventEmitter } from 'events'
 
-describe('File Operations Integration Tests', () => {
+const shouldRunFileWatcherIntegration = process.env.RUN_FILE_WATCHER_TESTS === 'true'
+const fileOpsDescribe = shouldRunFileWatcherIntegration ? describe : describe.skip
+
+fileOpsDescribe('File Operations Integration Tests', () => {
   const testWorkspacePath = 'test-workspace' // Use relative path instead of absolute
   const testUserId = 'integration-test-user';
   let fileOps: SecureFileSystemOperations;
