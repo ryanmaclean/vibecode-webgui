@@ -450,6 +450,26 @@ export default class ConnectionPoolAlertService {
         console.error('Error in alert listener:', error);
       }
     }
+
+    // Send notifications via notification service
+    if (typeof window === 'undefined') { // Only on server side
+      this.sendNotification(alert).catch(error => {
+        console.error('Failed to send alert notification:', error);
+      });
+    }
+  }
+
+  /**
+   * Send notification for alert (async import to avoid circular dependencies)
+   */
+  private async sendNotification(alert: Alert): Promise<void> {
+    try {
+      // Dynamically import to avoid circular dependencies
+      const { connectionPoolNotificationService } = await import('../monitoring/notification-service');
+      await connectionPoolNotificationService.sendAlert(alert);
+    } catch (error) {
+      console.error('Error loading notification service:', error);
+    }
   }
 
   /**

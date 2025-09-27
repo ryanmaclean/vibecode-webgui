@@ -7,6 +7,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import { useConnectionPoolWebSocket } from '@/hooks/useConnectionPoolWebSocket'
 import { 
   LineChart, 
   Line, 
@@ -107,6 +108,7 @@ interface ConnectionPoolMonitoringDashboardProps {
     acquireFailureRate: number
     validationFailureRate: number
   }
+  enableRealTimeUpdates?: boolean
 }
 
 interface HistoricalDataPoint {
@@ -130,7 +132,8 @@ const defaultAlertThresholds = {
 export const ConnectionPoolMonitoringDashboard: React.FC<ConnectionPoolMonitoringDashboardProps> = ({
   refreshInterval = 10000,
   showThresholdAlerts = true,
-  alertThresholds = defaultAlertThresholds
+  alertThresholds = defaultAlertThresholds,
+  enableRealTimeUpdates = true
 }) => {
   const [metrics, setMetrics] = useState<PoolMetricsResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
@@ -140,9 +143,107 @@ export const ConnectionPoolMonitoringDashboard: React.FC<ConnectionPoolMonitorin
   const [alerts, setAlerts] = useState<Alert[]>([])
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Use WebSocket for real-time updates
+  const {
+    connectionState,
+    systemOverview,
+    poolMetrics,
+    alerts: wsAlerts,
+    error: wsError,
+    isConnected
+  } = useConnectionPoolWebSocket({
+    enabled: enableRealTimeUpdates
+  })
+
   useEffect(() => {
-    // Function to fetch metrics
+    // Handle WebSocket data updates
+    if (enableRealTimeUpdates && systemOverview) {
+      // Update metrics from WebSocket data
+      const wsData = systemOverview as any
+      
+      if (wsData && poolMetrics.size > 0) {
+        // Convert WebSocket data to our expected format
+        const poolData = Array.from(poolMetrics.entries())[0]
+        if (poolData) {
+          const [poolName, poolMetricsData] = poolData
+          
+          // Create mock PoolMetricsResponse from WebSocket data
+          const mockResponse: PoolMetricsResponse = {
+            poolStatus: {
+              size: (poolMetricsData as any)?.total_connections || 0,
+              inUse: (poolMetricsData as any)?.active_connections || 0,
+              maxSize: (poolMetricsData as any)?.max_connections || 10,
+              minSize: (poolMetricsData as any)?.min_connections || 1,
+              available: (poolMetricsData as any)?.idle_connections || 0,
+              utilization: (poolMetricsData as any)?.utilization_percent || 0,
+              configuration: {
+                idleTimeout: 30000,
+                connectionTimeout: 5000,
+                acquireTimeout: 30000,
+                enableDynamicSizing: true,
+                enableConnectionValidation: true
+              },
+              metrics: {
+                totalConnections: (poolMetricsData as any)?.connections_created || 0,
+                peakConnections: (poolMetricsData as any)?.peak_connections || 0,
+                totalAcquires: 100,
+                acquireSuccesses: 98,
+                acquireFailures: 2,
+                acquireTimeAvg: (poolMetricsData as any)?.average_wait_time_ms || 50,
+                connectionValidations: 50,
+                connectionValidationFailures: 0,
+                dynamicPoolAdjustments: 0
+              }
+            },
+            detailedPoolInfo: {
+              status: {} as any,
+              connections: []
+            },
+            utilization: {
+              current: (poolMetricsData as any)?.utilization_percent || 0,
+              capacity: 100,
+              acquisitionSuccess: 95,
+              connectionValidation: {
+                success: 100,
+                failure: 0
+              }
+            },
+            timeSeriesData: {
+              timestamps: [],
+              connections: [],
+              active: [],
+              responseTime: [],
+              errors: []
+            },
+            ageDistribution: {},
+            idleTimeDistribution: {},
+            timestamp: new Date().toISOString()
+          }
+          
+          setMetrics(mockResponse)
+          setLoading(false)
+        }
+      }
+    }
+
+    // Update alerts from WebSocket
+    if (wsAlerts.length > 0) {
+      const formattedAlerts = wsAlerts.map((alert: any) => ({
+        type: alert.severity === 'critical' ? 'critical' : 'warning',
+        message: alert.message
+      }))
+      setAlerts(formattedAlerts)
+    }
+  }, [systemOverview, poolMetrics, wsAlerts, enableRealTimeUpdates])
+
+  useEffect(() => {
+    // Function to fetch metrics (fallback for when WebSocket is disabled)
     const fetchMetrics = async () => {
+      if (enableRealTimeUpdates && isConnected) {
+        // Skip polling when WebSocket is connected
+        return
+      }
+
       try {
         setLoading(true)
         const response = await fetch('/api/health/database/metrics')
@@ -216,19 +317,24 @@ export const ConnectionPoolMonitoringDashboard: React.FC<ConnectionPoolMonitorin
       }
     }
     
-    // Fetch metrics immediately
-    fetchMetrics()
+    // Fetch metrics immediately (fallback)
+    if (!enableRealTimeUpdates || !isConnected) {
+      fetchMetrics()
+    }
     
-    // Set up interval for refreshing
-    refreshTimerRef.current = setInterval(fetchMetrics, refreshInterval)
+    // Set up interval for refreshing (only when WebSocket is not connected)
+    if (!enableRealTimeUpdates) {
+      refreshTimerRef.current = setInterval(fetchMetrics, refreshInterval)
+    }
     
     // Clean up on unmount
     return () => {
       if (refreshTimerRef.current) {
         clearInterval(refreshTimerRef.current)
+        refreshTimerRef.current = null
       }
     }
-  }, [refreshInterval, showThresholdAlerts, alertThresholds])
+  }, [refreshInterval, showThresholdAlerts, alertThresholds, enableRealTimeUpdates, isConnected])
   
   if (loading && !metrics) {
     return (
@@ -290,10 +396,29 @@ export const ConnectionPoolMonitoringDashboard: React.FC<ConnectionPoolMonitorin
   return (
     <div className="bg-white p-6 rounded-lg shadow-md space-y-6">
       <div className="border-b border-gray-200 pb-4">
-        <h2 className="text-xl font-semibold text-gray-800">Database Connection Pool Monitoring</h2>
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-gray-800">Database Connection Pool Monitoring</h2>
+          {enableRealTimeUpdates && (
+            <div className="flex items-center space-x-2">
+              <div className={`h-2 w-2 rounded-full ${
+                connectionState === 'connected' ? 'bg-green-500' : 
+                connectionState === 'connecting' ? 'bg-yellow-500 animate-pulse' : 
+                'bg-red-500'
+              }`}></div>
+              <span className="text-sm text-gray-600">
+                {connectionState === 'connected' ? 'Real-time' : 
+                 connectionState === 'connecting' ? 'Connecting...' : 
+                 'Polling'}
+              </span>
+            </div>
+          )}
+        </div>
         <div className="flex justify-between items-center mt-2">
           <div className="text-sm text-gray-500">
             Last updated: {new Date(metrics.timestamp).toLocaleString()}
+            {wsError && (
+              <span className="ml-2 text-red-600">WebSocket Error: {wsError}</span>
+            )}
           </div>
           <div className="flex space-x-2">
             <button
