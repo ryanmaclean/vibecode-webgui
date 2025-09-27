@@ -7,9 +7,32 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Validate CI configuration and secrets
+  validate-ci-config:
+    name: Validate CI configuration (secrets/vars)
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check Datadog configuration
+        run: |
+          echo "🔧 Validating simple test CI configuration..."
+          
+          if [ -z "${{ secrets.DD_API_KEY }}" ]; then
+            echo "::warning::Missing DD_API_KEY secret; Datadog steps will be skipped."
+          else
+            echo "✅ DD_API_KEY present"
+          fi
+          
+          if [ -z "${{ secrets.DD_APP_KEY }}" ]; then
+            echo "::warning::Missing DD_APP_KEY secret; some Datadog features will be limited."
+          else
+            echo "✅ DD_APP_KEY present"
+          fi
+
   test-babel:
     runs-on: ubuntu-latest
     name: Test Babel Config
+    needs: validate-ci-config
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,6 +55,8 @@ jobs:
   test-datadog:
     runs-on: ubuntu-latest
     name: Test Datadog Integration
+    needs: validate-ci-config
+    if: secrets.DD_API_KEY != ''
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
