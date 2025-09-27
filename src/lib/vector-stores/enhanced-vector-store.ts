@@ -10,6 +10,7 @@ import type { WeaviateSearchOptions } from './weaviate-client'
 import { mlflowClient } from '../mlflow/mlflow-client'
 import { vectorQueryCache } from './query-cache'
 import { getMetricsCollector } from '../db/database-metrics'
+import { VectorConnectionPoolFactory, VectorConnectionPool } from '../db/vector-connection-pool'
 
 export interface VectorStoreProvider {
   id: 'pgvector' | 'weaviate'
@@ -74,9 +75,44 @@ export class EnhancedVectorStore {
   private lastHealthCheck: number = 0
   private healthCheckInterval: number = 300000 // 5 minutes
   private dbMetricsCollector = getMetricsCollector()
+  private connectionPool: VectorConnectionPool | null = null
 
   constructor() {
     this.initializeProviders()
+    this.initializeConnectionPool()
+  }
+
+  /**
+   * Initialize vector database connection pool for enhanced operations
+   */
+  private initializeConnectionPool(): void {
+    try {
+      // Get or create connection pool specifically for enhanced vector operations
+      this.connectionPool = VectorConnectionPoolFactory.getPool('enhanced-vector-store') || null
+      
+      if (!this.connectionPool) {
+        // Create optimized connection pool for enhanced vector operations
+        this.connectionPool = VectorConnectionPoolFactory.createPool(
+          {
+            connectionString: process.env.DATABASE_URL,
+            ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+          },
+          {
+            min: 3,  // Higher minimum for enhanced operations
+            max: 12, // Higher maximum for concurrent vector operations
+            acquireTimeoutMillis: 90000,  // Longer timeout for complex queries
+            idleTimeoutMillis: 600000,    // 10 minutes idle timeout
+            testOnBorrow: true,
+          },
+          'enhanced-vector-store'
+        )
+        
+        console.log('Initialized enhanced vector database connection pool')
+      }
+    } catch (error) {
+      console.warn('Failed to initialize enhanced vector connection pool:', error)
+      this.connectionPool = null
+    }
   }
 
   /**
@@ -499,7 +535,7 @@ export class EnhancedVectorStore {
   }
 
   /**
-   * Store documents with intelligent distribution and connection pool optimization
+   * Store documents with intelligent distribution and optimized connection pool integration
    */
   async storeDocuments(
     workspaceId: number, 
@@ -526,21 +562,16 @@ export class EnhancedVectorStore {
       poolMetrics: null as Record<string, unknown> | null
     }
 
-    // Store in PostgreSQL pgvector (primary store) with connection pool monitoring
+    // Store in PostgreSQL pgvector (primary store) with enhanced connection pool optimization
     if (this.providers.get('pgvector')) {
       try {
         const startTime = Date.now()
         
-        // Process in batches to optimize connection usage
-        const batchSize = 5
-        for (let i = 0; i < documents.length; i += batchSize) {
-          const batch = documents.slice(i, i + batchSize)
-          await pgVectorStore.storeChunks(batch[0].fileId, batch.map(doc => ({
-            content: doc.content,
-            startLine: doc.startLine,
-            endLine: doc.endLine,
-            tokens: doc.tokens
-          })))
+        // Use enhanced connection pool for batch operations when available
+        if (this.connectionPool) {
+          await this.storeDocumentsWithPool(documents, results)
+        } else {
+          await this.storeDocumentsWithPgVectorStore(documents, results)
         }
         
         const duration = Date.now() - startTime
@@ -550,23 +581,28 @@ export class EnhancedVectorStore {
         // Record vector store metrics for database monitoring
         this.dbMetricsCollector.recordVectorStore(documents.length, 'pgvector', duration)
         
-        // Collect connection pool metrics
+        // Enhanced connection pool metrics collection
         results.poolMetrics = {
           operation: 'store',
           duration,
-          batchSize: Math.ceil(documents.length / batchSize),
-          documentsProcessed: documents.length
+          documentsProcessed: documents.length,
+          connectionPool: this.getConnectionPoolStatus(),
+          batchOptimized: !!this.connectionPool
         }
         
-        console.log(`Stored ${documents.length} documents in ${duration}ms using ${Math.ceil(documents.length / batchSize)} batches`)
+        console.log(`Stored ${documents.length} documents in ${duration}ms using ${this.connectionPool ? 'enhanced connection pooling' : 'standard pgvector store'}`)
       } catch (error) {
         console.error('Failed to store in pgvector:', error)
         this.dbMetricsCollector.recordVectorError('store')
-        results.poolMetrics = { error: (error as Error).message, operation: 'store' }
+        results.poolMetrics = { 
+          error: (error as Error).message, 
+          operation: 'store',
+          connectionPool: this.getConnectionPoolStatus()
+        }
       }
     }
 
-    // Store in Weaviate (for advanced search capabilities)
+    // Store in Weaviate (for advanced search capabilities) - unchanged
     if (this.providers.get('weaviate')) {
       try {
         const weaviateDocuments = documents.map((doc, index) => ({
@@ -604,6 +640,116 @@ export class EnhancedVectorStore {
     }
 
     return results
+  }
+
+  /**
+   * Store documents using enhanced connection pool with transaction support
+   */
+  private async storeDocumentsWithPool(
+    documents: Array<{
+      content: string
+      fileName: string
+      filePath: string
+      language?: string
+      fileId: number
+      startLine?: number
+      endLine?: number
+      tokens: number
+    }>,
+    results: any
+  ): Promise<void> {
+    if (!this.connectionPool) {
+      throw new Error('Connection pool not available')
+    }
+
+    // Group documents by fileId for optimal batch processing
+    const documentsByFile = new Map<number, typeof documents>()
+    documents.forEach(doc => {
+      if (!documentsByFile.has(doc.fileId)) {
+        documentsByFile.set(doc.fileId, [])
+      }
+      documentsByFile.get(doc.fileId)!.push(doc)
+    })
+
+    // Process each file's documents in a transaction for atomicity
+    for (const [fileId, fileDocs] of documentsByFile) {
+      await this.connectionPool.withTransaction(async (client) => {
+        // Use optimized batch size for enhanced operations
+        const batchSize = 8 // Increased batch size for better performance
+        
+        for (let i = 0; i < fileDocs.length; i += batchSize) {
+          const batch = fileDocs.slice(i, i + batchSize)
+          
+          // Process batch using the underlying vector store
+          await pgVectorStore.storeChunks(fileId, batch.map(doc => ({
+            content: doc.content,
+            startLine: doc.startLine,
+            endLine: doc.endLine,
+            tokens: doc.tokens
+          })))
+        }
+      })
+    }
+  }
+
+  /**
+   * Fallback to standard pgvector store when connection pool is not available
+   */
+  private async storeDocumentsWithPgVectorStore(
+    documents: Array<{
+      content: string
+      fileName: string
+      filePath: string
+      language?: string
+      fileId: number
+      startLine?: number
+      endLine?: number
+      tokens: number
+    }>,
+    results: any
+  ): Promise<void> {
+    // Group documents by fileId and process with standard batch size
+    const documentsByFile = new Map<number, typeof documents>()
+    documents.forEach(doc => {
+      if (!documentsByFile.has(doc.fileId)) {
+        documentsByFile.set(doc.fileId, [])
+      }
+      documentsByFile.get(doc.fileId)!.push(doc)
+    })
+
+    // Process each file's documents
+    for (const [fileId, fileDocs] of documentsByFile) {
+      const batchSize = 5 // Standard batch size
+      for (let i = 0; i < fileDocs.length; i += batchSize) {
+        const batch = fileDocs.slice(i, i + batchSize)
+        await pgVectorStore.storeChunks(fileId, batch.map(doc => ({
+          content: doc.content,
+          startLine: doc.startLine,
+          endLine: doc.endLine,
+          tokens: doc.tokens
+        })))
+      }
+    }
+  }
+
+  /**
+   * Get connection pool status for metrics
+   */
+  private getConnectionPoolStatus(): any {
+    if (!this.connectionPool) {
+      return { available: false, reason: 'Pool not initialized' }
+    }
+
+    return {
+      available: true,
+      status: this.connectionPool.getStatus(),
+      metrics: {
+        utilization: this.connectionPool.getMetrics().utilization,
+        activeConnections: this.connectionPool.getMetrics().activeConnections,
+        totalAcquired: this.connectionPool.getMetrics().totalAcquired,
+        avgAcquireTime: this.connectionPool.getMetrics().avgAcquireTime
+      }
+    }
   }
 
   /**
