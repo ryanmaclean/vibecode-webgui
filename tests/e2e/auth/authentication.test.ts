@@ -5,7 +5,7 @@
 
 import { test, expect } from '@playwright/test'
 import TestHelpers from '../utils/test-helpers'
-import testData from '../fixtures/test-data.json' assert { type: 'json' }
+import testData from '../fixtures/test-data.json'
 
 test.describe('Authentication Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -65,26 +65,10 @@ test.describe('Authentication Flow', () => {
     await page.fill('[data-testid="password-input"]', 'wrongpassword')
     await page.click('[data-testid="signin-button"]')
     
-    // Wait for navigation to complete
-    await page.waitForLoadState('networkidle')
+    await TestHelpers.assertErrorMessage(page, 'Invalid credentials')
     
-    // Debug: Log current URL and page content
-    const currentUrl = page.url()
-    console.log('Current URL after login attempt:', currentUrl)
-    
-    // Check if we're on the error page or signin page
-    if (currentUrl.includes('/auth/error')) {
-      console.log('On error page, looking for error message')
-      // NextAuth redirected to error page
-      await TestHelpers.assertErrorMessage(page, 'Invalid credentials')
-    } else {
-      console.log('On signin page, looking for error message')
-      // Should remain on login page with error message
-      await TestHelpers.assertErrorMessage(page, 'Invalid credentials')
-    }
-    
-    // Should not be on the homepage
-    await expect(page).not.toHaveURL('/')
+    // Should remain on login page
+    await expect(page).toHaveURL('/auth/signin')
   })
 
   test('should successfully login with valid credentials', async ({ page }) => {

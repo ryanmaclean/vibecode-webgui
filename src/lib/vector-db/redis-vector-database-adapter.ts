@@ -70,6 +70,10 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // Check if Redis Search module is available
       // Create vector index if it doesn't exist
       
+      if (this.config.enableLogging) {
+        console.info('Redis vector database adapter initialized successfully');
+      }
+      
       throw new Error('Redis adapter not yet implemented');
     } catch (error) {
       if (this.config.enableLogging) {

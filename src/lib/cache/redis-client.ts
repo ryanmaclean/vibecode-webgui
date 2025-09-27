@@ -8,129 +8,97 @@
  * Handles caching, session storage, and real-time features
  */
 
-/**
- * Redis/Valkey client with enhanced type safety
- */
 import { Redis } from 'ioredis';
 import { metrics } from '../server-monitoring';
-
-// Enhanced Redis interfaces for type safety
-interface RedisCommands {
-  get(key: string): Promise<string | null>;
-  setex(key: string, seconds: number, value: string): Promise<'OK'>;
-  del(...keys: string[]): Promise<number>;
-  exists(key: string): Promise<number>;
-  mget(...keys: string[]): Promise<(string | null)[]>;
-  pipeline(): Pipeline;
-  incr(key: string): Promise<number>;
-  expire(key: string, seconds: number): Promise<number>;
-  keys(pattern: string): Promise<string[]>;
-  info(section?: string): Promise<string>;
-  dbsize(): Promise<number>;
-  flushdb(): Promise<'OK'>;
-  ping(): Promise<string>;
-}
-
-// Pipeline interface
-interface Pipeline {
-  setex(key: string, seconds: number, value: string): Pipeline;
-  exec(): Promise<[Error | null, any][]>;
-}
-
-// Combined Redis type with command extensions
-type EnhancedRedis = Redis & RedisCommands;
-
-// Redis connection options
-interface RedisConnectionOptions {
-  host: string;
-  port: number;
-  password?: string;
-  db: number;
-  retryDelayOnFailover: number;
-  enableReadyCheck: boolean;
-  maxRetriesPerRequest: number;
-  lazyConnect: boolean;
-  keepAlive: number;
-  family: number;
-  commandTimeout: number;
-  connectTimeout: number;
-}
 
 // Valkey configuration based on environment 
 // Note: Using Redis-compatible client libraries (ioredis) to connect to Valkey server
 const getValkeyConfig = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // Upstash provides Redis-compatible API (acceptable for managed service)
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    return {
+      type: 'upstash' as const,
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN
+    };
+  }
+  
   // Standard Valkey for development/self-hosted (Redis-compatible protocol)  
   if (process.env.VALKEY_URL || process.env.REDIS_URL) {
     return {
+      type: 'standard' as const,
       url: process.env.VALKEY_URL || process.env.REDIS_URL // Prefer VALKEY_URL
-    } as const;
+    };
   }
   
   // Fallback configuration for Valkey
   return {
+    type: 'standard' as const,
     host: process.env.VALKEY_HOST || process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.VALKEY_PORT || process.env.REDIS_PORT || '6379'),
     password: process.env.VALKEY_PASSWORD || process.env.REDIS_PASSWORD,
     db: parseInt(process.env.VALKEY_DB || process.env.REDIS_DB || '0')
-  } as const;
+  };
 };
 
 const config = getValkeyConfig();
 
 // Create Valkey client with optimized settings (using Redis-compatible ioredis client)
-let redisClient: any = null;
+const valkeyClient: Redis | null = null;
 
 try {
-  if ('url' in config) {
-    // @ts-expect-error - ioredis constructor typing issue
-    redisClient = new Redis(config.url, {
-      retryDelayOnFailover: 100,
-      enableReadyCheck: false,
-      maxRetriesPerRequest: 3,
-      lazyConnect: true,
-      keepAlive: 30000,
-      // Connection pool settings
-      family: 4,
-      // Performance optimizations
-      commandTimeout: 5000,
-      connectTimeout: 10000,
+  if (config.type === 'standard') {
+    if ('url' in config) {
+      redis = new Redis(config.url, {
+        retryDelayOnFailover: 100,
+        enableReadyCheck: false,
+        maxRetriesPerRequest: 3,
+        lazyConnect: true,
+        keepAlive: 30000,
+        // Connection pool settings
+        family: 4,
+        // Performance optimizations
+        commandTimeout: 5000,
+        connectTimeout: 10000,
+      });
+    } else {
+      redis = new Redis({
+        host: config.host,
+        port: config.port,
+        password: config.password,
+        db: config.db,
+        retryDelayOnFailover: 100,
+        enableReadyCheck: false,
+        maxRetriesPerRequest: 3,
+        lazyConnect: true,
+        keepAlive: 30000,
+        family: 4,
+        commandTimeout: 5000,
+        connectTimeout: 10000,
+      });
+    }
+
+    // Event listeners for monitoring
+    redis.on('connect', () => {
+      console.log('Redis connected successfully');
+      metrics.increment('redis.connection.success');
     });
-  } else {
-    // @ts-expect-error - ioredis constructor typing issue
-    redisClient = new Redis({
-      host: config.host,
-      port: config.port,
-      password: config.password,
-      db: config.db,
-      retryDelayOnFailover: 100,
-      enableReadyCheck: false,
-      maxRetriesPerRequest: 3,
-      lazyConnect: true,
-      keepAlive: 30000,
-      family: 4,
-      commandTimeout: 5000,
-      connectTimeout: 10000,
+
+    redis.on('error', (error) => {
+      console.error('Redis connection error:', error);
+      metrics.increment('redis.connection.error');
+    });
+
+    redis.on('ready', () => {
+      console.log('Redis client ready');
+      metrics.increment('redis.ready');
     });
   }
-
-  // Event listeners for monitoring
-  redisClient.on('connect', () => {
-    console.log('Redis connected successfully');
-    metrics.increment('redis.connection.success');
-  });
-
-  redisClient.on('error', (error) => {
-    console.error('Redis connection error:', error);
-    metrics.increment('redis.connection.error');
-  });
-
-  redisClient.on('ready', () => {
-    console.log('Redis client ready');
-    metrics.increment('redis.ready');
-  });
 } catch (error) {
   console.warn('Redis client initialization failed:', error);
-  redisClient = null;
+  redis = null;
 }
 
 // Cache key generators
@@ -163,10 +131,10 @@ export const CacheTTL = {
  * Enhanced cache operations with performance monitoring
  */
 export class CacheManager {
-  private redis: any;
+  private redis: Redis | null;
 
   constructor() {
-    this.redis = redisClient;
+    this.redis = redis;
   }
 
   /**
@@ -231,7 +199,7 @@ export class CacheManager {
       const keys = Array.isArray(key) ? key : [key];
       await this.redis.del(...keys);
       
-      metrics.increment('cache.delete', { count: keys.length as any });
+      metrics.increment('cache.delete', { count: keys.length });
       return true;
     } catch (error) {
       metrics.increment('cache.delete.error');
@@ -285,7 +253,7 @@ export class CacheManager {
       }
       
       await pipeline.exec();
-      metrics.increment('cache.mset.success', { count: pairs.length as any });
+      metrics.increment('cache.mset.success', { count: pairs.length });
       return true;
     } catch (error) {
       metrics.increment('cache.mset.error');

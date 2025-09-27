@@ -50,8 +50,7 @@ test.describe('Smoke Tests', () => {
   })
 
   test('should have working health check endpoint', async ({ page }) => {
-    // Use simple health endpoint for E2E tests (no external dependencies)
-    const response = await page.request.get('/api/health/simple')
+    const response = await page.request.get('/api/health')
     expect(response.status()).toBe(200)
     
     const health = await response.json()

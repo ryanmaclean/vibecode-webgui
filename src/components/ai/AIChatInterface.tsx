@@ -2,9 +2,8 @@
 // Inspired by Claude, ChatGPT, and Lovable.dev interfaces
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Upload, Code, Settings } from 'lucide-react'
+import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare, Wand2, FileText } from 'lucide-react'
 import { Button, Textarea, Card, CardContent, Badge, ScrollArea } from '@/components/ui';
-import styles from './AIChatInterface.module.css'
 // import PromptTemplates from './PromptTemplates'
 // import PromptEnhancer from './PromptEnhancer'
 
@@ -69,21 +68,22 @@ export const AIChatInterface = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Load conversation history on mount/workspace change
+  // Load conversation history on mount
   useEffect(() => {
-    const load = async () => {
-      try {
-        const response = await fetch(`/api/ai/conversations/${workspaceId}`)
-        if (response.ok) {
-          const history = await response.json()
-          setMessages(history.messages || [])
-        }
-      } catch (error) {
-        console.error('Failed to load conversation history:', error)
-      }
-    }
-    load()
+    loadConversationHistory()
   }, [workspaceId])
+
+  const loadConversationHistory = async () => {
+    try {
+      const response = await fetch(`/api/ai/conversations/${workspaceId}`)
+      if (response.ok) {
+        const history = await response.json()
+        setMessages(history.messages || [])
+      }
+    } catch (error) {
+      console.error('Failed to load conversation history:', error)
+    }
+  }
 
   const handleSendMessage = async () => {
     if (!input.trim() || isStreaming) return
@@ -121,7 +121,6 @@ export const AIChatInterface = ({
           context: {
             workspaceId,
             files: contextFiles,
-            previousMessages: messages
           }
         })
       })
@@ -236,7 +235,6 @@ export const AIChatInterface = ({
               size="sm"
               onClick={() => setShowSettings(!showSettings)}
               title="Settings"
-              aria-label="Settings"
             >
               <Settings className="w-4 h-4" />
             </Button>
@@ -304,7 +302,7 @@ export const AIChatInterface = ({
       {/* Messages area */}
       <ScrollArea className="flex-1 p-4" data-testid="chat-messages">
         <div className="space-y-4">
-          {messages.map((message) => (
+          {messages.map((message, index) => (
             <div key={message.id} className={`flex items-start gap-3 ${message.type === 'user' ? 'justify-end' : ''}`}>
               {message.type === 'assistant' && (
                 <div className="flex-shrink-0">
@@ -347,8 +345,8 @@ export const AIChatInterface = ({
           {isStreaming && (
             <div className="flex items-center space-x-2 text-gray-500">
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-              <div className={`w-2 h-2 bg-blue-600 rounded-full animate-bounce ${styles.delay100}`}></div>
-              <div className={`w-2 h-2 bg-blue-600 rounded-full animate-bounce ${styles.delay200}`}></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
               <span className="text-sm">AI is thinking...</span>
             </div>
           )}
@@ -374,15 +372,12 @@ export const AIChatInterface = ({
           <div className="flex space-x-1">
             <input
               ref={fileInputRef}
-              id="file-upload-input"
               type="file"
               multiple
               onChange={handleFileUpload}
               className="hidden"
               accept=".txt,.md,.js,.ts,.jsx,.tsx,.py,.java,.cpp,.c,.html,.css,.json,.xml,.yml,.yaml"
               data-testid="file-upload-input"
-              aria-label="Upload context files"
-              title="Upload context files"
             />
 
             <Button
@@ -399,7 +394,6 @@ export const AIChatInterface = ({
               onClick={handleSendMessage}
               disabled={!input.trim() || isStreaming}
               size="sm"
-              aria-label="Send"
             >
               <Send className="w-4 h-4" />
             </Button>
@@ -425,5 +419,3 @@ export const AIChatInterface = ({
     </div>
   )
 }
-
-export default AIChatInterface

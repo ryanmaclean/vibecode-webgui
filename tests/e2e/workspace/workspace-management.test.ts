@@ -5,7 +5,7 @@
 
 import { test, expect } from '@playwright/test'
 import TestHelpers from '../utils/test-helpers'
-import testData from '../fixtures/test-data.json' assert { type: 'json' }
+import testData from '../fixtures/test-data.json'
 
 test.describe('Workspace Management', () => {
   let testUser: any
@@ -164,7 +164,7 @@ test.describe('Workspace Management', () => {
       const file = new File([content], fileName, { type: 'text/plain' })
       dataTransfer.items.add(file)
       
-      const fileInput = document.querySelector('[data-testid="file-upload-input"]') as HTMLInputElement | null
+      const fileInput = document.querySelector('[data-testid="file-upload-input"]')
       if (fileInput) {
         fileInput.files = dataTransfer.files
         fileInput.dispatchEvent(new Event('change', { bubbles: true }))

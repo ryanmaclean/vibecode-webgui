@@ -542,17 +542,17 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         }
       });
 
-      return chunks.filter(chunk => chunk.chunk_id && chunk.file_id && chunk.file).map(chunk => ({
+      return chunks.map(chunk => ({
         chunk: {
-          id: chunk.chunk_id!,
+          id: chunk.chunk_id,
           content: chunk.content,
           embedding: [],
           metadata: {
-            fileId: chunk.file_id!,
-            fileName: chunk.file!.name,
+            fileId: chunk.file_id,
+            fileName: chunk.file.name,
             startLine: chunk.start_line || undefined,
             endLine: chunk.end_line || undefined,
-            language: chunk.file!.language || undefined,
+            language: chunk.file.language || undefined,
             tokens: chunk.tokens || 0
           }
         },

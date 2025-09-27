@@ -79,7 +79,7 @@ export class ProductionVectorCacheInvalidator {
     metadata?: Record<string, any>
   ): Promise<void> {
     const request: InvalidationRequest = {
-      keys: Array.from(new Set(keys)), // Remove duplicates
+      keys: [...new Set(keys)], // Remove duplicates
       priority,
       source,
       timestamp: Date.now(),
@@ -329,12 +329,9 @@ export class ProductionVectorCacheInvalidator {
       // Group requests by priority and execute
       const groupedRequests = this.groupRequestsByPriority(requests);
       
-      // Convert Map entries to array for iteration
-      const priorities = Array.from(groupedRequests.keys());
-      for (const priority of priorities) {
-        const priorityRequests = groupedRequests.get(priority) || [];
+      for (const [priority, priorityRequests] of groupedRequests) {
         const allKeys = priorityRequests.flatMap(req => req.keys);
-        const uniqueKeys = Array.from(new Set(allKeys));
+        const uniqueKeys = [...new Set(allKeys)];
         
         await this.executeActualInvalidation(uniqueKeys);
         totalKeysInvalidated += uniqueKeys.length;
@@ -386,7 +383,7 @@ export class ProductionVectorCacheInvalidator {
   /**
    * Handle invalidation failures with circuit breaker logic
    */
-  private handleFailure(_error: Error): void {
+  private handleFailure(error: Error): void {
     this.failureCount++;
     this.lastFailureTime = Date.now();
 
@@ -442,16 +439,10 @@ export class ProductionVectorCacheInvalidator {
    * Generate content type invalidation patterns
    */
   private generateContentTypePatterns(contentType: string, workspaceId?: string): string[] {
-    const patterns: string[] = [];
+    const patterns = [];
     
     if (workspaceId) {
-      // Handle workspace contentType specially to avoid duplication
-      if (contentType === 'workspace') {
-        patterns.push(`workspace:${workspaceId}:*`);
-      } else {
-        patterns.push(`${contentType}:${workspaceId}:*`);
-        patterns.push(`workspace:${workspaceId}:${contentType}:*`);
-      }
+      patterns.push(`workspace:${workspaceId}:${contentType}:*`);
       patterns.push(`embedding:${workspaceId}:${contentType}:*`);
       patterns.push(`search:${workspaceId}:${contentType}:*`);
     } else {
@@ -466,7 +457,7 @@ export class ProductionVectorCacheInvalidator {
   /**
    * Generate file invalidation keys
    */
-  private generateFileInvalidationKeys(fileId: string, _operation: string, workspaceId: string): string[] {
+  private generateFileInvalidationKeys(fileId: string, operation: string, workspaceId: string): string[] {
     return [
       `file:${fileId}`,
       `file:${fileId}:chunks`,
@@ -478,39 +469,9 @@ export class ProductionVectorCacheInvalidator {
   }
 
   /**
-   * Workspace-wide invalidation with selective optimization
-   */
-  public async invalidateWorkspace(
-    workspaceId: string,
-    options: {
-      contentTypes?: string[];
-      excludePatterns?: string[];
-      batchSize?: number;
-    } = {}
-  ): Promise<void> {
-    const patterns = this.generateWorkspacePatterns(workspaceId, options);
-    
-    // Process patterns in batches to avoid overwhelming the system
-    const batchSize = options.batchSize || 10;
-    
-    for (let i = 0; i < patterns.length; i += batchSize) {
-      const batch = patterns.slice(i, i + batchSize);
-      
-      await Promise.all(batch.map(pattern =>
-        this.invalidateByPattern(pattern, 'medium', 'workspace-invalidation')
-      ));
-      
-      // Small delay between batches to prevent overload
-      if (i + batchSize < patterns.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    }
-  }
-
-  /**
    * Find similar cache entries based on vector similarity
    */
-  private async findSimilarCacheEntries(keys: string[], _similarity: number): Promise<string[]> {
+  private async findSimilarCacheEntries(keys: string[], similarity: number): Promise<string[]> {
     // This would integrate with your vector similarity system
     // For now, simulate finding similar entries
     
@@ -525,35 +486,5 @@ export class ProductionVectorCacheInvalidator {
     }
     
     return similarKeys;
-  }
-
-  /**
-   * Generate workspace invalidation patterns
-   */
-  private generateWorkspacePatterns(
-    workspaceId: string, 
-    options: { contentTypes?: string[]; excludePatterns?: string[] }
-  ): string[] {
-    const patterns = [
-      `workspace:${workspaceId}:*`,
-      `embedding:${workspaceId}:*`,
-      `search:${workspaceId}:*`,
-      `user:*:workspace:${workspaceId}`
-    ];
-
-    if (options.contentTypes) {
-      for (const contentType of options.contentTypes) {
-        patterns.push(`${contentType}:${workspaceId}:*`);
-      }
-    }
-
-    // Filter out excluded patterns
-    if (options.excludePatterns) {
-      return patterns.filter(pattern => 
-        !options.excludePatterns!.some(exclude => pattern.includes(exclude))
-      );
-    }
-
-    return patterns;
   }
 }
