@@ -8,6 +8,7 @@ import { prisma } from './prisma'
 import { Prisma } from '@prisma/client'
 import { EmbeddingServiceFactory, EmbeddingServiceType } from './ai/embeddingServiceFactory'
 import { generateLocalEmbedding } from './ai/localEmbedding'
+import { VectorConnectionPoolFactory, VectorConnectionPool } from './db/vector-connection-pool'
 
 // Check if we're in build mode
 const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' || 
@@ -40,8 +41,12 @@ class VectorStore {
   private openrouterEmbeddingModel = process.env.OPENROUTER_EMBEDDING_MODEL || 'text-embedding-3-small'
   private useLocalEmbeddings = process.env.USE_LOCAL_EMBEDDINGS === 'true'
   private localEmbeddingDimensions = parseInt(process.env.LOCAL_EMBEDDING_DIM || '1536', 10)
+  private connectionPool: VectorConnectionPool | null = null
 
   constructor() {
+    // Initialize connection pool for vector operations
+    this.initializeConnectionPool()
+
     if (!isBuilding && prisma) {
       try {
         if (this.useLocalEmbeddings) {
@@ -75,6 +80,43 @@ class VectorStore {
         dangerouslyAllowBrowser: allowBrowserClient,
       })
       this.embeddingProviderLabel = 'openrouter'
+    }
+  }
+
+  /**
+   * Initialize vector database connection pool
+   */
+  private initializeConnectionPool(): void {
+    if (isBuilding || !prisma) {
+      return
+    }
+
+    try {
+      // Get existing pool or create new one for vector operations
+      this.connectionPool = VectorConnectionPoolFactory.getPool('vector-store') || null
+      
+      if (!this.connectionPool) {
+        // Create connection pool with optimized settings for vector operations
+        this.connectionPool = VectorConnectionPoolFactory.createPool(
+          {
+            connectionString: process.env.DATABASE_URL,
+            ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+          },
+          {
+            min: 2,  // Minimum connections for vector operations
+            max: 8,  // Maximum connections optimized for vector workloads
+            acquireTimeoutMillis: 60000, // Longer timeout for vector queries
+            idleTimeoutMillis: 300000,   // 5 minutes idle timeout
+            testOnBorrow: true,
+          },
+          'vector-store'
+        )
+        
+        console.log('Initialized vector database connection pool')
+      }
+    } catch (error) {
+      console.warn('Failed to initialize vector connection pool, falling back to Prisma:', error)
+      this.connectionPool = null
     }
   }
 
@@ -159,7 +201,7 @@ class VectorStore {
   }
 
   /**
-   * Store vector chunks in the database
+   * Store vector chunks in the database with connection pooling optimization
    */
   async storeChunks(fileId: number, chunks: Array<{
     content: string
@@ -173,59 +215,49 @@ class VectorStore {
     }
     
     try {
-      const fileInfo = await prisma.file.findUnique({
-        where: { id: fileId },
-        select: {
-          name: true,
-          language: true,
-          workspace_id: true,
-          workspace: {
-            select: {
-              workspace_id: true,
-              name: true
+      // Get file information first using connection pool if available
+      const fileInfo = await (this.connectionPool ? 
+        this.getFileInfoWithPool(fileId) : 
+        prisma.file.findUnique({
+          where: { id: fileId },
+          select: {
+            name: true,
+            language: true,
+            workspace_id: true,
+            workspace: {
+              select: {
+                workspace_id: true,
+                name: true
+              }
             }
           }
-        }
-      })
+        })
+      )
 
-      await prisma.rAGChunk.deleteMany({
-        where: { file_id: fileId }
-      })
+      // Delete existing chunks using connection pool if available
+      if (this.connectionPool) {
+        await this.connectionPool.query(
+          'DELETE FROM rag_chunks WHERE file_id = $1',
+          [fileId]
+        )
+      } else {
+        await prisma.rAGChunk.deleteMany({
+          where: { file_id: fileId }
+        })
+      }
 
-      // Process chunks in batches to avoid rate limits
+      console.log(`Processing ${chunks.length} chunks with ${this.connectionPool ? 'connection pooling' : 'Prisma'} for file ${fileId}`)
+
+      // Process chunks in batches to optimize connection usage and avoid rate limits
       const batchSize = 5
       for (let i = 0; i < chunks.length; i += batchSize) {
         const batch = chunks.slice(i, i + batchSize)
         
-        // Process each chunk individually to handle pgvector embedding insertion
-        for (let j = 0; j < batch.length; j++) {
-          const chunk = batch[j]
-          const chunkId = `${fileId}-chunk-${i + j}`
-          const embedding = await this.generateEmbedding(chunk.content)
-          const embeddingString = `[${embedding.join(',')}]`
-          
-          // Use raw SQL to insert with pgvector embedding
-          await prisma.$executeRawUnsafe(`
-            INSERT INTO rag_chunks (file_id, chunk_id, content, start_line, end_line, tokens, embedding, metadata, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7::vector, $8::jsonb, NOW())
-          `, 
-            fileId,
-            chunkId,
-            chunk.content,
-            chunk.startLine || null,
-            chunk.endLine || null,
-            chunk.tokens,
-            embeddingString,
-            JSON.stringify({
-              generatedAt: new Date().toISOString(),
-              provider: this.embeddingProviderLabel,
-              workspaceSlug: fileInfo?.workspace?.workspace_id,
-              workspaceId: fileInfo?.workspace_id,
-              workspaceName: fileInfo?.workspace?.name,
-              fileName: fileInfo?.name,
-              language: fileInfo?.language
-            })
-          )
+        // Use connection pooling for batch operations when available
+        if (this.connectionPool) {
+          await this.processBatchWithPool(batch, fileId, i, fileInfo)
+        } else {
+          await this.processBatchWithPrisma(batch, fileId, i, fileInfo)
         }
 
         // Small delay to respect rate limits
@@ -240,7 +272,126 @@ class VectorStore {
   }
 
   /**
-   * Search for similar content using pgvector similarity
+   * Get file info using connection pool
+   */
+  private async getFileInfoWithPool(fileId: number) {
+    if (!this.connectionPool) {
+      throw new Error('Connection pool not available')
+    }
+
+    const result = await this.connectionPool.query(`
+      SELECT f.name, f.language, f.workspace_id, w.workspace_id as workspace_slug, w.name as workspace_name
+      FROM files f
+      LEFT JOIN workspaces w ON f.workspace_id = w.id
+      WHERE f.id = $1
+    `, [fileId])
+
+    if (result.rows.length === 0) {
+      return null
+    }
+
+    const row = result.rows[0]
+    return {
+      name: row.name,
+      language: row.language,
+      workspace_id: row.workspace_id,
+      workspace: {
+        workspace_id: row.workspace_slug,
+        name: row.workspace_name
+      }
+    }
+  }
+
+  /**
+   * Process batch of chunks using connection pool for optimal performance
+   */
+  private async processBatchWithPool(
+    batch: Array<{ content: string; startLine?: number; endLine?: number; tokens: number }>,
+    fileId: number,
+    batchStartIndex: number,
+    fileInfo: any
+  ): Promise<void> {
+    if (!this.connectionPool) {
+      throw new Error('Connection pool not available')
+    }
+
+    // Use a transaction for batch operations to ensure atomicity
+    await this.connectionPool.withTransaction(async (client) => {
+      for (let j = 0; j < batch.length; j++) {
+        const chunk = batch[j]
+        const chunkId = `${fileId}-chunk-${batchStartIndex + j}`
+        const embedding = await this.generateEmbedding(chunk.content)
+        const embeddingString = `[${embedding.join(',')}]`
+        
+        // Insert with pgvector embedding using pooled connection
+        await client.query(`
+          INSERT INTO rag_chunks (file_id, chunk_id, content, start_line, end_line, tokens, embedding, metadata, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7::vector, $8::jsonb, NOW())
+        `, [
+          fileId,
+          chunkId,
+          chunk.content,
+          chunk.startLine || null,
+          chunk.endLine || null,
+          chunk.tokens,
+          embeddingString,
+          JSON.stringify({
+            generatedAt: new Date().toISOString(),
+            provider: this.embeddingProviderLabel,
+            workspaceSlug: fileInfo?.workspace?.workspace_id,
+            workspaceId: fileInfo?.workspace_id,
+            workspaceName: fileInfo?.workspace?.name,
+            fileName: fileInfo?.name,
+            language: fileInfo?.language
+          })
+        ])
+      }
+    })
+  }
+
+  /**
+   * Process batch of chunks using Prisma (fallback method)
+   */
+  private async processBatchWithPrisma(
+    batch: Array<{ content: string; startLine?: number; endLine?: number; tokens: number }>,
+    fileId: number,
+    batchStartIndex: number,
+    fileInfo: any
+  ): Promise<void> {
+    // Process each chunk individually to handle pgvector embedding insertion
+    for (let j = 0; j < batch.length; j++) {
+      const chunk = batch[j]
+      const chunkId = `${fileId}-chunk-${batchStartIndex + j}`
+      const embedding = await this.generateEmbedding(chunk.content)
+      const embeddingString = `[${embedding.join(',')}]`
+      
+      // Use raw SQL to insert with pgvector embedding
+      await prisma.$executeRawUnsafe(`
+        INSERT INTO rag_chunks (file_id, chunk_id, content, start_line, end_line, tokens, embedding, metadata, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7::vector, $8::jsonb, NOW())
+      `, 
+        fileId,
+        chunkId,
+        chunk.content,
+        chunk.startLine || null,
+        chunk.endLine || null,
+        chunk.tokens,
+        embeddingString,
+        JSON.stringify({
+          generatedAt: new Date().toISOString(),
+          provider: this.embeddingProviderLabel,
+          workspaceSlug: fileInfo?.workspace?.workspace_id,
+          workspaceId: fileInfo?.workspace_id,
+          workspaceName: fileInfo?.workspace?.name,
+          fileName: fileInfo?.name,
+          language: fileInfo?.language
+        })
+      )
+    }
+  }
+
+  /**
+   * Search for similar content using pgvector similarity with connection pooling optimization
    */
   async search(
     query: string, 
@@ -263,95 +414,192 @@ class VectorStore {
       const queryEmbedding = await this.generateEmbedding(query)
       const embeddingString = `[${queryEmbedding.join(',')}]`
 
-      // Build WHERE clause for filtering
-      const whereConditions: string[] = []
-      const params: (string | number | number[])[] = []
-      let paramIndex = 1
-
-      if (workspaceId) {
-        whereConditions.push(`f.workspace_id = $${paramIndex}`)
-        params.push(workspaceId)
-        paramIndex++
+      // Use connection pooling for vector search when available
+      if (this.connectionPool) {
+        return await this.searchWithPool(queryEmbedding, embeddingString, { workspaceId, fileIds, limit, threshold }, query)
+      } else {
+        return await this.searchWithPrisma(embeddingString, { workspaceId, fileIds, limit, threshold }, query)
       }
-
-      if (fileIds && fileIds.length > 0) {
-        whereConditions.push(`rc.file_id = ANY($${paramIndex}::int[])`)
-        params.push(`{${fileIds.join(',')}}`)
-        paramIndex++
-      }
-
-      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''
-
-      // Add embedding parameter
-      const embeddingParamIndex = paramIndex++
-      const limitParamIndex = paramIndex++
-
-      // Use pgvector for fast similarity search with cosine distance
-      const sql = `
-        SELECT 
-          rc.chunk_id,
-          rc.content,
-          rc.start_line,
-          rc.end_line,
-          rc.tokens,
-          rc.file_id,
-          f.name as file_name,
-          f.language,
-          (1 - (rc.embedding <=> $${embeddingParamIndex}::vector)) as similarity
-        FROM rag_chunks rc
-        JOIN files f ON rc.file_id = f.id
-        ${whereClause}
-        ORDER BY rc.embedding <=> $${embeddingParamIndex}::vector
-        LIMIT $${limitParamIndex}
-      `
-
-      // Add parameters in the correct order
-      params.push(embeddingString, limit)
-
-      // Define interface for raw SQL result
-      interface RawResult {
-        chunk_id: string
-        content: string
-        start_line: number | null
-        end_line: number | null
-        tokens: number
-        file_id: number
-        file_name: string
-        language: string | null
-        similarity: number
-      }
-
-      // Execute raw SQL query using Prisma
-      const rawResults = await prisma.$queryRawUnsafe<RawResult[]>(sql, ...params)
-
-      // Filter by threshold and format results
-      const results: SearchResult[] = rawResults
-        .filter((row) => row.similarity >= threshold)
-        .map((row) => ({
-          chunk: {
-            id: row.chunk_id,
-            content: row.content,
-            embedding: [], // Don't return embedding in response for performance
-            metadata: {
-              fileId: row.file_id,
-              fileName: row.file_name,
-              startLine: row.start_line || undefined,
-              endLine: row.end_line || undefined,
-              language: row.language || undefined,
-              tokens: row.tokens || 0
-            }
-          },
-          similarity: row.similarity
-        }))
-
-      console.log(`Vector search found ${results.length} relevant chunks for query: "${query.substring(0, 100)}..."`)
-      
-      return results
     } catch (error) {
       console.error('Error in vector search:', error)
       // Fallback to simple text search if vector search fails
       return this.fallbackTextSearch(query, options)
     }
+  }
+
+  /**
+   * Execute vector search using connection pool
+   */
+  private async searchWithPool(
+    queryEmbedding: number[],
+    embeddingString: string,
+    options: { workspaceId?: number; fileIds?: number[]; limit: number; threshold: number },
+    query: string
+  ): Promise<SearchResult[]> {
+    if (!this.connectionPool) {
+      throw new Error('Connection pool not available')
+    }
+
+    const { workspaceId, fileIds, limit, threshold } = options
+
+    // Build WHERE clause for filtering
+    const whereConditions: string[] = []
+    const params: (string | number | number[])[] = [embeddingString, embeddingString, limit] // embedding used twice in the query
+    let paramIndex = 4
+
+    if (workspaceId) {
+      whereConditions.push(`f.workspace_id = $${paramIndex}`)
+      params.push(workspaceId)
+      paramIndex++
+    }
+
+    if (fileIds && fileIds.length > 0) {
+      whereConditions.push(`rc.file_id = ANY($${paramIndex}::int[])`)
+      params.push(fileIds)
+      paramIndex++
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''
+
+    // Optimized pgvector query using connection pool for fast similarity search
+    const sql = `
+      SELECT 
+        rc.chunk_id,
+        rc.content,
+        rc.start_line,
+        rc.end_line,
+        rc.tokens,
+        rc.file_id,
+        f.name as file_name,
+        f.language,
+        (1 - (rc.embedding <=> $1::vector)) as similarity
+      FROM rag_chunks rc
+      JOIN files f ON rc.file_id = f.id
+      ${whereClause}
+      ORDER BY rc.embedding <=> $2::vector
+      LIMIT $3
+    `
+
+    const result = await this.connectionPool.query(sql, params)
+
+    // Filter by threshold and format results
+    const results: SearchResult[] = result.rows
+      .filter((row: any) => row.similarity >= threshold)
+      .map((row: any) => ({
+        chunk: {
+          id: row.chunk_id,
+          content: row.content,
+          embedding: [], // Don't return embedding in response for performance
+          metadata: {
+            fileId: row.file_id,
+            fileName: row.file_name,
+            startLine: row.start_line || undefined,
+            endLine: row.end_line || undefined,
+            language: row.language || undefined,
+            tokens: row.tokens || 0
+          }
+        },
+        similarity: row.similarity
+      }))
+
+    console.log(`Vector search (pooled) found ${results.length} relevant chunks for query: "${query.substring(0, 100)}..."`)
+    return results
+  }
+
+  /**
+   * Execute vector search using Prisma (fallback method)
+   */
+  private async searchWithPrisma(
+    embeddingString: string,
+    options: { workspaceId?: number; fileIds?: number[]; limit: number; threshold: number },
+    query: string
+  ): Promise<SearchResult[]> {
+    const { workspaceId, fileIds, limit, threshold } = options
+
+    // Build WHERE clause for filtering
+    const whereConditions: string[] = []
+    const params: (string | number | number[])[] = []
+    let paramIndex = 1
+
+    if (workspaceId) {
+      whereConditions.push(`f.workspace_id = $${paramIndex}`)
+      params.push(workspaceId)
+      paramIndex++
+    }
+
+    if (fileIds && fileIds.length > 0) {
+      whereConditions.push(`rc.file_id = ANY($${paramIndex}::int[])`)
+      params.push(`{${fileIds.join(',')}}`)
+      paramIndex++
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : ''
+
+    // Add embedding parameter
+    const embeddingParamIndex = paramIndex++
+    const limitParamIndex = paramIndex++
+
+    // Use pgvector for fast similarity search with cosine distance
+    const sql = `
+      SELECT 
+        rc.chunk_id,
+        rc.content,
+        rc.start_line,
+        rc.end_line,
+        rc.tokens,
+        rc.file_id,
+        f.name as file_name,
+        f.language,
+        (1 - (rc.embedding <=> $${embeddingParamIndex}::vector)) as similarity
+      FROM rag_chunks rc
+      JOIN files f ON rc.file_id = f.id
+      ${whereClause}
+      ORDER BY rc.embedding <=> $${embeddingParamIndex}::vector
+      LIMIT $${limitParamIndex}
+    `
+
+    // Add parameters in the correct order
+    params.push(embeddingString, limit)
+
+    // Define interface for raw SQL result
+    interface RawResult {
+      chunk_id: string
+      content: string
+      start_line: number | null
+      end_line: number | null
+      tokens: number
+      file_id: number
+      file_name: string
+      language: string | null
+      similarity: number
+    }
+
+    // Execute raw SQL query using Prisma
+    const rawResults = await prisma.$queryRawUnsafe(sql, ...params) as RawResult[]
+
+    // Filter by threshold and format results
+    const results: SearchResult[] = rawResults
+      .filter((row) => row.similarity >= threshold)
+      .map((row) => ({
+        chunk: {
+          id: row.chunk_id,
+          content: row.content,
+          embedding: [], // Don't return embedding in response for performance
+          metadata: {
+            fileId: row.file_id,
+            fileName: row.file_name,
+            startLine: row.start_line || undefined,
+            endLine: row.end_line || undefined,
+            language: row.language || undefined,
+            tokens: row.tokens || 0
+          }
+        },
+        similarity: row.similarity
+      }))
+
+    console.log(`Vector search found ${results.length} relevant chunks for query: "${query.substring(0, 100)}..."`)
+    
+    return results
   }
 
   /**
@@ -372,10 +620,10 @@ class VectorStore {
     try {
       const { workspaceId, fileIds, limit = 10 } = options
 
-      const whereClause: Prisma.RAGChunkWhereInput = {
+      const whereClause: any = {
         content: {
           contains: query,
-          mode: Prisma.QueryMode.insensitive
+          mode: 'insensitive' as any
         }
       }
       
@@ -464,7 +712,7 @@ class VectorStore {
   }
 
   /**
-   * Delete all chunks for a file
+   * Delete all chunks for a file using connection pooling when available
    */
   async deleteFileChunks(fileId: number): Promise<void> {
     if (isBuilding || !prisma) {
@@ -473,10 +721,20 @@ class VectorStore {
     }
     
     try {
-      await prisma.rAGChunk.deleteMany({
-        where: { file_id: fileId }
-      })
-      console.log(`Deleted vector chunks for file ${fileId}`)
+      if (this.connectionPool) {
+        // Use connection pooling for delete operation
+        await this.connectionPool.query(
+          'DELETE FROM rag_chunks WHERE file_id = $1',
+          [fileId]
+        )
+        console.log(`Deleted vector chunks for file ${fileId} (using connection pool)`)
+      } else {
+        // Fallback to Prisma
+        await prisma.rAGChunk.deleteMany({
+          where: { file_id: fileId }
+        })
+        console.log(`Deleted vector chunks for file ${fileId}`)
+      }
     } catch (error) {
       console.error('Error deleting file chunks:', error)
       throw error
@@ -484,7 +742,7 @@ class VectorStore {
   }
 
   /**
-   * Get statistics about the vector store
+   * Get statistics about the vector store with connection pooling optimization
    */
   async getStats(): Promise<{
     totalChunks: number
@@ -501,22 +759,38 @@ class VectorStore {
     }
     
     try {
-      const totalChunks = await prisma.rAGChunk.count()
-      const totalFiles = await prisma.rAGChunk.groupBy({
-        by: ['file_id'],
-        _count: true
-      })
+      if (this.connectionPool) {
+        // Use connection pooling for statistics queries
+        const [chunksResult, filesResult, avgResult] = await Promise.all([
+          this.connectionPool.query('SELECT COUNT(*) as total FROM rag_chunks'),
+          this.connectionPool.query('SELECT COUNT(DISTINCT file_id) as total FROM rag_chunks'),
+          this.connectionPool.query('SELECT AVG(tokens) as avg_tokens FROM rag_chunks WHERE tokens IS NOT NULL')
+        ])
 
-      const avgTokens = await prisma.rAGChunk.aggregate({
-        _avg: {
-          tokens: true
+        return {
+          totalChunks: parseInt(chunksResult.rows[0].total),
+          totalFiles: parseInt(filesResult.rows[0].total),
+          averageChunkSize: parseFloat(avgResult.rows[0].avg_tokens) || 0
         }
-      })
+      } else {
+        // Fallback to Prisma
+        const totalChunks = await prisma.rAGChunk.count()
+        const totalFiles = await prisma.rAGChunk.groupBy({
+          by: ['file_id'],
+          _count: true
+        })
 
-      return {
-        totalChunks,
-        totalFiles: totalFiles.length,
-        averageChunkSize: avgTokens._avg.tokens || 0
+        const avgTokens = await prisma.rAGChunk.aggregate({
+          _avg: {
+            tokens: true
+          }
+        })
+
+        return {
+          totalChunks,
+          totalFiles: totalFiles.length,
+          averageChunkSize: avgTokens._avg.tokens || 0
+        }
       }
     } catch (error) {
       console.error('Error getting vector store stats:', error)
@@ -524,6 +798,70 @@ class VectorStore {
         totalChunks: 0,
         totalFiles: 0,
         averageChunkSize: 0
+      }
+    }
+  }
+
+  /**
+   * Get connection pool metrics for monitoring
+   */
+  getConnectionPoolMetrics(): any {
+    if (!this.connectionPool) {
+      return {
+        available: false,
+        reason: 'Connection pool not initialized'
+      }
+    }
+
+    const status = this.connectionPool.getStatus()
+    const metrics = this.connectionPool.getMetrics()
+
+    return {
+      available: true,
+      status,
+      metrics: {
+        totalCreated: metrics.totalCreated,
+        totalAcquired: metrics.totalAcquired,
+        totalReleased: metrics.totalReleased,
+        totalErrors: metrics.totalErrors,
+        avgAcquireTime: metrics.avgAcquireTime,
+        utilization: metrics.utilization
+      }
+    }
+  }
+
+  /**
+   * Perform health check on connection pool
+   */
+  async healthCheck(): Promise<{ healthy: boolean; details: any }> {
+    if (!this.connectionPool) {
+      return {
+        healthy: false,
+        details: { error: 'Connection pool not available' }
+      }
+    }
+
+    try {
+      const isHealthy = await this.connectionPool.healthCheck()
+      const metrics = this.connectionPool.getMetrics()
+      
+      return {
+        healthy: isHealthy,
+        details: {
+          poolStatus: this.connectionPool.getStatus(),
+          metrics: {
+            activeConnections: metrics.activeConnections,
+            availableConnections: metrics.availableConnections,
+            utilization: metrics.utilization,
+            totalErrors: metrics.totalErrors,
+            avgAcquireTime: metrics.avgAcquireTime
+          }
+        }
+      }
+    } catch (error) {
+      return {
+        healthy: false,
+        details: { error: error instanceof Error ? error.message : 'Unknown error' }
       }
     }
   }
