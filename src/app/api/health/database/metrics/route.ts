@@ -96,7 +96,7 @@ export async function GET(_request: NextRequest) {
   };
   
   // Connection age distribution
-  const connectionAges = detailedPoolInfo.connections.map(conn => conn.ageMs);
+  const connectionAges = detailedPoolInfo?.connections?.map(conn => conn.ageMs) || [];
   const ageDistribution = {
     // Convert to seconds and group into buckets
     '<30s': connectionAges.filter(age => age < 30000).length,
@@ -107,7 +107,7 @@ export async function GET(_request: NextRequest) {
   };
   
   // Connection idle time distribution
-  const connectionIdleTimes = detailedPoolInfo.connections.map(conn => conn.idleTimeMs);
+  const connectionIdleTimes = detailedPoolInfo?.connections?.map(conn => conn.idleTimeMs) || [];
   const idleTimeDistribution = {
     // Convert to seconds and group into buckets
     '<10s': connectionIdleTimes.filter(idle => idle < 10000).length,
