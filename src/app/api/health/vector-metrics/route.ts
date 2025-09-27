@@ -1,22 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-// import { enhancedVectorStore } from '@/lib/vector-stores/enhanced-vector-store'
+import { enhancedVectorStore } from '@/lib/vector-stores/enhanced-vector-store'
 // import { prismaPoolOptimizer } from '@/lib/db/prisma-pool-optimizer'
 import { vectorQueryCache } from '@/lib/vector-stores/query-cache'
+import { vectorQueryCache as enhancedVectorQueryCache } from '@/lib/vector-stores/vector-query-cache'
 import { getMetricsCollector } from '@/lib/db/database-metrics'
+import { getVectorMetricsCollector } from '@/lib/metrics/VectorMetricsCollector'
 
 export async function GET(_request: NextRequest) {
   try {
-    // const stats = await enhancedVectorStore.healthCheck()
-    const stats = {
-      status: 'unavailable',
-      providers: [] as Array<{ id: string; available: boolean }>,
-      totalDocuments: 0,
-      performance: {
-        avgQueryTime: 0,
-        queriesPerSecond: 0,
-        errorRate: '0%'
-      }
-    }
+    // Use enhanced vector store and metrics
+    const stats = await enhancedVectorStore.healthCheck()
+    
     // const poolMetrics = await prismaPoolOptimizer.collectMetrics()
     const poolMetrics = {
       status: 'unavailable',
@@ -25,17 +19,23 @@ export async function GET(_request: NextRequest) {
       avgQueryTime: 0,
       pendingRequests: 0
     }
-    const cacheStats = vectorQueryCache.getStats()
-    const cacheAnalytics = vectorQueryCache.getAnalytics()
+    
+    // Get metrics from both old and new systems
+    const legacyCacheStats = vectorQueryCache.getStats()
+    const legacyCacheAnalytics = vectorQueryCache.getAnalytics()
+    const enhancedCacheStats = enhancedVectorStore.getVectorCacheStats()
+    const enhancedCacheAnalytics = enhancedVectorStore.getVectorCacheAnalytics()
+    
+    // Database metrics (existing system)
     const dbMetrics = getMetricsCollector()
-    const vectorMetrics = dbMetrics.getVectorMetrics()
-    // const providerInsights = enhancedVectorStore.getProviderSelectionInsights()
-    const providerInsights = {
-      status: 'unavailable',
-      recommendation: 'none',
-      pgvector: { score: 0, avgTime: 0, errorRate: 0 },
-      weaviate: { score: 0, avgTime: 0, errorRate: 0 }
-    }
+    const dbVectorMetrics = dbMetrics.getVectorMetrics()
+    
+    // Enhanced vector metrics (new system)
+    const enhancedVectorMetrics = enhancedVectorStore.getVectorMetrics()
+    const enhancedProviderInsights = enhancedVectorStore.getEnhancedProviderSelectionInsights()
+    
+    // Legacy provider insights for backward compatibility
+    const legacyProviderInsights = enhancedVectorStore.getProviderSelectionInsights()
     
     return NextResponse.json({
       status: 'success',
@@ -56,39 +56,98 @@ export async function GET(_request: NextRequest) {
         pendingRequests: poolMetrics.pendingRequests,
         efficiency: poolMetrics.connectionUtilization < 0.8 ? 'optimal' : 'high_load'
       },
+      // Legacy cache metrics (backward compatibility)
       queryCache: {
-        size: cacheStats.size,
-        maxSize: cacheStats.maxSize,
-        hitRate: `${(cacheStats.hitRate * 100).toFixed(1)}%`,
-        totalHits: cacheStats.totalHits,
-        totalMisses: cacheStats.totalMisses,
-        efficiency: cacheStats.efficiency,
-        utilization: `${cacheAnalytics.cacheUtilization.toFixed(1)}%`,
-        avgAccessFrequency: cacheAnalytics.avgAccessFrequency,
-        topQueries: cacheAnalytics.mostFrequentQueries.slice(0, 5)
+        size: legacyCacheStats.size,
+        maxSize: legacyCacheStats.maxSize,
+        hitRate: `${(legacyCacheStats.hitRate * 100).toFixed(1)}%`,
+        totalHits: legacyCacheStats.totalHits,
+        totalMisses: legacyCacheStats.totalMisses,
+        efficiency: legacyCacheStats.efficiency,
+        utilization: `${legacyCacheAnalytics.cacheUtilization.toFixed(1)}%`,
+        avgAccessFrequency: legacyCacheAnalytics.avgAccessFrequency,
+        topQueries: legacyCacheAnalytics.mostFrequentQueries.slice(0, 5)
       },
+      // Enhanced cache metrics (new system)
+      enhancedCache: {
+        size: enhancedCacheStats.size,
+        maxSize: enhancedCacheStats.maxSize,
+        hitRate: `${(enhancedCacheStats.hitRate * 100).toFixed(1)}%`,
+        totalHits: enhancedCacheStats.totalHits,
+        totalMisses: enhancedCacheStats.totalMisses,
+        efficiency: enhancedCacheStats.efficiency,
+        memoryUsage: `${(enhancedCacheStats.memoryUsage / 1024 / 1024).toFixed(1)}MB`,
+        utilization: `${enhancedCacheAnalytics.cacheUtilization.toFixed(1)}%`,
+        avgAccessFrequency: enhancedCacheAnalytics.avgAccessFrequency,
+        evictionRate: `${enhancedCacheAnalytics.evictionRate.toFixed(1)}%`,
+        topQueries: enhancedCacheAnalytics.mostFrequentQueries.slice(0, 5),
+        providerDistribution: {
+          pgvector: enhancedCacheAnalytics.providerDistribution.get('pgvector') || 0,
+          weaviate: enhancedCacheAnalytics.providerDistribution.get('weaviate') || 0
+        }
+      },
+      // Legacy vector operations (backward compatibility)
       vectorOperations: {
-        totalSearches: vectorMetrics.totalSearches,
-        totalStores: vectorMetrics.totalStores,
-        cacheEfficiency: `${vectorMetrics.cacheEfficiency.toFixed(1)}%`,
-        providerSwitchRate: `${vectorMetrics.providerSwitchRate.toFixed(1)}%`,
-        averageSearchTime: `${vectorMetrics.averageSearchTime}ms`,
-        failedOperations: vectorMetrics.failedOperations,
-        health: vectorMetrics.failedOperations < 5 ? 'healthy' : 'degraded'
+        totalSearches: dbVectorMetrics.totalSearches,
+        totalStores: dbVectorMetrics.totalStores,
+        cacheEfficiency: `${dbVectorMetrics.cacheEfficiency.toFixed(1)}%`,
+        providerSwitchRate: `${dbVectorMetrics.providerSwitchRate.toFixed(1)}%`,
+        averageSearchTime: `${dbVectorMetrics.averageSearchTime}ms`,
+        failedOperations: dbVectorMetrics.failedOperations,
+        health: dbVectorMetrics.failedOperations < 5 ? 'healthy' : 'degraded'
       },
+      // Enhanced vector metrics (new system)
+      enhancedVectorMetrics: {
+        totalSearches: enhancedVectorMetrics.totalSearches,
+        totalEmbeddings: enhancedVectorMetrics.totalEmbeddings,
+        avgSearchTime: `${enhancedVectorMetrics.avgSearchTime.toFixed(1)}ms`,
+        p95SearchTime: `${enhancedVectorMetrics.p95SearchTime.toFixed(1)}ms`,
+        p99SearchTime: `${enhancedVectorMetrics.p99SearchTime.toFixed(1)}ms`,
+        cacheHitRate: `${enhancedVectorMetrics.cacheHitRate.toFixed(1)}%`,
+        errorRate: `${enhancedVectorMetrics.errorRate.toFixed(1)}%`,
+        providerSwitches: enhancedVectorMetrics.providerSwitches,
+        providerPreference: enhancedVectorMetrics.providerPreference,
+        totalErrors: enhancedVectorMetrics.totalErrors,
+        searchTimesByProvider: {
+          pgvector: `${enhancedVectorMetrics.searchTimesByProvider.get('pgvector')?.slice(-1)[0] || 0}ms`,
+          weaviate: `${enhancedVectorMetrics.searchTimesByProvider.get('weaviate')?.slice(-1)[0] || 0}ms`
+        }
+      },
+      // Legacy provider selection (backward compatibility)
       providerSelection: {
-        recommendation: providerInsights.recommendation,
+        recommendation: legacyProviderInsights.recommendation,
         pgvector: {
-          performanceScore: providerInsights.pgvector.score,
-          avgResponseTime: `${providerInsights.pgvector.avgTime}ms`,
-          errorRate: `${providerInsights.pgvector.errorRate}%`,
-          status: providerInsights.pgvector.score > 0.7 ? 'excellent' : providerInsights.pgvector.score > 0.5 ? 'good' : 'needs_attention'
+          performanceScore: legacyProviderInsights.pgvector.score,
+          avgResponseTime: `${legacyProviderInsights.pgvector.avgTime}ms`,
+          errorRate: `${legacyProviderInsights.pgvector.errorRate}%`,
+          status: legacyProviderInsights.pgvector.score > 0.7 ? 'excellent' : legacyProviderInsights.pgvector.score > 0.5 ? 'good' : 'needs_attention'
         },
         weaviate: {
-          performanceScore: providerInsights.weaviate.score,
-          avgResponseTime: `${providerInsights.weaviate.avgTime}ms`,
-          errorRate: `${providerInsights.weaviate.errorRate}%`,
-          status: providerInsights.weaviate.score > 0.7 ? 'excellent' : providerInsights.weaviate.score > 0.5 ? 'good' : 'needs_attention'
+          performanceScore: legacyProviderInsights.weaviate.score,
+          avgResponseTime: `${legacyProviderInsights.weaviate.avgTime}ms`,
+          errorRate: `${legacyProviderInsights.weaviate.errorRate}%`,
+          status: legacyProviderInsights.weaviate.score > 0.7 ? 'excellent' : legacyProviderInsights.weaviate.score > 0.5 ? 'good' : 'needs_attention'
+        }
+      },
+      // Enhanced provider insights (new system)
+      enhancedProviderInsights: {
+        recommendation: enhancedProviderInsights.recommendation,
+        status: enhancedProviderInsights.status,
+        pgvector: {
+          score: enhancedProviderInsights.pgvector.score.toFixed(3),
+          avgTime: `${enhancedProviderInsights.pgvector.avgTime.toFixed(1)}ms`,
+          errorRate: `${enhancedProviderInsights.pgvector.errorRate.toFixed(1)}%`,
+          successfulQueries: enhancedProviderInsights.pgvector.successfulQueries,
+          totalQueries: enhancedProviderInsights.pgvector.totalQueries,
+          reliability: enhancedProviderInsights.pgvector.errorRate < 5 ? 'excellent' : enhancedProviderInsights.pgvector.errorRate < 10 ? 'good' : 'needs_attention'
+        },
+        weaviate: {
+          score: enhancedProviderInsights.weaviate.score.toFixed(3),
+          avgTime: `${enhancedProviderInsights.weaviate.avgTime.toFixed(1)}ms`,
+          errorRate: `${enhancedProviderInsights.weaviate.errorRate.toFixed(1)}%`,
+          successfulQueries: enhancedProviderInsights.weaviate.successfulQueries,
+          totalQueries: enhancedProviderInsights.weaviate.totalQueries,
+          reliability: enhancedProviderInsights.weaviate.errorRate < 5 ? 'excellent' : enhancedProviderInsights.weaviate.errorRate < 10 ? 'good' : 'needs_attention'
         }
       }
     })

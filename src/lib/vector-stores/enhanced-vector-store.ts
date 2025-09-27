@@ -9,7 +9,9 @@ import { weaviateStore } from './weaviate-client'
 import type { WeaviateSearchOptions } from './weaviate-client'
 import { mlflowClient } from '../mlflow/mlflow-client'
 import { vectorQueryCache } from './query-cache'
+import { vectorQueryCache as enhancedVectorQueryCache } from './vector-query-cache'
 import { getMetricsCollector } from '../db/database-metrics'
+import { getVectorMetricsCollector, vectorMetricsCollector } from '../metrics/VectorMetricsCollector'
 
 export interface VectorStoreProvider {
   id: 'pgvector' | 'weaviate'
@@ -74,6 +76,7 @@ export class EnhancedVectorStore {
   private lastHealthCheck: number = 0
   private healthCheckInterval: number = 300000 // 5 minutes
   private dbMetricsCollector = getMetricsCollector()
+  private vectorMetricsCollector = getVectorMetricsCollector()
 
   constructor() {
     this.initializeProviders()
@@ -357,11 +360,10 @@ export class EnhancedVectorStore {
         this.lastHealthCheck = Date.now()
       }
 
-      // Check cache first
-      const cachedResults = vectorQueryCache.getCachedResults(options.query, options)
+      // Check cache first - use enhanced cache for better performance
+      const cachedResults = enhancedVectorQueryCache.getCachedResults(options.query, options)
       if (cachedResults) {
-        // Record cache hit for monitoring
-        this.dbMetricsCollector.recordVectorSearch('pgvector', Date.now() - startTime, cachedResults.length, true)
+        // Cache hit is already recorded by the enhanced cache system
         return cachedResults
       }
 
@@ -373,18 +375,19 @@ export class EnhancedVectorStore {
         results = await this.searchPgVector(options)
       }
 
-      // Cache results for future queries
-      vectorQueryCache.cacheResults(options.query, options, results, provider)
+      // Cache results for future queries using enhanced cache
+      const queryTime = Date.now() - startTime
+      enhancedVectorQueryCache.cacheResults(options.query, options, results, provider, queryTime)
 
       // Track performance metrics
-      const queryTime = Date.now() - startTime
       this.recordMetric(`${provider}_query_time`, queryTime)
       this.recordMetric('overall_query_time', queryTime)
       
-      // Record vector search metrics for database monitoring
+      // Record vector search metrics for database monitoring (existing system)
       this.dbMetricsCollector.recordVectorSearch(provider, queryTime, results.length, false)
       
-      // Optional external metrics collector removed to simplify dependencies
+      // Record vector search metrics for enhanced monitoring (new system)
+      this.vectorMetricsCollector.recordVectorSearch(provider, queryTime, results.length, false)
 
       // Track with MLflow if available
       try {
@@ -413,6 +416,11 @@ export class EnhancedVectorStore {
       this.recordMetric(`${provider}_errors`, 1)
       this.dbMetricsCollector.recordVectorError('search')
       
+      // Record error in enhanced vector metrics
+      if (provider) {
+        this.vectorMetricsCollector.recordVectorError(provider, 'search')
+      }
+      
       // Try fallback provider
       const fallbackProvider = provider === 'weaviate' ? 'pgvector' : 'weaviate'
       if (this.providers.get(fallbackProvider)) {
@@ -431,10 +439,16 @@ export class EnhancedVectorStore {
           const queryTime = Date.now() - startTime
           this.recordMetric(`${fallbackProvider}_query_time`, queryTime)
           this.dbMetricsCollector.recordVectorSearch(fallbackProvider, queryTime, results.length, false)
+          this.vectorMetricsCollector.recordVectorSearch(fallbackProvider, queryTime, results.length, false)
+          
+          // Cache successful fallback results
+          enhancedVectorQueryCache.cacheResults(options.query, options, results, fallbackProvider, queryTime)
+          
           return results
         } catch (fallbackError) {
           console.error('Fallback search also failed:', fallbackError)
           this.recordMetric(`${fallbackProvider}_errors`, 1)
+          this.vectorMetricsCollector.recordVectorError(fallbackProvider, 'search')
           this.dbMetricsCollector.recordVectorError('search')
         }
       }
@@ -714,6 +728,55 @@ export class EnhancedVectorStore {
       },
       recommendation
     }
+  }
+
+  /**
+   * Get comprehensive vector metrics from the enhanced metrics collector
+   */
+  getVectorMetrics() {
+    return this.vectorMetricsCollector.getMetrics()
+  }
+
+  /**
+   * Get enhanced provider selection insights with detailed analytics
+   */
+  getEnhancedProviderSelectionInsights() {
+    return this.vectorMetricsCollector.getProviderSelectionInsights()
+  }
+
+  /**
+   * Get enhanced vector cache statistics
+   */
+  getVectorCacheStats() {
+    return enhancedVectorQueryCache.getStats()
+  }
+
+  /**
+   * Get detailed vector cache analytics
+   */
+  getVectorCacheAnalytics() {
+    return enhancedVectorQueryCache.getAnalytics()
+  }
+
+  /**
+   * Submit vector metrics to Datadog monitoring
+   */
+  async submitVectorMetricsToDatadog(): Promise<boolean> {
+    try {
+      return await this.vectorMetricsCollector.submitToDatadog()
+    } catch (error) {
+      console.warn('Failed to submit vector metrics to Datadog:', error)
+      return false
+    }
+  }
+
+  /**
+   * Clear vector metrics and cache for testing/reset
+   */
+  resetVectorMetrics(): void {
+    this.vectorMetricsCollector.reset()
+    enhancedVectorQueryCache.clear()
+    console.log('Vector metrics and cache reset')
   }
 
   /**
