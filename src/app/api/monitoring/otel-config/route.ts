@@ -5,12 +5,12 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 
-// Check if we're in a Docker build environment
+// Check if we're in a Docker build environment or explicitly disabling monitoring
 const isDockerBuild = (
   process.env.DOCKER_BUILD === 'true' ||
   process.env.SKIP_MONITORING === 'true' ||
-  process.env.CI === 'true' ||
-  process.env.GITHUB_ACTIONS === 'true' ||
+  // Only disable in CI if explicitly requested via OTEL_ENABLED=false  
+  (process.env.CI === 'true' && process.env.OTEL_ENABLED === 'false') ||
   process.env.OTEL_ENABLED === 'false' ||
   process.env.DD_ENABLED === 'false'
 );

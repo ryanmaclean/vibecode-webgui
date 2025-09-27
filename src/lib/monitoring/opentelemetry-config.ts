@@ -41,10 +41,19 @@ function initializeOtelImports(): boolean {
     OTLPTraceExporter = safeImport('@opentelemetry/exporter-otlp-http', 'OTLPTraceExporter');
     OTLPMetricExporter = safeImport('@opentelemetry/exporter-otlp-http', 'OTLPMetricExporter');
     
-    // Resources
+    // Resources and semantic conventions with fallback handling
     Resource = safeImport('@opentelemetry/resources', 'Resource');
-    SEMRESATTRS_SERVICE_NAME = safeImport('@opentelemetry/semantic-conventions', 'SEMRESATTRS_SERVICE_NAME');
-    SEMRESATTRS_SERVICE_VERSION = safeImport('@opentelemetry/semantic-conventions', 'SEMRESATTRS_SERVICE_VERSION');
+    
+    // Handle semantic conventions compatibility
+    const semanticConventions = safeImport('@opentelemetry/semantic-conventions');
+    if (semanticConventions) {
+      SEMRESATTRS_SERVICE_NAME = semanticConventions.SEMRESATTRS_SERVICE_NAME ?? semanticConventions.ATTR_SERVICE_NAME ?? 'service.name';
+      SEMRESATTRS_SERVICE_VERSION = semanticConventions.SEMRESATTRS_SERVICE_VERSION ?? semanticConventions.ATTR_SERVICE_VERSION ?? 'service.version';
+    } else {
+      // Fallback to standard strings if semantic conventions aren't available
+      SEMRESATTRS_SERVICE_NAME = 'service.name';
+      SEMRESATTRS_SERVICE_VERSION = 'service.version';
+    }
     
     // Check if core modules are available
     return !!(NodeSDK && Resource);
@@ -67,7 +76,7 @@ function createResource(): any {
       'service.environment': process.env.NODE_ENV || 'development',
     };
     
-    // Add semantic conventions if available
+    // Add semantic conventions if available - use nullish coalescing for better compatibility
     if (SEMRESATTRS_SERVICE_NAME) {
       attributes[SEMRESATTRS_SERVICE_NAME] = 'vibecode-webgui';
     }

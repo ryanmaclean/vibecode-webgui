@@ -1,14 +1,16 @@
 /**
  * OpenTelemetry Configuration and Setup
- * Provides vendor-neutral observability integration
+ * Provides vendor-neutral observability integration with fixed import issues
  */
 
-// Check if we're in a Docker build environment
+import { getDatadogApiKey } from './datadog-env'
+
+// Check if we're in a Docker build environment or explicitly disabling monitoring
 const isDockerBuild = (
   process.env.DOCKER_BUILD === 'true' ||
   process.env.SKIP_MONITORING === 'true' ||
-  process.env.CI === 'true' ||
-  process.env.GITHUB_ACTIONS === 'true' ||
+  // Only disable in CI if explicitly requested via OTEL_ENABLED=false  
+  (process.env.CI === 'true' && process.env.OTEL_ENABLED === 'false') ||
   process.env.OTEL_ENABLED === 'false' ||
   process.env.DD_ENABLED === 'false'
 );
@@ -37,14 +39,23 @@ if (!isDockerBuild) {
     OTLPTraceExporter = otlpExporter.OTLPTraceExporter;
     PrometheusExporter = prometheusExporter.PrometheusExporter;
     Resource = resources.Resource;
-    ATTR_SERVICE_NAME = semanticConventions.SEMRESATTRS_SERVICE_NAME || semanticConventions.ATTR_SERVICE_NAME;
-    ATTR_SERVICE_VERSION = semanticConventions.SEMRESATTRS_SERVICE_VERSION || semanticConventions.ATTR_SERVICE_VERSION;
+    
+    // Fixed semantic conventions compatibility - use nullish coalescing and proper fallback
+    ATTR_SERVICE_NAME = semanticConventions.SEMRESATTRS_SERVICE_NAME ?? 
+                       semanticConventions.ATTR_SERVICE_NAME ?? 
+                       'service.name';
+    ATTR_SERVICE_VERSION = semanticConventions.SEMRESATTRS_SERVICE_VERSION ?? 
+                          semanticConventions.ATTR_SERVICE_VERSION ?? 
+                          'service.version';
+                          
+    console.log('✅ OpenTelemetry modules loaded successfully');
+    console.log(`   Service name attribute: ${ATTR_SERVICE_NAME}`);
+    console.log(`   Service version attribute: ${ATTR_SERVICE_VERSION}`);
+    
   } catch (error) {
-    console.log('⚠️ OpenTelemetry modules not available, monitoring disabled');
+    console.log('⚠️ OpenTelemetry modules not available, monitoring disabled:', (error as Error).message);
   }
 }
-
-import { getDatadogApiKey } from './datadog-env'
 
 const isServer = typeof window === 'undefined'
 const serviceName = 'vibecode-webgui'
@@ -72,13 +83,17 @@ export function initializeOpenTelemetry() {
   console.log('🔧 Initializing OpenTelemetry...')
 
   try {
-    // Configure resource attributes
-    const resource = new Resource({
-      [ATTR_SERVICE_NAME]: serviceName,
-      [ATTR_SERVICE_VERSION]: serviceVersion,
+    // Configure resource attributes with proper fallback handling
+    const resourceAttributes: Record<string, string> = {
       'service.namespace': 'vibecode',
       'deployment.environment': process.env.NODE_ENV || 'development'
-    })
+    };
+    
+    // Use the dynamically determined attribute names
+    resourceAttributes[ATTR_SERVICE_NAME] = serviceName;
+    resourceAttributes[ATTR_SERVICE_VERSION] = serviceVersion;
+
+    const resource = new Resource(resourceAttributes)
 
     // Configure OTLP exporter (for Datadog and other OTLP-compatible backends)
     const ddApiKey = getDatadogApiKey()
@@ -139,6 +154,9 @@ export function initializeOpenTelemetry() {
     otelSDK.start()
     
     console.log('✅ OpenTelemetry initialized successfully')
+    console.log(`   Service: ${serviceName} v${serviceVersion}`)
+    console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`)
+    console.log(`   OTLP endpoint: ${process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || 'http://localhost:4318/v1/traces'}`)
 
     return otelSDK
 
@@ -173,8 +191,48 @@ export function getOpenTelemetryConfig() {
     environment: process.env.NODE_ENV || 'development',
     otlp_endpoint: process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || 'http://localhost:4318/v1/traces',
     prometheus_port: process.env.OTEL_PROMETHEUS_PORT || '9090',
-    datadog_integration: !!getDatadogApiKey()
+    datadog_integration: !!getDatadogApiKey(),
+    // Add status information
+    modules_loaded: {
+      NodeSDK: !!NodeSDK,
+      getNodeAutoInstrumentations: !!getNodeAutoInstrumentations,
+      OTLPTraceExporter: !!OTLPTraceExporter,
+      PrometheusExporter: !!PrometheusExporter,
+      Resource: !!Resource,
+    },
+    semantic_conventions: {
+      service_name_attr: ATTR_SERVICE_NAME,
+      service_version_attr: ATTR_SERVICE_VERSION,
+    }
   }
+}
+
+/**
+ * Check if OpenTelemetry is available and properly configured
+ */
+export function checkOpenTelemetryHealth() {
+  const modulesAvailable = !!(NodeSDK && Resource && getNodeAutoInstrumentations);
+  const exportersAvailable = !!(OTLPTraceExporter && PrometheusExporter);
+  
+  let status: 'healthy' | 'degraded' | 'unhealthy';
+  
+  if (modulesAvailable && exportersAvailable) {
+    status = 'healthy';
+  } else if (modulesAvailable || exportersAvailable) {
+    status = 'degraded';
+  } else {
+    status = 'unhealthy';
+  }
+  
+  return {
+    status,
+    details: {
+      modules_available: modulesAvailable,
+      exporters_available: exportersAvailable,
+      sdk_initialized: !!otelSDK,
+      docker_build: isDockerBuild,
+    }
+  };
 }
 
 // Export SDK instance for testing/debugging
