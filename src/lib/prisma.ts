@@ -104,7 +104,7 @@ export async function logAIRequest(data: {
   cost?: number
   duration_ms?: number
   status: string
-  response?: Prisma.InputJsonValue
+  response?: any
   error?: string
 }) {
   if (isBuilding) {

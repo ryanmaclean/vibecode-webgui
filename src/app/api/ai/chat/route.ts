@@ -240,7 +240,7 @@ export async function POST(request: NextRequest) {
         usage: {},
       }
       const modelUsed = (llmOutcome && typeof llmOutcome === 'object' && 'modelUsed' in llmOutcome)
-        ? (llmOutcome as { modelUsed?: string }).modelUsed ?? llmResponse.model ?? model
+        ? (llmOutcome as { modelUsed?: string }).modelUsed ?? (llmResponse as { model?: string }).model ?? model
         : (llmResponse as { model?: string }).model ?? model
 
       const providerUsed = (llmOutcome && typeof llmOutcome === 'object' && 'provider' in llmOutcome)
@@ -248,20 +248,22 @@ export async function POST(request: NextRequest) {
         : 'litellm'
       const processingTime = Date.now() - startTime
 
-      if (llmResponse.usage) {
+      if ((llmResponse as any).usage) {
+        const usage = (llmResponse as any).usage;
+        const cost = (llmResponse as any).cost;
         LLMTracer.trackTokenUsage(
           providerUsed,
           modelUsed,
-          llmResponse.usage.prompt_tokens ?? 0,
-          llmResponse.usage.completion_tokens ?? 0,
-          llmResponse.cost?.total_cost
+          usage.prompt_tokens ?? 0,
+          usage.completion_tokens ?? 0,
+          cost?.total_cost
         )
       }
 
       try {
-        let responsePayload: Prisma.InputJsonValue | undefined
+        let responsePayload: any | undefined
         try {
-          responsePayload = JSON.parse(JSON.stringify(llmResponse)) as Prisma.InputJsonValue
+          responsePayload = JSON.parse(JSON.stringify(llmResponse)) as any
         } catch {
           responsePayload = undefined
         }
@@ -272,9 +274,9 @@ export async function POST(request: NextRequest) {
           prompt: userPrompt,
           model: modelUsed,
           provider: providerUsed,
-          input_tokens: llmResponse.usage?.prompt_tokens,
-          output_tokens: llmResponse.usage?.completion_tokens,
-          cost: llmResponse.cost?.total_cost,
+          input_tokens: (llmResponse as any).usage?.prompt_tokens,
+          output_tokens: (llmResponse as any).usage?.completion_tokens,
+          cost: (llmResponse as any).cost?.total_cost,
           duration_ms: processingTime,
           status: 'completed',
           response: responsePayload,
@@ -294,7 +296,7 @@ export async function POST(request: NextRequest) {
         model_used: modelUsed,
         provider: providerUsed,
         processing_time_ms: processingTime,
-        response_length: llmResponse.choices?.[0]?.message?.content?.length || 0,
+        response_length: (llmResponse as any).choices?.[0]?.message?.content?.length || 0,
         workspace_id: workspaceId,
         rag_context_included: String(Boolean(ragContext)),
         rag_chunk_count: String(ragSources.length)

@@ -322,7 +322,7 @@ class VectorStore {
       }
 
       // Execute raw SQL query using Prisma
-      const rawResults = await prisma.$queryRawUnsafe<RawResult[]>(sql, ...params)
+      const rawResults = await prisma.$queryRawUnsafe(sql, ...params) as RawResult[]
 
       // Filter by threshold and format results
       const results: SearchResult[] = rawResults
@@ -372,10 +372,10 @@ class VectorStore {
     try {
       const { workspaceId, fileIds, limit = 10 } = options
 
-      const whereClause: Prisma.RAGChunkWhereInput = {
+      const whereClause: any = {
         content: {
           contains: query,
-          mode: Prisma.QueryMode.insensitive
+          mode: 'insensitive' as any
         }
       }
       

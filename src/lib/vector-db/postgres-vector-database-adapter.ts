@@ -320,7 +320,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       }
 
       // Execute raw SQL query using Prisma
-      const rawResults = await this.prisma.$queryRawUnsafe<RawResult[]>(sql, ...params);
+      const rawResults = await this.prisma.$queryRawUnsafe(sql, ...params) as RawResult[];
 
       // Filter by threshold and format results
       let results: SearchResult[] = [];
@@ -510,10 +510,10 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     try {
       const { workspaceId, fileIds, limit = 10 } = options;
 
-      const whereClause: Prisma.RAGChunkWhereInput = {
+      const whereClause: any = {
         content: query ? {
           contains: query,
-          mode: Prisma.QueryMode.insensitive
+          mode: 'insensitive' as any
         } : undefined
       };
       

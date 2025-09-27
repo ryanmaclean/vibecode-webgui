@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
           jobId,
           blobName,
           queue: getQueueName()
-        } as Prisma.JsonObject
+        } as any
       }
     })
     uploadRecordId = upload.id
