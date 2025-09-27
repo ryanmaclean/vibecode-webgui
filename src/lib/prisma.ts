@@ -22,25 +22,55 @@ if (isBuilding) {
   // Create a mock Prisma client for build time
   prismaClient = {} as PrismaClient
 } else {
-  // Add DBM tags to the database URL
-  const dbUrl = new URL(process.env.DATABASE_URL || 'postgresql://localhost:5432/placeholder');
-  if (!dbUrl.searchParams.has('application_name')) {
-    dbUrl.searchParams.set('application_name', 'vibecode-webgui');
-  }
-  if (!dbUrl.searchParams.has('options')) {
-    dbUrl.searchParams.set('options', `-c datadog.tags=env:${process.env.NODE_ENV},service:vibecode-webgui,version:1.0.0`);
+  // Validate DATABASE_URL
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    const errorMsg = `
+❌ Missing DATABASE_URL environment variable!
+
+Please set up your database configuration:
+1. Copy .env.local.example to .env.local
+2. Update DATABASE_URL with your PostgreSQL connection string
+3. Example: postgresql://username:password@localhost:5432/vibecode
+
+See docs/wiki-archive/ENV_VARIABLES.md for more details.
+`;
+    console.error(errorMsg);
+    throw new Error('DATABASE_URL environment variable is required');
   }
 
-  prismaClient = globalForPrisma.prisma ?? new PrismaClient({
-    log: process.env.NODE_ENV === 'development' 
-      ? ['query', 'info', 'warn', 'error']
-      : ['error'],
-    datasources: {
-      db: {
-        url: dbUrl.toString(),
+  try {
+    // Add DBM tags to the database URL
+    const dbUrl = new URL(databaseUrl);
+    if (!dbUrl.searchParams.has('application_name')) {
+      dbUrl.searchParams.set('application_name', 'vibecode-webgui');
+    }
+    if (!dbUrl.searchParams.has('options')) {
+      dbUrl.searchParams.set('options', `-c datadog.tags=env:${process.env.NODE_ENV},service:vibecode-webgui,version:1.0.0`);
+    }
+
+    prismaClient = globalForPrisma.prisma ?? new PrismaClient({
+      log: process.env.NODE_ENV === 'development' 
+        ? ['query', 'info', 'warn', 'error']
+        : ['error'],
+      datasources: {
+        db: {
+          url: dbUrl.toString(),
+        },
       },
-    },
-  })
+    })
+  } catch (error) {
+    const errorMsg = `
+❌ Invalid DATABASE_URL format!
+
+Current value: ${databaseUrl}
+Expected format: postgresql://username:password@host:port/database
+
+Please check your .env.local file and ensure DATABASE_URL is properly formatted.
+`;
+    console.error(errorMsg);
+    throw new Error('Invalid DATABASE_URL format');
+  }
 }
 
 export const prisma = prismaClient
