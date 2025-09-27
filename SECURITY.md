@@ -16,8 +16,8 @@ If you discover a security vulnerability, please follow these steps:
 ### 1. **Do NOT** create a public GitHub issue
 
 ### 2. **Email us directly** at:
-- **Primary**: security@vibecode.dev (if available)
-- **Fallback**: Create a private security advisory on GitHub
+- **Primary**: security@vibecode.dev
+- **Fallback**: Create a [private security advisory on GitHub](https://github.com/ryanmaclean/vibecode-webgui/security/advisories/new)
 
 ### 3. **Include the following information**:
 - Description of the vulnerability

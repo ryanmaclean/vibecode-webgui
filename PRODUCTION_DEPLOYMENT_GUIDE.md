@@ -465,7 +465,7 @@ tar -czf app-backup-$(date +%Y%m%d).tar.gz \
 - **Engineering Team**: engineering@company.com
 - **On-Call Support**: oncall@company.com
 - **Monitoring Issues**: monitoring@company.com
-- **Security Issues**: security@company.com
+- **Security Issues**: security@vibecode.dev
 
 ---
 

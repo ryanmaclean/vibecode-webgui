@@ -9,14 +9,12 @@ description: Auto-generated placeholder. Update as needed.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| main    | ✅ Yes             |
+| demo    | ✅ Yes (demo only) |
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability, please report it by emailing [security@yourdomain.com] or by opening a private issue on GitHub (if enabled).
+If you discover a security vulnerability, please report it by emailing security@vibecode.dev or by creating a [private security advisory on GitHub](https://github.com/ryanmaclean/vibecode-webgui/security/advisories/new).
 Please include as much detail as possible to help us resolve the issue quickly.
 
  * Acknowledgement: We will acknowledge receipt of your report within 2 business days.

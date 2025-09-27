@@ -294,7 +294,7 @@
 
 - **Technical Lead**: engineering@company.com
 - **DevOps/Infrastructure**: infrastructure@company.com  
-- **Security Issues**: security@company.com
+- **Security Issues**: security@vibecode.dev
 - **Emergency/On-Call**: oncall@company.com
 
 ---
