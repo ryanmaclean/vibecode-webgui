@@ -53,11 +53,11 @@ cp .env.example .env.local
 docker-compose -f docker-compose.dev.yml up -d
 
 # 5. Initialize database
-npm run db:deploy
-npm run db:generate
+# npm run db:deploy  # Script not found
+# npm run db:generate  # Script not found
 
 # 6. Run health check
-npm run perf:health
+# npm run perf:health  # Script not found
 
 # 7. Start development server
 npm run dev
@@ -157,7 +157,7 @@ src/
 ```bash
 # Start your day
 npm run dev                    # Start development server
-npm run perf:health           # Check system health
+# npm run perf:health  # Script not found           # Check system health
 
 # During development
 npm run type-check            # TypeScript validation
@@ -166,17 +166,17 @@ npm run test:unit            # Run unit tests
 npm run test:e2e             # Run E2E tests (slower)
 
 # When working with database
-npm run db:status            # Check migration status
-npm run db:generate          # Generate Prisma client
-npm run db:push              # Push schema changes
+# npm run db:status  # Script not found            # Check migration status
+# npm run db:generate  # Script not found          # Generate Prisma client
+# npm run db:push  # Script not found              # Push schema changes
 
 # When working with AI
-npm run ai:status            # Check AI gateway health
-npm run ai:models            # List available models
-npm run ai:costs             # Check usage costs
+# npm run ai:status  # Script not found            # Check AI gateway health
+# npm run ai:models  # Script not found            # List available models
+# npm run ai:costs  # Script not found             # Check usage costs
 
 # Documentation updates
-npm run docs:build           # Regenerate all documentation
+npm run build           # Regenerate all documentation
 npm run docs:validate        # Validate documentation
 ```
 
@@ -501,7 +501,7 @@ export const Default = {
 ```typescript
 // src/components/__tests__/workspace-card.test.tsx
 import { render, screen, fireEvent } from '@testing-library/react';
-import { WorkspaceCard } from '../workspace-card';
+import { WorkspaceCard } from '../lib/card';
 
 const mockWorkspace = {
   id: 1,
@@ -569,20 +569,20 @@ export async function generateCodeSuggestions(
 
 ```bash
 # Database connection issues
-npm run db:validate
+# npm run db:validate  # Script not found
 
 # Reset database (destructive)
-npm run db:reset
+# npm run db:reset  # Script not found
 
 # Check migration status
-npm run db:status
+# npm run db:status  # Script not found
 ```
 
 ### Cache Issues
 
 ```bash
 # Clear Redis cache
-npm run perf:cache
+# npm run perf:cache  # Script not found
 
 # Check cache health
 curl http://localhost:3000/api/monitoring/performance?action=cache
@@ -592,26 +592,26 @@ curl http://localhost:3000/api/monitoring/performance?action=cache
 
 ```bash
 # Check LiteLLM status
-npm run ai:status
+# npm run ai:status  # Script not found
 
 # View available models
-npm run ai:models
+# npm run ai:models  # Script not found
 
 # Check usage and costs
-npm run ai:usage && npm run ai:costs
+# npm run ai:usage  # Script not found && # npm run ai:costs  # Script not found
 ```
 
 ### Performance Issues
 
 ```bash
 # Check system health
-npm run perf:health
+# npm run perf:health  # Script not found
 
 # Monitor performance metrics
-npm run perf:monitor
+# npm run perf:monitor  # Script not found
 
 # Check database performance
-npm run perf:database
+# npm run perf:database  # Script not found
 ```
 
 ## 📖 Resources and Documentation

@@ -106,7 +106,7 @@ VibeCode surpasses existing solutions by combining the best of AI-driven develop
 - User preferences (cost, speed, quality priority)
 - Context length requirements
 - Provider reliability scores
-```
+```typescript
 
 #### Supported Models
 **OpenRouter Models (6)**:
@@ -184,7 +184,7 @@ The AI project generation workflow is the core innovation of VibeCode.
 │  + HuggingFace      │    │   (Real-time)        │    │   System        │
 │    Transformers     │    │                      │    │                 │
 └─────────────────────┘    └──────────────────────┘    └─────────────────┘
-```
+```typescript
 
 #### ✅ Implementation Status
 1. **✅ Phase 1**: MongoDB deployed and integrated with chat system

@@ -56,7 +56,7 @@ node scripts/universal-deployment-test.js --mode kind
 npm run dev:docker
 # or
 docker-compose up
-```
+```javascript
 **Result**: Build issues resolved, may need env var configuration
 
 **Standard Docker**

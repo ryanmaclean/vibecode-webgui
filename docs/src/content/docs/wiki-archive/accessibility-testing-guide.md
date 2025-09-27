@@ -34,22 +34,22 @@ VibeCode targets **WCAG 2.1 AA compliance**, which includes:
 #### axe-core
 - **Purpose**: Automated accessibility scanning
 - **Coverage**: ~60% of WCAG issues
-- **Usage**: `npm run test:accessibility:axe`
+- **Usage**: `npm run test`
 
 #### Lighthouse
 - **Purpose**: Performance and accessibility auditing
 - **Coverage**: Core accessibility metrics
-- **Usage**: `npm run test:accessibility:lighthouse`
+- **Usage**: `npm run test`
 
 #### jest-axe
 - **Purpose**: Unit testing accessibility in React components
 - **Coverage**: Component-level accessibility
-- **Usage**: `npm run test:accessibility:unit`
+- **Usage**: `npm run test`
 
 #### Playwright with axe
 - **Purpose**: End-to-end accessibility testing
 - **Coverage**: Full user flows
-- **Usage**: `npm run test:accessibility:e2e`
+- **Usage**: `npm run test`
 
 ### 2. Manual Testing Tools
 
@@ -69,13 +69,13 @@ VibeCode targets **WCAG 2.1 AA compliance**, which includes:
 ### Quick Start
 ```bash
 # Run all accessibility tests
-npm run test:accessibility
+npm run test
 
 # Run specific test types
-npm run test:accessibility:unit      # Jest unit tests
-npm run test:accessibility:e2e       # Playwright E2E tests
-npm run test:accessibility:lighthouse # Lighthouse audit
-npm run test:accessibility:axe       # axe-core CLI tests
+npm run test      # Jest unit tests
+npm run test       # Playwright E2E tests
+npm run test # Lighthouse audit
+npm run test       # axe-core CLI tests
 ```
 
 ### Comprehensive Testing
@@ -87,7 +87,7 @@ npm run dev
 ./scripts/run-accessibility-tests.sh
 
 # For CI/CD
-npm run test:accessibility:ci
+npm run test
 ```
 
 ### Test Configuration
@@ -209,13 +209,13 @@ tests/accessibility/reports/
   run: |
     npm run dev &
     sleep 10
-    npm run test:accessibility:ci
+    npm run test
 ```
 
 #### Pre-commit Hook
 ```bash
 #!/bin/bash
-npm run test:accessibility:unit
+npm run test
 ```
 
 ## 🛠 Fixing Common Issues

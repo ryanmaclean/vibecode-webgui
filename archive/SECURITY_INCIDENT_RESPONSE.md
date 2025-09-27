@@ -85,7 +85,7 @@ kubectl patch secret vibecode-secrets \
 
 kubectl patch secret vibecode-secrets \
   -p='{"data":{"OPENROUTER_API_KEY":"<base64-encoded-new-key>"}}'
-```
+```bash
 
 ### 🔄 4. Git History Cleanup
 

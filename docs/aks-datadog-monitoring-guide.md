@@ -63,7 +63,7 @@ After the PostgreSQL database is deployed, validate the DBM configuration:
 ```bash
 # Run the validation script
 ./scripts/verify-datadog-dbm.sh
-```
+```typescript
 
 This validation script:
 1. Verifies PostgreSQL deployment

@@ -311,7 +311,7 @@ kubectl describe deployment vibecode-webgui -n vibecode-webgui-production
 kubectl port-forward svc/vibecode-webgui -n vibecode-webgui-production 3000:80
 
 # Database connectivity
-kubectl exec -it deployment/vibecode-webgui -n vibecode-webgui-production -- npm run db:status
+kubectl exec -it deployment/vibecode-webgui -n vibecode-webgui-production -- # npm run db:status  # Script not found
 ```
 
 ### Log Analysis

@@ -32,7 +32,7 @@ The application follows a simple but powerful RAG pipeline:
 
 4.  **Run the application in development mode:**
     ```bash
-    npm run start:dev
+    npm run dev
     ```
     On the first run, the application will need a moment to download the embedding model and build the vector index from `data.md`.
 

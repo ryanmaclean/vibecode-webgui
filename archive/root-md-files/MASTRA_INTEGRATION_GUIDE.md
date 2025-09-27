@@ -105,7 +105,7 @@ export const MASTRA_TEMPLATES = {
 ```typescript
 // src/lib/ai/mastra-project-generator.ts
 import { Mastra } from '@mastra/core';
-import { MASTRA_TEMPLATES } from '../templates/mastra-templates';
+import { MASTRA_TEMPLATES } from '../lib/templates';
 
 interface MastraProjectRequest {
   prompt: string;

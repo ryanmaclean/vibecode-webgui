@@ -1029,7 +1029,7 @@ description: Auto-generated placeholder. Update as needed.
 
 ### code-server/docs/helm.md
 
-ℹ️ **INFO** (line 3): Version 1.0.0 may be outdated (current: 0.1.0)
+ℹ️ **INFO** (line 3): Version latest may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
 ℹ️ **INFO** (line 3): Version 4.8.0 may be outdated (current: 0.1.0)
@@ -1422,7 +1422,7 @@ description: Auto-generated placeholder. Update as needed.
 🚫 **ERROR** (line 218): npm script "health-check" not found
    *Suggestion: Add the script to package.json or update documentation*
 
-ℹ️ **INFO** (line 143): Version 1.0.0 may be outdated (current: 0.1.0)
+ℹ️ **INFO** (line 143): Version latest may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
 ### archive/root-md-files/COMPREHENSIVE_TEST_REPORT.md
@@ -2061,7 +2061,7 @@ description: Auto-generated placeholder. Update as needed.
 🚫 **ERROR** (line 223): npm script "health-check" not found
    *Suggestion: Add the script to package.json or update documentation*
 
-ℹ️ **INFO** (line 148): Version 1.0.0 may be outdated (current: 0.1.0)
+ℹ️ **INFO** (line 148): Version latest may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
 ### docs/src/content/docs/comprehensive-environment-test-report.md
@@ -2436,7 +2436,7 @@ description: Auto-generated placeholder. Update as needed.
 🚫 **ERROR** (line 223): npm script "health-check" not found
    *Suggestion: Add the script to package.json or update documentation*
 
-ℹ️ **INFO** (line 148): Version 1.0.0 may be outdated (current: 0.1.0)
+ℹ️ **INFO** (line 148): Version latest may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
 ### docs/src/content/docs/COMPREHENSIVE_TEST_REPORT.md

@@ -216,7 +216,7 @@ export class LoginPage {
 
 // tests/e2e/auth/authentication.test.ts
 import { test, expect } from '@playwright/test';
-import { LoginPage } from '../../pages/LoginPage';
+import { LoginPage } from '../lib/page';
 
 test.describe('Authentication', () => {
   let loginPage: LoginPage;
@@ -678,7 +678,7 @@ Use a structured approach to test data:
 
 ```typescript
 import { test as base, expect } from '@playwright/test';
-import { TestDataManager } from '../../utils/test-data-manager';
+import { TestDataManager } from '../lib/utils';
 
 // Extend the base test with test data
 const test = base.extend({

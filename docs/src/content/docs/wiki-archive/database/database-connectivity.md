@@ -73,7 +73,7 @@ const prisma = new PrismaClient();
 For features requiring robust connectivity (like vector embeddings), the enhanced connection utilities are used:
 
 ```typescript
-import { createRobustConnection } from './src/lib/db/robust-db-connection';
+import { createRobustConnection } from '../lib/src';
 
 const connection = await createRobustConnection();
 if (connection.success && connection.prisma) {
@@ -156,7 +156,7 @@ The vector database requires specific initialization steps:
 The application includes utilities to automate these steps:
 
 ```typescript
-import { initializeVectorDatabaseRobust } from './src/lib/db/robust-db-connection';
+import { initializeVectorDatabaseRobust } from '../lib/src';
 
 const result = await initializeVectorDatabaseRobust({
   debug: true,

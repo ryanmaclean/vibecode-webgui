@@ -94,9 +94,9 @@ docs/
 
 **New npm Scripts:**
 ```bash
-npm run docs:generate    # Generate API docs and enhance content
-npm run docs:build      # Build documentation site
-npm run docs:dev        # Development server for docs
+# npm run docs:generate  # Script not found    # Generate API docs and enhance content
+npm run build      # Build documentation site
+npm run dev        # Development server for docs
 npm run docs:validate   # Validate documentation accuracy
 ```
 

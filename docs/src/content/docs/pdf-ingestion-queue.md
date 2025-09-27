@@ -107,7 +107,7 @@ Tables needed (existing schema):
 
 4. **Testing**
    - Unit tests mocking storage/OpenAI/DB.
-   - Integration test using Azurite (storage emulator) + local Postgres (Docker) with `npm run test:integration:pdf`.
+   - Integration test using Azurite (storage emulator) + local Postgres (Docker) with `npm run test`.
    - Load test: ingest 20 PDFs concurrently; target < 2 minutes per 10MB file.
 
 5. **Deployment Notes**

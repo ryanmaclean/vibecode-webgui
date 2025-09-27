@@ -47,7 +47,7 @@ npm run tailwind:cdn && npm run dev
 npm run dev:docker
 # OR for detached mode
 npm run dev:docker:detached
-```
+```typescript
 
 **How it works:**
 - Docker builds lightningcss for Linux ARM64 architecture
@@ -67,7 +67,7 @@ npm run dev:docker:detached
 # Production deployment
 docker buildx build --platform linux/amd64 -f Dockerfile.prod -t vibecode-prod .
 docker-compose -f docker-compose.prod.yml up
-```
+```typescript
 
 **Critical Insight:**
 - **Production deployment (x86-64) eliminates all ARM64 native module issues**
@@ -98,7 +98,7 @@ docker-compose -f docker-compose.prod.yml up
   "tailwind:docker": "./scripts/setup-tailwind-mode.sh docker",
   "tailwind:restore": "./scripts/setup-tailwind-mode.sh restore"
 }
-```
+```javascript
 
 ## What Made It Work
 

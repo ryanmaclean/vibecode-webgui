@@ -141,8 +141,8 @@ Project templates for code generation:
 
 ### Database Changes
 1. **Schema**: Update `prisma/schema.prisma`
-2. **Migrations**: Generate with `npm run db:deploy`
-3. **Types**: Regenerate with `npm run db:generate`
+2. **Migrations**: Generate with `# npm run db:deploy  # Script not found`
+3. **Types**: Regenerate with `# npm run db:generate  # Script not found`
 
 ### Infrastructure Changes
 1. **Kubernetes**: Update manifests in `k8s/`

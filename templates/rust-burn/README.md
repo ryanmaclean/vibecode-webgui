@@ -150,7 +150,7 @@ cargo run --features metal --bin train
 
 # WebGPU (cross-platform)
 cargo run --features wgpu --bin train
-```
+```typescript
 
 ## 🔧 Integration with VibeCode Platform
 

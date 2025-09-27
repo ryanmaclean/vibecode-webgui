@@ -54,7 +54,7 @@ async function chat() {
 }
 
 chat();
-```
+```typescript
 
 ## Core Concepts
 

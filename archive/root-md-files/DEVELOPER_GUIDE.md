@@ -98,8 +98,8 @@ graph TB
 
 5. **Initialize the database**
    ```bash
-   npm run db:deploy
-   npm run db:generate
+   # npm run db:deploy  # Script not found
+   # npm run db:generate  # Script not found
    ```
 
 6. **Start development server**
@@ -117,10 +117,10 @@ npm run type-check            # TypeScript type checking
 npm run lint                  # ESLint code linting
 
 # Database
-npm run db:status             # Check migration status
-npm run db:deploy             # Deploy migrations
-npm run db:validate           # Validate database config
-npm run db:setup              # Run production setup
+# npm run db:status  # Script not found             # Check migration status
+# npm run db:deploy  # Script not found             # Deploy migrations
+# npm run db:validate  # Script not found           # Validate database config
+npm run setup              # Run production setup
 
 # Testing
 npm run test                  # Run unit tests
@@ -130,19 +130,19 @@ npm run test:security         # Run security tests
 
 # Security
 npm run security:test         # Comprehensive security scan
-npm run security:monitor      # Start security monitoring
-npm run security:headers      # Test security headers
+# npm run security:monitor  # Script not found      # Start security monitoring
+# npm run security:headers  # Script not found      # Test security headers
 
 # Performance
-npm run perf:monitor          # Performance overview
-npm run perf:health           # Quick health check
-npm run perf:database         # Database performance
+# npm run perf:monitor  # Script not found          # Performance overview
+# npm run perf:health  # Script not found           # Quick health check
+# npm run perf:database  # Script not found         # Database performance
 
 # AI Management
-npm run ai:status             # AI gateway health
-npm run ai:models             # Available models
-npm run ai:usage              # Usage statistics
-npm run ai:costs              # Cost analysis
+# npm run ai:status  # Script not found             # AI gateway health
+# npm run ai:models  # Script not found             # Available models
+# npm run ai:usage  # Script not found              # Usage statistics
+# npm run ai:costs  # Script not found              # Cost analysis
 ```
 
 ## 🧩 Core Components
@@ -178,7 +178,7 @@ export async function middleware(request: NextRequest) {
 **Location**: `src/middleware/security-middleware.ts`
 
 ```typescript
-import { apiSecurityMiddleware } from './middleware/security-middleware';
+import { apiSecurityMiddleware } from '../lib/middleware';
 
 // Apply security checks to API routes
 const securityResponse = await apiSecurityMiddleware(request);
@@ -199,7 +199,7 @@ if (securityResponse) {
 **Location**: `src/lib/performance/metrics-collector.ts`
 
 ```typescript
-import { performanceCollector } from '../performance/metrics-collector';
+import { performanceCollector } from '../lib/metrics-collector';
 
 // Track API performance
 performanceCollector.recordAPIPerformance({
@@ -225,7 +225,7 @@ performanceCollector.recordAPIPerformance({
 **Location**: `src/lib/ai/litellm-client.ts`
 
 ```typescript
-import { litellmClient } from '../ai/litellm-client';
+import { litellmClient } from '../lib/client';
 
 // Chat completion with cost tracking
 const response = await litellmClient.chatCompletion({
@@ -251,7 +251,7 @@ console.log(`Cost: $${response.cost}, Tokens: ${response.usage.total_tokens}`);
 **Location**: `src/lib/database/query-optimizer.ts`
 
 ```typescript
-import { CachedQueries } from '../database/query-optimizer';
+import { CachedQueries } from '../lib/query-optimizer';
 
 // Cached user lookup
 const user = await CachedQueries.getUserById(123, {
@@ -342,7 +342,7 @@ interface APIResponse<T> {
 ### Input Validation
 
 ```typescript
-import { validateAIQuery } from '../lib/security/input-validator';
+import { validateAIQuery } from '../lib/input-validator';
 
 // Validate and sanitize user input
 const validated = validateAIQuery({
@@ -354,7 +354,7 @@ const validated = validateAIQuery({
 ### Rate Limiting
 
 ```typescript
-import { aiRateLimiter } from '../lib/security/input-validator';
+import { aiRateLimiter } from '../lib/input-validator';
 
 // Check rate limits
 if (!aiRateLimiter.checkRateLimit(userId)) {
@@ -386,7 +386,7 @@ if (botDetection.isBot && !botDetection.allowedBot) {
 ### Caching Strategy
 
 ```typescript
-import { cache, CacheTTL } from '../lib/cache/redis-client';
+import { cache, CacheTTL } from '../lib/client';
 
 // Cache user data
 await cache.set(`user:${userId}`, userData, CacheTTL.MEDIUM);
@@ -400,7 +400,7 @@ if (cached) return cached;
 ### Database Optimization
 
 ```typescript
-import { CachedQueries } from '../lib/database/query-optimizer';
+import { CachedQueries } from '../lib/query-optimizer';
 
 // Use optimized queries with includes
 const workspace = await CachedQueries.getWorkspaceById(id, {
@@ -466,7 +466,7 @@ await litellmClient.streamChatCompletion(
 ### Datadog Integration
 
 ```typescript
-import { metrics } from '../lib/server-monitoring';
+import { metrics } from '../lib/monitoring';
 
 // Custom metrics
 metrics.increment('user.action', {
@@ -496,7 +496,7 @@ const cacheHealth = await cache.healthCheck();
 ### Error Tracking
 
 ```typescript
-import { AISecurityLogger } from '../lib/security/input-validator';
+import { AISecurityLogger } from '../lib/input-validator';
 
 // Log security events
 AISecurityLogger.logSuspiciousActivity(
@@ -563,7 +563,7 @@ npm run security:test
 npm run security:audit
 
 # Test security headers
-npm run security:headers
+# npm run security:headers  # Script not found
 ```
 
 ## 🚀 Deployment Guide
@@ -590,7 +590,7 @@ docker build -t vibecode-webgui .
 docker-compose -f docker-compose.prod.yml up -d
 
 # Run database migrations
-docker-compose exec app npm run db:deploy
+docker-compose exec app # npm run db:deploy  # Script not found
 ```
 
 ### Kubernetes Deployment
@@ -616,7 +616,7 @@ curl http://localhost:3000/api/monitoring/performance?action=health
 curl http://localhost:4000/health
 
 # Database health
-npm run db:validate
+# npm run db:validate  # Script not found
 ```
 
 ## 📈 Performance Benchmarks
@@ -637,16 +637,16 @@ npm run db:validate
 #### Database Connection Issues
 ```bash
 # Check database connectivity
-npm run db:validate
+# npm run db:validate  # Script not found
 
 # Reset database
-npm run db:reset
+# npm run db:reset  # Script not found
 ```
 
 #### Cache Issues
 ```bash
 # Check Redis connection
-npm run perf:cache
+# npm run perf:cache  # Script not found
 
 # Clear cache
 curl -X POST http://localhost:3000/api/monitoring/performance \
@@ -657,19 +657,19 @@ curl -X POST http://localhost:3000/api/monitoring/performance \
 #### AI Gateway Issues
 ```bash
 # Check LiteLLM status
-npm run ai:status
+# npm run ai:status  # Script not found
 
 # View available models
-npm run ai:models
+# npm run ai:models  # Script not found
 ```
 
 #### Performance Issues
 ```bash
 # Check performance metrics
-npm run perf:monitor
+# npm run perf:monitor  # Script not found
 
 # Analyze slow queries
-npm run perf:database
+# npm run perf:database  # Script not found
 ```
 
 ### Debugging
@@ -744,5 +744,5 @@ When adding new features:
 **Need Help?** 
 - Check the [troubleshooting section](#troubleshooting)
 - Review [API documentation](#api-documentation)
-- Run health checks: `npm run perf:health`
+- Run health checks: `# npm run perf:health  # Script not found`
 - View monitoring dashboard: `http://localhost:3000/api/monitoring/performance`

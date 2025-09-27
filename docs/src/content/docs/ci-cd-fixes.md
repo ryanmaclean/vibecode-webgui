@@ -55,7 +55,7 @@ Added comprehensive Git metadata collection:
     echo "DD_GIT_COMMIT_COMMITTER_NAME=$(git log -1 --pretty=%cn)" >> .env.local
     echo "DD_GIT_COMMIT_COMMITTER_EMAIL=$(git log -1 --pretty=%ce)" >> .env.local
     echo "DD_GIT_COMMIT_COMMITTER_DATE=$(git log -1 --pretty=%cI)" >> .env.local
-```
+```bash
 
 ### 3. **Required Environment Variables**
 

@@ -73,7 +73,7 @@ export async function GET(_request: NextRequest) {
     // Error handling...
   }
 }
-```
+```typescript
 
 **Results Achieved**:
 - Simple E2E tests: 15/15 passing (100%)
@@ -91,7 +91,7 @@ const mockQuery = jest.fn()
 // Import patterns must match exactly
 import { AIChatInterface } from '@/components/ai/AIChatInterface' // Wrong
 import AIChatInterface from '@/components/ai/AIChatInterface' // Correct
-```
+```typescript
 
 **Systematic Solution**:
 1. **Fix import/export patterns**: Default vs named imports
@@ -132,7 +132,7 @@ import AIChatInterface from '@/components/ai/AIChatInterface' // Default import
 const originalConfig = { ...zeroDowntimeMigration.config }
 Object.assign(zeroDowntimeMigration.config, testConfig)
 // Not environment variable injection
-```
+```typescript
 
 **Systematic Solution**:
 1. **Direct config object manipulation**: Modify configuration objects directly

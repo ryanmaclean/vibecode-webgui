@@ -48,7 +48,7 @@ excluded_tools: []
 initial_prompt: ""
 
 project_name: "vibecode-webgui"
-```
+```typescript
 
 The Project Manager provides functionality for:
 - Project initialization and configuration
@@ -98,7 +98,7 @@ console.log('Main components:', projectStructure.mainComponents);
 The Code-Server Client manages the lifecycle of code-server instances, providing an API for creating, accessing, and managing development environments:
 
 ```typescript
-import { CodeServerClient } from '../lib/code-server-client';
+import { CodeServerClient } from '../lib/client';
 
 // Create a new code-server session
 const session = await codeServerClient.createSession(workspaceId, userId);
@@ -758,7 +758,7 @@ MCP Serena integrates with major cloud providers for seamless deployment:
 ```typescript
 // Example of AWS integration
 import { SerenaCloud } from '../lib/serena';
-import { AWS } from '../lib/cloud-providers';
+import { AWS } from '../lib/providers';
 
 // Deploy Serena to AWS
 await SerenaCloud.deploy({

@@ -75,7 +75,7 @@ You can use the embedding service in your code like this:
 
 ```typescript
 import { PrismaClient } from '@prisma/client';
-import { createEmbeddingServiceWithRobustConnection } from './src/lib/ai/embeddingServiceFactory';
+import { createEmbeddingServiceWithRobustConnection } from '../lib/src';
 
 async function example() {
   // Create the embedding service with robust connection

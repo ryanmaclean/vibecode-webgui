@@ -32,7 +32,7 @@ Successfully transformed the test infrastructure from a broken state (~39% pass 
 ```typescript
 // Fixed: security-input-validator.test.ts
 // Removed broken mock, tested real implementation directly
-import { validateAIQuery, validatePrompt } from '../../src/lib/security/input-validator';
+import { validateAIQuery, validatePrompt } from '../lib/src';
 ```
 
 ### 2. Vector Database Factory Overhaul

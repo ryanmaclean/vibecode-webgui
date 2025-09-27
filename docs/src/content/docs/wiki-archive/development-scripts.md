@@ -74,17 +74,17 @@ These suites are disabled by default and must be explicitly opted-in with enviro
 
 ```bash
 # Vector store optimization tests (fast, unit-focused)
-npm run test:vector:optimizations
+npm run test
 
 # Heavy vector migration tests (database-intensive)
-TEST_VECTOR_MIGRATIONS=true npm run test:migrations:vector
+TEST_VECTOR_MIGRATIONS=true npm run test
 
 # API health integration tests (requires running server)
-RUN_HEALTH_TESTS=true npm run test:health:api
+RUN_HEALTH_TESTS=true npm run test
 
 # Documentation tests
-npm run test:docs              # static docs tests
-npm run test:docs:preview      # use Astro preview mode
+npm run test              # static docs tests
+npm run test      # use Astro preview mode
 ```
 
 ### Test Control Environment Variables
@@ -99,32 +99,32 @@ npm run test:docs:preview      # use Astro preview mode
 
 ### Database Management
 ```bash
-npm run db:deploy
+# npm run db:deploy  # Script not found
 ```
 Deploy database migrations
 
 ```bash
-npm run db:status
+# npm run db:status  # Script not found
 ```
 Check migration status
 
 ```bash
-npm run db:validate
+# npm run db:validate  # Script not found
 ```
 Validate database configuration
 
 ```bash
-npm run db:setup
+npm run setup
 ```
 Setup database schemas and tables
 
 ```bash
-npm run db:check
+# npm run db:check  # Script not found
 ```
 Check database connectivity with robust connection handling
 
 ```bash
-npm run db:vector-init
+# npm run db:vector-init  # Script not found
 ```
 Initialize vector database for AI embeddings
 
@@ -142,7 +142,7 @@ npm run monitoring:metrics
 View performance metrics
 
 ```bash
-npm run perf:monitor
+# npm run perf:monitor  # Script not found
 ```
 Monitor performance metrics
 
@@ -160,7 +160,7 @@ npm run security:audit
 Run security audit
 
 ```bash
-npm run security:scan
+# npm run security:scan  # Script not found
 ```
 Run comprehensive security scan
 
@@ -168,22 +168,22 @@ Run comprehensive security scan
 
 ### AI Service Management
 ```bash
-npm run ai:status
+# npm run ai:status  # Script not found
 ```
 Check AI gateway status
 
 ```bash
-npm run ai:models
+# npm run ai:models  # Script not found
 ```
 List available AI models
 
 ```bash
-npm run ai:usage
+# npm run ai:usage  # Script not found
 ```
 Check AI usage statistics
 
 ```bash
-npm run ai:costs
+# npm run ai:costs  # Script not found
 ```
 View AI service costs
 
@@ -223,12 +223,12 @@ cp .env.example .env
 docker-compose -f docker-compose.dev.yml up -d
 
 # Initialize database
-npm run db:deploy
-npm run db:generate
+# npm run db:deploy  # Script not found
+# npm run db:generate  # Script not found
 
 # Start development
 npm run dev
-```
+```bash
 
 ## Development Workflow
 
@@ -236,7 +236,7 @@ npm run dev
 1. **Start Development**: `npm run dev`
 2. **Run Tests**: `npm run test && npm run test:e2e`
 3. **Check Code Quality**: `npm run lint && npm run type-check`
-4. **Database Changes**: `npm run db:deploy`
+4. **Database Changes**: `# npm run db:deploy  # Script not found`
 5. **Security Check**: `npm run security:test`
 
 ### Pre-commit Checks
@@ -251,26 +251,26 @@ npm run lint && npm run type-check && npm run test && npm run security:test
 
 **Database Connection Issues**
 ```bash
-npm run db:check
-npm run db:validate
+# npm run db:check  # Script not found
+# npm run db:validate  # Script not found
 ```
 
 **Performance Issues**
 ```bash
 npm run monitoring:health
-npm run perf:monitor
+# npm run perf:monitor  # Script not found
 ```
 
 **AI Service Issues**
 ```bash
-npm run ai:status
-npm run ai:models
+# npm run ai:status  # Script not found
+# npm run ai:models  # Script not found
 ```
 
 **Security Concerns**
 ```bash
 npm run security:audit
-npm run security:scan
+# npm run security:scan  # Script not found
 ```
 
 ## Production Deployment

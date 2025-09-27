@@ -8,7 +8,7 @@ description: Auto-generated placeholder. Update as needed.
 ## ✅ **What We Actually Tested (Not Just Assumed)**
 
 ### 1. **Local Datadog Integration Testing**
-**Command**: `DD_CI_VISIBILITY_ENABLED=true DD_SERVICE=vibecode-webgui DD_ENV=local DD_VERSION=local-test npm run test:root:infrastructure`
+**Command**: `DD_CI_VISIBILITY_ENABLED=true DD_SERVICE=vibecode-webgui DD_ENV=local DD_VERSION=local-test npm run test`
 
 **Results**: ✅ **WORKING**
 ```
@@ -25,10 +25,10 @@ description: Auto-generated placeholder. Update as needed.
 **Fix Applied**: Added root tests to the optimized pre-commit script:
 ```bash
 # 7. Root integration tests (quick subset - always run for critical validation)
-run_in_background "root-infrastructure" "npm run test:root:infrastructure"
+run_in_background "root-infrastructure" "npm run test"
 jobs+=("root-infrastructure")
 
-run_in_background "root-credentials" "npm run test:root:credentials"
+run_in_background "root-credentials" "npm run test"
 jobs+=("root-credentials")
 ```
 
@@ -49,7 +49,7 @@ jobs+=("root-credentials")
 
 **Solution**: Environment variables must be set when running tests:
 ```bash
-DD_CI_VISIBILITY_ENABLED=true DD_SERVICE=vibecode-webgui DD_ENV=local DD_VERSION=local-test npm run test:root:infrastructure
+DD_CI_VISIBILITY_ENABLED=true DD_SERVICE=vibecode-webgui DD_ENV=local DD_VERSION=local-test npm run test
 ```
 
 ## 🎯 **What We Fixed Based on Datadog Troubleshooting Guide**

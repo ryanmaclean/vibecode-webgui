@@ -32,7 +32,7 @@ VibeCode has a comprehensive testing strategy that includes unit tests, integrat
 #### 4. Root Integration Tests (`tests/root-tests/`)
 - **Purpose**: Validate system-level functionality and external integrations
 - **Framework**: Custom Node.js scripts
-- **Run**: `npm run test:root`
+- **Run**: `npm run test`
 - **Coverage**: Azure services, database performance, infrastructure
 
 ## 🔧 Root Tests Organization
@@ -105,15 +105,15 @@ The root tests are organized into specialized categories:
 ### Individual Test Categories
 ```bash
 # Run all root tests
-npm run test:root
+npm run test
 
 # Run specific categories
-npm run test:root:azure          # Azure embedding tests
-npm run test:root:database       # Database tests
-npm run test:root:ai            # AI/embedding tests
-npm run test:root:infrastructure # Infrastructure tests
-npm run test:root:workflow      # Workflow tests
-npm run test:root:credentials   # Credentials tests
+npm run test          # Azure embedding tests
+npm run test       # Database tests
+npm run test            # AI/embedding tests
+npm run test # Infrastructure tests
+npm run test      # Workflow tests
+npm run test   # Credentials tests
 ```
 
 ### Test Runner Features
@@ -156,21 +156,21 @@ Quick validation tests run before commits:
 ### Before Committing
 ```bash
 # Run quick validation
-npm run test:root:infrastructure
-npm run test:root:credentials
+npm run test
+npm run test
 ```
 
 ### Before Pushing
 ```bash
 # Run comprehensive tests
-npm run test:root
+npm run test
 ```
 
 ### Local Development
 ```bash
 # Run specific tests during development
-npm run test:root:database  # When working on database features
-npm run test:root:azure     # When working on Azure integration
+npm run test  # When working on database features
+npm run test     # When working on Azure integration
 ```
 
 ## 🔧 Troubleshooting
@@ -200,7 +200,7 @@ node tests/root-tests/database/test-db-connection.js
 ### Debug Mode
 ```bash
 # Enable debug logging
-DEBUG=vibecode:* npm run test:root
+DEBUG=vibecode:* npm run test
 ```
 
 ## 📚 Additional Resources
@@ -216,4 +216,4 @@ DEBUG=vibecode:* npm run test:root
 - Check the [troubleshooting section](#troubleshooting)
 - Review [API documentation](/wiki/api-reference)
 - Run health checks: `npm run monitoring:health`
-- View test results: `npm run test:e2e:report`
+- View test results: `npm run test`

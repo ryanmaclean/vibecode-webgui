@@ -48,7 +48,7 @@ The system now tracks:
      "status": "pass",
      "duration_ms": 111,
      "timestamp": "2025-09-05T03:57:56.297Z",
-     "tags": ["test.name:test-simple-db-connection.cjs", "test.category:database", "test.status:pass", "service:vibecode-webgui", "env:test", "version:1.0.0"]
+     "tags": ["test.name:test-simple-db-connection.cjs", "test.category:database", "test.status:pass", "service:vibecode-webgui", "env:test", "version:latest"]
    }
    ```
 
@@ -71,18 +71,18 @@ The system now tracks:
 
 1. **Run Tests with Datadog Monitoring**
    ```bash
-   DD_CI_VISIBILITY_ENABLED=true npm run test:root:database
+   DD_CI_VISIBILITY_ENABLED=true npm run test
    ```
 
 2. **Available Test Commands**
    ```bash
-   npm run test:root                    # All tests
-   npm run test:root:infrastructure    # Infrastructure tests
-   npm run test:root:database          # Database tests
-   npm run test:root:ai                # AI/Embedding tests
-   npm run test:root:azure             # Azure tests
-   npm run test:root:workflow          # Workflow tests
-   npm run test:root:credentials       # Credential tests
+   npm run test                    # All tests
+   npm run test    # Infrastructure tests
+   npm run test          # Database tests
+   npm run test                # AI/Embedding tests
+   npm run test             # Azure tests
+   npm run test          # Workflow tests
+   npm run test       # Credential tests
    ```
 
 3. **CI/CD Integration**

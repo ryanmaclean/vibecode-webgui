@@ -41,7 +41,7 @@ The sample is a FastAPI + React app that already uses Azure OpenAI and Azure Dat
      --app-name <app-service> \
      --service rag-postgres-openai \
      --env demo \
-     --version 1.0.0
+     --version latest
    ```
    Add `--dry-run` to preview the `az webapp config appsettings set` commands.
 

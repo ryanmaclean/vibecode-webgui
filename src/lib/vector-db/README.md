@@ -59,7 +59,7 @@ This implementation provides a robust adapter pattern for vector database suppor
 
 ```typescript
 // Get the vector store service
-import { vectorStore } from './lib/vector-db/vector-store-service';
+import { vectorStore } from '../lib/vector-store';
 
 // Store vector chunks
 await vectorStore.storeChunks(fileId, chunks);

@@ -34,7 +34,7 @@ Run the setup script to enable required PostgreSQL extensions:
 npm install --save-dev ts-node typescript @types/node dotenv
 
 # Run the setup script
-npm run db:setup-datadog
+npm run setup
 ```
 
 ### 2. Deploy DBM Configuration

@@ -83,7 +83,7 @@ Notes:
 ## 🚀 Migration Phases
 1. **Design & Approval** – circulate this doc, capture sign-off from Eng + Ops.
 2. **Infrastructure Bootstrapping** – run `tofu init`, stand up storage, Postgres, and App Service (without swap).
-3. **App Readiness** – adapt Next.js to use Blob + Queue workflow, add Function App project, verify local integration (`npm run dev:queue`).
+3. **App Readiness** – adapt Next.js to use Blob + Queue workflow, add Function App project, verify local integration (`npm run dev`).
 4. **Data Migration** – run existing vector seeding scripts against the new Postgres server.
 5. **Cutover** – update DNS or App Service custom domain, run smoke tests, enable monitoring dashboards.
 6. **Decommission AKS** – remove unused Terraform, archive manifests, shut down related Azure resources.

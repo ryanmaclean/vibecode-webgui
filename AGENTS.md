@@ -28,5 +28,5 @@
 
 ## Environment & Security Notes
 - Copy `.env.local.example` to `.env.local`; keep secrets out of git and tailor extra `.env` files per environment.
-- Datadog requires `DD_API_KEY` and `DD_SITE`; validate telemetry with the `npm run monitoring:*` scripts before shipping.
+- Datadog requires `DD_API_KEY` and `DD_SITE`; validate telemetry with the `npm run test:monitoring:unit*` scripts before shipping.
 - Adjust Kubernetes or Terraform defaults in `k8s/` and `tofu/terraform.tfvars` rather than editing live manifests; document credential handling in the PR.

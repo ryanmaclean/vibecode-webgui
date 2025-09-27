@@ -42,14 +42,14 @@ Unit tests focus on testing individual functions, components, or classes in isol
 Example unit test:
 
 ```typescript
-import { sum } from '../math-utils';
+import { sum } from '../lib/utils';
 
 describe('sum function', () => {
   it('should add two numbers correctly', () => {
     expect(sum(1, 2)).toBe(3);
   });
 });
-```
+```bash
 
 ### Integration Tests
 
@@ -62,8 +62,8 @@ Integration tests verify that different parts of the application work correctly 
 Example integration test:
 
 ```typescript
-import { MongoDBChatService } from '../../src/lib/services/chat-mongodb';
-import { createMockDatabase } from '../utils/mock-db';
+import { MongoDBChatService } from '../lib/src';
+import { createMockDatabase } from '../lib/utils';
 
 describe('MongoDBChatService', () => {
   let service: MongoDBChatService;
@@ -79,7 +79,7 @@ describe('MongoDBChatService', () => {
     expect(result.userId).toBe('user123');
   });
 });
-```
+```bash
 
 ### End-to-End Tests
 

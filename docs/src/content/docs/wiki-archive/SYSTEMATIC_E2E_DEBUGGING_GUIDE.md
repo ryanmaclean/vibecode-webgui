@@ -252,7 +252,7 @@ if (isTestEnvironment) {
 
 **Standard Pattern**:
 ```typescript
-import { TestHelpers } from './utils/test-helpers'
+import { TestHelpers } from '../lib/utils'
 
 test.describe('Feature Tests', () => {
   test.beforeEach(async ({ page }) => {

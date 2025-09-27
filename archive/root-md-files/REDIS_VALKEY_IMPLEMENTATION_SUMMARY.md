@@ -111,7 +111,7 @@ redis_deployment_type = "all"
 ### **Application Integration**
 ```typescript
 // lib/redis-client.ts - Universal Redis client
-import { getRedisClient } from './redis-client';
+import { getRedisClient } from '../lib/client';
 
 const redis = getRedisClient(); // Automatically detects service type
 

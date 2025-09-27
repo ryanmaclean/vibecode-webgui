@@ -104,12 +104,12 @@ Remove or comment out any Sentry-related environment variables:
 
 Run the error tracking test suite:
 ```bash
-npm run test:error-tracking
+npm run test
 ```
 
 Or run individual tests:
 ```typescript
-import { runAllErrorTrackingTests } from './src/lib/monitoring/error-tracking-test';
+import { runAllErrorTrackingTests } from '../lib/src';
 runAllErrorTrackingTests();
 ```
 

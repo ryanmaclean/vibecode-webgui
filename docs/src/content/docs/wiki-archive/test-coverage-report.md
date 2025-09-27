@@ -157,7 +157,7 @@ FROM codercom/code-server:4.101.2
 - Official Microsoft VS Code extensions
 - Custom VibeCode AI Assistant
 - Terminal with bash shell
-```
+```typescript
 
 ### **Features Verified**
 - ✅ VS Code interface via iframe

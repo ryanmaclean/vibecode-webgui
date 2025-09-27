@@ -92,7 +92,7 @@ export const collections = {
 
 text
 ---
-import WikiLayout from '../../layouts/WikiLayout.astro';
+import WikiLayout from '../lib/layout';
 import { getCollection } from 'astro:content';
 import { AstroError } from 'astro/errors';
 import { Markdown } from 'astro/components';
@@ -255,7 +255,7 @@ Create Dynamic Page (src/pages/wiki/[slug].astro):
 
 text
 ---
-import WikiLayout from '../../layouts/WikiLayout.astro';
+import WikiLayout from '../lib/layout';
 import { getCollection } from 'astro:content';
 import { AstroError } from 'astro/errors';
 import { Markdown } from 'astro/components';

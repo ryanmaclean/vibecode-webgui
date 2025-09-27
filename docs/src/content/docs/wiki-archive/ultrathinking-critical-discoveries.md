@@ -27,7 +27,7 @@ I initially marked the pool exhaustion alerting system as "COMPLETED" because:
 // This line in /api/health/db/route.ts would crash at runtime:
 import { createRobustConnection, getConnectionPoolStatus } from '@/lib/db/robust-db-connection';
 // ❌ FILE DID NOT EXIST
-```
+```typescript
 
 **Impact**: Complete system failure - health dashboard would show loading screens permanently
 

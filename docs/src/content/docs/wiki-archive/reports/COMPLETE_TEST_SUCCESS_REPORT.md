@@ -56,7 +56,7 @@ description: Auto-generated placeholder. Update as needed.
     "test.status:pass",
     "service:vibecode-webgui",
     "env:test",
-    "version:1.0.0"
+    "version:latest"
   ]
 }
 ```
@@ -93,22 +93,22 @@ description: Auto-generated placeholder. Update as needed.
 **Run All Tests with Datadog Monitoring:**
 ```bash
 # All tests now work with environment variables from .env.local
-DD_CI_VISIBILITY_ENABLED=true npm run test:root:database      # 4/4 tests passing
-DD_CI_VISIBILITY_ENABLED=true npm run test:root:infrastructure # 3/3 tests passing  
-DD_CI_VISIBILITY_ENABLED=true npm run test:root:workflow      # 3/3 tests passing
-DD_CI_VISIBILITY_ENABLED=true npm run test:root:credentials   # 1/1 tests passing
-DD_CI_VISIBILITY_ENABLED=true npm run test:root:ai            # 1/1 tests passing
-DD_CI_VISIBILITY_ENABLED=true npm run test:root:azure         # 1/1 tests passing
+DD_CI_VISIBILITY_ENABLED=true npm run test      # 4/4 tests passing
+DD_CI_VISIBILITY_ENABLED=true npm run test # 3/3 tests passing  
+DD_CI_VISIBILITY_ENABLED=true npm run test      # 3/3 tests passing
+DD_CI_VISIBILITY_ENABLED=true npm run test   # 1/1 tests passing
+DD_CI_VISIBILITY_ENABLED=true npm run test            # 1/1 tests passing
+DD_CI_VISIBILITY_ENABLED=true npm run test         # 1/1 tests passing
 ```
 
 **Run All Tests Together:**
 ```bash
-DD_CI_VISIBILITY_ENABLED=true npm run test:root:database && \
-DD_CI_VISIBILITY_ENABLED=true npm run test:root:infrastructure && \
-DD_CI_VISIBILITY_ENABLED=true npm run test:root:workflow && \
-DD_CI_VISIBILITY_ENABLED=true npm run test:root:credentials && \
-DD_CI_VISIBILITY_ENABLED=true npm run test:root:ai && \
-DD_CI_VISIBILITY_ENABLED=true npm run test:root:azure
+DD_CI_VISIBILITY_ENABLED=true npm run test && \
+DD_CI_VISIBILITY_ENABLED=true npm run test && \
+DD_CI_VISIBILITY_ENABLED=true npm run test && \
+DD_CI_VISIBILITY_ENABLED=true npm run test && \
+DD_CI_VISIBILITY_ENABLED=true npm run test && \
+DD_CI_VISIBILITY_ENABLED=true npm run test
 ```
 
 ### 🔍 **Environment Variables Used**

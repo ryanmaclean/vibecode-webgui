@@ -94,8 +94,8 @@ VibeCode is built as a modern, cloud-native application with the following archi
    docker-compose -f docker-compose.dev.yml up -d postgres redis
    
    # Run database migrations
-   npm run db:deploy
-   npm run db:generate
+   # npm run db:deploy  # Script not found
+   # npm run db:generate  # Script not found
    ```
 
 4. **Development server**
@@ -175,13 +175,13 @@ We maintain high code quality through:
 npm run lint
 
 # Fix auto-fixable issues
-npm run lint:fix
+npm run lint
 
 # Type checking
 npm run type-check
 
 # Format code
-npm run format
+# npm run format  # Script not found
 ```
 
 ### 3. Testing Strategy
@@ -285,7 +285,7 @@ export async function POST(request: NextRequest) {
 2. **Register in AI orchestrator**
    ```typescript
    // src/lib/ai/orchestrator.ts
-   import { YourProviderClient } from './providers/your-provider';
+   import { YourProviderClient } from '../lib/providers';
    
    // Add to provider registry
    ```
@@ -464,14 +464,14 @@ feat(api): add user authentication endpoint
 fix(ui): resolve button styling issue
 docs(readme): update installation instructions
 test(auth): add unit tests for login flow
-```
+```bash
 
 ## Performance Optimization
 
 ### Frontend Performance
 - **Code Splitting**: Use dynamic imports
 - **Image Optimization**: Next.js Image component
-- **Bundle Analysis**: `npm run build:analyze`
+- **Bundle Analysis**: `npm run build`
 
 ### Backend Performance
 - **Database Queries**: Use Prisma query optimization

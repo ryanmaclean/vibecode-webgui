@@ -82,7 +82,7 @@ npm run dev
 curl http://localhost:3000/api/examples/basic-crud
 
 # Run component examples in Storybook (if available)
-npm run storybook
+# npm run storybook  # Script not found
 
 # Run test examples
 npm run test examples/testing/

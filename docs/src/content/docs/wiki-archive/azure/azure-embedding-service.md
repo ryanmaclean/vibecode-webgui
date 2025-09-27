@@ -165,7 +165,7 @@ const embeddingService = factory.createEmbeddingServiceFromEnv();
 
 ```typescript
 import { PrismaClient } from '@prisma/client';
-import { EmbeddingServiceFactory } from './src/lib/ai/embeddingServiceFactory';
+import { EmbeddingServiceFactory } from '../lib/src';
 
 // Create a Prisma client
 const prisma = new PrismaClient();
@@ -201,7 +201,7 @@ const ragResult = await embeddingService.ragQuery(query, {
 ### Using Static Factory Methods with Connection Pooling
 
 ```typescript
-import { EmbeddingServiceFactory } from './src/lib/ai/embeddingServiceFactory';
+import { EmbeddingServiceFactory } from '../lib/src';
 
 // For robust connection handling with connection pooling
 const { service, releaseConnection } = await EmbeddingServiceFactory.createEmbeddingServiceWithRobustConnection(true);
@@ -222,7 +222,7 @@ try {
 ### Direct Instantiation with Connection Pooling
 
 ```typescript
-import { AzureEmbeddingService } from './src/lib/ai/azureEmbeddingService';
+import { AzureEmbeddingService } from '../lib/src';
 
 // Initialize Azure Embedding Service with Connection Pooling
 const azureEmbeddingService = new AzureEmbeddingService(

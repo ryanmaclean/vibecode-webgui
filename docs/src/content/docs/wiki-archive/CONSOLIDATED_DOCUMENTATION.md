@@ -225,7 +225,7 @@ npm run test:performance
 # Run specific test types
 npm run test:performance:k6
 npm run test:performance:lighthouse
-```
+```typescript
 
 ---
 
@@ -445,8 +445,8 @@ OTEL_ENABLED=true
 npm run test:performance:ci
 
 # Specific test types
-npm run performance:baseline  # Baseline load testing
-npm run performance:stress    # Stress testing
+# npm run performance:baseline  # Script not found  # Baseline load testing
+# npm run performance:stress  # Script not found    # Stress testing
 ```
 
 ### Scaling Architecture

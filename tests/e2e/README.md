@@ -54,12 +54,12 @@ npm run test:e2e
 
 ### Specific Test Categories
 ```bash
-npm run test:e2e:auth        # Authentication tests
-npm run test:e2e:ai          # AI features tests
-npm run test:e2e:workspace   # Workspace management tests
-npm run test:e2e:responsive  # Responsive design tests
-npm run test:e2e:journeys    # Critical user journeys
-npm run test:e2e:a11y        # Accessibility tests
+npm run test        # Authentication tests
+npm run test          # AI features tests
+npm run test   # Workspace management tests
+npm run test  # Responsive design tests
+npm run test    # Critical user journeys
+npm run test        # Accessibility tests
 ```
 
 ### Debug Mode
@@ -69,7 +69,7 @@ npm run test:e2e:headed      # Run with browser UI visible
 
 ### Test Reports
 ```bash
-npm run test:e2e:report      # View HTML test report
+npm run test      # View HTML test report
 ```
 
 ## Configuration
@@ -165,7 +165,7 @@ npx playwright test tests/e2e/auth-flow.test.ts --debug
 
 # Run with trace viewer
 npx playwright test --trace on
-```
+```bash
 
 ### Screenshots and Videos
 Test artifacts are saved to:

@@ -128,10 +128,10 @@ helm upgrade --install vibecode-docs ./helm/vibecode-docs \
 
 ```bash
 # Apply database migrations
-kubectl exec -it deployment/vibecode-docs -- npm run db:migrate
+kubectl exec -it deployment/vibecode-docs -- # npm run db:migrate  # Script not found
 
 # Generate embeddings from documentation
-kubectl exec -it deployment/vibecode-docs -- npm run embeddings:generate
+kubectl exec -it deployment/vibecode-docs -- # npm run embeddings:generate  # Script not found
 ```
 
 ## 🔍 Key Differences from Vercel Template
@@ -218,8 +218,8 @@ docker build -t $(tofu output -raw container_registry_login_server)/vibecode-doc
 docker push $(tofu output -raw container_registry_login_server)/vibecode-docs:latest
 
 # Initialize database
-kubectl exec -it deployment/vibecode-docs -- npm run db:migrate
-kubectl exec -it deployment/vibecode-docs -- npm run embeddings:generate
+kubectl exec -it deployment/vibecode-docs -- # npm run db:migrate  # Script not found
+kubectl exec -it deployment/vibecode-docs -- # npm run embeddings:generate  # Script not found
 
 # Verify deployment
 kubectl get pods -n vibecode-docs
@@ -237,7 +237,7 @@ kubectl get pods -n vibecode-docs
 kubectl logs -f deployment/vibecode-docs -n vibecode-docs
 
 # Database connectivity
-kubectl exec -it deployment/vibecode-docs -- npm run db:test
+kubectl exec -it deployment/vibecode-docs -- npm run test
 ```
 
 ### **Performance Monitoring**

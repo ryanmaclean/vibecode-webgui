@@ -54,7 +54,7 @@ docker-compose up -d
 
 # Check that all services are healthy
 docker-compose ps
-```
+```typescript
 
 ## Available Services
 
@@ -124,7 +124,7 @@ docker model list
 
 # Pull missing models
 docker model pull ai/smollm2:360M-Q4_K_M
-```
+```bash
 
 ### Voice Features Not Working
 - Ensure you're using Safari (best Web Speech API support)

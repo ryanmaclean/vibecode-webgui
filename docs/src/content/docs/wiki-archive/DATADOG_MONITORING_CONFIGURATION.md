@@ -49,7 +49,7 @@ NEXT_PUBLIC_DD_CLIENT_TOKEN=...
 NEXT_PUBLIC_DD_SITE=datadoghq.com
 # Dev-only override (RUM is prod-only by default)
 NEXT_PUBLIC_ENABLE_RUM_IN_DEV=false
-```
+```bash
 
 ### Environment Variables Summary
 

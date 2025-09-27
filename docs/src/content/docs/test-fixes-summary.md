@@ -92,7 +92,7 @@ description: Summary of test infrastructure improvements and fixes
 ./setup-real-testing.sh
 # Validates API keys and provides testing guidance
 # Supports OpenRouter, OpenAI, Datadog, Azure OpenAI
-```
+```bash
 
 ### 🔧 **SYSTEMATIC IMPROVEMENTS APPLIED**
 

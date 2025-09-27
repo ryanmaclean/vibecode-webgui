@@ -45,7 +45,7 @@ export DD_VERSION=1.0.0
 
 ```bash
 # Test error tracking integration
-npm run test:error-tracking
+npm run test
 
 # Or run individual tests
 npx tsx src/lib/monitoring/error-tracking-test.ts
@@ -99,7 +99,7 @@ init_error_tracking "component_name" "action_name"
 All Node.js scripts automatically include error tracking:
 
 ```typescript
-import { createScriptErrorTracker } from '../src/lib/automation/error-tracking-node.js';
+import { createScriptErrorTracker } from '../lib/src';
 
 // Initialize error tracking
 const errorTracker = createScriptErrorTracker('script-name', 'component', 'action');
@@ -186,7 +186,7 @@ process.env.DD_API_KEY = 'your-api-key';
 
 ```bash
 # Run comprehensive error tracking tests
-npm run test:error-tracking
+npm run test
 
 # Or run the test script directly
 npx tsx src/lib/monitoring/error-tracking-test.ts
@@ -216,7 +216,7 @@ node -e "import('./src/lib/automation/error-tracking-node.js').then(m => console
 
 # Check Datadog dashboard for tracked errors
 # Look for errors tagged with service:vibecode-webgui
-```
+```typescript
 
 ## 📈 Monitoring and Dashboards
 
@@ -331,7 +331,7 @@ process.env.DD_ERROR_TRACKING_VERBOSE_LOGGING = 'true';
 
 ```typescript
 // In Node.js scripts
-import { trackError, trackApiError, trackDatabaseError } from '../src/lib/monitoring/error-tracking';
+import { trackError, trackApiError, trackDatabaseError } from '../lib/src';
 
 // Track custom errors
 trackError(new Error('Custom error'), {
@@ -373,7 +373,7 @@ safe_execute "my-command" "my-component" "custom-action"
 
 ```typescript
 // Integrate with existing monitoring systems
-import { getErrorTracker } from '../src/lib/monitoring/error-tracking';
+import { getErrorTracker } from '../lib/src';
 
 const errorTracker = getErrorTracker();
 

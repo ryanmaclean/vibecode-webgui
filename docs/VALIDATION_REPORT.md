@@ -1,13 +1,13 @@
 # Documentation Validation Report
 
-*Generated on 2025-09-27T21:53:28.708Z*
+*Generated on 2025-09-27T21:55:36.221Z*
 
 ## Summary
 
-- **Files processed:** 468
-- **Total issues:** 1893
-- **Errors:** 1171
-- **Warnings:** 436
+- **Files processed:** 470
+- **Total issues:** 1737
+- **Errors:** 757
+- **Warnings:** 435
 
 ## Issues by File
 
@@ -45,11 +45,6 @@
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
 ℹ️ **INFO** (line 4): Version 0.2.0 may be outdated (current: 0.1.0)
-   *Suggestion: Consider updating version number*
-
-### PRODUCTION_DEPLOYMENT_GUIDE.md
-
-ℹ️ **INFO** (line 482): Version 1.0.0 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
 ### POSTGRES_MONITORING_VALIDATION_RESULTS.md
@@ -92,11 +87,6 @@
 
 ⚠️ **WARNING** (line 36): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-### AGENTS.md
-
-🚫 **ERROR** (line 31): npm script "monitoring:" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### wiki/AKS_INFRASTRUCTURE_DEPLOYMENT.md
 
@@ -178,9 +168,6 @@
 ⚠️ **WARNING** (line 7): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-🚫 **ERROR** (line 79): npm script "storybook" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
 🚫 **ERROR** (line 60): Broken link: ./components/dashboard-analytics.tsx
    *Suggestion: Check if the linked file exists and update the path*
 
@@ -218,11 +205,6 @@
 ℹ️ **INFO** (line 11): Version 1.7.3 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
-### docs/azure-appservice-llm-demo.md
-
-ℹ️ **INFO** (line 44): Version 1.0.0 may be outdated (current: 0.1.0)
-   *Suggestion: Consider updating version number*
-
 ### docs/azure-aks-deployment.md
 
 ⚠️ **WARNING** (line 143): Code block missing language specification
@@ -231,18 +213,827 @@
 ℹ️ **INFO** (line 583): Version 1.1.0 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
+### docs/VALIDATION_REPORT.md
+
+ℹ️ **INFO** (line 27): Version 1.7.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 30): Version 0.2.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 47): Version 0.2.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 124): Version 1.7.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 127): Version 1.7.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 130): Version 1.32.7 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 133): Version 1.7.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 141): Version 1.6.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 167): Version 0.20.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 218): Version 1.7.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 231): Version 1.1.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 262): Version 1.2.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 285): Version 1.2.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 290): Version 0.2.4 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 293): Version 0.2.4 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 308): Version 3.4.17 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 311): Version 4.1.11 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 314): Version 3.4.17 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 317): Version 3.4.17 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 674): Version 3.4.17 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 677): Version 4.1.11 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 680): Version 3.4.17 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 683): Version 3.4.17 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 770): Version 1.1.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 793): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 796): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 799): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 802): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1200): Version 3.60.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1210): Version 22.0.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1303): Version 4.7.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1306): Version 6.18.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1309): Version 4.0.6 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1312): Version 1.27.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1464): Version 2.0.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1467): Version 2.0.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1470): Version 2.0.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1827): Version 3.4.17 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1830): Version 4.1.11 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1833): Version 3.4.17 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1857): Version 0.41.6 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1899): Version 5.12.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1951): Version 1.1.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1989): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1992): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1995): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 1998): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 2484): Version 4.1.11 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 2497): Version 2.0.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 2505): Version 7.27.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 2965): Version 3.4.17 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 2968): Version 4.1.11 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 2971): Version 3.4.17 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 3024): Version 5.12.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 3075): Version 0.18.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 3104): Version 1.1.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 3142): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 3145): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 3148): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 3151): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 3857): Version 4.1.11 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 3873): Version 7.27.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 4217): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 4220): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 4223): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 4226): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 4641): Version 4.0.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5176): Version 5.12.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5179): Version 2.7.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5182): Version 3.60.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5185): Version 3.4.17 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5188): Version 4.1.11 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5191): Version 3.4.17 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5194): Version 3.4.17 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5197): Version 3.60.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5200): Version 0.20.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5203): Version 4.0.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5206): Version 2.0.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5209): Version 99.99.999 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5212): Version 4.102.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5215): Version 1.102.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5218): Version 4.102.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5221): Version 1.102.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5224): Version 4.101.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5227): Version 1.101.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5230): Version 4.101.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5233): Version 1.101.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5236): Version 4.101.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5239): Version 1.101.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5242): Version 4.100.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5245): Version 1.100.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5248): Version 4.100.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5251): Version 1.100.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5254): Version 4.100.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5257): Version 1.100.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5260): Version 4.100.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5263): Version 1.100.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5266): Version 4.99.4 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5269): Version 1.99.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5272): Version 4.99.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5275): Version 1.99.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5278): Version 4.99.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5281): Version 1.99.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5284): Version 4.99.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5287): Version 1.99.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5290): Version 4.99.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5293): Version 1.99.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5296): Version 4.98.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5299): Version 1.98.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5302): Version 4.96.4 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5305): Version 1.97.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5308): Version 4.96.4 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5311): Version 1.96.4 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5314): Version 4.96.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5317): Version 1.96.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5320): Version 4.96.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5323): Version 1.96.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5326): Version 4.95.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5329): Version 1.95.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5332): Version 4.95.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5335): Version 1.95.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5338): Version 4.95.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5341): Version 1.95.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5344): Version 4.93.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5347): Version 1.93.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5350): Version 4.92.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5353): Version 1.92.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5356): Version 4.91.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5359): Version 1.91.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5362): Version 4.90.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5365): Version 1.90.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5368): Version 4.90.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5371): Version 1.90.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5374): Version 4.90.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5377): Version 1.90.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5380): Version 4.90.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5383): Version 1.90.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5386): Version 4.89.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5389): Version 1.89.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5392): Version 4.89.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5395): Version 1.89.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5398): Version 4.23.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5401): Version 1.88.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5404): Version 4.23.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5407): Version 1.88.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5410): Version 4.22.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5413): Version 1.87.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5416): Version 4.22.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5419): Version 1.87.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5422): Version 4.21.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5425): Version 1.86.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5428): Version 4.21.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5431): Version 1.86.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5434): Version 4.21.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5437): Version 1.86.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5440): Version 4.20.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5443): Version 1.85.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5446): Version 4.20.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5449): Version 1.85.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5452): Version 4.19.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5455): Version 1.84.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5458): Version 4.19.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5461): Version 1.84.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5464): Version 4.18.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5467): Version 1.83.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5470): Version 4.17.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5473): Version 1.82.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5476): Version 4.17.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5479): Version 1.82.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5482): Version 4.16.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5485): Version 1.80.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5488): Version 4.16.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5491): Version 1.80.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5494): Version 4.15.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5497): Version 1.80.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5500): Version 1.79.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5503): Version 4.14.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5506): Version 1.79.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5509): Version 4.14.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5512): Version 1.79.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5515): Version 4.13.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5518): Version 1.78.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5521): Version 4.12.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5524): Version 1.77.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5527): Version 4.11.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5530): Version 1.76.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5533): Version 4.10.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5536): Version 1.75.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5539): Version 4.10.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5542): Version 1.75.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5545): Version 4.9.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5548): Version 1.73.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5551): Version 4.9.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5554): Version 1.73.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5557): Version 4.8.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5560): Version 1.72.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5563): Version 4.8.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5566): Version 1.72.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5569): Version 4.8.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5572): Version 1.72.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5575): Version 4.8.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5578): Version 1.72.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5581): Version 4.7.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5584): Version 1.71.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5587): Version 4.7.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5590): Version 1.71.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5593): Version 4.6.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5596): Version 1.70.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5599): Version 4.6.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5602): Version 1.70.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5605): Version 4.5.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5608): Version 1.68.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5611): Version 4.5.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5614): Version 1.68.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5617): Version 4.5.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5620): Version 1.68.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5623): Version 4.4.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5626): Version 1.66.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5629): Version 4.3.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5632): Version 1.65.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5635): Version 4.2.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5638): Version 1.64.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5641): Version 0.2.4 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5644): Version 1.8.7 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5647): Version 4.1.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5650): Version 1.63.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5653): Version 4.0.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5656): Version 1.63.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5659): Version 4.0.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5662): Version 1.63.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5665): Version 3.12.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5668): Version 1.60.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5671): Version 3.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5674): Version 3.11.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5677): Version 3.10.2 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5680): Version 1.56.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5683): Version 3.10.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5686): Version 1.56.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5689): Version 3.10.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5692): Version 1.56.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5695): Version 1.2.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5698): Version 3.4.21 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5701): Version 3.4.21 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5707): Version 4.8.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5710): Version 4.8.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5713): Version 0.39.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5716): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5719): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5722): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5725): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5731): Version 2.0.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5734): Version 2.0.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5737): Version 2.0.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5740): Version 3.4.17 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5743): Version 4.1.11 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5746): Version 3.4.17 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5749): Version 5.12.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5752): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5755): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5758): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5761): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5767): Version 4.1.11 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5770): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5773): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5776): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 5779): Version 6.11.1 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 6031): Version 0.24.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 6166): Version 3.60.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+ℹ️ **INFO** (line 6241): Version 1.2.3 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
 ### docs/TESTING_STRATEGY.md
 
-🚫 **ERROR** (line 39): Import path "../math-utils" not found
+🚫 **ERROR** (line 39): Import path "../lib/utils" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 59): Use of "any" type detected
    *Suggestion: Consider using specific types instead of "any"*
 
-🚫 **ERROR** (line 59): Import path "../../src/lib/services/chat-mongodb" not found
+🚫 **ERROR** (line 59): Import path "../lib/src" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 59): Import path "../utils/mock-db" not found
+🚫 **ERROR** (line 59): Import path "../lib/utils" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 🚫 **ERROR** (line 117): Import path "../components/Button" not found
@@ -250,37 +1041,25 @@
 
 ### docs/DATADOG_ERROR_TRACKING_MIGRATION.md
 
-🚫 **ERROR** (line 106): npm script "test:error-tracking" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 111): Import path "./src/lib/monitoring/error-tracking-test" not found
+🚫 **ERROR** (line 111): Import path "../lib/src" not found
    *Suggestion: Verify the import path exists in the codebase*
-
-🚫 **ERROR** (line 107): npm script "test:error-tracking" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ℹ️ **INFO** (line 213): Version 1.2.3 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
 ### docs/AUTOMATED_ERROR_TRACKING_GUIDE.md
 
-🚫 **ERROR** (line 46): npm script "test:error-tracking" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
 ⚠️ **WARNING** (line 56): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-🚫 **ERROR** (line 101): Import path "../src/lib/automation/error-tracking-node.js" not found
+🚫 **ERROR** (line 101): Import path "../lib/src" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 187): npm script "test:error-tracking" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
+🚫 **ERROR** (line 332): Import path "../lib/src" not found
+   *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 48): npm script "test:error-tracking" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 189): npm script "test:error-tracking" not found
-   *Suggestion: Add the script to package.json or update documentation*
+🚫 **ERROR** (line 374): Import path "../lib/src" not found
+   *Suggestion: Verify the import path exists in the codebase*
 
 ℹ️ **INFO** (line 381): Version 1.2.3 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
@@ -352,22 +1131,7 @@
 ⚠️ **WARNING** (line 28): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-🚫 **ERROR** (line 96): npm script "docs:generate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 96): npm script "docs:build" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 96): npm script "docs:dev" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
 🚫 **ERROR** (line 97): npm script "docs:generate" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 98): npm script "docs:build" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 99): npm script "docs:dev" not found
    *Suggestion: Add the script to package.json or update documentation*
 
 ### archive/COMPREHENSIVE-DISCOVERY.md
@@ -377,50 +1141,6 @@
 
 ⚠️ **WARNING** (line 84): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-### tests/e2e/README.md
-
-🚫 **ERROR** (line 56): npm script "test:e2e:auth" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 56): npm script "test:e2e:ai" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 56): npm script "test:e2e:workspace" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 56): npm script "test:e2e:responsive" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 56): npm script "test:e2e:journeys" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 56): npm script "test:e2e:a11y" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 71): npm script "test:e2e:report" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 57): npm script "test:e2e:auth" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 58): npm script "test:e2e:ai" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 59): npm script "test:e2e:workspace" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 60): npm script "test:e2e:responsive" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 61): npm script "test:e2e:journeys" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 62): npm script "test:e2e:a11y" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 72): npm script "test:e2e:report" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### services/ai-gateway/README.md
 
@@ -437,9 +1157,6 @@
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
 ⚠️ **WARNING** (line 175): Code block missing language specification
-   *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-⚠️ **WARNING** (line 191): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
 ⚠️ **WARNING** (line 248): Code block missing language specification
@@ -582,57 +1299,16 @@
 🚫 **ERROR** (line 112): Invalid JSON: Expected double-quoted property name in JSON at position 166
    *Suggestion: Fix JSON syntax errors*
 
-🚫 **ERROR** (line 388): npm script "compile" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
 ⚠️ **WARNING** (line 507): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
 ⚠️ **WARNING** (line 512): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-🚫 **ERROR** (line 90): npm script "package" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 402): npm script "compile" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 ### archive/root-md-files/THIRD_PARTY_NOTICES_EXTENSIONS.md
 
 ⚠️ **WARNING** (line 56): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-### archive/root-md-files/TEST_INFRASTRUCTURE_SUMMARY.md
-
-🚫 **ERROR** (line 83): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 83): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 107): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 85): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 88): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 108): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 115): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 176): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 179): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### archive/root-md-files/TESTED-FEATURES-REPORT.md
 
@@ -657,12 +1333,6 @@
 
 🚫 **ERROR** (line 374): Import path "../../workflows/ai-code-generation" not found
    *Suggestion: Verify the import path exists in the codebase*
-
-🚫 **ERROR** (line 528): npm script "worker:ai" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 539): npm script "worker:ai" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### archive/root-md-files/TAILWIND_V4_SUCCESS.md
 
@@ -699,27 +1369,27 @@
 ⚠️ **WARNING** (line 159): Use of "any" type detected
    *Suggestion: Consider using specific types instead of "any"*
 
-🚫 **ERROR** (line 159): Import path "./redis-client" not found
+🚫 **ERROR** (line 159): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 201): Use of "any" type detected
    *Suggestion: Consider using specific types instead of "any"*
 
-🚫 **ERROR** (line 201): Import path "./redis-client" not found
+🚫 **ERROR** (line 201): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 256): Use of "any" type detected
    *Suggestion: Consider using specific types instead of "any"*
 
-🚫 **ERROR** (line 256): Import path "./redis-client" not found
+🚫 **ERROR** (line 256): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 366): Import path "./redis-client" not found
+🚫 **ERROR** (line 366): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ### archive/root-md-files/REDIS_VALKEY_IMPLEMENTATION_SUMMARY.md
 
-🚫 **ERROR** (line 112): Import path "./redis-client" not found
+🚫 **ERROR** (line 112): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 🚫 **ERROR** (line 202): Broken link: ./infrastructure/terraform/azure/README.md
@@ -740,24 +1410,6 @@
 
 ⚠️ **WARNING** (line 106): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-🚫 **ERROR** (line 215): npm script "samples:populate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 215): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 215): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 220): npm script "samples:populate" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 223): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 226): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### archive/root-md-files/PRODUCTION-DEPLOYMENT-GUIDE.md
 
@@ -819,7 +1471,7 @@
 
 ### archive/root-md-files/MASTRA_INTEGRATION_GUIDE.md
 
-🚫 **ERROR** (line 105): Import path "../templates/mastra-templates" not found
+🚫 **ERROR** (line 105): Import path "../lib/templates" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 433): Use of "any" type detected
@@ -967,104 +1619,35 @@
 
 ### archive/root-md-files/DEVELOPER_GUIDE.md
 
-🚫 **ERROR** (line 100): npm script "db:deploy" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 100): npm script "db:generate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "db:status" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "db:deploy" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "db:validate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "db:setup" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "security:monitor" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "security:headers" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "perf:monitor" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "perf:health" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "perf:database" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "ai:status" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "ai:models" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "ai:usage" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "ai:costs" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 201): Import path "../performance/metrics-collector" not found
+🚫 **ERROR** (line 180): Import path "../lib/middleware" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 227): Import path "../ai/litellm-client" not found
+🚫 **ERROR** (line 201): Import path "../lib/metrics-collector" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 253): Import path "../database/query-optimizer" not found
+🚫 **ERROR** (line 227): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 344): Import path "../lib/security/input-validator" not found
+🚫 **ERROR** (line 253): Import path "../lib/query-optimizer" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 356): Import path "../lib/security/input-validator" not found
+🚫 **ERROR** (line 344): Import path "../lib/input-validator" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 388): Import path "../lib/cache/redis-client" not found
+🚫 **ERROR** (line 356): Import path "../lib/input-validator" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 402): Import path "../lib/database/query-optimizer" not found
+🚫 **ERROR** (line 388): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 468): Import path "../lib/server-monitoring" not found
+🚫 **ERROR** (line 402): Import path "../lib/query-optimizer" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 498): Import path "../lib/security/input-validator" not found
+🚫 **ERROR** (line 468): Import path "../lib/monitoring" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 558): npm script "security:headers" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 611): npm script "db:validate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 638): npm script "db:validate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 638): npm script "db:reset" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 647): npm script "perf:cache" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 658): npm script "ai:status" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 658): npm script "ai:models" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 667): npm script "perf:monitor" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 667): npm script "perf:database" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
+🚫 **ERROR** (line 498): Import path "../lib/input-validator" not found
+   *Suggestion: Verify the import path exists in the codebase*
 
 🚫 **ERROR** (line 101): npm script "db:deploy" not found
    *Suggestion: Add the script to package.json or update documentation*
@@ -1079,9 +1662,6 @@
    *Suggestion: Add the script to package.json or update documentation*
 
 🚫 **ERROR** (line 122): npm script "db:validate" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 123): npm script "db:setup" not found
    *Suggestion: Add the script to package.json or update documentation*
 
 🚫 **ERROR** (line 133): npm script "security:monitor" not found
@@ -1212,9 +1792,6 @@
 
 ### archive/root-md-files/CONTAINER_MANIFEST.md
 
-🚫 **ERROR** (line 218): npm script "health-check" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 ℹ️ **INFO** (line 143): Version 1.0.0 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
@@ -1231,36 +1808,6 @@
 
 ⚠️ **WARNING** (line 111): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-🚫 **ERROR** (line 249): npm script "verify:rag" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 249): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 257): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 257): npm script "samples:populate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 314): npm script "samples:populate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 251): npm script "verify:rag" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 252): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 258): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 259): npm script "samples:populate" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 322): npm script "samples:populate" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### archive/root-md-files/COMPREHENSIVE_TESTING_GUIDE.md
 
@@ -1312,72 +1859,10 @@
 ℹ️ **INFO** (line 11): Version 1.27.0 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
-### archive/root-md-files/AI_CLI_TOOLS_IMPLEMENTATION_SUMMARY.md
-
-🚫 **ERROR** (line 160): npm script "install:gemini-cli" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 160): npm script "install:opencode" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 160): npm script "install:aider" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 160): npm script "list:ai-tools" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 162): npm script "install:gemini-cli" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 165): npm script "install:opencode" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 168): npm script "install:aider" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 171): npm script "list:ai-tools" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 ### archive/root-md-files/AI_CLI_TOOLS_IMPLEMENTATION_PLAN.md
 
 ⚠️ **WARNING** (line 349): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-🚫 **ERROR** (line 441): npm script "install:dev:ai-tools" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 454): npm script "test:ai-cli-tools" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 454): npm script "test:e2e:ai-tools" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 454): npm script "test:install:ai-tools" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 467): npm script "deploy:production" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 467): npm script "install:prod:ai-tools" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 449): npm script "install:dev:ai-tools" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 456): npm script "test:ai-cli-tools" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 459): npm script "test:e2e:ai-tools" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 462): npm script "test:install:ai-tools" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 472): npm script "deploy:production" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 475): npm script "install:prod:ai-tools" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### archive/implementation-reports/IMPLEMENTATION_COMPLETE.md
 
@@ -1429,16 +1914,13 @@
 
 ### templates/nodejs/nestjs-rag-app/README.md
 
-🚫 **ERROR** (line 34): npm script "start:dev" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
 ⚠️ **WARNING** (line 41): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-🚫 **ERROR** (line 35): npm script "start:dev" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 ### src/lib/vector-db/README.md
+
+🚫 **ERROR** (line 60): Import path "../lib/vector-store" not found
+   *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 82): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
@@ -1485,9 +1967,6 @@
    *Suggestion: Add the script to package.json or update documentation*
 
 🚫 **ERROR** (line 222): npm script "embeddings:generate" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 240): npm script "db:test" not found
    *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/x86-production-test-report.md
@@ -1696,20 +2175,11 @@
 🚫 **ERROR** (line 117): Invalid JSON: Expected double-quoted property name in JSON at position 166
    *Suggestion: Fix JSON syntax errors*
 
-🚫 **ERROR** (line 393): npm script "compile" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
 ⚠️ **WARNING** (line 512): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
 ⚠️ **WARNING** (line 517): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-🚫 **ERROR** (line 95): npm script "package" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 407): npm script "compile" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/third-party-notices.md
 
@@ -1718,52 +2188,20 @@
 
 ### docs/src/content/docs/testing-strategy.md
 
-🚫 **ERROR** (line 44): Import path "../math-utils" not found
+🚫 **ERROR** (line 44): Import path "../lib/utils" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 64): Use of "any" type detected
    *Suggestion: Consider using specific types instead of "any"*
 
-🚫 **ERROR** (line 64): Import path "../../src/lib/services/chat-mongodb" not found
+🚫 **ERROR** (line 64): Import path "../lib/src" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 64): Import path "../utils/mock-db" not found
+🚫 **ERROR** (line 64): Import path "../lib/utils" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 🚫 **ERROR** (line 122): Import path "../components/Button" not found
    *Suggestion: Verify the import path exists in the codebase*
-
-### docs/src/content/docs/test-infrastructure.md
-
-🚫 **ERROR** (line 88): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 88): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 117): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 90): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 93): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 113): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 120): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 181): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 184): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/test-coverage-report.md
 
@@ -1778,36 +2216,6 @@
 
 ⚠️ **WARNING** (line 116): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-🚫 **ERROR** (line 254): npm script "verify:rag" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 254): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 262): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 262): npm script "samples:populate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 319): npm script "samples:populate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 256): npm script "verify:rag" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 257): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 263): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 264): npm script "samples:populate" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 327): npm script "samples:populate" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/temporal-integration.md
 
@@ -1873,22 +2281,22 @@
 ⚠️ **WARNING** (line 164): Use of "any" type detected
    *Suggestion: Consider using specific types instead of "any"*
 
-🚫 **ERROR** (line 164): Import path "./redis-client" not found
+🚫 **ERROR** (line 164): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 206): Use of "any" type detected
    *Suggestion: Consider using specific types instead of "any"*
 
-🚫 **ERROR** (line 206): Import path "./redis-client" not found
+🚫 **ERROR** (line 206): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 261): Use of "any" type detected
    *Suggestion: Consider using specific types instead of "any"*
 
-🚫 **ERROR** (line 261): Import path "./redis-client" not found
+🚫 **ERROR** (line 261): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 371): Import path "./redis-client" not found
+🚫 **ERROR** (line 371): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ### docs/src/content/docs/project-todo.md
@@ -1903,24 +2311,6 @@
 
 ⚠️ **WARNING** (line 111): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-🚫 **ERROR** (line 220): npm script "samples:populate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 220): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 220): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 225): npm script "samples:populate" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 228): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 231): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/production-deployment-guide.md
 
@@ -2024,11 +2414,6 @@
 🚫 **ERROR** (line 612): Broken link: ./production-deployment-guide/
    *Suggestion: Check if the linked file exists and update the path*
 
-### docs/src/content/docs/pdf-ingestion-queue.md
-
-🚫 **ERROR** (line 110): npm script "test:integration:pdf" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 ### docs/src/content/docs/new-features.md
 
 🚫 **ERROR** (line 319): Broken link: ./enhanced-ai-features/
@@ -2054,7 +2439,7 @@
 🚫 **ERROR** (line 80): Import path "./serena-memory" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 100): Import path "../lib/code-server-client" not found
+🚫 **ERROR** (line 100): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 🚫 **ERROR** (line 307): Import path "../lib/serena" not found
@@ -2096,7 +2481,7 @@
 🚫 **ERROR** (line 758): Import path "../lib/serena" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 758): Import path "../lib/cloud-providers" not found
+🚫 **ERROR** (line 758): Import path "../lib/providers" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 🚫 **ERROR** (line 782): Import path "../lib/serena" not found
@@ -2127,7 +2512,7 @@
 ⚠️ **WARNING** (line 111): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-🚫 **ERROR** (line 196): Import path "../../pages/LoginPage" not found
+🚫 **ERROR** (line 196): Import path "../lib/page" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 🚫 **ERROR** (line 299): Import path "../../lib/context7" not found
@@ -2142,7 +2527,7 @@
 🚫 **ERROR** (line 428): Import path "../../lib/sequential-thinking" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 679): Import path "../../utils/test-data-manager" not found
+🚫 **ERROR** (line 679): Import path "../lib/utils" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ### docs/src/content/docs/mcp-implementation.md
@@ -2175,7 +2560,7 @@
 
 ### docs/src/content/docs/mastra-integration.md
 
-🚫 **ERROR** (line 110): Import path "../templates/mastra-templates" not found
+🚫 **ERROR** (line 110): Import path "../lib/templates" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 438): Use of "any" type detected
@@ -2319,12 +2704,6 @@
 
 ### docs/src/content/docs/getting-started.md
 
-🚫 **ERROR** (line 79): npm script "db:deploy" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 79): npm script "db:generate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
 🚫 **ERROR** (line 76): Broken link: /redis-valkey/
    *Suggestion: Check if the linked file exists and update the path*
 
@@ -2415,22 +2794,10 @@
 
 ### docs/src/content/docs/developer-guide.md
 
-🚫 **ERROR** (line 92): npm script "db:deploy" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 92): npm script "db:generate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
 ⚠️ **WARNING** (line 108): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-🚫 **ERROR** (line 173): npm script "lint:fix" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 173): npm script "format" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 286): Import path "./providers/your-provider" not found
+🚫 **ERROR** (line 286): Import path "../lib/providers" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 460): Code block missing language specification
@@ -2442,13 +2809,7 @@
 🚫 **ERROR** (line 98): npm script "db:generate" not found
    *Suggestion: Add the script to package.json or update documentation*
 
-🚫 **ERROR** (line 178): npm script "lint:fix" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 🚫 **ERROR** (line 184): npm script "format" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 474): npm script "build:analyze" not found
    *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/deploy-azure-openai-monitoring.md
@@ -2463,9 +2824,6 @@
    *Suggestion: Check if the linked file exists and update the path*
 
 ### docs/src/content/docs/container-manifest.md
-
-🚫 **ERROR** (line 223): npm script "health-check" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ℹ️ **INFO** (line 148): Version 1.0.0 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
@@ -2504,11 +2862,6 @@
 
 ℹ️ **INFO** (line 22): Version 7.27.0 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
-
-### docs/src/content/docs/azure-appservice-migration.md
-
-🚫 **ERROR** (line 86): npm script "dev:queue" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/api-reference.md
 
@@ -2580,32 +2933,6 @@
 
 🚫 **ERROR** (line 201): Broken link: ./API.md
    *Suggestion: Check if the linked file exists and update the path*
-
-### docs/src/content/docs/ai-cli-tools.md
-
-🚫 **ERROR** (line 165): npm script "install:gemini-cli" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 165): npm script "install:opencode" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 165): npm script "install:aider" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 165): npm script "list:ai-tools" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 167): npm script "install:gemini-cli" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 170): npm script "install:opencode" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 173): npm script "install:aider" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 176): npm script "list:ai-tools" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/KIND_TROUBLESHOOTING_GUIDE.md
 
@@ -2757,20 +3084,11 @@
 🚫 **ERROR** (line 117): Invalid JSON: Expected double-quoted property name in JSON at position 166
    *Suggestion: Fix JSON syntax errors*
 
-🚫 **ERROR** (line 393): npm script "compile" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
 ⚠️ **WARNING** (line 512): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
 ⚠️ **WARNING** (line 517): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-🚫 **ERROR** (line 95): npm script "package" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 407): npm script "compile" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/wiki-archive/ultrathinking-critical-discoveries.md
 
@@ -2784,124 +3102,11 @@
 
 ### docs/src/content/docs/wiki-archive/testing-guide.md
 
-🚫 **ERROR** (line 106): npm script "test:root" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 106): npm script "test:root:azure" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 106): npm script "test:root:database" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 106): npm script "test:root:ai" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 106): npm script "test:root:infrastructure" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 106): npm script "test:root:workflow" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 106): npm script "test:root:credentials" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 157): npm script "test:root:infrastructure" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 157): npm script "test:root:credentials" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 164): npm script "test:root" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 170): npm script "test:root:database" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 170): npm script "test:root:azure" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
 🚫 **ERROR** (line 211): Broken link: /wiki/production-deployment
    *Suggestion: Check if the linked file exists and update the path*
 
 🚫 **ERROR** (line 217): Broken link: /wiki/api-reference
    *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 35): npm script "test:root" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 108): npm script "test:root" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 111): npm script "test:root:azure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "test:root:database" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 113): npm script "test:root:ai" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 114): npm script "test:root:infrastructure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 115): npm script "test:root:workflow" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 116): npm script "test:root:credentials" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 159): npm script "test:root:infrastructure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 160): npm script "test:root:credentials" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 166): npm script "test:root" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 172): npm script "test:root:database" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 173): npm script "test:root:azure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 203): npm script "test:root" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 219): npm script "test:e2e:report" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-### docs/src/content/docs/wiki-archive/test-infrastructure.md
-
-🚫 **ERROR** (line 88): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 88): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 117): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 90): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 93): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 113): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 120): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 181): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 184): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/wiki-archive/test-coverage-report.md
 
@@ -2916,36 +3121,6 @@
 
 ⚠️ **WARNING** (line 116): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-🚫 **ERROR** (line 254): npm script "verify:rag" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 254): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 262): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 262): npm script "samples:populate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 319): npm script "samples:populate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 256): npm script "verify:rag" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 257): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 263): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 264): npm script "samples:populate" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 327): npm script "samples:populate" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/wiki-archive/temporal-integration.md
 
@@ -2998,22 +3173,22 @@
 ⚠️ **WARNING** (line 164): Use of "any" type detected
    *Suggestion: Consider using specific types instead of "any"*
 
-🚫 **ERROR** (line 164): Import path "./redis-client" not found
+🚫 **ERROR** (line 164): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 206): Use of "any" type detected
    *Suggestion: Consider using specific types instead of "any"*
 
-🚫 **ERROR** (line 206): Import path "./redis-client" not found
+🚫 **ERROR** (line 206): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 261): Use of "any" type detected
    *Suggestion: Consider using specific types instead of "any"*
 
-🚫 **ERROR** (line 261): Import path "./redis-client" not found
+🚫 **ERROR** (line 261): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 371): Import path "./redis-client" not found
+🚫 **ERROR** (line 371): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ### docs/src/content/docs/wiki-archive/project-todo.md
@@ -3051,24 +3226,6 @@
 
 ⚠️ **WARNING** (line 111): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-🚫 **ERROR** (line 220): npm script "samples:populate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 220): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 220): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 225): npm script "samples:populate" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 228): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 231): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/wiki-archive/production-deployment.md
 
@@ -3189,74 +3346,11 @@
 
 ### docs/src/content/docs/wiki-archive/onboarding-guide.md
 
-🚫 **ERROR** (line 41): npm script "db:deploy" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 41): npm script "db:generate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 41): npm script "perf:health" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
 ⚠️ **WARNING** (line 132): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-🚫 **ERROR** (line 157): npm script "perf:health" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 157): npm script "db:status" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 157): npm script "db:generate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 157): npm script "db:push" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 157): npm script "ai:status" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 157): npm script "ai:models" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 157): npm script "ai:costs" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 157): npm script "docs:build" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 501): Import path "../workspace-card" not found
+🚫 **ERROR** (line 501): Import path "../lib/card" not found
    *Suggestion: Verify the import path exists in the codebase*
-
-🚫 **ERROR** (line 570): npm script "db:validate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 570): npm script "db:reset" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 570): npm script "db:status" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 583): npm script "perf:cache" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 593): npm script "ai:status" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 593): npm script "ai:models" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 593): npm script "ai:usage" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 606): npm script "perf:health" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 606): npm script "perf:monitor" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 606): npm script "perf:database" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
 
 🚫 **ERROR** (line 621): Broken link: ./DEVELOPER_GUIDE.md
    *Suggestion: Check if the linked file exists and update the path*
@@ -3297,9 +3391,6 @@
 🚫 **ERROR** (line 176): npm script "ai:costs" not found
    *Suggestion: Add the script to package.json or update documentation*
 
-🚫 **ERROR** (line 179): npm script "docs:build" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 🚫 **ERROR** (line 572): npm script "db:validate" not found
    *Suggestion: Add the script to package.json or update documentation*
 
@@ -3335,7 +3426,7 @@
 
 ### docs/src/content/docs/wiki-archive/mastra-integration.md
 
-🚫 **ERROR** (line 110): Import path "../templates/mastra-templates" not found
+🚫 **ERROR** (line 110): Import path "../lib/templates" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 438): Use of "any" type detected
@@ -3526,12 +3617,6 @@
 
 ### docs/src/content/docs/wiki-archive/getting-started.md
 
-🚫 **ERROR** (line 59): npm script "db:deploy" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 59): npm script "db:generate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
 🚫 **ERROR** (line 175): Broken link: /ai-integration/
    *Suggestion: Check if the linked file exists and update the path*
 
@@ -3627,75 +3712,6 @@
 
 ### docs/src/content/docs/wiki-archive/development-scripts.md
 
-🚫 **ERROR** (line 75): npm script "test:vector:optimizations" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 75): npm script "test:docs" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 75): npm script "test:docs:preview" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 101): npm script "db:deploy" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 106): npm script "db:status" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 111): npm script "db:validate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 116): npm script "db:setup" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 121): npm script "db:check" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 126): npm script "db:vector-init" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 144): npm script "perf:monitor" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 162): npm script "security:scan" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 170): npm script "ai:status" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 175): npm script "ai:models" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 180): npm script "ai:usage" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 185): npm script "ai:costs" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 214): npm script "db:deploy" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 214): npm script "db:generate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 253): npm script "db:check" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 253): npm script "db:validate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 259): npm script "perf:monitor" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 265): npm script "ai:status" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 265): npm script "ai:models" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 271): npm script "security:scan" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
 🚫 **ERROR** (line 291): Broken link: /wiki/api-reference
    *Suggestion: Check if the linked file exists and update the path*
 
@@ -3708,21 +3724,6 @@
 🚫 **ERROR** (line 294): Broken link: /wiki/project-structure
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 77): npm script "test:vector:optimizations" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 80): npm script "test:migrations:vector" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 83): npm script "test:health:api" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 86): npm script "test:docs" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 87): npm script "test:docs:preview" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 🚫 **ERROR** (line 102): npm script "db:deploy" not found
    *Suggestion: Add the script to package.json or update documentation*
 
@@ -3730,9 +3731,6 @@
    *Suggestion: Add the script to package.json or update documentation*
 
 🚫 **ERROR** (line 112): npm script "db:validate" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 117): npm script "db:setup" not found
    *Suggestion: Add the script to package.json or update documentation*
 
 🚫 **ERROR** (line 122): npm script "db:check" not found
@@ -3788,22 +3786,10 @@
 
 ### docs/src/content/docs/wiki-archive/developer-guide.md
 
-🚫 **ERROR** (line 92): npm script "db:deploy" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 92): npm script "db:generate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
 ⚠️ **WARNING** (line 108): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-🚫 **ERROR** (line 173): npm script "lint:fix" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 173): npm script "format" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 286): Import path "./providers/your-provider" not found
+🚫 **ERROR** (line 286): Import path "../lib/providers" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 460): Code block missing language specification
@@ -3815,13 +3801,7 @@
 🚫 **ERROR** (line 98): npm script "db:generate" not found
    *Suggestion: Add the script to package.json or update documentation*
 
-🚫 **ERROR** (line 178): npm script "lint:fix" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 🚫 **ERROR** (line 184): npm script "format" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 474): npm script "build:analyze" not found
    *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/wiki-archive/deploy-azure-openai-monitoring.md
@@ -3836,9 +3816,6 @@
    *Suggestion: Check if the linked file exists and update the path*
 
 ### docs/src/content/docs/wiki-archive/container-manifest.md
-
-🚫 **ERROR** (line 223): npm script "health-check" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ℹ️ **INFO** (line 148): Version 1.0.0 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
@@ -3946,93 +3923,10 @@
 🚫 **ERROR** (line 90): Broken link: /api/health/simple
    *Suggestion: Check if the linked file exists and update the path*
 
-### docs/src/content/docs/wiki-archive/ai-cli-tools.md
-
-🚫 **ERROR** (line 165): npm script "install:gemini-cli" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 165): npm script "install:opencode" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 165): npm script "install:aider" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 165): npm script "list:ai-tools" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 167): npm script "install:gemini-cli" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 170): npm script "install:opencode" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 173): npm script "install:aider" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 176): npm script "list:ai-tools" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 ### docs/src/content/docs/wiki-archive/accessibility-testing-guide.md
-
-🚫 **ERROR** (line 70): npm script "test:accessibility" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 70): npm script "test:accessibility:unit" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 70): npm script "test:accessibility:e2e" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 70): npm script "test:accessibility:lighthouse" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 70): npm script "test:accessibility:axe" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 82): npm script "test:accessibility:ci" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
 
 ⚠️ **WARNING** (line 182): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-🚫 **ERROR** (line 216): npm script "test:accessibility:unit" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 37): npm script "test:accessibility:axe" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 42): npm script "test:accessibility:lighthouse" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 47): npm script "test:accessibility:unit" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 52): npm script "test:accessibility:e2e" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 72): npm script "test:accessibility" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 75): npm script "test:accessibility:unit" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 76): npm script "test:accessibility:e2e" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 77): npm script "test:accessibility:lighthouse" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 78): npm script "test:accessibility:axe" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 90): npm script "test:accessibility:ci" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 212): npm script "test:accessibility:ci" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 218): npm script "test:accessibility:unit" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/wiki-archive/VSCODE_EXTENSION_CONFIGURATION.md
 
@@ -4042,61 +3936,20 @@
 🚫 **ERROR** (line 117): Invalid JSON: Expected double-quoted property name in JSON at position 166
    *Suggestion: Fix JSON syntax errors*
 
-🚫 **ERROR** (line 393): npm script "compile" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
 ⚠️ **WARNING** (line 512): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
 ⚠️ **WARNING** (line 517): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-🚫 **ERROR** (line 95): npm script "package" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 407): npm script "compile" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 ### docs/src/content/docs/wiki-archive/THIRD_PARTY_NOTICES_EXTENSIONS.md
 
 ⚠️ **WARNING** (line 61): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-### docs/src/content/docs/wiki-archive/TEST_INFRASTRUCTURE_SUMMARY.md
-
-🚫 **ERROR** (line 88): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 88): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 117): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 90): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 93): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 113): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 120): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 181): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 184): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 ### docs/src/content/docs/wiki-archive/TEST_INFRASTRUCTURE_SUCCESS_REPORT.md
 
-🚫 **ERROR** (line 32): Import path "../../src/lib/security/input-validator" not found
+🚫 **ERROR** (line 32): Import path "../lib/src" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 52): Use of "any" type detected
@@ -4121,15 +3974,9 @@
 🚫 **ERROR** (line 379): Import path "../../workflows/ai-code-generation" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 533): npm script "worker:ai" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 544): npm script "worker:ai" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 ### docs/src/content/docs/wiki-archive/SYSTEMATIC_E2E_DEBUGGING_GUIDE.md
 
-🚫 **ERROR** (line 254): Import path "./utils/test-helpers" not found
+🚫 **ERROR** (line 254): Import path "../lib/utils" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ### docs/src/content/docs/wiki-archive/REPOSITORY_SCAN_REPORT_JULY_2025.md
@@ -4148,27 +3995,27 @@
 ⚠️ **WARNING** (line 164): Use of "any" type detected
    *Suggestion: Consider using specific types instead of "any"*
 
-🚫 **ERROR** (line 164): Import path "./redis-client" not found
+🚫 **ERROR** (line 164): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 206): Use of "any" type detected
    *Suggestion: Consider using specific types instead of "any"*
 
-🚫 **ERROR** (line 206): Import path "./redis-client" not found
+🚫 **ERROR** (line 206): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 261): Use of "any" type detected
    *Suggestion: Consider using specific types instead of "any"*
 
-🚫 **ERROR** (line 261): Import path "./redis-client" not found
+🚫 **ERROR** (line 261): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 371): Import path "./redis-client" not found
+🚫 **ERROR** (line 371): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ### docs/src/content/docs/wiki-archive/REDIS_VALKEY_IMPLEMENTATION_SUMMARY.md
 
-🚫 **ERROR** (line 117): Import path "./redis-client" not found
+🚫 **ERROR** (line 117): Import path "../lib/client" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 🚫 **ERROR** (line 207): Broken link: ./infrastructure/terraform/azure/README.md
@@ -4178,24 +4025,6 @@
 
 ⚠️ **WARNING** (line 111): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-🚫 **ERROR** (line 220): npm script "samples:populate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 220): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 220): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 225): npm script "samples:populate" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 228): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 231): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/wiki-archive/PRISMA_PGVECTOR_TEST_RESULTS.md
 
@@ -4228,7 +4057,7 @@
 
 ### docs/src/content/docs/wiki-archive/MASTRA_INTEGRATION_GUIDE.md
 
-🚫 **ERROR** (line 110): Import path "../templates/mastra-templates" not found
+🚫 **ERROR** (line 110): Import path "../lib/templates" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 438): Use of "any" type detected
@@ -4302,14 +4131,6 @@
 
 ⚠️ **WARNING** (line 295): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-### docs/src/content/docs/wiki-archive/EDUCATIONAL_REPRODUCIBILITY_GUIDE.md
-
-🚫 **ERROR** (line 74): npm script "dev:dd" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 78): npm script "dev:dd" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/wiki-archive/DOCUMENTATION_INDEX.md
 
@@ -4594,9 +4415,6 @@
 
 ### docs/src/content/docs/wiki-archive/CONTAINER_MANIFEST.md
 
-🚫 **ERROR** (line 223): npm script "health-check" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 ℹ️ **INFO** (line 148): Version 1.0.0 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
@@ -4604,18 +4422,6 @@
 
 ⚠️ **WARNING** (line 74): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-🚫 **ERROR** (line 221): npm script "test:performance:k6" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 443): npm script "performance:baseline" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 443): npm script "performance:stress" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 680): npm script "test:performance:k6" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
 
 🚫 **ERROR** (line 722): Broken link: ./DATADOG_MONITORING.md
    *Suggestion: Check if the linked file exists and update the path*
@@ -4626,16 +4432,10 @@
 🚫 **ERROR** (line 724): Broken link: ../README.md
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 226): npm script "test:performance:k6" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 🚫 **ERROR** (line 448): npm script "performance:baseline" not found
    *Suggestion: Add the script to package.json or update documentation*
 
 🚫 **ERROR** (line 449): npm script "performance:stress" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 685): npm script "test:performance:k6" not found
    *Suggestion: Add the script to package.json or update documentation*
 
 ℹ️ **INFO** (line 715): Version 4.0.0 may be outdated (current: 0.1.0)
@@ -4654,36 +4454,6 @@
 
 ⚠️ **WARNING** (line 116): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-🚫 **ERROR** (line 254): npm script "verify:rag" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 254): npm script "test:no-docker" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 262): npm script "test:real-apis" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 262): npm script "samples:populate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 319): npm script "samples:populate" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 256): npm script "verify:rag" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 257): npm script "test:no-docker" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 263): npm script "test:real-apis" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 264): npm script "samples:populate" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 327): npm script "samples:populate" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/wiki-archive/COMPREHENSIVE_TESTING_GUIDE.md
 
@@ -5045,72 +4815,10 @@
 🚫 **ERROR** (line 3159): Broken link: ../src/app/api/ai/chat/enhanced/route.ts
    *Suggestion: Check if the linked file exists and update the path*
 
-### docs/src/content/docs/wiki-archive/AI_CLI_TOOLS_IMPLEMENTATION_SUMMARY.md
-
-🚫 **ERROR** (line 165): npm script "install:gemini-cli" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 165): npm script "install:opencode" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 165): npm script "install:aider" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 165): npm script "list:ai-tools" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 167): npm script "install:gemini-cli" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 170): npm script "install:opencode" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 173): npm script "install:aider" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 176): npm script "list:ai-tools" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 ### docs/src/content/docs/wiki-archive/AI_CLI_TOOLS_IMPLEMENTATION_PLAN.md
 
 ⚠️ **WARNING** (line 354): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-🚫 **ERROR** (line 446): npm script "install:dev:ai-tools" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 459): npm script "test:ai-cli-tools" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 459): npm script "test:e2e:ai-tools" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 459): npm script "test:install:ai-tools" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 472): npm script "deploy:production" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 472): npm script "install:prod:ai-tools" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 454): npm script "install:dev:ai-tools" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 461): npm script "test:ai-cli-tools" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 464): npm script "test:e2e:ai-tools" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 467): npm script "test:install:ai-tools" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 477): npm script "deploy:production" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 480): npm script "install:prod:ai-tools" not found
-   *Suggestion: Add the script to package.json or update documentation*
 
 ### docs/src/content/docs/wiki-archive/runbooks/README.md
 
@@ -5169,6 +4877,101 @@
    *Suggestion: Check if the linked file exists and update the path*
 
 🚫 **ERROR** (line 40): Broken link: ./slo-breach.md
+   *Suggestion: Check if the linked file exists and update the path*
+
+### docs/src/content/docs/wiki-archive/monitoring/overview.md
+
+🚫 **ERROR** (line 84): Broken link: /monitoring/prometheus/
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 85): Broken link: /monitoring/vector/
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 86): Broken link: /monitoring/opentelemetry/
+   *Suggestion: Check if the linked file exists and update the path*
+
+### docs/src/content/docs/wiki-archive/monitoring/OPENTELEMETRY_INTEGRATION.md
+
+⚠️ **WARNING** (line 20): Code block missing language specification
+   *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
+
+### docs/src/content/docs/wiki-archive/infrastructure/gitops-deployment-guide.md
+
+ℹ️ **INFO** (line 97): Version 0.24.0 may be outdated (current: 0.1.0)
+   *Suggestion: Consider updating version number*
+
+### docs/src/content/docs/wiki-archive/infrastructure/INFRASTRUCTURE_OVERVIEW.md
+
+⚠️ **WARNING** (line 14): Code block missing language specification
+   *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
+
+🚫 **ERROR** (line 47): Broken link: ./DEPLOYMENT.md#automated-cicd-deployment-recommended
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 55): Broken link: ./DEPLOYMENT.md#kubernetes-deployment
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 56): Broken link: ../../k8s/
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 57): Broken link: ../../helm/vibecode-platform/
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 65): Broken link: ./DEPLOYMENT.md#docker-deployment
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 73): Broken link: ./DEPLOYMENT.md#self-hosted-server
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 84): Broken link: ../../infrastructure/terraform/azure/
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 85): Broken link: ../../infrastructure/terraform/azure/README.md
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 101): Broken link: ../../infrastructure/terraform/
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 102): Broken link: ../../infrastructure/terraform/azure/terraform.tfvars.example
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 110): Broken link: ../../helm/
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 111): Broken link: ../../helm/vibecode-platform/README.md
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 119): Broken link: ../../k8s/
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 129): Broken link: ./DATADOG_MONITORING.md
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 137): Broken link: ./OPENTELEMETRY_INTEGRATION.md
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 229): Broken link: ./DEPLOYMENT.md
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 250): Broken link: ./DEPLOYMENT.md
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 251): Broken link: ./DATADOG_MONITORING.md
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 252): Broken link: ./OPENTELEMETRY_INTEGRATION.md
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 253): Broken link: ./CONSOLIDATED_DOCUMENTATION.md
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 254): Broken link: ../../helm/vibecode-platform/README.md
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 255): Broken link: ../../infrastructure/terraform/azure/README.md
+   *Suggestion: Check if the linked file exists and update the path*
+
+🚫 **ERROR** (line 261): Broken link: ./DOCUMENTATION_INDEX.md
    *Suggestion: Check if the linked file exists and update the path*
 
 ### docs/src/content/docs/wiki-archive/reports/VALIDATION_REPORT.md
@@ -5701,9 +5504,6 @@
 ℹ️ **INFO** (line 1027): Version 3.4.21 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
-ℹ️ **INFO** (line 1032): Version 1.0.0 may be outdated (current: 0.1.0)
-   *Suggestion: Consider updating version number*
-
 ℹ️ **INFO** (line 1035): Version 4.8.0 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
@@ -5723,9 +5523,6 @@
    *Suggestion: Consider updating version number*
 
 ℹ️ **INFO** (line 1280): Version 6.11.1 may be outdated (current: 0.1.0)
-   *Suggestion: Consider updating version number*
-
-ℹ️ **INFO** (line 1425): Version 1.0.0 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
 ℹ️ **INFO** (line 1583): Version 2.0.0 may be outdated (current: 0.1.0)
@@ -5761,9 +5558,6 @@
 ℹ️ **INFO** (line 1894): Version 6.11.1 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
-ℹ️ **INFO** (line 2064): Version 1.0.0 may be outdated (current: 0.1.0)
-   *Suggestion: Consider updating version number*
-
 ℹ️ **INFO** (line 2078): Version 4.1.11 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
@@ -5779,43 +5573,10 @@
 ℹ️ **INFO** (line 2294): Version 6.11.1 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
-ℹ️ **INFO** (line 2439): Version 1.0.0 may be outdated (current: 0.1.0)
-   *Suggestion: Consider updating version number*
-
 ### docs/src/content/docs/wiki-archive/reports/TEST_SUCCESS_REPORT.md
 
 🚫 **ERROR** (line 42): Invalid JSON: Unexpected token 'D', "[DD_TEST_RE"... is not valid JSON
    *Suggestion: Fix JSON syntax errors*
-
-🚫 **ERROR** (line 83): npm script "test:root:database" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 84): npm script "test:root:infrastructure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 85): npm script "test:root:credentials" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 89): npm script "test:root:database" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 90): npm script "test:root:infrastructure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 91): npm script "test:root:credentials" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 92): npm script "test:root:ai" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 93): npm script "test:root:azure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 94): npm script "test:root:workflow" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-ℹ️ **INFO** (line 58): Version 1.0.0 may be outdated (current: 0.1.0)
-   *Suggestion: Consider updating version number*
 
 ### docs/src/content/docs/wiki-archive/reports/TEST_INFRASTRUCTURE_SUCCESS_REPORT.md
 
@@ -5836,63 +5597,6 @@
 🚫 **ERROR** (line 43): Invalid JSON: Unexpected token 'D', "[DD_TEST_RE"... is not valid JSON
    *Suggestion: Fix JSON syntax errors*
 
-🚫 **ERROR** (line 90): npm script "test:root:database" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 90): npm script "test:root:infrastructure" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 90): npm script "test:root:workflow" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 90): npm script "test:root:credentials" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 90): npm script "test:root:ai" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 90): npm script "test:root:azure" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 98): npm script "test:root:database" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 99): npm script "test:root:infrastructure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 100): npm script "test:root:workflow" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 101): npm script "test:root:credentials" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 102): npm script "test:root:ai" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 103): npm script "test:root:azure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 107): npm script "test:root:database" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 108): npm script "test:root:infrastructure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 109): npm script "test:root:workflow" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 110): npm script "test:root:credentials" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 111): npm script "test:root:ai" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 112): npm script "test:root:azure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-ℹ️ **INFO** (line 59): Version 1.0.0 may be outdated (current: 0.1.0)
-   *Suggestion: Consider updating version number*
-
 ### docs/src/content/docs/wiki-archive/reports/DATADOG_TEST_MONITORING_SUMMARY.md
 
 🚫 **ERROR** (line 41): Invalid JSON: Unexpected token 'D', "[DD_TEST_RE"... is not valid JSON
@@ -5901,209 +5605,15 @@
 ⚠️ **WARNING** (line 56): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-🚫 **ERROR** (line 78): npm script "test:root" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 78): npm script "test:root:infrastructure" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 78): npm script "test:root:database" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 78): npm script "test:root:ai" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 78): npm script "test:root:azure" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 78): npm script "test:root:workflow" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 78): npm script "test:root:credentials" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 74): npm script "test:root:database" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 79): npm script "test:root" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 80): npm script "test:root:infrastructure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 81): npm script "test:root:database" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 82): npm script "test:root:ai" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 83): npm script "test:root:azure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 84): npm script "test:root:workflow" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 85): npm script "test:root:credentials" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-ℹ️ **INFO** (line 51): Version 1.0.0 may be outdated (current: 0.1.0)
-   *Suggestion: Consider updating version number*
-
 ### docs/src/content/docs/wiki-archive/reports/DATADOG_TESTING_VERIFICATION.md
 
 ⚠️ **WARNING** (line 14): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-🚫 **ERROR** (line 11): npm script "test:root:infrastructure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 28): npm script "test:root:infrastructure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 31): npm script "test:root:credentials" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 52): npm script "test:root:infrastructure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 ### docs/src/content/docs/wiki-archive/reports/COMPLETE_TEST_SUCCESS_REPORT.md
 
 🚫 **ERROR** (line 43): Invalid JSON: Unexpected token 'D', "[DD_TEST_RE"... is not valid JSON
    *Suggestion: Fix JSON syntax errors*
-
-🚫 **ERROR** (line 96): npm script "test:root:database" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 97): npm script "test:root:infrastructure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 98): npm script "test:root:workflow" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 99): npm script "test:root:credentials" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 100): npm script "test:root:ai" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 101): npm script "test:root:azure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 106): npm script "test:root:database" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 107): npm script "test:root:infrastructure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 108): npm script "test:root:workflow" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 109): npm script "test:root:credentials" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 110): npm script "test:root:ai" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 111): npm script "test:root:azure" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
-ℹ️ **INFO** (line 59): Version 1.0.0 may be outdated (current: 0.1.0)
-   *Suggestion: Consider updating version number*
-
-### docs/src/content/docs/wiki-archive/monitoring/overview.md
-
-🚫 **ERROR** (line 84): Broken link: /monitoring/prometheus/
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 85): Broken link: /monitoring/vector/
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 86): Broken link: /monitoring/opentelemetry/
-   *Suggestion: Check if the linked file exists and update the path*
-
-### docs/src/content/docs/wiki-archive/monitoring/OPENTELEMETRY_INTEGRATION.md
-
-⚠️ **WARNING** (line 20): Code block missing language specification
-   *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-### docs/src/content/docs/wiki-archive/infrastructure/gitops-deployment-guide.md
-
-ℹ️ **INFO** (line 97): Version 0.24.0 may be outdated (current: 0.1.0)
-   *Suggestion: Consider updating version number*
-
-### docs/src/content/docs/wiki-archive/infrastructure/INFRASTRUCTURE_OVERVIEW.md
-
-⚠️ **WARNING** (line 14): Code block missing language specification
-   *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
-
-🚫 **ERROR** (line 47): Broken link: ./DEPLOYMENT.md#automated-cicd-deployment-recommended
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 55): Broken link: ./DEPLOYMENT.md#kubernetes-deployment
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 56): Broken link: ../../k8s/
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 57): Broken link: ../../helm/vibecode-platform/
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 65): Broken link: ./DEPLOYMENT.md#docker-deployment
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 73): Broken link: ./DEPLOYMENT.md#self-hosted-server
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 84): Broken link: ../../infrastructure/terraform/azure/
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 85): Broken link: ../../infrastructure/terraform/azure/README.md
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 101): Broken link: ../../infrastructure/terraform/
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 102): Broken link: ../../infrastructure/terraform/azure/terraform.tfvars.example
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 110): Broken link: ../../helm/
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 111): Broken link: ../../helm/vibecode-platform/README.md
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 119): Broken link: ../../k8s/
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 129): Broken link: ./DATADOG_MONITORING.md
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 137): Broken link: ./OPENTELEMETRY_INTEGRATION.md
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 229): Broken link: ./DEPLOYMENT.md
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 250): Broken link: ./DEPLOYMENT.md
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 251): Broken link: ./DATADOG_MONITORING.md
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 252): Broken link: ./OPENTELEMETRY_INTEGRATION.md
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 253): Broken link: ./CONSOLIDATED_DOCUMENTATION.md
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 254): Broken link: ../../helm/vibecode-platform/README.md
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 255): Broken link: ../../infrastructure/terraform/azure/README.md
-   *Suggestion: Check if the linked file exists and update the path*
-
-🚫 **ERROR** (line 261): Broken link: ./DOCUMENTATION_INDEX.md
-   *Suggestion: Check if the linked file exists and update the path*
 
 ### docs/src/content/docs/wiki-archive/guides/quick-start.md
 
@@ -6153,14 +5663,6 @@
 ⚠️ **WARNING** (line 103): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-### docs/src/content/docs/wiki-archive/database/database-monitoring.md
-
-🚫 **ERROR** (line 32): npm script "db:setup-datadog" not found in package.json
-   *Suggestion: Add the script to package.json or update documentation*
-
-🚫 **ERROR** (line 37): npm script "db:setup-datadog" not found
-   *Suggestion: Add the script to package.json or update documentation*
-
 ### docs/src/content/docs/wiki-archive/database/database-monitoring-setup.md
 
 ℹ️ **INFO** (line 24): Version 3.60.0 may be outdated (current: 0.1.0)
@@ -6174,13 +5676,13 @@
 ⚠️ **WARNING** (line 55): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-🚫 **ERROR** (line 75): Import path "./src/lib/db/robust-db-connection" not found
+🚫 **ERROR** (line 75): Import path "../lib/src" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ⚠️ **WARNING** (line 108): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-🚫 **ERROR** (line 158): Import path "./src/lib/db/robust-db-connection" not found
+🚫 **ERROR** (line 158): Import path "../lib/src" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ### docs/src/content/docs/wiki-archive/database/WHY_PGVECTOR.md
@@ -6222,18 +5724,18 @@
 ⚠️ **WARNING** (line 129): Code block missing language specification
    *Suggestion: Add language identifier (e.g., ```typescript, ```bash)*
 
-🚫 **ERROR** (line 166): Import path "./src/lib/ai/embeddingServiceFactory" not found
+🚫 **ERROR** (line 166): Import path "../lib/src" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 203): Import path "./src/lib/ai/embeddingServiceFactory" not found
+🚫 **ERROR** (line 203): Import path "../lib/src" not found
    *Suggestion: Verify the import path exists in the codebase*
 
-🚫 **ERROR** (line 224): Import path "./src/lib/ai/azureEmbeddingService" not found
+🚫 **ERROR** (line 224): Import path "../lib/src" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ### docs/src/content/docs/wiki-archive/azure/azure-embedding-service-setup.md
 
-🚫 **ERROR** (line 76): Import path "./src/lib/ai/embeddingServiceFactory" not found
+🚫 **ERROR** (line 76): Import path "../lib/src" not found
    *Suggestion: Verify the import path exists in the codebase*
 
 ### docs/src/content/docs/wiki-archive/analysis/AUTOMATION_ANALYSIS.md
@@ -6243,6 +5745,6 @@
 
 ## Statistics
 
-- **Code blocks:** 3046/3446 valid
+- **Code blocks:** 3047/3446 valid
 - **Broken links:** 558
 

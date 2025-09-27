@@ -479,4 +479,4 @@ tar -czf app-backup-$(date +%Y%m%d).tar.gz \
 ---
 
 *Last Updated: $(date)*
-*Version: 1.0.0*
+*Version: latest*

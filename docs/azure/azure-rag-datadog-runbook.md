@@ -79,7 +79,7 @@ After ingestion you can validate vector search:
 curl -X POST https://<your-app-host>/api/vector-store \
   -H "Content-Type: application/json" \
   -d '{"query":"How is Datadog monitoring configured?","workspaceId":1,"provider":"pgvector"}'
-```
+```bash
 
 ## 🤖 Chat with RAG + LLM Observability
 

@@ -77,8 +77,8 @@ Before you begin, ensure you have:
 
 4. **Initialize the database**
    ```bash
-   npm run db:deploy
-   npm run db:generate
+   # npm run db:deploy  # Script not found
+   # npm run db:generate  # Script not found
    ```
 
 5. **Start the development server**
@@ -103,7 +103,7 @@ Before you begin, ensure you have:
 
 3. **Initialize the database**
    ```bash
-   docker-compose exec app npm run db:deploy
+   docker-compose exec app # npm run db:deploy  # Script not found
    ```
 
 ## Your First AI Project

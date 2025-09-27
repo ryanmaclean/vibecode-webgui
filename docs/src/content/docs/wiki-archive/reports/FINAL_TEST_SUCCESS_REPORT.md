@@ -56,7 +56,7 @@ description: Auto-generated placeholder. Update as needed.
     "test.status:pass",
     "service:vibecode-webgui",
     "env:test",
-    "version:1.0.0"
+    "version:latest"
   ]
 }
 ```
@@ -95,21 +95,21 @@ export REDIS_URL=redis://localhost:6379
 export NEXTAUTH_SECRET=test-secret
 
 # Run all working test categories
-npm run test:root:database      # 4/4 tests passing
-npm run test:root:infrastructure # 3/3 tests passing  
-npm run test:root:workflow      # 3/3 tests passing
-npm run test:root:credentials   # Gracefully skipped
-npm run test:root:ai            # Gracefully skipped
-npm run test:root:azure         # Gracefully skipped
+npm run test      # 4/4 tests passing
+npm run test # 3/3 tests passing  
+npm run test      # 3/3 tests passing
+npm run test   # Gracefully skipped
+npm run test            # Gracefully skipped
+npm run test         # Gracefully skipped
 ```
 
 **Available Commands:**
-- `npm run test:root:database` - Database connectivity and performance tests
-- `npm run test:root:infrastructure` - Infrastructure validation tests
-- `npm run test:root:workflow` - End-to-end workflow tests
-- `npm run test:root:credentials` - Authentication tests (requires NEXTAUTH_SECRET)
-- `npm run test:root:ai` - AI/OpenAI tests (requires OPENAI_API_KEY)
-- `npm run test:root:azure` - Azure OpenAI tests (requires AZURE_OPENAI_API_KEY)
+- `npm run test` - Database connectivity and performance tests
+- `npm run test` - Infrastructure validation tests
+- `npm run test` - End-to-end workflow tests
+- `npm run test` - Authentication tests (requires NEXTAUTH_SECRET)
+- `npm run test` - AI/OpenAI tests (requires OPENAI_API_KEY)
+- `npm run test` - Azure OpenAI tests (requires AZURE_OPENAI_API_KEY)
 
 ### 🔍 **Datadog Monitoring Infrastructure**
 

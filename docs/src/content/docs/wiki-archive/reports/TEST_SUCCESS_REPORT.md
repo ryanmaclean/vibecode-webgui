@@ -55,7 +55,7 @@ description: Auto-generated placeholder. Update as needed.
     "test.status:pass",
     "service:vibecode-webgui",
     "env:test",
-    "version:1.0.0"
+    "version:latest"
   ]
 }
 ```
@@ -80,18 +80,18 @@ description: Auto-generated placeholder. Update as needed.
 
 **Run All Working Tests:**
 ```bash
-DD_CI_VISIBILITY_ENABLED=true DATABASE_URL=postgresql://test:test@localhost:5432/testdb REDIS_URL=redis://localhost:6379 NEXTAUTH_SECRET=test-secret npm run test:root:database
-DD_CI_VISIBILITY_ENABLED=true DATABASE_URL=postgresql://test:test@localhost:5432/testdb REDIS_URL=redis://localhost:6379 NEXTAUTH_SECRET=test-secret npm run test:root:infrastructure  
-DD_CI_VISIBILITY_ENABLED=true DATABASE_URL=postgresql://test:test@localhost:5432/testdb REDIS_URL=redis://localhost:6379 NEXTAUTH_SECRET=test-secret npm run test:root:credentials
+DD_CI_VISIBILITY_ENABLED=true DATABASE_URL=postgresql://test:test@localhost:5432/testdb REDIS_URL=redis://localhost:6379 NEXTAUTH_SECRET=test-secret npm run test
+DD_CI_VISIBILITY_ENABLED=true DATABASE_URL=postgresql://test:test@localhost:5432/testdb REDIS_URL=redis://localhost:6379 NEXTAUTH_SECRET=test-secret npm run test  
+DD_CI_VISIBILITY_ENABLED=true DATABASE_URL=postgresql://test:test@localhost:5432/testdb REDIS_URL=redis://localhost:6379 NEXTAUTH_SECRET=test-secret npm run test
 ```
 
 **Available Commands:**
-- `npm run test:root:database` - Database connectivity tests
-- `npm run test:root:infrastructure` - Infrastructure validation tests
-- `npm run test:root:credentials` - Authentication tests
-- `npm run test:root:ai` - AI/OpenAI tests (requires API keys)
-- `npm run test:root:azure` - Azure OpenAI tests (requires API keys)
-- `npm run test:root:workflow` - End-to-end workflow tests
+- `npm run test` - Database connectivity tests
+- `npm run test` - Infrastructure validation tests
+- `npm run test` - Authentication tests
+- `npm run test` - AI/OpenAI tests (requires API keys)
+- `npm run test` - Azure OpenAI tests (requires API keys)
+- `npm run test` - End-to-end workflow tests
 
 ### 🔍 **Datadog Monitoring Setup**
 

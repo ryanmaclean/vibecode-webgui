@@ -163,7 +163,7 @@ VALKEY_ENDPOINTS=valkey-service.valkey.svc.cluster.local:6379
 
 ```typescript
 // lib/session-store.ts
-import { getRedisClient } from './redis-client';
+import { getRedisClient } from '../lib/client';
 
 export class SessionStore {
   private redis = getRedisClient();
@@ -205,7 +205,7 @@ export class SessionStore {
 
 ```typescript
 // lib/cache.ts
-import { getRedisClient } from './redis-client';
+import { getRedisClient } from '../lib/client';
 
 export class CacheManager {
   private redis = getRedisClient();
@@ -260,7 +260,7 @@ export class CacheManager {
 
 ```typescript
 // lib/realtime.ts
-import { getRedisClient } from './redis-client';
+import { getRedisClient } from '../lib/client';
 
 export class RealtimeManager {
   private redis = getRedisClient();
@@ -370,7 +370,7 @@ terraform destroy -target=module.azure_cache_redis
 
 ```typescript
 // lib/metrics.ts
-import { getRedisClient } from './redis-client';
+import { getRedisClient } from '../lib/client';
 
 export class RedisMetrics {
   private redis = getRedisClient();

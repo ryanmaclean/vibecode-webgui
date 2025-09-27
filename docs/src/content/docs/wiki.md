@@ -25,7 +25,7 @@ npm run dev:docker
 
 # x86-64 Production (Recommended)
 docker buildx build --platform linux/amd64 -f Dockerfile.prod -t vibecode-prod .
-```
+```typescript
 
 ## Three Verified Solutions
 
@@ -72,7 +72,7 @@ docker buildx build --platform linux/amd64 -f Dockerfile.prod -t vibecode-prod .
 ```bash
 docker buildx build --platform linux/amd64 -f Dockerfile.prod -t vibecode-prod .
 docker-compose -f docker-compose.prod.yml up
-```
+```typescript
 
 ## Key Files Created
 
@@ -164,7 +164,7 @@ module.exports = {
     "@tailwindcss/postcss": {},
   },
 };
-```
+```javascript
 
 4. **Choose deployment approach** based on your environment needs
 
@@ -333,7 +333,7 @@ export const collections = {
 
 text
 ---
-import WikiLayout from '../../layouts/WikiLayout.astro';
+import WikiLayout from '../lib/layout';
 import { getCollection } from 'astro:content';
 import { AstroError } from 'astro/errors';
 import { Markdown } from 'astro/components';
@@ -496,7 +496,7 @@ Create Dynamic Page (src/pages/wiki/[slug].astro):
 
 text
 ---
-import WikiLayout from '../../layouts/WikiLayout.astro';
+import WikiLayout from '../lib/layout';
 import { getCollection } from 'astro:content';
 import { AstroError } from 'astro/errors';
 import { Markdown } from 'astro/components';

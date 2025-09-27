@@ -75,7 +75,7 @@ node scripts/test-genai-azure-complete.cjs
 # 1. Test Datadog instrumentation
 export DD_API_KEY="your-datadog-api-key"
 export DD_ENABLED="true"
-npm run dev:dd
+npm run dev
 
 # Expected: ✅ Application starts with monitoring enabled
 

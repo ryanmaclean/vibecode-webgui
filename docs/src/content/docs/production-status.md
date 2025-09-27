@@ -114,7 +114,7 @@ FROM codercom/code-server:4.101.2
 5. User Query → 6. Query Embedding → 7. Similarity Search → 8. Context Retrieval
                                                                        ↓  
 9. AI Prompt Enhancement → 10. OpenRouter API → 11. Streaming Response
-```
+```typescript
 
 ### **RAG Performance Metrics**
 - ✅ **Search Latency**: < 2 seconds for similarity search

@@ -188,7 +188,7 @@ Response includes confidence scores, cost efficiency, and reasoning:
     }
   ]
 }
-```
+```typescript
 
 ## Caching Strategy
 
