@@ -111,7 +111,7 @@ class MonitoringService {
   }
 
   /**
-   * Real database health check with connection pooling
+   * Real database health check with connection pooling and improved fallback
    */
   async checkDatabase(): Promise<HealthCheck> {
     // Server-side only check
@@ -132,11 +132,11 @@ class MonitoringService {
     }
 
     try {
-      // For PostgreSQL connections - use Prisma client instead of direct pg import
+      // For PostgreSQL connections - try multiple approaches
       if (databaseUrl.startsWith('postgres')) {
+        // First, try Prisma client
         try {
-          // Use Prisma client for database health check
-          const { prisma } = await import('@/lib/prisma')
+          const { prisma } = await import('../prisma')
           const start = Date.now()
           
           // Simple query to test connection
@@ -147,19 +147,59 @@ class MonitoringService {
             status: latency > 1000 ? 'warning' : 'healthy',
             details: {
               latency: `${latency}ms`,
-              connection: 'active',
+              connection: 'active via Prisma',
               result: Array.isArray(result) && result[0]?.health_check === 1
             }
           }
-        } catch (dbError) {
-          // Fallback to URL validation if database connection fails
-          const url = new URL(databaseUrl)
-          return {
-            status: 'warning',
-            details: {
-              host: url.hostname,
-              database: url.pathname.substring(1),
-              note: 'Database connection failed, using URL validation'
+        } catch (prismaError) {
+          // Fallback to direct pg connection if Prisma fails
+          try {
+            const { Pool } = await import('pg')
+            const pool = new Pool({
+              connectionString: databaseUrl,
+              max: 1, // Single connection for health check
+              connectionTimeoutMillis: parseInt(process.env.DB_POOL_CONNECTION_TIMEOUT || '5000', 10),
+              idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE_TIMEOUT || '1000', 10),
+              allowExitOnIdle: true
+            })
+
+            const start = Date.now()
+            const client = await pool.connect()
+
+            try {
+              const result = await client.query('SELECT 1 as health_check')
+              const latency = Date.now() - start
+
+              await client.release()
+              await pool.end()
+
+              return {
+                status: latency > 1000 ? 'warning' : 'healthy',
+                details: {
+                  latency: `${latency}ms`,
+                  connection: 'active via pg Pool',
+                  result: result.rows[0]?.health_check === 1
+                }
+              }
+            } catch (queryError) {
+              await client.release()
+              await pool.end()
+              throw queryError
+            }
+          } catch (pgError) {
+            // Final fallback to URL validation with detailed error info
+            const url = new URL(databaseUrl)
+            return {
+              status: 'error',
+              details: {
+                host: url.hostname,
+                port: url.port || '5432',
+                database: url.pathname.substring(1),
+                ssl: url.searchParams.get('sslmode') === 'require',
+                prismaError: prismaError instanceof Error ? prismaError.message : 'Prisma unavailable',
+                pgError: pgError instanceof Error ? pgError.message : 'PostgreSQL connection failed',
+                note: 'PostgreSQL module unavailable, using URL validation only'
+              }
             }
           }
         }
@@ -185,7 +225,7 @@ class MonitoringService {
   }
 
   /**
-   * Real Valkey health check with connection
+   * Real Redis health check with improved connection handling
    */
   async checkValkey(): Promise<HealthCheck> {
     // Server-side only check
@@ -206,14 +246,30 @@ class MonitoringService {
     }
 
     try {
-      // Try to use Valkey client, but fallback gracefully if it fails
+      // Try to use Redis client with improved configuration
       try {
         const { createClient } = await import('redis')
+        
+        // Parse Redis URL to get connection details
+        const url = new URL(valkeyUrl)
         const client = createClient({
           url: valkeyUrl,
           socket: {
-            connectTimeout: 5000
-          }
+            connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT || '5000', 10),
+            reconnectStrategy: (retries) => {
+              // Only retry once for health check
+              return retries > 1 ? false : Math.min(retries * 100, 1000)
+            }
+          },
+          // Add authentication if provided in URL
+          ...(url.password ? { password: url.password } : {}),
+          // Select database if specified in URL
+          database: parseInt(url.pathname.replace('/', '') || '0', 10)
+        })
+
+        // Set up error handlers to prevent unhandled rejections
+        client.on('error', (error) => {
+          console.warn('Redis client error during health check:', error.message)
         })
 
         const start = Date.now()
@@ -223,26 +279,52 @@ class MonitoringService {
           const pong = await client.ping()
           const latency = Date.now() - start
 
+          // Get additional info if possible
+          let info: { version?: string; mode?: string } | null = null
+          try {
+            const infoResult = await client.info('server')
+            const infoStr = typeof infoResult === 'string' ? infoResult : String(infoResult)
+            const lines = infoStr.split('\r\n')
+            const version = lines.find(line => line.startsWith('redis_version:'))?.split(':')[1]
+            const mode = lines.find(line => line.startsWith('redis_mode:'))?.split(':')[1]
+            info = { version, mode }
+          } catch (infoError) {
+            // Info command might not be available, continue without it
+          }
+
           return {
             status: latency > 1000 ? 'warning' : 'healthy',
             details: {
               latency: `${latency}ms`,
               response: pong,
-              connection: 'active'
+              connection: 'active',
+              host: url.hostname,
+              port: url.port || '6379',
+              database: url.pathname.replace('/', '') || '0',
+              ...(info ? { info } : {})
             }
           }
         } finally {
-          await client.disconnect()
+          try {
+            await client.quit()
+          } catch (disconnectError) {
+            // Ignore disconnect errors in health check
+            console.warn('Redis disconnect warning:', disconnectError)
+          }
         }
-      } catch (valkeyError) {
-        // Fallback to basic URL validation if Valkey client fails
+      } catch (redisError) {
+        // Fallback to basic URL validation if Redis client fails
         const url = new URL(valkeyUrl)
+        const errorMessage = redisError instanceof Error ? redisError.message : 'Unknown error'
+        
         return {
-          status: 'warning',
+          status: 'error',
           details: {
             host: url.hostname,
-            port: url.port,
-            note: 'Valkey client unavailable, using URL validation'
+            port: url.port || '6379',
+            database: url.pathname.replace('/', '') || '0',
+            error: errorMessage,
+            note: 'Redis connection failed, caching features unavailable'
           }
         }
       }
@@ -250,7 +332,7 @@ class MonitoringService {
     } catch (error) {
       return {
         status: 'error',
-        error: error instanceof Error ? error.message : 'Valkey connection failed'
+        error: error instanceof Error ? error.message : 'Redis connection failed'
       }
     }
   }
