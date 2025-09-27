@@ -46,8 +46,6 @@ You can use any of these credentials to sign in at:
 - **Pattern Matching**: Protection for OpenAI, Anthropic, Datadog, GitHub, AWS, Google, Stripe keys
 - **Integration Tests**: 11/11 tests passing with real API validation
 - **Emergency Cleanup**: BFG Docker commands for history sanitization available
-
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 ## 🛠️ Testing Different Scenarios
 
 ### Admin Access Testing
