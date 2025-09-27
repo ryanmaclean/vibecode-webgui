@@ -3,7 +3,7 @@
 import type { VectorDatabaseInterface } from "./vector-database-interface";
 import type { VectorDatabaseConfig, SearchOptions, SearchResult } from "./vector-types";
 import { EnhancedVectorDatabaseAdapter } from "./enhanced-vector-database-adapter";
-import { getMetricsCollector } from "@/lib/db/database-metrics";
+import { getMetricsCollector } from "../db/database-metrics";
 
 /**
  * A high‑level wrapper that exposes a simple vector store API while
