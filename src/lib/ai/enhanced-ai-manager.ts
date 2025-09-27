@@ -1,5 +1,5 @@
 import { MultiAgentWorkflow, WorkflowStep, WorkflowResult } from './agents/multi-agent-workflow';
-import { PGVectorClient, COLLECTION_SCHEMAS } from './vector-stores/pgvector-client';
+import { PGVectorClient, COLLECTION_SCHEMAS } from '../vector-db/pgvector-client-adapter';
 import { OllamaClient, createOllamaClient, OLLAMA_MODELS } from './local/ollama-client';
 // Temporarily disabled to fix build issues - TODO: Fix LangChain compatibility
 // import { ChatOpenAI } from '@langchain/openai';
