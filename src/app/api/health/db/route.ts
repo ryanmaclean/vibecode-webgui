@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
     
     if (includeMetrics) {
       const metricsCollector = getDatabaseMetricsCollector();
-      metricsData = metricsCollector.getMetrics();
+      metricsData = await metricsCollector.getMetrics();
     }
     
     // Check if pgvector is installed

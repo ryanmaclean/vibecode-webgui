@@ -59,7 +59,7 @@ export async function GET(_request: NextRequest) {
   );
   
   // Get current metrics
-  const metrics = collector.getMetrics();
+  const metrics = await collector.getMetrics();
   
   // Calculate additional metrics for visualization  
   const utilization = {

@@ -5,6 +5,7 @@
 
 
 import { createLogger, format, transports } from 'winston';
+import { getCpuUsage } from './system-metrics';
 
 // Import tracer from instrument.ts to avoid double initialization
 let tracer: any;
@@ -613,7 +614,7 @@ function performanceMiddleware() {
 }
 
 // Health check endpoint data
-function getHealthCheck(): {
+async function getHealthCheck(): Promise<{
   status: 'healthy' | 'unhealthy'
   timestamp: string
   uptime: number
@@ -632,7 +633,7 @@ function getHealthCheck(): {
     cores: number
   }
   metrics: Record<string, any>
-} {
+}> {
   const memUsage = process.memoryUsage()
   const totalMemory = memUsage.heapTotal + memUsage.external
   const usedMemory = memUsage.heapUsed + memUsage.arrayBuffers
@@ -650,9 +651,9 @@ function getHealthCheck(): {
     rss: memUsage.rss
   }
 
-  // CPU information (simplified for now)
+  // CPU information with real metrics
   const cpuInfo = {
-    usage: Math.random() * 100, // Placeholder - in production this would use os.cpus()
+    usage: await getCpuUsage(), // Real CPU usage
     cores: require('os').cpus().length
   }
 

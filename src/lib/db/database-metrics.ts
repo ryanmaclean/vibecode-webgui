@@ -1,3 +1,5 @@
+import { getSystemMetrics } from '../system-metrics';
+
 export interface DatabaseMetrics {
     connectionPool: {
         totalConnections: number;
@@ -133,7 +135,9 @@ class MetricsCollector {
         return (this.vectorOperationMetrics.providerSwitches / this.vectorOperationMetrics.similaritySearches) * 100;
     }
 
-    getMetrics(): DatabaseMetrics {
+    async getMetrics(): Promise<DatabaseMetrics> {
+        const systemHealth = await getSystemMetrics();
+        
         return {
             connectionPool: {
                 totalConnections: this.connectionMetrics.totalConnections,
@@ -155,10 +159,10 @@ class MetricsCollector {
                 avgEmbeddingTime: Math.round(this.getAverageEmbeddingTime())
             },
             systemHealth: {
-                diskUsage: 65.4, // Would need OS integration for real values
-                memoryUsage: 72.1,
-                cpuUsage: 45.2,
-                uptime: Date.now() - (global as any).__startTime || 86400
+                diskUsage: systemHealth.disk.usage,
+                memoryUsage: systemHealth.memory.usage,
+                cpuUsage: systemHealth.cpu.usage,
+                uptime: process.uptime() // Use process uptime in seconds
             }
         };
     }
@@ -183,32 +187,6 @@ export function getMetricsCollector(): MetricsCollector {
 }
 
 export async function collectDatabaseMetrics(): Promise<DatabaseMetrics> {
-    // This would collect real metrics from the database
-    return {
-        connectionPool: {
-            totalConnections: 10,
-            activeConnections: 5,
-            idleConnections: 5,
-            waitingClients: 0,
-            maxConnections: 20
-        },
-        queryPerformance: {
-            totalQueries: 1250,
-            averageQueryTime: 45,
-            slowQueries: 12,
-            failedQueries: 3
-        },
-        vectorOperations: {
-            embeddingInserts: 450,
-            similaritySearches: 230,
-            vectorIndexSize: 1500000,
-            avgEmbeddingTime: 120
-        },
-        systemHealth: {
-            diskUsage: 65.4,
-            memoryUsage: 72.1,
-            cpuUsage: 45.2,
-            uptime: 86400
-        }
-    };
+    // Use the actual metrics collector instead of hardcoded values
+    return await globalMetricsCollector.getMetrics();
 }
