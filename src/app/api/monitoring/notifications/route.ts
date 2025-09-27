@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { connectionPoolNotificationService } from '@/lib/monitoring/notification-service'
+import { monitoringRBAC } from '@/lib/monitoring/rbac'
 import type { NotificationConfig } from '@/lib/monitoring/notification-service'
 
 export const dynamic = 'force-dynamic'
@@ -14,6 +15,20 @@ export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Check permissions
+  const userContext = {
+    id: session.user.id || session.user.email || 'unknown',
+    email: session.user.email || 'unknown',
+    roles: (session.user as any).roles || [],
+    permissions: (session.user as any).permissions || []
+  }
+
+  const accessCheck = monitoringRBAC.validateAPIAccess(userContext, '/monitoring/notifications', 'GET')
+  if (!accessCheck.allowed) {
+    monitoringRBAC.logAccess(userContext, 'get_notifications', '/monitoring/notifications', false)
+    return NextResponse.json({ error: accessCheck.reason }, { status: 403 })
   }
 
   const { searchParams } = new URL(request.url)
@@ -81,6 +96,20 @@ export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Check permissions
+  const userContext = {
+    id: session.user.id || session.user.email || 'unknown',
+    email: session.user.email || 'unknown',
+    roles: (session.user as any).roles || [],
+    permissions: (session.user as any).permissions || []
+  }
+
+  const accessCheck = monitoringRBAC.validateAPIAccess(userContext, '/monitoring/notifications', 'POST')
+  if (!accessCheck.allowed) {
+    monitoringRBAC.logAccess(userContext, 'post_notifications', '/monitoring/notifications', false)
+    return NextResponse.json({ error: accessCheck.reason }, { status: 403 })
   }
 
   try {

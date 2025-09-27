@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth'
 import { WebSocketServer, WebSocket } from 'ws'
 import ConnectionPoolAlertService from '@/lib/db/connection-pool-alerts'
 import { connectionPoolMonitor } from '@/lib/monitoring/connection-pool-monitor'
+import { monitoringRBAC } from '@/lib/monitoring/rbac'
 import type { Alert } from '@/lib/db/connection-pool-alerts'
 
 // Force dynamic rendering to prevent static analysis during build
@@ -195,6 +196,23 @@ export async function GET(request: NextRequest) {
   if (!session?.user) {
     return new Response('Unauthorized', { status: 401 })
   }
+
+  // Check permissions
+  const userContext = {
+    id: session.user.id || session.user.email || 'unknown',
+    email: session.user.email || 'unknown',
+    roles: (session.user as any).roles || [],
+    permissions: (session.user as any).permissions || []
+  }
+
+  const accessCheck = monitoringRBAC.validateAPIAccess(userContext, '/monitoring/ws', 'GET')
+  if (!accessCheck.allowed) {
+    monitoringRBAC.logAccess(userContext, 'websocket_connect', '/monitoring/ws', false)
+    return new Response(accessCheck.reason || 'Forbidden', { status: 403 })
+  }
+
+  // Log successful access
+  monitoringRBAC.logAccess(userContext, 'websocket_connect', '/monitoring/ws', true)
 
   // Upgrade to WebSocket
   const upgrade = request.headers.get('upgrade')

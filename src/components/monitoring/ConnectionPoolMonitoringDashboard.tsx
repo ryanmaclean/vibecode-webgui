@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { useConnectionPoolWebSocket } from '@/hooks/useConnectionPoolWebSocket'
+import { useMonitoringPermissions } from '@/lib/monitoring/rbac'
 import { 
   LineChart, 
   Line, 
@@ -143,6 +144,22 @@ export const ConnectionPoolMonitoringDashboard: React.FC<ConnectionPoolMonitorin
   const [alerts, setAlerts] = useState<Alert[]>([])
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Get user permissions
+  const { permissions, role, hasPermission, dashboardConfig } = useMonitoringPermissions()
+
+  // Check if user can access dashboard
+  if (!hasPermission('viewMetrics')) {
+    return (
+      <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+        <h3 className="text-red-800 font-semibold">Access Denied</h3>
+        <p className="text-red-700 mt-2">
+          You don't have permission to view the connection pool monitoring dashboard.
+        </p>
+        <p className="text-sm text-red-600 mt-2">Current role: {role}</p>
+      </div>
+    )
+  }
+
   // Use WebSocket for real-time updates
   const {
     connectionState,
@@ -152,7 +169,7 @@ export const ConnectionPoolMonitoringDashboard: React.FC<ConnectionPoolMonitorin
     error: wsError,
     isConnected
   } = useConnectionPoolWebSocket({
-    enabled: enableRealTimeUpdates
+    enabled: enableRealTimeUpdates && hasPermission('viewMetrics')
   })
 
   useEffect(() => {
