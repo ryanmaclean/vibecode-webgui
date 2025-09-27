@@ -354,7 +354,7 @@ jobs:
       - name: Setup kubeconfig
         run: |
           mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > ~/.kube/config
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
 
       - name: Download Terraform Plan
@@ -371,12 +371,13 @@ jobs:
             -var="environment=staging" \
             -var="app_version=${{ needs.build-and-test.outputs.image-tag }}" \
             -var="replicas=2" \
-            -var="database_password=${{ secrets.DATABASE_PASSWORD_STAGING }}" \
-            -var="nextauth_secret=${{ secrets.NEXTAUTH_SECRET_STAGING }}" \
+            -var="database_password=${{ secrets.DATABASE_PASSWORD }}" \
+            -var="nextauth_secret=${{ secrets.NEXTAUTH_SECRET }}" \
             -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
             -var="anthropic_api_key=${{ secrets.ANTHROPIC_API_KEY }}" \
-            -var="datadog_api_key=${{ env.DD_API_KEY }}" \
-            -var="datadog_app_key=${{ env.DD_APP_KEY }}" \
+            -var="datadog_api_key=${{ secrets.DD_API_KEY }}" \
+            -var="datadog_app_key=${{ secrets.DD_APP_KEY }}" \
+            -var="kubeconfig=${{ secrets.KUBECONFIG }}" \
             -auto-approve
 
       - name: Wait for deployment
@@ -441,7 +442,7 @@ jobs:
       - name: Setup kubeconfig
         run: |
           mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG_PRODUCTION }}" | base64 -d > ~/.kube/config
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
 
       - name: Download Terraform Plan
@@ -460,12 +461,13 @@ jobs:
             -var="replicas=5" \
             -var="database_storage_size=100Gi" \
             -var="redis_memory_limit=2Gi" \
-            -var="database_password=${{ secrets.DATABASE_PASSWORD_PRODUCTION }}" \
-            -var="nextauth_secret=${{ secrets.NEXTAUTH_SECRET_PRODUCTION }}" \
+            -var="database_password=${{ secrets.DATABASE_PASSWORD }}" \
+            -var="nextauth_secret=${{ secrets.NEXTAUTH_SECRET }}" \
             -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
             -var="anthropic_api_key=${{ secrets.ANTHROPIC_API_KEY }}" \
-            -var="datadog_api_key=${{ env.DD_API_KEY }}" \
-            -var="datadog_app_key=${{ env.DD_APP_KEY }}" \
+            -var="datadog_api_key=${{ secrets.DD_API_KEY }}" \
+            -var="datadog_app_key=${{ secrets.DD_APP_KEY }}" \
+            -var="kubeconfig=${{ secrets.KUBECONFIG }}" \
             -auto-approve
 
       - name: Blue-Green Deployment Strategy
@@ -623,7 +625,7 @@ jobs:
       - name: Setup kubeconfig
         run: |
           mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG_PRODUCTION }}" | base64 -d > ~/.kube/config
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
 
       - name: Rollback deployment

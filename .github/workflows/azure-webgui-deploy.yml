@@ -7,8 +7,16 @@ on:
         description: 'Image tag to deploy (default: sha)'
         required: false
         default: ''
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - staging
+        - production
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
     paths:
       - 'Dockerfile'
       - 'next.config.mjs'
@@ -23,6 +31,7 @@ permissions:
 env:
   IMAGE_REPOSITORY: ${{ vars.IMAGE_REPOSITORY_WEBGUI || 'vibecode/webgui' }}
   IMAGE_TAG: ${{ github.event.inputs.image_tag || github.sha }}
+  TARGET_ENVIRONMENT: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production') || 'staging' }}
 
 jobs:
   build-and-push:
@@ -66,6 +75,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
+    environment:
+      name: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production') || 'staging' }}
+      url: ${{ github.event.inputs.environment == 'staging' && 'https://vibecode-staging.eastus2.cloudapp.azure.com' || 'https://vibecode.eastus2.cloudapp.azure.com' }}
     steps:
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -81,10 +93,12 @@ jobs:
             set -e
             ACR_LOGIN_SERVER=$(az acr show -n ${{ secrets.ACR_NAME }} -g ${{ secrets.AZURE_RESOURCE_GROUP }} --query loginServer -o tsv)
             IMAGE="${ACR_LOGIN_SERVER}/${{ env.IMAGE_REPOSITORY }}:${{ env.IMAGE_TAG }}"
-            echo "Deploying image: ${IMAGE}"
+            APP_NAME="${{ secrets.APP_NAME_WEBGUI }}"
+            echo "Deploying image: ${IMAGE} to environment: ${{ env.TARGET_ENVIRONMENT }}"
+            echo "App name: ${APP_NAME}"
             az webapp config container set \
               -g ${{ secrets.AZURE_RESOURCE_GROUP }} \
-              -n ${{ secrets.APP_NAME_WEBGUI }} \
+              -n ${APP_NAME} \
               --docker-custom-image-name ${IMAGE} \
               --enable-app-service-storage false
 
@@ -92,16 +106,18 @@ jobs:
         uses: azure/cli@v2
         with:
           inlineScript: |
-            az webapp restart -g ${{ secrets.AZURE_RESOURCE_GROUP }} -n ${{ secrets.APP_NAME_WEBGUI }}
+            APP_NAME="${{ secrets.APP_NAME_WEBGUI }}"
+            az webapp restart -g ${{ secrets.AZURE_RESOURCE_GROUP }} -n ${APP_NAME}
 
       - name: Resolve App URL
         id: app
         uses: azure/cli@v2
         with:
           inlineScript: |
-            HOST=$(az webapp show -g ${{ secrets.AZURE_RESOURCE_GROUP }} -n ${{ secrets.APP_NAME_WEBGUI }} --query defaultHostName -o tsv)
+            APP_NAME="${{ secrets.APP_NAME_WEBGUI }}"
+            HOST=$(az webapp show -g ${{ secrets.AZURE_RESOURCE_GROUP }} -n ${APP_NAME} --query defaultHostName -o tsv)
             echo "url=https://${HOST}" >> $GITHUB_OUTPUT
-            echo "WebGUI URL: https://${HOST}" >> $GITHUB_STEP_SUMMARY
+            echo "WebGUI URL (${TARGET_ENVIRONMENT}): https://${HOST}" >> $GITHUB_STEP_SUMMARY
 
       - name: Post-deploy smoke (home)
         run: |
