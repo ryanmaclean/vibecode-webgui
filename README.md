@@ -62,7 +62,7 @@ export DD_API_KEY=your_datadog_api_key
 ./scripts/setup-aks-datadog-monitoring.sh
 ```
 
-For advanced options and detailed guidance, see the [AKS Deployment Guide](./docs/aks-datadog-monitoring-guide.md).
+For advanced options and detailed guidance, see the [Datadog Monitoring Guide](./docs/monitoring/datadog.md).
 
 > **Note:** Make sure you have Azure CLI (`az`) and kubectl installed and configured. If using OpenTofu, see the section below about remote state management.
 
@@ -89,7 +89,7 @@ The monitoring stack includes:
 - Custom dashboards for vector search monitoring
 - System Probe for network monitoring
 
-For troubleshooting and advanced configuration, see the [Datadog Monitoring Guide](./docs/aks-datadog-monitoring-guide.md).
+📖 **For complete setup instructions, environment variables, CI/CD configuration, and troubleshooting, see the [Datadog Monitoring Guide](./docs/monitoring/datadog.md)**.
 
 ### 📚 **Seed the RAG Dataset**
 

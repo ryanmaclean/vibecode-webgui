@@ -1,5 +1,9 @@
 # Datadog Monitoring Configuration for VibeCode
 
+> **⚠️ ARCHIVED DOCUMENTATION**  
+> This document has been consolidated into the canonical [Datadog Monitoring Guide](../docs/monitoring/datadog.md).  
+> Please refer to the new location for the most up-to-date configuration information.
+
 This document outlines the comprehensive Datadog monitoring setup across all environments (dev/stg/prd).
 
 ## 🎯 Monitoring Strategy
