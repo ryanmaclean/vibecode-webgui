@@ -167,7 +167,7 @@ xml
 In your markdown files, use this syntax for links:
 
 text
-[Some Page](/wiki/some-page)
+[Getting Started](/docs/wiki-archive/getting-started)
 
 If some-page.md does not exist, it will route to /wiki/new?slug=some-page, prompting a page creation.
 
@@ -179,7 +179,7 @@ npm run dev
 
 Visit http://localhost:4321/wiki/home
 
-Try creating a new link in the markdown like [New Page](/wiki/my-new-page) — visiting this link will prompt the creation of that page.
+Try creating a new link in the markdown like [Production Guide](/docs/wiki-archive/production-deployment-guide) — this links to actual documentation.
 ✅ Summary
 
     Markdown files are stored in /content/wiki.
@@ -327,7 +327,7 @@ Add Sample Markdown Page (/content/wiki/home.md):
 
     # Welcome to the Wiki
 
-    This is the home page. Try creating a [New Page](/wiki/sample-page)!
+    This is the home page. Try exploring the [Developer Guide](../developer-guide.md)!
 
 🎯 Features Recap
 

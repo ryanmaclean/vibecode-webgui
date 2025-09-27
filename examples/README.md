@@ -56,14 +56,14 @@ See: [testing/user-journey.test.ts](./testing/user-journey.test.ts)
 3. [Basic Hook](./hooks/useWorkspaces.ts) - Custom hook patterns
 
 ### Intermediate
-1. [AI Integration](./integrations/ai-chat.ts) - Working with LiteLLM
-2. [Advanced Component](./components/dashboard-analytics.tsx) - Complex UI patterns
-3. [Testing Patterns](./testing/user-journey.test.ts) - Comprehensive testing
+1. **AI Integration** - Working with LiteLLM (see `src/lib/ai/` for examples)
+2. **Advanced Component** - Complex UI patterns (see `src/components/ui/` for examples)
+3. **Testing Patterns** - Comprehensive testing (see `tests/` directory)
 
 ### Advanced
-1. [Performance Optimization](./integrations/redis-caching.ts) - Caching strategies
-2. [Security Implementation](./api/secure-endpoint.ts) - Security best practices
-3. [Monitoring Integration](./integrations/datadog-metrics.ts) - Observability
+1. **Performance Optimization** - Caching strategies (see Redis integration docs)
+2. **Security Implementation** - Security best practices (see `SECURITY_GUIDELINES.md`)
+3. **Monitoring Integration** - Observability (see Datadog configuration in `src/instrument.ts`)
 
 ## 🔍 How to Use Examples
 
