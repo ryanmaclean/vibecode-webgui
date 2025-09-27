@@ -1,0 +1,765 @@
+# Comprehensive monitoring integration for Vector Database
+# ServiceMonitor resources for Prometheus and Datadog configuration
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vector-db-primary
+  namespace: vibecode-platform
+  labels:
+    app: vector-db
+    component: monitoring
+    role: primary
+spec:
+  selector:
+    matchLabels:
+      app: vector-db
+      role: primary
+  endpoints:
+    - port: metrics
+      interval: 15s
+      scrapeTimeout: 10s
+      path: /metrics
+      scheme: http
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+        - sourceLabels: [__meta_kubernetes_namespace]
+          targetLabel: kubernetes_namespace
+        - targetLabel: cluster
+          replacement: production
+        - targetLabel: service
+          replacement: vector-db
+        - targetLabel: role
+          replacement: primary
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vector-db-replicas
+  namespace: vibecode-platform
+  labels:
+    app: vector-db
+    component: monitoring
+    role: replica
+spec:
+  selector:
+    matchLabels:
+      app: vector-db
+      role: replica
+  endpoints:
+    - port: metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      path: /metrics
+      scheme: http
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+        - sourceLabels: [__meta_kubernetes_namespace]
+          targetLabel: kubernetes_namespace
+        - targetLabel: cluster
+          replacement: production
+        - targetLabel: service
+          replacement: vector-db
+        - targetLabel: role
+          replacement: replica
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vector-db-router
+  namespace: vibecode-platform
+  labels:
+    app: vector-db-router
+    component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: vector-db-router
+  endpoints:
+    - port: metrics
+      interval: 15s
+      scrapeTimeout: 10s
+      path: /metrics
+      scheme: http
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+        - targetLabel: cluster
+          replacement: production
+        - targetLabel: service
+          replacement: pgbouncer
+---
+# PrometheusRule for vector database alerting
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: vector-db-alerts
+  namespace: vibecode-platform
+  labels:
+    app: vector-db
+    component: alerting
+spec:
+  groups:
+    - name: vector-database.rules
+      interval: 30s
+      rules:
+        # High-level availability alerts
+        - alert: VectorDatabaseDown
+          expr: up{service="vector-db"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            service: vector-db
+          annotations:
+            summary: "Vector database is down"
+            description: "Vector database {{ $labels.pod }} in {{ $labels.kubernetes_namespace }} has been down for more than 1 minute"
+        
+        - alert: VectorDatabaseReadReplicaDown
+          expr: up{service="vector-db",role="replica"} == 0
+          for: 2m
+          labels:
+            severity: warning
+            service: vector-db
+          annotations:
+            summary: "Vector database read replica is down"
+            description: "Vector database read replica {{ $labels.pod }} has been down for more than 2 minutes"
+        
+        # Performance alerts
+        - alert: VectorDatabaseHighCPU
+          expr: rate(container_cpu_usage_seconds_total{pod=~"vector-db-.*"}[5m]) * 100 > 80
+          for: 5m
+          labels:
+            severity: warning
+            service: vector-db
+          annotations:
+            summary: "Vector database high CPU usage"
+            description: "Vector database {{ $labels.pod }} CPU usage is {{ $value }}% for more than 5 minutes"
+        
+        - alert: VectorDatabaseHighMemory
+          expr: container_memory_usage_bytes{pod=~"vector-db-.*"} / container_spec_memory_limit_bytes{pod=~"vector-db-.*"} * 100 > 85
+          for: 5m
+          labels:
+            severity: warning
+            service: vector-db
+          annotations:
+            summary: "Vector database high memory usage"
+            description: "Vector database {{ $labels.pod }} memory usage is {{ $value }}% for more than 5 minutes"
+        
+        # Database-specific alerts
+        - alert: VectorDatabaseTooManyConnections
+          expr: pg_stat_database_numbackends{datname="vibecode"} / pg_settings_max_connections * 100 > 80
+          for: 2m
+          labels:
+            severity: warning
+            service: vector-db
+          annotations:
+            summary: "Vector database too many connections"
+            description: "Vector database has {{ $value }}% of max connections in use"
+        
+        - alert: VectorDatabaseReplicationLag
+          expr: pg_replication_lag_seconds > 60
+          for: 1m
+          labels:
+            severity: warning
+            service: vector-db
+          annotations:
+            summary: "Vector database replication lag high"
+            description: "Replication lag is {{ $value }} seconds on {{ $labels.pod }}"
+        
+        - alert: VectorDatabaseSlowQueries
+          expr: rate(pg_stat_statements_total_exec_time_seconds[5m]) / rate(pg_stat_statements_calls[5m]) > 1
+          for: 3m
+          labels:
+            severity: warning
+            service: vector-db
+          annotations:
+            summary: "Vector database slow queries detected"
+            description: "Average query time is {{ $value }} seconds over the last 5 minutes"
+        
+        # Storage alerts
+        - alert: VectorDatabaseDiskSpaceLow
+          expr: (1 - (pg_database_size_bytes{datname="vibecode"} / (1024^3 * 400))) * 100 < 20
+          for: 10m
+          labels:
+            severity: warning
+            service: vector-db
+          annotations:
+            summary: "Vector database disk space running low"
+            description: "Vector database has less than 20% disk space remaining"
+        
+        - alert: VectorDatabaseDiskSpaceCritical
+          expr: (1 - (pg_database_size_bytes{datname="vibecode"} / (1024^3 * 400))) * 100 < 10
+          for: 5m
+          labels:
+            severity: critical
+            service: vector-db
+          annotations:
+            summary: "Vector database disk space critically low"
+            description: "Vector database has less than 10% disk space remaining"
+        
+        # Vector-specific alerts
+        - alert: VectorEmbeddingIngestionSlow
+          expr: rate(vector_embeddings_inserted_total[5m]) < 10
+          for: 5m
+          labels:
+            severity: warning
+            service: vector-db
+          annotations:
+            summary: "Vector embedding ingestion rate is slow"
+            description: "Vector embedding ingestion rate is {{ $value }} embeddings/second over the last 5 minutes"
+        
+        - alert: VectorSearchLatencyHigh
+          expr: histogram_quantile(0.95, rate(vector_search_duration_seconds_bucket[5m])) > 2
+          for: 3m
+          labels:
+            severity: warning
+            service: vector-db
+          annotations:
+            summary: "Vector search latency is high"
+            description: "95th percentile vector search latency is {{ $value }} seconds"
+        
+        # Index health alerts
+        - alert: VectorIndexNotUsed
+          expr: increase(pg_stat_user_indexes_idx_tup_read[1h]) == 0 and on(indexrelid) pg_stat_user_indexes{indexname=~".*embedding.*"}
+          for: 1h
+          labels:
+            severity: info
+            service: vector-db
+          annotations:
+            summary: "Vector index not being used"
+            description: "Vector index {{ $labels.indexname }} has not been used in the last hour"
+---
+# Grafana Dashboard ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vector-db-grafana-dashboard
+  namespace: vibecode-platform
+  labels:
+    app: vector-db
+    component: monitoring
+    grafana_dashboard: "true"
+data:
+  vector-db-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Vector Database Monitoring",
+        "tags": ["vector-db", "postgresql", "pgvector"],
+        "style": "dark",
+        "timezone": "UTC",
+        "refresh": "30s",
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "panels": [
+          {
+            "id": 1,
+            "title": "Database Availability",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "up{service=\"vector-db\"}",
+                "legendFormat": "{{ pod }}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "mappings": [
+                  {
+                    "options": {
+                      "0": {
+                        "text": "DOWN",
+                        "color": "red"
+                      },
+                      "1": {
+                        "text": "UP",
+                        "color": "green"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "gridPos": {
+              "h": 4,
+              "w": 6,
+              "x": 0,
+              "y": 0
+            }
+          },
+          {
+            "id": 2,
+            "title": "Active Connections",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "pg_stat_database_numbackends{datname=\"vibecode\"}",
+                "legendFormat": "Active Connections"
+              },
+              {
+                "expr": "pg_settings_max_connections",
+                "legendFormat": "Max Connections"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Connections"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 6,
+              "y": 0
+            }
+          },
+          {
+            "id": 3,
+            "title": "Vector Embeddings Count",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "vector_embeddings_count",
+                "legendFormat": "Total Embeddings"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "short"
+              }
+            },
+            "gridPos": {
+              "h": 4,
+              "w": 6,
+              "x": 18,
+              "y": 0
+            }
+          },
+          {
+            "id": 4,
+            "title": "Query Performance",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(pg_stat_statements_calls[5m])",
+                "legendFormat": "Queries/sec"
+              },
+              {
+                "expr": "rate(pg_stat_statements_total_exec_time_seconds[5m]) / rate(pg_stat_statements_calls[5m])",
+                "legendFormat": "Avg Query Time"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Queries/sec"
+              },
+              {
+                "label": "Seconds",
+                "side": "right"
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 8
+            }
+          },
+          {
+            "id": 5,
+            "title": "Vector Search Latency",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.50, rate(vector_search_duration_seconds_bucket[5m]))",
+                "legendFormat": "50th percentile"
+              },
+              {
+                "expr": "histogram_quantile(0.95, rate(vector_search_duration_seconds_bucket[5m]))",
+                "legendFormat": "95th percentile"
+              },
+              {
+                "expr": "histogram_quantile(0.99, rate(vector_search_duration_seconds_bucket[5m]))",
+                "legendFormat": "99th percentile"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Seconds",
+                "min": 0
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 8
+            }
+          },
+          {
+            "id": 6,
+            "title": "Database Size",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "pg_database_size_bytes{datname=\"vibecode\"} / (1024^3)",
+                "legendFormat": "Database Size (GB)"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "GB",
+                "min": 0
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 16
+            }
+          },
+          {
+            "id": 7,
+            "title": "Replication Lag",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "pg_replication_lag_seconds",
+                "legendFormat": "{{ replica }}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Seconds",
+                "min": 0
+              }
+            ],
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 16
+            }
+          }
+        ]
+      }
+    }
+---
+# Datadog Custom Metrics and Logs Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datadog-vector-db-config
+  namespace: vibecode-platform
+  labels:
+    app: vector-db
+    component: datadog-monitoring
+data:
+  postgres.yaml: |
+    # Datadog PostgreSQL integration for vector database
+    init_config:
+      
+    instances:
+      - host: vector-db.vibecode-platform.svc.cluster.local
+        port: 5432
+        username: datadog
+        password: "ENC[datadog_password]"
+        dbname: vibecode
+        ssl: require
+        
+        # Enhanced monitoring options
+        collect_count_metrics: true
+        collect_activity_metrics: true
+        collect_database_size_metrics: true
+        collect_default_db: true
+        collect_bloat_metrics: true
+        collect_wal_metrics: true
+        
+        # Database monitoring (DBM)
+        dbm: true
+        query_metrics:
+          enabled: true
+          run_sync: true
+          collection_interval: 10
+        query_activity:
+          enabled: true
+          collection_interval: 10
+        query_samples:
+          enabled: true
+          collection_interval: 1
+        
+        # Custom queries for vector operations
+        custom_queries:
+          - query: |
+              SELECT 
+                namespace,
+                count(*) as embedding_count,
+                avg(array_length(embedding, 1)) as avg_dimensions,
+                pg_size_pretty(pg_total_relation_size('vectors.document_embeddings')) as table_size
+              FROM vectors.document_embeddings 
+              GROUP BY namespace
+            columns:
+              - name: namespace
+                type: tag
+              - name: embedding_count
+                type: gauge
+              - name: avg_dimensions
+                type: gauge
+            tags:
+              - vector_db_metrics
+              
+          - query: |
+              SELECT 
+                indexname,
+                idx_tup_read,
+                idx_tup_fetch,
+                pg_size_pretty(pg_relation_size(indexrelid)) as index_size_pretty,
+                pg_relation_size(indexrelid) as index_size_bytes
+              FROM pg_stat_user_indexes 
+              WHERE schemaname = 'vectors'
+            columns:
+              - name: indexname
+                type: tag
+              - name: idx_tup_read
+                type: gauge
+              - name: idx_tup_fetch
+                type: gauge
+              - name: index_size_bytes
+                type: gauge
+            tags:
+              - vector_index_metrics
+              
+          - query: |
+              SELECT 
+                'vector_similarity_search' as query_type,
+                count(*) as total_queries,
+                avg(total_exec_time) as avg_exec_time_ms,
+                sum(total_exec_time) as total_exec_time_ms
+              FROM pg_stat_statements 
+              WHERE query LIKE '%<->%' OR query LIKE '%<#>%' OR query LIKE '%<=>%'
+            columns:
+              - name: query_type
+                type: tag
+              - name: total_queries
+                type: gauge
+              - name: avg_exec_time_ms
+                type: gauge  
+              - name: total_exec_time_ms
+                type: gauge
+            tags:
+              - vector_search_performance
+        
+        # Tagging
+        tags:
+          - environment:production
+          - service:vector-db
+          - cluster:aks-production
+          - component:primary
+          - database:vibecode
+        
+        # Performance settings
+        min_collection_interval: 15
+        
+  logs.yaml: |
+    # Datadog log configuration for PostgreSQL
+    logs:
+      - type: file
+        path: /var/lib/postgresql/data/log/*.log
+        source: postgresql
+        service: vector-db
+        tags:
+          - environment:production
+          - component:primary
+        log_processing_rules:
+          - type: multi_line
+            name: postgresql_multiline
+            pattern: \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}
+          - type: exclude_at_match
+            name: exclude_pg_stat_statements
+            pattern: pg_stat_statements
+            
+      # WAL and error logs
+      - type: file
+        path: /var/lib/postgresql/data/log/postgresql-*.log
+        source: postgresql
+        service: vector-db
+        tags:
+          - environment:production
+          - component:primary
+          - log_type:database
+          
+  custom_metrics.py: |
+    # Custom Python metrics for Datadog
+    from datadog_checks.base import AgentCheck
+    import psycopg2
+    from psycopg2.extras import DictCursor
+    
+    class VectorDatabaseCheck(AgentCheck):
+        def check(self, instance):
+            # Database connection parameters
+            host = instance.get('host', 'localhost')
+            port = instance.get('port', 5432)
+            database = instance.get('database', 'vibecode')
+            username = instance.get('username', 'datadog')
+            password = instance.get('password')
+            
+            try:
+                # Connect to database
+                conn = psycopg2.connect(
+                    host=host,
+                    port=port,
+                    database=database,
+                    user=username,
+                    password=password,
+                    sslmode='require'
+                )
+                
+                with conn.cursor(cursor_factory=DictCursor) as cursor:
+                    # Vector embedding growth rate
+                    cursor.execute("""
+                        SELECT 
+                            extract(epoch from now()) - extract(epoch from created_at) as age_seconds,
+                            count(*) as embeddings_created
+                        FROM vectors.document_embeddings 
+                        WHERE created_at >= now() - interval '1 hour'
+                        GROUP BY date_trunc('minute', created_at)
+                        ORDER BY age_seconds DESC
+                        LIMIT 1
+                    """)
+                    
+                    result = cursor.fetchone()
+                    if result:
+                        self.gauge('vector_db.embeddings.hourly_growth', 
+                                 result['embeddings_created'],
+                                 tags=['service:vector-db'])
+                    
+                    # Vector search performance by namespace
+                    cursor.execute("""
+                        SELECT 
+                            namespace,
+                            count(*) as search_count,
+                            avg(query_time_ms) as avg_query_time
+                        FROM vectors.vector_search_stats 
+                        WHERE search_timestamp >= now() - interval '5 minutes'
+                        GROUP BY namespace
+                    """)
+                    
+                    for row in cursor.fetchall():
+                        tags = [f'namespace:{row["namespace"]}', 'service:vector-db']
+                        self.gauge('vector_db.search.count', row['search_count'], tags=tags)
+                        self.gauge('vector_db.search.avg_latency', row['avg_query_time'], tags=tags)
+                    
+                    # Index efficiency metrics
+                    cursor.execute("""
+                        SELECT 
+                            indexname,
+                            CASE WHEN idx_tup_read > 0 
+                                THEN (idx_tup_fetch::float / idx_tup_read::float) * 100 
+                                ELSE 0 
+                            END as index_efficiency
+                        FROM pg_stat_user_indexes 
+                        WHERE schemaname = 'vectors'
+                        AND indexname LIKE '%embedding%'
+                    """)
+                    
+                    for row in cursor.fetchall():
+                        tags = [f'index:{row["indexname"]}', 'service:vector-db']
+                        self.gauge('vector_db.index.efficiency_percent', 
+                                 row['index_efficiency'], tags=tags)
+                
+                conn.close()
+                
+            except Exception as e:
+                self.service_check('vector_db.can_connect', AgentCheck.CRITICAL, 
+                                 message=str(e))
+                self.log.error(f"Error connecting to vector database: {e}")
+                return
+            
+            self.service_check('vector_db.can_connect', AgentCheck.OK)
+---
+# Network Policy for secure database access
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: vector-db-network-policy
+  namespace: vibecode-platform
+  labels:
+    app: vector-db
+    component: security
+spec:
+  podSelector:
+    matchLabels:
+      app: vector-db
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow connections from application pods
+    - from:
+        - podSelector:
+            matchLabels:
+              app: vibecode-webgui
+        - podSelector:
+            matchLabels:
+              app: vector-db-router
+      ports:
+        - protocol: TCP
+          port: 5432
+    
+    # Allow monitoring from Prometheus and Datadog
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+        - namespaceSelector:
+            matchLabels:
+              name: datadog
+      ports:
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 9187
+    
+    # Allow inter-replica communication for replication
+    - from:
+        - podSelector:
+            matchLabels:
+              app: vector-db
+      ports:
+        - protocol: TCP
+          port: 5432
+  
+  egress:
+    # Allow DNS resolution
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    
+    # Allow NTP
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 123
+    
+    # Allow connections to backup storage (Azure Blob Storage)
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+      namespaceSelector:
+        matchLabels:
+          name: kube-system
