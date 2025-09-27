@@ -26,13 +26,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  const useDockerMode = process.env.DOCKER === 'true';
+  
   return (
     <html lang="en">
       <head>
-        {/* Tailwind CSS v4 is now handled via PostCSS in Docker mode */}
+        {/* Tailwind CSS v4 Browser Bundle - Loaded locally when not using Docker mode */}
+        {isDevelopment && !useDockerMode && (
+          <script 
+            src="/js/tailwind-browser.js"
+            defer
+          />
+        )}
       </head>
       <body
-        className="antialiased"
+        className="antialiased bg-background text-foreground min-h-screen"
       >
         <Providers>
           {children}

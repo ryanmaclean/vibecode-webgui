@@ -1,8 +1,6 @@
-// PostCSS config for Docker environment with Tailwind v4
-const config = {
+module.exports = {
   plugins: {
-    "@tailwindcss/postcss": {},
+    // Tailwind CSS v4 loaded via CDN, no PostCSS plugin needed
     autoprefixer: {},
   },
-};
-module.exports = config;
+}

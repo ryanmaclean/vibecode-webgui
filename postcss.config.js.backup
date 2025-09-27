@@ -1,7 +1,12 @@
-// PostCSS config for Docker environment with Tailwind v3
-module.exports = {
+// PostCSS config - switches between CDN and Docker modes
+const isDockerMode = process.env.DOCKER === 'true';
+
+const config = {
   plugins: {
-    tailwindcss: {},
+    // Only use @tailwindcss/postcss in Docker mode
+    ...(isDockerMode ? { "@tailwindcss/postcss": {} } : {}),
     autoprefixer: {},
   },
 };
+
+module.exports = config;
