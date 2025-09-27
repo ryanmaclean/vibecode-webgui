@@ -102,18 +102,47 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        // Simple validation for testing
-        if (credentials.email === 'developer@vibecode.dev' && credentials.password === 'dev123') {
+        // Development test users - matches documentation
+        const testUsers = [
+          // Admin Users
+          { email: 'admin@vibecode.dev', password: 'admin123', id: '1', name: 'VibeCode Admin', role: 'admin' },
+          { email: 'lead@vibecode.dev', password: 'lead123', id: '2', name: 'Lisa Thompson', role: 'admin' },
+          
+          // Developer Users
+          { email: 'developer@vibecode.dev', password: 'dev123', id: '3', name: 'Sarah Johnson', role: 'developer' },
+          { email: 'frontend@vibecode.dev', password: 'frontend123', id: '4', name: 'Michael Chen', role: 'developer' },
+          { email: 'backend@vibecode.dev', password: 'backend123', id: '5', name: 'Emily Rodriguez', role: 'developer' },
+          
+          // Team Members
+          { email: 'fullstack@vibecode.dev', password: 'fullstack123', id: '6', name: 'David Kim', role: 'user' },
+          { email: 'designer@vibecode.dev', password: 'design123', id: '7', name: 'Jessica Taylor', role: 'user' },
+          { email: 'tester@vibecode.dev', password: 'test123', id: '8', name: 'Robert Wilson', role: 'user' },
+          { email: 'devops@vibecode.dev', password: 'devops123', id: '9', name: 'Amanda Garcia', role: 'user' },
+          { email: 'intern@vibecode.dev', password: 'intern123', id: '10', name: 'James Martinez', role: 'user' },
+        ];
+
+        // Only allow test users in development/test environments
+        if (process.env.NODE_ENV === 'production') {
+          console.log('❌ Test users disabled in production environment');
+          return null;
+        }
+
+        // Find matching test user
+        const user = testUsers.find(u => 
+          u.email === credentials.email && u.password === credentials.password
+        );
+
+        if (user) {
           console.log('✅ User authenticated successfully:', credentials.email);
-          return { 
-            id: '2', 
-            name: 'Developer User', 
-            email: 'developer@vibecode.dev', 
-            role: 'developer' 
-          }
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+          };
         } else {
           console.log('❌ Authentication failed for:', credentials.email);
-          return null
+          return null;
         }
       },
     }),

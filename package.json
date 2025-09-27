@@ -9,6 +9,7 @@
   },
   "scripts": {
     "setup": "node scripts/setup-development.js",
+    "setup:auth": "node scripts/setup-auth-testing.js",
     "dev": "next dev",
     "dev:simple": "next dev",
     "build": "next build",
@@ -17,6 +18,8 @@
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "test": "jest",
+    "test:auth": "node tests/root-tests/credentials/test-credentials.cjs",
+    "test:protected": "node tests/root-tests/test-protected-endpoints.cjs",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:unit": "jest --testPathPatterns=tests/unit",

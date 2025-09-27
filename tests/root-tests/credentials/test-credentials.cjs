@@ -5,10 +5,21 @@
  */
 
 const testCredentials = [
-  { email: 'admin@vibecode.dev', password: 'admin123', name: 'VibeCode Admin' },
-  { email: 'developer@vibecode.dev', password: 'dev123', name: 'Sarah Johnson' },
-  { email: 'frontend@vibecode.dev', password: 'frontend123', name: 'Michael Chen' },
-  { email: 'lead@vibecode.dev', password: 'lead123', name: 'Lisa Thompson' },
+  // Admin Users (2 accounts)
+  { email: 'admin@vibecode.dev', password: 'admin123', name: 'VibeCode Admin', role: 'admin' },
+  { email: 'lead@vibecode.dev', password: 'lead123', name: 'Lisa Thompson', role: 'admin' },
+  
+  // Developer Users (3 accounts)
+  { email: 'developer@vibecode.dev', password: 'dev123', name: 'Sarah Johnson', role: 'developer' },
+  { email: 'frontend@vibecode.dev', password: 'frontend123', name: 'Michael Chen', role: 'developer' },
+  { email: 'backend@vibecode.dev', password: 'backend123', name: 'Emily Rodriguez', role: 'developer' },
+  
+  // Team Members (5 accounts)
+  { email: 'fullstack@vibecode.dev', password: 'fullstack123', name: 'David Kim', role: 'user' },
+  { email: 'designer@vibecode.dev', password: 'design123', name: 'Jessica Taylor', role: 'user' },
+  { email: 'tester@vibecode.dev', password: 'test123', name: 'Robert Wilson', role: 'user' },
+  { email: 'devops@vibecode.dev', password: 'devops123', name: 'Amanda Garcia', role: 'user' },
+  { email: 'intern@vibecode.dev', password: 'intern123', name: 'James Martinez', role: 'user' },
 ]
 
 async function testCredential(email, password, name) {
