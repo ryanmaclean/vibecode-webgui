@@ -128,6 +128,8 @@
 ### Next Steps
 - [ ] Re-run ingestion with a larger chunk budget once KIND port-forward stability is confirmed so more Datadog content ranks higher.
 - [ ] Capture the Datadog spans for `service:vibecode-rag-demo env:kind` after trace search permissions are restored.
+- [x] Wire Datadog trace verification into runbooks (`docs/runbooks/datadog-trace-search-access.md`) with `npm run monitoring:trace` and the workflow `.github/workflows/datadog-trace-verify.yml`.
+- [ ] Schedule automated trace verification (workflow currently failing because `scripts/ensure-native-binaries.js` is skipped in CI; revisit after deciding on stub vs. disabling the postinstall hook).
 
 ## Agent Update (2025-09-24 19:23 UTC)
 
