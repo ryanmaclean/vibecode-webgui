@@ -154,6 +154,7 @@ go.work
 # Test artifacts
 coverage.xml
 test-results/
+tests/e2e/test-results/
 junit.xml
 
 # Performance test results
