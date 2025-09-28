@@ -162,6 +162,17 @@
 - [ ] After merging #249, repeat the validation flow for PRs #250 (framer-motion), #247 (@ai-sdk/openai), and #251 (tar-fs) to land the set.
 - [ ] Audit July 2025 remote branches (e.g., `origin/fix/auth-investigation`, `origin/cursor/identify-2025-online-trends-6363`) with owners and delete once confirmed obsolete.
 
+## Agent Update (2025-09-29 20:45 UTC)
+
+- Spawned `fix/ai-route-lint` branch from `main` (commit cd22e15d) so Dependabot PRs can rebase onto the shared lint/type fixes without replaying unrelated history.
+- Guarded `.github/workflows/secret-scanning.yml` so TruffleHog skips when `base == head`; this resolves the recurring CI failure on pushes to `main` with empty diffs.
+- Next: push the branch upstream, notify Dependabot PRs (#322, #321, #251, #241) to rebase, and rerun `npm run lint`, `npm run type-check`, `npm run test:unit` once the queue frees up.
+
+### Next Steps
+- [ ] Push `fix/ai-route-lint` and comment on Dependabot PRs (#322, #321, #251, #241) with rebase instructions.
+- [ ] Trigger `main-branch-ci.yml` after the TruffleHog guard lands to confirm the workflow succeeds.
+- [ ] Continue monitoring the long-running `scripts/ingest-docs-to-rag.ts` job; run `scripts/rag-local-demo.ts` once complete and document results in issue #312.
+
 ## Agent Update (2025-09-29 20:00 UTC)
 
 - **Repository Consolidation Complete**: Cleaned up sprawling codebase to focus on core functionality
