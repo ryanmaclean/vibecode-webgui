@@ -116,6 +116,13 @@ variable "postgresql_admin_username" {
   default     = "vibecodeusr"
 }
 
+variable "postgres_admin_password_override" {
+  description = "Optional override for the PostgreSQL administrator password (set to sync Terraform with rotated credentials)."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 # Azure AI Services Configuration
 variable "azure_openai_sku_name" {
   description = "SKU name for Azure OpenAI service"

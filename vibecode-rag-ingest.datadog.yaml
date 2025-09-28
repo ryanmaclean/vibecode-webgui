@@ -1,0 +1,59 @@
+schema-version: v2.2
+dd-service: vibecode-rag-ingest
+team: platform-engineering
+contacts:
+  - name: Kim Smith
+    type: email
+    contact: kim.smith@vibecode.com
+  - name: Jessie
+    type: email
+    contact: jessie@vibecode.com
+  - name: Platform Engineering Slack
+    type: slack
+    contact: https://vibecode.slack.com/archives/platform-engineering
+  - name: Platform Engineering Email
+    type: email
+    contact: platform-engineering@vibecode.com
+description: Queue-triggered worker that processes document uploads, generates embeddings, and stores RAG chunks in PostgreSQL.
+tier: tier1
+lifecycle: production
+application: vibecode-platform
+languages:
+  - typescript
+type: function
+ci-pipeline-fingerprints:
+  - github-actions:main-branch-ci
+  - github-actions:deploy-aks-monitoring
+links:
+  - name: RAG Ingestion Runbook
+    type: runbook
+    url: https://github.com/vibecode/vibecode-webgui/blob/main/queue-worker/README.md
+  - name: PDF Ingestion Pipeline
+    type: doc
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui/blob/main/docs/src/content/docs/pdf-ingestion-queue.md
+  - name: Queue Worker Source
+    type: repo
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui/tree/main/queue-worker
+  - name: RAG Observability Dashboard
+    type: doc
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui/blob/main/monitoring/datadog/dashboards/vector-database-dashboard.json
+tags:
+  - env:production
+  - component:rag-ingest
+  - runtime:azure-functions
+  - language:typescript
+  - business-unit:platform
+  - cost-center:engineering
+extensions:
+  datadoghq.com/dora-metrics:
+    repository: vibecode/vibecode-webgui
+    source_patterns:
+      - queue-worker/**
+      - docs/src/content/docs/pdf-ingestion-queue.md
+  datadoghq.com/cd-visibility:
+    deployment_patterns:
+      - Publish Queue Worker Function
+      - Validate RAG Ingestion Pipeline

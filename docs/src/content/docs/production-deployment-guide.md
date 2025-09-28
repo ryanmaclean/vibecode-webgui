@@ -177,6 +177,10 @@ kubectl create secret generic datadog-secret -n monitoring \
 kubectl apply -f infrastructure/kubernetes/monitoring/production/
 ```
 
+- The Helm values in `k8s/datadog-values.yaml` keep `datadog.networkMonitoring.enabled: true` and `systemProbe.enabled: true`; do not disable them because they power Cloud Network Monitoring dashboards.
+- Validate the deployment with `kubectl -n monitoring exec daemonset/datadog-agent -- agent status | grep -A5 "Network"` to confirm the network module is running.
+- Check Valkey/Postgres integrations with `kubectl -n monitoring exec daemonset/datadog-agent -- agent configcheck | grep -E "redisdb|postgres"` and ensure DBM dashboards populate.
+
 ### Alert Channels Configuration
 
 ```bash

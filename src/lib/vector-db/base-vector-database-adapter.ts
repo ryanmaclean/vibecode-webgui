@@ -4,9 +4,11 @@
  */
 
 import OpenAI from 'openai';
+import type { Span } from 'dd-trace';
 import { VectorDatabaseInterface } from './vector-database-interface';
 import { VectorChunk, SearchResult, SearchOptions, VectorDatabaseConfig } from './vector-types';
 import { metrics } from '../server-monitoring';
+import { llmObservability } from '../datadog-llm';
 
 /**
  * Abstract base class for vector database adapters
@@ -19,6 +21,9 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
   protected connectionStatus = false;
   protected retryCount = 0;
   protected lastError: Error | null = null;
+  protected embeddingModelIdentifier: string;
+  protected embeddingModelTag: string;
+  protected embeddingDimensions: number;
 
   /**
    * Constructor for the base adapter
@@ -34,11 +39,20 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       ...config
     };
 
+    const configuredModel = this.config.embeddingModel || process.env.OPENROUTER_EMBEDDING_MODEL || process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
+    this.embeddingModelTag = this.normalizeModelTag(configuredModel);
+    this.embeddingModelIdentifier = this.determineModelIdentifier(configuredModel);
+    this.embeddingDimensions = this.config.embeddingDimensions || this.resolveModelDimensions(this.embeddingModelTag);
+
     // Initialize OpenAI client for embeddings
     if (process.env.OPENROUTER_API_KEY) {
       this.openai = new OpenAI({
         baseURL: 'https://openrouter.ai/api/v1',
         apiKey: process.env.OPENROUTER_API_KEY,
+      });
+    } else if (process.env.OPENAI_API_KEY) {
+      this.openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
       });
     }
   }
@@ -100,32 +114,83 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       throw new Error('OpenAI client not initialized. Check OPENROUTER_API_KEY');
     }
 
-    try {
-      const startTime = Date.now();
-      
-      const response = await this.openai.embeddings.create({
-        model: 'text-embedding-3-small', // Using OpenAI embedding model via OpenRouter
-        input: text,
-      });
-      
-      if (this.config.enableMetrics) {
-        metrics.histogram('vector_db.embedding.duration', Date.now() - startTime);
-        metrics.increment('vector_db.embedding.success');
-      }
+    return llmObservability.createTaskSpan(
+      'vector-db.embedding',
+      async (span?: Span) => {
+        const startTime = Date.now();
 
-      return response.data[0].embedding;
-    } catch (error) {
-      if (this.config.enableMetrics) {
-        metrics.increment('vector_db.embedding.error');
+        try {
+          const response = await this.openai!.embeddings.create({
+            model: this.embeddingModelIdentifier,
+            input: text,
+          });
+
+          const embedding = response.data[0].embedding;
+          const duration = Date.now() - startTime;
+
+          if (this.config.enableMetrics) {
+            metrics.histogram('vector_db.embedding.duration', duration, {
+              provider: this.config.provider,
+              model: this.embeddingModelTag,
+            });
+            metrics.increment('vector_db.embedding.success', {
+              provider: this.config.provider,
+              model: this.embeddingModelTag,
+            });
+          }
+
+          span?.setTag('embedding.model', this.embeddingModelTag);
+          span?.setTag('embedding.provider', this.config.provider);
+          span?.setTag('embedding.dimensions', embedding.length);
+          span?.setTag('embedding.duration_ms', duration);
+          span?.setTag('embedding.input_length', text.length);
+
+          if (embedding.length !== this.embeddingDimensions) {
+            span?.setTag('embedding.dimension_mismatch', true);
+            span?.setTag('embedding.expected_dimensions', this.embeddingDimensions);
+            if (this.config.enableMetrics) {
+              metrics.increment('vector_db.embedding.dimension_mismatch', {
+                provider: this.config.provider,
+                model: this.embeddingModelTag,
+                expected: String(this.embeddingDimensions),
+                actual: String(embedding.length),
+              });
+            }
+          }
+
+          return embedding;
+        } catch (error) {
+          if (this.config.enableMetrics) {
+            metrics.increment('vector_db.embedding.error', {
+              provider: this.config.provider,
+              model: this.embeddingModelTag,
+            });
+          }
+
+          if (this.config.enableLogging) {
+            console.error('Error generating embedding:', error);
+          }
+
+          if (span) {
+            span.setTag('error', true);
+            span.setTag('error.message', error instanceof Error ? error.message : String(error));
+          }
+
+          // Fallback: return zero vector
+          return new Array(this.embeddingDimensions).fill(0);
+        }
+      },
+      {
+        tags: ['vector-db', 'embedding'],
+        context: {
+          provider: this.config.provider,
+          model: this.embeddingModelTag,
+        },
+        input: {
+          textLength: text.length,
+        },
       }
-      
-      if (this.config.enableLogging) {
-        console.error('Error generating embedding:', error);
-      }
-      
-      // Fallback: return zero vector
-      return new Array(1536).fill(0); // text-embedding-3-small returns 1536-dimensional vectors
-    }
+    );
   }
 
   /**
@@ -158,6 +223,45 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       
       // Fallback to simpler text search if available
       return this.fallbackTextSearch(query, options);
+    }
+  }
+
+  protected normalizeModelTag(model: string): string {
+    if (!model) {
+      return 'text-embedding-3-small';
+    }
+
+    const trimmed = model.trim();
+    if (trimmed.startsWith('openai/')) {
+      return trimmed.replace(/^openai\//, '');
+    }
+
+    return trimmed;
+  }
+
+  protected determineModelIdentifier(model: string): string {
+    if (!model) {
+      return 'openai/text-embedding-3-small';
+    }
+
+    const trimmed = model.trim();
+    const isOpenRouter = Boolean(process.env.OPENROUTER_API_KEY);
+
+    if (trimmed.startsWith('openai/')) {
+      return isOpenRouter ? trimmed : trimmed.replace(/^openai\//, '');
+    }
+
+    return isOpenRouter ? `openai/${trimmed}` : trimmed;
+  }
+
+  protected resolveModelDimensions(modelTag: string): number {
+    switch (modelTag) {
+      case 'text-embedding-3-large':
+        return 3072;
+      case 'text-embedding-ada-002':
+      case 'text-embedding-3-small':
+      default:
+        return 1536;
     }
   }
 

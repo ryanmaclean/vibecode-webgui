@@ -113,7 +113,7 @@ data:
       
     # Tags for local environment
     tags:
-      - env:local
+      - env:developement
       - cluster:kind
       - project:vibecode
 ---
@@ -165,7 +165,7 @@ spec:
           - name: DD_PROCESS_AGENT_ENABLED
             value: "true"
           - name: DD_ENV
-            value: "local"
+            value: "developement"
           - name: KUBERNETES
             value: "true"
           - name: DD_KUBERNETES_KUBELET_HOST

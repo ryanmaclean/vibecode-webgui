@@ -102,7 +102,6 @@ OTEL_PROMETHEUS_ENDPOINT=/metrics
 
 # For client-side OpenTelemetry
 NEXT_PUBLIC_OTEL_ENABLED=true
-NEXT_PUBLIC_OTEL_EXPORTER_URL=/api/monitoring/traces
 
 # Datadog Integration (optional)
 DD_API_KEY=your_datadog_api_key_here
@@ -111,12 +110,13 @@ DD_SITE=datadoghq.com
 # Service Information
 DD_SERVICE=vibecode-webgui
 DD_VERSION=1.0.0
-DD_ENV=development
+DD_ENV=developement
 `.trim()
 
     const envExamplePath = path.join(process.cwd(), '.env.otel.example')
     await fs.writeFile(envExamplePath, envExample)
     console.log(`✅ Environment example saved to .env.otel.example`)
+
   }
 
   private async validateEndpoints() {

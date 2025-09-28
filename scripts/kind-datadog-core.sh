@@ -92,7 +92,7 @@ datadog:
   
   tags:
     - "project:vibecode"
-    - "env:development"
+    - "env:developement"
 
 clusterAgent:
   enabled: true

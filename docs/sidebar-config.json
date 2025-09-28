@@ -121,6 +121,10 @@
         "link": "/kind-validation/"
       },
       {
+        "label": "MicroK8s Datadog Monitoring",
+        "link": "/microk8s-datadog-network-monitoring/"
+      },
+      {
         "label": "KIND_VALIDATION_REPORT",
         "link": "/KIND_VALIDATION_REPORT/"
       },

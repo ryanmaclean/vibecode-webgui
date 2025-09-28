@@ -65,8 +65,9 @@ python scripts/app_deploy.py \
 ### 4. Datadog Monitoring Setup
 
 ```bash
-# Export your Datadog API key
+# Export your Datadog credentials
 export DD_API_KEY=your_datadog_api_key
+export DD_APP_KEY=your_datadog_app_key
 export DD_SITE=datadoghq.com  # Optional, defaults to datadoghq.com
 
 # Deploy Datadog monitoring stack
@@ -76,8 +77,17 @@ export DD_SITE=datadoghq.com  # Optional, defaults to datadoghq.com
   --namespace vibecode-platform \
   --datadog-namespace datadog
 
+# Apply least-privilege RBAC for DBM operations
+kubectl apply -f k8s/rbac/dbm-ops-rbac.yaml
+
 # Validate Database Monitoring (after application is deployed)
 ./scripts/verify-datadog-dbm.sh
+
+# Quick metric smoke test against Datadog (requires jq)
+DD_API_KEY=$DD_API_KEY DD_APP_KEY=$DD_APP_KEY ./scripts/check-datadog-dbmon-metrics.sh -s vibecode -w 15m
+
+# The curated dashboard is available at:
+# https://app.datadoghq.com/dashboard/t47-awp-k2u/postgresql-pgvector-monitoring---vibecode
 ```
 
 ### 5. LLM Provider Configuration
@@ -90,9 +100,9 @@ export VIBECODE_DEFAULT_LLM_MODEL="mistralai/mistral-small-3.2-24b-instruct:free
 read -r -d '' FREE_LLM_MODELS <<'EOF'
 mistralai/mistral-small-3.2-24b-instruct:free
 x-ai/grok-4-fast:free
-deepseek/deepseek-chat-v3.1:free
 openai/gpt-oss-20b:free
 openai/gpt-oss-120b:free
+deepseek/deepseek-chat-v3.1:free
 nvidia/nemotron-nano-9b-v2:free
 z-ai/glm-4.5-air:free
 google/gemma-3n-e4b-it:free
@@ -108,6 +118,10 @@ helm upgrade vibecode charts/vibecode \
 ```
 
 > Tip: Keep at least one stable coding/generalist model (for example, the Mistral entry above) at the front of the list so the fallback chain has a reliable first responder.
+
+Starting with this release the chart installs a `CronJob` named `vibecode-free-llm-updater` that re-validates the OpenRouter free-tier catalogue every 12 hours. Successful runs patch the `free-llm-models` ConfigMap, which is mounted into the web pods at `/etc/vibecode/free-llm-models/models.txt` and read through the `FREE_LLM_MODELS_FILE` environment variable. Docker Compose environments include an equivalent `free-llm-model-updater` sidecar that performs the same refresh loop and writes to `/app/runtime/free-llm-models/models.txt`.
+
+Each job run also emits Datadog metrics (counts, gauges, and durations) under the `openrouter.free_models.*` namespace when `DD_API_KEY` is available, so you can alert on stale data (for example, `openrouter.free_models.working_models` dropping below your comfort threshold or consecutive `openrouter.free_models.failure` increments).
 
 ### 6. Data and Vector Setup
 
@@ -149,6 +163,9 @@ kubectl get certificate -n vibecode-platform
 ### Datadog Verification
 
 ```bash
+# Ensure DBM cluster agents are running for Kubernetes resource collection
+kubectl get deployments -n datadog -l app.kubernetes.io/name=datadog-cluster-agent
+
 # Check Datadog agent status
 kubectl get pods -n datadog
 
@@ -190,7 +207,10 @@ helm upgrade nginx-ingress ingress-nginx/ingress-nginx \
 # Update Datadog values
 helm upgrade datadog datadog/datadog \
   --namespace datadog \
-  --values k8s/datadog-values-aks.yaml
+  --values k8s/datadog-values-aks.yaml            # production
+# helm upgrade datadog datadog/datadog \
+#   --namespace datadog \
+#   --values k8s/datadog-values-aks-staging.yaml   # staging
 ```
 
 ## Troubleshooting

@@ -52,6 +52,25 @@ spec:
     metadata:
       labels:
         app: valkey
+      annotations:
+        ad.datadoghq.com/valkey.check_names: |
+          ["redisdb"]
+        ad.datadoghq.com/valkey.init_configs: |
+          [{}]
+        ad.datadoghq.com/valkey.instances: |
+          [{
+            "host": "%%host%%",
+            "port": 6379,
+            "tags": [
+              "service:vibecode-valkey",
+              "component:cache"
+            ]
+          }]
+        ad.datadoghq.com/valkey.logs: |
+          [{
+            "source": "redis",
+            "service": "vibecode-valkey"
+          }]
     spec:
       containers:
       - name: valkey
@@ -69,10 +88,10 @@ spec:
         resources:
           requests:
             memory: "128Mi"
-            cpu: "100m"
+            cpu: "25m"
           limits:
             memory: "256Mi"
-            cpu: "250m"
+            cpu: "150m"
         livenessProbe:
           exec:
             command:

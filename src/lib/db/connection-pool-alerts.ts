@@ -3,7 +3,17 @@
  * 
  * Provides alerting functionality for database connection pool monitoring
  */
-import { VectorConnectionPoolFactory } from './vector-connection-pool';
+let VectorConnectionPoolFactoryModule: typeof import('./vector-connection-pool') | null = null;
+const isBrowser = typeof window !== 'undefined';
+
+if (!isBrowser) {
+  try {
+    const nodeRequire = typeof eval === 'function' ? eval('require') : require;
+    VectorConnectionPoolFactoryModule = nodeRequire('./vector-connection-pool');
+  } catch (error) {
+    console.warn('[ConnectionPoolAlertService] Unable to load vector connection pool module', error);
+  }
+}
 
 // Alert severity levels
 export enum AlertSeverity {
@@ -190,7 +200,13 @@ export default class ConnectionPoolAlertService {
    */
   private checkConnectionPool(): void {
     try {
-      // Use pool factory to avoid circular deps and ensure availability
+      if (!VectorConnectionPoolFactoryModule) {
+        // Running in a browser or vector pool factory unavailable; skip heavy checks
+        return;
+      }
+
+      const { VectorConnectionPoolFactory } = VectorConnectionPoolFactoryModule;
+
       let pool = VectorConnectionPoolFactory.getPool('default');
       if (!pool) {
         pool = VectorConnectionPoolFactory.createPool({
@@ -314,7 +330,7 @@ export default class ConnectionPoolAlertService {
             totalConnections: metrics.poolSize
           }
         });
-      }
+     }
     } catch (error) {
       console.error('Error monitoring connection pool:', error);
       

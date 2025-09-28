@@ -109,26 +109,28 @@ function getTracer() {
     const mlApp = process.env.DD_LLMOBS_ML_APP || 'vibecode-ai';
 
     // Initialize the tracer with Next.js 15 compatible config
+    const startupLogsEnabled = parseFlag(process.env.DD_TRACE_STARTUP_LOGS, process.env.DD_TRACE_DEBUG === 'true');
+
     tracer.init({
       // Docs: https://docs.datadoghq.com/tracing/trace_collection/library_config/nodejs/
       logInjection: false, // Disabled to avoid stack trace issues
       profiling: false, // Disabled to avoid compatibility issues
       runtimeMetrics: false, // Disabled to avoid Next.js compatibility issues
       site,
-      startupLogs: false, // Reduce startup noise
+      startupLogs: startupLogsEnabled,
       env,
       service,
       version,
       
-      // Conservative sampling for development
-      sampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 0.5,
+      // Always sample while we're verifying Datadog ingestion
+      sampleRate: 1,
       
       // Enable database monitoring with minimal plugin set for Next.js 15
       plugins: {
         // Database monitoring for PostgreSQL
         pg: {
           enabled: true,
-          dbmPropagationMode: 'disabled', // Disable DBM propagation for compatibility
+          dbmPropagationMode: process.env.DD_DBM_PROPAGATION_MODE || 'full', // Enable DBM propagation per documentation
           service: 'vibecode-postgres'
         },
         openai: {
@@ -160,7 +162,9 @@ function getTracer() {
         enabled: llmObservabilityEnabled,
         agentlessEnabled: llmObservabilityEnabled && llmObservabilityAgentless,
         mlApp,
-      }
+      },
+      logLevel: process.env.DD_TRACE_LOG_LEVEL || (process.env.DD_TRACE_DEBUG === 'true' ? 'debug' : 'info'),
+      logFile: process.env.DD_TRACE_LOG_FILE || process.env.DD_TRACE_LOG_PATH
     });
 
     if (llmObservabilityEnabled) {

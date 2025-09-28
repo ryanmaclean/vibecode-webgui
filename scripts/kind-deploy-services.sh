@@ -5,7 +5,7 @@ set -e
 echo "🏗️  Deploying VibeCode services to KIND cluster"
 echo "=============================================="
 
-CLUSTER_NAME="vibecode-cluster"
+CLUSTER_NAME="${KIND_CLUSTER_NAME:-vibecode-test}"
 NAMESPACE="vibecode-platform"
 
 # Verify cluster exists and is accessible

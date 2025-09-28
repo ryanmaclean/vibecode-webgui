@@ -1,17 +1,50 @@
 import OpenAI from 'openai';
+import type { Span } from 'dd-trace';
 import { VectorService } from '../db/vector';
 import { PrismaClient } from '@prisma/client';
+import { llmObservability } from '../datadog-llm';
+import { metrics } from '../server-monitoring';
+
+export interface EmbeddingServiceOptions {
+  baseURL?: string;
+  defaultHeaders?: Record<string, string>;
+  dangerouslyAllowBrowser?: boolean;
+}
+
+const EMBEDDING_DIMENSIONS: Record<string, number> = {
+  'text-embedding-ada-002': 1536,
+  'text-embedding-3-small': 1536,
+  'text-embedding-3-large': 3072,
+};
 
 export class EmbeddingService {
   private openai: OpenAI;
   private vectorService: VectorService;
-  private model: string;
+  private readonly apiModel: string;
+  private readonly modelTag: string;
+  private readonly providerTag: string;
+  private readonly expectedDimensions: number;
 
-  constructor(apiKey: string, model: string = 'text-embedding-3-small', prismaClient: PrismaClient) {
+  constructor(
+    apiKey: string,
+    model: string = 'text-embedding-3-small',
+    prismaClient: PrismaClient,
+    clientOptions: EmbeddingServiceOptions = {}
+  ) {
+    const { baseURL, defaultHeaders, dangerouslyAllowBrowser } = clientOptions;
+
     this.openai = new OpenAI({
       apiKey,
+      ...(baseURL ? { baseURL } : {}),
+      ...(defaultHeaders && Object.keys(defaultHeaders).length > 0
+        ? { defaultHeaders }
+        : {}),
+      ...(dangerouslyAllowBrowser ? { dangerouslyAllowBrowser } : {}),
     });
-    this.model = model;
+    this.apiModel = model;
+    this.modelTag = this.normalizeModelTag(model);
+    this.providerTag = baseURL && baseURL.includes('openrouter') ? 'openrouter' : 'openai';
+    this.expectedDimensions = EMBEDDING_DIMENSIONS[this.modelTag] ?? 1536;
     this.vectorService = new VectorService(prismaClient);
   }
 
@@ -19,17 +52,80 @@ export class EmbeddingService {
    * Generate embeddings for a piece of text
    */
   async generateEmbedding(text: string): Promise<number[]> {
-    try {
-      const response = await this.openai.embeddings.create({
-        model: this.model,
-        input: text
-      });
+    return llmObservability.createTaskSpan(
+      'embedding.generate',
+      async (span?: Span) => {
+        const start = Date.now();
 
-      return response.data[0].embedding;
-    } catch (error) {
-      console.error('Error generating embedding:', error);
-      throw new Error('Failed to generate embedding');
-    }
+        try {
+          const response = await this.openai.embeddings.create({
+            model: this.apiModel,
+            input: text,
+          });
+
+          const embedding = response.data[0].embedding;
+          const duration = Date.now() - start;
+
+          span?.setTag('embedding.model', this.modelTag);
+          span?.setTag('embedding.provider', this.providerTag);
+          span?.setTag('embedding.dimensions', embedding.length);
+          span?.setTag('embedding.input_length', text.length);
+          span?.setTag('embedding.duration_ms', duration);
+
+          metrics.histogram('embedding.generate.duration_ms', duration, {
+            model: this.modelTag,
+            provider: this.providerTag,
+          });
+          metrics.increment('embedding.generate.success', {
+            model: this.modelTag,
+            provider: this.providerTag,
+          });
+
+          if (embedding.length !== this.expectedDimensions) {
+            metrics.increment('embedding.generate.dimension_mismatch', {
+              expected: String(this.expectedDimensions),
+              actual: String(embedding.length),
+              model: this.modelTag,
+            });
+            span?.setTag('embedding.dimension_mismatch', true);
+            span?.setTag('embedding.expected_dimensions', this.expectedDimensions);
+          }
+
+          llmObservability.annotate({
+            metadata: {
+              embedding_model: this.modelTag,
+              embedding_provider: this.providerTag,
+              embedding_dimensions: embedding.length,
+              duration_ms: duration,
+            },
+            tags: ['embedding', this.providerTag],
+          });
+
+          return embedding;
+        } catch (error) {
+          metrics.increment('embedding.generate.error', {
+            model: this.modelTag,
+            provider: this.providerTag,
+          });
+
+          if (span) {
+            span.setTag('error', true);
+            span.setTag('error.message', error instanceof Error ? error.message : String(error));
+          }
+
+          console.error('Error generating embedding:', error);
+          throw new Error('Failed to generate embedding');
+        }
+      },
+      {
+        tags: ['embedding', this.providerTag],
+        input: { textLength: text.length },
+        context: {
+          model: this.modelTag,
+          provider: this.providerTag,
+        },
+      }
+    );
   }
 
   /**
@@ -49,7 +145,9 @@ export class EmbeddingService {
         embedding,
         metadata: {
           ...metadata,
-          model: this.model,
+          model: this.modelTag,
+          provider: this.providerTag,
+          embeddingDimensions: embedding.length,
           contentLength: content.length,
           updatedAt: new Date().toISOString(),
         },
@@ -99,7 +197,7 @@ export class EmbeddingService {
         query,
         context,
         documents: similarDocs,
-        model: this.model,
+        model: this.modelTag,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
@@ -116,7 +214,7 @@ export class EmbeddingService {
       const stats = await this.vectorService.getEmbeddingStats();
       return {
         stats,
-        model: this.model,
+        model: this.modelTag,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
@@ -137,12 +235,28 @@ export class EmbeddingService {
       const result = await this.vectorService.cleanupOldEmbeddings(daysToKeep);
       return {
         deletedCount: result.deletedCount,
-        model: this.model,
+        model: this.modelTag,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
       console.error('Error cleaning up old embeddings:', error);
       throw new Error('Failed to clean up old embeddings');
     }
+  }
+
+  /**
+   * Normalize a model string for tagging/metrics (strip provider prefixes)
+   */
+  private normalizeModelTag(model: string): string {
+    const trimmed = (model || '').trim();
+    if (!trimmed) {
+      return 'text-embedding-3-small';
+    }
+
+    if (trimmed.startsWith('openai/')) {
+      return trimmed.replace(/^openai\//, '');
+    }
+
+    return trimmed;
   }
 }

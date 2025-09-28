@@ -9,6 +9,23 @@
 
 const VALID_KEYS = new Set(['API_KEY', 'APP_KEY', 'SITE', 'SERVICE', 'ENV', 'VERSION']);
 
+function readBooleanFlag(value, defaultValue = false) {
+  if (typeof value !== 'string') {
+    return defaultValue;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+    return true;
+  }
+
+  if (['0', 'false', 'no', 'off'].includes(normalized)) {
+    return false;
+  }
+
+  return defaultValue;
+}
+
 function safeWarn(message) {
   if (process.env.NODE_ENV !== 'test') {
     console.warn(`[DatadogEnv] ${message}`);
@@ -71,6 +88,11 @@ function getRUMPublicConfig() {
   return { applicationId, clientToken, site, version, env };
 }
 
+function isDBMEnabled() {
+  const flag = process.env.DD_DBM_ENABLED || process.env.DATADOG_DBM_ENABLED;
+  return readBooleanFlag(flag, false);
+}
+
 module.exports = {
   getDDValue,
   getDatadogApiKey,
@@ -78,4 +100,5 @@ module.exports = {
   getDatadogSite,
   getServiceEnvVersion,
   getRUMPublicConfig,
+  isDBMEnabled,
 };

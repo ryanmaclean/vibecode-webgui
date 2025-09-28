@@ -113,7 +113,7 @@ cat > .env << EOF
 # Datadog Configuration
 DD_API_KEY=$DD_API_KEY
 DD_SITE=datadoghq.com
-DD_ENV=development
+DD_ENV=developement
 DD_SERVICE=vibecode-webgui
 DD_VERSION=1.0.0
 

@@ -11,6 +11,8 @@ import { prisma, logAIRequest } from '@/lib/prisma'
 import { vectorStore } from '@/lib/vector-store'
 import ddTrace from 'dd-trace'
 import { createChatCompletionWithFallback, pickFreeModel } from '@/lib/ai-clients/litellm-instance'
+import type { ChatCompletionFallbackResult } from '@/lib/ai-clients/litellm-instance'
+import type { ChatCompletionResponse } from '@/lib/ai-clients/litellm-client'
 import { LLMTracer } from '@/lib/monitoring/llm-tracer'
 
 const tracer = ddTrace.tracer ?? ddTrace
@@ -155,10 +157,11 @@ export async function POST(request: NextRequest) {
       let workspaceDbId: number | null = null
 
       if (!allowTestBypass && includeRag && workspaceId && userPrompt) {
+        const numericUserId = userId as number;
         const workspace = await prisma.workspace.findFirst({
           where: {
             workspace_id: workspaceId,
-            user_id: userId
+            user_id: numericUserId
           }
         })
 
@@ -201,15 +204,15 @@ export async function POST(request: NextRequest) {
         {
           model,
           provider: 'litellm',
-            userId: session.user.id?.toString(),
-            sessionId: request.headers.get('x-session-id') || undefined,
-            prompt: userPrompt,
-            input: ragContext ? `Context:\n${ragContext}\n\nPrompt:\n${userPrompt}` : userPrompt,
+          userId: session.user.id?.toString(),
+          sessionId: request.headers.get('x-session-id') || undefined,
+          prompt: userPrompt,
+          input: ragContext ? `Context:\n${ragContext}\n\nPrompt:\n${userPrompt}` : userPrompt,
           temperature,
           maxTokens: max_tokens
         },
         async () => {
-         return createChatCompletionWithFallback({
+          return createChatCompletionWithFallback({
             model,
             messages: augmentedMessages,
             temperature,
@@ -224,28 +227,44 @@ export async function POST(request: NextRequest) {
         }
       )
 
-      const llmResponseCandidate = (llmOutcome && typeof llmOutcome === 'object' && 'response' in llmOutcome)
-        ? (llmOutcome as { response: unknown }).response
-        : llmOutcome
+      type LiteLLMResponse = ChatCompletionResponse & {
+        cost?: { total_cost?: number };
+      };
 
-      const llmResponse = llmResponseCandidate ?? {
+      const fallbackResult = llmOutcome as Partial<ChatCompletionFallbackResult> | LiteLLMResponse;
+      const defaultLiteLLMResponse: LiteLLMResponse = {
+        id: 'fallback-response',
+        object: 'chat.completion',
+        created: Math.floor(Date.now() / 1000),
         model,
         choices: [
           {
             message: {
+              role: 'assistant',
               content: 'Mock response unavailable',
             },
+            finish_reason: 'stop',
+            index: 0,
           },
         ],
-        usage: {},
-      }
-      const modelUsed = (llmOutcome && typeof llmOutcome === 'object' && 'modelUsed' in llmOutcome)
-        ? (llmOutcome as { modelUsed?: string }).modelUsed ?? llmResponse.model ?? model
-        : (llmResponse as { model?: string }).model ?? model
+        usage: {
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0,
+        },
+      };
 
-      const providerUsed = (llmOutcome && typeof llmOutcome === 'object' && 'provider' in llmOutcome)
-        ? (llmOutcome as { provider?: string }).provider ?? 'litellm'
-        : 'litellm'
+      const llmResponse: LiteLLMResponse = (fallbackResult && typeof fallbackResult === 'object' && 'response' in fallbackResult)
+        ? (fallbackResult.response as LiteLLMResponse)
+        : (fallbackResult as LiteLLMResponse | undefined) ?? defaultLiteLLMResponse;
+
+      const modelUsed = (fallbackResult && typeof fallbackResult === 'object' && 'modelUsed' in fallbackResult)
+        ? (fallbackResult as { modelUsed?: string }).modelUsed ?? llmResponse.model ?? model
+        : llmResponse.model ?? model;
+
+      const providerUsed = (fallbackResult && typeof fallbackResult === 'object' && 'provider' in fallbackResult)
+        ? (fallbackResult as { provider?: string }).provider ?? 'litellm'
+        : 'litellm';
       const processingTime = Date.now() - startTime
 
       if (llmResponse.usage) {

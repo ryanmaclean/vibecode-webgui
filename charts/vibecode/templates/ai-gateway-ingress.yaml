@@ -1,0 +1,28 @@
+{{- if and .Values.aiGateway.enabled .Values.aiGateway.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "vibecode.aiGateway.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- range $key, $value := .Values.aiGateway.ingress.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.aiGateway.ingress.className | default "nginx" }}
+  rules:
+    - host: {{ .Values.aiGateway.ingress.host | default (include "vibecode.ingressHost" .) }}
+      http:
+        paths:
+          - path: {{ .Values.aiGateway.ingress.path | default "/ai-gateway(/|$)(.*)" }}
+            pathType: {{ .Values.aiGateway.ingress.pathType | default "ImplementationSpecific" }}
+            backend:
+              service:
+                name: {{ include "vibecode.aiGateway.fullname" . }}
+                port:
+                  number: {{ .Values.aiGateway.service.port | default 3001 }}
+  {{- with .Values.aiGateway.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

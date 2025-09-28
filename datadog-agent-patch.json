@@ -1,0 +1,33 @@
+{
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [
+          {
+            "name": "datadog-agent",
+            "env": [
+              {
+                "name": "DD_LOGS_ENABLED",
+                "value": "false"
+              },
+              {
+                "name": "DD_SYSTEM_PROBE_ENABLED",
+                "value": "false"
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {"name": "dockersocket", "$patch": "delete"},
+          {"name": "procdir", "$patch": "delete"},
+          {"name": "cgroups", "$patch": "delete"},
+          {"name": "debugfs", "$patch": "delete"},
+          {"name": "systemprobe-socket-dir", "$patch": "delete"},
+          {"name": "logpodpath", "$patch": "delete"},
+          {"name": "logcontainerpath", "$patch": "delete"},
+          {"name": "pointerdir", "$patch": "delete"}
+        ]
+      }
+    }
+  }
+}

@@ -25,18 +25,23 @@ datadog:
   logs:
     enabled: true
     containerCollectAll: true
+    containerCollectUsingFiles: true
   
   # Enable APM for application tracing
   apm:
+    enabled: true
     portEnabled: true
     socketEnabled: true
+    hostSocketPath: /var/run/datadog
+
+  dogstatsd:
     hostSocketPath: /var/run/datadog
   
   # Enable process monitoring (lightweight)
   processAgent:
-    enabled: true
+    enabled: false
     
-  # Disable network monitoring for local development
+  # Enable network monitoring for local development clusters
   networkMonitoring:
     enabled: false
     
@@ -47,10 +52,76 @@ datadog:
   # Basic orchestrator explorer
   orchestratorExplorer:
     enabled: true
-    
+
+  kubeStateMetricsCore:
+    enabled: true
+  kubeStateMetricsScrape:
+    enabled: true
+
+  # Enable Kubernetes state metrics collected from the agent
+  # Collect cluster events
+  collectEvents: true
+
+  admissionController:
+    enabled: false
+
+  # Additional environment flags for full security coverage
+  env:
+    - name: DD_ENV
+      value: "developement"
+    - name: DD_HOSTNAME
+      value: "vibecode-kind-local"
+    - name: DD_KUBELET_TLS_VERIFY
+      value: "false"
+    - name: DD_APPSEC_ENABLED
+      value: "false"
+    - name: DD_IAST_ENABLED
+      value: "false"
+    - name: DD_IAST_REQUEST_SAMPLING
+      value: "0"
+    - name: DD_PROFILING_ENABLED
+      value: "false"
+    - name: DD_TRACE_SAMPLE_RATE
+      value: "1"
+    - name: DD_TRACE_ENABLED
+      value: "true"
+    - name: DD_APM_FEATURES
+      value: "appsec,profiling,ci_visibility"
+
+  # Static integrations to complement autodiscovery
+  confd:
+    redisdb.yaml: |
+      init_config:
+      instances:
+        - host: valkey-service.vibecode-platform.svc.cluster.local
+          port: 6379
+          tags:
+            - env:developement
+            - service:vibecode-valkey
+            - component:cache
+    postgres.yaml: |
+      init_config:
+      instances:
+        - host: postgres-service.vibecode-platform.svc.cluster.local
+          port: 5432
+          username: datadog
+          password: datadog_monitoring_password
+          dbname: vibecode
+          dbm: true
+          collect_wal_metrics: false
+          collect_database_size_metrics: true
+          query_samples:
+            enabled: false
+          query_activity:
+            enabled: false
+          tags:
+            - env:developement
+            - service:vibecode-postgres
+            - component:database
+
   # Local development tags
   tags:
-    - "env:local"
+    - "env:developement"
     - "cluster:kind"
     - "project:vibecode"
 
@@ -58,7 +129,8 @@ datadog:
 clusterAgent:
   enabled: true
   image:
-    tag: "1.24.0"
+    repository: datadog/cluster-agent
+    tag: "7.66.1"
   
   # Reduced resources for local development
   resources:
@@ -71,11 +143,14 @@ clusterAgent:
   
   # Enable metrics provider for HPA
   metricsProvider:
-    enabled: true
+    enabled: false
     
   # Enable cluster checks
   clusterChecks:
     enabled: true
+
+  admissionController:
+    enabled: false
 
 # Node Agent configuration
 agents:
@@ -94,13 +169,17 @@ agents:
   # Use host network for KIND compatibility
   useHostNetwork: true
 
-# Disable features not needed in local development
+# Enable required system probe for network monitoring
 systemProbe:
   enabled: false
+  enableTCPQueueLength: false
+  enableHTTPMonitoring: false
+  collectDNSStats: false
+  seccomp: "unconfined"
+  appArmor: "unconfined"
   
 securityAgent:
-  runtime:
-    enabled: false
+  enabled: false
     
 # Tolerations for KIND single-node cluster
 tolerations:

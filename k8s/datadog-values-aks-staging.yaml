@@ -1,0 +1,221 @@
+# Datadog Helm Values for AKS Staging Deployment
+# Mirrors the production configuration but tags data with the staging environment
+
+datadog:
+  # Use existing secrets created by OpenTofu / setup script
+  apiKeyExistingSecret: datadog-secret
+  appKeyExistingSecret: datadog-secret
+  
+  # Datadog site configuration
+  site: "datadoghq.com"
+  
+  # Cluster name for identification in Datadog
+  clusterName: "vibecode-aks-staging"
+  
+  # Resource configuration aligned with the production agent
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+  
+  # Enable comprehensive monitoring features
+  logs:
+    enabled: true
+    containerCollectAll: true
+    configMapName: "datadog-logs"
+    containerCollectUsingFiles: true
+  
+  apm:
+    enabled: true
+    portEnabled: true
+    socketEnabled: false
+
+  dogstatsd:
+    socketEnabled: false
+  
+  processAgent:
+    enabled: true
+    
+  networkMonitoring:
+    enabled: true
+    
+  collectEvents: true
+  kubeStateMetricsCore:
+    enabled: true
+  kubeStateMetricsScrape:
+    enabled: true
+    
+  databaseMonitoring:
+    enabled: true
+
+  confd:
+    postgres.yaml: |
+      init_config:
+      instances:
+        - host: "%%env_AZURE_PG_HOST%%"
+          port: 5432
+          username: "%%env_DD_AZURE_POSTGRES_USERNAME%%"
+          password: "%%env_DD_AZURE_POSTGRES_PASSWORD%%"
+          dbname: "%%env_AZURE_PG_DB%%"
+          ssl: 'require'
+          dbm: true
+          query_metrics:
+            enabled: true
+            run_sync: true
+            collection_interval: 15
+          query_samples:
+            enabled: false
+          query_activity:
+            enabled: true
+            collection_interval: 10
+          collect_schemas:
+            enabled: true
+            collection_interval: 60
+          collect_settings:
+            enabled: true
+            collection_interval: 60
+          tags:
+            - env:staging
+            - cloud:azure
+            - service:vibecode-azure-pg
+    redisdb.yaml: |
+      init_config:
+      instances:
+        - host: valkey-service.vibecode-platform.svc.cluster.local
+          port: 6379
+          password: ${DD_VALKEY_PASSWORD:-${DATADOG_VALKEY_PASSWORD}}
+          tags:
+            - env:staging
+            - service:vibecode-valkey
+            - component:cache
+    
+  orchestratorExplorer:
+    enabled: true
+    
+  tags:
+    - "env:staging"
+    - "provider:azure"
+    - "cluster:aks-staging"
+    - "project:vibecode"
+    - "region:eastus2"
+
+  env:
+    - name: DD_ENV
+      value: "staging"
+    - name: DD_POSTGRES_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: datadog-postgres
+          key: username
+    - name: DD_POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: datadog-postgres
+          key: password
+    - name: AZURE_PG_HOST
+      valueFrom:
+        secretKeyRef:
+          name: datadog-azure-postgres
+          key: host
+    - name: AZURE_PG_DB
+      valueFrom:
+        secretKeyRef:
+          name: datadog-azure-postgres
+          key: db
+    - name: DD_AZURE_POSTGRES_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: datadog-azure-postgres
+          key: username
+    - name: DD_AZURE_POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: datadog-azure-postgres
+          key: password
+    - name: DD_APPSEC_ENABLED
+      value: "true"
+    - name: DD_IAST_ENABLED
+      value: "true"
+    - name: DD_IAST_REQUEST_SAMPLING
+      value: "1.0"
+    - name: DD_PROFILING_ENABLED
+      value: "true"
+    - name: DD_TRACE_SAMPLE_RATE
+      value: "1"
+    - name: DD_TRACE_ENABLED
+      value: "true"
+    - name: DD_APM_ENABLED
+      value: "true"
+    - name: DD_APM_NON_LOCAL_TRAFFIC
+      value: "true"
+    - name: DD_LOGS_ENABLED
+      value: "true"
+    - name: DD_APM_FEATURES
+      value: "appsec,profiling,ci_visibility"
+
+clusterAgent:
+  enabled: true
+  replicas: 2
+  pdb:
+    create: true
+    minAvailable: 1
+  image:
+    tag: "7.66.1"
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  metricsProvider:
+    enabled: true
+  clusterChecks:
+    enabled: true
+  externalMetrics:
+    enabled: true
+  tolerations:
+    - key: "kubernetes.azure.com/scalesetpriority"
+      operator: "Equal"
+      value: "spot"
+      effect: "NoSchedule"
+
+clusterChecksRunner:
+  enabled: true
+  image:
+    tag: "7.66.1"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "250m"
+      memory: "512Mi"
+
+agents:
+  image:
+    tag: "7.66.1"
+  tolerations:
+    - key: "CriticalAddonsOnly"
+      operator: "Exists"
+  useHostNetwork: false
+
+networkMonitoring:
+  enabled: true
+
+securityAgent:
+  enabled: true
+  runtime:
+    enabled: true
+  compliance:
+    enabled: true
+
+systemProbe:
+  enabled: true
+  enableTCPQueueLength: true
+  enableOOMKill: true
+  enableHTTPMonitoring: true
+  collectDNSStats: true
