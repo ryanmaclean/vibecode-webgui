@@ -118,6 +118,10 @@ public
 # OS
 .DS_Store
 .DS_Store?
+
+# Repo-local tooling installs
+_tools/
+datadog/trace-search/
 ._*
 .Spotlight-V100
 .Trashes

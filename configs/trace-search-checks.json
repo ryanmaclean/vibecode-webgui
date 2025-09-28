@@ -1,0 +1,14 @@
+[
+  {
+    "service": "vibecode-webgui-smoke",
+    "env": "production",
+    "window": "2h",
+    "limit": 10
+  },
+  {
+    "service": "vibecode-rag-demo",
+    "env": "kind",
+    "window": "1h",
+    "limit": 15
+  }
+]
