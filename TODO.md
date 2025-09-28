@@ -117,6 +117,8 @@
 - Re-ran the dd-traced RAG demo with `USE_OPENROUTER=true` (OpenRouter completions + OpenAI embedding fallback). Querying `Which environment variables are set in DATADOG_LOCAL_DEVELOPMENT to enable logs and tracing?` returned the correct env var list using PGvector data from the KIND database.
 
 ### Next Steps
+- [x] Wire Datadog trace verification into runbooks (`docs/runbooks/datadog-trace-search-access.md`) with `npm run monitoring:trace` and automation workflow `.github/workflows/datadog-trace-verify.yml`.
+- [ ] Schedule automated trace verification (workflow still failing because `scripts/ensure-native-binaries.js` stub is skipped when `npm_config_ignore_scripts` is true in CI; decide whether to allow install scripts or provide a different validation path).
 - [ ] Stabilize the KIND API (cluster recreation) so we can raise `RAG_MAX_FILES` without connection resets.
 - [ ] Once trace search access is restored, export spans for `service:vibecode-rag-demo env:kind` to capture the observability evidence.
 
