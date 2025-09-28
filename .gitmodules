@@ -5,6 +5,11 @@
 	path = external/magic-code-gen
 	url = https://github.com/ryanmaclean/magic-code-gen.git
 
+[submodule "templates/nestjs-embedjs-template"]
+	path = templates/nestjs-embedjs-template
+	url = https://github.com/ryanmaclean/nestjs-embedjs-template.git
+	update = none
+
 [submodule "code-server"]
 	path = code-server
 	url = https://github.com/coder/code-server.git

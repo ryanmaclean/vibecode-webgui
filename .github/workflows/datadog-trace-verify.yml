@@ -12,19 +12,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        env:
+          NPM_CONFIG_IGNORE_SCRIPTS: "true"
+          npm_config_ignore_scripts: "true"
+        run: npm ci --omit=optional --no-audit --no-fund --ignore-scripts
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          pip install -r requirements-dev.txt || true
-
-      - name: Install Node dependencies
-        run: npm install --no-audit --no-fund
 
       - name: Verify trace search
         env:
