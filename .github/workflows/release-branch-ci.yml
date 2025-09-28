@@ -72,10 +72,39 @@ jobs:
             echo "• See docs/ci-cd-fixes.md for detailed setup instructions"
           fi
 
+  codex-mcp-smoke:
+    runs-on: ubuntu-latest
+    needs: validate-ci-config
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Install Codex CLI
+        run: npm install -g @openai/codex
+
+      - name: Verify Codex MCP configuration
+        env:
+          CODEX_HOME: ${{ github.workspace }}/.codex
+        run: |
+          set -euo pipefail
+          OUTPUT="$(codex mcp list)"
+          echo "$OUTPUT"
+          echo "$OUTPUT" | grep 'sequential-thinking'
+
   # Comprehensive testing matrix
   test-suite:
     runs-on: ubuntu-latest
-    needs: validate-ci-config
+    needs: [validate-ci-config, codex-mcp-smoke]
     timeout-minutes: 30
     strategy:
       matrix:
