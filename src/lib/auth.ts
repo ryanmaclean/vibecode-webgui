@@ -9,40 +9,6 @@ import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
 // import { PrismaAdapter } from '@next-auth/prisma-adapter'
 // import { prisma } from './prisma'
-
-declare module 'next-auth' {
-  interface Session {
-    user: {
-      id: string
-      email: string
-      name: string
-      image?: string
-      role: string
-    }
-  }
-
-  interface User {
-    id: string
-    email: string
-    name: string
-    image?: string
-    role: string
-    githubId?: string
-    googleId?: string
-  }
-}
-
-declare module 'next-auth/jwt' {
-  interface JWT {
-    id?: string | null;
-    role?: string | null;
-    githubId?: string;
-    googleId?: string;
-    email?: string | null;
-    name?: string | null;
-  }
-}
-
 // NextAuth configuration is properly loaded
 
 // Build providers dynamically so missing OAuth credentials do not break local auth flows.
@@ -92,7 +58,6 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
 providers.push(
   CredentialsProvider({
-      name: 'Credentials',
       credentials: {
         email: { label: 'Email', type: 'text' },
         password: { label: 'Password', type: 'password' },

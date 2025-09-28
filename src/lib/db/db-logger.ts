@@ -414,7 +414,6 @@ export function enhancePrismaWithLogging(
   // Add event handlers if possible
   try {
     if (loggingOptions.logQueries && loggingOptions.level! >= LogLevel.DEBUG) {
-      // @ts-expect-error - Adding event handlers to an existing client might not be supported
       prisma.$on('query', (e: PrismaQueryEvent) => {
         const durationMs = e.duration;
         

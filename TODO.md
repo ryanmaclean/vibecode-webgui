@@ -1,3 +1,54 @@
+## Agent Update (2025-09-28 07:58 UTC)
+
+- Applied shared lint/type fixes on main: docs/.astro ignores now skip generated content, terminal action uses `<Link>`, Function types replaced with explicit signatures, and `route.ts` handles workspace IDs + LiteLLM responses robustly. `npm run lint -- --quiet` and `npm run type-check` both pass locally.
+- Next step is to cherry-pick or branch these changes for Dependabot PRs #250/#247, rerun the validation suite there, then proceed to #251/#241.
+
+### Next Steps
+- [ ] Create `fix/ai-route-lint` branch with the updated files and push for reuse.
+- [ ] Rebase PRs #250/#247 onto the fix branch and rerun lint/type/unit.
+- [ ] Validate PRs #251 (tar-fs) and #241 (critters) after the shared fix is merged.
+- [ ] Address the Next.js `_not-found` NFT warning before production build.
+
+## Agent Update (2025-09-28 07:32 UTC)
+
+- Applied shared fixes on main: `src/app/api/ai/chat/route.ts` now normalizes workspace IDs and narrows LiteLLM responses; added doc lint ignores and converted JSX/text cases (DocSearch, workspace page, AI project mocks), replaced `Function` types with explicit signatures, and swapped terminal link to Next.js `<Link>`.
+- `npm run lint -- --quiet` and `npm run type-check` both pass on main with the cleanup.
+
+### Next Steps
+- [ ] Port these fixes onto a feature branch (`fix/ai-route-lint`) and push for PR re-use by Dependabot branches.
+- [ ] Rebase PRs #250 and #247 onto the fix branch and re-run lint/type/unit to confirm green.
+- [ ] Proceed with PRs #251 (tar-fs) and #241 (critters) once #250/#247 are unblocked.
+
+## Agent Update (2025-09-28 07:05 UTC)
+
+- Revalidated Dependabot PR #250 (framer-motion 12.23.22) and #247 (@ai-sdk/openai 2.0.35): `npm run lint -- --quiet` still fails on docs/.astro lint rules (same baseline noise); `npm run type-check` continues to report the untouched `src/app/api/ai/chat/route.ts` typing gaps in both branches; `npm run test:unit` passes in each worktree.
+- Worktrees removed after tests; next action is to port the route.ts typing fixes (and doc lint ignores) onto the Dependabot branches or land them on main before re-running checks.
+
+### Next Steps
+- [x] Drafted local fixes for `route.ts` typing; need to port to shared branch and apply doc lint ignores before rerunning PR validations.
+- [ ] After fixes merge, redo lint/type/unit on #250/#247, then proceed to validate PRs #251 (tar-fs) and #241 (critters).
+- [ ] Keep build follow-up open: catalog the `_not-found` NFT warning and determine if a stub is required for production builds.
+
+## Agent Update (2025-09-28 05:38 UTC)
+
+- Stubbed `/api/terminal/session` to load `node-pty` via `eval('require')` with graceful fallback, allowing `npm run build` to proceed (still exits with missing NFT warning but `.next/types` generated).
+- Refreshed `auth.ts` typings and Datadog logs init to keep TypeScript strict-null checks happy; removed ad-hoc module augmentations. `npm run type-check` now passes on main.
+
+### Next Steps
+- [ ] Repeat `npm run type-check` inside PR #250 and #247 validation worktrees (or re-checkout if needed) to confirm branches pass post-fix.
+- [ ] Continue with Dependabot PR #251 (tar-fs) validation after confirming type-check status.
+- [ ] Note Next.js build warning for `/app/_not-found` NFT file and decide whether to ignore or add a stub before final production build.
+
+## Agent Update (2025-09-28 05:10 UTC)
+
+- Attempted `npm run build` on main to regenerate `.next/types`; build ran ~37 min then failed when collecting page data for `/api/terminal/session` (missing `node-pty` native bindings).
+- `.next/types` remain absent, so branch type-checks still block on route.ts. Next step is to record the build failure and coordinate on skipping terminal routes or mocking `node-pty` during build before re-running.
+
+### Next Steps
+- [ ] Decide whether to stub `/api/terminal/session` (e.g., conditional import, build-time mock, or disabling the route) so `npm run build` succeeds locally.
+- [ ] Once build is fixed, rerun `npm run type-check` on main, PR #250, and PR #247 to confirm the route.ts fixes clear the Dependabot regressions.
+- [ ] Proceed with PR #251 and #241 validation after `.next/types` are regenerated.
+
 ## Agent Update (2025-09-28 02:26 UTC)
 
 - Broke down the 45 lint errors into concrete fix buckets (parse errors, triple-slash reference, unsafe `Function` types, React copy escapes, legacy `@ts-ignore`, and Next.js link usage).
