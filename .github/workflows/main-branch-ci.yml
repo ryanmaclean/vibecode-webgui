@@ -59,7 +59,19 @@ jobs:
       
       - name: Install dependencies
         run: npm ci --prefer-offline --no-audit
-      
+
+      - name: Install Codex CLI
+        run: npm install -g @openai/codex
+
+      - name: Verify Codex MCP configuration
+        env:
+          CODEX_HOME: ${{ github.workspace }}/.codex
+        run: |
+          set -euo pipefail
+          OUTPUT="$(codex mcp list)"
+          echo "$OUTPUT"
+          echo "$OUTPUT" | grep 'sequential-thinking'
+
       - name: Lint code
         run: npm run lint || true  # Don't fail on lint warnings
       
