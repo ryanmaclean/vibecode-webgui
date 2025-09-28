@@ -36,8 +36,7 @@ jobs:
         env:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-        run: |
-          npm run monitoring:trace
+        run: npm run monitoring:trace
 
       - name: Upload trace search artefacts
         if: always()

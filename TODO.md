@@ -1,26 +1,3 @@
-## Agent Update (2025-09-28 03:30 UTC)
-
-- Framer Motion upgrade (PR #250) validation: `npm run lint` (warnings only), `npm run type-check` (fails with TypeScript errors in `src/app/api/ai/chat/route.ts` matching main), `npm run test:unit` (green).
-- Worktree cleaned up after tests; queued remaining Dependabot PRs (#247, #251, #241) for the same install → lint → type-check → unit sequence.
-
-### Next Steps
-- [ ] Compare the `npm run type-check` failures against main to confirm they are pre-existing; post findings on PR #250 with mitigation plan.
-- [ ] Repeat validation for Dependabot PR #247 (@ai-sdk/openai 2.0.35).
-- [ ] Repeat validation for PR #251 (tar-fs 2.1.4) and PR #241 (critters 0.0.25).
-- [ ] Summarize validation matrix for all four PRs before merging.
-
-## Agent Update (2025-09-28 02:58 UTC)
-
-- Checked out Dependabot framer-motion PR (#250) into `../vibecode-webgui-pr250`, ran `npm install --prefer-offline --no-progress --no-fund --no-audit` (11m), then executed `npm run lint` (warnings only).
-- Validation will continue with `npm run type-check` and `npm run test:unit` once resources free up; results will be logged in the next update alongside comparison to baseline lint output on main.
-- TODO below tracks remaining Dependabot validation flows (framer-motion, ai-sdk/openai, tar-fs, critters).
-
-### Next Steps
-- [ ] Dependabot PR #250 (framer-motion 12.23.22): run `npm run type-check` and `npm run test:unit`, compare lint deltas, and prep merge notes.
-- [ ] Dependabot PR #247 (@ai-sdk/openai 2.0.35): repeat install + lint/type/unit validation once #250 is cleared.
-- [ ] Dependabot PR #251 (tar-fs 2.1.4) and #241 (critters 0.0.25): queue behind #247 for the same workflow.
-- [ ] Summarize final validation matrix (commands + outcomes) before merging upgrades.
-
 ## Agent Update (2025-09-28 02:26 UTC)
 
 - Broke down the 45 lint errors into concrete fix buckets (parse errors, triple-slash reference, unsafe `Function` types, React copy escapes, legacy `@ts-ignore`, and Next.js link usage).
@@ -44,8 +21,8 @@
 - Stored the machine-readable report in `lint-errors.json` so Dependabot reviewers can script remediation or generate follow-up tasks.
 
 ### Next Steps
-- [x] Assign owners or fixes for each cluster (React copy escaping, Function type annotations, ts-ignore migrations) before rerunning lint on PR #249.
-- [x] Once lint is clean, reran `npm run lint`, `npm run type-check`, `npm run test:unit`; merge pending review.
+- [ ] Assign owners or fixes for each cluster (React copy escaping, Function type annotations, ts-ignore migrations) before rerunning lint on PR #249.
+- [ ] Once lint is clean, rerun `npm run lint`, `npm run type-check`, `npm run test:unit` and merge PR #249.
 - [ ] Reapply the validation workflow to Dependabot PRs #250, #247, #251, and #241 after #249 merges.
 - [ ] Continue auditing July 2025 remote branches with owners and prune confirmed-stale heads.
 
@@ -64,12 +41,16 @@
 ## Agent Update (2025-09-28 02:33 UTC)
 
 - Locked `@octokit/openapi-types` to 24.0.0 so `npm run type-check` reaches project-level failures instead of parser errors.
-- Cleared the TypeScript failures by refactoring NextAuth type augmentation into `src/types/next-auth.d.ts`, tightening Datadog RUM/log typing, and enforcing concrete promise shapes in the vector cache adapter (`npm run type-check` now exits 0).
-- `npx eslint . --quiet` now exits clean; `npm run lint` reports only pre-existing warnings (no errors) after ignoring `_tools/**`.
-- Initial `npm run build` surfaced missing `@azure/msal-node`; installing it still left webpack complaining about the ESM re-export when `DefaultAzureCredential` was statically imported. Swapped to `await import('@azure/identity')` inside the managed-identity branch to keep msal out of cold builds. Need one more `npm run build` (can pass `NEXT_PRIVATE_BUILD_WORKERS=2` or `next build --no-lint` to reduce load) to confirm the bundle completes on this laptop.
+- Prepared to clear `npm run type-check` by fixing Datadog config typing (`src/app/providers.tsx:51:11`), NextAuth module augmentation (`src/lib/auth.ts:13:16` & 95:7), and the stale `@ts-expect-error` in `src/lib/db/db-logger.ts:417`.
+- Lint still surfaces 45 blocking errors across docs, scripts, and React components; captures remain in the last `npx eslint . --quiet` run.
+- Haven't run `npm run build` since the Tailwind tooling changes; will execute after lint/type-check are green.
 
 ### Next Steps
-- [ ] Re-run `npm run build` (consider `NEXT_PRIVATE_BUILD_WORKERS=2 next build --no-lint` to stay under resource limits) to confirm the Tailwind/Datadog/Azure path works end-to-end.
+- [ ] Resolve the Datadog `LogsInitConfiguration` typing in `src/app/providers.tsx`.
+- [ ] Update the NextAuth module augmentation in `src/lib/auth.ts` to align with the current `next-auth` types.
+- [ ] Remove or justify the `@ts-expect-error` guard in `src/lib/db/db-logger.ts:417`.
+- [ ] Triage the outstanding ESLint errors (triple-slash ref, JSX entities, script parse errors, `Function` types) and rerun `npm run lint`.
+- [ ] Run `npm run build` once lint and type-check succeed to validate the new Tailwind native-binary installer.
 
 ## Agent Update (2025-09-28 02:02 UTC)
 
@@ -147,6 +128,8 @@
 ### Next Steps
 - [ ] Re-run ingestion with a larger chunk budget once KIND port-forward stability is confirmed so more Datadog content ranks higher.
 - [ ] Capture the Datadog spans for `service:vibecode-rag-demo env:kind` after trace search permissions are restored.
+- [x] Wire Datadog trace verification into runbooks (`docs/runbooks/datadog-trace-search-access.md`) with `npm run monitoring:trace` and the workflow `.github/workflows/datadog-trace-verify.yml`.
+- [ ] Schedule automated trace verification (workflow currently failing because `scripts/ensure-native-binaries.js` is skipped in CI; revisit after deciding on stub vs. disabling the postinstall hook).
 
 ## Agent Update (2025-09-24 19:23 UTC)
 
@@ -217,7 +200,7 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 - [ ] Decide whether to disable Datadog external metrics/admission controller toggles for KIND (to remove the remaining HA warning) or stand up a two-replica cluster agent in that environment.
 - [ ] Mirror additional KIND DBM exports (e.g., `postgresql.db.size`, `postgresql.connections.*` per-database) once the query duration baseline is accepted.
 - [x] Wire Datadog trace verification into our runbooks (`docs/runbooks/datadog-trace-search-access.md`) with `npm run monitoring:trace`.
-- [ ] Schedule automated trace verification in CI (`.github/workflows/datadog-trace-verify.yml`) once DD_API_KEY/DD_APP_KEY secrets are present and record the first successful run in this TODO. (Blocked: workflow currently fails because `npm ci` postinstall expects `scripts/ensure-native-binaries.js`; decide whether to commit the script or disable postinstall in CI.)
+- [ ] Schedule automated trace verification in CI (`.github/workflows/datadog-trace-verify.yml`) once DD_API_KEY/DD_APP_KEY secrets are present and record the first successful run in this TODO.
 
 ## Agent Update (2025-09-24 13:52 UTC)
 
