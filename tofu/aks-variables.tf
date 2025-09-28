@@ -167,6 +167,27 @@ variable "datadog_app_key" {
   sensitive   = true
 }
 
+variable "dbm_sp_client_id" {
+  type        = string
+  description = "Azure AD client ID used by External Secrets to read Datadog DBM credentials."
+}
+
+variable "dbm_sp_client_secret" {
+  type        = string
+  description = "Azure AD client secret used by External Secrets to read Datadog DBM credentials."
+  sensitive   = true
+}
+
+variable "dbm_sp_tenant_id" {
+  type        = string
+  description = "Azure AD tenant ID for the Datadog DBM service principal."
+}
+
+variable "dbm_key_vault_url" {
+  type        = string
+  description = "Azure Key Vault URL containing Datadog DBM secrets (e.g. https://vibecode-prod-kv.vault.azure.net/)."
+}
+
 variable "datadog_api_url" {
   type        = string
   description = "Datadog API URL"

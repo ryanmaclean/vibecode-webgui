@@ -45,51 +45,53 @@ declare module 'next-auth/jwt' {
 
 // NextAuth configuration is properly loaded
 
-export const authOptions: NextAuthOptions = {
-  // adapter: PrismaAdapter(prisma), // Disabled for file-based development
-  secret: process.env.NEXTAUTH_SECRET,
-  // cookies: {
-  //   sessionToken: {
-  //     name: `__Secure-next-auth.session-token`,
-  //     options: {
-  //       httpOnly: true,
-  //       sameSite: 'lax',
-  //       path: '/',
-  //       secure: process.env.NODE_ENV === 'production',
-  //       domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined
-  //     }
-  //   }
-  // },
-  providers: [
+// Build providers dynamically so missing OAuth credentials do not break local auth flows.
+const providers: NextAuthOptions['providers'] = []
+
+if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
+  providers.push(
     GithubProvider({
-      clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!,
+      clientId: process.env.GITHUB_ID,
+      clientSecret: process.env.GITHUB_SECRET,
       profile(profile) {
         return {
           id: profile.id.toString(),
           name: profile.name || profile.login,
           email: profile.email,
           image: profile.avatar_url,
-          role: 'user', // Default role
+          role: 'user',
           githubId: profile.id.toString(),
         }
       },
-    }),
+    })
+  )
+} else if (process.env.NODE_ENV !== 'production') {
+  console.warn('GitHub OAuth provider disabled: missing GITHUB_ID/GITHUB_SECRET env vars')
+}
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  providers.push(
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       profile(profile) {
         return {
           id: profile.sub,
           name: profile.name,
           email: profile.email,
           image: profile.picture,
-          role: 'user', // Default role
+          role: 'user',
           googleId: profile.sub,
         }
       },
-    }),
-    CredentialsProvider({
+    })
+  )
+} else if (process.env.NODE_ENV !== 'production') {
+  console.warn('Google OAuth provider disabled: missing GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET env vars')
+}
+
+providers.push(
+  CredentialsProvider({
       name: 'Credentials',
       credentials: {
         email: { label: 'Email', type: 'text' },
@@ -116,8 +118,25 @@ export const authOptions: NextAuthOptions = {
           return null
         }
       },
-    }),
-  ],
+    })
+)
+
+export const authOptions: NextAuthOptions = {
+  // adapter: PrismaAdapter(prisma), // Disabled for file-based development
+  secret: process.env.NEXTAUTH_SECRET,
+  // cookies: {
+  //   sessionToken: {
+  //     name: `__Secure-next-auth.session-token`,
+  //     options: {
+  //       httpOnly: true,
+  //       sameSite: 'lax',
+  //       path: '/',
+  //       secure: process.env.NODE_ENV === 'production',
+  //       domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined
+  //     }
+  //   }
+  // },
+  providers,
   session: {
     strategy: 'jwt',
   },
@@ -160,6 +179,15 @@ export const authOptions: NextAuthOptions = {
         tokenId: token?.id,
         sessionUserId: session?.user?.id
       })
+
+      if (!session.user) {
+        session.user = {
+          id: '',
+          email: '',
+          name: '',
+          role: 'user',
+        }
+      }
 
       if (token) {
         session.user.id = token.id as string

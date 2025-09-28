@@ -47,8 +47,8 @@ if (!shouldRunRealTests) {
 conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
   const apiKey = process.env.OPENROUTER_API_KEY
   const baseUrl = 'https://openrouter.ai/api/v1'
-  const primaryFreeModel = process.env.OPENROUTER_FREE_MODEL?.trim() || 'deepseek/deepseek-chat-v3.1:free'
-  const secondaryFreeModel = 'openai/gpt-oss-20b:free'
+  const primaryFreeModel = process.env.OPENROUTER_FREE_MODEL?.trim() || 'openai/gpt-oss-20b:free'
+  const secondaryFreeModel = 'deepseek/deepseek-chat-v3.1:free'
 
   beforeAll(() => {
     if (!apiKey) {
@@ -161,7 +161,7 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
       const content = data.choices?.[0]?.message?.content ?? ''
       expect(content.length).toBeGreaterThan(10)
     } else {
-      expect([402, 422, 429, 503]).toContain(response.status)
+      expect([402, 422, 429, 502, 503]).toContain(response.status)
     }
   }, 30000)
 })

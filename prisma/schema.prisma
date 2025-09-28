@@ -58,6 +58,7 @@ model Workspace {
   status       String   @default("active") // active, archived, deleting
   workspace_id String   @unique // External workspace identifier
   url          String?  // code-server URL
+  dbm_last_sample_at DateTime? // Tracks last time DBM sample was recorded
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 

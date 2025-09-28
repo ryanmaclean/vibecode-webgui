@@ -12,6 +12,7 @@ import { OpenRouterBYOKEmbeddingService } from './openrouter-byok-embedding-serv
 export enum EmbeddingProvider {
   AZURE = 'azure',
   OPENAI = 'openai',
+  OPENROUTER = 'openrouter',
   OPENROUTER_BYOK = 'openrouter-byok',
   MOCK = 'mock'
 }
@@ -31,6 +32,10 @@ export interface EmbeddingServiceConfig {
   openrouterApiKey?: string;
   openaiApiKey?: string;
   fallbackToDirect?: boolean;
+  openrouterReferer?: string;
+  openrouterAppTitle?: string;
+  openrouterBaseUrl?: string;
+  dangerouslyAllowBrowser?: boolean;
 }
 
 // Type to handle all embedding service types
@@ -130,11 +135,44 @@ export class EmbeddingServiceFactory {
         if (!config.apiKey) {
           throw new Error('OpenAI embedding provider requires apiKey');
         }
-        
+
         return new EmbeddingService(
           config.apiKey,
           config.model || 'text-embedding-3-small',
-          this.prisma
+          this.prisma,
+          {
+            dangerouslyAllowBrowser:
+              config.dangerouslyAllowBrowser ??
+              ((process.env.NODE_ENV === 'test') || process.env.ALLOW_TEST_OPENAI === 'true')
+          }
+        );
+
+      case EmbeddingProvider.OPENROUTER:
+        if (!config.openrouterApiKey) {
+          throw new Error('OpenRouter embedding provider requires openrouterApiKey');
+        }
+
+        const baseURL = config.openrouterBaseUrl || process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
+        const referer = config.openrouterReferer || process.env.OPENROUTER_HTTP_REFERER || process.env.NEXT_PUBLIC_APP_URL;
+        const appTitle = config.openrouterAppTitle || process.env.OPENROUTER_APP_TITLE;
+        const defaultHeaders: Record<string, string> = {};
+
+        if (referer) {
+          defaultHeaders['HTTP-Referer'] = referer;
+        }
+        if (appTitle) {
+          defaultHeaders['X-Title'] = appTitle;
+        }
+
+        return new EmbeddingService(
+          config.openrouterApiKey,
+          (config.model || 'openai/text-embedding-3-small').replace(/^openai\//, ''),
+          this.prisma,
+          {
+            baseURL,
+            defaultHeaders: Object.keys(defaultHeaders).length ? defaultHeaders : undefined,
+            dangerouslyAllowBrowser: true,
+          }
         );
 
       case EmbeddingProvider.OPENROUTER_BYOK:
@@ -179,6 +217,19 @@ export class EmbeddingServiceFactory {
         fallbackToDirect
       });
     }
+
+    if (openrouterApiKey) {
+      const openrouterModel = process.env.OPENROUTER_EMBEDDING_MODEL || embeddingModel;
+
+      return this.createEmbeddingService({
+        provider: EmbeddingProvider.OPENROUTER,
+        openrouterApiKey,
+        model: openrouterModel,
+        openrouterReferer: process.env.OPENROUTER_HTTP_REFERER,
+        openrouterAppTitle: process.env.OPENROUTER_APP_TITLE,
+        openrouterBaseUrl: process.env.OPENROUTER_BASE_URL,
+      });
+    }
     
     // Check for Azure OpenAI configuration
     const azureApiKey = process.env.AZURE_OPENAI_API_KEY;
@@ -217,11 +268,12 @@ export class EmbeddingServiceFactory {
       return this.createEmbeddingService({
         provider: EmbeddingProvider.OPENAI,
         apiKey: openaiApiKey,
-        model: openaiModel
+        model: openaiModel,
+        dangerouslyAllowBrowser: process.env.NODE_ENV === 'test' || process.env.ALLOW_TEST_OPENAI === 'true'
       });
     }
     
-    throw new Error('No valid embedding service configuration found in environment variables. Required: OPENAI_API_KEY and optionally OPENROUTER_API_KEY for BYOK');
+    throw new Error('No valid embedding service configuration found in environment variables. Configure OPENROUTER_API_KEY, OPENAI_API_KEY, or Azure OpenAI settings.');
   }
 
   /**

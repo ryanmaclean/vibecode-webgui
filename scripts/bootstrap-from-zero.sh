@@ -98,7 +98,7 @@ GOOGLE_SECRET=your-google-oauth-secret
 DD_SITE=datadoghq.com
 DD_SERVICE=vibecode-webgui
 DD_VERSION=1.0.0
-DD_ENV=development
+DD_ENV=developement
 EOF
         log_success ".env created with defaults"
         log_warning "⚠️  Edit .env to add your real API keys"
@@ -174,7 +174,7 @@ deploy_monitoring() {
             --from-literal=DD_SITE="${DD_SITE:-datadoghq.com}" \
             --from-literal=DD_SERVICE="${DD_SERVICE:-vibecode-webgui}" \
             --from-literal=DD_VERSION="${DD_VERSION:-1.0.0}" \
-            --from-literal=DD_ENV="${DD_ENV:-development}" \
+            --from-literal=DD_ENV="${DD_ENV:-developement}" \
             --namespace=vibecode-platform \
             --dry-run=client -o yaml | kubectl apply -f -
         

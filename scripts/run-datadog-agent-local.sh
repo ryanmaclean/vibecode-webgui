@@ -64,7 +64,6 @@ instances:
     port: 5432
     username: datadog
     password: datadog_monitoring_password
-    dbname: vibecode
     dbm: true
     collect_schemas:
       enabled: true
@@ -100,7 +99,7 @@ instances:
             type: "gauge"
           - name: "vibecode.postgres.table.dead_tuples"
             type: "gauge"
-        tags: ["env:local", "service:vibecode", "database:vibecode"]
+        tags: ["env:developement", "service:vibecode", "database:vibecode"]
       - metric_prefix: "vibecode.postgres.indexes"
         query: "SELECT schemaname, relname as tablename, indexrelname as indexname, idx_tup_read, idx_tup_fetch FROM pg_stat_user_indexes"
         columns:
@@ -114,9 +113,9 @@ instances:
             type: "gauge"
           - name: "vibecode.postgres.index.tuples_fetched"
             type: "gauge"
-        tags: ["env:local", "service:vibecode", "database:vibecode"]
+        tags: ["env:developement", "service:vibecode", "database:vibecode"]
     tags:
-      - "env:local"
+      - "env:developement"
       - "service:vibecode-webgui"
       - "application:vibecode-platform"
       - "version:1.0.0"

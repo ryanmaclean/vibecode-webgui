@@ -3,5 +3,5 @@
  * This file allows importing the TypeScript implementation from non-TypeScript environments
  */
 
-// Re-export the TypeScript implementation
-export { EmbeddingServiceFactory, EmbeddingProvider } from './embeddingServiceFactory.js';
+// Re-export the TypeScript implementation without creating a circular import
+export { EmbeddingServiceFactory, EmbeddingProvider } from './embeddingServiceFactory.ts';

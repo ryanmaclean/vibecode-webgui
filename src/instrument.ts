@@ -120,7 +120,7 @@ function getTracer() {
       version,
       // Correlate DBM and APM by propagating service info into SQL comments
       // Docs: https://docs.datadoghq.com/database_monitoring/connect_dbm_and_apm/
-      dbmPropagationMode: 'service',
+      dbmPropagationMode: process.env.DD_DBM_PROPAGATION_MODE || 'full',
       
       // Enhanced sampling for better observability
       sampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,

@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "litellm-pgvector.fullname" . }}
+  labels:
+    {{- include "litellm-pgvector.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "litellm-pgvector.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "litellm-pgvector.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{- toYaml .Values.podAnnotations | nindent 8 }}
+    spec:
+      containers:
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            - name: PORT
+              value: {{ .Values.service.port | quote }}
+            - name: DATABASE_URL
+              value: {{ printf "postgresql://%s:$(POSTGRES_PASSWORD)@%s.%s.svc.cluster.local:%s/%s?sslmode=disable" .Values.postgresql.auth.username (include "litellm-pgvector.postgresql.host" .) .Release.Namespace (include "litellm-pgvector.postgresql.port" .) .Values.postgresql.auth.database | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "litellm-pgvector.postgresql.secretName" . }}
+                  key: {{ ternary "postgres-password" "password" (eq .Values.postgresql.auth.username "postgres") }}
+            - name: DEFAULT_MODEL
+              value: {{ .Values.env.DEFAULT_MODEL | quote }}
+            - name: LITELLM_MASTER_KEY
+              value: {{ .Values.env.LITELLM_MASTER_KEY | quote }}
+            - name: ENVIRONMENT
+              value: {{ .Values.env.ENVIRONMENT | quote }}
+            - name: OPENROUTER_HTTP_REFERER
+              value: {{ .Values.env.OPENROUTER_HTTP_REFERER | quote }}
+            - name: OPENROUTER_APP_TITLE
+              value: {{ .Values.env.OPENROUTER_APP_TITLE | quote }}
+{{- if .Values.envSecretName }}
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.envSecretName }}
+                  key: OPENROUTER_API_KEY
+{{- else }}
+            - name: OPENROUTER_API_KEY
+              value: {{ .Values.env.OPENROUTER_API_KEY | quote }}
+{{- end }}
+{{- if .Values.extraEnv }}
+{{ toYaml .Values.extraEnv | indent 12 }}
+{{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

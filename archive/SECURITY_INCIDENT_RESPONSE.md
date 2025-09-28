@@ -8,10 +8,10 @@
 
 ### Exposed Credentials Identified
 
-1. **Datadog API Key**: `d987we987wek`
-2. **OpenRouter API Key**: `sk-098weus`
-3. **NextAuth Secret**: `dsdlsk4uQkjs2NA=`
-4. **Datadog Client Token**: `pub91c2b19871298712fb5881c3511cde6`
+1. **Datadog API Key**: `***REDACTED***`
+2. **OpenRouter API Key**: `sk-***REDACTED***`
+3. **NextAuth Secret**: `***REDACTED***`
+4. **Datadog Client Token**: `***REDACTED***`
 
 ### Location of Exposure
 
@@ -34,7 +34,7 @@
 ```bash
 # 1. Log into Datadog dashboard
 # 2. Navigate to Organization Settings > API Keys
-# 3. Revoke key: eb9a040a5e044d89731a9158f0357ca4
+# 3. Revoke key: ***REDACTED***
 # 4. Generate new API key
 # 5. Update environment variables and secrets
 ```
@@ -43,7 +43,7 @@
 ```bash
 # 1. Log into OpenRouter dashboard
 # 2. Navigate to API Keys section
-# 3. Revoke key: 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
+# 3. Revoke key: sk-or-***REDACTED***
 # 4. Generate new API key
 # 5. Update environment variables
 ```

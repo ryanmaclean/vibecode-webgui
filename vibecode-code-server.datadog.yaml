@@ -1,0 +1,60 @@
+schema-version: v2.2
+dd-service: vibecode-code-server
+team: platform-engineering
+contacts:
+  - name: Kim Smith
+    type: email
+    contact: kim.smith@vibecode.com
+  - name: Jessie
+    type: email
+    contact: jessie@vibecode.com
+  - name: Platform Engineering Slack
+    type: slack
+    contact: https://vibecode.slack.com/archives/platform-engineering
+  - name: Platform Engineering Email
+    type: email
+    contact: platform-engineering@vibecode.com
+description: Custom VS Code server environment that powers the browser-based development workspace for VibeCode users.
+tier: tier2
+lifecycle: production
+application: vibecode-platform
+languages:
+  - typescript
+  - bash
+type: web
+ci-pipeline-fingerprints:
+  - github-actions:build-and-push-image
+  - github-actions:main-branch-ci
+links:
+  - name: Code Server Runbook
+    type: runbook
+    url: https://github.com/vibecode/vibecode-webgui/blob/main/docker/code-server/README.md
+  - name: Kubernetes Deployment Manifest
+    type: repo
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui/blob/main/k8s/code-server-custom.yaml
+  - name: Container Manifest
+    type: doc
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui/blob/main/docs/src/content/docs/container-manifest.md
+  - name: Code Server Source
+    type: repo
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui/tree/main/code-server
+tags:
+  - env:production
+  - component:code-server
+  - language:typescript
+  - platform:aks
+  - business-unit:platform
+  - cost-center:engineering
+extensions:
+  datadoghq.com/dora-metrics:
+    repository: vibecode/vibecode-webgui
+    source_patterns:
+      - docker/code-server/**
+      - k8s/code-server-custom.yaml
+  datadoghq.com/cd-visibility:
+    deployment_patterns:
+      - Build Code Server Image
+      - Deploy Code Server to AKS

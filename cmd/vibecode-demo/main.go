@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 const (
@@ -365,6 +366,19 @@ func (m model) renderHelp() string {
 }
 
 func main() {
+	// Initialize Datadog tracer for DBM-APM connection
+	// Docs: https://docs.datadoghq.com/database_monitoring/connect_dbm_and_apm/?tab=go
+	tracer.Start(
+		tracer.WithService("vibecode-demo"),
+		tracer.WithEnv(getEnv("DD_ENV", "development")),
+		tracer.WithVersion(getEnv("DD_VERSION", "0.1.0-dev")),
+		tracer.WithGlobalTag("deployment.environment", getEnv("DD_ENV", "development")),
+		tracer.WithGlobalTag("service.name", "vibecode-demo"),
+		tracer.WithGlobalTag("service.version", getEnv("DD_VERSION", "0.1.0-dev")),
+		tracer.WithGlobalTag("git.repository.url", "https://github.com/vibecode/vibecode-webgui"),
+	)
+	defer tracer.Stop()
+
 	// Check if we're in the right directory
 	if _, err := os.Stat("scripts/verify-datadog-dbm.sh"); os.IsNotExist(err) {
 		fmt.Println(errorStyle.Render("❌ Error: Must run from vibecode-webgui root directory"))
@@ -381,4 +395,12 @@ func main() {
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// Helper function to get environment variables with defaults
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

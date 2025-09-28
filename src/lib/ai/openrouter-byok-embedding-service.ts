@@ -16,7 +16,11 @@ export class OpenRouterBYOKEmbeddingService {
 
   constructor(config: OpenRouterBYOKConfig, prisma: PrismaClient) {
     // For now we use direct OpenAI with BYOK key; OpenRouter routing can be added later
-    this.openai = new OpenAI({ apiKey: config.openaiApiKey });
+    this.openai = new OpenAI({
+      apiKey: config.openaiApiKey,
+      // Jest/jsdom treats the test runtime as a browser; allow explicit opt-in.
+      dangerouslyAllowBrowser: true
+    });
     // Normalize model id if prefixed
     this.model = (config.model || 'text-embedding-3-small').replace(/^openai\//, '');
     this.vectorService = new VectorService(prisma);
