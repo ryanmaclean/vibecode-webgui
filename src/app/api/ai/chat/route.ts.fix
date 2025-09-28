@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
         const numericUserId = userId as number
         const workspace = await prisma.workspace.findFirst({
           where: {
-            workspace_id: validWorkspaceId || workspaceId,
+            workspace_id: validWorkspaceId,
             user_id: numericUserId
           }
         })
