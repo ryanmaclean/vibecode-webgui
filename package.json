@@ -37,6 +37,7 @@
     "test:monitoring": "jest --testPathPatterns=tests/unit/.*monitoring.*\\.test\\.(ts|js)$ --testPathPatterns=tests/integration/monitoring-api\\.test\\.(ts|js)$",
     "test:monitoring:unit": "jest --testPathPatterns=tests/unit/.*monitoring.*\\.test\\.(ts|js)$",
     "test:monitoring:integration": "jest --testPathPatterns=tests/integration/monitoring-api\\.test\\.(ts|js)$",
+    "codex": "node scripts/run-codex-with-config.mjs",
     "test:monitoring:e2e": "playwright test tests/e2e/monitoring-dashboard.test.ts",
     "test:monitoring:k8s": "jest --testPathPatterns=tests/k8s/monitoring-deployment\\.test\\.(ts|js)$",
     "test:monitoring:security": "jest --testPathPatterns=tests/security/monitoring-security\\.test\\.(ts|js)$",
