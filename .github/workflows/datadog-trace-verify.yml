@@ -1,0 +1,40 @@
+name: Datadog Trace Verification
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  trace-search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -r requirements-dev.txt || true
+
+      - name: Install Node dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Verify trace search
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+        run: npm run monitoring:trace
+
+      - name: Upload trace search artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: datadog-trace-search
+          path: datadog/trace-search/*.json
