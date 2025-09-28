@@ -95,6 +95,34 @@ env:
   DD_LLMOBS_AGENTLESS_ENABLED: "0"
   DD_LLMOBS_ML_APP: "vibecode-ai"
 
+freeModelUpdater:
+  enabled: true
+  schedule: "0 */12 * * *"
+  maxFreeModels: 10
+  minWorkingModels: 3
+  syncConfigMap: true
+  backoffLimit: 1
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  ttlSecondsAfterFinished: 86400
+  configMap:
+    name: ""
+    jsonKey: models.json
+    textKey: models.txt
+    mountPath: /etc/vibecode/free-llm-models
+    filePath: /etc/vibecode/free-llm-models/models.txt
+  initialModels:
+    - deepseek/deepseek-chat-v3.1:free
+    - openai/gpt-oss-20b:free
+    - openai/gpt-oss-120b:free
+    - x-ai/grok-4-fast:free
+    - nvidia/nemotron-nano-9b-v2:free
+  env: {}
+  resources: {}
+  annotations: {}
+  podAnnotations: {}
+
 monitoring:
   prometheus:
     enabled: false
@@ -145,6 +173,47 @@ redis:
   host: ""
   port: 6379
   ssl: false
+
+aiGateway:
+  enabled: false
+  replicaCount: 2
+  image:
+    repository: vibecode-ai-gateway
+    tag: latest
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  secretName: ""
+  env: {}
+  readinessProbe:
+    path: /health
+    initialDelaySeconds: 10
+    periodSeconds: 15
+    timeoutSeconds: 1
+    failureThreshold: 3
+  livenessProbe:
+    path: /health/live
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 1
+    failureThreshold: 3
+  resources: {}
+  service:
+    type: ClusterIP
+    port: 3001
+    targetPort: 3001
+    annotations: {}
+  ingress:
+    enabled: false
+    className: nginx
+    annotations: {}
+    host: ""
+    path: /ai-gateway(/|$)(.*)
+    pathType: ImplementationSpecific
+    tls: []
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
 
 persistence:
   enabled: false

@@ -1,0 +1,21 @@
+{
+  "generated_at": "20250924T193626Z",
+  "window_seconds": 900,
+  "summary": {
+    "connections": {
+      "note": "no series"
+    },
+    "rows_returned": {
+      "min": 152.23565303408196,
+      "max": 152.23565303408196,
+      "avg": 152.23565303408196,
+      "points": 1
+    },
+    "db_size": {
+      "note": "no series"
+    },
+    "index_scans": {
+      "note": "no series"
+    }
+  }
+}

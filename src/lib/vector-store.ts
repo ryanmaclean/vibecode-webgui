@@ -179,6 +179,8 @@ class VectorStore {
           name: true,
           language: true,
           workspace_id: true,
+          project_id: true,
+          user_id: true,
           workspace: {
             select: {
               workspace_id: true,
@@ -187,6 +189,10 @@ class VectorStore {
           }
         }
       })
+
+      if (!fileInfo || !fileInfo.user_id) {
+        throw new Error(`Unable to locate file metadata or owner for file ${fileId}`)
+      }
 
       await prisma.rAGChunk.deleteMany({
         where: { file_id: fileId }
@@ -206,15 +212,52 @@ class VectorStore {
           
           // Use raw SQL to insert with pgvector embedding
           await prisma.$executeRawUnsafe(`
-            INSERT INTO rag_chunks (file_id, chunk_id, content, start_line, end_line, tokens, embedding, metadata, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7::vector, $8::jsonb, NOW())
+            INSERT INTO rag_chunks (
+              file_id,
+              user_id,
+              workspace_id,
+              project_id,
+              chunk_id,
+              content,
+              start_line,
+              end_line,
+              tokens,
+              token_count,
+              chunk_index,
+              embedding,
+              metadata,
+              created_at,
+              updated_at
+            )
+            VALUES (
+              $1,
+              $2,
+              $3,
+              $4,
+              $5,
+              $6,
+              $7,
+              $8,
+              $9,
+              $10,
+              $11,
+              $12::vector,
+              $13::jsonb,
+              NOW(),
+              NOW()
+            )
           `, 
             fileId,
+            fileInfo.user_id,
+            fileInfo.workspace_id || null,
+            fileInfo.project_id || null,
             chunkId,
             chunk.content,
             chunk.startLine || null,
             chunk.endLine || null,
             chunk.tokens,
+            chunk.tokens,
+            i + j,
             embeddingString,
             JSON.stringify({
               generatedAt: new Date().toISOString(),

@@ -10,7 +10,7 @@ datadog:
   site: "datadoghq.com"
   
   # Cluster name for identification (set by OpenTofu)
-  clusterName: "vibecode-aks"
+  clusterName: "vibecode-aks-prod"
   
   # Production resource configuration
   resources:
@@ -26,9 +26,11 @@ datadog:
     enabled: true
     containerCollectAll: true
     configMapName: "datadog-logs"
+    containerCollectUsingFiles: true
   
   # Enable APM for application tracing with Dynamic Instrumentation
   apm:
+    enabled: true
     portEnabled: true
     socketEnabled: false
 
@@ -41,6 +43,13 @@ datadog:
     
   # Enable network monitoring for AKS
   networkMonitoring:
+    enabled: true
+  
+  # Collect cluster events and Kubernetes state metrics
+  collectEvents: true
+  kubeStateMetricsCore:
+    enabled: true
+  kubeStateMetricsScrape:
     enabled: true
     
   # Enable Database Monitoring (modern key)
@@ -79,6 +88,16 @@ datadog:
             - env:production
             - cloud:azure
             - service:vibecode-azure-pg
+    redisdb.yaml: |
+      init_config:
+      instances:
+        - host: valkey-service.vibecode-platform.svc.cluster.local
+          port: 6379
+          password: ${DD_VALKEY_PASSWORD:-${DATADOG_VALKEY_PASSWORD}}
+          tags:
+            - env:production
+            - service:vibecode-valkey
+            - component:cache
     
   # Enable orchestrator explorer for AKS
   orchestratorExplorer:
@@ -93,6 +112,8 @@ datadog:
     - "region:eastus2"
 
   env:
+    - name: DD_ENV
+      value: "production"
     - name: DD_POSTGRES_USERNAME
       valueFrom:
         secretKeyRef:
@@ -124,6 +145,26 @@ datadog:
         secretKeyRef:
           name: datadog-azure-postgres
           key: password
+    - name: DD_APPSEC_ENABLED
+      value: "true"
+    - name: DD_IAST_ENABLED
+      value: "true"
+    - name: DD_IAST_REQUEST_SAMPLING
+      value: "1.0"
+    - name: DD_PROFILING_ENABLED
+      value: "true"
+    - name: DD_TRACE_SAMPLE_RATE
+      value: "1"
+    - name: DD_TRACE_ENABLED
+      value: "true"
+    - name: DD_APM_ENABLED
+      value: "true"
+    - name: DD_APM_NON_LOCAL_TRAFFIC
+      value: "true"
+    - name: DD_LOGS_ENABLED
+      value: "true"
+    - name: DD_APM_FEATURES
+      value: "appsec,profiling,ci_visibility"
 
 # Cluster Agent configuration for AKS
 clusterAgent:
@@ -172,6 +213,9 @@ agents:
   pdb:
     create: true
     minAvailable: 1
+  apm:
+    enabled: true
+    hostPort: 8126
     
   # Production resources for Node Agents
   resources:
@@ -201,11 +245,17 @@ systemProbe:
   # Enable network security monitoring
   seccomp: "runtime/default"
   appArmor: "runtime/default"
+  enableTCPQueueLength: true
+  enableOOMKill: true
+  enableHTTPMonitoring: true
+  collectDNSStats: true
   
 # Security Agent for runtime security
 securityAgent:
   enabled: true
   runtime:
+    enabled: true
+  compliance:
     enabled: true
     
 # Additional AKS-specific configurations

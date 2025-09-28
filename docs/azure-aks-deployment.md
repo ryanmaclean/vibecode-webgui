@@ -337,6 +337,7 @@ helm upgrade --install datadog-agent datadog/datadog \
   --namespace datadog \
   --values k8s/datadog-values-aks.yaml \
   --set datadog.apiKey="$DD_API_KEY"
+# For staging clusters replace the values file with k8s/datadog-values-aks-staging.yaml
 ```
 
 2. **Enable Dynamic Instrumentation**:

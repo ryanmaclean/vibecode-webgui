@@ -1,0 +1,2 @@
+  PID TTY           TIME CMD
+96290 ttys283    0:00.13 kubectl --context kind-vibecode-test port-forward -n vibecode-platform svc/postgres-service 55432:5432

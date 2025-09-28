@@ -286,8 +286,8 @@ export class VectorSearch {
         id: collection.id,
         metadata: collection.metadata || {}
       }));
-    } catch (error) {
-      console.error('Error listing collections:', error);
+    } catch (_error) {
+      // Suppress console output in production; return empty list on failure
       return [];
     }
   }

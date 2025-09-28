@@ -95,12 +95,21 @@ spec:
               value: {{ .Values.env.VIBECODE_DEFAULT_LLM_MODEL | quote }}
             - name: FREE_LLM_MODELS
               value: {{ .Values.env.FREE_LLM_MODELS | quote }}
+            {{- if .Values.freeModelUpdater.enabled }}
+            - name: FREE_LLM_MODELS_FILE
+              value: {{ .Values.freeModelUpdater.configMap.filePath | quote }}
+            {{- end }}
             
             # Redis/Valkey configuration
             {{- if .Values.redis.enabled }}
             - name: REDIS_URL
               value: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port }}"
+            - name: VALKEY_URL
+              value: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port }}"
             {{- end }}
+
+            - name: VECTOR_DB_CACHE_ENABLED
+              value: {{ (.Values.env.VECTOR_DB_CACHE_ENABLED | default "true") | quote }}
             
             # Datadog configuration
             {{- if .Values.monitoring.datadog.enabled }}
@@ -189,6 +198,11 @@ spec:
             - name: uploads
               mountPath: {{ .Values.persistence.mountPath }}
             {{- end }}
+            {{- if .Values.freeModelUpdater.enabled }}
+            - name: free-llm-models
+              mountPath: {{ .Values.freeModelUpdater.configMap.mountPath }}
+              readOnly: true
+            {{- end }}
             - name: tmp
               mountPath: /tmp
             - name: app-logs
@@ -199,6 +213,11 @@ spec:
         - name: uploads
           persistentVolumeClaim:
             claimName: {{ include "vibecode.fullname" . }}-uploads
+        {{- end }}
+        {{- if .Values.freeModelUpdater.enabled }}
+        - name: free-llm-models
+          configMap:
+            name: {{ include "vibecode.freeLlmConfigMapName" . }}
         {{- end }}
         - name: tmp
           emptyDir:

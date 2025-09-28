@@ -7,7 +7,7 @@ fullnameOverride: vibecode-webgui
 
 env:
   NODE_ENV: development
-  DD_ENV: kind
+  DD_ENV: developement
   DD_SERVICE: vibecode-webgui
   DD_VERSION: "kind"
   DD_TRACE_ENABLED: "true"

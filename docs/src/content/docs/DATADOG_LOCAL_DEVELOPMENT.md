@@ -154,6 +154,12 @@ Legacy variables (`DATADOG_*`, `NEXT_PUBLIC_DATADOG_*`) are still recognized for
 
 # Test complete pipeline
 ./scripts/run-all-tests.sh
+
+# Validate Kubernetes Datadog coverage (KIND/MicroK8s/AKS values)
+npm run test:k8s -- datadog-k8s-config.test.ts
+
+# Execute Datadog Synthetic monitors
+npm run test:synthetics
 ```
 
 ### Manual Verification
@@ -174,10 +180,60 @@ curl -f http://localhost:8126/info
 docker-compose logs datadog-agent
 docker-compose logs docs
 docker-compose logs app
+
+# Trigger RUM session replay (browser console)
+datadogRum.startSessionReplayRecording?.()
 ```
 
-## 🔗 Environment Parity Matrix
+## ✅ Full Observability Validation Checklist
 
+- **Valkey & PostgreSQL Telemetry** — Helm values keep `redisdb` and `postgres` integrations in `confd`, and `k8s/valkey-deployment.yaml` ships Datadog autodiscovery annotations. Run `npm run test:k8s -- datadog-k8s-config.test.ts` to confirm.
+- **Logs, Traces, Profiling, AppSec/IAST/SCA** — Application containers export Datadog security flags (`DD_APPSEC_ENABLED`, `DD_IAST_ENABLED`, profiling) and the agents have runtime + compliance modules enabled. Verify with `kubectl -n datadog exec daemonset/datadog-agent -- agent status`.
+- **Real User Monitoring (RUM)** — Set `NEXT_PUBLIC_ENABLE_RUM_IN_DEV=true`, reload the app, and confirm `browser-rum` requests in DevTools.
+- **Datadog Synthetics** — Execute `npm run test:synthetics` (or the CI workflow) to run the browser/API monitors stored in `datadog-synthetics.json` and `tests/datadog/*.synthetics.json`.
+- **Database Query Analytics (DBM)** — Run `npm run verify:datadog-dbm` to test query metric ingestion and Postgres log collection.
+- **Dedicated Azure PostgreSQL DBM Agents** — Apply `k8s/datadog-dbmon.yaml` (dev/staging/prod deployments) so each flexible server has a single-purpose Datadog agent.
+  - Populate the external secrets `datadog/dbmon/{dev|staging|prod}` in Key Vault with `api-key`, `app-key`, `db-host`, `db-name`, `db-user`, and `db-password`.
+    ```bash
+    # Example: seed the dev JSON payload
+    az keyvault secret set \
+      --vault-name vibecode-dev-kv \
+      --name datadog-dbmon-dev \
+      --value '{
+        "api-key": "<DATADOG_API_KEY>",
+        "app-key": "<DATADOG_APP_KEY>",
+        "db-host": "vibecode-pgflex-1758429506.postgres.database.azure.com",
+        "db-name": "vibecode",
+        "db-user": "datadog",
+        "db-password": "<DATADOG_DBMON_PASSWORD>"
+      }' \
+      --content-type application/json
+    ```
+  - Deploy with `kubectl apply -f k8s/datadog-dbmon.yaml` in each cluster (ensure the `datadog` namespace exists).
+  - Install the cluster-level instrumentation that keeps Datadog's Agent/Cluster Agent matrix green:
+    ```bash
+    # Deploy dedicated cluster agents for dev/staging/prod DBM clusters
+    kubectl apply -f k8s/datadog-dbmon-cluster-agent.yaml
+
+    # Wait for each cluster agent to become Ready
+    kubectl rollout status deployment/datadog-dbmon-dev-cluster-agent -n datadog
+    kubectl rollout status deployment/datadog-dbmon-staging-cluster-agent -n datadog
+    kubectl rollout status deployment/datadog-dbmon-prod-cluster-agent -n datadog
+    ```
+  - Confirm the DBM agents are wired to the new cluster agents:
+    ```bash
+    # Check that both Agent and Cluster Agent report the expected versions
+    kubectl -n datadog get pods -l app=datadog-dbmon-dev
+    kubectl -n datadog get pods -l app=datadog-dbmon-dev-cluster-agent
+    kubectl -n datadog get pods -l app=datadog-dbmon-staging
+    kubectl -n datadog get pods -l app=datadog-dbmon-staging-cluster-agent
+    kubectl -n datadog get pods -l app=datadog-dbmon-prod
+    kubectl -n datadog get pods -l app=datadog-dbmon-prod-cluster-agent
+    ```
+  - Verify with `kubectl get pods -n datadog -l app.kubernetes.io/component=monitoring` and check `agent status` for the `postgres` check.
+- **Kubernetes Integrations** — The Helm values force-enable `collectEvents`, `kubeStateMetricsCore`, `networkMonitoring`, and the system-probe (HTTP/DNS/TCP). Inspect the Kubernetes section in `agent status` for each cluster.
+
+## 🔗 Environment Parity Matrix
 | Feature | Local Dev | KIND Staging | Azure Production |
 |---------|-----------|--------------|------------------|
 | **Datadog Agent** | Docker Container | DaemonSet | Helm Chart |

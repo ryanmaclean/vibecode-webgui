@@ -1,0 +1,1 @@
+{"status":"ok","res_type":"time_series","resp_version":1,"query":"avg:postgresql.query_duration{env:kind,host:postgres-service.vibecode-platform.svc.cluster.local,service:vibecode-postgres}","from_date":1758687776000,"to_date":1758688676000,"series":[],"values":[],"times":[],"message":"","group_by":[]}

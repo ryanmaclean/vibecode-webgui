@@ -53,6 +53,24 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+Names and labels for the AI Gateway component
+*/}}
+{{- define "vibecode.aiGateway.fullname" -}}
+{{- printf "%s-ai-gateway" (include "vibecode.fullname" .) -}}
+{{- end }}
+
+{{- define "vibecode.aiGateway.labels" -}}
+{{- $base := (include "vibecode.labels" . | fromYaml) -}}
+{{- $labels := merge $base (dict "app.kubernetes.io/name" (printf "%s-ai-gateway" (include "vibecode.name" .)) "app.kubernetes.io/component" "ai-gateway") -}}
+{{- toYaml $labels -}}
+{{- end }}
+
+{{- define "vibecode.aiGateway.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "vibecode.name" . }}-ai-gateway
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
 Create the name of the service account to use
 */}}
 {{- define "vibecode.serviceAccountName" -}}
@@ -175,6 +193,17 @@ Generate storage class name
 {{- .Values.global.storageClass }}
 {{- else }}
 {{- "managed-csi" }}
+{{- end }}
+{{- end }}
+
+{{/*
+Generate the ConfigMap name that stores free LLM models
+*/}}
+{{- define "vibecode.freeLlmConfigMapName" -}}
+{{- if .Values.freeModelUpdater.configMap.name }}
+{{- .Values.freeModelUpdater.configMap.name | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-free-llm-models" (include "vibecode.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
 

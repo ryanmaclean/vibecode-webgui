@@ -26,6 +26,7 @@ import { datadogMetrics } from '../src/lib/monitoring/datadog-metrics';
 import type { MetricData } from '../src/lib/monitoring/metrics-types';
 import OpenAI from 'openai';
 import { generateLocalEmbedding } from '../src/lib/ai/localEmbedding';
+import { llmObservability } from '../src/lib/datadog-llm';
 
 interface DocumentChunk {
   id: string;
@@ -55,6 +56,7 @@ class DocumentationRAGIngester {
   private useLocalEmbeddings: boolean;
   private localEmbeddingDimensions: number;
   private openAIEmbeddingModel: string;
+  private maxConcurrency: number;
   
   constructor() {
     this.prisma = new PrismaClient();
@@ -84,6 +86,11 @@ class DocumentationRAGIngester {
           'X-Title': process.env.OPENROUTER_APP_TITLE || 'VibeCode WebGUI'
         }
       });
+
+      if (openAIKey) {
+        console.log('ℹ️  OpenRouter embeddings enabled with OpenAI fallback');
+        this.openAIEmbeddingService = new EmbeddingService(openAIKey, this.openAIEmbeddingModel, this.prisma);
+      }
     } else if (this.useOpenAI) {
       if (!openAIKey) {
         throw new Error('OPENAI_API_KEY must be provided for OpenAI embedding mode.');
@@ -119,6 +126,12 @@ class DocumentationRAGIngester {
     });
 
     this.ddEnv = process.env.DD_ENV || process.env.NODE_ENV || 'development';
+    const defaultConcurrency = this.useOpenAI ? '4' : this.useOpenRouter ? '3' : '2';
+    this.maxConcurrency = Math.max(1, parseInt(process.env.RAG_MAX_CONCURRENCY || defaultConcurrency, 10));
+
+    if (this.maxConcurrency > 1) {
+      console.log(`⚡ Concurrent ingestion enabled (max ${this.maxConcurrency} chunks at a time)`);
+    }
   }
 
   /**
@@ -265,6 +278,32 @@ class DocumentationRAGIngester {
     return value.replace(/[^a-zA-Z0-9-_]/g, '_').slice(0, 64) || 'unknown';
   }
 
+  private getActiveEmbeddingModel(): string {
+    if (this.useLocalEmbeddings) {
+      return `local-${this.localEmbeddingDimensions}`;
+    }
+
+    if (this.useOpenRouter) {
+      return this.openRouterEmbeddingModel;
+    }
+
+    if (this.useOpenAI && this.openAIEmbeddingService) {
+      return this.openAIEmbeddingModel;
+    }
+
+    if (this.azureEmbeddingService) {
+      const azureDeployment = (this.azureEmbeddingService as any)?.deploymentName;
+      return (
+        azureDeployment ||
+        process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME ||
+        process.env.AZURE_OPENAI_DEPLOYMENT_EMBEDDING ||
+        'azure-openai-embedding'
+      );
+    }
+
+    return 'unknown';
+  }
+
   /**
    * Emit Datadog metrics for each processed chunk so ingestion progress is observable
    */
@@ -285,6 +324,8 @@ class DocumentationRAGIngester {
       total_chunks: String(chunk.metadata.totalChunks),
       retry_count: String(Math.max(attempt - 1, 0))
     };
+
+    tags.embedding_model = this.sanitizeTagValue(this.getActiveEmbeddingModel());
 
     if (error) {
       tags.error_type = this.sanitizeTagValue(error.name || 'error');
@@ -342,17 +383,29 @@ class DocumentationRAGIngester {
         throw new Error('OpenRouter client not initialised');
       }
 
-      const response = await this.openRouterClient.embeddings.create({
-        model: this.openRouterEmbeddingModel,
-        input: text,
-      });
+      try {
+        const response = await this.openRouterClient.embeddings.create({
+          model: this.openRouterEmbeddingModel,
+          input: text,
+        });
 
-      const embedding = response.data?.[0]?.embedding;
-      if (!embedding) {
-        throw new Error('OpenRouter returned no embedding data');
+        const embedding = response.data?.[0]?.embedding;
+        if (embedding && embedding.length) {
+          return embedding;
+        }
+
+        console.warn(`⚠️  OpenRouter returned no embedding data (model ${this.openRouterEmbeddingModel}); falling back.`);
+      } catch (error) {
+        console.warn(`⚠️  OpenRouter embedding request failed: ${(error as Error).message}`);
       }
 
-      return embedding;
+      if (this.openAIEmbeddingService) {
+        return this.openAIEmbeddingService.generateEmbedding(text);
+      }
+
+      if (!this.azureEmbeddingService && !this.useLocalEmbeddings) {
+        throw new Error('OpenRouter embedding failed and no fallback provider is configured');
+      }
     }
 
     if (this.openAIEmbeddingService) {
@@ -385,6 +438,16 @@ class DocumentationRAGIngester {
           content: chunk.content,
           embedding,
           metadata: chunk.metadata
+        });
+
+        llmObservability.annotate({
+          metadata: {
+            chunk_id: chunk.id,
+            embedding_model: this.getActiveEmbeddingModel(),
+            chunk_index: chunk.metadata.chunkIndex,
+            total_chunks: chunk.metadata.totalChunks,
+          },
+          tags: ['rag_ingest', 'embedding'],
         });
 
         console.log(`✅ Stored chunk: ${chunk.id}`);
@@ -434,9 +497,29 @@ class DocumentationRAGIngester {
    */
   private async storeDocumentChunks(chunks: DocumentChunk[]): Promise<void> {
     const interChunkDelayMs = parseInt(process.env.RAG_INTER_CHUNK_DELAY_MS || '250', 10);
+    const concurrency = this.maxConcurrency;
 
-    for (const chunk of chunks) {
-      await this.processChunk(chunk);
+    if (concurrency <= 1) {
+      for (const chunk of chunks) {
+        await this.processChunk(chunk);
+        if (interChunkDelayMs > 0) {
+          await this.sleep(interChunkDelayMs);
+        }
+      }
+      return;
+    }
+
+    for (let i = 0; i < chunks.length; i += concurrency) {
+      const batch = chunks.slice(i, i + concurrency);
+
+      await Promise.all(
+        batch.map(chunk =>
+          this.processChunk(chunk).catch(error => {
+            console.error(`Chunk ${chunk.id} encountered an unexpected error`, error);
+          })
+        )
+      );
+
       if (interChunkDelayMs > 0) {
         await this.sleep(interChunkDelayMs);
       }
@@ -458,6 +541,7 @@ class DocumentationRAGIngester {
         markdownFiles = markdownFiles.slice(0, maxFiles);
       }
       console.log(`📚 Using ${markdownFiles.length} documentation file(s) for ingestion`);
+      console.log(`🧠 Embedding model: ${this.getActiveEmbeddingModel()}`);
       
       // Process all files and collect chunks
       const allChunks: DocumentChunk[] = [];

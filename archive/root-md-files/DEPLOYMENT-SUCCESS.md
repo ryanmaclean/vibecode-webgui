@@ -177,12 +177,12 @@ examples/testing/
 
 ### Sourced from .env.local
 ```env
-✅ NEXTAUTH_SECRET=vibecode-development-secret-key-change-in-production
-✅ OPENROUTER_API_KEY=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
-✅ DATABASE_URL=postgresql://vibecode:vibecode@localhost:5432/vibecode
+✅ NEXTAUTH_SECRET=<redacted>
+✅ OPENROUTER_API_KEY=sk-or-***REDACTED***
+✅ DATABASE_URL=postgresql://vibecode:<redacted>@localhost:5432/vibecode
 ✅ REDIS_URL=redis://localhost:6379
-✅ DD_API_KEY=7ff60a7cdd44e0a596562bad2fd89342
-✅ DD_APP_KEY=c3b4bb992dcaed57d6378d097dad41f781b25fc5
+✅ DD_API_KEY=***REDACTED***
+✅ DD_APP_KEY=***REDACTED***
 ✅ DD_ENV=dev
 ✅ DD_SERVICE=vibecode-webgui
 ```

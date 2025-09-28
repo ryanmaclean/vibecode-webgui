@@ -10,6 +10,12 @@ datadog_api_key = "your-datadog-api-key"
 datadog_app_key = "your-datadog-app-key"
 datadog_site    = "datadoghq.com"
 
+# External Secrets / DBM credentials
+dbm_sp_client_id     = "00000000-0000-0000-0000-000000000000"
+dbm_sp_client_secret = "your-dbmon-service-principal-secret"
+dbm_sp_tenant_id     = "00000000-0000-0000-0000-000000000000"
+dbm_key_vault_url    = "https://vibecode-prod-kv.vault.azure.net/"
+
 # Optional external API keys
 openrouter_api_key    = ""
 azure_openai_api_key  = ""

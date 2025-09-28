@@ -23,7 +23,6 @@ data:
         port: 5432
         username: datadog
         password: datadog_monitoring_password
-        dbname: vibecode
         dbm: true
         collect_schemas:
           enabled: true

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 // import { datadogDBM, DBMAlert } from '@/lib/monitoring/datadog-dbm';
 import { createRobustConnection } from '@/lib/db/robust-db-connection';
 import { DatadogIntegration } from '@/lib/monitoring/datadog-integration';
+import { isDBMEnabled } from '@/lib/monitoring/datadog-env';
 
 // Alert thresholds for connection pool monitoring
 interface PoolAlertThresholds {
@@ -116,11 +117,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if Datadog DBM is enabled
-    if (true) { // datadogDBM not available
+    if (!isDBMEnabled()) {
       return NextResponse.json({
         error: 'Datadog Database Monitoring is not enabled. Set DD_DBM_ENABLED=true in environment.',
         alerts: [],
-        dbmConfig: null, // datadogDBM not available
+        dbmConfig: null,
         timestamp: new Date().toISOString()
       }, { status: 503 });
     }

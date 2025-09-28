@@ -1,0 +1,195 @@
+{
+  "from": 1758718106,
+  "to": 1758721706,
+  "queries": {
+    "connections": "avg:postgresql.connections{service:vibecode-postgres,env:kind}",
+    "rows_returned": "avg:postgresql.rows_returned{service:vibecode-postgres,env:kind}",
+    "db_size": "avg:postgresql.db_size{service:vibecode-postgres,env:kind}",
+    "index_scans": "avg:postgresql.index_scans{service:vibecode-postgres,env:kind}"
+  },
+  "results": {
+    "connections": {
+      "status": "ok",
+      "res_type": "time_series",
+      "resp_version": 1,
+      "query": "avg:postgresql.connections{service:vibecode-postgres,env:kind}",
+      "from_date": 1758718106000,
+      "to_date": 1758721706000,
+      "series": [],
+      "values": [],
+      "times": [],
+      "message": "",
+      "group_by": []
+    },
+    "rows_returned": {
+      "status": "ok",
+      "res_type": "time_series",
+      "resp_version": 1,
+      "query": "avg:postgresql.rows_returned{service:vibecode-postgres,env:kind}",
+      "from_date": 1758718106000,
+      "to_date": 1758721706000,
+      "series": [
+        {
+          "unit": [
+            {
+              "family": "db",
+              "id": 38,
+              "name": "row",
+              "short_name": null,
+              "plural": "rows",
+              "scale_factor": 1.0
+            },
+            {
+              "family": "time",
+              "id": 11,
+              "name": "second",
+              "short_name": "s",
+              "plural": "seconds",
+              "scale_factor": 1.0
+            }
+          ],
+          "query_index": 0,
+          "aggr": "avg",
+          "metric": "postgresql.rows_returned",
+          "tag_set": [],
+          "expression": "avg:postgresql.rows_returned{env:kind,service:vibecode-postgres}",
+          "scope": "env:kind,service:vibecode-postgres",
+          "interval": 20,
+          "length": 24,
+          "start": 1758721120000,
+          "end": 1758721599000,
+          "pointlist": [
+            [
+              1758721120000.0,
+              0.0405964613818274
+            ],
+            [
+              1758721140000.0,
+              77.81253410275895
+            ],
+            [
+              1758721160000.0,
+              59.57160849922542
+            ],
+            [
+              1758721180000.0,
+              49.87743353058023
+            ],
+            [
+              1758721200000.0,
+              52.284640195036125
+            ],
+            [
+              1758721220000.0,
+              59.581311341089354
+            ],
+            [
+              1758721240000.0,
+              49.496363934834214
+            ],
+            [
+              1758721260000.0,
+              52.91318932526175
+            ],
+            [
+              1758721280000.0,
+              59.48003923029529
+            ],
+            [
+              1758721300000.0,
+              50.062853801935596
+            ],
+            [
+              1758721320000.0,
+              52.284690896917844
+            ],
+            [
+              1758721340000.0,
+              59.56707308136517
+            ],
+            [
+              1758721360000.0,
+              49.893508980825025
+            ],
+            [
+              1758721380000.0,
+              52.283881659252955
+            ],
+            [
+              1758721400000.0,
+              59.56582170951913
+            ],
+            [
+              1758721420000.0,
+              49.91899239748286
+            ],
+            [
+              1758721440000.0,
+              52.231206124226276
+            ],
+            [
+              1758721460000.0,
+              59.56606511060858
+            ],
+            [
+              1758721480000.0,
+              49.93507322181247
+            ],
+            [
+              1758721500000.0,
+              59.65604990703666
+            ],
+            [
+              1758721520000.0,
+              54.243913437193726
+            ],
+            [
+              1758721540000.0,
+              49.650649464589264
+            ],
+            [
+              1758721560000.0,
+              39.469813416857924
+            ],
+            [
+              1758721580000.0,
+              53.0825709191046
+            ]
+          ],
+          "display_name": "postgresql.rows_returned",
+          "attributes": {}
+        }
+      ],
+      "values": [],
+      "times": [],
+      "message": "",
+      "group_by": []
+    },
+    "db_size": {
+      "status": "ok",
+      "res_type": "time_series",
+      "resp_version": 1,
+      "query": "avg:postgresql.db_size{service:vibecode-postgres,env:kind}",
+      "from_date": 1758718106000,
+      "to_date": 1758721706000,
+      "series": [],
+      "values": [],
+      "times": [],
+      "message": "",
+      "group_by": []
+    },
+    "index_scans": {
+      "status": "ok",
+      "res_type": "time_series",
+      "resp_version": 1,
+      "query": "avg:postgresql.index_scans{service:vibecode-postgres,env:kind}",
+      "from_date": 1758718106000,
+      "to_date": 1758721706000,
+      "series": [],
+      "values": [],
+      "times": [],
+      "message": "",
+      "group_by": []
+    }
+  }
+}

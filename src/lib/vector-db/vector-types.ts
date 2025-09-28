@@ -100,4 +100,14 @@ export interface VectorDatabaseConfig {
    * Default: 300000 (5 minutes)
    */
   connectionIdleTimeoutMs?: number;
+
+  /**
+   * Embedding model identifier (e.g. text-embedding-3-large)
+   */
+  embeddingModel?: string;
+
+  /**
+   * Expected embedding dimensions for the configured model
+   */
+  embeddingDimensions?: number;
 }

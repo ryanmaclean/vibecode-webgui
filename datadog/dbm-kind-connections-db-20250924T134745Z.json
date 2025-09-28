@@ -1,0 +1,1 @@
+{"status":"ok","res_type":"time_series","resp_version":1,"query":"avg:postgresql.connections{env:kind,service:vibecode-postgres} by {db}","from_date":1758720765000,"to_date":1758721665000,"series":[],"values":[],"times":[],"message":"","group_by":["db"]}

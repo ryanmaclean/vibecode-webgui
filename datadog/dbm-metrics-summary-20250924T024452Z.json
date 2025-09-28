@@ -1,0 +1,30 @@
+{
+  "generated_at_utc": "2025-09-24T02:44:52Z",
+  "from_utc": "2025-09-23T20:44:52Z",
+  "series": [
+    {
+      "metric": "(postgresql.connections + postgresql.rows_returned)",
+      "scope": "db:azure_sys,env:staging,service:vibecode-postgres",
+      "point_count": 60,
+      "avg": 45.724665703265735,
+      "max": 55.9283337689757,
+      "min": 38.241372236150966
+    },
+    {
+      "metric": "(postgresql.connections + postgresql.rows_returned)",
+      "scope": "db:postgres,env:staging,service:vibecode-postgres",
+      "point_count": 60,
+      "avg": 37.64284255985813,
+      "max": 58.717358528410045,
+      "min": 29.291963942489712
+    },
+    {
+      "metric": "(postgresql.connections + postgresql.rows_returned)",
+      "scope": "db:vibecode,env:staging,service:vibecode-postgres",
+      "point_count": 60,
+      "avg": 127.55023752209009,
+      "max": 160.61757431522864,
+      "min": 118.09821933085676
+    }
+  ]
+}
