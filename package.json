@@ -8,6 +8,7 @@
     "npm": ">=9.0.0"
   },
   "scripts": {
+    "postinstall": "node scripts/ensure-native-binaries.js",
     "setup": "node scripts/setup-development.js",
     "dev": "next dev",
     "dev:simple": "next dev",
@@ -65,6 +66,7 @@
     "monitoring:setup": "npx tsx scripts/setup-datadog-monitoring.ts",
     "monitoring:health": "curl -s http://localhost:3000/api/monitoring/dashboard | jq '.health'",
     "monitoring:metrics": "curl -s http://localhost:3000/api/monitoring/metrics?config=true | jq",
+    "monitoring:trace": "python3 scripts/verify-trace-search.py --config configs/trace-search-checks.json",
     "test:performance": "node scripts/run-performance-tests.js",
     "test:performance:synthetic": "npx @datadog/datadog-ci synthetics run-tests --config datadog-synthetics.json",
   "test:performance:lighthouse": "npx lighthouse-ci autorun",
@@ -132,7 +134,6 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "1.2.6",
     "@radix-ui/react-tabs": "1.1.13",
-    "@tailwindcss/oxide-darwin-arm64": "4.1.13",
     "@tremor/react": "^3.18.7",
     "@types/js-yaml": "4.0.9",
     "@types/mongodb": "4.0.7",
@@ -168,7 +169,6 @@
     "jsonwebtoken": "^9.0.2",
     "langchain": "0.3.34",
     "lightningcss": "1.30.1",
-    "lightningcss-darwin-arm64": "1.30.1",
     "lucide-react": "^0.525.0",
     "marked": "^16.1.1",
     "monaco-editor": "^0.52.2",
@@ -204,6 +204,7 @@
     "@vercel/kv": "^3.0.0",
     "ignore": "^7.0.5",
     "tmp": "^0.2.4",
+    "@octokit/openapi-types": "24.0.0",
     "@tremor/react": {
       "react": "^19.0.0",
       "react-dom": "^19.0.0"
