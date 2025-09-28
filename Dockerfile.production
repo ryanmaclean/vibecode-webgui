@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.4
 # Multi-stage production Dockerfile with source maps for Datadog Dynamic Instrumentation
 # Optimized for AKS deployment with security best practices
 
@@ -22,16 +23,21 @@ FROM base AS deps
 COPY package.json package-lock.json* ./
 
 # Install dependencies (production only)
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm install --omit=dev --legacy-peer-deps --force \
+  && npm cache clean --force
 
 # ===== Builder Stage =====
 FROM base AS builder
 
 # Copy package files
 COPY package.json package-lock.json* ./
+COPY prisma ./prisma
 
 # Install all dependencies needed for build
-RUN npm ci
+RUN npm install --legacy-peer-deps --force
+
+# Generate Prisma client for the build step
+RUN npx prisma generate
 
 # Copy source code
 COPY . .
@@ -86,16 +92,27 @@ ENV DD_APPSEC_RULES_FILE=/app/appsec-rules.json
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
 # Copy source maps for Dynamic Instrumentation
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./source-maps/.next
 COPY --from=builder --chown=nextjs:nodejs /app/src ./source-maps/src
 
+# Provide runtime instrumentation entrypoint
+COPY --from=builder --chown=nextjs:nodejs /app/src/instrument.cjs ./instrument.cjs
+
 # Copy production dependencies
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+# Ensure generated Prisma client ships with the runtime image
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
-# Create Datadog APM security rules file
-RUN cat > appsec-rules.json << 'EOF'
+# Ensure writable directory for Datadog trace logs
+RUN mkdir -p /app/logs && chown nextjs:nodejs /app/logs
+
+# Write Datadog AppSec rules to disk
+RUN cat <<'EOF' > /app/appsec-rules.json
 {
   "version": "2.2",
   "metadata": {
@@ -113,12 +130,8 @@ RUN cat > appsec-rules.json << 'EOF'
         {
           "parameters": {
             "inputs": [
-              {
-                "address": "server.request.query"
-              },
-              {
-                "address": "server.request.body"
-              }
+              { "address": "server.request.query" },
+              { "address": "server.request.body" }
             ],
             "regex": "(?i)(union|select|insert|update|delete|drop|create|alter)\\s"
           },
@@ -126,16 +139,14 @@ RUN cat > appsec-rules.json << 'EOF'
         }
       ],
       "transformers": [],
-      "on_match": [
-        "block"
-      ]
+      "on_match": ["block"]
     }
   ]
 }
 EOF
 
-# Create health check endpoint
-RUN cat > healthcheck.js << 'EOF'
+# Write health check script
+RUN cat <<'EOF' > /app/healthcheck.js
 const http = require('http');
 
 const options = {

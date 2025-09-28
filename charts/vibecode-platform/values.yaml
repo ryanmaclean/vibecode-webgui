@@ -23,6 +23,26 @@ web:
   nodeEnv: "production"
   resources: {}
 
+# ExternalSecret to auto-provision the primary database URL Secret (primary-database)
+# Disabled by default; enable in environments that use External Secrets Operator
+primaryDatabaseExternalSecret:
+  enabled: false
+  name: primary-database
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: akv-store
+  target:
+    name: primary-database
+    creationPolicy: Owner
+  data:
+    # This maps the external secret to the Kubernetes secret key "url"
+    secretKey: url
+    # Remote reference details (e.g., Azure Key Vault secret name and optional property)
+    remoteRef:
+      key: prod-db-url
+      property: url
+
   # Datadog RUM configuration for the frontend
   datadog:
     rum:
@@ -397,11 +417,6 @@ vector:
       enabled: false
       endpoints: ["http://elasticsearch:9200"]
 
-# Global configuration
-global:
-  environment: "production"
-  cluster:
-    name: "vibecode-platform"
 
 # Security Audit configuration (MKAT)
 securityAudit:
@@ -447,6 +462,27 @@ securityAudit:
       
     nodeSelector: {}
     tolerations: []
+
+# RAG Documentation Ingestion (pgvector) - runs inside AKS
+ragIngest:
+  enabled: false
+  # Cron schedule: every hour
+  schedule: "0 * * * *"
+  # Container image built from Dockerfile.ingest
+  image:
+    repository: vibecode/ingest
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  # Use local embeddings by default (no external API keys required)
+  useLocalEmbeddings: true
+  # Optional path override if using a custom image layout
+  docsPath: "/app/docs/src/content/docs"
+  # Optional: explicitly set DATABASE_URL here, or reference a secret
+  databaseUrl: ""
+  databaseUrlSecret:
+    name: ""
+    key: "url"
+  resources: {}
 
 # Supply Chain Security configuration (GuardDog)
 supplyChainSecurity:

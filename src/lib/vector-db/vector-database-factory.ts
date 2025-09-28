@@ -124,6 +124,13 @@ export class VectorDatabaseFactory {
         cacheEnabled: process.env.VECTOR_DB_CACHE_ENABLED !== 'false',
         enableMetrics: process.env.VECTOR_DB_METRICS_ENABLED !== 'false',
         enableLogging: process.env.VECTOR_DB_LOGGING_ENABLED !== 'false',
+        embeddingModel:
+          process.env.VECTOR_DB_EMBEDDING_MODEL ||
+          process.env.OPENAI_EMBEDDING_MODEL ||
+          process.env.OPENROUTER_EMBEDDING_MODEL,
+        embeddingDimensions: process.env.VECTOR_DB_EMBEDDING_DIMENSIONS
+          ? parseInt(process.env.VECTOR_DB_EMBEDDING_DIMENSIONS, 10)
+          : undefined,
       };
 
       // Create the appropriate adapter

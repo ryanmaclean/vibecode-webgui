@@ -1,5 +1,4 @@
 import { MultiAgentWorkflow, WorkflowStep, WorkflowResult } from './agents/multi-agent-workflow';
-import { PGVectorClient, COLLECTION_SCHEMAS } from './vector-stores/pgvector-client';
 import { OllamaClient, createOllamaClient, OLLAMA_MODELS } from './local/ollama-client';
 // Temporarily disabled to fix build issues - TODO: Fix LangChain compatibility
 // import { ChatOpenAI } from '@langchain/openai';
@@ -15,6 +14,35 @@ export interface ModelRecommendation {
   suitability: number; // 0-1
 }
 import { FunctionDefinition } from '../services/function-calling';
+
+// Dynamically load pgvector client on the server so the client bundle doesn't pull in Node-only deps
+const isBrowser = typeof window !== 'undefined';
+
+type PgVectorModule = typeof import('./vector-stores/pgvector-client');
+type PgVectorClientCtor = PgVectorModule['PGVectorClient'];
+type PgVectorClientInstance = PgVectorClientCtor extends new (...args: any[]) => infer Instance ? Instance : never;
+
+let cachedPgVectorModule: PgVectorModule | null = null;
+let attemptedPgVectorLoad = false;
+
+function getPgVectorModule(): PgVectorModule | null {
+  if (isBrowser) {
+    return null;
+  }
+
+  if (!attemptedPgVectorLoad) {
+    attemptedPgVectorLoad = true;
+    try {
+      const nodeRequire = typeof eval === 'function' ? eval('require') : require;
+      cachedPgVectorModule = nodeRequire('./vector-stores/pgvector-client') as PgVectorModule;
+    } catch (error) {
+      console.warn('[EnhancedAIManager] PGVector module unavailable; continuing without vector support.', error);
+      cachedPgVectorModule = null;
+    }
+  }
+
+  return cachedPgVectorModule;
+}
 
 export interface AIProviderConfig {
   openai?: {
@@ -61,7 +89,7 @@ export interface AIWorkflowResponse {
 
 export class EnhancedAIManager {
   private multiAgentWorkflow: MultiAgentWorkflow;
-  private pgvectorClient?: PGVectorClient;
+  private pgvectorClient?: PgVectorClientInstance;
   private ollamaClient?: OllamaClient;
   private openaiClient?: any; // ChatOpenAI - temporarily stubbed
   private config: AIProviderConfig;
@@ -76,20 +104,28 @@ export class EnhancedAIManager {
       // Initialize multi-agent workflow
       this.multiAgentWorkflow = new MultiAgentWorkflow();
 
-      // Initialize PGVector if configured
-      if (this.config.pgvector) {
-        this.pgvectorClient = new PGVectorClient(this.config.pgvector);
-        
-        // Initialize database and create default collections
-        try {
-          await this.pgvectorClient.initialize();
-          console.log('✅ PGVector database initialized successfully');
-          
-          // Create default collections
-          await this.pgvectorClient.createCollection(COLLECTION_SCHEMAS.DOCUMENTS);
-          await this.pgvectorClient.createCollection(COLLECTION_SCHEMAS.CODE_SNIPPETS);
-        } catch (error) {
-          console.warn('⚠️ PGVector initialization failed, falling back to local storage:', error);
+      // Initialize PGVector if configured and module available (server only)
+      if (this.config.pgvector && !isBrowser) {
+        const pgModule = getPgVectorModule();
+
+        if (pgModule) {
+          const { PGVectorClient, COLLECTION_SCHEMAS } = pgModule;
+
+          this.pgvectorClient = new PGVectorClient(this.config.pgvector);
+
+          // Initialize database and create default collections
+          try {
+            await this.pgvectorClient.initialize();
+            console.log('✅ PGVector database initialized successfully');
+
+            // Create default collections
+            await this.pgvectorClient.createCollection(COLLECTION_SCHEMAS.DOCUMENTS);
+            await this.pgvectorClient.createCollection(COLLECTION_SCHEMAS.CODE_SNIPPETS);
+          } catch (error) {
+            console.warn('⚠️ PGVector initialization failed, falling back to local storage:', error);
+          }
+        } else {
+          console.info('[EnhancedAIManager] PGVector module not loaded; skipping vector initialization.');
         }
       }
 

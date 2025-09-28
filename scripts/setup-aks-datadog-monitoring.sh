@@ -4,11 +4,12 @@
 set -euo pipefail
 
 # Configuration
+ENVIRONMENT=${ENVIRONMENT:-"prod"}
 RESOURCE_GROUP=${RESOURCE_GROUP:-"rg-vibecode-aks-prod"}
 CLUSTER_NAME=${CLUSTER_NAME:-"vibecode-prod-aks-6c3db0e6"}
 NAMESPACE=${NAMESPACE:-"vibecode-platform"}
 DATADOG_NAMESPACE=${DATADOG_NAMESPACE:-"datadog"}
-VALUES_FILE=${VALUES_FILE:-"k8s/datadog-values-aks.yaml"}
+VALUES_FILE=${VALUES_FILE:-""}
 POSTGRES_SERVICE=${POSTGRES_SERVICE:-"postgres-service"}
 DB_NAME=${DB_NAME:-"vibecode"}
 DB_USER=${DB_USER:-"datadog"}
@@ -30,6 +31,7 @@ show_help() {
   echo "  --cluster-name <name>     AKS cluster name (default: ${CLUSTER_NAME})"
   echo "  --namespace <name>        Application namespace (default: ${NAMESPACE})"
   echo "  --datadog-namespace <ns>  Datadog namespace (default: ${DATADOG_NAMESPACE})"
+  echo "  --environment <env>       Deployment environment (prod|staging) (default: ${ENVIRONMENT})"
   echo "  --db-name <name>          Database name (default: ${DB_NAME})"
   echo "  --db-user <user>          Datadog monitoring user (default: ${DB_USER})"
   echo "  --db-password <pass>      Datadog monitoring password (default: ${DB_PASSWORD})"
@@ -56,6 +58,10 @@ while [[ $# -gt 0 ]]; do
       DATADOG_NAMESPACE="$2"
       shift 2
       ;;
+    --environment)
+      ENVIRONMENT="$2"
+      shift 2
+      ;;
     --db-name)
       DB_NAME="$2"
       shift 2
@@ -80,11 +86,28 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [ -z "$VALUES_FILE" ]; then
+  case "$ENVIRONMENT" in
+    staging)
+      VALUES_FILE="k8s/datadog-values-aks-staging.yaml"
+      ;;
+    prod|production)
+      VALUES_FILE="k8s/datadog-values-aks.yaml"
+      ;;
+    *)
+      echo -e "${YELLOW}Unknown environment '$ENVIRONMENT'; defaulting Datadog values to production file.${NC}"
+      VALUES_FILE="k8s/datadog-values-aks.yaml"
+      ;;
+  esac
+fi
+
 echo -e "${YELLOW}=== Setting up Datadog Monitoring for AKS Cluster ===${NC}"
 echo -e "Resource Group: ${RESOURCE_GROUP}"
 echo -e "AKS Cluster: ${CLUSTER_NAME}"
 echo -e "Application Namespace: ${NAMESPACE}"
 echo -e "Datadog Namespace: ${DATADOG_NAMESPACE}"
+echo -e "Environment: ${ENVIRONMENT}"
+echo -e "Helm values file: ${VALUES_FILE}"
 echo -e "Database: ${DB_NAME}"
 
 # Check if Datadog API key is set

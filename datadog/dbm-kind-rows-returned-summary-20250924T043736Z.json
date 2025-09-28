@@ -1,0 +1,13 @@
+{
+  "generated_at": "20250924T043736Z",
+  "query": "avg:postgresql.rows_returned{env:kind,host:postgres-service.vibecode-platform.svc.cluster.local,service:vibecode-postgres}",
+  "window_seconds": 900,
+  "series": [
+    {
+      "points": 116,
+      "min": 37.25561573821852,
+      "max": 104.58430576523898,
+      "avg": 55.84099352032783
+    }
+  ]
+}

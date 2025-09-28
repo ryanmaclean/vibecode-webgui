@@ -478,6 +478,24 @@ kubectl top nodes
 kubectl top pods -n vibecode
 ```
 
+### **Datadog Network Monitoring (Required)**
+1. **Install/upgrade the Datadog chart with KIND values**
+   ```bash
+   helm upgrade --install datadog datadog/datadog \
+     --namespace datadog --create-namespace \
+     -f k8s/datadog-values-kind.yaml
+   ```
+2. **Confirm the system probe is running and network checks are enabled**
+   ```bash
+   kubectl -n datadog exec daemonset/datadog-agent -- agent status | grep -A5 "Network"
+   ```
+3. **Verify required host mounts are present**
+   ```bash
+   kubectl -n datadog get daemonset datadog-agent -o yaml | grep -A3 "system-probe"
+   ```
+4. The values file keeps `datadog.networkMonitoring.enabled: true` and `systemProbe.enabled: true`. Do not override these flags when testing changes.
+5. Confirm Valkey/Postgres integrations load: `kubectl -n datadog exec daemonset/datadog-agent -- agent configcheck | grep -E "redisdb|postgres"`.
+
 ---
 
 ## 📝 **MAINTENANCE LOG**

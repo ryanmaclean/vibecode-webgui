@@ -1,5 +1,5 @@
 #!/bin/bash
-export DD_API_KEY=1a13902a6e89e2620a651d368b927c0c
-export DD_APPLICATION_KEY=c32df41c0d38fc60ef6a2120ed87ebe480ec6f97
+export DD_API_KEY=${DD_API_KEY:-"dummy-datadog-key"}
+export DD_APPLICATION_KEY=${DD_APPLICATION_KEY:-"dummy-datadog-app-key"}
 export BASE_URL=http://localhost:8080
 npm run test:performance

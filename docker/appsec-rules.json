@@ -1,0 +1,36 @@
+{
+  "version": "2.2",
+  "metadata": {
+    "rules_version": "1.0.0"
+  },
+  "rules": [
+    {
+      "id": "vibecode-001",
+      "name": "Block SQL injection attempts",
+      "tags": {
+        "type": "security_scanner",
+        "category": "attack_attempt"
+      },
+      "conditions": [
+        {
+          "parameters": {
+            "inputs": [
+              {
+                "address": "server.request.query"
+              },
+              {
+                "address": "server.request.body"
+              }
+            ],
+            "regex": "(?i)(union|select|insert|update|delete|drop|create|alter)\\s"
+          },
+          "operator": "match_regex"
+        }
+      ],
+      "transformers": [],
+      "on_match": [
+        "block"
+      ]
+    }
+  ]
+}

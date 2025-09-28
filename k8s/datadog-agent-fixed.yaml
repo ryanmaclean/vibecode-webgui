@@ -48,7 +48,7 @@ spec:
         - name: DD_CLUSTER_NAME
           value: "vibecode-kind-local"
         - name: DD_ENV
-          value: "local"
+          value: "developement"
         - name: DD_SERVICE
           value: "vibecode-k8s"
         - name: DD_VERSION
@@ -139,7 +139,7 @@ spec:
 
         # Tags
         - name: DD_TAGS
-          value: "env:local,cluster:kind,platform:kubernetes,service:vibecode"
+          value: "env:developement,cluster:kind,platform:kubernetes,service:vibecode"
         
         volumeMounts:
         # Writable directories for runtime files

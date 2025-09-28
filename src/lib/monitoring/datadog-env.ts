@@ -16,6 +16,7 @@ type SharedExports = {
     version: string
     env: string
   }
+  isDBMEnabled: () => boolean
 }
 
 const shared = sharedModule as SharedExports
@@ -27,6 +28,7 @@ const {
   getDatadogSite,
   getServiceEnvVersion,
   getRUMPublicConfig,
+  isDBMEnabled,
 } = shared
 
-export { getDDValue, getDatadogApiKey, getDatadogAppKey, getDatadogSite, getServiceEnvVersion, getRUMPublicConfig }
+export { getDDValue, getDatadogApiKey, getDatadogAppKey, getDatadogSite, getServiceEnvVersion, getRUMPublicConfig, isDBMEnabled }

@@ -1,0 +1,61 @@
+schema-version: v2.2
+dd-service: vibecode-docs
+team: platform-engineering
+contacts:
+  - name: Kim Smith
+    type: email
+    contact: kim.smith@vibecode.com
+  - name: Jessie
+    type: email
+    contact: jessie@vibecode.com
+  - name: Platform Engineering Slack
+    type: slack
+    contact: https://vibecode.slack.com/archives/platform-engineering
+  - name: Platform Engineering Email
+    type: email
+    contact: platform-engineering@vibecode.com
+description: Astro-powered documentation portal for the VibeCode platform and operational runbooks.
+tier: tier2
+lifecycle: production
+application: vibecode-platform
+languages:
+  - typescript
+  - astro
+type: web
+ci-pipeline-fingerprints:
+  - github-actions:docs-ci-cd
+  - github-actions:deploy-docs
+links:
+  - name: Docs Deployment Runbook
+    type: runbook
+    url: https://github.com/vibecode/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/DOCS_DEPLOYMENT_VALIDATION.md
+  - name: Documentation Architecture
+    type: doc
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui/blob/main/docs/src/content/docs/container-manifest.md
+  - name: Docs Source
+    type: repo
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui/tree/main/docs
+  - name: KIND Documentation Validation
+    type: doc
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui/blob/main/tests/integration/docs-kind-integration.test.ts
+tags:
+  - env:production
+  - component:docs
+  - framework:astro
+  - language:typescript
+  - hosting:static
+  - business-unit:platform
+  - cost-center:engineering
+extensions:
+  datadoghq.com/dora-metrics:
+    repository: vibecode/vibecode-webgui
+    source_patterns:
+      - docs/**
+      - tests/integration/docs-kind-integration.test.ts
+  datadoghq.com/cd-visibility:
+    deployment_patterns:
+      - Docs CI/CD Pipeline
+      - Deploy Docs to CDN

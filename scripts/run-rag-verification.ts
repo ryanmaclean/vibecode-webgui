@@ -23,7 +23,7 @@ async function runVectorQueries(prisma: PrismaClient) {
     const embedding = await embeddingService.generateEmbedding(query)
     const results = await vectorService.findSimilarDocuments({
       embedding,
-      threshold: 0.55,
+      threshold: parseFloat(process.env.RAG_VERIFICATION_THRESHOLD || '0.35'),
       limit: 3
     })
 

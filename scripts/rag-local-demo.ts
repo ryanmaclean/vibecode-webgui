@@ -108,17 +108,31 @@ async function createEmbedding(text: string): Promise<number[]> {
     });
 
     const model = process.env.OPENROUTER_EMBEDDING_MODEL || 'text-embedding-3-small';
-    const response = await client.embeddings.create({
-      model,
-      input: text,
-    });
+    try {
+      const response = await client.embeddings.create({
+        model,
+        input: text,
+      });
 
-    const embedding = response.data?.[0]?.embedding;
-    if (!embedding) {
-      throw new Error('OpenRouter returned no embedding data');
+      const embedding = response.data?.[0]?.embedding;
+      if (embedding && embedding.length) {
+        return embedding;
+      }
+
+      console.warn(`⚠️  OpenRouter embedding response missing data (model ${model}); falling back to OpenAI`);
+    } catch (err) {
+      console.warn(`⚠️  OpenRouter embedding request failed (${(err as Error).message}); attempting fallback.`);
     }
 
-    return embedding;
+    if (OPENAI_KEY) {
+      return generateOpenAIEmbedding(text);
+    }
+
+    if (USE_LOCAL) {
+      return generateLocalEmbedding(text, LOCAL_DIM);
+    }
+
+    throw new Error('OpenRouter embedding failed and no fallback provider is configured');
   }
 
   if (OPENAI_KEY) {

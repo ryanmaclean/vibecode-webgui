@@ -1,0 +1,18 @@
+{
+  "generated_at": "20250924T025428Z",
+  "window_seconds": 900,
+  "summary": {
+    "connections": {
+      "note": "no series"
+    },
+    "rows_returned": {
+      "note": "no series"
+    },
+    "db_size": {
+      "note": "no series"
+    },
+    "index_scans": {
+      "note": "no series"
+    }
+  }
+}
