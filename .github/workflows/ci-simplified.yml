@@ -18,6 +18,55 @@ env:
   NODE_VERSION: '20.11.0'
 
 jobs:
+  # Validate CI configuration and secrets
+  validate-ci-config:
+    name: Validate CI configuration (secrets/vars)
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check required secrets and variables
+        run: |
+          echo "🔧 Validating CI configuration..."
+          missing=0
+          
+          # Check Datadog secrets (without exposing values)
+          if [ -z "${{ secrets.DD_API_KEY }}" ]; then
+            echo "::warning::Missing DD_API_KEY secret; Datadog steps will be skipped."
+            missing=1
+          else
+            echo "✅ DD_API_KEY present"
+          fi
+          
+          if [ -z "${{ secrets.DD_APP_KEY }}" ]; then
+            echo "::warning::Missing DD_APP_KEY secret; some Datadog features will be skipped."
+          else
+            echo "✅ DD_APP_KEY present"
+          fi
+          
+          # Check LHCI token
+          if [ -z "${{ secrets.LHCI_GITHUB_APP_TOKEN }}" ]; then
+            echo "::warning::Missing LHCI_GITHUB_APP_TOKEN secret; Lighthouse CI will be skipped."
+          else
+            echo "✅ LHCI_GITHUB_APP_TOKEN present"
+          fi
+          
+          # Check synthetic test IDs variable
+          if [ -z "${{ vars.DD_SYNTHETIC_TEST_IDS }}" ]; then
+            echo "::warning::Missing DD_SYNTHETIC_TEST_IDS variable; synthetic tests will be skipped."
+          else
+            echo "✅ DD_SYNTHETIC_TEST_IDS present"
+          fi
+          
+          if [ $missing -eq 1 ]; then
+            echo ""
+            echo "🏗️ Setup guidance:"
+            echo "• Add DD_API_KEY secret for Datadog CI Visibility"
+            echo "• Add DD_APP_KEY secret for enhanced Datadog features"  
+            echo "• Add LHCI_GITHUB_APP_TOKEN secret for Lighthouse CI"
+            echo "• Add DD_SYNTHETIC_TEST_IDS variable for synthetic tests"
+            echo "• See docs/ci-cd-fixes.md for detailed setup instructions"
+          fi
+
   # Code Quality & Security
   code-quality:
     runs-on: ubuntu-latest
@@ -68,14 +117,14 @@ jobs:
   root-tests:
     runs-on: ubuntu-latest
     name: Root Integration Tests
-    needs: code-quality
+    needs: [validate-ci-config, code-quality]
     timeout-minutes: 25
     env:
       DATABASE_URL: postgresql://test:test@localhost:5432/testdb
       REDIS_URL: redis://localhost:6379
       NEXTAUTH_SECRET: test-secret-key-for-ci
-      # Datadog CI Visibility
-      DD_CI_VISIBILITY_ENABLED: true
+      # Datadog CI Visibility - only set if API key is available
+      DD_CI_VISIBILITY_ENABLED: ${{ secrets.DD_API_KEY != '' && 'true' || 'false' }}
       DD_SERVICE: vibecode-webgui
       DD_ENV: ci
       DD_VERSION: ${{ github.sha }}
@@ -177,7 +226,7 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
     name: Build Test
-    needs: code-quality
+    needs: [validate-ci-config, code-quality]
     timeout-minutes: 20
     steps:
       - name: Checkout code
@@ -227,7 +276,7 @@ jobs:
           fi
 
       - name: Notify Datadog of CI completion
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.DD_API_KEY != ''
         run: |
           curl -X POST "https://api.datadoghq.com/api/v1/events" \
             -H "Content-Type: application/json" \
@@ -237,13 +286,13 @@ jobs:
               "text": "Simplified CI/CD pipeline completed successfully with root tests and build validation",
               "tags": ["source:github", "env:ci", "service:vibecode-webgui", "event:ci-complete"],
               "alert_type": "success"
-            }' || echo "Datadog notification skipped (no API key)"
+            }' || echo "Datadog notification failed"
 
   # AI Gateway Service Tests
   ai-gateway-tests:
     runs-on: ubuntu-latest
     name: AI Gateway Metrics and E2E (conditional)
-    needs: code-quality
+    needs: [validate-ci-config, code-quality]
     timeout-minutes: 20
     steps:
       - name: Checkout code

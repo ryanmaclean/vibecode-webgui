@@ -27,9 +27,55 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # Validate CI configuration and secrets
+  validate-ci-config:
+    name: Validate CI configuration (secrets/vars)
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check required secrets and variables
+        run: |
+          echo "🔧 Validating release CI configuration..."
+          missing=0
+          
+          # Check Datadog secrets
+          if [ -z "${{ secrets.DD_API_KEY }}" ]; then
+            echo "::warning::Missing DD_API_KEY secret; Datadog features will be skipped."
+            missing=1
+          else
+            echo "✅ DD_API_KEY present"
+          fi
+          
+          if [ -z "${{ secrets.DD_APP_KEY }}" ]; then
+            echo "::warning::Missing DD_APP_KEY secret; advanced Datadog features will be skipped."
+          else
+            echo "✅ DD_APP_KEY present"
+          fi
+          
+          # Check LHCI token
+          if [ -z "${{ secrets.LHCI_GITHUB_APP_TOKEN }}" ]; then
+            echo "::warning::Missing LHCI_GITHUB_APP_TOKEN secret; Lighthouse CI will be skipped."
+          else
+            echo "✅ LHCI_GITHUB_APP_TOKEN present"
+          fi
+          
+          # Check synthetic test IDs variable
+          if [ -z "${{ vars.DD_SYNTHETIC_TEST_IDS }}" ]; then
+            echo "::warning::Missing DD_SYNTHETIC_TEST_IDS variable; synthetic tests will be skipped."
+          else
+            echo "✅ DD_SYNTHETIC_TEST_IDS present"
+          fi
+          
+          if [ $missing -eq 1 ]; then
+            echo ""
+            echo "🏗️ Release testing may be limited without complete secret configuration"
+            echo "• See docs/ci-cd-fixes.md for detailed setup instructions"
+          fi
+
   # Comprehensive testing matrix
   test-suite:
     runs-on: ubuntu-latest
+    needs: validate-ci-config
     timeout-minutes: 30
     strategy:
       matrix:
@@ -133,6 +179,7 @@ jobs:
   # Security and quality checks
   security-and-quality:
     runs-on: ubuntu-latest
+    needs: validate-ci-config
     timeout-minutes: 20
     steps:
       - name: Checkout code
@@ -215,9 +262,9 @@ jobs:
   # Performance testing
   performance-tests:
     runs-on: ubuntu-latest
-    needs: [build-and-push]
+    needs: [validate-ci-config, build-and-push]
     timeout-minutes: 15
-    if: contains(github.ref, 'release/')
+    if: contains(github.ref, 'release/') && secrets.LHCI_GITHUB_APP_TOKEN != ''
     
     steps:
       - name: Checkout code

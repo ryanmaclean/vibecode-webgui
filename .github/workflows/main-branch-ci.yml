@@ -17,9 +17,35 @@ env:
   NODE_VERSION: '22.11.0'
 
 jobs:
+  # Validate CI configuration and secrets
+  validate-ci-config:
+    name: Validate CI configuration (secrets/vars)
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check required secrets and variables (main branch)
+        run: |
+          echo "🔧 Validating main branch CI configuration..."
+          
+          # For main branch, just inform about missing secrets without failing
+          if [ -z "${{ secrets.DD_API_KEY }}" ]; then
+            echo "ℹ️ DD_API_KEY secret not set; Datadog features would be limited on release branches."
+          else
+            echo "✅ DD_API_KEY present"
+          fi
+          
+          if [ -z "${{ secrets.LHCI_GITHUB_APP_TOKEN }}" ]; then
+            echo "ℹ️ LHCI_GITHUB_APP_TOKEN secret not set; Lighthouse CI would be skipped on release branches."
+          else
+            echo "✅ LHCI_GITHUB_APP_TOKEN present"
+          fi
+          
+          echo "ℹ️ Main branch uses lightweight CI. Full testing happens on release/* branches."
+
   # Fast validation - essential checks only
   quick-validation:
     runs-on: ubuntu-latest
+    needs: validate-ci-config
     timeout-minutes: 10
     steps:
       - name: Checkout code
@@ -53,6 +79,7 @@ jobs:
   # Security scan - lightweight version
   security-check:
     runs-on: ubuntu-latest
+    needs: validate-ci-config
     timeout-minutes: 5
     steps:
       - name: Checkout code
@@ -72,6 +99,7 @@ jobs:
   # Build validation - ensure it compiles
   build-check:
     runs-on: ubuntu-latest
+    needs: validate-ci-config
     timeout-minutes: 10
     steps:
       - name: Checkout code
