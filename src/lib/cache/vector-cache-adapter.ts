@@ -359,40 +359,30 @@ export const cacheIntegration = {
   /**
    * Wrap any vector search function with caching
    */
-  wrapVectorSearch: (searchFn: Function) => {
-    return async (query: string, options: any = {}) => {
-      return vectorCacheAdapter.searchWithCache(
-        () => searchFn(query, options),
-        query,
-        options
-      )
+  wrapVectorSearch: (searchFn: (query: string, options?: Record<string, unknown>) => Promise<any[]> | any[]) => {
+    return async (query: string, options: Record<string, unknown> = {}) => {
+      const executor = async () => (await Promise.resolve(searchFn(query, options))) as any[]
+      return vectorCacheAdapter.searchWithCache(executor, query, options)
     }
   },
 
   /**
    * Wrap any embedding function with caching
    */
-  wrapEmbeddingGeneration: (embeddingFn: Function) => {
-    return async (text: string, options: any = {}) => {
-      return vectorCacheAdapter.generateEmbeddingWithCache(
-        () => embeddingFn(text, options),
-        text,
-        options
-      )
+  wrapEmbeddingGeneration: (embeddingFn: (text: string, options?: Record<string, unknown>) => Promise<number[]> | number[]) => {
+    return async (text: string, options: Record<string, unknown> = {}) => {
+      const executor = async () => (await Promise.resolve(embeddingFn(text, options))) as number[]
+      return vectorCacheAdapter.generateEmbeddingWithCache(executor, text, options)
     }
   },
 
   /**
    * Wrap any database query function with caching
    */
-  wrapDatabaseQuery: (queryFn: Function) => {
-    return async (sql: string, params?: any[], options: any = {}) => {
-      return vectorCacheAdapter.queryWithCache(
-        () => queryFn(sql, params),
-        sql,
-        params,
-        options
-      )
+  wrapDatabaseQuery: <T>(queryFn: (sql: string, params?: unknown[], options?: Record<string, unknown>) => Promise<T> | T) => {
+    return async (sql: string, params: unknown[] = [], options: Record<string, unknown> = {}) => {
+      const executor = async () => await Promise.resolve(queryFn(sql, params, options))
+      return vectorCacheAdapter.queryWithCache(executor, sql, params, options)
     }
   }
 }

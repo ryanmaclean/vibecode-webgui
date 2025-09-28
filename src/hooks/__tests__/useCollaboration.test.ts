@@ -11,11 +11,12 @@ jest.mock('socket.io-client')
 
 import io from 'socket.io-client'
 
+ type SocketEventHandler = (...args: unknown[]) => void
 // Create the mock objects with event handler storage
-const eventHandlers = new Map<string, Function>()
+const eventHandlers = new Map<string, SocketEventHandler>()
 
 const mockSocket = {
-  on: jest.fn((event: string, handler: Function) => {
+  on: jest.fn((event: string, handler: SocketEventHandler) => {
     eventHandlers.set(event, handler)
     return mockSocket // Return for chaining
   }),
@@ -23,7 +24,7 @@ const mockSocket = {
   disconnect: jest.fn(),
   connected: false,
   // Helper method to trigger events in tests
-  _trigger: (event: string, ...args: any[]) => {
+  _trigger: (event: string, ...args: unknown[]) => {
     const handler = eventHandlers.get(event)
     if (handler) {
       handler(...args)
@@ -46,7 +47,7 @@ global.fetch = jest.fn()
 // Access global mocks set up in __mocks__/socket.io-client.js
 declare global {
   var mockSocket: any
-  var eventHandlers: Map<string, Function>
+  var eventHandlers: Map<string, SocketEventHandler>
 }
 
 describe('useCollaboration', () => {
@@ -94,7 +95,7 @@ describe('useCollaboration', () => {
     })
     
     // Re-setup the mockSocket.on implementation after clearAllMocks
-    ;(mockSocket.on as jest.MockedFunction<any>).mockImplementation((event: string, handler: Function) => {
+    ;(mockSocket.on as jest.MockedFunction<any>).mockImplementation((event: string, handler: SocketEventHandler) => {
       eventHandlers.set(event, handler)
       return mockSocket // Return for chaining
     })
