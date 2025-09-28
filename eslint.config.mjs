@@ -10,7 +10,7 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [{
-  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", ".backup/**"]
+  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", ".backup/**", "docs/.astro/**", "docs/dist/**", "docs/node_modules/**", "_tools/**", "scripts/integrate-error-tracking.ts", "scripts/test-multimodal.js"]
 }, ...compat.extends("next/core-web-vitals", "next/typescript"), {
   rules: {
     // Allow unused parameters prefixed with underscore
