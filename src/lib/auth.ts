@@ -7,9 +7,27 @@ import { NextAuthOptions } from 'next-auth'
 import GithubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
-// import { PrismaAdapter } from '@next-auth/prisma-adapter'
-// import { prisma } from './prisma'
-// NextAuth configuration is properly loaded
+
+type LegacyCredential = {
+  email: string
+  password: string
+  id: string
+  name: string
+  role: string
+}
+
+const LEGACY_CREDENTIALS: LegacyCredential[] = [
+  { email: 'admin@vibecode.dev', password: 'admin123', id: 'legacy-admin', name: 'Admin User', role: 'admin' },
+  { email: 'lead@vibecode.dev', password: 'lead123', id: 'legacy-lead', name: 'Lead User', role: 'admin' },
+  { email: 'developer@vibecode.dev', password: 'dev123', id: 'legacy-developer', name: 'Developer User', role: 'developer' },
+  { email: 'frontend@vibecode.dev', password: 'frontend123', id: 'legacy-frontend', name: 'Frontend User', role: 'user' },
+  { email: 'backend@vibecode.dev', password: 'backend123', id: 'legacy-backend', name: 'Backend User', role: 'user' },
+  { email: 'fullstack@vibecode.dev', password: 'fullstack123', id: 'legacy-fullstack', name: 'Fullstack User', role: 'user' },
+  { email: 'designer@vibecode.dev', password: 'design123', id: 'legacy-designer', name: 'Designer User', role: 'user' },
+  { email: 'tester@vibecode.dev', password: 'test123', id: 'legacy-tester', name: 'Tester User', role: 'user' },
+  { email: 'devops@vibecode.dev', password: 'devops123', id: 'legacy-devops', name: 'DevOps User', role: 'user' },
+  { email: 'security@vibecode.dev', password: 'security123', id: 'legacy-security', name: 'Security User', role: 'user' },
+]
 
 // Build providers dynamically so missing OAuth credentials do not break local auth flows.
 const providers: NextAuthOptions['providers'] = []
@@ -63,24 +81,26 @@ providers.push(
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        console.log('🔐 NextAuth authorize called with:', credentials);
         if (!credentials) {
           console.log('❌ No credentials provided');
           return null;
         }
 
-        // Simple validation for testing
-        if (credentials.email === 'developer@vibecode.dev' && credentials.password === 'dev123') {
-          console.log('✅ User authenticated successfully:', credentials.email);
-          return { 
-            id: '2', 
-            name: 'Developer User', 
-            email: 'developer@vibecode.dev', 
-            role: 'developer' 
-          }
-        } else {
-          console.log('❌ Authentication failed for:', credentials.email);
+        const match = LEGACY_CREDENTIALS.find(
+          (cred) => cred.email === credentials.email && cred.password === credentials.password,
+        )
+
+        if (!match) {
+          console.log('❌ Authentication failed for legacy credential:', credentials.email)
           return null
+        }
+
+        console.log('✅ Legacy credential authenticated:', match.email)
+        return {
+          id: match.id,
+          name: match.name,
+          email: match.email,
+          role: match.role,
         }
       },
     })
