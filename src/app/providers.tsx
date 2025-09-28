@@ -55,7 +55,7 @@ export default function Providers({ children }: ProvidersProps) {
           service: 'vibecode-webgui',
           env,
           version,
-        })
+        } as any)
 
         // Track application initialization
         RUMMonitoring.addAction('app.initialized', {
