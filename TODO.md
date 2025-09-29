@@ -182,6 +182,10 @@
 - [ ] Schedule full corpus ingestion when resource window allows and capture metrics/screenshots for issue #312.
 
 
+
+### CI Update (2025-09-29 20:55 UTC)
+- Main Branch CI run 18110107669 succeeded after slimming the quick-validation job and allowing optional deps; only `test:unit` now runs in the lightweight path, and build passed with `lightningcss` installed.
+
 ### CI Failures (2025-09-29 20:36 UTC)
 - Main Branch CI run 18109888329 still failing on `quick-validation` (lsp mocks / CLI tests) and `build-check` (webpack compile).
 - Capture failing suites: `docs/e2e/*.spec.ts`, `packages/vibecode-cli/src/__tests__/*`, `tests/vector-db-migrations.js` (missing `DATABASE_URL` / window env), and webpack errors tied to Next.js build.
