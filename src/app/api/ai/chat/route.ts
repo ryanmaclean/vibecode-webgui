@@ -157,13 +157,13 @@ export async function POST(request: NextRequest) {
       let workspaceDbId: number | undefined
 
       const workspaceNumericId = typeof workspaceId === 'string' ? Number.parseInt(workspaceId, 10) : workspaceId
-      const validWorkspaceId = Number.isFinite(workspaceNumericId) ? Number(workspaceNumericId) : undefined
+      const workspaceInternalId = Number.isFinite(workspaceNumericId) ? Number(workspaceNumericId) : undefined
+      const numericUserId = typeof userId === 'number' ? userId : undefined
 
-      if (!allowTestBypass && includeRag && validWorkspaceId && userPrompt) {
-        const numericUserId = userId as number
+      if (!allowTestBypass && includeRag && workspaceInternalId && numericUserId && userPrompt) {
         const workspace = await prisma.workspace.findFirst({
           where: {
-            workspace_id: validWorkspaceId,
+            id: workspaceInternalId,
             user_id: numericUserId
           }
         })
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      const workspaceIdentifier = validWorkspaceId ?? workspaceId ?? null
+      const workspaceIdentifier = workspaceInternalId ?? workspaceId ?? null
 
       logAIInteraction(request, 'chat_request', {
         model,
