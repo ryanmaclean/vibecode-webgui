@@ -169,7 +169,7 @@
 - Next: push the branch upstream, notify Dependabot PRs (#322, #321, #251, #241) to rebase, and rerun `npm run lint`, `npm run type-check`, `npm run test:unit` once the queue frees up.
 
 ### Next Steps
-- [ ] Push `fix/ai-route-lint` and comment on Dependabot PRs (#322, #321, #251, #241) with rebase instructions.
+- [x] Push `fix/ai-route-lint` and comment on Dependabot PRs (#322, #321, #251, #241) with rebase instructions.
 - [ ] Trigger `main-branch-ci.yml` after the TruffleHog guard lands to confirm the workflow succeeds.
 - [ ] Continue monitoring the long-running `scripts/ingest-docs-to-rag.ts` job; run `scripts/rag-local-demo.ts` once complete and document results in issue #312.
 
