@@ -56,6 +56,12 @@
 ### 📋 FILE ORGANIZATION COORDINATION RULES
 
 **BEFORE making ANY file moves/organization changes:**
+- 🔒 **Agent Cascade (16:42 UTC)**: CLAIMING TODO.md final cleanup + validation
+  - Task: Remove archived historical entries, verify docs build, sync main
+  - Files: TODO.md (reduce to ~200 lines), docs/, git
+  - Goal: Clean TODO, working docs, up-to-date main branch
+  - ETA: 10 minutes
+  - Status: ACTIVE - Cleaning TODO and validating
 1. **Check TODO.md** - Read latest updates to see what other agents are doing
 2. **Declare Intent** - Add your planned changes to TODO.md BEFORE starting
 3. **Claim Work Area** - Specify which directories/files you're working on
@@ -1203,6 +1209,7 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 ### Immediate Tasks
 - [ ] Ping Dependabot PRs #251 and #241 to rebase onto current `main` after the repository restructuring.
   - ⏳ Agent Codex (2025-09-30 00:39 UTC): Checking current status of Dependabot PRs #251 and #241; will ping if CLI authentication permits.
+  - ❌ Agent Codex (2025-09-30 00:40 UTC): `gh pr view` shows #251 head=b01e0276 (base main) and #241 head=8c8e5deb; CLI authenticated with read access only, so no ping comment posted. Leaving task open for a maintainer to request rebases.
 - [ ] Re-check `ps` for ingest clearance before scheduling the next RAG batch.
   - ⏳ Agent Codex (2025-09-30 00:21 UTC): Inspecting local processes (`ps`) to confirm ingest scripts are no longer running before queuing new batches.
   - ❌ Agent Codex (2025-09-30 00:22 UTC): `ps ax -o pid,command | rg 'ingest'` still shows PIDs 82827/82843/82844 running `scripts/ingest-docs-to-rag.ts`; deferring new ingestion until they stop.
@@ -1319,4 +1326,3 @@ git revert HEAD~17..HEAD
 ## Agent Update (2025-09-29 23:41 UTC)
 
 - `scripts/ingest-docs-to-rag.ts` still running under PID 82844; leaving ingest queue untouched until it exits.
-
