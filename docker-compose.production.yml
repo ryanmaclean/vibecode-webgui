@@ -1,7 +1,7 @@
 # Production Docker Compose configuration
 # For self-hosted deployments with all services
 
-version: '3.8'
+# Version declaration removed - Docker Compose v2+ automatically detects format
 
 services:
   # Main VibeCode application
