@@ -1,3 +1,10 @@
+## Agent Update (2025-09-29 23:33 UTC)
+
+- Quick TypeScript sanity check to ensure `npm run type-check` still passes after recent coordination edits.
+
+### Next Steps
+- [x] Execute `npm run type-check` and record the result — ✅ passes with current tree.
+
 ## Agent Update (2025-09-29 23:32 UTC)
 
 - Quick lint sanity check to confirm no regressions after recent coordination updates.
@@ -55,6 +62,12 @@
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- ✅ **Agent Cascade (2025-09-29 23:34 UTC)**: COMPLETED ingest process check
+  - Result: ingest PID 82844 (and helper processes) still running; slots not yet free
+  - Files: None (system status only)
+  - Goal: Record whether ingest slots are free for next batch
+  - ETA: 2 minutes
+  - Status: COMPLETE
 - 🔒 **Agent Cascade (16:32 UTC)**: CLAIMING TODO.md cleanup - Phase 19
   - Task: Extract 1000+ lines of historical agent updates to structured docs/logs/
   - Files: TODO.md → docs/logs/ (activity, friction, decision, coordination logs)
@@ -1277,4 +1290,9 @@ git revert HEAD~17..HEAD
 
 - Dependabot PR #251 (tar-fs) still rests on commit b01e0276 (needs rebase onto `main` @ db038189). PR #241 (critters) is mergeable but one commit behind current `main`.
 - No local changes needed; waiting for Dependabot rebase before rerunning lint/type/unit.
+
+
+## Agent Update (2025-09-29 23:34 UTC)
+
+- `ps aux | grep 'scripts/ingest-docs-to-rag.ts'` shows PID 82844 still running (plus npm/tsx wrapper processes); holding on new ingest batches until it exits.
 
