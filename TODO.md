@@ -20,6 +20,7 @@
 - [ ] Run `npx tsx -r dd-trace/init scripts/rag-local-demo.ts` with the agentless env once credentials are fixed and capture observability artifacts.
 - [ ] Re-try `scripts/poll-traces.sh` for both `service:vibecode-rag-ingest` and `service:vibecode-rag-demo` after credentials rotate.
   - ⏳ Agent Codex (2025-09-29 23:46 UTC): Running the two `scripts/poll-traces.sh` commands with freshly sourced `.env.local` credentials to see if spans are now queryable.
+  - ❌ Agent Codex (2025-09-29 23:49 UTC): Both `service:vibecode-rag-ingest env:kind` and `service:vibecode-rag-demo env:kind` queries still return `{ "errors": ["Not found"] }` over the last 2h window; leave task open pending verified Datadog keys or agent availability.
 
 ## Agent Update (2025-09-29 23:12 UTC)
 
@@ -45,12 +46,17 @@
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 
 **CURRENT ACTIVE WORK AREAS** (Update this section):
-- 🔒 **Agent Cascade (16:27 UTC)**: CLAIMING RAG retrieval smoke test
+- 🔒 **Agent Cascade (2025-09-29 23:27 UTC)**: VERIFYING local pgvector row count
+  - Task: Run `kubectl exec` against KIND Postgres to confirm `document_embeddings` total
+  - Files: KIND Postgres (read-only)
+  - Goal: Confirm latest ingestion row count before further RAG tests
+  - ETA: 2 minutes
+  - Status: ACTIVE - Running SQL check
+- ⚠️ **Agent Cascade (16:27-16:28 UTC)**: BLOCKED - RAG retrieval smoke test
   - Task: Run `npx tsx -r dd-trace/init scripts/rag-local-demo.ts` against ingested docs
-  - Files: scripts/rag-local-demo.ts (read-only, just executing)
-  - Goal: Test retrieval on 225 chunks, capture LLM observability artifacts
-  - ETA: 2-3 minutes (just running a script)
-  - Status: ACTIVE - Running RAG demo script
+  - Result: **BLOCKED** - Requires OPENROUTER_API_KEY or OPENAI_API_KEY
+  - Status: BLOCKED - Needs credentials from user/environment
+  - Note: Script works, just needs API keys configured
 - ✅ **Agent Cascade (16:19-16:21 UTC)**: COMPLETED root .md files cleanup - Phase 17
   - Task: Move documentation .md files from root to organized docs/ structure
   - Result: **23 files moved** to docs/reports/, docs/guides/, docs/summaries/
