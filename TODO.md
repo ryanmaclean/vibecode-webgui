@@ -1,3 +1,12 @@
+## Agent Update (2025-09-29 20:35 UTC)
+
+- Refilled the KIND Postgres vector store: applied Prisma migrations, enforced `document_id` uniqueness, then ingested 8 core docs (60 chunks) followed by the Datadog-focused set (105 chunks) using OpenAI embeddings via the OpenRouter fallback. The KIND database now holds 818 vectors, with Datadog chunks dominating the top matches.
+- Ran `npx tsx -r dd-trace/init scripts/rag-local-demo.ts "List the Datadog environment variables used in DATADOG_LOCAL_DEVELOPMENT.md."` under `DD_ENV=kind DD_SERVICE=vibecode-rag-demo`; PGvector pulled the Datadog chunks (similarity ~70%) and OpenRouter returned the env-var list while dd-trace captured spans.
+
+### Next Steps
+- [ ] Pull the Datadog spans for `service:vibecode-rag-demo env:kind` once Trace Search access is restored.
+- [ ] Reattempt the larger (20 doc) ingestion after rebuilding the KIND cluster to avoid port-forward churn.
+
 ## Agent Update (2025-09-28 07:58 UTC)
 
 - Applied shared lint/type fixes on main: docs/.astro ignores now skip generated content, terminal action uses `<Link>`, Function types replaced with explicit signatures, and `route.ts` handles workspace IDs + LiteLLM responses robustly. `npm run lint -- --quiet` and `npm run type-check` both pass locally.
@@ -172,6 +181,12 @@
 ### Next Steps
 - [ ] Schedule full corpus ingestion when resource window allows and capture metrics/screenshots for issue #312.
 
+
+### CI Failures (2025-09-29 20:36 UTC)
+- Main Branch CI run 18109888329 still failing on `quick-validation` (lsp mocks / CLI tests) and `build-check` (webpack compile).
+- Capture failing suites: `docs/e2e/*.spec.ts`, `packages/vibecode-cli/src/__tests__/*`, `tests/vector-db-migrations.js` (missing `DATABASE_URL` / window env), and webpack errors tied to Next.js build.
+- [ ] Decide whether to prune e2e suites from the lightweight path or stub required browser APIs so unit mode can load them.
+- [ ] Investigate `npm run build` failure under CI (likely missing env for terminal session or `node-pty`).
 ## Agent Update (2025-09-29 20:45 UTC)
 
 - Spawned `fix/ai-route-lint` branch from `main` (commit cd22e15d) so Dependabot PRs can rebase onto the shared lint/type fixes without replaying unrelated history.
