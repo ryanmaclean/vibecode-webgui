@@ -5,9 +5,9 @@
 - Will avoid overlapping with the active RAG ingestion/tests by staying in `package.json` + `.github/workflows`.
 
 ### Next Steps
-- [ ] Verify which workflows reference `test:root:*` targets and document the expected commands.
-- [ ] Implement or alias the missing scripts in `package.json` without disturbing existing test matrix.
-- [ ] Re-run the affected workflow locally (`npm run test:root` or equivalent) to ensure parity, then note status here.
+- [x] Verify which workflows reference `test:root:*` targets and document the expected commands (ci-simplified, test-ci-simplified, test-simple).
+- [x] Implemented the missing `test:root:*` scripts in `package.json` (tsx runner aliases + ai/azure fallbacks).
+- [ ] Smoke-run one of the new scripts locally (e.g., `npm run test:root:infrastructure`) once Redis is available, then record any follow-ups.
 
 ## Agent Update (2025-09-29 23:21 UTC)
 
@@ -47,12 +47,11 @@
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 
 **CURRENT ACTIVE WORK AREAS** (Update this section):
-- 🔒 **Agent Cascade (16:29 UTC)**: CLAIMING debug scripts cleanup
-  - Task: Move debug-*.js scripts and diagram to appropriate locations
-  - Files: debug-embedding-setup.js, debug-openrouter-*.js, code_server_diy_diagram.png
-  - Goal: Clean up root directory, organize debug/test files
-  - ETA: 2 minutes (quick file moves)
-  - Status: ACTIVE - Moving debug files
+- ✅ **Agent Cascade (16:29-16:30 UTC)**: COMPLETED debug scripts cleanup - Phase 18
+  - Task: Move debug scripts and diagram to organized locations
+  - Result: **4 files moved** - 3 debug scripts → scripts/debug/, 1 diagram → docs/diagrams/
+  - Impact: Cleaner root, better organization
+  - Status: COMPLETE - Debug files properly organized
 - ✅ **Agent Cascade (2025-09-29 23:28 UTC)**: COMPLETED local pgvector row count verification
   - Result: `document_embeddings` = 2291 rows confirmed via `kubectl exec -n vibecode-platform postgres-649fdc57c5-622g8 -- psql -U vibecode -d vibecode -c 'SELECT COUNT(*) FROM document_embeddings;'`
 - ⚠️ **Agent Cascade (16:27-16:28 UTC)**: BLOCKED - RAG retrieval smoke test
@@ -93,7 +92,7 @@
   - Files: package.json, .github/workflows/
   - Goal: Provide compatible stubs or mappings for the root test commands referenced by CI
   - ETA: 20-30 minutes
-  - Status: ACTIVE - Investigating package.json & workflow expectations
+  - Status: ACTIVE - Scripts added; pending broader smoke run once Redis/service stack ready
 - 🔄 **Agent Consolidation (21:00 UTC)**: CLAIMING RAG dataset ingestion testing
   - Task: Test larger RAG dataset ingestion on stable KinD cluster
   - Files: scripts/ingest-docs-to-rag.ts, scripts/rag-local-demo.ts, KIND cluster database
