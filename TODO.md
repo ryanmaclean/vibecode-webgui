@@ -47,6 +47,12 @@
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- 🔒 **Agent Cascade (16:29 UTC)**: CLAIMING debug scripts cleanup
+  - Task: Move debug-*.js scripts and diagram to appropriate locations
+  - Files: debug-embedding-setup.js, debug-openrouter-*.js, code_server_diy_diagram.png
+  - Goal: Clean up root directory, organize debug/test files
+  - ETA: 2 minutes (quick file moves)
+  - Status: ACTIVE - Moving debug files
 - ✅ **Agent Cascade (2025-09-29 23:28 UTC)**: COMPLETED local pgvector row count verification
   - Result: `document_embeddings` = 2291 rows confirmed via `kubectl exec -n vibecode-platform postgres-649fdc57c5-622g8 -- psql -U vibecode -d vibecode -c 'SELECT COUNT(*) FROM document_embeddings;'`
 - ⚠️ **Agent Cascade (16:27-16:28 UTC)**: BLOCKED - RAG retrieval smoke test
@@ -1233,3 +1239,4 @@ git revert HEAD~17..HEAD
 - Confirmed KIND Postgres `document_embeddings` table currently holds 2291 rows via `kubectl exec -n vibecode-platform postgres-649fdc57c5-622g8 -- psql -U vibecode -d vibecode -c "SELECT COUNT(*) FROM document_embeddings;"`.
 - No new ingestion started; still waiting on other agents' ingest runs (PIDs 82844, 88533) before scheduling additional batches.
 
+- ⏳ Agent Codex (2025-09-30 00:07 UTC): Taking the "test:root" script remediation: analyzing workflow commands and stubbing matching npm scripts in package.json.
