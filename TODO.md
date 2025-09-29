@@ -986,3 +986,5 @@ git revert HEAD~17..HEAD
 
 **Please coordinate here before making large changes!** 🙏
 
+
+**Reminder**: All agents must coordinate exclusively via TODO.md. Update the handoff section before starting long-running tasks (e.g., ingestion, restructures) and sign your update with timestamp/UTC.
