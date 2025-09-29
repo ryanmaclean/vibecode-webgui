@@ -12,10 +12,9 @@ echo ""
 # Function to move files safely
 move_batch() {
     local batch_name="$1"
-    shift
+    local dest="$2"
+    shift 2
     local files=("$@")
-    local dest="${files[-1]}"
-    unset 'files[-1]'
     
     echo "📦 Batch: $batch_name"
     echo "   Destination: $dest"
@@ -38,7 +37,7 @@ move_batch() {
 
 # Batch 1: Shell Scripts (13 files)
 echo "=== Batch 1: Shell Scripts ==="
-move_batch "Shell Scripts" \
+move_batch "Shell Scripts" "scripts" \
     audit-documentation.sh \
     create-release-branch.sh \
     DEMO.sh \
@@ -51,12 +50,11 @@ move_batch "Shell Scripts" \
     setup-branch-protection.sh \
     setup-real-testing.sh \
     troubleshoot-database.sh \
-    fix-merge-conflicts.sh \
-    scripts
+    fix-merge-conflicts.sh
 
 # Batch 2: Datadog Service Configs (11 files)
 echo "=== Batch 2: Datadog Configs ==="
-move_batch "Datadog Configs" \
+move_batch "Datadog Configs" "configs/datadog" \
     postgres.datadog.yaml \
     service.datadog.yaml \
     static-analysis.datadog.yml \
@@ -67,12 +65,11 @@ move_batch "Datadog Configs" \
     vibecode-rag-app.datadog.yaml \
     vibecode-webgui.datadog.yaml \
     vibecode-worker.datadog.yaml \
-    vibecode.datadog.yaml \
-    configs/datadog
+    vibecode.datadog.yaml
 
 # Batch 3: Dockerfiles (12 files)
 echo "=== Batch 3: Dockerfiles ==="
-move_batch "Dockerfiles" \
+move_batch "Dockerfiles" "docker" \
     Dockerfile.aks \
     Dockerfile.dev \
     Dockerfile.fast \
@@ -84,12 +81,11 @@ move_batch "Dockerfiles" \
     Dockerfile.production \
     Dockerfile.simple \
     Dockerfile.tailwind-test \
-    Dockerfile.test \
-    docker
+    Dockerfile.test
 
 # Batch 4: Docker Compose Files (10 files)
 echo "=== Batch 4: Docker Compose ==="
-move_batch "Docker Compose" \
+move_batch "Docker Compose" "docker" \
     docker-compose.ai-gateway.yml \
     docker-compose.dev.yml \
     docker-compose.litellm.yml \
@@ -99,40 +95,35 @@ move_batch "Docker Compose" \
     docker-compose.production.yml \
     docker-compose.repo.yml \
     docker-compose.test.yml \
-    docker-compose.yml \
-    docker
+    docker-compose.yml
 
 # Batch 5: K8s Manifests (3 files)
 echo "=== Batch 5: K8s Manifests ==="
-move_batch "K8s Manifests" \
+move_batch "K8s Manifests" "k8s" \
     kind-vibecode-local.yaml \
     simple-kind-cluster.yaml \
-    storage-class.yaml \
-    k8s
+    storage-class.yaml
 
 # Batch 6: Datadog Agent Configs (3 files)
 echo "=== Batch 6: Datadog Agent ==="
-move_batch "Datadog Agent" \
+move_batch "Datadog Agent" "k8s/datadog" \
     datadog-agent.yaml \
     datadog-agent-lean.yaml \
-    datadog-values.yaml \
-    k8s/datadog
+    datadog-values.yaml
 
 # Batch 7: Datadog Dashboards (4 files)
 echo "=== Batch 7: Datadog Dashboards ==="
-move_batch "Datadog Dashboards" \
+move_batch "Datadog Dashboards" "configs/datadog" \
     datadog-agent-patch.json \
     datadog-azure-embedding-dashboard.json \
     datadog-bot-protection-dashboard.json \
-    datadog-dashboard-embedding-metrics.json \
-    configs/datadog
+    datadog-dashboard-embedding-metrics.json
 
 # Batch 8: Misc Configs (2 files)
 echo "=== Batch 8: Misc Configs ==="
-move_batch "Misc Configs" \
+move_batch "Misc Configs" "configs/platforms" \
     datadog-synthetics.json \
-    dependency-compatibility-report.json \
-    configs/platforms
+    dependency-compatibility-report.json
 
 echo "✅ Cleanup Complete!"
 echo ""
