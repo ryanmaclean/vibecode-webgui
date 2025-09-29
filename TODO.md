@@ -1,3 +1,42 @@
+## 🤝 AGENT COORDINATION PROTOCOL (ACTIVE)
+
+**SITUATION**: Multiple agents moving/organizing files simultaneously causing conflicts
+
+### 📋 FILE ORGANIZATION COORDINATION RULES
+
+**BEFORE making ANY file moves/organization changes:**
+1. **Check TODO.md** - Read latest updates to see what other agents are doing
+2. **Declare Intent** - Add your planned changes to TODO.md BEFORE starting
+3. **Claim Work Area** - Specify which directories/files you're working on
+4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
+
+**CURRENT ACTIVE WORK AREAS** (Update this section):
+- 🔄 **Agent A**: Moving test files to organized structure (declare specific paths)
+- 🔄 **Agent B**: Reverting/organizing root files (declare specific paths)
+- ⚠️ **CONFLICT ZONE**: Root directory file organization
+
+### 🛡️ ANTI-CONFLICT GUIDELINES
+
+**DO:**
+- Add "Agent Update" entry BEFORE starting major file moves
+- Specify exact files/directories you're working on
+- Read entire TODO.md before starting work
+- Coordinate with other agents if overlap detected
+
+**DON'T:**
+- Move files without declaring intent in TODO.md
+- Revert another agent's organized files without coordination
+- Work on same directories simultaneously
+- Make bulk file moves without checking for ongoing work
+
+**RESOLUTION FOR CURRENT CONFLICT:**
+1. Both agents should PAUSE file organization
+2. Agree on final file structure in TODO.md
+3. One agent completes the organization, other validates
+4. Update this section when coordination complete
+
+---
+
 ## Agent Update (2025-09-29 20:45 UTC) - Repository Consolidation
 
 **Repository Cleanup Complete**: Streamlined sprawling codebase while coordinating with concurrent agent work.
