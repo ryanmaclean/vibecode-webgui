@@ -1,3 +1,14 @@
+## Agent Update (2025-09-29 23:26 UTC)
+
+- Claiming the CI remediation work: investigate the missing `test:root:*` scripts so GitHub Actions runners stop failing.
+- Plan: audit `package.json`, compare against workflows expecting the scripts, and add minimal stubs (likely delegating to `npm run test -- --runInBand`).
+- Will avoid overlapping with the active RAG ingestion/tests by staying in `package.json` + `.github/workflows`.
+
+### Next Steps
+- [ ] Verify which workflows reference `test:root:*` targets and document the expected commands.
+- [ ] Implement or alias the missing scripts in `package.json` without disturbing existing test matrix.
+- [ ] Re-run the affected workflow locally (`npm run test:root` or equivalent) to ensure parity, then note status here.
+
 ## Agent Update (2025-09-29 23:21 UTC)
 
 - Enabled the custom `DD_AGENTLESS_ENABLED=true` path in `src/instrument.ts`, then reran `npx tsx -r dd-trace/init scripts/ingest-docs-sample.ts` (20-doc slice) with pgvector on Docker; dd-trace stayed in agentless mode (no more `connect ECONNREFUSED 127.0.0.1:8126`) while 225 chunks upserted cleanly.
@@ -8,6 +19,7 @@
 - [ ] Swap in a validated Datadog API/app key (or re-enable the local agent) so Trace Search can confirm the new agentless spans.
 - [ ] Run `npx tsx -r dd-trace/init scripts/rag-local-demo.ts` with the agentless env once credentials are fixed and capture observability artifacts.
 - [ ] Re-try `scripts/poll-traces.sh` for both `service:vibecode-rag-ingest` and `service:vibecode-rag-demo` after credentials rotate.
+  - ⏳ Agent Codex (2025-09-29 23:46 UTC): Running the two `scripts/poll-traces.sh` commands with freshly sourced `.env.local` credentials to see if spans are now queryable.
 
 ## Agent Update (2025-09-29 23:12 UTC)
 
@@ -33,6 +45,12 @@
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- 🔒 **Agent Cascade (16:27 UTC)**: CLAIMING RAG retrieval smoke test
+  - Task: Run `npx tsx -r dd-trace/init scripts/rag-local-demo.ts` against ingested docs
+  - Files: scripts/rag-local-demo.ts (read-only, just executing)
+  - Goal: Test retrieval on 225 chunks, capture LLM observability artifacts
+  - ETA: 2-3 minutes (just running a script)
+  - Status: ACTIVE - Running RAG demo script
 - ✅ **Agent Cascade (16:19-16:21 UTC)**: COMPLETED root .md files cleanup - Phase 17
   - Task: Move documentation .md files from root to organized docs/ structure
   - Result: **23 files moved** to docs/reports/, docs/guides/, docs/summaries/
@@ -61,6 +79,12 @@
   - Files: Datadog config, instrument.ts, scripts/rag-local-demo.ts, poll-traces.sh
   - Result: Agentless ingestion succeeds locally (no ECONNREFUSED); spans still missing from Trace Search pending credential rotation
   - Status: COMPLETE - Handoff ready for credential owner
+- 🔒 **Agent Claude Code (23:30 UTC)**: CLAIMING CI script remediation (test:root:*)
+  - Task: Restore the missing `test:root:*` npm scripts so GitHub Actions workflows stop failing
+  - Files: package.json, .github/workflows/
+  - Goal: Provide compatible stubs or mappings for the root test commands referenced by CI
+  - ETA: 20-30 minutes
+  - Status: ACTIVE - Investigating package.json & workflow expectations
 - 🔄 **Agent Consolidation (21:00 UTC)**: CLAIMING RAG dataset ingestion testing
   - Task: Test larger RAG dataset ingestion on stable KinD cluster
   - Files: scripts/ingest-docs-to-rag.ts, scripts/rag-local-demo.ts, KIND cluster database
@@ -1200,4 +1224,3 @@ git revert HEAD~17..HEAD
 - [x] Review `lint-errors.json` and bucket issues by file/type (0 lint violations remain as of 2025-09-29 23:15 UTC).
 - [x] Propose owner or follow-up plan for each bucket in TODO.md (no remaining buckets; noted resolution).
 - [x] Re-ran `npm run lint` (no errors), `npm run type-check`, `npm run test:unit` on main; all green on 2025-09-29 23:16 UTC. Dependabot branches pending rebase.
-
