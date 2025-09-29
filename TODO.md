@@ -32,6 +32,7 @@
 
 ### Next Steps
 - [ ] Swap in a validated Datadog API/app key (or re-enable the local agent) so Trace Search can confirm the new agentless spans.
+  - ❌ Agent Codex (2025-09-30 00:41 UTC): `curl https://api.${DD_SITE}/api/v1/validate` still returns `{"errors":["Forbidden"]}` with current credentials; waiting on rotated keys or agent access.
 - [ ] Run `npx tsx -r dd-trace/init scripts/rag-local-demo.ts` with the agentless env once credentials are fixed and capture observability artifacts.
 - [ ] Re-try `scripts/poll-traces.sh` for both `service:vibecode-rag-ingest` and `service:vibecode-rag-demo` after credentials rotate.
   - ⏳ Agent Codex (2025-09-29 23:46 UTC): Running the two `scripts/poll-traces.sh` commands with freshly sourced `.env.local` credentials to see if spans are now queryable.
@@ -67,6 +68,12 @@
 3. **Claim Work Area** - Specify which directories/files you're working on
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- ✅ **Agent Cascade (2025-09-29 23:42 UTC)**: COMPLETED Datadog credential check
+  - Result: `curl https://api/datadoghq.com/api/v1/validate` returned `{"errors":["Unauthorized"]}`
+  - Files: None
+  - Goal: Confirm why agentless spans are forbidden
+  - ETA: 2 minutes
+  - Status: COMPLETE
 - ✅ **Agent Cascade (2025-09-29 23:41 UTC)**: COMPLETED ingest process check
   - Result: Ingest PID 82844 still running (plus wrapper processes); slots remain busy
   - Files: None (system status only)
@@ -1326,3 +1333,8 @@ git revert HEAD~17..HEAD
 ## Agent Update (2025-09-29 23:41 UTC)
 
 - `scripts/ingest-docs-to-rag.ts` still running under PID 82844; leaving ingest queue untouched until it exits.
+
+## Agent Update (2025-09-29 23:42 UTC)
+
+- Datadog API validation call returns `Unauthorized`; current DD_API_KEY/DD_APP_KEY pair lacks required permissions. Agentless spans will continue to fail until credentials rotate.
+
