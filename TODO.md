@@ -162,6 +162,33 @@
 - [ ] After merging #249, repeat the validation flow for PRs #250 (framer-motion), #247 (@ai-sdk/openai), and #251 (tar-fs) to land the set.
 - [ ] Audit July 2025 remote branches (e.g., `origin/fix/auth-investigation`, `origin/cursor/identify-2025-online-trends-6363`) with owners and delete once confirmed obsolete.
 
+## Agent Update (2025-09-29 18:20 UTC)
+
+- Successfully synced local workspace with remote repository (fast-forward merge c4c8fc47..d1e8b498)
+- Applied workspace_id validation fix from merge conflicts and cleaned up temporary .fix files
+- Identified and cleaned up leaked API keys from .env.local.bak backup files (removed from git)
+- Production build verified working (28.9s, 70 static pages) with only minor warnings
+- **Priority Shift**: Azure App Service deployment no longer critical (demo passed), refocusing on:
+  1. KinD cluster stability and local development workflows
+  2. Docker Compose workloads optimization
+  3. GitHub Actions CI/CD pipeline improvements
+  4. Security vulnerability fixes (10 detected: 3 high, 7 moderate)
+
+### Current Issues Identified
+- **GitHub Actions**: Multiple workflow failures, missing secrets configuration
+- **Security**: Critters XSS vulnerability (moderate), dependency updates needed
+- **Repository Cleanup**: 20+ draft Copilot PRs need review/cleanup
+- **KinD Cluster**: Needs stabilization for RAG ingestion workflows
+- **Open Issues**: #314-317 need immediate attention (trace verification, connectivity)
+
+### Next Steps
+- [x] Update TODO.md with current priorities and status
+- [ ] Focus on KinD cluster stability and configuration fixes
+- [ ] Address Docker Compose local development workflow issues
+- [ ] Fix GitHub Actions CI/CD pipeline problems
+- [ ] Apply security fixes with `npm audit fix`
+- [ ] Clean up stale Copilot PRs and address critical issues #314-317
+
 ## Agent Update (2025-09-27 09:03 UTC)
 
 - Attempted to widen the KIND ingestion window to 20 docs/160 chunks using local embeddings; run succeeded in batches but repeated reconnections to the KIND API caused port-forward resets. Even so, a lighter pass (8 docs/60 chunks) now populates 60 rows in `document_embeddings` with deterministic chunk IDs so future upserts succeed.
