@@ -1,3 +1,11 @@
+## Agent Update (2025-09-29 22:07 UTC)
+
+- Merged `fix/ai-route-lint` into the branch and reran `npm run lint -- --quiet` / `npm run type-check`; both now pass, unblocking Dependabot PR #250.
+
+### Next Steps
+- [ ] Re-run the same merge+validation for PR #247 and confirm green checks there as well.
+- [ ] Follow up with Dependabot PRs #251 and #241 once the lint/type fixes land.
+
 ## Agent Update (2025-09-28 07:58 UTC)
 
 - Applied shared lint/type fixes on main: docs/.astro ignores now skip generated content, terminal action uses `<Link>`, Function types replaced with explicit signatures, and `route.ts` handles workspace IDs + LiteLLM responses robustly. `npm run lint -- --quiet` and `npm run type-check` both pass locally.
@@ -162,6 +170,17 @@
 - [ ] After merging #249, repeat the validation flow for PRs #250 (framer-motion), #247 (@ai-sdk/openai), and #251 (tar-fs) to land the set.
 - [ ] Audit July 2025 remote branches (e.g., `origin/fix/auth-investigation`, `origin/cursor/identify-2025-online-trends-6363`) with owners and delete once confirmed obsolete.
 
+## Agent Update (2025-09-29 20:45 UTC)
+
+- Spawned `fix/ai-route-lint` branch from `main` (commit cd22e15d) so Dependabot PRs can rebase onto the shared lint/type fixes without replaying unrelated history.
+- Guarded `.github/workflows/secret-scanning.yml` so TruffleHog skips when `base == head`; this resolves the recurring CI failure on pushes to `main` with empty diffs.
+- Next: push the branch upstream, notify Dependabot PRs (#322, #321, #251, #241) to rebase, and rerun `npm run lint`, `npm run type-check`, `npm run test:unit` once the queue frees up.
+
+### Next Steps
+- [x] Push `fix/ai-route-lint` and comment on Dependabot PRs (#322, #321, #251, #241) with rebase instructions.
+- [x] Trigger `main-branch-ci.yml` after the TruffleHog guard lands to confirm the workflow succeeds. (Run https://github.com/ryanmaclean/vibecode-webgui/actions/runs/18109319386)
+- [ ] Continue monitoring the long-running `scripts/ingest-docs-to-rag.ts` job; run `scripts/rag-local-demo.ts` once complete and document results in issue #312.
+
 ## Agent Update (2025-09-29 20:00 UTC)
 
 - **Repository Consolidation Complete**: Cleaned up sprawling codebase to focus on core functionality
@@ -173,14 +192,21 @@
   - Updated .gitignore to exclude archive/ from version control
 - **Branch count reduced**: 114 → ~80 branches (30% reduction, focused on active work)
 - **Open PRs reduced**: 35+ → ~15 (removed WIP/stale items)
-- Production remains operational at https://vibecode.eastus2.cloudapp.azure.com
+- **Deployment Status**: Azure intentionally DOWN - focus shifted to local testing
+  - Local KIND cluster: `vibecode-test` running (PostgreSQL pod active)
+  - Database user setup needed (role "postgres" does not exist)
 
-### Next Priorities
-- [ ] Fix 45 lint errors blocking Dependabot PRs (see 2025-09-28 02:14 UTC entry)
-- [ ] Run npm audit fix for 10 security vulnerabilities (3 high, 7 moderate)
-- [ ] Merge critical Dependabot PRs: #322 (@ai-sdk/openai), #321 (codemirror), #251 (tar-fs), #241 (critters)
-- [ ] Restore Datadog Trace Search access (#314)
-- [ ] Fix Azure Flexible Server connectivity for RAG demos (#315)
+### Completed (2025-09-29 20:30 UTC)
+- [x] Fix 45 lint errors blocking Dependabot PRs ✅ 4 errors fixed, all lint checks passing
+- [x] Run npm audit fix for security vulnerabilities ✅ 0 vulnerabilities found
+
+### LOCAL TESTING FOCUS
+- [ ] Fix PostgreSQL role/user setup in KIND cluster
+- [ ] Verify local RAG demo functionality
+- [ ] Test vector search with local pgvector
+- [ ] ⏳ Merge critical Dependabot PRs: #322, #321, #251, #241 (rebases requested, awaiting CI)
+- [ ] Fix GitHub Actions CI/CD failures for local workflows
+- [ ] Update docs to reflect local-first development approach
 
 ## Agent Update (2025-09-29 18:20 UTC)
 
