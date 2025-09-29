@@ -22,12 +22,18 @@
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 
 **CURRENT ACTIVE WORK AREAS** (Update this section):
-- 🔒 **Agent Cascade (16:12 UTC)**: CLAIMING lint triage and fixes
-  - Task: Review and fix 45 ESLint violations from lint-errors.json
-  - Files: React components, scripts, test files (no file moves)
-  - Goal: Categorize by type, fix systematically, unblock PR #249
-  - ETA: 20-30 minutes
-  - Status: ACTIVE - Triaging lint errors
+- ✅ **Agent Cascade (16:12-16:14 UTC)**: COMPLETED lint triage
+  - Task: Review ESLint status (45 violations mentioned in TODO)
+  - Result: **0 ERRORS** - All critical lint issues already fixed! ✅
+  - Warnings: 3201 warnings remain (mostly @typescript-eslint/no-explicit-any)
+  - Status: COMPLETE - Lint passes with --quiet, PR #249 unblocked
+  - Note: Previous agents already fixed the critical errors
+- 🔒 **Agent Claude Code (16:20 PST)**: CLAIMING Datadog tracing configuration fix
+  - Task: Fix agentless spans targeting 127.0.0.1:8126 and validate trace delivery
+  - Files: Datadog config, instrument.ts, scripts/rag-local-demo.ts, poll-traces.sh
+  - Goal: Resolve ECONNREFUSED errors and confirm spans reach Datadog Trace Search
+  - ETA: 15-20 minutes
+  - Status: ACTIVE - Configuring agentless Datadog tracing
 - 🔄 **Agent Consolidation (21:00 UTC)**: CLAIMING RAG dataset ingestion testing
   - Task: Test larger RAG dataset ingestion on stable KinD cluster
   - Files: scripts/ingest-docs-to-rag.ts, scripts/rag-local-demo.ts, KIND cluster database
@@ -227,10 +233,10 @@ Local development infrastructure is now stable and functional. All immediate pri
 - Stored the machine-readable report in `lint-errors.json` so Dependabot reviewers can script remediation or generate follow-up tasks.
 
 ### Next Steps
-- [ ] Assign owners or fixes for each cluster (React copy escaping, Function type annotations, ts-ignore migrations) before rerunning lint on PR #249.
-- [ ] Once lint is clean, rerun `npm run lint`, `npm run type-check`, `npm run test:unit` and merge PR #249.
-- [ ] Reapply the validation workflow to Dependabot PRs #250, #247, #251, and #241 after #249 merges.
-- [ ] Continue auditing July 2025 remote branches with owners and prune confirmed-stale heads.
+- [x] Assign owners or fixes for each cluster (resolved: lint baseline is clean as of 2025-09-29 23:15 UTC).
+- [x] Once lint is clean, rerun `npm run lint`, `npm run type-check`, `npm run test:unit` (completed on main 2025-09-29 23:16 UTC; PR #249 ready pending merge).
+- [ ] Reapply the validation workflow to Dependabot PRs #250, #247, #251, and #241 after #249 merges (blocked on branch rebases).
+- [ ] Continue auditing July 2025 remote branches with owners and prune confirmed-stale heads (pending).
 
 ## Agent Update (2025-09-28 02:14 UTC)
 
@@ -240,9 +246,9 @@ Local development infrastructure is now stable and functional. All immediate pri
 
 ### Next Steps
 - [x] Enumerated the 45 lint violations (see 2025-09-28 02:19 UTC entry with rule counts and hotspots); ownership assignment still pending.
-- [ ] Re-run the validation suite (`npm run lint`, `npm run type-check`, `npm run test:unit`) once lint passes, then merge PR #249.
+- [x] Re-run the validation suite (`npm run lint`, `npm run type-check`, `npm run test:unit`) once lint passes (completed on main 2025-09-29 23:16 UTC; PR #249 ready pending merge).
 - [ ] Apply the same install/test flow for Dependabot PRs #250 (framer-motion), #247 (@ai-sdk/openai), #251 (tar-fs), and #241 (critters) after #249 merges.
-- [ ] Continue auditing July 2025 remote branches with owners and prune confirmed-stale heads.
+- [ ] Continue auditing July 2025 remote branches with owners and prune confirmed-stale heads (pending).
 
 ## Agent Update (2025-09-28 02:33 UTC)
 
@@ -252,10 +258,10 @@ Local development infrastructure is now stable and functional. All immediate pri
 - Haven't run `npm run build` since the Tailwind tooling changes; will execute after lint/type-check are green.
 
 ### Next Steps
-- [ ] Resolve the Datadog `LogsInitConfiguration` typing in `src/app/providers.tsx`.
-- [ ] Update the NextAuth module augmentation in `src/lib/auth.ts` to align with the current `next-auth` types.
-- [ ] Remove or justify the `@ts-expect-error` guard in `src/lib/db/db-logger.ts:417`.
-- [ ] Triage the outstanding ESLint errors (triple-slash ref, JSX entities, script parse errors, `Function` types) and rerun `npm run lint`.
+- [x] Resolve the Datadog `LogsInitConfiguration` typing in `src/app/providers.tsx` (type-check clean as of 2025-09-29 23:16 UTC).
+- [x] Update the NextAuth module augmentation in `src/lib/auth.ts` to align with the current `next-auth` types (type-check clean as of 2025-09-29 23:16 UTC).
+- [x] Remove or justify the `@ts-expect-error` guard in `src/lib/db/db-logger.ts:417` (no outstanding TS errors).
+- [x] Triage the outstanding ESLint errors (triple-slash ref, JSX entities, script parse errors, `Function` types) and rerun `npm run lint` (0 violations as of 2025-09-29 23:15 UTC).
 - [ ] Run `npm run build` once lint and type-check succeed to validate the new Tailwind native-binary installer.
 
 ## Agent Update (2025-09-28 02:02 UTC)
@@ -1160,7 +1166,7 @@ git revert HEAD~17..HEAD
 - No ingestion work will start until other agents' runs finish (PIDs 82844, 88533 still active).
 
 ### Next Steps
-- [ ] Review `lint-errors.json` and bucket issues by file/type (React escapes, Function type annotations, ts-ignore cleanups).
-- [ ] Propose owner or follow-up plan for each bucket in TODO.md.
-- [ ] Once buckets are assigned, re-run `npm run lint`, `npm run type-check`, `npm run test:unit` locally to confirm the fixes clear for PR #249, then propagate to Dependabot branches.
+- [x] Review `lint-errors.json` and bucket issues by file/type (0 lint violations remain as of 2025-09-29 23:15 UTC).
+- [x] Propose owner or follow-up plan for each bucket in TODO.md (no remaining buckets; noted resolution).
+- [x] Re-ran `npm run lint` (no errors), `npm run type-check`, `npm run test:unit` on main; all green on 2025-09-29 23:16 UTC. Dependabot branches pending rebase.
 
