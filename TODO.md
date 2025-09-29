@@ -1,3 +1,14 @@
+## Agent Update (2025-09-29 23:12 UTC)
+
+- Queried Datadog Trace Search via `./poll-traces.sh 'service:vibecode-rag-demo env:kind' 'now-12h'`; the API still responds with `{ "errors": ["Not found"] }`, so spans are not visible yet.
+- Confirmed the existing `kind-vibecode-test` cluster is healthy (age ~4h) and rebuilt the local pgvector schema against the `vibecode-pgvector` container before ingesting.
+- Ran `npx tsx -r dd-trace/init scripts/ingest-docs-sample.ts` with `RAG_SAMPLE_DOC_LIMIT=20`, OpenRouter embeddings (OpenAI fallback), and the kind pgvector endpoint; 20 docs / 225 chunks are now stored, and Datadog metrics emitted, but `dd-trace` still logs `connect ECONNREFUSED 127.0.0.1:8126` because the tracer expects a local agent despite agentless settings.
+
+### Next Steps
+- [ ] Adjust Datadog tracing config so agentless spans stop targeting `127.0.0.1:8126` (e.g., set `DD_TRACE_EXPORTER=agentless` or keep a local agent running) and rerun the ingestion batch to verify span delivery.
+- [ ] Run a retrieval smoke (`npx tsx -r dd-trace/init scripts/rag-local-demo.ts ...`) against the freshly ingested docs and capture dd-trace / LLM observability artifacts.
+- [ ] Re-run `poll-traces.sh` once tracing succeeds to confirm `service:vibecode-rag-demo env:kind` appears in Trace Search.
+
 ## 🤝 AGENT COORDINATION PROTOCOL (ACTIVE)
 
 **SITUATION**: Multiple agents moving/organizing files simultaneously causing conflicts
@@ -11,11 +22,22 @@
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- 🔒 **Agent Cascade (16:12 UTC)**: CLAIMING lint triage and fixes
+  - Task: Review and fix 45 ESLint violations from lint-errors.json
+  - Files: React components, scripts, test files (no file moves)
+  - Goal: Categorize by type, fix systematically, unblock PR #249
+  - ETA: 20-30 minutes
+  - Status: ACTIVE - Triaging lint errors
+- 🔄 **Agent Consolidation (21:00 UTC)**: CLAIMING RAG dataset ingestion testing
+  - Task: Test larger RAG dataset ingestion on stable KinD cluster
+  - Files: scripts/ingest-docs-to-rag.ts, scripts/rag-local-demo.ts, KIND cluster database
+  - Goal: Validate stability with 20+ document ingestion
+  - ETA: 15-20 minutes
+  - Status: ACTIVE - Testing RAG ingestion
 - ✅ **Agent Consolidation (20:55 UTC)**: Repository cleanup COMPLETED
   - Deleted 17 branches, closed 19 PRs, organized root files
   - Updated issues #312, #314, #315, #316, #317, #323
   - Commented on Dependabot PRs #322, #251
-  - Status: COMPLETED - Standing by for next priorities
 - ✅ **Agent Claude Code (11:45 PST)**: Completed infrastructure priorities - Standing by
   - Files: GitHub Actions workflows, Docker Compose files, TODO.md
   - Status: COMPLETED - Infrastructure stable, ready to support other agents
@@ -1131,3 +1153,14 @@ git revert HEAD~17..HEAD
 
 
 **Reminder**: All agents must coordinate exclusively via TODO.md. Update the handoff section before starting long-running tasks (e.g., ingestion, restructures) and sign your update with timestamp/UTC.
+
+## Agent Update (2025-09-29 23:11 UTC)
+
+- Starting lint triage for the remaining 45 ESLint violations captured in `lint-errors.json`; goal is to categorize fixes and note owners before rerunning PR #249 validations.
+- No ingestion work will start until other agents' runs finish (PIDs 82844, 88533 still active).
+
+### Next Steps
+- [ ] Review `lint-errors.json` and bucket issues by file/type (React escapes, Function type annotations, ts-ignore cleanups).
+- [ ] Propose owner or follow-up plan for each bucket in TODO.md.
+- [ ] Once buckets are assigned, re-run `npm run lint`, `npm run type-check`, `npm run test:unit` locally to confirm the fixes clear for PR #249, then propagate to Dependabot branches.
+
