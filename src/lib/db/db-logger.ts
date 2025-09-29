@@ -2,6 +2,7 @@
 // Provides structured logging for database operations
 
 import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 interface Logger {
   debug: (...args: any[]) => void;
@@ -113,20 +114,9 @@ export function configureDbLogging(options: Partial<DbLoggingOptions>) {
   logger.info('Database logging configured', { options: globalOptions });
 }
 
-// Define Prisma event types
-interface PrismaQueryEvent {
-  timestamp: Date;
-  query: string;
-  params: string;
-  duration: number;
-  target: string;
-}
-
-interface PrismaLogEvent {
-  timestamp: Date;
-  message: string;
-  target: string;
-}
+// Define Prisma event types using official Prisma definitions
+type PrismaQueryEvent = Prisma.QueryEvent;
+type PrismaLogEvent = Prisma.LogEvent;
 
 /**
  * Create a Prisma client with logging middleware
@@ -410,11 +400,15 @@ export function enhancePrismaWithLogging(
   options?: Partial<DbLoggingOptions>
 ): PrismaClient {
   const loggingOptions = { ...globalOptions, ...options };
+  const eventAwareClient = prisma as PrismaClient<
+    Prisma.PrismaClientOptions,
+    'query'
+  >;
   
   // Add event handlers if possible
   try {
     if (loggingOptions.logQueries && loggingOptions.level! >= LogLevel.DEBUG) {
-      prisma.$on('query', (e: PrismaQueryEvent) => {
+      eventAwareClient.$on('query', (e: PrismaQueryEvent) => {
         const durationMs = e.duration;
         
         // Determine log level based on query duration
