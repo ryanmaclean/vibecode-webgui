@@ -927,3 +927,14 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 - ⏳ Restore TCP access to the Azure flexible server (review firewall/VNet/private endpoint) so Prisma migrations and RAG tests can hit the database.
 - ⏳ Correct `.env.local` (`POSTRESQL_URL` → `POSTGRESQL_URL`) to avoid future confusion.
 - ⏳ After DB access returns, rerun `npx prisma migrate deploy` and `node -r dd-trace/init ./node_modules/.bin/jest tests/integration/vector-search-rag-real.test.ts --runInBand --verbose`, then capture Datadog dashboards.
+
+## Agent Note (2025-09-29 22:55 UTC)
+
+- Ingestion processes from other agents still active (`scripts/ingest-docs-to-rag.ts` PIDs 82844, 88533). Holding off on additional ingest batches to avoid thrashing the laptop.
+- Next ingest window will be capped (e.g. 15 files / 10 minutes) with explicit checkpoints once the queue clears; update TODO before starting.
+- Focus while waiting: ensure Dependabot PRs #251 and #241 are rebased onto current main (post-restructure) before rerunning lint/type/unit.
+
+### Immediate Tasks
+- [ ] Ping Dependabot PRs #251 and #241 to rebase onto current `main` after the repository restructuring.
+- [ ] Re-check `ps` for ingest clearance before scheduling the next RAG batch.
+
