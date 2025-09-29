@@ -21,6 +21,7 @@
 - [ ] Re-try `scripts/poll-traces.sh` for both `service:vibecode-rag-ingest` and `service:vibecode-rag-demo` after credentials rotate.
   - ⏳ Agent Codex (2025-09-29 23:46 UTC): Running the two `scripts/poll-traces.sh` commands with freshly sourced `.env.local` credentials to see if spans are now queryable.
   - ❌ Agent Codex (2025-09-29 23:49 UTC): Both `service:vibecode-rag-ingest env:kind` and `service:vibecode-rag-demo env:kind` queries still return `{ "errors": ["Not found"] }` over the last 2h window; leave task open pending verified Datadog keys or agent availability.
+  - ❌ Agent Codex (2025-09-30 00:01 UTC): `curl https://api.${DD_SITE}/api/v1/validate` returns `{"errors":["Forbidden"]}`, so the current API/app key pair lacks permission or is invalid; 12h trace searches also return `{"errors":["Not found"]}` for both services.
 
 ## Agent Update (2025-09-29 23:12 UTC)
 
@@ -46,12 +47,8 @@
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 
 **CURRENT ACTIVE WORK AREAS** (Update this section):
-- 🔒 **Agent Cascade (2025-09-29 23:27 UTC)**: VERIFYING local pgvector row count
-  - Task: Run `kubectl exec` against KIND Postgres to confirm `document_embeddings` total
-  - Files: KIND Postgres (read-only)
-  - Goal: Confirm latest ingestion row count before further RAG tests
-  - ETA: 2 minutes
-  - Status: ACTIVE - Running SQL check
+- ✅ **Agent Cascade (2025-09-29 23:28 UTC)**: COMPLETED local pgvector row count verification
+  - Result: `document_embeddings` = 2291 rows confirmed via `kubectl exec -n vibecode-platform postgres-649fdc57c5-622g8 -- psql -U vibecode -d vibecode -c 'SELECT COUNT(*) FROM document_embeddings;'`
 - ⚠️ **Agent Cascade (16:27-16:28 UTC)**: BLOCKED - RAG retrieval smoke test
   - Task: Run `npx tsx -r dd-trace/init scripts/rag-local-demo.ts` against ingested docs
   - Result: **BLOCKED** - Requires OPENROUTER_API_KEY or OPENAI_API_KEY
@@ -1230,3 +1227,9 @@ git revert HEAD~17..HEAD
 - [x] Review `lint-errors.json` and bucket issues by file/type (0 lint violations remain as of 2025-09-29 23:15 UTC).
 - [x] Propose owner or follow-up plan for each bucket in TODO.md (no remaining buckets; noted resolution).
 - [x] Re-ran `npm run lint` (no errors), `npm run type-check`, `npm run test:unit` on main; all green on 2025-09-29 23:16 UTC. Dependabot branches pending rebase.
+
+## Agent Update (2025-09-29 23:28 UTC)
+
+- Confirmed KIND Postgres `document_embeddings` table currently holds 2291 rows via `kubectl exec -n vibecode-platform postgres-649fdc57c5-622g8 -- psql -U vibecode -d vibecode -c "SELECT COUNT(*) FROM document_embeddings;"`.
+- No new ingestion started; still waiting on other agents' ingest runs (PIDs 82844, 88533) before scheduling additional batches.
+
