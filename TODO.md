@@ -938,3 +938,51 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 - [ ] Ping Dependabot PRs #251 and #241 to rebase onto current `main` after the repository restructuring.
 - [ ] Re-check `ps` for ingest clearance before scheduling the next RAG batch.
 
+## 🚨 AGENT COORDINATION NOTE (2025-09-29 22:57 UTC) - Agent Cascade
+
+**Repository restructuring is COMPLETE and COMMITTED (17 commits)**
+
+### What Was Done (Phases 12-15):
+- ✅ 63 files moved to proper locations (scripts/, docker/, configs/, database/, tests/manual/, docs/assets/)
+- ✅ 20 directories consolidated (docs/, .archive/, monitoring/, configs/)
+- ✅ Removed non-standard dirs (bin/, cmd/, venv/, runtime/, extensions/ moved to src/)
+- ✅ All documentation updated (README.md, TODO.md)
+- ✅ All references verified and fixed
+- ✅ Type-check passes
+- ✅ 45% reduction in root clutter (184 → 101 items)
+
+### Current State (VERIFIED):
+- **73 files in root** (down from 136)
+- **28 directories in root** (down from 48)
+- Repository follows Next.js/TypeScript industry standards
+- All changes are atomic commits (can be reverted individually if needed)
+
+### ⚠️ PLEASE DO NOT REVERT WITHOUT DISCUSSION
+If you're seeing issues with the restructuring:
+1. **Check what specific problem you're encountering** (broken imports? missing files? test failures?)
+2. **Document the issue here in TODO.md** before reverting
+3. **We can fix specific issues** without reverting all 17 commits
+4. **All file moves used `git mv`** - history is preserved
+
+### Files Moved (Key Locations):
+- Shell scripts → `scripts/`
+- Dockerfiles → `docker/` (except main Dockerfile)
+- docker-compose files → `docker/`
+- Datadog configs → `configs/datadog/`
+- K8s manifests → `k8s/`
+- Documentation → `docs/` subdirectories
+- Archives → `.archive/`
+- Extensions → `src/extensions/`
+- Runtime data → `configs/data/`
+
+### If You Need to Revert:
+```bash
+# Revert specific phase only:
+git revert <commit-hash>  # See git log for specific phase commits
+
+# Or revert all (NOT recommended):
+git revert HEAD~17..HEAD
+```
+
+**Please coordinate here before making large changes!** 🙏
+
