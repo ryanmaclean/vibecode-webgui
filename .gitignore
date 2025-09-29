@@ -133,6 +133,7 @@ Thumbs.db
 
 # Logs
 logs
+!docs/logs
 *.log
 
 # Temporary files
