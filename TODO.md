@@ -170,7 +170,7 @@
 
 ### Next Steps
 - [x] Push `fix/ai-route-lint` and comment on Dependabot PRs (#322, #321, #251, #241) with rebase instructions.
-- [ ] Trigger `main-branch-ci.yml` after the TruffleHog guard lands to confirm the workflow succeeds.
+- [x] Trigger `main-branch-ci.yml` after the TruffleHog guard lands to confirm the workflow succeeds. (Run https://github.com/ryanmaclean/vibecode-webgui/actions/runs/18109319386)
 - [ ] Continue monitoring the long-running `scripts/ingest-docs-to-rag.ts` job; run `scripts/rag-local-demo.ts` once complete and document results in issue #312.
 
 ## Agent Update (2025-09-29 20:00 UTC)
