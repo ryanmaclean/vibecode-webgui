@@ -15,6 +15,9 @@ runtime/
 coverage/
 *.lcov
 
+# Archive directory for old test scripts and results
+archive/
+
 # nyc test coverage
 .nyc_output
 
