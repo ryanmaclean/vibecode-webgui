@@ -100,12 +100,37 @@ jobs:
       - name: Run npm audit
         run: npm audit --audit-level=high || true
         
+      - name: Determine base and head commits
+        id: commit-range
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          echo "base=$BASE_SHA" >> "$GITHUB_OUTPUT"
+          echo "head=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+
+          if [ -z "$BASE_SHA" ]; then
+            echo "No base SHA available (push without before SHA); skipping TruffleHog." >> "$GITHUB_STEP_SUMMARY"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "$BASE_SHA" = "$HEAD_SHA" ]; then
+            echo "Base ($BASE_SHA) and head ($HEAD_SHA) are identical; skipping TruffleHog." >> "$GITHUB_STEP_SUMMARY"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Scanning commit range $BASE_SHA..$HEAD_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
       - name: Check for secrets
+        if: steps.commit-range.outputs.skip != 'true'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: main
-          head: HEAD
+          base: ${{ steps.commit-range.outputs.base }}
+          head: ${{ steps.commit-range.outputs.head }}
           extra_args: --debug --only-verified
 
   # Build validation - ensure it compiles
