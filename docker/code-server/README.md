@@ -54,6 +54,15 @@ This directory contains the configuration for the custom VibeCode code-server, w
 - **EditorConfig** - EditorConfig support
 - **Peacock** - Color workspace
 
+### Datadog Integration (Apache 2.0)
+- **Datadog for VS Code** - Official Datadog extension
+  - Log annotations
+  - Code insights
+  - Exception replay
+  - Static code analysis
+  - View in IDE integration
+  - MCP server support
+
 ### Database Tools (MIT/Apache)
 - **SQLTools** - Database management
 - **SQLTools PostgreSQL Driver** - pgvector support

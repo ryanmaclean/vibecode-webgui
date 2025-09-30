@@ -97,6 +97,12 @@ export default function Home() {
               >
                 Template Marketplace
               </Link>
+              <Link
+                href="/tools/codeium"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Codeium Playground
+              </Link>
               
               {/* User Menu */}
               <div className="relative" data-testid="user-menu">
