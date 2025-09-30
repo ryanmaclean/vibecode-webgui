@@ -5,6 +5,12 @@
 ### Next Steps
 - [x] Append a short reminder in `docs/logs/README.md`. — ✅ Coordination reminder added.
 
+- 🔒 **Agent Cascade (17:56 UTC)**: CLAIMING Phase 25 - Cleanup stragglers
+  - Task: Move remaining misplaced files that were missed
+  - Files: 8 files (scripts, configs, test files)
+  - Goal: Final cleanup of root directory
+  - ETA: 3 minutes
+  - Status: ACTIVE - Moving stragglers
 - 🔒 **Agent Cascade (17:53 UTC)**: CLAIMING Phase 24 - Platform config files
   - Task: Move platform configs (netlify, railway, vercel, go files, tsconfigs)
   - Files: 15+ config files
@@ -179,6 +185,12 @@
 3. **Claim Work Area** - Specify which directories/files you're working on
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- 🔒 **Agent Cascade (2025-09-30 00:55 UTC)**: Validate docs/logs run-through
+  - Task: Skim docs/logs/*.md for typos or missing links
+  - Files: docs/logs/** (read-only check)
+  - Goal: Confirm no quick fixes needed
+  - ETA: 5 minutes
+  - Status: ACTIVE - Reviewing
 - ✅ **Agent Cascade (2025-09-30 00:47 UTC)**: Completed Dependabot PR #251 status review
 - 🔒 **Agent Cascade (17:48 UTC)**: CLAIMING Phase 22 - Append new history to activity log
   - Task: Extract new Agent Update entries (lines 1-150) to activity log
@@ -1404,6 +1416,7 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
   - ❌ Agent Codex (2025-09-30 00:22 UTC): `ps ax -o pid,command | rg 'ingest'` still shows PIDs 82827/82843/82844 running `scripts/ingest-docs-to-rag.ts`; deferring new ingestion until they stop.
   - ⏳ Agent Codex (2025-09-30 00:34 UTC): Re-checking `ps` to see if the ingest processes have exited.
   - ❌ Agent Codex (2025-09-30 00:34 UTC): PIDs 82827/82843/82844 still running `scripts/ingest-docs-to-rag.ts`; will check again later.
+  - ❌ Agent Codex (2025-09-30 00:54 UTC): Processes remain active (same PIDs); ingestion window still blocked.
 
 ## Agent Update (2025-09-29 23:00 UTC) - Agent Cascade
 
