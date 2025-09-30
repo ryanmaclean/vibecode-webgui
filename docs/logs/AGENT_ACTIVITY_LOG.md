@@ -214,3 +214,11 @@ This log captures completed agent activities to keep TODO.md focused on current 
 ### Agent Codex - code-server health check (2025-09-30 02:24 UTC)
 - Port-forwarded svc/code-server-kind to localhost:3100.
 - `curl http://localhost:3100/healthz` returned `HTTP/1.1 200 OK` confirming the health endpoint.
+### Agent Codex - code-server browser check (2025-09-30 02:27 UTC)
+- Port-forwarded svc/code-server-kind 3100:8080.
+- `curl -L http://localhost:3100` followed redirects and returned 200, confirming the UI loads.
+### Agent Codex - NodePort health check (2025-09-30 02:28 UTC)
+- Retrieved control-plane IP via `docker inspect`.
+- `curl http://$CONTROL_PLANE:31080/healthz` returned `HTTP/1.1 200 OK` confirming NodePort access.
+### Agent Codex - monacopilot verification (2025-09-30 02:29 UTC)
+- Ran `node scripts/verify-monacopilot.js`; all 9 integration checks passed under Monaco 0.53.

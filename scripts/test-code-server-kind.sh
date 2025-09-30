@@ -25,13 +25,13 @@ kubectl port-forward svc/$SERVICE -n "$NAMESPACE" 3100:8080 >/tmp/code-server-po
 PF_PID=$!
 trap 'kill $PF_PID >/dev/null 2>&1 || true' EXIT
 sleep 3
-curl -sI http://localhost:3100 | head -n 1
+curl -s --max-redirs 2 -w '%{http_code}\n' -o /dev/null http://localhost:3100
 
 kill $PF_PID >/dev/null 2>&1 || true
 
 echo "==> NodePort check"
 CONTROL_PLANE_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CLUSTER_NAME}-control-plane)
-curl -sI http://$CONTROL_PLANE_IP:31080 | head -n 1
+curl -s --max-redirs 2 -w '%{http_code}\n' -o /dev/null http://$CONTROL_PLANE_IP:31080
 
 echo "==> Verifying terminal editors"
 CODE_SERVER_NAMESPACE="$NAMESPACE" CODE_SERVER_SELECTOR="app=code-server,tier=workspace" \

@@ -29,32 +29,35 @@ fi
 
 log "Testing terminal editors inside pod '$POD_NAME'"
 
-check_editor() {
-  local editor="$1"
-  local version_cmd="$2"
+check_tool() {
+  local label="$1"
+  local detect_cmd="$2"
+  local version_cmd="$3"
 
-  if kubectl exec "$POD_NAME" -n "$NAMESPACE" -- sh -lc "command -v $editor >/dev/null 2>&1"; then
+  if kubectl exec "$POD_NAME" -n "$NAMESPACE" -- sh -lc "$detect_cmd"; then
     local version_output
     version_output=$(kubectl exec "$POD_NAME" -n "$NAMESPACE" -- sh -lc "$version_cmd" 2>/dev/null | head -n 1 || true)
     if [[ -z "$version_output" ]]; then
-      echo "✅ $editor installed"
+      echo "✅ $label available"
     else
-      echo "✅ $editor installed — $version_output"
+      echo "✅ $label available — $version_output"
     fi
   else
-    echo "❌ $editor not found"
+    echo "❌ $label missing"
     return 1
   fi
 }
 
 missing=0
 
-check_editor "vim" "vim --version" || missing=1
-check_editor "nvim" "nvim --version" || missing=1
-check_editor "emacs" "emacs --version" || missing=1
+check_tool "vim" "command -v vim >/dev/null 2>&1" "vim --version" || missing=1
+check_tool "nvim" "command -v nvim >/dev/null 2>&1" "nvim --version" || missing=1
+check_tool "emacs" "command -v emacs >/dev/null 2>&1" "emacs --version" || missing=1
+check_tool "aider" "command -v aider >/dev/null 2>&1" "aider --version || aider --help" || missing=1
+check_tool "goose" "command -v goose >/dev/null 2>&1" "goose --version || goose --help" || missing=1
 
 if [[ $missing -eq 0 ]]; then
-  log "All editors verified."
+  log "All tools verified."
 else
-  error "One or more editors missing."
+  error "One or more required tools missing."
 fi
