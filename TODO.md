@@ -1,3 +1,10 @@
+## Agent Update (2025-09-30 00:42 UTC)
+
+- Re-running Datadog Trace Search for `service:vibecode-rag-demo env:kind` and `service:vibecode-rag-ingest env:kind` now that credentials validate.
+
+### Next Steps
+- [x] Execute both `scripts/poll-traces.sh` calls and record the responses — still `{ "errors": ["Not found"] }` for both services over `now-2h`.
+
 ## Agent Update (2025-09-30 00:40 UTC)
 
 - Skimming `docs/logs/` markdown for obvious typos or missing links referenced in README.
@@ -7,6 +14,12 @@
 
 ## Agent Update (2025-09-29 23:33 UTC)
 
+- 🔒 **Agent Cascade (17:43 UTC)**: CLAIMING Phase 20 - Stray files + config cleanup
+  - Task: Remove stray files, move configs to proper locations
+  - Files: 0, Dockerfile, demo.gif, env.*.example, babel/eslint configs
+  - Goal: Move 8+ files, cleaner root directory
+  - ETA: 5 minutes
+  - Status: ACTIVE - Cleaning stray files
 - Quick TypeScript sanity check to ensure `npm run type-check` still passes after recent coordination edits.
 
 ### Next Steps
@@ -24,6 +37,13 @@
 
 ### Next Steps
 - [x] Add coordination guidance to CONTRIBUTING.md (completed 2025-09-30 00:58 UTC).
+
+## Agent Update (2025-09-30 01:05 UTC)
+
+- Reviewed active Agent Claude tasks. Only the CI script remediation remains open and is now marked on hold until Claude is back after 21:00 UTC so others know it’s safe to pick up if urgent.
+
+### Next Steps
+- [x] Flag Agent Claude’s CI remediation task as on hold pending 21:00 UTC availability.
 
 ## Agent Update (2025-09-29 23:32 UTC)
 
@@ -54,6 +74,7 @@
 - [x] Swap in a validated Datadog API/app key (or re-enable the local agent) so Trace Search can confirm the new agentless spans.
   - ✅ Agent Codex (2025-09-30 00:45 UTC): `curl https://api.${DD_SITE}/api/v1/validate` now returns `{"valid":true}` (HTTP 200); refreshed credentials confirmed.
 - [ ] Run `npx tsx -r dd-trace/init scripts/rag-local-demo.ts` with the agentless env once credentials are fixed and capture observability artifacts.
+  - ❌ Agent Codex (2025-09-30 00:48 UTC): Command failed — Prisma cannot reach `vibecode-pgflex-1758422944.postgres.database.azure.com:5432`; leaving task open until DB access returns.
 - [ ] Re-try `scripts/poll-traces.sh` for both `service:vibecode-rag-ingest` and `service:vibecode-rag-demo` after credentials rotate.
   - ⏳ Agent Codex (2025-09-29 23:46 UTC): Running the two `scripts/poll-traces.sh` commands with freshly sourced `.env.local` credentials to see if spans are now queryable.
   - ❌ Agent Codex (2025-09-29 23:49 UTC): Both `service:vibecode-rag-ingest env:kind` and `service:vibecode-rag-demo env:kind` queries still return `{ "errors": ["Not found"] }` over the last 2h window; leave task open pending verified Datadog keys or agent availability.
@@ -96,6 +117,12 @@
   - Goal: Free the ingest queue for next RAG batch
   - ETA: 2 minutes
   - Status: COMPLETE - Ingestion still in progress
+- 🔒 **Agent Codex (2025-09-30 01:10 UTC)**: CLAIMING Dependabot rebase status check
+  - Task: Capture current mergeability for PRs #251 and #241 so the handoff stays fresh
+  - Files: GitHub metadata only (read)
+  - Goal: Update TODO with latest rebase guidance
+  - ETA: 3 minutes
+  - Status: ACTIVE - Inspecting PR status
 - ✅ **Agent Cascade (2025-09-30 00:38 UTC)**: COMPLETED ingest process check
   - Result: PID 82844 still running (wrapper processes too); ingest slots busy
   - Files: None
@@ -194,8 +221,8 @@
   - Task: Validate the reported missing `test:root:*` npm scripts so GitHub Actions workflows stop failing
   - Files: package.json, .github/workflows/
   - Goal: Confirm workflow coverage and provide guidance if failures persist despite scripts existing
-  - ETA: 20-30 minutes
-  - Status: ACTIVE - Scripts verified; planning deeper smoke run when Redis/service stack is up
+  - ETA: 20-30 minutes (Agent Claude resumes after 21:00 UTC)
+  - Status: ON HOLD - Waiting for Agent Claude's post-cutoff availability
 - 🔄 **Agent Consolidation (21:00 UTC)**: CLAIMING RAG dataset ingestion testing
   - Task: Test larger RAG dataset ingestion on stable KinD cluster
   - Files: scripts/ingest-docs-to-rag.ts, scripts/rag-local-demo.ts, KIND cluster database
