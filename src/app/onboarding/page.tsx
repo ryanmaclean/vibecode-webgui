@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 export type ThemeOption = 'light' | 'dark' | 'auto'
@@ -32,6 +32,7 @@ interface OnboardingData {
     sentry?: boolean
   }
   aiProviders: AiProvider[]
+  onboardingCompleted?: boolean
 }
 
 const steps: OnboardingStep[] = [
@@ -130,7 +131,10 @@ export default function OnboardingPage() {
     extensions: [],
     integrations: {},
     aiProviders: ['openai'],
+    onboardingCompleted: false,
   })
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const updateData = (updates: Partial<OnboardingData>) => {
     setData((prev) => ({ ...prev, ...updates }))
@@ -189,6 +193,57 @@ export default function OnboardingPage() {
 
   const progressPercent = (steps.indexOf(step) / (steps.length - 1)) * 100
 
+  useEffect(() => {
+    let cancelled = false
+    const loadPreferences = async () => {
+      try {
+        const response = await fetch('/api/user/preferences', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store',
+        })
+
+        if (!response.ok) {
+          if (response.status !== 401 && !cancelled) {
+            setError('Unable to load saved preferences.')
+          }
+          return
+        }
+
+        const preferences = (await response.json()) as OnboardingData
+        if (!cancelled && preferences) {
+          setData({
+            theme: preferences.theme ?? 'auto',
+            cliEditor: preferences.cliEditor ?? 'none',
+            preferredIde: preferences.preferredIde ?? 'vs-code',
+            extensions: preferences.extensions ?? [],
+            integrations: preferences.integrations ?? {},
+            aiProviders: preferences.aiProviders?.length ? preferences.aiProviders : ['openai'],
+            onboardingCompleted: preferences.onboardingCompleted ?? false,
+          })
+
+          if (preferences.onboardingCompleted) {
+            setStep('complete')
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError('Unable to load saved preferences.')
+          console.error('Failed to load onboarding preferences', err)
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadPreferences()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full p-8 space-y-8">
@@ -215,7 +270,20 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        {step === 'welcome' && (
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-32 space-y-4 text-center">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">Loading your saved preferences…</p>
+          </div>
+        )}
+
+        {!isLoading && error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200">
+            {error}
+          </div>
+        )}
+
+        {!isLoading && step === 'welcome' && (
           <div className="text-center space-y-6">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Welcome to VibeCode 🚀</h1>
             <p className="text-lg text-gray-600 dark:text-gray-300">
@@ -230,7 +298,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {step === 'theme' && (
+        {!isLoading && step === 'theme' && (
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Choose Your Theme</h2>
@@ -273,7 +341,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {step === 'workspace' && (
+        {!isLoading && step === 'workspace' && (
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Where will you build?</h2>
@@ -332,7 +400,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {step === 'editor' && (
+        {!isLoading && step === 'editor' && (
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">CLI Editor Preference</h2>
@@ -374,7 +442,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {step === 'extensions' && (
+        {!isLoading && step === 'extensions' && (
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recommended Extensions</h2>
@@ -464,7 +532,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {step === 'integrations' && (
+        {!isLoading && step === 'integrations' && (
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Connect Your Tools</h2>
@@ -516,7 +584,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {step === 'ai' && (
+        {!isLoading && step === 'ai' && (
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">AI Providers</h2>
@@ -561,7 +629,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {step === 'complete' && (
+        {!isLoading && step === 'complete' && (
           <div className="text-center space-y-6">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white">You&apos;re all set 🎉</h2>
