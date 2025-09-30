@@ -108,6 +108,7 @@
     "@ai-sdk/react": "1.2.12",
     "@azure/storage-blob": "^12.18.0",
     "@azure/storage-queue": "^12.13.0",
+    "@codeium/react-code-editor": "1.0.12",
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-python": "^6.2.1",
     "@datadog/browser-logs": "6.18.0",
