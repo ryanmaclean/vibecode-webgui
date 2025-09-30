@@ -1,0 +1,309 @@
+name: Automated Regression Tests
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - azure-embedding
+          - genai
+          - deployment
+          - ci-only
+      environment:
+        description: 'Environment to test against'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: regression-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20.11.0'
+  DD_SITE: "datadoghq.com"
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
+  TEST_SUITE: ${{ github.event.inputs.test_suite || 'all' }}
+
+jobs:
+  setup-infrastructure:
+    runs-on: ubuntu-latest
+    name: Setup Test Infrastructure
+    timeout-minutes: 15
+    outputs:
+      test-matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --omit=optional
+
+      - name: Setup test services
+        run: |
+          echo "Setting up PostgreSQL and Redis for tests..."
+          docker run -d --name postgres-regression \
+            -e POSTGRES_USER=test \
+            -e POSTGRES_PASSWORD=test \
+            -e POSTGRES_DB=testdb \
+            -p 5432:5432 \
+            postgres:15-alpine
+          
+          docker run -d --name redis-regression \
+            -p 6379:6379 \
+            redis:7-alpine
+          
+          # Wait for services
+          timeout 60 bash -c 'until pg_isready -h localhost -p 5432 -U test; do sleep 2; done'
+          timeout 60 bash -c 'until docker exec redis-regression redis-cli ping; do sleep 2; done'
+
+      - name: Determine test matrix
+        id: matrix
+        run: |
+          case "${{ env.TEST_SUITE }}" in
+            "all")
+              matrix='["azure-embedding", "genai", "deployment"]'
+              ;;
+            "ci-only")
+              matrix='["azure-embedding", "genai"]'
+              ;;
+            *)
+              matrix='["${{ env.TEST_SUITE }}"]'
+              ;;
+          esac
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+
+  regression-tests:
+    runs-on: ubuntu-latest
+    needs: setup-infrastructure
+    strategy:
+      fail-fast: false
+      matrix:
+        test-suite: ${{ fromJson(needs.setup-infrastructure.outputs.test-matrix) }}
+    name: Regression Test - ${{ matrix.test-suite }}
+    timeout-minutes: 30
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/testdb
+      REDIS_URL: redis://localhost:6379
+      NEXTAUTH_SECRET: test-secret-for-regression
+      # Datadog CI Visibility
+      DD_CI_VISIBILITY_ENABLED: true
+      DD_SERVICE: vibecode-webgui-regression
+      DD_ENV: ${{ env.ENVIRONMENT }}
+      DD_VERSION: ${{ github.sha }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      # Test-specific environment variables
+      AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+      AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+      AZURE_OPENAI_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_DEPLOYMENT_NAME }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --omit=optional
+
+      - name: Setup test infrastructure
+        run: |
+          # Setup PostgreSQL and Redis
+          docker run -d --name postgres-${{ matrix.test-suite }} \
+            -e POSTGRES_USER=test \
+            -e POSTGRES_PASSWORD=test \
+            -e POSTGRES_DB=testdb \
+            -p 5432:5432 \
+            postgres:15-alpine
+          
+          docker run -d --name redis-${{ matrix.test-suite }} \
+            -p 6379:6379 \
+            redis:7-alpine
+          
+          # Wait for services
+          timeout 60 bash -c 'until pg_isready -h localhost -p 5432 -U test; do sleep 2; done'
+          timeout 60 bash -c 'until docker exec redis-${{ matrix.test-suite }} redis-cli ping; do sleep 2; done'
+
+      - name: Setup test environment
+        run: |
+          echo "DATABASE_URL=postgresql://test:test@localhost:5432/testdb" >> .env
+          echo "REDIS_URL=redis://localhost:6379" >> .env
+          echo "NEXTAUTH_SECRET=test-secret-for-regression" >> .env
+          echo "NODE_ENV=test" >> .env
+
+      - name: Run Azure Embedding Regression Tests
+        if: matrix.test-suite == 'azure-embedding'
+        run: |
+          echo "🧪 Running Azure Embedding Regression Tests"
+          npm run test:regression:azure-embedding
+        continue-on-error: ${{ !env.AZURE_OPENAI_API_KEY }}
+
+      - name: Run GenAI Regression Tests
+        if: matrix.test-suite == 'genai'
+        run: |
+          echo "🧪 Running GenAI Regression Tests"
+          npm run test:regression:genai
+        continue-on-error: ${{ !env.POSTGRES_PASSWORD }}
+
+      - name: Run Deployment Regression Tests
+        if: matrix.test-suite == 'deployment'
+        run: |
+          echo "🧪 Running Deployment Regression Tests"
+          npm run test:regression:deployment
+
+      - name: Sanitize test artifacts
+        if: always()
+        run: |
+          node scripts/sanitize-test-artifacts.js test-results logs playwright-report
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: regression-test-artifacts-${{ matrix.test-suite }}
+          path: |
+            test-results/
+            logs/
+            playwright-report/
+            *.log
+          retention-days: 7
+
+      - name: Send Datadog metrics
+        if: always() && env.DD_API_KEY
+        run: |
+          # Send test completion metrics to Datadog
+          node scripts/verify-datadog-metrics.js \
+            --metric-prefix "regression_test" \
+            --environment "${{ env.ENVIRONMENT }}" \
+            --timeout 30
+
+      - name: Cleanup test infrastructure
+        if: always()
+        run: |
+          docker stop postgres-${{ matrix.test-suite }} redis-${{ matrix.test-suite }} || true
+          docker rm postgres-${{ matrix.test-suite }} redis-${{ matrix.test-suite }} || true
+
+  generate-regression-report:
+    runs-on: ubuntu-latest
+    needs: [setup-infrastructure, regression-tests]
+    if: always()
+    name: Generate Regression Report
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate comprehensive report
+        run: |
+          echo "# Automated Regression Test Report" > regression-report.md
+          echo "" >> regression-report.md
+          echo "**Test Run Details:**" >> regression-report.md
+          echo "- Environment: ${{ env.ENVIRONMENT }}" >> regression-report.md
+          echo "- Test Suite: ${{ env.TEST_SUITE }}" >> regression-report.md
+          echo "- Triggered by: ${{ github.actor }}" >> regression-report.md
+          echo "- Commit: ${{ github.sha }}" >> regression-report.md
+          echo "- Run Date: $(date)" >> regression-report.md
+          echo "" >> regression-report.md
+          
+          echo "**Test Results:**" >> regression-report.md
+          for result in regression-test-artifacts-*/; do
+            if [ -d "$result" ]; then
+              suite_name=$(basename "$result" | sed 's/regression-test-artifacts-//')
+              echo "- $suite_name: ${{ needs.regression-tests.result }}" >> regression-report.md
+            fi
+          done
+          echo "" >> regression-report.md
+          
+          echo "**Artifacts Generated:**" >> regression-report.md
+          find . -name "regression-test-artifacts-*" -type d | while read dir; do
+            echo "- $(basename "$dir"): $(find "$dir" -type f | wc -l) files" >> regression-report.md
+          done
+          
+          echo "Generated regression test report"
+
+      - name: Upload regression report
+        uses: actions/upload-artifact@v3
+        with:
+          name: regression-test-report
+          path: regression-report.md
+
+  notify-results:
+    runs-on: ubuntu-latest
+    needs: [regression-tests, generate-regression-report]
+    if: always()
+    name: Notify Test Results
+    timeout-minutes: 5
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    steps:
+      - name: Determine overall status
+        id: status
+        run: |
+          if [[ "${{ needs.regression-tests.result }}" == "success" ]]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "emoji=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT  
+            echo "emoji=❌" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Slack notification
+        if: env.SLACK_WEBHOOK_URL
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+              "text": "Automated Regression Tests ${{ steps.status.outputs.emoji }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "Automated Regression Test Results ${{ steps.status.outputs.emoji }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Environment:* ${{ env.ENVIRONMENT }}\n*Test Suite:* ${{ env.TEST_SUITE }}\n*Status:* ${{ steps.status.outputs.status }}\n*Triggered by:* ${{ github.actor }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "View details: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|GitHub Actions Run>"
+                  }
+                }
+              ]
+            }
