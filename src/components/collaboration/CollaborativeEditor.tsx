@@ -13,8 +13,7 @@ import DOMPurify from 'dompurify'
 import { EditorView } from '@codemirror/view'
 import { EditorState, type Extension } from '@codemirror/state'
 import { javascript } from '@codemirror/lang-javascript'
-// TODO: Import real collaboration manager once TypeScript issues are resolved
-// import { collaborationManager, type CollaborationSession, type CollaborationUser } from '../../../lib/collaboration'
+import { collaborationManager, type CollaborationSession, type CollaborationUser } from '@/lib/collaboration/collaboration-manager'
 import * as Y from 'yjs'
 
 type AwarenessState = {
@@ -23,97 +22,6 @@ type AwarenessState = {
   selection?: { from: number; to: number };
   color: string;
   active: boolean;
-};
-
-// Types for collaboration - compatible with real lib/collaboration types
-interface CollaborationUser {
-  id: string;
-  name: string;
-  email: string;
-  color: string;
-  cursor?: {
-    line: number;
-    column: number;
-  };
-}
-
-interface CollaborationSession {
-  documentId: string;
-  projectId: string;
-  filePath: string;
-  users: Map<string, CollaborationUser>;
-  doc: Y.Doc;
-  provider?: {
-    awareness?: {
-      on: (event: 'change', callback: () => void) => void;
-      off: (event: 'change', callback: () => void) => void;
-      getStates: () => Map<number, any>;
-      setLocalState: (state: any) => void;
-      getLocalState: () => any;
-    };
-  };
-}
-
-// Improved stub collaboration manager compatible with real implementation
-const collaborationManager = {
-  setCurrentUser: (user: CollaborationUser) => {
-    // Improved stub - stores user locally
-  },
-  
-  joinSession: async (documentId: string, projectId: string, filePath: string): Promise<CollaborationSession> => {
-    // Create a more realistic mock session
-    const doc = new Y.Doc();
-    
-    return {
-      documentId,
-      projectId,  
-      filePath,
-      users: new Map(),
-      doc,
-      provider: {
-        awareness: {
-          on: (event: 'change', callback: () => void) => {},
-          off: (event: 'change', callback: () => void) => {},
-          getStates: () => new Map(),
-          setLocalState: (state: any) => {},
-          getLocalState: () => null,
-        }
-      }
-    };
-  },
-  
-  getText: (session: CollaborationSession, key: string = 'content'): Y.Text => {
-    return session.doc.getText(key);
-  },
-  
-  getMap: (session: CollaborationSession, key: string = 'metadata'): Y.Map<any> => {
-    return session.doc.getMap(key);
-  },
-  
-  updateCursor: (session: CollaborationSession | null, line: number, column: number) => {
-    // Improved stub - could update awareness if implemented
-  },
-  
-  getActiveUsers: (session: CollaborationSession | null): CollaborationUser[] => {
-    if (!session) return [];
-    return Array.from(session.users.values());
-  },
-  
-  leaveSession: async (documentId: string) => {
-    // Improved stub cleanup
-  },
-  
-  getStats: (session: CollaborationSession) => {
-    const metadata = session.doc.getMap('metadata');
-    const textContent = session.doc.getText('content');
-    
-    return {
-      userCount: session.users.size,
-      documentSize: textContent.length,
-      conflicts: metadata.get('conflicts') || 0,
-      lastActivity: Date.now()
-    };
-  }
 };
 
 interface CollaborativeEditorProps {

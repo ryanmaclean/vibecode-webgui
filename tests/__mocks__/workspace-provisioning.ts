@@ -1,6 +1,6 @@
 /**
- * Simplified Workspace Provisioning Service
- * Stub implementation for initial deployment - will be replaced with full K8s integration
+ * Mock Workspace Provisioning Service for Testing
+ * Extracted from src/lib/services/workspace-provisioning-simple.ts
  */
 
 import { z } from 'zod'
@@ -39,38 +39,37 @@ const WorkspaceStatusSchema = z.object({
 export type WorkspaceRequest = z.infer<typeof WorkspaceRequestSchema>
 export type WorkspaceStatus = z.infer<typeof WorkspaceStatusSchema>
 
-export class WorkspaceProvisioningService {
+export class MockWorkspaceProvisioningService {
   private namespace: string
+  
+  // Mock data storage for tests
+  private workspaces: Map<string, WorkspaceStatus> = new Map()
 
   constructor() {
-    this.namespace = process.env.WORKSPACE_NAMESPACE || 'vibecode-workspaces'
-    console.log('🔧 WorkspaceProvisioningService initialized (simplified mode)')
+    this.namespace = process.env.WORKSPACE_NAMESPACE || 'vibecode-workspaces-test'
   }
 
   /**
-   * Create a new development workspace (simplified implementation)
+   * Create a new development workspace (mock implementation)
    */
   async createWorkspace(request: WorkspaceRequest): Promise<WorkspaceStatus> {
     const validatedRequest = WorkspaceRequestSchema.parse(request)
     
-    console.log(`🚀 Creating workspace for project: ${validatedRequest.projectName}`)
-    console.log('⚠️ Using simplified workspace provisioning - full K8s integration pending')
-
     // Generate unique workspace ID
     const workspaceId = `ws-${validatedRequest.projectId}-${Date.now()}`
     const workspaceName = `workspace-${workspaceId}`
 
-    // Simulate workspace creation delay
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // Simulate workspace creation delay (minimal for tests)
+    await new Promise(resolve => setTimeout(resolve, 10))
 
     const workspace: WorkspaceStatus = {
       id: workspaceId,
       status: 'ready',
-      url: `https://${workspaceId}.workspaces.vibecode.dev`,
+      url: `https://${workspaceId}.workspaces.vibecode.test`,
       endpoints: {
-        ide: `https://${workspaceId}.workspaces.vibecode.dev`,
-        preview: `https://${workspaceId}.workspaces.vibecode.dev/preview`,
-        terminal: `https://${workspaceId}.workspaces.vibecode.dev/terminal`
+        ide: `https://${workspaceId}.workspaces.vibecode.test`,
+        preview: `https://${workspaceId}.workspaces.vibecode.test/preview`,
+        terminal: `https://${workspaceId}.workspaces.vibecode.test/terminal`
       },
       resources: {
         namespace: this.namespace,
@@ -84,28 +83,30 @@ export class WorkspaceProvisioningService {
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
     }
 
-    console.log(`✅ Workspace created (simulated): ${workspaceId}`)
-    console.log(`🌐 Workspace URL: ${workspace.url}`)
+    // Store for retrieval
+    this.workspaces.set(workspaceId, workspace)
     
     return workspace
   }
 
   /**
-   * Get workspace status (simplified implementation)
+   * Get workspace status (mock implementation)
    */
   async getWorkspaceStatus(workspaceId: string): Promise<WorkspaceStatus | null> {
-    console.log(`🔍 Getting workspace status: ${workspaceId}`)
-    console.log('⚠️ Using simplified workspace status - returning mock data')
+    const stored = this.workspaces.get(workspaceId)
+    if (stored) {
+      return stored
+    }
 
-    // Return mock status for now
+    // Return mock status for unknown workspaces
     return {
       id: workspaceId,
       status: 'ready',
-      url: `https://${workspaceId}.workspaces.vibecode.dev`,
+      url: `https://${workspaceId}.workspaces.vibecode.test`,
       endpoints: {
-        ide: `https://${workspaceId}.workspaces.vibecode.dev`,
-        preview: `https://${workspaceId}.workspaces.vibecode.dev/preview`,
-        terminal: `https://${workspaceId}.workspaces.vibecode.dev/terminal`
+        ide: `https://${workspaceId}.workspaces.vibecode.test`,
+        preview: `https://${workspaceId}.workspaces.vibecode.test/preview`,
+        terminal: `https://${workspaceId}.workspaces.vibecode.test/terminal`
       },
       resources: {
         namespace: this.namespace,
@@ -121,25 +122,37 @@ export class WorkspaceProvisioningService {
   }
 
   /**
-   * Delete workspace (simplified implementation)
+   * Delete workspace (mock implementation)
    */
   async deleteWorkspace(workspaceId: string): Promise<void> {
-    console.log(`🗑️ Deleting workspace: ${workspaceId}`)
-    console.log('⚠️ Using simplified workspace deletion - no actual resources deleted')
-
-    // Simulate deletion delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    console.log(`✅ Workspace deleted (simulated): ${workspaceId}`)
+    // Simulate deletion delay (minimal for tests)
+    await new Promise(resolve => setTimeout(resolve, 10))
+    
+    // Remove from mock storage
+    this.workspaces.delete(workspaceId)
   }
 
   /**
-   * List all workspaces (simplified implementation)
+   * List all workspaces (mock implementation)
    */
   async listWorkspaces(): Promise<WorkspaceStatus[]> {
-    console.log('📋 Listing workspaces')
-    console.log('⚠️ Using simplified workspace listing - returning empty list')
+    return Array.from(this.workspaces.values())
+  }
 
-    return []
+  /**
+   * Test helper: Clear all mock data
+   */
+  clearAll(): void {
+    this.workspaces.clear()
+  }
+
+  /**
+   * Test helper: Set workspace status
+   */
+  setWorkspaceStatus(workspaceId: string, status: WorkspaceStatus): void {
+    this.workspaces.set(workspaceId, status)
   }
 }
+
+// Export default for Jest mocking
+export default MockWorkspaceProvisioningService

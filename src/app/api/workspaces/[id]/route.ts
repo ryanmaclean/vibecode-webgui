@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
+import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning'
 
 interface RouteParams {
   params: Promise<{
