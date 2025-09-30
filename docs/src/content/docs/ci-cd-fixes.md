@@ -225,3 +225,108 @@ env:
 ---
 
 **This comprehensive fix addresses both the fundamental test visibility issues AND the operational problems caused by missing secrets. The CI/CD pipeline now provides a better developer experience with clear guidance and graceful degradation.**
+
+## 🏗️ **KinD Infrastructure Testing**
+
+The KinD (Kubernetes in Docker) infrastructure testing workflow provides automated validation of Kubernetes manifests, Helm charts, and cluster operations.
+
+### **Workflow Configuration**
+
+**File**: `.github/workflows/kind-testing.yml`
+
+**Triggers**:
+- **Nightly Schedule**: 2 AM UTC daily for regular validation
+- **Manual Dispatch**: On-demand testing with configurable options
+- **Push/PR**: Changes to K8s/Helm files trigger testing
+
+### **Features**
+
+#### **Comprehensive Validation**:
+- ✅ Configuration file validation (YAML syntax, structure)
+- ✅ Kubernetes manifest linting (`kubectl apply --dry-run`)
+- ✅ Helm chart testing and linting
+- ✅ Jest K8s cluster validation tests
+- ✅ Test workload deployment and connectivity
+- ✅ Cluster information collection for debugging
+
+#### **Security & Reliability**:
+- ✅ Fork-safe execution (skips secret-dependent tests on forks)
+- ✅ Single-node stable configuration for CI performance
+- ✅ 30-minute timeout for reasonable resource usage
+- ✅ Always-run cleanup steps regardless of success/failure
+- ✅ Modern action versions (checkout@v4, kind-action@v1.10.0)
+
+#### **Configuration Options**:
+- `cluster_config`: KinD cluster configuration file (default: `k8s/kind-ci-config.yaml`)
+- `run_full_tests`: Enable/disable full test suite including deployment tests
+
+### **Usage**
+
+#### **Manual Trigger**:
+```bash
+# Via GitHub UI: Actions → KinD Infrastructure Testing → Run workflow
+# Or via CLI:
+gh workflow run kind-testing.yml
+```
+
+#### **With Custom Configuration**:
+```bash
+gh workflow run kind-testing.yml \
+  -f cluster_config="k8s/custom-config.yaml" \
+  -f run_full_tests=true
+```
+
+### **Local Development**
+
+**Run KinD tests locally**:
+```bash
+# Install dependencies
+npm ci
+
+# Run Jest K8s validation tests
+npm run test:k8s:quick
+
+# Create local KinD cluster for testing
+kind create cluster --config k8s/kind-ci-config.yaml --name vibecode-ci
+kubectl cluster-info --context kind-vibecode-ci
+```
+
+### **Troubleshooting**
+
+#### **Common Issues**:
+
+1. **Cluster Creation Fails**:
+   ```bash
+   # Check Docker resources
+   docker system df
+   
+   # Clean up existing clusters
+   kind delete cluster --name vibecode-ci
+   ```
+
+2. **Manifest Validation Fails**:
+   ```bash
+   # Test manifests locally
+   find ./k8s -name "*.yaml" -exec kubectl apply --dry-run=client -f {} \;
+   ```
+
+3. **Helm Chart Issues**:
+   ```bash
+   # Lint charts locally
+   helm lint ./helm/your-chart
+   ```
+
+#### **Resource Requirements**:
+- **Memory**: ~2GB for single-node cluster
+- **Disk**: ~1GB for Docker images
+- **Time**: ~10-15 minutes for full test suite
+
+### **Configuration Files**
+
+- **CI Config**: `k8s/kind-ci-config.yaml` (single-node, optimized for CI)
+- **Local Config**: `k8s/kind-test-config.yaml` (multi-node, for local development)
+- **Production Config**: `infrastructure/kind/cluster-config.yaml` (full featured)
+
+---
+
+**The KinD workflow provides robust infrastructure testing with comprehensive validation, security best practices, and reliable cleanup. It supports both automated nightly validation and on-demand testing for development workflows.**

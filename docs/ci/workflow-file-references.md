@@ -20,6 +20,7 @@ This note collects the path filters used by active GitHub Actions workflows so u
 | `azure-webgui-deploy.yml` | Workflow expects repository root Dockerfile | Update if the main Dockerfile is moved under `docker/`. |
 | `infrastructure-tests.yml` | `infrastructure/**`, `scripts/infrastructure/**`, workflow file | Covers terraform/helm manifests and helper scripts. |
 | `db-monitoring-deployment.yml` | `datadog/dbm/**`, workflow file | Watches DBM deployment manifests. |
+| `kind-testing.yml` | `k8s/**`, `helm/**`, `infrastructure/kind/**`, `tests/k8s/**`, workflow file | KinD cluster testing with nightly schedule and manual dispatch. |
 
 ### Other notable workflows
 
