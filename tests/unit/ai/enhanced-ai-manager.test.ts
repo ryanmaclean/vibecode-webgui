@@ -1,8 +1,10 @@
 import { EnhancedAIManager, createEnhancedAIManager } from '@/lib/ai/enhanced-ai-manager';
 import { MultiAgentWorkflow } from '@/lib/ai/agents/multi-agent-workflow';
+import { AgentOrchestrator } from '@/lib/ai/agent-orchestrator';
 
 // Mock the external dependencies
 jest.mock('@/lib/ai/agents/multi-agent-workflow');
+jest.mock('@/lib/ai/agent-orchestrator');
 jest.mock('@/lib/ai/vector-stores/pgvector-client', () => ({
   PGVectorClient: jest.fn().mockImplementation(() => ({
     initialize: jest.fn().mockResolvedValue(true),
@@ -49,6 +51,7 @@ jest.mock('@/lib/ai/local/ollama-client', () => ({
 describe('EnhancedAIManager', () => {
   let aiManager: EnhancedAIManager;
   let mockConfig: any;
+  let mockOrchestrator: jest.Mocked<AgentOrchestrator>;
 
   beforeEach(() => {
     // Reset mocks
@@ -74,6 +77,57 @@ describe('EnhancedAIManager', () => {
         password: 'test'
       }
     };
+
+    // Mock AgentOrchestrator
+    mockOrchestrator = {
+      createOrchestrationPlan: jest.fn().mockResolvedValue({
+        id: 'test-plan-id',
+        goal: 'test goal',
+        steps: [],
+        parallelGroups: [[]],
+        totalEstimatedTime: 60,
+        resourceRequirements: { totalMemory: 512, peakConcurrency: 2 },
+        validationPlan: []
+      }),
+      executeOrchestrationPlan: jest.fn().mockResolvedValue(new Map([
+        ['test-step', {
+          stepId: 'test-step',
+          agentRole: 'architect',
+          input: 'test input',
+          output: 'test output',
+          metadata: {
+            model: 'gpt-4',
+            duration: 1000,
+            timestamp: new Date().toISOString()
+          }
+        }]
+      ])),
+      getOrchestrationStatus: jest.fn().mockReturnValue({
+        planId: 'test-plan-id',
+        progress: 0.5,
+        agentLoads: {}
+      }),
+      getSpecializedAgents: jest.fn().mockReturnValue([
+        {
+          name: 'architect',
+          description: 'Software architect',
+          specialization: ['system-design'],
+          capabilities: [],
+          performanceMetrics: { averageResponseTime: 120, successRate: 0.95, qualityScore: 0.92 },
+          loadLimits: { maxConcurrentTasks: 2, maxQueueSize: 5 }
+        }
+      ]),
+      getAgentMetrics: jest.fn().mockReturnValue({
+        averageResponseTime: 120,
+        successRate: 0.95,
+        qualityScore: 0.92
+      }),
+      registerSpecializedAgent: jest.fn()
+    } as any;
+
+    // Mock createAgentOrchestrator
+    (AgentOrchestrator as any).mockImplementation = jest.fn();
+    require('@/lib/ai/agent-orchestrator').createAgentOrchestrator = jest.fn().mockReturnValue(mockOrchestrator);
 
     // Mock MultiAgentWorkflow
     (MultiAgentWorkflow as jest.MockedClass<typeof MultiAgentWorkflow>).mockImplementation(() => ({
@@ -243,6 +297,81 @@ describe('EnhancedAIManager', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Unknown workflow type');
+    });
+
+    it('should execute orchestrated workflow', async () => {
+      const request = {
+        type: 'orchestrated' as const,
+        requirements: 'Create a comprehensive web application'
+      };
+
+      const result = await aiManager.executeWorkflow(request);
+
+      expect(result.success).toBe(true);
+      expect(result.orchestrationPlan).toBeDefined();
+      expect(result.metadata.orchestrationMetrics).toBeDefined();
+      expect(mockOrchestrator.createOrchestrationPlan).toHaveBeenCalledWith(request.requirements);
+      expect(mockOrchestrator.executeOrchestrationPlan).toHaveBeenCalled();
+    });
+
+    it('should execute workflow with orchestrated flag', async () => {
+      const request = {
+        type: 'code-generation' as const,
+        requirements: 'Create a React component',
+        orchestrated: true
+      };
+
+      const result = await aiManager.executeWorkflow(request);
+
+      expect(result.success).toBe(true);
+      expect(result.orchestrationPlan).toBeDefined();
+      expect(mockOrchestrator.createOrchestrationPlan).toHaveBeenCalled();
+    });
+  });
+
+  describe('orchestrator integration', () => {
+    it('should provide access to orchestrator', () => {
+      const orchestrator = aiManager.getOrchestrator();
+      expect(orchestrator).toBe(mockOrchestrator);
+    });
+
+    it('should get specialized agents', () => {
+      const agents = aiManager.getSpecializedAgents();
+      expect(mockOrchestrator.getSpecializedAgents).toHaveBeenCalled();
+      expect(agents).toHaveLength(1);
+      expect(agents[0].name).toBe('architect');
+    });
+
+    it('should get agent metrics', () => {
+      const metrics = aiManager.getAgentMetrics('architect');
+      expect(mockOrchestrator.getAgentMetrics).toHaveBeenCalledWith('architect');
+      expect(metrics).toBeDefined();
+      expect(metrics.averageResponseTime).toBe(120);
+    });
+
+    it('should create orchestration plan', async () => {
+      const goal = 'Build a microservices architecture';
+      const plan = await aiManager.createOrchestrationPlan(goal);
+      
+      expect(mockOrchestrator.createOrchestrationPlan).toHaveBeenCalledWith(goal);
+      expect(plan.id).toBe('test-plan-id');
+      expect(plan.goal).toBe('test goal');
+    });
+
+    it('should execute orchestration plan', async () => {
+      const planId = 'test-plan-id';
+      const results = await aiManager.executeOrchestrationPlan(planId);
+      
+      expect(mockOrchestrator.executeOrchestrationPlan).toHaveBeenCalledWith(planId);
+      expect(results).toBeInstanceOf(Map);
+    });
+
+    it('should get orchestration status', () => {
+      const planId = 'test-plan-id';
+      const status = aiManager.getOrchestrationStatus(planId);
+      
+      expect(mockOrchestrator.getOrchestrationStatus).toHaveBeenCalledWith(planId);
+      expect(status.planId).toBe('test-plan-id');
     });
   });
 });

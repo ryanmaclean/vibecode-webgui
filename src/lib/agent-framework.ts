@@ -1,9 +1,11 @@
 // Agent Framework Foundation - Basic multi-agent coordination system
 // Designed for future LangChain integration while providing immediate value
+// Enhanced with Multi-Agent Orchestration System integration
 
 import { UnifiedAIClient, type UnifiedChatMessage } from './unified-ai-client'
 import { ollamaClient } from './ollama-client'
 import { vectorStore } from './vector-store'
+import { AgentOrchestrator, createAgentOrchestrator, type OrchestrationPlan } from './ai/agent-orchestrator'
 
 export interface AgentCapability {
   name: string
@@ -135,9 +137,11 @@ export class AgentCoordinator {
   private agents: Map<string, Agent> = new Map()
   private activeWorkflows: Map<string, AgentWorkflow> = new Map()
   private defaultAIClient: UnifiedAIClient
+  private orchestrator: AgentOrchestrator
 
   constructor(aiClient: UnifiedAIClient) {
     this.defaultAIClient = aiClient
+    this.orchestrator = createAgentOrchestrator(aiClient)
     this.initializeBuiltInAgents()
   }
 
@@ -301,6 +305,34 @@ Respond in JSON format with the following structure:
   getWorkflowStatus(sessionId: string): any {
     const workflow = this.activeWorkflows.get(sessionId)
     return workflow ? workflow.getStatus() : null
+  }
+
+  /**
+   * Create an orchestrated execution plan using the enhanced orchestrator
+   */
+  async createOrchestrationPlan(goal: string, context?: AgentContext): Promise<OrchestrationPlan> {
+    return await this.orchestrator.createOrchestrationPlan(goal)
+  }
+
+  /**
+   * Execute an orchestrated plan with parallel processing and validation
+   */
+  async executeOrchestrationPlan(planId: string): Promise<Map<string, any>> {
+    return await this.orchestrator.executeOrchestrationPlan(planId)
+  }
+
+  /**
+   * Get orchestration status and metrics
+   */
+  getOrchestrationStatus(planId: string): any {
+    return this.orchestrator.getOrchestrationStatus(planId)
+  }
+
+  /**
+   * Get the underlying orchestrator for advanced operations
+   */
+  getOrchestrator(): AgentOrchestrator {
+    return this.orchestrator
   }
 }
 

@@ -1,4 +1,5 @@
 import { MultiAgentWorkflow, WorkflowStep, WorkflowResult } from './agents/multi-agent-workflow';
+import { AgentOrchestrator, createAgentOrchestrator, type OrchestrationPlan } from './agent-orchestrator';
 import { OllamaClient, createOllamaClient, OLLAMA_MODELS } from './local/ollama-client';
 // Temporarily disabled to fix build issues - TODO: Fix LangChain compatibility
 // import { ChatOpenAI } from '@langchain/openai';
@@ -66,29 +67,37 @@ export interface AIProviderConfig {
 }
 
 export interface AIWorkflowRequest {
-  type: 'code-generation' | 'code-review' | 'documentation' | 'custom';
+  type: 'code-generation' | 'code-review' | 'documentation' | 'orchestrated' | 'custom';
   requirements: string;
   language?: string;
   framework?: string;
   customSteps?: WorkflowStep[];
   useLocalAI?: boolean;
   outputFormat?: 'text' | 'json' | 'structured';
+  orchestrated?: boolean; // Use the new orchestrator for enhanced coordination
 }
 
 export interface AIWorkflowResponse {
   success: boolean;
   results: WorkflowResult[];
+  orchestrationPlan?: OrchestrationPlan;
   metadata: {
     totalDuration: number;
     modelsUsed: string[];
     tokensUsed?: number;
     cost?: number;
+    orchestrationMetrics?: {
+      parallelExecutionGroups: number;
+      validationSteps: number;
+      agentLoadBalancing: Record<string, any>;
+    };
   };
   error?: string;
 }
 
 export class EnhancedAIManager {
   private multiAgentWorkflow: MultiAgentWorkflow;
+  private agentOrchestrator: AgentOrchestrator;
   private pgvectorClient?: PgVectorClientInstance;
   private ollamaClient?: OllamaClient;
   private openaiClient?: any; // ChatOpenAI - temporarily stubbed
@@ -103,6 +112,10 @@ export class EnhancedAIManager {
     try {
       // Initialize multi-agent workflow
       this.multiAgentWorkflow = new MultiAgentWorkflow();
+      
+      // Initialize the enhanced agent orchestrator
+      this.agentOrchestrator = createAgentOrchestrator();
+      console.log('✅ Agent Orchestrator initialized with specialized agents');
 
       // Initialize PGVector if configured and module available (server only)
       if (this.config.pgvector && !isBrowser) {
@@ -174,6 +187,11 @@ export class EnhancedAIManager {
     const cost = 0;
 
     try {
+      // Use orchestrated execution if requested or for orchestrated type
+      if (request.orchestrated || request.type === 'orchestrated') {
+        return await this.executeOrchestratedWorkflow(request, startTime);
+      }
+
       let steps: WorkflowStep[];
 
       // Determine workflow steps based on type
@@ -224,6 +242,62 @@ export class EnhancedAIManager {
           modelsUsed,
           tokensUsed,
           cost
+        },
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Execute workflow using the enhanced orchestrator with parallel processing and validation
+   */
+  private async executeOrchestratedWorkflow(request: AIWorkflowRequest, startTime: number): Promise<AIWorkflowResponse> {
+    try {
+      // Create orchestration plan
+      const plan = await this.agentOrchestrator.createOrchestrationPlan(request.requirements);
+      
+      // Execute the plan
+      const orchestrationResults = await this.agentOrchestrator.executeOrchestrationPlan(plan.id);
+      
+      // Convert orchestration results to workflow results format
+      const results: WorkflowResult[] = Array.from(orchestrationResults.values());
+      
+      // Calculate metadata
+      const totalDuration = Date.now() - startTime;
+      const modelsUsed: string[] = [];
+      results.forEach(result => {
+        modelsUsed.push(result.metadata.model);
+      });
+
+      // Get orchestration metrics
+      const orchestrationMetrics = {
+        parallelExecutionGroups: plan.parallelGroups.length,
+        validationSteps: plan.validationPlan.length,
+        agentLoadBalancing: this.agentOrchestrator.getOrchestrationStatus(plan.id)?.agentLoads || {}
+      };
+
+      return {
+        success: true,
+        results,
+        orchestrationPlan: plan,
+        metadata: {
+          totalDuration,
+          modelsUsed: [...new Set(modelsUsed)],
+          tokensUsed: 0, // TODO: Implement token counting
+          cost: 0, // TODO: Implement cost calculation
+          orchestrationMetrics
+        }
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        results: [],
+        metadata: {
+          totalDuration: Date.now() - startTime,
+          modelsUsed: [],
+          tokensUsed: 0,
+          cost: 0
         },
         error: error.message
       };
@@ -459,6 +533,48 @@ export class EnhancedAIManager {
      // Sort by suitability
      return recommendations.sort((a, b) => b.suitability - a.suitability);
    }
+
+  /**
+   * Get the agent orchestrator for advanced operations
+   */
+  getOrchestrator(): AgentOrchestrator {
+    return this.agentOrchestrator;
+  }
+
+  /**
+   * Get specialized agent information
+   */
+  getSpecializedAgents() {
+    return this.agentOrchestrator.getSpecializedAgents();
+  }
+
+  /**
+   * Get agent performance metrics
+   */
+  getAgentMetrics(agentName: string) {
+    return this.agentOrchestrator.getAgentMetrics(agentName);
+  }
+
+  /**
+   * Create an orchestration plan for complex multi-agent workflows
+   */
+  async createOrchestrationPlan(goal: string): Promise<OrchestrationPlan> {
+    return await this.agentOrchestrator.createOrchestrationPlan(goal);
+  }
+
+  /**
+   * Execute an orchestration plan with enhanced coordination
+   */
+  async executeOrchestrationPlan(planId: string): Promise<Map<string, any>> {
+    return await this.agentOrchestrator.executeOrchestrationPlan(planId);
+  }
+
+  /**
+   * Get orchestration status and metrics
+   */
+  getOrchestrationStatus(planId: string): any {
+    return this.agentOrchestrator.getOrchestrationStatus(planId);
+  }
 }
 
 // Factory function to create enhanced AI manager
