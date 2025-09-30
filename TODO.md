@@ -1,9 +1,30 @@
+## Agent Update (2025-09-30 00:40 UTC)
+
+- Skimming `docs/logs/` markdown for obvious typos or missing links referenced in README.
+
+### Next Steps
+- [ ] Review each file under `docs/logs/` and note/correct any quick wins.
+
 ## Agent Update (2025-09-29 23:33 UTC)
 
 - Quick TypeScript sanity check to ensure `npm run type-check` still passes after recent coordination edits.
 
 ### Next Steps
 - [x] Execute `npm run type-check` and record the result — ✅ passes with current tree.
+
+## Agent Update (2025-09-30 00:55 UTC)
+
+- Added a "Coordination & History" section to `README.md` so contributors can quickly find `docs/logs/` and `TODO.md` before making changes.
+
+### Next Steps
+- [x] Update README.md to reference the new log structure (completed 2025-09-30 00:55 UTC).
+
+## Agent Update (2025-09-30 00:58 UTC)
+
+- Mirrored the coordination reminder in `CONTRIBUTING.md` so contributors know to read `TODO.md` and `docs/logs/` before starting work.
+
+### Next Steps
+- [x] Add coordination guidance to CONTRIBUTING.md (completed 2025-09-30 00:58 UTC).
 
 ## Agent Update (2025-09-29 23:32 UTC)
 
@@ -31,13 +52,15 @@
 - `./scripts/poll-traces.sh 'service:vibecode-rag-ingest env:kind' 'now-2h'` still returns `{ "errors": ["Not found"] }`, so we likely need a working Datadog API key before span queries succeed.
 
 ### Next Steps
-- [ ] Swap in a validated Datadog API/app key (or re-enable the local agent) so Trace Search can confirm the new agentless spans.
-  - ❌ Agent Codex (2025-09-30 00:41 UTC): `curl https://api.${DD_SITE}/api/v1/validate` still returns `{"errors":["Forbidden"]}` with current credentials; waiting on rotated keys or agent access.
+- [x] Swap in a validated Datadog API/app key (or re-enable the local agent) so Trace Search can confirm the new agentless spans.
+  - ✅ Agent Codex (2025-09-30 00:45 UTC): `curl https://api.${DD_SITE}/api/v1/validate` now returns `{"valid":true}` (HTTP 200); refreshed credentials confirmed.
 - [ ] Run `npx tsx -r dd-trace/init scripts/rag-local-demo.ts` with the agentless env once credentials are fixed and capture observability artifacts.
 - [ ] Re-try `scripts/poll-traces.sh` for both `service:vibecode-rag-ingest` and `service:vibecode-rag-demo` after credentials rotate.
   - ⏳ Agent Codex (2025-09-29 23:46 UTC): Running the two `scripts/poll-traces.sh` commands with freshly sourced `.env.local` credentials to see if spans are now queryable.
   - ❌ Agent Codex (2025-09-29 23:49 UTC): Both `service:vibecode-rag-ingest env:kind` and `service:vibecode-rag-demo env:kind` queries still return `{ "errors": ["Not found"] }` over the last 2h window; leave task open pending verified Datadog keys or agent availability.
   - ❌ Agent Codex (2025-09-30 00:01 UTC): `curl https://api.${DD_SITE}/api/v1/validate` returns `{"errors":["Forbidden"]}`, so the current API/app key pair lacks permission or is invalid; 12h trace searches also return `{"errors":["Not found"]}` for both services.
+  - ⏳ Agent Codex (2025-09-30 00:46 UTC): Re-running both `poll-traces` queries now that Datadog keys validate successfully.
+  - ❌ Agent Codex (2025-09-30 00:47 UTC): `poll-traces.sh` still returns `{ "errors": ["Not found"] }` for both services over `now-2h`; will retry after trace ingestion is confirmed.
 
 ## Agent Update (2025-09-29 23:12 UTC)
 
@@ -68,6 +91,12 @@
 3. **Claim Work Area** - Specify which directories/files you're working on
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- ✅ **Agent Codex (2025-09-30 00:59 UTC)**: COMPLETED ingest process spot-check
+  - Result: PIDs 82827/82843/82844 still running `scripts/ingest-docs-to-rag.ts` (local embeddings mode); queue remains occupied
+  - Files: System process list only (read)
+  - Goal: Free the ingest queue for next RAG batch
+  - ETA: 2 minutes
+  - Status: COMPLETE - Ingestion still in progress
 - ✅ **Agent Cascade (2025-09-30 00:38 UTC)**: COMPLETED ingest process check
   - Result: PID 82844 still running (wrapper processes too); ingest slots busy
   - Files: None
@@ -1353,4 +1382,3 @@ git revert HEAD~17..HEAD
 ## Agent Update (2025-09-30 00:38 UTC)
 
 - `scripts/ingest-docs-to-rag.ts` still active under PID 82844; delaying any new ingestion batches until the queue clears.
-
