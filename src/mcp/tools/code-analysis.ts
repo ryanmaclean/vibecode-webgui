@@ -2,7 +2,13 @@
  * Code analysis tools for MCP
  */
 
-export async function searchCode(args: any) {
+interface SearchCodeArgs {
+  query: string
+  workspaceId: string
+  language?: string
+}
+
+export async function searchCode(args: SearchCodeArgs) {
   const { query, workspaceId, language } = args;
 
   // TODO: Integrate with actual vector search
@@ -33,7 +39,13 @@ export async function searchCode(args: any) {
   };
 }
 
-export async function analyzeCode(args: any) {
+interface AnalyzeCodeArgs {
+  workspaceId: string
+  filePath: string
+  checks?: string[]
+}
+
+export async function analyzeCode(args: AnalyzeCodeArgs) {
   const { workspaceId, filePath, checks = ['security', 'performance', 'quality'] } = args;
 
   return {

@@ -108,7 +108,8 @@
     "mcp": "npm run mcp:start",
     "check": "npm run lint && npm run type-check",
     "quick-test": "npm run test:unit -- --maxWorkers=2",
-    "test:unit:monaco": "jest --runTestsByPath tests/unit/monaco-monacopilot.test.ts"
+    "test:unit:monaco": "jest --runTestsByPath tests/unit/monaco-monacopilot.test.ts",
+    "lint:markdown": "markdownlint-cli2"
   },
   "dependencies": {
     "@ai-sdk/openai": "2.0.40",
@@ -271,6 +272,7 @@
     "jest-environment-jsdom": "^30.0.4",
     "jest-watch-typeahead": "3.0.1",
     "lighthouse": "12.8.1",
+    "markdownlint-cli2": "0.15.0",
     "msw": "^2.10.5",
     "null-loader": "4.0.1",
     "postcss": "^8.4.38",

@@ -92,7 +92,7 @@ DD_SITE="datadoghq.com"
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │  Next.js 15 App (React 19)             │
 │  ├─ Monaco 0.53.0 + Monacopilot        │

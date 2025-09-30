@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: code-server
-          image: vibecode/code-server:monaco053
+          image: ghcr.io/ryanmaclean/vibecode-codeserver:latest
           args:
             - --bind-addr
             - 0.0.0.0:8765

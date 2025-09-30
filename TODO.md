@@ -1,9 +1,25 @@
+## Agent Update (2025-09-30 22:50 UTC)
+
+- Added markdownlint CLI tooling (`markdownlint-cli2`), a repo-wide config, and the `npm run lint:markdown` script covering the key deployment docs and README.
+- README architecture block now declares a language so the new linter passes cleanly.
+- First lint run succeeded (0 errors) with the narrowed scope aligned to actively maintained docs.
+
+### Next Steps
+- [ ] Expand markdownlint coverage incrementally (docs/wiki, TODO.md) once we have capacity to fix historical formatting.
+
+## Agent Update (2025-09-30 22:47 UTC)
+
+- Attempted to run a markdown lint sweep, but the repo does not define `npm run lint:docs` or `.markdownlint.json`; eslint tried to load the markdown config and failed (ENOENT).
+
+### Next Steps
+- [x] Decide whether to add a dedicated markdown lint script/config or drop the TODO until documentation tooling is clarified.
+
 ## Agent Update (2025-09-30 22:45 UTC)
 
 - Updated README Quick Install to point developers at the Compose validation command and the deployment guide for deeper instructions.
 
 ### Next Steps
-- [ ] Run markdown lint (once pending docs settle) to ensure new tips don't introduce formatting issues.
+- [x] Run markdown lint (once pending docs settle) to ensure new tips don't introduce formatting issues.
 
 ## Agent Update (2025-09-30 22:38 UTC)
 - Copied the Docker Compose validation tip into docker/code-server/DEPLOYMENT_GUIDE.md so operators see it in the main deployment walkthrough.
@@ -41,7 +57,7 @@
 - Added a troubleshooting callout in docs/NAS_DEPLOYMENT.md pointing users to the Compose config validation command before deploying.
 
 ### Next Steps
-- [ ] Mirror the troubleshooting tip into docker/code-server/DEPLOYMENT_GUIDE.md so the primary deployment guide stays consistent.
+- [x] Mirror the troubleshooting tip into docker/code-server/DEPLOYMENT_GUIDE.md so the primary deployment guide stays consistent.
 
 ## Agent Update (2025-09-30 15:59 UTC)
 
@@ -277,6 +293,7 @@
 
 - Cataloging all CI/CD workflows so we can file tracking issues for each pipeline.
 
+- [ ] Evaluate CodeArkt sample projects (https://github.com/IlyaGusev/codearkt); confirm license compatibility and whether to integrate examples into our repo. (Tracking: #??? TBD)
 ### Workflows Requiring Issues
 - [ ] .github/workflows/azure-appservice-deploy.yml — requires AZURE_* secrets, deploys ai-gateway via ACR push + App Service restart; needs issue to confirm secrets up to date and health probes cover 200s. (Tracking: #355 — secret gating added 2025-09-30; need credentials audit + smoke expansion) (Draft: docs/logs/workflow-issues/azure-appservice-deploy.md) (notes: docs/logs/workflow-issues/azure-appservice-deploy.yml.md)
 - [ ] .github/workflows/azure-webgui-deploy.yml — builds root Dockerfile, pushes to same ACR, deploys App Service `${{ secrets.APP_NAME_WEBGUI }}`, smoke hits `/`; confirm env secrets + health path adequate. (Tracking: #356 — secret gating added 2025-09-30; need smoke expansion + notifications) (Draft: docs/logs/workflow-issues/azure-webgui-deploy.md) (notes: docs/logs/workflow-issues/azure-webgui-deploy.yml.md)
@@ -300,8 +317,8 @@
 - [ ] .github/workflows/kind-code-server-smoke.yml — nightly + manual KinD smoke using our script; needs KinD permissions only; issue should monitor runtime (~2m) and decide if diagnostics need retention tweaks. (Tracking: #395) (notes: docs/logs/workflow-issues/kind-code-server-smoke.yml.md)
 - [ ] .github/workflows/main-branch-ci.yml — lightweight checks (npm audit, unit tests, Codex CLI verification, Trufflehog diff) on main; issue to confirm codex install still needed and whether lint/type-check should fail fast. (Tracking: #378 — lint/type results recorded in summary 2025-09-30; decide on failure policy next) (notes: docs/logs/workflow-issues/main-branch-ci.yml.md)
 - [ ] .github/workflows/release-branch-ci.yml — comprehensive release pipeline (Codex MCP, matrix tests incl. Playwright, GHCR build, LHCI, Datadog synthetic triggers); issue should review runtime cost, secret requirements, and force_deploy logic. (Tracking: #381 — triggers re-enabled with secret gating 2025-09-30; still need GitHub issue + secret provisioning follow-up) (notes: docs/logs/workflow-issues/release-branch-ci.yml.md)
-- [ ] .github/workflows/secret-scanning.yml — standalone TruffleHog diff scan on pushes/PRs; issue should ensure skip logic matches main-branch guard and consider integration with GitHub Advanced Security. (Tracking: #382) (notes: docs/logs/workflow-issues/secret-scanning.yml.md)
-- [ ] .github/workflows/stale.yml — nightly actions/stale sweep (issue/PR labels, exempt list); issue should confirm label conventions and whether security items stay exempt. (Tracking: #383) (notes: docs/logs/workflow-issues/stale.yml.md)
+- [ ] .github/workflows/secret-scanning.yml — standalone TruffleHog diff scan on pushes/PRs; issue should ensure skip logic matches main-branch guard and consider integration with GitHub Advanced Security. (Tracking: #382 — concurrency added 2025-09-30; evaluate GitHub Advanced Security integration) (notes: docs/logs/workflow-issues/secret-scanning.yml.md)
+- [ ] .github/workflows/stale.yml — nightly actions/stale sweep (issue/PR labels, exempt list); issue should confirm label conventions and whether security items stay exempt. (Tracking: #383 — concurrency added 2025-09-30; review label strategy) (notes: docs/logs/workflow-issues/stale.yml.md)
 - [ ] .github/workflows/standup-report.yml — weekday standup script that files GitHub issues and optionally posts to Slack; issue to confirm GH token scopes and Slack channel usage. (Tracking: #384) (notes: docs/logs/workflow-issues/standup-report.yml.md)
 - [ ] .github/workflows/test-ci-simplified.yml — root tests pipeline spinning up Docker Postgres/Redis, heavy Datadog env; issue should question duplicate redis install steps and optional API key coverage. (Tracking: #386) (notes: docs/logs/workflow-issues/ci-simplified.yml.md)
 - [ ] .github/workflows/test-simple.yml — sanity jobs for Babel config + optional Datadog CI visibility; issue to determine if still needed vs simplified CI and ensure Datadog secrets gating works. (Tracking: #387) (notes: docs/logs/workflow-issues/test-simple.yml.md)
