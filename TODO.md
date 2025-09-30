@@ -213,9 +213,10 @@
 - [ ] Convert remaining Node-based helper scripts to ESM (or annotate CommonJS shims) so `npm run lint` can run without `no-require-imports` noise.
 - [x] Convert core helper scripts (`check-monaco-version`, `create-env`, `create-env-local`) to modern ESM/TypeScript so linting can cover them. — ✅ scripts now use native Node imports and secure file writes.
 - [x] Expand onboarding flow with workspace, integrations, and AI provider selections so agents know what to wire next.
+- [x] Centralize user preference schema + persistence (Prisma `UserPreference` table, shared Zod schema, onboarding fetch/save).
 - [ ] Replace `any` placeholders in `src/types/*.d.ts` with upstream typings to finish the lint cleanup (#174/#188 follow-up).
 - [ ] Split remaining packages (CLI, VS Code extension) into per-package lint configs or exclude them explicitly once owners confirm scope.
-  - ↳ Follow-up: wire `/api/user/preferences` endpoint to persist onboarding selections (currently stubbed).
+  - ↳ Follow-up: surface stored onboarding preferences across the dashboard/settings UI.
 - [x] Update README with a quick link to the Codeium playground (`/tools/codeium`) so the feature is discoverable.
   - ✅ Agent Codex (2025-09-30 02:09 UTC): Added a bullet under "New Features" pointing to the playground (notes the signin requirement).
 - [ ] Collect feedback on the onboarding drawer copy/layout from design before marking it GA.
