@@ -166,6 +166,40 @@ RUN code-server --install-extension usernamehw.errorlens \
     && code-server --install-extension oderwat.indent-rainbow \
     && code-server --install-extension christian-kohler.path-intellisense
 
+# Code Quality and Formatting (MIT)
+RUN code-server --install-extension esbenp.prettier-vscode \
+    && code-server --install-extension aaron-bond.better-comments \
+    && code-server --install-extension formulahendry.auto-rename-tag \
+    && code-server --install-extension formulahendry.auto-close-tag
+
+# Git Tools (MIT)
+RUN code-server --install-extension mhutchie.git-graph \
+    && code-server --install-extension donjayamanne.githistory \
+    && code-server --install-extension vivaxy.vscode-conventional-commits
+
+# Testing and Debugging (MIT)
+RUN code-server --install-extension orta.vscode-jest \
+    && code-server --install-extension hbenl.vscode-test-explorer \
+    && code-server --install-extension ryanluker.vscode-coverage-gutters
+
+# Project Management (MIT)
+RUN code-server --install-extension alefragnani.project-manager \
+    && code-server --install-extension alefragnani.bookmarks \
+    && code-server --install-extension ritwickdey.liveserver \
+    && code-server --install-extension wix.vscode-import-cost
+
+# Language Support (MIT/Apache)
+RUN code-server --install-extension redhat.vscode-yaml \
+    && code-server --install-extension redhat.vscode-xml \
+    && code-server --install-extension prisma.prisma \
+    && code-server --install-extension graphql.vscode-graphql \
+    && code-server --install-extension bradlc.vscode-tailwindcss
+
+# Utilities (MIT)
+RUN code-server --install-extension mikestead.dotenv \
+    && code-server --install-extension editorconfig.editorconfig \
+    && code-server --install-extension johnpapa.vscode-peacock
+
 # Database Tools (MIT/Apache)
 RUN code-server --install-extension mtxr.sqltools \
     && code-server --install-extension mtxr.sqltools-driver-pg
