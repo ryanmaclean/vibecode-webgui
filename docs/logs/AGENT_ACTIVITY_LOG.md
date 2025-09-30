@@ -182,6 +182,7 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Added `CodeiumPlayground` component that mounts Monaco via `@monaco-editor/react` and wires Codeium (monacopilot) completions.
 - Created `/tools/codeium` route with feature overview, usage tips, and quick links to the Codeium repo.
 - Lint remains blocked by the existing ESLint flat-config migration; recorded the failure in TODO.md and friction log.
+- Attempted to run `npm run dev`; even with the `dd-trace` stub alias, Next.js still errors because `@opentelemetry/*` pulls Node core modules (`stream`). Playground smoke test remains blocked pending a broader observability stub.
 ### Agent Codex - RAG Demo Trace (2025-09-30 01:20 UTC)
 - Ran `npx tsx -r dd-trace/init scripts/rag-local-demo.ts "List the Datadog environment variables tracked in the repository."`
 - PGVector top matches came from `docs:DATADOG_LOCAL_DEVELOPMENT` and `docs:ci-cd-fixes` (similarity ~60%).
@@ -194,3 +195,9 @@ This log captures completed agent activities to keep TODO.md focused on current 
 ### Agent Codex - Code-Server Port-Forward Check (2025-09-30 01:28 UTC)
 - Ran `kubectl port-forward svc/code-server-kind 3100:8080`.
 - `curl http://localhost:3100` returned `"Found. Redirecting to ./?folder=/home/coder"` confirming service is reachable.
+### Agent Codex - Monaco 0.53 Code-Server Image (2025-09-30 01:36 UTC)
+- Created `docker/code-server/Dockerfile.kind` targeting `codercom/code-server:4.104.2`.
+- Built local image `vibecode/code-server:monaco053` (copied existing settings + vibecode AI extension).
+- Loaded into KinD (`kind load docker-image vibecode/code-server:monaco053 --name vibecode-test`).
+- Updated `k8s/code-server-kind.yaml` to use the new image and rolled the Deployment.
+- Port-forwarded to confirm the endpoint now serves (HTTP 302 redirect).

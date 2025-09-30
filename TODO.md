@@ -1,11 +1,18 @@
+## Agent Update (2025-09-30 01:49 UTC)
+
+- Documenting how to access the KinD code-server (NodePort / port-forward) in README so others can try the Monaco 0.53 build.
+
+### Next Steps
+- [ ] Add a short snippet to README under local setup describing `kubectl port-forward svc/code-server-kind 3100:8080` and the NodePort.
+
 ## Agent Update (2025-09-30 01:37 UTC)
 
 - Expanding the KinD code-server environment and monacopilot API to cover additional editors/providers (Vim/Neovim/Emacs + Gemini/OpenCode/Codex/Claude Code).
 
 ### Next Steps
 - [x] Install Emacs and Neovim alongside Vim in the code-server pod; capture install notes. — ✅ `sudo apt-get install -y neovim emacs-nox` succeeded (Emacs 28.2, Neovim 0.7.2).
-- [ ] Extend `/api/code-completion` to handle provider dispatch for Gemini/OpenCode/Codex/Claude Code.
-- [ ] Update docs/env examples so others can configure the new providers.
+- [x] Extend `/api/code-completion` to handle provider dispatch for Gemini/OpenCode/Codex/Claude Code. — ✅ Route now dispatches to provider-specific handlers (OpenAI, Gemini, OpenRouter, Claude).
+- [x] Update docs/env examples so others can configure the new providers. — ✅ `.env.local.example` and docs/MONACOPILOT_INTEGRATION.md refreshed.
 
 ## Agent Update (2025-09-30 01:36 UTC)
 
@@ -20,10 +27,10 @@
 - Rebuild the custom code-server image on top of `codercom/code-server:4.104.2` to pick up Monaco 0.53.
 
 ### Next Steps
-- [ ] Update `docker/code-server/Dockerfile` base tag.
-- [ ] Build image `vibecode/code-server:monaco053` locally.
-- [ ] Load into KinD (`kind load docker-image ...`).
-- [ ] Restart the `code-server-kind` deployment to use the new image.
+- [x] Update `docker/code-server/Dockerfile` base tag. (Swapped to dedicated minimal Dockerfile.kind)
+- [x] Build image `vibecode/code-server:monaco053` locally.
+- [x] Load into KinD (`kind load docker-image ...`).
+- [x] Restart the `code-server-kind` deployment to use the new image. (Pod rolled out, HTTP 302 verify)
 
 ## Agent Update (2025-09-30 01:35 UTC)
 
@@ -32,7 +39,7 @@
 ### Next Steps
 - [x] Inspect the package manager in `codercom/code-server:4.101.2` (`kubectl exec ... -- sh -lc 'cat /etc/os-release && command -v apt-get'`). — ✅ Debian 12 with `apt-get` available.
 - [x] Attempt a temporary `apt-get install -y vim` (document whether sudo/root is required). — ✅ Needed `sudo`; installation succeeded.
-- [ ] Record instructions in TODO/doc if successful.
+- [x] Record instructions in TODO/doc if successful. — ✅ See docs/logs/COORDINATION_LOG.md (2025-09-30 code-server editor smoke test).
 
 ## Agent Update (2025-09-30 01:33 UTC)
 
@@ -77,7 +84,7 @@
 - [x] Add a reusable `CodeiumPlayground` client component under `src/components/editors` that wires Monaco + monacopilot with language/theme toggles.
 - [x] Create a Next.js route at `src/app/tools/codeium/page.tsx` showcasing the playground with usage tips.
 - [ ] Smoke-test in the browser (or document how to) and update TODO/logs with results.
-  - ❌ Agent Codex (2025-09-30 01:35 UTC): `npm run dev -- --port 4020` fails with `Module not found: Can't resolve './src/instrument'` while compiling `src/instrumentation.ts`; playground renders once instrumentation import is restored.
+  - ❌ Agent Codex (2025-09-30 01:46 UTC): After aliasing `dd-trace`, dev build now fails on `@opentelemetry` requiring Node streams; need a broader dev stub for observability before `/tools/codeium` can be smoke-tested.
 
 ## Agent Update (2025-09-30 01:23 UTC)
 
@@ -407,6 +414,24 @@
 3. **Claim Work Area** - Specify which directories/files you're working on
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- 🔒 **Agent Cascade (2025-09-30 01:47 UTC)**: Double-check docs/logs/FRICTION_LOG.md lint entry
+  - Task: Ensure new note references root location requirement
+  - Files: docs/logs/FRICTION_LOG.md
+  - Goal: Confirm documentation accurate
+  - ETA: 3 minutes
+  - Status: ACTIVE - reviewing
+- ✅ **Agent Cascade (2025-09-30 01:46 UTC)**: Dependabot PR #251 check
+  - Result: No new commits yet (head still b01e0276); mergeable UNKNOWN
+  - Files: None
+  - Goal: log readiness
+  - ETA: 5 minutes
+  - Status: COMPLETE
+- ✅ **Agent Cascade (2025-09-30 01:45 UTC)**: Ingest queue check
+  - Result: PID 82844 still running (wrapper processes too); ingest slot busy
+  - Files: None
+  - Goal: Determine if ingest slot cleared
+  - ETA: 2 minutes
+  - Status: COMPLETE
 - ✅ **Agent Cascade (2025-09-30 01:43 UTC)**: Updated issue #315
   - Result: Commented that Azure flexible server still unreachable; local pgvector fallback in use
   - Files: None
@@ -1993,3 +2018,11 @@ If another agent needs Codeium features, use Monacopilot instead - it's better a
 
 - Issue #315 updated: confirmed Azure PG remains blocked by firewall/private endpoint; local Docker fallback still the only workable option.
 
+
+## Agent Update (2025-09-30 01:45 UTC)
+
+- Ingest PID 82844 still active; continuing to hold off on new ingestion tasks.
+
+## Agent Update (2025-09-30 01:46 UTC)
+
+- PR #251 unchanged since rebase request; still waiting on Dependabot to refresh.
