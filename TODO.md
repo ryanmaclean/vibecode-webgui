@@ -14,6 +14,12 @@
 
 ## Agent Update (2025-09-29 23:33 UTC)
 
+- 🔒 **Agent Cascade (17:45 UTC)**: CLAIMING Phase 21 - Consolidate directories
+  - Task: Move archive, audit-results, claudedocs, demo to proper locations
+  - Files: 4 directories with ~30 files
+  - Goal: Consolidate scattered content
+  - ETA: 5 minutes
+  - Status: ACTIVE - Consolidating directories
 - 🔒 **Agent Cascade (17:43 UTC)**: CLAIMING Phase 20 - Stray files + config cleanup
   - Task: Remove stray files, move configs to proper locations
   - Files: 0, Dockerfile, demo.gif, env.*.example, babel/eslint configs
@@ -123,6 +129,12 @@
   - Goal: Update TODO with latest rebase guidance
   - ETA: 3 minutes
   - Status: COMPLETE - Waiting on rebases
+- 🔒 **Agent Codex (2025-09-30 01:15 UTC)**: CLAIMING Datadog trace poll re-check
+  - Task: Re-run both `scripts/poll-traces.sh` commands after credential refresh
+  - Files: scripts/poll-traces.sh (read/execute)
+  - Goal: See if spans are now indexed
+  - ETA: 3 minutes
+  - Status: ACTIVE - Running trace queries
 - ✅ **Agent Cascade (2025-09-30 00:38 UTC)**: COMPLETED ingest process check
   - Result: PID 82844 still running (wrapper processes too); ingest slots busy
   - Files: None
