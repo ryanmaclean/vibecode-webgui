@@ -167,7 +167,7 @@ export const CodeiumEditor: React.FC<CodeiumEditorProps> = ({
     inlineCompletionsProviderRef.current?.updateOtherDocuments(otherDocuments);
   }, [otherDocuments]);
 
-  let defaultLanguageProps: EditorProps = {
+  const defaultLanguageProps: EditorProps = {
     defaultLanguage: props.language,
     defaultValue: getDefaultValue(props.language),
   };

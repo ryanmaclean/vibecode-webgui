@@ -21,6 +21,10 @@ const nextConfig = {
       '@langchain/core/documents': require.resolve('./src/lib/ai/stubs/langchain-documents.ts'),
     }
 
+    if (dev && isServer) {
+      config.resolve.alias['dd-trace'] = require.resolve('./src/stubs/dd-trace.js')
+    }
+
     if (!isServer) {
       config.resolve.fallback = {
         ...(config.resolve.fallback || {}),

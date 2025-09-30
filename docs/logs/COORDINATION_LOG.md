@@ -261,5 +261,8 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - `docs/logs/README.md` now includes a reminder to log significant updates back in `TODO.md`.
 - Keep these documents in sync whenever the protocol evolves.
 
-- Added Neovim and Emacs inside code-server: `kubectl exec ... -- sudo apt-get install -y neovim emacs-nox`
-- Verify via `nvim --version` / `emacs --version`
+### 2025-09-30 01:36 UTC — Code-server editor smoke test
+- `kubectl port-forward -n vibecode-platform svc/code-server-kind 3100:8080`
+- `curl -I http://localhost:3100` (expect 302) and `curl -sf http://localhost:3100/healthz` (expect 200)
+- `kubectl exec -n vibecode-platform deployment/code-server-kind -- sh -lc 'sudo apt-get update && sudo apt-get install -y neovim emacs-nox'`
+- Verify with `kubectl exec ... -- sh -lc 'vim --version | head -n 1'`, `nvim --version`, `emacs --version`
