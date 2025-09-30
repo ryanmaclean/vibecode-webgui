@@ -61,14 +61,14 @@ RUN set -eux; \
 
 RUN set -eux; \
     case "$TARGETPLATFORM" in \
-      "linux/amd64") ARCH=x86_64-unknown-linux-musl ;; \
-      "linux/arm64") ARCH=aarch64-unknown-linux-musl ;; \
+      "linux/amd64") DEB_ARCH=amd64 ;; \
+      "linux/arm64") DEB_ARCH=arm64 ;; \
       *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
     esac; \
-    curl -fsSL "https://github.com/ajeetdsouza/zoxide/releases/download/v${ZOXIDE_VERSION}/zoxide-${ARCH}.tar.xz" -o /tmp/zoxide.tar.xz; \
-    tar -xf /tmp/zoxide.tar.xz -C /tmp; \
-    install -m755 /tmp/zoxide-${ARCH}/zoxide /usr/local/bin/zoxide; \
-    rm -rf /tmp/zoxide.tar.xz /tmp/zoxide-${ARCH}
+    curl -fsSL "https://github.com/ajeetdsouza/zoxide/releases/download/v${ZOXIDE_VERSION}/zoxide_${ZOXIDE_VERSION}-1_${DEB_ARCH}.deb" -o /tmp/zoxide.deb; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends /tmp/zoxide.deb; \
+    rm -rf /tmp/zoxide.deb /var/lib/apt/lists/*
 
 # Install Node.js 18 LTS
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
