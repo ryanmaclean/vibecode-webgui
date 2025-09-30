@@ -32,7 +32,18 @@ jest.mock('@langchain/core/runnables', () => ({
   },
 }))
 
-import { AutomatedTestGenerator, createTestGenerator, TestGenerationOptions, GeneratedTest, TestSuite } from '../automated-test-generator'
+import { AutomatedTestGenerator, createTestGenerator, TestGenerationOptions } from '../automated-test-generator'
+
+// Type helper for accessing private members in tests
+type AutomatedTestGeneratorPrivate = AutomatedTestGenerator & {
+  testTemplates: Map<string, string>;
+  parseAnalysisResult: (result: string) => unknown;
+  parseTestSuiteResult: (result: string, options: TestGenerationOptions) => unknown;
+  extractTestName: (code: string) => string;
+  parseTestDataResult: (result: string) => unknown;
+  parseCoverageAnalysis: (result: string) => unknown;
+  llm: unknown;
+};
 
 describe.skip('AutomatedTestGenerator', () => {
   // Skipping LangChain-dependent tests until proper mocking is implemented
@@ -51,27 +62,27 @@ describe.skip('AutomatedTestGenerator', () => {
 
     it('should initialize test templates', () => {
       // Access private property for testing
-      const templates = (generator as any).testTemplates
+      const templates = (generator as AutomatedTestGeneratorPrivate).testTemplates
       expect(templates).toBeDefined()
       expect(templates.size).toBeGreaterThan(0)
     })
 
     it('should have Jest TypeScript template', () => {
-      const templates = (generator as any).testTemplates
+      const templates = (generator as AutomatedTestGeneratorPrivate).testTemplates
       const jestTemplate = templates.get('jest-typescript')
       expect(jestTemplate).toContain('@testing-library/react')
       expect(jestTemplate).toContain('describe')
     })
 
     it('should have Vitest TypeScript template', () => {
-      const templates = (generator as any).testTemplates
+      const templates = (generator as AutomatedTestGeneratorPrivate).testTemplates
       const vitestTemplate = templates.get('vitest-typescript')
       expect(vitestTemplate).toContain('vitest')
       expect(vitestTemplate).toContain('describe')
     })
 
     it('should have Python pytest template', () => {
-      const templates = (generator as any).testTemplates
+      const templates = (generator as AutomatedTestGeneratorPrivate).testTemplates
       const pytestTemplate = templates.get('pytest-python')
       expect(pytestTemplate).toContain('pytest')
       expect(pytestTemplate).toContain('class Test')
@@ -284,7 +295,7 @@ describe.skip('AutomatedTestGenerator', () => {
           - Test error handling
         `
 
-        const parseMethod = (generator as any).parseAnalysisResult.bind(generator)
+        const parseMethod = (generator as AutomatedTestGeneratorPrivate).parseAnalysisResult.bind(generator)
         const result = parseMethod(mockResult)
 
         expect(result).toHaveProperty('suggestedTests')
@@ -312,7 +323,7 @@ describe.skip('AutomatedTestGenerator', () => {
           coverage: 'basic',
         }
 
-        const parseMethod = (generator as any).parseTestSuiteResult.bind(generator)
+        const parseMethod = (generator as AutomatedTestGeneratorPrivate).parseTestSuiteResult.bind(generator)
         const result = parseMethod(mockResult, mockOptions)
 
         expect(result).toHaveProperty('framework', 'jest')
@@ -325,7 +336,7 @@ describe.skip('AutomatedTestGenerator', () => {
 
     describe('extractTestName', () => {
       it('should extract test name from test code', () => {
-        const extractMethod = (generator as any).extractTestName.bind(generator)
+        const extractMethod = (generator as AutomatedTestGeneratorPrivate).extractTestName.bind(generator)
         
         expect(extractMethod("it('should test something', () => {})")).toBe('should test something')
         expect(extractMethod('it("should test something", () => {})')).toBe('should test something')
@@ -336,7 +347,7 @@ describe.skip('AutomatedTestGenerator', () => {
 
     describe('parseTestDataResult', () => {
       it('should parse test data result', () => {
-        const parseMethod = (generator as any).parseTestDataResult.bind(generator)
+        const parseMethod = (generator as AutomatedTestGeneratorPrivate).parseTestDataResult.bind(generator)
         const result = parseMethod('mock result')
 
         expect(result).toHaveProperty('fixtures')
@@ -349,7 +360,7 @@ describe.skip('AutomatedTestGenerator', () => {
 
     describe('parseCoverageAnalysis', () => {
       it('should parse coverage analysis result', () => {
-        const parseMethod = (generator as any).parseCoverageAnalysis.bind(generator)
+        const parseMethod = (generator as AutomatedTestGeneratorPrivate).parseCoverageAnalysis.bind(generator)
         const result = parseMethod('mock result')
 
         expect(result).toHaveProperty('coverage', 75)
@@ -368,7 +379,7 @@ describe.skip('AutomatedTestGenerator', () => {
       const mockChain = {
         invoke: jest.fn().mockRejectedValue(new Error('API Error')),
       }
-      ;(generator as any).llm = { invoke: jest.fn() }
+      ;(generator as AutomatedTestGeneratorPrivate).llm = { invoke: jest.fn() }
 
       const mockOptions: TestGenerationOptions = {
         framework: 'jest',
@@ -382,10 +393,10 @@ describe.skip('AutomatedTestGenerator', () => {
 
     it('should handle invalid options', async () => {
       const invalidOptions = {
-        framework: 'invalid' as any,
-        language: 'invalid' as any,
-        testType: 'invalid' as any,
-        coverage: 'invalid' as any,
+        framework: 'invalid' as never,
+        language: 'invalid' as never,
+        testType: 'invalid' as never,
+        coverage: 'invalid' as never,
       }
 
       // Should not throw, but may not work as expected
