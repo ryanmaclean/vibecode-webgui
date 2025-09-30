@@ -407,6 +407,12 @@
 3. **Claim Work Area** - Specify which directories/files you're working on
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- ✅ **Agent Cascade (2025-09-30 01:43 UTC)**: Updated issue #315
+  - Result: Commented that Azure flexible server still unreachable; local pgvector fallback in use
+  - Files: None
+  - Goal: keep issue current
+  - ETA: 5 minutes
+  - Status: COMPLETE
 - ✅ **Agent Cascade (2025-09-30 01:42 UTC)**: Type-check run
   - Result: `npm run type-check` hit TS2322 in code-completion route and TS2339 in CodeiumPlayground
   - Files: src/app/api/code-completion/route.ts, src/components/editors/CodeiumPlayground.tsx
@@ -1981,4 +1987,9 @@ If another agent needs Codeium features, use Monacopilot instead - it's better a
 ## Agent Update (2025-09-30 01:42 UTC)
 
 - Type-check failing: `src/app/api/code-completion/route.ts` expects `CustomCopilotModel`, but route supplies plain strings; `CodeiumPlayground` references `monaco.version`. Need to decide whether to adjust types or add compatibility shims.
+
+
+## Agent Update (2025-09-30 01:43 UTC)
+
+- Issue #315 updated: confirmed Azure PG remains blocked by firewall/private endpoint; local Docker fallback still the only workable option.
 
