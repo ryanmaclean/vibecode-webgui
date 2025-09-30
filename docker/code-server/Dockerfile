@@ -1,6 +1,11 @@
 # VibeCode Custom code-server with pre-installed extensions
 FROM codercom/code-server:4.104.2
 
+ARG TARGETPLATFORM
+ARG LAZYGIT_VERSION=0.55.1
+ARG STARSHIP_VERSION=1.23.0
+ARG ZOXIDE_VERSION=0.9.8
+
 # Switch to root for setup
 USER root
 
@@ -9,13 +14,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     fish \
-    eza \
+    exa \
     git \
     openssh-client \
     hyperfine \
-    lazygit \
     ripgrep \
-    starship \
     sudo \
     wget \
     gnupg \
@@ -23,7 +26,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     python3-venv \
     jq \
-    zoxide \
     fzf \
     bat \
     fd-find \
@@ -32,7 +34,41 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     software-properties-common \
     && rm -rf /var/lib/apt/lists/*
 
-RUN ln -sf /usr/bin/fdfind /usr/local/bin/fd
+RUN ln -sf /usr/bin/fdfind /usr/local/bin/fd && \
+    ln -sf /usr/bin/exa /usr/local/bin/eza
+
+RUN set -eux; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") ARCH=Linux_x86_64 ;; \
+      "linux/arm64") ARCH=Linux_arm64 ;; \
+      *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_${ARCH}.tar.gz" -o /tmp/lazygit.tar.gz; \
+    tar -xf /tmp/lazygit.tar.gz -C /tmp lazygit; \
+    install -m755 /tmp/lazygit /usr/local/bin/lazygit; \
+    rm -rf /tmp/lazygit.tar.gz /tmp/lazygit
+
+RUN set -eux; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") ARCH=x86_64-unknown-linux-musl ;; \
+      "linux/arm64") ARCH=aarch64-unknown-linux-musl ;; \
+      *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    curl -fsSL "https://github.com/starship/starship/releases/download/v${STARSHIP_VERSION}/starship-${ARCH}.tar.gz" -o /tmp/starship.tar.gz; \
+    tar -xf /tmp/starship.tar.gz -C /tmp; \
+    install -m755 /tmp/starship /usr/local/bin/starship; \
+    rm -rf /tmp/starship.tar.gz /tmp/starship
+
+RUN set -eux; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") ARCH=x86_64-unknown-linux-musl ;; \
+      "linux/arm64") ARCH=aarch64-unknown-linux-musl ;; \
+      *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    curl -fsSL "https://github.com/ajeetdsouza/zoxide/releases/download/v${ZOXIDE_VERSION}/zoxide-${ARCH}.tar.xz" -o /tmp/zoxide.tar.xz; \
+    tar -xf /tmp/zoxide.tar.xz -C /tmp; \
+    install -m755 /tmp/zoxide-${ARCH}/zoxide /usr/local/bin/zoxide; \
+    rm -rf /tmp/zoxide.tar.xz /tmp/zoxide-${ARCH}
 
 # Install Node.js 18 LTS
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \

@@ -2,7 +2,13 @@
  * Testing tools for MCP
  */
 
-export async function runTests(args: any) {
+interface RunTestsArgs {
+  workspaceId: string
+  testType?: string
+  pattern?: string
+}
+
+export async function runTests(args: RunTestsArgs) {
   const { workspaceId, testType = 'all', pattern } = args;
 
   return {
