@@ -1,4 +1,6 @@
 import { CollaborationService, CollaborativeUser, WorkspaceState, CollaborationEvent } from '../collaboration';
+import { Server } from 'socket.io';
+import { datadogMetrics } from '../../monitoring/datadog-metrics';
 
 // Mock external dependencies
 jest.mock('socket.io', () => ({
@@ -58,8 +60,7 @@ describe('CollaborationService', () => {
     };
 
     // Mock Socket.IO Server constructor
-    const { Server } = require('socket.io');
-    Server.mockImplementation(() => mockSocketIO);
+    (Server as jest.Mock).mockImplementation(() => mockSocketIO);
 
     service = new CollaborationService();
   });
@@ -456,8 +457,6 @@ describe('CollaborationService', () => {
     });
 
     it('should record collaboration metrics', async () => {
-      const { datadogMetrics } = require('../../monitoring/datadog-metrics');
-      
       const connectionHandler = mockSocketIO.on.mock.calls.find(call => call[0] === 'connection')[1];
       connectionHandler(mockSocket);
 
