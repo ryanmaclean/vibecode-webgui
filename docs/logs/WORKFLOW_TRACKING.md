@@ -17,7 +17,7 @@ This table maps each workflow called out in TODO.md to its tracking issue and no
 | `.github/workflows/dbm-verifier-run.yml` (disabled) | #368 | Determine whether DBM verifier workflow is still needed or can be removed. |
 | `.github/workflows/demo-validation.yml` (+ disabled variant) | #390 | Validate Go/KinD demo checks and consolidate duplicate workflows. |
 | `.github/workflows/dependency-compatibility.yml` (+ disabled variant) | #369 | Maintain Node version matrix, npm audits, and Github-script issue creation without spam. |
-| `.github/workflows/deploy-aks-monitoring.yml` | #393 | Review manual AKS deploy flow, required inputs, and `skip_datadog` flag behavior. |
+| `.github/workflows/deploy-aks-monitoring.yml` | #393 | Review manual AKS deploy flow, required inputs, and `skip_datadog` flag behavior. Issue draft: docs/logs/workflow-issues/deploy-aks-monitoring.md. |
 | `.github/workflows/deploy-docs.yml` | #394 | Confirm Astro/Next.js dual-mode deploy remains accurate with GitHub Pages concurrency. Issue draft: docs/logs/workflow-issues/deploy-docs.md. |
 | `.github/workflows/docs-automation.yml` (+ disabled variant) | #370 | Ensure auto README/API updates run safely and old workflow is removed. Issue draft: docs/logs/workflow-issues/docs-automation.md. Triggers/cron restored 2025-09-30 with artifact-based flow. |
 | `.github/workflows/docs-ci-cd.yml` (+ disabled variant) | #371 | Audit docs CI/CD (security scans, container push) and reconcile with deploy-docs. Issue draft: docs/logs/workflow-issues/docs-ci-cd.md. Triggers restored with secret gating 2025-09-30; pending secret refresh + cleanup. |

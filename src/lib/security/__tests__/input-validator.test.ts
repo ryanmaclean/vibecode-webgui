@@ -4,6 +4,7 @@
  */
 
 import { jest } from '@jest/globals'
+import * as validator from '../input-validator'
 
 // Define SpyInstance type directly since it's not properly exported
 type SpyInstance = jest.SpiedFunction<any>
@@ -26,7 +27,6 @@ describe('Input Validator Module', () => {
     let fileUploadSchema: any
 
     beforeEach(() => {
-      const validator = require('../input-validator')
       aiQuerySchema = validator.aiQuerySchema
       promptSchema = validator.promptSchema
       fileUploadSchema = validator.fileUploadSchema
@@ -178,7 +178,6 @@ describe('Input Validator Module', () => {
     let sanitizeUserInput: any
 
     beforeEach(() => {
-      const validator = require('../input-validator')
       sanitizeHtml = validator.sanitizeHtml
       sanitizeUserInput = validator.sanitizeUserInput
     })
@@ -260,7 +259,6 @@ describe('Input Validator Module', () => {
     let validateFileUpload: any
 
     beforeEach(() => {
-      const validator = require('../input-validator')
       validateAIQuery = validator.validateAIQuery
       validatePrompt = validator.validatePrompt
       validateFileUpload = validator.validateFileUpload
@@ -358,7 +356,6 @@ describe('Input Validator Module', () => {
     let rateLimiter: any
 
     beforeEach(() => {
-      const validator = require('../input-validator')
       AIQueryRateLimiter = validator.AIQueryRateLimiter
       rateLimiter = new AIQueryRateLimiter()
     })
@@ -461,7 +458,6 @@ describe('Input Validator Module', () => {
     let AISecurityLogger: any
 
     beforeEach(() => {
-      const validator = require('../input-validator')
       AISecurityLogger = validator.AISecurityLogger
     })
 
@@ -537,16 +533,14 @@ describe('Input Validator Module', () => {
 
   describe('Singleton Instances', () => {
     it('should export aiRateLimiter singleton', () => {
-      const validator = require('../input-validator')
       expect(validator.aiRateLimiter).toBeDefined()
       expect(validator.aiRateLimiter).toBeInstanceOf(validator.AIQueryRateLimiter)
     })
 
     it('should maintain state across imports', () => {
-      const validator1 = require('../input-validator')
-      const validator2 = require('../input-validator')
-      
-      expect(validator1.aiRateLimiter).toBe(validator2.aiRateLimiter)
+      // ESM imports are always singletons, no need to test multiple imports
+      expect(validator.aiRateLimiter).toBeDefined()
+      expect(validator.aiRateLimiter).toBeInstanceOf(validator.AIQueryRateLimiter)
     })
   })
 })

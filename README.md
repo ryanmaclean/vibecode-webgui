@@ -115,16 +115,24 @@ DD_SITE="datadoghq.com"
 
 ## Code-Server Extensions
 
-53+ pre-installed extensions (all MIT/BSD/Apache licensed):
+Custom Docker image with official AI extensions and OAuth support:
 
-**AI Assistants (5):**
-- Continue, Codeium, Cline, Aider, VibeCode
+**AI Assistants (9):**
+- Anthropic Claude Code (official)
+- OpenAI ChatGPT (official Codex)
+- GitHub Copilot + Chat
+- Codeium, Cline
+- VibeCode AI Assistant, Inline Edit, Codebase Chat
 
-**Productivity (25+):**
-- Prettier, ESLint, Git Graph, Jest, Live Server, etc.
+**Features:**
+- OAuth authentication (port 46203)
+- Port 8765 (VibeCode's unique port)
+- Multi-architecture (ARM64 + AMD64)
+- Trusted domains pre-configured
+- No API keys in image (runtime config)
 
-**Official:**
-- Datadog for VS Code
+**Productivity (20+):**
+- Prettier, ESLint, Git Graph, Jest, Datadog, etc.
 
 See [docker/code-server/README.md](docker/code-server/README.md) for full list.
 

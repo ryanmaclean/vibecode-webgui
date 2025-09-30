@@ -1,3 +1,53 @@
+## Agent Update (2025-09-30 15:06 UTC)
+
+- ✅ **Code-Server Docker Build Complete** - Built secure multi-architecture image with official AI extensions
+  - Installed **Anthropic Claude Code** (v2.0.1) and **OpenAI ChatGPT** (v0.4.15) extensions
+  - Patched both extensions to work in code-server (removed desktop-only restrictions)
+  - Added GitHub Copilot, Copilot Chat, Codeium, and Cline (saoudrizwan.claude-dev)
+  - Configured OAuth callback support (port 46203 mapped for authentication)
+  - Removed Prisma extension (commercial tool requiring login)
+  - Changed default port from 8080 to **8765** (VibeCode's unique port)
+  - Added comprehensive trusted domains for all AI services (Anthropic, OpenAI, Windsurf, etc.)
+  - Removed API keys from build process (configured for runtime via environment variables)
+  - Created multi-architecture build script: `scripts/build-codeserver-multiarch.sh`
+  - Documented in `docker/code-server/README.md`, `MULTIARCH_BUILD.md`, and `TRUSTED_DOMAINS.md`
+  - Image size: 5.91GB (ARM64), includes 3 custom VibeCode extensions + 20+ marketplace extensions
+  - All LSP servers installed: Python, TypeScript, Rust, Java, C/C++, Bash, Docker
+  - Container committed with working extensions: `vibecode-codeserver:latest`
+
+### Next Steps
+- [ ] Test OAuth authentication for Claude Code and OpenAI ChatGPT extensions
+- [ ] Build AMD64 version for x86_64 deployment
+- [ ] Push multi-arch manifest to container registry (GHCR or Docker Hub)
+- [ ] Update Kubernetes manifests to use new port 8765
+- [ ] Document API key configuration for users with subscriptions
+
+## Agent Update (2025-09-30 15:25 UTC)
+
+- **Completed full ESM migration across codebase** - eliminated all `@typescript-eslint/no-require-imports` errors (14 → 0)
+- Migrated 4 test files to ESM:
+  - `src/lib/security/__tests__/input-validator.test.ts` - converted 8 `require()` calls to ESM imports
+  - `src/lib/services/__tests__/chat-mongodb.test.ts` - converted 3 `require()` calls to ESM imports with proper jest mocking
+  - `src/lib/services/__tests__/collaboration.test.ts` - converted 2 `require()` calls to ESM imports
+  - `src/lib/services/__tests__/intelligent-model-selection.test.ts` - converted 1 `require()` call to ESM import
+- All files now use modern ESM syntax with proper TypeScript typing
+- **Final lint status: 0 errors, 1688 warnings** (all errors eliminated, only warnings remain)
+
+### Next Steps
+- [ ] Expand zod coverage across additional auth/chat routes to reduce `@typescript-eslint/no-explicit-any` warnings (currently 1688 warnings)
+- [ ] Consider running `npm run lint -- --fix` to auto-fix the 2 fixable warnings
+
+## Agent Update (2025-09-30 15:10 UTC)
+
+- Completed middleware ESM migration: converted `src/middleware/security-middleware.ts` from `require()` to async dynamic `import()`
+- Created `loadSecurityModules()` async function to handle conditional module loading for next-auth/jwt and input-validator
+- Integrated `loadSecurityModules()` call into `apiSecurityMiddleware()` function
+- Reduced eslint errors from 17 to 14 (remaining errors are in test files: input-validator.test, chat-mongodb.test, collaboration.test, intelligent-model-selection.test)
+
+### Next Steps
+- [x] Migrate remaining test file CommonJS requires (4 test files in src/lib/security/__tests__ and src/lib/services/__tests__) — ✅ Completed, all 14 errors eliminated
+- [ ] Expand zod coverage across additional auth/chat routes to reduce `@typescript-eslint/no-explicit-any` warnings
+
 ## Agent Update (2025-09-30 14:55 UTC)
 
 - Reviewing existing workflow issues (#355-#395) to ensure they're created and contain the right details.
@@ -27,12 +77,19 @@
 - [x] Create/update markdown summaries for each workflow listed above with owner, secrets, current status, and recommended actions. — Initial templates generated under docs/logs/workflow-issues/.
 - [x] Attach the file paths to the TODO entries once drafts exist. — Each bullet now references docs/logs/workflow-issues/*.md templates.
 
+## Agent Update (2025-09-30 15:06 UTC)
+
+- Added `jest.config.mjs` (with `<rootDir>/extensions` ignored) plus `babel.config.js` so Jest handles TS/aliases without haste-map noise; parser suite now passes cleanly.
+
+### Next Steps
+- [ ] Implement real handling for `subscribe-file` broadcasts once client requirements are finalized.
+- [ ] Expand file sync integration coverage now that the parser contract is locked in.
+
 ## Agent Update (2025-09-30 05:07 UTC)
 
 - Split the file-sync WebSocket parser into `src/lib/file-sync/websocket.ts` and added unit coverage in `tests/unit/file-sync/parse-file-sync-message.test.ts` to guard the accepted payload shapes.
 
 ### Next Steps
-- [ ] Resolve Jest ESM configuration (current run via `npm run test:unit` fails before hitting new tests) so the suite can execute reliably outside CI.
 - [ ] Expand file sync integration tests once the subscribe workflow is fully implemented.
 
 ## Agent Update (2025-09-30 05:05 UTC)
@@ -88,7 +145,7 @@
 - [ ] .github/workflows/db-monitoring-deployment.yml — massive pipeline (schema/vector checks, Datadog dashboards, Azure Postgres tuning, Slack notify); requires POSTGRES_CONNECTION, Datadog + Azure creds; issue should triage secrets + whether to keep continue-on-error steps. (Tracking: #367 — cron+secret gating added 2025-09-30; Azure cleanup + reporting still pending) (Draft: docs/logs/workflow-issues/db-monitoring-deployment.md)
 - [ ] .github/workflows/demo-validation.yml — Go/KinD demo build, shell lint, README checks; relies on Make targets, shellcheck (non-blocking), optional infra; issue to capture flakiness in script timeouts and KinD setup. (Tracking: #390) (notes: docs/logs/workflow-issues/demo-validation.yml.md)
 - [ ] .github/workflows/dependency-compatibility.yml — matrix Node 18/20/22 compatibility checks w/ npm audit/build/type-check plus scheduled issue creation via npm-check-updates; ensure secrets not needed, but review GitHub issue spam controls. (Tracking: #369) (notes: docs/logs/workflow-issues/dependency-compatibility.yml.md)
-- [ ] .github/workflows/deploy-aks-monitoring.yml — manual AKS rollout incl. ingress, cert-manager, Datadog monitors; depends on AZURE_* secrets, Datadog keys, scripts/*.sh; issue should review manual inputs + skip_datadog flag coverage. (Tracking: #393) (notes: docs/logs/workflow-issues/deploy-aks-monitoring.yml.md)
+- [ ] .github/workflows/deploy-aks-monitoring.yml — manual AKS rollout incl. ingress, cert-manager, Datadog monitors; depends on AZURE_* secrets, Datadog keys, scripts/*.sh; issue should review manual inputs + skip_datadog flag coverage. (Tracking: #393 — secret gating + skip notices added 2025-09-30; need timeout/cleanup review) (Draft: docs/logs/workflow-issues/deploy-aks-monitoring.md) (notes: docs/logs/workflow-issues/deploy-aks-monitoring.yml.md)
 - [ ] .github/workflows/deploy-docs.yml — builds Astro docs by default, optional Next.js via workflow_dispatch; uses GitHub Pages permissions; issue should check cache paths and dual-system support + whether Next.js artifacts still needed. (Tracking: #394 — docs system auto-detected; weekly cron re-added 2025-09-30; need cache/reporting plan) (notes: docs/logs/workflow-issues/deploy-docs.yml.md)
 - [ ] .github/workflows/docs-automation.yml — multi-job docs validator (npm ci, lychee link check, auto-commit on main, TypeScript snippet lint); issue to review auto-push behavior and secret scanning sensitivity. (Tracking: #370 — triggers/cron restored 2025-09-30 with artifact+PR flow; still need caching + skip annotations) (Draft: docs/logs/workflow-issues/docs-automation.md)
 - [ ] .github/workflows/docs-ci-cd.yml — full docs pipeline (security scan, Astro build, container push to ACR, optional deploy via KUBE_CONFIG, Datadog notifications); issue should confirm secrets coverage and whether duplicated with deploy-docs. (Tracking: #371 — triggers restored 2025-09-30 with secret gating; still need Azure/Datadog secret refresh + GitHub issue link) (notes: docs/logs/workflow-issues/docs-ci-cd.yml.md)
