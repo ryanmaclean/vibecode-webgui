@@ -20,6 +20,7 @@ export const dynamic = 'force-dynamic'
 
 // WebSocket connections per workspace
 const workspaceConnections = new Map<string, Set<WebSocket>>()
+const workspaceFileSubscriptions = new Map<string, Map<string, Set<WebSocket>>>()
 
 type RealtimeFileSystem = SecureFileSystemOperations & {
   handleFileUpdate?: (payload: unknown) => void
@@ -248,13 +249,24 @@ if (!global.wss) {
       // Event handler for file sync events
       const handleFileSyncEvent = (event: FileSyncEvent) => {
         const connections = workspaceConnections.get(workspaceId)
+        const targeted = new Set<WebSocket>(
+          getFileSubscribers(workspaceId, event.metadata.path),
+        )
+
         if (connections) {
           connections.forEach(client => {
             if (client.readyState === WebSocket.OPEN) {
-              client.send(JSON.stringify(event))
+              targeted.add(client)
             }
           })
         }
+
+        const payload = JSON.stringify(event)
+        targeted.forEach(client => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(payload)
+          }
+        })
       }
 
       // Subscribe to file system events
@@ -280,7 +292,15 @@ if (!global.wss) {
               break
 
             case 'subscribe-file':
-              // TODO: Implement file-specific subscriptions
+              addFileSubscription(workspaceId, message.payload.path, ws)
+              ws.send(
+                JSON.stringify({
+                  type: 'subscribed',
+                  workspaceId,
+                  path: message.payload.path,
+                  timestamp: new Date(),
+                }),
+              )
               break
           }
         } catch (error) {
@@ -300,6 +320,7 @@ if (!global.wss) {
 
         fileSystem.off('file-sync', handleFileSyncEvent)
         fileSystem.off('conflict-detected', handleFileSyncEvent)
+        removeFileSubscription(workspaceId, ws)
       })
 
       // Send initial connection confirmation
@@ -315,6 +336,57 @@ if (!global.wss) {
       ws.close(1011, 'Internal server error')
     }
   })
+}
+
+function addFileSubscription(workspaceId: string, rawPath: string, socket: WebSocket) {
+  const path = rawPath.trim()
+  if (!path) {
+    socket.send(
+      JSON.stringify({
+        type: 'error',
+        reason: 'File path required for subscription',
+        timestamp: new Date(),
+      }),
+    )
+    return
+  }
+
+  if (!workspaceFileSubscriptions.has(workspaceId)) {
+    workspaceFileSubscriptions.set(workspaceId, new Map())
+  }
+
+  const fileMap = workspaceFileSubscriptions.get(workspaceId)!
+  if (!fileMap.has(path)) {
+    fileMap.set(path, new Set())
+  }
+
+  fileMap.get(path)!.add(socket)
+}
+
+function removeFileSubscription(workspaceId: string, socket: WebSocket) {
+  const fileMap = workspaceFileSubscriptions.get(workspaceId)
+  if (!fileMap) {
+    return
+  }
+
+  for (const [path, sockets] of fileMap.entries()) {
+    if (sockets.delete(socket) && sockets.size === 0) {
+      fileMap.delete(path)
+    }
+  }
+
+  if (fileMap.size === 0) {
+    workspaceFileSubscriptions.delete(workspaceId)
+  }
+}
+
+function getFileSubscribers(workspaceId: string, filePath: string | undefined): Set<WebSocket> {
+  if (!filePath) {
+    return new Set()
+  }
+
+  const fileMap = workspaceFileSubscriptions.get(workspaceId)
+  return fileMap?.get(filePath) ?? new Set()
 }
 
 /**

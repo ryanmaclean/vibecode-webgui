@@ -4,6 +4,8 @@ jest.mock('uuid', () => ({
 }));
 
 import { MongoDBChatService } from '../chat-mongodb';
+import { v4 as uuidv4 } from 'uuid';
+import { getDatabase } from '../../mongodb';
 
 // Mock external dependencies
 jest.mock('../../mongodb', () => ({
@@ -26,10 +28,9 @@ describe('MongoDBChatService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Reset uuid mock
-    const { v4 } = require('uuid');
-    v4.mockReturnValue('test-uuid-123');
+    (uuidv4 as jest.Mock).mockReturnValue('test-uuid-123');
     
     // Setup mock collections
     mockConversationsCollection = {
@@ -71,8 +72,7 @@ describe('MongoDBChatService', () => {
     };
 
     // Mock getDatabase
-    const { getDatabase } = require('../../mongodb');
-    getDatabase.mockResolvedValue(mockDb);
+    (getDatabase as jest.Mock).mockResolvedValue(mockDb);
 
     service = new MongoDBChatService();
     
@@ -556,8 +556,7 @@ describe('MongoDBChatService', () => {
 
   describe('Error Handling', () => {
     it('should handle database connection errors gracefully', async () => {
-      const { getDatabase } = require('../../mongodb');
-      getDatabase.mockRejectedValue(new Error('Connection failed'));
+      (getDatabase as jest.Mock).mockRejectedValue(new Error('Connection failed'));
 
       await expect(service.createSession('user123')).rejects.toThrow('Connection failed');
     });

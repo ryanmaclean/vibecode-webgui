@@ -1,4 +1,5 @@
 import { intelligentModelSelection, ModelCapability, PromptAnalysis, ModelSelection } from '../intelligent-model-selection';
+import { datadogMetrics } from '../../monitoring/datadog-metrics';
 
 // Mock external dependencies
 jest.mock('../../monitoring/datadog-metrics', () => ({
@@ -468,8 +469,6 @@ describe('IntelligentModelSelectionService', () => {
 
   describe('Performance and Metrics', () => {
     it('should record metrics for model selection', () => {
-      const { datadogMetrics } = require('../../monitoring/datadog-metrics');
-      
       const analysis: PromptAnalysis = {
         type: 'coding',
         complexity: 'medium',

@@ -127,6 +127,43 @@ docker run -p 8765:8765 \
   vibecode-codeserver:latest
 ```
 
+## Configuring AI API Keys
+
+Provide AI provider credentials via environment variables when you start the container. The extensions check for the following keys:
+
+- `OPENAI_API_KEY` — OpenAI ChatGPT extension and VibeCode inline edits
+- `ANTHROPIC_API_KEY` or `CLAUDE_CODE_API_KEY` — Claude Code extension and Claude CLI utilities
+- `OPENROUTER_API_KEY` — VibeCode AI Assistant router (OpenRouter-backed models)
+- `CODEIUM_API_KEY` (optional) — Team or enterprise Codeium deployments
+- `DD_API_KEY`, `DD_SITE`, and optionally `DD_APP_KEY` — Datadog metrics/traces from the IDE
+
+Set only the variables you need; each extension disables itself gracefully when a key is missing.
+
+### Docker Example
+
+```bash
+docker run -p 8765:8765 \
+  -e PASSWORD=secure_password \
+  -e OPENAI_API_KEY=$(op read op://ai/openai/api_key) \
+  -e ANTHROPIC_API_KEY=$(op read op://ai/anthropic/api_key) \
+  -e OPENROUTER_API_KEY=$(op read op://ai/openrouter/api_key) \
+  vibecode-codeserver:latest
+```
+
+### Compose / Kubernetes
+
+1. Create a secret that stores the keys, for example in Kubernetes:
+
+   ```bash
+   kubectl create secret generic vibecode-codeserver-ai \
+     --from-literal=OPENAI_API_KEY=sk-live-*** \
+     --from-literal=ANTHROPIC_API_KEY=sk-ant-*** \
+     --from-literal=OPENROUTER_API_KEY=or-*** \
+     -n vibecode-platform
+   ```
+
+2. Reference the secret under the deployment `envFrom`/`env` block (see `k8s/code-server-custom.yaml`). For Docker Compose or NAS stacks, place the real values in a `.env` file and add that file to your secret management tooling instead of committing it to git.
+
 ## Kubernetes Deployment
 
 Deploy the custom code-server to your Kubernetes cluster:
