@@ -163,3 +163,17 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Multiple agents working simultaneously
 - Zero conflicts
 - Protocol working perfectly
+
+### Agent Codex - RAG Local Fallback (2025-09-30 00:51-00:53 UTC)
+- Updated `.env.local` `DATABASE_URL` to the `vibecode-pgvector` container (`postgresql://vibecode:vibecode123@192.168.107.2:5432/vibecode?schema=public&sslmode=disable`).
+- Verified container health via `docker exec vibecode-pgvector psql -U vibecode -d vibecode -c 'SELECT COUNT(*) FROM document_embeddings;'` (225 rows).
+- Re-ran `npx tsx -r dd-trace/init scripts/rag-local-demo.ts "Summarize the Datadog agentless setup."`; script returned top matches and an OpenRouter response.
+- Follow-up `scripts/poll-traces.sh 'service:vibecode-rag-demo env:development' 'now-30m'` still reports `{ "errors": ["Not found"] }`; traces pending ingestion.
+
+### Agent Codex - ESLint Status (2025-09-30 01:00 UTC)
+- `npm run lint -- --quiet` fails with "ESLint couldn't find an eslint.config.(js|mjs|cjs)" because the repo remains on `.eslintrc.*`.
+- Logged blocker in TODO.md and friction log for follow-up (flat config migration vs `ESLINT_USE_FLAT_CONFIG=false`).
+
+### Agent Codex - GitHub Issue Triage (2025-09-30 01:02 UTC)
+- Ran `gh issue list --limit 20` to capture open GitHub issues.
+- Recorded assignments in TODO.md: #329 stays with Copilot; #323 coordinated by Agent Codex; #315/#314 remain with Observability/Infra; automation backlog (#313-299) recommended for Agent Cascade when available.
