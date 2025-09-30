@@ -6,7 +6,7 @@ This table maps each workflow called out in TODO.md to its tracking issue and no
 | --- | --- | --- |
 | `.github/workflows/azure-appservice-deploy.yml` | #355 | Active workflow validated; disabled-expensive duplicate removed so this remains the single source. |
 | `.github/workflows/azure-webgui-deploy.yml` | #356 | Duplicate disabled workflow deleted; continue to monitor App Service deploy health checks. |
-| `.github/workflows/build-and-push-image.yml` | #357 | Active GHCR build pipeline under review; disabled-expensive duplicate removed. |
+| `.github/workflows/build-and-push-image.yml` | #357 | Active GHCR build pipeline under review; disabled-expensive duplicate removed. Issue draft: docs/logs/workflow-issues/build-and-push-image.md. |
 | `.github/workflows/ci-simplified.yml` (+ disabled variant) | #361 | Align simplified CI job with archived copy; capture missing checks or delete duplicate. |
 | `.github/workflows/claude-code-review.yml` (+ disabled variant) | #363 | Confirm Anthropics reviewer configuration, token scope, and consolidate workflows. |
 | `.github/workflows/claude.yml` (+ disabled variant) | #364 | Validate @claude responder triggers/permissions and remove any extra workflow. |
@@ -18,7 +18,7 @@ This table maps each workflow called out in TODO.md to its tracking issue and no
 | `.github/workflows/demo-validation.yml` (+ disabled variant) | #390 | Validate Go/KinD demo checks and consolidate duplicate workflows. |
 | `.github/workflows/dependency-compatibility.yml` (+ disabled variant) | #369 | Maintain Node version matrix, npm audits, and Github-script issue creation without spam. |
 | `.github/workflows/deploy-aks-monitoring.yml` | #393 | Review manual AKS deploy flow, required inputs, and `skip_datadog` flag behavior. |
-| `.github/workflows/deploy-docs.yml` | #394 | Confirm Astro/Next.js dual-mode deploy remains accurate with GitHub Pages concurrency. |
+| `.github/workflows/deploy-docs.yml` | #394 | Confirm Astro/Next.js dual-mode deploy remains accurate with GitHub Pages concurrency. Issue draft: docs/logs/workflow-issues/deploy-docs.md. |
 | `.github/workflows/docs-automation.yml` (+ disabled variant) | #370 | Ensure auto README/API updates run safely and old workflow is removed. Issue draft: docs/logs/workflow-issues/docs-automation.md. |
 | `.github/workflows/docs-ci-cd.yml` (+ disabled variant) | #371 | Audit docs CI/CD (security scans, container push) and reconcile with deploy-docs. Issue draft: docs/logs/workflow-issues/docs-ci-cd.md. Triggers restored with secret gating 2025-09-30; pending secret refresh + cleanup. |
 | `.github/workflows/error-tracking-integration.yml` (+ disabled variant) | #372 | Check Datadog error tracking automation, `[skip ci]` commits, and duplicates. Issue draft: docs/logs/workflow-issues/error-tracking-integration.md. PR trigger + secret gating restored 2025-09-30; awaiting secrets + alerting. |

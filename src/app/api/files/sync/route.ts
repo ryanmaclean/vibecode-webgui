@@ -12,20 +12,22 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { WebSocketServer, WebSocket } from 'ws'
 import { getFileSystemInstance } from '@/lib/file-system-operations'
-import type { FileSystemConfig, FileSyncEvent } from '@/lib/file-system-operations'
-import { prisma } from '@/lib/prisma'
-import { vectorStore } from '@/lib/vector-store'
+import type { FileSystemConfig, FileSyncEvent, SecureFileSystemOperations } from '@/lib/file-system-operations'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
 interface WebSocketMessage {
-  type: string;
-  payload?: any; // To be refined in future implementations
+  type: string
+  payload?: unknown
 }
 
 // WebSocket connections per workspace
 const workspaceConnections = new Map<string, Set<WebSocket>>()
+
+type RealtimeFileSystem = SecureFileSystemOperations & {
+  handleFileUpdate?: (payload: unknown) => void
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -127,7 +129,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function createFilesInWorkspace(workspaceId: string, files: Array<{path: string, content: string, type: string}>) {
-  const { spawn } = await import('child_process')
+  const { spawn } = await import('node:child_process')
   const namespace = 'vibecode'
 
   // Create a temporary pod to handle file creation
@@ -245,7 +247,7 @@ if (!global.wss) {
         enableRealTimeSync: true,
         conflictResolution: 'auto-merge'
       }
-      const fileSystem = getFileSystemInstance(fsConfig)
+      const fileSystem: RealtimeFileSystem = getFileSystemInstance(fsConfig)
 
       // Event handler for file sync events
       const handleFileSyncEvent = (event: FileSyncEvent) => {
@@ -270,7 +272,7 @@ if (!global.wss) {
 
           switch (message.type) {
             case 'file-update':
-              (fileSystem as any).handleFileUpdate?.(message.payload)
+              fileSystem.handleFileUpdate?.(message.payload)
               break
 
             case 'ping':

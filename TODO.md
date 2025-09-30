@@ -1,3 +1,17 @@
+## Agent Update (2025-09-30 06:45 UTC)
+
+- Completed ESM migration for code-server and monitoring API routes
+- Converted `src/app/api/code-server/session/route.ts` from `require()` to dynamic `import()` for child_process and path
+- Converted `src/app/api/files/sync/route.ts` from `require()` to dynamic `import()` for child_process
+- Refactored `src/app/api/monitoring/otel-config/route.ts` to use async loader function for dynamic imports
+- Updated `eslint.config.mjs` to exclude compiled extension outputs and allow `require()` in monitoring/instrumentation files
+- Reduced eslint errors from 115 to 25 (remaining are in test files and monitoring infrastructure)
+
+### Next Steps
+- [x] Re-run eslint across the repo after migrating additional CommonJS hotspots — ✅ Completed, lint errors reduced by 78%
+- [ ] Continue migrating remaining server/middleware CommonJS hotspots (`src/middleware/__tests__`, additional lib files)
+- [ ] Expand zod coverage across additional auth/chat routes to reduce `@typescript-eslint/no-explicit-any` in request handling
+
 ## Agent Update (2025-09-30 04:18 UTC)
 
 - Drafting workflow audit notes under `docs/logs/workflow-issues/` so each CI/CD pipeline has a ready-to-file issue summary.
@@ -5,6 +19,15 @@
 ### Next Steps
 - [x] Create/update markdown summaries for each workflow listed above with owner, secrets, current status, and recommended actions. — Initial templates generated under docs/logs/workflow-issues/.
 - [x] Attach the file paths to the TODO entries once drafts exist. — Each bullet now references docs/logs/workflow-issues/*.md templates.
+
+## Agent Update (2025-09-30 04:45 UTC)
+
+- Reworked `src/middleware/__tests__/security-middleware.test.ts` to load modules via dynamic ESM imports, centralized setup helpers, and replaced throwaway `any` casts with typed request utilities.
+- Tightened `src/app/api/files/sync/route.ts` by removing unused imports, switching to `node:` builtins, and introducing a typed `RealtimeFileSystem` wrapper instead of casting to `any`.
+
+### Next Steps
+- [ ] Port the remaining middleware test suites off CommonJS patterns so eslint can cover the entire `src/middleware/__tests__` tree without exceptions.
+- [ ] Flesh out the file sync API's message schemas (currently `payload?: unknown`) once the client event contracts land, then add tests to guard the WebSocket handler.
 
 ## Agent Update (2025-09-30 04:28 UTC)
 
@@ -31,7 +54,7 @@
 ### Workflows Requiring Issues
 - [ ] .github/workflows/azure-appservice-deploy.yml — requires AZURE_* secrets, deploys ai-gateway via ACR push + App Service restart; needs issue to confirm secrets up to date and health probes cover 200s. (Tracking: #355) (notes: docs/logs/workflow-issues/azure-appservice-deploy.yml.md)
 - [ ] .github/workflows/azure-webgui-deploy.yml — builds root Dockerfile, pushes to same ACR, deploys App Service `${{ secrets.APP_NAME_WEBGUI }}`, smoke hits `/`; confirm env secrets + health path adequate. (Tracking: #356) (notes: docs/logs/workflow-issues/azure-webgui-deploy.yml.md)
-- [ ] .github/workflows/build-and-push-image.yml — GHCR build via Dockerfile.production with Buildx cache, Trivy SARIF upload, optional AKS Helm deploy (`AZURE_CREDENTIALS`, vars.AKS_*); issue should confirm secrets + helm chart alignment. (Tracking: #357) (notes: docs/logs/workflow-issues/build-and-push-image.yml.md)
+- [ ] .github/workflows/build-and-push-image.yml — GHCR build via Dockerfile.production with Buildx cache, Trivy SARIF upload, optional AKS Helm deploy (`AZURE_CREDENTIALS`, vars.AKS_*); issue should confirm secrets + helm chart alignment. (Tracking: #357 — cron/concurrency + secret gating added 2025-09-30; AKS deploy skipped when creds missing; need creds audit + issue filing) (notes: docs/logs/workflow-issues/build-and-push-image.yml.md)
 - [ ] .github/workflows/ci-simplified.yml — multi-job pipeline (secret validation, lint/audit, root tests w/ Postgres+Redis services, Datadog/LHCI optional); issue should capture missing secrets handling + continue-on-error follow-up. (Tracking: #361) (notes: docs/logs/workflow-issues/ci-simplified.yml.md)
 - [ ] .github/workflows/claude-code-review.yml — runs anthropic/claude-code-action@beta on PRs, needs `CLAUDE_CODE_OAUTH_TOKEN`; issue to confirm token scope + whether sticky comments/prompts should be customized. (Tracking: #363) (notes: docs/logs/workflow-issues/claude-code-review.yml.md)
 - [ ] .github/workflows/claude.yml — listens for @claude mentions across issues/PR comments, same `CLAUDE_CODE_OAUTH_TOKEN`, optional actions:read; issue should confirm rate limits, trigger phrases, and additional permissions setup. (Tracking: #364) (notes: docs/logs/workflow-issues/claude.yml.md)
@@ -42,7 +65,7 @@
 - [ ] .github/workflows/demo-validation.yml — Go/KinD demo build, shell lint, README checks; relies on Make targets, shellcheck (non-blocking), optional infra; issue to capture flakiness in script timeouts and KinD setup. (Tracking: #390) (notes: docs/logs/workflow-issues/demo-validation.yml.md)
 - [ ] .github/workflows/dependency-compatibility.yml — matrix Node 18/20/22 compatibility checks w/ npm audit/build/type-check plus scheduled issue creation via npm-check-updates; ensure secrets not needed, but review GitHub issue spam controls. (Tracking: #369) (notes: docs/logs/workflow-issues/dependency-compatibility.yml.md)
 - [ ] .github/workflows/deploy-aks-monitoring.yml — manual AKS rollout incl. ingress, cert-manager, Datadog monitors; depends on AZURE_* secrets, Datadog keys, scripts/*.sh; issue should review manual inputs + skip_datadog flag coverage. (Tracking: #393) (notes: docs/logs/workflow-issues/deploy-aks-monitoring.yml.md)
-- [ ] .github/workflows/deploy-docs.yml — builds Astro docs by default, optional Next.js via workflow_dispatch; uses GitHub Pages permissions; issue should check cache paths and dual-system support + whether Next.js artifacts still needed. (Tracking: #394) (notes: docs/logs/workflow-issues/deploy-docs.yml.md)
+- [ ] .github/workflows/deploy-docs.yml — builds Astro docs by default, optional Next.js via workflow_dispatch; uses GitHub Pages permissions; issue should check cache paths and dual-system support + whether Next.js artifacts still needed. (Tracking: #394 — docs system auto-detected; weekly cron re-added 2025-09-30; need cache/reporting plan) (notes: docs/logs/workflow-issues/deploy-docs.yml.md)
 - [ ] .github/workflows/docs-automation.yml — multi-job docs validator (npm ci, lychee link check, auto-commit on main, TypeScript snippet lint); issue to review auto-push behavior and secret scanning sensitivity. (Tracking: #370 — triggers paused; draft: docs/logs/workflow-issues/docs-automation.md)
 - [ ] .github/workflows/docs-ci-cd.yml — full docs pipeline (security scan, Astro build, container push to ACR, optional deploy via KUBE_CONFIG, Datadog notifications); issue should confirm secrets coverage and whether duplicated with deploy-docs. (Tracking: #371 — triggers restored 2025-09-30 with secret gating; still need Azure/Datadog secret refresh + GitHub issue link) (notes: docs/logs/workflow-issues/docs-ci-cd.yml.md)
 - [ ] .github/workflows/error-tracking-integration.yml — auto-integrates Datadog error tracking across scripts, commits back to main, matrix tests; relies on DD_API_KEY and pushes changes; issue should evaluate `[skip ci]` commit strategy + deployment placeholder. (Tracking: #372 — PR trigger + secret gating restored 2025-09-30; workflow now opens PR via `peter-evans/create-pull-request` when `apply_changes=true`; awaiting Datadog secrets + alerting follow-up; draft: docs/logs/workflow-issues/error-tracking-integration.md)
