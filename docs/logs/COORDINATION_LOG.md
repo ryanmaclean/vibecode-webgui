@@ -412,3 +412,8 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - Added concurrency + secret validation to `.github/workflows/azure-appservice-deploy.yml`; build/deploy skip with notices when Azure secrets missing.
 - Model smoke test only runs when `GATEWAY_API_KEY` provided, avoiding flaky failures.
 - Follow-up: audit Azure credentials, expand smoke coverage, and file the GitHub issue using `docs/logs/workflow-issues/azure-appservice-deploy.md`.
+
+### 2025-09-30 06:56 UTC — WebGUI Azure deploy gating
+- Added concurrency + secret validation to `.github/workflows/azure-webgui-deploy.yml`; build/deploy now skip when Azure secrets missing and emit a notice.
+- Logged follow-up draft at `docs/logs/workflow-issues/azure-webgui-deploy.md`; TODO/workflow tracking updated.
+- Remaining work: expand smoke checks, add notifications/rollback guidance, and audit Azure credentials before trusting automated pushes.
