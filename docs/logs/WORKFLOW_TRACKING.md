@@ -32,8 +32,8 @@ This table maps each workflow called out in TODO.md to its tracking issue and no
 | `.github/workflows/performance-gates.yml` (disabled) | #379 | Capture performance test prerequisites before deciding on re-enable/remove. |
 | `.github/workflows/production-deployment.yml` (disabled) | #380 | Reconcile legacy production deploy job with modern GitOps/Azure flows. |
 | `.github/workflows/release-branch-ci.yml` (+ disabled variant) | #381 | Manage comprehensive release CI (Playwright, GHCR, LHCI, Datadog triggers). |
-| `.github/workflows/secret-scanning.yml` (+ disabled variant) | #382 | Align TruffleHog diff scanning across workflows and avoid duplication. |
-| `.github/workflows/stale.yml` (+ disabled variant) | #383 | Ensure actions/stale configuration matches triage policy; remove extra copy. |
+| `.github/workflows/secret-scanning.yml` (+ disabled variant) | #382 | Align TruffleHog diff scanning across workflows and avoid duplication. Concurrency added 2025-09-30. |
+| `.github/workflows/stale.yml` (+ disabled variant) | #383 | Ensure actions/stale configuration matches triage policy; remove extra copy. Concurrency added 2025-09-30. |
 | `.github/workflows/standup-report.yml` (+ disabled variant) | #384 | Validate daily standup automation (GH issue + Slack) and consolidate workflows. |
 | `.github/workflows/synthetic-test.yml` (disabled) | #385 | Decide whether synthetic monitoring should be replaced or abandoned. |
 | `.github/workflows/test-ci-simplified.yml` (+ disabled variant) | #386 | Review root infra tests pipeline and dedupe Docker setup steps. |

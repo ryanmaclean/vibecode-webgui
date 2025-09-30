@@ -2,7 +2,13 @@
  * Workspace management tools for MCP
  */
 
-export async function createWorkspace(args: any) {
+interface CreateWorkspaceArgs {
+  name: string
+  template: string
+  description?: string
+}
+
+export async function createWorkspace(args: CreateWorkspaceArgs) {
   const { name, template, description } = args;
 
   // TODO: Integrate with actual workspace creation logic
