@@ -1,23 +1,35 @@
 /**
  * OpenTelemetry Configuration with Dependency Error Handling
- * 
+ *
  * This module provides a robust OpenTelemetry setup that gracefully handles
  * missing dependencies and version conflicts.
  */
 
+// Type definitions for OpenTelemetry optional dependencies
+type NodeSDKConstructor = new (config: Record<string, unknown>) => {
+  start: () => void;
+  shutdown: () => Promise<void>;
+};
+
+type ResourceConstructor = new (attributes: Record<string, string>) => unknown;
+
+type ExporterConstructor = new (config?: Record<string, unknown>) => unknown;
+
+type InstrumentationFunction = (config?: Record<string, unknown>) => unknown[];
+
 // Conditional imports with fallbacks
-let NodeSDK: any = null;
-let getNodeAutoInstrumentations: any = null;
-let PeriodicExportingMetricReader: any = null;
-let PrometheusExporter: any = null;
-let OTLPTraceExporter: any = null;
-let OTLPMetricExporter: any = null;
-let Resource: any = null;
-let SEMRESATTRS_SERVICE_NAME: any = null;
-let SEMRESATTRS_SERVICE_VERSION: any = null;
+let NodeSDK: NodeSDKConstructor | null = null;
+let getNodeAutoInstrumentations: InstrumentationFunction | null = null;
+let PeriodicExportingMetricReader: ExporterConstructor | null = null;
+let PrometheusExporter: ExporterConstructor | null = null;
+let OTLPTraceExporter: ExporterConstructor | null = null;
+let OTLPMetricExporter: ExporterConstructor | null = null;
+let Resource: ResourceConstructor | null = null;
+let SEMRESATTRS_SERVICE_NAME: string | null = null;
+let SEMRESATTRS_SERVICE_VERSION: string | null = null;
 
 // Safe import function
-function safeImport(moduleName: string, exportName?: string): any {
+function safeImport(moduleName: string, exportName?: string): unknown {
   try {
     const moduleExports = require(moduleName);
     return exportName ? moduleExports[exportName] : moduleExports;
@@ -30,22 +42,22 @@ function safeImport(moduleName: string, exportName?: string): any {
 // Initialize imports with error handling
 function initializeOtelImports(): boolean {
   try {
-    NodeSDK = safeImport('@opentelemetry/sdk-node', 'NodeSDK');
-    getNodeAutoInstrumentations = safeImport('@opentelemetry/auto-instrumentations-node', 'getNodeAutoInstrumentations');
-    
+    NodeSDK = safeImport('@opentelemetry/sdk-node', 'NodeSDK') as NodeSDKConstructor | null;
+    getNodeAutoInstrumentations = safeImport('@opentelemetry/auto-instrumentations-node', 'getNodeAutoInstrumentations') as InstrumentationFunction | null;
+
     // Metrics
-    PeriodicExportingMetricReader = safeImport('@opentelemetry/sdk-metrics', 'PeriodicExportingMetricReader');
-    PrometheusExporter = safeImport('@opentelemetry/exporter-prometheus', 'PrometheusExporter');
-    
+    PeriodicExportingMetricReader = safeImport('@opentelemetry/sdk-metrics', 'PeriodicExportingMetricReader') as ExporterConstructor | null;
+    PrometheusExporter = safeImport('@opentelemetry/exporter-prometheus', 'PrometheusExporter') as ExporterConstructor | null;
+
     // Exporters
-    OTLPTraceExporter = safeImport('@opentelemetry/exporter-otlp-http', 'OTLPTraceExporter');
-    OTLPMetricExporter = safeImport('@opentelemetry/exporter-otlp-http', 'OTLPMetricExporter');
-    
+    OTLPTraceExporter = safeImport('@opentelemetry/exporter-otlp-http', 'OTLPTraceExporter') as ExporterConstructor | null;
+    OTLPMetricExporter = safeImport('@opentelemetry/exporter-otlp-http', 'OTLPMetricExporter') as ExporterConstructor | null;
+
     // Resources
-    Resource = safeImport('@opentelemetry/resources', 'Resource');
-    SEMRESATTRS_SERVICE_NAME = safeImport('@opentelemetry/semantic-conventions', 'SEMRESATTRS_SERVICE_NAME');
-    SEMRESATTRS_SERVICE_VERSION = safeImport('@opentelemetry/semantic-conventions', 'SEMRESATTRS_SERVICE_VERSION');
-    
+    Resource = safeImport('@opentelemetry/resources', 'Resource') as ResourceConstructor | null;
+    SEMRESATTRS_SERVICE_NAME = safeImport('@opentelemetry/semantic-conventions', 'SEMRESATTRS_SERVICE_NAME') as string | null;
+    SEMRESATTRS_SERVICE_VERSION = safeImport('@opentelemetry/semantic-conventions', 'SEMRESATTRS_SERVICE_VERSION') as string | null;
+
     // Check if core modules are available
     return !!(NodeSDK && Resource);
   } catch (error) {
@@ -55,18 +67,18 @@ function initializeOtelImports(): boolean {
 }
 
 // Create resource with fallback
-function createResource(): any {
+function createResource(): unknown {
   if (!Resource) {
     return null;
   }
-  
+
   try {
     const attributes: Record<string, string> = {
       'service.name': 'vibecode-webgui',
       'service.version': process.env.npm_package_version || '1.0.0',
       'service.environment': process.env.NODE_ENV || 'development',
     };
-    
+
     // Add semantic conventions if available
     if (SEMRESATTRS_SERVICE_NAME) {
       attributes[SEMRESATTRS_SERVICE_NAME] = 'vibecode-webgui';
@@ -74,7 +86,7 @@ function createResource(): any {
     if (SEMRESATTRS_SERVICE_VERSION) {
       attributes[SEMRESATTRS_SERVICE_VERSION] = process.env.npm_package_version || '1.0.0';
     }
-    
+
     return new Resource(attributes);
   } catch (error) {
     console.warn('⚠️ Failed to create OpenTelemetry resource:', (error as Error).message);
@@ -83,12 +95,12 @@ function createResource(): any {
 }
 
 // Create instrumentations with fallback
-function createInstrumentations(): any[] {
+function createInstrumentations(): unknown[] {
   if (!getNodeAutoInstrumentations) {
     console.warn('⚠️ Auto-instrumentations not available, using empty array');
     return [];
   }
-  
+
   try {
     return getNodeAutoInstrumentations({
       // Disable problematic instrumentations
@@ -121,8 +133,8 @@ function createInstrumentations(): any[] {
 }
 
 // Create metric readers with fallback
-function createMetricReaders(): any[] {
-  const readers: any[] = [];
+function createMetricReaders(): unknown[] {
+  const readers: unknown[] = [];
   
   // Prometheus exporter
   if (PrometheusExporter) {
@@ -158,7 +170,7 @@ function createMetricReaders(): any[] {
 }
 
 // Create trace exporter
-function createTraceExporter(): any {
+function createTraceExporter(): unknown {
   // Use OTLP if configured
   if (OTLPTraceExporter && process.env.OTEL_EXPORTER_OTLP_ENDPOINT) {
     try {
@@ -217,7 +229,7 @@ export function initializeOpenTelemetry(): boolean {
     }
     
     // Create SDK configuration
-    const sdkConfig: any = {
+    const sdkConfig: Record<string, unknown> = {
       resource,
       instrumentations,
     };
@@ -259,9 +271,9 @@ export function initializeOpenTelemetry(): boolean {
 // Health check function
 export function checkOpenTelemetryHealth(): {
   status: 'healthy' | 'degraded' | 'unhealthy';
-  details: Record<string, any>;
+  details: Record<string, unknown>;
 } {
-  const details: Record<string, any> = {};
+  const details: Record<string, unknown> = {};
   
   // Check if core modules are available
   const coreModules = {
