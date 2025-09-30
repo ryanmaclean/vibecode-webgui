@@ -1,3 +1,45 @@
+## Agent Update (2025-09-30 23:50 UTC)
+
+- Reduced TypeScript `any` warnings from 1,624 → 912 (-712 total, -115 from 6 files)
+- **Session 1**: Fixed vector-db-error-handler-new.ts (23→0), database-error-patterns.ts (20→0), azureEmbeddingService.ts (20→0)
+- **Session 2**: Fixed opentelemetry-config.ts (18→0), multimodal-agent.ts (17→0), db-logger.ts (17→0)
+- Created ErrorLike helper interfaces for consistent error typing
+- Added type constructors for OpenTelemetry optional dependencies
+- Improved type safety across monitoring, AI, and database modules
+
+### Next Steps
+- [ ] Continue reducing `any` usage in remaining high-impact files (16 templates/generator.ts, 15 agent-framework.ts, etc.)
+
+## Agent Update (2025-09-30 23:35 UTC)
+
+- Tightened `AzurePostgresConnection.executeQuery` generics (now `QueryResultRow`-based) and removed the `any` params/rows usage so eslint no longer flags that helper.
+- Added typed defaults to `explainQuery` and ensured pg query results stay strongly typed.
+
+## Agent Update (2025-09-30 23:22 UTC)
+
+- Added `npm run lint:markdown` to the `ci-simplified` workflow so GitHub Actions enforces the doc lint baseline (step runs after TypeScript lint).
+- Lint command completes locally; ESLint still surfaces known warnings, matching prior runs. Markdown lint remains clean across active + backup docs.
+
+### Next Steps
+- [ ] Monitor upcoming CI runs to ensure the markdown step executes as expected and adjust concurrency/allow-failure behavior if it proves noisy.
+
+## Agent Update (2025-09-30 23:18 UTC)
+
+- Brought `.archive` and `.backup` markdown files under markdownlint coverage; normalized vector DB migration backups (heading formatting, trailing spaces, code fence languages).
+- `npm run lint:markdown` now spans active docs plus archival backups with zero outstanding errors.
+
+### Next Steps
+- [x] Add markdownlint to CI once repo churn settles so regressions surface automatically.
+
+## Agent Update (2025-09-30 23:05 UTC)
+
+- Extended markdownlint coverage to `docs/wiki/**/*.md` and `docs/logs/**/*.md`, fixing fenced block languages and inline emphasis issues so the broader lint run stays clean.
+- Lint scope now covers README, deployment docs, TODO, and coordination/wiki logs; future expansion can tackle archived backups when needed.
+- `npm run lint:markdown` passes with zero errors after the wiki/log fixes.
+
+### Next Steps
+- [x] Triage remaining markdown debt in archived backups (`.archive/`, `.backup/`) once active docs are stable.
+
 ## Agent Update (2025-09-30 22:50 UTC)
 
 - Added markdownlint CLI tooling (`markdownlint-cli2`), a repo-wide config, and the `npm run lint:markdown` script covering README + deployment docs.
@@ -5,7 +47,7 @@
 - `npm run lint:markdown` now succeeds with broader scope; queued wiki expansion once we have bandwidth.
 
 ### Next Steps
-- [ ] Expand markdownlint coverage incrementally (docs/wiki) once we have capacity to fix historical formatting.
+- [x] Expand markdownlint coverage incrementally (docs/wiki) once we have capacity to fix historical formatting.
 
 ## Agent Update (2025-09-30 22:47 UTC)
 
@@ -27,6 +69,24 @@
 ### Next Steps
 - [x] Cross-linked the troubleshooting guidance from README.md Quick Install so the quickstart references the Compose validation tip.
 
+## Agent Update (2025-09-30 23:00 UTC)
+
+- ✅ **Code-Server Successfully Deployed to Synology NAS** - Production deployment complete
+  - Transferred 2GB compressed image (6GB uncompressed) to `/volume1/docker/vibecode-codeserver/`
+  - Deployed AMD64 build on x86_64 Synology NAS (Docker 24.0.2)
+  - Container running: `vibecode-codeserver` (bbd5827ce091)
+  - Ports bound: 8765 (HTTP), 46203 (OAuth)
+  - Accessible at: http://snas.local:8765
+  - Created deployment scripts: `deploy.sh`, `check-status.sh`, `DEPLOY.md`
+  - All 9 AI extensions ready (Claude Code, ChatGPT, Copilot, Codeium, etc.)
+  - Development tools installed: Node.js 18, Python 3, Go 1.22, all LSP servers
+
+### Next Steps
+- [x] Deploy code-server to Synology NAS
+- [ ] Configure AI extension API keys through UI
+- [ ] Push multi-arch images to GHCR (requires GITHUB_TOKEN)
+- [ ] Set up automated CI/CD pipeline for builds
+
 ## Agent Update (2025-09-30 22:37 UTC)
 
 - ✅ **Code-Server Portability Complete** - Full portability infrastructure created
@@ -45,12 +105,6 @@
 - **CI/CD Integration**: GitHub Actions and GitLab CI workflows
 - **Registry Migration**: Tools for moving between registries
 - **Testing Framework**: Automated portability testing
-
-### Next Steps
-- [ ] Push multi-arch images to GHCR (requires GITHUB_TOKEN)
-- [ ] Test offline bundle creation and installation
-- [ ] Set up automated CI/CD pipeline for builds
-- [ ] Create registry sync schedule for backup registries
 
 ## Agent Update (2025-09-30 22:36 UTC)
 
@@ -246,6 +300,23 @@
 - [ ] Expand file sync integration coverage now that the parser contract is locked in.
 - [ ] Instrument subscription metrics (success/error counts) to feed monitoring dashboards.
 
+## Agent Update (2025-09-30 23:14 UTC)
+
+- Added a Datadog sidecar template (`datadog-agent-config` ConfigMap + agent container) to both `k8s/code-server-kind.yaml` and `k8s/code-server-custom.yaml`, wiring APM/log/process monitoring with optional `datadog-secret` API key.
+
+### Next Steps
+- [x] Create the matching `datadog-secrets` Secret (README snippet) so operators know how to supply API keys at deploy time.
+- [ ] Evaluate autoscaling impact—consider adding resource requests/limits for the workspace deployment once Datadog is enabled in larger clusters.
+
+## Agent Update (2025-09-30 23:20 UTC)
+
+- Refactored file-sync subscriptions into `SubscriptionManager` and added unit coverage for trimming, limits, and cleanup; `/api/files/sync` now delegates subscribe/unsubscribe logic to the shared manager.
+- Updated Jest config to ignore `.next` artifacts, eliminating haste-map collisions during focused test runs.
+
+### Next Steps
+- [ ] Broaden file-sync coverage with integration/e2e flows once the WebSocket test harness is in place.
+- [ ] Add DogStatsD metrics inside `/api/files/sync` to monitor subscription churn and broadcast counts.
+
 ## Agent Update (2025-09-30 05:07 UTC)
 
 - Split the file-sync WebSocket parser into `src/lib/file-sync/websocket.ts` and added unit coverage in `tests/unit/file-sync/parse-file-sync-message.test.ts` to guard the accepted payload shapes.
@@ -293,7 +364,7 @@
 
 - Cataloging all CI/CD workflows so we can file tracking issues for each pipeline.
 
-- [ ] Evaluate CodeArkt sample projects (https://github.com/IlyaGusev/codearkt); confirm license compatibility and whether to integrate examples into our repo. (Tracking: #??? TBD) (notes: docs/logs/integrations/CODEARKT.md)
+- [ ] Evaluate CodeArkt sample projects (https://github.com/IlyaGusev/codearkt); confirm license compatibility and whether to integrate examples into our repo. (Tracking: #396 — issue: #396) (notes: docs/logs/integrations/CODEARKT.md, docs/logs/issues/396-codearkt-evaluation.md)
 ### Workflows Requiring Issues
 - [ ] .github/workflows/azure-appservice-deploy.yml — requires `AZURE_*` secrets, deploys ai-gateway via ACR push + App Service restart; needs issue to confirm secrets up to date and health probes cover 200s. (Tracking: #355 — secret gating added 2025-09-30; need credentials audit + smoke expansion) (Draft: docs/logs/workflow-issues/azure-appservice-deploy.md) (notes: docs/logs/workflow-issues/azure-appservice-deploy.yml.md)
 - [ ] .github/workflows/azure-webgui-deploy.yml — builds root Dockerfile, pushes to same ACR, deploys App Service `${{ secrets.APP_NAME_WEBGUI }}`, smoke hits `/`; confirm env secrets + health path adequate. (Tracking: #356 — secret gating added 2025-09-30; need smoke expansion + notifications) (Draft: docs/logs/workflow-issues/azure-webgui-deploy.md) (notes: docs/logs/workflow-issues/azure-webgui-deploy.yml.md)
@@ -312,14 +383,14 @@
 - [ ] .github/workflows/docs-automation.yml — multi-job docs validator (npm ci, lychee link check, auto-commit on main, TypeScript snippet lint); issue to review auto-push behavior and secret scanning sensitivity. (Tracking: #370 — triggers/cron restored 2025-09-30 with artifact+PR flow; still need caching + skip annotations) (Draft: docs/logs/workflow-issues/docs-automation.md)
 - [ ] .github/workflows/docs-ci-cd.yml — full docs pipeline (security scan, Astro build, container push to ACR, optional deploy via KUBE_CONFIG, Datadog notifications); issue should confirm secrets coverage and whether duplicated with deploy-docs. (Tracking: #371 — triggers restored 2025-09-30 with secret gating; still need Azure/Datadog secret refresh + GitHub issue link) (notes: docs/logs/workflow-issues/docs-ci-cd.yml.md)
 - [ ] .github/workflows/error-tracking-integration.yml — auto-integrates Datadog error tracking across scripts, commits back to main, matrix tests; relies on DD_API_KEY and pushes changes; issue should evaluate `[skip ci]` commit strategy + deployment placeholder. (Tracking: #372 — PR trigger + secret gating restored 2025-09-30; workflow now opens PR via `peter-evans/create-pull-request` when `apply_changes=true`; awaiting Datadog secrets + alerting follow-up; draft: docs/logs/workflow-issues/error-tracking-integration.md)
-- [ ] .github/workflows/gitops-deployment.yml — full GitOps pipeline with Trivy/Snyk, build/push, optional force_deploy, uses Datadog CI visibility and pushes to GHCR; issue to confirm secret sprawl (DD, SNYK_TOKEN) and deployment steps alignment. (Tracking: #374 — concurrency + secret gating added 2025-09-30; Snyk/Datadog steps now skip when creds missing; still need registry/azure audit + issue link) (notes: docs/logs/workflow-issues/gitops-deployment.yml.md)
+- [ ] .github/workflows/gitops-deployment.yml — full GitOps pipeline with Trivy/Snyk, build/push, optional force_deploy, uses Datadog CI visibility and pushes to GHCR; issue to confirm secret sprawl (DD, SNYK_TOKEN) and deployment steps alignment. (Tracking: #374 — Azure secret gating added 2025-09-30; still need registry/azure audit + issue link) (notes: docs/logs/workflow-issues/gitops-deployment.yml.md) (notes: docs/logs/workflow-issues/gitops-deployment.yml.md)
 - [ ] .github/workflows/infrastructure-tests.yml — Python-based infra tests w/ OpenTofu, Azure CLI installs, artifacts; manual dispatch runs real deployment; issue to note lack of cached tooling and ensure Azure creds documented for e2e job. (Tracking: #375 — path triggers re-enabled 2025-09-30 with validate-secrets gating; need cleanup automation + secret provisioning follow-up) (notes: docs/logs/workflow-issues/infrastructure-tests.yml.md)
 - [ ] .github/workflows/kind-code-server-smoke.yml — nightly + manual KinD smoke using our script; needs KinD permissions only; issue should monitor runtime (~2m) and decide if diagnostics need retention tweaks. (Tracking: #395) (notes: docs/logs/workflow-issues/kind-code-server-smoke.yml.md)
-- [ ] .github/workflows/main-branch-ci.yml — lightweight checks (npm audit, unit tests, Codex CLI verification, Trufflehog diff) on main; issue to confirm codex install still needed and whether lint/type-check should fail fast. (Tracking: #378 — lint/type results recorded in summary 2025-09-30; decide on failure policy next) (notes: docs/logs/workflow-issues/main-branch-ci.yml.md)
+- [ ] .github/workflows/main-branch-ci.yml — lightweight checks (npm audit, unit tests, Codex CLI verification, Trufflehog diff) on main; issue to confirm codex install still needed and whether lint/type-check should fail fast. (Tracking: #378 — lint/type summary + PR fail gating added 2025-09-30; review Codex requirement next) (notes: docs/logs/workflow-issues/main-branch-ci.yml.md)
 - [ ] .github/workflows/release-branch-ci.yml — comprehensive release pipeline (Codex MCP, matrix tests incl. Playwright, GHCR build, LHCI, Datadog synthetic triggers); issue should review runtime cost, secret requirements, and force_deploy logic. (Tracking: #381 — triggers re-enabled with secret gating 2025-09-30; still need GitHub issue + secret provisioning follow-up) (notes: docs/logs/workflow-issues/release-branch-ci.yml.md)
 - [ ] .github/workflows/secret-scanning.yml — standalone TruffleHog diff scan on pushes/PRs; issue should ensure skip logic matches main-branch guard and consider integration with GitHub Advanced Security. (Tracking: #382 — concurrency added 2025-09-30; evaluate GitHub Advanced Security integration) (notes: docs/logs/workflow-issues/secret-scanning.yml.md)
 - [ ] .github/workflows/stale.yml — nightly actions/stale sweep (issue/PR labels, exempt list); issue should confirm label conventions and whether security items stay exempt. (Tracking: #383 — concurrency added 2025-09-30; review label strategy) (notes: docs/logs/workflow-issues/stale.yml.md)
-- [ ] .github/workflows/standup-report.yml — weekday standup script that files GitHub issues and optionally posts to Slack; issue to confirm GH token scopes and Slack channel usage. (Tracking: #384) (notes: docs/logs/workflow-issues/standup-report.yml.md)
+- [ ] .github/workflows/standup-report.yml — weekday standup script that files GitHub issues and optionally posts to Slack; issue to confirm GH token scopes and Slack channel usage. (Tracking: #384 — concurrency + issue summary added 2025-09-30; finalize Slack strategy) (notes: docs/logs/workflow-issues/standup-report.yml.md)
 - [ ] .github/workflows/test-ci-simplified.yml — root tests pipeline spinning up Docker Postgres/Redis, heavy Datadog env; issue should question duplicate redis install steps and optional API key coverage. (Tracking: #386) (notes: docs/logs/workflow-issues/ci-simplified.yml.md)
 - [ ] .github/workflows/test-simple.yml — sanity jobs for Babel config + optional Datadog CI visibility; issue to determine if still needed vs simplified CI and ensure Datadog secrets gating works. (Tracking: #387) (notes: docs/logs/workflow-issues/test-simple.yml.md)
 - [ ] azure-appservice-deploy.yml/* — confirm disabled-expensive copy stays in sync with active workflow or remove duplicate. (Tracking: #355)
