@@ -1,5 +1,8 @@
 import { MultiAgentWorkflow, WorkflowStep, WorkflowResult } from './agents/multi-agent-workflow';
 import { OllamaClient, createOllamaClient, OLLAMA_MODELS } from './local/ollama-client';
+import { CodeDevelopmentWorkflow, createCodeDevelopmentWorkflow } from './workflows/code-development-workflow';
+import { WorkflowInput, WorkflowResult as LangGraphWorkflowResult, WorkflowConfig } from './workflows/workflow-state';
+import { workflowDebugger } from './workflows/workflow-debugger';
 // Temporarily disabled to fix build issues - TODO: Fix LangChain compatibility
 // import { ChatOpenAI } from '@langchain/openai';
 // import { PromptTemplate } from '@langchain/core/prompts';
@@ -89,6 +92,7 @@ export interface AIWorkflowResponse {
 
 export class EnhancedAIManager {
   private multiAgentWorkflow: MultiAgentWorkflow;
+  private langGraphWorkflow: CodeDevelopmentWorkflow;
   private pgvectorClient?: PgVectorClientInstance;
   private ollamaClient?: OllamaClient;
   private openaiClient?: any; // ChatOpenAI - temporarily stubbed
@@ -103,6 +107,13 @@ export class EnhancedAIManager {
     try {
       // Initialize multi-agent workflow
       this.multiAgentWorkflow = new MultiAgentWorkflow();
+
+      // Initialize LangGraph workflow
+      this.langGraphWorkflow = createCodeDevelopmentWorkflow({
+        debug: process.env.NODE_ENV === 'development',
+        maxRetries: 3,
+        stepTimeout: 300000, // 5 minutes
+      });
 
       // Initialize PGVector if configured and module available (server only)
       if (this.config.pgvector && !isBrowser) {
@@ -165,7 +176,7 @@ export class EnhancedAIManager {
   }
 
   /**
-   * Execute an AI workflow
+   * Execute an AI workflow using the legacy multi-agent system
    */
   async executeWorkflow(request: AIWorkflowRequest): Promise<AIWorkflowResponse> {
     const startTime = Date.now();
@@ -225,9 +236,71 @@ export class EnhancedAIManager {
           tokensUsed,
           cost
         },
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
+  }
+
+  /**
+   * Execute a LangGraph state machine workflow
+   */
+  async executeLangGraphWorkflow(input: WorkflowInput): Promise<LangGraphWorkflowResult> {
+    try {
+      // Start debugging session
+      const sessionId = input.sessionId || require('crypto').randomUUID();
+      
+      // Execute the workflow with debugging
+      const result = await this.langGraphWorkflow.execute(input);
+      
+      // Record final state for debugging
+      workflowDebugger.recordState(sessionId, result.state);
+      
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        state: {
+          sessionId: input.sessionId || 'unknown',
+          currentStep: 'error',
+          originalInput: input.requirements,
+          outputs: {},
+          requirements: input.requirements,
+          language: input.language,
+          framework: input.framework,
+          metadata: {
+            startTime: new Date().toISOString(),
+            totalSteps: 5,
+            completedSteps: [],
+            failedSteps: ['initialization'],
+          },
+          error: {
+            step: 'initialization',
+            message: error instanceof Error ? error.message : 'Unknown error',
+            retryCount: 0,
+          },
+        },
+        duration: 0,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Get workflow debugging information
+   */
+  getWorkflowDebugInfo(sessionId?: string) {
+    if (sessionId) {
+      return {
+        trace: workflowDebugger.getExecutionTrace(sessionId),
+        performance: workflowDebugger.getPerformanceMetrics(sessionId),
+        graph: workflowDebugger.getWorkflowGraph(sessionId),
+      };
+    }
+    
+    return {
+      activeSessions: workflowDebugger.getActiveSessions(),
+      graph: workflowDebugger.getWorkflowGraph(),
+    };
   }
 
   /**

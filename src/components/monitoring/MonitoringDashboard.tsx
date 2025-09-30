@@ -10,9 +10,14 @@ import dynamic from 'next/dynamic'
 import { useSession } from 'next-auth/react'
 import { BarChart, LineChart, PieChart, XAxis, YAxis, Tooltip, Legend, Line, Bar, Pie, Cell, ResponsiveContainer } from 'recharts'
 
-// Dynamically import the NetworkDiagnostics component with no SSR
+// Dynamically import components with no SSR
 const NetworkDiagnostics = dynamic(
   () => import('@/components/NetworkDiagnostics/NetworkDiagnostics').then(mod => mod.default),
+  { ssr: false }
+);
+
+const WorkflowVisualizer = dynamic(
+  () => import('@/components/workflows/WorkflowVisualizer'),
   { ssr: false }
 );
 
@@ -67,7 +72,7 @@ interface EnhancedMonitoringData {
   }
 }
 
-type TabType = 'overview' | 'metrics' | 'logs' | 'alerts' | 'security' | 'network' | 'health' | 'rum';
+type TabType = 'overview' | 'metrics' | 'logs' | 'alerts' | 'security' | 'network' | 'health' | 'rum' | 'workflows';
 
 interface LogEntry {
   timestamp: string
@@ -680,6 +685,21 @@ export default function MonitoringDashboard() {
             )}
           </div>
         );
+
+      case 'workflows':
+        return (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6 border">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">LangGraph Workflow Monitoring</h2>
+              <p className="text-gray-600 mb-6">
+                Monitor and debug AI workflow executions using LangGraph state machines.
+                Track workflow progress, performance metrics, and execution traces.
+              </p>
+            </div>
+            
+            <WorkflowVisualizer />
+          </div>
+        );
         
       default:
         return null;
@@ -709,7 +729,7 @@ export default function MonitoringDashboard() {
       <div className="mb-6">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-            {(['health', 'overview', 'metrics', 'logs', 'alerts', 'security', 'network', 'rum'] as TabType[]).map(tab => (
+            {(['health', 'overview', 'metrics', 'logs', 'alerts', 'security', 'network', 'rum', 'workflows'] as TabType[]).map(tab => (
               <button
                 key={tab}
                 onClick={() => setSelectedTab(tab)}
