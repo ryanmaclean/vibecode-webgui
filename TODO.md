@@ -43,7 +43,7 @@
 
 ### Next Steps
 - [x] Assess image size impact and prune optional dependencies if the KinD cluster gets tight on disk. — `docker images vibecode/code-server:monaco053` reports 2.31GB; monitor Kind node disk space before adding more tooling.
-- [ ] Decide where to surface the enhanced smoke test in CI (e.g., post-merge job or nightly run).
+- [x] Decide where to surface the enhanced smoke test in CI (e.g., post-merge job or nightly run). — Added `.github/workflows/kind-code-server-smoke.yml` (nightly + manual).
 - [x] Capture quickstart snippets for running `aider`/`goose` inside the pod so folks know how to authenticate. — Added walkthrough to `docs/logs/COORDINATION_LOG.md` (2025-09-30 03:35 UTC entry).
 
 ## Agent Update (2025-09-30 03:05 UTC)
@@ -54,7 +54,7 @@
 ### Next Steps
 - [ ] Evaluate caching the apt-installed editors inside the base image to shorten CI runs.
 - [x] Follow up on extending the editor script once aider/goose CLI installs are available. — Script now checks both CLIs and is wired into the smoke test.
-- [ ] Consider surfacing the new checks in CI (GitHub Actions) after other agents sign off.
+- [x] Consider surfacing the new checks in CI (GitHub Actions) after other agents sign off. — See `.github/workflows/kind-code-server-smoke.yml`.
 
 ## Agent Update (2025-09-30 02:50 UTC)
 
@@ -64,8 +64,8 @@
 
 ### Next Steps
 - [ ] Decide whether to bake the editors into the custom code-server image to avoid repeated apt installs.
-- [ ] Extend the script once aider/goose CLI installs land so we can validate the additional tooling.
-- [ ] Consider wiring the script into `scripts/test-code-server-kind.sh` (or GitHub Actions) for automated regression checks.
+- [x] Extend the script once aider/goose CLI installs land so we can validate the additional tooling. — Completed; helper now checks CLIs.
+- [x] Consider wiring the script into `scripts/test-code-server-kind.sh` (or GitHub Actions) for automated regression checks. — Smoke workflow added for automation.
 
 ## Agent Update (2025-09-30 02:10 UTC)
 
@@ -90,10 +90,12 @@
 - Scoped ESLint to first-party code (ignoring vendor dirs and compiled artifacts) and scrubbed the Codeium sandbox/type defs so conflict markers are gone.
 
 ### Next Steps
-- [ ] Convert Node-based helper scripts to ESM (or annotate commonjs shims) so `npm run lint` can run without `no-require-imports` noise.
+- [ ] Convert remaining Node-based helper scripts to ESM (or annotate CommonJS shims) so `npm run lint` can run without `no-require-imports` noise.
 - [x] Convert core helper scripts (`check-monaco-version`, `create-env`, `create-env-local`) to modern ESM/TypeScript so linting can cover them. — ✅ scripts now use native Node imports and secure file writes.
+- [x] Expand onboarding flow with workspace, integrations, and AI provider selections so agents know what to wire next.
 - [ ] Replace `any` placeholders in `src/types/*.d.ts` with upstream typings to finish the lint cleanup (#174/#188 follow-up).
 - [ ] Split remaining packages (CLI, VS Code extension) into per-package lint configs or exclude them explicitly once owners confirm scope.
+  - ↳ Follow-up: wire `/api/user/preferences` endpoint to persist onboarding selections (currently stubbed).
 - [x] Update README with a quick link to the Codeium playground (`/tools/codeium`) so the feature is discoverable.
   - ✅ Agent Codex (2025-09-30 02:09 UTC): Added a bullet under "New Features" pointing to the playground (notes the signin requirement).
 
