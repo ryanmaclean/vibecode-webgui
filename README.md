@@ -5,11 +5,34 @@
 **pgvector on PostgreSQL + Kubernetes + Datadog Database Monitoring**
 
 [![Demo](https://img.shields.io/badge/Demo-Live-brightgreen?style=for-the-badge&logo=play)](./DEMO.sh)
+[![Monaco](https://img.shields.io/badge/Monaco-0.53.0-blue?style=for-the-badge&logo=visualstudiocode)](https://microsoft.github.io/monaco-editor/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-blue?style=for-the-badge&logo=kubernetes)](https://kubernetes.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-336791?style=for-the-badge&logo=postgresql)](https://github.com/pgvector/pgvector)
 [![Datadog](https://img.shields.io/badge/Datadog-DBM-632CA6?style=for-the-badge&logo=datadog)](https://www.datadoghq.com/)
 
 </div>
+
+## ⚡ Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Verify setup
+npm run verify
+
+# Start development server
+npm run dev
+
+# Open http://localhost:3000
+```
+
+**New Features:**
+- 🤖 AI Code Completion with Monaco 0.53.0
+- 🔌 MCP Server for AI agent integration
+- 🐍 Pydantic AI CLI Coding Agent example
+
+See [docs/MONACOPILOT_INTEGRATION.md](./docs/MONACOPILOT_INTEGRATION.md) for AI completion setup.
 
 ## 🧭 Coordination & History
 

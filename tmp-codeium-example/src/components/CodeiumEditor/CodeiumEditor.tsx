@@ -64,6 +64,16 @@ export const CodeiumEditor: React.FC<CodeiumEditorProps> = ({
   containerStyle = {},
   ...props
 }) => {
+  const {
+    apiKey,
+    multilineModelThreshold,
+    onAutocomplete,
+    options,
+    language,
+    width,
+    height,
+    ...restEditorProps
+  } = props;
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const inlineCompletionsProviderRef = useRef<InlineCompletionProvider | null>(
@@ -93,13 +103,13 @@ export const CodeiumEditor: React.FC<CodeiumEditorProps> = ({
         setCompletionCount,
         setCodeiumStatus,
         setCodeiumStatusMessage,
-        props.apiKey,
-        props.multilineModelThreshold,
+        apiKey,
+        multilineModelThreshold,
       ),
     [
       grpcClient,
-      props.apiKey,
-      props.multilineModelThreshold,
+      apiKey,
+      multilineModelThreshold,
       setCompletionCount,
       setCodeiumStatus,
       setCodeiumStatusMessage,
@@ -123,8 +133,8 @@ export const CodeiumEditor: React.FC<CodeiumEditorProps> = ({
     const completionDisposable = monacoInstance.editor.registerCommand(
       'codeium.acceptCompletion',
       (_: unknown, completionId: string, insertText: string) => {
-        if (props.onAutocomplete) {
-          props.onAutocomplete(insertText);
+        if (onAutocomplete) {
+          onAutocomplete(insertText);
         }
         setAcceptedCompletionCount((prev) => prev + 1);
         completionProvider.acceptedLastCompletion(completionId);
@@ -135,7 +145,7 @@ export const CodeiumEditor: React.FC<CodeiumEditorProps> = ({
       providerDisposable.dispose();
       completionDisposable.dispose();
     };
-  }, [completionProvider, isEditorReady, props.onAutocomplete]);
+  }, [completionProvider, isEditorReady, onAutocomplete]);
 
   const handleEditorDidMount = async (
     editor: editor.IStandaloneCodeEditor,
@@ -148,7 +158,7 @@ export const CodeiumEditor: React.FC<CodeiumEditorProps> = ({
     // CORS pre-flight cache optimization.
     try {
       await grpcClient.getCompletions({});
-    } catch (_error) {
+    } catch {
       // This is expected.
     }
 
@@ -164,17 +174,17 @@ export const CodeiumEditor: React.FC<CodeiumEditorProps> = ({
   }, [completionProvider, otherDocuments]);
 
   const defaultLanguageProps: EditorProps = {
-    defaultLanguage: props.language,
-    defaultValue: getDefaultValue(props.language),
+    defaultLanguage: language,
+    defaultValue: getDefaultValue(language),
   };
 
   const layout = {
-    width: props.width || '100%',
+    width: width || '100%',
     // The height is set to 300px by default. Otherwise, the editor when
     // rendered with the default value will not be visible.
     // The monaco editor's default height is 100% but it requires the user to
     // define a container with an explicit height.
-    height: props.height || '300px',
+    height: height || '300px',
   };
 
   return (
@@ -199,12 +209,12 @@ export const CodeiumEditor: React.FC<CodeiumEditorProps> = ({
       </a>
       <Editor
         {...defaultLanguageProps}
-        {...props}
+        {...restEditorProps}
         width={layout.width}
         height={layout.height}
         onMount={handleEditorDidMount}
         options={deepMerge<editor.IStandaloneEditorConstructionOptions>(
-          props.options,
+          options,
           {
             scrollBeyondLastColumn: 0,
             scrollbar: {
