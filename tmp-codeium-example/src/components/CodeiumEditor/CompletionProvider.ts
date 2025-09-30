@@ -200,23 +200,20 @@ export class MonacoCompletionProvider {
    * @param ctx - Codeium context
    * @param completionId - unique ID of the last completion.
    */
-  public acceptedLastCompletion(completionId: string) {
-    new Promise((resolve, reject) => {
-      this.client
-        .acceptCompletion(
-          {
-            metadata: this.getMetadata(),
-            completionId: completionId,
-          },
-          {
-            headers: this.getAuthHeader(),
-          },
-        )
-        .then(resolve)
-        .catch((err) => {
-          console.log('Error: ', err);
-        });
-    });
+  public async acceptedLastCompletion(completionId: string) {
+    try {
+      await this.client.acceptCompletion(
+        {
+          metadata: this.getMetadata(),
+          completionId,
+        },
+        {
+          headers: this.getAuthHeader(),
+        },
+      );
+    } catch (error) {
+      console.error('Unable to record accepted completion', error);
+    }
   }
 
   /**
