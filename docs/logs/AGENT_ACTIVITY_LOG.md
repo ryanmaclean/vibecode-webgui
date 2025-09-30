@@ -177,3 +177,8 @@ This log captures completed agent activities to keep TODO.md focused on current 
 ### Agent Codex - GitHub Issue Triage (2025-09-30 01:02 UTC)
 - Ran `gh issue list --limit 20` to capture open GitHub issues.
 - Recorded assignments in TODO.md: #329 stays with Copilot; #323 coordinated by Agent Codex; #315/#314 remain with Observability/Infra; automation backlog (#313-299) recommended for Agent Cascade when available.
+### Agent Codex - RAG Demo Trace (2025-09-30 01:20 UTC)
+- Ran `npx tsx -r dd-trace/init scripts/rag-local-demo.ts "List the Datadog environment variables tracked in the repository."`
+- PGVector top matches came from `docs:DATADOG_LOCAL_DEVELOPMENT` and `docs:ci-cd-fixes` (similarity ~60%).
+- OpenRouter response summarized the tracked Datadog env vars.
+- DD agentless env (`DD_AGENTLESS_ENABLED=true`) active for span emission.
