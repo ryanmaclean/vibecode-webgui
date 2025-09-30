@@ -1,0 +1,306 @@
+# Datadog Agent Configuration for VibeCode Code-Server
+# Optimized for AI development, code-server monitoring, and extension telemetry
+
+# Core Configuration
+api_key: ${DD_API_KEY:-"your_api_key_here"}
+site: ${DD_SITE:-"datadoghq.com"}
+hostname: ${DD_HOSTNAME:-"vibecode-codeserver"}
+
+# APM (Application Performance Monitoring)
+apm_config:
+  enabled: true
+  env: ${DD_ENV:-"development"}
+  apm_non_local_traffic: true
+  # Enable profiling for Node.js processes
+  profiling_enabled: true
+  # Capture all traces (adjust for production)
+  analyzed_rate_by_service:
+    "*": 1.0
+  # Additional APM settings for code-server
+  filter_tags:
+    require: []
+    reject: []
+  max_traces_per_second: 100
+  trace_buffer: 50
+
+# Logs Configuration
+logs_enabled: true
+logs_config:
+  container_collect_all: true
+  # Auto-detect code-server logs
+  auto_multi_line_detection: true
+  # Process multiline logs (stack traces, etc.)
+  processing_rules:
+    - type: multi_line
+      name: log_start_with_date
+      pattern: \d{4}-\d{2}-\d{2}
+  # Exclude noisy logs
+  exclude_at_match:
+    - "healthcheck"
+    - "ping"
+
+# Process Monitoring
+process_config:
+  enabled: true
+  process_collection:
+    enabled: true
+  container_collection:
+    enabled: true
+  # Monitor code-server and extension processes
+  process_discovery:
+    enabled: true
+    hints:
+      - name: "code-server"
+        process_names: ["code-server", "node"]
+      - name: "extensions"
+        process_names: ["extensionHost"]
+
+# Live Processes
+process_config:
+  enabled: "true"
+  scrub_args: true
+  custom_sensitive_words:
+    - "password"
+    - "token"
+    - "api_key"
+    - "secret"
+
+# Network Performance Monitoring
+network_config:
+  enabled: true
+
+# Universal Service Monitoring
+service_monitoring_config:
+  enabled: true
+
+# Database Monitoring (for PostgreSQL connections)
+database_monitoring:
+  enabled: true
+  # Auto-discover PostgreSQL connections from code-server
+  autodiscovery:
+    enabled: true
+
+# LLM Observability (for AI extension monitoring)
+llm_obs:
+  enabled: true
+  ml_app: "vibecode-ai-extensions"
+  # Track AI model calls from extensions
+  integrations:
+    - openai
+    - anthropic
+    - langchain
+
+# Real User Monitoring (if code-server has web UI)
+rum:
+  enabled: true
+
+# Continuous Profiler
+profiling:
+  enabled: true
+
+# Container Monitoring
+container_include: []
+container_exclude: []
+docker_labels_as_tags:
+  app: app
+  env: env
+  service: service
+  version: version
+
+# Kubernetes Integration (if running in K8s)
+kubernetes_kubelet_host: ${KUBERNETES_KUBELET_HOST:-""}
+kubernetes_pod_labels_as_tags:
+  app: app
+  component: component
+  tier: tier
+
+# Custom Checks Directory
+confd_path: /etc/datadog-agent/conf.d
+checks_d: /etc/datadog-agent/checks.d
+
+# Integrations
+# Node.js monitoring
+integrations:
+  node:
+    init_config:
+    instances:
+      - host: localhost
+        port: 8765
+        # Monitor code-server Node.js process
+        tags:
+          - service:code-server
+          - component:ide
+
+  # HTTP check for code-server health
+  http_check:
+    init_config:
+    instances:
+      - name: code-server-health
+        url: http://localhost:8765/healthz
+        timeout: 5
+        http_response_status_code: 200
+        tags:
+          - service:code-server
+          - check:health
+
+  # Process check for extensions
+  process:
+    init_config:
+    instances:
+      - name: code-server-process
+        search_string: ['code-server']
+        exact_match: false
+        tags:
+          - service:code-server
+          - process:main
+      - name: extension-host
+        search_string: ['extensionHost']
+        exact_match: false
+        tags:
+          - service:code-server
+          - process:extensions
+
+  # Directory monitoring for workspace changes
+  directory:
+    init_config:
+    instances:
+      - directory: /home/coder/workspace
+        pattern: "*"
+        recursive: true
+        tags:
+          - service:code-server
+          - component:workspace
+
+# Custom Metrics
+dogstatsd_config:
+  enabled: true
+  port: 8125
+  non_local_traffic: true
+  # Custom metric namespaces
+  namespace: vibecode
+  # Tag cardinality
+  tag_cardinality: orchestrator
+
+# Service Discovery
+listeners:
+  - name: docker
+  - name: kubelet
+
+config_providers:
+  - name: docker
+    polling: true
+  - name: kubelet
+    polling: true
+
+# Auto-discovery for extensions
+ad_identifiers:
+  - code-server
+  - vscode-extension
+
+# Tags
+tags:
+  - env:${DD_ENV:-"development"}
+  - service:${DD_SERVICE:-"vibecode-codeserver"}
+  - version:${DD_VERSION:-"1.0.0"}
+  - component:ide
+  - platform:code-server
+  - port:8765
+  # AI-specific tags
+  - ai_enabled:true
+  - extensions:claude,openai,codeium,copilot
+  # Infrastructure tags
+  - infrastructure:${DD_INFRASTRUCTURE:-"docker"}
+  - team:${DD_TEAM:-"engineering"}
+
+# Performance Settings
+forwarder_timeout: 20
+forwarder_retry_queue_max_size: 30
+
+# Compliance & Security
+compliance_config:
+  enabled: true
+  # Monitor for secrets in code
+  host_benchmarks:
+    enabled: true
+
+# Cloud Security Posture Management
+security_agent:
+  compliance_config:
+    enabled: true
+  runtime_security_config:
+    enabled: true
+
+# Additional Monitoring
+system_probe_config:
+  enabled: true
+  # Network traffic monitoring
+  network_config:
+    enabled: true
+
+# Orchestrator Explorer
+orchestrator_explorer:
+  enabled: true
+  container_scrubbing:
+    enabled: true
+
+# External Metrics Provider (for custom AI metrics)
+external_metrics_provider:
+  enabled: true
+  port: 8443
+
+# Cluster Agent (if using Kubernetes)
+cluster_agent:
+  enabled: ${DD_CLUSTER_AGENT_ENABLED:-false}
+  cmd_port: 5005
+
+# Prometheus Scraping (for extension metrics)
+prometheus_scrape:
+  enabled: true
+  service_endpoints: true
+  checks:
+    - configurations:
+        - namespace: vibecode
+          metrics:
+            - "*"
+          prometheus_url: http://localhost:8765/metrics
+          tags:
+            - service:code-server
+            - component:metrics
+
+# Custom Python Checks Path
+additional_checksd: /etc/datadog-agent/checks.d
+
+# Histogram Aggregates
+histogram_aggregates:
+  - max
+  - median
+  - avg
+  - count
+  - sum
+
+histogram_percentiles:
+  - 0.5
+  - 0.75
+  - 0.9
+  - 0.95
+  - 0.99
+
+# Aggregator Settings
+aggregator_stop_timeout: 10
+aggregator_buffer_size: 100
+
+# Serializer Settings
+serializer_max_payload_size: 5242880
+serializer_max_uncompressed_payload_size: 62914560
+
+# Enable Inventories
+inventories_enabled: true
+inventories_checks_interval: 300
+
+# Enable SBOM (Software Bill of Materials)
+sbom:
+  enabled: true
+  container_image:
+    enabled: true
+  host:
+    enabled: true

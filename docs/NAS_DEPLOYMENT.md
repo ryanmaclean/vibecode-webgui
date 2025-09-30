@@ -45,14 +45,20 @@ docker buildx build \
 Example `docker-compose.nas.yml`:
 
 ```yaml
-version: "3.7"
 services:
   code-server:
     image: your-registry/vibecode-code-server:monaco053
+    env_file:
+      - nas.env
     environment:
-      PASSWORD: "change-me"
+      PASSWORD: "${CODE_SERVER_PASSWORD:-change-me}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
+      DD_API_KEY: "${DD_API_KEY:-}"
+      DD_SITE: "${DD_SITE:-datadoghq.com}"
     ports:
-      - "8443:8080"
+      - "8443:8765"
     volumes:
       - cs-workspace:/home/coder/workspace
       - cs-settings:/home/coder/.local/share/code-server/User
@@ -60,10 +66,16 @@ services:
 
   vibecode-app: # optional web UI
     image: your-registry/vibecode-webgui:latest
+    env_file:
+      - nas.env
     environment:
       NODE_ENV: production
       DATABASE_URL: "postgres://user:pass@host:5432/db"
-      OPENAI_API_KEY: "..."
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
+      DD_API_KEY: "${DD_API_KEY:-}"
+      DD_SITE: "${DD_SITE:-datadoghq.com}"
     ports:
       - "3000:3000"
     restart: unless-stopped
@@ -72,6 +84,11 @@ volumes:
   cs-workspace:
   cs-settings:
 ```
+
+> Refer to `docker/code-server/README.md` → "Configuring AI API Keys" for provider-specific env var guidance. Store values in a `.env` file or the NAS secret manager; never commit keys to git.
+
+1. Copy `nas.env.example` to `nas.env` and fill in real credentials. Compose will load it automatically.
+2. Upload the updated `docker-compose.nas.yml` and `nas.env` through your NAS UI (or run `docker compose --env-file nas.env -f docker-compose.nas.yml up -d`).
 
 Upload the file and deploy via the NAS UI:
 
@@ -84,6 +101,8 @@ CLI alternative:
 ```bash
 docker compose -f docker-compose.nas.yml up -d
 ```
+
+> **Troubleshooting:** Run `docker compose --env-file nas.env -f docker-compose.nas.yml config` to validate the stack before deploying. This catches missing environment variables or typos without starting containers.
 
 ## 3. Set up reverse proxy (optional)
 

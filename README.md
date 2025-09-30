@@ -21,8 +21,10 @@ docker run -d -p 3000:3000 vibecode/webgui:latest
 ### Docker Compose
 ```bash
 curl -O https://raw.githubusercontent.com/ryanmaclean/vibecode-webgui/main/docker-compose.yml
-docker-compose up -d
+docker compose --project-name vibecode up -d
 ```
+
+> Tip: Run `docker compose -f docker-compose.yml config` first to validate the stack, and see [docker/code-server/DEPLOYMENT_GUIDE.md](docker/code-server/DEPLOYMENT_GUIDE.md#option-2-docker-compose-recommended) for full guidance.
 
 ### Kubernetes (KinD)
 ```bash

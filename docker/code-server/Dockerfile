@@ -9,8 +9,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     fish \
+    eza \
     git \
     openssh-client \
+    hyperfine \
+    lazygit \
+    ripgrep \
+    starship \
     sudo \
     wget \
     gnupg \
@@ -18,10 +23,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     python3-venv \
     jq \
+    zoxide \
+    fzf \
+    bat \
+    fd-find \
     unzip \
     apt-transport-https \
     software-properties-common \
     && rm -rf /var/lib/apt/lists/*
+
+RUN ln -sf /usr/bin/fdfind /usr/local/bin/fd
 
 # Install Node.js 18 LTS
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
