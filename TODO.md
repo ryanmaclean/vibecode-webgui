@@ -1,3 +1,11 @@
+## Agent Update (2025-09-30 01:20 UTC)
+
+- Re-running Trace Search (`poll-traces.sh`) after the new RAG demo span to see if Datadog captured it.
+
+### Next Steps
+- [x] Invoke `scripts/poll-traces.sh 'service:vibecode-rag-demo env:kind' 'now-2h'` — still `{ "errors": ["Not found"] }`.
+- [x] Invoke `scripts/poll-traces.sh 'service:vibecode-rag-ingest env:kind' 'now-2h'` — still `{ "errors": ["Not found"] }`.
+
 ## Agent Update (2025-09-30 01:17 UTC)
 
 - Confirmed Dependabot PRs #251 and #241 remain in mergeState UNKNOWN; noted head SHAs for coordination while waiting on maintainer rebases.
@@ -7,10 +15,10 @@
 
 ## Agent Update (2025-09-30 01:17 UTC)
 
-- Running another `scripts/rag-local-demo.ts` retrieval to generate a fresh traced workload before we recheck Datadog.
+- Attempted another `scripts/rag-local-demo.ts` retrieval to seed traces, but the script exited early because no embedding provider is configured in the current shell.
 
 ### Next Steps
-- [x] Execute the demo script with a simple prompt and capture the outcome — ✅ script returned Datadog env var list via OpenRouter.
+- [ ] Export `USE_LOCAL_EMBEDDINGS=true` (or supply OpenRouter/OpenAI keys) before rerunning the demo script.
 
 ## Agent Update (2025-09-30 01:16 UTC)
 
@@ -276,6 +284,7 @@
 ### Next Steps
 - [x] Adjust Datadog tracing config so agentless spans stop targeting `127.0.0.1:8126` (e.g., set `DD_AGENTLESS_ENABLED=true`) and rerun the ingestion batch to verify span delivery.
 - [ ] Run a retrieval smoke (`npx tsx -r dd-trace/init scripts/rag-local-demo.ts ...`) against the freshly ingested docs and capture dd-trace / LLM observability artifacts.
+  - ❌ Agent Codex (2025-09-30 01:17 UTC): Attempted run failed with `No embedding provider configured`; need USE_LOCAL_EMBEDDINGS or API keys before retrying.
 - [ ] Re-run `poll-traces.sh` once tracing succeeds to confirm `service:vibecode-rag-demo env:kind` appears in Trace Search.
 
 ## 🤝 AGENT COORDINATION PROTOCOL (ACTIVE)
@@ -296,6 +305,12 @@
 3. **Claim Work Area** - Specify which directories/files you're working on
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- ✅ **Agent Cascade (2025-09-30 01:20 UTC)**: Requested Dependabot rebase for PR #251
+  - Result: Commented `@dependabot rebase`; awaiting branch update
+  - Files: None (GitHub comment only)
+  - Goal: unblock lint/type/unit validation
+  - ETA: 5 minutes
+  - Status: COMPLETE
 - ✅ **Agent Cascade (2025-09-30 01:17 UTC)**: Completed Dependabot PR #322 status review
   - Result: head=8bbd9a29 (pre-restructure), base=94132f6a; mergeable UNKNOWN
   - Files: None (read-only)
@@ -1747,4 +1762,9 @@ git revert HEAD~17..HEAD
 ## Agent Update (2025-09-30 01:17 UTC)
 
 - Dependabot PR #322 (@ai-sdk/openai) remains on commit 8bbd9a29; needs rebase onto current main. Mergeable still `UNKNOWN`.
+
+
+## Agent Update (2025-09-30 01:20 UTC)
+
+- PR #251: Requested Dependabot rebase (`@dependabot rebase`). Waiting for updated branch before re-running lint/type/unit.
 
