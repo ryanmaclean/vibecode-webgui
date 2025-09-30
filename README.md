@@ -162,6 +162,32 @@ npm run test:integration:production
 npm run test:production:all
 ```
 
+### 🔄 **Automated Regression Tests**
+
+The automated regression testing infrastructure wraps demo scripts into CI-backed test suites with Datadog integration:
+
+```bash
+# Individual regression test suites
+npm run test:regression:azure-embedding  # Azure OpenAI embedding tests
+npm run test:regression:genai           # GenAI database operations  
+npm run test:regression:deployment      # Deployment pipeline tests
+
+# Combined test suites
+npm run test:regression:ci              # CI-friendly tests
+npm run test:regression                 # Master test suite
+npm run test:regression:all             # Complete test matrix
+```
+
+**Features:**
+- **Scheduled execution**: Daily at 2 AM UTC via GitHub Actions
+- **Manual triggers**: Configurable test suites and environments
+- **Datadog integration**: Metrics and observability for test execution
+- **Graceful degradation**: Skips tests when external services unavailable
+- **Artifact collection**: Sanitized logs, reports, and screenshots
+- **Slack notifications**: Automated result reporting
+
+See [`docs/REGRESSION_TESTS.md`](./docs/REGRESSION_TESTS.md) for detailed documentation.
+
 ### 🤝 **Agent Coordination & Logs**
 
 - Active work in progress is tracked in [`TODO.md`](./TODO.md); read and update it before starting new changes to avoid conflicts.
