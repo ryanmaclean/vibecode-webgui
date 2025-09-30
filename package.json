@@ -76,7 +76,7 @@
     "monitoring:setup": "npx tsx scripts/setup-datadog-monitoring.ts",
     "monitoring:health": "curl -s http://localhost:3000/api/monitoring/dashboard | jq '.health'",
     "monitoring:metrics": "curl -s http://localhost:3000/api/monitoring/metrics?config=true | jq",
-    "monitoring:trace": "python3 scripts/verify-trace-search.py --config configs/trace-search-checks.json",
+    "monitoring:trace": "python3 scripts/verify-trace-search.py --config configs/trace-search-checks.json --ci-safe",
     "test:performance": "node scripts/run-performance-tests.js",
     "test:performance:synthetic": "npx @datadog/datadog-ci synthetics run-tests --config datadog-synthetics.json",
     "test:performance:lighthouse": "npx lighthouse-ci autorun",
