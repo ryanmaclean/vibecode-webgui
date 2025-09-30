@@ -69,8 +69,28 @@ DATADOG_TRACE_SEARCH_BASE_URL=http://127.0.0.1:5005 \
 This keeps CI green while you coordinate the official fix; remember to disable the mock once real access is available.
 
 6. **Automation**
-   - Workflow `.github/workflows/datadog-trace-verify.yml` runs hourly (and on demand) using the npm script above. Ensure `DD_API_KEY` / `DD_APP_KEY` secrets stay in GitHub Actions and monitor runs for failures.
-   - Update `TODO.md` entries once automation is passing.
+   - **GitHub Actions Workflow**: `.github/workflows/datadog-trace-verify.yml` runs hourly and on-demand
+   - **CI-Safe Mode**: The workflow automatically handles missing credentials by generating mock data
+   - **Configuration**: Service/environment combinations defined in `configs/trace-search-checks.json`
+   - **Artifacts**: Each run produces JSON trace files and a summary in `datadog/trace-search/`
+   
+   **Manual Execution**:
+   ```bash
+   # Run with real credentials (if available)
+   npm run monitoring:trace
+   
+   # Force CI-safe mode for testing
+   python3 scripts/verify-trace-search.py --config configs/trace-search-checks.json --ci-safe
+   
+   # Use custom mock data
+   python3 scripts/verify-trace-search.py --service test --env dev --mock-file path/to/mock.json
+   ```
+   
+   **Troubleshooting**:
+   - If credentials are missing, workflow will generate mock data and continue
+   - Check workflow artifacts for trace search results and summary
+   - Monitor GitHub Actions logs for API errors or failures
+   - Use `--ci-safe` flag for local testing without credentials
 
 ## Rollback
 
