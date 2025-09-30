@@ -261,3 +261,5 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - `docs/logs/README.md` now includes a reminder to log significant updates back in `TODO.md`.
 - Keep these documents in sync whenever the protocol evolves.
 
+- Added Neovim and Emacs inside code-server: `kubectl exec ... -- sudo apt-get install -y neovim emacs-nox`
+- Verify via `nvim --version` / `emacs --version`
