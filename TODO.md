@@ -15,6 +15,12 @@
 ## Agent Update (2025-09-29 23:33 UTC)
 
 - 🔒 **Agent Cascade (17:45 UTC)**: CLAIMING Phase 21 - Consolidate directories
+- 🔒 **Agent Cascade (17:46 UTC)**: CLAIMING RAG demo test with local DB
+  - Task: Run rag-local-demo.ts with fixed DATABASE_URL (now points to local)
+  - Files: scripts/rag-local-demo.ts (read-only execution)
+  - Goal: Test RAG retrieval with local pgvector, capture observability
+  - ETA: 3 minutes
+  - Status: ACTIVE - Running RAG demo
   - Task: Move archive, audit-results, claudedocs, demo to proper locations
   - Files: 4 directories with ~30 files
   - Goal: Consolidate scattered content
@@ -50,6 +56,16 @@
 
 ### Next Steps
 - [x] Flag Agent Claude’s CI remediation task as on hold pending 21:00 UTC availability.
+
+## Agent Update (2025-09-30 00:51 UTC)
+
+- Updated `.env.local` so `DATABASE_URL` targets the local `vibecode-pgvector` container on `localhost:5432` while Azure access remains blocked.
+- Verified the container is healthy and contains 225 embeddings via `docker exec vibecode-pgvector psql -U vibecode -d vibecode -c 'SELECT COUNT(*) FROM document_embeddings;'`.
+
+### Next Steps
+- [x] Switch `.env.local` `DATABASE_URL` to the local container connection string (completed 2025-09-30 00:51 UTC).
+- [x] Confirm the local container holds the expected embeddings (225 rows) via `docker exec ... SELECT COUNT(*)`.
+- [ ] Rerun `npx tsx -r dd-trace/init scripts/rag-local-demo.ts` with the agentless env to confirm spans now generate against the reachable database.
 
 ## Agent Update (2025-09-29 23:32 UTC)
 
@@ -117,6 +133,12 @@
 3. **Claim Work Area** - Specify which directories/files you're working on
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- 🔒 **Agent Cascade (2025-09-30 00:45 UTC)**: Quick `kubectl get pods` health check
+  - Task: Ensure core pods still running while ingest jobs proceed
+  - Files: None (cluster status only)
+  - Goal: Document cluster health in TODO
+  - ETA: 2 minutes
+  - Status: ACTIVE - Checking
 - ✅ **Agent Codex (2025-09-30 00:59 UTC)**: COMPLETED ingest process spot-check
   - Result: PIDs 82827/82843/82844 still running `scripts/ingest-docs-to-rag.ts` (local embeddings mode); queue remains occupied
   - Files: System process list only (read)
@@ -129,12 +151,18 @@
   - Goal: Update TODO with latest rebase guidance
   - ETA: 3 minutes
   - Status: COMPLETE - Waiting on rebases
-- 🔒 **Agent Codex (2025-09-30 01:15 UTC)**: CLAIMING Datadog trace poll re-check
-  - Task: Re-run both `scripts/poll-traces.sh` commands after credential refresh
+- ✅ **Agent Codex (2025-09-30 01:15 UTC)**: COMPLETED Datadog trace poll re-check
+  - Result: Both `service:vibecode-rag-ingest env:kind` and `service:vibecode-rag-demo env:kind` still return `{ "errors": ["Not found"] }` over `now-2h`
   - Files: scripts/poll-traces.sh (read/execute)
   - Goal: See if spans are now indexed
   - ETA: 3 minutes
-  - Status: ACTIVE - Running trace queries
+  - Status: COMPLETE - Awaiting trace ingestion
+- ✅ **Agent Codex (2025-09-30 01:20 UTC)**: COMPLETED ingest process re-check
+  - Result: PIDs 82827/82843/82844 still running `scripts/ingest-docs-to-rag.ts` (local embeddings mode); queue remains occupied
+  - Files: System process list only (read)
+  - Goal: Confirm queue availability for next RAG batch
+  - ETA: 2 minutes
+  - Status: COMPLETE - Ingestion still running
 - ✅ **Agent Cascade (2025-09-30 00:38 UTC)**: COMPLETED ingest process check
   - Result: PID 82844 still running (wrapper processes too); ingest slots busy
   - Files: None
