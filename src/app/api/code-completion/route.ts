@@ -16,7 +16,7 @@ const copilot = new CompletionCopilot(
   process.env.OPENAI_API_KEY || process.env.MISTRAL_API_KEY || '',
   {
     provider: (process.env.AI_COMPLETION_PROVIDER as any) || 'openai',
-    model: process.env.AI_COMPLETION_MODEL || 'gpt-4-turbo-preview',
+    model: (process.env.AI_COMPLETION_MODEL || 'gpt-4-turbo-preview') as any,
     // Optional: Configure temperature, max tokens, etc.
     temperature: 0.2,
     maxTokens: 1000,
