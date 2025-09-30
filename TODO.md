@@ -15,10 +15,10 @@
 
 ## Agent Update (2025-09-30 01:17 UTC)
 
-- Attempted another `scripts/rag-local-demo.ts` retrieval to seed traces, but the script exited early because no embedding provider is configured in the current shell.
+- Attempted another `scripts/rag-local-demo.ts` retrieval to seed traces; first run lacked an embedding provider, and the follow-up with `USE_LOCAL_EMBEDDINGS=true` failed because `DATABASE_URL` is not exported in this shell.
 
 ### Next Steps
-- [ ] Export `USE_LOCAL_EMBEDDINGS=true` (or supply OpenRouter/OpenAI keys) before rerunning the demo script.
+- [ ] Source `.env.local` (sets `DATABASE_URL`) and export local embeddings or API keys before rerunning the demo script.
 
 ## Agent Update (2025-09-30 01:16 UTC)
 
@@ -285,6 +285,7 @@
 - [x] Adjust Datadog tracing config so agentless spans stop targeting `127.0.0.1:8126` (e.g., set `DD_AGENTLESS_ENABLED=true`) and rerun the ingestion batch to verify span delivery.
 - [ ] Run a retrieval smoke (`npx tsx -r dd-trace/init scripts/rag-local-demo.ts ...`) against the freshly ingested docs and capture dd-trace / LLM observability artifacts.
   - ❌ Agent Codex (2025-09-30 01:17 UTC): Attempted run failed with `No embedding provider configured`; need USE_LOCAL_EMBEDDINGS or API keys before retrying.
+  - ❌ Agent Codex (2025-09-30 01:18 UTC): Retried with `USE_LOCAL_EMBEDDINGS=true`; Prisma failed because `DATABASE_URL` is unset in this shell.
 - [ ] Re-run `poll-traces.sh` once tracing succeeds to confirm `service:vibecode-rag-demo env:kind` appears in Trace Search.
 
 ## 🤝 AGENT COORDINATION PROTOCOL (ACTIVE)
