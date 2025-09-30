@@ -76,6 +76,12 @@ const eslintConfig = [{
     "import/no-anonymous-default-export": "off"
   }
 }, {
+  files: ["scripts/**/*.js"],
+  rules: {
+    "@typescript-eslint/no-require-imports": "off",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }]
+  }
+}, {
   files: ["**/*.cjs", "**/.eslintrc.*"],
   rules: {
     "@typescript-eslint/no-require-imports": "off"
