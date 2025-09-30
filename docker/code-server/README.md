@@ -4,11 +4,49 @@ This directory contains the configuration for the custom VibeCode code-server, w
 
 ## Features
 
-- Pre-installed VS Code extensions for web development
+### AI Coding Assistants (11 pre-installed)
+- **GitHub Copilot** - AI pair programmer
+- **Codeium** - Free AI code completion
+- **Tabnine** - AI code completion
+- **Amazon Q** - AWS AI assistant
+- **Sourcegraph Cody** - AI coding assistant
+- **Continue** - Open-source autopilot
+- **Cline** (formerly Claude Dev) - AI coding assistant with Claude
+- **Aider** - AI pair programming
+- **Cursor Tools** - AI-first editor features
+- **VibeCode AI Assistant** - Custom AI integration
+
+### Developer Productivity Tools
+- **GitLens** - Supercharged Git
+- **Error Lens** - Inline error highlighting
+- **Code Spell Checker** - Catch typos
+- **TODO Highlight** - Track TODOs
+- **TODO Tree** - TODO management
+- **Material Icon Theme** - Beautiful icons
+- **Indent Rainbow** - Visual indentation
+- **Path Intellisense** - Auto-complete paths
+
+### Database Tools
+- **SQLTools** - Database management
+- **PostgreSQL Client** - pgvector support
+
+### DevOps Tools
+- **Docker** - Container management
+- **Kubernetes** - K8s integration
+- **REST Client** - API testing
+- **Thunder Client** - HTTP client
+
+### Language Support
+- Python (with Pylance and Black formatter)
+- TypeScript/JavaScript (with ESLint)
+- Go, Rust, Java, C/C++, Bash
+- Markdown with linting
+
+### Other Features
 - Custom keybindings and settings
-- Integration with VibeCode AI Assistant
 - Optimized for Kubernetes deployment
 - Secure defaults with non-root user
+- Pre-configured LSP servers for all major languages
 
 ## Building the Image
 

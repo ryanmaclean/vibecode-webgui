@@ -13,6 +13,8 @@ const isDockerBuild = (
   process.env.DD_ENABLED === 'false'
 );
 
+const isLocalDev = process.env.NODE_ENV !== 'production'
+
 // Conditional imports to prevent build-time errors in Docker
 let NodeSDK: any = null;
 let getNodeAutoInstrumentations: any = null;
@@ -22,7 +24,7 @@ let Resource: any = null;
 let ATTR_SERVICE_NAME: any = null;
 let ATTR_SERVICE_VERSION: any = null;
 
-if (!isDockerBuild) {
+if (!isDockerBuild && !isLocalDev) {
   try {
     // Dynamic imports to prevent static analysis issues
     const sdkNode = require('@opentelemetry/sdk-node');
