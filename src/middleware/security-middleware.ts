@@ -384,6 +384,9 @@ function validateCORS(request: NextRequest): { valid: boolean; headers?: Record<
  * Main API security middleware
  */
 export async function apiSecurityMiddleware(request: NextRequest): Promise<NextResponse | null> {
+  // Load security modules if not already loaded
+  await loadSecurityModules();
+
   // Skip security middleware in test environment or when bypass is enabled
   if (isTestEnvironment || _bypassSecurityChecks) {
     return null;
