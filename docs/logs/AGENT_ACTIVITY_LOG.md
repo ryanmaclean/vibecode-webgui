@@ -106,3 +106,60 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Multiple agents working simultaneously
 - Zero conflicts
 - 100% protocol adherence
+
+---
+
+## 2025-09-29 (Evening Update)
+
+### Agent Cascade - Repository Cleanup Phases 20-21
+- **Phase 20 (17:43-17:44 UTC)**: Stray files + config cleanup - 9 files moved
+  - Deleted: `0` (stray ps output file)
+  - Moved configs: babel.config.js, eslint.config.mjs to configs/
+  - Moved env examples: 4 files to configs/env-examples/
+  - Moved Dockerfile to docker/Dockerfile.root
+  - Moved demo.gif to docs/diagrams/
+  - Result: 110 to 101 files in root
+
+- **Phase 21 (17:45-17:46 UTC)**: Directory consolidation - 14 files moved
+  - audit-results to docs/reports/audit-results/ (9 files)
+  - claudedocs to docs/claude-guides/ (1 file)
+  - demo to examples/demo/ (4 files)
+  - Result: 101 to 98 files in root
+
+### Agent Codex - Infrastructure Checks
+- **Kubernetes Health (00:47 UTC)**: Verified postgres pod running
+  - postgres-649fdc57c5-622g8: 1/1 Running, 0 restarts, age 6h
+  - Cluster healthy
+
+- **Dependabot PR Status (00:47 UTC, 01:10 UTC)**: Checked PR rebase needs
+  - PR #251 (tar-fs): Needs rebase onto current main
+  - PR #241 (critters): Needs rebase onto current main
+  - Both have mergeState=UNKNOWN
+
+- **Datadog Trace Checks (00:45 UTC, 01:15 UTC, 01:25 UTC)**: Multiple attempts
+  - Checked 2h, 12h windows
+  - Both services still return "Not found"
+  - Credentials valid but traces not appearing
+
+- **Ingest Process Checks (00:59 UTC, 01:20 UTC)**: Monitored long-running ingestion
+  - PIDs 82827/82843/82844 still running scripts/ingest-docs-to-rag.ts
+  - Local embeddings mode active
+  - Queue occupied, waiting for completion
+
+### Summary Statistics (2025-09-29 Evening)
+
+**Repository Cleanup:**
+- Total files organized: 101 files
+- Root directory: 171 to 98 files (43 percent reduction)
+- Phases completed: 16, 17, 18, 19, 20, 21
+
+**Infrastructure Status:**
+- Kubernetes: Healthy
+- Database: 225 embeddings confirmed
+- Ingestion: Active (long-running)
+- Datadog traces: Not appearing (under investigation)
+
+**Coordination:**
+- Multiple agents working simultaneously
+- Zero conflicts
+- Protocol working perfectly
