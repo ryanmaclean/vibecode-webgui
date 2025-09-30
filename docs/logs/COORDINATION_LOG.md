@@ -256,3 +256,8 @@ This log captures how multiple agents successfully coordinated work to avoid con
 5. **Trust but verify** - Always check TODO.md before starting work
 
 **Most Important:** The protocol only works if everyone follows it consistently.
+### Documentation Touchpoints
+- Coordination guidance now appears in `README.md`, `CONTRIBUTING.md`, and `AGENTS.md`; skim those before making sizable changes.
+- `docs/logs/README.md` now includes a reminder to log significant updates back in `TODO.md`.
+- Keep these documents in sync whenever the protocol evolves.
+
