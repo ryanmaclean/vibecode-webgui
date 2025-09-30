@@ -209,3 +209,16 @@ secrets/
 # Editor files
 *.sublime-*
 .atom/
+
+# MCP Server logs
+mcp-server.log
+*.mcp.log
+
+# Pydantic AI
+examples/pydantic-ai-cli-agent/workspace/
+examples/pydantic-ai-cli-agent/.env
+
+# Agent checkpoints
+.agent-state/
+*.checkpoint
+

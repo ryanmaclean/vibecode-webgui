@@ -11,7 +11,7 @@ declare global {
 export const getCurrentURL = () => {
   try {
     return window.location.href;
-  } catch (_error) {
+  } catch {
     return null;
   }
 };
@@ -19,7 +19,7 @@ export const getCurrentURL = () => {
 export const getBrowserVersion = () => {
   try {
     return window.navigator.userAgent;
-  } catch (_error) {
+  } catch {
     return null;
   }
 };
@@ -30,7 +30,7 @@ export const getBrowserVersion = () => {
 export const getPackageVersion = () => {
   try {
     return window.CODEIUM_REACT_CODE_VERSION ? window.CODEIUM_REACT_CODE_VERSION : null;
-  } catch (_error) {
+  } catch {
     return null;
   }
 };

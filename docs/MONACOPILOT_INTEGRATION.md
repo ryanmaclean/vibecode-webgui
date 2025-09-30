@@ -8,7 +8,7 @@ Monacopilot adds GitHub Copilot-style AI completions to Monaco Editor with suppo
 
 **Features:**
 - ✅ Compatible with Monaco Editor 0.52.2
-- ✅ Multiple AI providers (OpenAI, Gemini, OpenCode via OpenRouter, Claude Code)
+- ✅ Multiple AI providers (OpenAI, Gemini, Gemini CLI, OpenCode, Claude Code, Aider, GooseAI, Project4)
 - ✅ Real-time code suggestions
 - ✅ Context-aware completions
 - ✅ Easy integration
@@ -21,7 +21,7 @@ Add to your `.env.local`:
 
 ```bash
 # Choose your AI provider
-AI_COMPLETION_PROVIDER=openai   # openai | codex | gemini | opencode | claude
+AI_COMPLETION_PROVIDER=openai   # openai | codex | gemini | gemini-cli | opencode | claude | aider | goose | project4
 AI_COMPLETION_MODEL=gpt-4o-mini
 AI_COMPLETION_MAX_TOKENS=512
 AI_COMPLETION_TEMPERATURE=0.2
@@ -44,6 +44,18 @@ OPENROUTER_APP_TITLE=VibeCode WebGUI
 # Claude Code (provider: claude)
 CLAUDE_CODE_API_KEY=...
 CLAUDE_CODE_MODEL=claude-3.5-sonnet-20240620
+
+# Aider CLI (provider: aider)
+AIDER_API_KEY=...
+AIDER_MODEL=gpt-4o-mini
+
+# GooseAI (provider: goose)
+GOOSE_API_KEY=...
+GOOSE_MODEL=gpt-4o-mini
+
+# Project4 (provider: project4)
+PROJECT4_API_KEY=...
+PROJECT4_MODEL=gpt-4o-mini
 ```
 
 ### 2. Frontend Integration
@@ -115,6 +127,34 @@ OPENROUTER_APP_TITLE=VibeCode WebGUI
 AI_COMPLETION_PROVIDER=claude
 CLAUDE_CODE_API_KEY=...
 CLAUDE_CODE_MODEL=claude-3.5-sonnet-20240620
+```
+
+### Gemini CLI
+```bash
+AI_COMPLETION_PROVIDER=gemini-cli
+GEMINI_CLI_API_KEY=...
+GEMINI_CLI_MODEL=gemini-1.5-pro-latest
+```
+
+### Aider CLI
+```bash
+AI_COMPLETION_PROVIDER=aider
+AIDER_API_KEY=...
+AIDER_MODEL=gpt-4o-mini
+```
+
+### GooseAI
+```bash
+AI_COMPLETION_PROVIDER=goose
+GOOSE_API_KEY=...
+GOOSE_MODEL=gpt-4o-mini
+```
+
+### Project4
+```bash
+AI_COMPLETION_PROVIDER=project4
+PROJECT4_API_KEY=...
+PROJECT4_MODEL=gpt-4o-mini
 ```
 
 ## Advanced Configuration
