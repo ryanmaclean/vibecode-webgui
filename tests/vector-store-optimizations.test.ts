@@ -44,11 +44,12 @@ jest.mock('../src/lib/mlflow/mlflow-client', () => ({
 import { EnhancedVectorStore } from '../src/lib/vector-stores/enhanced-vector-store'
 import { VectorQueryCache } from '../src/lib/vector-stores/query-cache'
 import { getMetricsCollector } from '../src/lib/db/database-metrics'
+import type { MetricsCollector } from '../src/lib/db/database-metrics'
 
 describe('Enhanced Vector Store Optimizations', () => {
   let vectorStore: EnhancedVectorStore
   let queryCache: VectorQueryCache
-  let metricsCollector: any
+  let metricsCollector: MetricsCollector
 
   beforeEach(() => {
     vectorStore = new EnhancedVectorStore()
@@ -181,14 +182,16 @@ describe('Enhanced Vector Store Optimizations', () => {
 
     test('should track provider switching', () => {
       const initialMetrics = metricsCollector.getVectorMetrics()
-      const initialSwitches = initialMetrics.providerSwitchRate
+      const initialSwitchRate = initialMetrics.providerSwitchRate
       
       // Record provider switch
+      metricsCollector.recordVectorSearch('pgvector', 120, 7, false)
       metricsCollector.recordProviderSwitch('pgvector', 'weaviate')
       
       const updatedMetrics = metricsCollector.getVectorMetrics()
       // Switch rate should be calculated based on total searches
       expect(typeof updatedMetrics.providerSwitchRate).toBe('number')
+      expect(updatedMetrics.providerSwitchRate).toBeGreaterThanOrEqual(initialSwitchRate)
     })
 
     test('should track vector storage operations', () => {

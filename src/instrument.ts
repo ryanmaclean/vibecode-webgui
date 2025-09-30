@@ -47,9 +47,13 @@ function getTracer() {
     
     // Only import monitoring modules if not in Docker build
     let initializeOpenTelemetry, getServiceEnvVersion, getDatadogSite;
-    
+   
     try {
-      const opentelemetryModule = require('./lib/monitoring/opentelemetry');
+      const otelModulePath = process.env.NODE_ENV === 'production'
+        ? './lib/monitoring/opentelemetry'
+        : './lib/monitoring/opentelemetry.stub'
+
+      const opentelemetryModule = require(otelModulePath);
       initializeOpenTelemetry = opentelemetryModule.initializeOpenTelemetry;
     } catch (e) {
       console.log('⚠️ OpenTelemetry module not available');
