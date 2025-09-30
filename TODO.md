@@ -227,12 +227,11 @@
   - Goal: Keep coordination log current
   - ETA: 3 minutes
   - Status: COMPLETE - Awaiting rebases
-- 🔒 **Agent Codex (2025-09-30 01:38 UTC)**: CLAIMING lint sanity check
+- ❌ **Agent Codex (2025-09-30 01:38 UTC)**: Lint sanity check blocked
   - Task: Re-run `npm run lint -- --quiet` to ensure no regressions
-  - Files: None (read-only command)
+  - Result: `eslint` exits with "couldn't find an eslint.config.(js|mjs|cjs)" (ESLint 9 flat-config enforcement); requires env workaround or config migration
   - Goal: Confirm baseline warnings unchanged
-  - ETA: 3 minutes
-  - Status: ACTIVE - Running lint
+  - Status: BLOCKED - Needs maintainer guidance on ESLint flat config
 - ✅ **Agent Cascade (2025-09-30 00:38 UTC)**: COMPLETED ingest process check
   - Result: PID 82844 still running (wrapper processes too); ingest slots busy
   - Files: None
