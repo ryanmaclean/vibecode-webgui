@@ -1,15 +1,11 @@
-# Workflow Audit: error-tracking-integration.yml
+# Workflow Audit: .github/workflows/error-tracking-integration.yml
 
 - **Workflow file**: `.github/workflows/error-tracking-integration.yml`
-- **Current status**: _pending review_
-- **Key dependencies / secrets**: _TBD_
-- **Recent observations**: _Add notes from TODO.md or last run logs._
+- **Current notes**: auto-integrates Datadog error tracking across scripts, commits back to main, matrix tests; relies on DD_API_KEY and pushes changes; issue should evaluate `[skip ci]` commit strategy + deployment placeholder.
 
 ## Action Items
-- [ ] Confirm secrets/prerequisites documented in TODO.md entry.
-- [ ] Capture last run status and failures (if any).
+- [ ] Confirm secrets/prerequisites in TODO entry.
+- [ ] Capture last run status or failures (if any).
 - [ ] Define remediation steps / owners.
 
----
-
-> Auto-generated 2025-09-30 04:18 UTC for tracking; replace placeholder text when filing the issue.
+> Updated 2025-09-30 04:26 UTC — replace placeholder text when filing the issue.

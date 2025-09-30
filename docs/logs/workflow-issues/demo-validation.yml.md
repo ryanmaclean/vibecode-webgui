@@ -1,15 +1,12 @@
-# Workflow Audit: demo-validation.yml
+# Workflow Audit: .github/workflows/demo-validation.yml
 
 - **Workflow file**: `.github/workflows/demo-validation.yml`
-- **Current status**: _pending review_
-- **Key dependencies / secrets**: _TBD_
-- **Recent observations**: _Add notes from TODO.md or last run logs._
+- **Tracking issue**: #390
+- **Current notes**: Go/KinD demo build, shell lint, README checks; relies on Make targets, shellcheck (non-blocking), optional infra; issue to capture flakiness in script timeouts and KinD setup.
 
 ## Action Items
-- [ ] Confirm secrets/prerequisites documented in TODO.md entry.
-- [ ] Capture last run status and failures (if any).
+- [ ] Confirm secrets/prerequisites in TODO entry.
+- [ ] Capture last run status or failures (if any).
 - [ ] Define remediation steps / owners.
 
----
-
-> Auto-generated 2025-09-30 04:18 UTC for tracking; replace placeholder text when filing the issue.
+> Updated 2025-09-30 04:26 UTC — replace placeholder text when filing the issue.
