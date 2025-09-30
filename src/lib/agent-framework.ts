@@ -460,6 +460,177 @@ export const BUILT_IN_WORKFLOWS = {
 
 export type WorkflowType = keyof typeof BUILT_IN_WORKFLOWS
 
+// ReAct Pattern Integration
+import { ReActAgent } from './agent-framework/react-agent'
+import { ReasoningEngine } from './agent-framework/reasoning-engine'
+import { ObservationTracker } from './agent-framework/observation-tracker'
+
+// Enhanced AgentCoordinator with ReAct capabilities
+export class ReActAgentCoordinator extends AgentCoordinator {
+  private reasoningEngine: ReasoningEngine
+  private observationTracker: ObservationTracker
+
+  constructor(aiClient: UnifiedAIClient) {
+    super(aiClient)
+    this.reasoningEngine = new ReasoningEngine(aiClient)
+    this.observationTracker = new ObservationTracker(aiClient)
+    this.initializeReActAgents()
+  }
+
+  private initializeReActAgents(): void {
+    // Create ReAct version of code analysis agent
+    const reActCodeAgent = new ReActAgent(
+      'react-code-analyzer',
+      'ReAct Code Analysis Agent',
+      'Expert at analyzing code using systematic thinking and observation',
+      this.defaultAIClient,
+      'gpt-4',
+      15 // max steps for complex code analysis
+    )
+
+    reActCodeAgent.addCapability({
+      name: 'analyze-codebase',
+      description: 'Systematically analyze codebase structure and patterns',
+      parameters: { workspaceId: 'string' },
+      execute: async (input, context) => {
+        // Use vector search with ReAct pattern
+        const codeContext = await vectorStore.getContext(
+          'code structure dependencies patterns',
+          parseInt(context.workspaceId, 10),
+          5000,
+          0.6
+        )
+        
+        // Record observation for learning
+        this.observationTracker.addObservation(
+          'action_result',
+          { codeContext, workspaceId: context.workspaceId },
+          'analyze-codebase',
+          0.9
+        )
+        
+        return { analysis: codeContext, type: 'codebase-analysis' }
+      }
+    })
+
+    // Register ReAct agent
+    this.registerAgent(reActCodeAgent)
+    console.log('✅ ReAct agents initialized and registered')
+  }
+
+  /**
+   * Execute a goal using ReAct methodology with enhanced reasoning and observation
+   */
+  async executeReActGoal(
+    goal: string,
+    context: AgentContext,
+    useReActAgent: boolean = true
+  ): Promise<any> {
+    if (useReActAgent) {
+      // Find the best ReAct agent for this goal
+      const reActAgent = this.findBestReActAgent(goal)
+      if (reActAgent) {
+        const task: AgentTask = {
+          id: `react-${Date.now()}`,
+          description: goal,
+          priority: 'high',
+          capabilities: reActAgent.getCapabilities(),
+          status: 'pending'
+        }
+
+        return await reActAgent.executeReActTask(task, context)
+      }
+    }
+
+    // Fallback to standard execution
+    return await this.executeGoal(goal, context)
+  }
+
+  /**
+   * Get reasoning insights for current session
+   */
+  async getReasoningInsights(): Promise<{
+    hypotheses: any[]
+    patterns: any[]
+    observations: any[]
+    recommendations: any[]
+  }> {
+    const [patterns, summary] = await Promise.all([
+      this.observationTracker.analyzeObservations(),
+      this.observationTracker.getSummaryAndRecommendations()
+    ])
+
+    return {
+      hypotheses: this.reasoningEngine.getHypotheses(),
+      patterns: this.observationTracker.getLearningPatterns(),
+      observations: this.observationTracker.getRecentObservations(10),
+      recommendations: summary.recommendations
+    }
+  }
+
+  /**
+   * Reset reasoning state for new session
+   */
+  resetReActState(): void {
+    this.reasoningEngine.reset()
+    this.observationTracker.reset()
+  }
+
+  private findBestReActAgent(goal: string): ReActAgent | null {
+    const agents = Array.from(this.agents.values())
+    const reActAgents = agents.filter(agent => agent instanceof ReActAgent)
+    
+    if (reActAgents.length === 0) return null
+
+    // Simple matching based on goal keywords
+    const goalLower = goal.toLowerCase()
+    
+    if (goalLower.includes('code') || goalLower.includes('analyze')) {
+      return reActAgents.find(agent => 
+        // @ts-expect-error - Accessing private property for internal use
+        agent.id === 'react-code-analyzer'
+      ) as ReActAgent || null
+    }
+
+    // Return first ReAct agent as default
+    return reActAgents[0] as ReActAgent
+  }
+}
+
+// Factory function for creating ReAct-enabled coordinator  
+export function createReActAgentCoordinator(userApiKeys: any = {}): ReActAgentCoordinator {
+  const aiClient = new UnifiedAIClient(userApiKeys)
+  return new ReActAgentCoordinator(aiClient)
+}
+
+// Export ReAct pattern components
+export { ReActAgent } from './agent-framework/react-agent'
+export { ReasoningEngine } from './agent-framework/reasoning-engine' 
+export { ObservationTracker } from './agent-framework/observation-tracker'
+
+export type {
+  ReActStep,
+  ReActState, 
+  ReActObservation
+} from './agent-framework/react-agent'
+
+export type {
+  ReasoningHypothesis,
+  ReasoningBranch,
+  ReasoningContext
+} from './agent-framework/reasoning-engine'
+
+export type {
+  Observation,
+  StateSnapshot,
+  LearningPattern,
+  StateTransition
+} from './agent-framework/observation-tracker'
+
 // Export default instance for immediate use
 const defaultCoordinator = createVibeCodeAgentCoordinator()
 export { defaultCoordinator as agentCoordinator }
+
+// Export default ReAct coordinator instance
+const defaultReActCoordinator = createReActAgentCoordinator()
+export { defaultReActCoordinator as reActAgentCoordinator }
