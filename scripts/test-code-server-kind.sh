@@ -1,24 +1,36 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 1. Build minimal Monaco 0.53 code-server image
-if ! docker image inspect vibecode/code-server:monaco053 >/dev/null 2>&1; then
-  echo "ℹ️  Building vibecode/code-server:monaco053"
-  docker build -t vibecode/code-server:monaco053 -f docker/code-server/Dockerfile.kind .
+CLUSTER_NAME=${KIND_CLUSTER_NAME:-vibecode-test}
+NAMESPACE=vibecode-platform
+SERVICE=code-server-kind
+IMAGE=vibecode/code-server:monaco053
+
+echo "==> Building local code-server image (Monaco 0.53)"
+if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  docker build -t "$IMAGE" -f docker/code-server/Dockerfile.kind .
 fi
 
-# 2. Load image into the KinD cluster
-kind load docker-image vibecode/code-server:monaco053 --name vibecode-test
+echo "==> Loading image into KinD cluster $CLUSTER_NAME"
+kind load docker-image "$IMAGE" --name "$CLUSTER_NAME"
 
-# 3. Apply the KinD manifest
-kubectl apply -f k8s/code-server-kind.yaml
+echo "==> Applying k8s manifest"
+kubectl apply -f k8s/code-server-kind.yaml >/dev/null
 
-# 4. Wait for deployment to roll out
-kubectl rollout status deployment/code-server-kind -n vibecode-platform --timeout=120s
+echo "==> Waiting for rollout"
+kubectl rollout status deployment/$SERVICE -n "$NAMESPACE" --timeout=120s >/dev/null
 
-# 5. Port-forward and curl the editor
-kubectl port-forward svc/code-server-kind -n vibecode-platform 3100:8080 >/tmp/code-server-kind-port-forward.log 2>&1 &
+echo "==> Port-forward check"
+kubectl port-forward svc/$SERVICE -n "$NAMESPACE" 3100:8080 >/tmp/code-server-portforward.log 2>&1 &
 PF_PID=$!
-trap "kill $PF_PID" EXIT
+trap 'kill $PF_PID >/dev/null 2>&1 || true' EXIT
 sleep 3
 curl -sI http://localhost:3100 | head -n 1
+
+kill $PF_PID >/dev/null 2>&1 || true
+
+echo "==> NodePort check"
+CONTROL_PLANE_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CLUSTER_NAME}-control-plane)
+curl -sI http://$CONTROL_PLANE_IP:31080 | head -n 1
+
+echo "✅ code-server reachable via port-forward and NodePort"

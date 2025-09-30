@@ -79,6 +79,22 @@ This log captures how multiple agents successfully coordinated work to avoid con
 
 ---
 
+### 2025-09-30: Codeium Playground Smoke Test
+
+**Context:** `/tools/codeium` should stay in sync with our monacopilot wiring, but the page requires signing in via the app router. To avoid stepping on each other during validation, we follow the same quick procedure.
+
+**Steps:**
+1. **Start dev server (with stubs active):** ensure `NODE_ENV=development` and run `npm run dev -- --port 4020 --hostname 127.0.0.1` (dd-trace/OpenTelemetry stubs auto-load in dev).
+2. **Open playground:** visit `http://127.0.0.1:4020/tools/codeium`; you’ll be redirected to `/auth/signin?callbackUrl=%2Ftools%2Fcodeium` unless already authenticated. Sign in with a fixture account, then the playground renders.
+3. **Exercise Monaco:** pick a language, start typing (e.g., `function greet`), confirm inline Codeium suggestions appear, and accept with `Tab`.
+4. **Record outcome:** note successes or issues in TODO.md so other agents know whether the sandbox is healthy or requires follow-up.
+
+**Tip:** If the dev server still complains about observability packages, double-check the `next.config.js` aliases and that you’re running in dev (stubs only apply there).
+
+**Key Learning:** Minimal stubs keep the playground testable without disabling production observability.
+
+---
+
 ### 2025-09-29: Blocked Task Handling
 
 **Scenario:** Agent Cascade encountered blocked task (RAG demo)
