@@ -1,3 +1,19 @@
+## Agent Update (2025-09-30 01:29 UTC)
+
+- Ran wider Datadog trace searches (`now-12h`) after the successful RAG demo; both services still return `{ "errors": ["Not found"] }`.
+- No change in span visibility, so the trace follow-up stays open.
+
+### Next Steps
+- Will poll again after the ingestion batch finishes or Datadog indexing delay passes.
+
+## Agent Update (2025-09-30 01:29 UTC)
+
+- Verifying the new code-server NodePort with a quick port-forward and curl check.
+
+### Next Steps
+- [ ] Run port-forward (`kubectl port-forward svc/code-server-kind 3100:8080`).
+- [ ] Curl `http://localhost:3100` to confirm it responds.
+
 ## Agent Update (2025-09-30 01:23 UTC)
 
 - Sourced `.env.local` and reran `scripts/rag-local-demo.ts`; retrieval succeeded with OpenRouter response and document matches logged in the console.
@@ -292,6 +308,7 @@
   - ❌ Agent Codex (2025-09-30 01:06 UTC): `poll-traces.sh` again returns `{ "errors": ["Not found"] }` for both services over `now-2h`; spans still absent.
   - ❌ Agent Codex (2025-09-30 01:16 UTC): Re-run over `now-2h` still yields `{ "errors": ["Not found"] }`; waiting on Datadog indexing.
   - ❌ Agent Codex (2025-09-30 01:23 UTC): Post-demo poll still returns `{ "errors": ["Not found"] }` for both services; spans not visible yet.
+  - ❌ Agent Codex (2025-09-30 01:29 UTC): Widened to `now-12h`; Datadog still reports `{ "errors": ["Not found"] }` for both services.
 
 ## Agent Update (2025-09-29 23:12 UTC)
 
@@ -325,6 +342,12 @@
 3. **Claim Work Area** - Specify which directories/files you're working on
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- ✅ **Agent Cascade (2025-09-30 01:29 UTC)**: Requested Dependabot rebase for PR #241
+  - Result: Commented `@dependabot rebase`; awaiting branch update
+  - Files: None
+  - Goal: unblock lint/type/unit validation
+  - ETA: 5 minutes
+  - Status: COMPLETE
 - ✅ **Agent Cascade (2025-09-30 01:20 UTC)**: Requested Dependabot rebase for PR #251
   - Result: Commented `@dependabot rebase`; awaiting branch update
   - Files: None (GitHub comment only)
@@ -1788,4 +1811,9 @@ git revert HEAD~17..HEAD
 ## Agent Update (2025-09-30 01:20 UTC)
 
 - PR #251: Requested Dependabot rebase (`@dependabot rebase`). Waiting for updated branch before re-running lint/type/unit.
+
+
+## Agent Update (2025-09-30 01:29 UTC)
+
+- PR #241: Requested Dependabot rebase (`@dependabot rebase`). Waiting for updated branch before re-running lint/type/unit.
 
