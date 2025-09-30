@@ -153,8 +153,8 @@ export class MultimodalAgent {
 
   constructor(config: {
     openRouterKey: string;
-    datadogConfig?: any;
-    voiceConfig?: any;
+    datadogConfig?: Record<string, unknown>;
+    voiceConfig?: Record<string, unknown>;
   }) {
     this.openRouter = new OpenRouter(config.openRouterKey);
     this.voiceProcessor = new VoiceProcessor(config.voiceConfig);
@@ -276,7 +276,7 @@ export class MultimodalAgent {
    * Process different input modalities
    */
   private async processInputModalities(input: MultimodalInput) {
-    const processed: any = {};
+    const processed: Record<string, unknown> = {};
 
     // Process voice input
     if (input.audio) {
@@ -309,7 +309,7 @@ export class MultimodalAgent {
   /**
    * Generate contextual prompt based on all processed inputs
    */
-  private async generateContextualPrompt(processedInput: any, context?: AgentContext): Promise<string> {
+  private async generateContextualPrompt(processedInput: Record<string, unknown>, context?: AgentContext): Promise<string> {
     let prompt = `You are VibeCode AI, an expert multimodal coding assistant. `;
 
     // Add context from previous messages
@@ -437,7 +437,7 @@ Be encouraging, technically accurate, and provide working code examples.`;
   /**
    * Enhance AI response with additional processing
    */
-  private async enhanceResponse(aiResponse: any, input: MultimodalInput) {
+  private async enhanceResponse(aiResponse: Record<string, unknown>, input: MultimodalInput) {
     const enhanced = { ...aiResponse };
 
     // Extract and validate code blocks
@@ -462,8 +462,8 @@ Be encouraging, technically accurate, and provide working code examples.`;
   /**
    * Generate multimodal outputs
    */
-  private async generateMultimodalOutput(response: any, input: MultimodalInput) {
-    const output: any = {};
+  private async generateMultimodalOutput(response: Record<string, unknown>, input: MultimodalInput) {
+    const output: Record<string, unknown> = {};
 
     // Generate voice output if requested
     if (input.voice?.enabled) {
@@ -619,7 +619,7 @@ Be encouraging, technically accurate, and provide working code examples.`;
   /**
    * Generate file changes based on response
    */
-  private async generateFileChanges(response: any, input: MultimodalInput): Promise<FileChange[]> {
+  private async generateFileChanges(response: Record<string, unknown>, input: MultimodalInput): Promise<FileChange[]> {
     const changes: FileChange[] = [];
 
     // Extract code blocks and suggest file structure
@@ -682,7 +682,7 @@ Be encouraging, technically accurate, and provide working code examples.`;
   /**
    * Calculate response confidence
    */
-  private calculateConfidence(response: any): number {
+  private calculateConfidence(response: Record<string, unknown>): number {
     let confidence = 0.7; // Base confidence
 
     // Increase confidence for code blocks
@@ -739,7 +739,7 @@ Be encouraging, technically accurate, and provide working code examples.`;
   /**
    * Log agent activity for Datadog monitoring
    */
-  private logAgentActivity(event: string, data: any) {
+  private logAgentActivity(event: string, data: Record<string, unknown>) {
     const logData = {
       '@timestamp': new Date().toISOString(),
       service: 'vibecode-webgui',
@@ -763,7 +763,7 @@ Be encouraging, technically accurate, and provide working code examples.`;
  * Voice Processing Component
  */
 class VoiceProcessor {
-  constructor(private config: any = {}) {}
+  constructor(private config: Record<string, unknown> = {}) {}
 
   async transcribe(audio: Blob | File): Promise<string> {
     // Mock transcription for now - would integrate with Whisper API or similar
@@ -781,7 +781,7 @@ class VoiceProcessor {
     return 'general';
   }
 
-  async generateSpeech(text: string, voiceSettings: any): Promise<string> {
+  async generateSpeech(text: string, voiceSettings: Record<string, unknown>): Promise<string> {
     // Mock speech generation - would integrate with ElevenLabs or similar
     return 'data:audio/mp3;base64,mock-audio-data';
   }
@@ -815,7 +815,7 @@ class VisionAnalyzer {
  * Code Generation Component
  */
 class CodeGenerator {
-  async validateCode(codeBlocks: any[]): Promise<any> {
+  async validateCode(codeBlocks: Array<Record<string, unknown>>): Promise<Record<string, unknown>> {
     // Mock code validation
     return {
       valid: true,
@@ -824,7 +824,7 @@ class CodeGenerator {
     };
   }
 
-  async processCodeBlocks(codeBlocks: any[]): Promise<GeneratedCode> {
+  async processCodeBlocks(codeBlocks: Array<Record<string, unknown>>): Promise<GeneratedCode> {
     return {
       language: 'typescript',
       framework: 'react',
