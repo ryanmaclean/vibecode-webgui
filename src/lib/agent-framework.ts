@@ -8,8 +8,8 @@ import { vectorStore } from './vector-store'
 export interface AgentCapability {
   name: string
   description: string
-  parameters: Record<string, any>
-  execute: (input: any, context: AgentContext) => Promise<any>
+  parameters: Record<string, unknown>
+  execute: (input: unknown, context: AgentContext) => Promise<unknown>
 }
 
 export interface AgentContext {
@@ -17,7 +17,7 @@ export interface AgentContext {
   userId: string
   sessionId: string
   aiClient: UnifiedAIClient
-  previousResults: Map<string, any>
+  previousResults: Map<string, unknown>
   maxSteps: number
   currentStep: number
 }
@@ -30,7 +30,7 @@ export interface AgentTask {
   dependencies?: string[]
   capabilities: string[]
   status: 'pending' | 'running' | 'completed' | 'failed'
-  result?: any
+  result?: unknown
   error?: string
 }
 
@@ -72,7 +72,7 @@ export class Agent {
     return Array.from(this.capabilities.keys())
   }
 
-  async executeTask(task: AgentTask, context: AgentContext): Promise<any> {
+  async executeTask(task: AgentTask, context: AgentContext): Promise<unknown> {
     console.log(`Agent ${this.name} executing task: ${task.description}`)
     
     try {
@@ -259,7 +259,7 @@ Respond in JSON format with the following structure:
     
     try {
       const planData = JSON.parse(response.content)
-      const tasks: AgentTask[] = planData.tasks.map((t: any) => ({
+      const tasks: AgentTask[] = planData.tasks.map((t: Record<string, unknown>) => ({
         ...t,
         status: 'pending' as const
       }))
@@ -275,7 +275,7 @@ Respond in JSON format with the following structure:
     }
   }
 
-  async executePlan(plan: AgentPlan, context: AgentContext): Promise<Map<string, any>> {
+  async executePlan(plan: AgentPlan, context: AgentContext): Promise<Map<string, unknown>> {
     const workflow = new AgentWorkflow(plan, this.agents, context)
     this.activeWorkflows.set(context.sessionId, workflow)
     
@@ -289,7 +289,7 @@ Respond in JSON format with the following structure:
     }
   }
 
-  async executeGoal(goal: string, context: AgentContext): Promise<Map<string, any>> {
+  async executeGoal(goal: string, context: AgentContext): Promise<Map<string, unknown>> {
     const plan = await this.createPlan(goal, context)
     return await this.executePlan(plan, context)
   }
@@ -298,17 +298,28 @@ Respond in JSON format with the following structure:
     return Array.from(this.activeWorkflows.keys())
   }
 
-  getWorkflowStatus(sessionId: string): any {
+  getWorkflowStatus(sessionId: string): WorkflowStatus | null {
     const workflow = this.activeWorkflows.get(sessionId)
     return workflow ? workflow.getStatus() : null
   }
+}
+
+export interface WorkflowStatus {
+  goal: string
+  totalTasks: number
+  completed: number
+  failed: number
+  running: number
+  progress: number
+  currentStep: number
+  estimatedTimeRemaining: number
 }
 
 export class AgentWorkflow {
   private plan: AgentPlan
   private agents: Map<string, Agent>
   private context: AgentContext
-  private results: Map<string, any> = new Map()
+  private results: Map<string, unknown> = new Map()
   private currentTaskIndex: number = 0
 
   constructor(plan: AgentPlan, agents: Map<string, Agent>, context: AgentContext) {
@@ -317,7 +328,7 @@ export class AgentWorkflow {
     this.context = context
   }
 
-  async execute(): Promise<Map<string, any>> {
+  async execute(): Promise<Map<string, unknown>> {
     console.log(`Executing workflow for goal: ${this.plan.goal}`)
     
     // Sort tasks by dependencies and priority
@@ -415,7 +426,7 @@ export class AgentWorkflow {
     return sorted
   }
 
-  getStatus(): any {
+  getStatus(): WorkflowStatus {
     const completedTasks = this.plan.tasks.filter(t => t.status === 'completed').length
     const failedTasks = this.plan.tasks.filter(t => t.status === 'failed').length
     const runningTasks = this.plan.tasks.filter(t => t.status === 'running').length
@@ -434,7 +445,7 @@ export class AgentWorkflow {
 }
 
 // Factory function to create agent coordinator with VibeCode configuration
-export function createVibeCodeAgentCoordinator(userApiKeys: any = {}): AgentCoordinator {
+export function createVibeCodeAgentCoordinator(userApiKeys: Record<string, string> = {}): AgentCoordinator {
   const aiClient = new UnifiedAIClient(userApiKeys)
   return new AgentCoordinator(aiClient)
 }
