@@ -8,10 +8,10 @@ describe('Monaco Editor and Monacopilot Compatibility', () => {
     expect(packageJson.dependencies['monaco-editor']).toBeDefined();
   });
 
-  it('should have monaco-editor version 0.52.x', () => {
+  it('should have monaco-editor version 0.53.x (latest stable)', () => {
     const packageJson = require('../../package.json');
     const version = packageJson.dependencies['monaco-editor'];
-    expect(version).toMatch(/0\.52\./);
+    expect(version).toMatch(/0\.53\./);
   });
 
   it('should have monacopilot installed', () => {
