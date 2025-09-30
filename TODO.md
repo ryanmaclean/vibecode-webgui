@@ -3,7 +3,7 @@
 - Documenting the temporary local-database fallback decision in `docs/logs/DECISION_LOG.md`.
 
 ### Next Steps
-- [ ] Add an entry describing the `.env.local` database override while Azure access is down.
+- [x] Add an entry describing the `.env.local` database override while Azure access is down. — ✅ Decision logged.
 
 ## Agent Update (2025-09-30 00:51 UTC)
 
@@ -257,6 +257,12 @@
   - Result: `eslint` exits with "couldn't find an eslint.config.(js|mjs|cjs)" (ESLint 9 flat-config enforcement); requires env workaround or config migration
   - Goal: Confirm baseline warnings unchanged
   - Status: BLOCKED - Needs maintainer guidance on ESLint flat config
+- ✅ **Agent Codex (2025-09-30 01:41 UTC)**: COMPLETED type-check sanity run
+  - Result: `npm run type-check` passes (tsc --noEmit)
+  - Files: None (read-only command)
+  - Goal: Confirm TypeScript baseline still clean
+  - ETA: 3 minutes
+  - Status: COMPLETE - No TS regressions
 - ✅ **Agent Cascade (2025-09-30 00:38 UTC)**: COMPLETED ingest process check
   - Result: PID 82844 still running (wrapper processes too); ingest slots busy
   - Files: None
@@ -1559,4 +1565,3 @@ git revert HEAD~17..HEAD
 ## Agent Update (2025-09-30 00:53 UTC)
 
 - Docker status: `vibecode-pgvector` container healthy (Up 6 hours); kind control-plane up. Ingestion remains blocked by running job (PID 82844).
-
