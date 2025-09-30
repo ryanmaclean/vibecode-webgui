@@ -1,3 +1,10 @@
+## Agent Update (2025-09-30 14:55 UTC)
+
+- Reviewing existing workflow issues (#355-#395) to ensure they're created and contain the right details.
+
+### Next Steps
+- [ ] Once GitHub API access (token) is available, pull status for issues #355–#395 and update TODO/workflow docs accordingly.
+
 ## Agent Update (2025-09-30 06:45 UTC)
 
 - Completed ESM migration for code-server and monitoring API routes
@@ -19,6 +26,23 @@
 ### Next Steps
 - [x] Create/update markdown summaries for each workflow listed above with owner, secrets, current status, and recommended actions. — Initial templates generated under docs/logs/workflow-issues/.
 - [x] Attach the file paths to the TODO entries once drafts exist. — Each bullet now references docs/logs/workflow-issues/*.md templates.
+
+## Agent Update (2025-09-30 05:07 UTC)
+
+- Split the file-sync WebSocket parser into `src/lib/file-sync/websocket.ts` and added unit coverage in `tests/unit/file-sync/parse-file-sync-message.test.ts` to guard the accepted payload shapes.
+
+### Next Steps
+- [ ] Resolve Jest ESM configuration (current run via `npm run test:unit` fails before hitting new tests) so the suite can execute reliably outside CI.
+- [ ] Expand file sync integration tests once the subscribe workflow is fully implemented.
+
+## Agent Update (2025-09-30 05:05 UTC)
+
+- Converted `src/middleware/__tests__/quota-middleware.test.ts` to use typed ESM imports and jest helpers, clearing the remaining `require()` usage and removing blanket `any` casts.
+- Introduced explicit WebSocket message parsing in `src/app/api/files/sync/route.ts`, replacing ad-hoc payload handling with a validated union that covers file updates, pings, and subscriptions.
+
+### Next Steps
+- [ ] Add focused unit tests around the new WebSocket message parser to lock in the contract once the client payloads stabilize.
+- [ ] Extend the file sync handler to honor `subscribe-file` requests (per-room broadcasts) after the protocol is finalized.
 
 ## Agent Update (2025-09-30 04:45 UTC)
 
@@ -52,10 +76,10 @@
 - Cataloging all CI/CD workflows so we can file tracking issues for each pipeline.
 
 ### Workflows Requiring Issues
-- [ ] .github/workflows/azure-appservice-deploy.yml — requires AZURE_* secrets, deploys ai-gateway via ACR push + App Service restart; needs issue to confirm secrets up to date and health probes cover 200s. (Tracking: #355) (notes: docs/logs/workflow-issues/azure-appservice-deploy.yml.md)
-- [ ] .github/workflows/azure-webgui-deploy.yml — builds root Dockerfile, pushes to same ACR, deploys App Service `${{ secrets.APP_NAME_WEBGUI }}`, smoke hits `/`; confirm env secrets + health path adequate. (Tracking: #356) (notes: docs/logs/workflow-issues/azure-webgui-deploy.yml.md)
+- [ ] .github/workflows/azure-appservice-deploy.yml — requires AZURE_* secrets, deploys ai-gateway via ACR push + App Service restart; needs issue to confirm secrets up to date and health probes cover 200s. (Tracking: #355 — secret gating added 2025-09-30; need credentials audit + smoke expansion) (Draft: docs/logs/workflow-issues/azure-appservice-deploy.md) (notes: docs/logs/workflow-issues/azure-appservice-deploy.yml.md)
+- [ ] .github/workflows/azure-webgui-deploy.yml — builds root Dockerfile, pushes to same ACR, deploys App Service `${{ secrets.APP_NAME_WEBGUI }}`, smoke hits `/`; confirm env secrets + health path adequate. (Tracking: #356 — secret gating added 2025-09-30; need smoke expansion + notifications) (Draft: docs/logs/workflow-issues/azure-webgui-deploy.md) (notes: docs/logs/workflow-issues/azure-webgui-deploy.yml.md)
 - [ ] .github/workflows/build-and-push-image.yml — GHCR build via Dockerfile.production with Buildx cache, Trivy SARIF upload, optional AKS Helm deploy (`AZURE_CREDENTIALS`, vars.AKS_*); issue should confirm secrets + helm chart alignment. (Tracking: #357 — cron/concurrency + secret gating added 2025-09-30; AKS deploy skipped when creds missing; need creds audit + issue filing) (notes: docs/logs/workflow-issues/build-and-push-image.yml.md)
-- [ ] .github/workflows/ci-simplified.yml — multi-job pipeline (secret validation, lint/audit, root tests w/ Postgres+Redis services, Datadog/LHCI optional); issue should capture missing secrets handling + continue-on-error follow-up. (Tracking: #361) (notes: docs/logs/workflow-issues/ci-simplified.yml.md)
+- [ ] .github/workflows/ci-simplified.yml — multi-job pipeline (secret validation, lint/audit, root tests w/ Postgres+Redis services, Datadog/LHCI optional); issue should capture missing secrets handling + continue-on-error follow-up. (Tracking: #361 — secret outputs added 2025-09-30; still need to consume outputs + remove unnecessary continue-on-error) (notes: docs/logs/workflow-issues/ci-simplified.yml.md)
 - [ ] .github/workflows/claude-code-review.yml — runs anthropic/claude-code-action@beta on PRs, needs `CLAUDE_CODE_OAUTH_TOKEN`; issue to confirm token scope + whether sticky comments/prompts should be customized. (Tracking: #363) (notes: docs/logs/workflow-issues/claude-code-review.yml.md)
 - [ ] .github/workflows/claude.yml — listens for @claude mentions across issues/PR comments, same `CLAUDE_CODE_OAUTH_TOKEN`, optional actions:read; issue should confirm rate limits, trigger phrases, and additional permissions setup. (Tracking: #364) (notes: docs/logs/workflow-issues/claude.yml.md)
 - [ ] .github/workflows/cost-monitor.yml — simple weekly cron echo; issue to decide if we replace with real usage metrics or disable once budget tooling arrives. (Tracking: #365) (notes: docs/logs/workflow-issues/cost-monitor.yml.md)
@@ -66,7 +90,7 @@
 - [ ] .github/workflows/dependency-compatibility.yml — matrix Node 18/20/22 compatibility checks w/ npm audit/build/type-check plus scheduled issue creation via npm-check-updates; ensure secrets not needed, but review GitHub issue spam controls. (Tracking: #369) (notes: docs/logs/workflow-issues/dependency-compatibility.yml.md)
 - [ ] .github/workflows/deploy-aks-monitoring.yml — manual AKS rollout incl. ingress, cert-manager, Datadog monitors; depends on AZURE_* secrets, Datadog keys, scripts/*.sh; issue should review manual inputs + skip_datadog flag coverage. (Tracking: #393) (notes: docs/logs/workflow-issues/deploy-aks-monitoring.yml.md)
 - [ ] .github/workflows/deploy-docs.yml — builds Astro docs by default, optional Next.js via workflow_dispatch; uses GitHub Pages permissions; issue should check cache paths and dual-system support + whether Next.js artifacts still needed. (Tracking: #394 — docs system auto-detected; weekly cron re-added 2025-09-30; need cache/reporting plan) (notes: docs/logs/workflow-issues/deploy-docs.yml.md)
-- [ ] .github/workflows/docs-automation.yml — multi-job docs validator (npm ci, lychee link check, auto-commit on main, TypeScript snippet lint); issue to review auto-push behavior and secret scanning sensitivity. (Tracking: #370 — triggers paused; draft: docs/logs/workflow-issues/docs-automation.md)
+- [ ] .github/workflows/docs-automation.yml — multi-job docs validator (npm ci, lychee link check, auto-commit on main, TypeScript snippet lint); issue to review auto-push behavior and secret scanning sensitivity. (Tracking: #370 — triggers/cron restored 2025-09-30 with artifact+PR flow; still need caching + skip annotations) (Draft: docs/logs/workflow-issues/docs-automation.md)
 - [ ] .github/workflows/docs-ci-cd.yml — full docs pipeline (security scan, Astro build, container push to ACR, optional deploy via KUBE_CONFIG, Datadog notifications); issue should confirm secrets coverage and whether duplicated with deploy-docs. (Tracking: #371 — triggers restored 2025-09-30 with secret gating; still need Azure/Datadog secret refresh + GitHub issue link) (notes: docs/logs/workflow-issues/docs-ci-cd.yml.md)
 - [ ] .github/workflows/error-tracking-integration.yml — auto-integrates Datadog error tracking across scripts, commits back to main, matrix tests; relies on DD_API_KEY and pushes changes; issue should evaluate `[skip ci]` commit strategy + deployment placeholder. (Tracking: #372 — PR trigger + secret gating restored 2025-09-30; workflow now opens PR via `peter-evans/create-pull-request` when `apply_changes=true`; awaiting Datadog secrets + alerting follow-up; draft: docs/logs/workflow-issues/error-tracking-integration.md)
 - [ ] .github/workflows/gitops-deployment.yml — full GitOps pipeline with Trivy/Snyk, build/push, optional force_deploy, uses Datadog CI visibility and pushes to GHCR; issue to confirm secret sprawl (DD, SNYK_TOKEN) and deployment steps alignment. (Tracking: #374 — concurrency + secret gating added 2025-09-30; Snyk/Datadog steps now skip when creds missing; still need registry/azure audit + issue link) (notes: docs/logs/workflow-issues/gitops-deployment.yml.md)

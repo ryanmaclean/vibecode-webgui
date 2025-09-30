@@ -19,16 +19,20 @@ let validateAIQuery: any = null;
 let aiRateLimiter: any = null;
 let AISecurityLogger: any = null;
 
-if (!isTestEnvironment) {
+async function loadSecurityModules() {
+  if (isTestEnvironment || getToken !== null) {
+    return;
+  }
+
   try {
-    const jwtModule = require('next-auth/jwt');
+    const jwtModule = await import('next-auth/jwt');
     getToken = jwtModule.getToken;
-    
-    const validatorModule = require('../lib/security/input-validator');
+
+    const validatorModule = await import('../lib/security/input-validator');
     validateAIQuery = validatorModule.validateAIQuery;
     aiRateLimiter = validatorModule.aiRateLimiter;
     AISecurityLogger = validatorModule.AISecurityLogger;
-  } catch (error) {
+  } catch (error: any) {
     console.warn('Security modules not available:', error.message);
   }
 }
