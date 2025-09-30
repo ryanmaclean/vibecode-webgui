@@ -28,7 +28,17 @@ const CURSOR_MARKER = '<cursor>'
 const SYSTEM_PROMPT =
   'You are an expert pair programmer. Return only the code to insert at the cursor with no additional commentary.'
 
-const AVAILABLE_PROVIDERS = ['openai', 'codex', 'gemini', 'opencode', 'claude']
+const AVAILABLE_PROVIDERS = [
+  'openai',
+  'codex',
+  'gemini',
+  'gemini-cli',
+  'opencode',
+  'claude',
+  'aider',
+  'goose',
+  'project4',
+]
 
 function ensureMetadata(body: CompletionRequestBody): CompletionMetadata {
   if (!body || typeof body !== 'object' || !body.completionMetadata) {
@@ -76,18 +86,30 @@ function buildUserPrompt(metadata: CompletionMetadata): string {
   return sections.join('\n\n')
 }
 
+type OpenAICompatOptions = {
+  apiKey?: string
+  baseURL?: string
+  modelFallback?: string
+  providerLabel?: string
+}
+
 async function callOpenAI(
   metadata: CompletionMetadata,
   provider: 'openai' | 'codex',
   modelOverride?: string,
+  options: OpenAICompatOptions = {},
 ): Promise<CompletionResult> {
-  const apiKey = process.env.OPENAI_API_KEY || process.env.CODEX_API_KEY
+  const defaultKey = provider === 'codex' ? process.env.CODEX_API_KEY : process.env.OPENAI_API_KEY
+  const apiKey = options.apiKey || defaultKey
+  const baseURL = options.baseURL || process.env.OPENAI_API_BASE
+  const label = options.providerLabel || (provider === 'codex' ? 'Codex' : 'OpenAI')
+
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY (or CODEX_API_KEY) is required for OpenAI/Codex providers')
+    throw new Error(`${label} API key is required for provider ${provider}`)
   }
 
-  const client = new OpenAI({ apiKey })
-  const model = modelOverride || DEFAULT_MODEL
+  const client = new OpenAI({ apiKey, baseURL })
+  const model = modelOverride || options.modelFallback || DEFAULT_MODEL
   const response = await client.responses.create({
     model,
     input: [
@@ -112,7 +134,8 @@ async function callGemini(metadata: CompletionMetadata, modelOverride?: string):
   }
 
   const model = modelOverride || process.env.GEMINI_MODEL || 'gemini-1.5-pro-latest'
-  const url = `${process.env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com/v1beta'}/models/${model}:generateContent?key=${apiKey}`
+  const base = process.env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com/v1beta'
+  const url = `${base}/models/${model}:generateContent?key=${apiKey}`
 
   const body = {
     contents: [
@@ -136,6 +159,50 @@ async function callGemini(metadata: CompletionMetadata, modelOverride?: string):
   if (!response.ok) {
     const errorBody = await safeJson(response)
     throw new Error(`Gemini request failed (${response.status}): ${JSON.stringify(errorBody)}`)
+  }
+
+  const data: any = await response.json()
+  const completion = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null
+
+  return {
+    completion,
+    raw: data,
+  }
+}
+
+async function callGeminiCli(metadata: CompletionMetadata, modelOverride?: string): Promise<CompletionResult> {
+  const apiKey =
+    process.env.GEMINI_CLI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
+  if (!apiKey) {
+    throw new Error('GEMINI_CLI_API_KEY (or GEMINI_API_KEY/GOOGLE_API_KEY) is required for gemini-cli provider')
+  }
+
+  const model = modelOverride || process.env.GEMINI_CLI_MODEL || process.env.GEMINI_MODEL || 'gemini-1.5-pro-latest'
+  const base = process.env.GEMINI_CLI_API_BASE || process.env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com/v1beta'
+  const url = `${base}/models/${model}:generateContent?key=${apiKey}`
+
+  const body = {
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: `${SYSTEM_PROMPT}\n\n${buildUserPrompt(metadata)}` }],
+      },
+    ],
+    generationConfig: {
+      temperature: Number(process.env.AI_COMPLETION_TEMPERATURE || '0.2'),
+      maxOutputTokens: Number(process.env.AI_COMPLETION_MAX_TOKENS || DEFAULT_MAX_TOKENS),
+    },
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+
+  if (!response.ok) {
+    const errorBody = await safeJson(response)
+    throw new Error(`Gemini CLI request failed (${response.status}): ${JSON.stringify(errorBody)}`)
   }
 
   const data: any = await response.json()
@@ -249,6 +316,35 @@ async function callClaude(metadata: CompletionMetadata, modelOverride?: string):
   }
 }
 
+async function callAider(metadata: CompletionMetadata, modelOverride?: string): Promise<CompletionResult> {
+  return callOpenAI(metadata, 'openai', modelOverride || process.env.AIDER_MODEL, {
+    apiKey: process.env.AIDER_API_KEY || process.env.OPENAI_API_KEY,
+    baseURL: process.env.AIDER_API_BASE || process.env.OPENAI_API_BASE,
+    modelFallback: process.env.AIDER_MODEL || DEFAULT_MODEL,
+    providerLabel: 'Aider',
+  })
+}
+
+async function callGoose(metadata: CompletionMetadata, modelOverride?: string): Promise<CompletionResult> {
+  const baseURL = process.env.GOOSE_API_BASE || 'https://api.goose.ai/v1'
+  return callOpenAI(metadata, 'openai', modelOverride || process.env.GOOSE_MODEL, {
+    apiKey: process.env.GOOSE_API_KEY || process.env.OPENAI_API_KEY,
+    baseURL,
+    modelFallback: process.env.GOOSE_MODEL || DEFAULT_MODEL,
+    providerLabel: 'GooseAI',
+  })
+}
+
+async function callProject4(metadata: CompletionMetadata, modelOverride?: string): Promise<CompletionResult> {
+  const baseURL = process.env.PROJECT4_API_BASE || 'https://api.project4.ai/v1'
+  return callOpenAI(metadata, 'openai', modelOverride || process.env.PROJECT4_MODEL, {
+    apiKey: process.env.PROJECT4_API_KEY || process.env.OPENAI_API_KEY,
+    baseURL,
+    modelFallback: process.env.PROJECT4_MODEL || DEFAULT_MODEL,
+    providerLabel: 'Project4',
+  })
+}
+
 async function safeJson(response: Response): Promise<unknown> {
   try {
     return await response.json()
@@ -269,10 +365,18 @@ async function generateCompletion(body: CompletionRequestBody): Promise<Completi
       return callOpenAI(metadata, 'codex', model || process.env.CODEX_MODEL || 'gpt-4o-mini')
     case 'gemini':
       return callGemini(metadata, model)
+    case 'gemini-cli':
+      return callGeminiCli(metadata, model)
     case 'opencode':
       return callOpenCode(metadata, model)
     case 'claude':
       return callClaude(metadata, model)
+    case 'aider':
+      return callAider(metadata, model)
+    case 'goose':
+      return callGoose(metadata, model)
+    case 'project4':
+      return callProject4(metadata, model)
     default:
       throw new Error(`Unsupported AI provider: ${provider}`)
   }
@@ -305,4 +409,3 @@ export async function GET() {
     providers: AVAILABLE_PROVIDERS,
   })
 }
-

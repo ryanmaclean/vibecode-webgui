@@ -266,3 +266,4 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - `curl -I http://localhost:3100` (expect 302) and `curl -sf http://localhost:3100/healthz` (expect 200)
 - `kubectl exec -n vibecode-platform deployment/code-server-kind -- sh -lc 'sudo apt-get update && sudo apt-get install -y neovim emacs-nox'`
 - Verify with `kubectl exec ... -- sh -lc 'vim --version | head -n 1'`, `nvim --version`, `emacs --version`
+- 2025-09-30 01:55 UTC — Extended /api/code-completion providers (Gemini CLI, Aider, GooseAI, Project4) and refreshed docs/env samples.
