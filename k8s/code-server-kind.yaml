@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-server-kind
+  namespace: vibecode-platform
+  labels:
+    app: code-server
+    tier: workspace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: code-server
+      tier: workspace
+  template:
+    metadata:
+      labels:
+        app: code-server
+        tier: workspace
+    spec:
+      containers:
+        - name: code-server
+          image: codercom/code-server:4.101.2
+          args:
+            - --bind-addr
+            - 0.0.0.0:8080
+            - --auth
+            - none
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /home/coder/project
+      volumes:
+        - name: workspace
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-server-kind
+  namespace: vibecode-platform
+spec:
+  type: NodePort
+  selector:
+    app: code-server
+    tier: workspace
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      nodePort: 31080
