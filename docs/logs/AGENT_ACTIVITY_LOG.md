@@ -182,7 +182,7 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Added `CodeiumPlayground` component that mounts Monaco via `@monaco-editor/react` and wires Codeium (monacopilot) completions.
 - Created `/tools/codeium` route with feature overview, usage tips, and quick links to the Codeium repo.
 - Lint remains blocked by the existing ESLint flat-config migration; recorded the failure in TODO.md and friction log.
-- Attempted to run `npm run dev`; even with the `dd-trace` stub alias, Next.js still errors because `@opentelemetry/*` pulls Node core modules (`stream`). Playground smoke test remains blocked pending a broader observability stub.
+- Added dev stubs for `dd-trace` and OpenTelemetry so `npm run dev` now serves `/tools/codeium` (redirects unsigned users to `/auth/signin?callbackUrl=%2Ftools%2Fcodeium`).
 ### Agent Codex - RAG Demo Trace (2025-09-30 01:20 UTC)
 - Ran `npx tsx -r dd-trace/init scripts/rag-local-demo.ts "List the Datadog environment variables tracked in the repository."`
 - PGVector top matches came from `docs:DATADOG_LOCAL_DEVELOPMENT` and `docs:ci-cd-fixes` (similarity ~60%).
