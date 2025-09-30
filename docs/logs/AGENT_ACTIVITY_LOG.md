@@ -201,3 +201,7 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Loaded into KinD (`kind load docker-image vibecode/code-server:monaco053 --name vibecode-test`).
 - Updated `k8s/code-server-kind.yaml` to use the new image and rolled the Deployment.
 - Port-forwarded to confirm the endpoint now serves (HTTP 302 redirect).
+### Agent Codex - README code-server test (2025-09-30 01:43 UTC)
+- Created `scripts/test-code-server-kind.sh` to automate the README steps.
+- Script builds the Monaco 0.53 image, loads it into KinD, applies the manifest, waits for rollout, and curls the port-forward.
+- Verified: curl returned `HTTP/1.1 302 Found`, matching the manual instructions.

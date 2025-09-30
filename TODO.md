@@ -1,9 +1,29 @@
+## Agent Update (2025-09-30 01:55 UTC)
+
+- Extending AI provider coverage in the code completion API and documentation (Gemini CLI, OpenCode, Codex, Claude Code, Aider, Goose, Project4).
+
+### Next Steps
+- [ ] Add provider handlers for gemini-cli, aider, goose, project4 (reuse OpenAI-compatible flows where possible).
+- [ ] Update `.env.local.example`, README/docs to include the new provider knobs.
+- [ ] Re-run type-check + monacopilot verification after changes.
+
+## Agent Update (2025-09-30 01:52 UTC)
+
+- Checking TODO backlog for low-overhead validation tasks while ingestion completes.
+
+### Next Steps
+- [x] Re-run `npm run lint -- --quiet` on main; ESLint clean as of 2025-09-30 01:52 UTC.
+- [x] Execute `npm run type-check`; `tsc --noEmit` passes with current workspace.
+- [ ] Monitor ingest PID 82844 until it exits before starting new batches.
+  - ⏳ Agent Codex (2025-09-30 01:52 UTC): `ps ax -o pid,ppid,command | rg "ingest-docs-to-rag"` still lists PIDs 82827/82843/82844.
+- [ ] Finish documenting a lightweight `/tools/codeium` browser smoke test once the observability stub lands.
+
 ## Agent Update (2025-09-30 01:49 UTC)
 
 - Documenting how to access the KinD code-server (NodePort / port-forward) in README so others can try the Monaco 0.53 build.
 
 ### Next Steps
-- [x] Add a short snippet to README under local setup describing `kubectl port-forward svc/code-server-kind 3100:8080` and the NodePort. — ✅ README updated.
+- [x] Add a short snippet to README under local setup describing `kubectl port-forward svc/code-server-kind 3100:8080` and the NodePort. — ✅ README updated & tested via scripts/test-code-server-kind.sh.
 
 ## Agent Update (2025-09-30 01:37 UTC)
 
@@ -271,8 +291,9 @@
 - Confirming that the existing lint workflow still passes after the recent config moves.
 
 ### Next Steps
-- [ ] Re-run `npm run lint -- --quiet` and record the result.
+- [x] Re-run `npm run lint -- --quiet` and record the result.
   - ❌ Agent Codex (2025-09-30 01:00 UTC): Command fails with "ESLint couldn't find an eslint.config.(js|mjs|cjs)" (ESLint 9.33.0); lint remains blocked pending flat-config migration or script env override.
+  - ✅ Agent Codex (2025-09-30 01:52 UTC): Command completed cleanly; ESLint now resolves the flat config and reports no errors.
 
 ## Agent Update (2025-09-29 23:33 UTC)
 
@@ -1771,6 +1792,7 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 - [ ] Re-check `ps` for ingest clearance before scheduling the next RAG batch.
   - ⏳ Agent Codex (2025-09-30 00:21 UTC): Inspecting local processes (`ps`) to confirm ingest scripts are no longer running before queuing new batches.
   - ❌ Agent Codex (2025-09-30 00:22 UTC): `ps ax -o pid,command | rg 'ingest'` still shows PIDs 82827/82843/82844 running `scripts/ingest-docs-to-rag.ts`; deferring new ingestion until they stop.
+  - ⏳ Agent Codex (2025-09-30 01:52 UTC): `ps` check confirms the same PIDs remain active; will wait for completion before re-queuing ingestion.
   - ⏳ Agent Codex (2025-09-30 00:34 UTC): Re-checking `ps` to see if the ingest processes have exited.
   - ❌ Agent Codex (2025-09-30 00:34 UTC): PIDs 82827/82843/82844 still running `scripts/ingest-docs-to-rag.ts`; will check again later.
   - ❌ Agent Codex (2025-09-30 00:54 UTC): Processes remain active (same PIDs); ingestion window still blocked.

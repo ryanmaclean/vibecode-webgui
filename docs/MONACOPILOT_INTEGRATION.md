@@ -8,7 +8,7 @@ Monacopilot adds GitHub Copilot-style AI completions to Monaco Editor with suppo
 
 **Features:**
 - ✅ Compatible with Monaco Editor 0.52.2
-- ✅ Multiple AI providers (OpenAI, Mistral, Anthropic, Groq, etc.)
+- ✅ Multiple AI providers (OpenAI, Gemini, OpenCode via OpenRouter, Claude Code)
 - ✅ Real-time code suggestions
 - ✅ Context-aware completions
 - ✅ Easy integration
@@ -188,16 +188,16 @@ app.use(cors({
 
 ## Performance Tips
 
-1. **Use Mistral Codestral** - Optimized for code, very fast
-2. **Use Groq** - Extremely fast inference
+1. **Use OpenCode (OpenRouter)** - Access high-throughput hosted models
+2. **Use Gemini 1.5** - Great for long context + strong code quality
 3. **Lower temperature** - Faster and more deterministic (0.1-0.3)
 4. **Reduce maxTokens** - Shorter completions = faster response
 
 ## Cost Optimization
 
-1. **Mistral** - Free tier available, cheap paid tier
-2. **Groq** - Very generous free tier
-3. **OpenAI** - Use `gpt-3.5-turbo` for cost savings
+1. **Gemini** - Generous free tier for experimentation
+2. **OpenCode (OpenRouter)** - Mix and match cheaper OSS models
+3. **OpenAI** - Use `gpt-4o-mini`/`gpt-3.5` to balance cost and quality
 4. **Cache completions** - Add caching layer for repeated patterns
 
 ## Resources
