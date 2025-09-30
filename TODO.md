@@ -1,3 +1,77 @@
+## Agent Update (2025-09-30 03:06 UTC)
+
+- Cataloging all CI/CD workflows so we can file tracking issues for each pipeline.
+
+### Workflows Requiring Issues
+- [ ] .github/workflows/azure-appservice-deploy.yml — requires AZURE_* secrets, deploys ai-gateway via ACR push + App Service restart; needs issue to confirm secrets up to date and health probes cover 200s
+- [ ] .github/workflows/azure-webgui-deploy.yml
+- [ ] .github/workflows/build-and-push-image.yml
+- [ ] .github/workflows/ci-simplified.yml
+- [ ] .github/workflows/claude-code-review.yml
+- [ ] .github/workflows/claude.yml
+- [ ] .github/workflows/cost-monitor.yml
+- [ ] .github/workflows/datadog-service-catalog.yml
+- [ ] .github/workflows/datadog-trace-verify.yml
+- [ ] .github/workflows/db-monitoring-deployment.yml
+- [ ] .github/workflows/demo-validation.yml
+- [ ] .github/workflows/dependency-compatibility.yml
+- [ ] .github/workflows/deploy-aks-monitoring.yml
+- [ ] .github/workflows/deploy-docs.yml
+- [ ] .github/workflows/docs-automation.yml
+- [ ] .github/workflows/docs-ci-cd.yml
+- [ ] .github/workflows/error-tracking-integration.yml
+- [ ] .github/workflows/gitops-deployment.yml
+- [ ] .github/workflows/infrastructure-tests.yml
+- [ ] .github/workflows/kind-code-server-smoke.yml
+- [ ] .github/workflows/main-branch-ci.yml
+- [ ] .github/workflows/release-branch-ci.yml
+- [ ] .github/workflows/secret-scanning.yml
+- [ ] .github/workflows/stale.yml
+- [ ] .github/workflows/standup-report.yml
+- [ ] .github/workflows/test-ci-simplified.yml
+- [ ] .github/workflows/test-simple.yml
+- [ ] azure-appservice-deploy.yml/*
+- [ ] azure-webgui-deploy.yml/*
+- [ ] build-and-push-image.yml/*
+- [ ] ci-cd.yml/*
+- [ ] ci-complex.yml/*
+- [ ] ci-enhancements.yml/*
+- [ ] ci-simplified.yml/*
+- [ ] ci.yml/*
+- [ ] claude-code-review.yml/*
+- [ ] claude.yml/*
+- [ ] cost-monitor.yml/*
+- [ ] datadog-service-catalog.yml/*
+- [ ] db-monitoring-deployment.yml/*
+- [ ] dbm-verifier-run.yml/*
+- [ ] demo-validation.yml/*
+- [ ] dependency-compatibility.yml/*
+- [ ] docker-multiarch.yml/*
+- [ ] docs-automation.yml/*
+- [ ] docs-ci-cd.yml/*
+- [ ] error-tracking-integration.yml/*
+- [ ] ethicalcheck.yml/*
+- [ ] gitops-deployment.yml/*
+- [ ] infrastructure-tests.yml/*
+- [ ] k8s-deploy.yml/*
+- [ ] kind-testing.yml/*
+- [ ] main-branch-ci.yml/*
+- [ ] performance-gates.yml/*
+- [ ] production-deployment.yml/*
+- [ ] release-branch-ci.yml/*
+- [ ] secret-scanning.yml/*
+- [ ] stale.yml/*
+- [ ] standup-report.yml/*
+- [ ] synthetic-test.yml/*
+- [ ] test-ci-simplified.yml/*
+- [ ] test-simple.yml/*
+- [ ] trufflehog-on-demand.yml/*
+- [ ] working-ci.yml/*
+
+### Next Steps
+- [ ] Create GitHub issues for each workflow above noting current status (failing, disabled, or needs validation).
+- [ ] Link each issue back to TODO once opened.
+
 ## Agent Update (2025-09-30 02:59 UTC)
 
 - Documenting Docker-on-NAS deployment (Asustor, QNAP, Synology) and preparing a portable compose file.
@@ -98,6 +172,7 @@
   - ↳ Follow-up: wire `/api/user/preferences` endpoint to persist onboarding selections (currently stubbed).
 - [x] Update README with a quick link to the Codeium playground (`/tools/codeium`) so the feature is discoverable.
   - ✅ Agent Codex (2025-09-30 02:09 UTC): Added a bullet under "New Features" pointing to the playground (notes the signin requirement).
+- [ ] Collect feedback on the onboarding drawer copy/layout from design before marking it GA.
 
 ## Agent Update (2025-09-30 02:15 UTC)
 
