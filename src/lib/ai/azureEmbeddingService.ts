@@ -53,12 +53,12 @@ interface EmbeddingOptions {
 interface VectorSearchOptions {
   threshold?: number;
   limit?: number;
-  filter?: Record<string, any>;
+  filter?: Record<string, unknown>;
 }
 
 // Interface for document metadata
 interface DocumentMetadata {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Interface for similar document result
@@ -90,6 +90,24 @@ interface EmbeddingStats {
   }>;
 }
 
+// Interface for vector service operations
+interface VectorService {
+  upsertEmbedding: (params: {
+    documentId: string;
+    content: string;
+    embedding: number[];
+    metadata?: DocumentMetadata;
+  }) => Promise<unknown>;
+  findSimilarDocuments: (params: {
+    embedding: number[];
+    threshold?: number;
+    limit?: number;
+    filter?: Record<string, unknown>;
+  }) => Promise<unknown[]>;
+  getEmbeddingStats: () => Promise<unknown>;
+  cleanupOldEmbeddings: (params: { olderThan?: Date }) => Promise<{ deletedCount: number }>;
+}
+
 /**
  * Azure OpenAI Embedding Service class
  * Handles generating embeddings using Azure OpenAI and storing them in a database
@@ -100,7 +118,7 @@ export class AzureEmbeddingService {
   private deploymentName: string;
   private apiVersion: string;
   private prisma: PrismaClient | null;
-  private vectorService: any; // Will hold database vector operations
+  private vectorService: VectorService;
   private useManagedIdentity: boolean;
   private useConnectionPool: boolean;
   
@@ -242,7 +260,7 @@ export class AzureEmbeddingService {
             user: process.env.DATABASE_USER || 'postgres',
             password: process.env.DATABASE_PASSWORD || 'password'
         });
-        return pool.withTransaction(async (client: any) => {
+        return pool.withTransaction(async (client: PrismaClient) => {
           // Use Prisma's executeRaw to handle the pgvector type
           return client.$executeRawUnsafe(
             `INSERT INTO document_embeddings (
@@ -273,7 +291,7 @@ export class AzureEmbeddingService {
         embedding: number[];
         threshold?: number;
         limit?: number;
-        filter?: Record<string, any>;
+        filter?: Record<string, unknown>;
       }) => {
         const { embedding, threshold = 0.7, limit = 5, filter } = params;
         
@@ -291,7 +309,7 @@ export class AzureEmbeddingService {
             1 - (embedding <=> $1::vector) > $2
         `;
         
-        const queryParams: any[] = [JSON.stringify(embedding), threshold];
+        const queryParams: unknown[] = [JSON.stringify(embedding), threshold];
         let paramIndex = 3;
         
         // Add filter conditions if provided
@@ -315,7 +333,7 @@ export class AzureEmbeddingService {
             user: process.env.DATABASE_USER || 'postgres',
             password: process.env.DATABASE_PASSWORD || 'password'
         });
-        return pool.withTransaction(async (client: any) => {
+        return pool.withTransaction(async (client: PrismaClient) => {
           return client.$queryRawUnsafe(query, ...queryParams);
         });
       },
@@ -329,7 +347,7 @@ export class AzureEmbeddingService {
             user: process.env.DATABASE_USER || 'postgres',
             password: process.env.DATABASE_PASSWORD || 'password'
         });
-        return pool.withTransaction(async (client: any) => {
+        return pool.withTransaction(async (client: PrismaClient) => {
           return client.$queryRawUnsafe(`
             SELECT 
               DATE_TRUNC('hour', created_at) AS hour_bucket,
@@ -367,8 +385,8 @@ export class AzureEmbeddingService {
           `;
           
           const result = await client.$queryRawUnsafe(query, olderThan);
-          const deletedCount = Array.isArray(result) && result.length > 0 ? 
-            (result[0] as any).deleted_count || 0 : 0;
+          const deletedCount = Array.isArray(result) && result.length > 0 ?
+            (result[0] as { deleted_count?: number }).deleted_count || 0 : 0;
           
           return { deletedCount };
         });
@@ -431,7 +449,7 @@ export class AzureEmbeddingService {
         embedding: number[];
         threshold?: number;
         limit?: number;
-        filter?: Record<string, any>;
+        filter?: Record<string, unknown>;
       }) => {
         const { embedding, threshold = 0.7, limit = 5, filter } = params;
         
@@ -449,7 +467,7 @@ export class AzureEmbeddingService {
             1 - (embedding <=> $1::vector) > $2
         `;
         
-        const queryParams: any[] = [JSON.stringify(embedding), threshold];
+        const queryParams: unknown[] = [JSON.stringify(embedding), threshold];
         let paramIndex = 3;
         
         // Add filter conditions if provided
@@ -499,8 +517,8 @@ export class AzureEmbeddingService {
         `;
         
         const result = await this.prisma!.$queryRawUnsafe(query, olderThan);
-        const deletedCount = Array.isArray(result) && result.length > 0 ? 
-          (result[0] as any).deleted_count || 0 : 0;
+        const deletedCount = Array.isArray(result) && result.length > 0 ?
+          (result[0] as { deleted_count?: number }).deleted_count || 0 : 0;
         
         return { deletedCount };
       }
@@ -612,21 +630,22 @@ export class AzureEmbeddingService {
       } else {
         throw new Error('No embedding data returned from Azure OpenAI API');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { response?: { status?: number; data?: unknown }; message?: string };
       // Record error metrics
       try {
         azureEmbeddingMetrics.recordError(
-          error.response?.status ? 'api_error' : 'client_error',
+          err.response?.status ? 'api_error' : 'client_error',
           'generate_embedding',
-          error.response?.status,
-          error.message
+          err.response?.status,
+          err.message || 'Unknown error'
         );
       } catch (metricError) {
         console.warn('Error recording error metrics:', metricError);
       }
-      
+
       errorType = this.categorizeError(error);
-      
+
       // Record failed API call
       this.recordApiCall({
         timestamp: new Date(startTime),
@@ -651,11 +670,11 @@ export class AzureEmbeddingService {
         inputLength: text.length
       });
 
-      console.error('Error generating embedding:', error.message);
-      if (error.response) {
-        console.error('Azure API response:', error.response.data);
+      console.error('Error generating embedding:', err.message || 'Unknown error');
+      if (err.response) {
+        console.error('Azure API response:', err.response.data);
       }
-      throw new Error(`Failed to generate embedding: ${error.message}`);
+      throw new Error(`Failed to generate embedding: ${err.message || 'Unknown error'}`);
     }
   }
 
@@ -723,7 +742,7 @@ export class AzureEmbeddingService {
           console.warn('Error recording pool metrics:', metricError);
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Record error
       try {
         azureEmbeddingMetrics.recordError(
@@ -736,8 +755,9 @@ export class AzureEmbeddingService {
         console.warn('Error recording error metrics:', metricError);
       }
       
-      console.error('Error storing document:', error.message);
-      throw new Error(`Failed to store document: ${error.message}`);
+      const err = error as { message?: string };
+      console.error('Error storing document:', err.message || 'Unknown error');
+      throw new Error(`Failed to store document: ${err.message || 'Unknown error'}`);
     }
   }
 
@@ -779,7 +799,7 @@ export class AzureEmbeddingService {
       }
       
       return similarDocuments as SimilarDocument[];
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Record error
       try {
         azureEmbeddingMetrics.recordError(
@@ -792,8 +812,9 @@ export class AzureEmbeddingService {
         console.warn('Error recording error metrics:', metricError);
       }
       
-      console.error('Error finding similar documents:', error.message);
-      throw new Error(`Failed to find similar documents: ${error.message}`);
+      const err = error as { message?: string };
+      console.error('Error finding similar documents:', err.message || 'Unknown error');
+      throw new Error(`Failed to find similar documents: ${err.message || 'Unknown error'}`);
     }
   }
 
@@ -819,9 +840,10 @@ export class AzureEmbeddingService {
         documents,
         timestamp: new Date().toISOString()
       };
-    } catch (error: any) {
-      console.error('Error performing RAG query:', error.message);
-      throw new Error(`Failed to perform RAG query: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      console.error('Error performing RAG query:', err.message || 'Unknown error');
+      throw new Error(`Failed to perform RAG query: ${err.message || 'Unknown error'}`);
     }
   }
 
@@ -839,9 +861,10 @@ export class AzureEmbeddingService {
         provider: 'azure',
         stats
       };
-    } catch (error: any) {
-      console.error('Error getting embedding statistics:', error.message);
-      throw new Error(`Failed to get embedding statistics: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      console.error('Error getting embedding statistics:', err.message || 'Unknown error');
+      throw new Error(`Failed to get embedding statistics: ${err.message || 'Unknown error'}`);
     }
   }
 
@@ -896,7 +919,7 @@ export class AzureEmbeddingService {
    * Process rate limit headers from Azure API response
    * @param headers Response headers from Azure API
    */
-  private processRateLimitHeaders(headers: any): void {
+  private processRateLimitHeaders(headers: Record<string, string | string[] | undefined>): void {
     try {
       // Extract rate limit headers if they exist
       const remainingRequests = headers['x-ratelimit-remaining-requests'] || 
@@ -1097,16 +1120,17 @@ export class AzureEmbeddingService {
   /**
    * Categorize error for monitoring
    */
-  private categorizeError(error: any): string {
-    if (error.response?.status) {
-      const status = error.response.status;
+  private categorizeError(error: unknown): string {
+    const err = error as { response?: { status?: number }; code?: string };
+    if (err.response?.status) {
+      const status = err.response.status;
       if (status === 401) return 'authentication';
       if (status === 403) return 'authorization';
       if (status === 429) return 'rate_limit';
       if (status >= 500) return 'server_error';
       if (status >= 400) return 'client_error';
     }
-    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+    if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
       return 'network_error';
     }
     return 'unknown';
