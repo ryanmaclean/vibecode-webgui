@@ -224,20 +224,20 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2">
-              <Badge asChild variant="secondary">
-                <a href="/tools/codeium">Codeium Playground</a>
+              <Badge variant="secondary">
+                <a href="/tools/codeium" className="no-underline">Codeium Playground</a>
               </Badge>
-              <Badge asChild variant="secondary">
-                <a href="/console">AI Console</a>
+              <Badge variant="secondary">
+                <a href="/console" className="no-underline">AI Console</a>
               </Badge>
-              <Badge asChild variant="secondary">
-                <a href="/docs/logs/AGENT_ACTIVITY_LOG.md" target="_blank" rel="noreferrer">
+              <Badge variant="secondary">
+                <a href="/docs/logs/AGENT_ACTIVITY_LOG.md" target="_blank" rel="noreferrer" className="no-underline">
                   Activity Log
                 </a>
               </Badge>
-              <Badge asChild variant="secondary">
-                <a href="https://github.com/ryanmaclean/vibecode-webgui" target="_blank" rel="noreferrer">
-                  GitHub Repo
+              <Badge variant="secondary">
+                <a href="https://github.com/ryanmaclean/vibecode-webgui" target="_blank" rel="noreferrer" className="no-underline">
+                  GitHub
                 </a>
               </Badge>
             </CardContent>

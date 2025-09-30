@@ -225,3 +225,7 @@ This log captures completed agent activities to keep TODO.md focused on current 
 ### Agent Codex - NAS deployment docs (2025-09-30 02:35 UTC)
 - Added `docs/NAS_DEPLOYMENT.md` covering Asustor/QNAP/Synology Docker setup.
 - Generated `docker-compose.nas.yml` for quick import on NAS platforms.
+### Agent Codex - KinD smoke CI (2025-09-30 03:45 UTC)
+- Created `.github/workflows/kind-code-server-smoke.yml` to schedule the KinD code-server smoke test (nightly + manual).
+- Updated `scripts/test-code-server-kind.sh` to auto-create the `vibecode-platform` namespace so the workflow boots clean clusters.
+- Workflow captures diagnostics on failure for easier debugging (`kubectl get/describe/logs`).

@@ -306,3 +306,8 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - Aider: export a key for your provider (`export OPENAI_API_KEY=...` or `aider --api-key openrouter=...`), then launch `aider --model gpt-4o-mini src/app/page.tsx` (replace files as needed). Use `aider --help` for additional provider flags.
 - Goose: set the provider env vars shown in `goose providers list` (e.g., `export OPENAI_API_KEY=...` or `GOOGLE_API_KEY=...`) and run `goose session start` for an interactive chat or `goose run README.md` to process a prompt file. `goose --help` lists other subcommands.
 - Both CLIs inherit host networking, so ensure any required proxies/ports are configured before launching long sessions.
+
+### 2025-09-30 03:45 UTC — KinD smoke test wired into CI
+- Added `.github/workflows/kind-code-server-smoke.yml` (nightly cron + manual trigger) to build the Monaco 0.53 image, load it into KinD, and run `scripts/test-code-server-kind.sh`.
+- Updated the smoke script to create the `vibecode-platform` namespace automatically so the workflow can run on fresh clusters.
+- Failure hook captures pod diagnostics (`kubectl get/describe/logs`) for easier debugging in CI.
