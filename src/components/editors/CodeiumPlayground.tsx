@@ -88,7 +88,7 @@ export function CodeiumPlayground() {
 
   const handleMount = useCallback(
     async (editorInstance: EditorNS.IStandaloneCodeEditor, monaco: typeof import('monaco-editor')) => {
-      setStatus('Monaco ready (v' + monaco.version + ')')
+      setStatus('Monaco ready (v0.53.0)')
 
       try {
         setupMonacopilot(monaco as any, editorInstance, {
