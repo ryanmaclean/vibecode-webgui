@@ -417,3 +417,7 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - Added concurrency + secret validation to `.github/workflows/azure-webgui-deploy.yml`; build/deploy now skip when Azure secrets missing and emit a notice.
 - Logged follow-up draft at `docs/logs/workflow-issues/azure-webgui-deploy.md`; TODO/workflow tracking updated.
 - Remaining work: expand smoke checks, add notifications/rollback guidance, and audit Azure credentials before trusting automated pushes.
+
+### 2025-09-30 07:02 UTC — AKS monitoring gating
+- Added concurrency and secret outputs to `.github/workflows/deploy-aks-monitoring.yml`; deployment/Datadog stages now skip when Azure or DD secrets missing, emitting notices instead of failing midway.
+- Documented remaining follow-ups (timeouts, cleanup, reporting) in `docs/logs/workflow-issues/deploy-aks-monitoring.md` and updated TODO/tracking entries.
