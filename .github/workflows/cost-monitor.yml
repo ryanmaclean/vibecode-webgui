@@ -5,6 +5,10 @@ on:
     - cron: '0 9 * * MON'  # Weekly on Monday
   workflow_dispatch:
 
+concurrency:
+  group: cost-monitor
+  cancel-in-progress: true
+
 jobs:
   cost-report:
     runs-on: ubuntu-latest

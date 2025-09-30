@@ -23,11 +23,11 @@ spec:
           image: vibecode/code-server:monaco053
           args:
             - --bind-addr
-            - 0.0.0.0:8080
+            - 0.0.0.0:8765
             - --auth
             - none
           ports:
-            - containerPort: 8080
+            - containerPort: 8765
               name: http
           resources:
             requests:
@@ -55,6 +55,6 @@ spec:
     tier: workspace
   ports:
     - name: http
-      port: 8080
-      targetPort: 8080
-      nodePort: 31080
+      port: 8765
+      targetPort: 8765
+      nodePort: 31765

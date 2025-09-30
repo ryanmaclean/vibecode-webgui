@@ -5,6 +5,25 @@
 
 import { logger } from '../logger';
 
+/**
+ * Details object for vector database errors
+ */
+export interface VectorDBErrorDetails {
+  code?: string | number;
+  errno?: number;
+  sqlMessage?: string;
+  stack?: string;
+  originalError?: unknown;
+  [key: string]: unknown;
+}
+
+/**
+ * Type guard for objects with code property
+ */
+function hasCode(e: unknown): e is { code: string | number } {
+  return typeof e === 'object' && e !== null && 'code' in e;
+}
+
 export enum VectorDBErrorType {
   CONNECTION_FAILED = 'CONNECTION_FAILED',
   QUERY_FAILED = 'QUERY_FAILED',
@@ -30,7 +49,7 @@ export class VectorDBError extends Error {
   type: VectorDBErrorType;
   operation: string;
   provider: string;
-  details: any;
+  details: VectorDBErrorDetails | null;
   timestamp: string;
   // Whether the error is considered retryable (optional; set by handlers)
   retryable?: boolean;
@@ -40,7 +59,7 @@ export class VectorDBError extends Error {
     type: VectorDBErrorType = VectorDBErrorType.UNKNOWN_ERROR,
     operation: string = 'unknown',
     provider: string = 'unknown',
-    details: any = null
+    details: VectorDBErrorDetails | null = null
   ) {
     super(message);
     this.name = 'VectorDBError';
@@ -78,7 +97,7 @@ export class VectorDBError extends Error {
     };
   }
 
-  private sanitizeDetails(details: any) {
+  private sanitizeDetails(details: VectorDBErrorDetails | null): VectorDBErrorDetails | null {
     if (!details) return null;
 
     // Create a copy to avoid modifying the original
@@ -101,7 +120,7 @@ export class VectorDBError extends Error {
 }
 
 export const handleVectorDBError = (
-  error: any,
+  error: unknown,
   operation: string,
   provider: string
 ): VectorDBError => {
@@ -123,11 +142,12 @@ export const handleVectorDBError = (
     baseError = new Error('Unknown error');
   } else if (typeof error === 'string') {
     baseError = new Error(error);
-  } else if (typeof (error as any).message === 'string') {
-    baseError = new Error((error as any).message);
-  } else if ((error as any).message && typeof (error as any).message !== 'string') {
+  } else if (typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    baseError = new Error(error.message);
+  } else if (typeof error === 'object' && 'message' in error && error.message) {
     // Non-string message (e.g., object)
-    baseError = new Error(String((error as any).message?.text || 'Unknown error'));
+    const msg = error.message as { text?: string };
+    baseError = new Error(String(msg.text || 'Unknown error'));
   } else {
     baseError = new Error('Unknown error');
   }
@@ -135,12 +155,11 @@ export const handleVectorDBError = (
   // Map common database errors to appropriate types
   let errorType = VectorDBErrorType.UNKNOWN_ERROR;
   const errorMessage = baseError.message || 'Unknown vector database error';
-  let errorDetails: Record<string, unknown> = {};
+  const errorDetails: VectorDBErrorDetails = {};
 
   // Connection errors
   if (
-    (error as any)?.code === 'ECONNREFUSED' ||
-    (error as any)?.code === 'ETIMEDOUT' ||
+    (hasCode(error) && (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT')) ||
     baseError.name === 'ConnectionError' ||
     errorMessage.includes('connect') ||
     errorMessage.includes('connection')
@@ -149,9 +168,7 @@ export const handleVectorDBError = (
   }
   // Authentication errors
   else if (
-    (error as any)?.code === 'EAUTH' ||
-    (error as any)?.code === 401 ||
-    (error as any)?.code === 403 ||
+    (hasCode(error) && (error.code === 'EAUTH' || error.code === 401 || error.code === 403)) ||
     errorMessage.includes('auth') ||
     errorMessage.includes('credentials') ||
     errorMessage.includes('permission')
@@ -160,7 +177,7 @@ export const handleVectorDBError = (
   }
   // Query errors
   else if (
-    (error as any)?.code === 'EQUERY' ||
+    (hasCode(error) && error.code === 'EQUERY') ||
     errorMessage.includes('query') ||
     errorMessage.includes('SQL')
   ) {
@@ -168,13 +185,21 @@ export const handleVectorDBError = (
   }
 
   // Extract useful information from the error
-  if ((error as any)?.code) errorDetails = { ...errorDetails, code: (error as any).code };
-  if ((error as any)?.errno) errorDetails = { ...errorDetails, errno: (error as any).errno };
-  if ((error as any)?.sqlMessage) errorDetails = { ...errorDetails, sqlMessage: (error as any).sqlMessage };
-  if ((baseError as any)?.stack) errorDetails = { ...errorDetails, stack: (baseError as any).stack };
+  if (hasCode(error)) {
+    errorDetails.code = error.code;
+  }
+  if (typeof error === 'object' && error !== null && 'errno' in error && typeof error.errno === 'number') {
+    errorDetails.errno = error.errno;
+  }
+  if (typeof error === 'object' && error !== null && 'sqlMessage' in error && typeof error.sqlMessage === 'string') {
+    errorDetails.sqlMessage = error.sqlMessage;
+  }
+  if (baseError.stack) {
+    errorDetails.stack = baseError.stack;
+  }
   // Preserve original error for diagnostics (redacted later by toJSON)
   if (!(error instanceof Error)) {
-    errorDetails = { ...errorDetails, originalError };
+    errorDetails.originalError = originalError;
   }
 
   return new VectorDBError(
@@ -211,11 +236,11 @@ export class VectorDbErrorHandler {
    * Normalize and enrich an error with consistent formatting.
    */
   public handleError(
-    error: any,
+    error: unknown,
     operation: string,
     errorType?: VectorDBErrorType,
     retryable?: boolean,
-    additionalContext: Record<string, any> = {}
+    additionalContext: VectorDBErrorDetails = {}
   ): VectorDBError {
     // Categorize if no explicit type provided (use local fallback to avoid circular imports)
     const resolvedType = errorType ?? this.categorizeFallback(error);
@@ -241,7 +266,7 @@ export class VectorDbErrorHandler {
     // Merge context into details and set top-level retryable property when provided
     normalized.details = { ...(normalized.details || {}), ...context };
     if (typeof retryable === 'boolean') {
-      (normalized as any).retryable = retryable;
+      normalized.retryable = retryable;
     }
 
     // Optional logging hook
@@ -261,7 +286,7 @@ export class VectorDbErrorHandler {
   /**
    * Determine if an error is retryable using provider-aware patterns.
    */
-  public isRetryableError(error: any): boolean {
+  public isRetryableError(error: unknown): boolean {
     const t = this.categorizeFallback(error);
     return (
       t === VectorDBErrorType.CONNECTION_FAILED ||
@@ -274,10 +299,12 @@ export class VectorDbErrorHandler {
   /**
    * Check if error is authentication related
    */
-  public isAuthError(error: any): boolean {
-    const msg = String(error?.message || '').toLowerCase();
-    const code = String((error as any)?.code ?? '');
-    const status = (error as any)?.status ?? (error as any)?.statusCode ?? 0;
+  public isAuthError(error: unknown): boolean {
+    const msg = String((typeof error === 'object' && error !== null && 'message' in error) ? error.message : '').toLowerCase();
+    const code = String(hasCode(error) ? error.code : '');
+    const status = (typeof error === 'object' && error !== null && ('status' in error || 'statusCode' in error))
+      ? ((error as { status?: number }).status ?? (error as { statusCode?: number }).statusCode ?? 0)
+      : 0;
 
     return (
       code === 'EAUTH' || status === 401 || status === 403 ||
@@ -289,9 +316,9 @@ export class VectorDbErrorHandler {
   /**
    * Check if error is network/connection related
    */
-  public isNetworkError(error: any): boolean {
-    const msg = String(error?.message || '').toLowerCase();
-    const code = String((error as any)?.code ?? '');
+  public isNetworkError(error: unknown): boolean {
+    const msg = String((typeof error === 'object' && error !== null && 'message' in error) ? error.message : '').toLowerCase();
+    const code = String(hasCode(error) ? error.code : '');
 
     return (
       code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ENETWORK' ||
@@ -302,10 +329,12 @@ export class VectorDbErrorHandler {
   /**
    * Check if error is timeout related
    */
-  public isTimeoutError(error: any): boolean {
-    const msg = String(error?.message || '').toLowerCase();
-    const code = String((error as any)?.code ?? '');
-    const status = (error as any)?.status ?? (error as any)?.statusCode ?? 0;
+  public isTimeoutError(error: unknown): boolean {
+    const msg = String((typeof error === 'object' && error !== null && 'message' in error) ? error.message : '').toLowerCase();
+    const code = String(hasCode(error) ? error.code : '');
+    const status = (typeof error === 'object' && error !== null && ('status' in error || 'statusCode' in error))
+      ? ((error as { status?: number }).status ?? (error as { statusCode?: number }).statusCode ?? 0)
+      : 0;
 
     return (
       code === 'ETIMEDOUT' || status === 408 || status === 504 ||
@@ -316,11 +345,13 @@ export class VectorDbErrorHandler {
   /**
    * Fallback categorization to avoid importing database-error-patterns (prevents circular deps).
    */
-  private categorizeFallback(error: any): VectorDBErrorType {
+  private categorizeFallback(error: unknown): VectorDBErrorType {
     if (!error) return VectorDBErrorType.UNKNOWN_ERROR;
-    const msg = String(error.message || '').toLowerCase();
-    const code = String((error as any).code ?? '');
-    const status = (error as any).status ?? (error as any).statusCode ?? 0;
+    const msg = String((typeof error === 'object' && error !== null && 'message' in error) ? error.message : '').toLowerCase();
+    const code = String(hasCode(error) ? error.code : '');
+    const status = (typeof error === 'object' && error !== null && ('status' in error || 'statusCode' in error))
+      ? ((error as { status?: number }).status ?? (error as { statusCode?: number }).statusCode ?? 0)
+      : 0;
 
     // Connection
     if (

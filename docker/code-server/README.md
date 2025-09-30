@@ -88,6 +88,7 @@ This directory contains the configuration for the custom VibeCode code-server, w
 - Pre-configured LSP servers for all major languages
 - Bash, Zsh, and Fish shells pre-installed in the container
 - **Trusted domains pre-configured** - No annoying prompts for extension URLs (see [TRUSTED_DOMAINS.md](TRUSTED_DOMAINS.md))
+- CLI essentials pre-installed: `eza`, `ripgrep`, `fd`, `fzf`, `bat`, `hyperfine`, `lazygit`, `starship`, `zoxide`
 
 ## Building the Image
 

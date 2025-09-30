@@ -75,16 +75,45 @@ jobs:
           echo "$OUTPUT" | grep 'sequential-thinking'
 
       - name: Lint code
-        run: npm run lint || true  # Don't fail on lint warnings
+        id: lint
+        run: |
+          set +e
+          npm run lint
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
       
       - name: Type check
-        run: npm run type-check || true
+        id: typecheck
+        run: |
+          set +e
+          npm run type-check
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
       
       - name: Run fast unit tests only
         run: npm run test:unit
         env:
           NODE_ENV: test
           CI: true
+
+      - name: Quick validation summary
+        run: |
+          echo "### Quick Validation" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          lint_status="${{ steps.lint.outputs.status || '0' }}"
+          type_status="${{ steps.typecheck.outputs.status || '0' }}"
+          if [ "$lint_status" != '0' ]; then
+            echo "- Lint: ⚠️ exit code $lint_status (see logs)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Lint: ✅" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "$type_status" != '0' ]; then
+            echo "- Type check: ⚠️ exit code $type_status (see logs)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Type check: ✅" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   # Security scan - lightweight version
   security-check:
