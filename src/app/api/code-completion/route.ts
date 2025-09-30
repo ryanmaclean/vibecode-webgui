@@ -101,6 +101,58 @@ type OpenAICompatOptions = {
   providerLabel?: string
 }
 
+type GeminiGenerateContentResponse = {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{
+        text?: string | null
+      }>
+    }
+  }>
+}
+
+type OpenRouterMessagePart = {
+  text?: string | null
+  content?: string | null
+}
+
+type OpenRouterResponse = {
+  choices?: Array<{
+    message?: {
+      content?: string | OpenRouterMessagePart[] | null
+    }
+  }>
+}
+
+type ClaudeMessageResponse = {
+  content?: Array<{
+    text?: string | null
+  }>
+}
+
+type DeepSeekChatResponse = {
+  choices?: Array<{
+    message?: {
+      content?: string | null
+    }
+  }>
+}
+
+type AzureOpenAIChatResponse = {
+  choices?: Array<{
+    message?: {
+      content?: string | null
+    }
+  }>
+}
+
+type BedrockInvokeResponse = {
+  content?: Array<{
+    text?: string | null
+  }>
+  outputText?: string | null
+}
+
 async function callOpenAI(
   metadata: CompletionMetadata,
   provider: 'openai' | 'codex',
@@ -169,8 +221,8 @@ async function callGemini(metadata: CompletionMetadata, modelOverride?: string):
     throw new Error(`Gemini request failed (${response.status}): ${JSON.stringify(errorBody)}`)
   }
 
-  const data: any = await response.json()
-  const completion = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null
+  const data = (await response.json()) as GeminiGenerateContentResponse
+  const completion = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? null
 
   return {
     completion,
@@ -213,8 +265,8 @@ async function callGeminiCli(metadata: CompletionMetadata, modelOverride?: strin
     throw new Error(`Gemini CLI request failed (${response.status}): ${JSON.stringify(errorBody)}`)
   }
 
-  const data: any = await response.json()
-  const completion = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null
+  const data = (await response.json()) as GeminiGenerateContentResponse
+  const completion = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? null
 
   return {
     completion,
@@ -266,13 +318,8 @@ async function callOpenCode(metadata: CompletionMetadata, modelOverride?: string
     throw new Error(`OpenCode request failed (${response.status}): ${JSON.stringify(errorBody)}`)
   }
 
-  const data: any = await response.json()
-  const content = data?.choices?.[0]?.message?.content
-  const completion = Array.isArray(content)
-    ? content.map((part: any) => part?.text ?? part?.content ?? '').join('').trim()
-    : typeof content === 'string'
-      ? content.trim()
-      : null
+  const data = (await response.json()) as OpenRouterResponse
+  const completion = extractOpenRouterCompletion(data)
 
   return {
     completion: completion && completion.length ? completion : null,
@@ -315,8 +362,8 @@ async function callClaude(metadata: CompletionMetadata, modelOverride?: string):
     throw new Error(`Claude request failed (${response.status}): ${JSON.stringify(errorBody)}`)
   }
 
-  const data: any = await response.json()
-  const completion = data?.content?.[0]?.text?.trim() || null
+  const data = (await response.json()) as ClaudeMessageResponse
+  const completion = data.content?.[0]?.text?.trim() ?? null
 
   return {
     completion,
@@ -402,13 +449,8 @@ async function callOpenRouter(metadata: CompletionMetadata, modelOverride?: stri
     throw new Error(`OpenRouter request failed (${response.status}): ${JSON.stringify(errorBody)}`)
   }
 
-  const data: any = await response.json()
-  const content = data?.choices?.[0]?.message?.content
-  const completion = Array.isArray(content)
-    ? content.map((part: any) => part?.text ?? part?.content ?? '').join('').trim()
-    : typeof content === 'string'
-      ? content.trim()
-      : null
+  const data = (await response.json()) as OpenRouterResponse
+  const completion = extractOpenRouterCompletion(data)
 
   return {
     completion: completion && completion.length ? completion : null,
@@ -461,8 +503,8 @@ async function callDeepSeek(metadata: CompletionMetadata, modelOverride?: string
     throw new Error(`DeepSeek request failed (${response.status}): ${JSON.stringify(errorBody)}`)
   }
 
-  const data: any = await response.json()
-  const completion = data?.choices?.[0]?.message?.content?.trim() || null
+  const data = (await response.json()) as DeepSeekChatResponse
+  const completion = data.choices?.[0]?.message?.content?.trim() ?? null
 
   return {
     completion,
@@ -515,8 +557,8 @@ async function callAzureOpenAI(metadata: CompletionMetadata, modelOverride?: str
     throw new Error(`Azure OpenAI request failed (${response.status}): ${JSON.stringify(errorBody)}`)
   }
 
-  const data: any = await response.json()
-  const completion = data?.choices?.[0]?.message?.content?.trim() || null
+  const data = (await response.json()) as AzureOpenAIChatResponse
+  const completion = data.choices?.[0]?.message?.content?.trim() ?? null
 
   return {
     completion,
@@ -586,8 +628,9 @@ async function callBedrock(metadata: CompletionMetadata, modelOverride?: string)
     throw new Error(`Bedrock request failed (${response.status}): ${JSON.stringify(errorBody)}`)
   }
 
-  const data: any = await response.json()
-  const completion = data?.content?.[0]?.text?.trim() || data?.outputText?.trim() || null
+  const data = (await response.json()) as BedrockInvokeResponse
+  const completion =
+    data.content?.[0]?.text?.trim() ?? data.outputText?.trim() ?? null
 
   return {
     completion,
@@ -635,8 +678,8 @@ async function callVertex(metadata: CompletionMetadata, modelOverride?: string):
     throw new Error(`Vertex request failed (${response.status}): ${JSON.stringify(errorBody)}`)
   }
 
-  const data: any = await response.json()
-  const completion = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null
+  const data = (await response.json()) as GeminiGenerateContentResponse
+  const completion = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? null
 
   return {
     completion,
@@ -722,6 +765,30 @@ function toAmzDate(date: Date): string {
 
 function toDateStamp(date: Date): string {
   return date.toISOString().slice(0, 10).replace(/-/g, '')
+}
+
+function extractOpenRouterCompletion(data: OpenRouterResponse): string | null {
+  const content = data.choices?.[0]?.message?.content
+
+  if (typeof content === 'string') {
+    const trimmed = content.trim()
+    return trimmed.length ? trimmed : null
+  }
+
+  if (isOpenRouterPartArray(content)) {
+    const joined = content
+      .map((part) => (part?.text ?? part?.content ?? '') ?? '')
+      .join('')
+      .trim()
+
+    return joined.length ? joined : null
+  }
+
+  return null
+}
+
+function isOpenRouterPartArray(value: unknown): value is OpenRouterMessagePart[] {
+  return Array.isArray(value)
 }
 
 async function safeJson(response: Response): Promise<unknown> {
