@@ -4,10 +4,10 @@
 The database monitoring workflow provisions diagnostics, tunes Azure Postgres, validates dashboards, and posts to Slack/Datadog. It is one of the costliest pipelines and was parked on manual dispatch after repeated failures from missing secrets and long runtimes. We need to make it safe to run automatically when infra/db changes land.
 
 ## Current Status
-- Triggers limited to `workflow_dispatch`; path filters for `tofu/`, `services/db-monitoring/`, and dashboards disabled.
-- Secrets required include `POSTGRES_CONNECTION`, `AZURE_*` credentials, `DD_API_KEY`, `DD_APP_KEY`, Slack webhook, and optional SNYK token. Missing secrets cause retries that burn minutes.
-- Multiple jobs run in parallel without coordination, sometimes racing on shared resource groups.
-- Cleanup logic is best-effort: failures can leave Azure resources and Datadog dashboards in inconsistent states.
+- Push/PR triggers active with weekly cron; concurrency guard prevents overlapping runs.
+- Secret validation now emits outputs used to skip database/Datadog phases when credentials missing. A notice job fires instead of running heavy steps.
+- Database schema/index/benchmark phases gated behind Postgres secret; Azure + Datadog deployment stages gated behind corresponding credentials. Slack notifications skip when webhook absent.
+- Cleanup logic remains best-effort: Azure resources and dashboards still need idempotent teardown improvements.
 
 ## Proposed Remediation
 1. **Secret gating**: Add upfront validation that outputs which secrets are present. Skip or downgrade jobs when credentials missing instead of failing mid-run.
@@ -28,4 +28,4 @@ The database monitoring workflow provisions diagnostics, tunes Azure Postgres, v
 - Ensure Terraform state/backend choices support Ephemeral runs (consider migrating to a preview environment).
 
 ## Progress Log
-- **2025-09-30:** Draft remediation steps captured; implementation pending.
+- **2025-09-30:** Added secret gating with concurrency, weekly cron, and phase-specific `if` conditions so expensive jobs skip when creds missing. Workflow still needs cleanup automation, Azure resource teardown, and reporting polish.
