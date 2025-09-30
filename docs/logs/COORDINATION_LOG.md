@@ -285,3 +285,8 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - 2025-09-30 01:55 UTC — Extended /api/code-completion providers (Gemini CLI, Aider, GooseAI, Project4) and refreshed docs/env samples.
 - 2025-09-30 02:35 UTC — Added DeepSeek, OpenRouter, Anthropic, Google AI Studio, Azure OpenAI, Amazon Bedrock, and Google Vertex handlers to `/api/code-completion`; `.env.local.example` and Monacopilot guide updated with new keys.
 - Verification still required: supply provider credentials, run `npm run type-check`, and exercise `/api/code-completion` against each new provider once keys are in place.
+
+### 2025-09-30 02:50 UTC — Code-server editor verification script
+- Added `scripts/test-code-server-editors.sh` to locate the KinD code-server pod and assert `vim`, `nvim`, and `emacs` availability.
+- Reinstalled editors in the running pod (`sudo apt-get install -y vim neovim emacs-nox`) so the helper reports success even after image rollouts.
+- Next follow-up: bake editors into the image or integrate the script into CI to surface regressions automatically.

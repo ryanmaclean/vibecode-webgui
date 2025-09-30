@@ -1,35 +1,40 @@
 declare module 'jest-axe' {
-  import { ReactElement } from 'react';
-  
+  import type { ReactElement } from 'react';
+  import type { Result as AxeResult, RunOptions } from 'axe-core';
+
   export interface AxeResults {
-    violations: any[];
-    passes: any[];
-    incomplete: any[];
-    inapplicable: any[];
+    violations: AxeResult[];
+    passes: AxeResult[];
+    incomplete: AxeResult[];
+    inapplicable: AxeResult[];
   }
 
-  export interface ConfigOptions {
-    rules?: Record<string, { enabled: boolean }>;
-    tags?: string[];
-    [key: string]: any;
-  }
+  export type AxeConfigOptions = RunOptions;
 
-  export function configureAxe(options?: ConfigOptions): (element: Element | ReactElement | Document) => Promise<AxeResults>;
-  
+  export type AxeRun = (
+    element: Element | ReactElement | Document,
+    options?: AxeConfigOptions,
+  ) => Promise<AxeResults>;
+
+  export function configureAxe(options?: AxeConfigOptions): AxeRun;
+
   export const toHaveNoViolations: {
-    toHaveNoViolations(results: AxeResults): { pass: boolean; message(): string };
+    (results: AxeResults): { pass: boolean; message(): string };
   };
-  
+
   interface AxeMatcherResult {
     pass: boolean;
     message: () => string;
   }
-  
-  function axe(element: Element | ReactElement | Document, options?: ConfigOptions): Promise<AxeResults>;
-  
+
+  function axe(
+    element: Element | ReactElement | Document,
+    options?: AxeConfigOptions,
+  ): Promise<AxeResults>;
+
   namespace axe {
     function toHaveNoViolations(results: AxeResults): AxeMatcherResult;
   }
-  
+
   export default axe;
 }

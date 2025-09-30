@@ -1,9 +1,38 @@
+## Agent Update (2025-09-30 02:20 UTC)
+
+- Checking the code-server health endpoint in KinD to ensure the Monaco 0.53 image responds on `/healthz`.
+
+### Next Steps
+- [ ] `curl http://localhost:3100/healthz` with port-forward active and log the status.
+
+## Agent Update (2025-09-30 02:50 UTC)
+
+- Added `scripts/test-code-server-editors.sh` to verify Vim/Neovim/Emacs availability inside the KinD code-server pod.
+- Ran the helper script after reinstalling the editors via `kubectl exec ... sudo apt-get install -y vim neovim emacs-nox`; all three report expected versions.
+- Confirmed the script surfaces missing editors with a non-zero exit so CI/agents can spot drift quickly.
+
+### Next Steps
+- [ ] Decide whether to bake the editors into the custom code-server image to avoid repeated apt installs.
+- [ ] Extend the script once aider/goose CLI installs land so we can validate the additional tooling.
+- [ ] Consider wiring the script into `scripts/test-code-server-kind.sh` (or GitHub Actions) for automated regression checks.
+
 ## Agent Update (2025-09-30 02:10 UTC)
 
 - Running the monacopilot unit suite (`npm run test:unit -- monaco-monacopilot`) to confirm the new Monaco build still passes tests.
 
 ### Next Steps
 - [x] Execute targeted unit test run and record results — ✅ Added focused script `npm run test:unit:monaco` and updated tests to check files via fs; suite passes.
+
+## Agent Update (2025-09-30 02:36 UTC)
+
+- Added DeepSeek, OpenRouter, Anthropic, Google AI Studio, Azure OpenAI, Amazon Bedrock, and Google Vertex branches to `/api/code-completion/route.ts` with signed Bedrock requests.
+- Refreshed `.env.local.example` and `docs/MONACOPILOT_INTEGRATION.md` to document the new providers and required keys.
+- Logged the provider expansion in `docs/logs/COORDINATION_LOG.md` and re-ran `npm run type-check` (passes as of 2025-09-30 02:36 UTC).
+
+### Next Steps
+- [ ] Provide credentials for each new provider and exercise `/api/code-completion` end-to-end (DeepSeek, OpenRouter, Anthropic direct, Google AI Studio, Azure OpenAI, Bedrock, Vertex).
+- [ ] Add provider-specific smoke scripts or unit tests to guard the new branches once credentials are available.
+- [ ] Follow up on aider/goose CLI installation in KinD code-server once current ingestion jobs finish.
 
 ## Agent Update (2025-09-30 02:15 UTC)
 
