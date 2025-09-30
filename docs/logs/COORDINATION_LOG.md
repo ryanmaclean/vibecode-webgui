@@ -290,3 +290,8 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - Added `scripts/test-code-server-editors.sh` to locate the KinD code-server pod and assert `vim`, `nvim`, and `emacs` availability.
 - Reinstalled editors in the running pod (`sudo apt-get install -y vim neovim emacs-nox`) so the helper reports success even after image rollouts.
 - Next follow-up: bake editors into the image or integrate the script into CI to surface regressions automatically.
+
+### 2025-09-30 03:05 UTC — Code-server KinD smoke test updated
+- Hooked the terminal editor check into `scripts/test-code-server-kind.sh`; the smoke test now builds/loads the image, verifies connectivity, and ensures Vim/Neovim/Emacs are present.
+- Ran the combined script (`scripts/test-code-server-kind.sh`) to confirm all steps pass end-to-end.
+- Future work: decide if the editor installs should be baked into the image or left for runtime verification.
