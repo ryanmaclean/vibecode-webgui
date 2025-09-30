@@ -2,11 +2,21 @@
  * Enhanced Vector Database Error Handler
  */
 
-import { 
-  VectorDBErrorType, 
+import {
+  VectorDBErrorType,
   VectorDBError
 } from './vector-db-error-handler';
 import { categorizeErrorWithProvider } from './database-error-patterns';
+
+// Helper type for error-like objects
+interface ErrorLike {
+  message?: unknown
+  code?: unknown
+  stack?: unknown
+  status?: unknown
+  statusCode?: unknown
+  retryable?: unknown
+}
 
 /**
  * Enhanced error handler class for vector database operations
@@ -49,17 +59,19 @@ export class VectorDbErrorHandler {
         this.provider,
         mergedDetails
       );
+      const errorLike = error as ErrorLike;
       if (typeof retryable === 'boolean') {
-        (enriched as any).retryable = retryable;
-      } else if (typeof (error as any).retryable === 'boolean') {
-        (enriched as any).retryable = (error as any).retryable;
+        (enriched as ErrorLike).retryable = retryable;
+      } else if (typeof errorLike.retryable === 'boolean') {
+        (enriched as ErrorLike).retryable = errorLike.retryable;
       }
       return enriched;
     }
     // Check for Azure PostgreSQL specific pgvector errors (guard against non-objects)
     if (this.isAzurePgVectorError(error)) {
-      const message = (typeof (error as any)?.message === 'string')
-        ? (error as any).message
+      const errorLike = error as ErrorLike;
+      const message = (typeof errorLike?.message === 'string')
+        ? errorLike.message
         : 'Azure PostgreSQL pgvector extension error';
       const ctx = {
         ...additionalContext,
@@ -76,7 +88,7 @@ export class VectorDbErrorHandler {
         ctx
       );
       if (typeof retryable === 'boolean') {
-        (enriched as any).retryable = retryable;
+        (enriched as ErrorLike).retryable = retryable;
       }
       return enriched;
     }
@@ -92,17 +104,21 @@ export class VectorDbErrorHandler {
       message = error.message || 'Unknown error';
     } else if (typeof error === 'string') {
       message = error;
-    } else if (error && typeof (error as any).message === 'string') {
-      message = (error as any).message as string;
-    } else if ((error as any)?.message && typeof (error as any).message !== 'string') {
-      message = String((error as any).message?.text || 'Unknown error');
     } else {
-      message = 'Unknown error';
+      const errorLike = error as ErrorLike;
+      if (error && typeof errorLike.message === 'string') {
+        message = errorLike.message as string;
+      } else if (errorLike?.message && typeof errorLike.message !== 'string') {
+        const messageObj = errorLike.message as { text?: unknown };
+        message = String(messageObj?.text || 'Unknown error');
+      } else {
+        message = 'Unknown error';
+      }
     }
 
     // Prepare details including stack and original error if non-Error
     const details: Record<string, unknown> = {};
-    const stack = (error instanceof Error ? error.stack : (error as any)?.stack);
+    const stack = (error instanceof Error ? error.stack : (error as ErrorLike)?.stack);
     if (typeof stack === 'string') details.stack = stack;
     if (!(error instanceof Error)) details.originalError = error as unknown;
 
@@ -126,8 +142,9 @@ export class VectorDbErrorHandler {
     if (
       resolvedErrorType === VectorDBErrorType.UNKNOWN_ERROR
     ) {
-      const m = String((error as any)?.message ?? '').toLowerCase();
-      const c = String((error as any)?.code ?? '').toLowerCase();
+      const errorLike = error as ErrorLike;
+      const m = String(errorLike?.message ?? '').toLowerCase();
+      const c = String(errorLike?.code ?? '').toLowerCase();
       if (
         m.includes('does not exist') || c.startsWith('42') ||
         m.includes('wrongtype') || m.includes('unknown command') || m.includes('operation against a key') || c === 'wrongtype'
@@ -144,7 +161,7 @@ export class VectorDbErrorHandler {
       this.provider,
       mergedDetails
     );
-    (enriched as any).retryable = effectiveRetryable;
+    (enriched as ErrorLike).retryable = effectiveRetryable;
     return enriched;
   }
 
@@ -160,8 +177,11 @@ export class VectorDbErrorHandler {
    */
   public isRetryableError(error: unknown): boolean {
     // Respect explicit retryable flag on VectorDBError
-    if (error instanceof VectorDBError && typeof (error as any).retryable === 'boolean') {
-      return (error as any).retryable as boolean;
+    if (error instanceof VectorDBError) {
+      const errorLike = error as ErrorLike;
+      if (typeof errorLike.retryable === 'boolean') {
+        return errorLike.retryable as boolean;
+      }
     }
 
     // Prefer using VectorDBError.type when available
@@ -184,11 +204,12 @@ export class VectorDbErrorHandler {
    */
   private isAzurePgVectorError(error: unknown): boolean {
     if (!error) return false;
-    const message = String((error as any)?.message ?? '').toLowerCase();
-    
+    const errorLike = error as ErrorLike;
+    const message = String(errorLike?.message ?? '').toLowerCase();
+
     // Check for Azure PostgreSQL specific pgvector errors
     return (
-      message.includes('vector') && 
+      message.includes('vector') &&
       (
         message.includes('shared_preload_libraries') ||
         message.includes('extension "vector" is not available') ||
@@ -207,9 +228,10 @@ export class VectorDbErrorHandler {
    */
   private getGenericFallbackType(error: unknown): VectorDBErrorType {
     if (!error) return VectorDBErrorType.UNKNOWN_ERROR;
-    const msg = String((error as any)?.message ?? '').toLowerCase();
-    const code = String((error as any)?.code ?? '');
-    const status = (error as any)?.status ?? (error as any)?.statusCode ?? 0;
+    const errorLike = error as ErrorLike;
+    const msg = String(errorLike?.message ?? '').toLowerCase();
+    const code = String(errorLike?.code ?? '');
+    const status = errorLike?.status ?? errorLike?.statusCode ?? 0;
 
     if (
       code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ETIMEDOUT' ||
