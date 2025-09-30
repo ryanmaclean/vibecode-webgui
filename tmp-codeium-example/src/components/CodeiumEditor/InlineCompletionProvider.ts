@@ -6,14 +6,6 @@ import { Status } from './Status';
 import { MonacoCompletionProvider } from './CompletionProvider';
 import { LanguageServerService } from '../../api/proto/exa/language_server_pb/language_server_connect';
 
-declare module 'monaco-editor' {
-  namespace editor {
-    interface ICodeEditor {
-      _commandService: { executeCommand(command: string): unknown };
-    }
-  }
-}
-
 export class InlineCompletionProvider
   implements monaco.languages.InlineCompletionsProvider
 {
