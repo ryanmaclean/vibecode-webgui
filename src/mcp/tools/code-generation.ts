@@ -2,7 +2,13 @@
  * Code generation tools for MCP
  */
 
-export async function generateCode(args: any) {
+interface GenerateCodeArgs {
+  prompt: string
+  language: string
+  context?: unknown
+}
+
+export async function generateCode(args: GenerateCodeArgs) {
   const { prompt, language, context } = args;
 
   // TODO: Integrate with actual AI code generation

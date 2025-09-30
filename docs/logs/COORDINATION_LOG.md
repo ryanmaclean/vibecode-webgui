@@ -452,3 +452,12 @@ This log captures how multiple agents successfully coordinated work to avoid con
 ### 2025-09-30 07:22 UTC — Claude responder gating
 - Added concurrency + secret validation to `.github/workflows/claude.yml`; @claude responses now skip with a notice when the OAuth token is missing.
 - Updated the corresponding issue draft.
+
+### 2025-09-30 07:24 UTC — Secret scanning concurrency
+- Added concurrency guard to `.github/workflows/secret-scanning.yml` so overlapping TruffleHog runs don’t pile up; TODO updated to note the change.
+
+### 2025-09-30 07:25 UTC — Stale sweeper concurrency
+- Added concurrency guard to `.github/workflows/stale.yml` so nightly stale runs don’t overlap; TODO/logs updated accordingly.
+
+### 2025-09-30 07:27 UTC — CodeArkt evaluation TODO added
+- Added TODO to assess https://github.com/IlyaGusev/codearkt (license, sample projects) before integrating into the repo.

@@ -2,7 +2,13 @@
  * Deployment tools for MCP
  */
 
-export async function deployProject(args: any) {
+interface DeployProjectArgs {
+  workspaceId: string
+  environment: string
+  buildCommand?: string
+}
+
+export async function deployProject(args: DeployProjectArgs) {
   const { workspaceId, environment, buildCommand } = args;
 
   return {

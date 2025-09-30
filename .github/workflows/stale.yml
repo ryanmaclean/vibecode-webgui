@@ -5,6 +5,10 @@ on:
     - cron: '30 4 * * *' # nightly UTC
   workflow_dispatch:
 
+concurrency:
+  group: stale-sweeper
+  cancel-in-progress: true
+
 permissions:
   issues: write
   pull-requests: write

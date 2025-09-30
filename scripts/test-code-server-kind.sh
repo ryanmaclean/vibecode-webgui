@@ -4,15 +4,23 @@ set -euo pipefail
 CLUSTER_NAME=${KIND_CLUSTER_NAME:-vibecode-test}
 NAMESPACE=vibecode-platform
 SERVICE=code-server-kind
-IMAGE=vibecode/code-server:monaco053
+IMAGE=${CODE_SERVER_IMAGE:-ghcr.io/ryanmaclean/vibecode-codeserver:latest}
 
-echo "==> Building local code-server image (Monaco 0.53)"
-if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
-  docker build -t "$IMAGE" -f docker/code-server/Dockerfile.kind .
+if [ "${SKIP_CODE_SERVER_BUILD:-false}" != "true" ]; then
+  echo "==> Building local code-server image"
+  if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+    docker build -t "$IMAGE" -f docker/code-server/Dockerfile.kind .
+  fi
+else
+  echo "==> Skipping local build; using existing image $IMAGE"
 fi
 
 echo "==> Loading image into KinD cluster $CLUSTER_NAME"
-kind load docker-image "$IMAGE" --name "$CLUSTER_NAME"
+if [ "${SKIP_CODE_SERVER_BUILD:-false}" != "true" ]; then
+  kind load docker-image "$IMAGE" --name "$CLUSTER_NAME"
+else
+  echo "==> Skipping kind image load for remote image"
+fi
 
 echo "==> Ensuring namespace $NAMESPACE exists"
 kubectl get namespace "$NAMESPACE" >/dev/null 2>&1 || kubectl create namespace "$NAMESPACE" >/dev/null
