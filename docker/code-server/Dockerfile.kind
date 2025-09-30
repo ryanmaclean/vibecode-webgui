@@ -15,7 +15,7 @@ RUN apt-get update \
 
 USER coder
 ENV PATH="/home/coder/.local/bin:${PATH}"
-RUN python3 -m pip install --user --no-cache-dir --break-system-packages aider-chat goose-ai
+RUN python3 -m pip install --user --no-cache-dir --break-system-packages aider-chat goose-ai 'langfuse<3'
 RUN mkdir -p /home/coder/.local/share/code-server/User
 COPY --chown=coder:coder docker/code-server/settings.json /home/coder/.local/share/code-server/User/settings.json
 COPY --chown=coder:coder docker/code-server/keybindings.json /home/coder/.local/share/code-server/User/keybindings.json

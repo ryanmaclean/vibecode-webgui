@@ -17,6 +17,9 @@ kind load docker-image "$IMAGE" --name "$CLUSTER_NAME"
 echo "==> Applying k8s manifest"
 kubectl apply -f k8s/code-server-kind.yaml >/dev/null
 
+echo "==> Restarting deployment to pick up latest image"
+kubectl rollout restart deployment/$SERVICE -n "$NAMESPACE" >/dev/null
+
 echo "==> Waiting for rollout"
 kubectl rollout status deployment/$SERVICE -n "$NAMESPACE" --timeout=120s >/dev/null
 
@@ -25,13 +28,13 @@ kubectl port-forward svc/$SERVICE -n "$NAMESPACE" 3100:8080 >/tmp/code-server-po
 PF_PID=$!
 trap 'kill $PF_PID >/dev/null 2>&1 || true' EXIT
 sleep 3
-curl -s --max-redirs 2 -w '%{http_code}\n' -o /dev/null http://localhost:3100
+curl -s -L --max-redirs 2 -w '%{http_code}\n' -o /dev/null http://localhost:3100
 
 kill $PF_PID >/dev/null 2>&1 || true
 
 echo "==> NodePort check"
 CONTROL_PLANE_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CLUSTER_NAME}-control-plane)
-curl -s --max-redirs 2 -w '%{http_code}\n' -o /dev/null http://$CONTROL_PLANE_IP:31080
+curl -s -L --max-redirs 2 -w '%{http_code}\n' -o /dev/null http://$CONTROL_PLANE_IP:31080
 
 echo "==> Verifying terminal editors"
 CODE_SERVER_NAMESPACE="$NAMESPACE" CODE_SERVER_SELECTOR="app=code-server,tier=workspace" \

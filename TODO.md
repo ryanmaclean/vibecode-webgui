@@ -26,6 +26,17 @@
 ### Next Steps
 - [x] `curl http://localhost:3100/healthz` with port-forward active and log the status — HTTP/1.1 200 OK confirmed.
 
+## Agent Update (2025-09-30 03:25 UTC)
+
+- Rebuilt the KinD code-server image from `docker/code-server/Dockerfile.kind`, pinning `langfuse<3` alongside the existing Vim/Neovim/Emacs and Aider/Goose installs so the CLI dependencies resolve on fresh pods.
+- Extended `scripts/test-code-server-editors.sh` to verify both terminal editors and AI CLIs; the helper now checks `aider` and `goose` alongside the editors.
+- Updated `scripts/test-code-server-kind.sh` to restart the deployment and call the verification helper; the refreshed script passes end-to-end with the new image.
+
+### Next Steps
+- [x] Assess image size impact and prune optional dependencies if the KinD cluster gets tight on disk. — `docker images vibecode/code-server:monaco053` reports 2.31GB; monitor Kind node disk space before adding more tooling.
+- [ ] Decide where to surface the enhanced smoke test in CI (e.g., post-merge job or nightly run).
+- [x] Capture quickstart snippets for running `aider`/`goose` inside the pod so folks know how to authenticate. — Added walkthrough to `docs/logs/COORDINATION_LOG.md` (2025-09-30 03:35 UTC entry).
+
 ## Agent Update (2025-09-30 03:05 UTC)
 
 - Integrated the new editor verification helper into `scripts/test-code-server-kind.sh` so the KinD smoke test now asserts Vim/Neovim/Emacs availability.
@@ -33,7 +44,7 @@
 
 ### Next Steps
 - [ ] Evaluate caching the apt-installed editors inside the base image to shorten CI runs.
-- [ ] Follow up on extending the editor script once aider/goose CLI installs are available.
+- [x] Follow up on extending the editor script once aider/goose CLI installs are available. — Script now checks both CLIs and is wired into the smoke test.
 - [ ] Consider surfacing the new checks in CI (GitHub Actions) after other agents sign off.
 
 ## Agent Update (2025-09-30 02:50 UTC)
