@@ -9,19 +9,37 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { CompletionCopilot } from 'monacopilot';
+import { AIProvider, MistralModel } from '../../types/monacopilot';
 
-// Initialize the completion copilot with your preferred provider
-// You can use: 'openai', 'mistral', 'anthropic', 'groq', 'cohere', 'fireworks-ai'
-const copilot = new CompletionCopilot(
-  process.env.OPENAI_API_KEY || process.env.MISTRAL_API_KEY || '',
-  {
-    provider: (process.env.AI_COMPLETION_PROVIDER as any) || 'openai',
-    model: process.env.AI_COMPLETION_MODEL || 'gpt-4-turbo-preview',
-    // Optional: Configure temperature, max tokens, etc.
-    temperature: 0.2,
-    maxTokens: 1000,
+// Get environment configuration
+const provider = (process.env.AI_COMPLETION_PROVIDER as AIProvider) || 'mistral';
+const apiKey = process.env.OPENAI_API_KEY || process.env.MISTRAL_API_KEY || '';
+const modelFromEnv = process.env.AI_COMPLETION_MODEL;
+
+// Map provider to appropriate model configuration
+function getModelConfig() {
+  switch (provider) {
+    case 'mistral':
+      // Monacopilot only supports Mistral's 'codestral' model currently
+      const mistralModel: MistralModel = 'codestral';
+      return {
+        provider: 'mistral' as const,
+        model: mistralModel
+      };
+    default:
+      // For other providers, use custom model function
+      return {
+        model: async (prompt: any) => {
+          // Custom implementation for other providers would go here
+          // For now, return a placeholder response
+          return { text: null };
+        }
+      };
   }
-);
+}
+
+// Initialize the completion copilot with proper typing
+const copilot = new CompletionCopilot(apiKey, getModelConfig());
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,7 +74,9 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     status: 'ok',
-    provider: process.env.AI_COMPLETION_PROVIDER || 'openai',
-    model: process.env.AI_COMPLETION_MODEL || 'gpt-4-turbo-preview',
+    provider: provider,
+    model: provider === 'mistral' ? 'codestral' : 'custom',
+    supportedProviders: ['mistral'],
+    note: 'Currently only Mistral Codestral is fully supported by monacopilot library'
   });
 }

@@ -41,6 +41,7 @@ AI_COMPLETION_MODEL=claude-3-sonnet-20240229
 ```typescript
 import * as monaco from 'monaco-editor';
 import { setupMonacopilot } from '@/lib/monaco/monacopilot-integration';
+import type { EnhancedMonacopilotConfig } from '@/types/monacopilot';
 
 // Create your Monaco editor
 const editor = monaco.editor.create(document.getElementById('editor'), {
@@ -49,12 +50,29 @@ const editor = monaco.editor.create(document.getElementById('editor'), {
   automaticLayout: true,
 });
 
-// Enable AI completion
-setupMonacopilot(monaco, editor, {
+// Enable AI completion with enhanced configuration
+const config: EnhancedMonacopilotConfig = {
   endpoint: '/api/code-completion',
   language: 'typescript',
+  provider: 'mistral',
+  model: 'codestral',
   debug: process.env.NODE_ENV === 'development',
-});
+  trigger: 'onIdle',
+  maxContextLines: 100,
+  enableCaching: true,
+  technologies: ['react', 'nextjs', 'typescript'],
+  modelParameters: {
+    temperature: 0.2,
+    maxTokens: 1000
+  },
+  onCompletionAccepted: () => console.log('Completion accepted!'),
+  onError: (error) => console.error('Completion error:', error)
+};
+
+const registration = setupMonacopilot(monaco, editor, config);
+
+// Later, cleanup when component unmounts
+registration.deregister();
 ```
 
 ### 3. That's it!
@@ -104,32 +122,153 @@ GROQ_API_KEY=...
 AI_COMPLETION_MODEL=mixtral-8x7b-32768
 ```
 
+## TypeScript Support
+
+VibeCode includes comprehensive TypeScript type definitions for Monacopilot configuration in `src/types/monacopilot.d.ts`.
+
+### Available Types
+
+```typescript
+import type {
+  // Basic configuration
+  MonacopilotConfig,
+  EnhancedMonacopilotConfig,
+  
+  // AI providers and models  
+  AIProvider,
+  OpenAIModel,
+  MistralModel,
+  AnthropicModel,
+  GroqModel,
+  
+  // Configuration options
+  CompletionTrigger,
+  SupportedLanguage,
+  ModelParameters,
+  RelatedFile,
+  
+  // Provider-specific configs
+  OpenAIConfig,
+  MistralConfig,
+  AnthropicConfig,
+  
+  // Callback types
+  OnCompletionAccepted,
+  OnCompletionRejected,
+  OnError
+} from '@/types/monacopilot';
+```
+
+### Provider-Specific Configuration
+
+```typescript
+// OpenAI configuration
+const openaiConfig: OpenAIConfig = {
+  provider: 'openai',
+  model: 'gpt-4-turbo',
+  endpoint: '/api/code-completion',
+  language: 'typescript',
+  apiKey: process.env.OPENAI_API_KEY
+};
+
+// Mistral configuration
+const mistralConfig: MistralConfig = {
+  provider: 'mistral',
+  model: 'codestral',
+  endpoint: '/api/code-completion',
+  language: 'typescript',
+  apiKey: process.env.MISTRAL_API_KEY
+};
+```
+
+### Enhanced Configuration Example
+
+```typescript
+const enhancedConfig: EnhancedMonacopilotConfig = {
+  // Required
+  endpoint: '/api/code-completion',
+  language: 'typescript',
+  
+  // AI Provider
+  provider: 'mistral',
+  model: 'codestral',
+  
+  // Behavior
+  trigger: 'onIdle',
+  enableCaching: true,
+  allowFollowUpCompletions: true,
+  
+  // Context
+  filename: 'utils.ts',
+  technologies: ['react', 'nextjs', 'tailwindcss'],
+  maxContextLines: 150,
+  
+  // Model parameters
+  modelParameters: {
+    temperature: 0.2,
+    maxTokens: 1000,
+    topP: 0.95
+  },
+  
+  // Callbacks
+  onCompletionAccepted: () => {
+    console.log('User accepted completion');
+  },
+  onError: (error) => {
+    console.error('Completion error:', error.message);
+  }
+};
+```
+
 ## Advanced Configuration
 
 ### Custom Headers
 
 ```typescript
-setupMonacopilot(monaco, editor, {
+import type { EnhancedMonacopilotConfig } from '@/types/monacopilot';
+
+const config: EnhancedMonacopilotConfig = {
   endpoint: '/api/code-completion',
   language: 'typescript',
   headers: {
     'Authorization': 'Bearer your-token',
     'X-Custom-Header': 'value',
   },
-});
+  // Enhanced configuration options
+  provider: 'openai',
+  model: 'gpt-4-turbo',
+  trigger: 'onIdle',
+  technologies: ['react', 'nextjs'],
+  modelParameters: {
+    temperature: 0.2,
+    maxTokens: 500
+  }
+};
+
+setupMonacopilot(monaco, editor, config);
 ```
 
 ### Multiple Editors
 
 ```typescript
 import { setupMonacopilotMulti } from '@/lib/monaco/monacopilot-integration';
+import type { EnhancedMonacopilotConfig } from '@/types/monacopilot';
 
 const editors = [editor1, editor2, editor3];
 
-setupMonacopilotMulti(monaco, editors, {
+const config: EnhancedMonacopilotConfig = {
   endpoint: '/api/code-completion',
   language: 'typescript',
-});
+  provider: 'mistral',
+  model: 'codestral',
+  trigger: 'onIdle',
+  enableCaching: true
+};
+
+const registrations = setupMonacopilotMulti(monaco, editors, config);
+
+// Cleanup all registrations later
+registrations.forEach(reg => reg.deregister());
 ```
 
 ### Custom Backend
