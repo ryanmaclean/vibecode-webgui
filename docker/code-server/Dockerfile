@@ -1,5 +1,5 @@
 # VibeCode Custom code-server with pre-installed extensions
-FROM codercom/code-server:4.101.2
+FROM codercom/code-server:4.104.2
 
 # Switch to root for setup
 USER root
@@ -43,7 +43,7 @@ RUN wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz \
     && ln -s /usr/local/go/bin/go /usr/local/bin/go
 
 # Install Goose for database migrations
-RUN go install github.com/pressly/goose/v3/cmd/goose@latest \
+RUN CGO_ENABLED=0 go install github.com/pressly/goose/v3/cmd/goose@latest \
     && echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> /home/coder/.bashrc \
     && mkdir -p /home/coder/.vscode/extensions/goose-integration \
     && echo 'alias goose="goose -dir /home/coder/workspace/migrations"' >> /home/coder/.bashrc
