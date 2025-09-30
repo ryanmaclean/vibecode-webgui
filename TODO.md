@@ -426,6 +426,7 @@
   - ⏳ Agent Codex (2025-09-30 00:46 UTC): Re-running both `poll-traces` queries now that Datadog keys validate successfully.
   - ❌ Agent Codex (2025-09-30 00:47 UTC): `poll-traces.sh` still returns `{ "errors": ["Not found"] }` for both services over `now-2h`; will retry after trace ingestion is confirmed.
   - ❌ Agent Codex (2025-09-30 01:06 UTC): `poll-traces.sh` again returns `{ "errors": ["Not found"] }` for both services over `now-2h`; spans still absent.
+  - ❌ Agent Codex (2025-09-30 02:04 UTC): Latest poll (`now-2h`) continues to return `{ "errors": ["Not found"] }`; no traces yet.
   - ❌ Agent Codex (2025-09-30 01:16 UTC): Re-run over `now-2h` still yields `{ "errors": ["Not found"] }`; waiting on Datadog indexing.
   - ❌ Agent Codex (2025-09-30 01:23 UTC): Post-demo poll still returns `{ "errors": ["Not found"] }` for both services; spans not visible yet.
   - ❌ Agent Codex (2025-09-30 01:29 UTC): Widened to `now-12h`; Datadog still reports `{ "errors": ["Not found"] }` for both services.

@@ -20,6 +20,40 @@ This directory contains the configuration for the custom VibeCode code-server, w
 - **Indent Rainbow** - Visual indentation
 - **Path Intellisense** - Auto-complete paths
 
+### Code Quality & Formatting (MIT)
+- **Prettier** - Code formatter
+- **Better Comments** - Enhanced comment highlighting
+- **Auto Rename Tag** - HTML/XML tag renaming
+- **Auto Close Tag** - Auto close HTML tags
+
+### Git Tools (MIT)
+- **Git Graph** - Visual git history
+- **Git History** - View git log
+- **Conventional Commits** - Commit message helper
+
+### Testing & Debugging (MIT)
+- **Jest** - Jest test runner
+- **Test Explorer UI** - Unified test interface
+- **Coverage Gutters** - Display test coverage
+
+### Project Management (MIT)
+- **Project Manager** - Manage multiple projects
+- **Bookmarks** - Mark lines and jump
+- **Live Server** - Local dev server with live reload
+- **Import Cost** - Display import sizes
+
+### Additional Language Support (MIT/Apache)
+- **YAML** - YAML language support
+- **XML** - XML language support
+- **Prisma** - Prisma ORM support
+- **GraphQL** - GraphQL support
+- **Tailwind CSS IntelliSense** - Tailwind autocomplete
+
+### Utilities (MIT)
+- **DotENV** - .env file support
+- **EditorConfig** - EditorConfig support
+- **Peacock** - Color workspace
+
 ### Database Tools (MIT/Apache)
 - **SQLTools** - Database management
 - **SQLTools PostgreSQL Driver** - pgvector support
