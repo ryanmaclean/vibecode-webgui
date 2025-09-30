@@ -58,6 +58,10 @@
   "telemetry.telemetryLevel": "off",
   "http.proxyStrictSSL": false,
   "workbench.trustedDomains.promptInTrustedWorkspace": false,
+  "remote.extensionKind": {
+    "anthropic.claude-code": ["ui"],
+    "openai.chatgpt": ["ui"]
+  },
   "http.linkProtectionTrustedDomains": [
     "https://*.github.com",
     "https://*.githubusercontent.com",
@@ -98,6 +102,10 @@
     "https://localhost",
     "http://localhost",
     "https://127.0.0.1",
-    "http://127.0.0.1"
+    "http://127.0.0.1",
+    "http://localhost:8765",
+    "https://localhost:8765",
+    "http://localhost:46203",
+    "https://localhost:46203"
   ]
 }

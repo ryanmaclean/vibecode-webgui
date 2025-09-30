@@ -394,3 +394,8 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - Added weekly cron, secret-aware outputs, and job-level gating to `.github/workflows/db-monitoring-deployment.yml` so Postgres/Azure/Datadog phases only run when creds exist; missing secrets now short-circuit with a notice.
 - Slack and Azure steps skip cleanly without credentials; benchmark + Datadog phases only run once database validation succeeds.
 - TODO: implement Azure resource cleanup, add reporting summary, rotate secrets, and open the GitHub issue from the draft.
+
+### 2025-09-30 06:32 UTC — Docs dual-system workflow tuned
+- Added weekly cron and auto-detection between Astro/Next.js in `.github/workflows/deploy-docs.yml`; gated Node setup/build steps accordingly.
+- Recorded draft in `docs/logs/workflow-issues/deploy-docs.md` and updated TODO/workflow tracking to note remaining cache/reporting work.
+- Next: finalize cache strategy per docs system and document dispatch usage in the runbook before closing the TODO.

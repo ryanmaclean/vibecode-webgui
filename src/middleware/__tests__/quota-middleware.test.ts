@@ -1,47 +1,44 @@
-import { NextRequest } from 'next/server';
-import { withQuotaCheck, createQuotaResponse } from '../quota-middleware';
+import { NextRequest } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { resourceManager } from '@/lib/resource-management'
+import { withQuotaCheck, createQuotaResponse } from '../quota-middleware'
 
 // Mock external dependencies
 jest.mock('next-auth', () => ({
   getServerSession: jest.fn()
-}));
+}))
 
 jest.mock('@/lib/auth', () => ({
   authOptions: {}
-}));
+}))
 
 jest.mock('@/lib/resource-management', () => ({
   resourceManager: {
     checkQuota: jest.fn(),
     recordAPICall: jest.fn()
   }
-}));
+}))
 
 describe('Quota Middleware', () => {
-  let mockRequest: NextRequest;
-  let mockGetServerSession: jest.MockedFunction<any>;
-  let mockResourceManager: any;
+  const mockedGetServerSession = jest.mocked(getServerSession)
+  const mockedResourceManager = jest.mocked(resourceManager, true)
+  let mockRequest: NextRequest
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    
-    // Setup mock request
+    jest.clearAllMocks()
+
     mockRequest = new NextRequest('https://example.com/api/test', {
       method: 'POST',
       headers: {
         'content-type': 'application/json'
       }
-    });
-
-    // Setup mocks
-    mockGetServerSession = require('next-auth').getServerSession;
-    mockResourceManager = require('@/lib/resource-management').resourceManager;
-  });
+    })
+  })
 
   describe('withQuotaCheck', () => {
     describe('Authentication', () => {
       it('should return authentication required when no session', async () => {
-        mockGetServerSession.mockResolvedValue(null);
+        mockedGetServerSession.mockResolvedValue(null)
 
         const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
@@ -49,11 +46,11 @@ describe('Quota Middleware', () => {
           allowed: false,
           reason: 'Authentication required'
         });
-        expect(mockResourceManager.checkQuota).not.toHaveBeenCalled();
+        expect(mockedResourceManager.checkQuota).not.toHaveBeenCalled()
       });
 
       it('should return authentication required when session has no user', async () => {
-        mockGetServerSession.mockResolvedValue({ user: null });
+        mockedGetServerSession.mockResolvedValue({ user: null } as any)
 
         const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
@@ -61,11 +58,11 @@ describe('Quota Middleware', () => {
           allowed: false,
           reason: 'Authentication required'
         });
-        expect(mockResourceManager.checkQuota).not.toHaveBeenCalled();
+        expect(mockedResourceManager.checkQuota).not.toHaveBeenCalled()
       });
 
       it('should return authentication required when user has no id', async () => {
-        mockGetServerSession.mockResolvedValue({ user: { email: 'test@example.com' } });
+        mockedGetServerSession.mockResolvedValue({ user: { email: 'test@example.com' } } as any)
 
         const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
@@ -73,37 +70,37 @@ describe('Quota Middleware', () => {
           allowed: false,
           reason: 'Authentication required'
         });
-        expect(mockResourceManager.checkQuota).not.toHaveBeenCalled();
+        expect(mockedResourceManager.checkQuota).not.toHaveBeenCalled()
       });
     });
 
     describe('Quota Checking', () => {
       beforeEach(() => {
-        mockGetServerSession.mockResolvedValue({
+        mockedGetServerSession.mockResolvedValue({
           user: { id: '123' }
-        });
+        } as any)
       });
 
       it('should allow action when quota check passes', async () => {
-        mockResourceManager.checkQuota.mockResolvedValue({
+        mockedResourceManager.checkQuota.mockResolvedValue({
           allowed: true,
           quotas: { maxWorkspaces: 10 },
           usage: { workspaceCount: 5 }
-        });
+        })
 
         const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
         expect(result).toEqual({ allowed: true });
-        expect(mockResourceManager.checkQuota).toHaveBeenCalledWith(123, 'create_workspace', undefined);
+        expect(mockedResourceManager.checkQuota).toHaveBeenCalledWith(123, 'create_workspace', undefined)
       });
 
       it('should deny action when quota check fails', async () => {
-        mockResourceManager.checkQuota.mockResolvedValue({
+        mockedResourceManager.checkQuota.mockResolvedValue({
           allowed: false,
           reason: 'Maximum workspaces exceeded',
           quotas: { maxWorkspaces: 10 },
           usage: { workspaceCount: 10 }
-        });
+        })
 
         const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
@@ -113,60 +110,60 @@ describe('Quota Middleware', () => {
           remainingQuota: 0,
           resetTime: expect.any(Number)
         });
-        expect(mockResourceManager.checkQuota).toHaveBeenCalledWith(123, 'create_workspace', undefined);
+        expect(mockedResourceManager.checkQuota).toHaveBeenCalledWith(123, 'create_workspace', undefined)
       });
 
       it('should pass file size option for upload_file action', async () => {
-        mockResourceManager.checkQuota.mockResolvedValue({
+        mockedResourceManager.checkQuota.mockResolvedValue({
           allowed: true,
           quotas: { maxFileSize: 1000000 },
           usage: { workspaceCount: 5 }
-        });
+        })
 
         const result = await withQuotaCheck(mockRequest, 'upload_file', { fileSize: 500000 });
 
         expect(result).toEqual({ allowed: true });
-        expect(mockResourceManager.checkQuota).toHaveBeenCalledWith(123, 'upload_file', 500000);
+        expect(mockedResourceManager.checkQuota).toHaveBeenCalledWith(123, 'upload_file', 500000)
       });
     });
 
     describe('API Call Recording', () => {
       beforeEach(() => {
-        mockGetServerSession.mockResolvedValue({
+        mockedGetServerSession.mockResolvedValue({
           user: { id: '123' }
-        });
-        mockResourceManager.checkQuota.mockResolvedValue({
+        } as any)
+        mockedResourceManager.checkQuota.mockResolvedValue({
           allowed: true,
           quotas: { maxAPICallsPerHour: 1000 },
           usage: { apiCallsThisHour: 500 }
-        });
+        })
       });
 
       it('should record API call for api_call action', async () => {
         const result = await withQuotaCheck(mockRequest, 'api_call');
 
         expect(result).toEqual({ allowed: true });
-        expect(mockResourceManager.recordAPICall).toHaveBeenCalledWith(123, '/api/test');
+        expect(mockedResourceManager.recordAPICall).toHaveBeenCalledWith(123, '/api/test')
       });
 
       it('should not record API call for non-api_call actions', async () => {
-        await withQuotaCheck(mockRequest, 'create_workspace');
-        await withQuotaCheck(mockRequest, 'upload_file');
-        await withQuotaCheck(mockRequest, 'create_session');
+        await withQuotaCheck(mockRequest, 'create_workspace')
+        await withQuotaCheck(mockRequest, 'upload_file')
+        await withQuotaCheck(mockRequest, 'create_session')
 
-        expect(mockResourceManager.recordAPICall).not.toHaveBeenCalled();
+        expect(mockedResourceManager.recordAPICall).not.toHaveBeenCalled()
       });
     });
 
     describe('Error Handling', () => {
       beforeEach(() => {
-        mockGetServerSession.mockResolvedValue({
+        mockedGetServerSession.mockResolvedValue({
           user: { id: '123' }
-        });
+        } as any)
       });
 
       it('should handle quota check errors gracefully', async () => {
-        mockResourceManager.checkQuota.mockRejectedValue(new Error('Database error'));
+        mockedResourceManager.checkQuota.mockRejectedValue(new Error('Database error'))
 
         const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
@@ -177,12 +174,12 @@ describe('Quota Middleware', () => {
       });
 
       it('should handle API call recording errors gracefully', async () => {
-        mockResourceManager.checkQuota.mockResolvedValue({
+        mockedResourceManager.checkQuota.mockResolvedValue({
           allowed: true,
           quotas: { maxAPICallsPerHour: 1000 },
           usage: { apiCallsThisHour: 500 }
-        });
-        mockResourceManager.recordAPICall.mockRejectedValue(new Error('Database error'));
+        })
+        mockedResourceManager.recordAPICall.mockRejectedValue(new Error('Database error'))
 
         const result = await withQuotaCheck(mockRequest, 'api_call');
 
