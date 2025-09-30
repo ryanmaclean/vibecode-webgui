@@ -3,9 +3,9 @@
 - Extending AI provider coverage in the code completion API and documentation (Gemini CLI, OpenCode, Codex, Claude Code, Aider, Goose, Project4).
 
 ### Next Steps
-- [ ] Add provider handlers for gemini-cli, aider, goose, project4 (reuse OpenAI-compatible flows where possible).
-- [ ] Update `.env.local.example`, README/docs to include the new provider knobs.
-- [ ] Re-run type-check + monacopilot verification after changes.
+- [x] Add provider handlers for gemini-cli, aider, goose, project4 (reuse OpenAI-compatible flows where possible). — ✅ API route dispatch updated (Gemini CLI, Aider, GooseAI, Project4).
+- [x] Update `.env.local.example`, README/docs to include the new provider knobs. — ✅ Env template & Monacopilot guide refreshed.
+- [x] Re-run type-check + monacopilot verification after changes. — ✅ npm run type-check & scripts/verify-monacopilot.js.
 
 ## Agent Update (2025-09-30 01:52 UTC)
 
@@ -69,8 +69,8 @@
 - Hit `/healthz` via the port-forward and received HTTP 200.
 
 ### Next Steps
-- Document the curl test so others can verify the editor quickly, or wire an automated health check if needed.
-- Capture the `sudo apt-get install vim` steps in docs/TODO so future testers can enable the terminal editor.
+- [x] Document the curl test so others can verify the editor quickly, or wire an automated health check if needed. — ✅ Logged in docs/logs/COORDINATION_LOG.md (2025-09-30 code-server editor smoke test).
+- [x] Capture the `sudo apt-get install vim` steps in docs/TODO so future testers can enable the terminal editor. — ✅ Same coordination log entry covers vim/neovim/emacs installs.
 
 ## Agent Update (2025-09-30 01:30 UTC)
 
