@@ -9,7 +9,10 @@ import { SessionProvider } from 'next-auth/react'
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { datadogLogs } from '@datadog/browser-logs'
+import { ThemeProvider } from 'next-themes'
+
 import { ConsoleProvider } from '@/providers/ConsoleProvider'
+import { UserPreferencesProvider } from '@/providers/UserPreferencesProvider'
 import RUMMonitoring from '@/lib/monitoring/rum-client'
 import { getRUMPublicConfig } from '@/lib/monitoring/datadog-env'
 
@@ -74,9 +77,13 @@ export default function Providers({ children }: ProvidersProps) {
 
   return (
     <SessionProvider>
-      <ConsoleProvider>
-        {children}
-      </ConsoleProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <UserPreferencesProvider>
+          <ConsoleProvider>
+            {children}
+          </ConsoleProvider>
+        </UserPreferencesProvider>
+      </ThemeProvider>
     </SessionProvider>
   )
 }

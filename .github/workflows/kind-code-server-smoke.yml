@@ -1,0 +1,46 @@
+name: KinD Code-Server Smoke Test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '45 07 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Monaco Code-Server Sanity
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      KIND_CLUSTER_NAME: vibecode-test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up KinD cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: vibecode-test
+          wait: 120s
+          config: |
+            kind: Cluster
+            apiVersion: kind.x-k8s.io/v1alpha4
+            nodes:
+              - role: control-plane
+                extraPortMappings:
+                  - containerPort: 31080
+                    hostPort: 31080
+
+      - name: Smoke test code-server deployment
+        run: |
+          chmod +x scripts/test-code-server-kind.sh
+          ./scripts/test-code-server-kind.sh
+
+      - name: Capture pod diagnostics
+        if: failure()
+        run: |
+          kubectl get pods -A
+          kubectl describe deployment/code-server-kind -n vibecode-platform || true
+          kubectl logs deployment/code-server-kind -n vibecode-platform --tail=200 || true

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "vibecode": {
+      "command": "node",
+      "args": ["--loader", "ts-node/esm", "src/mcp/server.ts"],
+      "env": {
+        "NODE_ENV": "development"
+      }
+    }
+  }
+}

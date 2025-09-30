@@ -39,68 +39,59 @@ async function startCodeServerContainer(workspaceId: string, userId: string): Pr
   containerId: string
   url: string
 }> {
-  // Real Kubernetes deployment
-  const { spawn } = require('child_process')
-  const path = require('path')
-  
-  const scriptPath = path.join(process.cwd(), 'scripts', 'create-workspace.sh')
-  
+  const { spawn } = await import('node:child_process')
+  const { join } = await import('node:path')
+
+  const scriptPath = join(process.cwd(), 'scripts', 'create-workspace.sh')
+
   return new Promise((resolve, reject) => {
     const child = spawn('bash', [scriptPath, workspaceId, userId], {
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
     })
-    
-    let stdout = ''
-    let stderr = ''
-    
+
+    let combinedStdout = ''
+    let combinedStderr = ''
+
     child.stdout.on('data', (data: Buffer) => {
-      stdout += data.toString()
+      combinedStdout += data.toString()
     })
-    
+
     child.stderr.on('data', (data: Buffer) => {
-      stderr += data.toString()
+      combinedStderr += data.toString()
     })
-    
+
     child.on('close', (code) => {
       if (code === 0) {
-        // Parse the output to get service details
-        const serviceName = `code-server-${workspaceId}-svc`
-        const internalUrl = `http://${serviceName}.vibecode.svc.cluster.local:8080`
-        
-        // Set up port forwarding for external access
-        const portNumber = 8080 + Math.floor(Math.random() * 1000) // Random port for dev
+        if (combinedStdout.trim().length > 0) {
+          console.debug('[code-server] workspace bootstrap stdout:', combinedStdout)
+        }
+
+        const portNumber = 8080 + Math.floor(Math.random() * 1000)
         const externalUrl = `http://localhost:${portNumber}`
-        
-        // Start port forwarding in background
-        const portForwardCmd = spawn('kubectl', [
-          'port-forward', '-n', 'vibecode',
-          `deployment/code-server-${workspaceId}`,
-          `${portNumber}:8080`
-        ], { detached: true, stdio: 'ignore' })
-        
+
+        const portForwardCmd = spawn(
+          'kubectl',
+          ['port-forward', '-n', 'vibecode', `deployment/code-server-${workspaceId}`, `${portNumber}:8080`],
+          { detached: true, stdio: 'ignore' },
+        )
+
         portForwardCmd.unref()
-        
+
         resolve({
           containerId: `code-server-${workspaceId}`,
-          url: externalUrl
+          url: externalUrl,
         })
       } else {
-        console.error('Workspace creation failed:', stderr)
-        reject(new Error(`Failed to create workspace: ${stderr}`))
+        console.error('Workspace creation failed:', combinedStderr || '(no stderr provided)')
+        reject(new Error(`Failed to create workspace: ${combinedStderr}`))
       }
     })
-    
+
     child.on('error', (error) => {
       console.error('Script execution error:', error)
       reject(error)
     })
   })
-}
-
-async function stopCodeServerContainer(containerId: string): Promise<void> {
-  // Simulate container cleanup
-  console.log(`Stopping container: ${containerId}`)
-  await new Promise(resolve => setTimeout(resolve, 500))
 }
 
 // Export for use in other files
