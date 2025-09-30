@@ -103,6 +103,12 @@ RUN code-server --install-extension Continue.continue
 # 2. Codeium - Free AI Code Completion (MIT)
 RUN code-server --install-extension Codeium.codeium
 
+# 3. Cline (formerly Claude Dev) - AI coding assistant (Apache 2.0)
+RUN code-server --install-extension saoudrizwan.claude-dev
+
+# 4. Aider - AI pair programming (Apache 2.0)
+RUN code-server --install-extension aider.aider-vscode
+
 # Install Language Server Protocol (LSP) Servers
 # 1. Python LSP (pylsp)
 RUN pip3 install 'python-lsp-server[all]' pylsp-mypy python-lsp-black
