@@ -20,8 +20,8 @@ on:
         default: 'staging'
         type: choice
         options:
-        - staging
-        - production
+          - staging
+          - production
       force_deploy:
         description: 'Force deployment even if tests fail'
         required: false
@@ -31,36 +31,69 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
- 
-  
+
+concurrency:
+  group: gitops-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   # Early validation of required secrets/vars (non-fatal)
   validate-ci-config:
     name: Validate CI configuration (secrets/vars)
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      has_dd_api_key: ${{ steps.secret-check.outputs.has_dd_api_key }}
+      has_dd_app_key: ${{ steps.secret-check.outputs.has_dd_app_key }}
+      has_snyk_token: ${{ steps.secret-check.outputs.has_snyk_token }}
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
       - name: Check required secrets and variables
+        id: secret-check
         shell: bash
-        continue-on-error: true
         run: |
-          missing=0
-          if [ -z "${{ secrets.DD_API_KEY }}" ]; then echo " Missing secret: DD_API_KEY"; missing=1; else echo " Found secret: DD_API_KEY"; fi
-          if [ -z "${{ secrets.DD_APP_KEY }}" ]; then echo " Missing secret: DD_APP_KEY"; missing=1; else echo " Found secret: DD_APP_KEY"; fi
-          if [ "$missing" -eq 0 ]; then
-            echo " All required Datadog secrets are present."
+          set -euo pipefail
+
+          has_dd_api_key=0
+          if [ -n "${DD_API_KEY:-}" ]; then
+            echo "✅ Found secret: DD_API_KEY"
+            has_dd_api_key=1
           else
-            echo " One or more secrets are missing. Datadog-dependent steps will be skipped."
+            echo "::warning::Missing secret: DD_API_KEY (Datadog notifications and CI visibility will be skipped)."
           fi
+
+          has_dd_app_key=0
+          if [ -n "${DD_APP_KEY:-}" ]; then
+            echo "✅ Found secret: DD_APP_KEY"
+            has_dd_app_key=1
+          else
+            echo "::warning::Missing secret: DD_APP_KEY (advanced Datadog steps will be skipped)."
+          fi
+
+          has_snyk_token=0
+          if [ -n "${SNYK_TOKEN:-}" ]; then
+            echo "✅ Found secret: SNYK_TOKEN"
+            has_snyk_token=1
+          else
+            echo "::warning::Missing secret: SNYK_TOKEN (Snyk scan will be skipped)."
+          fi
+
+          printf 'has_dd_api_key=%s\n' "$has_dd_api_key" >> "$GITHUB_OUTPUT"
+          printf 'has_dd_app_key=%s\n' "$has_dd_app_key" >> "$GITHUB_OUTPUT"
+          printf 'has_snyk_token=%s\n' "$has_snyk_token" >> "$GITHUB_OUTPUT"
 
   # Security and Quality Gates
   security-scan:
     name: Security Analysis
     runs-on: ubuntu-latest
-    if: github.event_name != 'workflow_dispatch' || inputs.force_deploy == false
+    needs: validate-ci-config
+    if: github.event_name != 'workflow_dispatch' || inputs.force_deploy != 'true'
     env:
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
       DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+      DD_SITE: ${{ secrets.DD_SITE || 'datadoghq.com' }}
       # Cloud Network Monitoring for GitHub Actions
       DD_SYSTEM_PROBE_NETWORK_ENABLED: true
       DD_PROCESS_AGENT_ENABLED: true
@@ -91,16 +124,21 @@ jobs:
           sarif_file: 'trivy-results.sarif'
 
       - name: Run Snyk to check for vulnerabilities
+        if: needs.validate-ci-config.outputs.has_snyk_token == '1'
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high
 
+      - name: Skip Snyk scan (token missing)
+        if: needs.validate-ci-config.outputs.has_snyk_token != '1'
+        run: echo '::notice::Snyk scan skipped because SNYK_TOKEN is not configured.'
+
       - name: Notify Datadog of security scan
-        if: always() && env.DD_API_KEY != ''
+        if: always() && needs.validate-ci-config.outputs.has_dd_api_key == '1'
         run: |
-          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+          curl -X POST "https://api.${{ env.DD_SITE }}/api/v1/events" \
             -H "Content-Type: application/json" \
             -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
             -d @- << 'EOF'
@@ -119,10 +157,16 @@ jobs:
     name: Build and Test
     runs-on: ubuntu-latest
     needs: [security-scan, validate-ci-config]
-    if: always() && (needs.security-scan.result == 'success' || github.event.inputs.force_deploy == 'true')
+    if: >-
+      always() && (
+        needs.security-scan.result == 'success' ||
+        needs.security-scan.result == 'skipped' ||
+        (github.event_name == 'workflow_dispatch' && inputs.force_deploy == 'true')
+      )
     env:
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
       DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+      DD_SITE: ${{ secrets.DD_SITE || 'datadoghq.com' }}
       # Cloud Network Monitoring for GitHub Actions
       DD_SYSTEM_PROBE_NETWORK_ENABLED: true
       DD_PROCESS_AGENT_ENABLED: true

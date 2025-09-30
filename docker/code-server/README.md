@@ -4,25 +4,127 @@ This directory contains the configuration for the custom VibeCode code-server, w
 
 ## Features
 
-- Pre-installed VS Code extensions for web development
+### AI Coding Assistants
+- **Anthropic Claude Code** - Official Claude AI extension (requires API key)
+- **OpenAI ChatGPT** - Official OpenAI extension (requires API key)
+- **GitHub Copilot** - OpenAI Codex integration (requires subscription)
+- **GitHub Copilot Chat** - Chat interface for Copilot
+- **Codeium** - Free AI code completion (MIT)
+- **Cline** - Community Claude integration (Apache 2.0)
+- **VibeCode AI Assistant** - Multi-provider AI (OpenRouter, Claude, GPT, Gemini)
+- **VibeCode Inline Edit** - Cmd+K inline editing like Cursor
+- **VibeCode Codebase Chat** - Chat with your codebase
+
+**Note:** Official AI extensions require API keys or subscriptions. Configure them after first launch.
+
+### Developer Productivity Tools (MIT/BSD/Apache)
+- **Error Lens** - Inline error highlighting
+- **Code Spell Checker** - Catch typos
+- **TODO Highlight** - Track TODOs
+- **TODO Tree** - TODO management
+- **Material Icon Theme** - Beautiful icons
+- **Indent Rainbow** - Visual indentation
+- **Path Intellisense** - Auto-complete paths
+
+### Code Quality & Formatting (MIT)
+- **Prettier** - Code formatter
+- **Better Comments** - Enhanced comment highlighting
+- **Auto Rename Tag** - HTML/XML tag renaming
+- **Auto Close Tag** - Auto close HTML tags
+
+### Git Tools (MIT)
+- **Git Graph** - Visual git history
+- **Git History** - View git log
+- **Conventional Commits** - Commit message helper
+
+### Testing & Debugging (MIT)
+- **Jest** - Jest test runner
+- **Test Explorer UI** - Unified test interface
+- **Coverage Gutters** - Display test coverage
+
+### Project Management (MIT)
+- **Project Manager** - Manage multiple projects
+- **Bookmarks** - Mark lines and jump
+- **Live Server** - Local dev server with live reload
+- **Import Cost** - Display import sizes
+
+### Additional Language Support (MIT/Apache)
+- **YAML** - YAML language support
+- **Tailwind CSS IntelliSense** - Tailwind autocomplete
+
+### Utilities (MIT)
+- **DotENV** - .env file support
+- **EditorConfig** - EditorConfig support
+- **Peacock** - Color workspace
+
+### Datadog Integration (Apache 2.0)
+- **Datadog for VS Code** - Official Datadog extension
+  - Log annotations
+  - Code insights
+  - Exception replay
+  - Static code analysis
+  - View in IDE integration
+  - MCP server support
+
+### Database Tools (MIT/Apache)
+- **SQLTools** - Database management
+- **SQLTools PostgreSQL Driver** - pgvector support
+
+### DevOps Tools (Microsoft MIT)
+- **Docker** - Container management
+- **Kubernetes** - K8s integration
+- **REST Client** - API testing (MIT)
+
+### Language Support
+- Python (with Pylance and Black formatter)
+- TypeScript/JavaScript (with ESLint)
+- Go, Rust, Java, C/C++, Bash
+- Markdown with linting
+
+### Other Features
 - Custom keybindings and settings
-- Integration with VibeCode AI Assistant
 - Optimized for Kubernetes deployment
 - Secure defaults with non-root user
+- Pre-configured LSP servers for all major languages
+- Bash, Zsh, and Fish shells pre-installed in the container
+- **Trusted domains pre-configured** - No annoying prompts for extension URLs (see [TRUSTED_DOMAINS.md](TRUSTED_DOMAINS.md))
 
 ## Building the Image
 
-To build the custom code-server image locally:
+### Multi-Architecture Build (Recommended)
+
+Build for both ARM64 and AMD64 architectures:
 
 ```bash
-# Make the build script executable
-chmod +x ../../scripts/build-code-server.sh
+# Build both architectures locally
+./scripts/build-codeserver-multiarch.sh local
 
-# Build the image
-./scripts/build-code-server.sh
+# Build and push multi-arch manifest to registry
+./scripts/build-codeserver-multiarch.sh push docker.io/youruser
 
-# To build and push to a container registry:
-# ./scripts/build-code-server.sh --push
+# Export to tarballs for offline distribution
+./scripts/build-codeserver-multiarch.sh export ./dist
+```
+
+### Single Architecture Build
+
+For local development on your current platform:
+
+```bash
+docker build -f docker/code-server/Dockerfile -t vibecode-codeserver:latest .
+```
+
+### Security Note
+
+⚠️ **Never include API keys in the Docker image!**
+
+The Dockerfile is configured to skip Datadog Agent installation during build. Configure secrets at runtime:
+
+```bash
+docker run -p 8765:8765 \
+  -e DD_API_KEY=your_key_here \
+  -e PASSWORD=secure_password \
+  vibecode-codeserver:latest
 ```
 
 ## Kubernetes Deployment
@@ -50,7 +152,7 @@ To add more VS Code extensions, update the `Dockerfile` and add them to the list
 2. Build and test locally:
    ```bash
    docker build -t vibecode/code-server:local -f docker/code-server/Dockerfile .
-   docker run -p 8080:8080 -v $(pwd):/home/coder/workspace vibecode/code-server:local
+   docker run -p 8765:8765 -v $(pwd):/home/coder/workspace vibecode/code-server:local
    ```
 3. Push changes to the repository
 4. The CI/CD pipeline will automatically build and deploy the new image
