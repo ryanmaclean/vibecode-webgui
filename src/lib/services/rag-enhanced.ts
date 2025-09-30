@@ -7,16 +7,20 @@ export interface RAGContext {
   relevanceScore: number
 }
 
+export interface RAGSourceMetadata {
+  title?: string;
+  url?: string;
+  type: 'file' | 'web' | 'database';
+  timestamp?: string;
+  relevance: number;
+  strategy?: string;
+  strategyType?: 'semantic' | 'keyword' | 'hybrid';
+}
+
 export interface RAGSource {
-  id: string
-  content: string
-  metadata: {
-    title?: string
-    url?: string
-    type: 'file' | 'web' | 'database'
-    timestamp?: string
-    relevance: number
-  }
+  id: string;
+  content: string;
+  metadata: RAGSourceMetadata;
 }
 
 export interface RAGQuery {
@@ -85,7 +89,7 @@ export class EnhancedRAGService {
     }
   }
 
-  private async searchFileContent(query: string, workspaceId: string, maxResults: number): Promise<RAGSource[]> {
+  protected async searchFileContent(query: string, workspaceId: string, maxResults: number): Promise<RAGSource[]> {
     try {
       // Read existing RAG data for the workspace
       const fs = await import('fs').then(m => m.promises)
@@ -247,7 +251,7 @@ export class EnhancedRAGService {
       .slice(0, 10) // Limit to top 10 sources
   }
 
-  private estimateTokenCount(sources: RAGSource[]): number {
+  protected estimateTokenCount(sources: RAGSource[]): number {
     const totalChars = sources.reduce((acc, source) => acc + source.content.length, 0)
     return Math.ceil(totalChars / 4) // Rough estimation: 4 chars per token
   }

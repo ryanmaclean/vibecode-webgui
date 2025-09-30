@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'
 import { prisma } from '@/lib/prisma'
 import { UnifiedAIClient, type UnifiedChatMessage } from '@/lib/unified-ai-client'
+import { createAgenticRAGService } from '@/lib/services/agentic-rag'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -21,6 +22,7 @@ interface UnifiedChatRequest {
       role: 'user' | 'assistant'
       content: string
     }>
+    enableAgenticRAG?: boolean
   }
   enableTools?: boolean
   userApiKeys?: {
@@ -85,6 +87,61 @@ async function buildAdvancedRAGContext(workspaceId: string, userQuery: string, u
   }
 }
 
+// Enhanced Agentic RAG context builder with AI-driven strategy selection
+async function buildAgenticRAGContext(
+  workspaceId: string, 
+  userQuery: string, 
+  userId: string,
+  aiClient: UnifiedAIClient,
+  enableAgenticRetrieval: boolean = true
+) {
+  try {
+    const workspace = await prisma.workspace.findFirst({
+      where: {
+        workspace_id: workspaceId,
+        user_id: parseInt(userId)
+      }
+    })
+
+    if (!workspace) {
+      return null
+    }
+
+    // Use AgenticRAG service for intelligent retrieval
+    const agenticRAG = createAgenticRAGService(aiClient)
+    
+    const agenticContext = await agenticRAG.buildAgenticContext({
+      query: userQuery,
+      workspaceId: workspace.workspace_id,
+      enableAgenticRetrieval,
+      maxStrategies: 3,
+      complexityLevel: userQuery.length > 100 || /\b(compare|analyze|explain|relationship)\b/i.test(userQuery) ? 'complex' : 'medium',
+      requiresMultiHop: /\b(compare|relationship|between|how does|what is the connection)\b/i.test(userQuery)
+    })
+
+    if (!agenticContext || agenticContext.sources.length === 0) {
+      return null
+    }
+
+    return {
+      context: agenticRAG.formatAgenticContextForPrompt(agenticContext),
+      workspaceId: workspace.workspace_id,
+      relevanceScore: agenticContext.relevanceScore > 0.8 ? 'high' : agenticContext.relevanceScore > 0.5 ? 'medium' : 'low',
+      strategiesUsed: agenticContext.strategiesUsed.length,
+      totalLength: agenticContext.sources.reduce((acc, source) => acc + source.content.length, 0),
+      agenticInfo: {
+        strategiesUsed: agenticContext.strategiesUsed.map(s => s.name),
+        multiHopResults: agenticContext.multiHopResults?.length || 0,
+        synthesisReasoning: agenticContext.synthesisReasoning
+      }
+    }
+  } catch (error) {
+    console.error('Agentic RAG context error:', error)
+    // Fallback to advanced RAG if agentic fails
+    return await buildAdvancedRAGContext(workspaceId, userQuery, userId)
+  }
+}
+
 // Tool capabilities for enhanced AI responses
 function generateToolCapabilities(enableTools: boolean, availableProviders: string[]): string {
   if (!enableTools) return ''
@@ -135,12 +192,20 @@ export async function POST(request: NextRequest) {
     
     console.log('Provider health check:', providerHealth)
 
-    // Build advanced RAG context
-    const ragResult = await buildAdvancedRAGContext(
-      context.workspaceId, 
-      message, 
-      session.user.id
-    )
+    // Build advanced RAG context - use AgenticRAG if enabled
+    const ragResult = context.enableAgenticRAG 
+      ? await buildAgenticRAGContext(
+          context.workspaceId, 
+          message, 
+          session.user.id,
+          aiClient,
+          true
+        )
+      : await buildAdvancedRAGContext(
+          context.workspaceId, 
+          message, 
+          session.user.id
+        )
 
     // Prepare system message with enhanced context
     const systemMessage = `You are an expert AI coding assistant integrated into VibeCode, an open-source development platform.
@@ -150,13 +215,22 @@ export async function POST(request: NextRequest) {
 - Workspace: ${context.workspaceId}
 - Model: ${model}
 - RAG Status: ${ragResult ? `Active (${ragResult.relevanceScore} relevance, ${ragResult.strategiesUsed} strategies)` : 'Disabled'}
+- RAG Type: ${context.enableAgenticRAG ? 'Agentic (AI-driven strategy selection)' : 'Multi-strategy'}
 - Providers Available: ${availableProviders.join(', ')}
 
 ${ragResult ? `**📋 Relevant Code Context (${ragResult.totalLength} chars):**\n${ragResult.context}\n` : ''}
 
+${ragResult && (ragResult as any).agenticInfo ? `
+**🧠 Agentic RAG Details:**
+- Strategies Used: ${(ragResult as any).agenticInfo.strategiesUsed.join(', ')}
+- Multi-hop Results: ${(ragResult as any).agenticInfo.multiHopResults}
+- Synthesis: ${(ragResult as any).agenticInfo.synthesisReasoning}
+` : ''}
+
 **🚀 Platform Capabilities:**
 - Multi-provider AI access with automatic fallbacks
 - Advanced RAG with semantic search and context ranking
+- Agentic RAG with AI-driven retrieval strategy selection
 - Local model support (Ollama, LocalAI) for privacy and cost savings
 - BYOK (Bring Your Own Keys) support for premium features
 - Real-time workspace integration and file system access
