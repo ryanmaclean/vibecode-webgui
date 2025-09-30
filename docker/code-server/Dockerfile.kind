@@ -2,9 +2,20 @@
 FROM codercom/code-server:4.104.2
 
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends git curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    curl \
+    emacs-nox \
+    git \
+    neovim \
+    python3-pip \
+    python3-venv \
+    vim \
+  && rm -rf /var/lib/apt/lists/*
 
 USER coder
+ENV PATH="/home/coder/.local/bin:${PATH}"
+RUN python3 -m pip install --user --no-cache-dir --break-system-packages aider-chat goose-ai
 RUN mkdir -p /home/coder/.local/share/code-server/User
 COPY --chown=coder:coder docker/code-server/settings.json /home/coder/.local/share/code-server/User/settings.json
 COPY --chown=coder:coder docker/code-server/keybindings.json /home/coder/.local/share/code-server/User/keybindings.json
