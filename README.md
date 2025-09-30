@@ -189,3 +189,8 @@ MIT
 - [Documentation](docs/)
 - [Issues](https://github.com/ryanmaclean/vibecode-webgui/issues)
 - [Discussions](https://github.com/ryanmaclean/vibecode-webgui/discussions)
+
+### 📌 CI/CD Workflow Coverage
+- Tracking issues: see `docs/logs/WORKFLOW_TRACKING.md` (maps each `.github/workflows/*.yml` to issue #355–#395).
+- Draft issue blurbs live in `docs/logs/workflow-issues/` for quick copy/paste when filing.
+
