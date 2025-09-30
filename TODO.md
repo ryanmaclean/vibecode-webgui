@@ -50,6 +50,12 @@
 
 - 🔒 **Agent Cascade (17:45 UTC)**: CLAIMING Phase 21 - Consolidate directories
 - 🔒 **Agent Cascade (17:46 UTC)**: CLAIMING RAG demo test with local DB
+- ✅ **Agent Cascade (2025-09-30 00:53 UTC)**: Completed Docker container status check
+  - Result: `docker ps` shows vibecode-pgvector Up 6 hours (healthy); kind control-plane also running
+  - Files: None
+  - Goal: Document container health before next ingestion
+  - ETA: 2 minutes
+  - Status: COMPLETE
 - ✅ **Agent Cascade (2025-09-30 00:52 UTC)**: Completed Docker container status check
   - Result: `docker ps` shows vibecode-pgvector Up 6 hours (healthy); vibecode-test-control-plane also up
   - Files: None
@@ -99,7 +105,7 @@
 
 ## Agent Update (2025-09-30 00:51 UTC)
 
-- Updated `.env.local` so `DATABASE_URL` targets the local `vibecode-pgvector` container on `localhost:5432` while Azure access remains blocked.
+- Updated `.env.local` so `DATABASE_URL` targets the local `vibecode-pgvector` container on `192.168.107.2:5432` while Azure access remains blocked.
 - Verified the container is healthy and contains 225 embeddings via `docker exec vibecode-pgvector psql -U vibecode -d vibecode -c 'SELECT COUNT(*) FROM document_embeddings;'`.
 
 ### Next Steps
@@ -1529,3 +1535,8 @@ git revert HEAD~17..HEAD
 ## Agent Update (2025-09-30 00:52 UTC)
 
 - Docker status: `vibecode-pgvector` container healthy (Up 6 hours); kind control-plane also running. Ready for next ingestion once other agents finish.
+
+## Agent Update (2025-09-30 00:53 UTC)
+
+- Docker status: `vibecode-pgvector` container healthy (Up 6 hours); kind control-plane up. Ingestion remains blocked by running job (PID 82844).
+
