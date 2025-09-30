@@ -114,26 +114,6 @@ export type ToolExecutor = (
 ) => Promise<any>;
 
 /**
- * Tool definition with enhanced metadata
- */
-export interface EnhancedToolDefinition extends ToolDefinition {
-  /** Whether the tool is enabled */
-  enabled: boolean;
-  
-  /** Timeout for tool execution in milliseconds */
-  timeout?: number;
-  
-  /** Rate limiting configuration */
-  rateLimit?: {
-    /** Maximum number of calls per minute */
-    maxCalls: number;
-    
-    /** Time window in minutes */
-    timeWindow: number;
-  };
-}
-
-/**
  * Memory management configuration
  */
 export interface MemoryConfig {

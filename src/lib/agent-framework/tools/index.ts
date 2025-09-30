@@ -185,6 +185,9 @@ export const getCurrentTimeTool: ToolDefinition = {
   },
 };
 
+// Export TAG tools
+export * from './tag-tools';
+
 /**
  * Export all built-in tools
  */

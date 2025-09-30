@@ -328,5 +328,9 @@ export * from './types';
 // Export built-in tools
 export * from './tools';
 
+// Export TAG system components
+export * from './tool-registry';
+export * from './tool-orchestrator';
+
 // Export specialized agents
 export * from './agents';
