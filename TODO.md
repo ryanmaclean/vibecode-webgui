@@ -1,3 +1,13 @@
+## Agent Update (2025-09-30 01:33 UTC)
+
+- Tested the new KinD code-server editor: port-forwarded svc/code-server-kind to localhost:3100 and confirmed HTTP 302 redirect from the service.
+- Cleared an old kubectl port-forward (PID 34599) that was blocking the listener before re-running.
+- Verified terminal tooling inside the pod (`kubectl exec ... -- sh -lc 'which vim || which vi'`) — `vi` available, `vim` missing.
+
+### Next Steps
+- Document the curl test so others can verify the editor quickly, or wire an automated health check if needed.
+- Decide whether to install `vim` in the code-server image or adjust docs to use `vi`.
+
 ## Agent Update (2025-09-30 01:30 UTC)
 
 - Checked pgvector via `docker exec`; `document_embeddings` count remains 225 while ingestion jobs run.
@@ -19,8 +29,17 @@
 - Verifying the new code-server NodePort with a quick port-forward and curl check.
 
 ### Next Steps
-- [ ] Run port-forward (`kubectl port-forward svc/code-server-kind 3100:8080`).
-- [ ] Curl `http://localhost:3100` to confirm it responds.
+- [x] Run port-forward (`kubectl port-forward svc/code-server-kind 3100:8080`). — ✅ succeeded after stopping stale PID 34599; new port-forward reached localhost:3100.
+- [x] Curl `http://localhost:3100` to confirm it responds — ✅ received 302 redirect to `./?folder=/home/coder`.
+
+## Agent Update (2025-09-30 01:32 UTC)
+
+- Building a Codeium Monaco playground using our existing monacopilot integration so users can try AI completions.
+
+### Next Steps
+- [x] Add a reusable `CodeiumPlayground` client component under `src/components/editors` that wires Monaco + monacopilot with language/theme toggles.
+- [x] Create a Next.js route at `src/app/tools/codeium/page.tsx` showcasing the playground with usage tips.
+- [ ] Smoke-test in the browser (or document how to) and update TODO/logs with results.
 
 ## Agent Update (2025-09-30 01:23 UTC)
 
@@ -1882,4 +1901,3 @@ If another agent needs Codeium features, use Monacopilot instead - it's better a
 ## Agent Update (2025-09-30 01:30 UTC)
 
 - PR #322: Requested Dependabot rebase (`@dependabot rebase`). Waiting for updated branch before running validation.
-
