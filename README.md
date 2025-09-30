@@ -29,6 +29,7 @@ npm run dev
 
 **New Features:**
 - 🤖 AI Code Completion with Monaco 0.53.0 (visit `/tools/codeium` on a running dev server to try the Codeium playground)
+- 🎯 Welcome drawer for quick theme/CLI/integration setup (click “Welcome” in the signed-in header)
 - 🔌 MCP Server for AI agent integration
 - 🐍 Pydantic AI CLI Coding Agent example
 
