@@ -117,6 +117,8 @@ setupMonacopilot(monaco, editor, {
 
 Start typing and you'll see AI-powered suggestions appear automatically.
 
+> **Heads up:** to try the integration in the browser without wiring your own editor, run `npm run dev` and visit [`/tools/codeium`](http://localhost:3000/tools/codeium) (sign in when prompted). The playground uses the same monacopilot setup described here.
+
 ## Supported Languages
 
 Monacopilot works with all Monaco-supported languages:

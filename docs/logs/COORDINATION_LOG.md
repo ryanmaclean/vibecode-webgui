@@ -295,3 +295,14 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - Hooked the terminal editor check into `scripts/test-code-server-kind.sh`; the smoke test now builds/loads the image, verifies connectivity, and ensures Vim/Neovim/Emacs are present.
 - Ran the combined script (`scripts/test-code-server-kind.sh`) to confirm all steps pass end-to-end.
 - Future work: decide if the editor installs should be baked into the image or left for runtime verification.
+
+### 2025-09-30 03:25 UTC — KinD image + smoke test cover AI CLIs
+- Rebuilt `docker/code-server/Dockerfile.kind`, pinning `langfuse<3` alongside the existing Vim/Neovim/Emacs + `aider-chat`/`goose-ai` installs so Goose CLI starts cleanly on fresh pods.
+- Enhanced `scripts/test-code-server-editors.sh` to assert the AI CLIs exist, and wired the helper into `scripts/test-code-server-kind.sh` with a forced rollout restart.
+- Reloaded the image into KinD and reran `scripts/test-code-server-kind.sh`; the script passes with all editor/CLI checks.
+
+### 2025-09-30 03:35 UTC — Aider/Goose CLI quickstart inside KinD code-server
+- Exec steps: `kubectl exec -it -n vibecode-platform deployment/code-server-kind -- bash` drops you into `/home/coder/project` alongside the workspace files.
+- Aider: export a key for your provider (`export OPENAI_API_KEY=...` or `aider --api-key openrouter=...`), then launch `aider --model gpt-4o-mini src/app/page.tsx` (replace files as needed). Use `aider --help` for additional provider flags.
+- Goose: set the provider env vars shown in `goose providers list` (e.g., `export OPENAI_API_KEY=...` or `GOOGLE_API_KEY=...`) and run `goose session start` for an interactive chat or `goose run README.md` to process a prompt file. `goose --help` lists other subcommands.
+- Both CLIs inherit host networking, so ensure any required proxies/ports are configured before launching long sessions.
