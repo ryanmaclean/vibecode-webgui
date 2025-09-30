@@ -11,7 +11,15 @@ const isDockerBuild = (
   process.env.DD_ENABLED === 'false'
 );
 
-const path = require('path');
+let pathModule: any = null;
+try {
+  // Use eval to avoid bundlers complaining about Node built-ins in edge/dev environments
+  // eslint-disable-next-line no-eval
+  const dynamicRequire = eval('require');
+  pathModule = dynamicRequire('path');
+} catch (error) {
+  // path module not available (likely edge/dev build)
+}
 const truthy = ['1', 'true', 'yes', 'on'];
 const falsy = ['0', 'false', 'no', 'off'];
 
@@ -62,10 +70,15 @@ function getTracer() {
     
     const envModuleCandidates = [
       './lib/monitoring/datadog-env.shared.js',
-      path.join(__dirname ?? '.', 'lib', 'monitoring', 'datadog-env.shared.js'),
-      path.join(__dirname ?? '.', 'src', 'lib', 'monitoring', 'datadog-env.shared.js'),
-      path.join(process.cwd(), 'src', 'lib', 'monitoring', 'datadog-env.shared.js'),
     ];
+
+    if (pathModule) {
+      envModuleCandidates.push(
+        pathModule.join(__dirname ?? '.', 'lib', 'monitoring', 'datadog-env.shared.js'),
+        pathModule.join(__dirname ?? '.', 'src', 'lib', 'monitoring', 'datadog-env.shared.js'),
+        pathModule.join(process.cwd(), 'src', 'lib', 'monitoring', 'datadog-env.shared.js'),
+      )
+    }
 
     for (const candidate of envModuleCandidates) {
       try {

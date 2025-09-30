@@ -96,42 +96,12 @@ USER coder
 RUN mkdir -p /home/coder/.local/share/code-server/User/ \
     && mkdir -p /home/coder/.vscode/extensions/
 
-# Install AI/ML and Pair Programming Extensions
-# 1. GitHub Copilot and related extensions
-RUN code-server --install-extension GitHub.copilot \
-    && code-server --install-extension GitHub.copilot-chat \
-    && code-server --install-extension GitHub.copilot-labs
-
-# 2. Codeium - Free AI Code Completion
-RUN code-server --install-extension Codeium.codeium \
-    && code-server --install-extension Codeium.codeium-enterprise-edition
-
-# 3. Tabnine - AI Code Completion
-RUN code-server --install-extension TabNine.tabnine-vscode
-
-# 4. Amazon Q (formerly CodeWhisperer)
-RUN code-server --install-extension AmazonWebServices.aws-toolkit-vscode
-
-# 5. Cursor - AI-first editor features
-RUN code-server --install-extension cwchasesm.cursor-tools
-
-# 6. Sourcegraph Cody - AI coding assistant
-RUN code-server --install-extension sourcegraph.cody-ai
-
-# 7. Continue - Open-source autopilot
+# Install AI/ML Extensions (MIT/BSD/Apache only)
+# 1. Continue - Open-source autopilot (Apache 2.0)
 RUN code-server --install-extension Continue.continue
 
-# 8. Cline (formerly Claude Dev) - AI coding assistant
-RUN code-server --install-extension saoudrizwan.claude-dev
-
-# 9. Aider - AI pair programming
-RUN code-server --install-extension aider.aider-vscode
-
-# 10. Cursor Rules - AI context management
-RUN code-server --install-extension cursor.cursor-rules || echo "Cursor rules not available"
-
-# 11. Windsurf Cascade - AI agent (if available)
-RUN code-server --install-extension codeium.windsurf || echo "Windsurf not available in marketplace"
+# 2. Codeium - Free AI Code Completion (MIT)
+RUN code-server --install-extension Codeium.codeium
 
 # Install Language Server Protocol (LSP) Servers
 # 1. Python LSP (pylsp)
@@ -181,40 +151,36 @@ RUN code-server --install-extension ms-vscode.vscode-typescript-next \
     && code-server --install-extension ms-vscode.vscode-css-languagefeatures \
     && code-server --install-extension ms-vscode.vscode-html-languagefeatures
 
-# Productivity and Developer Tools
-RUN code-server --install-extension eamodio.gitlens \
-    && code-server --install-extension usernamehw.errorlens \
+# Productivity and Developer Tools (MIT/BSD/Apache only)
+RUN code-server --install-extension usernamehw.errorlens \
     && code-server --install-extension streetsidesoftware.code-spell-checker \
     && code-server --install-extension wayou.vscode-todo-highlight \
     && code-server --install-extension gruntfuggly.todo-tree \
     && code-server --install-extension PKief.material-icon-theme \
-    && code-server --install-extension zhuangtongfa.material-theme \
     && code-server --install-extension oderwat.indent-rainbow \
     && code-server --install-extension christian-kohler.path-intellisense
 
-# Database Tools
+# Database Tools (MIT/Apache)
 RUN code-server --install-extension mtxr.sqltools \
-    && code-server --install-extension mtxr.sqltools-driver-pg \
-    && code-server --install-extension cweijan.vscode-postgresql-client2
+    && code-server --install-extension mtxr.sqltools-driver-pg
 
-# Docker and Kubernetes
+# Docker and Kubernetes (Microsoft - MIT)
 RUN code-server --install-extension ms-azuretools.vscode-docker \
     && code-server --install-extension ms-kubernetes-tools.vscode-kubernetes-tools
 
-# REST API Testing
-RUN code-server --install-extension humao.rest-client \
-    && code-server --install-extension rangav.vscode-thunder-client
+# REST API Testing (MIT)
+RUN code-server --install-extension humao.rest-client
 
-# Markdown and Documentation
+# Markdown and Documentation (MIT)
 RUN code-server --install-extension yzhang.markdown-all-in-one \
     && code-server --install-extension DavidAnson.vscode-markdownlint
 
-# Python Development
+# Python Development (Microsoft - MIT)
 RUN code-server --install-extension ms-python.python \
     && code-server --install-extension ms-python.vscode-pylance \
     && code-server --install-extension ms-python.black-formatter
 
-# Remote Development
+# Remote Development (Microsoft - MIT)
 RUN code-server --install-extension ms-vscode-remote.remote-ssh \
     && code-server --install-extension ms-vscode-remote.remote-containers
 
