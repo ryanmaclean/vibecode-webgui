@@ -1,0 +1,30 @@
+version: "3.7"
+services:
+  code-server:
+    image: vibecode/code-server:monaco053
+    container_name: vibecode-code-server
+    environment:
+      PASSWORD: "change-me"
+    ports:
+      - "8443:8080"
+    volumes:
+      - cs-workspace:/home/coder/workspace
+      - cs-settings:/home/coder/.local/share/code-server/User
+    restart: unless-stopped
+
+  vibecode-app:
+    image: vibecode/webgui:latest
+    container_name: vibecode-webgui
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: "postgres://user:pass@postgres:5432/vibecode"
+      OPENAI_API_KEY: ""
+      ANTHROPIC_API_KEY: ""
+      DATADOG_API_KEY: ""
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  cs-workspace:
+  cs-settings:
