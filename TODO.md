@@ -1,3 +1,10 @@
+## Agent Update (2025-09-30 00:51 UTC)
+
+- Adding a coordination reminder in `docs/logs/README.md` so log editors know to check `TODO.md` and `AGENTS.md` first.
+
+### Next Steps
+- [ ] Append a short reminder in `docs/logs/README.md`.
+
 ## Agent Update (2025-09-30 00:47 UTC)
 
 - Checking pgvector row count via the Docker container to ensure ingestion is still at 225 documents.
@@ -37,6 +44,12 @@
 
 - 🔒 **Agent Cascade (17:45 UTC)**: CLAIMING Phase 21 - Consolidate directories
 - 🔒 **Agent Cascade (17:46 UTC)**: CLAIMING RAG demo test with local DB
+- 🔒 **Agent Cascade (2025-09-30 00:51 UTC)**: Docker container status check
+  - Task: Run `docker ps` to verify `vibecode-pgvector` is up
+  - Files: None (system status only)
+  - Goal: Document container health before next ingestion
+  - ETA: 2 minutes
+  - Status: ACTIVE - Checking
   - Task: Run rag-local-demo.ts with fixed DATABASE_URL (now points to local)
   - Files: scripts/rag-local-demo.ts (read-only execution)
   - Goal: Test RAG retrieval with local pgvector, capture observability

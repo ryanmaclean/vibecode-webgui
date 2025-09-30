@@ -1,7 +1,7 @@
 # Friction Log
 
 > **Purpose:** Document blockers, issues, and workarounds encountered during development  
-> **Last Updated:** 2025-09-29  
+> **Last Updated:** 2025-09-30  
 > **Extracted By:** Agent Cascade - Phase 19
 
 This log captures friction points to help improve developer experience and identify systemic issues.
@@ -12,30 +12,27 @@ This log captures friction points to help improve developer experience and ident
 
 ### RAG Demo Script - Database Configuration
 **Date:** 2025-09-29  
-**Blocker:** RAG retrieval smoke test blocked on database configuration  
+**Blocker:** Azure flexible server (`vibecode-pgflex-1758422944`) remains inaccessible from local workstation due to firewall/private endpoint.  
 **Details:**
-- Script `scripts/rag-local-demo.ts` connects to Azure Postgres by default
-- Needs `DATABASE_URL` override to point to local KIND cluster
-- API keys available in `.env.local` ✅
-- Script works correctly, just needs proper connection string
+- `scripts/rag-local-demo.ts` and Prisma RAG suites need a reachable Postgres endpoint
+- Direct Azure access fails with `Can't reach database server` / `User was denied access`
+- A local Docker container (`vibecode-pgvector` @ `192.168.107.2:5432`) holds 225 embeddings and is healthy
 
-**Workaround:** None yet  
-**Status:** BLOCKED - Needs local DB configuration  
-**Owner:** TBD
+**Workaround:** Update `.env.local` `DATABASE_URL` to the local container (`postgresql://vibecode:vibecode123@192.168.107.2:5432/vibecode?schema=public&sslmode=disable`). RAG demo now succeeds; Datadog spans pending Trace Search propagation.  
+**Status:** MITIGATED LOCALLY — still blocked on Azure firewall for production parity  
+**Owner:** Agent Codex (local fallback) / Infrastructure team (Azure access)
 
-### Datadog Trace Search - API Credentials
+### Datadog Trace Search - Spans Not Visible
 **Date:** 2025-09-29  
-**Blocker:** Datadog Trace Search queries return "Not found" or "Forbidden"  
+**Blocker:** Datadog Trace Search still returns `{ "errors": ["Not found"] }` for RAG services even after credentials were refreshed.  
 **Details:**
-- `./scripts/poll-traces.sh` queries return `{ "errors": ["Not found"] }`
-- API validation: `curl https://api.${DD_SITE}/api/v1/validate` returns `{"errors":["Forbidden"]}`
-- Current API/app key pair lacks permission or is invalid
-- Agentless mode working locally (no ECONNREFUSED) ✅
-- Spans not appearing in Trace Search
+- `./scripts/poll-traces.sh` (`service:vibecode-rag-demo` / `vibecode-rag-ingest`) over `now-30m` and `now-2h` return "Not found"
+- API validation now passes (`{"valid":true}`)
+- Local runs emit agentless logs and tracer output, but spans may not be reaching Trace Search yet
 
-**Workaround:** Local agentless mode enabled with `DD_AGENTLESS_ENABLED=true`  
-**Status:** BLOCKED - Needs valid Datadog credentials  
-**Owner:** Credential owner
+**Workaround:** Continue using agentless mode; plan to retry Trace Search once ingestion volume increases  
+**Status:** BLOCKED - Waiting on Datadog ingestion/permissions  
+**Owner:** Observability
 
 ---
 
