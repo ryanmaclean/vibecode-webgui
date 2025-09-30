@@ -184,6 +184,11 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Lint remains blocked by the existing ESLint flat-config migration; recorded the failure in TODO.md and friction log.
 - Added dev stubs for `dd-trace` and OpenTelemetry so `npm run dev` now serves `/tools/codeium` (redirects unsigned users to `/auth/signin?callbackUrl=%2Ftools%2Fcodeium`).
 - Updated README "New Features" section with a direct link to the playground for quick discovery.
+
+### Agent Codex - Onboarding Drawer (2025-09-30 02:20 UTC)
+- Introduced a lightweight onboarding drawer accessible via the "Welcome" button in the authenticated header.
+- Captures theme preference, CLI editor choice, recommended extensions, and integration checkboxes; state is stored in `localStorage`.
+- Logged the four-step smoke test in coordination docs so other agents can reuse the flow.
 - Linked the playground from the authenticated header (`Codeium Playground` beside Template Marketplace) so engineers can find it quickly.
 ### Agent Codex - RAG Demo Trace (2025-09-30 01:20 UTC)
 - Ran `npx tsx -r dd-trace/init scripts/rag-local-demo.ts "List the Datadog environment variables tracked in the repository."`
