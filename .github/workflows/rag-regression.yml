@@ -1,0 +1,231 @@
+name: RAG Regression Tests
+
+on:
+  schedule:
+    # Run nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+  
+  # Run on deployment events  
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test against'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      enable_real_ai:
+        description: 'Enable real AI API calls'
+        required: false
+        default: true
+        type: boolean
+      
+  # Run after successful deployments
+  workflow_run:
+    workflows: ["Deploy to Production", "Deploy to Staging"]
+    types:
+      - completed
+
+env:
+  ENABLE_RAG_REGRESSION_TESTS: true
+  NODE_ENV: test
+  DD_ENV: ${{ github.event.inputs.environment || 'staging' }}
+  DD_SERVICE: vibecode-webgui
+  DD_VERSION: ${{ github.sha }}
+
+jobs:
+  rag-regression-tests:
+    name: RAG Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    # Only run if previous workflow succeeded (for workflow_run trigger)
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Setup test environment
+        run: |
+          # Create test directories
+          mkdir -p rag-regression-results
+          mkdir -p test-results
+          
+          # Set environment variables
+          echo "BASE_URL=${{ vars.RAG_TEST_BASE_URL || 'https://vibecode.eastus2.cloudapp.azure.com' }}" >> $GITHUB_ENV
+          echo "ENABLE_REAL_AI_TESTS=${{ github.event.inputs.enable_real_ai || 'true' }}" >> $GITHUB_ENV
+          
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+        
+      - name: Run RAG Regression Tests
+        env:
+          # Datadog configuration
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+          DD_SITE: ${{ vars.DD_SITE || 'datadoghq.com' }}
+          
+          # AI API keys (if real AI tests are enabled)
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          
+          # Database (if available for vector search tests)
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+          
+        run: |
+          # Run the comprehensive RAG test suite
+          npm run test:rag:ci
+          
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rag-regression-artifacts-${{ github.run_number }}
+          path: |
+            rag-regression-results/
+            test-results/
+            playwright-report/
+            rag-e2e-debug.png
+          retention-days: 30
+          
+      - name: Upload test results to Datadog
+        if: always()
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+          DD_SITE: ${{ vars.DD_SITE || 'datadoghq.com' }}
+        run: |
+          # Send test completion event to Datadog
+          TIMESTAMP=$(date +%s)
+          TEST_RESULT=$([ $? -eq 0 ] && echo "success" || echo "failure")
+          
+          curl -X POST "https://api.${{ vars.DD_SITE || 'datadoghq.com' }}/api/v1/events" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: $DD_API_KEY" \
+            -d "{
+              \"title\": \"RAG Regression Tests Completed\",
+              \"text\": \"RAG regression test suite execution completed with result: $TEST_RESULT\",
+              \"date_happened\": $TIMESTAMP,
+              \"priority\": \"normal\",
+              \"tags\": [
+                \"service:vibecode-webgui\",
+                \"component:rag\",
+                \"test:regression\",
+                \"environment:${{ env.DD_ENV }}\",
+                \"result:$TEST_RESULT\",
+                \"ci:github-actions\",
+                \"workflow:${{ github.workflow }}\",
+                \"run_id:${{ github.run_id }}\"
+              ],
+              \"alert_type\": \"$([ \"$TEST_RESULT\" = \"success\" ] && echo \"success\" || echo \"error\")\"
+            }"
+            
+      - name: Create test summary
+        if: always()
+        run: |
+          echo "## RAG Regression Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | ${{ env.DD_ENV }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Base URL | ${{ env.BASE_URL }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Real AI Enabled | ${{ env.ENABLE_REAL_AI_TESTS }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Run ID | ${{ github.run_id }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflow | ${{ github.workflow }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "rag-regression-results/artifact-summary.json" ]; then
+            echo "### Test Artifacts" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat rag-regression-results/artifact-summary.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View detailed metrics in [Datadog RAG Dashboard](https://app.${{ vars.DD_SITE || 'datadoghq.com' }}/dashboard/rag-regression)" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Notify on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -n "$SLACK_WEBHOOK" ]; then
+            curl -X POST "$SLACK_WEBHOOK" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"text\": \":warning: RAG Regression Tests Failed\",
+                \"attachments\": [{
+                  \"color\": \"danger\",
+                  \"fields\": [
+                    {\"title\": \"Environment\", \"value\": \"${{ env.DD_ENV }}\", \"short\": true},
+                    {\"title\": \"Workflow\", \"value\": \"${{ github.workflow }}\", \"short\": true},
+                    {\"title\": \"Run ID\", \"value\": \"${{ github.run_id }}\", \"short\": true},
+                    {\"title\": \"Repository\", \"value\": \"${{ github.repository }}\", \"short\": true}
+                  ],
+                  \"actions\": [{
+                    \"type\": \"button\",
+                    \"text\": \"View Logs\",
+                    \"url\": \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"
+                  }]
+                }]
+              }"
+          fi
+
+  # Separate job for performance baseline tracking
+  performance-baseline:
+    name: RAG Performance Baseline
+    runs-on: ubuntu-latest
+    needs: rag-regression-tests
+    if: always()
+    
+    steps:
+      - name: Download test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: rag-regression-artifacts-${{ github.run_number }}
+          path: ./artifacts
+          
+      - name: Extract performance metrics
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: ${{ vars.DD_SITE || 'datadoghq.com' }}
+        run: |
+          # Extract performance data from test results
+          if [ -f "artifacts/rag-regression-results/artifact-summary.json" ]; then
+            # Parse test results and send baseline metrics
+            echo "Extracting performance baseline metrics..."
+            
+            # This would parse the test results and send performance baselines
+            # For now, we'll send a completion marker
+            TIMESTAMP=$(date +%s)
+            
+            curl -X POST "https://api.${{ vars.DD_SITE || 'datadoghq.com' }}/api/v1/series" \
+              -H "Content-Type: application/json" \
+              -H "DD-API-KEY: $DD_API_KEY" \
+              -d "{
+                \"series\": [{
+                  \"metric\": \"vibecode.rag.regression.baseline_completed\",
+                  \"points\": [[$TIMESTAMP, 1]],
+                  \"tags\": [
+                    \"service:vibecode-webgui\",
+                    \"component:rag\",
+                    \"test:baseline\",
+                    \"environment:${{ env.DD_ENV }}\",
+                    \"ci:github-actions\"
+                  ]
+                }]
+              }"
+          fi

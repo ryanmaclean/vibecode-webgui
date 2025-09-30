@@ -1,0 +1,197 @@
+{
+  "monitors": [
+    {
+      "name": "RAG Regression Test Failure Rate",
+      "type": "metric alert",
+      "query": "avg(last_1h):( sum:vibecode.rag.regression.test_duration{success:false}.as_count() / sum:vibecode.rag.regression.test_duration{*}.as_count() ) * 100 > 20",
+      "message": "🚨 RAG regression test failure rate is above 20% in the last hour.\n\nThis indicates potential issues with:\n- RAG pipeline performance\n- Vector search accuracy\n- AI model responses\n- Test data quality\n\nPlease investigate:\n1. Check recent deployments\n2. Review failed test scenarios\n3. Verify AI model availability\n4. Check database connectivity\n\n@slack-alerts @oncall-team",
+      "tags": [
+        "service:vibecode-webgui",
+        "component:rag",
+        "alert-type:regression",
+        "severity:high"
+      ],
+      "options": {
+        "thresholds": {
+          "critical": 20,
+          "warning": 10
+        },
+        "notify_audit": false,
+        "require_full_window": true,
+        "new_host_delay": 300,
+        "notify_no_data": true,
+        "no_data_timeframe": 60,
+        "evaluation_delay": 60
+      }
+    },
+    {
+      "name": "RAG Response Quality Degradation", 
+      "type": "metric alert",
+      "query": "avg(last_30m):avg:vibecode.rag.regression.response_quality{*} < 0.5",
+      "message": "📉 RAG response quality has dropped below 50% in the last 30 minutes.\n\nThis suggests:\n- Poor context retrieval\n- AI model issues\n- Vector database problems\n- Demo data corruption\n\nImmediate actions:\n1. Check vector search results\n2. Verify AI model status\n3. Review recent changes\n4. Run manual RAG test\n\n@slack-alerts @engineering-team",
+      "tags": [
+        "service:vibecode-webgui",
+        "component:rag",
+        "alert-type:quality",
+        "severity:high"
+      ],
+      "options": {
+        "thresholds": {
+          "critical": 0.5,
+          "warning": 0.6
+        },
+        "notify_audit": false,
+        "require_full_window": false,
+        "new_host_delay": 300,
+        "notify_no_data": true,
+        "no_data_timeframe": 45,
+        "evaluation_delay": 60
+      }
+    },
+    {
+      "name": "RAG Performance Regression",
+      "type": "metric alert", 
+      "query": "avg(last_15m):avg:vibecode.rag.regression.test_duration{*} > 15000",
+      "message": "⏰ RAG test performance has regressed - average duration exceeds 15 seconds.\n\nPossible causes:\n- Vector search slowdown\n- AI API latency\n- Database performance issues\n- Network connectivity problems\n\nInvestigate:\n1. Database query performance\n2. AI provider status\n3. Vector search indexes\n4. Network latency\n\n@slack-alerts @performance-team",
+      "tags": [
+        "service:vibecode-webgui",
+        "component:rag",
+        "alert-type:performance",
+        "severity:medium"
+      ],
+      "options": {
+        "thresholds": {
+          "critical": 15000,
+          "warning": 10000
+        },
+        "notify_audit": false,
+        "require_full_window": true,
+        "new_host_delay": 300,
+        "notify_no_data": false,
+        "evaluation_delay": 60
+      }
+    },
+    {
+      "name": "RAG Relevance Score Alert",
+      "type": "metric alert",
+      "query": "avg(last_20m):avg:vibecode.rag.regression.relevance_score{*} < 0.4",
+      "message": "🎯 RAG relevance scores have dropped below 40% - poor context matching detected.\n\nThis indicates:\n- Vector embedding issues\n- Poor semantic similarity\n- Outdated demo data\n- Index corruption\n\nCheck:\n1. Vector database health\n2. Embedding model status\n3. Search index integrity\n4. Demo document quality\n\n@slack-alerts @ai-team",
+      "tags": [
+        "service:vibecode-webgui",
+        "component:rag",
+        "alert-type:relevance",
+        "severity:medium"
+      ],
+      "options": {
+        "thresholds": {
+          "critical": 0.4,
+          "warning": 0.5
+        },
+        "notify_audit": false,
+        "require_full_window": true,
+        "new_host_delay": 300,
+        "notify_no_data": true,
+        "no_data_timeframe": 30,
+        "evaluation_delay": 60
+      }
+    },
+    {
+      "name": "RAG Vector Search Performance",
+      "type": "metric alert",
+      "query": "avg(last_10m):avg:vibecode.rag.vector_search.duration{*} > 5000", 
+      "message": "🔍 Vector search performance degraded - queries taking over 5 seconds.\n\nVector search is critical for RAG quality. Slow searches impact:\n- User experience\n- Test execution time\n- Overall RAG pipeline\n\nCheck:\n1. pgvector extension status\n2. Database connection pool\n3. Index performance\n4. Query optimization\n\n@slack-alerts @database-team",
+      "tags": [
+        "service:vibecode-webgui", 
+        "component:vector-search",
+        "alert-type:performance",
+        "severity:medium"
+      ],
+      "options": {
+        "thresholds": {
+          "critical": 5000,
+          "warning": 3000
+        },
+        "notify_audit": false,
+        "require_full_window": true,
+        "new_host_delay": 300,
+        "notify_no_data": false,
+        "evaluation_delay": 60
+      }
+    },
+    {
+      "name": "RAG Test Execution Missing",
+      "type": "metric alert",
+      "query": "avg(last_2h):sum:vibecode.rag.regression.test_duration{*}.as_count() < 1",
+      "message": "❌ No RAG regression tests executed in the last 2 hours.\n\nThis could indicate:\n- CI/CD pipeline issues\n- Test runner failures\n- Infrastructure problems\n- Scheduled job failures\n\nVerify:\n1. CI/CD pipeline status\n2. Test runner health\n3. Infrastructure availability\n4. Scheduled job configuration\n\n@slack-alerts @devops-team",
+      "tags": [
+        "service:vibecode-webgui",
+        "component:rag",
+        "alert-type:availability",
+        "severity:medium"
+      ],
+      "options": {
+        "thresholds": {
+          "critical": 1
+        },
+        "notify_audit": false,
+        "require_full_window": true,
+        "new_host_delay": 300,
+        "notify_no_data": false,
+        "evaluation_delay": 300
+      }
+    }
+  ],
+  "alert_channels": {
+    "slack-alerts": {
+      "type": "slack",
+      "webhook": "${SLACK_WEBHOOK_URL}",
+      "channel": "#alerts-rag"
+    },
+    "oncall-team": {
+      "type": "pagerduty",
+      "service_key": "${PAGERDUTY_SERVICE_KEY}"
+    },
+    "engineering-team": {
+      "type": "email",
+      "emails": ["engineering@vibecode.dev"]
+    },
+    "performance-team": {
+      "type": "email", 
+      "emails": ["performance@vibecode.dev"]
+    },
+    "ai-team": {
+      "type": "email",
+      "emails": ["ai-team@vibecode.dev"]
+    },
+    "database-team": {
+      "type": "email",
+      "emails": ["database@vibecode.dev"]
+    },
+    "devops-team": {
+      "type": "email",
+      "emails": ["devops@vibecode.dev"]
+    }
+  },
+  "sla_thresholds": {
+    "rag_test_success_rate": {
+      "target": 95,
+      "warning": 90,
+      "critical": 80
+    },
+    "rag_response_quality": {
+      "target": 0.8,
+      "warning": 0.7,
+      "critical": 0.5
+    },
+    "rag_test_duration": {
+      "target": 5000,
+      "warning": 10000,
+      "critical": 15000
+    },
+    "vector_search_duration": {
+      "target": 1000,
+      "warning": 3000,
+      "critical": 5000
+    }
+  }
+}

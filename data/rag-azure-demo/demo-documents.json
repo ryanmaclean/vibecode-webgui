@@ -1,0 +1,52 @@
+[
+  {
+    "id": "demo-doc-1",
+    "title": "Authentication Guide",
+    "content": "To implement user authentication in this codebase, use NextAuth.js with the configured providers. The authentication flow includes OAuth providers, credential validation, and session management. Key functions include getServerSession for server-side auth and useSession for client-side auth.",
+    "metadata": {
+      "type": "documentation",
+      "category": "authentication",
+      "tags": ["auth", "oauth", "nextauth", "session"]
+    }
+  },
+  {
+    "id": "demo-doc-2", 
+    "title": "Database Setup",
+    "content": "The application uses PostgreSQL with Prisma ORM. To set up the database, run 'npx prisma migrate dev' for development or 'npx prisma db push' for production. The database includes tables for users, workspaces, files, and vector embeddings stored using pgvector extension.",
+    "metadata": {
+      "type": "documentation",
+      "category": "database",
+      "tags": ["postgresql", "prisma", "pgvector", "database"]
+    }
+  },
+  {
+    "id": "demo-doc-3",
+    "title": "Vector Search Implementation", 
+    "content": "Vector search is implemented using OpenAI embeddings and pgvector. The vectorStore service handles document chunking, embedding generation, and similarity search. Context retrieval uses cosine similarity with configurable thresholds for relevance scoring.",
+    "metadata": {
+      "type": "documentation",
+      "category": "search",
+      "tags": ["vector", "embeddings", "search", "openai", "similarity"]
+    }
+  },
+  {
+    "id": "demo-doc-4",
+    "title": "AI Chat Integration",
+    "content": "The AI chat system integrates with multiple LLM providers through OpenRouter and direct APIs. Chat responses are enhanced with RAG context from vector search. The system supports streaming responses, conversation history, and model switching between OpenAI, Anthropic, and other providers.",
+    "metadata": {
+      "type": "documentation", 
+      "category": "ai",
+      "tags": ["chat", "llm", "rag", "streaming", "openrouter"]
+    }
+  },
+  {
+    "id": "demo-doc-5",
+    "title": "Monitoring and Observability",
+    "content": "Application monitoring uses Datadog for APM, logging, and custom metrics. Key metrics include response times, error rates, database performance, and AI operation costs. Real User Monitoring (RUM) tracks frontend performance and user interactions.",
+    "metadata": {
+      "type": "documentation",
+      "category": "monitoring", 
+      "tags": ["datadog", "apm", "monitoring", "metrics", "rum"]
+    }
+  }
+]

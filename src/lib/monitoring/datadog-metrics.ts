@@ -133,6 +133,109 @@ export class DatadogMetricsService {
     this.sendMetric('vibecode.rag.context_build_time', duration, tags, options?.timestamp)
   }
 
+  // RAG Regression Test Metrics
+  recordRAGRegressionTest(
+    scenarioId: string,
+    duration: number,
+    relevanceScore: number,
+    responseQuality: number,
+    success: boolean,
+    options?: MetricOptions & {
+      category?: string
+      difficulty?: string
+      keywordsMatched?: number
+      documentsFound?: number
+      tokenUsage?: number
+    }
+  ) {
+    const tags = this.mergeTags({
+      ...options?.tags,
+      component: 'rag_regression',
+      scenario_id: scenarioId,
+      category: options?.category || 'unknown',
+      difficulty: options?.difficulty || 'unknown',
+      success: success.toString(),
+      relevance_tier: this.categorizeRelevanceScore(relevanceScore),
+      quality_tier: this.categorizeQualityScore(responseQuality)
+    })
+
+    // Send multiple metrics for comprehensive tracking
+    this.sendMetric('vibecode.rag.regression.test_duration', duration, tags, options?.timestamp)
+    this.sendMetric('vibecode.rag.regression.relevance_score', relevanceScore, tags, options?.timestamp)
+    this.sendMetric('vibecode.rag.regression.response_quality', responseQuality, tags, options?.timestamp)
+    
+    if (options?.keywordsMatched !== undefined) {
+      this.sendMetric('vibecode.rag.regression.keywords_matched', options.keywordsMatched, tags, options?.timestamp)
+    }
+    
+    if (options?.documentsFound !== undefined) {
+      this.sendMetric('vibecode.rag.regression.documents_found', options.documentsFound, tags, options?.timestamp)
+    }
+
+    if (options?.tokenUsage !== undefined) {
+      this.sendMetric('vibecode.rag.regression.token_usage', options.tokenUsage, tags, options?.timestamp)
+    }
+  }
+
+  // RAG Vector Search Performance
+  recordRAGVectorSearch(
+    duration: number,
+    query: string,
+    resultCount: number,
+    averageSimilarity: number,
+    options?: MetricOptions & {
+      workspaceId?: string
+      threshold?: number
+    }
+  ) {
+    const tags = this.mergeTags({
+      ...options?.tags,
+      component: 'rag_vector_search',
+      query_length: this.categorizeMessageSize(query.length),
+      result_count: this.categorizeResultsCount(resultCount),
+      similarity_tier: this.categorizeRelevanceScore(averageSimilarity),
+      workspace_type: options?.workspaceId?.includes('test') ? 'test' : 'production'
+    })
+
+    this.sendMetric('vibecode.rag.vector_search.duration', duration, tags, options?.timestamp)
+    this.sendMetric('vibecode.rag.vector_search.result_count', resultCount, tags, options?.timestamp)
+    this.sendMetric('vibecode.rag.vector_search.avg_similarity', averageSimilarity, tags, options?.timestamp)
+  }
+
+  // RAG End-to-End Performance
+  recordRAGEndToEnd(
+    totalDuration: number,
+    contextBuildTime: number,
+    aiResponseTime: number,
+    success: boolean,
+    options?: MetricOptions & {
+      model?: string
+      promptTokens?: number
+      completionTokens?: number
+      errorType?: string
+    }
+  ) {
+    const tags = this.mergeTags({
+      ...options?.tags,
+      component: 'rag_e2e',
+      success: success.toString(),
+      model: options?.model?.replace('/', '_') || 'unknown',
+      error_type: options?.errorType || 'none'
+    })
+
+    this.sendMetric('vibecode.rag.e2e.total_duration', totalDuration, tags, options?.timestamp)
+    this.sendMetric('vibecode.rag.e2e.context_build_time', contextBuildTime, tags, options?.timestamp)
+    this.sendMetric('vibecode.rag.e2e.ai_response_time', aiResponseTime, tags, options?.timestamp)
+    
+    if (options?.promptTokens !== undefined) {
+      this.sendMetric('vibecode.rag.e2e.prompt_tokens', options.promptTokens, tags, options?.timestamp)
+    }
+    
+    if (options?.completionTokens !== undefined) {
+      this.sendMetric('vibecode.rag.e2e.completion_tokens', options.completionTokens, tags, options?.timestamp)
+    }
+  }
+
   // Web Search Performance
   recordWebSearch(duration: number, resultsCount: number, searchEngine: string, options?: MetricOptions) {
 
@@ -232,6 +335,12 @@ export class DatadogMetricsService {
     if (count < 3) return 'few'
     if (count < 8) return 'medium'
     return 'many'
+  }
+
+  private categorizeQualityScore(score: number): string {
+    if (score < 0.4) return 'low'
+    if (score < 0.7) return 'medium'
+    return 'high'
   }
 
   // Core metric sending functionality

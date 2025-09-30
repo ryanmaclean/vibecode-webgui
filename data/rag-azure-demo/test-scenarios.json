@@ -1,0 +1,56 @@
+[
+  {
+    "id": "auth-scenario",
+    "name": "Authentication Implementation Query",
+    "query": "How do I implement user authentication in this codebase?",
+    "expectedKeywords": ["NextAuth.js", "OAuth", "getServerSession", "session"],
+    "expectedDocuments": ["demo-doc-1"],
+    "category": "authentication",
+    "difficulty": "basic"
+  },
+  {
+    "id": "database-scenario", 
+    "name": "Database Configuration Query",
+    "query": "How do I set up the database and what database technology is used?",
+    "expectedKeywords": ["PostgreSQL", "Prisma", "pgvector", "migrate"],
+    "expectedDocuments": ["demo-doc-2"],
+    "category": "database",
+    "difficulty": "basic"
+  },
+  {
+    "id": "vector-search-scenario",
+    "name": "Vector Search Technical Query",
+    "query": "Explain how vector search and similarity matching works in this system",
+    "expectedKeywords": ["embeddings", "cosine similarity", "OpenAI", "vectorStore"],
+    "expectedDocuments": ["demo-doc-3"],
+    "category": "search",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "ai-integration-scenario",
+    "name": "AI Chat Integration Query", 
+    "query": "How does the AI chat system work and what providers are supported?",
+    "expectedKeywords": ["LLM", "OpenRouter", "streaming", "RAG context"],
+    "expectedDocuments": ["demo-doc-4"],
+    "category": "ai",
+    "difficulty": "intermediate"
+  },
+  {
+    "id": "monitoring-scenario",
+    "name": "Monitoring and Observability Query",
+    "query": "What monitoring tools are used and how do I track application performance?",
+    "expectedKeywords": ["Datadog", "APM", "metrics", "RUM"],
+    "expectedDocuments": ["demo-doc-5"], 
+    "category": "monitoring",
+    "difficulty": "basic"
+  },
+  {
+    "id": "cross-domain-scenario",
+    "name": "Complex Cross-Domain Query",
+    "query": "How do I implement authenticated AI chat with database persistence and monitoring?",
+    "expectedKeywords": ["authentication", "AI chat", "database", "monitoring"],
+    "expectedDocuments": ["demo-doc-1", "demo-doc-2", "demo-doc-4", "demo-doc-5"],
+    "category": "integration",
+    "difficulty": "advanced"
+  }
+]

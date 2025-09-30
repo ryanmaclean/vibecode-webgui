@@ -1,0 +1,377 @@
+{
+  "title": "VibeCode RAG Regression Dashboard",
+  "description": "Monitoring dashboard for RAG functionality regression testing and performance KPIs",
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.rag.regression.test_duration{*} by {scenario_id,category}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "RAG Test Duration by Scenario",
+        "title_size": "16",
+        "title_align": "left",
+        "yaxis": {
+          "label": "Duration (ms)",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto"
+        },
+        "markers": [
+          {
+            "value": "y = 10000",
+            "display_type": "error dashed",
+            "label": "10s SLA"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.rag.regression.relevance_score{*} by {scenario_id}",
+            "display_type": "line",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "RAG Relevance Score Trends",
+        "title_size": "16",
+        "title_align": "left",
+        "yaxis": {
+          "label": "Relevance Score (0-1)",
+          "scale": "linear",
+          "min": "0",
+          "max": "1"
+        },
+        "markers": [
+          {
+            "value": "y = 0.7",
+            "display_type": "warning dashed",
+            "label": "Target Relevance"
+          },
+          {
+            "value": "y = 0.5",
+            "display_type": "error dashed",
+            "label": "Min Relevance"
+          }
+        ]
+      },
+      "layout": {
+        "x": 6,
+        "y": 0,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.rag.regression.response_quality{*} by {difficulty}",
+            "display_type": "line",
+            "style": {
+              "palette": "purple",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Response Quality by Difficulty",
+        "title_size": "16",
+        "title_align": "left",
+        "yaxis": {
+          "label": "Quality Score (0-1)",
+          "scale": "linear",
+          "min": "0",
+          "max": "1"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 3,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:vibecode.rag.regression.test_duration{success:true}.as_count()",
+            "aggregator": "last"
+          }
+        ],
+        "title": "Successful Tests (Last Run)",
+        "title_size": "16",
+        "title_align": "center",
+        "precision": 0,
+        "custom_unit": "tests",
+        "text_align": "center"
+      },
+      "layout": {
+        "x": 6,
+        "y": 3,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "avg:vibecode.rag.regression.relevance_score{*}",
+            "aggregator": "last"
+          }
+        ],
+        "title": "Avg Relevance Score",
+        "title_size": "16", 
+        "title_align": "center",
+        "precision": 2,
+        "text_align": "center",
+        "conditional_formats": [
+          {
+            "comparator": ">=",
+            "value": 0.7,
+            "palette": "green_on_white"
+          },
+          {
+            "comparator": "<",
+            "value": 0.5,
+            "palette": "red_on_white"
+          }
+        ]
+      },
+      "layout": {
+        "x": 9,
+        "y": 3,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.rag.vector_search.duration{*}",
+            "display_type": "line",
+            "style": {
+              "palette": "cool",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "Vector Search Performance",
+        "title_size": "16",
+        "title_align": "left",
+        "yaxis": {
+          "label": "Duration (ms)",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 6,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "type": "heatmap",
+        "requests": [
+          {
+            "q": "avg:vibecode.rag.regression.keywords_matched{*} by {scenario_id}"
+          }
+        ],
+        "title": "Keyword Match Heatmap",
+        "title_size": "16",
+        "title_align": "left",
+        "yaxis": {
+          "label": "Scenario ID",
+          "scale": "linear"
+        },
+        "xaxis": {
+          "label": "Time",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 6,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.rag.e2e.total_duration{*}",
+            "display_type": "line",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "avg:vibecode.rag.e2e.context_build_time{*}",
+            "display_type": "line",
+            "style": {
+              "palette": "blue",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "avg:vibecode.rag.e2e.ai_response_time{*}",
+            "display_type": "line",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "title": "End-to-End RAG Performance Breakdown",
+        "title_size": "16",
+        "title_align": "left",
+        "yaxis": {
+          "label": "Duration (ms)",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto"
+        },
+        "legend": {
+          "enabled": true
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 9,
+        "width": 12,
+        "height": 3
+      }
+    },
+    {
+      "id": 9,
+      "definition": {
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(avg:vibecode.rag.regression.test_duration{success:false} by {scenario_id}, 10, 'mean', 'desc')"
+          }
+        ],
+        "title": "Slowest Failed Test Scenarios",
+        "title_size": "16",
+        "title_align": "left"
+      },
+      "layout": {
+        "x": 0,
+        "y": 12,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 10,
+      "definition": {
+        "type": "distribution",
+        "requests": [
+          {
+            "q": "avg:vibecode.rag.regression.token_usage{*}"
+          }
+        ],
+        "title": "Token Usage Distribution",
+        "title_size": "16",
+        "title_align": "left",
+        "xaxis": {
+          "label": "Token Count",
+          "scale": "linear"
+        },
+        "yaxis": {
+          "label": "Frequency",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 12,
+        "width": 6,
+        "height": 3
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "category",
+      "prefix": "category",
+      "available_values": [
+        "authentication",
+        "database",
+        "search",
+        "ai",
+        "monitoring",
+        "integration"
+      ]
+    },
+    {
+      "name": "difficulty",
+      "prefix": "difficulty",
+      "available_values": [
+        "basic",
+        "intermediate", 
+        "advanced"
+      ]
+    },
+    {
+      "name": "environment",
+      "prefix": "env",
+      "available_values": [
+        "test",
+        "development",
+        "staging",
+        "production"
+      ]
+    }
+  ],
+  "layout_type": "ordered",
+  "notify_list": [],
+  "reflow_type": "fixed"
+}
