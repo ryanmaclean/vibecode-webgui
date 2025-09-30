@@ -17,7 +17,7 @@ const mockStreamResponse = jest.mocked(streamResponse)
 
 beforeEach(() => {
   jest.clearAllMocks()
-  ;(useRouter as jest.Mock).mockReturnValue({ push: mockPush })
+  (useRouter as jest.Mock).mockReturnValue({ push: mockPush })
 })
 
 describe('useProjectGenerator', () => {
