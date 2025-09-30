@@ -5,7 +5,7 @@ This table maps each workflow called out in TODO.md to its tracking issue and no
 | Workflow(s) | Issue | Notes |
 | --- | --- | --- |
 | `.github/workflows/azure-appservice-deploy.yml` | #355 | Active workflow validated; disabled-expensive duplicate removed so this remains the single source. Issue draft: docs/logs/workflow-issues/azure-appservice-deploy.md. |
-| `.github/workflows/azure-webgui-deploy.yml` | #356 | Duplicate disabled workflow deleted; continue to monitor App Service deploy health checks. |
+| `.github/workflows/azure-webgui-deploy.yml` | #356 | Duplicate disabled workflow deleted; continue to monitor App Service deploy health checks. Issue draft: docs/logs/workflow-issues/azure-webgui-deploy.md. |
 | `.github/workflows/build-and-push-image.yml` | #357 | Active GHCR build pipeline under review; disabled-expensive duplicate removed. Issue draft: docs/logs/workflow-issues/build-and-push-image.md. |
 | `.github/workflows/ci-simplified.yml` (+ disabled variant) | #361 | Align simplified CI job with archived copy; capture missing checks or delete duplicate. Issue draft: docs/logs/workflow-issues/ci-simplified.yml.md. Secret outputs added 2025-09-30. |
 | `.github/workflows/claude-code-review.yml` (+ disabled variant) | #363 | Confirm Anthropics reviewer configuration, token scope, and consolidate workflows. |
