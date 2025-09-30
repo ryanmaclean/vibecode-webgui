@@ -1,9 +1,26 @@
+## Agent Update (2025-09-30 02:26 UTC)
+
+- Verifying the KinD code-server editor loads in-browser by opening http://localhost:3100 while the port-forward runs.
+
+### Next Steps
+- [ ] Start port-forward, open the URL, and capture status/redirect message.
+
 ## Agent Update (2025-09-30 02:20 UTC)
 
 - Checking the code-server health endpoint in KinD to ensure the Monaco 0.53 image responds on `/healthz`.
 
 ### Next Steps
-- [ ] `curl http://localhost:3100/healthz` with port-forward active and log the status.
+- [x] `curl http://localhost:3100/healthz` with port-forward active and log the status — HTTP/1.1 200 OK confirmed.
+
+## Agent Update (2025-09-30 03:05 UTC)
+
+- Integrated the new editor verification helper into `scripts/test-code-server-kind.sh` so the KinD smoke test now asserts Vim/Neovim/Emacs availability.
+- Re-ran the combined script; port-forward + NodePort checks still pass and the editor probe reports all three binaries.
+
+### Next Steps
+- [ ] Evaluate caching the apt-installed editors inside the base image to shorten CI runs.
+- [ ] Follow up on extending the editor script once aider/goose CLI installs are available.
+- [ ] Consider surfacing the new checks in CI (GitHub Actions) after other agents sign off.
 
 ## Agent Update (2025-09-30 02:50 UTC)
 
