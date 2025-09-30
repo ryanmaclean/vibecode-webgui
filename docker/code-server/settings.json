@@ -59,8 +59,17 @@
   "http.proxyStrictSSL": false,
   "workbench.trustedDomains.promptInTrustedWorkspace": false,
   "remote.extensionKind": {
-    "anthropic.claude-code": ["ui"],
-    "openai.chatgpt": ["ui"]
+    "anthropic.claude-code": ["ui", "workspace"],
+    "openai.chatgpt": ["ui", "workspace"]
+  },
+  "extensions.supportUntrustedWorkspaces": {
+    "anthropic.claude-code": {
+      "supported": true,
+      "version": "2.0.1"
+    },
+    "openai.chatgpt": {
+      "supported": true
+    }
   },
   "http.linkProtectionTrustedDomains": [
     "https://*.github.com",
