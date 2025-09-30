@@ -5,10 +5,7 @@
 // Our src/instrument.ts performs the actual dd-trace initialization and tagging.
 
 export async function register() {
-  const isProduction = process.env.NODE_ENV === 'production'
-  const forceInstrument = process.env.DD_FORCE_INSTRUMENT === 'true'
-
-  const modulePath = !isProduction && !forceInstrument ? './instrument.dev' : './instrument'
-
-  await import(modulePath)
+  if (process.env.NODE_ENV === 'production' || process.env.DD_FORCE_INSTRUMENT === 'true') {
+    await import('./instrument')
+  }
 }
