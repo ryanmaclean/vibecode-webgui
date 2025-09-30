@@ -28,7 +28,7 @@ npm run dev
 ```
 
 **New Features:**
-- 🤖 AI Code Completion with Monaco 0.53.0 ([Codeium Playground](http://localhost:3000/tools/codeium) – sign in from the dev server to try inline suggestions)
+- 🤖 AI Code Completion with Monaco 0.53.0 (visit `/tools/codeium` on a running dev server to try the Codeium playground)
 - 🔌 MCP Server for AI agent integration
 - 🐍 Pydantic AI CLI Coding Agent example
 

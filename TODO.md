@@ -1,9 +1,23 @@
+## Agent Update (2025-09-30 02:27 UTC)
+
+- Running `node scripts/verify-monacopilot.js` to confirm all 9 checks still pass after the Monaco upgrade.
+
+### Next Steps
+- [x] Execute the verification script and record the output — all 9 monacopilot checks passed.
+
+## Agent Update (2025-09-30 02:27 UTC)
+
+- Validating that the NodePort responds on `/healthz` using the control-plane IP (no port-forward).
+
+### Next Steps
+- [x] Curl `http://<control-plane>:31080/healthz` and capture status — HTTP/1.1 200 OK from NodePort.
+
 ## Agent Update (2025-09-30 02:26 UTC)
 
 - Verifying the KinD code-server editor loads in-browser by opening http://localhost:3100 while the port-forward runs.
 
 ### Next Steps
-- [ ] Start port-forward, open the URL, and capture status/redirect message.
+- [x] Start port-forward, open the URL, and capture status/redirect message — curl -L returned 200 (code-server login redirect).
 
 ## Agent Update (2025-09-30 02:20 UTC)
 
@@ -96,7 +110,7 @@
 - [x] Execute `npm run type-check`; `tsc --noEmit` passes with current workspace.
 - [x] Monitor ingest PID 82844 until it exits before starting new batches.
   - ✅ Agent Codex (2025-09-30 01:52 UTC): `ps ax -o pid,ppid,command | rg "ingest-docs-to-rag"` still lists PIDs 82827/82843/82844.
-  - ⏳ Still running as of latest check - process continues to run.
+  - ⏳ Agent Codex (2025-09-30 02:12 UTC): Follow-up check shows the same PIDs active; ingest queue remains occupied.
 - [x] Finish documenting a lightweight `/tools/codeium` browser smoke test once the observability stub lands.
   - ✅ Agent Codex (2025-09-30 01:55 UTC): After stubbing `dd-trace` and OpenTelemetry in dev, `npm run dev` serves `/tools/codeium` (redirects to `/auth/signin?callbackUrl=%2Ftools%2Fcodeium` for anonymous sessions).
   - ✅ Agent Codex (2025-09-30 02:00 UTC): Added the four-step smoke test walkthrough to `docs/logs/COORDINATION_LOG.md` (2025-09-30 entry) so future checks follow the same playbook.
