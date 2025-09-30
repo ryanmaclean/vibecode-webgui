@@ -4,20 +4,12 @@ This directory contains the configuration for the custom VibeCode code-server, w
 
 ## Features
 
-### AI Coding Assistants (11 pre-installed)
-- **GitHub Copilot** - AI pair programmer
-- **Codeium** - Free AI code completion
-- **Tabnine** - AI code completion
-- **Amazon Q** - AWS AI assistant
-- **Sourcegraph Cody** - AI coding assistant
-- **Continue** - Open-source autopilot
-- **Cline** (formerly Claude Dev) - AI coding assistant with Claude
-- **Aider** - AI pair programming
-- **Cursor Tools** - AI-first editor features
-- **VibeCode AI Assistant** - Custom AI integration
+### AI Coding Assistants (MIT/Apache Licensed)
+- **Continue** - Open-source autopilot (Apache 2.0)
+- **Codeium** - Free AI code completion (MIT)
+- **VibeCode AI Assistant** - Custom AI integration (MIT)
 
-### Developer Productivity Tools
-- **GitLens** - Supercharged Git
+### Developer Productivity Tools (MIT/BSD/Apache)
 - **Error Lens** - Inline error highlighting
 - **Code Spell Checker** - Catch typos
 - **TODO Highlight** - Track TODOs
@@ -26,15 +18,14 @@ This directory contains the configuration for the custom VibeCode code-server, w
 - **Indent Rainbow** - Visual indentation
 - **Path Intellisense** - Auto-complete paths
 
-### Database Tools
+### Database Tools (MIT/Apache)
 - **SQLTools** - Database management
-- **PostgreSQL Client** - pgvector support
+- **SQLTools PostgreSQL Driver** - pgvector support
 
-### DevOps Tools
+### DevOps Tools (Microsoft MIT)
 - **Docker** - Container management
 - **Kubernetes** - K8s integration
-- **REST Client** - API testing
-- **Thunder Client** - HTTP client
+- **REST Client** - API testing (MIT)
 
 ### Language Support
 - Python (with Pylance and Black formatter)

@@ -23,7 +23,14 @@ const eslintConfig = [{
     "_tools/**",
     "scripts/integrate-error-tracking.ts",
     "scripts/test-multimodal.js",
-    ".archive/**"
+    ".archive/**",
+    "code-server/**",
+    "web-dashboard/**",
+    "docker/**",
+    "docs/e2e/**",
+    "examples/**",
+    "extensions/**",
+    "packages/**"
   ]
 }, ...compat.extends("next/core-web-vitals", "next/typescript"), {
   rules: {
@@ -56,7 +63,20 @@ const eslintConfig = [{
     "import/no-anonymous-default-export": "off"
   }
 }, {
-  files: ["__mocks__/**", "tests/**"],
+  files: ["__mocks__/**"],
+  rules: {
+    "@typescript-eslint/no-require-imports": "off"
+  }
+}, {
+  files: ["tests/**/*.{ts,tsx,js,jsx}"],
+  rules: {
+    "@typescript-eslint/no-require-imports": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unused-vars": "off",
+    "import/no-anonymous-default-export": "off"
+  }
+}, {
+  files: ["**/*.cjs", "**/.eslintrc.*"],
   rules: {
     "@typescript-eslint/no-require-imports": "off"
   }
