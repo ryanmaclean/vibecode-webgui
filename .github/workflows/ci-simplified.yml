@@ -23,49 +23,32 @@ jobs:
     name: Validate CI configuration (secrets/vars)
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    outputs:
+      has_dd_api_key: ${{ steps.check.outputs.has_dd_api_key }}
+      has_dd_app_key: ${{ steps.check.outputs.has_dd_app_key }}
+      has_lhci_token: ${{ steps.check.outputs.has_lhci_token }}
+      has_dd_synthetic_ids: ${{ steps.check.outputs.has_dd_synthetic_ids }}
     steps:
       - name: Check required secrets and variables
+        id: check
         run: |
           echo "🔧 Validating CI configuration..."
-          missing=0
-          
-          # Check Datadog secrets (without exposing values)
-          if [ -z "${{ secrets.DD_API_KEY }}" ]; then
-            echo "::warning::Missing DD_API_KEY secret; Datadog steps will be skipped."
-            missing=1
-          else
-            echo "✅ DD_API_KEY present"
-          fi
-          
-          if [ -z "${{ secrets.DD_APP_KEY }}" ]; then
-            echo "::warning::Missing DD_APP_KEY secret; some Datadog features will be skipped."
-          else
-            echo "✅ DD_APP_KEY present"
-          fi
-          
-          # Check LHCI token
-          if [ -z "${{ secrets.LHCI_GITHUB_APP_TOKEN }}" ]; then
-            echo "::warning::Missing LHCI_GITHUB_APP_TOKEN secret; Lighthouse CI will be skipped."
-          else
-            echo "✅ LHCI_GITHUB_APP_TOKEN present"
-          fi
-          
-          # Check synthetic test IDs variable
-          if [ -z "${{ vars.DD_SYNTHETIC_TEST_IDS }}" ]; then
-            echo "::warning::Missing DD_SYNTHETIC_TEST_IDS variable; synthetic tests will be skipped."
-          else
-            echo "✅ DD_SYNTHETIC_TEST_IDS present"
-          fi
-          
-          if [ $missing -eq 1 ]; then
-            echo ""
-            echo "🏗️ Setup guidance:"
-            echo "• Add DD_API_KEY secret for Datadog CI Visibility"
-            echo "• Add DD_APP_KEY secret for enhanced Datadog features"  
-            echo "• Add LHCI_GITHUB_APP_TOKEN secret for Lighthouse CI"
-            echo "• Add DD_SYNTHETIC_TEST_IDS variable for synthetic tests"
-            echo "• See docs/ci-cd-fixes.md for detailed setup instructions"
-          fi
+
+          check() {
+            local name="$1" value="$2" message="$3" flag="$4"
+            if [ -n "$value" ]; then
+              echo "✅ $name present"
+              printf '%s=1\n' "$flag" >> "$GITHUB_OUTPUT"
+            else
+              echo "::warning::$message"
+              printf '%s=0\n' "$flag" >> "$GITHUB_OUTPUT"
+            fi
+          }
+
+          check 'DD_API_KEY' '${{ secrets.DD_API_KEY }}' 'Missing DD_API_KEY secret; Datadog steps will be skipped.' 'has_dd_api_key'
+          check 'DD_APP_KEY' '${{ secrets.DD_APP_KEY }}' 'Missing DD_APP_KEY secret; some Datadog features will be skipped.' 'has_dd_app_key'
+          check 'LHCI_GITHUB_APP_TOKEN' '${{ secrets.LHCI_GITHUB_APP_TOKEN }}' 'Missing LHCI_GITHUB_APP_TOKEN secret; Lighthouse CI will be skipped.' 'has_lhci_token'
+          check 'DD_SYNTHETIC_TEST_IDS' '${{ vars.DD_SYNTHETIC_TEST_IDS }}' 'Missing DD_SYNTHETIC_TEST_IDS variable; synthetic tests will be skipped.' 'has_dd_synthetic_ids'
 
   # Code Quality & Security
   code-quality:
@@ -182,7 +165,7 @@ jobs:
           echo "Waiting for Redis..."
           timeout 30 bash -c 'until redis-cli -h localhost -p 6379 ping; do sleep 1; done'
 
-      - name: Run infrastructure tests
+     - name: Run infrastructure tests
         run: npm run test:root:infrastructure
         continue-on-error: true
 
@@ -194,7 +177,7 @@ jobs:
         run: npm run test:root:credentials
         continue-on-error: true
 
-      - name: Run workflow tests
+     - name: Run workflow tests
         run: npm run test:root:workflow
         continue-on-error: true
 

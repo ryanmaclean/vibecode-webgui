@@ -4,10 +4,10 @@
 The docs automation workflow validates content, runs lychee link checks, and auto-commits generated docs to main. It was paused after repeated failures from rate-limited link checks and branch protection blocking auto-commits. We need to modernize the workflow so doc updates regain automated guardrails without spamming CI.
 
 ## Current Status
-- Trigger restricted to manual `workflow_dispatch`; push/PR path filters and weekly cron removed.
-- Link checker (`lychee`) fails frequently due to rate limits, causing job failures across unrelated PRs.
-- Auto-commit step pushes directly to `main`, conflicting with branch protection rules and retriggering the workflow.
-- No secret gating or caching; each run installs dependencies from scratch.
+- Push/PR triggers and weekly cron restored with concurrency guard.
+- Lychee link checks now run with GitHub token, concurrency, and retries to reduce rate-limit failures.
+- Documentation updates are generated only on manual dispatch; changes are uploaded as an artifact and optional PR via `peter-evans/create-pull-request` instead of direct pushes to `main`.
+- Remaining issues: link report still fails hard on transient errors, jobs reinstall dependencies each run, and validation outputs aren’t summarized for contributors.
 
 ## Proposed Remediation
 1. **Trigger strategy**: Reintroduce push/PR triggers targeting `docs/**`, `.md`, and generator scripts, plus an optional weekly cron. Provide `[skip docs-automation]` opt-out for large doc migrations.
@@ -27,4 +27,4 @@ The docs automation workflow validates content, runs lychee link checks, and aut
 - Align with Platform on branch protections for auto-generated doc PRs.
 
 ## Progress Log
-- **2025-09-30:** Draft created outlining gating, lychee tuning, and PR-based auto-commit strategy. Awaiting implementation plan.
+- **2025-09-30:** Re-enabled triggers/cron with concurrency, tuned lychee retry behavior, and switched auto-update flow to artifact + optional PR on manual dispatch.

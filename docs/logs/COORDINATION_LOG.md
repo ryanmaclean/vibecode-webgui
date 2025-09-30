@@ -399,3 +399,16 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - Added weekly cron and auto-detection between Astro/Next.js in `.github/workflows/deploy-docs.yml`; gated Node setup/build steps accordingly.
 - Recorded draft in `docs/logs/workflow-issues/deploy-docs.md` and updated TODO/workflow tracking to note remaining cache/reporting work.
 - Next: finalize cache strategy per docs system and document dispatch usage in the runbook before closing the TODO.
+
+### 2025-09-30 06:42 UTC — CI simplified gating tweak
+- Added explicit outputs for Datadog/LHCI secrets in `.github/workflows/ci-simplified.yml` so downstream jobs can gate optional steps.
+- Logged follow-up in `docs/logs/workflow-issues/ci-simplified.yml.md`; TODO/workflow tracking updated to note remaining work (consuming outputs + pruning `continue-on-error`).
+
+### 2025-09-30 06:48 UTC — Docs automation flow revived
+- Restored push/PR/cron triggers for `.github/workflows/docs-automation.yml`, added concurrency, tuned lychee retries, and swapped direct commits for artifact + optional PR on manual dispatch.
+- TODO/workflow tracking updated; remaining tasks: caching improvements and skip annotations for optional warnings.
+
+### 2025-09-30 06:52 UTC — Azure App Service gating
+- Added concurrency + secret validation to `.github/workflows/azure-appservice-deploy.yml`; build/deploy skip with notices when Azure secrets missing.
+- Model smoke test only runs when `GATEWAY_API_KEY` provided, avoiding flaky failures.
+- Follow-up: audit Azure credentials, expand smoke coverage, and file the GitHub issue using `docs/logs/workflow-issues/azure-appservice-deploy.md`.

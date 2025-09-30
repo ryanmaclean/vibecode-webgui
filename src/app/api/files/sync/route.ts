@@ -13,14 +13,10 @@ import { authOptions } from '@/lib/auth'
 import { WebSocketServer, WebSocket } from 'ws'
 import { getFileSystemInstance } from '@/lib/file-system-operations'
 import type { FileSystemConfig, FileSyncEvent, SecureFileSystemOperations } from '@/lib/file-system-operations'
+import { parseFileSyncMessage } from '@/lib/file-sync/websocket'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
-
-interface WebSocketMessage {
-  type: string
-  payload?: unknown
-}
 
 // WebSocket connections per workspace
 const workspaceConnections = new Map<string, Set<WebSocket>>()
@@ -268,7 +264,11 @@ if (!global.wss) {
       // Handle incoming messages
       ws.on('message', (data: string) => {
         try {
-          const message: WebSocketMessage = JSON.parse(data)
+          const message = parseFileSyncMessage(data)
+          if (!message) {
+            console.warn('Unrecognized WebSocket message payload:', data)
+            return
+          }
 
           switch (message.type) {
             case 'file-update':
@@ -280,12 +280,8 @@ if (!global.wss) {
               break
 
             case 'subscribe-file':
-              // Subscribe to specific file changes
               // TODO: Implement file-specific subscriptions
               break
-
-            default:
-              console.warn('Unknown WebSocket message type:', message.type)
           }
         } catch (error) {
           console.error('Failed to process WebSocket message:', error)

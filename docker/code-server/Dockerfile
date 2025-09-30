@@ -104,8 +104,22 @@ RUN mkdir -p /home/coder/.local/share/code-server/User/ \
 # 1. Anthropic Claude Code - Official Claude extension
 RUN timeout 120 code-server --install-extension anthropic.claude-code || echo "Claude Code installation timed out or failed, skipping"
 
+# Patch Claude Code to work in code-server (remove desktop-only restriction)
+RUN if [ -d "/home/coder/.local/share/code-server/extensions/anthropic.claude-code"* ]; then \
+    CLAUDE_DIR=$(ls -d /home/coder/.local/share/code-server/extensions/anthropic.claude-code* | head -1) && \
+    sed -i 's/"extensionKind":\s*\["ui"\]/"extensionKind": ["ui", "workspace"]/g' "$CLAUDE_DIR/package.json" && \
+    echo "Patched Claude Code for code-server compatibility"; \
+    fi
+
 # 2. OpenAI ChatGPT - Official OpenAI extension (Codex)
 RUN timeout 120 code-server --install-extension openai.chatgpt || echo "OpenAI ChatGPT installation timed out or failed, skipping"
+
+# Patch OpenAI ChatGPT to work in code-server (remove desktop-only restriction)
+RUN if [ -d "/home/coder/.local/share/code-server/extensions/openai.chatgpt"* ]; then \
+    OPENAI_DIR=$(ls -d /home/coder/.local/share/code-server/extensions/openai.chatgpt* | head -1) && \
+    sed -i 's/"extensionKind":\s*\["ui"\]/"extensionKind": ["ui", "workspace"]/g' "$OPENAI_DIR/package.json" && \
+    echo "Patched OpenAI ChatGPT for code-server compatibility"; \
+    fi
 
 # 3. GitHub Copilot - OpenAI Codex integration (requires GitHub subscription)
 RUN timeout 120 code-server --install-extension GitHub.copilot || echo "GitHub Copilot installation timed out or failed, skipping"
