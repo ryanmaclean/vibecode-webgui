@@ -1,19 +1,67 @@
-## Agent Update (2025-09-30 23:50 UTC)
+## Agent Update (2025-09-30 23:59 UTC)
 
-- Reduced TypeScript `any` warnings from 1,624 → 912 (-712 total, -115 from 6 files)
-- **Session 1**: Fixed vector-db-error-handler-new.ts (23→0), database-error-patterns.ts (20→0), azureEmbeddingService.ts (20→0)
-- **Session 2**: Fixed opentelemetry-config.ts (18→0), multimodal-agent.ts (17→0), db-logger.ts (17→0)
-- Created ErrorLike helper interfaces for consistent error typing
-- Added type constructors for OpenTelemetry optional dependencies
-- Improved type safety across monitoring, AI, and database modules
+- Scrubbed `QueryResultRow` generics through the connection router so read/write routing no longer passes `any[]` params; replica health diagnostics now rely on typed destructuring.
+- Redis adapter now imports the `Redis` type from `ioredis`, giving the client holder a concrete interface even while the implementation remains TODO.
 
 ### Next Steps
-- [ ] Continue reducing `any` usage in remaining high-impact files (16 templates/generator.ts, 15 agent-framework.ts, etc.)
+- [ ] Tighten the Cosmos adapter (and remaining vector shims) to keep peeling back the `any` warnings in the vector DB stack.
+
+## Agent Update (2025-09-30 23:55 UTC)
+
+- Bound the Redis vector adapter client to the `ioredis` type, replacing the `unknown` placeholder so future work can wire in the real client without eslint noise.
+- Sharding manager now consumes `ReadonlyArray<unknown>` parameters and typed variadic logger args; outstanding warnings are limited to intentionally unused placeholders.
+
+### Next Steps
+- [x] Triage remaining `any` usage in `connection-router.ts` (read/write routing) to keep chipping away at the vector-db lint backlog.
+
+## Agent Update (2025-09-30 23:48 UTC)
+
+- Swapped the Redis adapter client holder to `unknown` and updated the sharding manager to use `ReadonlyArray<unknown>`/`unknown[]` variadics so the vector DB layer sheds several lingering `any[]` signatures.
+- Remaining hotspots: Redis/Cosmos adapters still need concrete client typings once implementations land, and the sharding manager keeps existing unused-argument warnings until downstream work finishes.
+
+### Next Steps
+- [x] Type the Redis adapter client once we hook in an actual Redis library (replace `unknown` with the concrete client interface).
+
+## Agent Update (2025-09-30 - Current Session)
+
+- Reduced TypeScript `any` warnings from 1,624 → 831 (-793 total, -81 from 9 files)
+- **Previous Sessions**: Fixed 6 files (-115 warnings)
+  - vector-db-error-handler-new.ts (23→0), database-error-patterns.ts (20→0), azureEmbeddingService.ts (20→0)
+  - opentelemetry-config.ts (18→0), multimodal-agent.ts (17→0), db-logger.ts (17→0)
+- **Current Session**: Fixed 3 files (-81 warnings)
+  - templates/generator.ts (16→0): Created TemplateVariables interface
+  - agent-framework.ts (15→0): Created WorkflowStatus interface, replaced all any with unknown
+  - health/database/metrics/route.ts (15→0): Created query result interfaces for Prisma $queryRaw
+
+### Technical Patterns Applied
+- ErrorLike interfaces for error handling
+- Type constructors for optional dependencies
+- TemplateVariables interface for template generation
+- WorkflowStatus interface for agent coordination
+- Query result interfaces for Prisma raw queries
+- Systematic replacement of `any` with `unknown` or specific types
+
+### Next Steps
+- [ ] Continue reducing `any` usage in remaining high-impact files
+- [ ] Target files: rum-client.ts (14), metaplane-integration.ts (14), mcp/context7/interfaces.ts (14)
 
 ## Agent Update (2025-09-30 23:35 UTC)
 
 - Tightened `AzurePostgresConnection.executeQuery` generics (now `QueryResultRow`-based) and removed the `any` params/rows usage so eslint no longer flags that helper.
 - Added typed defaults to `explainQuery` and ensured pg query results stay strongly typed.
+
+## Agent Update (2025-09-30 23:45 UTC)
+
+- Ran the code-server image through OrbStack container checks, KinD smoke test, and Helm chart deployment validation.
+  - OrbStack (`ghcr.io/ryanmaclean/vibecode-codeserver:latest`) exposes bash/zsh/fish plus eza/rg/fd/fzf/batcat/hyperfine/lazygit/starship/zoxide; note `bat` is reachable via `batcat`, and aider/goose CLIs are still absent in this image.
+  - `scripts/test-code-server-kind.sh` now fails on the refreshed image because `/usr/bin/code-server` is mode 700 for UID 1000 and the Datadog sidecar exits without a hostname; rolled the deployment down to 0 after capturing logs.
+  - `helm upgrade --install vibecode-platform` (overriding to the same image) hits the identical permission guard; `scripts/validate-helm.sh` succeeds for lint/template coverage.
+- Added placeholder `datadog-secret` (api-key: `fakefakefake`) in `vibecode-platform` so the Datadog agent could start during testing; safe to replace once real keys are available.
+
+### Next Steps
+- [ ] Either chmod the code-server binary in both Dockerfiles or relax the security context so KinD/Helm pods can execute as UID 1000 without root.
+- [ ] Bake aider/goose CLIs into the primary image (parity with `Dockerfile.kind`) before re-running smoke tests.
+- [ ] Scale `code-server-kind` back up and re-enable the nightly smoke workflow once the permission fix lands.
 
 ## Agent Update (2025-09-30 23:22 UTC)
 
@@ -22,6 +70,20 @@
 
 ### Next Steps
 - [ ] Monitor upcoming CI runs to ensure the markdown step executes as expected and adjust concurrency/allow-failure behavior if it proves noisy.
+
+## Agent Update (2025-09-30 23:36 UTC)
+
+- Replaced the vector cache mock’s `any` usage with typed generics (`CacheableKey`, `CacheEntry<T>`), so cached results now preserve their element types and lint stops flagging the helper.
+
+### Next Steps
+- [ ] Continue migrating remaining vector DB helpers (e.g., connection pool signatures) away from `any` to drive the lint warning count down.
+
+## Agent Update (2025-09-30 23:43 UTC)
+
+- Genericised the vector DB connection pool (`ConnectionPoolConfig<T>`, `ConnectionPool<T>`) and updated the unit suite to use typed mock connections, removing another set of `any` usages.
+
+### Next Steps
+- [ ] Extend the same generics to the Cosmos/SQL adapters so connection/validate/close signatures stay strongly typed end-to-end.
 
 ## Agent Update (2025-09-30 23:18 UTC)
 
@@ -310,12 +372,12 @@
 
 ## Agent Update (2025-09-30 23:20 UTC)
 
-- Refactored file-sync subscriptions into `SubscriptionManager` and added unit coverage for trimming, limits, and cleanup; `/api/files/sync` now delegates subscribe/unsubscribe logic to the shared manager.
+- Refactored file-sync subscriptions into `SubscriptionManager`, added DogStatsD metrics, and expanded unit coverage for trimming, limits, cleanup, and broadcast sizing; `/api/files/sync` now delegates subscribe/unsubscribe logic to the shared manager.
 - Updated Jest config to ignore `.next` artifacts, eliminating haste-map collisions during focused test runs.
 
 ### Next Steps
 - [ ] Broaden file-sync coverage with integration/e2e flows once the WebSocket test harness is in place.
-- [ ] Add DogStatsD metrics inside `/api/files/sync` to monitor subscription churn and broadcast counts.
+- [x] Add DogStatsD metrics inside `/api/files/sync` to monitor subscription churn and broadcast counts.
 
 ## Agent Update (2025-09-30 05:07 UTC)
 
@@ -385,14 +447,14 @@
 - [ ] .github/workflows/error-tracking-integration.yml — auto-integrates Datadog error tracking across scripts, commits back to main, matrix tests; relies on DD_API_KEY and pushes changes; issue should evaluate `[skip ci]` commit strategy + deployment placeholder. (Tracking: #372 — PR trigger + secret gating restored 2025-09-30; workflow now opens PR via `peter-evans/create-pull-request` when `apply_changes=true`; awaiting Datadog secrets + alerting follow-up; draft: docs/logs/workflow-issues/error-tracking-integration.md)
 - [ ] .github/workflows/gitops-deployment.yml — full GitOps pipeline with Trivy/Snyk, build/push, optional force_deploy, uses Datadog CI visibility and pushes to GHCR; issue to confirm secret sprawl (DD, SNYK_TOKEN) and deployment steps alignment. (Tracking: #374 — Azure secret gating added 2025-09-30; still need registry/azure audit + issue link) (notes: docs/logs/workflow-issues/gitops-deployment.yml.md) (notes: docs/logs/workflow-issues/gitops-deployment.yml.md)
 - [ ] .github/workflows/infrastructure-tests.yml — Python-based infra tests w/ OpenTofu, Azure CLI installs, artifacts; manual dispatch runs real deployment; issue to note lack of cached tooling and ensure Azure creds documented for e2e job. (Tracking: #375 — path triggers re-enabled 2025-09-30 with validate-secrets gating; need cleanup automation + secret provisioning follow-up) (notes: docs/logs/workflow-issues/infrastructure-tests.yml.md)
-- [ ] .github/workflows/kind-code-server-smoke.yml — nightly + manual KinD smoke using our script; needs KinD permissions only; issue should monitor runtime (~2m) and decide if diagnostics need retention tweaks. (Tracking: #395) (notes: docs/logs/workflow-issues/kind-code-server-smoke.yml.md)
+- [ ] .github/workflows/kind-code-server-smoke.yml — nightly + manual KinD smoke using our script; needs KinD permissions only; issue should monitor runtime (~2m) and decide if diagnostics need retention tweaks. (Tracking: #395 — concurrency + runtime summary added 2025-09-30) (notes: docs/logs/workflow-issues/kind-code-server-smoke.yml.md)
 - [ ] .github/workflows/main-branch-ci.yml — lightweight checks (npm audit, unit tests, Codex CLI verification, Trufflehog diff) on main; issue to confirm codex install still needed and whether lint/type-check should fail fast. (Tracking: #378 — lint/type summary + PR fail gating added 2025-09-30; review Codex requirement next) (notes: docs/logs/workflow-issues/main-branch-ci.yml.md)
 - [ ] .github/workflows/release-branch-ci.yml — comprehensive release pipeline (Codex MCP, matrix tests incl. Playwright, GHCR build, LHCI, Datadog synthetic triggers); issue should review runtime cost, secret requirements, and force_deploy logic. (Tracking: #381 — triggers re-enabled with secret gating 2025-09-30; still need GitHub issue + secret provisioning follow-up) (notes: docs/logs/workflow-issues/release-branch-ci.yml.md)
 - [ ] .github/workflows/secret-scanning.yml — standalone TruffleHog diff scan on pushes/PRs; issue should ensure skip logic matches main-branch guard and consider integration with GitHub Advanced Security. (Tracking: #382 — concurrency added 2025-09-30; evaluate GitHub Advanced Security integration) (notes: docs/logs/workflow-issues/secret-scanning.yml.md)
 - [ ] .github/workflows/stale.yml — nightly actions/stale sweep (issue/PR labels, exempt list); issue should confirm label conventions and whether security items stay exempt. (Tracking: #383 — concurrency added 2025-09-30; review label strategy) (notes: docs/logs/workflow-issues/stale.yml.md)
 - [ ] .github/workflows/standup-report.yml — weekday standup script that files GitHub issues and optionally posts to Slack; issue to confirm GH token scopes and Slack channel usage. (Tracking: #384 — concurrency + issue summary added 2025-09-30; finalize Slack strategy) (notes: docs/logs/workflow-issues/standup-report.yml.md)
 - [ ] .github/workflows/test-ci-simplified.yml — root tests pipeline spinning up Docker Postgres/Redis, heavy Datadog env; issue should question duplicate redis install steps and optional API key coverage. (Tracking: #386) (notes: docs/logs/workflow-issues/ci-simplified.yml.md)
-- [ ] .github/workflows/test-simple.yml — sanity jobs for Babel config + optional Datadog CI visibility; issue to determine if still needed vs simplified CI and ensure Datadog secrets gating works. (Tracking: #387) (notes: docs/logs/workflow-issues/test-simple.yml.md)
+- [ ] .github/workflows/test-simple.yml — sanity jobs for Babel config + optional Datadog CI visibility; issue to determine if still needed vs simplified CI and ensure Datadog secrets gating works. (Tracking: #387 — concurrency added 2025-09-30) (notes: docs/logs/workflow-issues/test-simple.yml.md)
 - [ ] azure-appservice-deploy.yml/* — confirm disabled-expensive copy stays in sync with active workflow or remove duplicate. (Tracking: #355)
 - [ ] azure-webgui-deploy.yml/* — same check for WebGUI deployment variant. (Tracking: #356)
 - [ ] build-and-push-image.yml/* — ensure legacy disabled workflow aligns with primary GHCR build. (Tracking: #357)
