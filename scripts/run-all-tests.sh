@@ -22,7 +22,7 @@ TOTAL_SUITES=0
 PASSED_SUITES=0
 FAILED_SUITES=0
 
-BASE_DIR="/Users/ryan.maclean/vibecode-webgui"
+BASE_DIR="${BASE_DIR:-$(pwd)}"
 TEST_DIR="$BASE_DIR/tests"
 SCRIPTS_DIR="$BASE_DIR/scripts"
 
