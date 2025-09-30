@@ -13,8 +13,8 @@ import type {
 import {
   defaultUserPreferences,
   mergeWithDefaultPreferences,
-  storedUserPreferencesSchema,
 } from '@/lib/user-preferences'
+import { useUserPreferences } from '@/providers/UserPreferencesProvider'
 
 type OnboardingStep =
   | 'welcome'
@@ -117,11 +117,18 @@ const aiProviderOptions: { id: AiProvider; label: string; description: string }[
 export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState<OnboardingStep>('welcome')
+  const {
+    preferences: storedPreferences,
+    isLoading: preferencesLoading,
+    error: preferencesError,
+    save: savePreferences,
+  } = useUserPreferences()
   const [data, setData] = useState<OnboardingData>({ ...defaultUserPreferences })
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [localError, setLocalError] = useState<string | null>(null)
+  const error = localError ?? preferencesError ?? null
 
   const updateData = (updates: Partial<OnboardingData>) => {
+    setLocalError(null)
     setData((prev) =>
       mergeWithDefaultPreferences({
         ...prev,
@@ -131,6 +138,7 @@ export default function OnboardingPage() {
   }
 
   const toggleExtension = (extensionId: string) => {
+    setLocalError(null)
     setData((prev) =>
       mergeWithDefaultPreferences({
         ...prev,
@@ -142,6 +150,7 @@ export default function OnboardingPage() {
   }
 
   const toggleIntegration = (id: keyof OnboardingData['integrations']) => {
+    setLocalError(null)
     setData((prev) =>
       mergeWithDefaultPreferences({
         ...prev,
@@ -154,6 +163,7 @@ export default function OnboardingPage() {
   }
 
   const toggleAiProvider = (provider: AiProvider) => {
+    setLocalError(null)
     setData((prev) =>
       mergeWithDefaultPreferences({
         ...prev,
@@ -179,76 +189,32 @@ export default function OnboardingPage() {
   }
 
   const completeOnboarding = async () => {
-    const response = await fetch('/api/user/preferences', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-
-    if (!response.ok) {
-      setError('We hit a snag saving your preferences. Please try again.')
-      return
+    try {
+      const saved = await savePreferences({
+        theme: data.theme,
+        cliEditor: data.cliEditor,
+        preferredIde: data.preferredIde,
+        extensions: data.extensions,
+        integrations: data.integrations,
+        aiProviders: data.aiProviders,
+      })
+      setData(saved)
+      router.push('/dashboard')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'We hit a snag saving your preferences. Please try again.'
+      setLocalError(message)
     }
-
-    const payload = await response.json()
-    const parsed = storedUserPreferencesSchema.safeParse(payload.preferences ?? payload)
-    if (parsed.success) {
-      setData(mergeWithDefaultPreferences(parsed.data))
-    }
-
-    router.push('/dashboard')
   }
 
   const progressPercent = (steps.indexOf(step) / (steps.length - 1)) * 100
 
   useEffect(() => {
-    let cancelled = false
-    const loadPreferences = async () => {
-      try {
-        const response = await fetch('/api/user/preferences', {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          cache: 'no-store',
-        })
-
-        if (!response.ok) {
-          if (response.status !== 401 && !cancelled) {
-            setError('Unable to load saved preferences.')
-          }
-          return
-        }
-
-        const payload = await response.json()
-        const parsed = storedUserPreferencesSchema.safeParse(payload)
-
-        if (!cancelled) {
-          if (parsed.success) {
-            const merged = mergeWithDefaultPreferences(parsed.data)
-            setData(merged)
-            if (merged.onboardingCompleted) {
-              setStep('complete')
-            }
-          } else {
-            setError('Unable to load saved preferences.')
-          }
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError('Unable to load saved preferences.')
-          console.error('Failed to load onboarding preferences', err)
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false)
-        }
-      }
+    const merged = mergeWithDefaultPreferences(storedPreferences)
+    setData(merged)
+    if (merged.onboardingCompleted) {
+      setStep('complete')
     }
-
-    void loadPreferences()
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  }, [storedPreferences])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
@@ -276,20 +242,20 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        {isLoading && (
+        {preferencesLoading && (
           <div className="flex flex-col items-center justify-center py-32 space-y-4 text-center">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-600" />
             <p className="text-sm text-gray-500 dark:text-gray-400">Loading your saved preferences…</p>
           </div>
         )}
 
-        {!isLoading && error && (
+        {!preferencesLoading && error && (
           <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-200">
             {error}
           </div>
         )}
 
-        {!isLoading && step === 'welcome' && (
+        {!preferencesLoading && step === 'welcome' && (
           <div className="text-center space-y-6">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Welcome to VibeCode 🚀</h1>
             <p className="text-lg text-gray-600 dark:text-gray-300">
@@ -304,7 +270,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {!isLoading && step === 'theme' && (
+        {!preferencesLoading && step === 'theme' && (
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Choose Your Theme</h2>
@@ -347,7 +313,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {!isLoading && step === 'workspace' && (
+        {!preferencesLoading && step === 'workspace' && (
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Where will you build?</h2>
@@ -406,7 +372,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {!isLoading && step === 'editor' && (
+        {!preferencesLoading && step === 'editor' && (
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">CLI Editor Preference</h2>
@@ -448,7 +414,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {!isLoading && step === 'extensions' && (
+        {!preferencesLoading && step === 'extensions' && (
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recommended Extensions</h2>
@@ -538,7 +504,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {!isLoading && step === 'integrations' && (
+        {!preferencesLoading && step === 'integrations' && (
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Connect Your Tools</h2>
@@ -590,7 +556,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {!isLoading && step === 'ai' && (
+        {!preferencesLoading && step === 'ai' && (
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">AI Providers</h2>
@@ -635,7 +601,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {!isLoading && step === 'complete' && (
+        {!preferencesLoading && step === 'complete' && (
           <div className="text-center space-y-6">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white">You&apos;re all set 🎉</h2>

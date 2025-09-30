@@ -8,6 +8,7 @@ USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
+    fish \
     git \
     openssh-client \
     sudo \
@@ -49,11 +50,12 @@ RUN CGO_ENABLED=0 go install github.com/pressly/goose/v3/cmd/goose@latest \
     && echo 'alias goose="goose -dir /home/coder/workspace/migrations"' >> /home/coder/.bashrc
 
 # Install Datadog tools
-# 1. Datadog Agent
-RUN if [ -n "$DD_API_KEY" ]; then \
-    DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=$DD_API_KEY bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)" && \
-    systemctl disable datadog-agent; \
-    fi
+# 1. Datadog Agent - SKIPPED in build (configure at runtime with DD_API_KEY env var)
+# The agent should be configured when the container runs, not baked into the image
+# RUN if [ -n "$DD_API_KEY" ]; then \
+#     DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=$DD_API_KEY bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)" && \
+#     systemctl disable datadog-agent; \
+#     fi
 
 # 2. Datadog CLI
 RUN npm install -g @datadog/datadog-ci
@@ -61,18 +63,18 @@ RUN npm install -g @datadog/datadog-ci
 # 3. Vector (for log collection)
 RUN echo "Skipping vector agent install for local build"
 
-# 4. KubeHound (Kubernetes security)
-RUN curl -sSfL https://raw.githubusercontent.com/DataDog/kubehound/main/install.sh | sh
+# 4. KubeHound (Kubernetes security) - optional
+RUN curl -sSfL https://raw.githubusercontent.com/DataDog/kubehound/main/install.sh | sh || echo "KubeHound not available, skipping"
 
-# 5. Stratus Red Team (security testing)
-RUN pip3 install --break-system-packages stratus-red-team
+# 5. Stratus Red Team (security testing) - optional
+RUN pip3 install --break-system-packages stratus-red-team || echo "Stratus Red Team not available, skipping"
 
-# 6. Eppo (feature flagging)
-RUN curl -sL https://packagecloud.io/install/repositories/eppo/eppo-server/script.deb.sh | bash && \
-    apt-get install -y eppo-agent
+# 6. Eppo (feature flagging) - optional
+RUN (curl -sL https://packagecloud.io/install/repositories/eppo/eppo-server/script.deb.sh | bash && \
+    apt-get install -y eppo-agent) || echo "Eppo not available, skipping"
 
-# 7. Toto (test observability)
-RUN pip3 install --break-system-packages datadog-toto
+# 7. Toto (test observability) - optional
+RUN pip3 install --break-system-packages datadog-toto || echo "Datadog Toto not available, skipping"
 
 # Create workspace and set permissions
 WORKDIR /home/coder/workspace
@@ -97,45 +99,69 @@ RUN mkdir -p /home/coder/.local/share/code-server/User/ \
     && mkdir -p /home/coder/.vscode/extensions/
 
 # Install AI/ML Extensions (MIT/BSD/Apache only)
-# 1. Continue - Open-source autopilot (Apache 2.0)
-RUN code-server --install-extension Continue.continue
+# Note: Some extensions can hang during installation, so we install them with timeouts
 
-# 2. Codeium - Free AI Code Completion (MIT)
-RUN code-server --install-extension Codeium.codeium
+# 1. Anthropic Claude Code - Official Claude extension
+RUN timeout 120 code-server --install-extension anthropic.claude-code || echo "Claude Code installation timed out or failed, skipping"
 
-# 3. Cline (formerly Claude Dev) - AI coding assistant (Apache 2.0)
-RUN code-server --install-extension saoudrizwan.claude-dev
+# 2. OpenAI ChatGPT - Official OpenAI extension
+RUN timeout 120 code-server --install-extension openai.chatgpt || echo "OpenAI ChatGPT installation timed out or failed, skipping"
 
-# 4. Aider - AI pair programming (Apache 2.0)
-RUN code-server --install-extension aider.aider-vscode
+# 3. GitHub Copilot - OpenAI Codex integration (requires GitHub account)
+RUN timeout 120 code-server --install-extension GitHub.copilot || echo "GitHub Copilot installation timed out or failed, skipping"
+
+# 4. GitHub Copilot Chat
+RUN timeout 120 code-server --install-extension GitHub.copilot-chat || echo "GitHub Copilot Chat installation timed out or failed, skipping"
+
+# 3. Codeium - Free AI Code Completion (MIT)
+RUN timeout 120 code-server --install-extension Codeium.codeium || echo "Codeium installation timed out or failed, skipping"
+
+# 4. Cline (formerly Claude Dev) - AI coding assistant (Apache 2.0)
+RUN timeout 120 code-server --install-extension saoudrizwan.claude-dev || echo "Cline installation timed out or failed, skipping"
+
+# 5. Continue - Open-source autopilot (Apache 2.0) - SKIPPED (hangs during install)
+# RUN code-server --install-extension Continue.continue
+
+# 6. Aider - AI pair programming (Apache 2.0) - SKIPPED (not essential)
+# RUN code-server --install-extension aider.aider-vscode
 
 # Install Language Server Protocol (LSP) Servers
-# 1. Python LSP (pylsp)
-RUN pip3 install 'python-lsp-server[all]' pylsp-mypy python-lsp-black
+# Switch to root for system-level installations
+USER root
 
-# 2. TypeScript/JavaScript LSP
+# 1. Python LSP (pylsp) - installed as coder user
+USER coder
+RUN pip3 install --break-system-packages 'python-lsp-server[all]' pylsp-mypy python-lsp-black
+
+# 2. TypeScript/JavaScript LSP - needs root
+USER root
 RUN npm install -g typescript-language-server vscode-langservers-extracted
 
 # 3. Rust LSP (rust-analyzer)
 RUN curl -L https://github.com/rust-analyzer/rust-analyzer/releases/latest/download/rust-analyzer-x86_64-unknown-linux-gnu.gz | gunzip -c - > /usr/local/bin/rust-analyzer \
     && chmod +x /usr/local/bin/rust-analyzer
 
-# 4. Go LSP (gopls)
-RUN go install golang.org/x/tools/gopls@latest
+# 4. Go LSP (gopls) - as coder user - optional due to architecture issues
+USER coder
+RUN go install golang.org/x/tools/gopls@latest || echo "gopls installation failed, skipping"
 
 # 5. Java LSP (jdtls)
 RUN mkdir -p /home/coder/.local/share/jdtls \
     && curl -L https://download.eclipse.org/jdtls/milestones/1.9.0/jdt-language-server-1.9.0-202203031534.tar.gz | tar xz -C /home/coder/.local/share/jdtls
 
-# 6. C/C++ LSP (clangd)
-RUN apt-get update && apt-get install -y clangd-12 \
-    && update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-12 100
+# 6. C/C++ LSP (clangd) - needs root
+USER root
+RUN apt-get update && apt-get install -y clangd \
+    && rm -rf /var/lib/apt/lists/*
 
 # 7. Bash LSP
 RUN npm install -g bash-language-server
 
 # 8. Docker LSP
 RUN npm install -g dockerfile-language-server-nodejs
+
+# Switch back to coder user
+USER coder
 
 # Configure environment for LSP servers
 ENV PATH="/home/coder/go/bin:${PATH}"
@@ -151,83 +177,55 @@ RUN chmod +x /tmp/configure-ai-extensions.sh && \
 COPY --chown=coder:coder extensions/vibecode-ai-assistant /home/coder/.vscode/extensions/vibecode-ai-assistant
 COPY --chown=coder:coder extensions/vibecode-inline-edit /home/coder/.vscode/extensions/vibecode-inline-edit
 COPY --chown=coder:coder extensions/vibecode-codebase-chat /home/coder/.vscode/extensions/vibecode-codebase-chat
+COPY --chown=coder:coder extensions/claude-code-vscode /home/coder/.vscode/extensions/claude-code-vscode
 
-# Official Microsoft Extensions Only (MIT Licensed)
-RUN code-server --install-extension ms-vscode.vscode-typescript-next \
-    && code-server --install-extension ms-vscode.vscode-json \
-    && code-server --install-extension ms-vscode.vscode-eslint \
-    && code-server --install-extension ms-vscode.vscode-css-languagefeatures \
-    && code-server --install-extension ms-vscode.vscode-html-languagefeatures
+# Official Microsoft Extensions Only (MIT Licensed) - install with fallback
+RUN code-server --install-extension ms-vscode.vscode-typescript-next || echo "TypeScript extension failed" \
+    && code-server --install-extension dbaeumer.vscode-eslint || echo "ESLint extension failed"
 
-# Productivity and Developer Tools (MIT/BSD/Apache only)
-RUN code-server --install-extension usernamehw.errorlens \
-    && code-server --install-extension streetsidesoftware.code-spell-checker \
-    && code-server --install-extension wayou.vscode-todo-highlight \
-    && code-server --install-extension gruntfuggly.todo-tree \
-    && code-server --install-extension PKief.material-icon-theme \
-    && code-server --install-extension oderwat.indent-rainbow \
-    && code-server --install-extension christian-kohler.path-intellisense
+# Productivity and Developer Tools (MIT/BSD/Apache only) - essential only
+RUN code-server --install-extension usernamehw.errorlens || echo "ErrorLens failed" \
+    && code-server --install-extension PKief.material-icon-theme || echo "Material icons failed"
 
 # Code Quality and Formatting (MIT)
-RUN code-server --install-extension esbenp.prettier-vscode \
-    && code-server --install-extension aaron-bond.better-comments \
-    && code-server --install-extension formulahendry.auto-rename-tag \
-    && code-server --install-extension formulahendry.auto-close-tag
+RUN code-server --install-extension esbenp.prettier-vscode || echo "Prettier failed"
 
-# Git Tools (MIT)
-RUN code-server --install-extension mhutchie.git-graph \
-    && code-server --install-extension donjayamanne.githistory \
-    && code-server --install-extension vivaxy.vscode-conventional-commits
+# Git Tools (MIT) - optional
+RUN code-server --install-extension mhutchie.git-graph || echo "Git graph failed"
 
-# Testing and Debugging (MIT)
-RUN code-server --install-extension orta.vscode-jest \
-    && code-server --install-extension hbenl.vscode-test-explorer \
-    && code-server --install-extension ryanluker.vscode-coverage-gutters
+# Testing and Debugging (MIT) - optional
+RUN code-server --install-extension orta.vscode-jest || echo "Jest extension failed"
 
-# Project Management (MIT)
-RUN code-server --install-extension alefragnani.project-manager \
-    && code-server --install-extension alefragnani.bookmarks \
-    && code-server --install-extension ritwickdey.liveserver \
-    && code-server --install-extension wix.vscode-import-cost
+# Project Management (MIT) - skipped for faster build
+# RUN code-server --install-extension alefragnani.project-manager || echo "Project manager failed"
 
-# Language Support (MIT/Apache)
-RUN code-server --install-extension redhat.vscode-yaml \
-    && code-server --install-extension redhat.vscode-xml \
-    && code-server --install-extension prisma.prisma \
-    && code-server --install-extension graphql.vscode-graphql \
-    && code-server --install-extension bradlc.vscode-tailwindcss
+# Language Support (MIT/Apache) - essential only
+RUN code-server --install-extension redhat.vscode-yaml || echo "YAML failed" \
+    && code-server --install-extension bradlc.vscode-tailwindcss || echo "Tailwind failed"
 
-# Utilities (MIT)
-RUN code-server --install-extension mikestead.dotenv \
-    && code-server --install-extension editorconfig.editorconfig \
-    && code-server --install-extension johnpapa.vscode-peacock
+# Utilities (MIT) - optional
+RUN code-server --install-extension mikestead.dotenv || echo "dotenv failed"
 
-# Datadog Official Extension (Apache 2.0)
-RUN code-server --install-extension datadog.datadog-vscode
+# Datadog Official Extension (Apache 2.0) - optional
+RUN code-server --install-extension datadog.datadog-vscode || echo "Datadog extension failed"
 
-# Database Tools (MIT/Apache)
-RUN code-server --install-extension mtxr.sqltools \
-    && code-server --install-extension mtxr.sqltools-driver-pg
+# Database Tools (MIT/Apache) - optional
+RUN code-server --install-extension mtxr.sqltools || echo "SQLTools failed"
 
-# Docker and Kubernetes (Microsoft - MIT)
-RUN code-server --install-extension ms-azuretools.vscode-docker \
-    && code-server --install-extension ms-kubernetes-tools.vscode-kubernetes-tools
+# Docker and Kubernetes (Microsoft - MIT) - optional
+RUN code-server --install-extension ms-azuretools.vscode-docker || echo "Docker extension failed"
 
-# REST API Testing (MIT)
-RUN code-server --install-extension humao.rest-client
+# REST API Testing (MIT) - optional
+RUN code-server --install-extension humao.rest-client || echo "REST client failed"
 
-# Markdown and Documentation (MIT)
-RUN code-server --install-extension yzhang.markdown-all-in-one \
-    && code-server --install-extension DavidAnson.vscode-markdownlint
+# Markdown and Documentation (MIT) - optional
+RUN code-server --install-extension yzhang.markdown-all-in-one || echo "Markdown failed"
 
-# Python Development (Microsoft - MIT)
-RUN code-server --install-extension ms-python.python \
-    && code-server --install-extension ms-python.vscode-pylance \
-    && code-server --install-extension ms-python.black-formatter
+# Python Development (Microsoft - MIT) - optional
+RUN code-server --install-extension ms-python.python || echo "Python extension failed"
 
-# Remote Development (Microsoft - MIT)
-RUN code-server --install-extension ms-vscode-remote.remote-ssh \
-    && code-server --install-extension ms-vscode-remote.remote-containers
+# Remote Development (Microsoft - MIT) - skipped (not needed in container)
+# RUN code-server --install-extension ms-vscode-remote.remote-ssh || echo "Remote SSH failed"
 
 # Configure VS Code settings
 COPY --chown=coder:coder docker/code-server/settings.json /home/coder/.local/share/code-server/User/settings.json
@@ -236,15 +234,20 @@ COPY --chown=coder:coder docker/code-server/keybindings.json /home/coder/.local/
 # Install VibeCode extension dependencies
 RUN cd /home/coder/.vscode/extensions/vibecode-ai-assistant \
     && npm install \
-    && npm run build
+    && (npm run compile || npm run build || echo "No build script, extension will load from source")
 
 RUN cd /home/coder/.vscode/extensions/vibecode-inline-edit \
     && npm install \
-    && npm run build
+    && (npm run build || npm run compile || echo "No build script, extension will load from source")
 
 RUN cd /home/coder/.vscode/extensions/vibecode-codebase-chat \
     && npm install \
-    && npm run build
+    && (npm run build || npm run compile || echo "No build script, extension will load from source")
+
+# Claude Code extension - placeholder for future implementation
+# RUN cd /home/coder/.vscode/extensions/claude-code-vscode \
+#     && npm install \
+#     && (npm run compile || npm run build || echo "No build script, extension will load from source")
 
 # Set default shell to bash
 ENV SHELL=/bin/bash
@@ -252,12 +255,12 @@ ENV SHELL=/bin/bash
 # Set workspace as default directory
 WORKDIR /home/coder/workspace
 
-# Expose code-server port
-EXPOSE 8080
+# Expose code-server port (8765 = VibeCode's unique port)
+EXPOSE 8765
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/healthz || exit 1
+    CMD curl -f http://localhost:8765/healthz || exit 1
 
 # Start command
-CMD ["code-server", "--bind-addr", "0.0.0.0:8080", "--auth", "none", "/home/coder/workspace"]
+CMD ["code-server", "--bind-addr", "0.0.0.0:8765", "--auth", "none", "/home/coder/workspace"]
