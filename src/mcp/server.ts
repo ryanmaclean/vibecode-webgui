@@ -19,10 +19,13 @@ import {
 
 // Tool implementations
 import { createWorkspace, listWorkspaces } from './tools/workspace.js';
-import { runTests, getTestResults } from './tools/testing.js';
-import { deployProject, getDeploymentStatus } from './tools/deployment.js';
+import { runTests } from './tools/testing.js';
+import { deployProject } from './tools/deployment.js';
 import { searchCode, analyzeCode } from './tools/code-analysis.js';
 import { generateCode } from './tools/code-generation.js';
+
+// Unused exports for future implementation
+// getTestResults, getDeploymentStatus
 
 /**
  * Initialize MCP Server
