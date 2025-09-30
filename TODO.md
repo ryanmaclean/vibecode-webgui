@@ -3,7 +3,7 @@
 - Checking Datadog Trace Search again with a wider `now-12h` window for both RAG services.
 
 ### Next Steps
-- [ ] Run `scripts/poll-traces.sh ... 'now-12h'` for `vibecode-rag-demo` and `vibecode-rag-ingest` and note the responses.
+- [x] Run `scripts/poll-traces.sh ... 'now-12h'` for `vibecode-rag-demo` and `vibecode-rag-ingest` and note the responses — both still return `{ "errors": ["Not found"] }`.
 
 ## Agent Update (2025-09-30 00:42 UTC)
 
@@ -170,6 +170,12 @@
   - Goal: Confirm queue availability for next RAG batch
   - ETA: 2 minutes
   - Status: COMPLETE - Ingestion still running
+- ✅ **Agent Codex (2025-09-30 01:25 UTC)**: COMPLETED Datadog trace poll (12h window)
+  - Result: Both services still return `{ "errors": ["Not found"] }` over `now-12h`
+  - Files: scripts/poll-traces.sh
+  - Goal: Check if older spans show up
+  - ETA: 3 minutes
+  - Status: COMPLETE - No traces yet
 - ✅ **Agent Cascade (2025-09-30 00:38 UTC)**: COMPLETED ingest process check
   - Result: PID 82844 still running (wrapper processes too); ingest slots busy
   - Files: None
@@ -1459,4 +1465,3 @@ git revert HEAD~17..HEAD
 ## Agent Update (2025-09-30 00:45 UTC)
 
 - Cluster check: `kubectl get pods -n vibecode-platform` reports postgres-649fdc57c5-622g8 in Running state (1/1 ready, 6h age). No additional pods present.
-
