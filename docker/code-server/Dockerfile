@@ -149,6 +149,8 @@ RUN chmod +x /tmp/configure-ai-extensions.sh && \
 
 # Copy VibeCode extensions
 COPY --chown=coder:coder extensions/vibecode-ai-assistant /home/coder/.vscode/extensions/vibecode-ai-assistant
+COPY --chown=coder:coder extensions/vibecode-inline-edit /home/coder/.vscode/extensions/vibecode-inline-edit
+COPY --chown=coder:coder extensions/vibecode-codebase-chat /home/coder/.vscode/extensions/vibecode-codebase-chat
 
 # Official Microsoft Extensions Only (MIT Licensed)
 RUN code-server --install-extension ms-vscode.vscode-typescript-next \
@@ -233,6 +235,14 @@ COPY --chown=coder:coder docker/code-server/keybindings.json /home/coder/.local/
 
 # Install VibeCode extension dependencies
 RUN cd /home/coder/.vscode/extensions/vibecode-ai-assistant \
+    && npm install \
+    && npm run build
+
+RUN cd /home/coder/.vscode/extensions/vibecode-inline-edit \
+    && npm install \
+    && npm run build
+
+RUN cd /home/coder/.vscode/extensions/vibecode-codebase-chat \
     && npm install \
     && npm run build
 
