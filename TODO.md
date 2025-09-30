@@ -1,3 +1,42 @@
+## Agent Update (2025-10-01 00:04 UTC, Polyfill Applied)
+
+- Added `tests/jest.polyfills.js` to `setupFiles` in `jest.config.mjs`; the feature-flags unit suite now passes locally (previous `setImmediate` ReferenceError resolved).
+- Logged CI run 18146262057 in TODO and will notify the feature-flags owners with the fix details.
+
+### Next Steps
+- [ ] Share the polyfill update + passing local run with the feature-flags owners (see docs/logs/issues/feature-flags-jest-worker.md).
+
+## Agent Update (2025-10-01 00:02 UTC, Local Repro)
+
+- Running `npm run test -- tests/unit/feature-flags.test.ts` locally throws `ReferenceError: setImmediate is not defined` (Node 24.7.0), matching the CI crash profile.
+- Added contextual note so feature-flags owners can investigate missing polyfills or jest env setup.
+
+### Next Steps
+- [x] Provide a simple polyfill (`tests/jest.polyfills.js`) and load it via `setupFiles` so the feature-flags unit suite runs cleanly.
+
+## Agent Update (2025-09-30 23:59 UTC, Test Follow-up)
+
+- Documented quick-validation failure details: Jest worker exceptions in `tests/unit/feature-flags.test.ts` (7 suites / 36 tests failed). Screenshot/log reference: GitHub Actions run 18146262057.
+- Tagged TODO for test owners to investigate the worker crash before enabling fail-fast lint gating.
+
+### Next Steps
+- [ ] Share the fix + CI run reference with feature-flags owners to confirm the polyfill resolves their tests.
+
+## Agent Update (2025-09-30 23:59 UTC, CI Monitor)
+
+- Reviewed the latest main-branch CI run (18146262057); markdown lint step passed, existing quick-validation suite still fails (Jest worker crash).
+- No markdown adjustments required; failure remains tied to known unit test flakiness.
+
+### Next Steps
+- [ ] Coordinate with test owners to stabilize `tests/unit/feature-flags.test.ts` and related suites now that linting is enforced in CI.
+
+## Agent Update (2025-09-30 23:59 UTC)
+
+- Swapped the Cosmos DB adapter placeholders from `any` to `unknown` so the remaining vector database scaffolding keeps inching toward stricter typings while we leave TODO comments for future implementation.
+
+### Next Steps
+- [ ] Revisit the Cosmos adapter once the SDK integration lands so actual client/database/container types can replace the temporary placeholders.
+
 ## Agent Update (2025-09-30 23:59 UTC)
 
 - Scrubbed `QueryResultRow` generics through the connection router so read/write routing no longer passes `any[]` params; replica health diagnostics now rely on typed destructuring.
@@ -5,6 +44,14 @@
 
 ### Next Steps
 - [ ] Tighten the Cosmos adapter (and remaining vector shims) to keep peeling back the `any` warnings in the vector DB stack.
+
+## Agent Update (2025-09-30 23:48 UTC)
+
+- Estimated the Datadog sidecar overhead (~200m CPU / 256Mi memory) and updated both `k8s/code-server-kind.yaml` and `k8s/code-server-custom.yaml` requests/limits so each pod now reserves ~700m CPU and ~1.25Gi memory. Documented the assumption in the activity log; awaiting live telemetry for fine-tuning.
+
+### Next Steps
+- [x] Evaluate autoscaling impact—consider adding resource requests/limits for the workspace deployment once Datadog is enabled in larger clusters.
+- [ ] Revisit resource requests after gathering real workload metrics and, if necessary, introduce an HPA tuned for the combined CPU demand.
 
 ## Agent Update (2025-09-30 23:55 UTC)
 
@@ -22,16 +69,20 @@
 ### Next Steps
 - [x] Type the Redis adapter client once we hook in an actual Redis library (replace `unknown` with the concrete client interface).
 
-## Agent Update (2025-09-30 - Current Session)
+## Agent Update (2025-09-30 - Current Session Extended)
 
-- Reduced TypeScript `any` warnings from 1,624 → 831 (-793 total, -81 from 9 files)
+- Reduced TypeScript `any` warnings from 1,624 → 786 (-838 total, -126 from 12 files)
 - **Previous Sessions**: Fixed 6 files (-115 warnings)
   - vector-db-error-handler-new.ts (23→0), database-error-patterns.ts (20→0), azureEmbeddingService.ts (20→0)
   - opentelemetry-config.ts (18→0), multimodal-agent.ts (17→0), db-logger.ts (17→0)
-- **Current Session**: Fixed 3 files (-81 warnings)
+- **Current Session Batch 1**: Fixed 3 files (-81 warnings)
   - templates/generator.ts (16→0): Created TemplateVariables interface
   - agent-framework.ts (15→0): Created WorkflowStatus interface, replaced all any with unknown
   - health/database/metrics/route.ts (15→0): Created query result interfaces for Prisma $queryRaw
+- **Current Session Batch 2**: Fixed 3 files (-45 warnings)
+  - rum-client.ts (14→0): Created LayoutShiftEntry/FirstInputEntry interfaces for Web Vitals
+  - metaplane-integration.ts (14→0): Created DataRow type for pipeline data
+  - mcp/context7/interfaces.ts (14→0): Replaced all any with unknown across context dimensions
 
 ### Technical Patterns Applied
 - ErrorLike interfaces for error handling
@@ -39,11 +90,18 @@
 - TemplateVariables interface for template generation
 - WorkflowStatus interface for agent coordination
 - Query result interfaces for Prisma raw queries
-- Systematic replacement of `any` with `unknown` or specific types
+- Performance entry interfaces for Web Vitals tracking
+- DataRow type for data pipeline processing
+- Systematic replacement of `any` with `unknown` or specific types across all modules
+
+### Progress Summary
+- Total files fixed: 12 files
+- Total warnings eliminated: 838 warnings (-51.6% from starting point)
+- Remaining warnings: 786 (48.4% of original)
 
 ### Next Steps
 - [ ] Continue reducing `any` usage in remaining high-impact files
-- [ ] Target files: rum-client.ts (14), metaplane-integration.ts (14), mcp/context7/interfaces.ts (14)
+- [ ] Target files: automated-test-generator.test.ts (14), useRUM.ts (14), voice-test/page.tsx (13)
 
 ## Agent Update (2025-09-30 23:35 UTC)
 
@@ -434,11 +492,11 @@
 - [ ] .github/workflows/ci-simplified.yml — multi-job pipeline (secret validation, lint/audit, root tests w/ Postgres+Redis services, Datadog/LHCI optional); issue should capture missing secrets handling + continue-on-error follow-up. (Tracking: #361 — secret outputs added 2025-09-30; still need to consume outputs + remove unnecessary continue-on-error) (notes: docs/logs/workflow-issues/ci-simplified.yml.md)
 - [ ] .github/workflows/claude-code-review.yml — runs anthropic/claude-code-action@beta on PRs, needs `CLAUDE_CODE_OAUTH_TOKEN`; issue to confirm token scope + whether sticky comments/prompts should be customized. (Tracking: #363 — concurrency + secret gating added 2025-09-30; finalize prompts) (Draft: docs/logs/workflow-issues/claude-code-review.md) (notes: docs/logs/workflow-issues/claude-code-review.yml.md)
 - [ ] .github/workflows/claude.yml — listens for @claude mentions across issues/PR comments, same `CLAUDE_CODE_OAUTH_TOKEN`, optional actions:read; issue should confirm rate limits, trigger phrases, and additional permissions setup. (Tracking: #364 — concurrency + secret gating added 2025-09-30; finalize prompts/permissions) (Draft: docs/logs/workflow-issues/claude.yml.md)
-- [ ] .github/workflows/cost-monitor.yml — simple weekly cron echo; issue to decide if we replace with real usage metrics or disable once budget tooling arrives. (Tracking: #365 — concurrency added 2025-09-30; need real metrics decision) (Draft: docs/logs/workflow-issues/cost-monitor.md) (notes: docs/logs/workflow-issues/cost-monitor.yml.md)
+- [ ] .github/workflows/cost-monitor.yml — weekly cost monitor now queries GitHub billing minutes (requires GH_BILLING_PAT); issue to decide if we integrate with dashboards or retire. (Tracking: #365 — concurrency + billing query added 2025-09-30) (Draft: docs/logs/workflow-issues/cost-monitor.md) (notes: docs/logs/workflow-issues/cost-monitor.yml.md)
 - [ ] .github/workflows/datadog-service-catalog.yml — registers *.datadog.yaml via arcxp action (needs DD_API_KEY/DD_APP_KEY) and validates required fields; issue should track secrets freshness + list completeness. (Tracking: #366) (Draft: docs/logs/workflow-issues/datadog-service-catalog.md)
 - [ ] .github/workflows/datadog-trace-verify.yml — hourly cron runs `npm run monitoring:trace` (requires DD_API_KEY/DD_APP_KEY, Node+Python setup) and uploads JSON artefacts; issue to note current script failures + retention. (Tracking: #392 — hourly cron restored 2025-09-30 with secret gating/log artefacts; still need Datadog `Not found` fix + alerting; draft: docs/logs/workflow-issues/datadog-trace-verify.md)
 - [ ] .github/workflows/db-monitoring-deployment.yml — massive pipeline (schema/vector checks, Datadog dashboards, Azure Postgres tuning, Slack notify); requires POSTGRES_CONNECTION, Datadog + Azure creds; issue should triage secrets + whether to keep continue-on-error steps. (Tracking: #367 — cron+secret gating added 2025-09-30; Azure cleanup + reporting still pending) (Draft: docs/logs/workflow-issues/db-monitoring-deployment.md)
-- [ ] .github/workflows/demo-validation.yml — Go/KinD demo build, shell lint, README checks; relies on Make targets, shellcheck (non-blocking), optional infra; issue to capture flakiness in script timeouts and KinD setup. (Tracking: #390 — concurrency added 2025-09-30; need timeout/noise cleanup) (Draft: docs/logs/workflow-issues/demo-validation.md) (notes: docs/logs/workflow-issues/demo-validation.yml.md)
+- [ ] .github/workflows/demo-validation.yml — Go/KinD demo build, shell lint, README checks; relies on Make targets, shellcheck (non-blocking), optional infra; issue to capture flakiness in script timeouts and KinD setup. (Tracking: #390 — concurrency + summary/artifact updates added 2025-09-30; finish noise cleanup) (Draft: docs/logs/workflow-issues/demo-validation.md) (notes: docs/logs/workflow-issues/demo-validation.yml.md)
 - [ ] .github/workflows/dependency-compatibility.yml — matrix Node 18/20/22 compatibility checks w/ npm audit/build/type-check plus scheduled issue creation via npm-check-updates; ensure secrets not needed, but review GitHub issue spam controls. (Tracking: #369 — concurrency added 2025-09-30; need exit-code summary + issue dedupe) (Draft: docs/logs/workflow-issues/dependency-compatibility.md) (notes: docs/logs/workflow-issues/dependency-compatibility.yml.md)
 - [ ] .github/workflows/deploy-aks-monitoring.yml — manual AKS rollout incl. ingress, cert-manager, Datadog monitors; depends on `AZURE_*` secrets, Datadog keys, `scripts/*.sh`; issue should review manual inputs + `skip_datadog` flag coverage. (Tracking: #393 — secret gating + skip notices added 2025-09-30; need timeout/cleanup review) (Draft: docs/logs/workflow-issues/deploy-aks-monitoring.md) (notes: docs/logs/workflow-issues/deploy-aks-monitoring.yml.md)
 - [ ] .github/workflows/deploy-docs.yml — builds Astro docs by default, optional Next.js via workflow_dispatch; uses GitHub Pages permissions; issue should check cache paths and dual-system support + whether Next.js artifacts still needed. (Tracking: #394 — docs system auto-detected; weekly cron re-added 2025-09-30; need cache/reporting plan) (notes: docs/logs/workflow-issues/deploy-docs.yml.md)
@@ -452,7 +510,7 @@
 - [ ] .github/workflows/release-branch-ci.yml — comprehensive release pipeline (Codex MCP, matrix tests incl. Playwright, GHCR build, LHCI, Datadog synthetic triggers); issue should review runtime cost, secret requirements, and force_deploy logic. (Tracking: #381 — triggers re-enabled with secret gating 2025-09-30; still need GitHub issue + secret provisioning follow-up) (notes: docs/logs/workflow-issues/release-branch-ci.yml.md)
 - [ ] .github/workflows/secret-scanning.yml — standalone TruffleHog diff scan on pushes/PRs; issue should ensure skip logic matches main-branch guard and consider integration with GitHub Advanced Security. (Tracking: #382 — concurrency added 2025-09-30; evaluate GitHub Advanced Security integration) (notes: docs/logs/workflow-issues/secret-scanning.yml.md)
 - [ ] .github/workflows/stale.yml — nightly actions/stale sweep (issue/PR labels, exempt list); issue should confirm label conventions and whether security items stay exempt. (Tracking: #383 — concurrency added 2025-09-30; review label strategy) (notes: docs/logs/workflow-issues/stale.yml.md)
-- [ ] .github/workflows/standup-report.yml — weekday standup script that files GitHub issues and optionally posts to Slack; issue to confirm GH token scopes and Slack channel usage. (Tracking: #384 — concurrency + issue summary added 2025-09-30; finalize Slack strategy) (notes: docs/logs/workflow-issues/standup-report.yml.md)
+- [ ] .github/workflows/standup-report.yml — weekday standup script that files GitHub issues and optionally posts to Slack; issue to confirm GH token scopes and Slack channel usage. (Tracking: #384 — concurrency + configurable outputs added 2025-09-30) (notes: docs/logs/workflow-issues/standup-report.yml.md)
 - [ ] .github/workflows/test-ci-simplified.yml — root tests pipeline spinning up Docker Postgres/Redis, heavy Datadog env; issue should question duplicate redis install steps and optional API key coverage. (Tracking: #386) (notes: docs/logs/workflow-issues/ci-simplified.yml.md)
 - [ ] .github/workflows/test-simple.yml — sanity jobs for Babel config + optional Datadog CI visibility; issue to determine if still needed vs simplified CI and ensure Datadog secrets gating works. (Tracking: #387 — concurrency added 2025-09-30) (notes: docs/logs/workflow-issues/test-simple.yml.md)
 - [ ] azure-appservice-deploy.yml/* — confirm disabled-expensive copy stays in sync with active workflow or remove duplicate. (Tracking: #355)
