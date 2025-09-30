@@ -18,9 +18,26 @@ export * from './code-review-automation';
 export * from './performance-optimization';
 export * from './integration-testing';
 
+// Chain-of-Thought with Self-Consistency
+export * from './self-consistent-reasoning';
+export * from './model-orchestration';
+
 // Types
 export type { Prompt } from './prompts/manager';
 export type { SearchResult } from './search/vector-search';
+export type {
+  SelfConsistentResult,
+  SelfConsistencyConfig,
+  ReasoningPath,
+  AnswerComparison
+} from './self-consistent-reasoning';
+export type {
+  ModelConfig,
+  ModelCapabilities,
+  RequestContext,
+  ModelSelection,
+  TaskType
+} from './model-orchestration';
 
 // AI Integration Manager
 import { VectorSearch } from './search/vector-search';
