@@ -21,19 +21,29 @@ Add to your `.env.local`:
 
 ```bash
 # Choose your AI provider
-AI_COMPLETION_PROVIDER=openai  # or: mistral, anthropic, groq, cohere, fireworks-ai
+AI_COMPLETION_PROVIDER=openai   # openai | codex | gemini | opencode | claude
+AI_COMPLETION_MODEL=gpt-4o-mini
+AI_COMPLETION_MAX_TOKENS=512
+AI_COMPLETION_TEMPERATURE=0.2
 
-# OpenAI (recommended)
+# OpenAI / Codex (providers: openai, codex)
 OPENAI_API_KEY=sk-...
-AI_COMPLETION_MODEL=gpt-4-turbo-preview
+CODEX_API_KEY=sk-...          # optional override for provider=codex
+CODEX_MODEL=gpt-4o-mini       # optional override
 
-# Or Mistral (fast and free tier available)
-MISTRAL_API_KEY=...
-AI_COMPLETION_MODEL=codestral-latest
+# Google Gemini (provider: gemini)
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-1.5-pro-latest
 
-# Or Anthropic
-ANTHROPIC_API_KEY=...
-AI_COMPLETION_MODEL=claude-3-sonnet-20240229
+# OpenCode via OpenRouter (provider: opencode)
+OPENCODE_API_KEY=...
+OPENCODE_MODEL=anthropic/claude-3.5-sonnet
+OPENROUTER_HTTP_REFERER=https://vibecode.ai
+OPENROUTER_APP_TITLE=VibeCode WebGUI
+
+# Claude Code (provider: claude)
+CLAUDE_CODE_API_KEY=...
+CLAUDE_CODE_MODEL=claude-3.5-sonnet-20240620
 ```
 
 ### 2. Frontend Integration
@@ -76,32 +86,35 @@ Monacopilot works with all Monaco-supported languages:
 
 ## Supported AI Providers
 
-### OpenAI (Recommended)
+### OpenAI / Codex
 ```bash
-AI_COMPLETION_PROVIDER=openai
+AI_COMPLETION_PROVIDER=openai   # or codex
 OPENAI_API_KEY=sk-...
-AI_COMPLETION_MODEL=gpt-4-turbo-preview  # or gpt-3.5-turbo
+CODEX_API_KEY=sk-...            # optional override
+AI_COMPLETION_MODEL=gpt-4o-mini
 ```
 
-### Mistral (Fast & Free Tier)
+### Gemini
 ```bash
-AI_COMPLETION_PROVIDER=mistral
-MISTRAL_API_KEY=...
-AI_COMPLETION_MODEL=codestral-latest  # Optimized for code
+AI_COMPLETION_PROVIDER=gemini
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-1.5-pro-latest
 ```
 
-### Anthropic Claude
+### OpenCode (OpenRouter)
 ```bash
-AI_COMPLETION_PROVIDER=anthropic
-ANTHROPIC_API_KEY=...
-AI_COMPLETION_MODEL=claude-3-sonnet-20240229
+AI_COMPLETION_PROVIDER=opencode
+OPENCODE_API_KEY=...
+OPENCODE_MODEL=anthropic/claude-3.5-sonnet
+OPENROUTER_HTTP_REFERER=https://vibecode.ai
+OPENROUTER_APP_TITLE=VibeCode WebGUI
 ```
 
-### Groq (Very Fast)
+### Claude Code
 ```bash
-AI_COMPLETION_PROVIDER=groq
-GROQ_API_KEY=...
-AI_COMPLETION_MODEL=mixtral-8x7b-32768
+AI_COMPLETION_PROVIDER=claude
+CLAUDE_CODE_API_KEY=...
+CLAUDE_CODE_MODEL=claude-3.5-sonnet-20240620
 ```
 
 ## Advanced Configuration

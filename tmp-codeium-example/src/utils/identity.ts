@@ -1,3 +1,9 @@
+declare global {
+  interface Window {
+    CODEIUM_REACT_CODE_VERSION?: string;
+  }
+}
+
 /**
  * Get the current URL of the window. If this fails, a null string is returned.
  * @returns The current URL
@@ -23,7 +29,6 @@ export const getBrowserVersion = () => {
  */
 export const getPackageVersion = () => {
   try {
-    // @ts-ignore
     return window.CODEIUM_REACT_CODE_VERSION ? window.CODEIUM_REACT_CODE_VERSION : null;
   } catch (e) {
     return null;

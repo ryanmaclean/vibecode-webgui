@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: code-server
-          image: codercom/code-server:4.101.2
+          image: vibecode/code-server:monaco053
           args:
             - --bind-addr
             - 0.0.0.0:8080
