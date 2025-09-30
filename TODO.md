@@ -1,3 +1,155 @@
+## Agent Update (2025-09-30 22:45 UTC)
+
+- Updated README Quick Install to point developers at the Compose validation command and the deployment guide for deeper instructions.
+
+### Next Steps
+- [ ] Run markdown lint (once pending docs settle) to ensure new tips don't introduce formatting issues.
+
+## Agent Update (2025-09-30 22:38 UTC)
+- Copied the Docker Compose validation tip into docker/code-server/DEPLOYMENT_GUIDE.md so operators see it in the main deployment walkthrough.
+
+### Next Steps
+- [x] Cross-linked the troubleshooting guidance from README.md Quick Install so the quickstart references the Compose validation tip.
+
+## Agent Update (2025-09-30 22:37 UTC)
+
+- ✅ **Code-Server Portability Complete** - Full portability infrastructure created
+  - Created comprehensive `docker/code-server/PORTABILITY_GUIDE.md` (7 sections, 600+ lines)
+  - Built `scripts/push-multiarch-codeserver.sh` for registry deployment
+  - Built `scripts/create-offline-bundle.sh` for air-gapped environments
+  - Documented 6 portability requirements: multi-arch manifests, registry-agnostic tagging, platform detection, offline distribution, CI/CD automation, registry migration
+  - Added GitHub Actions and GitLab CI pipeline examples
+  - Created registry migration and sync tools
+  - Included testing and troubleshooting guides
+
+### Portability Features Added:
+- **Multi-Registry Support**: GHCR, Docker Hub, ACR, ECR, private registries
+- **Platform Auto-Detection**: Automatic ARM64/AMD64 selection
+- **Offline Bundles**: Complete air-gapped installation packages
+- **CI/CD Integration**: GitHub Actions and GitLab CI workflows
+- **Registry Migration**: Tools for moving between registries
+- **Testing Framework**: Automated portability testing
+
+### Next Steps
+- [ ] Push multi-arch images to GHCR (requires GITHUB_TOKEN)
+- [ ] Test offline bundle creation and installation
+- [ ] Set up automated CI/CD pipeline for builds
+- [ ] Create registry sync schedule for backup registries
+
+## Agent Update (2025-09-30 22:36 UTC)
+
+- Added a troubleshooting callout in docs/NAS_DEPLOYMENT.md pointing users to the Compose config validation command before deploying.
+
+### Next Steps
+- [ ] Mirror the troubleshooting tip into docker/code-server/DEPLOYMENT_GUIDE.md so the primary deployment guide stays consistent.
+
+## Agent Update (2025-09-30 15:59 UTC)
+
+- Removed the obsolete `version` stanza from docker-compose.nas.yml and the NAS docs snippet; reran the Compose config check (no warnings).
+### Next Steps
+- [x] Added a troubleshooting tip to docs/NAS_DEPLOYMENT.md recommending `docker compose --env-file nas.env -f docker-compose.nas.yml config` for validation.
+
+## Agent Update (2025-09-30 16:57 UTC)
+
+- ✅ **Code-Server Multi-Arch Build & Deployment Complete** - Production-ready deployment guide created
+  - Both ARM64 (6.11GB) and AMD64 (6.06GB) builds completed successfully
+  - Created comprehensive deployment guide: `docker/code-server/DEPLOYMENT_GUIDE.md`
+  - Documented 4 deployment options: Docker Run, Docker Compose, Kubernetes, NAS
+  - Included post-deployment configuration for all 9 AI extensions
+  - Added OAuth authentication testing procedures (port 46203)
+  - Datadog monitoring integration with LLM Observability
+  - Security best practices and performance tuning guides
+  - Backup/recovery procedures for workspace data
+  - Troubleshooting guide for common issues
+
+### Next Steps
+- [ ] Push multi-arch images to GHCR or Docker Hub
+- [ ] Test OAuth authentication flow for Claude Code and OpenAI ChatGPT
+- [ ] Create LLM Observability dashboard in Datadog UI
+- [ ] Document API key rotation procedures
+
+## Agent Update (2025-09-30 15:57 UTC)
+
+- Verified the NAS compose stack resolves correctly by running `docker compose --env-file nas.env -f docker-compose.nas.yml config`; documented the version warning for follow-up.
+
+### Next Steps
+- [x] Dropped the deprecated `version` field from docker-compose.nas.yml (Compose v2 ignores it).
+
+## Agent Update (2025-09-30 15:55 UTC)
+
+- Added `nas.env.example` so NAS operators have a safe template for required credentials.
+- Wired the new env file into both the Compose sample and NAS docs via `env_file` entries and deployment steps.
+
+### Next Steps
+- [x] Ran `docker compose --env-file nas.env -f docker-compose.nas.yml config` to sanity-check the stack once credentials are populated (warning about obsolete version noted).
+
+## Agent Update (2025-09-30 15:40 UTC)
+
+- **Type safety improvements in vector-db-error-handler.ts** - eliminated 41 `@typescript-eslint/no-explicit-any` warnings
+- Created `VectorDBErrorDetails` interface to replace `any` types for error details
+- Replaced all `any` parameter types with `unknown` for proper type safety (11 instances)
+- Added type guards and proper type narrowing for error property access
+- Improved type safety in VectorDbErrorHandler class methods
+- **Lint status: 0 errors, 1647 warnings** (41 warnings eliminated from 1688)
+
+### Next Steps
+- [ ] Continue type safety improvements in vector-db-error-handler-new.ts (23 any instances)
+- [ ] Improve types in database-error-patterns.ts (20 instances)
+- [ ] Run `npm run lint -- --fix` to auto-fix the 2 fixable warnings
+
+## Agent Update (2025-09-30 15:38 UTC)
+
+- Propagated the code-server AI environment variable guidance to NAS docs and the Compose sample (docs/NAS_DEPLOYMENT.md, docker-compose.nas.yml).
+- Updated the NAS Compose port mapping to reflect code-server's 8765 bind and added placeholders for OpenRouter/Datadog keys.
+
+### Next Steps
+- [x] Provided a `nas.env.example` template mirroring the new variables so operators can copy it without exposing secrets.
+
+## Agent Update (2025-09-30 15:10 UTC)
+
+- Documented runtime AI API key configuration for the code-server image (docker/code-server/README.md).
+- Added examples for Docker, Docker Compose, and Kubernetes secret injection so subscribers can wire credentials without baking keys into images.
+
+### Next Steps
+- [x] Cross-referenced the environment variable guidance in docs/NAS_DEPLOYMENT.md and docker-compose.nas.yml so NAS users see the same instructions.
+
+## Agent Update (2025-09-30 15:12 UTC)
+
+- ✅ **Datadog Integration for Code-Server Complete** - Comprehensive monitoring configuration created
+  - Created `docker/code-server/datadog-agent.yaml` with full agent configuration
+  - **LLM Observability** enabled for tracking AI extension usage (Claude, OpenAI, Copilot)
+  - **Process monitoring** for code-server and extension hosts
+  - **Network monitoring** for AI API calls and bandwidth tracking
+  - **Security monitoring** with compliance checks and secret detection
+  - **Custom metrics** via DogStatsD for extension telemetry
+  - **Log collection** with multiline processing for stack traces
+  - **Database monitoring** for PostgreSQL connections
+  - Created comprehensive guide: `docker/code-server/DATADOG_INTEGRATION.md`
+  - Includes Docker Compose and Kubernetes deployment examples
+  - Custom dashboards for AI cost tracking and performance monitoring
+  - Alert templates for high costs, crashes, and latency issues
+
+### Next Steps
+- [ ] Add Datadog Agent sidecar to code-server Kubernetes manifests
+- [ ] Create custom metrics instrumentation in VibeCode extensions
+- [ ] Set up LLM Observability dashboard in Datadog UI
+- [ ] Configure cost alerts for AI API usage
+
+## Agent Update (2025-09-30 15:10 UTC)
+
+- ✅ **Kubernetes Manifests Updated for Port 8765** - All code-server K8s configs updated
+  - Updated `k8s/code-server-kind.yaml` (bind-addr, containerPort, targetPort, NodePort 31765)
+  - Updated `k8s/code-server-custom.yaml` (containerPort, health probes, service targetPort)
+  - Updated `k8s/code-server-config.yaml` (bind-addr configuration)
+  - Multi-architecture build in progress (ARM64 building, AMD64 pending)
+
+### Next Steps
+- [x] Update Kubernetes manifests to use new port 8765 — ✅ Completed
+- [ ] Wait for ARM64 build completion, then build AMD64
+- [ ] Push multi-arch manifest to container registry (GHCR or Docker Hub)
+- [ ] Test OAuth authentication for Claude Code and OpenAI ChatGPT extensions
+- [ ] Document API key configuration for users with subscriptions
+
 ## Agent Update (2025-09-30 15:06 UTC)
 
 - ✅ **Code-Server Docker Build Complete** - Built secure multi-architecture image with official AI extensions
@@ -13,14 +165,7 @@
   - Documented in `docker/code-server/README.md`, `MULTIARCH_BUILD.md`, and `TRUSTED_DOMAINS.md`
   - Image size: 5.91GB (ARM64), includes 3 custom VibeCode extensions + 20+ marketplace extensions
   - All LSP servers installed: Python, TypeScript, Rust, Java, C/C++, Bash, Docker
-  - Container committed with working extensions: `vibecode-codeserver:latest`
-
-### Next Steps
-- [ ] Test OAuth authentication for Claude Code and OpenAI ChatGPT extensions
-- [ ] Build AMD64 version for x86_64 deployment
-- [ ] Push multi-arch manifest to container registry (GHCR or Docker Hub)
-- [ ] Update Kubernetes manifests to use new port 8765
-- [ ] Document API key configuration for users with subscriptions
+  - Container committed with working extensions: `vibecode-codeserver:latest` (docker/code-server/README.md)
 
 ## Agent Update (2025-09-30 15:25 UTC)
 
@@ -77,13 +222,13 @@
 - [x] Create/update markdown summaries for each workflow listed above with owner, secrets, current status, and recommended actions. — Initial templates generated under docs/logs/workflow-issues/.
 - [x] Attach the file paths to the TODO entries once drafts exist. — Each bullet now references docs/logs/workflow-issues/*.md templates.
 
-## Agent Update (2025-09-30 15:06 UTC)
+## Agent Update (2025-09-30 15:09 UTC)
 
-- Added `jest.config.mjs` (with `<rootDir>/extensions` ignored) plus `babel.config.js` so Jest handles TS/aliases without haste-map noise; parser suite now passes cleanly.
+- Added file-level subscription handling (with per-socket caps) inside `/api/files/sync`, so `subscribe-file` messages register/unregister watchers, receive scoped broadcasts, and are limited to 50 tracked files each.
 
 ### Next Steps
-- [ ] Implement real handling for `subscribe-file` broadcasts once client requirements are finalized.
 - [ ] Expand file sync integration coverage now that the parser contract is locked in.
+- [ ] Instrument subscription metrics (success/error counts) to feed monitoring dashboards.
 
 ## Agent Update (2025-09-30 05:07 UTC)
 
@@ -137,14 +282,14 @@
 - [ ] .github/workflows/azure-webgui-deploy.yml — builds root Dockerfile, pushes to same ACR, deploys App Service `${{ secrets.APP_NAME_WEBGUI }}`, smoke hits `/`; confirm env secrets + health path adequate. (Tracking: #356 — secret gating added 2025-09-30; need smoke expansion + notifications) (Draft: docs/logs/workflow-issues/azure-webgui-deploy.md) (notes: docs/logs/workflow-issues/azure-webgui-deploy.yml.md)
 - [ ] .github/workflows/build-and-push-image.yml — GHCR build via Dockerfile.production with Buildx cache, Trivy SARIF upload, optional AKS Helm deploy (`AZURE_CREDENTIALS`, vars.AKS_*); issue should confirm secrets + helm chart alignment. (Tracking: #357 — cron/concurrency + secret gating added 2025-09-30; AKS deploy skipped when creds missing; need creds audit + issue filing) (notes: docs/logs/workflow-issues/build-and-push-image.yml.md)
 - [ ] .github/workflows/ci-simplified.yml — multi-job pipeline (secret validation, lint/audit, root tests w/ Postgres+Redis services, Datadog/LHCI optional); issue should capture missing secrets handling + continue-on-error follow-up. (Tracking: #361 — secret outputs added 2025-09-30; still need to consume outputs + remove unnecessary continue-on-error) (notes: docs/logs/workflow-issues/ci-simplified.yml.md)
-- [ ] .github/workflows/claude-code-review.yml — runs anthropic/claude-code-action@beta on PRs, needs `CLAUDE_CODE_OAUTH_TOKEN`; issue to confirm token scope + whether sticky comments/prompts should be customized. (Tracking: #363) (notes: docs/logs/workflow-issues/claude-code-review.yml.md)
-- [ ] .github/workflows/claude.yml — listens for @claude mentions across issues/PR comments, same `CLAUDE_CODE_OAUTH_TOKEN`, optional actions:read; issue should confirm rate limits, trigger phrases, and additional permissions setup. (Tracking: #364) (notes: docs/logs/workflow-issues/claude.yml.md)
-- [ ] .github/workflows/cost-monitor.yml — simple weekly cron echo; issue to decide if we replace with real usage metrics or disable once budget tooling arrives. (Tracking: #365) (notes: docs/logs/workflow-issues/cost-monitor.yml.md)
+- [ ] .github/workflows/claude-code-review.yml — runs anthropic/claude-code-action@beta on PRs, needs `CLAUDE_CODE_OAUTH_TOKEN`; issue to confirm token scope + whether sticky comments/prompts should be customized. (Tracking: #363 — concurrency + secret gating added 2025-09-30; finalize prompts) (Draft: docs/logs/workflow-issues/claude-code-review.md) (notes: docs/logs/workflow-issues/claude-code-review.yml.md)
+- [ ] .github/workflows/claude.yml — listens for @claude mentions across issues/PR comments, same `CLAUDE_CODE_OAUTH_TOKEN`, optional actions:read; issue should confirm rate limits, trigger phrases, and additional permissions setup. (Tracking: #364 — concurrency + secret gating added 2025-09-30; finalize prompts/permissions) (Draft: docs/logs/workflow-issues/claude.yml.md)
+- [ ] .github/workflows/cost-monitor.yml — simple weekly cron echo; issue to decide if we replace with real usage metrics or disable once budget tooling arrives. (Tracking: #365 — concurrency added 2025-09-30; need real metrics decision) (Draft: docs/logs/workflow-issues/cost-monitor.md) (notes: docs/logs/workflow-issues/cost-monitor.yml.md)
 - [ ] .github/workflows/datadog-service-catalog.yml — registers *.datadog.yaml via arcxp action (needs DD_API_KEY/DD_APP_KEY) and validates required fields; issue should track secrets freshness + list completeness. (Tracking: #366) (Draft: docs/logs/workflow-issues/datadog-service-catalog.md)
 - [ ] .github/workflows/datadog-trace-verify.yml — hourly cron runs `npm run monitoring:trace` (requires DD_API_KEY/DD_APP_KEY, Node+Python setup) and uploads JSON artefacts; issue to note current script failures + retention. (Tracking: #392 — hourly cron restored 2025-09-30 with secret gating/log artefacts; still need Datadog `Not found` fix + alerting; draft: docs/logs/workflow-issues/datadog-trace-verify.md)
 - [ ] .github/workflows/db-monitoring-deployment.yml — massive pipeline (schema/vector checks, Datadog dashboards, Azure Postgres tuning, Slack notify); requires POSTGRES_CONNECTION, Datadog + Azure creds; issue should triage secrets + whether to keep continue-on-error steps. (Tracking: #367 — cron+secret gating added 2025-09-30; Azure cleanup + reporting still pending) (Draft: docs/logs/workflow-issues/db-monitoring-deployment.md)
-- [ ] .github/workflows/demo-validation.yml — Go/KinD demo build, shell lint, README checks; relies on Make targets, shellcheck (non-blocking), optional infra; issue to capture flakiness in script timeouts and KinD setup. (Tracking: #390) (notes: docs/logs/workflow-issues/demo-validation.yml.md)
-- [ ] .github/workflows/dependency-compatibility.yml — matrix Node 18/20/22 compatibility checks w/ npm audit/build/type-check plus scheduled issue creation via npm-check-updates; ensure secrets not needed, but review GitHub issue spam controls. (Tracking: #369) (notes: docs/logs/workflow-issues/dependency-compatibility.yml.md)
+- [ ] .github/workflows/demo-validation.yml — Go/KinD demo build, shell lint, README checks; relies on Make targets, shellcheck (non-blocking), optional infra; issue to capture flakiness in script timeouts and KinD setup. (Tracking: #390 — concurrency added 2025-09-30; need timeout/noise cleanup) (Draft: docs/logs/workflow-issues/demo-validation.md) (notes: docs/logs/workflow-issues/demo-validation.yml.md)
+- [ ] .github/workflows/dependency-compatibility.yml — matrix Node 18/20/22 compatibility checks w/ npm audit/build/type-check plus scheduled issue creation via npm-check-updates; ensure secrets not needed, but review GitHub issue spam controls. (Tracking: #369 — concurrency added 2025-09-30; need exit-code summary + issue dedupe) (Draft: docs/logs/workflow-issues/dependency-compatibility.md) (notes: docs/logs/workflow-issues/dependency-compatibility.yml.md)
 - [ ] .github/workflows/deploy-aks-monitoring.yml — manual AKS rollout incl. ingress, cert-manager, Datadog monitors; depends on AZURE_* secrets, Datadog keys, scripts/*.sh; issue should review manual inputs + skip_datadog flag coverage. (Tracking: #393 — secret gating + skip notices added 2025-09-30; need timeout/cleanup review) (Draft: docs/logs/workflow-issues/deploy-aks-monitoring.md) (notes: docs/logs/workflow-issues/deploy-aks-monitoring.yml.md)
 - [ ] .github/workflows/deploy-docs.yml — builds Astro docs by default, optional Next.js via workflow_dispatch; uses GitHub Pages permissions; issue should check cache paths and dual-system support + whether Next.js artifacts still needed. (Tracking: #394 — docs system auto-detected; weekly cron re-added 2025-09-30; need cache/reporting plan) (notes: docs/logs/workflow-issues/deploy-docs.yml.md)
 - [ ] .github/workflows/docs-automation.yml — multi-job docs validator (npm ci, lychee link check, auto-commit on main, TypeScript snippet lint); issue to review auto-push behavior and secret scanning sensitivity. (Tracking: #370 — triggers/cron restored 2025-09-30 with artifact+PR flow; still need caching + skip annotations) (Draft: docs/logs/workflow-issues/docs-automation.md)
@@ -153,7 +298,7 @@
 - [ ] .github/workflows/gitops-deployment.yml — full GitOps pipeline with Trivy/Snyk, build/push, optional force_deploy, uses Datadog CI visibility and pushes to GHCR; issue to confirm secret sprawl (DD, SNYK_TOKEN) and deployment steps alignment. (Tracking: #374 — concurrency + secret gating added 2025-09-30; Snyk/Datadog steps now skip when creds missing; still need registry/azure audit + issue link) (notes: docs/logs/workflow-issues/gitops-deployment.yml.md)
 - [ ] .github/workflows/infrastructure-tests.yml — Python-based infra tests w/ OpenTofu, Azure CLI installs, artifacts; manual dispatch runs real deployment; issue to note lack of cached tooling and ensure Azure creds documented for e2e job. (Tracking: #375 — path triggers re-enabled 2025-09-30 with validate-secrets gating; need cleanup automation + secret provisioning follow-up) (notes: docs/logs/workflow-issues/infrastructure-tests.yml.md)
 - [ ] .github/workflows/kind-code-server-smoke.yml — nightly + manual KinD smoke using our script; needs KinD permissions only; issue should monitor runtime (~2m) and decide if diagnostics need retention tweaks. (Tracking: #395) (notes: docs/logs/workflow-issues/kind-code-server-smoke.yml.md)
-- [ ] .github/workflows/main-branch-ci.yml — lightweight checks (npm audit, unit tests, Codex CLI verification, Trufflehog diff) on main; issue to confirm codex install still needed and whether lint/type-check should fail fast. (Tracking: #378) (notes: docs/logs/workflow-issues/main-branch-ci.yml.md)
+- [ ] .github/workflows/main-branch-ci.yml — lightweight checks (npm audit, unit tests, Codex CLI verification, Trufflehog diff) on main; issue to confirm codex install still needed and whether lint/type-check should fail fast. (Tracking: #378 — lint/type results recorded in summary 2025-09-30; decide on failure policy next) (notes: docs/logs/workflow-issues/main-branch-ci.yml.md)
 - [ ] .github/workflows/release-branch-ci.yml — comprehensive release pipeline (Codex MCP, matrix tests incl. Playwright, GHCR build, LHCI, Datadog synthetic triggers); issue should review runtime cost, secret requirements, and force_deploy logic. (Tracking: #381 — triggers re-enabled with secret gating 2025-09-30; still need GitHub issue + secret provisioning follow-up) (notes: docs/logs/workflow-issues/release-branch-ci.yml.md)
 - [ ] .github/workflows/secret-scanning.yml — standalone TruffleHog diff scan on pushes/PRs; issue should ensure skip logic matches main-branch guard and consider integration with GitHub Advanced Security. (Tracking: #382) (notes: docs/logs/workflow-issues/secret-scanning.yml.md)
 - [ ] .github/workflows/stale.yml — nightly actions/stale sweep (issue/PR labels, exempt list); issue should confirm label conventions and whether security items stay exempt. (Tracking: #383) (notes: docs/logs/workflow-issues/stale.yml.md)

@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import * as monaco from 'monaco-editor';
-import { setupMonacopilot } from '@/lib/monaco/monacopilot-integration';
+import type * as Monaco from 'monaco-editor';
 
 export default function MonacopilotDemo() {
   const editorRef = useRef<HTMLDivElement>(null);
-  const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const [editor, setEditor] = useState<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const [status, setStatus] = useState<string>('Initializing...');
   const [apiStatus, setApiStatus] = useState<string>('Checking...');
 
@@ -25,9 +24,20 @@ export default function MonacopilotDemo() {
   useEffect(() => {
     if (!editorRef.current) return;
 
-    try {
-      // Create Monaco editor
-      const editorInstance = monaco.editor.create(editorRef.current, {
+    let editorInstance: Monaco.editor.IStandaloneCodeEditor | null = null;
+
+    // Dynamic import to avoid SSR issues
+    const initializeEditor = async () => {
+      try {
+        const [monaco, { setupMonacopilot }] = await Promise.all([
+          import('monaco-editor'),
+          import('@/lib/monaco/monacopilot-integration'),
+        ]);
+
+        if (!editorRef.current) return;
+
+        // Create Monaco editor
+        editorInstance = monaco.editor.create(editorRef.current, {
         value: `// Type some code and wait for AI suggestions
 // Try typing: function hello
 // Or: const data = 
@@ -47,27 +57,32 @@ function example() {
         readOnly: false,
       });
 
-      setEditor(editorInstance);
-      setStatus('✅ Monaco Editor loaded (v0.53.0)');
+        setEditor(editorInstance);
+        setStatus('✅ Monaco Editor loaded (v0.53.0)');
 
-      // Setup Monacopilot
-      try {
-        setupMonacopilot(monaco, editorInstance, {
-          endpoint: '/api/code-completion',
-          language: 'typescript',
-          debug: true,
-        });
-        setStatus('✅ Monacopilot AI completion enabled!');
+        // Setup Monacopilot
+        try {
+          setupMonacopilot(monaco, editorInstance, {
+            endpoint: '/api/code-completion',
+            language: 'typescript',
+            debug: true,
+          });
+          setStatus('✅ Monacopilot AI completion enabled!');
+        } catch (err) {
+          setStatus(`⚠️ Monacopilot setup failed: ${err}`);
+        }
       } catch (err) {
-        setStatus(`⚠️ Monacopilot setup failed: ${err}`);
+        setStatus(`❌ Error: ${err}`);
       }
+    };
 
-      return () => {
+    initializeEditor();
+
+    return () => {
+      if (editorInstance) {
         editorInstance.dispose();
-      };
-    } catch (err) {
-      setStatus(`❌ Error: ${err}`);
-    }
+      }
+    };
   }, []);
 
   return (

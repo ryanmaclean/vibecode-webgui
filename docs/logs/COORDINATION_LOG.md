@@ -334,6 +334,8 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - Deleted `disabled-expensive/build-and-push-image.yml` (tracked via #357) so only the active GHCR pipeline remains in use.
 - Fish shell added to both code-server Dockerfiles so Bash, Zsh, and Fish are available when the KinD or primary images rebuild.
 - Multi-arch code-server images rebuilt with Fish (`scripts/build-codeserver-multiarch.sh local`); both ARM64 and AMD64 variants confirmed to include `/usr/bin/fish` 3.6.0.
+- Published the refreshed multi-architecture image to `ghcr.io/ryanmaclean/vibecode-codeserver:latest` (linux/arm64 + linux/amd64).
+- Dockerfiles now install popular permissively licensed CLI helpers (eza, ripgrep, fd, fzf, bat, hyperfine, lazygit, starship, zoxide) for parity across shells.
 
 ### 2025-09-30 04:15 UTC — Workflow issue drafts for manual-only pipelines
 - Drafted remediation outlines for the workflows we paused (`datadog-trace-verify`, `docs-automation`, `docs-ci-cd`, `error-tracking-integration`, `infrastructure-tests`, `release-branch-ci`, `test-simple`).
@@ -421,3 +423,32 @@ This log captures how multiple agents successfully coordinated work to avoid con
 ### 2025-09-30 07:02 UTC — AKS monitoring gating
 - Added concurrency and secret outputs to `.github/workflows/deploy-aks-monitoring.yml`; deployment/Datadog stages now skip when Azure or DD secrets missing, emitting notices instead of failing midway.
 - Documented remaining follow-ups (timeouts, cleanup, reporting) in `docs/logs/workflow-issues/deploy-aks-monitoring.md` and updated TODO/tracking entries.
+
+### 2025-09-30 07:05 UTC — Main branch summary tweaks
+- Updated `.github/workflows/main-branch-ci.yml` to capture lint/type-check exit codes and append them to the job summary so optional failures are visible without rereading logs.
+- Logged the follow-up draft at `docs/logs/workflow-issues/main-branch-ci.yml.md`; TODO/workflow tracking updated to reflect the next steps (decide on failure policy, codex optionality).
+
+### 2025-09-30 07:08 UTC — Dependency matrix concurrency
+- Added concurrency guard and made build/type-check steps tolerant in `.github/workflows/dependency-compatibility.yml`, with summary placeholder for per-node results.
+- Drafted follow-up issue (`docs/logs/workflow-issues/dependency-compatibility.md`) and updated TODO/tracking entries; next step is wiring exit codes into summaries and deduping update issues.
+
+### 2025-09-30 07:10 UTC — Cost monitor placeholder
+- Added concurrency guard to `.github/workflows/cost-monitor.yml`; documented next steps (real metrics vs. decommission) in `docs/logs/workflow-issues/cost-monitor.md` and updated TODO/tracking entries.
+
+### 2025-09-30 07:13 UTC — Demo validation tweaks
+- Added concurrency guard to `.github/workflows/demo-validation.yml`; recorded remaining todo (flaky timeouts, better reporting) in `docs/logs/workflow-issues/demo-validation.md` and updated TODO/tracking entries.
+
+### 2025-09-30 07:16 UTC — Claude code review drafting
+- Added workflow issue draft (`docs/logs/workflow-issues/claude-code-review.md`) outlining token gating and prompt customization work.
+- TODO/workflow tracking updated; no YAML changes yet.
+
+### 2025-09-30 07:18 UTC — Claude responder draft
+- Added `docs/logs/workflow-issues/claude.yml.md` capturing secret gating and permission review tasks for the @claude responder workflow; TODO/tracking entries linked.
+
+### 2025-09-30 07:20 UTC — Claude code review gating
+- Added concurrency + secret validation to `.github/workflows/claude-code-review.yml`; workflow now skips with a notice when the Claude token is absent.
+- Updated the issue draft to reflect current status.
+
+### 2025-09-30 07:22 UTC — Claude responder gating
+- Added concurrency + secret validation to `.github/workflows/claude.yml`; @claude responses now skip with a notice when the OAuth token is missing.
+- Updated the corresponding issue draft.

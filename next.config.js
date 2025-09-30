@@ -10,6 +10,17 @@ const nextConfig = {
       config.devtool = 'source-map'
     }
 
+    // Add IgnorePlugin for browser builds to skip server-only modules
+    if (!isServer) {
+      const webpack = require('webpack')
+      config.plugins = config.plugins || []
+      config.plugins.push(
+        new webpack.IgnorePlugin({
+          resourceRegExp: /^(dd-trace|@datadog\/libdatadog|@datadog\/native-appsec|@datadog\/native-metrics|ansi-color|@opentelemetry\/exporter-jaeger)$/,
+        })
+      )
+    }
+
     config.resolve = config.resolve || {}
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
@@ -21,7 +32,21 @@ const nextConfig = {
       '@langchain/core/documents': require.resolve('./src/lib/ai/stubs/langchain-documents.ts'),
     }
 
-    if (dev && isServer) {
+    // Stub dd-trace and instrument.ts for browser builds
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'dd-trace': require.resolve('./src/stubs/dd-trace.js'),
+        './instrument': require.resolve('./src/stubs/instrument-browser.js'),
+        './instrument.ts': require.resolve('./src/stubs/instrument-browser.js'),
+        '@opentelemetry/sdk-node': require.resolve('./src/stubs/opentelemetry-sdk-node.js'),
+        '@opentelemetry/auto-instrumentations-node': require.resolve('./src/stubs/opentelemetry-auto.js'),
+        '@opentelemetry/exporter-otlp-http': require.resolve('./src/stubs/opentelemetry-exporter-otlp-http.js'),
+        '@opentelemetry/exporter-prometheus': require.resolve('./src/stubs/opentelemetry-exporter-prometheus.js'),
+        '@opentelemetry/resources': require.resolve('./src/stubs/opentelemetry-resources.js'),
+        '@opentelemetry/semantic-conventions': require.resolve('./src/stubs/opentelemetry-semantic-conventions.js'),
+      }
+    } else if (dev) {
       config.resolve.alias['dd-trace'] = require.resolve('./src/stubs/dd-trace.js')
     }
 
@@ -29,10 +54,27 @@ const nextConfig = {
       config.resolve.fallback = {
         ...(config.resolve.fallback || {}),
         fs: false,
+        os: false,
+        path: false,
         tls: false,
         net: false,
         dns: false,
         child_process: false,
+        stream: false,
+        events: false,
+      }
+
+      // Externalize Datadog native modules and problematic deps from browser bundle
+      config.externals = config.externals || []
+      if (Array.isArray(config.externals)) {
+        config.externals.push(
+          '@datadog/libdatadog',
+          '@datadog/native-appsec',
+          '@datadog/native-metrics',
+          'dd-trace',
+          'ansi-color', // Legacy package with strict mode issues
+          '@opentelemetry/exporter-jaeger' // Jaeger exporter not needed in browser
+        )
       }
     }
 
@@ -68,7 +110,18 @@ const nextConfig = {
   },
 
   // Server external packages (moved from experimental)
-  serverExternalPackages: ['@datadog/browser-rum'],
+  // These packages should not be bundled by webpack - kept as external requires
+  serverExternalPackages: [
+    '@datadog/browser-rum',
+    'dd-trace',
+    '@datadog/libdatadog',
+    '@datadog/native-appsec',
+    '@datadog/native-metrics',
+    '@datadog/native-iast-taint-tracking',
+    '@datadog/pprof',
+    'ansi-color',
+    '@opentelemetry/exporter-jaeger',
+  ],
 
   // Environment variables for Datadog
   env: {

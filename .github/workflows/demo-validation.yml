@@ -19,6 +19,11 @@ on:
       - 'Makefile'
       - 'go.mod'
       - 'go.sum'
+  workflow_dispatch:
+
+concurrency:
+  group: demo-validation-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate-demo:
