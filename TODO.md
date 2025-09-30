@@ -1,3 +1,10 @@
+## Agent Update (2025-09-30 00:55 UTC)
+
+- Documenting the temporary local-database fallback decision in `docs/logs/DECISION_LOG.md`.
+
+### Next Steps
+- [ ] Add an entry describing the `.env.local` database override while Azure access is down.
+
 ## Agent Update (2025-09-30 00:51 UTC)
 
 - Adding a coordination reminder in `docs/logs/README.md` so log editors know to check `TODO.md` and `AGENTS.md` first.
