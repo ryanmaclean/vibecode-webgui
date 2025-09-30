@@ -1,4 +1,3 @@
-import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
@@ -35,10 +34,17 @@ const AVAILABLE_PROVIDERS = [
   'gemini',
   'gemini-cli',
   'opencode',
+  'openrouter',
   'claude',
+  'anthropic',
   'aider',
   'goose',
   'project4',
+  'deepseek',
+  'google',
+  'azure-openai',
+  'bedrock',
+  'vertex',
 ]
 
 function ensureMetadata(body: CompletionRequestBody): CompletionMetadata {
