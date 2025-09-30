@@ -43,6 +43,8 @@ const eslintConfig = [{
     "docs/e2e/**",
     "examples/**",
     "extensions/**",
+    "src/extensions/**/out/**",
+    "src/components/__mocks__/**",
     "packages/**"
   ]
 }, ...compat.extends("next/core-web-vitals", "next/typescript"), {
@@ -94,6 +96,18 @@ const eslintConfig = [{
   }
 }, {
   files: ["**/*.cjs", "**/.eslintrc.*"],
+  rules: {
+    "@typescript-eslint/no-require-imports": "off"
+  }
+}, {
+  files: [
+    "src/instrument.ts",
+    "src/lib/monitoring/**/*.ts",
+    "src/lib/server-monitoring.ts",
+    "src/lib/datadog-llm.ts",
+    "src/lib/automation/error-tracking-node.ts",
+    "src/extensions/vibecode-ai-assistant/src/code-generator.ts"
+  ],
   rules: {
     "@typescript-eslint/no-require-imports": "off"
   }

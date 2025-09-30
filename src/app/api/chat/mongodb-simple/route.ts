@@ -2,6 +2,32 @@ import { NextRequest, NextResponse } from 'next/server'
 import { connectToMongoDB } from '@/lib/mongodb'
 import { v4 as uuidv4 } from 'uuid'
 
+type SessionDocument = {
+  sessionId: string
+  userId: string
+  createdAt: Date
+  expiresAt: Date
+}
+
+type ConversationMessage = {
+  id: string
+  from: string
+  content: string
+  createdAt: Date
+}
+
+type ConversationDocument = {
+  id: string
+  title: string
+  sessionId: string
+  model: string
+  userId: string
+  workspaceId: string
+  createdAt: Date
+  updatedAt: Date
+  messages: ConversationMessage[]
+}
+
 // Simple MongoDB chat test without complex service layer
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +45,8 @@ export async function POST(request: NextRequest) {
     const { action } = body
 
     const { db } = await connectToMongoDB()
+    const sessionsCollection = db.collection<SessionDocument>('sessions')
+    const conversationsCollection = db.collection<ConversationDocument>('conversations')
 
     switch (action) {
       case 'create_session':
@@ -29,7 +57,7 @@ export async function POST(request: NextRequest) {
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
         }
         
-        const sessionResult = await db.collection('sessions').insertOne(session)
+        const sessionResult = await sessionsCollection.insertOne(session)
         
         return NextResponse.json({
           success: true,
@@ -54,7 +82,7 @@ export async function POST(request: NextRequest) {
           messages: []
         }
         
-        const convResult = await db.collection('conversations').insertOne(conversation)
+        const convResult = await conversationsCollection.insertOne(conversation)
         
         return NextResponse.json({
           success: true,
@@ -74,10 +102,10 @@ export async function POST(request: NextRequest) {
           createdAt: new Date()
         }
         
-        const updateResult = await db.collection('conversations').updateOne(
+        const updateResult = await conversationsCollection.updateOne(
           { id: conversationId },
           {
-            $push: { messages: message } as any,
+            $push: { messages: message },
             $set: { updatedAt: new Date() }
           }
         )
@@ -95,7 +123,7 @@ export async function POST(request: NextRequest) {
         })
 
       case 'get_conversations':
-        const conversations = await db.collection('conversations')
+        const conversations = await conversationsCollection
           .find({ userId })
           .sort({ updatedAt: -1 })
           .limit(20)

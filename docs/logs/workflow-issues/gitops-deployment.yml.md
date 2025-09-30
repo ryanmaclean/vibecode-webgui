@@ -1,15 +1,11 @@
-# Workflow Audit: gitops-deployment.yml
+# Workflow Audit: .github/workflows/gitops-deployment.yml
 
 - **Workflow file**: `.github/workflows/gitops-deployment.yml`
-- **Current status**: _pending review_
-- **Key dependencies / secrets**: _TBD_
-- **Recent observations**: _Add notes from TODO.md or last run logs._
+- **Current notes**: full GitOps pipeline with Trivy/Snyk, build/push, optional force_deploy, uses Datadog CI visibility and pushes to GHCR; issue to confirm secret sprawl (DD, SNYK_TOKEN) and deployment steps alignment.
 
 ## Action Items
-- [ ] Confirm secrets/prerequisites documented in TODO.md entry.
-- [ ] Capture last run status and failures (if any).
+- [ ] Confirm secrets/prerequisites in TODO entry.
+- [ ] Capture last run status or failures (if any).
 - [ ] Define remediation steps / owners.
 
----
-
-> Auto-generated 2025-09-30 04:18 UTC for tracking; replace placeholder text when filing the issue.
+> Updated 2025-09-30 04:26 UTC — replace placeholder text when filing the issue.

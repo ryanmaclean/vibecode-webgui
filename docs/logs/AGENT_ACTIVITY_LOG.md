@@ -251,5 +251,6 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Deleted `disabled-expensive/build-and-push-image.yml`; issue #357 updated to track remaining audit tasks on the active GHCR pipeline.
 ### Agent Codex - Fish shell added to code-server image (2025-09-30 04:32 UTC)
 - Updated `docker/code-server/Dockerfile` and `Dockerfile.kind` to install the Fish shell alongside Bash/Zsh; README now mentions all three shells are available in the container.
+- Built multi-arch images (`scripts/build-codeserver-multiarch.sh local`) producing `vibecode-codeserver:latest-arm64` and `:latest-amd64`; verified `/usr/bin/fish --version` inside both images.
 ### Agent Codex - Workflow issue templates (2025-09-30 03:12 UTC)
 - Generated placeholder summaries for all `.github/workflows/*.yml` (+ disabled-expensive) under `docs/logs/workflow-issues/` so each pipeline has a ready-to-file issue brief.

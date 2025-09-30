@@ -333,6 +333,7 @@ This log captures how multiple agents successfully coordinated work to avoid con
 ### 2025-09-30 04:27 UTC — Removed legacy build-and-push workflow
 - Deleted `disabled-expensive/build-and-push-image.yml` (tracked via #357) so only the active GHCR pipeline remains in use.
 - Fish shell added to both code-server Dockerfiles so Bash, Zsh, and Fish are available when the KinD or primary images rebuild.
+- Multi-arch code-server images rebuilt with Fish (`scripts/build-codeserver-multiarch.sh local`); both ARM64 and AMD64 variants confirmed to include `/usr/bin/fish` 3.6.0.
 
 ### 2025-09-30 04:15 UTC — Workflow issue drafts for manual-only pipelines
 - Drafted remediation outlines for the workflows we paused (`datadog-trace-verify`, `docs-automation`, `docs-ci-cd`, `error-tracking-integration`, `infrastructure-tests`, `release-branch-ci`, `test-simple`).
@@ -383,3 +384,13 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - Added concurrency and explicit secret validation outputs to `.github/workflows/gitops-deployment.yml` so Snyk/Datadog steps skip cleanly without credentials.
 - Adjusted build gating to keep tests running when security scans skip, and defaulted Datadog API calls to `DD_SITE` env.
 - Pending: audit container registry/Azure credentials and file the tracking issue before considering trigger adjustments.
+
+### 2025-09-30 06:18 UTC — Datadog service catalog workflow hardened
+- Added concurrency, secret validation, YAML + `datadog-ci` linting, and weekly cron to `.github/workflows/datadog-service-catalog.yml`.
+- Service registration now skips when Datadog keys missing and falls back to DD_SITE secret if provided.
+- Remaining follow-up: rotate API/app keys, add reporting artifact, and file the GitHub issue from the draft.
+
+### 2025-09-30 06:26 UTC — DB monitoring gating pass
+- Added weekly cron, secret-aware outputs, and job-level gating to `.github/workflows/db-monitoring-deployment.yml` so Postgres/Azure/Datadog phases only run when creds exist; missing secrets now short-circuit with a notice.
+- Slack and Azure steps skip cleanly without credentials; benchmark + Datadog phases only run once database validation succeeds.
+- TODO: implement Azure resource cleanup, add reporting summary, rotate secrets, and open the GitHub issue from the draft.

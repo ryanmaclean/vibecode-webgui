@@ -6,6 +6,15 @@
 - [x] Create/update markdown summaries for each workflow listed above with owner, secrets, current status, and recommended actions. — Initial templates generated under docs/logs/workflow-issues/.
 - [x] Attach the file paths to the TODO entries once drafts exist. — Each bullet now references docs/logs/workflow-issues/*.md templates.
 
+## Agent Update (2025-09-30 04:28 UTC)
+
+- Converted the code-server session API to fully ESM-friendly imports and trimmed unused helpers to satisfy `@typescript-eslint/no-require-imports` and unused variable rules.
+- Tightened auth/chat MongoDB endpoints by replacing `any` usage with schemas and typed collections, eliminating several high-noise lint warnings.
+
+### Next Steps
+- [ ] Continue migrating remaining server/middleware CommonJS hotspots (`src/middleware/__tests__`, file sync API) to modern imports.
+- [ ] Expand zod coverage across additional auth/chat routes to reduce `@typescript-eslint/no-explicit-any` in request handling.
+
 ## Agent Update (2025-09-30 04:22 UTC)
 
 - Converted `scripts/check-dependency-compatibility` to native ESM (`.mjs`), keeping CLI parity and refreshing documentation/package scripts.
@@ -29,7 +38,7 @@
 - [ ] .github/workflows/cost-monitor.yml — simple weekly cron echo; issue to decide if we replace with real usage metrics or disable once budget tooling arrives. (Tracking: #365) (notes: docs/logs/workflow-issues/cost-monitor.yml.md)
 - [ ] .github/workflows/datadog-service-catalog.yml — registers *.datadog.yaml via arcxp action (needs DD_API_KEY/DD_APP_KEY) and validates required fields; issue should track secrets freshness + list completeness. (Tracking: #366) (Draft: docs/logs/workflow-issues/datadog-service-catalog.md)
 - [ ] .github/workflows/datadog-trace-verify.yml — hourly cron runs `npm run monitoring:trace` (requires DD_API_KEY/DD_APP_KEY, Node+Python setup) and uploads JSON artefacts; issue to note current script failures + retention. (Tracking: #392 — hourly cron restored 2025-09-30 with secret gating/log artefacts; still need Datadog `Not found` fix + alerting; draft: docs/logs/workflow-issues/datadog-trace-verify.md)
-- [ ] .github/workflows/db-monitoring-deployment.yml — massive pipeline (schema/vector checks, Datadog dashboards, Azure Postgres tuning, Slack notify); requires POSTGRES_CONNECTION, Datadog + Azure creds; issue should triage secrets + whether to keep continue-on-error steps. (Tracking: #367 — draft: docs/logs/workflow-issues/db-monitoring-deployment.md)
+- [ ] .github/workflows/db-monitoring-deployment.yml — massive pipeline (schema/vector checks, Datadog dashboards, Azure Postgres tuning, Slack notify); requires POSTGRES_CONNECTION, Datadog + Azure creds; issue should triage secrets + whether to keep continue-on-error steps. (Tracking: #367 — cron+secret gating added 2025-09-30; Azure cleanup + reporting still pending) (Draft: docs/logs/workflow-issues/db-monitoring-deployment.md)
 - [ ] .github/workflows/demo-validation.yml — Go/KinD demo build, shell lint, README checks; relies on Make targets, shellcheck (non-blocking), optional infra; issue to capture flakiness in script timeouts and KinD setup. (Tracking: #390) (notes: docs/logs/workflow-issues/demo-validation.yml.md)
 - [ ] .github/workflows/dependency-compatibility.yml — matrix Node 18/20/22 compatibility checks w/ npm audit/build/type-check plus scheduled issue creation via npm-check-updates; ensure secrets not needed, but review GitHub issue spam controls. (Tracking: #369) (notes: docs/logs/workflow-issues/dependency-compatibility.yml.md)
 - [ ] .github/workflows/deploy-aks-monitoring.yml — manual AKS rollout incl. ingress, cert-manager, Datadog monitors; depends on AZURE_* secrets, Datadog keys, scripts/*.sh; issue should review manual inputs + skip_datadog flag coverage. (Tracking: #393) (notes: docs/logs/workflow-issues/deploy-aks-monitoring.yml.md)

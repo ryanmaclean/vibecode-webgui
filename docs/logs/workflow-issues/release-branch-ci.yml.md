@@ -1,15 +1,11 @@
-# Workflow Audit: release-branch-ci.yml
+# Workflow Audit: .github/workflows/release-branch-ci.yml
 
 - **Workflow file**: `.github/workflows/release-branch-ci.yml`
-- **Current status**: _pending review_
-- **Key dependencies / secrets**: _TBD_
-- **Recent observations**: _Add notes from TODO.md or last run logs._
+- **Current notes**: comprehensive release pipeline (Codex MCP, matrix tests incl. Playwright, GHCR build, LHCI, Datadog synthetic triggers); issue should review runtime cost, secret requirements, and force_deploy logic.
 
 ## Action Items
-- [ ] Confirm secrets/prerequisites documented in TODO.md entry.
-- [ ] Capture last run status and failures (if any).
+- [ ] Confirm secrets/prerequisites in TODO entry.
+- [ ] Capture last run status or failures (if any).
 - [ ] Define remediation steps / owners.
 
----
-
-> Auto-generated 2025-09-30 04:18 UTC for tracking; replace placeholder text when filing the issue.
+> Updated 2025-09-30 04:26 UTC — replace placeholder text when filing the issue.

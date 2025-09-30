@@ -1,15 +1,11 @@
-# Workflow Audit: db-monitoring-deployment.yml
+# Workflow Audit: .github/workflows/db-monitoring-deployment.yml
 
 - **Workflow file**: `.github/workflows/db-monitoring-deployment.yml`
-- **Current status**: _pending review_
-- **Key dependencies / secrets**: _TBD_
-- **Recent observations**: _Add notes from TODO.md or last run logs._
+- **Current notes**: massive pipeline (schema/vector checks, Datadog dashboards, Azure Postgres tuning, Slack notify); requires POSTGRES_CONNECTION, Datadog + Azure creds; issue should triage secrets + whether to keep continue-on-error steps.
 
 ## Action Items
-- [ ] Confirm secrets/prerequisites documented in TODO.md entry.
-- [ ] Capture last run status and failures (if any).
+- [ ] Confirm secrets/prerequisites in TODO entry.
+- [ ] Capture last run status or failures (if any).
 - [ ] Define remediation steps / owners.
 
----
-
-> Auto-generated 2025-09-30 04:18 UTC for tracking; replace placeholder text when filing the issue.
+> Updated 2025-09-30 04:26 UTC — replace placeholder text when filing the issue.

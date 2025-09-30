@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function createFilesInWorkspace(workspaceId: string, files: Array<{path: string, content: string, type: string}>) {
-  const { spawn } = require('child_process')
+  const { spawn } = await import('child_process')
   const namespace = 'vibecode'
 
   // Create a temporary pod to handle file creation
