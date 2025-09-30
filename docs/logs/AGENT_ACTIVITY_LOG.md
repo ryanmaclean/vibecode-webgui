@@ -229,3 +229,4 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Created `.github/workflows/kind-code-server-smoke.yml` to schedule the KinD code-server smoke test (nightly + manual).
 - Updated `scripts/test-code-server-kind.sh` to auto-create the `vibecode-platform` namespace so the workflow boots clean clusters.
 - Workflow captures diagnostics on failure for easier debugging (`kubectl get/describe/logs`).
+- Measured build duration (~2 minutes end-to-end on `ubuntu-latest`); no further Docker layer caching required at this time.
