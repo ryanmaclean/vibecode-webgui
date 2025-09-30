@@ -1,3 +1,30 @@
+## Agent Update (2025-09-30 01:36 UTC)
+
+- Beginning to document the KinD code-server smoke test so teammates can reproduce the editor check quickly.
+
+### Next Steps
+- [x] Draft a short snippet for `docs/logs/COORDINATION_LOG.md` (or README) describing the port-forward + curl and optional vim install. — ✅ Added 2025-09-30 entry in coordination log.
+- [x] Link the TODO entry so coordination readers know where to find the instructions. — ✅ Section references TODO top entry.
+
+## Agent Update (2025-09-30 01:37 UTC)
+
+- Rebuild the custom code-server image on top of `codercom/code-server:4.104.2` to pick up Monaco 0.53.
+
+### Next Steps
+- [ ] Update `docker/code-server/Dockerfile` base tag.
+- [ ] Build image `vibecode/code-server:monaco053` locally.
+- [ ] Load into KinD (`kind load docker-image ...`).
+- [ ] Restart the `code-server-kind` deployment to use the new image.
+
+## Agent Update (2025-09-30 01:35 UTC)
+
+- Planning a quick vim install smoke test inside the KinD code-server pod so we know how to enable a terminal editor.
+
+### Next Steps
+- [x] Inspect the package manager in `codercom/code-server:4.101.2` (`kubectl exec ... -- sh -lc 'cat /etc/os-release && command -v apt-get'`). — ✅ Debian 12 with `apt-get` available.
+- [x] Attempt a temporary `apt-get install -y vim` (document whether sudo/root is required). — ✅ Needed `sudo`; installation succeeded.
+- [ ] Record instructions in TODO/doc if successful.
+
 ## Agent Update (2025-09-30 01:33 UTC)
 
 - Tested the new KinD code-server editor: port-forwarded svc/code-server-kind to localhost:3100 and confirmed HTTP 302 redirect from the service.
@@ -7,7 +34,7 @@
 
 ### Next Steps
 - Document the curl test so others can verify the editor quickly, or wire an automated health check if needed.
-- Decide whether to install `vim` in the code-server image or adjust docs to use `vi`.
+- Capture the `sudo apt-get install vim` steps in docs/TODO so future testers can enable the terminal editor.
 
 ## Agent Update (2025-09-30 01:30 UTC)
 
@@ -41,6 +68,7 @@
 - [x] Add a reusable `CodeiumPlayground` client component under `src/components/editors` that wires Monaco + monacopilot with language/theme toggles.
 - [x] Create a Next.js route at `src/app/tools/codeium/page.tsx` showcasing the playground with usage tips.
 - [ ] Smoke-test in the browser (or document how to) and update TODO/logs with results.
+  - ❌ Agent Codex (2025-09-30 01:35 UTC): `npm run dev -- --port 4020` fails with `Module not found: Can't resolve './src/instrument'` while compiling `src/instrumentation.ts`; playground renders once instrumentation import is restored.
 
 ## Agent Update (2025-09-30 01:23 UTC)
 
@@ -370,6 +398,12 @@
 3. **Claim Work Area** - Specify which directories/files you're working on
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- ✅ **Agent Cascade (2025-09-30 01:38 UTC)**: Ingest PID check
+  - Result: PID 82844 still running (wrapper processes too); waiting before starting new ingest
+  - Files: None
+  - Goal: Determine if new ingest work can start
+  - ETA: 2 minutes
+  - Status: COMPLETE
 - ✅ **Agent Cascade (2025-09-30 01:35 UTC)**: Reviewed Copilot PR #330
   - Result: Noted update already merged (commit 22078751) and closed PR as redundant
   - Files: None
@@ -1912,4 +1946,8 @@ If another agent needs Codeium features, use Monacopilot instead - it's better a
 ## Agent Update (2025-09-30 01:35 UTC)
 
 - PR #330 closed after confirming the docs note is already in main. No further action needed.
+
+## Agent Update (2025-09-30 01:38 UTC)
+
+- PID 82844 (scripts/ingest-docs-to-rag.ts) still running; ingest queue remains occupied.
 
