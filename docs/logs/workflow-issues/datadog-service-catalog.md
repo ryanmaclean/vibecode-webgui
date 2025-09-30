@@ -4,9 +4,10 @@
 The Datadog service catalog workflow validates our `*.datadog.yaml` descriptors and registers them with Datadog. It was moved to manual dispatch after secrets drift and schema mismatches caused repeated failures. We need to verify configuration and make the automation safe to run on a schedule again.
 
 ## Current Status
-- Trigger sits under disabled-expensive; workflow currently manual-only via `workflow_dispatch`.
-- Requires `DD_API_KEY`, `DD_APP_KEY`, and access to the `datadog/service-catalog/action`. Keys were last rotated before the API migration.
-- YAML inventory has grown; missing or invalid entries cause the workflow to fail fast without clear mapping to owners.
+- Push/PR triggers now run with a weekly cron; concurrency guard prevents overlapping runs.
+- Secrets validated up front; registration job skips when Datadog keys are absent and posts a notice.
+- Service definitions linted with `datadog-ci service-catalog lint` plus YAML structural checks before the registration step.
+- Registration still depends on `DD_API_KEY`/`DD_APP_KEY` and assumes service files list owners correctly.
 
 ## Proposed Remediation
 1. **Secret validation**: Confirm API/app keys exist in GitHub Secrets and map to the correct Datadog org/permissions (service catalog write scope).
@@ -26,4 +27,4 @@ The Datadog service catalog workflow validates our `*.datadog.yaml` descriptors 
 - Decide whether to couple this workflow with the Datadog trace verification job for unified reporting.
 
 ## Progress Log
-- **2025-09-30:** Drafted remediation outline; awaiting secret confirmation and linting updates before re-enabling triggers.
+- **2025-09-30:** Added concurrency, secret validation, YAML + datadog-ci linting, and restored push/PR/weekly triggers with optional workflow dispatch. Registration now skips gracefully when secrets missing; still need to confirm key rotation and add reporting.

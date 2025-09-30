@@ -1,15 +1,13 @@
-# Workflow Audit: test-ci-simplified.yml
+# Workflow Audit: .github/workflows/test-ci-simplified.yml
 
 - **Workflow file**: `.github/workflows/test-ci-simplified.yml`
-- **Current status**: _pending review_
-- **Key dependencies / secrets**: _TBD_
-- **Recent observations**: _Add notes from TODO.md or last run logs._
+- **Tracking issue**: #386
+- **Current notes**: root tests pipeline spinning up Docker Postgres/Redis, heavy Datadog env; issue should question duplicate redis install steps and optional API key coverage.
+- **Related docs**: docs/logs/workflow-issues/ci-simplified.yml.md
 
 ## Action Items
-- [ ] Confirm secrets/prerequisites documented in TODO.md entry.
-- [ ] Capture last run status and failures (if any).
+- [ ] Confirm secrets/prerequisites in TODO entry.
+- [ ] Capture last run status or failures (if any).
 - [ ] Define remediation steps / owners.
 
----
-
-> Auto-generated 2025-09-30 04:18 UTC for tracking; replace placeholder text when filing the issue.
+> Updated 2025-09-30 04:26 UTC — replace placeholder text when filing the issue.

@@ -3,13 +3,18 @@ name: Deploy Documentation to GitHub Pages
 on:
   push:
     branches: [main]
-    # Always build docs on main branch pushes to keep them up to date
+    paths:
+      - 'docs/**'
+      - 'content/wiki/**'
+      - '.github/workflows/deploy-docs.yml'
   pull_request:
     branches: [main]
     paths:
       - 'docs/**'
       - 'content/wiki/**'
       - '.github/workflows/deploy-docs.yml'
+  schedule:
+    - cron: '0 4 * * 1'
   workflow_dispatch:
     inputs:
       docs_system:
@@ -34,6 +39,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      docs_system: ${{ steps.detect.outputs.docs_system }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -45,8 +52,21 @@ jobs:
           enablement: true
 
       # --- Astro Build Steps ---
+      - name: Detect docs system
+        id: detect
+        run: |
+          system='${{ github.event.inputs.docs_system || '' }}'
+          if [ -z "$system" ]; then
+            if [ -f docs/package.json ]; then
+              system='astro'
+            else
+              system='nextjs'
+            fi
+          fi
+          echo "docs_system=$system" >> "$GITHUB_OUTPUT"
+
       - name: Setup Node.js for Astro
-        if: ${{ github.event_name == 'push' || github.event.inputs.docs_system == 'astro' }}
+        if: steps.detect.outputs.docs_system == 'astro'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -54,24 +74,24 @@ jobs:
           cache-dependency-path: './docs/package-lock.json'
 
       - name: Install Astro dependencies
-        if: ${{ github.event_name == 'push' || github.event.inputs.docs_system == 'astro' }}
+        if: steps.detect.outputs.docs_system == 'astro'
         run: npm ci
         working-directory: ./docs
 
       - name: Build Astro site
-        if: ${{ github.event_name == 'push' || github.event.inputs.docs_system == 'astro' }}
+        if: steps.detect.outputs.docs_system == 'astro'
         run: npm run build
         working-directory: ./docs
 
       - name: Upload Astro artifact
-        if: ${{ github.event_name == 'push' || github.event.inputs.docs_system == 'astro' }}
+        if: steps.detect.outputs.docs_system == 'astro'
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./docs/dist
 
       # --- Next.js Build Steps ---
       - name: Setup Node.js for Next.js
-        if: ${{ github.event.inputs.docs_system == 'nextjs' }}
+        if: steps.detect.outputs.docs_system == 'nextjs'
         uses: actions/setup-node@v4
         with:
           node-version: '18'
@@ -79,15 +99,15 @@ jobs:
           cache-dependency-path: './package-lock.json'
 
       - name: Install Next.js dependencies
-        if: ${{ github.event.inputs.docs_system == 'nextjs' }}
+        if: steps.detect.outputs.docs_system == 'nextjs'
         run: npm ci
 
       - name: Build Next.js site
-        if: ${{ github.event.inputs.docs_system == 'nextjs' }}
+        if: steps.detect.outputs.docs_system == 'nextjs'
         run: npm run build
 
       - name: Upload Next.js artifact
-        if: ${{ github.event.inputs.docs_system == 'nextjs' }}
+        if: steps.detect.outputs.docs_system == 'nextjs'
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./out
