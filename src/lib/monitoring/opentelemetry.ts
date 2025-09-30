@@ -15,6 +15,10 @@ const isDockerBuild = (
 
 const isLocalDev = process.env.NODE_ENV !== 'production'
 
+// Shareable type alias for dynamic require fallback
+type NodeRequireFn = typeof require
+
+
 // Conditional imports to prevent build-time errors in Docker
 let NodeSDK: any = null;
 let getNodeAutoInstrumentations: any = null;
@@ -26,13 +30,15 @@ let ATTR_SERVICE_VERSION: any = null;
 
 if (!isDockerBuild && !isLocalDev) {
   try {
-    // Dynamic imports to prevent static analysis issues
-    const sdkNode = require('@opentelemetry/sdk-node');
-    const autoInstrumentations = require('@opentelemetry/auto-instrumentations-node');
-    const otlpExporter = require('@opentelemetry/exporter-otlp-http');
-    const prometheusExporter = require('@opentelemetry/exporter-prometheus');
-    const resources = require('@opentelemetry/resources');
-    const semanticConventions = require('@opentelemetry/semantic-conventions');
+    // Dynamic imports to prevent static analysis issues and keep dev builds lightweight
+    // eslint-disable-next-line no-eval
+    const dynamicRequire = eval('require') as NodeRequireFn;
+    const sdkNode = dynamicRequire('@opentelemetry/sdk-node');
+    const autoInstrumentations = dynamicRequire('@opentelemetry/auto-instrumentations-node');
+    const otlpExporter = dynamicRequire('@opentelemetry/exporter-otlp-http');
+    const prometheusExporter = dynamicRequire('@opentelemetry/exporter-prometheus');
+    const resources = dynamicRequire('@opentelemetry/resources');
+    const semanticConventions = dynamicRequire('@opentelemetry/semantic-conventions');
     
     NodeSDK = sdkNode.NodeSDK;
     getNodeAutoInstrumentations = autoInstrumentations.getNodeAutoInstrumentations;

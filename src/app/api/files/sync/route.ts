@@ -21,6 +21,9 @@ export const dynamic = 'force-dynamic'
 // WebSocket connections per workspace
 const workspaceConnections = new Map<string, Set<WebSocket>>()
 const workspaceFileSubscriptions = new Map<string, Map<string, Set<WebSocket>>>()
+const socketFileSubscriptions = new Map<WebSocket, Set<string>>()
+
+const MAX_FILE_SUBSCRIPTIONS_PER_SOCKET = 50
 
 type RealtimeFileSystem = SecureFileSystemOperations & {
   handleFileUpdate?: (payload: unknown) => void
@@ -360,6 +363,23 @@ function addFileSubscription(workspaceId: string, rawPath: string, socket: WebSo
     fileMap.set(path, new Set())
   }
 
+  if (!socketFileSubscriptions.has(socket)) {
+    socketFileSubscriptions.set(socket, new Set())
+  }
+
+  const socketPaths = socketFileSubscriptions.get(socket)!
+  if (socketPaths.size >= MAX_FILE_SUBSCRIPTIONS_PER_SOCKET && !socketPaths.has(subscriptionKey(workspaceId, path))) {
+    socket.send(
+      JSON.stringify({
+        type: 'error',
+        reason: `Subscription limit of ${MAX_FILE_SUBSCRIPTIONS_PER_SOCKET} reached`,
+        timestamp: new Date(),
+      }),
+    )
+    return
+  }
+
+  socketPaths.add(subscriptionKey(workspaceId, path))
   fileMap.get(path)!.add(socket)
 }
 
@@ -369,14 +389,21 @@ function removeFileSubscription(workspaceId: string, socket: WebSocket) {
     return
   }
 
+  const socketPaths = socketFileSubscriptions.get(socket)
+
   for (const [path, sockets] of fileMap.entries()) {
     if (sockets.delete(socket) && sockets.size === 0) {
       fileMap.delete(path)
     }
+    socketPaths?.delete(subscriptionKey(workspaceId, path))
   }
 
   if (fileMap.size === 0) {
     workspaceFileSubscriptions.delete(workspaceId)
+  }
+
+  if (socketPaths && socketPaths.size === 0) {
+    socketFileSubscriptions.delete(socket)
   }
 }
 
@@ -387,6 +414,10 @@ function getFileSubscribers(workspaceId: string, filePath: string | undefined): 
 
   const fileMap = workspaceFileSubscriptions.get(workspaceId)
   return fileMap?.get(filePath) ?? new Set()
+}
+
+function subscriptionKey(workspaceId: string, path: string): string {
+  return `${workspaceId}::${path}`
 }
 
 /**
