@@ -211,3 +211,6 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Added npm script `test:unit:monaco` to run only tests/unit/monaco-monacopilot.test.ts.
 - Simplified the test file to check dependencies and source files via fs instead of require.
 - `npm run test:unit:monaco` now passes (affirms Monaco 0.53 + monacopilot integration).
+### Agent Codex - code-server health check (2025-09-30 02:24 UTC)
+- Port-forwarded svc/code-server-kind to localhost:3100.
+- `curl http://localhost:3100/healthz` returned `HTTP/1.1 200 OK` confirming the health endpoint.

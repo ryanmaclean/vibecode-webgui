@@ -33,4 +33,8 @@ echo "==> NodePort check"
 CONTROL_PLANE_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CLUSTER_NAME}-control-plane)
 curl -sI http://$CONTROL_PLANE_IP:31080 | head -n 1
 
+echo "==> Verifying terminal editors"
+CODE_SERVER_NAMESPACE="$NAMESPACE" CODE_SERVER_SELECTOR="app=code-server,tier=workspace" \
+  ./scripts/test-code-server-editors.sh
+
 echo "✅ code-server reachable via port-forward and NodePort"
