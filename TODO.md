@@ -1,3 +1,11 @@
+## Agent Update (2025-09-30 01:14 UTC)
+
+- Re-checked Dependabot PR statuses (#250, #247) while ingestion jobs run; both still blocked on rebases (mergeState DIRTY/UNKNOWN).
+- Logged the head SHAs so maintainers know nothing drifted during the current ingest window.
+
+### Next Steps
+- Will monitor for maintainer rebases; no further action until the ingest queue clears.
+
 ## Agent Update (2025-09-30 01:13 UTC)
 
 - Logging the ongoing Datadog Trace Search issue in `docs/logs/FRICTION_LOG.md` now that we’ve revalidated the credentials.
@@ -1523,6 +1531,7 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 - [ ] Ping Dependabot PRs #251 and #241 to rebase onto current `main` after the repository restructuring.
   - ⏳ Agent Codex (2025-09-30 00:39 UTC): Checking current status of Dependabot PRs #251 and #241; will ping if CLI authentication permits.
   - ❌ Agent Codex (2025-09-30 00:40 UTC): `gh pr view` shows #251 head=b01e0276 (base main) and #241 head=8c8e5deb; CLI authenticated with read access only, so no ping comment posted. Leaving task open for a maintainer to request rebases.
+  - ✅ Agent Codex (2025-09-30 01:13 UTC): `gh pr view` shows #250 head=e2471ed4 (mergeState=DIRTY, needs rebase) and #247 head=b98a1c05 (mergeState=UNKNOWN, still requires maintainer action).
 - [ ] Re-check `ps` for ingest clearance before scheduling the next RAG batch.
   - ⏳ Agent Codex (2025-09-30 00:21 UTC): Inspecting local processes (`ps`) to confirm ingest scripts are no longer running before queuing new batches.
   - ❌ Agent Codex (2025-09-30 00:22 UTC): `ps ax -o pid,command | rg 'ingest'` still shows PIDs 82827/82843/82844 running `scripts/ingest-docs-to-rag.ts`; deferring new ingestion until they stop.
