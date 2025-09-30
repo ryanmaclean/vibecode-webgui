@@ -1,9 +1,17 @@
+## Agent Update (2025-09-30 02:10 UTC)
+
+- Running the monacopilot unit suite (`npm run test:unit -- monaco-monacopilot`) to confirm the new Monaco build still passes tests.
+
+### Next Steps
+- [x] Execute targeted unit test run and record results — ❌ `npm run test:unit -- monaco-monacopilot` drags in all `tests/unit` suites and fails on ESM/TS parsing; need a Jest target/sample config before marking resolved.
+
 ## Agent Update (2025-09-30 02:15 UTC)
 
 - Scoped ESLint to first-party code (ignoring vendor dirs and compiled artifacts) and scrubbed the Codeium sandbox/type defs so conflict markers are gone.
 
 ### Next Steps
 - [ ] Convert Node-based helper scripts to ESM (or annotate commonjs shims) so `npm run lint` can run without `no-require-imports` noise.
+- [x] Convert `scripts/check-monaco-version` to modern ESM/TypeScript and keep the version guard intact. — ✅ script now runs via Node with native imports.
 - [ ] Replace `any` placeholders in `src/types/*.d.ts` with upstream typings to finish the lint cleanup (#174/#188 follow-up).
 - [ ] Split remaining packages (CLI, VS Code extension) into per-package lint configs or exclude them explicitly once owners confirm scope.
 
