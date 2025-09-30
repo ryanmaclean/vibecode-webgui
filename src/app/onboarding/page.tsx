@@ -117,48 +117,51 @@ const aiProviderOptions: { id: AiProvider; label: string; description: string }[
 export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState<OnboardingStep>('welcome')
-  const [data, setData] = useState<OnboardingData>({
-    theme: 'auto',
-    cliEditor: 'none',
-    preferredIde: 'vs-code',
-    extensions: [],
-    integrations: {},
-    aiProviders: ['openai'],
-    onboardingCompleted: false,
-  })
+  const [data, setData] = useState<OnboardingData>({ ...defaultUserPreferences })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const updateData = (updates: Partial<OnboardingData>) => {
-    setData((prev) => ({ ...prev, ...updates }))
+    setData((prev) =>
+      mergeWithDefaultPreferences({
+        ...prev,
+        ...updates,
+      }),
+    )
   }
 
   const toggleExtension = (extensionId: string) => {
-    setData((prev) => ({
-      ...prev,
-      extensions: prev.extensions.includes(extensionId)
-        ? prev.extensions.filter((item) => item !== extensionId)
-        : [...prev.extensions, extensionId],
-    }))
+    setData((prev) =>
+      mergeWithDefaultPreferences({
+        ...prev,
+        extensions: prev.extensions.includes(extensionId)
+          ? prev.extensions.filter((item) => item !== extensionId)
+          : [...prev.extensions, extensionId],
+      }),
+    )
   }
 
   const toggleIntegration = (id: keyof OnboardingData['integrations']) => {
-    setData((prev) => ({
-      ...prev,
-      integrations: {
-        ...prev.integrations,
-        [id]: !prev.integrations[id],
-      },
-    }))
+    setData((prev) =>
+      mergeWithDefaultPreferences({
+        ...prev,
+        integrations: {
+          ...prev.integrations,
+          [id]: !prev.integrations[id],
+        },
+      }),
+    )
   }
 
   const toggleAiProvider = (provider: AiProvider) => {
-    setData((prev) => ({
-      ...prev,
-      aiProviders: prev.aiProviders.includes(provider)
-        ? prev.aiProviders.filter((item) => item !== provider)
-        : [...prev.aiProviders, provider],
-    }))
+    setData((prev) =>
+      mergeWithDefaultPreferences({
+        ...prev,
+        aiProviders: prev.aiProviders.includes(provider)
+          ? prev.aiProviders.filter((item) => item !== provider)
+          : [...prev.aiProviders, provider],
+      }),
+    )
   }
 
   const nextStep = () => {
@@ -176,11 +179,23 @@ export default function OnboardingPage() {
   }
 
   const completeOnboarding = async () => {
-    await fetch('/api/user/preferences', {
+    const response = await fetch('/api/user/preferences', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
+
+    if (!response.ok) {
+      setError('We hit a snag saving your preferences. Please try again.')
+      return
+    }
+
+    const payload = await response.json()
+    const parsed = storedUserPreferencesSchema.safeParse(payload.preferences ?? payload)
+    if (parsed.success) {
+      setData(mergeWithDefaultPreferences(parsed.data))
+    }
+
     router.push('/dashboard')
   }
 
@@ -203,20 +218,18 @@ export default function OnboardingPage() {
           return
         }
 
-        const preferences = (await response.json()) as OnboardingData
-        if (!cancelled && preferences) {
-          setData({
-            theme: preferences.theme ?? 'auto',
-            cliEditor: preferences.cliEditor ?? 'none',
-            preferredIde: preferences.preferredIde ?? 'vs-code',
-            extensions: preferences.extensions ?? [],
-            integrations: preferences.integrations ?? {},
-            aiProviders: preferences.aiProviders?.length ? preferences.aiProviders : ['openai'],
-            onboardingCompleted: preferences.onboardingCompleted ?? false,
-          })
+        const payload = await response.json()
+        const parsed = storedUserPreferencesSchema.safeParse(payload)
 
-          if (preferences.onboardingCompleted) {
-            setStep('complete')
+        if (!cancelled) {
+          if (parsed.success) {
+            const merged = mergeWithDefaultPreferences(parsed.data)
+            setData(merged)
+            if (merged.onboardingCompleted) {
+              setStep('complete')
+            }
+          } else {
+            setError('Unable to load saved preferences.')
           }
         }
       } catch (err) {
