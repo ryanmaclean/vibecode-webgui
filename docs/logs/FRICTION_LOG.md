@@ -95,6 +95,17 @@ This log captures friction points to help improve developer experience and ident
 **Impact:** Zero conflicts with 3+ agents working simultaneously  
 **Resolved By:** Agent coordination protocol
 
+### ESLint Config File Location Requirement
+**Date:** 2025-09-30  
+**Issue:** Moving `eslint.config.mjs` to `configs/` directory during Phase 23 cleanup broke linting  
+**Resolution:**
+- Phase 27: Moved `eslint.config.mjs` back to repository root
+- ESLint 9 requires flat config files to be in project root for discovery
+- `npm run lint` restored to working state
+
+**Impact:** Learned that some config files have tool-specific location requirements  
+**Resolved By:** Agent Cascade (Phase 27, 18:02 UTC)
+
 ---
 
 ## Patterns & Learnings
@@ -123,8 +134,8 @@ This log captures friction points to help improve developer experience and ident
 
 ## Metrics
 
-**Blockers Encountered:** 4  
-**Blockers Resolved:** 2 (50%)  
+**Blockers Encountered:** 5  
+**Blockers Resolved:** 3 (60%)  
 **Blockers Active:** 2  
 **Average Resolution Time:** < 1 hour  
 **Workarounds Applied:** 2
