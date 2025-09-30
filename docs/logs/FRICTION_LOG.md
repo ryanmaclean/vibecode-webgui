@@ -34,6 +34,18 @@ This log captures friction points to help improve developer experience and ident
 **Status:** BLOCKED - Waiting on Datadog ingestion/permissions  
 **Owner:** Observability
 
+### ESLint Flat Config Migration
+**Date:** 2025-09-30  
+**Blocker:** `npm run lint -- --quiet` fails because ESLint 9 expects `eslint.config.*` while the repo still uses `.eslintrc.*`.  
+**Details:**
+- Command exits with "ESLint couldn't find an eslint.config.(js|mjs|cjs)"
+- Lint script does not set `ESLINT_USE_FLAT_CONFIG=false`
+- ESLint 9 is already installed (per package.json)
+
+**Workaround:** Pending — options include adding `ESLINT_USE_FLAT_CONFIG=false` to the lint script or migrating configs to the new flat format.  
+**Status:** BLOCKED - Needs configuration migration or environment override  
+**Owner:** Tooling
+
 ---
 
 ## Resolved Issues
