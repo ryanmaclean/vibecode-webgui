@@ -177,6 +177,11 @@ This log captures completed agent activities to keep TODO.md focused on current 
 ### Agent Codex - GitHub Issue Triage (2025-09-30 01:02 UTC)
 - Ran `gh issue list --limit 20` to capture open GitHub issues.
 - Recorded assignments in TODO.md: #329 stays with Copilot; #323 coordinated by Agent Codex; #315/#314 remain with Observability/Infra; automation backlog (#313-299) recommended for Agent Cascade when available.
+
+### Agent Codex - Codeium Playground (2025-09-30 01:33 UTC)
+- Added `CodeiumPlayground` component that mounts Monaco via `@monaco-editor/react` and wires Codeium (monacopilot) completions.
+- Created `/tools/codeium` route with feature overview, usage tips, and quick links to the Codeium repo.
+- Lint remains blocked by the existing ESLint flat-config migration; recorded the failure in TODO.md and friction log.
 ### Agent Codex - RAG Demo Trace (2025-09-30 01:20 UTC)
 - Ran `npx tsx -r dd-trace/init scripts/rag-local-demo.ts "List the Datadog environment variables tracked in the repository."`
 - PGVector top matches came from `docs:DATADOG_LOCAL_DEVELOPMENT` and `docs:ci-cd-fixes` (similarity ~60%).
@@ -186,3 +191,6 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Added `k8s/code-server-kind.yaml` (Deployment + NodePort Service using emptyDir) for local KinD clusters.
 - Applied manifest; pod `code-server-kind-966c588d9-shh76` is Running (1/1) in `vibecode-platform`.
 - Access via `kubectl port-forward svc/code-server-kind 3100:8080` or Kind node port 31080.
+### Agent Codex - Code-Server Port-Forward Check (2025-09-30 01:28 UTC)
+- Ran `kubectl port-forward svc/code-server-kind 3100:8080`.
+- `curl http://localhost:3100` returned `"Found. Redirecting to ./?folder=/home/coder"` confirming service is reachable.
