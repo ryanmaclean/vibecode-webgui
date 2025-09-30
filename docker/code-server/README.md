@@ -7,6 +7,8 @@ This directory contains the configuration for the custom VibeCode code-server, w
 ### AI Coding Assistants (MIT/Apache Licensed)
 - **Continue** - Open-source autopilot (Apache 2.0)
 - **Codeium** - Free AI code completion (MIT)
+- **Cline** (formerly Claude Dev) - AI coding assistant (Apache 2.0)
+- **Aider** - AI pair programming (Apache 2.0)
 - **VibeCode AI Assistant** - Custom AI integration (MIT)
 
 ### Developer Productivity Tools (MIT/BSD/Apache)
