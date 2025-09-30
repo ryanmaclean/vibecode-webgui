@@ -121,6 +121,18 @@ RUN code-server --install-extension sourcegraph.cody-ai
 # 7. Continue - Open-source autopilot
 RUN code-server --install-extension Continue.continue
 
+# 8. Cline (formerly Claude Dev) - AI coding assistant
+RUN code-server --install-extension saoudrizwan.claude-dev
+
+# 9. Aider - AI pair programming
+RUN code-server --install-extension aider.aider-vscode
+
+# 10. Cursor Rules - AI context management
+RUN code-server --install-extension cursor.cursor-rules || echo "Cursor rules not available"
+
+# 11. Windsurf Cascade - AI agent (if available)
+RUN code-server --install-extension codeium.windsurf || echo "Windsurf not available in marketplace"
+
 # Install Language Server Protocol (LSP) Servers
 # 1. Python LSP (pylsp)
 RUN pip3 install 'python-lsp-server[all]' pylsp-mypy python-lsp-black
@@ -168,6 +180,43 @@ RUN code-server --install-extension ms-vscode.vscode-typescript-next \
     && code-server --install-extension ms-vscode.vscode-eslint \
     && code-server --install-extension ms-vscode.vscode-css-languagefeatures \
     && code-server --install-extension ms-vscode.vscode-html-languagefeatures
+
+# Productivity and Developer Tools
+RUN code-server --install-extension eamodio.gitlens \
+    && code-server --install-extension usernamehw.errorlens \
+    && code-server --install-extension streetsidesoftware.code-spell-checker \
+    && code-server --install-extension wayou.vscode-todo-highlight \
+    && code-server --install-extension gruntfuggly.todo-tree \
+    && code-server --install-extension PKief.material-icon-theme \
+    && code-server --install-extension zhuangtongfa.material-theme \
+    && code-server --install-extension oderwat.indent-rainbow \
+    && code-server --install-extension christian-kohler.path-intellisense
+
+# Database Tools
+RUN code-server --install-extension mtxr.sqltools \
+    && code-server --install-extension mtxr.sqltools-driver-pg \
+    && code-server --install-extension cweijan.vscode-postgresql-client2
+
+# Docker and Kubernetes
+RUN code-server --install-extension ms-azuretools.vscode-docker \
+    && code-server --install-extension ms-kubernetes-tools.vscode-kubernetes-tools
+
+# REST API Testing
+RUN code-server --install-extension humao.rest-client \
+    && code-server --install-extension rangav.vscode-thunder-client
+
+# Markdown and Documentation
+RUN code-server --install-extension yzhang.markdown-all-in-one \
+    && code-server --install-extension DavidAnson.vscode-markdownlint
+
+# Python Development
+RUN code-server --install-extension ms-python.python \
+    && code-server --install-extension ms-python.vscode-pylance \
+    && code-server --install-extension ms-python.black-formatter
+
+# Remote Development
+RUN code-server --install-extension ms-vscode-remote.remote-ssh \
+    && code-server --install-extension ms-vscode-remote.remote-containers
 
 # Configure VS Code settings
 COPY --chown=coder:coder docker/code-server/settings.json /home/coder/.local/share/code-server/User/settings.json

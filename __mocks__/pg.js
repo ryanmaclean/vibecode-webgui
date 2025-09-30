@@ -1,5 +1,5 @@
 // Manual mock for pg module
-const mockQuery = jest.fn().mockImplementation(async (query, params) => {
+const mockQuery = jest.fn().mockImplementation(async (query, _params) => {
   if (query === 'BEGIN') return { rows: [] };
   if (query === 'COMMIT') return { rows: [] };
   if (query === 'ROLLBACK') return { rows: [] };
