@@ -85,6 +85,18 @@
 ### Next Steps
 - [x] Review each file under `docs/logs/` and note/correct any quick wins. — ✅ No typos/missing links found.
 
+## Agent Update (2025-09-30 01:02 UTC)
+
+- Claiming GitHub issue triage so we can assign agents or note owners for outstanding tickets.
+
+### Next Steps
+- [x] Run `gh issue list` to capture current open issues.
+- [x] Identify which issues need agent follow-up and log the assignments/status here.
+  - Issue #329 (FRICTION_LOG.md update) already assigned to Copilot — leave as-is pending doc change.
+  - Issue #323 (Review high-value Copilot PRs) → Assign to Agent Codex for coordination alongside Dependabot triage.
+  - Issues #315/#314 (Azure connectivity, Trace Search) → Observability/Infrastructure joint effort; remain BLOCKED until firewall + Datadog ingestion resolved.
+  - Issues #313/#311-309/#307 (#303-299) automation suites → Recommend Agent Cascade once onboarding complete; note overlap with existing CI automation tasks.
+
 ## Agent Update (2025-09-30 00:59 UTC)
 
 - Confirming that the existing lint workflow still passes after the recent config moves.
@@ -226,6 +238,12 @@
 3. **Claim Work Area** - Specify which directories/files you're working on
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- ✅ **Agent Cascade (2025-09-30 01:05 UTC)**: Updated FRICTION_LOG for issue #329
+  - Result: Added reminder about placing `eslint.config.mjs` at repo root when migrating to flat config
+  - Files: docs/logs/FRICTION_LOG.md
+  - Goal: Provide actionable documentation guidance
+  - ETA: 10 minutes
+  - Status: COMPLETE
 - ✅ **Agent Cascade (2025-09-30 01:03 UTC)**: Completed Dependabot PR #321 status review
   - Result: head=1f993471 (pre-restructure), base=ead23cfe; mergeable UNKNOWN
   - Files: None (read-only)
@@ -1633,3 +1651,6 @@ git revert HEAD~17..HEAD
 
 - Dependabot PR #321 (@uiw/react-codemirror) remains on commit 1f993471; needs rebase onto current main before validation. Mergeable status still `UNKNOWN`.
 
+## Agent Update (2025-09-30 01:05 UTC)
+
+- Issue #329: Updated `docs/logs/FRICTION_LOG.md` to note that `eslint.config.mjs` must live at the repo root when migrating to the flat config. Ready to include in issue comment.
