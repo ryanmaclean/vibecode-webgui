@@ -5,6 +5,24 @@
 
 import { jest } from '@jest/globals'
 
+type SecurityMiddlewareModule = typeof import('../security-middleware')
+type MockedNextServerModule = jest.Mocked<typeof import('next/server')>
+
+type HeaderMock = jest.Mock<string | null, [string]>
+interface MockHeaders {
+  get: HeaderMock
+}
+
+type BasicRequest = { headers: MockHeaders }
+type ValidationResult = { valid: boolean; reason?: string }
+type CorsValidationResult = { valid: boolean; headers?: Record<string, string> }
+type IpValidationResult = { allowed: boolean; reason?: string }
+
+let securityMiddlewareModule: SecurityMiddlewareModule
+let apiSecurityMiddleware: (request: MockNextRequest) => Promise<MockNextResponse | null>
+let addSecurityHeaders: (response: MockNextResponse) => MockNextResponse
+let nextServerModule: MockedNextServerModule
+
 // Helper function to safely set NODE_ENV
 function setNodeEnv(value: string) {
   Object.defineProperty(process.env, 'NODE_ENV', {
@@ -20,32 +38,21 @@ jest.mock('next/server', () => ({
   NextResponse: jest.fn()
 }))
 
-// Type for auth token
-type AuthToken = {
-  sub?: string;
-  id?: string;
-  role?: string;
-  email?: string;
-  name?: string;
-}
-
 // Interface for mocked NextRequest
 interface MockNextRequest {
-  nextUrl: { pathname: string };
-  method: string;
-  headers: {
-    get: jest.Mock;
-  };
-  body?: any;
-  text?: () => Promise<string>;
+  nextUrl: { pathname: string }
+  method: string
+  headers: MockHeaders
+  body?: unknown
+  text?: () => Promise<string>
 }
 
 // Interface for mocked NextResponse
 interface MockNextResponse {
-  status?: number;
+  status?: number
   headers: {
-    set: jest.Mock;
-  };
+    set: jest.Mock<void, [string, string]>
+  }
 }
 
 // Mock next-auth/jwt
@@ -70,51 +77,45 @@ jest.mock('../../lib/security/input-validator', () => ({
   AISecurityLogger: mockAISecurityLogger
 }))
 
-describe('Security Middleware Module', () => {
-  let apiSecurityMiddleware: (request: MockNextRequest) => Promise<MockNextResponse | null>;
-  let addSecurityHeaders: (response: MockNextResponse) => MockNextResponse;
-  let mockRequest: MockNextRequest;
-  let mockResponse: MockNextResponse;
+const loadSecurityMiddleware = () => import('../security-middleware')
 
-  beforeEach(() => {
+async function initializeSecurityModules(bypass = true) {
+  jest.resetModules()
+  securityMiddlewareModule = await loadSecurityMiddleware()
+  securityMiddlewareModule.__TEST__bypassSecurityChecks(bypass)
+  nextServerModule = (await import('next/server')) as MockedNextServerModule
+  nextServerModule.NextResponse.mockImplementation((_, init?: { status?: number }): MockNextResponse => ({
+    status: init?.status ?? 200,
+    headers: {
+      set: jest.fn<void, [string, string]>()
+    }
+  }))
+  apiSecurityMiddleware = securityMiddlewareModule.apiSecurityMiddleware
+  addSecurityHeaders = securityMiddlewareModule.addSecurityHeaders
+}
+
+describe('Security Middleware Module', () => {
+  let mockRequest: MockNextRequest
+
+  beforeEach(async () => {
     jest.clearAllMocks()
-    
+
     // Set up environment to bypass test environment check
     setNodeEnv('production')
     process.env.CI = 'false'
 
-    // Reset modules to get fresh instance
-    jest.resetModules()
-    const securityMiddleware = require('../security-middleware')
-    securityMiddleware.__TEST__bypassSecurityChecks(true)
-    apiSecurityMiddleware = securityMiddleware.apiSecurityMiddleware
-    addSecurityHeaders = securityMiddleware.addSecurityHeaders
+    await initializeSecurityModules(true)
 
     // Mock NextRequest
     mockRequest = {
       nextUrl: { pathname: '/api/test' },
       method: 'GET',
       headers: {
-        get: jest.fn()
+        get: jest.fn<string | null, [string]>()
       }
     }
 
     // Mock NextResponse
-    mockResponse = {
-      headers: {
-        set: jest.fn()
-      }
-    }
-
-    // Set up mock NextResponse to return proper response objects
-    const { NextResponse } = require('next/server')
-    NextResponse.mockImplementation((body: any, init: any): MockNextResponse => ({
-      status: init?.status || 200,
-      headers: {
-        set: jest.fn()
-      }
-    }))
-
     // Make tests recognize localhost origins by setting development mode
     process.env.MOCK_ORIGINS = 'true'
   })
@@ -130,11 +131,9 @@ describe('Security Middleware Module', () => {
       process.env.CI = 'true'
       
       // Reset modules to get fresh instance with test environment
-      jest.resetModules()
-      const securityMiddleware = require('../security-middleware')
-      const testApiSecurityMiddleware = securityMiddleware.apiSecurityMiddleware
+      await initializeSecurityModules(false)
       
-      const result = await testApiSecurityMiddleware(mockRequest)
+      const result = await apiSecurityMiddleware(mockRequest)
       expect(result).toBeNull()
       
       // Reset back to production for other tests
@@ -170,8 +169,7 @@ describe('Security Middleware Module', () => {
       setNodeEnv('production')
       
       // Ensure security checks are enabled
-      const securityMiddleware = require('../security-middleware')
-      securityMiddleware.__TEST__bypassSecurityChecks(false)
+      securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
       
       mockRequest.method = 'OPTIONS'
       mockRequest.nextUrl.pathname = '/api/test'
@@ -192,8 +190,7 @@ describe('Security Middleware Module', () => {
       setNodeEnv('production')
       
       // Ensure security checks are enabled
-      const securityMiddleware = require('../security-middleware')
-      securityMiddleware.__TEST__bypassSecurityChecks(false)
+      securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
       
       // Temporarily disable MOCK_ORIGINS for this test
       const oldMockOrigins = process.env.MOCK_ORIGINS
@@ -233,13 +230,10 @@ describe('Security Middleware Module', () => {
   })
 
   describe('Security Level Detection', () => {
-    let getSecurityLevel: any
+    let getSecurityLevel: (pathname: string) => string
 
     beforeEach(() => {
       // We need to test the internal function, so we'll create a test version
-      const securityMiddleware = require('../security-middleware')
-      
-      // Create a mock that exposes the internal function
       getSecurityLevel = (pathname: string) => {
         const ENDPOINT_SECURITY = {
           '/api/auth/*': 'low',
@@ -301,11 +295,11 @@ describe('Security Middleware Module', () => {
   })
 
   describe('Request Size Validation', () => {
-    let checkRequestSize: any
+    let checkRequestSize: (request: BasicRequest) => boolean
 
     beforeEach(() => {
       // Mock the internal function
-      checkRequestSize = (request: any) => {
+      checkRequestSize = (request: BasicRequest) => {
         const contentLength = request.headers.get('content-length')
         if (!contentLength) return true
         
@@ -315,27 +309,27 @@ describe('Security Middleware Module', () => {
     })
 
     it('should allow requests without content-length header', () => {
-      const request = { headers: { get: jest.fn(() => null) } }
+      const request: BasicRequest = { headers: { get: jest.fn<string | null, [string]>(() => null) } }
       expect(checkRequestSize(request)).toBe(true)
     })
 
     it('should allow requests within size limit', () => {
-      const request = { headers: { get: jest.fn(() => '1024') } }
+      const request: BasicRequest = { headers: { get: jest.fn<string | null, [string]>(() => '1024') } }
       expect(checkRequestSize(request)).toBe(true)
     })
 
     it('should reject requests exceeding size limit', () => {
-      const request = { headers: { get: jest.fn(() => '11000000') } } // 11MB
+      const request: BasicRequest = { headers: { get: jest.fn<string | null, [string]>(() => '11000000') } } // 11MB
       expect(checkRequestSize(request)).toBe(false)
     })
   })
 
   describe('Header Validation', () => {
-    let validateHeaders: any
+    let validateHeaders: (request: BasicRequest) => ValidationResult
 
     beforeEach(() => {
       // Mock the internal function
-      validateHeaders = (request: any) => {
+      validateHeaders = (request: BasicRequest) => {
         const userAgent = request.headers.get('user-agent')
         if (!userAgent) {
           return { valid: false, reason: 'Missing user-agent' }
@@ -355,14 +349,16 @@ describe('Security Middleware Module', () => {
     })
 
     it('should reject requests without user-agent', () => {
-      const request = { headers: { get: jest.fn(() => null) } }
+      const request: BasicRequest = { headers: { get: jest.fn<string | null, [string]>(() => null) } }
       const result = validateHeaders(request)
       expect(result.valid).toBe(false)
       expect(result.reason).toBe('Missing user-agent')
     })
 
     it('should allow requests with normal user-agent', () => {
-      const request = { headers: { get: jest.fn(() => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36') } }
+      const request: BasicRequest = {
+        headers: { get: jest.fn<string | null, [string]>(() => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36') }
+      }
       const result = validateHeaders(request)
       expect(result.valid).toBe(true)
     })
@@ -377,7 +373,7 @@ describe('Security Middleware Module', () => {
       ]
 
       suspiciousAgents.forEach(agent => {
-        const request = { headers: { get: jest.fn(() => agent) } }
+        const request: BasicRequest = { headers: { get: jest.fn<string | null, [string]>(() => agent) } }
         const result = validateHeaders(request)
         expect(result.valid).toBe(false)
         expect(result.reason).toBe('Suspicious user-agent')
@@ -386,11 +382,11 @@ describe('Security Middleware Module', () => {
   })
 
   describe('IP Security Validation', () => {
-    let checkIPSecurity: any
+    let checkIPSecurity: (request: BasicRequest) => IpValidationResult
 
     beforeEach(() => {
       // Mock the internal function
-      checkIPSecurity = (request: any) => {
+      checkIPSecurity = (request: BasicRequest) => {
         const ip = request.headers.get('x-forwarded-for') || 
                   request.headers.get('x-real-ip') || 
                   '127.0.0.1'
@@ -407,22 +403,22 @@ describe('Security Middleware Module', () => {
     })
 
     it('should allow requests from non-blocked IPs', () => {
-      const request = { headers: { get: jest.fn(() => '192.168.1.1') } }
+      const request: BasicRequest = { headers: { get: jest.fn<string | null, [string]>(() => '192.168.1.1') } }
       const result = checkIPSecurity(request)
       expect(result.allowed).toBe(true)
     })
 
     it('should block requests from blocked IPs', () => {
-      const request = { headers: { get: jest.fn(() => '192.168.1.100') } }
+      const request: BasicRequest = { headers: { get: jest.fn<string | null, [string]>(() => '192.168.1.100') } }
       const result = checkIPSecurity(request)
       expect(result.allowed).toBe(false)
       expect(result.reason).toBe('IP blocked')
     })
 
     it('should use x-forwarded-for header when available', () => {
-      const request = { 
+      const request: BasicRequest = { 
         headers: { 
-          get: jest.fn((header: string) => {
+          get: jest.fn<string | null, [string]>((header: string) => {
             if (header === 'x-forwarded-for') return '192.168.1.100'
             return null
           })
@@ -454,8 +450,7 @@ describe('Security Middleware Module', () => {
       setNodeEnv('production')
       
       // Ensure security checks are enabled
-      const securityMiddleware = require('../security-middleware')
-      securityMiddleware.__TEST__bypassSecurityChecks(false)
+      securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
       
       mockRequest.nextUrl.pathname = '/api/ai/chat'
       mockRequest.headers.get.mockImplementation((header: string) => {
@@ -480,8 +475,7 @@ describe('Security Middleware Module', () => {
       setNodeEnv('production')
       
       // Ensure security checks are enabled
-      const securityMiddleware = require('../security-middleware')
-      securityMiddleware.__TEST__bypassSecurityChecks(false)
+      securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
       
       mockRequest.nextUrl.pathname = '/api/admin/users'
       mockRequest.headers.get.mockImplementation((header: string) => {
@@ -540,9 +534,6 @@ describe('Security Middleware Module', () => {
         throw new Error('Invalid AI query')
       })
       
-      // Create a direct verification test for the error handling behavior
-      const AISecurityLogger = { logValidationFailure: jest.fn() };
-      
       try {
         // Simulate the behavior of validation failing
         mockValidateAIQuery({ query: 'test' });
@@ -562,8 +553,7 @@ describe('Security Middleware Module', () => {
       setNodeEnv('production')
       
       // Ensure security checks are enabled
-      const securityMiddleware = require('../security-middleware')
-      securityMiddleware.__TEST__bypassSecurityChecks(false)
+      securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
       
       mockRequest.nextUrl.pathname = '/api/ai/chat'
       mockRequest.method = 'POST'
@@ -632,11 +622,11 @@ describe('Security Middleware Module', () => {
   })
 
   describe('CORS Validation', () => {
-    let validateCORS: any
+    let validateCORS: (request: BasicRequest) => CorsValidationResult
 
     beforeEach(() => {
       // Mock the internal function
-      validateCORS = (request: any) => {
+      validateCORS = (request: BasicRequest) => {
         const origin = request.headers.get('origin')
         if (!origin) return { valid: true }
 
@@ -659,7 +649,7 @@ describe('Security Middleware Module', () => {
     })
 
     it('should allow requests without origin header', () => {
-      const request = { headers: { get: jest.fn(() => null) } }
+      const request: BasicRequest = { headers: { get: jest.fn<string | null, [string]>(() => null) } }
       const result = validateCORS(request)
       expect(result.valid).toBe(true)
     })
@@ -667,7 +657,7 @@ describe('Security Middleware Module', () => {
     it('should allow localhost origins in development', () => {
       setNodeEnv('development')
       
-      const request = { headers: { get: jest.fn(() => 'http://localhost:3000') } }
+      const request: BasicRequest = { headers: { get: jest.fn<string | null, [string]>(() => 'http://localhost:3000') } }
       const result = validateCORS(request)
       expect(result.valid).toBe(true)
       expect(result.headers['Access-Control-Allow-Origin']).toBe('http://localhost:3000')
@@ -676,7 +666,7 @@ describe('Security Middleware Module', () => {
     it('should allow production origins in production', () => {
       setNodeEnv('production')
       
-      const request = { headers: { get: jest.fn(() => 'https://vibecode.dev') } }
+      const request: BasicRequest = { headers: { get: jest.fn<string | null, [string]>(() => 'https://vibecode.dev') } }
       const result = validateCORS(request)
       expect(result.valid).toBe(true)
       expect(result.headers['Access-Control-Allow-Origin']).toBe('https://vibecode.dev')
@@ -685,7 +675,7 @@ describe('Security Middleware Module', () => {
     it('should reject unauthorized origins', () => {
       setNodeEnv('production')
       
-      const request = { headers: { get: jest.fn(() => 'https://malicious.com') } }
+      const request: BasicRequest = { headers: { get: jest.fn<string | null, [string]>(() => 'https://malicious.com') } }
       const result = validateCORS(request)
       expect(result.valid).toBe(false)
     })

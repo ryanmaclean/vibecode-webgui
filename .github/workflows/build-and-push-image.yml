@@ -24,6 +24,8 @@ on:
       - 'tailwind.config.js'
       - 'tsconfig.json'
       - 'Dockerfile.production'
+  schedule:
+    - cron: '0 2 * * 2'
   workflow_dispatch:
     inputs:
       force_build:
@@ -36,8 +38,45 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
+concurrency:
+  group: build-and-push-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  validate-secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      has_azure_credentials: ${{ steps.check.outputs.has_azure_credentials }}
+      has_slack_webhook: ${{ steps.check.outputs.has_slack_webhook }}
+    steps:
+      - name: Check optional secrets
+        id: check
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          set -euo pipefail
+          has_azure=0
+          if [ -n "${AZURE_CREDENTIALS:-}" ]; then
+            echo "✅ AZURE_CREDENTIALS present"
+            has_azure=1
+          else
+            echo "::notice::AZURE_CREDENTIALS missing; AKS deploy will be skipped."
+          fi
+
+          has_slack=0
+          if [ -n "${SLACK_WEBHOOK_URL:-}" ]; then
+            echo "✅ Slack webhook configured"
+            has_slack=1
+          else
+            echo "::notice::Slack webhook missing; deployment notifications disabled."
+          fi
+
+          printf 'has_azure_credentials=%s\n' "$has_azure" >> "$GITHUB_OUTPUT"
+          printf 'has_slack_webhook=%s\n' "$has_slack" >> "$GITHUB_OUTPUT"
+
   build-and-push:
+    needs: validate-secrets
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -122,8 +161,8 @@ jobs:
         sarif_file: 'trivy-results.sarif'
 
   deploy-to-aks:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [build-and-push, security-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.validate-secrets.outputs.has_azure_credentials == '1'
+    needs: [validate-secrets, build-and-push, security-scan]
     runs-on: ubuntu-latest
     environment: production
     
@@ -165,7 +204,7 @@ jobs:
         kubectl get pods -n vibecode-platform -l app.kubernetes.io/name=vibecode
 
     - name: Post deployment notification
-      if: always()
+      if: always() && needs.validate-secrets.outputs.has_slack_webhook == '1'
       uses: 8398a7/action-slack@v3
       with:
         status: ${{ job.status }}
@@ -176,3 +215,12 @@ jobs:
           Commit: ${{ github.sha }}
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  notify-missing-azure:
+    runs-on: ubuntu-latest
+    needs: [validate-secrets, build-and-push]
+    if: needs.validate-secrets.outputs.has_azure_credentials != '1'
+    steps:
+      - name: Log skipped deployment
+        run: |
+          echo '::notice::Skipping AKS deployment because AZURE_CREDENTIALS secret is not configured.'

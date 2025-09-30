@@ -104,19 +104,19 @@ RUN mkdir -p /home/coder/.local/share/code-server/User/ \
 # 1. Anthropic Claude Code - Official Claude extension
 RUN timeout 120 code-server --install-extension anthropic.claude-code || echo "Claude Code installation timed out or failed, skipping"
 
-# 2. OpenAI ChatGPT - Official OpenAI extension
+# 2. OpenAI ChatGPT - Official OpenAI extension (Codex)
 RUN timeout 120 code-server --install-extension openai.chatgpt || echo "OpenAI ChatGPT installation timed out or failed, skipping"
 
-# 3. GitHub Copilot - OpenAI Codex integration (requires GitHub account)
+# 3. GitHub Copilot - OpenAI Codex integration (requires GitHub subscription)
 RUN timeout 120 code-server --install-extension GitHub.copilot || echo "GitHub Copilot installation timed out or failed, skipping"
 
 # 4. GitHub Copilot Chat
 RUN timeout 120 code-server --install-extension GitHub.copilot-chat || echo "GitHub Copilot Chat installation timed out or failed, skipping"
 
-# 3. Codeium - Free AI Code Completion (MIT)
+# 5. Codeium - Free AI Code Completion (MIT)
 RUN timeout 120 code-server --install-extension Codeium.codeium || echo "Codeium installation timed out or failed, skipping"
 
-# 4. Cline (formerly Claude Dev) - AI coding assistant (Apache 2.0)
+# 6. Cline (formerly Claude Dev) - AI coding assistant (Apache 2.0)
 RUN timeout 120 code-server --install-extension saoudrizwan.claude-dev || echo "Cline installation timed out or failed, skipping"
 
 # 5. Continue - Open-source autopilot (Apache 2.0) - SKIPPED (hangs during install)
