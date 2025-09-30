@@ -353,6 +353,377 @@ async function callProject4(metadata: CompletionMetadata, modelOverride?: string
   })
 }
 
+async function callOpenRouter(metadata: CompletionMetadata, modelOverride?: string): Promise<CompletionResult> {
+  const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENCODE_API_KEY
+  if (!apiKey) {
+    throw new Error('OPENROUTER_API_KEY (or OPENCODE_API_KEY) is required for openrouter provider')
+  }
+
+  const model =
+    modelOverride ||
+    process.env.OPENROUTER_MODEL ||
+    process.env.OPENCODE_MODEL ||
+    'anthropic/claude-3.5-sonnet'
+
+  const baseUrl = process.env.OPENROUTER_API_BASE || process.env.OPENCODE_API_BASE || 'https://openrouter.ai/api/v1'
+  const url = `${baseUrl.replace(/\/$/, '')}/chat/completions`
+
+  const body = {
+    model,
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: buildUserPrompt(metadata) },
+    ],
+    temperature: Number(process.env.AI_COMPLETION_TEMPERATURE || '0.2'),
+    max_tokens: Number(process.env.AI_COMPLETION_MAX_TOKENS || DEFAULT_MAX_TOKENS),
+  }
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${apiKey}`,
+  }
+
+  if (process.env.OPENROUTER_HTTP_REFERER) {
+    headers['HTTP-Referer'] = process.env.OPENROUTER_HTTP_REFERER
+  }
+
+  if (process.env.OPENROUTER_APP_TITLE) {
+    headers['X-Title'] = process.env.OPENROUTER_APP_TITLE
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  })
+
+  if (!response.ok) {
+    const errorBody = await safeJson(response)
+    throw new Error(`OpenRouter request failed (${response.status}): ${JSON.stringify(errorBody)}`)
+  }
+
+  const data: any = await response.json()
+  const content = data?.choices?.[0]?.message?.content
+  const completion = Array.isArray(content)
+    ? content.map((part: any) => part?.text ?? part?.content ?? '').join('').trim()
+    : typeof content === 'string'
+      ? content.trim()
+      : null
+
+  return {
+    completion: completion && completion.length ? completion : null,
+    raw: data,
+  }
+}
+
+async function callAnthropicDirect(
+  metadata: CompletionMetadata,
+  modelOverride?: string,
+): Promise<CompletionResult> {
+  if (!process.env.ANTHROPIC_API_KEY && !process.env.CLAUDE_CODE_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY (or CLAUDE_CODE_API_KEY) is required for anthropic provider')
+  }
+
+  return callClaude(metadata, modelOverride || process.env.ANTHROPIC_MODEL)
+}
+
+async function callDeepSeek(metadata: CompletionMetadata, modelOverride?: string): Promise<CompletionResult> {
+  const apiKey = process.env.DEEPSEEK_API_KEY
+  if (!apiKey) {
+    throw new Error('DEEPSEEK_API_KEY is required for deepseek provider')
+  }
+
+  const model = modelOverride || process.env.DEEPSEEK_MODEL || 'deepseek-coder'
+  const base = process.env.DEEPSEEK_API_BASE || 'https://api.deepseek.com'
+  const url = `${base.replace(/\/$/, '')}/v1/chat/completions`
+
+  const body = {
+    model,
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: buildUserPrompt(metadata) },
+    ],
+    temperature: Number(process.env.AI_COMPLETION_TEMPERATURE || '0.2'),
+    max_tokens: Number(process.env.AI_COMPLETION_MAX_TOKENS || DEFAULT_MAX_TOKENS),
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!response.ok) {
+    const errorBody = await safeJson(response)
+    throw new Error(`DeepSeek request failed (${response.status}): ${JSON.stringify(errorBody)}`)
+  }
+
+  const data: any = await response.json()
+  const completion = data?.choices?.[0]?.message?.content?.trim() || null
+
+  return {
+    completion,
+    raw: data,
+  }
+}
+
+async function callGoogle(metadata: CompletionMetadata, modelOverride?: string): Promise<CompletionResult> {
+  if (!process.env.GOOGLE_API_KEY && !process.env.GEMINI_API_KEY) {
+    throw new Error('GOOGLE_API_KEY (or GEMINI_API_KEY) is required for google provider')
+  }
+
+  return callGemini(metadata, modelOverride || process.env.GOOGLE_MODEL)
+}
+
+async function callAzureOpenAI(metadata: CompletionMetadata, modelOverride?: string): Promise<CompletionResult> {
+  const apiKey = process.env.AZURE_OPENAI_API_KEY
+  const endpoint = process.env.AZURE_OPENAI_ENDPOINT
+  const deployment = process.env.AZURE_OPENAI_DEPLOYMENT
+  if (!apiKey || !endpoint || !deployment) {
+    throw new Error('AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, and AZURE_OPENAI_DEPLOYMENT are required for azure-openai provider')
+  }
+
+  const apiVersion = process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview'
+  const url = `${endpoint.replace(/\/$/, '')}/openai/deployments/${deployment}/chat/completions?api-version=${encodeURIComponent(apiVersion)}`
+
+  const messages = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: buildUserPrompt(metadata) },
+  ]
+
+  const body = {
+    messages,
+    temperature: Number(process.env.AI_COMPLETION_TEMPERATURE || '0.2'),
+    max_tokens: Number(process.env.AI_COMPLETION_MAX_TOKENS || DEFAULT_MAX_TOKENS),
+    model: modelOverride || process.env.AZURE_OPENAI_MODEL || undefined,
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': apiKey,
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!response.ok) {
+    const errorBody = await safeJson(response)
+    throw new Error(`Azure OpenAI request failed (${response.status}): ${JSON.stringify(errorBody)}`)
+  }
+
+  const data: any = await response.json()
+  const completion = data?.choices?.[0]?.message?.content?.trim() || null
+
+  return {
+    completion,
+    raw: data,
+  }
+}
+
+async function callBedrock(metadata: CompletionMetadata, modelOverride?: string): Promise<CompletionResult> {
+  const accessKey = process.env.AWS_BEDROCK_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID
+  const secretKey = process.env.AWS_BEDROCK_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY
+  const sessionToken = process.env.AWS_BEDROCK_SESSION_TOKEN || process.env.AWS_SESSION_TOKEN
+  const region = process.env.AWS_BEDROCK_REGION || process.env.AWS_REGION || 'us-east-1'
+  const modelId = modelOverride || process.env.AWS_BEDROCK_MODEL || 'anthropic.claude-3-sonnet-20240229-v1:0'
+
+  if (!accessKey || !secretKey) {
+    throw new Error('AWS_BEDROCK_ACCESS_KEY_ID/AWS_ACCESS_KEY_ID and AWS_BEDROCK_SECRET_ACCESS_KEY/AWS_SECRET_ACCESS_KEY are required for bedrock provider')
+  }
+
+  const host = `bedrock-runtime.${region}.amazonaws.com`
+  const path = `/model/${encodeURIComponent(modelId)}/invoke`
+  const url = `https://${host}${path}`
+
+  const body = JSON.stringify({
+    anthropic_version: process.env.AWS_BEDROCK_ANTHROPIC_VERSION || 'bedrock-2023-06-01',
+    max_tokens: Number(process.env.AI_COMPLETION_MAX_TOKENS || DEFAULT_MAX_TOKENS),
+    temperature: Number(process.env.AI_COMPLETION_TEMPERATURE || '0.2'),
+    messages: [
+      {
+        role: 'user',
+        content: [{ type: 'text', text: `${SYSTEM_PROMPT}\n\n${buildUserPrompt(metadata)}` }],
+      },
+    ],
+  })
+
+  const contentType = 'application/json'
+  const { authorization, amzDate, securityTokenHeader } = signAwsRequest({
+    method: 'POST',
+    service: 'bedrock',
+    region,
+    host,
+    path,
+    contentType,
+    body,
+    accessKey,
+    secretKey,
+    sessionToken,
+  })
+
+  const headers: Record<string, string> = {
+    'Content-Type': contentType,
+    Authorization: authorization,
+    'X-Amz-Date': amzDate,
+  }
+
+  if (securityTokenHeader) {
+    headers['X-Amz-Security-Token'] = securityTokenHeader
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body,
+  })
+
+  if (!response.ok) {
+    const errorBody = await safeJson(response)
+    throw new Error(`Bedrock request failed (${response.status}): ${JSON.stringify(errorBody)}`)
+  }
+
+  const data: any = await response.json()
+  const completion = data?.content?.[0]?.text?.trim() || data?.outputText?.trim() || null
+
+  return {
+    completion,
+    raw: data,
+  }
+}
+
+async function callVertex(metadata: CompletionMetadata, modelOverride?: string): Promise<CompletionResult> {
+  const accessToken = process.env.GOOGLE_VERTEX_ACCESS_TOKEN
+  const projectId = process.env.GOOGLE_VERTEX_PROJECT_ID
+  const location = process.env.GOOGLE_VERTEX_LOCATION || 'us-central1'
+
+  if (!accessToken || !projectId) {
+    throw new Error('GOOGLE_VERTEX_ACCESS_TOKEN and GOOGLE_VERTEX_PROJECT_ID are required for vertex provider')
+  }
+
+  const model = modelOverride || process.env.GOOGLE_VERTEX_MODEL || 'gemini-1.5-pro'
+  const endpoint = process.env.GOOGLE_VERTEX_API_BASE || `${location}-aiplatform.googleapis.com`
+  const url = `https://${endpoint.replace(/\/$/, '')}/v1/projects/${projectId}/locations/${location}/publishers/google/models/${model}:generateContent`
+
+  const body = {
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: `${SYSTEM_PROMPT}\n\n${buildUserPrompt(metadata)}` }],
+      },
+    ],
+    generationConfig: {
+      temperature: Number(process.env.AI_COMPLETION_TEMPERATURE || '0.2'),
+      maxOutputTokens: Number(process.env.AI_COMPLETION_MAX_TOKENS || DEFAULT_MAX_TOKENS),
+    },
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!response.ok) {
+    const errorBody = await safeJson(response)
+    throw new Error(`Vertex request failed (${response.status}): ${JSON.stringify(errorBody)}`)
+  }
+
+  const data: any = await response.json()
+  const completion = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null
+
+  return {
+    completion,
+    raw: data,
+  }
+}
+
+type AwsSignatureOptions = {
+  method: 'POST'
+  service: 'bedrock'
+  region: string
+  host: string
+  path: string
+  contentType: string
+  body: string
+  accessKey: string
+  secretKey: string
+  sessionToken?: string
+}
+
+function signAwsRequest(options: AwsSignatureOptions) {
+  const { method, service, region, host, path, contentType, body, accessKey, secretKey, sessionToken } = options
+
+  const now = new Date()
+  const amzDate = toAmzDate(now)
+  const dateStamp = toDateStamp(now)
+  const payloadHash = sha256Hex(body)
+
+  let canonicalHeaders = `content-type:${contentType}\n`
+  canonicalHeaders += `host:${host}\n`
+  if (sessionToken) {
+    canonicalHeaders += `x-amz-security-token:${sessionToken}\n`
+  }
+  canonicalHeaders += `x-amz-date:${amzDate}\n`
+
+  const signedHeaders = sessionToken
+    ? 'content-type;host;x-amz-date;x-amz-security-token'
+    : 'content-type;host;x-amz-date'
+
+  const canonicalRequest = [
+    method,
+    path,
+    '',
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash,
+  ].join('\n')
+
+  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`
+  const canonicalRequestHash = sha256Hex(canonicalRequest)
+  const stringToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${credentialScope}\n${canonicalRequestHash}`
+  const signingKey = getSignatureKey(secretKey, dateStamp, region, service)
+  const signature = hmacSha256(signingKey, stringToSign).toString('hex')
+
+  const authorization = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`
+
+  return {
+    authorization,
+    amzDate,
+    signedHeaders,
+    securityTokenHeader: sessionToken,
+  }
+}
+
+function sha256Hex(value: string): string {
+  return createHash('sha256').update(value, 'utf8').digest('hex')
+}
+
+function hmacSha256(key: Buffer, value: string): Buffer {
+  return createHmac('sha256', key).update(value, 'utf8').digest()
+}
+
+function getSignatureKey(secretKey: string, dateStamp: string, region: string, service: string): Buffer {
+  const kDate = hmacSha256(Buffer.from(`AWS4${secretKey}`, 'utf8'), dateStamp)
+  const kRegion = hmacSha256(kDate, region)
+  const kService = hmacSha256(kRegion, service)
+  return hmacSha256(kService, 'aws4_request')
+}
+
+function toAmzDate(date: Date): string {
+  return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
+}
+
+function toDateStamp(date: Date): string {
+  return date.toISOString().slice(0, 10).replace(/-/g, '')
+}
+
 async function safeJson(response: Response): Promise<unknown> {
   try {
     return await response.json()
@@ -377,14 +748,28 @@ async function generateCompletion(body: CompletionRequestBody): Promise<Completi
       return callGeminiCli(metadata, model)
     case 'opencode':
       return callOpenCode(metadata, model)
+    case 'openrouter':
+      return callOpenRouter(metadata, model)
     case 'claude':
       return callClaude(metadata, model)
+    case 'anthropic':
+      return callAnthropicDirect(metadata, model)
     case 'aider':
       return callAider(metadata, model)
     case 'goose':
       return callGoose(metadata, model)
     case 'project4':
       return callProject4(metadata, model)
+    case 'deepseek':
+      return callDeepSeek(metadata, model)
+    case 'google':
+      return callGoogle(metadata, model)
+    case 'azure-openai':
+      return callAzureOpenAI(metadata, model)
+    case 'bedrock':
+      return callBedrock(metadata, model)
+    case 'vertex':
+      return callVertex(metadata, model)
     default:
       throw new Error(`Unsupported AI provider: ${provider}`)
   }
