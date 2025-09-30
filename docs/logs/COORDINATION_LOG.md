@@ -311,3 +311,4 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - Added `.github/workflows/kind-code-server-smoke.yml` (nightly cron + manual trigger) to build the Monaco 0.53 image, load it into KinD, and run `scripts/test-code-server-kind.sh`.
 - Updated the smoke script to create the `vibecode-platform` namespace automatically so the workflow can run on fresh clusters.
 - Failure hook captures pod diagnostics (`kubectl get/describe/logs`) for easier debugging in CI.
+- Build timing check: GitHub-hosted runners complete the image build/load/smoke loop in ~2 minutes, so no additional caching is required right now.
