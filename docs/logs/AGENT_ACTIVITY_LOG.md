@@ -235,3 +235,21 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Updated `scripts/test-code-server-kind.sh` to auto-create the `vibecode-platform` namespace so the workflow boots clean clusters.
 - Workflow captures diagnostics on failure for easier debugging (`kubectl get/describe/logs`).
 - Measured build duration (~2 minutes end-to-end on `ubuntu-latest`); no further Docker layer caching required at this time.
+### Agent Codex - Workflow issue drafting (2025-09-30 03:58 UTC)
+- Added `docs/logs/WORKFLOW_TRACKING.md` containing draft titles/notes for each outstanding CI/CD workflow (active + disabled variants).
+- Updated TODO.md next steps to reference the draft table so issue creation can proceed smoothly.
+### Agent Codex - Workflow issues opened (2025-09-30 04:12 UTC)
+- Created GitHub issues #355–#395 to track every workflow item from TODO.md.
+- TODO.md now references each issue (`Tracking: #...`), and the tracking table lists workflow ↔ issue mappings.
+### Agent Codex - Datadog trace verify workflow (2025-09-30 04:20 UTC)
+- Updated `.github/workflows/datadog-trace-verify.yml` so it skips when Datadog secrets are missing and only uploads artefacts when traces run (`if-no-files-found: warn`).
+- Commented on issue #392 with the change details.
+### Agent Codex - Azure App Service workflow cleanup (2025-09-30 04:25 UTC)
+- Removed duplicate disabled workflows (`disabled-expensive/azure-appservice-deploy.yml`, `disabled-expensive/azure-webgui-deploy.yml`) to keep the active App Service deploy jobs as the single source.
+- Noted the deletions in issues #355 and #356.
+### Agent Codex - Build/push workflow cleanup (2025-09-30 04:27 UTC)
+- Deleted `disabled-expensive/build-and-push-image.yml`; issue #357 updated to track remaining audit tasks on the active GHCR pipeline.
+### Agent Codex - Fish shell added to code-server image (2025-09-30 04:32 UTC)
+- Updated `docker/code-server/Dockerfile` and `Dockerfile.kind` to install the Fish shell alongside Bash/Zsh; README now mentions all three shells are available in the container.
+### Agent Codex - Workflow issue templates (2025-09-30 03:12 UTC)
+- Generated placeholder summaries for all `.github/workflows/*.yml` (+ disabled-expensive) under `docs/logs/workflow-issues/` so each pipeline has a ready-to-file issue brief.

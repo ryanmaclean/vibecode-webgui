@@ -1,76 +1,93 @@
+## Agent Update (2025-09-30 04:18 UTC)
+
+- Drafting workflow audit notes under `docs/logs/workflow-issues/` so each CI/CD pipeline has a ready-to-file issue summary.
+
+### Next Steps
+- [x] Create/update markdown summaries for each workflow listed above with owner, secrets, current status, and recommended actions. — Initial templates generated under docs/logs/workflow-issues/.
+- [x] Attach the file paths to the TODO entries once drafts exist. — Each bullet now references docs/logs/workflow-issues/*.md templates.
+
+## Agent Update (2025-09-30 04:22 UTC)
+
+- Converted `scripts/check-dependency-compatibility` to native ESM (`.mjs`), keeping CLI parity and refreshing documentation/package scripts.
+- Replaced `any` usage in `src/app/api/code-completion/route.ts` with explicit response interfaces and helpers to support lint expansion.
+
+### Next Steps
+- [ ] Re-run eslint across the repo after migrating additional CommonJS hotspots (e.g., `src/app/api/code-server/session/route.ts`, middleware tests) to confirm rule coverage can extend beyond `src`.
+- [ ] Continue tightening API response typing (auth/chat routes) to chip away at the remaining `@typescript-eslint/no-explicit-any` backlog.
+
 ## Agent Update (2025-09-30 03:06 UTC)
 
 - Cataloging all CI/CD workflows so we can file tracking issues for each pipeline.
 
 ### Workflows Requiring Issues
-- [ ] .github/workflows/azure-appservice-deploy.yml — requires AZURE_* secrets, deploys ai-gateway via ACR push + App Service restart; needs issue to confirm secrets up to date and health probes cover 200s
-- [ ] .github/workflows/azure-webgui-deploy.yml — builds root Dockerfile, pushes to same ACR, deploys App Service `${{ secrets.APP_NAME_WEBGUI }}`, smoke hits `/`; confirm env secrets + health path adequate
-- [ ] .github/workflows/build-and-push-image.yml — GHCR build via Dockerfile.production with Buildx cache, Trivy SARIF upload, optional AKS Helm deploy (`AZURE_CREDENTIALS`, vars.AKS_*); issue should confirm secrets + helm chart alignment
-- [ ] .github/workflows/ci-simplified.yml — multi-job pipeline (secret validation, lint/audit, root tests w/ Postgres+Redis services, Datadog/LHCI optional); issue should capture missing secrets handling + continue-on-error follow-up
-- [ ] .github/workflows/claude-code-review.yml — runs anthropic/claude-code-action@beta on PRs, needs `CLAUDE_CODE_OAUTH_TOKEN`; issue to confirm token scope + whether sticky comments/prompts should be customized
-- [ ] .github/workflows/claude.yml — listens for @claude mentions across issues/PR comments, same `CLAUDE_CODE_OAUTH_TOKEN`, optional actions:read; issue should confirm rate limits, trigger phrases, and additional permissions setup
-- [ ] .github/workflows/cost-monitor.yml — simple weekly cron echo; issue to decide if we replace with real usage metrics or disable once budget tooling arrives
-- [ ] .github/workflows/datadog-service-catalog.yml — registers *.datadog.yaml via arcxp action (needs DD_API_KEY/DD_APP_KEY) and validates required fields; issue should track secrets freshness + list completeness
-- [ ] .github/workflows/datadog-trace-verify.yml — hourly cron runs `npm run monitoring:trace` (requires DD_API_KEY/DD_APP_KEY, Node+Python setup) and uploads JSON artefacts; issue to note current script failures + retention
-- [ ] .github/workflows/db-monitoring-deployment.yml — massive pipeline (schema/vector checks, Datadog dashboards, Azure Postgres tuning, Slack notify); requires POSTGRES_CONNECTION, Datadog + Azure creds; issue should triage secrets + whether to keep continue-on-error steps
-- [ ] .github/workflows/demo-validation.yml — Go/KinD demo build, shell lint, README checks; relies on Make targets, shellcheck (non-blocking), optional infra; issue to capture flakiness in script timeouts and KinD setup
-- [ ] .github/workflows/dependency-compatibility.yml — matrix Node 18/20/22 compatibility checks w/ npm audit/build/type-check plus scheduled issue creation via npm-check-updates; ensure secrets not needed, but review GitHub issue spam controls
-- [ ] .github/workflows/deploy-aks-monitoring.yml — manual AKS rollout incl. ingress, cert-manager, Datadog monitors; depends on AZURE_* secrets, Datadog keys, scripts/*.sh; issue should review manual inputs + skip_datadog flag coverage
-- [ ] .github/workflows/deploy-docs.yml — builds Astro docs by default, optional Next.js via workflow_dispatch; uses GitHub Pages permissions; issue should check cache paths and dual-system support + whether Next.js artifacts still needed
-- [ ] .github/workflows/docs-automation.yml — multi-job docs validator (npm ci, lychee link check, auto-commit on main, TypeScript snippet lint); issue to review auto-push behavior and secret scanning sensitivity
-- [ ] .github/workflows/docs-ci-cd.yml — full docs pipeline (security scan, Astro build, container push to ACR, optional deploy via KUBE_CONFIG, Datadog notifications); issue should confirm secrets coverage and whether duplicated with deploy-docs
-- [ ] .github/workflows/error-tracking-integration.yml — auto-integrates Datadog error tracking across scripts, commits back to main, matrix tests; relies on DD_API_KEY and pushes changes; issue should evaluate `[skip ci]` commit strategy + deployment placeholder
-- [ ] .github/workflows/gitops-deployment.yml — full GitOps pipeline with Trivy/Snyk, build/push, optional force_deploy, uses Datadog CI visibility and pushes to GHCR; issue to confirm secret sprawl (DD, SNYK_TOKEN) and deployment steps alignment
-- [ ] .github/workflows/infrastructure-tests.yml — Python-based infra tests w/ OpenTofu, Azure CLI installs, artifacts; manual dispatch runs real deployment; issue to note lack of cached tooling and ensure Azure creds documented for e2e job
-- [ ] .github/workflows/kind-code-server-smoke.yml — nightly + manual KinD smoke using our script; needs KinD permissions only; issue should monitor runtime (~2m) and decide if diagnostics need retention tweaks
-- [ ] .github/workflows/main-branch-ci.yml — lightweight checks (npm audit, unit tests, Codex CLI verification, Trufflehog diff) on main; issue to confirm codex install still needed and whether lint/type-check should fail fast
-- [ ] .github/workflows/release-branch-ci.yml — comprehensive release pipeline (Codex MCP, matrix tests incl. Playwright, GHCR build, LHCI, Datadog synthetic triggers); issue should review runtime cost, secret requirements, and force_deploy logic
-- [ ] .github/workflows/secret-scanning.yml — standalone TruffleHog diff scan on pushes/PRs; issue should ensure skip logic matches main-branch guard and consider integration with GitHub Advanced Security
-- [ ] .github/workflows/stale.yml — nightly actions/stale sweep (issue/PR labels, exempt list); issue should confirm label conventions and whether security items stay exempt
-- [ ] .github/workflows/standup-report.yml — weekday standup script that files GitHub issues and optionally posts to Slack; issue to confirm GH token scopes and Slack channel usage
-- [ ] .github/workflows/test-ci-simplified.yml — root tests pipeline spinning up Docker Postgres/Redis, heavy Datadog env; issue should question duplicate redis install steps and optional API key coverage
-- [ ] .github/workflows/test-simple.yml — sanity jobs for Babel config + optional Datadog CI visibility; issue to determine if still needed vs simplified CI and ensure Datadog secrets gating works
-- [ ] azure-appservice-deploy.yml/* — confirm disabled-expensive copy stays in sync with active workflow or remove duplicate.
-- [ ] azure-webgui-deploy.yml/* — same check for WebGUI deployment variant.
-- [ ] build-and-push-image.yml/* — ensure legacy disabled workflow aligns with primary GHCR build.
-- [ ] ci-cd.yml/* — disabled-expensive pipeline with unit/e2e/build steps; decide archival vs revival.
-- [ ] ci-complex.yml/* — retired heavy CI (Trivy, Snyk, Datadog CLI); document whether to resurrect.
-- [ ] ci-enhancements.yml/* — experimental enhanced CI workflow now disabled; capture lessons/next action.
-- [ ] ci-simplified.yml/* — disabled variant; ensure notes reflect active simplified CI counterpart.
-- [ ] ci.yml/* — generic CI placeholder under disabled-expensive; confirm if safe to delete.
-- [ ] claude-code-review.yml/* — check for disabled alternate copy and consolidate config.
-- [ ] claude.yml/* — ensure only active @claude responder remains.
-- [ ] cost-monitor.yml/* — verify disabled reminder isn’t conflicting with the active schedule.
-- [ ] datadog-service-catalog.yml/* — document whether disabled copy references outdated service files.
-- [ ] db-monitoring-deployment.yml/* — confirm any disabled variant is archived or updated.
-- [ ] dbm-verifier-run.yml/* — disabled Datadog DBM verifier; check overlap with db-monitoring-deployment.
-- [ ] demo-validation.yml/* — ensure disabled-expensive variant mirrors active demo workflow or remove.
-- [ ] dependency-compatibility.yml/* — confirm no redundant disabled workflow remains.
-- [ ] docker-multiarch.yml/* — disabled multi-arch build; review demand vs GHCR workflows.
-- [ ] docs-automation.yml/* — verify disabled copy isn’t diverging from automation job.
-- [ ] docs-ci-cd.yml/* — reconcile disabled entry with active docs pipeline.
-- [ ] error-tracking-integration.yml/* — note whether disabled workflow still needed for reference.
-- [ ] ethicalcheck.yml/* — disabled EthicalCheck security scan; assess historical value.
-- [ ] gitops-deployment.yml/* — confirm status of disabled GitOps pipeline.
-- [ ] infrastructure-tests.yml/* — check for any disabled duplicates to clean up.
-- [ ] k8s-deploy.yml/* — disabled K8s deploy; ensure AKS/GitOps workflows cover same scope.
-- [ ] kind-testing.yml/* — disabled KinD suite; compare with new smoke test.
-- [ ] main-branch-ci.yml/* — document if disabled version exists and align coverage.
-- [ ] performance-gates.yml/* — disabled performance gate workflow; note infra requirements.
-- [ ] production-deployment.yml/* — legacy prod deploy in disabled-expensive; reconcile with current deployment path.
-- [ ] release-branch-ci.yml/* — ensure disabled variant is archived or synced.
-- [ ] secret-scanning.yml/* — ensure disabled variant is redundant before removal.
-- [ ] stale.yml/* — confirm no duplicate automation remains.
-- [ ] standup-report.yml/* — ensure only active workflow lives under .github/workflows.
-- [ ] synthetic-test.yml/* — disabled synthetic monitoring workflow; determine replacement.
-- [ ] test-ci-simplified.yml/* — check disabled copy parallels active root-test workflow.
-- [ ] test-simple.yml/* — ensure disabled version matches current simple test job.
-- [ ] trufflehog-on-demand.yml/* — disabled on-demand secret scan; decide if redundant.
-- [ ] working-ci.yml/* — catch-all CI file (disabled); evaluate removal.
+- [ ] .github/workflows/azure-appservice-deploy.yml — requires AZURE_* secrets, deploys ai-gateway via ACR push + App Service restart; needs issue to confirm secrets up to date and health probes cover 200s. (Tracking: #355) (notes: docs/logs/workflow-issues/azure-appservice-deploy.yml.md)
+- [ ] .github/workflows/azure-webgui-deploy.yml — builds root Dockerfile, pushes to same ACR, deploys App Service `${{ secrets.APP_NAME_WEBGUI }}`, smoke hits `/`; confirm env secrets + health path adequate. (Tracking: #356) (notes: docs/logs/workflow-issues/azure-webgui-deploy.yml.md)
+- [ ] .github/workflows/build-and-push-image.yml — GHCR build via Dockerfile.production with Buildx cache, Trivy SARIF upload, optional AKS Helm deploy (`AZURE_CREDENTIALS`, vars.AKS_*); issue should confirm secrets + helm chart alignment. (Tracking: #357) (notes: docs/logs/workflow-issues/build-and-push-image.yml.md)
+- [ ] .github/workflows/ci-simplified.yml — multi-job pipeline (secret validation, lint/audit, root tests w/ Postgres+Redis services, Datadog/LHCI optional); issue should capture missing secrets handling + continue-on-error follow-up. (Tracking: #361) (notes: docs/logs/workflow-issues/ci-simplified.yml.md)
+- [ ] .github/workflows/claude-code-review.yml — runs anthropic/claude-code-action@beta on PRs, needs `CLAUDE_CODE_OAUTH_TOKEN`; issue to confirm token scope + whether sticky comments/prompts should be customized. (Tracking: #363) (notes: docs/logs/workflow-issues/claude-code-review.yml.md)
+- [ ] .github/workflows/claude.yml — listens for @claude mentions across issues/PR comments, same `CLAUDE_CODE_OAUTH_TOKEN`, optional actions:read; issue should confirm rate limits, trigger phrases, and additional permissions setup. (Tracking: #364) (notes: docs/logs/workflow-issues/claude.yml.md)
+- [ ] .github/workflows/cost-monitor.yml — simple weekly cron echo; issue to decide if we replace with real usage metrics or disable once budget tooling arrives. (Tracking: #365) (notes: docs/logs/workflow-issues/cost-monitor.yml.md)
+- [ ] .github/workflows/datadog-service-catalog.yml — registers *.datadog.yaml via arcxp action (needs DD_API_KEY/DD_APP_KEY) and validates required fields; issue should track secrets freshness + list completeness. (Tracking: #366) (Draft: docs/logs/workflow-issues/datadog-service-catalog.md)
+- [ ] .github/workflows/datadog-trace-verify.yml — hourly cron runs `npm run monitoring:trace` (requires DD_API_KEY/DD_APP_KEY, Node+Python setup) and uploads JSON artefacts; issue to note current script failures + retention. (Tracking: #392 — hourly cron restored 2025-09-30 with secret gating/log artefacts; still need Datadog `Not found` fix + alerting; draft: docs/logs/workflow-issues/datadog-trace-verify.md)
+- [ ] .github/workflows/db-monitoring-deployment.yml — massive pipeline (schema/vector checks, Datadog dashboards, Azure Postgres tuning, Slack notify); requires POSTGRES_CONNECTION, Datadog + Azure creds; issue should triage secrets + whether to keep continue-on-error steps. (Tracking: #367 — draft: docs/logs/workflow-issues/db-monitoring-deployment.md)
+- [ ] .github/workflows/demo-validation.yml — Go/KinD demo build, shell lint, README checks; relies on Make targets, shellcheck (non-blocking), optional infra; issue to capture flakiness in script timeouts and KinD setup. (Tracking: #390) (notes: docs/logs/workflow-issues/demo-validation.yml.md)
+- [ ] .github/workflows/dependency-compatibility.yml — matrix Node 18/20/22 compatibility checks w/ npm audit/build/type-check plus scheduled issue creation via npm-check-updates; ensure secrets not needed, but review GitHub issue spam controls. (Tracking: #369) (notes: docs/logs/workflow-issues/dependency-compatibility.yml.md)
+- [ ] .github/workflows/deploy-aks-monitoring.yml — manual AKS rollout incl. ingress, cert-manager, Datadog monitors; depends on AZURE_* secrets, Datadog keys, scripts/*.sh; issue should review manual inputs + skip_datadog flag coverage. (Tracking: #393) (notes: docs/logs/workflow-issues/deploy-aks-monitoring.yml.md)
+- [ ] .github/workflows/deploy-docs.yml — builds Astro docs by default, optional Next.js via workflow_dispatch; uses GitHub Pages permissions; issue should check cache paths and dual-system support + whether Next.js artifacts still needed. (Tracking: #394) (notes: docs/logs/workflow-issues/deploy-docs.yml.md)
+- [ ] .github/workflows/docs-automation.yml — multi-job docs validator (npm ci, lychee link check, auto-commit on main, TypeScript snippet lint); issue to review auto-push behavior and secret scanning sensitivity. (Tracking: #370 — triggers paused; draft: docs/logs/workflow-issues/docs-automation.md)
+- [ ] .github/workflows/docs-ci-cd.yml — full docs pipeline (security scan, Astro build, container push to ACR, optional deploy via KUBE_CONFIG, Datadog notifications); issue should confirm secrets coverage and whether duplicated with deploy-docs. (Tracking: #371 — triggers restored 2025-09-30 with secret gating; still need Azure/Datadog secret refresh + GitHub issue link) (notes: docs/logs/workflow-issues/docs-ci-cd.yml.md)
+- [ ] .github/workflows/error-tracking-integration.yml — auto-integrates Datadog error tracking across scripts, commits back to main, matrix tests; relies on DD_API_KEY and pushes changes; issue should evaluate `[skip ci]` commit strategy + deployment placeholder. (Tracking: #372 — PR trigger + secret gating restored 2025-09-30; workflow now opens PR via `peter-evans/create-pull-request` when `apply_changes=true`; awaiting Datadog secrets + alerting follow-up; draft: docs/logs/workflow-issues/error-tracking-integration.md)
+- [ ] .github/workflows/gitops-deployment.yml — full GitOps pipeline with Trivy/Snyk, build/push, optional force_deploy, uses Datadog CI visibility and pushes to GHCR; issue to confirm secret sprawl (DD, SNYK_TOKEN) and deployment steps alignment. (Tracking: #374 — concurrency + secret gating added 2025-09-30; Snyk/Datadog steps now skip when creds missing; still need registry/azure audit + issue link) (notes: docs/logs/workflow-issues/gitops-deployment.yml.md)
+- [ ] .github/workflows/infrastructure-tests.yml — Python-based infra tests w/ OpenTofu, Azure CLI installs, artifacts; manual dispatch runs real deployment; issue to note lack of cached tooling and ensure Azure creds documented for e2e job. (Tracking: #375 — path triggers re-enabled 2025-09-30 with validate-secrets gating; need cleanup automation + secret provisioning follow-up) (notes: docs/logs/workflow-issues/infrastructure-tests.yml.md)
+- [ ] .github/workflows/kind-code-server-smoke.yml — nightly + manual KinD smoke using our script; needs KinD permissions only; issue should monitor runtime (~2m) and decide if diagnostics need retention tweaks. (Tracking: #395) (notes: docs/logs/workflow-issues/kind-code-server-smoke.yml.md)
+- [ ] .github/workflows/main-branch-ci.yml — lightweight checks (npm audit, unit tests, Codex CLI verification, Trufflehog diff) on main; issue to confirm codex install still needed and whether lint/type-check should fail fast. (Tracking: #378) (notes: docs/logs/workflow-issues/main-branch-ci.yml.md)
+- [ ] .github/workflows/release-branch-ci.yml — comprehensive release pipeline (Codex MCP, matrix tests incl. Playwright, GHCR build, LHCI, Datadog synthetic triggers); issue should review runtime cost, secret requirements, and force_deploy logic. (Tracking: #381 — triggers re-enabled with secret gating 2025-09-30; still need GitHub issue + secret provisioning follow-up) (notes: docs/logs/workflow-issues/release-branch-ci.yml.md)
+- [ ] .github/workflows/secret-scanning.yml — standalone TruffleHog diff scan on pushes/PRs; issue should ensure skip logic matches main-branch guard and consider integration with GitHub Advanced Security. (Tracking: #382) (notes: docs/logs/workflow-issues/secret-scanning.yml.md)
+- [ ] .github/workflows/stale.yml — nightly actions/stale sweep (issue/PR labels, exempt list); issue should confirm label conventions and whether security items stay exempt. (Tracking: #383) (notes: docs/logs/workflow-issues/stale.yml.md)
+- [ ] .github/workflows/standup-report.yml — weekday standup script that files GitHub issues and optionally posts to Slack; issue to confirm GH token scopes and Slack channel usage. (Tracking: #384) (notes: docs/logs/workflow-issues/standup-report.yml.md)
+- [ ] .github/workflows/test-ci-simplified.yml — root tests pipeline spinning up Docker Postgres/Redis, heavy Datadog env; issue should question duplicate redis install steps and optional API key coverage. (Tracking: #386) (notes: docs/logs/workflow-issues/ci-simplified.yml.md)
+- [ ] .github/workflows/test-simple.yml — sanity jobs for Babel config + optional Datadog CI visibility; issue to determine if still needed vs simplified CI and ensure Datadog secrets gating works. (Tracking: #387) (notes: docs/logs/workflow-issues/test-simple.yml.md)
+- [ ] azure-appservice-deploy.yml/* — confirm disabled-expensive copy stays in sync with active workflow or remove duplicate. (Tracking: #355)
+- [ ] azure-webgui-deploy.yml/* — same check for WebGUI deployment variant. (Tracking: #356)
+- [ ] build-and-push-image.yml/* — ensure legacy disabled workflow aligns with primary GHCR build. (Tracking: #357)
+- [ ] ci-cd.yml/* — disabled-expensive pipeline with unit/e2e/build steps; decide archival vs revival. (Tracking: #358)
+- [ ] ci-complex.yml/* — retired heavy CI (Trivy, Snyk, Datadog CLI); document whether to resurrect. (Tracking: #359)
+- [ ] ci-enhancements.yml/* — experimental enhanced CI workflow now disabled; capture lessons/next action. (Tracking: #360)
+- [ ] ci-simplified.yml/* — disabled variant; ensure notes reflect active simplified CI counterpart. (Tracking: #361)
+- [ ] ci.yml/* — generic CI placeholder under disabled-expensive; confirm if safe to delete. (Tracking: #362)
+- [ ] claude-code-review.yml/* — check for disabled alternate copy and consolidate config. (Tracking: #363)
+- [ ] claude.yml/* — ensure only active @claude responder remains. (Tracking: #364)
+- [ ] cost-monitor.yml/* — verify disabled reminder isn’t conflicting with the active schedule. (Tracking: #365)
+- [ ] datadog-service-catalog.yml/* — document whether disabled copy references outdated service files. (Tracking: #366)
+- [ ] db-monitoring-deployment.yml/* — confirm any disabled variant is archived or updated. (Tracking: #367)
+- [ ] dbm-verifier-run.yml/* — disabled Datadog DBM verifier; check overlap with db-monitoring-deployment. (Tracking: #368)
+- [ ] demo-validation.yml/* — ensure disabled-expensive variant mirrors active demo workflow or remove. (Tracking: #390)
+- [ ] dependency-compatibility.yml/* — confirm no redundant disabled workflow remains. (Tracking: #369)
+- [ ] docker-multiarch.yml/* — disabled multi-arch build; review demand vs GHCR workflows. (Tracking: #391)
+- [ ] docs-automation.yml/* — verify disabled copy isn’t diverging from automation job. (Tracking: #370)
+- [ ] docs-ci-cd.yml/* — reconcile disabled entry with active docs pipeline. (Tracking: #371)
+- [ ] error-tracking-integration.yml/* — note whether disabled workflow still needed for reference. (Tracking: #372)
+- [ ] ethicalcheck.yml/* — disabled EthicalCheck security scan; assess historical value. (Tracking: #373)
+- [ ] gitops-deployment.yml/* — confirm status of disabled GitOps pipeline. (Tracking: #374)
+- [ ] infrastructure-tests.yml/* — check for any disabled duplicates to clean up. (Tracking: #375)
+- [ ] k8s-deploy.yml/* — disabled K8s deploy; ensure AKS/GitOps workflows cover same scope. (Tracking: #376)
+- [ ] kind-testing.yml/* — disabled KinD suite; compare with new smoke test. (Tracking: #377)
+- [ ] main-branch-ci.yml/* — document if disabled version exists and align coverage. (Tracking: #378)
+- [ ] performance-gates.yml/* — disabled performance gate workflow; note infra requirements. (Tracking: #379)
+- [ ] production-deployment.yml/* — legacy prod deploy in disabled-expensive; reconcile with current deployment path. (Tracking: #380)
+- [ ] release-branch-ci.yml/* — ensure disabled variant is archived or synced. (Tracking: #381)
+- [ ] secret-scanning.yml/* — ensure disabled variant is redundant before removal. (Tracking: #382)
+- [ ] stale.yml/* — confirm no duplicate automation remains. (Tracking: #383)
+- [ ] standup-report.yml/* — ensure only active workflow lives under .github/workflows. (Tracking: #384) (notes: docs/logs/workflow-issues/standup-report.yml.md)
+- [ ] synthetic-test.yml/* — disabled synthetic monitoring workflow; determine replacement. (Tracking: #385)
+- [ ] test-ci-simplified.yml/* — check disabled copy parallels active root-test workflow. (Tracking: #386)
+- [ ] test-simple.yml/* — ensure disabled version matches current simple test job. (Tracking: #387)
+- [ ] trufflehog-on-demand.yml/* — disabled on-demand secret scan; decide if redundant. (Tracking: #388)
+- [ ] working-ci.yml/* — catch-all CI file (disabled); evaluate removal. (Tracking: #389)
 
 ### Next Steps
-- [ ] Create GitHub issues for each workflow above noting current status (failing, disabled, or needs validation).
-- [ ] Link each issue back to TODO once opened.
+- [x] Create GitHub issues for each workflow above noting current status (failing, disabled, or needs validation). — Draft summaries live in docs/logs/WORKFLOW_TRACKING.md. (Issues #355–#395)
+- [x] Link each issue back to TODO once opened.
 
 ## Agent Update (2025-09-30 03:12 UTC)
 
@@ -103,6 +120,15 @@
 ### Next Steps
 - [ ] Triage failing PRs (#321, #241) to understand security/build failures before merging.
 - [ ] Refresh/approve/merge the green set (#322, #251, #250) once reviews are done.
+
+## Agent Update (2025-09-30 06:29 UTC)
+
+- 🔒 **Agent Claude Code (06:29 UTC)**: CLAIMING merge of Dependabot PR #322
+  - Task: Merge @ai-sdk/openai 1.3.24 → 2.0.38 (checks green)
+  - Files: GitHub PR #322 only (merge operation)
+  - Goal: Complete green Dependabot PR merge
+  - ETA: 2-3 minutes
+  - Status: ACTIVE - Merging PR
 
 ## Agent Update (2025-09-30 03:22 UTC)
 
@@ -163,7 +189,7 @@
 
 ### Next Steps
 - [x] Assess image size impact and prune optional dependencies if the KinD cluster gets tight on disk. — `docker images vibecode/code-server:monaco053` reports 2.31GB; monitor Kind node disk space before adding more tooling.
-- [x] Decide where to surface the enhanced smoke test in CI (e.g., post-merge job or nightly run). — Added `.github/workflows/kind-code-server-smoke.yml` (nightly + manual).
+- [x] Decide where to surface the enhanced smoke test in CI (e.g., post-merge job or nightly run). — Added `.github/workflows/kind-code-server-smoke.yml` (nightly + manual). (notes: docs/logs/workflow-issues/kind-code-server-smoke.yml.md)
 - [x] Capture quickstart snippets for running `aider`/`goose` inside the pod so folks know how to authenticate. — Added walkthrough to `docs/logs/COORDINATION_LOG.md` (2025-09-30 03:35 UTC entry).
 
 ## Agent Update (2025-09-30 03:05 UTC)
@@ -174,7 +200,7 @@
 ### Next Steps
 - [x] Evaluate caching the apt-installed editors inside the base image to shorten CI runs. — CI build already bakes editors into `vibecode/code-server:monaco053`; nightly workflow build and load completes in ~2m, so no extra caching needed yet.
 - [x] Follow up on extending the editor script once aider/goose CLI installs are available. — Script now checks both CLIs and is wired into the smoke test.
-- [x] Consider surfacing the new checks in CI (GitHub Actions) after other agents sign off. — See `.github/workflows/kind-code-server-smoke.yml`.
+- [x] Consider surfacing the new checks in CI (GitHub Actions) after other agents sign off. — See `.github/workflows/kind-code-server-smoke.yml`. (notes: docs/logs/workflow-issues/kind-code-server-smoke.yml.md)
 
 ## Agent Update (2025-09-30 02:50 UTC)
 
@@ -213,6 +239,7 @@
 - [ ] Convert remaining Node-based helper scripts to ESM (or annotate CommonJS shims) so `npm run lint` can run without `no-require-imports` noise.
 - [x] Convert core helper scripts (`check-monaco-version`, `create-env`, `create-env-local`) to modern ESM/TypeScript so linting can cover them. — ✅ scripts now use native Node imports and secure file writes.
 - [x] Expand onboarding flow with workspace, integrations, and AI provider selections so agents know what to wire next.
+- [x] Drive onboarding drawer + global theme via shared UserPreferencesProvider.
 - [x] Centralize user preference schema + persistence (Prisma `UserPreference` table, shared Zod schema, onboarding fetch/save).
 - [ ] Replace `any` placeholders in `src/types/*.d.ts` with upstream typings to finish the lint cleanup (#174/#188 follow-up).
 - [ ] Split remaining packages (CLI, VS Code extension) into per-package lint configs or exclude them explicitly once owners confirm scope.
@@ -1285,7 +1312,7 @@ Local development infrastructure is now stable and functional. All immediate pri
 ## Agent Update (2025-09-29 20:45 UTC)
 
 - Spawned `fix/ai-route-lint` branch from `main` (commit cd22e15d) so Dependabot PRs can rebase onto the shared lint/type fixes without replaying unrelated history.
-- Guarded `.github/workflows/secret-scanning.yml` so TruffleHog skips when `base == head`; this resolves the recurring CI failure on pushes to `main` with empty diffs.
+- Guarded `.github/workflows/secret-scanning.yml` so TruffleHog skips when `base == head`; this resolves the recurring CI failure on pushes to `main` with empty diffs. (notes: docs/logs/workflow-issues/secret-scanning.yml.md)
 - Next: push the branch upstream, notify Dependabot PRs (#322, #321, #251, #241) to rebase, and rerun `npm run lint`, `npm run type-check`, `npm run test:unit` once the queue frees up.
 
 ### Next Steps
@@ -1353,7 +1380,7 @@ Local development infrastructure is now stable and functional. All immediate pri
 - Re-ran the dd-traced RAG demo with `USE_OPENROUTER=true` (OpenRouter completions + OpenAI embedding fallback). Querying `Which environment variables are set in DATADOG_LOCAL_DEVELOPMENT to enable logs and tracing?` returned the correct env var list using PGvector data from the KIND database.
 
 ### Next Steps
-- [x] Wire Datadog trace verification into runbooks (`docs/runbooks/datadog-trace-search-access.md`) with `npm run monitoring:trace` and automation workflow `.github/workflows/datadog-trace-verify.yml`.
+- [x] Wire Datadog trace verification into runbooks (`docs/runbooks/datadog-trace-search-access.md`) with `npm run monitoring:trace` and automation workflow `.github/workflows/datadog-trace-verify.yml`. (notes: docs/logs/workflow-issues/datadog-trace-verify.yml.md)
 - [ ] Schedule automated trace verification (workflow still failing because `scripts/ensure-native-binaries.js` stub is skipped when `npm_config_ignore_scripts` is true in CI; decide whether to allow install scripts or provide a different validation path).
 - [ ] Stabilize the KIND API (cluster recreation) so we can raise `RAG_MAX_FILES` without connection resets.
 - [ ] Once trace search access is restored, export spans for `service:vibecode-rag-demo env:kind` to capture the observability evidence.
@@ -1366,7 +1393,7 @@ Local development infrastructure is now stable and functional. All immediate pri
 ### Next Steps
 - [ ] Re-run ingestion with a larger chunk budget once KIND port-forward stability is confirmed so more Datadog content ranks higher.
 - [ ] Capture the Datadog spans for `service:vibecode-rag-demo env:kind` after trace search permissions are restored.
-- [x] Wire Datadog trace verification into runbooks (`docs/runbooks/datadog-trace-search-access.md`) with `npm run monitoring:trace` and the workflow `.github/workflows/datadog-trace-verify.yml`.
+- [x] Wire Datadog trace verification into runbooks (`docs/runbooks/datadog-trace-search-access.md`) with `npm run monitoring:trace` and the workflow `.github/workflows/datadog-trace-verify.yml`. (notes: docs/logs/workflow-issues/datadog-trace-verify.yml.md)
 - [ ] Schedule automated trace verification (workflow currently failing because `scripts/ensure-native-binaries.js` is skipped in CI; revisit after deciding on stub vs. disabling the postinstall hook).
 
 ## Agent Update (2025-09-24 19:23 UTC)
@@ -1438,7 +1465,7 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 - [ ] Decide whether to disable Datadog external metrics/admission controller toggles for KIND (to remove the remaining HA warning) or stand up a two-replica cluster agent in that environment.
 - [ ] Mirror additional KIND DBM exports (e.g., `postgresql.db.size`, `postgresql.connections.*` per-database) once the query duration baseline is accepted.
 - [x] Wire Datadog trace verification into our runbooks (`docs/runbooks/datadog-trace-search-access.md`) with `npm run monitoring:trace`.
-- [ ] Schedule automated trace verification in CI (`.github/workflows/datadog-trace-verify.yml`) once DD_API_KEY/DD_APP_KEY secrets are present and record the first successful run in this TODO.
+- [ ] Schedule automated trace verification in CI (`.github/workflows/datadog-trace-verify.yml`) once DD_API_KEY/DD_APP_KEY secrets are present and record the first successful run in this TODO. (notes: docs/logs/workflow-issues/datadog-trace-verify.yml.md)
 
 ## Agent Update (2025-09-24 13:52 UTC)
 
@@ -1778,7 +1805,7 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 ### Blocking Work / Next Steps
 - ⏳ Provide a safe path to exercise the RAG and OpenRouter suites (document required flags/keys and ensure the environment has network access before invoking).
 - ⏳ Revisit the Helm provisioning chart or add lightweight smoke targets so `RUN_HELM_PROVISIONING_TESTS=true` can complete within the timeout budget.
-  - `services/ai-gateway` — built from its dedicated Dockerfile and pushed to Azure App Service by `.github/workflows/azure-appservice-deploy.yml` (image hosted in ACR).
+  - `services/ai-gateway` — built from its dedicated Dockerfile and pushed to Azure App Service by `.github/workflows/azure-appservice-deploy.yml` (image hosted in ACR). (notes: docs/logs/workflow-issues/azure-appservice-deploy.yml.md)
   - `docs/` site — rendered with Astro/Next and deployed to GitHub Pages (`deploy-docs.yml`), no container build.
   - `queue-worker/` — Azure Functions queue trigger packaged and published with `func azure functionapp publish` (no container, relies on Function App settings).
   - `code-server/` — Helm templates and values exist inside `helm/vibecode-platform`, but the AKS cluster currently runs only `deployment/vibecode-app`; no code-server pods are present.
