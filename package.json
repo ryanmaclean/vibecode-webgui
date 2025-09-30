@@ -107,7 +107,8 @@
     "verify": "node scripts/verify-monacopilot.js && ./scripts/verify-setup.sh",
     "mcp": "npm run mcp:start",
     "check": "npm run lint && npm run type-check",
-    "quick-test": "npm run test:unit -- --maxWorkers=2"
+    "quick-test": "npm run test:unit -- --maxWorkers=2",
+    "test:unit:monaco": "jest --runTestsByPath tests/unit/monaco-monacopilot.test.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "1.3.24",
