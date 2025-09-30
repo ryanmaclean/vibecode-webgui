@@ -1,4 +1,4 @@
-import { AzureFunction, Context } from "@azure/functions";
+import { AzureFunction, Context, Timer } from "@azure/functions";
 import { Pool } from 'pg';
 import { OpenAIApi, Configuration } from 'openai';
 import { promises as fs } from 'fs';
@@ -246,7 +246,7 @@ async function updateDocument(db: Pool, doc: DocumentData, embedding: number[]):
   ]);
 }
 
-const timerTrigger: AzureFunction = async function (context: Context, myTimer: any): Promise<void> {
+const timerTrigger: AzureFunction = async function (context: Context, _timer: Timer): Promise<void> {
   const startTime = Date.now();
   context.log('Embedding generation function started');
   

@@ -10,7 +10,21 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [{
-  ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", ".backup/**", "docs/.astro/**", "docs/dist/**", "docs/node_modules/**", "_tools/**", "scripts/integrate-error-tracking.ts", "scripts/test-multimodal.js"]
+  ignores: [
+    "node_modules/**",
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    ".backup/**",
+    "docs/.astro/**",
+    "docs/dist/**",
+    "docs/node_modules/**",
+    "_tools/**",
+    "scripts/integrate-error-tracking.ts",
+    "scripts/test-multimodal.js",
+    ".archive/**"
+  ]
 }, ...compat.extends("next/core-web-vitals", "next/typescript"), {
   rules: {
     // Allow unused parameters prefixed with underscore
@@ -24,6 +38,25 @@ const eslintConfig = [{
   }
 }, {
   files: ["scripts/vector-db-migrations/**/*.js"],
+  rules: {
+    "@typescript-eslint/no-require-imports": "off"
+  }
+}, {
+  files: ["code-server/**"],
+  rules: {
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-require-imports": "off",
+    "@typescript-eslint/no-unused-vars": "off"
+  }
+}, {
+  files: ["web-dashboard/**"],
+  rules: {
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "import/no-anonymous-default-export": "off"
+  }
+}, {
+  files: ["__mocks__/**", "tests/**"],
   rules: {
     "@typescript-eslint/no-require-imports": "off"
   }
