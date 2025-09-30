@@ -279,7 +279,7 @@ graph TB
 - Apply `k8s/code-server-kind.yaml` after creating the KinD cluster (`kubectl apply -f k8s/code-server-kind.yaml`).
 - Load the local image `vibecode/code-server:monaco053` into KinD (`kind load docker-image vibecode/code-server:monaco053 --name vibecode-test`).
 - Access the editor with `kubectl port-forward svc/code-server-kind -n vibecode-platform 3100:8080` and open http://localhost:3100 (Monaco 0.53 + AI extensions).
-- Alternatively, hit the NodePort on the KinD worker (`kubectl get svc code-server-kind -n vibecode-platform`).
+- Alternatively, hit the NodePort on the KinD control-plane: `CONTROL_PLANE=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' vibecode-test-control-plane)` then open `http://$CONTROL_PLANE:31080`.
 
 ### Vector-Specific Metrics
 - `postgresql.pgvector.vector_count` - Total embeddings stored

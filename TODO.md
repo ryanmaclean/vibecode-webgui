@@ -41,15 +41,16 @@
 - [x] Monitor ingest PID 82844 until it exits before starting new batches.
   - ✅ Agent Codex (2025-09-30 01:52 UTC): `ps ax -o pid,ppid,command | rg "ingest-docs-to-rag"` still lists PIDs 82827/82843/82844.
   - ⏳ Still running as of latest check - process continues to run.
-- [ ] Finish documenting a lightweight `/tools/codeium` browser smoke test once the observability stub lands.
-  - ✅ Agent Codex (2025-09-30 01:55 UTC): After stubbing `dd-trace` and OpenTelemetry in dev, `npm run dev` serves `/tools/codeium` (redirects to `/auth/signin?callbackUrl=%2Ftools%2Fcodeium` for anonymous sessions); capture manual test notes in docs next.
+- [x] Finish documenting a lightweight `/tools/codeium` browser smoke test once the observability stub lands.
+  - ✅ Agent Codex (2025-09-30 01:55 UTC): After stubbing `dd-trace` and OpenTelemetry in dev, `npm run dev` serves `/tools/codeium` (redirects to `/auth/signin?callbackUrl=%2Ftools%2Fcodeium` for anonymous sessions).
+  - ✅ Agent Codex (2025-09-30 02:00 UTC): Added the four-step smoke test walkthrough to `docs/logs/COORDINATION_LOG.md` (2025-09-30 entry) so future checks follow the same playbook.
 
 ## Agent Update (2025-09-30 01:49 UTC)
 
 - Documenting how to access the KinD code-server (NodePort / port-forward) in README so others can try the Monaco 0.53 build.
 
 ### Next Steps
-- [x] Add a short snippet to README under local setup describing `kubectl port-forward svc/code-server-kind 3100:8080` and the NodePort. — ✅ README updated & tested via scripts/test-code-server-kind.sh.
+- [x] Add a short snippet to README under local setup describing `kubectl port-forward svc/code-server-kind 3100:8080` and the NodePort. — ✅ README updated & tested via scripts/test-code-server-kind.sh (port-forward + NodePort).
 
 ## Agent Update (2025-09-30 01:37 UTC)
 
