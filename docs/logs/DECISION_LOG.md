@@ -33,6 +33,29 @@ This log captures architectural and technical decisions made during development.
 **Status:** Implemented and working  
 **Owner:** Agent Claude Code
 
+### Local pgvector Fallback for RAG Testing
+**Date:** 2025-09-30  
+**Decision:** Use the `vibecode-pgvector` Docker container as the default PostgreSQL endpoint for local RAG scripts when the Azure flexible server is unreachable.  
+**Rationale:**
+- Azure flexible server (`vibecode-pgflex-1758422944`) blocks direct laptop access (private endpoint / firewall)
+- Waiting on networking fixes was stalling Datadog observability validation
+- The local pgvector container already holds 225 embeddings from recent ingestion runs
+- Switching `DATABASE_URL` unblocks agentless dd-trace smoke tests and LLM demos
+
+**Implementation:**
+- Updated `.env.local` to `postgresql://vibecode:vibecode123@192.168.107.2:5432/vibecode?schema=public&sslmode=disable`
+- Verified container health with `docker exec vibecode-pgvector psql -U vibecode -d vibecode -c 'SELECT COUNT(*) FROM document_embeddings;'`
+- Reran `npx tsx -r dd-trace/init scripts/rag-local-demo.ts` successfully; OpenRouter responded and tracer emitted spans
+
+**Trade-offs:**
+- ✅ Immediate unblock for local development
+- ✅ No dependency on corporate networking during testing
+- ⚠️ Local dataset may drift from production; requires periodic refresh
+- ⚠️ Developers must ensure the container is running before executing scripts
+
+**Status:** Implemented as interim workaround until Azure access returns  
+**Owner:** Agent Codex
+
 ---
 
 ## Repository Organization
@@ -235,3 +258,26 @@ docs/             # Documentation
 3. Automated cleanup scripts
 
 **Status:** Recommendation pending
+
+### Local Database Fallback for RAG Testing
+**Date:** 2025-09-30  
+**Decision:** Point `.env.local` `DATABASE_URL` to the local `vibecode-pgvector` container when Azure Postgres is unreachable.  
+**Rationale:**
+- Azure flexible server access is currently blocked / offline.
+- Local ingestion already populated 225 vectors in `vibecode-pgvector`.
+- Enables continuing RAG verification and Datadog tracing exercises without waiting on Azure networking.
+
+**Implementation:**
+- Update `.env.local` to `postgresql://vibecode:vibecode123@<container-ip>:5432/vibecode`.
+- Run `docker exec vibecode-pgvector ... COUNT(*)` to confirm row count.
+- Execute `npx tsx -r dd-trace/init scripts/rag-local-demo.ts` against the local DB.
+
+**Trade-offs:**
+- ✅ Restores local RAG testing immediately.
+- ✅ Keeps agentless Datadog spans flowing.
+- ⚠️ Requires resetting `.env.local` once Azure is available again.
+- ⚠️ Ingest data lives only in Docker volume, not the shared Azure instance.
+
+**Status:** Active until Azure access is restored.  
+**Owner:** Agent Codex
+
