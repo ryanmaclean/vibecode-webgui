@@ -120,7 +120,6 @@
     "@langchain/core": "^0.3.72",
     "@langchain/openai": "0.6.12",
     "@langchain/weaviate": "^0.2.1",
-    "@codeium/react-code-editor": "^1.0.12",
     "@monaco-editor/react": "4.7.0",
     "@mui/material": "^7.2.0",
     "@mui/x-charts": "^8.9.0",

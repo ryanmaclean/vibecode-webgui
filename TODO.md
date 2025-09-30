@@ -1,3 +1,20 @@
+## Agent Update (2025-09-30 01:23 UTC)
+
+- Sourced `.env.local` and reran `scripts/rag-local-demo.ts`; retrieval succeeded with OpenRouter response and document matches logged in the console.
+- Immediately re-polled Datadog Trace Search, but both services still return `{ "errors": ["Not found"] }`.
+
+### Next Steps
+- Will retry trace polling once spans have had time to index and continue monitoring the ingest queue.
+
+## Agent Update (2025-09-30 01:22 UTC)
+
+- Drafting a minimal KinD-ready code-server manifest (emptyDir + NodePort) and applying it to the running cluster.
+
+### Next Steps
+- [x] Add `k8s/code-server-kind.yaml` with a simple Deployment+Service.
+- [x] Apply the manifest (`kubectl apply -f`). — deployment/service created, pod Running.
+- [x] Port-forward or note the NodePort so others can test — use `kubectl port-forward svc/code-server-kind 3100:8080` or NodePort 31080 on Kind nodes.
+
 ## Agent Update (2025-09-30 01:20 UTC)
 
 - Re-running Trace Search (`poll-traces.sh`) after the new RAG demo span to see if Datadog captured it.
@@ -18,7 +35,7 @@
 - Attempted another `scripts/rag-local-demo.ts` retrieval to seed traces; first run lacked an embedding provider, and the follow-up with `USE_LOCAL_EMBEDDINGS=true` failed because `DATABASE_URL` is not exported in this shell.
 
 ### Next Steps
-- [ ] Source `.env.local` (sets `DATABASE_URL`) and export local embeddings or API keys before rerunning the demo script.
+- [x] Source `.env.local` (sets `DATABASE_URL`) and export local embeddings or API keys before rerunning the demo script. — ✅ Completed before the 2025-09-30 01:23 UTC run.
 
 ## Agent Update (2025-09-30 01:16 UTC)
 
@@ -274,6 +291,7 @@
   - ❌ Agent Codex (2025-09-30 00:47 UTC): `poll-traces.sh` still returns `{ "errors": ["Not found"] }` for both services over `now-2h`; will retry after trace ingestion is confirmed.
   - ❌ Agent Codex (2025-09-30 01:06 UTC): `poll-traces.sh` again returns `{ "errors": ["Not found"] }` for both services over `now-2h`; spans still absent.
   - ❌ Agent Codex (2025-09-30 01:16 UTC): Re-run over `now-2h` still yields `{ "errors": ["Not found"] }`; waiting on Datadog indexing.
+  - ❌ Agent Codex (2025-09-30 01:23 UTC): Post-demo poll still returns `{ "errors": ["Not found"] }` for both services; spans not visible yet.
 
 ## Agent Update (2025-09-29 23:12 UTC)
 
@@ -283,9 +301,10 @@
 
 ### Next Steps
 - [x] Adjust Datadog tracing config so agentless spans stop targeting `127.0.0.1:8126` (e.g., set `DD_AGENTLESS_ENABLED=true`) and rerun the ingestion batch to verify span delivery.
-- [ ] Run a retrieval smoke (`npx tsx -r dd-trace/init scripts/rag-local-demo.ts ...`) against the freshly ingested docs and capture dd-trace / LLM observability artifacts.
+- [x] Run a retrieval smoke (`npx tsx -r dd-trace/init scripts/rag-local-demo.ts ...`) against the freshly ingested docs and capture dd-trace / LLM observability artifacts.
   - ❌ Agent Codex (2025-09-30 01:17 UTC): Attempted run failed with `No embedding provider configured`; need USE_LOCAL_EMBEDDINGS or API keys before retrying.
   - ❌ Agent Codex (2025-09-30 01:18 UTC): Retried with `USE_LOCAL_EMBEDDINGS=true`; Prisma failed because `DATABASE_URL` is unset in this shell.
+  - ✅ Agent Codex (2025-09-30 01:23 UTC): Sourced `.env.local` and reran the script; OpenRouter returned a Datadog curl snippet and top matches logged.
 - [ ] Re-run `poll-traces.sh` once tracing succeeds to confirm `service:vibecode-rag-demo env:kind` appears in Trace Search.
 
 ## 🤝 AGENT COORDINATION PROTOCOL (ACTIVE)
@@ -1603,6 +1622,7 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
   - ❌ Agent Codex (2025-09-30 01:01 UTC): Recheck shows the same PIDs 82827/82843/82844 active; continue deferring new batches.
   - ❌ Agent Codex (2025-09-30 01:05 UTC): PIDs 82827/82843/82844 still running `scripts/ingest-docs-to-rag.ts`; ingestion window remains blocked.
   - ❌ Agent Codex (2025-09-30 01:16 UTC): PIDs 82827/82843/82844 still running `scripts/ingest-docs-to-rag.ts`; continuing to defer new runs.
+  - ❌ Agent Codex (2025-09-30 01:23 UTC): Same ingest PIDs active; queue remains occupied.
 
 ## Agent Update (2025-09-29 23:00 UTC) - Agent Cascade
 
