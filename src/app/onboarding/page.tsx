@@ -3,10 +3,18 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-export type ThemeOption = 'light' | 'dark' | 'auto'
-export type CliEditorOption = 'vim' | 'neovim' | 'emacs' | 'nano' | 'none'
-export type IdeOption = 'vs-code' | 'windsurf' | 'code-server' | 'browser-only'
-export type AiProvider = 'openai' | 'anthropic' | 'gemini' | 'claude' | 'groq'
+import type {
+  AiProvider,
+  CliEditorOption,
+  IdeOption,
+  ThemeOption,
+  UserPreferences,
+} from '@/lib/user-preferences'
+import {
+  defaultUserPreferences,
+  mergeWithDefaultPreferences,
+  storedUserPreferencesSchema,
+} from '@/lib/user-preferences'
 
 type OnboardingStep =
   | 'welcome'
@@ -18,22 +26,7 @@ type OnboardingStep =
   | 'ai'
   | 'complete'
 
-interface OnboardingData {
-  theme: ThemeOption
-  cliEditor: CliEditorOption
-  preferredIde: IdeOption
-  extensions: string[]
-  integrations: {
-    github?: boolean
-    gitlab?: boolean
-    jira?: boolean
-    linear?: boolean
-    datadog?: boolean
-    sentry?: boolean
-  }
-  aiProviders: AiProvider[]
-  onboardingCompleted?: boolean
-}
+type OnboardingData = UserPreferences
 
 const steps: OnboardingStep[] = [
   'welcome',
