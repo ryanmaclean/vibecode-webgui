@@ -30,41 +30,41 @@
 - [ ] .github/workflows/standup-report.yml — weekday standup script that files GitHub issues and optionally posts to Slack; issue to confirm GH token scopes and Slack channel usage
 - [ ] .github/workflows/test-ci-simplified.yml — root tests pipeline spinning up Docker Postgres/Redis, heavy Datadog env; issue should question duplicate redis install steps and optional API key coverage
 - [ ] .github/workflows/test-simple.yml — sanity jobs for Babel config + optional Datadog CI visibility; issue to determine if still needed vs simplified CI and ensure Datadog secrets gating works
-- [ ] azure-appservice-deploy.yml/*
-- [ ] azure-webgui-deploy.yml/*
-- [ ] build-and-push-image.yml/*
+- [ ] azure-appservice-deploy.yml/* — confirm disabled-expensive copy stays in sync with active workflow or remove duplicate.
+- [ ] azure-webgui-deploy.yml/* — same check for WebGUI deployment variant.
+- [ ] build-and-push-image.yml/* — ensure legacy disabled workflow aligns with primary GHCR build.
 - [ ] ci-cd.yml/* — disabled-expensive pipeline with unit/e2e/build steps; decide archival vs revival.
 - [ ] ci-complex.yml/* — retired heavy CI (Trivy, Snyk, Datadog CLI); document whether to resurrect.
 - [ ] ci-enhancements.yml/* — experimental enhanced CI workflow now disabled; capture lessons/next action.
 - [ ] ci-simplified.yml/* — disabled variant; ensure notes reflect active simplified CI counterpart.
 - [ ] ci.yml/* — generic CI placeholder under disabled-expensive; confirm if safe to delete.
-- [ ] claude-code-review.yml/*
-- [ ] claude.yml/*
-- [ ] cost-monitor.yml/*
-- [ ] datadog-service-catalog.yml/*
-- [ ] db-monitoring-deployment.yml/*
+- [ ] claude-code-review.yml/* — check for disabled alternate copy and consolidate config.
+- [ ] claude.yml/* — ensure only active @claude responder remains.
+- [ ] cost-monitor.yml/* — verify disabled reminder isn’t conflicting with the active schedule.
+- [ ] datadog-service-catalog.yml/* — document whether disabled copy references outdated service files.
+- [ ] db-monitoring-deployment.yml/* — confirm any disabled variant is archived or updated.
 - [ ] dbm-verifier-run.yml/* — disabled Datadog DBM verifier; check overlap with db-monitoring-deployment.
-- [ ] demo-validation.yml/*
-- [ ] dependency-compatibility.yml/*
+- [ ] demo-validation.yml/* — ensure disabled-expensive variant mirrors active demo workflow or remove.
+- [ ] dependency-compatibility.yml/* — confirm no redundant disabled workflow remains.
 - [ ] docker-multiarch.yml/* — disabled multi-arch build; review demand vs GHCR workflows.
-- [ ] docs-automation.yml/*
-- [ ] docs-ci-cd.yml/*
-- [ ] error-tracking-integration.yml/*
+- [ ] docs-automation.yml/* — verify disabled copy isn’t diverging from automation job.
+- [ ] docs-ci-cd.yml/* — reconcile disabled entry with active docs pipeline.
+- [ ] error-tracking-integration.yml/* — note whether disabled workflow still needed for reference.
 - [ ] ethicalcheck.yml/* — disabled EthicalCheck security scan; assess historical value.
-- [ ] gitops-deployment.yml/*
-- [ ] infrastructure-tests.yml/*
+- [ ] gitops-deployment.yml/* — confirm status of disabled GitOps pipeline.
+- [ ] infrastructure-tests.yml/* — check for any disabled duplicates to clean up.
 - [ ] k8s-deploy.yml/* — disabled K8s deploy; ensure AKS/GitOps workflows cover same scope.
 - [ ] kind-testing.yml/* — disabled KinD suite; compare with new smoke test.
-- [ ] main-branch-ci.yml/*
+- [ ] main-branch-ci.yml/* — document if disabled version exists and align coverage.
 - [ ] performance-gates.yml/* — disabled performance gate workflow; note infra requirements.
 - [ ] production-deployment.yml/* — legacy prod deploy in disabled-expensive; reconcile with current deployment path.
-- [ ] release-branch-ci.yml/*
-- [ ] secret-scanning.yml/*
-- [ ] stale.yml/*
-- [ ] standup-report.yml/*
+- [ ] release-branch-ci.yml/* — ensure disabled variant is archived or synced.
+- [ ] secret-scanning.yml/* — ensure disabled variant is redundant before removal.
+- [ ] stale.yml/* — confirm no duplicate automation remains.
+- [ ] standup-report.yml/* — ensure only active workflow lives under .github/workflows.
 - [ ] synthetic-test.yml/* — disabled synthetic monitoring workflow; determine replacement.
-- [ ] test-ci-simplified.yml/*
-- [ ] test-simple.yml/*
+- [ ] test-ci-simplified.yml/* — check disabled copy parallels active root-test workflow.
+- [ ] test-simple.yml/* — ensure disabled version matches current simple test job.
 - [ ] trufflehog-on-demand.yml/* — disabled on-demand secret scan; decide if redundant.
 - [ ] working-ci.yml/* — catch-all CI file (disabled); evaluate removal.
 
@@ -110,6 +110,13 @@
 
 ### Next Steps
 - [ ] No action needed unless Copilot leaves future comments; continue tracking via assigned issues snapshot above.
+
+## Agent Update (2025-09-30 03:24 UTC)
+
+- Searched issue threads for "copilot" mentions. Only owner-authored notes reference Copilot (#323 planning note, #312 KinD stabilization) — no bot comments yet.
+
+### Next Steps
+- [ ] None required; monitor future discussions if the bot starts commenting.
 
 ## Agent Update (2025-09-30 02:59 UTC)
 
