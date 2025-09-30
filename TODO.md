@@ -28,45 +28,45 @@
 - [ ] .github/workflows/secret-scanning.yml — standalone TruffleHog diff scan on pushes/PRs; issue should ensure skip logic matches main-branch guard and consider integration with GitHub Advanced Security
 - [ ] .github/workflows/stale.yml — nightly actions/stale sweep (issue/PR labels, exempt list); issue should confirm label conventions and whether security items stay exempt
 - [ ] .github/workflows/standup-report.yml — weekday standup script that files GitHub issues and optionally posts to Slack; issue to confirm GH token scopes and Slack channel usage
-- [ ] .github/workflows/test-ci-simplified.yml
-- [ ] .github/workflows/test-simple.yml
+- [ ] .github/workflows/test-ci-simplified.yml — root tests pipeline spinning up Docker Postgres/Redis, heavy Datadog env; issue should question duplicate redis install steps and optional API key coverage
+- [ ] .github/workflows/test-simple.yml — sanity jobs for Babel config + optional Datadog CI visibility; issue to determine if still needed vs simplified CI and ensure Datadog secrets gating works
 - [ ] azure-appservice-deploy.yml/*
 - [ ] azure-webgui-deploy.yml/*
 - [ ] build-and-push-image.yml/*
-- [ ] ci-cd.yml/*
-- [ ] ci-complex.yml/*
-- [ ] ci-enhancements.yml/*
-- [ ] ci-simplified.yml/*
-- [ ] ci.yml/*
+- [ ] ci-cd.yml/* — disabled-expensive pipeline with unit/e2e/build steps; decide archival vs revival.
+- [ ] ci-complex.yml/* — retired heavy CI (Trivy, Snyk, Datadog CLI); document whether to resurrect.
+- [ ] ci-enhancements.yml/* — experimental enhanced CI workflow now disabled; capture lessons/next action.
+- [ ] ci-simplified.yml/* — disabled variant; ensure notes reflect active simplified CI counterpart.
+- [ ] ci.yml/* — generic CI placeholder under disabled-expensive; confirm if safe to delete.
 - [ ] claude-code-review.yml/*
 - [ ] claude.yml/*
 - [ ] cost-monitor.yml/*
 - [ ] datadog-service-catalog.yml/*
 - [ ] db-monitoring-deployment.yml/*
-- [ ] dbm-verifier-run.yml/*
+- [ ] dbm-verifier-run.yml/* — disabled Datadog DBM verifier; check overlap with db-monitoring-deployment.
 - [ ] demo-validation.yml/*
 - [ ] dependency-compatibility.yml/*
-- [ ] docker-multiarch.yml/*
+- [ ] docker-multiarch.yml/* — disabled multi-arch build; review demand vs GHCR workflows.
 - [ ] docs-automation.yml/*
 - [ ] docs-ci-cd.yml/*
 - [ ] error-tracking-integration.yml/*
-- [ ] ethicalcheck.yml/*
+- [ ] ethicalcheck.yml/* — disabled EthicalCheck security scan; assess historical value.
 - [ ] gitops-deployment.yml/*
 - [ ] infrastructure-tests.yml/*
-- [ ] k8s-deploy.yml/*
-- [ ] kind-testing.yml/*
+- [ ] k8s-deploy.yml/* — disabled K8s deploy; ensure AKS/GitOps workflows cover same scope.
+- [ ] kind-testing.yml/* — disabled KinD suite; compare with new smoke test.
 - [ ] main-branch-ci.yml/*
-- [ ] performance-gates.yml/*
-- [ ] production-deployment.yml/*
+- [ ] performance-gates.yml/* — disabled performance gate workflow; note infra requirements.
+- [ ] production-deployment.yml/* — legacy prod deploy in disabled-expensive; reconcile with current deployment path.
 - [ ] release-branch-ci.yml/*
 - [ ] secret-scanning.yml/*
 - [ ] stale.yml/*
 - [ ] standup-report.yml/*
-- [ ] synthetic-test.yml/*
+- [ ] synthetic-test.yml/* — disabled synthetic monitoring workflow; determine replacement.
 - [ ] test-ci-simplified.yml/*
 - [ ] test-simple.yml/*
-- [ ] trufflehog-on-demand.yml/*
-- [ ] working-ci.yml/*
+- [ ] trufflehog-on-demand.yml/* — disabled on-demand secret scan; decide if redundant.
+- [ ] working-ci.yml/* — catch-all CI file (disabled); evaluate removal.
 
 ### Next Steps
 - [ ] Create GitHub issues for each workflow above noting current status (failing, disabled, or needs validation).
@@ -87,6 +87,29 @@
 
 ### Next Steps
 - [ ] Decide which of the Copilot-owned backlog items dovetail with the workflow/issues catalog and coordinate follow-up owners.
+
+## Agent Update (2025-09-30 03:18 UTC)
+
+- Reviewed current dependency-update branches to see which are merge-ready.
+
+### Dependabot PR status (Sep 30)
+- ✅ #322 `@ai-sdk/openai` 1.3.24 → 2.0.38 — checks green; only waiting on mergeability refresh/review.
+- ✅ #251 `tar-fs` 2.1.3 → 2.1.4 (extensions) — checks green.
+- ✅ #250 `framer-motion` 12.23.12 → 12.23.22 — checks green.
+- ❌ #321 `@uiw/react-codemirror` 4.25.1 → 4.25.2 — fails security/build/dependency compatibility.
+- ❌ #241 `critters` 0.0.19 → 0.0.25 — same failing checks.
+- ⏳ #238 `react-hook-form` 7.63.0 — CI still pending (no results yet).
+
+### Next Steps
+- [ ] Triage failing PRs (#321, #241) to understand security/build failures before merging.
+- [ ] Refresh/approve/merge the green set (#322, #251, #250) once reviews are done.
+
+## Agent Update (2025-09-30 03:22 UTC)
+
+- Queried issue history looking for Copilot-authored comments (`gh issue list ... --json comments`) and none were found—only assignments so far.
+
+### Next Steps
+- [ ] No action needed unless Copilot leaves future comments; continue tracking via assigned issues snapshot above.
 
 ## Agent Update (2025-09-30 02:59 UTC)
 
