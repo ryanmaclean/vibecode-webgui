@@ -200,6 +200,9 @@ RUN code-server --install-extension mikestead.dotenv \
     && code-server --install-extension editorconfig.editorconfig \
     && code-server --install-extension johnpapa.vscode-peacock
 
+# Datadog Official Extension (Apache 2.0)
+RUN code-server --install-extension datadog.datadog-vscode
+
 # Database Tools (MIT/Apache)
 RUN code-server --install-extension mtxr.sqltools \
     && code-server --install-extension mtxr.sqltools-driver-pg
