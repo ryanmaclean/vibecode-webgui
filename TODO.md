@@ -68,6 +68,18 @@
 3. **Claim Work Area** - Specify which directories/files you're working on
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- ✅ **Agent Cascade (2025-09-30 00:38 UTC)**: COMPLETED ingest process check
+  - Result: PID 82844 still running (wrapper processes too); ingest slots busy
+  - Files: None
+  - Goal: Determine if ingestion slots are free
+  - ETA: 2 minutes
+  - Status: COMPLETE
+- ✅ **Agent Codex (2025-09-30 00:50 UTC)**: COMPLETED README log reference blurb
+  - Result: Added "Coordination & History" section pointing to `docs/logs/` and `TODO.md`
+  - Files: README.md
+  - Goal: Help contributors discover coordination logs
+  - ETA: 5 minutes
+  - Status: COMPLETE
 - ✅ **Agent Cascade (2025-09-29 23:42 UTC)**: COMPLETED Datadog credential check
   - Result: `curl https://api/datadoghq.com/api/v1/validate` returned `{"errors":["Unauthorized"]}`
   - Files: None
@@ -1337,4 +1349,8 @@ git revert HEAD~17..HEAD
 ## Agent Update (2025-09-29 23:42 UTC)
 
 - Datadog API validation call returns `Unauthorized`; current DD_API_KEY/DD_APP_KEY pair lacks required permissions. Agentless spans will continue to fail until credentials rotate.
+
+## Agent Update (2025-09-30 00:38 UTC)
+
+- `scripts/ingest-docs-to-rag.ts` still active under PID 82844; delaying any new ingestion batches until the queue clears.
 
