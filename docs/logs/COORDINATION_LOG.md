@@ -312,3 +312,74 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - Updated the smoke script to create the `vibecode-platform` namespace automatically so the workflow can run on fresh clusters.
 - Failure hook captures pod diagnostics (`kubectl get/describe/logs`) for easier debugging in CI.
 - Build timing check: GitHub-hosted runners complete the image build/load/smoke loop in ~2 minutes, so no additional caching is required right now.
+
+### 2025-09-30 03:58 UTC — Workflow issue drafts prepared
+- Captured draft titles/notes for every outstanding workflow in `docs/logs/WORKFLOW_TRACKING.md` (covers both active and disabled-expensive variants).
+- TODO.md now links to the draft table so issue creation can proceed without re-reading each YAML.
+- Next action: open GitHub issues using the drafts, then back-link them in TODO.md per coordination protocol.
+
+### 2025-09-30 04:12 UTC — Workflow issues opened
+- Created issues #355–#395 covering every workflow listed in TODO.md (active + disabled variants).
+- Updated TODO.md entries with `Tracking: #...` references and refreshed `docs/logs/WORKFLOW_TRACKING.md` to map workflows to issues.
+- Next follow-up: work each issue, then mark the corresponding TODO item complete once resolved.
+
+### 2025-09-30 04:20 UTC — Datadog trace verify guard
+- Workflow `.github/workflows/datadog-trace-verify.yml` now skips gracefully when DD secrets are missing and warns if no artefacts are produced.
+- Issue #392 updated with the change; future runs should no longer fail noisily on missing secrets.
+
+### 2025-09-30 04:25 UTC — Removed redundant App Service workflows
+- Deleted the disabled-expensive duplicates for azure-appservice and azure-webgui deploy pipelines so the active workflows remain authoritative.
+- Comments added to issues #355 and #356 documenting the cleanup.
+### 2025-09-30 04:27 UTC — Removed legacy build-and-push workflow
+- Deleted `disabled-expensive/build-and-push-image.yml` (tracked via #357) so only the active GHCR pipeline remains in use.
+- Fish shell added to both code-server Dockerfiles so Bash, Zsh, and Fish are available when the KinD or primary images rebuild.
+
+### 2025-09-30 04:15 UTC — Workflow issue drafts for manual-only pipelines
+- Drafted remediation outlines for the workflows we paused (`datadog-trace-verify`, `docs-automation`, `docs-ci-cd`, `error-tracking-integration`, `infrastructure-tests`, `release-branch-ci`, `test-simple`).
+- Stored the drafts under `docs/logs/workflow-issues/` and linked them from TODO.md + WORKFLOW_TRACKING.md.
+- Next step: convert drafts into GitHub issues, back-link them, then start unpausing the highest impact workflows (release branch CI + infra tests).
+
+### 2025-09-30 04:40 UTC — Release CI gating restored
+- Re-enabled push/PR triggers on `.github/workflows/release-branch-ci.yml` and added secret-aware gating so Datadog/LHCI steps skip cleanly when creds missing.
+- Playwright stage now waits for the dev server (`curl` loop + trap cleanup) to avoid flaky sleeps.
+- Pending: load Datadog/LHCI secrets in GitHub, open the tracking issue from `docs/logs/workflow-issues/release-branch-ci.md`, and verify the workflow on a `release/` branch.
+
+### 2025-09-30 05:00 UTC — Infra tests workflow back on PRs
+- Restored push/PR triggers on `.github/workflows/infrastructure-tests.yml` with concurrency guard to avoid overlapping Azure runs.
+- Added `validate-secrets` preflight so integration/e2e stages skip when Azure, Postgres, or Datadog secrets are missing. Unit stage still runs for baseline coverage.
+- TODO: provision the required secrets, implement automatic resource cleanup, and open the tracking issue using `docs/logs/workflow-issues/infrastructure-tests.md` as the template.
+
+### 2025-09-30 05:20 UTC — Docs CI/CD auto triggers restored
+- Re-enabled `.github/workflows/docs-ci-cd.yml` for docs path changes (push, PR, weekly cron) with concurrency guard.
+- Added secret-aware outputs so container push, staging/prod deploys, and Datadog notifications skip gracefully when creds are missing. Staging run now tags local images when ACR push is unavailable and suppresses Datadog pod checks without API keys.
+- Pending follow-up: refresh Azure/Datadog secrets, document cache strategy, and file the GitHub issue using `docs/logs/workflow-issues/docs-ci-cd.md`.
+
+### 2025-09-30 05:28 UTC — Drafted Datadog service catalog remediation
+- Captured issue template at `docs/logs/workflow-issues/datadog-service-catalog.md` covering secret audit, schema linting, scheduling, and reporting.
+- Linked the draft from TODO.md and WORKFLOW_TRACKING.md so the next agent can open a GitHub issue quickly.
+- Pending: confirm DD API/app keys, add preflight linting to the workflow, and re-enable the weekly cron.
+
+### 2025-09-30 05:38 UTC — Datadog trace cron re-enabled
+- Restored the hourly schedule for `.github/workflows/datadog-trace-verify.yml` and added concurrency guard + secret-aware early exit.
+- Captured `npm run monitoring:trace` output into `datadog-trace-search.log` and ship it with artefacts for better debugging.
+- Next: refresh Datadog API/App keys, resolve the `{"errors":["Not found"]}` response, and plug alerting into Datadog/Slack before marking the TODO complete.
+
+### 2025-09-30 05:45 UTC — Docs automation issue draft
+- Captured remediation plan for `.github/workflows/docs-automation.yml` covering trigger strategy, lychee tuning, and PR-based auto-commits in `docs/logs/workflow-issues/docs-automation.md`.
+- Linked the draft from TODO.md and WORKFLOW_TRACKING.md to unblock future issue filing.
+- Pending: implement gating/caching updates and decide on the auto-generated documentation publication flow.
+
+### 2025-09-30 05:55 UTC — Error tracking workflow refactor
+- Re-enabled `.github/workflows/error-tracking-integration.yml` on PRs with concurrency + Datadog secret validation; added `missing-secrets` notice job.
+- Swapped direct commits for a PR-based flow gated behind a manual `apply_changes` input and upload diffs when running in validation mode.
+- Next: provision Datadog API/App keys, configure alerting, and confirm the workflow can auto-open a PR via `workflow_dispatch` once secrets are present.
+
+### 2025-09-30 06:02 UTC — DB monitoring workflow draft
+- Documented remediation plan for `.github/workflows/db-monitoring-deployment.yml` (secret gating, concurrency, modular phases) in `docs/logs/workflow-issues/db-monitoring-deployment.md`.
+- Linked the draft from TODO and WORKFLOW_TRACKING to prepare for a GitHub issue.
+- Pending: implement the outlined changes and coordinate with DB/Observability teams before re-enabling triggers.
+
+### 2025-09-30 06:10 UTC — GitOps pipeline secret gating
+- Added concurrency and explicit secret validation outputs to `.github/workflows/gitops-deployment.yml` so Snyk/Datadog steps skip cleanly without credentials.
+- Adjusted build gating to keep tests running when security scans skip, and defaulted Datadog API calls to `DD_SITE` env.
+- Pending: audit container registry/Azure credentials and file the tracking issue before considering trigger adjustments.

@@ -1,13 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { useTheme } from 'next-themes'
+import { useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-
-const LOCAL_STORAGE_KEY = 'vibecode-onboarding/preferences'
+import { useUserPreferences } from '@/providers/UserPreferencesProvider'
 
 const cliEditors = [
   { label: 'Vim', value: 'vim' },
@@ -37,56 +35,56 @@ type Preferences = {
   integrations: Record<string, boolean>
 }
 
-const defaultPreferences: Preferences = {
-  theme: 'dark',
-  cliEditor: '',
-  integrations: integrations.reduce((acc, item) => {
-    acc[item.id] = false
-    return acc
-  }, {} as Record<string, boolean>),
-}
-
 type OnboardingDrawerProps = {
   open: boolean
   onClose: () => void
 }
 
 export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
-  const { theme, setTheme } = useTheme()
-  const [preferences, setPreferences] = useState<Preferences>(defaultPreferences)
+  const { preferences, save, isLoading, error } = useUserPreferences()
+  const [saving, setSaving] = useState(false)
+  const [localError, setLocalError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!open) return
-
-    try {
-      const raw = localStorage.getItem(LOCAL_STORAGE_KEY)
-      if (raw) {
-        const parsed = JSON.parse(raw)
-        setPreferences({
-          ...defaultPreferences,
-          ...parsed,
-          integrations: {
-            ...defaultPreferences.integrations,
-            ...(parsed.integrations || {}),
-          },
-        })
-      } else if (theme === 'light' || theme === 'dark') {
-        setPreferences((prev) => ({ ...prev, theme }))
-      }
-    } catch (error) {
-      console.warn('Failed to read onboarding preferences', error)
+  const integrationState = useMemo(() => {
+    const base = integrations.reduce((acc, item) => {
+      acc[item.id] = false
+      return acc
+    }, {} as Record<string, boolean>)
+    return {
+      ...base,
+      ...(preferences.integrations ?? {}),
     }
-  }, [open, theme])
+  }, [preferences.integrations])
 
-  useEffect(() => {
-    if (!open) return
-    setTheme(preferences.theme)
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(preferences))
-  }, [open, preferences, setTheme])
+  const mergedPreferences: Preferences = {
+    theme: preferences.theme === 'auto' ? 'dark' : preferences.theme,
+    cliEditor: preferences.cliEditor,
+    integrations: integrationState,
+  }
+
+  const handleUpdate = async (updates: Partial<Preferences>) => {
+    try {
+      setSaving(true)
+      setLocalError(null)
+      await save({
+        theme: updates.theme ?? preferences.theme,
+        cliEditor: updates.cliEditor ?? preferences.cliEditor,
+        preferredIde: preferences.preferredIde,
+        extensions: preferences.extensions,
+        integrations: updates.integrations ?? preferences.integrations,
+        aiProviders: preferences.aiProviders,
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update preferences'
+      setLocalError(message)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const integrationsComplete = useMemo(() => {
-    return integrations.every((item) => preferences.integrations[item.id])
-  }, [preferences.integrations])
+    return integrations.every((item) => mergedPreferences.integrations[item.id])
+  }, [mergedPreferences.integrations])
 
   if (!open) return null
 
@@ -100,6 +98,9 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
             <p className="text-sm text-muted-foreground">
               Tweak your workspace and connect the services you rely on every day.
             </p>
+            {(error || localError) && (
+              <p className="text-xs text-red-500">{localError ?? error}</p>
+            )}
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close onboarding">
             ✕
@@ -116,9 +117,10 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
               {(['light', 'dark'] as const).map((value) => (
                 <Button
                   key={value}
-                  variant={preferences.theme === value ? 'default' : 'outline'}
-                  onClick={() => setPreferences((prev) => ({ ...prev, theme: value }))}
+                  variant={mergedPreferences.theme === value ? 'default' : 'outline'}
+                  onClick={() => handleUpdate({ theme: value })}
                   className="flex-1"
+                  disabled={saving || isLoading}
                 >
                   {value === 'light' ? 'Light' : 'Dark'}
                 </Button>
@@ -136,10 +138,9 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
               <select
                 id="cli-editor"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={preferences.cliEditor}
-                onChange={(event) =>
-                  setPreferences((prev) => ({ ...prev, cliEditor: event.target.value }))
-                }
+                value={mergedPreferences.cliEditor}
+                onChange={(event) => handleUpdate({ cliEditor: event.target.value })}
+                disabled={saving || isLoading}
               >
                 <option value="">Select an editor</option>
                 {cliEditors.map((editor) => (
@@ -187,16 +188,16 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
                     <input
                       type="checkbox"
                       className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                      checked={preferences.integrations[item.id]}
+                      checked={mergedPreferences.integrations[item.id]}
                       onChange={(event) =>
-                        setPreferences((prev) => ({
-                          ...prev,
+                        handleUpdate({
                           integrations: {
-                            ...prev.integrations,
+                            ...mergedPreferences.integrations,
                             [item.id]: event.target.checked,
                           },
-                        }))
+                        })
                       }
+                      disabled={saving || isLoading}
                     />
                     <span className="text-sm text-foreground">{item.label}</span>
                   </div>

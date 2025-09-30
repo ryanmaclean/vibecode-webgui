@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-/* eslint-disable @typescript-eslint/no-require-imports */
 
 /**
  * Dependency Compatibility Checker
- * 
- * This script performs comprehensive dependency compatibility testing
- * to catch issues before they reach CI/CD pipelines.
+ *
+ * Performs comprehensive dependency compatibility testing to catch issues
+ * before they reach CI/CD pipelines. Converts CommonJS usage to native ESM so
+ * eslint can enforce modern module standards without suppressing rules.
  */
 
-const { execSync, spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync } from 'node:child_process';
+import fs from 'node:fs';
+import { pathToFileURL } from 'node:url';
 
 class DependencyCompatibilityChecker {
   constructor() {
@@ -26,26 +26,26 @@ class DependencyCompatibilityChecker {
 
   log(message, type = 'info') {
     const colors = {
-      info: '\x1b[36m',    // Cyan
-      success: '\x1b[32m', // Green
-      warning: '\x1b[33m', // Yellow
-      error: '\x1b[31m',   // Red
-      reset: '\x1b[0m'     // Reset
+      info: '\x1b[36m',
+      success: '\x1b[32m',
+      warning: '\x1b[33m',
+      error: '\x1b[31m',
+      reset: '\x1b[0m'
     };
-    
+
     console.log(`${colors[type]}${message}${colors.reset}`);
   }
 
   async checkDependencyConflicts() {
     this.log('🔍 Checking for dependency conflicts...', 'info');
-    
+
     try {
-      const output = execSync('npm ls --depth=0', { encoding: 'utf8', stdio: 'pipe' });
+      execSync('npm ls --depth=0', { encoding: 'utf8', stdio: 'pipe' });
       this.log('✅ No dependency conflicts found', 'success');
     } catch (error) {
-      const conflicts = error.stdout.match(/npm ERR!.*$/gm) || [];
+      const conflicts = error.stdout?.match(/npm ERR!.*$/gm) || [];
       this.results.conflicts = conflicts;
-      
+
       if (conflicts.length > 0) {
         this.log(`❌ Found ${conflicts.length} dependency conflicts`, 'error');
         conflicts.forEach(conflict => this.log(`  ${conflict}`, 'error'));
@@ -55,14 +55,14 @@ class DependencyCompatibilityChecker {
 
   async checkSecurityVulnerabilities() {
     this.log('🔒 Checking for security vulnerabilities...', 'info');
-    
+
     try {
       execSync('npm audit --audit-level=moderate', { encoding: 'utf8', stdio: 'pipe' });
       this.log('✅ No security vulnerabilities found', 'success');
     } catch (error) {
-      const auditOutput = error.stdout;
+      const auditOutput = error.stdout || '';
       const vulnerabilities = auditOutput.match(/(\d+) vulnerabilities?/);
-      
+
       if (vulnerabilities) {
         const count = vulnerabilities[1];
         this.log(`⚠️  Found ${count} security vulnerabilities`, 'warning');
@@ -73,9 +73,8 @@ class DependencyCompatibilityChecker {
 
   async checkOutdatedDependencies() {
     this.log('📦 Checking for outdated dependencies...', 'info');
-    
+
     try {
-      // Check if npm-check-updates is available
       execSync('which ncu', { stdio: 'pipe' });
     } catch {
       this.log('Installing npm-check-updates...', 'info');
@@ -85,7 +84,7 @@ class DependencyCompatibilityChecker {
     try {
       const output = execSync('ncu --format json', { encoding: 'utf8', stdio: 'pipe' });
       const outdated = JSON.parse(output);
-      
+
       if (Object.keys(outdated).length === 0) {
         this.log('✅ All dependencies are up to date', 'success');
       } else {
@@ -98,18 +97,21 @@ class DependencyCompatibilityChecker {
     } catch (error) {
       this.log('❌ Failed to check outdated dependencies', 'error');
       this.results.errors.push('outdated-check-failed');
+      if (error.stdout) {
+        this.log(error.stdout, 'error');
+      }
     }
   }
 
   async checkPeerDependencies() {
     this.log('🔗 Checking peer dependencies...', 'info');
-    
+
     try {
-      const output = execSync('npm ls --depth=1', { encoding: 'utf8', stdio: 'pipe' });
+      execSync('npm ls --depth=1', { encoding: 'utf8', stdio: 'pipe' });
       this.log('✅ All peer dependencies satisfied', 'success');
     } catch (error) {
-      const peerIssues = error.stdout.match(/(UNMET|missing|invalid).*$/gm) || [];
-      
+      const peerIssues = error.stdout?.match(/(UNMET|missing|invalid).*$/gm) || [];
+
       if (peerIssues.length > 0) {
         this.log(`⚠️  Found ${peerIssues.length} peer dependency issues:`, 'warning');
         peerIssues.forEach(issue => this.log(`  ${issue}`, 'warning'));
@@ -120,41 +122,33 @@ class DependencyCompatibilityChecker {
 
   async checkPhantomDependencies() {
     this.log('👻 Checking for phantom dependencies...', 'info');
-    
+
     const backupNodeModules = fs.existsSync('node_modules.backup');
-    
+
     try {
-      // Backup current node_modules
       if (fs.existsSync('node_modules') && !backupNodeModules) {
         execSync('mv node_modules node_modules.backup');
       }
-      
-      // Install only production dependencies
+
       execSync('npm ci --omit=dev --omit=optional', { stdio: 'pipe' });
-      
-      // Try to build
       execSync('npm run build', { stdio: 'pipe' });
-      
+
       this.log('✅ No phantom dependencies detected', 'success');
-      
     } catch (error) {
       this.log('❌ Phantom dependencies detected - build failed with prod-only deps', 'error');
       this.results.phantom.push('build-failed-prod-only');
-      
-      // Show the error for debugging
+
       if (error.stdout) {
         this.log('Build error output:', 'error');
         console.log(error.stdout);
       }
     } finally {
-      // Restore full node_modules
       if (fs.existsSync('node_modules')) {
         execSync('rm -rf node_modules');
       }
       if (fs.existsSync('node_modules.backup')) {
         execSync('mv node_modules.backup node_modules');
       } else {
-        // Reinstall all dependencies
         execSync('npm ci', { stdio: 'inherit' });
       }
     }
@@ -162,14 +156,14 @@ class DependencyCompatibilityChecker {
 
   async checkTypeScriptCompatibility() {
     this.log('📝 Checking TypeScript compatibility...', 'info');
-    
+
     try {
       execSync('npm run type-check', { stdio: 'pipe' });
       this.log('✅ TypeScript compatibility check passed', 'success');
     } catch (error) {
       this.log('❌ TypeScript compatibility issues found', 'error');
       this.results.errors.push('typescript-check-failed');
-      
+
       if (error.stdout) {
         console.log(error.stdout);
       }
@@ -178,32 +172,32 @@ class DependencyCompatibilityChecker {
 
   async validateLockfile() {
     this.log('🔒 Validating package-lock.json...', 'info');
-    
+
     try {
-      // Check lockfile integrity
       execSync('npm ci --dry-run', { stdio: 'pipe' });
-      
-      // Check lockfile version
+
       const packageLock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
       const version = packageLock.lockfileVersion;
-      
+
       if (version !== 3) {
         this.log(`⚠️  Lockfile version is ${version}, consider updating to version 3`, 'warning');
       } else {
         this.log('✅ Lockfile validation passed', 'success');
       }
-      
     } catch (error) {
       this.log('❌ Lockfile validation failed', 'error');
       this.results.errors.push('lockfile-validation-failed');
+      if (error.stdout) {
+        this.log(error.stdout, 'error');
+      }
     }
   }
 
   generateReport() {
     this.log('\n📊 DEPENDENCY COMPATIBILITY REPORT', 'info');
-    this.log('=' .repeat(50), 'info');
-    
-    const hasIssues = 
+    this.log('='.repeat(50), 'info');
+
+    const hasIssues =
       this.results.conflicts.length > 0 ||
       this.results.security.length > 0 ||
       this.results.peer.length > 0 ||
@@ -214,23 +208,23 @@ class DependencyCompatibilityChecker {
       this.log('🎉 All dependency compatibility checks passed!', 'success');
     } else {
       this.log('⚠️  Issues found:', 'warning');
-      
+
       if (this.results.conflicts.length > 0) {
         this.log(`  • ${this.results.conflicts.length} dependency conflicts`, 'error');
       }
-      
+
       if (this.results.security.length > 0) {
-        this.log(`  • Security vulnerabilities detected`, 'error');
+        this.log('  • Security vulnerabilities detected', 'error');
       }
-      
+
       if (this.results.peer.length > 0) {
         this.log(`  • ${this.results.peer.length} peer dependency issues`, 'warning');
       }
-      
+
       if (this.results.phantom.length > 0) {
-        this.log(`  • Phantom dependencies detected`, 'error');
+        this.log('  • Phantom dependencies detected', 'error');
       }
-      
+
       if (this.results.errors.length > 0) {
         this.log(`  • ${this.results.errors.length} other errors`, 'error');
       }
@@ -240,7 +234,6 @@ class DependencyCompatibilityChecker {
       this.log(`\n📋 ${Object.keys(this.results.outdated).length} outdated dependencies available for update`, 'info');
     }
 
-    // Save detailed report
     const report = {
       timestamp: new Date().toISOString(),
       summary: {
@@ -262,15 +255,14 @@ class DependencyCompatibilityChecker {
 
   async run() {
     this.log('🚀 Starting dependency compatibility check...', 'info');
-    
+
     await this.checkDependencyConflicts();
     await this.checkSecurityVulnerabilities();
     await this.checkOutdatedDependencies();
     await this.checkPeerDependencies();
     await this.validateLockfile();
     await this.checkTypeScriptCompatibility();
-    
-    // Skip phantom dependency check in CI or if requested
+
     if (!process.env.CI && !process.argv.includes('--skip-phantom')) {
       await this.checkPhantomDependencies();
     } else if (process.argv.includes('--skip-phantom')) {
@@ -278,24 +270,26 @@ class DependencyCompatibilityChecker {
     } else {
       this.log('⏭️  Skipping phantom dependency check (CI environment)', 'info');
     }
-    
+
     const success = this.generateReport();
-    
+
     if (!success && !process.argv.includes('--no-exit')) {
       process.exit(1);
     }
-    
+
     return success;
   }
 }
 
-// Run the checker if called directly
-if (require.main === module) {
+export default DependencyCompatibilityChecker;
+
+const invokedUrl = process.argv[1] ? pathToFileURL(process.argv[1]).href : undefined;
+const isDirectExecution = invokedUrl === import.meta.url;
+
+if (isDirectExecution) {
   const checker = new DependencyCompatibilityChecker();
   checker.run().catch(error => {
     console.error('❌ Dependency compatibility check failed:', error);
     process.exit(1);
   });
 }
-
-module.exports = DependencyCompatibilityChecker;

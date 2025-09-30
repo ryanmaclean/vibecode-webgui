@@ -4,12 +4,18 @@ This directory contains the configuration for the custom VibeCode code-server, w
 
 ## Features
 
-### AI Coding Assistants (MIT/Apache Licensed)
-- **Continue** - Open-source autopilot (Apache 2.0)
+### AI Coding Assistants
+- **Anthropic Claude Code** - Official Claude AI extension (requires API key)
+- **OpenAI ChatGPT** - Official OpenAI extension (requires API key)
+- **GitHub Copilot** - OpenAI Codex integration (requires subscription)
+- **GitHub Copilot Chat** - Chat interface for Copilot
 - **Codeium** - Free AI code completion (MIT)
-- **Cline** (formerly Claude Dev) - AI coding assistant (Apache 2.0)
-- **Aider** - AI pair programming (Apache 2.0)
-- **VibeCode AI Assistant** - Custom AI integration (MIT)
+- **Cline** - Community Claude integration (Apache 2.0)
+- **VibeCode AI Assistant** - Multi-provider AI (OpenRouter, Claude, GPT, Gemini)
+- **VibeCode Inline Edit** - Cmd+K inline editing like Cursor
+- **VibeCode Codebase Chat** - Chat with your codebase
+
+**Note:** Official AI extensions require API keys or subscriptions. Configure them after first launch.
 
 ### Developer Productivity Tools (MIT/BSD/Apache)
 - **Error Lens** - Inline error highlighting
@@ -44,9 +50,6 @@ This directory contains the configuration for the custom VibeCode code-server, w
 
 ### Additional Language Support (MIT/Apache)
 - **YAML** - YAML language support
-- **XML** - XML language support
-- **Prisma** - Prisma ORM support
-- **GraphQL** - GraphQL support
 - **Tailwind CSS IntelliSense** - Tailwind autocomplete
 
 ### Utilities (MIT)
@@ -83,20 +86,45 @@ This directory contains the configuration for the custom VibeCode code-server, w
 - Optimized for Kubernetes deployment
 - Secure defaults with non-root user
 - Pre-configured LSP servers for all major languages
+- Bash, Zsh, and Fish shells pre-installed in the container
+- **Trusted domains pre-configured** - No annoying prompts for extension URLs (see [TRUSTED_DOMAINS.md](TRUSTED_DOMAINS.md))
 
 ## Building the Image
 
-To build the custom code-server image locally:
+### Multi-Architecture Build (Recommended)
+
+Build for both ARM64 and AMD64 architectures:
 
 ```bash
-# Make the build script executable
-chmod +x ../../scripts/build-code-server.sh
+# Build both architectures locally
+./scripts/build-codeserver-multiarch.sh local
 
-# Build the image
-./scripts/build-code-server.sh
+# Build and push multi-arch manifest to registry
+./scripts/build-codeserver-multiarch.sh push docker.io/youruser
 
-# To build and push to a container registry:
-# ./scripts/build-code-server.sh --push
+# Export to tarballs for offline distribution
+./scripts/build-codeserver-multiarch.sh export ./dist
+```
+
+### Single Architecture Build
+
+For local development on your current platform:
+
+```bash
+docker build -f docker/code-server/Dockerfile -t vibecode-codeserver:latest .
+```
+
+### Security Note
+
+⚠️ **Never include API keys in the Docker image!**
+
+The Dockerfile is configured to skip Datadog Agent installation during build. Configure secrets at runtime:
+
+```bash
+docker run -p 8765:8765 \
+  -e DD_API_KEY=your_key_here \
+  -e PASSWORD=secure_password \
+  vibecode-codeserver:latest
 ```
 
 ## Kubernetes Deployment
@@ -124,7 +152,7 @@ To add more VS Code extensions, update the `Dockerfile` and add them to the list
 2. Build and test locally:
    ```bash
    docker build -t vibecode/code-server:local -f docker/code-server/Dockerfile .
-   docker run -p 8080:8080 -v $(pwd):/home/coder/workspace vibecode/code-server:local
+   docker run -p 8765:8765 -v $(pwd):/home/coder/workspace vibecode/code-server:local
    ```
 3. Push changes to the repository
 4. The CI/CD pipeline will automatically build and deploy the new image

@@ -1,23 +1,6 @@
 name: Documentation Automation
 
 on:
-  push:
-    branches: [ main, develop ]
-    paths:
-      - 'src/**'
-      - 'package.json'
-      - 'docs/**'
-      - '**/*.md'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'package.json' 
-      - 'docs/**'
-      - '**/*.md'
-  schedule:
-    # Run weekly to check for outdated documentation
-    - cron: '0 2 * * 0'
   workflow_dispatch:
 
 jobs:
