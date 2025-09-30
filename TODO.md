@@ -1,3 +1,12 @@
+## Agent Update (2025-09-30 02:59 UTC)
+
+- Documenting Docker-on-NAS deployment (Asustor, QNAP, Synology) and preparing a portable compose file.
+
+### Next Steps
+- [x] Add `docs/NAS_DEPLOYMENT.md` with the instructions.
+- [x] Generate a ready-to-import `docker-compose.nas.yml`.
+- [x] Log the addition in `AGENT_ACTIVITY_LOG`.
+
 ## Agent Update (2025-09-30 02:27 UTC)
 
 - Running `node scripts/verify-monacopilot.js` to confirm all 9 checks still pass after the Monaco upgrade.
