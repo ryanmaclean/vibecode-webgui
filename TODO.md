@@ -52,7 +52,7 @@
 - Re-ran the combined script; port-forward + NodePort checks still pass and the editor probe reports all three binaries.
 
 ### Next Steps
-- [ ] Evaluate caching the apt-installed editors inside the base image to shorten CI runs.
+- [x] Evaluate caching the apt-installed editors inside the base image to shorten CI runs. — CI build already bakes editors into `vibecode/code-server:monaco053`; nightly workflow build and load completes in ~2m, so no extra caching needed yet.
 - [x] Follow up on extending the editor script once aider/goose CLI installs are available. — Script now checks both CLIs and is wired into the smoke test.
 - [x] Consider surfacing the new checks in CI (GitHub Actions) after other agents sign off. — See `.github/workflows/kind-code-server-smoke.yml`.
 
