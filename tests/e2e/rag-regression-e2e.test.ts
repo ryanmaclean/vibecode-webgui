@@ -14,17 +14,10 @@ const BASE_URL = process.env.BASE_URL || 'http://localhost:3000'
 const DEMO_DATA_PATH = path.join(process.cwd(), 'data', 'rag-azure-demo')
 const TEST_SCENARIOS_PATH = path.join(DEMO_DATA_PATH, 'test-scenarios.json')
 
-interface TestScenario {
-  id: string
-  name: string
-  query: string
-  expectedKeywords: string[]
-  category: string
-  difficulty: string
-}
+// TestScenario structure: { id, name, query, expectedKeywords, category, difficulty }
 
 // Load test scenarios
-let testScenarios: TestScenario[] = []
+let testScenarios = []
 if (fs.existsSync(TEST_SCENARIOS_PATH)) {
   testScenarios = JSON.parse(fs.readFileSync(TEST_SCENARIOS_PATH, 'utf8'))
 }

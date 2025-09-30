@@ -53,37 +53,35 @@ const DEMO_DATA_PATH = path.join(process.cwd(), 'data', 'rag-azure-demo')
 const DEMO_DOCUMENTS_PATH = path.join(DEMO_DATA_PATH, 'demo-documents.json')
 const TEST_SCENARIOS_PATH = path.join(DEMO_DATA_PATH, 'test-scenarios.json')
 
-interface TestScenario {
-  id: string
-  name: string
-  query: string
-  expectedKeywords: string[]
-  expectedDocuments: string[]
-  category: string
-  difficulty: 'basic' | 'intermediate' | 'advanced'
-}
+// TestScenario structure:
+// {
+//   id: string
+//   name: string
+//   query: string
+//   expectedKeywords: string[]
+//   expectedDocuments: string[]
+//   category: string
+//   difficulty: 'basic' | 'intermediate' | 'advanced'
+// }
 
-interface RagMetrics {
-  contextBuildTime: number
-  searchLatency: number
-  totalLatency: number
-  relevanceScore: number
-  documentsFound: number
-  keywordsMatched: number
-  responseQuality: number
-  tokenUsage?: {
-    prompt: number
-    completion: number
-    total: number
-  }
-}
+// RagMetrics structure:
+// {
+//   contextBuildTime: number
+//   searchLatency: number
+//   totalLatency: number
+//   relevanceScore: number
+//   documentsFound: number
+//   keywordsMatched: number
+//   responseQuality: number
+//   tokenUsage?: { prompt: number, completion: number, total: number }
+// }
 
 const conditionalDescribe = shouldRunRagRegressionTests ? describe : describe.skip
 
 conditionalDescribe('RAG Regression Tests with Datadog Telemetry', () => {
-  let testWorkspace: any
-  let testDocuments: any[]
-  let testScenarios: TestScenario[]
+  let testWorkspace
+  let testDocuments
+  let testScenarios
   const testUserId = 99999 // Use high ID to avoid conflicts
 
   const mockSession = {
@@ -197,7 +195,7 @@ conditionalDescribe('RAG Regression Tests with Datadog Telemetry', () => {
   }, 30000)
 
   // Helper function to calculate relevance score
-  function calculateRelevanceScore(response: string, expectedKeywords: string[]): number {
+  function calculateRelevanceScore(response, expectedKeywords) {
     const lowerResponse = response.toLowerCase()
     const matchedKeywords = expectedKeywords.filter(keyword => 
       lowerResponse.includes(keyword.toLowerCase())
@@ -206,7 +204,7 @@ conditionalDescribe('RAG Regression Tests with Datadog Telemetry', () => {
   }
 
   // Helper function to extract response quality metrics
-  function calculateResponseQuality(response: string, scenario: TestScenario): number {
+  function calculateResponseQuality(response, scenario) {
     let score = 0
     
     // Length appropriateness (not too short, not too long)
@@ -224,7 +222,7 @@ conditionalDescribe('RAG Regression Tests with Datadog Telemetry', () => {
   }
 
   // Helper function to send metrics to Datadog
-  function sendRagMetrics(scenario: TestScenario, metrics: RagMetrics, success: boolean) {
+  function sendRagMetrics(scenario, metrics, success) {
     const tags = [
       `scenario:${scenario.id}`,
       `category:${scenario.category}`,
