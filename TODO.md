@@ -1,3 +1,12 @@
+## Agent Update (2025-09-30 01:37 UTC)
+
+- Expanding the KinD code-server environment and monacopilot API to cover additional editors/providers (Vim/Neovim/Emacs + Gemini/OpenCode/Codex/Claude Code).
+
+### Next Steps
+- [x] Install Emacs and Neovim alongside Vim in the code-server pod; capture install notes. — ✅ `sudo apt-get install -y neovim emacs-nox` succeeded (Emacs 28.2, Neovim 0.7.2).
+- [ ] Extend `/api/code-completion` to handle provider dispatch for Gemini/OpenCode/Codex/Claude Code.
+- [ ] Update docs/env examples so others can configure the new providers.
+
 ## Agent Update (2025-09-30 01:36 UTC)
 
 - Beginning to document the KinD code-server smoke test so teammates can reproduce the editor check quickly.
@@ -398,6 +407,18 @@
 3. **Claim Work Area** - Specify which directories/files you're working on
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- ✅ **Agent Cascade (2025-09-30 01:42 UTC)**: Type-check run
+  - Result: `npm run type-check` hit TS2322 in code-completion route and TS2339 in CodeiumPlayground
+  - Files: src/app/api/code-completion/route.ts, src/components/editors/CodeiumPlayground.tsx
+  - Goal: Confirm TS baseline
+  - ETA: 5 minutes
+  - Status: COMPLETE (needs follow-up)
+- ✅ **Agent Cascade (2025-09-30 01:41 UTC)**: Lint sanity check
+  - Result: `npm run lint -- --quiet` fails due to tmp-codeium-example/ lint errors (3 issues)
+  - Files: tmp-codeium-example/src/**
+  - Goal: Ensure lint baseline still clean
+  - ETA: 5 minutes
+  - Status: COMPLETE (flagged follow-up)
 - ✅ **Agent Cascade (2025-09-30 01:38 UTC)**: Ingest PID check
   - Result: PID 82844 still running (wrapper processes too); waiting before starting new ingest
   - Files: None
@@ -1950,4 +1971,14 @@ If another agent needs Codeium features, use Monacopilot instead - it's better a
 ## Agent Update (2025-09-30 01:38 UTC)
 
 - PID 82844 (scripts/ingest-docs-to-rag.ts) still running; ingest queue remains occupied.
+
+
+## Agent Update (2025-09-30 01:41 UTC)
+
+- Lint run surfaced 3 errors from `tmp-codeium-example/` (prefer-const, no-namespace, ban-ts-comment). Need to investigate whether this directory should be ignored or cleaned.
+
+
+## Agent Update (2025-09-30 01:42 UTC)
+
+- Type-check failing: `src/app/api/code-completion/route.ts` expects `CustomCopilotModel`, but route supplies plain strings; `CodeiumPlayground` references `monaco.version`. Need to decide whether to adjust types or add compatibility shims.
 
