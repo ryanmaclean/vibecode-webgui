@@ -5,27 +5,39 @@
  * @param {T} fallback - the fallback object to merge with
  * @return {T} the merged object
  */
-export function deepMerge<T>(partial: Partial<T> | undefined, fallback: T): T {
-  const merged: any = { ...fallback };
+type MergeableRecord = Record<string, unknown>;
 
-  for (const key in partial) {
-    if (typeof partial[key] === 'object' && !Array.isArray(partial[key])) {
-      if (
-        fallback[key] &&
-        typeof fallback[key] === 'object' &&
-        !Array.isArray(fallback[key])
-      ) {
-        merged[key] = deepMerge(
-          partial[key] as Partial<T> | undefined,
-          fallback[key] as T,
-        );
-      } else {
-        merged[key] = { ...partial[key] };
-      }
-    } else {
-      merged[key] = partial[key];
-    }
+const isMergeableRecord = (value: unknown): value is MergeableRecord =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+export function deepMerge<T extends MergeableRecord>(
+  partial: Partial<T> | undefined,
+  fallback: T,
+): T {
+  const merged: MergeableRecord = { ...fallback };
+
+  if (!partial) {
+    return merged as T;
   }
 
-  return merged;
+  (Object.keys(partial) as Array<keyof T>).forEach((key) => {
+    const partialValue = partial[key];
+
+    if (partialValue === undefined) {
+      return;
+    }
+
+    const fallbackValue = fallback[key];
+
+    if (isMergeableRecord(partialValue) && isMergeableRecord(fallbackValue)) {
+      merged[key as string] = deepMerge(
+        partialValue as Partial<MergeableRecord>,
+        fallbackValue as MergeableRecord,
+      );
+    } else {
+      merged[key as string] = partialValue as T[keyof T];
+    }
+  });
+
+  return merged as T;
 }

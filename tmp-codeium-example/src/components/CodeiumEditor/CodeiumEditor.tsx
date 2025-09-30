@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createConnectTransport } from '@connectrpc/connect-web';
 import { createPromiseClient } from '@connectrpc/connect';
 import { Status } from './Status';
@@ -69,11 +69,11 @@ export const CodeiumEditor: React.FC<CodeiumEditorProps> = ({
   const inlineCompletionsProviderRef = useRef<InlineCompletionProvider | null>(
     null,
   );
-  const [acceptedCompletionCount, setAcceptedCompletionCount] = useState(-1);
   const [completionCount, setCompletionCount] = useState(0);
+  const [acceptedCompletionCount, setAcceptedCompletionCount] = useState(0);
   const [codeiumStatus, setCodeiumStatus] = useState(Status.INACTIVE);
   const [codeiumStatusMessage, setCodeiumStatusMessage] = useState('');
-  const [mounted, setMounted] = useState(false);
+  const [isEditorReady, setIsEditorReady] = useState(false);
 
   const transport = useMemo(() => {
     return createConnectTransport({
@@ -86,46 +86,48 @@ export const CodeiumEditor: React.FC<CodeiumEditorProps> = ({
     return createPromiseClient(LanguageServerService, transport);
   }, [transport]);
 
-  inlineCompletionsProviderRef.current = useMemo(() => {
-    return new InlineCompletionProvider(
+  const completionProvider = useMemo(
+    () =>
+      new InlineCompletionProvider(
+        grpcClient,
+        setCompletionCount,
+        setCodeiumStatus,
+        setCodeiumStatusMessage,
+        props.apiKey,
+        props.multilineModelThreshold,
+      ),
+    [
       grpcClient,
+      props.apiKey,
+      props.multilineModelThreshold,
       setCompletionCount,
       setCodeiumStatus,
       setCodeiumStatusMessage,
-      props.apiKey,
-      props.multilineModelThreshold,
-    );
-  }, []);
+    ],
+  );
 
   useEffect(() => {
-    if (
-      !editorRef?.current ||
-      !monacoRef.current ||
-      !inlineCompletionsProviderRef.current
-    ) {
+    inlineCompletionsProviderRef.current = completionProvider;
+  }, [completionProvider]);
+
+  useEffect(() => {
+    if (!isEditorReady || !monacoRef.current) {
       return;
     }
-    const monaco = monacoRef.current;
 
-    const providerDisposable =
-      monaco.languages.registerInlineCompletionsProvider(
-        { pattern: '**' },
-        inlineCompletionsProviderRef.current,
-      );
-    const completionDisposable = monaco.editor.registerCommand(
+    const monacoInstance = monacoRef.current;
+    const providerDisposable = monacoInstance.languages.registerInlineCompletionsProvider(
+      { pattern: '**' },
+      completionProvider,
+    );
+    const completionDisposable = monacoInstance.editor.registerCommand(
       'codeium.acceptCompletion',
       (_: unknown, completionId: string, insertText: string) => {
-        try {
-          if (props.onAutocomplete) {
-            props.onAutocomplete(insertText);
-          }
-          setAcceptedCompletionCount(acceptedCompletionCount + 1);
-          inlineCompletionsProviderRef.current?.acceptedLastCompletion(
-            completionId,
-          );
-        } catch (err) {
-          console.log('Err');
+        if (props.onAutocomplete) {
+          props.onAutocomplete(insertText);
         }
+        setAcceptedCompletionCount((prev) => prev + 1);
+        completionProvider.acceptedLastCompletion(completionId);
       },
     );
 
@@ -133,13 +135,7 @@ export const CodeiumEditor: React.FC<CodeiumEditorProps> = ({
       providerDisposable.dispose();
       completionDisposable.dispose();
     };
-  }, [
-    editorRef?.current,
-    monacoRef?.current,
-    inlineCompletionsProviderRef?.current,
-    acceptedCompletionCount,
-    mounted,
-  ]);
+  }, [completionProvider, isEditorReady, props.onAutocomplete]);
 
   const handleEditorDidMount = async (
     editor: editor.IStandaloneCodeEditor,
@@ -147,12 +143,12 @@ export const CodeiumEditor: React.FC<CodeiumEditorProps> = ({
   ) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
-    setMounted(true);
+    setIsEditorReady(true);
 
     // CORS pre-flight cache optimization.
     try {
       await grpcClient.getCompletions({});
-    } catch (e) {
+    } catch (_error) {
       // This is expected.
     }
 
@@ -164,8 +160,8 @@ export const CodeiumEditor: React.FC<CodeiumEditorProps> = ({
 
   // Keep other documents up to date.
   useEffect(() => {
-    inlineCompletionsProviderRef.current?.updateOtherDocuments(otherDocuments);
-  }, [otherDocuments]);
+    completionProvider.updateOtherDocuments(otherDocuments);
+  }, [completionProvider, otherDocuments]);
 
   const defaultLanguageProps: EditorProps = {
     defaultLanguage: props.language,
@@ -230,6 +226,32 @@ export const CodeiumEditor: React.FC<CodeiumEditorProps> = ({
           },
         )}
       />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 12,
+          left: 12,
+          padding: '8px 12px',
+          borderRadius: 8,
+          background: 'rgba(12, 14, 20, 0.72)',
+          color: '#EEF2FF',
+          fontSize: 12,
+          maxWidth: '60%',
+        }}
+        aria-live="polite"
+      >
+        <div style={{ fontWeight: 600, marginBottom: 4 }}>
+          {isEditorReady ? 'Codeium ready' : 'Initializing Codeium…'}
+        </div>
+        <div>Status: {codeiumStatus}</div>
+        {codeiumStatusMessage && (
+          <div style={{ marginTop: 2 }}>{codeiumStatusMessage}</div>
+        )}
+        <div style={{ marginTop: 4 }}>
+          Generated suggestions: {completionCount}
+        </div>
+        <div>Accepted suggestions: {acceptedCompletionCount}</div>
+      </div>
     </div>
   );
 };
