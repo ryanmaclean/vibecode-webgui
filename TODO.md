@@ -1,3 +1,10 @@
+## Agent Update (2025-09-30 00:57 UTC)
+
+- Quick check of services in `vibecode-platform` to confirm nothing unexpected is running.
+
+### Next Steps
+- [x] Run `kubectl get svc -n vibecode-platform` — postgres NodePort/ClusterIP services still present, no additional services.
+
 ## Agent Update (2025-09-30 00:55 UTC)
 
 - Documenting the temporary local-database fallback decision in `docs/logs/DECISION_LOG.md`.
@@ -64,6 +71,13 @@
 
 ### Next Steps
 - [x] Review each file under `docs/logs/` and note/correct any quick wins. — ✅ No typos/missing links found.
+
+## Agent Update (2025-09-30 00:59 UTC)
+
+- Confirming that the existing lint workflow still passes after the recent config moves.
+
+### Next Steps
+- [ ] Re-run `npm run lint -- --quiet` and record the result.
 
 ## Agent Update (2025-09-29 23:33 UTC)
 
@@ -198,6 +212,12 @@
 3. **Claim Work Area** - Specify which directories/files you're working on
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- ✅ **Agent Cascade (2025-09-30 00:58 UTC)**: Completed `kubectl get svc` health check
+  - Result: postgres-service (ClusterIP 5432/TCP) and postgres-nodeport (NodePort 5432:30001/TCP) up (~6h age)
+  - Files: None
+  - Goal: Confirm services before further work
+  - ETA: 2 minutes
+  - Status: COMPLETE
 - 🔒 **Agent Cascade (2025-09-30 00:55 UTC)**: Validate docs/logs run-through
   - Task: Skim docs/logs/*.md for typos or missing links
   - Files: docs/logs/** (read-only check)
@@ -269,6 +289,12 @@
   - Goal: Confirm TypeScript baseline still clean
   - ETA: 3 minutes
   - Status: COMPLETE - No TS regressions
+- ✅ **Agent Codex (2025-09-30 01:45 UTC)**: COMPLETED docs/logs link spot-check
+  - Result: README.md and docs/logs/*.md links resolve correctly; no typos or missing anchors found
+  - Files: docs/logs/*.md, README.md
+  - Goal: Catch broken anchors early
+  - ETA: 3 minutes
+  - Status: COMPLETE - Links healthy
 - ✅ **Agent Cascade (2025-09-30 00:38 UTC)**: COMPLETED ingest process check
   - Result: PID 82844 still running (wrapper processes too); ingest slots busy
   - Files: None
@@ -1571,3 +1597,8 @@ git revert HEAD~17..HEAD
 ## Agent Update (2025-09-30 00:53 UTC)
 
 - Docker status: `vibecode-pgvector` container healthy (Up 6 hours); kind control-plane up. Ingestion remains blocked by running job (PID 82844).
+
+## Agent Update (2025-09-30 00:58 UTC)
+
+- Service check: `kubectl get svc -n vibecode-platform` shows postgres-service (ClusterIP) and postgres-nodeport (NodePort) both up for ~6h.
+
