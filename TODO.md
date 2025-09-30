@@ -1,3 +1,19 @@
+## Agent Update (2025-09-30 01:13 UTC)
+
+- Logging the ongoing Datadog Trace Search issue in `docs/logs/FRICTION_LOG.md` now that we’ve revalidated the credentials.
+
+### Next Steps
+- [x] Append the current state of the trace search blocker to the friction log. — ✅ Friction log updated with 2025-09-30 status.
+
+## Agent Update (2025-09-30 01:06 UTC)
+
+- Running safe status checks alongside active ingestion: polled Datadog traces and inspected RAG ingest processes to avoid conflicts.
+- Recorded the outcomes under the existing trace poll and ingest queue tasks so others see the latest state.
+
+### Next Steps
+- Will re-run `scripts/poll-traces.sh` once span ingestion should succeed (after current jobs settle).
+- Will re-check `ps` after the `scripts/ingest-docs-to-rag.ts` processes exit to confirm the queue is free.
+
 ## Agent Update (2025-09-30 01:02 UTC)
 
 - Adding a short note in `docs/logs/COORDINATION_LOG.md` about the README/CONTRIBUTING updates so coordination guidance stays consistent.
@@ -208,6 +224,7 @@
   - ❌ Agent Codex (2025-09-30 00:01 UTC): `curl https://api.${DD_SITE}/api/v1/validate` returns `{"errors":["Forbidden"]}`, so the current API/app key pair lacks permission or is invalid; 12h trace searches also return `{"errors":["Not found"]}` for both services.
   - ⏳ Agent Codex (2025-09-30 00:46 UTC): Re-running both `poll-traces` queries now that Datadog keys validate successfully.
   - ❌ Agent Codex (2025-09-30 00:47 UTC): `poll-traces.sh` still returns `{ "errors": ["Not found"] }` for both services over `now-2h`; will retry after trace ingestion is confirmed.
+  - ❌ Agent Codex (2025-09-30 01:06 UTC): `poll-traces.sh` again returns `{ "errors": ["Not found"] }` for both services over `now-2h`; spans still absent.
 
 ## Agent Update (2025-09-29 23:12 UTC)
 
@@ -238,6 +255,12 @@
 3. **Claim Work Area** - Specify which directories/files you're working on
 4. **Check for Conflicts** - If another agent is doing similar work, coordinate or defer
 **CURRENT ACTIVE WORK AREAS** (Update this section):
+- ✅ **Agent Cascade (2025-09-30 01:13 UTC)**: Completed ingest process check
+  - Result: PID 82844 still running (wrapper processes too); ingest slots remain occupied
+  - Files: None (system status)
+  - Goal: Record availability before scheduling next batch
+  - ETA: 2 minutes
+  - Status: COMPLETE
 - ✅ **Agent Cascade (2025-09-30 01:05 UTC)**: Updated FRICTION_LOG for issue #329
   - Result: Added reminder about placing `eslint.config.mjs` at repo root when migrating to flat config
   - Files: docs/logs/FRICTION_LOG.md
@@ -1507,6 +1530,7 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
   - ❌ Agent Codex (2025-09-30 00:34 UTC): PIDs 82827/82843/82844 still running `scripts/ingest-docs-to-rag.ts`; will check again later.
   - ❌ Agent Codex (2025-09-30 00:54 UTC): Processes remain active (same PIDs); ingestion window still blocked.
   - ❌ Agent Codex (2025-09-30 01:01 UTC): Recheck shows the same PIDs 82827/82843/82844 active; continue deferring new batches.
+  - ❌ Agent Codex (2025-09-30 01:05 UTC): PIDs 82827/82843/82844 still running `scripts/ingest-docs-to-rag.ts`; ingestion window remains blocked.
 
 ## Agent Update (2025-09-29 23:00 UTC) - Agent Cascade
 
@@ -1654,3 +1678,8 @@ git revert HEAD~17..HEAD
 ## Agent Update (2025-09-30 01:05 UTC)
 
 - Issue #329: Updated `docs/logs/FRICTION_LOG.md` to note that `eslint.config.mjs` must live at the repo root when migrating to the flat config. Ready to include in issue comment.
+
+## Agent Update (2025-09-30 01:13 UTC)
+
+- Ingest job (PID 82844) still in progress; waiting before scheduling any new ingestion tasks.
+
