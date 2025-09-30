@@ -65,14 +65,14 @@ RUN echo "Skipping vector agent install for local build"
 RUN curl -sSfL https://raw.githubusercontent.com/DataDog/kubehound/main/install.sh | sh
 
 # 5. Stratus Red Team (security testing)
-RUN pip3 install stratus-red-team
+RUN pip3 install --break-system-packages stratus-red-team
 
 # 6. Eppo (feature flagging)
 RUN curl -sL https://packagecloud.io/install/repositories/eppo/eppo-server/script.deb.sh | bash && \
     apt-get install -y eppo-agent
 
 # 7. Toto (test observability)
-RUN pip3 install datadog-toto
+RUN pip3 install --break-system-packages datadog-toto
 
 # Create workspace and set permissions
 WORKDIR /home/coder/workspace

@@ -8,7 +8,7 @@ Monacopilot adds GitHub Copilot-style AI completions to Monaco Editor with suppo
 
 **Features:**
 - ✅ Compatible with Monaco Editor 0.52.2
-- ✅ Multiple AI providers (OpenAI, Gemini, Gemini CLI, OpenCode, Claude Code, Aider, GooseAI, Project4)
+- ✅ Multiple AI providers (OpenAI, Codex, Gemini, Gemini CLI, OpenCode, OpenRouter, Claude/Anthropic, Aider, GooseAI, Project4, DeepSeek, Google AI Studio, Azure OpenAI, Amazon Bedrock, Google Vertex)
 - ✅ Real-time code suggestions
 - ✅ Context-aware completions
 - ✅ Easy integration
@@ -21,7 +21,7 @@ Add to your `.env.local`:
 
 ```bash
 # Choose your AI provider
-AI_COMPLETION_PROVIDER=openai   # openai | codex | gemini | gemini-cli | opencode | claude | aider | goose | project4
+AI_COMPLETION_PROVIDER=openai   # openai | codex | gemini | gemini-cli | opencode | openrouter | claude | anthropic | aider | goose | project4 | deepseek | google | azure-openai | bedrock | vertex
 AI_COMPLETION_MODEL=gpt-4o-mini
 AI_COMPLETION_MAX_TOKENS=512
 AI_COMPLETION_TEMPERATURE=0.2
@@ -41,9 +41,21 @@ OPENCODE_MODEL=anthropic/claude-3.5-sonnet
 OPENROUTER_HTTP_REFERER=https://vibecode.ai
 OPENROUTER_APP_TITLE=VibeCode WebGUI
 
+# OpenRouter direct (provider: openrouter)
+OPENROUTER_API_KEY=...
+OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
+
+# DeepSeek (provider: deepseek)
+DEEPSEEK_API_KEY=...
+DEEPSEEK_MODEL=deepseek-coder
+
 # Claude Code (provider: claude)
 CLAUDE_CODE_API_KEY=...
 CLAUDE_CODE_MODEL=claude-3.5-sonnet-20240620
+
+# Anthropic direct (provider: anthropic)
+ANTHROPIC_API_KEY=...
+ANTHROPIC_MODEL=claude-3.5-sonnet-20241022
 
 # Aider CLI (provider: aider)
 AIDER_API_KEY=...
@@ -56,6 +68,28 @@ GOOSE_MODEL=gpt-4o-mini
 # Project4 (provider: project4)
 PROJECT4_API_KEY=...
 PROJECT4_MODEL=gpt-4o-mini
+
+# Google AI Studio (provider: google)
+GOOGLE_API_KEY=...
+GOOGLE_MODEL=gemini-1.5-pro-latest
+
+# Azure OpenAI (provider: azure-openai)
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
+AZURE_OPENAI_API_KEY=...
+AZURE_OPENAI_DEPLOYMENT=gpt-4o
+AZURE_OPENAI_API_VERSION=2024-02-01
+
+# Amazon Bedrock (provider: bedrock)
+AWS_BEDROCK_ACCESS_KEY_ID=...
+AWS_BEDROCK_SECRET_ACCESS_KEY=...
+AWS_BEDROCK_REGION=us-east-1
+AWS_BEDROCK_MODEL=anthropic.claude-3-sonnet-20240229-v1:0
+
+# Google Vertex AI (provider: vertex)
+GOOGLE_VERTEX_ACCESS_TOKEN=...
+GOOGLE_VERTEX_PROJECT_ID=...
+GOOGLE_VERTEX_LOCATION=us-central1
+GOOGLE_VERTEX_MODEL=gemini-1.5-pro
 ```
 
 ### 2. Frontend Integration
@@ -155,6 +189,61 @@ GOOSE_MODEL=gpt-4o-mini
 AI_COMPLETION_PROVIDER=project4
 PROJECT4_API_KEY=...
 PROJECT4_MODEL=gpt-4o-mini
+```
+
+### OpenRouter
+```bash
+AI_COMPLETION_PROVIDER=openrouter
+OPENROUTER_API_KEY=...
+OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
+```
+
+### Anthropic
+```bash
+AI_COMPLETION_PROVIDER=anthropic
+ANTHROPIC_API_KEY=...
+ANTHROPIC_MODEL=claude-3.5-sonnet-20241022
+```
+
+### DeepSeek
+```bash
+AI_COMPLETION_PROVIDER=deepseek
+DEEPSEEK_API_KEY=...
+DEEPSEEK_MODEL=deepseek-coder
+```
+
+### Google AI Studio
+```bash
+AI_COMPLETION_PROVIDER=google
+GOOGLE_API_KEY=...
+GOOGLE_MODEL=gemini-1.5-pro-latest
+```
+
+### Azure OpenAI
+```bash
+AI_COMPLETION_PROVIDER=azure-openai
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
+AZURE_OPENAI_API_KEY=...
+AZURE_OPENAI_DEPLOYMENT=gpt-4o
+AZURE_OPENAI_API_VERSION=2024-02-01
+```
+
+### Amazon Bedrock
+```bash
+AI_COMPLETION_PROVIDER=bedrock
+AWS_BEDROCK_ACCESS_KEY_ID=...
+AWS_BEDROCK_SECRET_ACCESS_KEY=...
+AWS_BEDROCK_REGION=us-east-1
+AWS_BEDROCK_MODEL=anthropic.claude-3-sonnet-20240229-v1:0
+```
+
+### Google Vertex AI
+```bash
+AI_COMPLETION_PROVIDER=vertex
+GOOGLE_VERTEX_ACCESS_TOKEN=...
+GOOGLE_VERTEX_PROJECT_ID=...
+GOOGLE_VERTEX_LOCATION=us-central1
+GOOGLE_VERTEX_MODEL=gemini-1.5-pro
 ```
 
 ## Advanced Configuration
