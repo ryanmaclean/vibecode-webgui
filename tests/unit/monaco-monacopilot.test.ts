@@ -36,10 +36,15 @@ describe('Monaco Editor and Monacopilot Compatibility', () => {
     }
   });
 
-  it('should not have @codeium/react-code-editor installed', () => {
-    // This package is incompatible with Monaco 0.52
+  it('should include the Codeium React Code Editor integration', () => {
     const packageJson = require('../../package.json');
-    expect(packageJson.dependencies['@codeium/react-code-editor']).toBeUndefined();
+    expect(packageJson.dependencies['@codeium/react-code-editor']).toBeDefined();
+  });
+
+  it('should pin Codeium editor to a known working release', () => {
+    const packageJson = require('../../package.json');
+    const version = packageJson.dependencies['@codeium/react-code-editor'];
+    expect(version).toMatch(/^\^?1\.0\./);
   });
 
   it('should have monacopilot integration file', () => {

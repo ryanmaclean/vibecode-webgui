@@ -182,3 +182,7 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - PGVector top matches came from `docs:DATADOG_LOCAL_DEVELOPMENT` and `docs:ci-cd-fixes` (similarity ~60%).
 - OpenRouter response summarized the tracked Datadog env vars.
 - DD agentless env (`DD_AGENTLESS_ENABLED=true`) active for span emission.
+### Agent Codex - Code-Server KinD Bootstrap (2025-09-30 01:25 UTC)
+- Added `k8s/code-server-kind.yaml` (Deployment + NodePort Service using emptyDir) for local KinD clusters.
+- Applied manifest; pod `code-server-kind-966c588d9-shh76` is Running (1/1) in `vibecode-platform`.
+- Access via `kubectl port-forward svc/code-server-kind 3100:8080` or Kind node port 31080.
