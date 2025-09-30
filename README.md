@@ -11,6 +11,10 @@
 
 </div>
 
+## 🧭 Coordination & History
+
+Working alongside other maintainers or automation agents? Review the shared logs in [`docs/logs/`](./docs/logs/) before you start so you understand recent decisions and coordination notes. Pair that with [`TODO.md`](./TODO.md) to confirm which work areas are already claimed.
+
 ## 🚀 **One-Click Demo**
 
 ```bash
@@ -157,6 +161,12 @@ npm run test:integration:production
 # Complete test suite
 npm run test:production:all
 ```
+
+### 🤝 **Agent Coordination & Logs**
+
+- Active work in progress is tracked in [`TODO.md`](./TODO.md); read and update it before starting new changes to avoid conflicts.
+- Historical activity, decisions, and friction notes now live in [`docs/logs/`](./docs/logs/) (`AGENT_ACTIVITY_LOG.md`, `FRICTION_LOG.md`, etc.).
+- Follow the coordination protocol captured in `TODO.md` when moving files or launching long-running jobs so multi-agent workflows stay smooth.
 
 ### 📊 **Infrastructure Components**
 - **AKS cluster** with dual node pools (system + user)
