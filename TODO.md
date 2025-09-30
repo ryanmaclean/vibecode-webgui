@@ -1,11 +1,11 @@
 ## Agent Update (2025-09-30 22:50 UTC)
 
-- Added markdownlint CLI tooling (`markdownlint-cli2`), a repo-wide config, and the `npm run lint:markdown` script covering the key deployment docs and README.
-- README architecture block now declares a language so the new linter passes cleanly.
-- First lint run succeeded (0 errors) with the narrowed scope aligned to actively maintained docs.
+- Added markdownlint CLI tooling (`markdownlint-cli2`), a repo-wide config, and the `npm run lint:markdown` script covering README + deployment docs.
+- Expanded coverage to `TODO.md` (cleaned headings, indentation, and code references) and kept the architecture block properly annotated so lint passes.
+- `npm run lint:markdown` now succeeds with broader scope; queued wiki expansion once we have bandwidth.
 
 ### Next Steps
-- [ ] Expand markdownlint coverage incrementally (docs/wiki, TODO.md) once we have capacity to fix historical formatting.
+- [ ] Expand markdownlint coverage incrementally (docs/wiki) once we have capacity to fix historical formatting.
 
 ## Agent Update (2025-09-30 22:47 UTC)
 
@@ -206,7 +206,7 @@
 - Reduced eslint errors from 17 to 14 (remaining errors are in test files: input-validator.test, chat-mongodb.test, collaboration.test, intelligent-model-selection.test)
 
 ### Next Steps
-- [x] Migrate remaining test file CommonJS requires (4 test files in src/lib/security/__tests__ and src/lib/services/__tests__) — ✅ Completed, all 14 errors eliminated
+- [x] Migrate remaining test file CommonJS requires (4 test files in `src/lib/security/__tests__` and `src/lib/services/__tests__`) — ✅ Completed, all 14 errors eliminated
 - [ ] Expand zod coverage across additional auth/chat routes to reduce `@typescript-eslint/no-explicit-any` warnings
 
 ## Agent Update (2025-09-30 14:55 UTC)
@@ -293,11 +293,11 @@
 
 - Cataloging all CI/CD workflows so we can file tracking issues for each pipeline.
 
-- [ ] Evaluate CodeArkt sample projects (https://github.com/IlyaGusev/codearkt); confirm license compatibility and whether to integrate examples into our repo. (Tracking: #??? TBD)
+- [ ] Evaluate CodeArkt sample projects (https://github.com/IlyaGusev/codearkt); confirm license compatibility and whether to integrate examples into our repo. (Tracking: #??? TBD) (notes: docs/logs/integrations/CODEARKT.md)
 ### Workflows Requiring Issues
-- [ ] .github/workflows/azure-appservice-deploy.yml — requires AZURE_* secrets, deploys ai-gateway via ACR push + App Service restart; needs issue to confirm secrets up to date and health probes cover 200s. (Tracking: #355 — secret gating added 2025-09-30; need credentials audit + smoke expansion) (Draft: docs/logs/workflow-issues/azure-appservice-deploy.md) (notes: docs/logs/workflow-issues/azure-appservice-deploy.yml.md)
+- [ ] .github/workflows/azure-appservice-deploy.yml — requires `AZURE_*` secrets, deploys ai-gateway via ACR push + App Service restart; needs issue to confirm secrets up to date and health probes cover 200s. (Tracking: #355 — secret gating added 2025-09-30; need credentials audit + smoke expansion) (Draft: docs/logs/workflow-issues/azure-appservice-deploy.md) (notes: docs/logs/workflow-issues/azure-appservice-deploy.yml.md)
 - [ ] .github/workflows/azure-webgui-deploy.yml — builds root Dockerfile, pushes to same ACR, deploys App Service `${{ secrets.APP_NAME_WEBGUI }}`, smoke hits `/`; confirm env secrets + health path adequate. (Tracking: #356 — secret gating added 2025-09-30; need smoke expansion + notifications) (Draft: docs/logs/workflow-issues/azure-webgui-deploy.md) (notes: docs/logs/workflow-issues/azure-webgui-deploy.yml.md)
-- [ ] .github/workflows/build-and-push-image.yml — GHCR build via Dockerfile.production with Buildx cache, Trivy SARIF upload, optional AKS Helm deploy (`AZURE_CREDENTIALS`, vars.AKS_*); issue should confirm secrets + helm chart alignment. (Tracking: #357 — cron/concurrency + secret gating added 2025-09-30; AKS deploy skipped when creds missing; need creds audit + issue filing) (notes: docs/logs/workflow-issues/build-and-push-image.yml.md)
+- [ ] .github/workflows/build-and-push-image.yml — GHCR build via Dockerfile.production with Buildx cache, Trivy SARIF upload, optional AKS Helm deploy (`AZURE_CREDENTIALS`, vars.`AKS_*`); issue should confirm secrets + helm chart alignment. (Tracking: #357 — cron/concurrency + secret gating added 2025-09-30; AKS deploy skipped when creds missing; need creds audit + issue filing) (notes: docs/logs/workflow-issues/build-and-push-image.yml.md)
 - [ ] .github/workflows/ci-simplified.yml — multi-job pipeline (secret validation, lint/audit, root tests w/ Postgres+Redis services, Datadog/LHCI optional); issue should capture missing secrets handling + continue-on-error follow-up. (Tracking: #361 — secret outputs added 2025-09-30; still need to consume outputs + remove unnecessary continue-on-error) (notes: docs/logs/workflow-issues/ci-simplified.yml.md)
 - [ ] .github/workflows/claude-code-review.yml — runs anthropic/claude-code-action@beta on PRs, needs `CLAUDE_CODE_OAUTH_TOKEN`; issue to confirm token scope + whether sticky comments/prompts should be customized. (Tracking: #363 — concurrency + secret gating added 2025-09-30; finalize prompts) (Draft: docs/logs/workflow-issues/claude-code-review.md) (notes: docs/logs/workflow-issues/claude-code-review.yml.md)
 - [ ] .github/workflows/claude.yml — listens for @claude mentions across issues/PR comments, same `CLAUDE_CODE_OAUTH_TOKEN`, optional actions:read; issue should confirm rate limits, trigger phrases, and additional permissions setup. (Tracking: #364 — concurrency + secret gating added 2025-09-30; finalize prompts/permissions) (Draft: docs/logs/workflow-issues/claude.yml.md)
@@ -307,7 +307,7 @@
 - [ ] .github/workflows/db-monitoring-deployment.yml — massive pipeline (schema/vector checks, Datadog dashboards, Azure Postgres tuning, Slack notify); requires POSTGRES_CONNECTION, Datadog + Azure creds; issue should triage secrets + whether to keep continue-on-error steps. (Tracking: #367 — cron+secret gating added 2025-09-30; Azure cleanup + reporting still pending) (Draft: docs/logs/workflow-issues/db-monitoring-deployment.md)
 - [ ] .github/workflows/demo-validation.yml — Go/KinD demo build, shell lint, README checks; relies on Make targets, shellcheck (non-blocking), optional infra; issue to capture flakiness in script timeouts and KinD setup. (Tracking: #390 — concurrency added 2025-09-30; need timeout/noise cleanup) (Draft: docs/logs/workflow-issues/demo-validation.md) (notes: docs/logs/workflow-issues/demo-validation.yml.md)
 - [ ] .github/workflows/dependency-compatibility.yml — matrix Node 18/20/22 compatibility checks w/ npm audit/build/type-check plus scheduled issue creation via npm-check-updates; ensure secrets not needed, but review GitHub issue spam controls. (Tracking: #369 — concurrency added 2025-09-30; need exit-code summary + issue dedupe) (Draft: docs/logs/workflow-issues/dependency-compatibility.md) (notes: docs/logs/workflow-issues/dependency-compatibility.yml.md)
-- [ ] .github/workflows/deploy-aks-monitoring.yml — manual AKS rollout incl. ingress, cert-manager, Datadog monitors; depends on AZURE_* secrets, Datadog keys, scripts/*.sh; issue should review manual inputs + skip_datadog flag coverage. (Tracking: #393 — secret gating + skip notices added 2025-09-30; need timeout/cleanup review) (Draft: docs/logs/workflow-issues/deploy-aks-monitoring.md) (notes: docs/logs/workflow-issues/deploy-aks-monitoring.yml.md)
+- [ ] .github/workflows/deploy-aks-monitoring.yml — manual AKS rollout incl. ingress, cert-manager, Datadog monitors; depends on `AZURE_*` secrets, Datadog keys, `scripts/*.sh`; issue should review manual inputs + `skip_datadog` flag coverage. (Tracking: #393 — secret gating + skip notices added 2025-09-30; need timeout/cleanup review) (Draft: docs/logs/workflow-issues/deploy-aks-monitoring.md) (notes: docs/logs/workflow-issues/deploy-aks-monitoring.yml.md)
 - [ ] .github/workflows/deploy-docs.yml — builds Astro docs by default, optional Next.js via workflow_dispatch; uses GitHub Pages permissions; issue should check cache paths and dual-system support + whether Next.js artifacts still needed. (Tracking: #394 — docs system auto-detected; weekly cron re-added 2025-09-30; need cache/reporting plan) (notes: docs/logs/workflow-issues/deploy-docs.yml.md)
 - [ ] .github/workflows/docs-automation.yml — multi-job docs validator (npm ci, lychee link check, auto-commit on main, TypeScript snippet lint); issue to review auto-push behavior and secret scanning sensitivity. (Tracking: #370 — triggers/cron restored 2025-09-30 with artifact+PR flow; still need caching + skip annotations) (Draft: docs/logs/workflow-issues/docs-automation.md)
 - [ ] .github/workflows/docs-ci-cd.yml — full docs pipeline (security scan, Astro build, container push to ACR, optional deploy via KUBE_CONFIG, Datadog notifications); issue should confirm secrets coverage and whether duplicated with deploy-docs. (Tracking: #371 — triggers restored 2025-09-30 with secret gating; still need Azure/Datadog secret refresh + GitHub issue link) (notes: docs/logs/workflow-issues/docs-ci-cd.yml.md)
@@ -1462,10 +1462,10 @@ Local development infrastructure is now stable and functional. All immediate pri
 - [x] scripts/integrate-error-tracking.ts: cleaned Python template block and restored valid TypeScript guard to eliminate parse errors.
 - [x] scripts/test-multimodal.js: fixed regex typo so lint parser no longer fails at line 78.
 - [x] services/ai-gateway/src/middleware/error-handler.ts and src/lib/cache/vector-cache-adapter.ts plus related tests: replaced broad `Function` usage with typed callbacks (see 2025-09-28 02:26 UTC update).
-- [x] src/app/workspaces/[id]/page.tsx, src/components/DocSearch.tsx, and tests/__mocks__/@/components/projects/AIProjectGenerator.tsx: escaped quotes/comment strings; targeted lint checks are green.
+- [x] `src/app/workspaces/[id]/page.tsx`, `src/components/DocSearch.tsx`, and `tests/__mocks__/@/components/projects/AIProjectGenerator.tsx`: escaped quotes/comment strings; targeted lint checks are green.
 - [x] tests/accessibility/automated-a11y.test.ts and tests/integration/datadog-real.test.ts: removed/swap ped legacy `@ts-ignore`; lint passes cleanly.
 - [x] src/lib/error-handling.tsx: switched to `<Link href="/">` for internal navigation.
-- [x] tests/integration/workspace-creation.test.ts and src/hooks/__tests__/useCollaboration.test.ts: callback typing tightened (see lint runs on 2025-09-28).
+- [x] `tests/integration/workspace-creation.test.ts` and `src/hooks/__tests__/useCollaboration.test.ts`: callback typing tightened (see lint runs on 2025-09-28).
 
 ## Agent Update (2025-09-28 02:19 UTC)
 
@@ -1680,23 +1680,23 @@ Local development infrastructure is now stable and functional. All immediate pri
 - [ ] Expand the KIND corpus (increase `RAG_MAX_FILES`) so similarity scores rise above ~5% for the Datadog docs once port-forwarding is stable.
 - [ ] When Datadog Trace Search access returns, pull the `service:vibecode-rag-demo env:dev` spans from this local run for evidence.
 
----
+```yaml
 title: TODO
 description: Multi-agent coordination log (regenerated 2025-09-19)
----
+```
 
 ## ✅ **DISASTER RECOVERY SUCCESS - AGENT #19 COMPLETED** (2025-09-20 12:00 UTC)
 
-**RECOVERY STATUS**: Production AKS cluster and infrastructure SUCCESSFULLY RESTORED
+### RECOVERY STATUS Production AKS cluster and infrastructure SUCCESSFULLY RESTORED
 
-**Recovery Achievements**:
+### Recovery Achievements
 - ✅ **AKS Cluster**: `vibecode-prod-aks-6c3db0e6` in `rg-vibecode-aks-prod` - OPERATIONAL
 - ✅ **Core Services**: PostgreSQL, Valkey, AI Gateway - RUNNING
 - ✅ **Datadog Monitoring**: All agents and cluster agents - OPERATIONAL
 - ✅ **Ingress Controller**: NGINX with external IP `20.57.69.198` - ACTIVE
 - ✅ **Namespaces**: All required namespaces restored and functional
 
-**Current Status:**
+### Current Status
 - Infrastructure: ✅ **FULLY OPERATIONAL**
 - AKS Cluster: ✅ **RUNNING** (vibecode-prod-aks-6c3db0e6)
 - Core Services: ✅ **DEPLOYED** (PostgreSQL, Valkey, AI Gateway)
@@ -1952,9 +1952,9 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 
 ### Next Steps
 - [ ] Propagate the fresh OpenAI/OpenRouter/Datadog credentials to runtime environments (runbook: `docs/runbooks/secret-propagation.md`):
-    - Re-create the relevant Kubernetes secrets (e.g., `kubectl create secret generic vibecode-app-secrets ... --dry-run=client -o yaml | kubectl apply -f -`) and restart `vibecode-app`, code-server, and supporting workloads (`kubectl rollout restart deployment/...`).
-    - Re-run `helmfile apply` (or `helm upgrade --install`) for `helm/helmfile.yaml` so `litellm-pgvector` and `code-server` pick up the new values.
-    - Update any CI/automation stores (.env.azure, GitHub Actions secrets) to keep the rotation consistent.
+  - Re-create the relevant Kubernetes secrets (e.g., `kubectl create secret generic vibecode-app-secrets ... --dry-run=client -o yaml | kubectl apply -f -`) and restart `vibecode-app`, code-server, and supporting workloads (`kubectl rollout restart deployment/...`).
+  - Re-run `helmfile apply` (or `helm upgrade --install`) for `helm/helmfile.yaml` so `litellm-pgvector` and `code-server` pick up the new values.
+  - Update any CI/automation stores (.env.azure, GitHub Actions secrets) to keep the rotation consistent.
 - [ ] After redeployments, execute the dd-trace-instrumented smoke checks again (`node -r dd-trace/init scripts/smoke/openrouter-chat.js`, `real-openrouter-integration`, staging health monitors) and capture Datadog dashboards to confirm the new API key is active.
 
 ## Agent Update (2025-09-23 14:20 UTC)
@@ -1966,7 +1966,7 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 - Upgraded the staging Helm release to the new image, rotated `NEXTAUTH_URL` to the staging load balancer, and confirmed `/api/health` plus the credentialed login flow work end-to-end on `http://172.169.24.111`.
 - Re-ingested Datadog and production deployment guides into `document_embeddings` (182 rows total) with dd-trace + LLM observability enabled, and replayed the Datadog-instrumented AI chat smoke test — LLM completions now return 200 without Prisma errors.
 
-- **Progress**
+- ### Progress
   - ✅ Expanded RAG ingestion (DATADOG_LOCAL_DEVELOPMENT + production guide) and lowered verification threshold via `RAG_VERIFICATION_THRESHOLD`; canned queries now return 3 matches each.
 
 ### Next Steps
@@ -2050,8 +2050,8 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 ### Summary
 - Catalogued every runnable app in the repo and captured its current deployment target:
   - `vibecode-webgui` — Docker image published via `Dockerfile.production`, promoted to AKS through `charts/vibecode-aks` and the `build-and-push-image` workflow.
-- `queue-worker` — build and push via `Dockerfile.queue` and deployed using `charts/vibecode-queue` in AKS. 
-- `datadog-agent` — shipped via `helm/datadog-agent` with Azure secrets; relies on `.env.azure` during bootstrap.
+  - `queue-worker` — build and push via `Dockerfile.queue` and deployed using `charts/vibecode-queue` in AKS.
+  - `datadog-agent` — shipped via `helm/datadog-agent` with Azure secrets; relies on `.env.azure` during bootstrap.
 
 ## Agent Update (2025-09-21 23:12 UTC)
 
@@ -2137,24 +2137,24 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 
 ### Current Blockers & Recommendations for Next Agent
 - **Critical Environment Issue**: The Next.js development server's performance on this machine is severely degraded. The next agent should investigate the local development environment setup, focusing on:
-    - Ensuring the Docker daemon is stable and has sufficient disk space/resources.
-    - Reviewing Next.js/Tailwind CSS/PostCSS configurations for any known compatibility issues on ARM64 architectures that might impact development server performance.
-    - Verifying that the `npm run dev` process is not being throttled or encountering resource limits.
+  - Ensuring the Docker daemon is stable and has sufficient disk space/resources.
+  - Reviewing Next.js/Tailwind CSS/PostCSS configurations for any known compatibility issues on ARM64 architectures that might impact development server performance.
+  - Verifying that the `npm run dev` process is not being throttled or encountering resource limits.
 - **Datadog Synthetic Tests**: Revisit `datadog-ci` usage for local tests. Consider alternative approaches if local execution remains problematic (e.g., uploading tests directly to Datadog and triggering them via API).
 - **All changes made during this session have been reverted to their original state.**
 
 ## Coordination Snapshot (2025-09-19 17:50 UTC)
 
 ### 2025-09-20 22:30 UTC — PaaS Pivot (App Service + Flexible Postgres)
-**Directive**: Drop AKS recovery efforts and re-platform on lower-cost Azure services: App Service for the Next.js app, Azure Database for PostgreSQL Flexible Server (pgvector enabled), Azure OpenAI, and a queue-driven PDF ingestion workflow.
+### Directive: Drop AKS recovery efforts and re-platform on lower-cost Azure services: App Service for the Next.js app, Azure Database for PostgreSQL Flexible Server (pgvector enabled), Azure OpenAI, and a queue-driven PDF ingestion workflow.
 
-**Current state**
+### Current State
 - Legacy AKS cluster has been decommissioned. Public IP `vibecode-ingress-ip` (172.203.72.2) still exists but isn’t attached to a load balancer, so `vibecode.eastus2.cloudapp.azure.com` times out.
 - Remote OpenTofu backend scaffolding is ready (resource group `rg-vibecode-tofu-state`, storage account `vibecodetfstate01`, container `opentofu-state`).
 - App Service Terraform skeleton now provisions Storage, Postgres, Linux Web App, and Function App modules—monitoring/Key Vault/OpenAI modules remain TODO.
 - Datadog runbook updated with DBM + LLM prerequisites and verification steps; alert snippets prepared for synthetics/metric monitors but not yet deployed.
 
-**Immediate focus**
+### Immediate Focus
 1. Author a lean architecture doc describing the App Service + Flexible Postgres + Azure OpenAI design, including cost estimates and network considerations.
 2. Produce new infrastructure-as-code scaffolding (OpenTofu with remote backend) to deploy:
    - App Service Plan (Linux, B1) + Web App for SSR Next.js
@@ -2168,7 +2168,7 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
    - Extend `.env.defaults`, Helm/Tofu modules, and local docker-compose to include agent + tracer settings so developers get parity.
    - Add CI guardrails that fail deployments if Datadog env vars or agent containers are missing.
    - Document the verification runbook (harness script + Datadog API checks) and wire it into post-deploy smoke tests.
-3. Update the application workflow so file uploads land in Blob Storage, enqueue a work item, and the Function processes the file with Azure OpenAI embeddings, persisting chunks to Postgres.
+4. Update the application workflow so file uploads land in Blob Storage, enqueue a work item, and the Function processes the file with Azure OpenAI embeddings, persisting chunks to Postgres.
 
 ### Priority Ranking (2025-09-20 22:30 UTC)
 1. **Document & approve PaaS architecture** — ✅ `docs/src/content/docs/azure-appservice-migration.md` circulated; awaiting stakeholder sign-off.
@@ -2274,7 +2274,7 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 - [x] Provide valid LLM provider credentials (free `mistralai/mistral-small-24b-instruct-2501:free`) so `/api/ai/chat` succeeds instead of `fetch failed`
 - [x] Rebuild container/Helm targets to propagate `DD_IAST_ENABLED=true` (Docker + AKS release) — 2025-09-21: rebuilt `Dockerfile.production` → `vibecode-webgui:latest` and verified `helm template` output includes env
 - [x] Validate runtime logs report IAST activation during startup — `docker run` with `DD_TRACE_DEBUG=true` emitted `[ASM] Enabled AppsecFsPlugin for iast` and dynamic instrumentation banner (403 expected with dummy key)
- - [ ] Confirm APM traces flow from the web app
+- [ ] Confirm APM traces flow from the web app
 
 ### Datadog Internal Developer Portal — Orange Items (Action List)
 
@@ -2362,7 +2362,7 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 3. **Check for any broken imports** due to file moves
 4. **Monitor for issues** from other agents
 
-**Repository State:**
+### Repository State
 - Root: 73 files + 28 directories (down from 136 + 48)
 - All moves used `git mv` - history preserved
 - Type-check passes
@@ -2370,7 +2370,7 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 
 ## 🚨 AGENT COORDINATION NOTE (2025-09-29 22:57 UTC) - Agent Cascade
 
-**Repository restructuring is COMPLETE and COMMITTED (17 commits)**
+### Repository restructuring is COMPLETE and COMMITTED (17 commits)
 
 ### What Was Done (Phases 12-15):
 - ✅ 63 files moved to proper locations (scripts/, docker/, configs/, database/, tests/manual/, docs/assets/)
