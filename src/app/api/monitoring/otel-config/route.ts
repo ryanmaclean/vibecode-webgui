@@ -15,23 +15,21 @@ const isDockerBuild = (
   process.env.DD_ENABLED === 'false'
 );
 
-// Conditional imports to prevent build-time errors in Docker
-let getOpenTelemetryConfig: any = null;
-let otelSDK: any = null;
-
-if (!isDockerBuild) {
-  try {
-    // Dynamic imports to prevent static analysis issues
-    const opentelemetryModule = require('../../../../lib/monitoring/opentelemetry');
-    getOpenTelemetryConfig = opentelemetryModule.getOpenTelemetryConfig;
-    otelSDK = opentelemetryModule.otelSDK;
-  } catch {
-    console.log('⚠️ OpenTelemetry module not available, monitoring disabled');
-  }
-}
-
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
+
+async function loadOpenTelemetryModule() {
+  try {
+    const opentelemetryModule = await import('../../../../lib/monitoring/opentelemetry');
+    return {
+      getOpenTelemetryConfig: opentelemetryModule.getOpenTelemetryConfig,
+      otelSDK: opentelemetryModule.otelSDK
+    };
+  } catch {
+    console.log('⚠️ OpenTelemetry module not available, monitoring disabled');
+    return { getOpenTelemetryConfig: null, otelSDK: null };
+  }
+}
 
 export async function GET(request: NextRequest) {
   // If in Docker build, return a simple response
@@ -46,6 +44,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const action = searchParams.get('action') || 'config'
+
+    // Load OpenTelemetry modules dynamically
+    const { getOpenTelemetryConfig, otelSDK } = await loadOpenTelemetryModule();
 
     // Check if OpenTelemetry modules are available
     if (!getOpenTelemetryConfig || !otelSDK) {

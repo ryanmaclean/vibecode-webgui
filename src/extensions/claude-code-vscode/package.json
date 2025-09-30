@@ -1,0 +1,261 @@
+{
+  "name": "claude-code",
+  "displayName": "Claude Code",
+  "description": "AI-powered development assistance with Claude",
+  "version": "1.0.0",
+  "publisher": "vibecode",
+  "icon": "assets/icon.png",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Programming Languages",
+    "Snippets",
+    "Other"
+  ],
+  "keywords": [
+    "ai",
+    "claude",
+    "anthropic",
+    "code completion",
+    "code assistant",
+    "programming",
+    "development"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "claude-code.explain",
+        "title": "Explain Code",
+        "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.optimize",
+        "title": "Optimize Code",
+        "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.debug",
+        "title": "Debug Code",
+        "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.generateTests",
+        "title": "Generate Tests",
+        "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.generateDocumentation",
+        "title": "Generate Documentation",
+        "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.refactor",
+        "title": "Refactor Code",
+        "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.chat",
+        "title": "Open AI Chat",
+        "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.quickFix",
+        "title": "AI Quick Fix",
+        "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.codeReview",
+        "title": "AI Code Review",
+        "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.translateCode",
+        "title": "Translate Code",
+        "category": "Claude Code"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "claude-code.explain",
+          "when": "editorHasSelection",
+          "group": "claude-code@1"
+        },
+        {
+          "command": "claude-code.optimize",
+          "when": "editorHasSelection",
+          "group": "claude-code@2"
+        },
+        {
+          "command": "claude-code.debug",
+          "when": "editorHasSelection",
+          "group": "claude-code@3"
+        },
+        {
+          "command": "claude-code.refactor",
+          "when": "editorHasSelection",
+          "group": "claude-code@4"
+        },
+        {
+          "command": "claude-code.generateTests",
+          "when": "editorHasSelection",
+          "group": "claude-code@5"
+        },
+        {
+          "command": "claude-code.codeReview",
+          "when": "editorHasSelection",
+          "group": "claude-code@6"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "claude-code.chat",
+          "when": "true"
+        },
+        {
+          "command": "claude-code.quickFix",
+          "when": "editorHasSelection"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "claude-code.explain",
+        "key": "ctrl+alt+e",
+        "mac": "cmd+alt+e",
+        "when": "editorTextFocus && editorHasSelection"
+      },
+      {
+        "command": "claude-code.chat",
+        "key": "ctrl+alt+c",
+        "mac": "cmd+alt+c",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "claude-code.quickFix",
+        "key": "ctrl+alt+q",
+        "mac": "cmd+alt+q",
+        "when": "editorTextFocus && editorHasSelection"
+      }
+    ],
+    "configuration": {
+      "title": "Claude Code",
+      "properties": {
+        "claude-code.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Anthropic Claude API key",
+          "scope": "machine-overridable"
+        },
+        "claude-code.model": {
+          "type": "string",
+          "default": "claude-3-5-sonnet-20241022",
+          "enum": [
+            "claude-3-5-sonnet-20241022",
+            "claude-3-5-haiku-20241022",
+            "claude-3-opus-20240229"
+          ],
+          "description": "Claude model to use for code assistance"
+        },
+        "claude-code.maxTokens": {
+          "type": "number",
+          "default": 4096,
+          "minimum": 1,
+          "maximum": 200000,
+          "description": "Maximum tokens per request"
+        },
+        "claude-code.temperature": {
+          "type": "number",
+          "default": 0.1,
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Temperature for AI responses (0 = deterministic, 1 = creative)"
+        },
+        "claude-code.enableInlineCompletion": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable inline code completion suggestions"
+        },
+        "claude-code.enableDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AI-powered error diagnostics"
+        },
+        "claude-code.enableCodeLens": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AI-powered CodeLens suggestions"
+        },
+        "claude-code.contextWindow": {
+          "type": "number",
+          "default": 50,
+          "minimum": 10,
+          "maximum": 200,
+          "description": "Number of lines to include as context around selection"
+        },
+        "claude-code.autoSuggest": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically suggest improvements while typing"
+        }
+      }
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "claude-code.chatView",
+          "name": "Claude Code Assistant",
+          "when": "true"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "claude-code",
+          "title": "Claude Code",
+          "icon": "$(robot)"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "16.x",
+    "@typescript-eslint/eslint-plugin": "^6.4.1",
+    "@typescript-eslint/parser": "^6.4.1",
+    "eslint": "^8.47.0",
+    "typescript": "^5.1.6",
+    "@vscode/test-electron": "^2.3.4",
+    "vsce": "^2.15.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.27.0",
+    "axios": "^1.6.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vibecode/claude-code-vscode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vibecode/claude-code-vscode/issues"
+  },
+  "homepage": "https://github.com/vibecode/claude-code-vscode#readme",
+  "license": "MIT"
+}

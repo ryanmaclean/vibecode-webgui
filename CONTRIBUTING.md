@@ -10,6 +10,12 @@ Thanks for your interest in contributing! This project demonstrates **pgvector +
 4. **Make your changes**
 5. **Test the demo still works**: `./DEMO.sh`
 
+## 🤝 Coordinate Before You Ship
+
+- **Read [`TODO.md`](./TODO.md)** to see which work areas are already claimed and follow the live coordination protocol.
+- **Scan [`docs/logs/`](./docs/logs/)** for the latest activity, decision, and friction logs so you don’t redo or conflict with recent work.
+- If you’re planning large file moves or automation changes, document your intent in `TODO.md` first so other agents can adjust.
+
 ## 🎯 What We're Looking For
 
 ### High-Priority Contributions

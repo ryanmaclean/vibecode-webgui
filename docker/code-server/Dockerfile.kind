@@ -1,0 +1,25 @@
+# Minimal VibeCode code-server image for KinD testing with Monaco 0.53
+FROM codercom/code-server:4.104.2
+
+USER root
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    curl \
+    emacs-nox \
+    fish \
+    git \
+    neovim \
+    python3-pip \
+    python3-venv \
+    vim \
+  && rm -rf /var/lib/apt/lists/*
+
+USER coder
+ENV PATH="/home/coder/.local/bin:${PATH}"
+RUN python3 -m pip install --user --no-cache-dir --break-system-packages aider-chat goose-ai 'langfuse<3'
+RUN mkdir -p /home/coder/.local/share/code-server/User
+COPY --chown=coder:coder docker/code-server/settings.json /home/coder/.local/share/code-server/User/settings.json
+COPY --chown=coder:coder docker/code-server/keybindings.json /home/coder/.local/share/code-server/User/keybindings.json
+COPY --chown=coder:coder extensions/vibecode-ai-assistant /home/coder/.vscode/extensions/vibecode-ai-assistant
+
+CMD ["code-server", "--bind-addr", "0.0.0.0:8080", "--auth", "none", "/home/coder/workspace"]

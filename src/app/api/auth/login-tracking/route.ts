@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-
+import { z } from 'zod'
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
+
+type AuthEventType = 'login_attempt' | 'login_success' | 'login_failure' | 'logout'
+
+type AuthMetadata = {
+  userId?: string
+  email?: string
+  provider?: string
+  sessionId?: string
+  loginMethod?: string
+  [key: string]: unknown
+}
+
+const authEventSchema = z
+  .object({
+    event: z.enum(['login_attempt', 'login_success', 'login_failure', 'logout']),
+    userId: z.string().min(1).optional(),
+    email: z.string().email().optional(),
+    provider: z.string().optional(),
+    sessionId: z.string().optional(),
+    loginMethod: z.string().optional(),
+  })
+  .passthrough()
 
 // Get client IP for geographic mapping
 function getClientIP(request: NextRequest): string {
@@ -11,17 +31,13 @@ function getClientIP(request: NextRequest): string {
     request.headers.get('x-real-ip') ||
     request.headers.get('cf-connecting-ip') ||
     request.headers.get('x-client-ip') ||
-    'unknown';
+    'unknown'
 }
 
 // Log user authentication events to Datadog for geographic tracking
-function logUserAuth(
-  request: NextRequest,
-  event: 'login_attempt' | 'login_success' | 'login_failure' | 'logout',
-  metadata: Record<string, any>
-) {
-  const clientIP = getClientIP(request);
-  
+function logUserAuth(request: NextRequest, event: AuthEventType, metadata: AuthMetadata) {
+  const clientIP = getClientIP(request)
+
   const logData = {
     // Datadog standard fields
     '@timestamp': new Date().toISOString(),
@@ -100,25 +116,17 @@ function logUserAuth(
       service: 'vibecode-webgui',
       env: process.env.NODE_ENV || 'development',
     },
-  };
+  }
 
   // Output structured JSON for Datadog Log Agent
-  console.log(JSON.stringify(logData));
+  console.log(JSON.stringify(logData))
 }
 
 // Track login attempts
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { event, userId, email, provider, sessionId, ...otherMetadata } = body;
-
-    // Validate required fields
-    if (!event || !['login_attempt', 'login_success', 'login_failure', 'logout'].includes(event)) {
-      return NextResponse.json(
-        { error: 'Invalid event type' },
-        { status: 400 }
-      );
-    }
+    const parsedBody = authEventSchema.parse(await request.json())
+    const { event, userId, email, provider, sessionId, loginMethod, ...otherMetadata } = parsedBody
 
     // Log the authentication event
     logUserAuth(request, event, {
@@ -126,23 +134,22 @@ export async function POST(request: NextRequest) {
       email,
       provider: provider || 'local',
       sessionId,
-      loginMethod: otherMetadata.loginMethod || 'password',
+      loginMethod: loginMethod || 'password',
       timestamp: new Date().toISOString(),
       ...otherMetadata,
-    });
+    })
 
     return NextResponse.json({
       success: true,
       message: `${event} logged successfully`,
       timestamp: new Date().toISOString(),
-    });
-
+    })
   } catch (error) {
-    console.error('Login tracking error:', error);
+    console.error('Login tracking error:', error)
     return NextResponse.json(
       { error: 'Failed to track login event' },
       { status: 500 }
-    );
+    )
   }
 }
 
