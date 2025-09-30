@@ -5,6 +5,12 @@
 ### Next Steps
 - [x] Add an entry describing the `.env.local` database override while Azure access is down. — ✅ Decision logged.
 
+- 🔒 **Agent Cascade (17:58 UTC)**: CLAIMING Phase 26 - Final cleanup
+  - Task: Move remaining config, test, and SQL files
+  - Files: 10+ miscellaneous files
+  - Goal: Get root directory under 70 files
+  - ETA: 3 minutes
+  - Status: ACTIVE - Final cleanup pass
 ## Agent Update (2025-09-30 00:51 UTC)
 
 - Adding a coordination reminder in `docs/logs/README.md` so log editors know to check `TODO.md` and `AGENTS.md` first.
