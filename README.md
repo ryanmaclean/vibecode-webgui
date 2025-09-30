@@ -1,363 +1,191 @@
-<div align="center">
+# VibeCode
 
-# 🐘 VibeCode Platform
+AI-powered development platform. Next.js 15 + Monaco 0.53.0 + pgvector + Kubernetes.
 
-**pgvector on PostgreSQL + Kubernetes + Datadog Database Monitoring**
+## Tech Stack
 
-[![Demo](https://img.shields.io/badge/Demo-Live-brightgreen?style=for-the-badge&logo=play)](./DEMO.sh)
-[![Monaco](https://img.shields.io/badge/Monaco-0.53.0-blue?style=for-the-badge&logo=visualstudiocode)](https://microsoft.github.io/monaco-editor/)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-blue?style=for-the-badge&logo=kubernetes)](https://kubernetes.io/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-336791?style=for-the-badge&logo=postgresql)](https://github.com/pgvector/pgvector)
-[![Datadog](https://img.shields.io/badge/Datadog-DBM-632CA6?style=for-the-badge&logo=datadog)](https://www.datadoghq.com/)
+- **Frontend:** Next.js 15, React 19, TypeScript, Tailwind CSS
+- **Editor:** Monaco 0.53.0 with Monacopilot AI completion
+- **Database:** PostgreSQL 16 + pgvector (HNSW indexes)
+- **AI:** OpenAI, Anthropic, Gemini, Groq, DeepSeek
+- **Infra:** Kubernetes (AKS), Docker, Helm
+- **Monitoring:** Datadog (APM, DBM, RUM, Logs)
 
-</div>
+## Quick Install
 
-## ⚡ Quick Start
-
+### Docker
 ```bash
-# Install dependencies
+docker run -d -p 3000:3000 vibecode/webgui:latest
+```
+
+### Docker Compose
+```bash
+curl -O https://raw.githubusercontent.com/ryanmaclean/vibecode-webgui/main/docker-compose.yml
+docker-compose up -d
+```
+
+### Kubernetes (KinD)
+```bash
+kind create cluster --name vibecode
+kubectl apply -f https://raw.githubusercontent.com/ryanmaclean/vibecode-webgui/main/k8s/vibecode-kind.yaml
+kubectl port-forward svc/vibecode 3000:80
+```
+
+### Local Development
+```bash
+git clone https://github.com/ryanmaclean/vibecode-webgui
+cd vibecode-webgui
 npm install
-
-# Verify setup
-npm run verify
-
-# Start development server
 npm run dev
-
-# Open http://localhost:3000
 ```
 
-**New Features:**
-- 🤖 AI Code Completion with Monaco 0.53.0 (visit `/tools/codeium` on a running dev server to try the Codeium playground)
-- 🎯 Welcome drawer for quick theme/CLI/integration setup (click “Welcome” in the signed-in header)
-- 🔌 MCP Server for AI agent integration
-- 🐍 Pydantic AI CLI Coding Agent example
+## Features
 
-See [docs/MONACOPILOT_INTEGRATION.md](./docs/MONACOPILOT_INTEGRATION.md) for AI completion setup.
+- **Cmd+K Inline Edit** - Natural language code transformations
+- **Codebase Chat** - Ask questions about your code (vector search)
+- **AI Completion** - Multi-provider support (OpenAI/Anthropic/etc)
+- **7-Step Onboarding** - Theme, workspace, extensions, integrations
+- **53+ Extensions** - Continue, Codeium, Cline, Aider, Prettier, ESLint, etc
+- **MCP Server** - Model Context Protocol for Windsurf/Claude Desktop
+- **Vector Search** - Semantic code search with pgvector + HNSW
 
-## 🧭 Coordination & History
+## Screenshots
 
-Working alongside other maintainers or automation agents? Review the shared logs in [`docs/logs/`](./docs/logs/) before you start so you understand recent decisions and coordination notes. Pair that with [`TODO.md`](./TODO.md) to confirm which work areas are already claimed.
+### Monaco Editor with AI Completion
+![Monaco Editor](docs/screenshots/monaco-editor.png)
 
-## 🚀 **One-Click Demo**
+### Codebase Chat
+![Codebase Chat](docs/screenshots/codebase-chat.png)
+
+### Onboarding Flow
+![Onboarding](docs/screenshots/onboarding.png)
+
+## Deployment
+
+See [DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md) for:
+- macOS (Intel + Apple Silicon)
+- Linux (Ubuntu/Debian/Fedora/Arch)
+- Windows (Desktop + Server)
+- QNAP, Synology, Asustor NAS
+- Docker Compose
+- Kubernetes (KinD + Production)
+
+## Environment Variables
 
 ```bash
-./DEMO.sh
+# Required
+DATABASE_URL="postgresql://user:pass@host:5432/vibecode"
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="$(openssl rand -base64 32)"
+
+# Optional - AI Providers
+OPENAI_API_KEY="sk-..."
+ANTHROPIC_API_KEY="sk-ant-..."
+GOOGLE_AI_API_KEY="..."
+
+# Optional - Monitoring
+DD_API_KEY="..."
+DD_SITE="datadoghq.com"
 ```
 
-**See pgvector + PostgreSQL + Datadog DBM in action in 30 seconds.**
+## Architecture
 
-> Note: To see Datadog metrics in the demo, create a `.env.local` with your Datadog API key before running.
+```
+┌─────────────────────────────────────────┐
+│  Next.js 15 App (React 19)             │
+│  ├─ Monaco 0.53.0 + Monacopilot        │
+│  ├─ AI Completion API                  │
+│  └─ Vector Search API                  │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│  PostgreSQL 16 + pgvector               │
+│  ├─ HNSW indexes                        │
+│  ├─ User preferences                    │
+│  └─ Code embeddings                     │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│  Datadog Monitoring                     │
+│  ├─ APM (traces)                        │
+│  ├─ DBM (query samples)                 │
+│  └─ RUM (user sessions)                 │
+└─────────────────────────────────────────┘
+```
+
+## Code-Server Extensions
+
+53+ pre-installed extensions (all MIT/BSD/Apache licensed):
+
+**AI Assistants (5):**
+- Continue, Codeium, Cline, Aider, VibeCode
+
+**Productivity (25+):**
+- Prettier, ESLint, Git Graph, Jest, Live Server, etc.
+
+**Official:**
+- Datadog for VS Code
+
+See [docker/code-server/README.md](docker/code-server/README.md) for full list.
+
+## API Endpoints
 
 ```bash
-cat > .env.local << 'EOF'
-DD_API_KEY=REPLACE_WITH_YOUR_KEY
-DD_SITE=datadoghq.com
-EOF
+# AI Completion
+curl -X POST http://localhost:3000/api/code-completion \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"write a function","provider":"openai"}'
+
+# Vector Search
+curl -X POST http://localhost:3000/api/search/vector \
+  -H "Content-Type: application/json" \
+  -d '{"query":"authentication logic","limit":5}'
+
+# User Preferences
+curl http://localhost:3000/api/user/preferences
 ```
 
----
-
-## 🏗️ **Deployment Status**
-
-[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-ONLINE-brightgreen?style=for-the-badge)](https://vibecode.eastus2.cloudapp.azure.com)
-[![Infrastructure Tests](https://img.shields.io/badge/Infrastructure%20Tests-✅%20Passing-brightgreen?style=for-the-badge)](./tests/tofu/)
-[![OpenTofu](https://img.shields.io/badge/OpenTofu-v1.7.3-blue?style=for-the-badge&logo=terraform)](https://opentofu.org/)
-[![Azure AKS](https://img.shields.io/badge/Azure%20AKS-DEPLOYED-brightgreen?style=for-the-badge&logo=microsoft-azure)](https://azure.microsoft.com/en-us/services/kubernetes-service/)
-
-### 🌐 **Production Deployment**
-- **Live Application**: [https://vibecode.eastus2.cloudapp.azure.com](https://vibecode.eastus2.cloudapp.azure.com)
-- **AKS Cluster**: `vibecode-prod-aks-6c3db0e6` (East US 2)
-- **Container Registry**: `vibecodecr6c3db0e6.azurecr.io`
-- **Application Version**: `v0.2.0`
-- **Database**: PostgreSQL 15 with pgvector (in-cluster)
-- **Monitoring**: Datadog with Database Monitoring enabled
-
-### 🚀 **Quick Deploy to Azure AKS**
+## Testing
 
 ```bash
-# 1. Create AKS cluster
-./scripts/create-aks-cluster.sh
-
-# 2. Configure DNS with Azure public IP
-./scripts/create-public-ip.sh
-
-# 3. Deploy full stack (ingress, app, SSL)
-./scripts/deploy-vibecode.sh
-
-# 4. Setup Datadog monitoring
-export DD_API_KEY=your_datadog_api_key
-./scripts/setup-aks-datadog-monitoring.sh
+npm run test:unit          # Unit tests
+npm run test:integration   # Integration tests
+npm run test:e2e           # E2E tests (Playwright)
+npm run type-check         # TypeScript
+npm run lint               # ESLint
 ```
 
-For advanced options and detailed guidance, see the [AKS Deployment Guide](./docs/aks-datadog-monitoring-guide.md).
+## Documentation
 
-> **Note:** Make sure you have Azure CLI (`az`) and kubectl installed and configured. If using OpenTofu, see the section below about remote state management.
+- [Onboarding Guide](docs/ONBOARDING.md)
+- [Monaco Integration](docs/MONACOPILOT_INTEGRATION.md)
+- [MCP Server](docs/MCP_INTEGRATION.md)
+- [Docker Deployment](docs/DOCKER_DEPLOYMENT.md)
+- [Test Coverage](docs/TEST_COVERAGE_AUDIT.md)
+- [Kubernetes Guide](docs/azure-aks-deployment.md)
 
-### 📈 **Datadog Monitoring Setup**
-
-The platform comes with comprehensive Datadog monitoring:
+## Contributing
 
 ```bash
-# Set your Datadog API key
-export DD_API_KEY=your_datadog_api_key
-export DD_SITE=datadoghq.com  # Optional, defaults to datadoghq.com
+# Fork, clone, create branch
+git checkout -b feature/your-feature
 
-# Deploy Datadog monitoring stack
-./scripts/setup-aks-datadog-monitoring.sh --cluster-name vibecode-prod-aks-6c3db0e6
+# Make changes, test
+npm run test
+npm run type-check
 
-# Validate Database Monitoring (after application is deployed)
-./scripts/verify-datadog-dbm.sh
+# Commit, push, PR
+git commit -m "feat: your feature"
+git push origin feature/your-feature
 ```
 
-The monitoring stack includes:
-- Node Agent with APM, logs, and process monitoring
-- Cluster Agent for Kubernetes metrics
-- Database Monitoring (DBM) for PostgreSQL and pgvector
-- Custom dashboards for vector search monitoring
-- System Probe for network monitoring
+## License
 
-For troubleshooting and advanced configuration, see the [Datadog Monitoring Guide](./docs/aks-datadog-monitoring-guide.md).
+MIT
 
-### 📚 **Seed the RAG Dataset**
+## Links
 
-The `RAGChunk` Prisma model now stores embeddings directly as `vector(1536)` values, so once PostgreSQL is reachable you should:
-
-```bash
-npx prisma generate
-npx prisma migrate deploy
-./scripts/generate-vector-activity.sh           # or your preferred seeding script
-npx ts-node scripts/verify-rag-functionality.ts # optional: smoke test retrieval
-```
-
-This loads demo content into pgvector and verifies the Lovable-style chat flows before the Datadog dashboards go live.
-
-### 🗄️ **Harden OpenTofu State (Azure Storage)**
-
-To keep disaster-recovery work from deleting the local `terraform.tfstate`, migrate the stack to Azure Blob Storage:
-
-```bash
-# one-time provisioning of the remote backend
-./scripts/create-remote-state-storage.sh \
-  RESOURCE_GROUP=rg-vibecode-tofu-state \
-  STORAGE_ACCOUNT_NAME=vibecodetfstate01 \
-  CONTAINER_NAME=opentofu-state
-
-# copy the sample backend config and initialize
-cp tofu/backend.tf.example tofu/backend.tf
-tofu init -migrate-state
-```
-
-After migration, future `tofu plan/apply` runs will use the blob container (`opentofu-state`) instead of the fragile local file.
-
-### ☁️ **App Service Stack (Preview)**
-
-The new `tofu/appservice/` project provisions an Azure PaaS alternative (Storage + App Service + Function App + Postgres Flexible Server + Monitoring). To experiment locally:
-
-```bash
-cd tofu/appservice
-cp appservice.tfvars.example appservice.auto.tfvars            # customise project name, env, passwords
-tofu init                                                      # uses backend.tf.sample or local state
-tofu plan                                                      # review the PaaS resources
-```
-
-Modules currently implemented:
-- `modules/storage` – Storage account, private uploads container, ingestion queue
-- `modules/app_service` – Linux App Service Plan & Web App (managed identity, monitoring settings)
-- `modules/function_app` – Consumption plan Function App for queue-triggered PDF processing
-
-Remaining work: populate monitoring, Key Vault, and Azure OpenAI modules plus application deployment scripts (see `TODO.md` for the active follow-ups).
-
-### 🧪 **Production Testing**
-
-Test against the live deployment:
-
-```bash
-# Quick smoke test (7 core tests)
-npm run test:production:smoke
-
-# Full E2E test suite (448 tests)
-npm run test:e2e:production
-
-# Integration tests (database, AI, monitoring)
-npm run test:integration:production
-
-# Complete test suite
-npm run test:production:all
-```
-
-### 🤝 **Agent Coordination & Logs**
-
-- Active work in progress is tracked in [`TODO.md`](./TODO.md); read and update it before starting new changes to avoid conflicts.
-- Historical activity, decisions, and friction notes now live in [`docs/logs/`](./docs/logs/) (`AGENT_ACTIVITY_LOG.md`, `FRICTION_LOG.md`, etc.).
-- Follow the coordination protocol captured in `TODO.md` when moving files or launching long-running jobs so multi-agent workflows stay smooth.
-
-### 📊 **Infrastructure Components**
-- **AKS cluster** with dual node pools (system + user)
-- **PostgreSQL with pgvector** deployed in-cluster
-- **Datadog monitoring** with database monitoring (DBM)
-- **Network policies** and security hardening
-- **Rollback mechanisms** for deployment failures
-- **SSL/TLS** via Let's Encrypt with cert-manager
-
-### 💸 **Minimize Your AKS Footprint**
-- Keep the system node pool at the platform minimum (two Linux nodes on a 4-vCPU, 4+ GB SKU such as `Standard_D4as_v5`) and taint it so only control-plane add-ons schedule there.
-- Run application workloads on a separate user pool with the cluster autoscaler `minCount` set to `0` so it scales to zero when idle.
-- Stop and start the cluster (`az aks stop` / `az aks start`) during predictable downtimes to avoid paying for compute while the environment is quiet.
-- Stay on the AKS Free tier unless you need an uptime SLA—the control plane remains free and you only pay for the agent nodes that are running.
-
----
-
-## ✨ **What This Demonstrates**
-
-<table>
-<tr>
-<td width="50%">
-
-### 🎯 **Core Demo**
-- **pgvector** for semantic search
-- **PostgreSQL** on Kubernetes  
-- **Datadog Database Monitoring**
-- **Real-time vector metrics**
-- **Query performance analysis**
-
-</td>
-<td width="50%">
-
-### 📊 **What You'll See**
-- 120 documents with embeddings
-- Vector similarity searches
-- Custom Datadog metrics
-- Query samples & explain plans
-- Performance dashboards
-
-</td>
-</tr>
-</table>
-
----
-
-## 🎮 **Quick Start Options**
-
-| Method | Command | Description |
-|--------|---------|-------------|
-| **🚀 Interactive Demo** | `./DEMO.sh` | Full TUI experience |
-| **⚡ Direct Setup** | `make setup` | Setup pgvector + DBM |
-| **🎯 Generate Activity** | `make vector` | Create vector data |
-| **📊 View Dashboard** | `make dashboard` | Open Datadog |
-| **☁️ Deploy to AKS** | `./scripts/deploy-vibecode.sh` | Full production deployment |
-
----
-
-## 🏗️ **Architecture**
-
-```mermaid
-graph TB
-    subgraph "Azure Kubernetes Service"
-        A[VibeCode App] --> B[PostgreSQL + pgvector]
-        B --> C[Datadog Agent]
-        I[NGINX Ingress] --> A
-        I --> D[Let's Encrypt/cert-manager]
-    end
-    C --> E[Datadog Platform]
-    E --> F[Database Monitoring]
-    E --> G[APM Traces]
-    E --> H[Logs]
-    F --> J[Query Samples]
-    F --> K[Performance Metrics]
-    F --> L[Vector Metrics]
-```
-
----
-
-## 📈 **Monitoring Capabilities**
-
-<details>
-<summary><b>🔍 Click to see what gets monitored</b></summary>
-
-
-### 🧪 code-server in KinD
-- Apply `k8s/code-server-kind.yaml` after creating the KinD cluster (`kubectl apply -f k8s/code-server-kind.yaml`).
-- Load the local image `vibecode/code-server:monaco053` into KinD (`kind load docker-image vibecode/code-server:monaco053 --name vibecode-test`).
-- Access the editor with `kubectl port-forward svc/code-server-kind -n vibecode-platform 3100:8080` and open http://localhost:3100 (Monaco 0.53 + AI extensions).
-- Alternatively, hit the NodePort on the KinD control-plane: `CONTROL_PLANE=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' vibecode-test-control-plane)` then open `http://$CONTROL_PLANE:31080`.
-
-### Vector-Specific Metrics
-- `postgresql.pgvector.vector_count` - Total embeddings stored
-- `postgresql.pgvector.table_size` - Storage utilization  
-- `postgresql.pgvector.index.*` - IVFFLAT index performance
-
-### Database Performance
-- Query execution times and explain plans
-- Index usage and efficiency
-- Connection pool monitoring
-- Lock contention analysis
-
-### Custom Queries Tracked
-```sql
--- Vector similarity search
-SELECT embedding <=> '[0.1,0.2,0.3]'::vector FROM documents;
-
--- Hybrid search (vector + text)
-SELECT * FROM documents WHERE content @@ 'query' 
-ORDER BY embedding <=> '[...]'::vector;
-```
-
-### Infrastructure Monitoring
-- Node CPU, memory, and disk usage
-- Kubernetes pod resource utilization
-- AKS cluster health metrics
-- Network traffic patterns
-
-### Application Performance
-- API response times
-- Error rates
-- Throughput metrics
-- User experience metrics
-
-</details>
-
----
-
-## 🎯 **Perfect For**
-
-- **Database Teams**: Monitoring pgvector in production
-- **ML Engineers**: Vector database performance optimization  
-- **DevOps**: Kubernetes + PostgreSQL + monitoring stack
-- **Datadog Users**: Custom DBM metrics and dashboards
-- **Cloud Architects**: Azure AKS deployment patterns
-
----
-
-## 🔧 **Requirements**
-
-- Kubernetes cluster (AKS, Docker Desktop, KIND, minikube)
-- `kubectl` and `az` CLI configured
-- Helm for package management
-- Optional: Datadog API key for full monitoring
-
----
-
-## 📋 **What Happens in the Demo**
-
-1. **🔍 Verification**: Checks PostgreSQL + pgvector setup
-2. **⚙️ Configuration**: Sets up Datadog DBM monitoring
-3. **🎯 Data Generation**: Creates 120 sample documents with embeddings
-4. **🔄 Activity Simulation**: Runs vector similarity searches
-5. **📊 Monitoring**: Shows real metrics in Datadog dashboard
-
----
-
-<div align="center">
-
-**🚀 Ready to see pgvector monitoring in action?**
-
-### [`./DEMO.sh`](./DEMO.sh)
-
-*Supports both interactive TUI and simple menu modes*
-
----
-
-<sub>Built with ❤️ for the Datadog + PostgreSQL + Kubernetes community</sub>
-
-</div>
+- [Live Demo](https://vibecode.eastus2.cloudapp.azure.com)
+- [Documentation](docs/)
+- [Issues](https://github.com/ryanmaclean/vibecode-webgui/issues)
+- [Discussions](https://github.com/ryanmaclean/vibecode-webgui/discussions)
