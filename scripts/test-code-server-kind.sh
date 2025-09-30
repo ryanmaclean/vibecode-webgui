@@ -14,6 +14,9 @@ fi
 echo "==> Loading image into KinD cluster $CLUSTER_NAME"
 kind load docker-image "$IMAGE" --name "$CLUSTER_NAME"
 
+echo "==> Ensuring namespace $NAMESPACE exists"
+kubectl get namespace "$NAMESPACE" >/dev/null 2>&1 || kubectl create namespace "$NAMESPACE" >/dev/null
+
 echo "==> Applying k8s manifest"
 kubectl apply -f k8s/code-server-kind.yaml >/dev/null
 
