@@ -43,6 +43,7 @@ This log captures friction points to help improve developer experience and ident
 - ESLint 9 is already installed (per package.json)
 
 **Workaround:** Pending — options include adding `ESLINT_USE_FLAT_CONFIG=false` to the lint script or migrating configs to the new flat format.  
+- NOTE: When migrating, place `eslint.config.mjs` at the repository root so `npm run lint` and CI workflows resolve it without additional flags.
 **Status:** BLOCKED - Needs configuration migration or environment override  
 **Owner:** Tooling
 
