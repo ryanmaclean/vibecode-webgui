@@ -1,17 +1,27 @@
 # Monacopilot Integration Guide
 
-AI-powered code completion for Monaco Editor 0.52 using Monacopilot.
+AI-powered code completion for Monaco Editor 0.53 using Monacopilot.
 
 ## Overview
 
 Monacopilot adds GitHub Copilot-style AI completions to Monaco Editor with support for multiple AI providers.
 
 **Features:**
-- ✅ Compatible with Monaco Editor 0.52.2
+- ✅ Compatible with Monaco Editor 0.53.0
 - ✅ Multiple AI providers (OpenAI, Mistral, Anthropic, Groq, etc.)
 - ✅ Real-time code suggestions
 - ✅ Context-aware completions
 - ✅ Easy integration
+
+## Monaco 0.53.0 Features
+
+Our integration now supports Monaco Editor 0.53.0, which includes several exciting new features:
+
+- **Next Edit Suggestion support** - Enhanced AI-powered editing suggestions
+- **Scroll On Middle Click** - Improved navigation experience  
+- **Edit Context Support** - Better context awareness for code completions
+
+Breaking changes in Monaco 0.53.0 do not affect our Monacopilot integration.
 
 ## Quick Start
 
