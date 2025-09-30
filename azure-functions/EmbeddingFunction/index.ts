@@ -190,7 +190,7 @@ async function findDocumentationFiles(): Promise<string[]> {
     try {
       await walkDirectory(docPath, files);
     } catch (error) {
-      console.log(`Documentation path not found: ${docPath}`);
+      console.warn(`Documentation path not found: ${docPath}`, error);
     }
   }
   
