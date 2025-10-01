@@ -42,3 +42,5 @@
 - `docs/handoff/shipping-dashboard.md`
 - `docs/logs/issues/docker-multiarch-audit.md`
 - `scripts/test-code-server-kind.sh`
+
+- **Update 2025-10-01:** Dockerfile now verifies SHA256 sums for helm/kubectl/kubectx/kubens before copying binaries; update issue #416 with validation links.

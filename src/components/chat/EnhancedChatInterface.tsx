@@ -553,6 +553,8 @@ export const EnhancedChatInterface = ({
       <div
         ref={liveRegionRef}
         aria-live="polite"
+        aria-atomic="true"
+        aria-relevant="additions text"
         role="status"
         className="sr-only"
         data-testid="chat-live-region"
@@ -652,6 +654,8 @@ export const EnhancedChatInterface = ({
               <Button
                 size="sm"
                 data-testid="chat-jump-button"
+                aria-label="Jump to latest message"
+                aria-controls="chat-scroll-anchor"
                 className="pointer-events-auto shadow-md"
                 onClick={handleJumpToLatest}
               >
@@ -664,7 +668,11 @@ export const EnhancedChatInterface = ({
             className="h-full p-4"
             data-testid="chat-scroll-area"
           >
-            <div className="space-y-4" data-testid="chat-message-list">
+            <div
+              className="space-y-4"
+              data-testid="chat-message-list"
+              aria-busy={isStreaming ? 'true' : 'false'}
+            >
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.from === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] ${message.from === 'user' ? 'order-2' : 'order-1'}`}>
@@ -768,7 +776,7 @@ export const EnhancedChatInterface = ({
                 </div>
               )}
               
-              <div ref={messagesEndRef} tabIndex={-1} data-testid="chat-scroll-anchor" />
+              <div ref={messagesEndRef} tabIndex={-1} data-testid="chat-scroll-anchor" id="chat-scroll-anchor" />
             </div>
           </ScrollArea>
         </CardContent>
