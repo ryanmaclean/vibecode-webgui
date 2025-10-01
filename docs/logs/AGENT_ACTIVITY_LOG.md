@@ -286,3 +286,5 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Normalized 353 repo-relative links by migrating them to on-site routes or GitHub blobs and copied `monitoring/dashboards/genai-vector-performance.json` into `docs/public` so dashboard downloads work from GitHub Pages.
 - Updated `astro.config.mjs` sidebar links (Datadog docs, pgvector test results) to remove dead `/PRISMA_PGVECTOR_TEST_RESULTS/` routes and point to live sources.
 - Added a fallback favicon and reran the local link audit utility until it reported zero missing paths; results captured in `docs/logs/astro-link-audit-2025-10-01.md`.
+- Wired the new `docs:link-audit` script into docs-automation CI so GitHub Actions builds Astro docs and fails if static links break.
+- Authored `docs/runbooks/docs-verification.md` covering the build + link audit workflow and the link migration playbook so future CI failures have a documented remediation path.
