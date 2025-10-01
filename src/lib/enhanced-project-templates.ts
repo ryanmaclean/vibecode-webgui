@@ -321,7 +321,7 @@ export class EnhancedProjectTemplates {
   // Helper methods for generating specific file content
   // (These would be implemented with actual template content)
 
-  private generateNextjsPackageJson(projectName: string, options: any): string {
+  private generateNextjsPackageJson(projectName: string, _options: Record<string, unknown>): string {
     return JSON.stringify({
       name: projectName,
       version: "0.1.0",
@@ -345,7 +345,7 @@ export class EnhancedProjectTemplates {
     }, null, 2);
   }
 
-  private generateNextjsConfig(options: any): string {
+  private generateNextjsConfig(_options: Record<string, unknown>): string {
     return `/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -399,7 +399,7 @@ module.exports = {
     }, null, 2);
   }
 
-  private generateEnvExample(options: any): string {
+  private generateEnvExample(_options: Record<string, unknown>): string {
     return `# AI Provider Configuration
 OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here

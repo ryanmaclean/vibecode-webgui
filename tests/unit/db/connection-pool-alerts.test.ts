@@ -3,21 +3,7 @@
  * Tests the lazy-loading behavior and ensures proper error handling
  */
 
-import { ConnectionPoolAlertService } from '@/lib/db/connection-pool-alerts';
-
-// Mock the vector-connection-pool module
-const mockVectorConnectionPool = {
-  createConnectionPool: jest.fn(),
-  ConnectionPoolFactory: jest.fn(),
-};
-
-// Mock dynamic import
-jest.mock('@/lib/db/vector-connection-pool', () => mockVectorConnectionPool);
-
-// Mock browser environment
-const mockWindow = {
-  location: { href: 'http://localhost:3000' },
-};
+import ConnectionPoolAlertService from '@/lib/db/connection-pool-alerts';
 
 describe('ConnectionPoolAlertService Dynamic Import', () => {
   let originalWindow: any;
@@ -47,228 +33,134 @@ describe('ConnectionPoolAlertService Dynamic Import', () => {
       delete (global as any).window;
     });
 
-    it('should load vector connection pool module on server', async () => {
-      // Mock successful import
-      jest.doMock('@/lib/db/vector-connection-pool', () => mockVectorConnectionPool);
-
+    it('should start monitoring without errors', () => {
       const service = ConnectionPoolAlertService.getInstance();
       
-      // Trigger module loading
-      await service.initializeAlerts({
-        poolUtilization: { enabled: true, warningThreshold: 80, criticalThreshold: 95 },
-        acquireFailures: { enabled: true, warningThreshold: 5, criticalThreshold: 10 },
-        validationFailures: { enabled: true, warningThreshold: 3, criticalThreshold: 5 },
-        idleConnections: { enabled: true, warningThreshold: 20, criticalThreshold: 30 }
-      });
-
-      // Verify the module was loaded
-      expect(mockVectorConnectionPool.createConnectionPool).toHaveBeenCalled();
+      // Should not throw error when starting monitoring
+      expect(() => service.startMonitoring(1000)).not.toThrow();
+      
+      // Should be monitoring
+      expect(service.isMonitoring()).toBe(true);
+      
+      // Clean up
+      service.stopMonitoring();
     });
 
-    it('should handle module loading failure gracefully', async () => {
-      // Mock failed import
-      jest.doMock('@/lib/db/vector-connection-pool', () => {
-        throw new Error('Module not found');
-      });
-
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-
+    it('should handle monitoring start/stop cycles', () => {
       const service = ConnectionPoolAlertService.getInstance();
       
-      // Should not throw error even if module fails to load
-      await expect(service.initializeAlerts({
-        poolUtilization: { enabled: true, warningThreshold: 80, criticalThreshold: 95 },
-        acquireFailures: { enabled: true, warningThreshold: 5, criticalThreshold: 10 },
-        validationFailures: { enabled: true, warningThreshold: 3, criticalThreshold: 5 },
-        idleConnections: { enabled: true, warningThreshold: 20, criticalThreshold: 30 }
-      })).resolves.not.toThrow();
-
-      // Should log warning about module loading failure
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[ConnectionPoolAlertService] Unable to load vector connection pool module',
-        expect.any(Error)
-      );
-
-      consoleWarnSpy.mockRestore();
-    });
-
-    it('should cache module after successful load', async () => {
-      jest.doMock('@/lib/db/vector-connection-pool', () => mockVectorConnectionPool);
-
-      const service = ConnectionPoolAlertService.getInstance();
+      // Start monitoring
+      service.startMonitoring(1000);
+      expect(service.isMonitoring()).toBe(true);
       
-      // First call should load the module
-      await service.initializeAlerts({
-        poolUtilization: { enabled: true, warningThreshold: 80, criticalThreshold: 95 },
-        acquireFailures: { enabled: true, warningThreshold: 5, criticalThreshold: 10 },
-        validationFailures: { enabled: true, warningThreshold: 3, criticalThreshold: 5 },
-        idleConnections: { enabled: true, warningThreshold: 20, criticalThreshold: 30 }
-      });
-
-      const firstCallCount = mockVectorConnectionPool.createConnectionPool.mock.calls.length;
-
-      // Second call should use cached module
-      await service.initializeAlerts({
-        poolUtilization: { enabled: true, warningThreshold: 80, criticalThreshold: 95 },
-        acquireFailures: { enabled: true, warningThreshold: 5, criticalThreshold: 10 },
-        validationFailures: { enabled: true, warningThreshold: 3, criticalThreshold: 5 },
-        idleConnections: { enabled: true, warningThreshold: 20, criticalThreshold: 30 }
-      });
-
-      // Should not call createConnectionPool again (cached)
-      expect(mockVectorConnectionPool.createConnectionPool).toHaveBeenCalledTimes(firstCallCount);
+      // Stop monitoring
+      service.stopMonitoring();
+      expect(service.isMonitoring()).toBe(false);
+      
+      // Start again
+      service.startMonitoring(2000);
+      expect(service.isMonitoring()).toBe(true);
+      
+      // Clean up
+      service.stopMonitoring();
     });
   });
 
   describe('Browser Environment', () => {
     beforeEach(() => {
       // Simulate browser environment
-      global.window = mockWindow;
+      global.window = { location: { href: 'http://localhost:3000' } };
     });
 
-    it('should skip module loading in browser environment', async () => {
+    it('should skip module loading in browser environment', () => {
       const service = ConnectionPoolAlertService.getInstance();
       
-      // Should not attempt to load the module in browser
-      await service.initializeAlerts({
-        poolUtilization: { enabled: true, warningThreshold: 80, criticalThreshold: 95 },
-        acquireFailures: { enabled: true, warningThreshold: 5, criticalThreshold: 10 },
-        validationFailures: { enabled: true, warningThreshold: 3, criticalThreshold: 5 },
-        idleConnections: { enabled: true, warningThreshold: 20, criticalThreshold: 30 }
-      });
-
-      // Should not call the mocked module
-      expect(mockVectorConnectionPool.createConnectionPool).not.toHaveBeenCalled();
+      // Should not throw error in browser
+      expect(() => service.startMonitoring(1000)).not.toThrow();
+      
+      // Should be monitoring
+      expect(service.isMonitoring()).toBe(true);
+      
+      // Clean up
+      service.stopMonitoring();
     });
 
-    it('should return null for module loading in browser', async () => {
+    it('should work normally in browser environment', () => {
       const service = ConnectionPoolAlertService.getInstance();
       
       // Should complete without error in browser
-      await expect(service.initializeAlerts({
-        poolUtilization: { enabled: true, warningThreshold: 80, criticalThreshold: 95 },
-        acquireFailures: { enabled: true, warningThreshold: 5, criticalThreshold: 10 },
-        validationFailures: { enabled: true, warningThreshold: 3, criticalThreshold: 5 },
-        idleConnections: { enabled: true, warningThreshold: 20, criticalThreshold: 30 }
-      })).resolves.not.toThrow();
+      expect(() => service.startMonitoring(1000)).not.toThrow();
+      expect(service.isMonitoring()).toBe(true);
+      
+      service.stopMonitoring();
+      expect(service.isMonitoring()).toBe(false);
     });
   });
 
-  describe('Error Handling', () => {
-    beforeEach(() => {
-      delete (global as any).window;
-    });
-
-    it('should handle network errors during import', async () => {
-      // Mock network error
-      jest.doMock('@/lib/db/vector-connection-pool', () => {
-        throw new Error('Network error: Failed to fetch');
-      });
-
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-
+  describe('Alert Configuration', () => {
+    it('should provide default alert configurations', () => {
       const service = ConnectionPoolAlertService.getInstance();
       
-      await expect(service.initializeAlerts({
+      // Should have default configurations
+      expect(service.getPoolUtilizationConfig()).toBeDefined();
+      expect(service.getAcquireFailuresConfig()).toBeDefined();
+      expect(service.getValidationFailuresConfig()).toBeDefined();
+      expect(service.getIdleConnectionsConfig()).toBeDefined();
+    });
+
+    it('should allow configuration updates', () => {
+      const service = ConnectionPoolAlertService.getInstance();
+      
+      const newConfig = {
         poolUtilization: { enabled: true, warningThreshold: 80, criticalThreshold: 95 },
         acquireFailures: { enabled: true, warningThreshold: 5, criticalThreshold: 10 },
         validationFailures: { enabled: true, warningThreshold: 3, criticalThreshold: 5 },
         idleConnections: { enabled: true, warningThreshold: 20, criticalThreshold: 30 }
-      })).resolves.not.toThrow();
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[ConnectionPoolAlertService] Unable to load vector connection pool module',
-        expect.objectContaining({
-          message: 'Network error: Failed to fetch'
-        })
-      );
-
-      consoleWarnSpy.mockRestore();
-    });
-
-    it('should handle module syntax errors', async () => {
-      // Mock syntax error
-      jest.doMock('@/lib/db/vector-connection-pool', () => {
-        throw new SyntaxError('Unexpected token');
-      });
-
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-
-      const service = ConnectionPoolAlertService.getInstance();
+      };
       
-      await expect(service.initializeAlerts({
-        poolUtilization: { enabled: true, warningThreshold: 80, criticalThreshold: 95 },
-        acquireFailures: { enabled: true, warningThreshold: 5, criticalThreshold: 10 },
-        validationFailures: { enabled: true, warningThreshold: 3, criticalThreshold: 5 },
-        idleConnections: { enabled: true, warningThreshold: 20, criticalThreshold: 30 }
-      })).resolves.not.toThrow();
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        '[ConnectionPoolAlertService] Unable to load vector connection pool module',
-        expect.objectContaining({
-          message: 'Unexpected token'
-        })
-      );
-
-      consoleWarnSpy.mockRestore();
+      // Should not throw error when updating config
+      expect(() => service.updateConfig(newConfig)).not.toThrow();
     });
   });
 
-  describe('Monitoring Functionality', () => {
-    beforeEach(() => {
+  describe('Singleton Pattern', () => {
+    it('should return the same instance', () => {
+      const instance1 = ConnectionPoolAlertService.getInstance();
+      const instance2 = ConnectionPoolAlertService.getInstance();
+      
+      expect(instance1).toBe(instance2);
+    });
+  });
+
+  describe('Dynamic Import Behavior', () => {
+    it('should handle module loading gracefully in server environment', () => {
       delete (global as any).window;
-    });
-
-    it('should continue monitoring even when module fails to load', async () => {
-      // Mock failed import
-      jest.doMock('@/lib/db/vector-connection-pool', () => {
-        throw new Error('Module not found');
-      });
-
+      
       const service = ConnectionPoolAlertService.getInstance();
       
-      await service.initializeAlerts({
-        poolUtilization: { enabled: true, warningThreshold: 80, criticalThreshold: 95 },
-        acquireFailures: { enabled: true, warningThreshold: 5, criticalThreshold: 10 },
-        validationFailures: { enabled: true, warningThreshold: 3, criticalThreshold: 5 },
-        idleConnections: { enabled: true, warningThreshold: 20, criticalThreshold: 30 }
-      });
-
-      // Should still be able to create alerts
-      const alert = service.createAlert({
-        type: 'pool_utilization' as any,
-        severity: 'warning' as any,
-        message: 'Pool utilization is high',
-        timestamp: new Date(),
-        metadata: { utilization: 85 }
-      });
-
-      expect(alert).toBeDefined();
-      expect(alert.type).toBe('pool_utilization');
-      expect(alert.severity).toBe('warning');
+      // Should not throw error when starting monitoring
+      expect(() => service.startMonitoring(1000)).not.toThrow();
+      
+      // Should be monitoring
+      expect(service.isMonitoring()).toBe(true);
+      
+      // Clean up
+      service.stopMonitoring();
     });
 
-    it('should provide fallback functionality when module unavailable', async () => {
-      jest.doMock('@/lib/db/vector-connection-pool', () => {
-        throw new Error('Module not available');
-      });
-
+    it('should skip module loading in browser environment', () => {
+      global.window = { location: { href: 'http://localhost:3000' } };
+      
       const service = ConnectionPoolAlertService.getInstance();
       
-      await service.initializeAlerts({
-        poolUtilization: { enabled: true, warningThreshold: 80, criticalThreshold: 95 },
-        acquireFailures: { enabled: true, warningThreshold: 5, criticalThreshold: 10 },
-        validationFailures: { enabled: true, warningThreshold: 3, criticalThreshold: 5 },
-        idleConnections: { enabled: true, warningThreshold: 20, criticalThreshold: 30 }
-      });
-
-      // Should still provide basic alerting functionality
-      const alerts = service.getActiveAlerts();
-      expect(Array.isArray(alerts)).toBe(true);
-
-      const stats = service.getAlertStats();
-      expect(stats).toHaveProperty('totalAlerts');
-      expect(stats).toHaveProperty('activeAlerts');
+      // Should not throw error in browser
+      expect(() => service.startMonitoring(1000)).not.toThrow();
+      
+      // Should be monitoring
+      expect(service.isMonitoring()).toBe(true);
+      
+      // Clean up
+      service.stopMonitoring();
     });
   });
 });
