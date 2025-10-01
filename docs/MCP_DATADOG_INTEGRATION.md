@@ -5,6 +5,7 @@ This document describes how to run Model Context Protocol (MCP) servers with Dat
 ## Overview
 
 All MCP servers in VibeCode are wrapped with Datadog tracing to provide:
+
 - **Performance monitoring**: Track execution time and throughput
 - **Error tracking**: Capture exceptions and failures
 - **Resource usage**: Monitor CPU, memory, and I/O
@@ -150,7 +151,7 @@ curl http://localhost:8126/info
 
 Restart Windsurf/Cascade and check stderr output for:
 
-```
+```text
 Datadog tracing enabled for <service> MCP server
 ```
 
@@ -165,6 +166,7 @@ Datadog tracing enabled for <service> MCP server
 ### No Traces Appearing
 
 1. **Check Agent Connection**:
+
    ```bash
    telnet localhost 8126
    ```
@@ -224,15 +226,21 @@ import os
 import ddtrace
 from ddtrace import tracer, patch
 
-tracer.configure(
-    hostname=os.getenv('DD_AGENT_HOST', 'localhost'),
-    port=int(os.getenv('DD_TRACE_AGENT_PORT', '8126')),
-)
-patch(logging=True, requests=True)
+# Set environment variables for Datadog Agent
+os.environ.setdefault('DD_AGENT_HOST', 'localhost')
+os.environ.setdefault('DD_TRACE_AGENT_PORT', '8126')
+
+# Patch libraries and configure service
+patch(logging=True, requests=True, subprocess=True)
 ddtrace.config.service = 'mcp-new-server'
+ddtrace.config.env = os.getenv('DD_ENV', 'development')
+ddtrace.config.version = os.getenv('DD_VERSION', '1.0.0')
 
 from new_server_package import main
-main()
+
+if __name__ == "__main__":
+    with tracer.trace("mcp.new-server.main", service="mcp-new-server"):
+        main()
 ```
 
 ## Best Practices
@@ -249,3 +257,4 @@ main()
 - [dd-trace-js](https://github.com/DataDog/dd-trace-js)
 - [ddtrace Python](https://ddtrace.readthedocs.io/)
 - [MCP Protocol Specification](https://modelcontextprotocol.io/)
+
