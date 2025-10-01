@@ -17,3 +17,4 @@ The cost monitor currently echoes reminders weekly. We added concurrency but sti
 
 ## Progress Log
 - **2025-09-30:** Added concurrency guard to prevent overlapping runs.
+- **2025-09-30:** Added GitHub billing query and optional Slack notification; falls back to summary when token missing.

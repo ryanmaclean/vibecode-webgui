@@ -4,20 +4,22 @@
  */
 
 // Simple cache entry type
-interface CacheEntry {
+type CacheableKey = string | number | boolean | Record<string, unknown> | Array<unknown>
+
+interface CacheEntry<T> {
   timestamp: number;
-  data: any;
+  data: T;
   ttl: number;
 }
 
 // Vector cache manager mock implementation
 export class VectorCacheManager {
-  private static cache: Map<string, CacheEntry> = new Map();
+  private static cache: Map<string, CacheEntry<unknown>> = new Map();
   
   /**
    * Cache results for future retrieval
    */
-  public static async cacheResults(key: any, results: any[], workspace?: string): Promise<boolean> {
+  public static async cacheResults<T>(key: CacheableKey, results: T[], workspace?: string): Promise<boolean> {
     const cacheKey = this.generateCacheKey(key, workspace);
     this.cache.set(cacheKey, {
       timestamp: Date.now(),
@@ -30,9 +32,9 @@ export class VectorCacheManager {
   /**
    * Get cached results if available
    */
-  public static async getCachedResults(key: any, workspace?: string): Promise<any[] | null> {
+  public static async getCachedResults<T = unknown>(key: CacheableKey, workspace?: string): Promise<T[] | null> {
     const cacheKey = this.generateCacheKey(key, workspace);
-    const entry = this.cache.get(cacheKey);
+    const entry = this.cache.get(cacheKey) as CacheEntry<T> | undefined;
     
     if (!entry) {
       return null;
@@ -71,7 +73,7 @@ export class VectorCacheManager {
   /**
    * Generate a cache key from parameters
    */
-  private static generateCacheKey(key: any, workspace?: string): string {
+  private static generateCacheKey(key: CacheableKey, workspace?: string): string {
     const keyStr = typeof key === 'string' ? key : JSON.stringify(key);
     return workspace ? `${workspace}:${keyStr}` : keyStr;
   }

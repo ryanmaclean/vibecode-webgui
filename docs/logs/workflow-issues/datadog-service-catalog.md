@@ -28,3 +28,5 @@ The Datadog service catalog workflow validates our `*.datadog.yaml` descriptors 
 
 ## Progress Log
 - **2025-09-30:** Added concurrency, secret validation, YAML + datadog-ci linting, and restored push/PR/weekly triggers with optional workflow dispatch. Registration now skips gracefully when secrets missing; still need to confirm key rotation and add reporting.
+
+- **2025-09-30:** Added per-service summary entry to GitHub step summary.

@@ -1,0 +1,20 @@
+# Standard Profile - 12 extensions (~700MB)
+# Recommended for most users
+
+# AI Assistants (4)
+anthropic.claude-code
+codeium.codeium
+continue.continue
+rooveterinaryinc.roo-cline
+
+# Languages (3)
+ms-python.python
+ms-vscode.vscode-typescript-next
+llvm-vs-code-extensions.vscode-clangd
+
+# Essential Tools (5)
+dbaeumer.vscode-eslint
+esbenp.prettier-vscode
+mhutchie.git-graph
+pkief.material-icon-theme
+usernamehw.errorlens

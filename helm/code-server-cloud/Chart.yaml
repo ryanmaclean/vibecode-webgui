@@ -1,0 +1,5 @@
+apiVersion: v2
+name: code-server-cloud
+version: 0.1.0
+description: Deploy code-server workspaces on spot/preemptible nodes.
+type: application

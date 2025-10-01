@@ -69,6 +69,14 @@ volumes:
 
 ### Option 2: Kubernetes Deployment
 
+Before applying the manifests, create the Datadog API secret in the target namespace:
+
+```bash
+kubectl create secret generic datadog-secret \
+  --namespace vibecode-platform \
+  --from-literal=api-key="<your-datadog-api-key>"
+```
+
 ```yaml
 apiVersion: v1
 kind: ConfigMap
