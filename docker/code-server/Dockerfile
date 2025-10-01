@@ -21,7 +21,7 @@ ARG GLAB_VERSION=1.22.0
 ARG PROFILE=full
 ARG BUILD_DATE
 ARG GIT_COMMIT
-ARG VERSION=1.0.0
+ARG VERSION=1.2.0
 
 # Metadata
 LABEL org.opencontainers.image.title="VibeCode Code-Server"
@@ -196,13 +196,36 @@ RUN set -eux; \
 # 2. Aider - AI pair programming CLI
 RUN pip3 install --break-system-packages --no-cache-dir aider-chat
 
-# 3. Verify all required tools are installed (MUST succeed or build fails)
+# 3. PocketBase - Lightweight database (MIT License)
+ARG POCKETBASE_VERSION=0.24.4
+RUN set -eux; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") PB_ARCH=amd64 ;; \
+      "linux/arm64") PB_ARCH=arm64 ;; \
+      *) echo "Unsupported platform for PocketBase: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    curl -fsSL "https://github.com/pocketbase/pocketbase/releases/download/v${POCKETBASE_VERSION}/pocketbase_${POCKETBASE_VERSION}_linux_${PB_ARCH}.zip" -o /tmp/pocketbase.zip; \
+    unzip /tmp/pocketbase.zip -d /tmp; \
+    install -m755 /tmp/pocketbase /usr/local/bin/pocketbase; \
+    rm -rf /tmp/pocketbase.zip /tmp/pocketbase
+
+# 4. Devbox - Portable development environments (Apache 2.0)
+RUN set -eux; \
+    curl -fsSL https://get.jetify.com/devbox | bash -s -- -f
+
+# 5. Clone OpenAI Cookbook for reference examples
+RUN git clone --depth=1 https://github.com/openai/openai-cookbook /opt/openai-cookbook && \
+    chmod -R a+rX /opt/openai-cookbook
+
+# 6. Verify all required tools are installed (MUST succeed or build fails)
 RUN set -e && \
     echo "🔍 Verifying installed tools..." && \
     echo "Testing vim..." && vim --version | head -1 && \
     echo "Testing nvim..." && nvim --version | head -1 && \
     echo "Testing aider..." && aider --version && \
     echo "Testing goose..." && goose -version 2>&1 | grep -i goose && \
+    echo "Testing pocketbase..." && pocketbase --version && \
+    echo "Testing devbox..." && devbox version && \
     echo "✅ All required tools verified!"
 
 # Install Datadog tools
