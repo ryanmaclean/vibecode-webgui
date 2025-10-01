@@ -198,7 +198,7 @@ export default function OnboardingPage() {
         integrations: data.integrations,
         aiProviders: data.aiProviders,
       })
-      setData(saved)
+      setData(saved as Preferences)
       router.push('/dashboard')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'We hit a snag saving your preferences. Please try again.'

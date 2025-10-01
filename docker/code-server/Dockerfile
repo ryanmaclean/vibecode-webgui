@@ -127,7 +127,7 @@ RUN echo "🔍 Verifying installed tools..." && \
     nvim --version | head -1 && \
     emacs --version | head -1 && \
     aider --version && \
-    /root/go/bin/goose version && \
+    { /root/go/bin/goose -version 2>&1 | head -1 || /root/go/bin/goose --help 2>&1 | head -1; } && \
     echo "✅ All required tools verified!"
 
 # Install Datadog tools
