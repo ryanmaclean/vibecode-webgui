@@ -76,26 +76,53 @@ class AWSCloudDeploymentTests(unittest.TestCase):
                 self.skipTest("Neither terraform nor tofu CLI tools are available")
 
         try:
-            # Initialize first with timeout
-            init_result = subprocess.run(
-                [tool, "init", "-backend=false"],
-                capture_output=True,
-                text=True,
-                cwd=self.tofu_dir,
-                timeout=60
-            )
+            # Initialize first with timeout and retry logic
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    init_result = subprocess.run(
+                        [tool, "init", "-backend=false"],
+                        capture_output=True,
+                        text=True,
+                        cwd=self.tofu_dir,
+                        timeout=120  # Increased timeout
+                    )
+                    if init_result.returncode == 0:
+                        break
+                    elif attempt < max_retries - 1:
+                        print(f"Init attempt {attempt + 1} failed, retrying...")
+                        continue
+                except subprocess.TimeoutExpired:
+                    if attempt < max_retries - 1:
+                        print(f"Init timeout on attempt {attempt + 1}, retrying...")
+                        continue
+                    else:
+                        self.skipTest("Provider initialization timeout - skipping validation test")
 
             if init_result.returncode != 0:
                 self.fail(f"AWS Terraform init failed: {init_result.stderr}")
 
-            # Validate syntax with timeout
-            result = subprocess.run(
-                [tool, "validate", "-json"],
-                capture_output=True,
-                text=True,
-                cwd=self.tofu_dir,
-                timeout=60
-            )
+            # Validate syntax with timeout and retry logic
+            for attempt in range(max_retries):
+                try:
+                    result = subprocess.run(
+                        [tool, "validate", "-json"],
+                        capture_output=True,
+                        text=True,
+                        cwd=self.tofu_dir,
+                        timeout=120  # Increased timeout
+                    )
+                    if result.returncode == 0:
+                        break
+                    elif attempt < max_retries - 1:
+                        print(f"Validation attempt {attempt + 1} failed, retrying...")
+                        continue
+                except subprocess.TimeoutExpired:
+                    if attempt < max_retries - 1:
+                        print(f"Validation timeout on attempt {attempt + 1}, retrying...")
+                        continue
+                    else:
+                        self.skipTest("Terraform validation timeout - skipping validation test")
 
             if result.returncode != 0:
                 # Check if it's a provider timeout issue

@@ -10,6 +10,8 @@ setup() {
   unset MOCK_TOOL_MISSING
   unset MOCK_KUBECTL_EXEC_FAIL
   unset MOCK_KUBECTL_EXEC_TIMEOUT
+  unset MOCK_KUBECTL_WAIT_FAIL
+  unset MOCK_KUBECTL_GET_FAIL
   unset MOCK_TIMEOUT_EXIT
 }
 
@@ -17,6 +19,8 @@ teardown() {
   unset MOCK_TOOL_MISSING
   unset MOCK_KUBECTL_EXEC_FAIL
   unset MOCK_KUBECTL_EXEC_TIMEOUT
+  unset MOCK_KUBECTL_WAIT_FAIL
+  unset MOCK_KUBECTL_GET_FAIL
   unset MOCK_TIMEOUT_EXIT
 }
 
@@ -45,4 +49,60 @@ teardown() {
   run ./scripts/test-code-server-editors.sh
   [ "$status" -ne 0 ]
   [[ "$output" == *"timeout after"* ]]
+}
+
+@test "handles kubectl wait failures gracefully" {
+  export MOCK_KUBECTL_WAIT_FAIL=1
+  run ./scripts/test-code-server-editors.sh
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Warning: kubectl wait"* ]]
+}
+
+@test "handles kubectl get pod failures" {
+  export MOCK_KUBECTL_GET_FAIL=1
+  run ./scripts/test-code-server-editors.sh
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"No Ready pods found"* ]]
+}
+
+@test "differentiates transport/RBAC failures from missing tools" {
+  export MOCK_KUBECTL_EXEC_FAIL=1
+  # Mock stderr to contain transport error
+  export MOCK_STDERR="transport: dial tcp: connection refused"
+  run ./scripts/test-code-server-editors.sh
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"transport/RBAC failure"* ]]
+}
+
+@test "emits structured status logs" {
+  run ./scripts/test-code-server-editors.sh
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"tool=vim status=ok duration_ms="* ]]
+  [[ "$output" == *"tool=nvim status=ok duration_ms="* ]]
+}
+
+@test "handles permission denied errors" {
+  export MOCK_TOOL_MISSING=vim
+  export MOCK_EXEC_RC=126
+  run ./scripts/test-code-server-editors.sh
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"permission denied"* ]]
+}
+
+@test "retries across multiple pods" {
+  export MOCK_TOOL_MISSING=vim
+  run ./scripts/test-code-server-editors.sh
+  [ "$status" -ne 0 ]
+  # Should show retry attempts across pods
+  [[ "$output" == *"retry"* ]]
+}
+
+@test "redacts sensitive information from logs" {
+  export MOCK_SENSITIVE_DATA="password=secret123"
+  run ./scripts/test-code-server-editors.sh
+  [ "$status" -eq 0 ]
+  # Should not contain actual password
+  [[ "$output" != *"password=secret123"* ]]
+  # Should contain redacted version
+  [[ "$output" == *"password=***"* ]]
 }
