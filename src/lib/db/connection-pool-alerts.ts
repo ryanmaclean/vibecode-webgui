@@ -8,8 +8,9 @@ const isBrowser = typeof window !== 'undefined';
 
 if (!isBrowser) {
   try {
-    const nodeRequire = typeof eval === 'function' ? eval('require') : require;
-    VectorConnectionPoolFactoryModule = nodeRequire('./vector-connection-pool');
+    // Use dynamic import instead of require to avoid webpack warnings
+    const modulePath = './vector-connection-pool';
+    VectorConnectionPoolFactoryModule = eval(`require('${modulePath}')`);
   } catch (error) {
     console.warn('[ConnectionPoolAlertService] Unable to load vector connection pool module', error);
   }

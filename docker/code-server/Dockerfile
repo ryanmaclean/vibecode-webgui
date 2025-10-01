@@ -111,11 +111,24 @@ RUN wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz \
     && rm go1.22.4.linux-amd64.tar.gz \
     && ln -s /usr/local/go/bin/go /usr/local/bin/go
 
-# Install Goose for database migrations
+# Install AI CLI tools and database tools
+# 1. Goose for database migrations
 RUN CGO_ENABLED=0 go install github.com/pressly/goose/v3/cmd/goose@latest \
     && echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> /home/coder/.bashrc \
     && mkdir -p /home/coder/.vscode/extensions/goose-integration \
     && echo 'alias goose="goose -dir /home/coder/workspace/migrations"' >> /home/coder/.bashrc
+
+# 2. Aider - AI pair programming CLI
+RUN pip3 install --break-system-packages aider-chat
+
+# 3. Verify all required tools are installed
+RUN echo "🔍 Verifying installed tools..." && \
+    vim --version | head -1 && \
+    nvim --version | head -1 && \
+    emacs --version | head -1 && \
+    aider --version && \
+    /root/go/bin/goose version && \
+    echo "✅ All required tools verified!"
 
 # Install Datadog tools
 # 1. Datadog Agent - SKIPPED in build (configure at runtime with DD_API_KEY env var)
@@ -173,21 +186,20 @@ RUN mkdir -p /home/coder/.local/share/code-server/User/ \
 # Profiles: minimal, standard, ai, web, full
 
 # Copy profile file
-COPY docker/code-server/profiles/${PROFILE}.txt /tmp/extensions-list.txt
+COPY --chown=coder:coder docker/code-server/profiles/${PROFILE}.txt /tmp/extensions-list.txt
 
 # Install extensions from profile (combined into single layer for efficiency)
 # Use BuildKit cache mount for faster rebuilds
 RUN --mount=type=cache,target=/home/coder/.cache/code-server \
     echo "📦 Installing extensions for profile: ${PROFILE}" && \
-    while IFS= read -r extension || [ -n "$extension" ]; do \
-        # Skip comments and empty lines
-        [[ "$extension" =~ ^#.*$ ]] && continue; \
-        [[ -z "$extension" ]] && continue; \
-        echo "Installing: $extension" && \
-        /usr/bin/code-server --install-extension "$extension" --force || \
-        echo "⚠️  Failed to install $extension, skipping"; \
-    done < /tmp/extensions-list.txt && \
-    rm /tmp/extensions-list.txt && \
+    grep -v '^#' /tmp/extensions-list.txt | grep -v '^$' | while read -r extension; do \
+        if [ -n "$extension" ]; then \
+            echo "Installing: $extension" && \
+            /usr/bin/code-server --install-extension "$extension" --force || \
+            echo "⚠️  Failed to install $extension, skipping"; \
+        fi; \
+    done && \
+    rm -f /tmp/extensions-list.txt && \
     echo "✅ Extension installation complete for profile: ${PROFILE}"
 
 # Patch extensions to work in code-server (remove desktop-only restrictions)
