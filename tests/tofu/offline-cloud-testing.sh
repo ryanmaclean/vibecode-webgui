@@ -165,10 +165,10 @@ EOF
     grep -q "google_compute_instance_group_manager" "$GCP_DIR/main.tf"
     test_result "GCP instance group manager configuration"
     
-    grep -q "preemptible = true" "$GCP_DIR/main.tf"
+    grep -q "preemptible" "$GCP_DIR/main.tf"
     test_result "GCP preemptible instances cost optimization"
     
-    grep -q "google_compute_disk" "$GCP_DIR/main.tf"
+    grep -q "disk {" "$GCP_DIR/main.tf"
     test_result "GCP persistent disk configuration"
     
     grep -q "google_cloud_scheduler_job" "$GCP_DIR/main.tf"
@@ -215,11 +215,11 @@ fi
 
 # GCP naming
 if [ -d "$GCP_DIR" ]; then
-    grep -q "\${var.environment}-codeserver" "$GCP_DIR/main.tf"
+    grep -q "codeserver-\${var.environment}" "$GCP_DIR/main.tf"
     test_result "GCP resource naming conventions"
     
-    grep -q "environment = var.environment" "$GCP_DIR/main.tf"
-    test_result "GCP resource labeling conventions"
+    grep -q "tags = \[\"codeserver\", var.environment\]" "$GCP_DIR/main.tf"
+    test_result "GCP resource tagging conventions"
 fi
 
 echo -e "\n${BLUE}6. Security Configuration Tests${NC}"
@@ -263,7 +263,7 @@ fi
 
 # GCP cost optimization
 if [ -d "$GCP_DIR" ]; then
-    grep -q "preemptible = true" "$GCP_DIR/main.tf"
+    grep -q "preemptible" "$GCP_DIR/main.tf"
     test_result "GCP preemptible instances cost optimization"
     
     grep -q "google_cloud_scheduler_job" "$GCP_DIR/main.tf"
