@@ -1,44 +1,43 @@
 # Workflow Report: codeserver-multiarch (Updated 2025-10-01)
 
 - **Workflow file:** `.github/workflows/codeserver-multiarch.yml`
-- **Status:** Re-enabled (nightly + path-triggered)
-- **Last Run:** Pending (post-refactor awaiting merge)
-- **Primary Owner:** Platform Observability (ryan.m)
-- **Backup Owner:** Platform Build (alex.h)
+- **Status:** Refactored (awaiting first nightly post-merge)
+- **Last manual run:** 2025-10-01 05:52 UTC (validation only)
+- **Primary owner:** Platform Build rotation (`@ryan.m`)
+- **Backup owner:** Observability rotation (`@alex.h`)
 
-## Trigger Matrix
+## Triggers
 | Trigger | Details |
 | --- | --- |
-| `schedule` | `cron: '15 5 * * *'` nightly smoke + publish |
+| `schedule` | `cron: '15 5 * * *'` nightly validation + promotion |
 | `push` | Paths: `docker/code-server/**`, `scripts/test-code-server-kind.sh`, `scripts/build-codeserver-multiarch.sh`, workflow file |
-| `workflow_dispatch` | Manual hotfix or verification runs |
+| `workflow_dispatch` | Manual hotfix / verification runs |
 
-## Job Summary
+## Job Overview
 1. **validate**
-   - Checks out repo, runs `npm ci`, `npm run lint`, `npm run type-check`, and targeted unit tests.
-   - Builds an `linux/amd64` validation image (`ci-<run id>`) with Buildx cache reuse (`scope=codeserver`).
-   - Verifies aider/goose binaries inside the image.
-   - Spins up KinD via `helm/kind-action@v1.10.0` and executes `scripts/test-code-server-kind.sh` (port-forward, NodePort, editor checks).
-   - Uploads KinD diagnostics (`pods`, `deployment`, `logs`) as workflow artifacts.
+   - Executes repository QA (`npm ci`, `npm run lint`, `npm run type-check`, `npm run test:unit -- --runInBand`).
+   - Builds a multi-arch CI tag (`ghcr.io/<owner>/vibecode-codeserver:ci-<run id>`) with Buildx cache reuse.
+   - Verifies aider/goose in both `linux/amd64` and `linux/arm64` containers via `docker run --platform ...`.
+   - Runs `scripts/test-code-server-kind.sh` against the CI tag (script now patches deployment image when `CODE_SERVER_IMAGE` set).
+   - Uploads KinD diagnostics (`pods`, `describe`, `logs`) as artifacts.
 2. **build-push**
-   - Depends on `validate`; only runs on canonical repo.
-   - Builds and pushes multi-arch image (`linux/amd64`, `linux/arm64`) with tags: `latest`, commit SHA, `ci-<run id>`, and `nightly` (for scheduled runs).
-   - Enables Buildx provenance + SBOM export.
-   - Verifies aider/goose on both architectures via `docker run --platform ...`.
-   - Optionally emits Datadog metric `codeserver.build.duration` when `DD_API_KEY`/`DD_SITE` secrets exist.
+   - Canonical repo only; promotes the CI tag to `latest`, commit SHA, and `nightly` (for scheduled runs) using `docker buildx imagetools create`.
+   - Generates an SBOM (`sbom-code-server.spdx.json`) for the CI tag and uploads it as an artifact.
 
 ## Observability Hooks
-- Datadog metric stub present; telemetry blocked until secrets added (tracked in TODO queue).
-- KinD diagnostics retained via uploaded artifacts (`kind-smoke-<run id>`).
-- Release digest template referenced in `docs/handoff/code-server-release.md` for post-run summary.
+- Datadog metrics placeholders (`codeserver.build.duration`, `codeserver.kind.smoke`) still require `DD_API_KEY`/`DD_SITE` secrets.
+- KinD logs retained as `kind-smoke-<run id>` artifacts; confirm retention ≥14 days.
+- Release digest template lives in `docs/handoff/code-server-release.md`; ensure each run appends an entry.
 
-## Known Gaps / Follow-ups
-- Assign owners for Datadog alerts `codeserver.build.duration.p95` and `codeserver.kind.smoke.failure` (callout in TODO + shipping dashboard).
-- Add telemetry emission to `scripts/test-code-server-kind.sh` (Datadog metric + event) once secrets provisioned.
-- Monitor first nightly run for QEMU/arm64 runtime duration; adjust cache scope if Buildx thrashes.
+## Outstanding Actions
+- [ ] Assign alert owners for `codeserver.build.duration.p95` and `codeserver.kind.smoke.failure` (tracked in TODO + shipping dashboard).
+- [ ] Add Datadog metric/event emission inside `scripts/test-code-server-kind.sh` once secrets land.
+- [ ] Monitor first nightly run for QEMU performance; adjust Buildx cache scope if arm64 build time spikes.
+- [ ] Add lint to clean up old `ci-*` tags in GHCR weekly.
 
 ## References
+- `.github/workflows/codeserver-multiarch.yml`
 - `docs/handoff/code-server-release.md`
 - `docs/handoff/shipping-dashboard.md`
-- `docs/logs/issues/code-server-cloud-deployment.md`
+- `docs/logs/issues/docker-multiarch-audit.md`
 - `scripts/test-code-server-kind.sh`

@@ -84,6 +84,12 @@ The `./DEMO.sh` script:
 - **Dashboard permissions**
 - **API key management**
 
+### Supply Chain Requirements (2025-10-01 update)
+- **Verified binaries only**: Any curl/wget download of CLI tools (e.g., kubectl, helm, kubectx, kubens) must include checksum validation and, when the publisher supports it, cosign signature verification before installation.
+- **Documented evidence**: Record successful checksum/cosign commands in build logs or CI artifacts to make audits repeatable.
+- **Pinned sources**: Fetch release assets from official vendor URLs with version variables (no `master` branch raw files) unless accompanied by a justification approved by Security.
+- **Fail closed**: Docker build steps must exit non-zero if verification fails; guard release promotion on these checks.
+
 ## 🛠️ Security Tools Integration
 
 This repository includes:

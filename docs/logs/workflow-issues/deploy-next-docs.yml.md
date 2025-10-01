@@ -12,7 +12,7 @@ Automates deployment of the Next.js documentation experience (pulled from `src/`
 
 ## Key Jobs
 1. **build-artifact** — runs `next build`, packages `next-standalone/` (includes `.next/static`, `public/`, and `content/wiki/`), uploads the tarball artifact.
-2. **deploy** — downloads the artifact, builds `docker/Dockerfile.docs-next`, pushes to ACR, updates the Azure App Service container, and runs an `/api/readyz` smoke test (configurable via `DOCS_NEXT_HEALTHCHECK_URL`).
+2. **deploy** — downloads the artifact, builds `docker/Dockerfile.docs-next`, pushes to ACR, updates the Azure App Service container, and runs an `/api/readyz` smoke test (configurable via `DOCS_NEXT_HEALTHCHECK_URL`). Missing secrets now fail the job up front, and the smoke step retries five times with a growing delay before marking the run red.
 
 ## Required Secrets (per GitHub environment)
 - `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
@@ -21,7 +21,7 @@ Automates deployment of the Next.js documentation experience (pulled from `src/`
 
 ## Outputs & Observability
 - Publishes the deployed image reference and resolved App Service URL to the workflow summary.
-- Curl-based smoke test fails the job if the health endpoint is unavailable.
+- Curl-based smoke test retries five times (15s, 30s, 45s, 60s, 75s) before failing the job if the health endpoint stays unavailable.
 
 ## Follow-up Checks
 - Confirm Datadog logs/traces show the new deployment within 5 minutes.

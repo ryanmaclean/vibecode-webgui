@@ -606,7 +606,8 @@ With these principles in place, you'll have robust observability for your AI-pow
 
 ## Related Documentation
 
-- **[Azure OpenAI Monitoring](/azure-openai-monitoring/** - Complete monitoring setup for AI operations
-- **[Deploy Azure OpenAI Monitoring](/deploy-azure-openai-monitoring/** - Automated deployment with Terraform
-- **[PostgreSQL + pgvector](/prisma-pgvector/** - Database setup and configuration
-- **[Production Deployment Guide](/production-deployment-guide/** - End-to-end production deployment
+- **[Azure OpenAI Monitoring](/azure-openai-monitoring/)** - Complete monitoring setup for AI operations
+- **[Deploy Azure OpenAI Monitoring](/deploy-azure-openai-monitoring/)** - Automated deployment with Terraform
+- **[PostgreSQL + pgvector](/prisma-pgvector/)** - Database setup and configuration
+- **[Production Deployment Guide](/production-deployment-guide/)** - End-to-end production deployment
+- **[Changelog & Version Notes](/changelog/)** - Latest platform release history and documentation updates
