@@ -12,19 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Multi-Profile Support
 - **5 optimized profiles** for different use cases:
   - `minimal` (400MB, 5 extensions) - Lightweight development
-  - `standard` (700MB, 12 extensions) - General development (recommended)
   - `ai` (900MB, 15 extensions) - AI/ML development
   - `web` (600MB, 14 extensions) - Web development
   - `full` (1.2GB, 26 extensions) - Complete Swiss Army knife
 
 #### Essential CLI Tools
-- **Terminal Editors**: vim 9.0, neovim 0.7.2, emacs 28.2
+- **Terminal Editors:**
+  - vim 9.0
+  - neovim 0.7.2
 - **AI Coding Assistants**: aider 0.84.0, goose (latest)
 - **DevOps Tools**: 
   - kubectl 1.31.1
   - helm 3.19.0
   - k9s 0.50.13
-  - stern 1.33.0
   - helmfile 0.169.1
   - sops 3.9.3
   - glab 1.22.0

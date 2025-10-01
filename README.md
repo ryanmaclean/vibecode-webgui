@@ -226,7 +226,7 @@ docker pull ryanmaclean/vibecode-codeserver:1.1.0-standard
 ### Included CLI Tools (All Profiles)
 
 **Terminal Editors:**
-- vim 9.0, neovim 0.7.2, emacs 28.2
+- vim 9.0, neovim 0.7.2
 
 **AI Coding Assistants:**
 - aider 0.84.0, goose (latest)
