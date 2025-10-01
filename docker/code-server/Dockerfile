@@ -390,6 +390,7 @@ RUN set -eux; \
     chmod 755 /usr/local/bin/helmfile; \
     rm -rf /tmp/helmfile.tar.gz /tmp/helmfile*; \
     echo "Installing helm ${HELM_VERSION}"; \
+    # TODO(sec-hardening-helm): swap to checksum + signature verification for helm tarball (see TODO.md)
     curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-${HELM_TAR_ARCH}.tar.gz" -o /tmp/helm.tar.gz; \
     tar -xzf /tmp/helm.tar.gz -C /tmp; \
     cp "/tmp/${HELM_TAR_DIR}/helm" /usr/local/bin/helm; \
@@ -410,12 +411,14 @@ RUN set -eux; \
     find /tmp -type f -name "glab" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/glab; \
     chmod 755 /usr/local/bin/glab; \
     rm -rf /tmp/glab.tar.gz /tmp/glab*; \
+    # TODO(sec-hardening-kubens): verify kubens download via pinned checksum or cosign prior to install
     curl -fsSL https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens -o /usr/local/bin/kubens; \
-    chmod 755 /usr/local/bin/kubens
-RUN set -eux; \
+    chmod 755 /usr/local/bin/kubens; \
+    # TODO(sec-hardening-kubectx): verify kubectx download via pinned checksum or cosign prior to install
     curl -fsSL "https://raw.githubusercontent.com/ahmetb/kubectx/master/kubectx" -o /usr/local/bin/kubectx; \
     chmod 755 /usr/local/bin/kubectx; \
-    echo "Installing kubectl ${KUBECTL_VERSION}"; \
+    echo "Installing kubectl ${KUBECTL_VERSION} for ${KUBECTL_ARCH}"; \
+    # TODO(sec-hardening-kubectl): layer in sha256sum + cosign verification for kubectl binary fetch
     curl -fsSL "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/${KUBECTL_ARCH}/kubectl" -o /usr/local/bin/kubectl; \
     chmod 755 /usr/local/bin/kubectl
 USER coder

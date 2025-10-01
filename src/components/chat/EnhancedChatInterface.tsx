@@ -113,18 +113,63 @@ export const EnhancedChatInterface = ({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const autoScrollRef = useRef(true)
+  const prefersReducedMotionRef = useRef(false)
 
   useEffect(() => {
     setContextFiles([...initialContext])
   }, [initialContext])
 
-  const scrollToBottom = useCallback(() => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const updatePreference = (event?: MediaQueryListEvent) => {
+      prefersReducedMotionRef.current = event ? event.matches : mediaQuery.matches
+    }
+
+    updatePreference()
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', updatePreference)
+      return () => mediaQuery.removeEventListener('change', updatePreference)
+    }
+
+    mediaQuery.addListener(updatePreference)
+    return () => mediaQuery.removeListener(updatePreference)
+  }, [])
+
+  useEffect(() => {
+    const root = scrollAreaRef.current
+    if (!root) return
+
+    const viewport = root.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null
+    if (!viewport) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = viewport
+      const distanceFromBottom = scrollHeight - (scrollTop + clientHeight)
+      autoScrollRef.current = distanceFromBottom < 48
+    }
+
+    viewport.addEventListener('scroll', handleScroll)
+    handleScroll()
+
+    return () => {
+      viewport.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
+
+  const maybeScrollToBottom = useCallback(() => {
+    if (!autoScrollRef.current || prefersReducedMotionRef.current) return
+
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages, scrollToBottom])
+    maybeScrollToBottom()
+  }, [messages, maybeScrollToBottom])
 
   const loadConversation = useCallback(async () => {
     if (!conversationId) return
@@ -183,6 +228,22 @@ export const EnhancedChatInterface = ({
 
   const removeAttachedFile = (index: number) => {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const updateLastAssistantMessage = (updater: (message: Message) => Message) => {
+    setMessages(prev => {
+      const lastIndex = prev.length - 1
+      if (lastIndex < 0) return prev
+
+      const lastMessage = prev[lastIndex]
+      if (lastMessage.from !== 'assistant') {
+        return prev
+      }
+
+      const nextMessages = prev.slice()
+      nextMessages[lastIndex] = updater(lastMessage)
+      return nextMessages
+    })
   }
 
   const sendMessage = async () => {
@@ -282,50 +343,81 @@ export const EnhancedChatInterface = ({
       const decoder = new TextDecoder()
 
       if (reader) {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
+        let bufferedText = ''
+        let pendingDataLines: string[] = []
 
-          const chunk = decoder.decode(value)
-          const lines = chunk.split('\n').filter(line => line.trim())
+        const flushPendingData = () => {
+          if (pendingDataLines.length === 0) return
 
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6)
-              try {
-                const parsed: unknown = JSON.parse(data)
-                if (isContentChunk(parsed)) {
-                  setMessages(prev => {
-                    const lastIndex = prev.length - 1
-                    if (lastIndex < 0) return prev
-                    return prev.map((msg, index) =>
-                      index === lastIndex
-                        ? { ...msg, content: `${msg.content}${parsed.content}` }
-                        : msg
-                    )
-                  })
-                } else if (isMetadataChunk(parsed)) {
-                  setMessages(prev => {
-                    const lastIndex = prev.length - 1
-                    if (lastIndex < 0) return prev
-                    return prev.map((msg, index) => {
-                      if (index !== lastIndex) return msg
+          const dataPayload = pendingDataLines.join('\n')
+          pendingDataLines = []
 
-                      return {
-                        ...msg,
-                        metadata: {
-                          ...(msg.metadata ?? {}),
-                          ...parsed.metadata
-                        }
-                      }
-                    })
-                  })
+          if (!dataPayload) return
+
+          try {
+            const parsed: unknown = JSON.parse(dataPayload)
+
+            if (isContentChunk(parsed)) {
+              updateLastAssistantMessage(message => ({
+                ...message,
+                content: `${message.content}${parsed.content}`
+              }))
+            } else if (isMetadataChunk(parsed)) {
+              updateLastAssistantMessage(message => ({
+                ...message,
+                metadata: {
+                  ...(message.metadata ?? {}),
+                  ...parsed.metadata
                 }
-              } catch {
-                // Skip invalid JSON
-                continue
-              }
+              }))
             }
+          } catch (streamError) {
+            console.warn('Failed to parse stream chunk', streamError)
+          }
+        }
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+
+            if (value) {
+              bufferedText += decoder.decode(value, { stream: true })
+            }
+
+            if (done) {
+              bufferedText += decoder.decode()
+              bufferedText += '\n'
+            }
+
+            let newlineIndex = bufferedText.indexOf('\n')
+
+            while (newlineIndex !== -1) {
+              const rawLine = bufferedText.slice(0, newlineIndex)
+              bufferedText = bufferedText.slice(newlineIndex + 1)
+              const line = rawLine.replace(/\r$/, '')
+
+              if (line.trim() === '') {
+                flushPendingData()
+              } else if (line.startsWith('data:')) {
+                const dataValue = line.startsWith('data: ')
+                  ? line.slice(6)
+                  : line.slice(5)
+                pendingDataLines.push(dataValue)
+              }
+
+              newlineIndex = bufferedText.indexOf('\n')
+            }
+
+            if (done) {
+              flushPendingData()
+              break
+            }
+          }
+        } finally {
+          try {
+            reader.releaseLock()
+          } catch (releaseError) {
+            console.warn('Failed to release stream reader', releaseError)
           }
         }
       }
@@ -451,7 +543,7 @@ export const EnhancedChatInterface = ({
 
         {/* Messages Area */}
         <CardContent className="flex-1 overflow-hidden p-0">
-          <ScrollArea className="h-full p-4">
+          <ScrollArea ref={scrollAreaRef} className="h-full p-4">
             <div className="space-y-4">
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.from === 'user' ? 'justify-end' : 'justify-start'}`}>

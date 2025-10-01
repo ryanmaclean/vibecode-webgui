@@ -127,7 +127,8 @@ jobs:
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Next docs deployment skipped because one or more secrets are missing." >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::Next docs deployment skipped because one or more secrets are missing." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
 
       - name: Azure login
@@ -195,7 +196,7 @@ jobs:
             HOST=$(az webapp show -g ${{ secrets.AZURE_RESOURCE_GROUP }} -n ${{ secrets.AZURE_WEBAPP_NAME }} --query defaultHostName -o tsv)
             echo "url=https://${HOST}" >> "$GITHUB_OUTPUT"
 
-      - name: Smoke test
+      - name: Smoke test with retries
         if: steps.secrets.outputs.ready == 'true'
         env:
           DOCS_NEXT_HEALTHCHECK_URL: ${{ secrets.DOCS_NEXT_HEALTHCHECK_URL || '' }}
@@ -206,9 +207,18 @@ jobs:
           if [ -z "$URL" ]; then
             URL="${APP_URL}/api/readyz"
           fi
-          echo "Pinging ${URL}"
-          curl -fsS -o /dev/null --max-time 15 "$URL"
-          echo "✅ Health check succeeded for ${URL}"
+          echo "Polling ${URL} for readiness"
+          for attempt in 1 2 3 4 5; do
+            if curl -fsS -o /dev/null --max-time 15 "$URL"; then
+              echo "✅ Health check succeeded for ${URL} on attempt ${attempt}"
+              exit 0
+            fi
+            sleep_seconds=$((attempt * 15))
+            echo "Attempt ${attempt} failed; sleeping ${sleep_seconds}s before retry" >&2
+            sleep "${sleep_seconds}"
+          done
+          echo "::error::Health check failed after 5 attempts" >&2
+          exit 1
 
       - name: Summary
         if: steps.secrets.outputs.ready == 'true'
