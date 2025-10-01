@@ -10,9 +10,7 @@ const customJestConfig = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   modulePathIgnorePatterns: ['<rootDir>/extensions/', '<rootDir>/.next/'],
-  coveragePathIgnorePatterns: [
-    '<rootDir>/src/lib/db/vector-connection-pool.ts',
-  ],
+  coveragePathIgnorePatterns: [],
   transform: {
     '^.+\\.(t|j)sx?$': ['babel-jest', { presets: ['@babel/preset-env', '@babel/preset-react', '@babel/preset-typescript'] }],
   },
