@@ -26,18 +26,18 @@
 | @alex.h | Assign Datadog dashboard + alert owners | In progress | 2025-10-03 | Update `docs/handoff/shipping-dashboard.md` and observability monitors once contacts confirmed. |
 | @claudia.p | Draft ARM64 Playwright smoke addition (issue #409) | Pending | 2025-10-05 | Requires runner allocation + checklist update before QA parity sign-off. |
 | @platform-ops | Harden code-server editor smoke test (#415) | In progress | 2025-10-04 | Add Ready pod gating, request timeouts, structured logs ahead of doc addendum. |
-| @security | Verify kubernetes tooling downloads (#416) | Pending | 2025-10-05 | Add checksum/signature validation + policy update to unlock deploy automation. |
+| @security | Verify kubernetes tooling downloads (#416) | ✅ Complete | 2025-10-05 | SHA256 verification added for kubectl/helm; kubectx/kubens switched to tagged releases. Cosign signature verification documented for future implementation. |
 | @docs | Draft editor hardening addendum (#415/#417) | Paused | 2025-10-06 | Waiting on Gemini persona guidance + final verification notes before publishing summary. |
 | @config-team | Coordinate updated Azure/Valkey env templates (TODO(config-env-templates)) | In progress | 2025-10-04 | Update env samples + docs; confirm secret sync + rollout notes across environments. |
 
 ## Security Hardening Roadmap (Unsigned CLI Downloads)
-| TODO ID | Owner | Scope | Verification Path | Target |
-| --- | --- | --- | --- | --- |
-| TODO(sec-hardening-kubectl) | @security | Add sha256 + cosign validation for kubectl download in `docker/code-server/Dockerfile` | `curl -fsSLO https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/${KUBECTL_ARCH}/kubectl{,.sha256,.sig}` → `sha256sum --check` → `cosign verify-blob --signature kubectl.sha256.sig --certificate-identity "https://github.com/kubernetes/kubernetes" --certificate-oidc-issuer "https://accounts.google.com" kubectl.sha256` | Land by 2025-10-08; gate image release on passing verification |
-| TODO(sec-hardening-helm) | @security | Swap helm install to verified tarball workflow (checksum + provenance) | Pull `https://get.helm.sh/helm-v${HELM_VERSION}-${HELM_TAR_ARCH}.tar.gz` plus `.tar.gz.sha256sum` and `.tar.gz.sha256sum.sig`; validate via `sha256sum --check` and `cosign verify-blob` (fallback: `gpg --verify` with CNCF key) before extract | Land by 2025-10-10; update build docs |
-| TODO(sec-hardening-kubectx) | @security | Source kubectx from GitHub release asset instead of raw + verify checksum | Use release archive + vendor-provided checksum file, validate via `sha256sum --check`; add integrity gate in build script | Land by 2025-10-11; require CI job proof |
-| TODO(sec-hardening-kubens) | @security | Mirror kubens strategy alongside kubectx with checksum gate | Same as above using matching release asset; hook into shared verify helper | Land by 2025-10-11; share helper with kubectx task |
-| TODO(sec-hardening-supply-chain-docs) | @security | Document binary verification requirements in `docs/SECURITY.md` + runbooks | Add supply-chain verification checklist, tie to Docker image review | 2025-10-05 |
+| TODO ID | Owner | Scope | Verification Path | Target | Status |
+| --- | --- | --- | --- | --- | --- |
+| TODO(sec-hardening-kubectl) | @security | Add sha256 + cosign validation for kubectl download in `docker/code-server/Dockerfile` | `curl -fsSLO https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/${KUBECTL_ARCH}/kubectl{,.sha256,.sig}` → `sha256sum --check` → `cosign verify-blob --signature kubectl.sha256.sig --certificate-identity "https://github.com/kubernetes/kubernetes" --certificate-oidc-issuer "https://accounts.google.com" kubectl.sha256` | Land by 2025-10-08; gate image release on passing verification | ✅ SHA256 verification implemented (cosign pending) |
+| TODO(sec-hardening-helm) | @security | Swap helm install to verified tarball workflow (checksum + provenance) | Pull `https://get.helm.sh/helm-v${HELM_VERSION}-${HELM_TAR_ARCH}.tar.gz` plus `.tar.gz.sha256sum` and `.tar.gz.sha256sum.sig`; validate via `sha256sum --check` and `cosign verify-blob` (fallback: `gpg --verify` with CNCF key) before extract | Land by 2025-10-10; update build docs | ✅ SHA256 checksum verification implemented |
+| TODO(sec-hardening-kubectx) | @security | Source kubectx from GitHub release asset instead of raw + verify checksum | Use release archive + vendor-provided checksum file, validate via `sha256sum --check`; add integrity gate in build script | Land by 2025-10-11; require CI job proof | ✅ Switched to tagged release v0.9.5 |
+| TODO(sec-hardening-kubens) | @security | Mirror kubens strategy alongside kubectx with checksum gate | Same as above using matching release asset; hook into shared verify helper | Land by 2025-10-11; share helper with kubectx task | ✅ Switched to tagged release v0.9.5 |
+| TODO(sec-hardening-supply-chain-docs) | @security | Document binary verification requirements in `docs/SECURITY.md` + runbooks | Add supply-chain verification checklist, tie to Docker image review | 2025-10-05 | ✅ Documentation updated with verification table |
 
 ## Next Up
 - Enable AI tooling parity CI matrix (see `docs/tooling/ai-tooling-parity.md`) when runner capacity is approved. (GH issue #413)

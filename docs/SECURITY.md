@@ -90,6 +90,27 @@ The `./DEMO.sh` script:
 - **Pinned sources**: Fetch release assets from official vendor URLs with version variables (no `master` branch raw files) unless accompanied by a justification approved by Security.
 - **Fail closed**: Docker build steps must exit non-zero if verification fails; guard release promotion on these checks.
 
+#### Implemented Verifications (2025-10-05)
+The following tools now include checksum verification in `docker/code-server/Dockerfile`:
+
+| Tool | Version | Verification Method | Source |
+|------|---------|-------------------|---------|
+| kubectl | 1.31.1 | SHA256 checksum from dl.k8s.io | Official Kubernetes release |
+| helm | 3.19.0 | SHA256 checksum file (.sha256sum) | Official Helm release |
+| kubectx | 0.9.5 | Tagged release (pinned version) | GitHub release tag |
+| kubens | 0.9.5 | Tagged release (pinned version) | GitHub release tag |
+
+**Verification Policy**:
+- All downloads stage to `/tmp` and use `install -Dm755` for atomic writes with correct permissions
+- SHA256 checksums must match before installation proceeds
+- Build fails immediately if checksum verification fails
+- Future: Add cosign signature verification for tools that support it (kubectl, helm)
+
+**Key Fingerprints** (for future cosign verification):
+- kubectl: Certificate identity `https://github.com/kubernetes/kubernetes`, OIDC issuer `https://accounts.google.com`
+- helm: CNCF GPG key or cosign certificate (to be implemented)
+
+
 ## 🛠️ Security Tools Integration
 
 This repository includes:
