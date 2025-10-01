@@ -462,10 +462,10 @@ Before deploying to production, ensure:
 
 ## 📚 Related Documentation
 
-- [WIKI_INDEX.md](./WIKI_INDEX.md) - Complete documentation index
-- [DATADOG_MONITORING_CONFIGURATION.md](./DATADOG_MONITORING_CONFIGURATION.md) - Monitoring setup
-- [COMPONENT_ONBOARDING_CHECKLIST.md](./COMPONENT_ONBOARDING_CHECKLIST.md) - Component guidelines
-- [README.md](./README.md) - Project overview
+- [WIKI_INDEX.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/WIKI_INDEX.md) - Complete documentation index
+- [DATADOG_MONITORING_CONFIGURATION.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/DATADOG_MONITORING_CONFIGURATION.md) - Monitoring setup
+- [COMPONENT_ONBOARDING_CHECKLIST.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/COMPONENT_ONBOARDING_CHECKLIST.md) - Component guidelines
+- [README.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/README.md) - Project overview
 
 ---
 

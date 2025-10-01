@@ -267,3 +267,22 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Bumped both `docker/code-server/Dockerfile` and `Dockerfile.kind` to `codercom/code-server:4.104.2-39` (latest upstream build as of 4 days ago).
 - Verified `package.json` still pins `monaco-editor@0.53.0`; Monacopilot integration unchanged.
 - TODO.md updated with follow-up to watch for future code-server releases and rebuild multi-arch image.
+
+### Agent Cascade - Dependabot Rebase Pings (2025-09-30 01:20-01:29 UTC)
+- Requested `@dependabot rebase` on PR #251 (tar-fs) after confirming the branch lagged main at commit b01e0276; validation waits on refreshed head.
+- Requested `@dependabot rebase` on PR #241 (critters) so lint/type/unit can re-run once the branch syncs with main.
+- Requested `@dependabot rebase` on PR #321 (@uiw/react-codemirror) to clear the UNKNOWN merge state before running validation.
+### Agent Cascade - Vector Query Typing (2025-09-30 23:35 UTC)
+- Tightened `AzurePostgresConnection.executeQuery` generics to rely on `QueryResultRow`, removing the lingering `any` usage in that helper.
+- Added typed defaults around `explainQuery` so pg results retain strong types throughout.
+
+### Agent Codex - Code-Server Smoke + Permissions (2025-09-30 23:45 UTC)
+- Validated the consolidated `ghcr.io/ryanmaclean/vibecode-codeserver:latest` image across OrbStack, KinD, and Helm flows; documented missing aider/goose CLIs and Datadog sidecar issues.
+- Captured the permission failure (`/usr/bin/code-server` mode 700) and temporary Datadog secret used during testing prior to the Dockerfile fix.
+
+### Agent Codex - Platform Consolidation (2025-10-01 01:05 UTC)
+- Summarized the code-server consolidation, Cosmos adapter completion, ARM64 SWC install, and related TypeScript/build fixes now that the pipeline is passing again.
+### Agent Codex - Astro Link Remediation (2025-10-01 03:54 UTC)
+- Normalized 353 repo-relative links by migrating them to on-site routes or GitHub blobs and copied `monitoring/dashboards/genai-vector-performance.json` into `docs/public` so dashboard downloads work from GitHub Pages.
+- Updated `astro.config.mjs` sidebar links (Datadog docs, pgvector test results) to remove dead `/PRISMA_PGVECTOR_TEST_RESULTS/` routes and point to live sources.
+- Added a fallback favicon and reran the local link audit utility until it reported zero missing paths; results captured in `docs/logs/astro-link-audit-2025-10-01.md`.
