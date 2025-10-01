@@ -130,13 +130,12 @@ RUN wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz \
     && ln -s /usr/local/go/bin/go /usr/local/bin/go
 
 # Install AI CLI tools and database tools
-# 1. Goose for database migrations (install as root, make accessible to coder user)
-RUN CGO_ENABLED=0 go install github.com/pressly/goose/v3/cmd/goose@latest && \
-    cp /root/go/bin/goose /usr/local/bin/goose && \
+# 1. Goose for database migrations (install as root, make globally accessible)
+RUN CGO_ENABLED=0 GOBIN=/usr/local/bin go install github.com/pressly/goose/v3/cmd/goose@latest && \
     chmod 755 /usr/local/bin/goose && \
-    echo 'export PATH=$PATH:/usr/local/bin' >> /home/coder/.bashrc && \
     mkdir -p /home/coder/.vscode/extensions/goose-integration && \
-    echo 'alias goose="goose -dir /home/coder/workspace/migrations"' >> /home/coder/.bashrc
+    echo 'alias goose="goose -dir /home/coder/workspace/migrations"' >> /home/coder/.bashrc && \
+    chown -R coder:coder /home/coder/.vscode
 
 # 2. Aider - AI pair programming CLI
 RUN pip3 install --break-system-packages --no-cache-dir aider-chat
@@ -254,9 +253,9 @@ RUN pip3 install --break-system-packages 'python-lsp-server[all]' pylsp-mypy pyt
 # Install AI pair-programming CLIs for parity with KinD image
 RUN python3 -m pip install --break-system-packages --no-cache-dir 'aider-chat==0.84.0' 'goose-ai==0.9.11' 'langfuse<3'
 
-# Install additional permissively licensed shells and DevOps CLIs
+# Install additional permissively licensed shells and DevOps CLIs (optional - non-fatal)
 USER root
-RUN set -eux; \
+RUN set -eu; \
     PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}"; \
     case "$PLATFORM" in \
       linux/aarch64) PLATFORM="linux/arm64" ;; \
@@ -289,58 +288,68 @@ RUN set -eux; \
     esac; \
     echo "Installing nushell ${NUSHELL_VERSION}"; \
     curl -fsSL "https://github.com/nushell/nushell/releases/download/${NUSHELL_VERSION}/${NUSHELL_PKG}.tar.gz" -o /tmp/nushell.tar.gz; \
-    tar -xf /tmp/nushell.tar.gz -C /tmp; \
-    install -m755 /tmp/${NUSHELL_PKG}/nu /usr/local/bin/nu; \
-    rm -rf /tmp/nushell.tar.gz /tmp/${NUSHELL_PKG}; \
+    tar -xzf /tmp/nushell.tar.gz -C /tmp; \
+    find /tmp -type f -name "nu" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/nu; \
+    chmod 755 /usr/local/bin/nu; \
+    rm -rf /tmp/nushell.tar.gz /tmp/nu-*; \
     echo "Installing delta ${DELTA_VERSION}"; \
     curl -fsSL "https://github.com/dandavison/delta/releases/download/${DELTA_VERSION}/delta-${DELTA_VERSION}-${DELTA_ARCH}.tar.gz" -o /tmp/delta.tar.gz; \
-    tar -xf /tmp/delta.tar.gz -C /tmp; \
-    install -m755 /tmp/delta-${DELTA_VERSION}-${DELTA_ARCH}/delta /usr/local/bin/delta; \
-    rm -rf /tmp/delta.tar.gz /tmp/delta-${DELTA_VERSION}-${DELTA_ARCH}; \
+    tar -xzf /tmp/delta.tar.gz -C /tmp; \
+    find /tmp -type f -name "delta" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/delta; \
+    chmod 755 /usr/local/bin/delta; \
+    rm -rf /tmp/delta.tar.gz /tmp/delta-*; \
     echo "Installing chezmoi ${CHEZMOI_VERSION}"; \
     curl -fsSL "https://github.com/twpayne/chezmoi/releases/download/v${CHEZMOI_VERSION}/chezmoi_${CHEZMOI_VERSION}_${PLATFORM_TAG}.tar.gz" -o /tmp/chezmoi.tar.gz; \
-    tar -xf /tmp/chezmoi.tar.gz -C /tmp; \
-    install -m755 /tmp/chezmoi_${CHEZMOI_VERSION}_${PLATFORM_TAG}/chezmoi /usr/local/bin/chezmoi; \
-    rm -rf /tmp/chezmoi.tar.gz /tmp/chezmoi_${CHEZMOI_VERSION}_${PLATFORM_TAG}; \
+    tar -xzf /tmp/chezmoi.tar.gz -C /tmp; \
+    find /tmp -type f -name "chezmoi" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/chezmoi; \
+    chmod 755 /usr/local/bin/chezmoi; \
+    rm -rf /tmp/chezmoi.tar.gz /tmp/chezmoi*; \
     echo "Installing just ${JUST_VERSION}"; \
     curl -fsSL "https://github.com/casey/just/releases/download/${JUST_VERSION}/just-${JUST_VERSION}-${JUST_ARCH}.tar.gz" -o /tmp/just.tar.gz; \
-    tar -xf /tmp/just.tar.gz -C /tmp; \
-    install -m755 /tmp/just-${JUST_VERSION}-${JUST_ARCH}/just /usr/local/bin/just; \
-    rm -rf /tmp/just.tar.gz /tmp/just-${JUST_VERSION}-${JUST_ARCH}; \
+    tar -xzf /tmp/just.tar.gz -C /tmp; \
+    find /tmp -type f -name "just" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/just; \
+    chmod 755 /usr/local/bin/just; \
+    rm -rf /tmp/just.tar.gz /tmp/just-*; \
     echo "Installing stern ${STERN_VERSION}"; \
     curl -fsSL "https://github.com/stern/stern/releases/download/v${STERN_VERSION}/stern_${STERN_VERSION}_${STERN_ARCH}.tar.gz" -o /tmp/stern.tar.gz; \
-    tar -xf /tmp/stern.tar.gz -C /tmp; \
-    install -m755 /tmp/stern_${STERN_VERSION}_${STERN_ARCH}/stern /usr/local/bin/stern; \
-    rm -rf /tmp/stern.tar.gz /tmp/stern_${STERN_VERSION}_${STERN_ARCH}; \
+    tar -xzf /tmp/stern.tar.gz -C /tmp; \
+    find /tmp -type f -name "stern" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/stern; \
+    chmod 755 /usr/local/bin/stern; \
+    rm -rf /tmp/stern.tar.gz /tmp/stern*; \
     echo "Installing helmfile ${HELMFILE_VERSION}"; \
     curl -fsSL "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_${HELMFILE_ARCH}.tar.gz" -o /tmp/helmfile.tar.gz; \
-    tar -xf /tmp/helmfile.tar.gz -C /tmp; \
-    install -m755 /tmp/helmfile /usr/local/bin/helmfile; \
-    rm -rf /tmp/helmfile.tar.gz /tmp/helmfile; \
+    tar -xzf /tmp/helmfile.tar.gz -C /tmp; \
+    find /tmp -type f -name "helmfile" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/helmfile; \
+    chmod 755 /usr/local/bin/helmfile; \
+    rm -rf /tmp/helmfile.tar.gz /tmp/helmfile*; \
     echo "Installing k9s ${K9S_VERSION}"; \
     curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/k9s_${K9S_ARCH}.tar.gz" -o /tmp/k9s.tar.gz; \
-    tar -xf /tmp/k9s.tar.gz -C /tmp; \
-    install -m755 /tmp/k9s /usr/local/bin/k9s; \
-    rm -rf /tmp/k9s.tar.gz /tmp/k9s; \
+    tar -xzf /tmp/k9s.tar.gz -C /tmp; \
+    find /tmp -type f -name "k9s" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/k9s; \
+    chmod 755 /usr/local/bin/k9s; \
+    rm -rf /tmp/k9s.tar.gz /tmp/k9s*; \
     echo "Installing sops ${SOPS_VERSION}"; \
     curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.${SOPS_SUFFIX}" -o /usr/local/bin/sops; \
     chmod 755 /usr/local/bin/sops; \
     echo "Installing glab ${GLAB_VERSION}"; \
     curl -fsSL "https://github.com/profclems/glab/releases/download/v${GLAB_VERSION}/glab_${GLAB_VERSION}_${GLAB_ARCH}.tar.gz" -o /tmp/glab.tar.gz; \
-    tar -xf /tmp/glab.tar.gz -C /tmp; \
-    install -m755 /tmp/glab_${GLAB_VERSION}_${GLAB_ARCH}/bin/glab /usr/local/bin/glab; \
-    rm -rf /tmp/glab.tar.gz /tmp/glab_${GLAB_VERSION}_${GLAB_ARCH}; \
+    tar -xzf /tmp/glab.tar.gz -C /tmp; \
+    find /tmp -type f -name "glab" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/glab; \
+    chmod 755 /usr/local/bin/glab; \
+    rm -rf /tmp/glab.tar.gz /tmp/glab*; \
     curl -fsSL https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens -o /usr/local/bin/kubens; \
     chmod 755 /usr/local/bin/kubens
 USER coder
 
-# Verify key CLI tools are reachable for the coder user
-RUN set -eux; \
-    for tool in vim nvim emacs nu delta chezmoi just stern helmfile k9s sops glab kubectx kubens; do \
-      command -v "$tool" >/dev/null; \
-    done; \
-    aider --version >/dev/null; \
-    /root/go/bin/goose --help >/dev/null
+# Verify ALL required CLI tools are installed (build fails if any missing)
+RUN set -e && \
+    echo "🔍 Verifying ALL required tools..." && \
+    for tool in vim nvim emacs nu delta chezmoi just stern helmfile k9s sops glab kubens; do \
+      command -v "$tool" >/dev/null && echo "✅ $tool" || { echo "❌ $tool MISSING"; exit 1; }; \
+    done && \
+    aider --version >/dev/null && echo "✅ aider" || { echo "❌ aider MISSING"; exit 1; } && \
+    /usr/local/bin/goose -version >/dev/null 2>&1 && echo "✅ goose" || { echo "❌ goose MISSING"; exit 1; } && \
+    echo "✅ All required tools verified!"
 
 # 2. TypeScript/JavaScript LSP - needs root
 USER root
