@@ -6,6 +6,13 @@
       "env": {
         "NODE_ENV": "development"
       }
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
     }
   }
 }

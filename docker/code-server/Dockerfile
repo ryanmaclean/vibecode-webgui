@@ -32,7 +32,7 @@ LABEL org.opencontainers.image.profile="${PROFILE}"
 USER root
 
 # Install system dependencies
-RUN set -eux; \
+RUN set -ex; \
     mkdir -p /tmp && chmod 1777 /tmp; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
@@ -255,15 +255,21 @@ RUN pip3 install --break-system-packages 'python-lsp-server[all]' pylsp-mypy pyt
 RUN python3 -m pip install --break-system-packages --no-cache-dir 'aider-chat==0.84.0' 'goose-ai==0.9.11' 'langfuse<3'
 
 # Install additional permissively licensed shells and DevOps CLIs
+USER root
 RUN set -eux; \
-    case "$TARGETPLATFORM" in \
+    PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}"; \
+    case "$PLATFORM" in \
+      linux/aarch64) PLATFORM="linux/arm64" ;; \
+      linux/x86_64) PLATFORM="linux/amd64" ;; \
+    esac; \
+    case "$PLATFORM" in \
       "linux/amd64") \
         PLATFORM_TAG="linux_amd64"; \
         NUSHELL_PKG="nu-${NUSHELL_VERSION}-x86_64-unknown-linux-gnu"; \
         DELTA_ARCH="x86_64-unknown-linux-gnu"; \
         JUST_ARCH="x86_64-unknown-linux-musl"; \
         STERN_ARCH="linux_amd64"; \
-        HELMFILE_ARCH="Linux_x86_64"; \
+        HELMFILE_ARCH="linux_amd64"; \
         K9S_ARCH="Linux_x86_64"; \
         SOPS_SUFFIX="linux.amd64"; \
         GLAB_ARCH="Linux_x86_64"; \
@@ -274,49 +280,59 @@ RUN set -eux; \
         DELTA_ARCH="aarch64-unknown-linux-gnu"; \
         JUST_ARCH="aarch64-unknown-linux-musl"; \
         STERN_ARCH="linux_arm64"; \
-        HELMFILE_ARCH="Linux_arm64"; \
+        HELMFILE_ARCH="linux_arm64"; \
         K9S_ARCH="Linux_arm64"; \
         SOPS_SUFFIX="linux.arm64"; \
         GLAB_ARCH="Linux_arm64"; \
         ;; \
-      *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
+      *) echo "Unsupported platform: $PLATFORM"; exit 1 ;; \
     esac; \
+    echo "Installing nushell ${NUSHELL_VERSION}"; \
     curl -fsSL "https://github.com/nushell/nushell/releases/download/${NUSHELL_VERSION}/${NUSHELL_PKG}.tar.gz" -o /tmp/nushell.tar.gz; \
     tar -xf /tmp/nushell.tar.gz -C /tmp; \
     install -m755 /tmp/${NUSHELL_PKG}/nu /usr/local/bin/nu; \
     rm -rf /tmp/nushell.tar.gz /tmp/${NUSHELL_PKG}; \
+    echo "Installing delta ${DELTA_VERSION}"; \
     curl -fsSL "https://github.com/dandavison/delta/releases/download/${DELTA_VERSION}/delta-${DELTA_VERSION}-${DELTA_ARCH}.tar.gz" -o /tmp/delta.tar.gz; \
     tar -xf /tmp/delta.tar.gz -C /tmp; \
     install -m755 /tmp/delta-${DELTA_VERSION}-${DELTA_ARCH}/delta /usr/local/bin/delta; \
     rm -rf /tmp/delta.tar.gz /tmp/delta-${DELTA_VERSION}-${DELTA_ARCH}; \
+    echo "Installing chezmoi ${CHEZMOI_VERSION}"; \
     curl -fsSL "https://github.com/twpayne/chezmoi/releases/download/v${CHEZMOI_VERSION}/chezmoi_${CHEZMOI_VERSION}_${PLATFORM_TAG}.tar.gz" -o /tmp/chezmoi.tar.gz; \
     tar -xf /tmp/chezmoi.tar.gz -C /tmp; \
     install -m755 /tmp/chezmoi_${CHEZMOI_VERSION}_${PLATFORM_TAG}/chezmoi /usr/local/bin/chezmoi; \
     rm -rf /tmp/chezmoi.tar.gz /tmp/chezmoi_${CHEZMOI_VERSION}_${PLATFORM_TAG}; \
-    curl -fsSL "https://github.com/casey/just/releases/download/v${JUST_VERSION}/just-${JUST_VERSION}-${JUST_ARCH}.tar.gz" -o /tmp/just.tar.gz; \
+    echo "Installing just ${JUST_VERSION}"; \
+    curl -fsSL "https://github.com/casey/just/releases/download/${JUST_VERSION}/just-${JUST_VERSION}-${JUST_ARCH}.tar.gz" -o /tmp/just.tar.gz; \
     tar -xf /tmp/just.tar.gz -C /tmp; \
     install -m755 /tmp/just-${JUST_VERSION}-${JUST_ARCH}/just /usr/local/bin/just; \
     rm -rf /tmp/just.tar.gz /tmp/just-${JUST_VERSION}-${JUST_ARCH}; \
+    echo "Installing stern ${STERN_VERSION}"; \
     curl -fsSL "https://github.com/stern/stern/releases/download/v${STERN_VERSION}/stern_${STERN_VERSION}_${STERN_ARCH}.tar.gz" -o /tmp/stern.tar.gz; \
     tar -xf /tmp/stern.tar.gz -C /tmp; \
     install -m755 /tmp/stern_${STERN_VERSION}_${STERN_ARCH}/stern /usr/local/bin/stern; \
     rm -rf /tmp/stern.tar.gz /tmp/stern_${STERN_VERSION}_${STERN_ARCH}; \
+    echo "Installing helmfile ${HELMFILE_VERSION}"; \
     curl -fsSL "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_${HELMFILE_ARCH}.tar.gz" -o /tmp/helmfile.tar.gz; \
     tar -xf /tmp/helmfile.tar.gz -C /tmp; \
     install -m755 /tmp/helmfile /usr/local/bin/helmfile; \
     rm -rf /tmp/helmfile.tar.gz /tmp/helmfile; \
+    echo "Installing k9s ${K9S_VERSION}"; \
     curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/k9s_${K9S_ARCH}.tar.gz" -o /tmp/k9s.tar.gz; \
     tar -xf /tmp/k9s.tar.gz -C /tmp; \
     install -m755 /tmp/k9s /usr/local/bin/k9s; \
     rm -rf /tmp/k9s.tar.gz /tmp/k9s; \
+    echo "Installing sops ${SOPS_VERSION}"; \
     curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.${SOPS_SUFFIX}" -o /usr/local/bin/sops; \
     chmod 755 /usr/local/bin/sops; \
+    echo "Installing glab ${GLAB_VERSION}"; \
     curl -fsSL "https://github.com/profclems/glab/releases/download/v${GLAB_VERSION}/glab_${GLAB_VERSION}_${GLAB_ARCH}.tar.gz" -o /tmp/glab.tar.gz; \
     tar -xf /tmp/glab.tar.gz -C /tmp; \
     install -m755 /tmp/glab_${GLAB_VERSION}_${GLAB_ARCH}/bin/glab /usr/local/bin/glab; \
     rm -rf /tmp/glab.tar.gz /tmp/glab_${GLAB_VERSION}_${GLAB_ARCH}; \
     curl -fsSL https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens -o /usr/local/bin/kubens; \
     chmod 755 /usr/local/bin/kubens
+USER coder
 
 # Verify key CLI tools are reachable for the coder user
 RUN set -eux; \
