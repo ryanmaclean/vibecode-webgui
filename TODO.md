@@ -1,3 +1,35 @@
+## Agent Update (2025-10-01 03:54 UTC, Astro Docs Links Cleared)
+
+- Rebuilt the Astro docs after rewriting repo-relative links to on-site paths or GitHub blobs; `monitoring/dashboards/genai-vector-performance.json` now ships from `docs/public`.
+- Updated `astro.config.mjs` sidebar entries to remove dead routes and point Datadog docs to the published wiki pages/GitHub fallback.
+- Created a local favicon and reran the static link audit script until it reported zero missing links; results logged in `docs/logs/astro-link-audit-2025-10-01.md`.
+- Added GitHub backlinks for helper scripts (`docs/`, `.github/workflows`, `prisma/`, `src/lib/*`) so GitHub Pages no longer references repo-only files.
+
+### Next Steps
+- [ ] Automate the link audit as part of docs CI (wrap the Python checker + `npm run build`).
+- [ ] Document the link-migration playbook alongside the planned docs verification runbook.
+
+## Agent Update (2025-09-30, TypeScript `any` Warnings - Batch 9)
+
+**Batch 9 completed**: Fixed 24 warnings across 3 files (8 warnings each)
+- cosmosdb-vector-database-adapter.ts: 8→0 warnings (Cosmos DB client interfaces, document types)
+- health-monitoring.ts: 8→0 warnings (metrics collector, middleware parameters, metadata types)
+- db-types.ts: 8→0 warnings (logger interfaces, metadata types)
+
+**Progress**: ~581 warnings remaining (from 1,624 initial → 64.2% reduction)
+
+**Technical Patterns Applied**:
+- Type aliases for dynamically imported Cosmos DB client (CosmosClient, CosmosDatabase, CosmosContainer)
+- Inline interface types for Cosmos documents with proper field definitions
+- Type predicates for filtering (`result is SearchResult`)
+- Metrics collector typed as `Record<string, number | number[]>`
+- Express middleware with proper request/response types
+- Replaced all `Record<string, any>` with `Record<string, unknown>`
+
+### Next Steps
+- [ ] Continue toward <500 warnings milestone (134 more to fix)
+- [ ] Target remaining high-impact files (8+ warnings)
+
 ## Agent Update (2025-09-30, TypeScript `any` Warnings - Batch 8)
 
 **Batch 8 completed**: Fixed 28 warnings across 3 files (9-10 warnings each)
@@ -48,7 +80,7 @@
 
 ### Next Steps
 - [ ] Patch the docs CI to exclude or shim `.next/types/**` (and other Next artifacts) so `npx astro check` can pass without removing the `__TEST__` helper.
-- [ ] Triage the repo-relative links from the audit report and convert them to published assets or canonical GitHub URLs (start with dashboard JSON + script references).
+- [x] Triage the repo-relative links from the audit report and convert them to published assets or canonical GitHub URLs (start with dashboard JSON + script references).
 - [ ] Add a docs verification runbook covering `npm run build`, the local link audit script, and how to serve the site with base `/vibecode-webgui` for interactive checks.
 
 ## Agent Update (2025-10-01 03:25 UTC, Connection Pool Coverage)
