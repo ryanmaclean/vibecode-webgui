@@ -4,11 +4,12 @@ const createJestConfig = createNextJestConfig({ dir: './' })
 
 const customJestConfig = {
   testEnvironment: 'jest-environment-jsdom',
+  setupFiles: ['<rootDir>/tests/jest.polyfills.js'],
   setupFilesAfterEnv: ['<rootDir>/tests/jest.setup.js'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  modulePathIgnorePatterns: ['<rootDir>/extensions/'],
+  modulePathIgnorePatterns: ['<rootDir>/extensions/', '<rootDir>/.next/'],
   transform: {
     '^.+\\.(t|j)sx?$': ['babel-jest', { presets: ['@babel/preset-env', '@babel/preset-react', '@babel/preset-typescript'] }],
   },

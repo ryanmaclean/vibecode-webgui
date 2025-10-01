@@ -89,6 +89,9 @@ jobs:
         run: npm run lint
         continue-on-error: true
 
+      - name: Lint markdown docs
+        run: npm run lint:markdown
+
       - name: Check for hardcoded secrets
         run: |
           echo "Scanning for hardcoded secrets and API keys..."

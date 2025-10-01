@@ -258,3 +258,8 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Added common DevOps CLI tools (`eza`, `ripgrep`, `fd`, `fzf`, `bat`, `hyperfine`, `lazygit`, `starship`, `zoxide`) to both code-server Dockerfiles and noted the additions in the README.
 ### Agent Codex - Workflow issue templates (2025-09-30 03:12 UTC)
 - Generated placeholder summaries for all `.github/workflows/*.yml` (+ disabled-expensive) under `docs/logs/workflow-issues/` so each pipeline has a ready-to-file issue brief.
+- 2025-09-30 07:30 UTC — Added CodeArkt evaluation issue draft (`docs/logs/issues/396-codearkt-evaluation.md`) and linked TODO #396.
+
+## 2025-09-30 23:48 UTC
+- Estimated Datadog sidecar overhead (~200m CPU / 256Mi memory) and updated both Kind and production manifests with explicit resource requests/limits.
+- Documented total per-pod requests (~700m CPU / 1.25Gi memory) so cluster autoscaler calculations remain predictable until we gather live telemetry.

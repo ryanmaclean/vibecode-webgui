@@ -35,17 +35,18 @@ echo "==> Waiting for rollout"
 kubectl rollout status deployment/$SERVICE -n "$NAMESPACE" --timeout=120s >/dev/null
 
 echo "==> Port-forward check"
-kubectl port-forward svc/$SERVICE -n "$NAMESPACE" 3100:8080 >/tmp/code-server-portforward.log 2>&1 &
+kubectl port-forward svc/$SERVICE -n "$NAMESPACE" 3100:8765 >/tmp/code-server-portforward.log 2>&1 &
 PF_PID=$!
 trap 'kill $PF_PID >/dev/null 2>&1 || true' EXIT
-sleep 3
+sleep 8
 curl -s -L --max-redirs 2 -w '%{http_code}\n' -o /dev/null http://localhost:3100
 
 kill $PF_PID >/dev/null 2>&1 || true
 
 echo "==> NodePort check"
 CONTROL_PLANE_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CLUSTER_NAME}-control-plane)
-curl -s -L --max-redirs 2 -w '%{http_code}\n' -o /dev/null http://$CONTROL_PLANE_IP:31080
+NODE_PORT=$(kubectl get svc/$SERVICE -n "$NAMESPACE" -o jsonpath='{.spec.ports[0].nodePort}')
+curl -s -L --max-redirs 2 -w '%{http_code}\n' -o /dev/null http://$CONTROL_PLANE_IP:$NODE_PORT
 
 echo "==> Verifying terminal editors"
 CODE_SERVER_NAMESPACE="$NAMESPACE" CODE_SERVER_SELECTOR="app=code-server,tier=workspace" \

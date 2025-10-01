@@ -98,6 +98,18 @@ jobs:
           NODE_ENV: test
           CI: true
 
+      - name: Fail on lint errors (PR only)
+        if: github.event_name == 'pull_request' && steps.lint.outputs.status != '0'
+        run: |
+          echo '::error::Linting failed on PR (exit code ${{ steps.lint.outputs.status }})'
+          exit 1
+
+      - name: Fail on type errors (PR only)
+        if: github.event_name == 'pull_request' && steps.typecheck.outputs.status != '0'
+        run: |
+          echo '::error::Type-check failed on PR (exit code ${{ steps.typecheck.outputs.status }})'
+          exit 1
+
       - name: Quick validation summary
         run: |
           echo "### Quick Validation" >> "$GITHUB_STEP_SUMMARY"

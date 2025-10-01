@@ -10,3 +10,7 @@
 - [ ] Define remediation steps / owners.
 
 > Updated 2025-09-30 04:26 UTC — replace placeholder text when filing the issue.
+
+- **2025-09-30:** Added concurrency guard, token check, and summary output for created issue/Slack skip.
+
+- **2025-09-30:** Standup workflow supports configurable issue/Slack outputs via dispatch inputs.

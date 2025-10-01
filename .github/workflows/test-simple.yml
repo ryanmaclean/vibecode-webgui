@@ -3,6 +3,10 @@ name: Simple Test
 on:
   workflow_dispatch:
 
+concurrency:
+  group: test-simple
+  cancel-in-progress: true
+
 jobs:
   # Validate CI configuration and secrets
   validate-ci-config:

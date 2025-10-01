@@ -18,3 +18,5 @@ The demo validation workflow builds the Go TUI, checks scripts, and runs limited
 
 ## Progress Log
 - **2025-09-30:** Added concurrency guard; planning log/noise cleanup next.
+
+- **2025-09-30:** Added concurrency guard and summary/artifact support to the integration job.

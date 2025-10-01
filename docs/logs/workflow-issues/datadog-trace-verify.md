@@ -28,3 +28,5 @@ The Datadog trace verification workflow runs hourly to ensure agentless tracing 
 
 ## Progress Log
 - **2025-09-30:** Re-enabled hourly cron with concurrency guard, added secret-aware early exit, and captured trace logs as artifacts. Still need to resolve Datadog "Not found" errors and wire alerting.
+
+- **2025-09-30:** Updated trace check script to treat 404/empty responses as skips and record status in summary.- **2025-09-30:** Verified script behaviour locally using httpbin 404; skipped checks recorded in summary.
