@@ -55,6 +55,10 @@ check_tool "nvim" "command -v nvim >/dev/null 2>&1" "nvim --version" || missing=
 check_tool "emacs" "command -v emacs >/dev/null 2>&1" "emacs --version" || missing=1
 check_tool "aider" "command -v aider >/dev/null 2>&1" "aider --version || aider --help" || missing=1
 check_tool "goose" "command -v goose >/dev/null 2>&1" "goose --version || goose --help" || missing=1
+check_tool "kubectl" "command -v kubectl >/dev/null 2>&1" "kubectl version --client --short" || missing=1
+check_tool "helm" "command -v helm >/dev/null 2>&1" "helm version --short || helm version" || missing=1
+check_tool "kubectx" "command -v kubectx >/dev/null 2>&1" "kubectx --help" || missing=1
+check_tool "kubens" "command -v kubens >/dev/null 2>&1" "kubens --help" || missing=1
 
 if [[ $missing -eq 0 ]]; then
   log "All tools verified."

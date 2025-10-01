@@ -1,12 +1,26 @@
 # Coordination Log
 
 > **Purpose:** Document multi-agent coordination successes and learnings  
-> **Last Updated:** 2025-09-29  
+> **Last Updated:** 2025-10-01  
 > **Extracted By:** Agent Cascade - Phase 19
 
 This log captures how multiple agents successfully coordinated work to avoid conflicts.
 
 ---
+
+## 2025-10-01: Code-Server Release Coordination Refresh
+
+**Context:** Preparing for regular multi-arch code-server releases while aligning agents on TODO restructuring.
+
+**Decisions:**
+- Re-introduce a `Status at a Glance` block at the top of `TODO.md` listing release blockers, workflow state, and owners.
+- Record code-server release handoffs in `docs/handoff/code-server-release.md` and mirror Build/Test/Deploy state in `docs/handoff/shipping-dashboard.md`.
+- Pause re-enabling `.github/workflows/codeserver-multiarch.yml` until Docker optional tool audit completes (tracked in TODO).
+
+**Action Items:**
+- [ ] Platform Build rotation updates TODO once workflow is green.
+- [ ] Observability rotation assigns owners to Datadog dashboards noted in the handoff doc.
+- [ ] Coordination team reviews Activity Log weekly to archive stale Agent Updates.
 
 ## Coordination Protocol
 
@@ -25,6 +39,26 @@ This log captures how multiple agents successfully coordinated work to avoid con
 ---
 
 ## Coordination Success Stories
+
+### 2025-10-01: Multi-Arch Release Handoff
+
+**Scenario:** Shipping docs, workflow updates, and Docker audit in parallel across platform and observability.
+
+**Agents Active:**
+- **Platform Observability:** Authored release/shipping handoffs, refreshed TODO queue, and re-enabled `codeserver-multiarch` workflow.
+- **Platform Build:** Reviewed KinD smoke gating and Buildx cache settings.
+
+**How It Worked:**
+1. Declared work areas in TODO.md (`docs/handoff/*`, `.github/workflows/codeserver-multiarch.yml`, `docker/code-server/Dockerfile`).
+2. Shared release checklist in `docs/logs/issues/code-server-cloud-deployment.md` before editing workflow.
+3. Coordinated on telemetry gaps (missing Datadog owners) via shipping dashboard entry.
+
+**Result:**
+- ✅ Nightly cron + path-trigger reinstated without stepping on existing CI.
+- ✅ Documentation, workflow metadata, and Dockerfile changes landed together.
+- ✅ Ownership gaps surfaced for alerts/dashboards prior to release.
+
+**Key Learning:** Pair documentation updates with automation changes and declare directories explicitly to avoid churn.
 
 ### 2025-09-29: Triple Agent Coordination
 
@@ -506,3 +540,16 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - **2025-10-01 03:26 UTC — Vector pool unit coverage**
   - Added `tests/unit/db/vector-connection-pool.test.ts` with a mocked `pg.Pool`, silencing console output during runs and raising module coverage to ~54% statements.
   - TODO entry updated; pending decision on deeper branch coverage vs. ignore list, plus future coverage upload workflow.
+
+### 2025-10-01 06:12 UTC — kubectx/kubens documentation
+- Updated `docker/code-server/README.md` with a Kubernetes tooling note that explains the need to mount or create a kubeconfig before using `kubectx`/`kubens` inside the workspace container.
+- Marked TODO entry for the kubectx/kubens documentation task as completed with the README reference.
+
+### 2025-10-01 06:40 UTC — Kubernetes completions bundled
+- Added multi-arch installations for `helm` v3.19.0 and `kubectl` v1.31.1 in `docker/code-server/Dockerfile`, alongside download of the upstream `kubectx` helper script.
+- Generated Bash, Zsh, and Fish completion files for both commands during the image build (written to `/etc/bash_completion.d`, `/usr/share/zsh/site-functions`, and `/etc/fish/completions`).
+- README updated to highlight the pre-baked completions and reiterate kubeconfig mounting requirements; TODO entry closed with timestamped notes.
+
+### 2025-10-01 06:55 UTC — KinD smoke script coverage bump
+- Expanded `scripts/test-code-server-editors.sh` so the KinD smoke test now asserts `kubectl`, `helm`, `kubectx`, and `kubens` binaries exist in the workspace container (alongside vim/nvim/emacs/aider/goose).
+- TODO.md updated to record the enhanced coverage; wiring the script into CI remains open.

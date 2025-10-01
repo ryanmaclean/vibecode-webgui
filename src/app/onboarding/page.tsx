@@ -190,7 +190,7 @@ export default function OnboardingPage() {
 
   const completeOnboarding = async () => {
     try {
-      const saved = await savePreferences({
+      await savePreferences({
         theme: data.theme,
         cliEditor: data.cliEditor,
         preferredIde: data.preferredIde,
@@ -198,7 +198,6 @@ export default function OnboardingPage() {
         integrations: data.integrations,
         aiProviders: data.aiProviders,
       })
-      setData(saved as Preferences)
       router.push('/dashboard')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'We hit a snag saving your preferences. Please try again.'
