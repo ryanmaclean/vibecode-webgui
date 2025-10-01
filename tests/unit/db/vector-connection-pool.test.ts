@@ -120,6 +120,41 @@ describe('VectorConnectionPoolFactory', () => {
     expect(metrics.activeConnections).toBe(0);
   });
 
+  it('records pool exhaustion when max connections reached', async () => {
+    const pool = VectorConnectionPoolFactory.createPool(defaultConfig, { max: 1 }, 'exhausted');
+
+    const events: PoolEvent[] = [];
+    pool.on(PoolEvent.EXHAUSTED, () => events.push(PoolEvent.EXHAUSTED));
+
+    const firstClient = await pool.acquire();
+
+    const acquirePromise = pool.acquire();
+
+    await expect(acquirePromise).resolves.toBeDefined();
+
+    expect(events).toEqual([PoolEvent.EXHAUSTED]);
+
+    const metrics = pool.getMetrics();
+    expect(metrics.totalExhausted).toBeGreaterThan(0);
+
+    firstClient.release();
+  });
+
+  it('increments timeout metrics when connect throws', async () => {
+    const pool = VectorConnectionPoolFactory.createPool(defaultConfig, { max: 1 }, 'timeout');
+
+    const mockPool = mockPoolInstances[mockPoolInstances.length - 1];
+    mockPool.connect.mockImplementationOnce(async () => {
+      throw new Error('timeout exceeded');
+    });
+
+    await expect(pool.acquire()).rejects.toThrow('timeout exceeded');
+
+    const metrics = pool.getMetrics();
+    expect(metrics.totalTimeouts).toBeGreaterThanOrEqual(1);
+    expect(metrics.totalErrors).toBeGreaterThanOrEqual(1);
+  });
+
   it('closes pools via closeAllPools()', async () => {
     VectorConnectionPoolFactory.createPool(defaultConfig, {}, 'close');
 
