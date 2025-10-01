@@ -90,8 +90,14 @@ jobs:
           path: ./docs/dist
 
       # --- Next.js Build Steps ---
-      - name: Setup Node.js for Next.js
+      - name: Abort – Next.js export not supported yet
         if: steps.detect.outputs.docs_system == 'nextjs'
+        run: |
+          echo "::error::Next.js static export is currently unsupported. Use the Astro docs path or deploy the Next.js app via the platform pipelines."
+          exit 1
+
+      - name: Setup Node.js for Next.js
+        if: false
         uses: actions/setup-node@v4
         with:
           node-version: '18'
@@ -99,15 +105,23 @@ jobs:
           cache-dependency-path: './package-lock.json'
 
       - name: Install Next.js dependencies
-        if: steps.detect.outputs.docs_system == 'nextjs'
+        if: false
         run: npm ci
 
       - name: Build Next.js site
-        if: steps.detect.outputs.docs_system == 'nextjs'
+        if: false
         run: npm run build
 
+      - name: Verify Next.js export artifact
+        if: false
+        run: |
+          if [ ! -d "./out" ]; then
+            echo "::error::Next.js export directory ./out not found. Set NEXT_OUTPUT_MODE=export or update the workflow artifact path before rerunning."
+            exit 1
+          fi
+
       - name: Upload Next.js artifact
-        if: steps.detect.outputs.docs_system == 'nextjs'
+        if: false
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./out

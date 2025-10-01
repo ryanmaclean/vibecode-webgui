@@ -5,9 +5,14 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const outputMode = process.env.NEXT_OUTPUT_MODE === 'export' ? 'export' : 'standalone';
+if (process.env.NEXT_OUTPUT_MODE === 'export') {
+  console.info('[next.config] output mode: export');
+}
+
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone',
+  output: outputMode,
   eslint: {
     ignoreDuringBuilds: true,
   },

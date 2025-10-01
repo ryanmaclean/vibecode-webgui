@@ -486,3 +486,4 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - Added secrets checklist to `docs/logs/workflow-issues/gitops-deployment.yml.md` to guide credential audit.
 - KinD smoke test run locally; rollout succeeds with new amd64 image but editor/AI CLI checks fail (vim/nvim/emacs/aider/goose missing). Need updated image before gating passes.
 - Verified new code-server image in KinD: HTTP checks succeed but Vim/Nvim/Emacs/Aider/Goose binaries absent; smoke test still fails until image is rebuilt with those tools.
+- Latest code-server image still lacks vim/nvim/emacs/aider/goose; KinD smoke test fails on editor checks even though service is reachable.
