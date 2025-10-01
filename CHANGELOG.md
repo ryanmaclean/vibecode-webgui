@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v1.2.0] - 2025-10-01
+
+### Added
+
+- **PocketBase v0.24.4**: Lightweight, embedded database with admin UI and REST API (MIT License)
+- **Devbox**: Portable, reproducible development environments powered by Nix (Apache 2.0)
+- **OpenAI Cookbook**: Comprehensive reference examples cloned to `/opt/openai-cookbook`
+- **Enhanced tool verification**: Automated validation of all installed tools during build
+
+### Changed
+
+- Updated to v1.2.0 with expanded tooling ecosystem
+- All dependencies remain permissively licensed (Apache 2.0/MIT)
+- Improved build-time verification for tool availability
+
 ### Added
 
 - **MCP Server Datadog Integration**: All Model Context Protocol servers now support Datadog APM tracing
