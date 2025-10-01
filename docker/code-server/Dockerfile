@@ -5,12 +5,28 @@ ARG TARGETPLATFORM
 ARG LAZYGIT_VERSION=0.55.1
 ARG STARSHIP_VERSION=1.23.0
 ARG ZOXIDE_VERSION=0.9.8
+ARG PROFILE=full
+ARG BUILD_DATE
+ARG GIT_COMMIT
+ARG VERSION=1.0.0
+
+# Metadata
+LABEL org.opencontainers.image.title="VibeCode Code-Server"
+LABEL org.opencontainers.image.description="Code-server with AI assistants and development tools"
+LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
+LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
+LABEL org.opencontainers.image.source="https://github.com/ryanmaclean/vibecode-webgui"
+LABEL org.opencontainers.image.profile="${PROFILE}"
 
 # Switch to root for setup
 USER root
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN set -eux; \
+    mkdir -p /tmp && chmod 1777 /tmp; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     fish \
@@ -19,6 +35,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-client \
     hyperfine \
     ripgrep \
+    vim \
+    neovim \
+    emacs-nox \
     sudo \
     wget \
     gnupg \
@@ -31,8 +50,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fd-find \
     unzip \
     apt-transport-https \
-    software-properties-common \
-    && rm -rf /var/lib/apt/lists/*
+    software-properties-common; \
+    rm -rf /var/lib/apt/lists/*
+
+RUN chmod 755 /usr/bin/code-server /usr/lib/code-server/bin/code-server
 
 RUN ln -sf /usr/bin/fdfind /usr/local/bin/fd && \
     ln -sf /usr/bin/exa /usr/local/bin/eza
@@ -141,44 +162,47 @@ RUN chmod +x /tmp/configure-datadog.sh && \
 # Switch to coder user for extension installation
 USER coder
 
+ENV PATH="/home/coder/.local/bin:${PATH}"
+
 # Create directories for VSCode
 RUN mkdir -p /home/coder/.local/share/code-server/User/ \
     && mkdir -p /home/coder/.vscode/extensions/
 
-# Install AI/ML Extensions (MIT/BSD/Apache only)
-# Note: Some extensions can hang during installation, so we install them with timeouts
+# Install Extensions Based on Profile
+# Profile-based installation reduces image size and build time
+# Profiles: minimal, standard, ai, web, full
 
-# 1. Anthropic Claude Code - Official Claude extension
-RUN timeout 120 code-server --install-extension anthropic.claude-code || echo "Claude Code installation timed out or failed, skipping"
+# Copy profile file
+COPY docker/code-server/profiles/${PROFILE}.txt /tmp/extensions-list.txt
 
-# Patch Claude Code to work in code-server (remove desktop-only restriction)
-RUN if [ -d "/home/coder/.local/share/code-server/extensions/anthropic.claude-code"* ]; then \
-    CLAUDE_DIR=$(ls -d /home/coder/.local/share/code-server/extensions/anthropic.claude-code* | head -1) && \
-    sed -i 's/"extensionKind":\s*\["ui"\]/"extensionKind": ["ui", "workspace"]/g' "$CLAUDE_DIR/package.json" && \
-    echo "Patched Claude Code for code-server compatibility"; \
-    fi
+# Install extensions from profile (combined into single layer for efficiency)
+# Use BuildKit cache mount for faster rebuilds
+RUN --mount=type=cache,target=/home/coder/.cache/code-server \
+    echo "📦 Installing extensions for profile: ${PROFILE}" && \
+    while IFS= read -r extension || [ -n "$extension" ]; do \
+        # Skip comments and empty lines
+        [[ "$extension" =~ ^#.*$ ]] && continue; \
+        [[ -z "$extension" ]] && continue; \
+        echo "Installing: $extension" && \
+        /usr/bin/code-server --install-extension "$extension" --force || \
+        echo "⚠️  Failed to install $extension, skipping"; \
+    done < /tmp/extensions-list.txt && \
+    rm /tmp/extensions-list.txt && \
+    echo "✅ Extension installation complete for profile: ${PROFILE}"
 
-# 2. OpenAI ChatGPT - Official OpenAI extension (Codex)
-RUN timeout 120 code-server --install-extension openai.chatgpt || echo "OpenAI ChatGPT installation timed out or failed, skipping"
+# Patch extensions to work in code-server (remove desktop-only restrictions)
+RUN for ext_dir in /home/coder/.local/share/code-server/extensions/anthropic.claude-code* \
+                   /home/coder/.local/share/code-server/extensions/openai.chatgpt*; do \
+    if [ -d "$ext_dir" ]; then \
+        sed -i 's/"extensionKind":\s*\["ui"\]/"extensionKind": ["ui", "workspace"]/g' "$ext_dir/package.json" 2>/dev/null || true; \
+        echo "Patched $(basename $ext_dir) for code-server compatibility"; \
+    fi; \
+done
 
-# Patch OpenAI ChatGPT to work in code-server (remove desktop-only restriction)
-RUN if [ -d "/home/coder/.local/share/code-server/extensions/openai.chatgpt"* ]; then \
-    OPENAI_DIR=$(ls -d /home/coder/.local/share/code-server/extensions/openai.chatgpt* | head -1) && \
-    sed -i 's/"extensionKind":\s*\["ui"\]/"extensionKind": ["ui", "workspace"]/g' "$OPENAI_DIR/package.json" && \
-    echo "Patched OpenAI ChatGPT for code-server compatibility"; \
-    fi
-
-# 3. GitHub Copilot - OpenAI Codex integration (requires GitHub subscription)
-RUN timeout 120 code-server --install-extension GitHub.copilot || echo "GitHub Copilot installation timed out or failed, skipping"
-
-# 4. GitHub Copilot Chat
-RUN timeout 120 code-server --install-extension GitHub.copilot-chat || echo "GitHub Copilot Chat installation timed out or failed, skipping"
-
-# 5. Codeium - Free AI Code Completion (MIT)
-RUN timeout 120 code-server --install-extension Codeium.codeium || echo "Codeium installation timed out or failed, skipping"
-
-# 6. Cline (formerly Claude Dev) - AI coding assistant (Apache 2.0)
-RUN timeout 120 code-server --install-extension saoudrizwan.claude-dev || echo "Cline installation timed out or failed, skipping"
+# Clean up (as root)
+USER root
+RUN rm -rf /tmp/extensions
+USER coder
 
 # 5. Continue - Open-source autopilot (Apache 2.0) - SKIPPED (hangs during install)
 # RUN code-server --install-extension Continue.continue
@@ -193,6 +217,9 @@ USER root
 # 1. Python LSP (pylsp) - installed as coder user
 USER coder
 RUN pip3 install --break-system-packages 'python-lsp-server[all]' pylsp-mypy python-lsp-black
+
+# Install AI pair-programming CLIs for parity with KinD image
+RUN python3 -m pip install --break-system-packages --no-cache-dir aider-chat goose-ai 'langfuse<3'
 
 # 2. TypeScript/JavaScript LSP - needs root
 USER root
@@ -228,11 +255,15 @@ USER coder
 ENV PATH="/home/coder/go/bin:${PATH}"
 ENV NODE_PATH=/usr/local/lib/node_modules
 
-# Copy and run AI extensions configuration script
-COPY --chown=coder:coder docker/code-server/configure-ai-extensions.sh /tmp/configure-ai-extensions.sh
+# Copy and run AI extensions configuration script (as root for symf install)
+USER root
+COPY docker/code-server/configure-ai-extensions.sh /tmp/configure-ai-extensions.sh
 RUN chmod +x /tmp/configure-ai-extensions.sh && \
     /tmp/configure-ai-extensions.sh && \
-    rm /tmp/configure-ai-extensions.sh
+    rm /tmp/configure-ai-extensions.sh && \
+    chown -R coder:coder /home/coder/.local/share/code-server/ && \
+    chown -R coder:coder /home/coder/.vscode/
+USER coder
 
 # Copy VibeCode extensions
 COPY --chown=coder:coder extensions/vibecode-ai-assistant /home/coder/.vscode/extensions/vibecode-ai-assistant
@@ -241,49 +272,49 @@ COPY --chown=coder:coder extensions/vibecode-codebase-chat /home/coder/.vscode/e
 COPY --chown=coder:coder extensions/claude-code-vscode /home/coder/.vscode/extensions/claude-code-vscode
 
 # Official Microsoft Extensions Only (MIT Licensed) - install with fallback
-RUN code-server --install-extension ms-vscode.vscode-typescript-next || echo "TypeScript extension failed" \
-    && code-server --install-extension dbaeumer.vscode-eslint || echo "ESLint extension failed"
+RUN /usr/bin/code-server --install-extension ms-vscode.vscode-typescript-next || echo "TypeScript extension failed" \
+    && /usr/bin/code-server --install-extension dbaeumer.vscode-eslint || echo "ESLint extension failed"
 
 # Productivity and Developer Tools (MIT/BSD/Apache only) - essential only
-RUN code-server --install-extension usernamehw.errorlens || echo "ErrorLens failed" \
-    && code-server --install-extension PKief.material-icon-theme || echo "Material icons failed"
+RUN /usr/bin/code-server --install-extension usernamehw.errorlens || echo "ErrorLens failed" \
+    && /usr/bin/code-server --install-extension PKief.material-icon-theme || echo "Material icons failed"
 
 # Code Quality and Formatting (MIT)
-RUN code-server --install-extension esbenp.prettier-vscode || echo "Prettier failed"
+RUN /usr/bin/code-server --install-extension esbenp.prettier-vscode || echo "Prettier failed"
 
 # Git Tools (MIT) - optional
-RUN code-server --install-extension mhutchie.git-graph || echo "Git graph failed"
+RUN /usr/bin/code-server --install-extension mhutchie.git-graph || echo "Git graph failed"
 
 # Testing and Debugging (MIT) - optional
-RUN code-server --install-extension orta.vscode-jest || echo "Jest extension failed"
+RUN /usr/bin/code-server --install-extension orta.vscode-jest || echo "Jest extension failed"
 
 # Project Management (MIT) - skipped for faster build
-# RUN code-server --install-extension alefragnani.project-manager || echo "Project manager failed"
+# RUN /usr/bin/code-server --install-extension alefragnani.project-manager || echo "Project manager failed"
 
 # Language Support (MIT/Apache) - essential only
-RUN code-server --install-extension redhat.vscode-yaml || echo "YAML failed" \
-    && code-server --install-extension bradlc.vscode-tailwindcss || echo "Tailwind failed"
+RUN /usr/bin/code-server --install-extension redhat.vscode-yaml || echo "YAML failed" \
+    && /usr/bin/code-server --install-extension bradlc.vscode-tailwindcss || echo "Tailwind failed"
 
 # Utilities (MIT) - optional
-RUN code-server --install-extension mikestead.dotenv || echo "dotenv failed"
+RUN /usr/bin/code-server --install-extension mikestead.dotenv || echo "dotenv failed"
 
 # Datadog Official Extension (Apache 2.0) - optional
-RUN code-server --install-extension datadog.datadog-vscode || echo "Datadog extension failed"
+RUN /usr/bin/code-server --install-extension datadog.datadog-vscode || echo "Datadog extension failed"
 
 # Database Tools (MIT/Apache) - optional
-RUN code-server --install-extension mtxr.sqltools || echo "SQLTools failed"
+RUN /usr/bin/code-server --install-extension mtxr.sqltools || echo "SQLTools failed"
 
 # Docker and Kubernetes (Microsoft - MIT) - optional
-RUN code-server --install-extension ms-azuretools.vscode-docker || echo "Docker extension failed"
+RUN /usr/bin/code-server --install-extension ms-azuretools.vscode-docker || echo "Docker extension failed"
 
 # REST API Testing (MIT) - optional
-RUN code-server --install-extension humao.rest-client || echo "REST client failed"
+RUN /usr/bin/code-server --install-extension humao.rest-client || echo "REST client failed"
 
 # Markdown and Documentation (MIT) - optional
-RUN code-server --install-extension yzhang.markdown-all-in-one || echo "Markdown failed"
+RUN /usr/bin/code-server --install-extension yzhang.markdown-all-in-one || echo "Markdown failed"
 
-# Python Development (Microsoft - MIT) - optional
-RUN code-server --install-extension ms-python.python || echo "Python extension failed"
+# Python Development (Microsoft - MIT) - optional (already installed earlier)
+# RUN /usr/bin/code-server --install-extension ms-python.python || echo "Python extension failed"
 
 # Remote Development (Microsoft - MIT) - skipped (not needed in container)
 # RUN code-server --install-extension ms-vscode-remote.remote-ssh || echo "Remote SSH failed"

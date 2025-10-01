@@ -2,23 +2,28 @@
 
 The VibeCode code-server comes pre-configured with trusted domains to prevent annoying prompts when extensions try to open external URLs.
 
-## Pre-Configured Trusted Domains
+## Pre-configured Trusted Domains
+
+The following domains are pre-configured as trusted in the VibeCode code-server image:
 
 ### AI Services
+- **Anthropic Claude**: `anthropic.com`, `*.anthropic.com`, `api.anthropic.com`, `console.anthropic.com`
+- **OpenAI**: `openai.com`, `*.openai.com`, `api.openai.com`
 - **OpenRouter**: `openrouter.ai`, `*.openrouter.ai`
-- **OpenAI**: `api.openai.com`, `*.openai.com`
-- **Anthropic**: `anthropic.com`, `*.anthropic.com`
 - **Codeium**: `codeium.com`, `*.codeium.com`
-- **Windsurf**: `windsurf.com`, `*.windsurf.com`
+- **Windsurf**: `windsurf.com`, `*.windsurf.com`, `codeium.windsurf.com`
 - **Continue**: `continue.dev`, `*.continue.dev`
+
+### Monitoring & Observability
+- **Datadog**: `datadog.com`, `*.datadog.com`, `datadoghq.com`, `*.datadoghq.com`
+  - `app.datadoghq.com` (US1)
+  - `app.datadoghq.eu` (EU)
+  - `us5.datadoghq.com` (US5)
 
 ### Development Tools
 - **GitHub**: `github.com`, `*.github.com`, `*.githubusercontent.com`
 - **NPM**: `npmjs.com`, `*.npmjs.com`
 - **VS Code Marketplace**: `marketplace.visualstudio.com`, `*.visualstudio.com`, `code.visualstudio.com`
-
-### Monitoring & Observability
-- **Datadog**: `datadog.com`, `*.datadog.com`, `datadoghq.com`, `*.datadoghq.com`
 
 ### Documentation & Resources
 - **Stack Overflow**: `stackoverflow.com`, `*.stackoverflow.com`

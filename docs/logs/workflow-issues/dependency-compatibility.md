@@ -21,3 +21,5 @@ Node matrix runs weekly and on dependency changes. We added concurrency and made
 
 ## Progress Log
 - **2025-09-30:** Added concurrency guard and made build/type-check optional; summary placeholder added (needs exit-code wiring).
+
+- **2025-09-30:** Added concurrency guard and per-node summary with build/test/type exit codes captured.

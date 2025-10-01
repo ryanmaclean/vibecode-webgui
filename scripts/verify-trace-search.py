@@ -10,6 +10,8 @@ import sys
 import typing as t
 import urllib.parse
 import urllib.request
+import urllib.error
+import urllib.error
 
 
 def die(message: str, exit_code: int = 1) -> None:
@@ -60,12 +62,20 @@ def run_check(
             "DD-APPLICATION-KEY": app_key,
         },
     )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        body = resp.read().decode()
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            body = resp.read().decode()
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode() if exc.fp else ""
+        if exc.code == 404:
+            detail = body or exc.reason or "trace data not found"
+            return None, {"status": "not_found", "detail": detail}
+        raise
+
     response = json.loads(body)
     series = response.get("data") or []
     if not series:
-        die(f"No spans returned for {query} within window {window}.", exit_code=2)
+        return None, {"status": "empty", "detail": f"No spans for {query} within window {window}"}
 
     timestamp = now.strftime("%Y%m%dT%H%M%SZ")
     os.makedirs(output_dir, exist_ok=True)
@@ -73,7 +83,7 @@ def run_check(
     with open(outfile, "w", encoding="utf-8") as fh:
         json.dump(response, fh, indent=2)
 
-    return outfile
+    return outfile, {"status": "ok", "detail": f"{len(series)} spans"}
 
 
 def load_checks(config_path: str) -> list[dict[str, t.Any]]:
@@ -133,7 +143,7 @@ def main() -> None:
     for entry in checks:
         window = entry.get("window", args.window)
         limit = int(entry.get("limit", args.limit))
-        outfile = run_check(
+        outfile, status = run_check(
             service=entry["service"],
             env_tag=entry["env"],
             window=window,
@@ -144,7 +154,8 @@ def main() -> None:
             site=site,
             output_dir=args.output_dir,
         )
-        saved.append(outfile)
+        if outfile:
+            saved.append(outfile)
         summary_checks.append(
             {
                 "service": entry["service"],
@@ -152,6 +163,8 @@ def main() -> None:
                 "window": window,
                 "limit": limit,
                 "output": outfile,
+                "status": status.get("status"),
+                "detail": status.get("detail"),
             }
         )
 

@@ -24,6 +24,15 @@ curl -O https://raw.githubusercontent.com/ryanmaclean/vibecode-webgui/main/docke
 docker compose --project-name vibecode up -d
 ```
 
+For a persistent “cloud workspace” variant with resumable state, try the experimental bundle:
+
+```bash
+git clone https://github.com/ryanmaclean/vibecode-webgui
+cd vibecode-webgui
+CODE_SERVER_PASSWORD=changeme scripts/cloud/docker/start-compose.sh
+```
+Shelled-out volumes live under `workspace/` and `config/`; run `scripts/cloud/docker/stop-compose.sh` to tear down.
+
 > Tip: Run `docker compose -f docker-compose.yml config` first to validate the stack, and see [docker/code-server/DEPLOYMENT_GUIDE.md](docker/code-server/DEPLOYMENT_GUIDE.md#option-2-docker-compose-recommended) for full guidance.
 
 ### Kubernetes (KinD)
@@ -71,6 +80,34 @@ See [DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md) for:
 - QNAP, Synology, Asustor NAS
 - Docker Compose
 - Kubernetes (KinD + Production)
+
+### Cloud Workspaces (code-server)
+
+We are standardising low-cost, resumable developer workspaces on both Google Cloud Platform and AWS. Key points:
+
+| Cloud | Minimal Footprint | Persistent Storage | Auth | Notes |
+|-------|------------------|--------------------|------|-------|
+| **GCP** | Preemptible `e2-small` VM running code-server in Docker | Regional Persistent Disk per user (50 GiB) | Cloud HTTPS LB + Identity-Aware Proxy | Stop the VM when idle; snapshot PD nightly. |
+|       | GKE Autopilot deployment on Spot nodes (multi-user) | Filestore Basic HDD or PD PVC | IAP/OAuth proxy | Use StatefulSet for disk reattachment. |
+| **AWS** | EC2 `t4g.small` Spot instance + Docker | gp3 EBS per user (50 GiB) | ALB + Amazon Cognito | Lambda watcher stops idle instances; attach EBS on resume. |
+|       | ECS Fargate Spot (or EKS + Spot node groups) | EFS One Zone (IA) shared workspaces | Cognito/OIDC proxy | Suspend tasks when no active sessions. |
+
+Next deliverables:
+
+- ✅ Docker Compose + stop/start scripts for single-user VMs (`scripts/cloud/gcp`, `scripts/cloud/aws`, `scripts/cloud/docker`).
+- Kind/GKE/EKS manifests with Filestore/EFS-backed StatefulSets.
+- Helm chart modules + Terraform/OpenTofu stacks for managed rollout.
+- Idle detection hooks (WebSocket + CPU) that trigger Scheduler/Lambda jobs to shut down workloads.
+
+Progress is tracked in [docs/logs/issues/code-server-cloud-deployment.md](docs/logs/issues/code-server-cloud-deployment.md).
+
+Current tooling:
+
+- `scripts/cloud/gcp/*`, `scripts/cloud/aws/*` – launch/stop Spot or preemptible VMs with persistent disks.
+- `docker/code-server/docker-compose.cloud.yml` + `scripts/cloud/docker/*` – resumable Compose bundle for local testing.
+- `helm/code-server-cloud/` – experimental Helm chart parameterised for persistence and Datadog sidecar.
+- `tofu/code-server-gke`, `tofu/code-server-eks` – OpenTofu modules that install the chart onto existing clusters.
+- `scripts/cloud/kind/test-cloud-chart.sh` – quick KinD smoke test mirroring the cloud chart.
 
 ## Environment Variables
 
@@ -203,4 +240,3 @@ MIT
 ### 📌 CI/CD Workflow Coverage
 - Tracking issues: see `docs/logs/WORKFLOW_TRACKING.md` (maps each `.github/workflows/*.yml` to issue #355–#395).
 - Draft issue blurbs live in `docs/logs/workflow-issues/` for quick copy/paste when filing.
-

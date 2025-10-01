@@ -22,13 +22,15 @@ jest.mock('../../logger', () => ({
   }
 }));
 
+type MockConnection = { id: string; connected: boolean };
+
 describe('ConnectionPool', () => {
-  let mockConnection: any;
-  let mockCreateConnection: jest.Mock;
+  let mockConnection: MockConnection;
+  let mockCreateConnection: jest.Mock; // resolves MockConnection
   let mockCloseConnection: jest.Mock;
   let mockValidateConnection: jest.Mock;
-  let config: ConnectionPoolConfig;
-  let pool: ConnectionPool<any>;
+  let config: ConnectionPoolConfig<MockConnection>;
+  let pool: ConnectionPool<MockConnection>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -66,7 +68,7 @@ describe('ConnectionPool', () => {
 
   describe('constructor', () => {
     it('should initialize with default configuration', () => {
-      const defaultConfig: ConnectionPoolConfig = {
+      const defaultConfig: ConnectionPoolConfig<MockConnection> = {
         createConnection: jest.fn(),
         closeConnection: jest.fn()
       };
@@ -99,7 +101,7 @@ describe('ConnectionPool', () => {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       // Acquire all connections to exhaust the pool
-      const connections: any[] = [];
+      const connections: MockConnection[] = [];
       for (let i = 0; i < config.minConnections!; i++) {
         connections.push(await pool.acquire());
       }
@@ -115,7 +117,7 @@ describe('ConnectionPool', () => {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       // Acquire all connections
-      const connections: any[] = [];
+      const connections: MockConnection[] = [];
       for (let i = 0; i < config.maxConnections!; i++) {
         connections.push(await pool.acquire());
       }
@@ -151,6 +153,7 @@ describe('ConnectionPool', () => {
       
       // Acquire the only connection
       const connection = await shortTimeoutPool.acquire();
+      expect(connection).toBeDefined();
       
       // Try to acquire another connection - should timeout
       await expect(shortTimeoutPool.acquire()).rejects.toThrow('Timed out waiting for connection');
@@ -337,7 +340,7 @@ describe('ConnectionPool', () => {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       // Acquire all connections
-      const connections: any[] = [];
+      const connections: MockConnection[] = [];
       for (let i = 0; i < config.maxConnections!; i++) {
         connections.push(await pool.acquire());
       }

@@ -24,7 +24,7 @@ jobs:
       REDIS_URL: redis://localhost:6379
       NEXTAUTH_SECRET: test-secret-key-for-ci
       # Datadog CI Visibility
-      DD_CI_VISIBILITY_ENABLED: true
+      DD_CI_VISIBILITY_ENABLED: ${{ secrets.DD_API_KEY != '' && 'true' || 'false' }}
       DD_SERVICE: vibecode-webgui
       DD_ENV: ci
       DD_VERSION: ${{ github.sha }}
@@ -51,6 +51,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Record start time
+        run: echo "SIMPLIFIED_START=$(date +%s)" >> "$GITHUB_ENV"
 
       - name: Install Redis CLI
         run: |
@@ -85,11 +88,6 @@ jobs:
           echo "NEXTAUTH_SECRET=test-secret-key-for-ci" >> .env
           echo "NODE_ENV=test" >> .env
 
-      - name: Install Redis CLI
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y redis-tools
-
       - name: Wait for services
         run: |
           echo "Waiting for PostgreSQL..."
@@ -110,14 +108,24 @@ jobs:
         run: npm run test:root:workflow
 
       - name: Run AI/Embedding tests (if API keys available)
-        run: npm run test:root:ai-embedding
-        continue-on-error: true
+        id: ai-tests
+        if: secrets.OPENAI_API_KEY != ''
+        run: |
+          set +e
+          npm run test:root:ai-embedding
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+          exit 0
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Run Azure Embedding tests (if API keys available)
-        run: npm run test:root:azure-embedding
-        continue-on-error: true
+        id: azure-tests
+        if: secrets.AZURE_OPENAI_API_KEY != '' && secrets.AZURE_OPENAI_ENDPOINT != ''
+        run: |
+          set +e
+          npm run test:root:azure-embedding
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+          exit 0
         env:
           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
@@ -127,3 +135,24 @@ jobs:
         run: |
           docker stop postgres-test redis-test || true
           docker rm postgres-test redis-test || true
+
+      - name: Summary
+        if: always()
+        run: |
+          end=$(date +%s)
+          duration=$(( end - SIMPLIFIED_START ))
+          mins=$(( duration / 60 ))
+          secs=$(( duration % 60 ))
+          ai_status='${{ steps.ai-tests.outputs.status || "skipped" }}'
+          azure_status='${{ steps.azure-tests.outputs.status || "skipped" }}'
+          fmt_status() {
+            case "$1" in
+              skipped) echo 'skipped';;
+              0) echo '✅ success';;
+              *) echo "⚠️ exit $1";;
+            esac
+          }
+          echo "### Simplified CI" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Duration: ${duration}s (${mins}m ${secs}s)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- AI embedding tests: $(fmt_status "$ai_status")" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Azure embedding tests: $(fmt_status "$azure_status")" >> "$GITHUB_STEP_SUMMARY"

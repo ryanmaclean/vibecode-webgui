@@ -272,6 +272,11 @@ This log captures how multiple agents successfully coordinated work to avoid con
 5. **Trust but verify** - Always check TODO.md before starting work
 
 **Most Important:** The protocol only works if everyone follows it consistently.
+### 2025-09-30 23:45 UTC — Multi-environment code-server tooling verification
+- Pulled `ghcr.io/ryanmaclean/vibecode-codeserver:latest` under OrbStack and confirmed bash/zsh/fish plus eza/rg/fd/fzf/batcat/hyperfine/lazygit/starship/zoxide; aider/goose CLIs remain absent and `bat` resolves through `batcat`.
+- `scripts/test-code-server-kind.sh` now fails because `/usr/bin/code-server` ships mode 700 for UID 1000 and the Datadog agent exits without an API key; created a placeholder `datadog-secret` (`api-key=fakefakefake`) for diagnostics and scaled the deployment down to 0 after capturing logs.
+- `helm upgrade --install vibecode-platform` (image override to GHCR) hit the same permission guard, while `scripts/validate-helm.sh` passed lint/template/security checks; runtime remains blocked pending a chmod or security-context fix.
+- Updated TODO.md with the permission follow-up, CLI parity gap, and action to restore the KinD smoke deployment once remediation lands.
 ### Documentation Touchpoints
 - Coordination guidance now appears in `README.md`, `CONTRIBUTING.md`, and `AGENTS.md`; skim those before making sizable changes.
 - `docs/logs/README.md` now includes a reminder to log significant updates back in `TODO.md`.
@@ -461,3 +466,23 @@ This log captures how multiple agents successfully coordinated work to avoid con
 
 ### 2025-09-30 07:27 UTC — CodeArkt evaluation TODO added
 - Added TODO to assess https://github.com/IlyaGusev/codearkt (license, sample projects) before integrating into the repo.
+- Documented preliminary findings under `docs/logs/integrations/CODEARKT.md`; TODO references the assessment for next steps.
+- Tracking CodeArkt evaluation as TODO #396; open GitHub issue when ready.
+- Draft GitHub issue stub at `docs/logs/issues/396-codearkt-evaluation.md`; ready to copy into GitHub when finalizing.
+- Added concurrency guard and issue summary output to `.github/workflows/standup-report.yml`; Slack now explicitly notes when webhook missing.
+- Updated `.github/workflows/dependency-compatibility.yml` to capture build/test/type exit codes per Node version in the summary.
+- Filed GitHub issue #396 (Integrations: evaluate CodeArkt samples); TODO updated accordingly.
+- Added Azure secret gating (staging/production) and missing-secret notice job to `.github/workflows/gitops-deployment.yml`.
+- Updated `.github/workflows/main-branch-ci.yml` so lint/type-check failures block PRs; main pushes remain advisory.
+- Added concurrency guard and duration summary to `.github/workflows/kind-code-server-smoke.yml`.
+- Added concurrency guard to `.github/workflows/test-simple.yml` to prevent overlapping manual runs.
+- Updated `scripts/verify-trace-search.py` so Datadog trace checks skip gracefully on 404/empty responses and record status in the summary.
+- `.github/workflows/datadog-service-catalog.yml` now appends each registered service to the workflow summary for easier review.
+- Standup workflow now allows skipping issue creation/Slack posting via dispatch inputs and records skips in the summary.
+- Demo validation workflow now captures per-step statuses, exports logs, and summarizes duration/results.
+- Simplified CI test workflow now captures start/end time and logs AI/Azure embedding test status in the summary.
+- Cost monitor workflow now queries GitHub billing minutes (requires GH_BILLING_PAT) and posts Slack notification when configured.
+- Verified `scripts/verify-trace-search.py` locally using httpbin 404; summary shows `not_found` status and workflow exits cleanly.
+- Added secrets checklist to `docs/logs/workflow-issues/gitops-deployment.yml.md` to guide credential audit.
+- KinD smoke test run locally; rollout succeeds with new amd64 image but editor/AI CLI checks fail (vim/nvim/emacs/aider/goose missing). Need updated image before gating passes.
+- Verified new code-server image in KinD: HTTP checks succeed but Vim/Nvim/Emacs/Aider/Goose binaries absent; smoke test still fails until image is rebuilt with those tools.

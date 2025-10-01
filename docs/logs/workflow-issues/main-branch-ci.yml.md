@@ -18,3 +18,5 @@ Main branch CI runs lightweight checks with optional lint/type-step warnings. We
 
 ## Progress Log
 - **2025-09-30:** Added lint/type status summary for quick validation job.
+
+- **2025-09-30:** PR runs now fail when lint/type-check exit non-zero; summary still displays exit codes.
