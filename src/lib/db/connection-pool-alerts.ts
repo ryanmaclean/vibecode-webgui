@@ -4,16 +4,50 @@
  * Provides alerting functionality for database connection pool monitoring
  */
 let VectorConnectionPoolFactoryModule: typeof import('./vector-connection-pool') | null = null;
+let vectorConnectionPoolPromise: Promise<typeof import('./vector-connection-pool') | null> | null = null;
 const isBrowser = typeof window !== 'undefined';
 
-if (!isBrowser) {
-  try {
-    // Use dynamic import instead of require to avoid webpack warnings
-    const modulePath = './vector-connection-pool';
-    VectorConnectionPoolFactoryModule = eval(`require('${modulePath}')`);
-  } catch (error) {
-    console.warn('[ConnectionPoolAlertService] Unable to load vector connection pool module', error);
+async function loadVectorConnectionPoolModule(): Promise<typeof import('./vector-connection-pool') | null> {
+  if (isBrowser) {
+    return null;
   }
+
+  if (VectorConnectionPoolFactoryModule) {
+    return VectorConnectionPoolFactoryModule;
+  }
+
+  if (!vectorConnectionPoolPromise) {
+    vectorConnectionPoolPromise = import('./vector-connection-pool')
+      .then((module) => {
+        VectorConnectionPoolFactoryModule = module;
+        return module;
+      })
+      .catch((error) => {
+        console.warn('[ConnectionPoolAlertService] Unable to load vector connection pool module', error);
+        VectorConnectionPoolFactoryModule = null;
+        vectorConnectionPoolPromise = null;
+        return null;
+      });
+  }
+
+  return vectorConnectionPoolPromise;
+}
+
+if (!isBrowser) {
+  void loadVectorConnectionPoolModule();
+}
+
+// Test helpers
+export function __setVectorConnectionPoolModule(
+  module: typeof import('./vector-connection-pool') | null,
+): void {
+  VectorConnectionPoolFactoryModule = module;
+  vectorConnectionPoolPromise = null;
+}
+
+export function __resetVectorConnectionPoolModule(): void {
+  VectorConnectionPoolFactoryModule = null;
+  vectorConnectionPoolPromise = null;
 }
 
 // Alert severity levels
@@ -163,14 +197,16 @@ export default class ConnectionPoolAlertService {
     if (this.isMonitoringActive) {
       return;
     }
-    
+
+    void loadVectorConnectionPoolModule();
+
     this.isMonitoringActive = true;
-    
+
     // Set up monitoring interval
     this.monitoringInterval = setInterval(() => {
       this.checkConnectionPool();
     }, intervalMs);
-    
+
     // Initial check
     this.checkConnectionPool();
   }
@@ -202,6 +238,7 @@ export default class ConnectionPoolAlertService {
   private checkConnectionPool(): void {
     try {
       if (!VectorConnectionPoolFactoryModule) {
+        void loadVectorConnectionPoolModule();
         // Running in a browser or vector pool factory unavailable; skip heavy checks
         return;
       }
