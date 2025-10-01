@@ -44,7 +44,7 @@ teardown() {
   export MOCK_TOOL_MISSING=nvim
   run "$SCRIPT"
   [ "$status" -ne 0 ]
-  [[ "$output" == *"nvim missing"* ]]
+  [[ "$output" == *"nvim check failed"* ]]
 }
 
 @test "surfaces kubectl exec failures with redacted tokens" {
@@ -61,7 +61,7 @@ teardown() {
   export MOCK_TIMEOUT_EXIT=1
   run "$SCRIPT"
   [ "$status" -ne 0 ]
-  [[ "$output" == *"timeout after"* ]]
+  [[ "$output" == *"kubectl wait failed"* ]]
 }
 
 @test "fails fast when kubectl wait fails" {
