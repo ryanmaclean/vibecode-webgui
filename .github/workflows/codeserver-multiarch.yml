@@ -62,7 +62,7 @@ jobs:
       - name: Set build metadata
         id: meta
         run: |
-          tag="ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:ci-${{ github.run_id }}"
+          tag="ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:ci-${{ github.sha }}-${{ github.run_id }}"
           echo "VALIDATION_TAG=$tag" >> "$GITHUB_ENV"
           echo "validation_tag=$tag" >> "$GITHUB_OUTPUT"
           echo "BUILD_DATE=${{ github.run_started_at }}" >> "$GITHUB_ENV"
@@ -181,6 +181,29 @@ jobs:
           printf '%b\n' "$summary_tags" >> "$GITHUB_OUTPUT"
           echo 'EOF' >> "$GITHUB_OUTPUT"
 
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ needs.validate.outputs.validation_tag }}
+          format: spdx-json
+          output-file: sbom-code-server.spdx.json
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-code-server-${{ github.run_id }}
+          path: sbom-code-server.spdx.json
+          sbom: true
+
+      - name: Verify SBOM artifact exists
+        run: |
+          set -euo pipefail
+          if [ ! -f sbom-code-server.spdx.json ]; then
+            echo "ERROR: SBOM artifact not found at sbom-code-server.spdx.json" >&2
+            exit 1
+          fi
+          echo "✅ SBOM artifact verified at sbom-code-server.spdx.json"
+
       - name: Promote validation tag to canary tags
         if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.promote_canary == false) }}
         env:
@@ -198,29 +221,39 @@ jobs:
           docker buildx imagetools create --tag "ghcr.io/$OWNER/${{ env.IMAGE_NAME }}:amd64-canary" "$VALIDATION_TAG@$amd64_digest"
           docker buildx imagetools create --tag "ghcr.io/$OWNER/${{ env.IMAGE_NAME }}:arm64-canary" "$VALIDATION_TAG@$arm64_digest"
 
+      - name: Write validation digest to job summary
+        env:
+          VALIDATION_TAG: ${{ needs.validate.outputs.validation_tag }}
+        run: |
+          set -euo pipefail
+          manifest=$(docker buildx imagetools inspect "$VALIDATION_TAG" --raw)
+          list_digest=$(echo "$manifest" | sha256sum | awk '{print $1}')
+          amd64_digest=$(echo "$manifest" | jq -r '.manifests[] | select(.platform.os == "linux" and .platform.architecture == "amd64") | .digest')
+          arm64_digest=$(echo "$manifest" | jq -r '.manifests[] | select(.platform.os == "linux" and .platform.architecture == "arm64") | .digest')
+          
+          cat <<MARKDOWN >> "$GITHUB_STEP_SUMMARY"
+          ### Validation Image Digests
+          
+          **Validation Tag:** \`${VALIDATION_TAG}\`
+          
+          | Platform | Digest |
+          |----------|--------|
+          | amd64    | \`${amd64_digest}\` |
+          | arm64    | \`${arm64_digest}\` |
+          | manifest | \`sha256:${list_digest}\` |
+          
+          MARKDOWN
+
       - name: Promote validation tag to release tags
         if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.promote_latest == false) }}
         run: |
+          set -euo pipefail
           while read -r tag; do
             [ -z "$tag" ] && continue
             docker buildx imagetools create --tag "$tag" ${{ needs.validate.outputs.validation_tag }}
           done <<'EOF'
 ${{ steps.tags.outputs.promote_tags }}
 EOF
-
-      - name: Generate SBOM
-        uses: anchore/sbom-action@v0
-        with:
-          image: ${{ needs.validate.outputs.validation_tag }}
-          format: spdx-json
-          output-file: sbom-code-server.spdx.json
-
-      - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: sbom-code-server-${{ github.run_id }}
-          path: sbom-code-server.spdx.json
-          sbom: true
 
       - name: Verify aider/goose on amd64 image
         run: docker run --rm --platform linux/amd64 --entrypoint bash ${{ needs.validate.outputs.validation_tag }} -lc "aider --version && goose -version"
@@ -241,6 +274,7 @@ EOF
           GITHUB_RUN_ID: ${{ github.run_id }}
           VALIDATION_TAG: ${{ needs.validate.outputs.validation_tag }}
         run: |
+          set -euo pipefail
           start_epoch=$(date -d '${{ github.run_started_at }}' +%s 2>/dev/null || date +%s)
           end_epoch=$(date +%s)
           duration=$(( end_epoch - start_epoch ))
