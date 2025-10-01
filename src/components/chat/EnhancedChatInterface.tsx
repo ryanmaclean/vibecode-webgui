@@ -659,8 +659,12 @@ export const EnhancedChatInterface = ({
               </Button>
             </div>
           )}
-          <ScrollArea ref={scrollAreaRef} className="h-full p-4">
-            <div className="space-y-4">
+          <ScrollArea
+            ref={scrollAreaRef}
+            className="h-full p-4"
+            data-testid="chat-scroll-area"
+          >
+            <div className="space-y-4" data-testid="chat-message-list">
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.from === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] ${message.from === 'user' ? 'order-2' : 'order-1'}`}>
@@ -812,6 +816,7 @@ export const EnhancedChatInterface = ({
                 placeholder="Ask me anything or attach files..."
                 className="min-h-[60px] resize-none"
                 disabled={isStreaming}
+                data-testid="chat-input"
               />
             </div>
             
@@ -841,6 +846,7 @@ export const EnhancedChatInterface = ({
                   size="sm"
                   onClick={sendMessage}
                   disabled={isStreaming || (!input.trim() && attachedFiles.length === 0)}
+                  data-testid="chat-send-button"
                 >
                   <Send className="w-4 h-4" />
                 </Button>

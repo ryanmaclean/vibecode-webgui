@@ -10,6 +10,7 @@ AI-powered development platform. Next.js 15 + Monaco 0.53.0 + pgvector + Kuberne
 - **AI:** OpenAI, Anthropic, Gemini, Groq, DeepSeek
 - **Infra:** Kubernetes (AKS), Docker, Helm
 - **Monitoring:** Datadog (APM, DBM, RUM, Logs)
+- **Testing:** Comprehensive offline cloud infrastructure testing framework
 
 ## Quick Install
 
@@ -50,6 +51,8 @@ npm install
 npm run dev
 ```
 
+> 2025-10-01 update: Browser bundles now alias Datadog/OpenTelemetry packages to lightweight stubs. If `npm run dev:simple` still fails, finish the TypeScript fixes called out in TODO.md before retrying so the `/tools/codeium` smoke test can complete.
+
 ## Features
 
 - **Cmd+K Inline Edit** - Natural language code transformations
@@ -59,6 +62,47 @@ npm run dev
 - **53+ Extensions** - Continue, Codeium, Cline, Aider, Prettier, ESLint, etc
 - **MCP Server** - Model Context Protocol for Windsurf/Claude Desktop
 - **Vector Search** - Semantic code search with pgvector + HNSW
+- **Offline Testing** - Comprehensive cloud infrastructure validation without cloud resources
+
+## Testing
+
+### Offline Cloud Infrastructure Testing
+
+Our comprehensive offline testing framework validates cloud infrastructure configurations without creating actual cloud resources:
+
+```bash
+# Run comprehensive offline tests
+./tests/tofu/offline-cloud-testing.sh
+
+# Run specific test suites
+npm run test:scripts  # Bats tests for shell scripts
+python3 tests/tofu/test_aws_cloud_deployment.py -v
+python3 tests/tofu/test_gcp_cloud_deployment.py -v
+python3 tests/tofu/test_security_validation.py -v
+```
+
+**Test Coverage:**
+- **AWS ECS/Fargate**: 12 comprehensive test cases with retry logic
+- **GCP Compute Engine**: 12 comprehensive test cases with validation
+- **Security Validation**: Comprehensive security best practices testing
+- **Shell Script Testing**: Bats test suite for script validation
+- **GitHub Integration**: Automated issue updates and test reporting
+
+**Benefits:**
+- **Cost Savings**: No cloud resources created during testing
+- **Fast Feedback**: Tests run in seconds with comprehensive validation
+- **Security**: Automated security validation and secret detection
+- **CI/CD Ready**: GitHub Actions integration ready
+
+## Daily Checkpoint — 2025-10-01
+
+The code-server editor smoke test hardening shipped today (Ready pod gating, kubectl timeouts, structured logging), but three follow-ups remain before closing the loop:
+
+- [#415](https://github.com/ryanmaclean/vibecode-webgui/issues/415): propagate `kubectl wait` errors, refresh the Ready pod list between retries, mask pod identifiers in logs, and install `shellcheck`/`bats` locally + in CI.
+- [#416](https://github.com/ryanmaclean/vibecode-webgui/issues/416): add checksum/signature verification for kubectl/helm/kubectx/kubens and redact stderr output before it reaches shared telemetry.
+- [#417](https://github.com/ryanmaclean/vibecode-webgui/issues/417): expand the Bats suite to cover pod rotation, “no Ready pod” errors, structured status parsing, and timeout overrides.
+
+Heads-up: attempts to gather end-of-day guidance via `roundtable-ai/gemini_subagent` currently fail even though the CLI reports the agent as available. Re-run those persona prompts once the MCP server recognises Gemini again.
 
 ## Screenshots
 
@@ -240,3 +284,13 @@ MIT
 ### 📌 CI/CD Workflow Coverage
 - Tracking issues: see `docs/logs/WORKFLOW_TRACKING.md` (maps each `.github/workflows/*.yml` to issue #355–#395).
 - Draft issue blurbs live in `docs/logs/workflow-issues/` for quick copy/paste when filing.
+
+## Daily Check-out (2025-10-01)
+
+- Config Guardian: captured env-template follow-ups in `TODO(config-env-templates)` and issue #416 (reconfirm hostnames, restore VALKEY/REDIS alias mapping, rotate secrets).
+- Workflow SRE: logged recommendations in issue #418 to scope validation tags per run, enforce concurrency, and fail on SBOM upload errors before promotion.
+- Observability Lead: noted doc/runbook updates for deploy-next-docs smoke-test logs, dashboards, and rollback steps in issue #405 and the Observability Callouts of `TODO.md`.
+- Docs Steward: refreshed the Status at a Glance table, Agent Update summary, and assigned owners/dates for outstanding lint/testing actions in `TODO.md`.
+- Docker Buildsmith: recorded install/cleanup improvements for kubectl/kubectx/kubens in issue #416 ahead of the security hardening backlog.
+
+Next pass: implement the workflow/env/doc adjustments above, rerun `codeserver-multiarch` with `promote_latest=false`, and close out the outstanding TODO items.

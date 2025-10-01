@@ -167,6 +167,7 @@ describe('EnhancedChatInterface streaming', () => {
     await clickSendButton(user)
 
     await screen.findByText('Accessibility')
+    await screen.findByText('42ms')
 
     const viewport = document.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement
     expect(viewport).toBeTruthy()
@@ -195,6 +196,11 @@ describe('EnhancedChatInterface streaming', () => {
 
     await waitFor(() => {
       expect(screen.queryByTestId('chat-jump-button')).not.toBeInTheDocument()
+    })
+
+    await waitFor(() => {
+      expect(reader.cancel).toHaveBeenCalled()
+      expect(reader.releaseLock).toHaveBeenCalled()
     })
   })
 })
