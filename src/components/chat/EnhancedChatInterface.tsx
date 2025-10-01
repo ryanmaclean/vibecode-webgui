@@ -66,6 +66,8 @@ const AVAILABLE_MODELS = [
 
 const STREAM_FLUSH_THRESHOLD = 8192
 const STREAM_FLUSH_INTERVAL_MS = 48
+const REDUCED_MOTION_STREAM_FLUSH_INTERVAL_MS = 600
+const REDUCED_MOTION_STREAM_FLUSH_THRESHOLD = STREAM_FLUSH_THRESHOLD * 4
 
 interface EnhancedChatInterfaceProps {
   conversationId?: string
@@ -92,6 +94,7 @@ export const EnhancedChatInterface = ({
   const [enableWebSearch, setEnableWebSearch] = useState(false)
   const [enableRAG, setEnableRAG] = useState(true)
   const [showJumpButton, setShowJumpButton] = useState(false)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -114,7 +117,9 @@ export const EnhancedChatInterface = ({
 
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
     const updatePreference = (event?: MediaQueryListEvent) => {
-      prefersReducedMotionRef.current = event ? event.matches : mediaQuery.matches
+      const matches = event ? event.matches : mediaQuery.matches
+      prefersReducedMotionRef.current = matches
+      setPrefersReducedMotion(matches)
     }
 
     updatePreference()
@@ -169,8 +174,8 @@ export const EnhancedChatInterface = ({
     if (!autoScrollRef.current) return
 
     if (prefersReducedMotionRef.current) {
-      autoScrollRef.current = false
-      setShowJumpButton(true)
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+      setShowJumpButton(false)
       return
     }
 
@@ -200,7 +205,9 @@ export const EnhancedChatInterface = ({
 
     const liveRegion = liveRegionRef.current
     if (liveRegion) {
-      liveRegion.textContent = 'New assistant message available.'
+      liveRegion.textContent = prefersReducedMotionRef.current
+        ? 'New assistant message available. Auto-scroll paused. Activate Jump to latest to review.'
+        : 'New assistant message available.'
     }
   }, [messages])
 
@@ -292,7 +299,11 @@ export const EnhancedChatInterface = ({
       return
     }
 
-    if (!force && buffer.size < STREAM_FLUSH_THRESHOLD) {
+    const threshold = prefersReducedMotionRef.current
+      ? REDUCED_MOTION_STREAM_FLUSH_THRESHOLD
+      : STREAM_FLUSH_THRESHOLD
+
+    if (!force && buffer.size < threshold) {
       return
     }
 
@@ -311,7 +322,11 @@ export const EnhancedChatInterface = ({
   }, [clearFlushTimer, updateLastAssistantMessage])
 
   const scheduleContentFlush = useCallback(() => {
-    if (contentBufferRef.current.size >= STREAM_FLUSH_THRESHOLD) {
+    const threshold = prefersReducedMotionRef.current
+      ? REDUCED_MOTION_STREAM_FLUSH_THRESHOLD
+      : STREAM_FLUSH_THRESHOLD
+
+    if (contentBufferRef.current.size >= threshold) {
       flushContentBuffer(true)
       return
     }
@@ -323,10 +338,14 @@ export const EnhancedChatInterface = ({
 
     if (flushTimeoutRef.current !== null) return
 
+    const delay = prefersReducedMotionRef.current
+      ? REDUCED_MOTION_STREAM_FLUSH_INTERVAL_MS
+      : STREAM_FLUSH_INTERVAL_MS
+
     flushTimeoutRef.current = window.setTimeout(() => {
       flushTimeoutRef.current = null
       flushContentBuffer(true)
-    }, STREAM_FLUSH_INTERVAL_MS)
+    }, delay)
   }, [flushContentBuffer])
 
   const sendMessage = async () => {
@@ -649,7 +668,7 @@ export const EnhancedChatInterface = ({
 
         {/* Messages Area */}
         <CardContent className="relative flex-1 overflow-hidden p-0">
-          {showJumpButton && (
+          {showJumpButton && !prefersReducedMotion && (
             <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
               <Button
                 size="sm"
@@ -673,6 +692,23 @@ export const EnhancedChatInterface = ({
               data-testid="chat-message-list"
               aria-busy={isStreaming ? 'true' : 'false'}
             >
+              {showJumpButton && prefersReducedMotion && (
+                <div className="flex justify-center" role="status">
+                  <div className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700">
+                    <span>New messages available</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      data-testid="chat-jump-button"
+                      aria-label="Jump to latest message"
+                      aria-controls="chat-scroll-anchor"
+                      onClick={handleJumpToLatest}
+                    >
+                      Jump to latest
+                    </Button>
+                  </div>
+                </div>
+              )}
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.from === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] ${message.from === 'user' ? 'order-2' : 'order-1'}`}>
@@ -766,9 +802,18 @@ export const EnhancedChatInterface = ({
                     </div>
                     <div className="flex-1">
                       <div className="inline-block p-3 rounded-lg bg-gray-100 text-gray-900">
-                        <div className="flex items-center space-x-2">
-                          <Sparkles className="w-4 h-4 animate-pulse" />
-                          <span>Thinking...</span>
+                        <div
+                          className="flex items-center space-x-2"
+                          role="status"
+                          aria-live="polite"
+                          data-testid="chat-streaming-indicator"
+                        >
+                          {!prefersReducedMotion && (
+                            <Sparkles className="w-4 h-4 animate-pulse" aria-hidden="true" />
+                          )}
+                          <span>
+                            {prefersReducedMotion ? 'Assistant is preparing a response...' : 'Thinking...'}
+                          </span>
                         </div>
                       </div>
                     </div>

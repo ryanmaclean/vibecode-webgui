@@ -28,20 +28,20 @@ MCP Playwright is built on top of the Playwright testing framework and extends i
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './tests/e2e',
+  testDir: './',
   /* Run tests in files in parallel */
-  fullyParallel: true,
+  fullyParallel: false,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : 2,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html'],
-    ['json', { outputFile: 'test-results/playwright-results.json' }],
-    ['junit', { outputFile: 'test-results/playwright-results.xml' }]
+    ['json', { outputFile: 'test-results/e2e-results.json' }],
+    ['junit', { outputFile: 'test-results/e2e-results.xml' }]
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
@@ -85,13 +85,14 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: process.env.USE_BUILD
-      ? 'bash -c "BUILDING=true NODE_ENV=production PLAYWRIGHT_TEST=true PORT=3000 npm run build && PORT=3000 PLAYWRIGHT_TEST=true node .next/standalone/server.js"'
-      : 'PLAYWRIGHT_TEST=true npm run dev:simple',
+    command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 300 * 1000,
+    timeout: 180 * 1000,
   },
+
+  /* Global test timeout */
+  timeout: 180 * 1000,
 });
 ```
 
@@ -287,6 +288,7 @@ The accessibility testing framework covers:
 3. **Screen Reader Compatibility**: Test with ARIA attributes and semantic HTML
 4. **Color Contrast**: Verify sufficient contrast for text and UI elements
 5. **Form Accessibility**: Ensure forms have proper labels and error states
+6. **Reduced-Motion Chat Flow**: Validate Enhanced Chat’s manual jump control and live-region announcements (`tests/e2e/enhanced-chat/reduced-motion.spec.ts`)
 
 ## Integration with Context7 and Sequential Thinking
 

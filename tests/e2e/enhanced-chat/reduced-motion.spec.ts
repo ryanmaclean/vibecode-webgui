@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { PassThrough } from 'stream'
+import { createSSEStream } from '../helpers/createSSEStream'
 
 const STREAM_ROUTE = '**/api/chat/stream'
 
@@ -8,27 +8,17 @@ const scriptedChunks = [
   'data: {"type":"metadata","metadata":{"responseTime":42}}\n\n'
 ]
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-
 test.describe('EnhancedChatInterface – reduced motion path', () => {
   test('shows jump control and focuses anchor when reduced motion is preferred', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
 
     let streamCalls = 0
+    let streamCompletionPromise: Promise<void> | undefined
 
     await page.route(STREAM_ROUTE, async route => {
       streamCalls += 1
-      const stream = new PassThrough()
-
-      const sendChunks = async () => {
-        for (const chunk of scriptedChunks) {
-          stream.write(chunk)
-          await sleep(20)
-        }
-        stream.end()
-      }
-
-      void sendChunks()
+      const { stream, completionPromise } = createSSEStream(scriptedChunks, 150)
+      streamCompletionPromise = completionPromise
 
       await route.fulfill({
         status: 200,
@@ -45,6 +35,16 @@ test.describe('EnhancedChatInterface – reduced motion path', () => {
 
       await page.getByTestId('chat-input').fill('Reduced motion request')
       await page.getByTestId('chat-send-button').click()
+
+      if (!streamCompletionPromise) {
+        throw new Error('Expected chat stream to start')
+      }
+
+      const streamingIndicator = page.getByTestId('chat-streaming-indicator')
+      await expect(streamingIndicator).toContainText('Assistant is preparing a response...')
+      await expect(streamingIndicator.locator('svg')).toHaveCount(0)
+
+      await streamCompletionPromise
 
       const liveRegion = page.getByTestId('chat-live-region')
       await expect(liveRegion).toHaveAttribute('aria-live', 'polite')
