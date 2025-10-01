@@ -28,18 +28,18 @@ This documentation is automatically generated from the codebase.
 - [/api/projects/template](#-api-projects-template)
 - [/api/terminal/session](#-api-terminal-session)
 - [/api/ollama/models](#-api-ollama-models)
-- [/api/monitoring/security](#-api-monitoring-security)
-- [/api/monitoring/traces](#-api-monitoring-traces)
-- [/api/monitoring/pool-alerts](#-api-monitoring-pool-alerts)
-- [/api/monitoring/pool](#-api-monitoring-pool)
-- [/api/monitoring/rum](#-api-monitoring-rum)
-- [/api/monitoring/performance](#-api-monitoring-performance)
-- [/api/monitoring/metrics](#-api-monitoring-metrics)
-- [/api/monitoring/otel-config](#-api-monitoring-otel-config)
-- [/api/monitoring/embeddings](#-api-monitoring-embeddings)
-- [/api/monitoring/dashboard](#-api-monitoring-dashboard)
-- [/api/monitoring/cache](#-api-monitoring-cache)
-- [/api/monitoring/azure-embedding](#-api-monitoring-azure-embedding)
+- [/api/monitoring/overview/security](#-api-monitoring-security)
+- [/api/monitoring/overview/traces](#-api-monitoring-traces)
+- [/api/monitoring/overview/pool-alerts](#-api-monitoring-pool-alerts)
+- [/api/monitoring/overview/pool](#-api-monitoring-pool)
+- [/api/monitoring/overview/rum](#-api-monitoring-rum)
+- [/api/monitoring/overview/performance](#-api-monitoring-performance)
+- [/api/monitoring/overview/metrics](#-api-monitoring-metrics)
+- [/api/monitoring/overview/otel-config](#-api-monitoring-otel-config)
+- [/api/monitoring/overview/embeddings](#-api-monitoring-embeddings)
+- [/api/monitoring/overview/dashboard](#-api-monitoring-dashboard)
+- [/api/monitoring/overview/cache](#-api-monitoring-cache)
+- [/api/monitoring/overview/azure-embedding](#-api-monitoring-azure-embedding)
 - [/api/health/vector-metrics](#-api-health-vector-metrics)
 - [/api/health/vector-db](#-api-health-vector-db)
 - [/api/health/simple](#-api-health-simple)
@@ -82,7 +82,7 @@ This documentation is automatically generated from the codebase.
 - [/api/ai/chat/unified](#-api-ai-chat-unified)
 - [/api/ai/chat/stream](#-api-ai-chat-stream)
 - [/api/ai/chat/enhanced](#-api-ai-chat-enhanced)
-- [/api/monitoring/connection-pool/dashboard](#-api-monitoring-connection-pool-dashboard)
+- [/api/monitoring/overview/connection-pool/dashboard](#-api-monitoring-connection-pool-dashboard)
 
 ## /api/vector-store
 
@@ -106,7 +106,7 @@ Enhanced Vector Store API Unified API for multiple vector database providers Sup
 
 **401** - Unauthorized
 
-*Source: [src/app/api/vector-store/route.ts](../src/app/api/vector-store/route.ts)*
+*Source: [src/app/api/vector-store/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/vector-store/route.ts)*
 
 ---
 
@@ -130,7 +130,7 @@ Enhanced Vector Store API Unified API for multiple vector database providers Sup
 
 **401** - Unauthorized
 
-*Source: [src/app/api/vector-store/route.ts](../src/app/api/vector-store/route.ts)*
+*Source: [src/app/api/vector-store/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/vector-store/route.ts)*
 
 ---
 
@@ -154,7 +154,7 @@ Enhanced Vector Store API Unified API for multiple vector database providers Sup
 
 **401** - Unauthorized
 
-*Source: [src/app/api/vector-store/route.ts](../src/app/api/vector-store/route.ts)*
+*Source: [src/app/api/vector-store/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/vector-store/route.ts)*
 
 ---
 
@@ -178,7 +178,7 @@ Enhanced Vector Store API Unified API for multiple vector database providers Sup
 
 **401** - Unauthorized
 
-*Source: [src/app/api/vector-store/route.ts](../src/app/api/vector-store/route.ts)*
+*Source: [src/app/api/vector-store/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/vector-store/route.ts)*
 
 ---
 
@@ -192,7 +192,7 @@ GET endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/test-db/route.ts](../src/app/api/test-db/route.ts)*
+*Source: [src/app/api/test-db/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/test-db/route.ts)*
 
 ---
 
@@ -208,7 +208,7 @@ Templates API - Real template management Provides actual project templates for q
 
 **501** - Response
 
-*Source: [src/app/api/templates/route.ts](../src/app/api/templates/route.ts)*
+*Source: [src/app/api/templates/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/templates/route.ts)*
 
 ---
 
@@ -222,7 +222,7 @@ Templates API - Real template management Provides actual project templates for q
 
 **501** - Response
 
-*Source: [src/app/api/templates/route.ts](../src/app/api/templates/route.ts)*
+*Source: [src/app/api/templates/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/templates/route.ts)*
 
 ---
 
@@ -236,7 +236,7 @@ GET endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/readyz/route.ts](../src/app/api/readyz/route.ts)*
+*Source: [src/app/api/readyz/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/readyz/route.ts)*
 
 ---
 
@@ -250,7 +250,7 @@ GET endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/mongodb-test/route.ts](../src/app/api/mongodb-test/route.ts)*
+*Source: [src/app/api/mongodb-test/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/mongodb-test/route.ts)*
 
 ---
 
@@ -264,7 +264,7 @@ GET endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/healthz/route.ts](../src/app/api/healthz/route.ts)*
+*Source: [src/app/api/healthz/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/healthz/route.ts)*
 
 ---
 
@@ -278,7 +278,7 @@ GET endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/health/route.ts](../src/app/api/health/route.ts)*
+*Source: [src/app/api/health/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/health/route.ts)*
 
 ---
 
@@ -304,7 +304,7 @@ Workspace Management API Handles workspace creation, listing, and management
 
 **404** - Not Found
 
-*Source: [src/app/api/workspaces/route.ts](../src/app/api/workspaces/route.ts)*
+*Source: [src/app/api/workspaces/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/workspaces/route.ts)*
 
 ---
 
@@ -328,7 +328,7 @@ Workspace Management API Handles workspace creation, listing, and management
 
 **404** - Not Found
 
-*Source: [src/app/api/workspaces/route.ts](../src/app/api/workspaces/route.ts)*
+*Source: [src/app/api/workspaces/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/workspaces/route.ts)*
 
 ---
 
@@ -378,7 +378,7 @@ Secure File Operations API Routes Production-ready file CRUD operations with sec
 
 **403** - Forbidden
 
-*Source: [src/app/api/files/route.ts](../src/app/api/files/route.ts)*
+*Source: [src/app/api/files/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/files/route.ts)*
 
 ---
 
@@ -426,7 +426,7 @@ Secure File Operations API Routes Production-ready file CRUD operations with sec
 
 **403** - Forbidden
 
-*Source: [src/app/api/files/route.ts](../src/app/api/files/route.ts)*
+*Source: [src/app/api/files/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/files/route.ts)*
 
 ---
 
@@ -474,7 +474,7 @@ Secure File Operations API Routes Production-ready file CRUD operations with sec
 
 **403** - Forbidden
 
-*Source: [src/app/api/files/route.ts](../src/app/api/files/route.ts)*
+*Source: [src/app/api/files/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/files/route.ts)*
 
 ---
 
@@ -522,7 +522,7 @@ Secure File Operations API Routes Production-ready file CRUD operations with sec
 
 **403** - Forbidden
 
-*Source: [src/app/api/files/route.ts](../src/app/api/files/route.ts)*
+*Source: [src/app/api/files/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/files/route.ts)*
 
 ---
 
@@ -555,7 +555,7 @@ Experiments API endpoint Provides feature flag evaluation and experiment trackin
 
 **400** - Bad Request
 
-*Source: [src/app/api/experiments/route.ts](../src/app/api/experiments/route.ts)*
+*Source: [src/app/api/experiments/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/experiments/route.ts)*
 
 ---
 
@@ -586,7 +586,7 @@ Experiments API endpoint Provides feature flag evaluation and experiment trackin
 
 **400** - Bad Request
 
-*Source: [src/app/api/experiments/route.ts](../src/app/api/experiments/route.ts)*
+*Source: [src/app/api/experiments/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/experiments/route.ts)*
 
 ---
 
@@ -602,7 +602,7 @@ Code Completion API Route Handles AI-powered code completion requests from Monac
 
 **400** - Bad Request
 
-*Source: [src/app/api/code-completion/route.ts](../src/app/api/code-completion/route.ts)*
+*Source: [src/app/api/code-completion/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/code-completion/route.ts)*
 
 ---
 
@@ -616,7 +616,7 @@ Code Completion API Route Handles AI-powered code completion requests from Monac
 
 **400** - Bad Request
 
-*Source: [src/app/api/code-completion/route.ts](../src/app/api/code-completion/route.ts)*
+*Source: [src/app/api/code-completion/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/code-completion/route.ts)*
 
 ---
 
@@ -653,7 +653,7 @@ Workspace Auto-Scaling API Manages dynamic resource scaling for workspace instan
 
 **403** - Forbidden
 
-*Source: [src/app/api/workspace/auto-scaling/route.ts](../src/app/api/workspace/auto-scaling/route.ts)*
+*Source: [src/app/api/workspace/auto-scaling/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/workspace/auto-scaling/route.ts)*
 
 ---
 
@@ -688,7 +688,7 @@ Workspace Auto-Scaling API Manages dynamic resource scaling for workspace instan
 
 **403** - Forbidden
 
-*Source: [src/app/api/workspace/auto-scaling/route.ts](../src/app/api/workspace/auto-scaling/route.ts)*
+*Source: [src/app/api/workspace/auto-scaling/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/workspace/auto-scaling/route.ts)*
 
 ---
 
@@ -723,7 +723,7 @@ Workspace Auto-Scaling API Manages dynamic resource scaling for workspace instan
 
 **403** - Forbidden
 
-*Source: [src/app/api/workspace/auto-scaling/route.ts](../src/app/api/workspace/auto-scaling/route.ts)*
+*Source: [src/app/api/workspace/auto-scaling/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/workspace/auto-scaling/route.ts)*
 
 ---
 
@@ -758,7 +758,7 @@ Workspace Auto-Scaling API Manages dynamic resource scaling for workspace instan
 
 **403** - Forbidden
 
-*Source: [src/app/api/workspace/auto-scaling/route.ts](../src/app/api/workspace/auto-scaling/route.ts)*
+*Source: [src/app/api/workspace/auto-scaling/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/workspace/auto-scaling/route.ts)*
 
 ---
 
@@ -793,7 +793,7 @@ Workspace Auto-Scaling API Manages dynamic resource scaling for workspace instan
 
 **403** - Forbidden
 
-*Source: [src/app/api/workspace/auto-scaling/route.ts](../src/app/api/workspace/auto-scaling/route.ts)*
+*Source: [src/app/api/workspace/auto-scaling/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/workspace/auto-scaling/route.ts)*
 
 ---
 
@@ -829,7 +829,7 @@ POST endpoint
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/uploads/pdf/route.ts](../src/app/api/uploads/pdf/route.ts)*
+*Source: [src/app/api/uploads/pdf/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/uploads/pdf/route.ts)*
 
 ---
 
@@ -852,7 +852,7 @@ WebSocket endpoint for terminal sessions Handles real-time terminal communicatio
 
 **200** - Successful response
 
-*Source: [src/app/api/terminal/ws/route.ts](../src/app/api/terminal/ws/route.ts)*
+*Source: [src/app/api/terminal/ws/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/terminal/ws/route.ts)*
 
 ---
 
@@ -882,7 +882,7 @@ Template-based project generation API endpoint Creates projects from pre-defined
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/projects/template/route.ts](../src/app/api/projects/template/route.ts)*
+*Source: [src/app/api/projects/template/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/projects/template/route.ts)*
 
 ---
 
@@ -910,7 +910,7 @@ Template-based project generation API endpoint Creates projects from pre-defined
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/projects/template/route.ts](../src/app/api/projects/template/route.ts)*
+*Source: [src/app/api/projects/template/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/projects/template/route.ts)*
 
 ---
 
@@ -932,7 +932,7 @@ GET endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/terminal/session/route.ts](../src/app/api/terminal/session/route.ts)*
+*Source: [src/app/api/terminal/session/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/terminal/session/route.ts)*
 
 ---
 
@@ -968,7 +968,7 @@ GET endpoint
 
 **400** - Bad Request
 
-*Source: [src/app/api/ollama/models/route.ts](../src/app/api/ollama/models/route.ts)*
+*Source: [src/app/api/ollama/models/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ollama/models/route.ts)*
 
 ---
 
@@ -1002,13 +1002,13 @@ POST endpoint
 
 **400** - Bad Request
 
-*Source: [src/app/api/ollama/models/route.ts](../src/app/api/ollama/models/route.ts)*
+*Source: [src/app/api/ollama/models/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ollama/models/route.ts)*
 
 ---
 
-## /api/monitoring/security
+## /api/monitoring/overview/security
 
-### GET /api/monitoring/security
+### GET /api/monitoring/overview/security
 
 Security Monitoring API Endpoint Provides real-time security status and metrics
 
@@ -1041,11 +1041,11 @@ Security Monitoring API Endpoint Provides real-time security status and metrics
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/monitoring/security/route.ts](../src/app/api/monitoring/security/route.ts)*
+*Source: [src/app/api/monitoring/overview/security/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/security/route.ts)*
 
 ---
 
-### POST /api/monitoring/security
+### POST /api/monitoring/overview/security
 
 Security Monitoring API Endpoint Provides real-time security status and metrics
 
@@ -1078,13 +1078,13 @@ Security Monitoring API Endpoint Provides real-time security status and metrics
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/monitoring/security/route.ts](../src/app/api/monitoring/security/route.ts)*
+*Source: [src/app/api/monitoring/overview/security/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/security/route.ts)*
 
 ---
 
-## /api/monitoring/traces
+## /api/monitoring/overview/traces
 
-### GET /api/monitoring/traces
+### GET /api/monitoring/overview/traces
 
 OpenTelemetry Traces API Endpoint Receives traces from client-side and forwards to monitoring systems
 
@@ -1092,11 +1092,11 @@ OpenTelemetry Traces API Endpoint Receives traces from client-side and forwards 
 
 **200** - Successful response
 
-*Source: [src/app/api/monitoring/traces/route.ts](../src/app/api/monitoring/traces/route.ts)*
+*Source: [src/app/api/monitoring/overview/traces/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/traces/route.ts)*
 
 ---
 
-### POST /api/monitoring/traces
+### POST /api/monitoring/overview/traces
 
 OpenTelemetry Traces API Endpoint Receives traces from client-side and forwards to monitoring systems
 
@@ -1104,13 +1104,13 @@ OpenTelemetry Traces API Endpoint Receives traces from client-side and forwards 
 
 **200** - Successful response
 
-*Source: [src/app/api/monitoring/traces/route.ts](../src/app/api/monitoring/traces/route.ts)*
+*Source: [src/app/api/monitoring/overview/traces/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/traces/route.ts)*
 
 ---
 
-## /api/monitoring/pool-alerts
+## /api/monitoring/overview/pool-alerts
 
-### GET /api/monitoring/pool-alerts
+### GET /api/monitoring/overview/pool-alerts
 
 Check pool status and generate alerts if thresholds are exceeded
 
@@ -1134,11 +1134,11 @@ Check pool status and generate alerts if thresholds are exceeded
 
 **400** - Bad Request
 
-*Source: [src/app/api/monitoring/pool-alerts/route.ts](../src/app/api/monitoring/pool-alerts/route.ts)*
+*Source: [src/app/api/monitoring/overview/pool-alerts/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/pool-alerts/route.ts)*
 
 ---
 
-### POST /api/monitoring/pool-alerts
+### POST /api/monitoring/overview/pool-alerts
 
 Check pool status and generate alerts if thresholds are exceeded
 
@@ -1162,15 +1162,15 @@ Check pool status and generate alerts if thresholds are exceeded
 
 **400** - Bad Request
 
-*Source: [src/app/api/monitoring/pool-alerts/route.ts](../src/app/api/monitoring/pool-alerts/route.ts)*
+*Source: [src/app/api/monitoring/overview/pool-alerts/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/pool-alerts/route.ts)*
 
 ---
 
-## /api/monitoring/pool
+## /api/monitoring/overview/pool
 
-### GET /api/monitoring/pool
+### GET /api/monitoring/overview/pool
 
-GET /api/monitoring/pool Returns connection pool monitoring data including: - Metrics for all pools - Alerts (active or all based on query param) - Recommendations - Pool status
+GET /api/monitoring/overview/pool Returns connection pool monitoring data including: - Metrics for all pools - Alerts (active or all based on query param) - Recommendations - Pool status
 
 #### Parameters
 
@@ -1186,13 +1186,13 @@ GET /api/monitoring/pool Returns connection pool monitoring data including: - Me
 
 **200** - Successful response
 
-*Source: [src/app/api/monitoring/pool/route.ts](../src/app/api/monitoring/pool/route.ts)*
+*Source: [src/app/api/monitoring/overview/pool/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/pool/route.ts)*
 
 ---
 
-### POST /api/monitoring/pool
+### POST /api/monitoring/overview/pool
 
-GET /api/monitoring/pool Returns connection pool monitoring data including: - Metrics for all pools - Alerts (active or all based on query param) - Recommendations - Pool status
+GET /api/monitoring/overview/pool Returns connection pool monitoring data including: - Metrics for all pools - Alerts (active or all based on query param) - Recommendations - Pool status
 
 #### Parameters
 
@@ -1208,13 +1208,13 @@ GET /api/monitoring/pool Returns connection pool monitoring data including: - Me
 
 **200** - Successful response
 
-*Source: [src/app/api/monitoring/pool/route.ts](../src/app/api/monitoring/pool/route.ts)*
+*Source: [src/app/api/monitoring/overview/pool/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/pool/route.ts)*
 
 ---
 
-## /api/monitoring/rum
+## /api/monitoring/overview/rum
 
-### GET /api/monitoring/rum
+### GET /api/monitoring/overview/rum
 
 Real User Monitoring (RUM) API Endpoint Provides RUM data collection and analysis
 
@@ -1228,11 +1228,11 @@ Real User Monitoring (RUM) API Endpoint Provides RUM data collection and analysi
 
 **200** - Successful response
 
-*Source: [src/app/api/monitoring/rum/route.ts](../src/app/api/monitoring/rum/route.ts)*
+*Source: [src/app/api/monitoring/overview/rum/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/rum/route.ts)*
 
 ---
 
-### POST /api/monitoring/rum
+### POST /api/monitoring/overview/rum
 
 Real User Monitoring (RUM) API Endpoint Provides RUM data collection and analysis
 
@@ -1246,13 +1246,13 @@ Real User Monitoring (RUM) API Endpoint Provides RUM data collection and analysi
 
 **200** - Successful response
 
-*Source: [src/app/api/monitoring/rum/route.ts](../src/app/api/monitoring/rum/route.ts)*
+*Source: [src/app/api/monitoring/overview/rum/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/rum/route.ts)*
 
 ---
 
-## /api/monitoring/performance
+## /api/monitoring/overview/performance
 
-### GET /api/monitoring/performance
+### GET /api/monitoring/overview/performance
 
 Performance Monitoring API Endpoint Provides performance metrics and optimization insights
 
@@ -1267,11 +1267,11 @@ Performance Monitoring API Endpoint Provides performance metrics and optimizatio
 
 **200** - Successful response
 
-*Source: [src/app/api/monitoring/performance/route.ts](../src/app/api/monitoring/performance/route.ts)*
+*Source: [src/app/api/monitoring/overview/performance/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/performance/route.ts)*
 
 ---
 
-### POST /api/monitoring/performance
+### POST /api/monitoring/overview/performance
 
 Performance Monitoring API Endpoint Provides performance metrics and optimization insights
 
@@ -1286,13 +1286,13 @@ Performance Monitoring API Endpoint Provides performance metrics and optimizatio
 
 **200** - Successful response
 
-*Source: [src/app/api/monitoring/performance/route.ts](../src/app/api/monitoring/performance/route.ts)*
+*Source: [src/app/api/monitoring/overview/performance/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/performance/route.ts)*
 
 ---
 
-## /api/monitoring/metrics
+## /api/monitoring/overview/metrics
 
-### GET /api/monitoring/metrics
+### GET /api/monitoring/overview/metrics
 
 Monitoring Metrics API Endpoint Provides detailed metrics and performance data
 
@@ -1300,11 +1300,11 @@ Monitoring Metrics API Endpoint Provides detailed metrics and performance data
 
 **200** - Successful response
 
-*Source: [src/app/api/monitoring/metrics/route.ts](../src/app/api/monitoring/metrics/route.ts)*
+*Source: [src/app/api/monitoring/overview/metrics/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/metrics/route.ts)*
 
 ---
 
-### POST /api/monitoring/metrics
+### POST /api/monitoring/overview/metrics
 
 Monitoring Metrics API Endpoint Provides detailed metrics and performance data
 
@@ -1312,13 +1312,13 @@ Monitoring Metrics API Endpoint Provides detailed metrics and performance data
 
 **200** - Successful response
 
-*Source: [src/app/api/monitoring/metrics/route.ts](../src/app/api/monitoring/metrics/route.ts)*
+*Source: [src/app/api/monitoring/overview/metrics/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/metrics/route.ts)*
 
 ---
 
-## /api/monitoring/otel-config
+## /api/monitoring/overview/otel-config
 
-### GET /api/monitoring/otel-config
+### GET /api/monitoring/overview/otel-config
 
 OpenTelemetry Configuration API Endpoint Provides configuration information and health status for OpenTelemetry integration
 
@@ -1334,11 +1334,11 @@ OpenTelemetry Configuration API Endpoint Provides configuration information and 
 
 **200** - Successful response
 
-*Source: [src/app/api/monitoring/otel-config/route.ts](../src/app/api/monitoring/otel-config/route.ts)*
+*Source: [src/app/api/monitoring/overview/otel-config/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/otel-config/route.ts)*
 
 ---
 
-### POST /api/monitoring/otel-config
+### POST /api/monitoring/overview/otel-config
 
 OpenTelemetry Configuration API Endpoint Provides configuration information and health status for OpenTelemetry integration
 
@@ -1354,15 +1354,15 @@ OpenTelemetry Configuration API Endpoint Provides configuration information and 
 
 **200** - Successful response
 
-*Source: [src/app/api/monitoring/otel-config/route.ts](../src/app/api/monitoring/otel-config/route.ts)*
+*Source: [src/app/api/monitoring/overview/otel-config/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/otel-config/route.ts)*
 
 ---
 
-## /api/monitoring/embeddings
+## /api/monitoring/overview/embeddings
 
-### GET /api/monitoring/embeddings
+### GET /api/monitoring/overview/embeddings
 
-GET /api/monitoring/embeddings Returns comprehensive embedding service metrics and usage data
+GET /api/monitoring/overview/embeddings Returns comprehensive embedding service metrics and usage data
 
 #### Parameters
 
@@ -1385,13 +1385,13 @@ GET /api/monitoring/embeddings Returns comprehensive embedding service metrics a
 
 **400** - Bad Request
 
-*Source: [src/app/api/monitoring/embeddings/route.ts](../src/app/api/monitoring/embeddings/route.ts)*
+*Source: [src/app/api/monitoring/overview/embeddings/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/embeddings/route.ts)*
 
 ---
 
-### POST /api/monitoring/embeddings
+### POST /api/monitoring/overview/embeddings
 
-GET /api/monitoring/embeddings Returns comprehensive embedding service metrics and usage data
+GET /api/monitoring/overview/embeddings Returns comprehensive embedding service metrics and usage data
 
 #### Parameters
 
@@ -1414,13 +1414,13 @@ GET /api/monitoring/embeddings Returns comprehensive embedding service metrics a
 
 **400** - Bad Request
 
-*Source: [src/app/api/monitoring/embeddings/route.ts](../src/app/api/monitoring/embeddings/route.ts)*
+*Source: [src/app/api/monitoring/overview/embeddings/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/embeddings/route.ts)*
 
 ---
 
-### DELETE /api/monitoring/embeddings
+### DELETE /api/monitoring/overview/embeddings
 
-GET /api/monitoring/embeddings Returns comprehensive embedding service metrics and usage data
+GET /api/monitoring/overview/embeddings Returns comprehensive embedding service metrics and usage data
 
 #### Parameters
 
@@ -1443,13 +1443,13 @@ GET /api/monitoring/embeddings Returns comprehensive embedding service metrics a
 
 **400** - Bad Request
 
-*Source: [src/app/api/monitoring/embeddings/route.ts](../src/app/api/monitoring/embeddings/route.ts)*
+*Source: [src/app/api/monitoring/overview/embeddings/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/embeddings/route.ts)*
 
 ---
 
-## /api/monitoring/dashboard
+## /api/monitoring/overview/dashboard
 
-### GET /api/monitoring/dashboard
+### GET /api/monitoring/overview/dashboard
 
 Monitoring Dashboard API Endpoint Provides comprehensive monitoring data and health status
 
@@ -1464,13 +1464,13 @@ Monitoring Dashboard API Endpoint Provides comprehensive monitoring data and hea
 
 **200** - Successful response
 
-*Source: [src/app/api/monitoring/dashboard/route.ts](../src/app/api/monitoring/dashboard/route.ts)*
+*Source: [src/app/api/monitoring/overview/dashboard/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/dashboard/route.ts)*
 
 ---
 
-## /api/monitoring/cache
+## /api/monitoring/overview/cache
 
-### GET /api/monitoring/cache
+### GET /api/monitoring/overview/cache
 
 Cache Monitoring and Management API Provides cache statistics, management operations, and health monitoring
 
@@ -1493,11 +1493,11 @@ Cache Monitoring and Management API Provides cache statistics, management operat
 
 **400** - Bad Request
 
-*Source: [src/app/api/monitoring/cache/route.ts](../src/app/api/monitoring/cache/route.ts)*
+*Source: [src/app/api/monitoring/overview/cache/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/cache/route.ts)*
 
 ---
 
-### POST /api/monitoring/cache
+### POST /api/monitoring/overview/cache
 
 Cache Monitoring and Management API Provides cache statistics, management operations, and health monitoring
 
@@ -1520,13 +1520,13 @@ Cache Monitoring and Management API Provides cache statistics, management operat
 
 **400** - Bad Request
 
-*Source: [src/app/api/monitoring/cache/route.ts](../src/app/api/monitoring/cache/route.ts)*
+*Source: [src/app/api/monitoring/overview/cache/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/cache/route.ts)*
 
 ---
 
-## /api/monitoring/azure-embedding
+## /api/monitoring/overview/azure-embedding
 
-### GET /api/monitoring/azure-embedding
+### GET /api/monitoring/overview/azure-embedding
 
 Azure Embedding Service Monitoring API Provides monitoring endpoints for Azure OpenAI embedding service and connection pool metrics
 
@@ -1543,7 +1543,7 @@ Azure Embedding Service Monitoring API Provides monitoring endpoints for Azure O
 
 **403** - Forbidden
 
-*Source: [src/app/api/monitoring/azure-embedding/route.ts](../src/app/api/monitoring/azure-embedding/route.ts)*
+*Source: [src/app/api/monitoring/overview/azure-embedding/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/azure-embedding/route.ts)*
 
 ---
 
@@ -1557,7 +1557,7 @@ GET endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/health/vector-metrics/route.ts](../src/app/api/health/vector-metrics/route.ts)*
+*Source: [src/app/api/health/vector-metrics/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/health/vector-metrics/route.ts)*
 
 ---
 
@@ -1577,7 +1577,7 @@ GET endpoint
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/health/vector-db/route.ts](../src/app/api/health/vector-db/route.ts)*
+*Source: [src/app/api/health/vector-db/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/health/vector-db/route.ts)*
 
 ---
 
@@ -1591,7 +1591,7 @@ Simple health check endpoint for E2E testing Returns basic status without extern
 
 **200** - Successful response
 
-*Source: [src/app/api/health/simple/route.ts](../src/app/api/health/simple/route.ts)*
+*Source: [src/app/api/health/simple/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/health/simple/route.ts)*
 
 ---
 
@@ -1613,7 +1613,7 @@ Database health check endpoint Returns: - status: "ok" | "error" - message: Stri
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/health/db/route.ts](../src/app/api/health/db/route.ts)*
+*Source: [src/app/api/health/db/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/health/db/route.ts)*
 
 ---
 
@@ -1635,7 +1635,7 @@ GET endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/health/database/route.ts](../src/app/api/health/database/route.ts)*
+*Source: [src/app/api/health/database/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/health/database/route.ts)*
 
 ---
 
@@ -1649,7 +1649,7 @@ GET endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/health/connection-pool/route.ts](../src/app/api/health/connection-pool/route.ts)*
+*Source: [src/app/api/health/connection-pool/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/health/connection-pool/route.ts)*
 
 ---
 
@@ -1661,7 +1661,7 @@ POST endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/health/connection-pool/route.ts](../src/app/api/health/connection-pool/route.ts)*
+*Source: [src/app/api/health/connection-pool/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/health/connection-pool/route.ts)*
 
 ---
 
@@ -1687,7 +1687,7 @@ Individual Workspace Management API Handles specific workspace operations (get, 
 
 **404** - Not Found
 
-*Source: [src/app/api/workspaces/[id]/route.ts](../src/app/api/workspaces/[id]/route.ts)*
+*Source: [src/app/api/workspaces/[id]/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/workspaces/[id]/route.ts)*
 
 ---
 
@@ -1711,7 +1711,7 @@ Individual Workspace Management API Handles specific workspace operations (get, 
 
 **404** - Not Found
 
-*Source: [src/app/api/workspaces/[id]/route.ts](../src/app/api/workspaces/[id]/route.ts)*
+*Source: [src/app/api/workspaces/[id]/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/workspaces/[id]/route.ts)*
 
 ---
 
@@ -1735,7 +1735,7 @@ Individual Workspace Management API Handles specific workspace operations (get, 
 
 **404** - Not Found
 
-*Source: [src/app/api/workspaces/[id]/route.ts](../src/app/api/workspaces/[id]/route.ts)*
+*Source: [src/app/api/workspaces/[id]/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/workspaces/[id]/route.ts)*
 
 ---
 
@@ -1774,7 +1774,7 @@ Real-time File Synchronization API WebSocket-based real-time file synchronizatio
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/files/sync/route.ts](../src/app/api/files/sync/route.ts)*
+*Source: [src/app/api/files/sync/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/files/sync/route.ts)*
 
 ---
 
@@ -1811,7 +1811,7 @@ Real-time File Synchronization API WebSocket-based real-time file synchronizatio
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/files/sync/route.ts](../src/app/api/files/sync/route.ts)*
+*Source: [src/app/api/files/sync/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/files/sync/route.ts)*
 
 ---
 
@@ -1850,7 +1850,7 @@ GET endpoint
 
 **400** - Bad Request
 
-*Source: [src/app/api/docs/search/route.ts](../src/app/api/docs/search/route.ts)*
+*Source: [src/app/api/docs/search/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/docs/search/route.ts)*
 
 ---
 
@@ -1887,7 +1887,7 @@ POST endpoint
 
 **400** - Bad Request
 
-*Source: [src/app/api/docs/search/route.ts](../src/app/api/docs/search/route.ts)*
+*Source: [src/app/api/docs/search/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/docs/search/route.ts)*
 
 ---
 
@@ -1919,7 +1919,7 @@ Claude Code Session API Route API endpoint for managing Claude Code CLI interact
 
 **400** - Bad Request
 
-*Source: [src/app/api/claude/session/route.ts](../src/app/api/claude/session/route.ts)*
+*Source: [src/app/api/claude/session/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/claude/session/route.ts)*
 
 ---
 
@@ -1949,7 +1949,7 @@ Claude Code Session API Route API endpoint for managing Claude Code CLI interact
 
 **400** - Bad Request
 
-*Source: [src/app/api/claude/session/route.ts](../src/app/api/claude/session/route.ts)*
+*Source: [src/app/api/claude/session/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/claude/session/route.ts)*
 
 ---
 
@@ -1969,7 +1969,7 @@ Claude Code Generate API Route API endpoint for Claude Code CLI code generation 
 
 **400** - Bad Request
 
-*Source: [src/app/api/claude/generate/route.ts](../src/app/api/claude/generate/route.ts)*
+*Source: [src/app/api/claude/generate/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/claude/generate/route.ts)*
 
 ---
 
@@ -1989,7 +1989,7 @@ Claude Code Chat API Route API endpoint for Claude Code CLI chat integration Han
 
 **400** - Bad Request
 
-*Source: [src/app/api/claude/chat/route.ts](../src/app/api/claude/chat/route.ts)*
+*Source: [src/app/api/claude/chat/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/claude/chat/route.ts)*
 
 ---
 
@@ -2009,7 +2009,7 @@ Claude Code Analyze API Route API endpoint for Claude Code CLI code analysis Han
 
 **400** - Bad Request
 
-*Source: [src/app/api/claude/analyze/route.ts](../src/app/api/claude/analyze/route.ts)*
+*Source: [src/app/api/claude/analyze/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/claude/analyze/route.ts)*
 
 ---
 
@@ -2027,7 +2027,7 @@ POST endpoint
 
 **400** - Bad Request
 
-*Source: [src/app/api/chat/stream/route.ts](../src/app/api/chat/stream/route.ts)*
+*Source: [src/app/api/chat/stream/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/chat/stream/route.ts)*
 
 ---
 
@@ -2055,7 +2055,7 @@ GET endpoint
 
 **400** - Bad Request
 
-*Source: [src/app/api/chat/mongodb-simple/route.ts](../src/app/api/chat/mongodb-simple/route.ts)*
+*Source: [src/app/api/chat/mongodb-simple/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/chat/mongodb-simple/route.ts)*
 
 ---
 
@@ -2081,7 +2081,7 @@ POST endpoint
 
 **400** - Bad Request
 
-*Source: [src/app/api/chat/mongodb-simple/route.ts](../src/app/api/chat/mongodb-simple/route.ts)*
+*Source: [src/app/api/chat/mongodb-simple/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/chat/mongodb-simple/route.ts)*
 
 ---
 
@@ -2111,7 +2111,7 @@ GET endpoint
 
 **400** - Bad Request
 
-*Source: [src/app/api/chat/mongodb/route.ts](../src/app/api/chat/mongodb/route.ts)*
+*Source: [src/app/api/chat/mongodb/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/chat/mongodb/route.ts)*
 
 ---
 
@@ -2139,7 +2139,7 @@ POST endpoint
 
 **400** - Bad Request
 
-*Source: [src/app/api/chat/mongodb/route.ts](../src/app/api/chat/mongodb/route.ts)*
+*Source: [src/app/api/chat/mongodb/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/chat/mongodb/route.ts)*
 
 ---
 
@@ -2155,7 +2155,7 @@ GET endpoint
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/auth/login-tracking/route.ts](../src/app/api/auth/login-tracking/route.ts)*
+*Source: [src/app/api/auth/login-tracking/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/auth/login-tracking/route.ts)*
 
 ---
 
@@ -2169,7 +2169,7 @@ POST endpoint
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/auth/login-tracking/route.ts](../src/app/api/auth/login-tracking/route.ts)*
+*Source: [src/app/api/auth/login-tracking/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/auth/login-tracking/route.ts)*
 
 ---
 
@@ -2205,7 +2205,7 @@ Code-server session management API Handles creation and management of code-serve
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/code-server/session/route.ts](../src/app/api/code-server/session/route.ts)*
+*Source: [src/app/api/code-server/session/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/code-server/session/route.ts)*
 
 ---
 
@@ -2239,7 +2239,7 @@ Code-server session management API Handles creation and management of code-serve
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/code-server/session/route.ts](../src/app/api/code-server/session/route.ts)*
+*Source: [src/app/api/code-server/session/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/code-server/session/route.ts)*
 
 ---
 
@@ -2262,7 +2262,7 @@ GET endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/ai/web-search/route.ts](../src/app/api/ai/web-search/route.ts)*
+*Source: [src/app/api/ai/web-search/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/web-search/route.ts)*
 
 ---
 
@@ -2283,7 +2283,7 @@ POST endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/ai/web-search/route.ts](../src/app/api/ai/web-search/route.ts)*
+*Source: [src/app/api/ai/web-search/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/web-search/route.ts)*
 
 ---
 
@@ -2307,7 +2307,7 @@ GET endpoint
 
 **400** - Bad Request
 
-*Source: [src/app/api/ai/upload/route.ts](../src/app/api/ai/upload/route.ts)*
+*Source: [src/app/api/ai/upload/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/upload/route.ts)*
 
 ---
 
@@ -2329,7 +2329,7 @@ POST endpoint
 
 **400** - Bad Request
 
-*Source: [src/app/api/ai/upload/route.ts](../src/app/api/ai/upload/route.ts)*
+*Source: [src/app/api/ai/upload/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/upload/route.ts)*
 
 ---
 
@@ -2355,7 +2355,7 @@ Vector Search API for RAG functionality Provides semantic search across uploaded
 
 **401** - Unauthorized
 
-*Source: [src/app/api/ai/search/route.ts](../src/app/api/ai/search/route.ts)*
+*Source: [src/app/api/ai/search/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/search/route.ts)*
 
 ---
 
@@ -2379,7 +2379,7 @@ Vector Search API for RAG functionality Provides semantic search across uploaded
 
 **401** - Unauthorized
 
-*Source: [src/app/api/ai/search/route.ts](../src/app/api/ai/search/route.ts)*
+*Source: [src/app/api/ai/search/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/search/route.ts)*
 
 ---
 
@@ -2399,7 +2399,7 @@ AI Provider Health Check API Endpoint Tests availability and latency of differen
 
 **401** - Unauthorized
 
-*Source: [src/app/api/ai/provider-health/route.ts](../src/app/api/ai/provider-health/route.ts)*
+*Source: [src/app/api/ai/provider-health/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/provider-health/route.ts)*
 
 ---
 
@@ -2417,7 +2417,7 @@ AI Provider Health Check API Endpoint Tests availability and latency of differen
 
 **401** - Unauthorized
 
-*Source: [src/app/api/ai/provider-health/route.ts](../src/app/api/ai/provider-health/route.ts)*
+*Source: [src/app/api/ai/provider-health/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/provider-health/route.ts)*
 
 ---
 
@@ -2440,7 +2440,7 @@ GET endpoint
 
 **401** - Unauthorized
 
-*Source: [src/app/api/ai/model-selection/route.ts](../src/app/api/ai/model-selection/route.ts)*
+*Source: [src/app/api/ai/model-selection/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/model-selection/route.ts)*
 
 ---
 
@@ -2461,7 +2461,7 @@ POST endpoint
 
 **401** - Unauthorized
 
-*Source: [src/app/api/ai/model-selection/route.ts](../src/app/api/ai/model-selection/route.ts)*
+*Source: [src/app/api/ai/model-selection/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/model-selection/route.ts)*
 
 ---
 
@@ -2492,7 +2492,7 @@ AI Model Management and Monitoring API Provides comprehensive AI model usage, co
 
 **501** - Response
 
-*Source: [src/app/api/ai/management/route.ts](../src/app/api/ai/management/route.ts)*
+*Source: [src/app/api/ai/management/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/management/route.ts)*
 
 ---
 
@@ -2521,7 +2521,7 @@ AI Model Management and Monitoring API Provides comprehensive AI model usage, co
 
 **501** - Response
 
-*Source: [src/app/api/ai/management/route.ts](../src/app/api/ai/management/route.ts)*
+*Source: [src/app/api/ai/management/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/management/route.ts)*
 
 ---
 
@@ -2537,7 +2537,7 @@ GET endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/ai/huggingface-init/route.ts](../src/app/api/ai/huggingface-init/route.ts)*
+*Source: [src/app/api/ai/huggingface-init/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/huggingface-init/route.ts)*
 
 ---
 
@@ -2551,7 +2551,7 @@ POST endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/ai/huggingface-init/route.ts](../src/app/api/ai/huggingface-init/route.ts)*
+*Source: [src/app/api/ai/huggingface-init/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/huggingface-init/route.ts)*
 
 ---
 
@@ -2567,7 +2567,7 @@ GET endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/ai/huggingface-chat/route.ts](../src/app/api/ai/huggingface-chat/route.ts)*
+*Source: [src/app/api/ai/huggingface-chat/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/huggingface-chat/route.ts)*
 
 ---
 
@@ -2581,7 +2581,7 @@ POST endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/ai/huggingface-chat/route.ts](../src/app/api/ai/huggingface-chat/route.ts)*
+*Source: [src/app/api/ai/huggingface-chat/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/huggingface-chat/route.ts)*
 
 ---
 
@@ -2615,7 +2615,7 @@ Health check and system status
 
 **400** - Bad Request
 
-*Source: [src/app/api/ai/litellm/route.ts](../src/app/api/ai/litellm/route.ts)*
+*Source: [src/app/api/ai/litellm/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/litellm/route.ts)*
 
 ---
 
@@ -2647,7 +2647,7 @@ Chat completions and embeddings
 
 **400** - Bad Request
 
-*Source: [src/app/api/ai/litellm/route.ts](../src/app/api/ai/litellm/route.ts)*
+*Source: [src/app/api/ai/litellm/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/litellm/route.ts)*
 
 ---
 
@@ -2679,7 +2679,7 @@ Update configuration
 
 **400** - Bad Request
 
-*Source: [src/app/api/ai/litellm/route.ts](../src/app/api/ai/litellm/route.ts)*
+*Source: [src/app/api/ai/litellm/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/litellm/route.ts)*
 
 ---
 
@@ -2701,7 +2701,7 @@ AI Project Generation API Route Core API endpoint for Lovable.ai clone functiona
 
 **408** - Response
 
-*Source: [src/app/api/ai/generate-project/route.ts](../src/app/api/ai/generate-project/route.ts)*
+*Source: [src/app/api/ai/generate-project/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/generate-project/route.ts)*
 
 ---
 
@@ -2721,7 +2721,7 @@ AI Project Generation API Route Core API endpoint for Lovable.ai clone functiona
 
 **408** - Response
 
-*Source: [src/app/api/ai/generate-project/route.ts](../src/app/api/ai/generate-project/route.ts)*
+*Source: [src/app/api/ai/generate-project/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/generate-project/route.ts)*
 
 ---
 
@@ -2735,7 +2735,7 @@ GET endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/ai/function-call/route.ts](../src/app/api/ai/function-call/route.ts)*
+*Source: [src/app/api/ai/function-call/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/function-call/route.ts)*
 
 ---
 
@@ -2747,7 +2747,7 @@ POST endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/ai/function-call/route.ts](../src/app/api/ai/function-call/route.ts)*
+*Source: [src/app/api/ai/function-call/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/function-call/route.ts)*
 
 ---
 
@@ -2761,7 +2761,7 @@ AI Chat API endpoint for VibeCode WebGUI Handles AI-powered assistance with opti
 
 **200** - Successful response
 
-*Source: [src/app/api/ai/chat/route.ts](../src/app/api/ai/chat/route.ts)*
+*Source: [src/app/api/ai/chat/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/chat/route.ts)*
 
 ---
 
@@ -2775,7 +2775,7 @@ POST endpoint
 
 **400** - Bad Request
 
-*Source: [src/app/api/gradio/run/route.ts](../src/app/api/gradio/run/route.ts)*
+*Source: [src/app/api/gradio/run/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/gradio/run/route.ts)*
 
 ---
 
@@ -2795,7 +2795,7 @@ POST endpoint
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/workspace/[id]/init-goose/route.ts](../src/app/api/workspace/[id]/init-goose/route.ts)*
+*Source: [src/app/api/workspace/[id]/init-goose/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/workspace/[id]/init-goose/route.ts)*
 
 ---
 
@@ -2809,7 +2809,7 @@ GET endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/health/database/metrics/route.ts](../src/app/api/health/database/metrics/route.ts)*
+*Source: [src/app/api/health/database/metrics/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/health/database/metrics/route.ts)*
 
 ---
 
@@ -2831,7 +2831,7 @@ SAML SSO Authentication API Handles SAML authentication requests and responses
 
 **404** - Not Found
 
-*Source: [src/app/api/auth/saml/sso/route.ts](../src/app/api/auth/saml/sso/route.ts)*
+*Source: [src/app/api/auth/saml/sso/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/auth/saml/sso/route.ts)*
 
 ---
 
@@ -2851,7 +2851,7 @@ SAML SSO Authentication API Handles SAML authentication requests and responses
 
 **404** - Not Found
 
-*Source: [src/app/api/auth/saml/sso/route.ts](../src/app/api/auth/saml/sso/route.ts)*
+*Source: [src/app/api/auth/saml/sso/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/auth/saml/sso/route.ts)*
 
 ---
 
@@ -2871,7 +2871,7 @@ SAML SSO Authentication API Handles SAML authentication requests and responses
 
 **404** - Not Found
 
-*Source: [src/app/api/auth/saml/sso/route.ts](../src/app/api/auth/saml/sso/route.ts)*
+*Source: [src/app/api/auth/saml/sso/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/auth/saml/sso/route.ts)*
 
 ---
 
@@ -2891,7 +2891,7 @@ SAML Metadata API Provides SAML service provider metadata for identity provider 
 
 **404** - Not Found
 
-*Source: [src/app/api/auth/saml/metadata/route.ts](../src/app/api/auth/saml/metadata/route.ts)*
+*Source: [src/app/api/auth/saml/metadata/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/auth/saml/metadata/route.ts)*
 
 ---
 
@@ -2921,7 +2921,7 @@ MFA Verification API Handles multi-factor authentication challenges and verifica
 
 **404** - Not Found
 
-*Source: [src/app/api/auth/mfa/verify/route.ts](../src/app/api/auth/mfa/verify/route.ts)*
+*Source: [src/app/api/auth/mfa/verify/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/auth/mfa/verify/route.ts)*
 
 ---
 
@@ -2949,7 +2949,7 @@ MFA Verification API Handles multi-factor authentication challenges and verifica
 
 **404** - Not Found
 
-*Source: [src/app/api/auth/mfa/verify/route.ts](../src/app/api/auth/mfa/verify/route.ts)*
+*Source: [src/app/api/auth/mfa/verify/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/auth/mfa/verify/route.ts)*
 
 ---
 
@@ -2977,7 +2977,7 @@ MFA Verification API Handles multi-factor authentication challenges and verifica
 
 **404** - Not Found
 
-*Source: [src/app/api/auth/mfa/verify/route.ts](../src/app/api/auth/mfa/verify/route.ts)*
+*Source: [src/app/api/auth/mfa/verify/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/auth/mfa/verify/route.ts)*
 
 ---
 
@@ -3005,7 +3005,7 @@ MFA Verification API Handles multi-factor authentication challenges and verifica
 
 **404** - Not Found
 
-*Source: [src/app/api/auth/mfa/verify/route.ts](../src/app/api/auth/mfa/verify/route.ts)*
+*Source: [src/app/api/auth/mfa/verify/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/auth/mfa/verify/route.ts)*
 
 ---
 
@@ -3029,7 +3029,7 @@ MFA Setup API Handles multi-factor authentication device setup
 
 **400** - Bad Request
 
-*Source: [src/app/api/auth/mfa/setup/route.ts](../src/app/api/auth/mfa/setup/route.ts)*
+*Source: [src/app/api/auth/mfa/setup/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/auth/mfa/setup/route.ts)*
 
 ---
 
@@ -3051,7 +3051,7 @@ MFA Setup API Handles multi-factor authentication device setup
 
 **400** - Bad Request
 
-*Source: [src/app/api/auth/mfa/setup/route.ts](../src/app/api/auth/mfa/setup/route.ts)*
+*Source: [src/app/api/auth/mfa/setup/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/auth/mfa/setup/route.ts)*
 
 ---
 
@@ -3101,7 +3101,7 @@ Individual code-server session management API Handles session status, updates, a
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/code-server/session/[sessionId]/route.ts](../src/app/api/code-server/session/[sessionId]/route.ts)*
+*Source: [src/app/api/code-server/session/[sessionId]/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/code-server/session/[sessionId]/route.ts)*
 
 ---
 
@@ -3149,7 +3149,7 @@ Individual code-server session management API Handles session status, updates, a
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/code-server/session/[sessionId]/route.ts](../src/app/api/code-server/session/[sessionId]/route.ts)*
+*Source: [src/app/api/code-server/session/[sessionId]/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/code-server/session/[sessionId]/route.ts)*
 
 ---
 
@@ -3197,7 +3197,7 @@ Individual code-server session management API Handles session status, updates, a
 
 **500** - Internal Server Error
 
-*Source: [src/app/api/code-server/session/[sessionId]/route.ts](../src/app/api/code-server/session/[sessionId]/route.ts)*
+*Source: [src/app/api/code-server/session/[sessionId]/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/code-server/session/[sessionId]/route.ts)*
 
 ---
 
@@ -3232,7 +3232,7 @@ GET endpoint
 
 **400** - Bad Request
 
-*Source: [src/app/api/ai/conversations/[workspaceId]/route.ts](../src/app/api/ai/conversations/[workspaceId]/route.ts)*
+*Source: [src/app/api/ai/conversations/[workspaceId]/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/conversations/[workspaceId]/route.ts)*
 
 ---
 
@@ -3265,7 +3265,7 @@ POST endpoint
 
 **400** - Bad Request
 
-*Source: [src/app/api/ai/conversations/[workspaceId]/route.ts](../src/app/api/ai/conversations/[workspaceId]/route.ts)*
+*Source: [src/app/api/ai/conversations/[workspaceId]/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/conversations/[workspaceId]/route.ts)*
 
 ---
 
@@ -3298,7 +3298,7 @@ DELETE endpoint
 
 **400** - Bad Request
 
-*Source: [src/app/api/ai/conversations/[workspaceId]/route.ts](../src/app/api/ai/conversations/[workspaceId]/route.ts)*
+*Source: [src/app/api/ai/conversations/[workspaceId]/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/conversations/[workspaceId]/route.ts)*
 
 ---
 
@@ -3312,7 +3312,7 @@ POST endpoint
 
 **401** - Unauthorized
 
-*Source: [src/app/api/ai/chat/unified/route.ts](../src/app/api/ai/chat/unified/route.ts)*
+*Source: [src/app/api/ai/chat/unified/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/chat/unified/route.ts)*
 
 ---
 
@@ -3328,7 +3328,7 @@ POST endpoint
 
 **401** - Unauthorized
 
-*Source: [src/app/api/ai/chat/stream/route.ts](../src/app/api/ai/chat/stream/route.ts)*
+*Source: [src/app/api/ai/chat/stream/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/chat/stream/route.ts)*
 
 ---
 
@@ -3344,13 +3344,13 @@ POST endpoint
 
 **200** - Successful response
 
-*Source: [src/app/api/ai/chat/enhanced/route.ts](../src/app/api/ai/chat/enhanced/route.ts)*
+*Source: [src/app/api/ai/chat/enhanced/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/chat/enhanced/route.ts)*
 
 ---
 
-## /api/monitoring/connection-pool/dashboard
+## /api/monitoring/overview/connection-pool/dashboard
 
-### GET /api/monitoring/connection-pool/dashboard
+### GET /api/monitoring/overview/connection-pool/dashboard
 
 Connection Pool Monitoring Dashboard API Provides real-time connection pool metrics, alerts, and capacity planning
 
@@ -3368,11 +3368,11 @@ Connection Pool Monitoring Dashboard API Provides real-time connection pool metr
 
 **400** - Bad Request
 
-*Source: [src/app/api/monitoring/connection-pool/dashboard/route.ts](../src/app/api/monitoring/connection-pool/dashboard/route.ts)*
+*Source: [src/app/api/monitoring/overview/connection-pool/dashboard/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/connection-pool/dashboard/route.ts)*
 
 ---
 
-### POST /api/monitoring/connection-pool/dashboard
+### POST /api/monitoring/overview/connection-pool/dashboard
 
 Connection Pool Monitoring Dashboard API Provides real-time connection pool metrics, alerts, and capacity planning
 
@@ -3390,7 +3390,7 @@ Connection Pool Monitoring Dashboard API Provides real-time connection pool metr
 
 **400** - Bad Request
 
-*Source: [src/app/api/monitoring/connection-pool/dashboard/route.ts](../src/app/api/monitoring/connection-pool/dashboard/route.ts)*
+*Source: [src/app/api/monitoring/overview/connection-pool/dashboard/route.ts](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/connection-pool/dashboard/route.ts)*
 
 ---
 

@@ -330,10 +330,10 @@ npm run samples:populate
 ### **4. Monitoring Setup**
 ```bash
 # Verify Datadog integration
-curl http://localhost:3000/api/monitoring/metrics
+curl http://localhost:3000/api/monitoring/overview/metrics
 
 # Check resource quotas
-curl http://localhost:3000/api/monitoring/health
+curl http://localhost:3000/api/monitoring/overview/health
 ```
 
 ---
