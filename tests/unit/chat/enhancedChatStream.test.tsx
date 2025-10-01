@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, beforeEach, afterEach, it, expect, beforeAll, afterAll } from '@jest/globals'
 import { TextDecoder as NodeTextDecoder } from 'util'
@@ -165,6 +165,17 @@ describe('EnhancedChatInterface streaming', () => {
     const user = userEvent.setup()
     await user.type(screen.getByPlaceholderText('Ask me anything or attach files...'), 'Reduced motion request')
     await clickSendButton(user)
+
+    await screen.findByText('Accessibility')
+
+    const viewport = document.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement
+    expect(viewport).toBeTruthy()
+    Object.defineProperty(viewport, 'scrollHeight', { value: 1000, configurable: true })
+    Object.defineProperty(viewport, 'clientHeight', { value: 400, configurable: true })
+    Object.defineProperty(viewport, 'scrollTop', { value: 200, configurable: true, writable: true })
+    await act(async () => {
+      viewport.dispatchEvent(new Event('scroll'))
+    })
 
     const jumpButton = await screen.findByTestId('chat-jump-button')
     expect(jumpButton).toBeVisible()
