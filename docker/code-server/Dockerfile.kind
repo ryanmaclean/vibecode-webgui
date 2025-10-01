@@ -1,5 +1,5 @@
 # Minimal VibeCode code-server image for KinD testing with Monaco 0.53
-FROM codercom/code-server:4.104.2
+FROM codercom/code-server:4.104.2-39
 
 ARG TARGETPLATFORM
 ARG LAZYGIT_VERSION=0.55.1
