@@ -33,6 +33,13 @@ test.describe('EnhancedChatInterface – reduced motion path', () => {
     try {
       await page.goto('/playwright/enhanced-chat')
 
+      const scrollViewport = page.locator('[data-radix-scroll-area-viewport]')
+      await expect(scrollViewport).toHaveAttribute('data-prefers-reduced-motion', 'true')
+      const scrollBehavior = await scrollViewport.evaluate((element) =>
+        getComputedStyle(element).scrollBehavior
+      )
+      expect(scrollBehavior).toBe('auto')
+
       await page.getByTestId('chat-input').fill('Reduced motion request')
       await page.getByTestId('chat-send-button').click()
 
@@ -59,6 +66,7 @@ test.describe('EnhancedChatInterface – reduced motion path', () => {
 
       const jumpButton = page.getByTestId('chat-jump-button')
       await expect(jumpButton).toBeVisible()
+      await expect(jumpButton).toHaveAttribute('class', /motion-reduce:transition-none/)
       await expect(jumpButton).toHaveAttribute('aria-label', 'Jump to latest message')
       await expect(jumpButton).toHaveAttribute('aria-controls', 'chat-scroll-anchor')
       await jumpButton.click()
