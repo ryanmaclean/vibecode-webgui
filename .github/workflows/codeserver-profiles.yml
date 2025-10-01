@@ -85,7 +85,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
-        if: ${{ github.event.inputs.push_to_dockerhub == 'true' }}
+        if: ${{ github.event.inputs.push_to_dockerhub == 'true' && secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
         uses: docker/login-action@v3
         with:
           registry: docker.io
@@ -103,8 +103,8 @@ jobs:
           ghcr_tags="ghcr.io/${owner}/${{ env.IMAGE_NAME }}:${version}-${profile}"
           ghcr_tags="${ghcr_tags},ghcr.io/${owner}/${{ env.IMAGE_NAME }}:${profile}"
           
-          # Docker Hub tags (if enabled)
-          if [ "${{ github.event.inputs.push_to_dockerhub }}" = "true" ]; then
+          # Docker Hub tags (if enabled and credentials available)
+          if [ "${{ github.event.inputs.push_to_dockerhub }}" = "true" ] && [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
             dockerhub_tags="${owner}/${{ env.IMAGE_NAME }}:${version}-${profile}"
             dockerhub_tags="${dockerhub_tags},${owner}/${{ env.IMAGE_NAME }}:${profile}"
             all_tags="${ghcr_tags},${dockerhub_tags}"
