@@ -5,18 +5,18 @@
 - **Release blocker:** Hold promoting new `codeserver-multiarch` builds to `latest` until the guarded workflow has at least one clean nightly run with the image patch.
 - **Latest build:** `codeserver-multiarch` manual run 2025-10-01 05:52 UTC ✅ (CI tag only).
 - **Deploy:** Release tags paused pending workflow merge; Synology/KinD manual deploys healthy.
-- **Observability:** Datadog alerts `codeserver.build.duration.p95` and `codeserver.kind.smoke.failure` still lack assigned owners.
+- **Observability:** Alert ownership assignment in progress via @alex.h; due 2025-10-03 with updates captured in `docs/handoff/shipping-dashboard.md`.
 - **Docs refreshed:** Handoff + shipping dashboard updated with version/canary sections; AI tooling parity plan added under `docs/tooling/`; coordination/activity logs include 2025-10-01 notes.
 
 ## Active Work
-| Owner | Task | Status | Notes |
-| --- | --- | --- | --- |
-| @ryan.m | Merge workflow + Dockerfile changes, monitor first nightly run | In progress | Record metrics and artifact links in release digest. |
-| @alex.h | Assign Datadog dashboard + alert owners | In progress | Update `docs/handoff/shipping-dashboard.md` once assigned. |
-| @claudia.p | Draft ARM64 Playwright smoke addition (issue #409) | Pending | Requires runner allocation + checklist update. |
-| @platform-ops | Harden code-server editor smoke test (#415) | In progress | Add Ready pod gating, request timeouts, structured logs. |
-| @security | Verify kubernetes tooling downloads (#416) | Pending | Add checksum/signature validation + policy update. |
-| @config-team | Coordinate updated Azure/Valkey env templates (TODO(config-env-templates)) | In progress | Update env samples + docs; confirm secret sync + rollout notes. |
+| Owner | Task | Status | Target | Notes |
+| --- | --- | --- | --- | --- |
+| @ryan.m | Merge workflow + Dockerfile changes, monitor first nightly run | In progress | 2025-10-02 05:15 UTC | Record metrics and artifact links in release digest after nightly confirms image patch. |
+| @alex.h | Assign Datadog dashboard + alert owners | In progress | 2025-10-03 | Update `docs/handoff/shipping-dashboard.md` and observability monitors once contacts confirmed. |
+| @claudia.p | Draft ARM64 Playwright smoke addition (issue #409) | Pending | 2025-10-05 | Requires runner allocation + checklist update before QA parity sign-off. |
+| @platform-ops | Harden code-server editor smoke test (#415) | In progress | 2025-10-04 | Add Ready pod gating, request timeouts, structured logs ahead of doc addendum. |
+| @security | Verify kubernetes tooling downloads (#416) | Pending | 2025-10-05 | Add checksum/signature validation + policy update to unlock deploy automation. |
+| @config-team | Coordinate updated Azure/Valkey env templates (TODO(config-env-templates)) | In progress | 2025-10-04 | Update env samples + docs; confirm secret sync + rollout notes across environments. |
 
 ## Security Hardening Roadmap (Unsigned CLI Downloads)
 | TODO ID | Owner | Scope | Verification Path | Target |
@@ -48,10 +48,10 @@
 ### Ready Next
 | Status | Owner | Item | Prerequisites |
 | --- | --- | --- | --- |
-| ⏭️ Ready | Ryan M | Wire `scripts/test-code-server-kind.sh` to emit Datadog metrics (`codeserver.kind.latency`) | Requires DD API key available in workflow secrets |
-| ⏭️ Ready | Alex H | Assign dashboard + alert owners for `codeserver.build.duration.p95` and `codeserver.kind.smoke.failure` | Owners to be listed in `docs/handoff/shipping-dashboard.md` |
-| ⏭️ Ready | Docs Lead | Backfill weekly entry in `docs/handoff/shipping-dashboard.md` and ensure shipping thread automation points to it | Needs latest release digest |
-| ⏭️ Ready | Platform Build | Add release digest artifact upload to `codeserver-multiarch` workflow | Depends on docs template committed |
+| ⏭️ Ready | Ryan M | Wire `scripts/test-code-server-kind.sh` to emit Datadog metrics (`codeserver.kind.latency`) | Requires DD API key available in workflow secrets (SLA 2025-10-04) |
+| ⏭️ Ready | Alex H | Assign dashboard + alert owners for `codeserver.build.duration.p95` and `codeserver.kind.smoke.failure` | Owners to be listed in `docs/handoff/shipping-dashboard.md` by 2025-10-03 |
+| ⏭️ Ready | Docs Lead | Backfill weekly entry in `docs/handoff/shipping-dashboard.md` and ensure shipping thread automation points to it | Needs latest release digest (due 2025-10-02 18:00 UTC) |
+| ⏭️ Ready | Platform Build | Add release digest artifact upload to `codeserver-multiarch` workflow | Depends on docs template committed before 2025-10-04 |
 
 ### Issue Follow-ups
 - #405 – Tighten `deploy-next-docs` workflow to fail fast when secrets are missing and add a backoff/poll loop after App Service restart; document the changes in the runbook and comment on the GitHub issue once green.
@@ -172,5 +172,6 @@ docker buildx ls
 - [x] Replace per-token string concatenation with buffered chunk flushes to eliminate O(n²) response assembly; target `<=8 KB` flush thresholds and reuse buffers between stream ticks. (GH issue #414)
 - [x] Introduce AbortController-backed stream cancellation and reader cleanup on unmount; add scroll hysteresis reset during abort to prevent jump replays. (GH issue #414)
 - [x] Add `aria-live="polite"` region plus "Jump to latest" button gated behind reduced-motion/auto-scroll pauses, keeping focus management accessible. (GH issue #414)
-- [ ] Ship Jest coverage for fragmented SSE payloads and keep-alive frames, and Playwright coverage for reduced-motion scroll gating + manual jump affordance. (GH issue #414)
+- [x] Ship Jest coverage for fragmented SSE payloads and keep-alive frames. (GH issue #414)
+- [ ] Add Playwright coverage for reduced-motion scroll gating + manual jump affordance. (GH issue #414)
 - [ ] Backfill unit + Playwright coverage for context badges and file upload flows per QA recommendations.
