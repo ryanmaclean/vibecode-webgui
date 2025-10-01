@@ -1,0 +1,5 @@
+- Release drift unresolved (#410/#418) with deadlines 2025-10-02 checkpoint.
+- QA gaps blocking `npm run test:scripts` gating (#417).
+- Security deadlines: 10-05 checklist, 10-08 kubectl cosign, 10-10 helm cosign (#416).
+- Docs deliverables due 10-02 and 10-06 (#411).
+- Need cross-team sync before 2025-10-02 12:00 and tracking of decisions in TODO/issues.

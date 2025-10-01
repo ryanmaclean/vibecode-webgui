@@ -88,6 +88,7 @@ End-to-End (E2E) tests simulate real user behavior and test the application as a
 - **Location**: `tests/e2e/`
 - **Technology**: Playwright
 - **Run Command**: `npm run test:e2e`
+- **Key Scenario**: Reduced-motion Enhanced Chat flow (`tests/e2e/enhanced-chat/reduced-motion.spec.ts`) verifies manual jump controls when auto-scroll is paused
 
 Example E2E test:
 

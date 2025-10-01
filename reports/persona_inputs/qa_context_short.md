@@ -1,0 +1,3 @@
+- Bats covers: happy path, MOCK_TOOL_MISSING, MOCK_KUBECTL_EXEC_FAIL, MOCK_TIMEOUT_EXIT, MOCK_KUBECTL_WAIT_FAIL, retry with MOCK_KUBECTL_GET_SEQUENCE + MOCK_KUBECTL_EXEC_FAIL_ONCE.
+- Script emits telemetry `tool=/status=/duration_ms=` with sanitize; exits when kubectl missing from PATH.
+- Issue #417 asks for telemetry assertions, secret sanitization checks, PATH-without-kubectl scenario, empty Ready pod exhaustion, then CI wiring via `npm run test:scripts`.
