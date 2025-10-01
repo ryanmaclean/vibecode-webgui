@@ -127,6 +127,41 @@ jobs:
             echo "- Type check: ✅" >> "$GITHUB_STEP_SUMMARY"
           fi
 
+  script-tests:
+    name: Shell script regression tests
+    runs-on: ubuntu-latest
+    needs: quick-validation
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Install Bats
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats
+
+      - name: Prepare script test artifacts directory
+        run: mkdir -p tests/scripts/test-results
+
+      - name: Run script tests
+        run: npm run test:scripts
+
+      - name: Upload script test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: script-tests-${{ github.run_id }}
+          path: tests/scripts/test-results/
+
   # Security scan - lightweight version
   security-check:
     runs-on: ubuntu-latest
