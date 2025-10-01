@@ -69,7 +69,7 @@ This log captures architectural and technical decisions made during development.
 - Hard to find specific file types
 
 **Structure Decided:**
-```
+```text
 scripts/          # All executable scripts
   debug/          # Debug and diagnostic scripts
 docker/           # Dockerfiles and docker-compose files

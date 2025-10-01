@@ -6,13 +6,7 @@
 import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { metrics } from '../server-monitoring';
-import { VectorDBError, VectorDBErrorType, handleVectorDBError } from './vector-db-error-handler';
-import { 
-  CosmosClient, 
-  Container, 
-  Database,
-  SqlQuerySpec 
-} from '../../types/azure-cosmos';
+import { handleVectorDBError } from './vector-db-error-handler';
 
 /**
  * Azure Cosmos DB specific configuration options
@@ -34,9 +28,9 @@ export interface CosmosDbVectorDatabaseConfig extends VectorDatabaseConfig {
  * Implements vector database operations using Azure Cosmos DB with vector search
  */
 export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
-  private client: any = null; // Cosmos DB client
-  private database: any = null;
-  private container: any = null;
+  private client: unknown = null; // Cosmos DB client
+  private database: unknown = null;
+  private container: unknown = null;
   // Using standalone handleVectorDBError function instead of class
   protected cosmosConfig: CosmosDbVectorDatabaseConfig;
 
@@ -91,7 +85,7 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   /**
    * Store vector chunks in the database
    */
-  public async storeChunks(fileId: number, chunks: Array<{
+  public async storeChunks(_fileId: number, _chunks: Array<{
     content: string;
     startLine?: number;
     endLine?: number;
@@ -125,7 +119,7 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   /**
    * Search for similar content using vector similarity
    */
-  public async search(embedding: number[], options: SearchOptions = {}): Promise<SearchResult[]> {
+  public async search(embedding: number[], _options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.container) {
       throw handleVectorDBError(new Error('Cosmos DB adapter not initialized'), 'unknown', 'cosmosdb');
     }
@@ -170,7 +164,7 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   /**
    * Delete all chunks for a file
    */
-  public async deleteFileChunks(fileId: number): Promise<void> {
+  public async deleteFileChunks(_fileId: number): Promise<void> {
     if (!this.container) {
       throw handleVectorDBError(new Error('Cosmos DB adapter not initialized'), 'unknown', 'cosmosdb');
     }
@@ -241,7 +235,7 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   /**
    * Invalidate cache entries for a specific table or content type
    */
-  public async invalidateCache(table: string, contentType?: string): Promise<number> {
+  public async invalidateCache(_table: string, _contentType?: string): Promise<number> {
     // TODO: Implement Cosmos DB cache invalidation if applicable
     // For Cosmos DB, we might not have a direct cache integration
     // Could implement a separate cache layer for Cosmos DB results
@@ -285,7 +279,7 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   /**
    * Fallback text search when vector search is not available
    */
-  protected async fallbackTextSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
+  protected async fallbackTextSearch(query: string, _options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.container) {
       throw handleVectorDBError(new Error('Cosmos DB adapter not initialized'), 'unknown', 'cosmosdb');
     }

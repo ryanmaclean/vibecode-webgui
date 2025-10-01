@@ -2,20 +2,48 @@
 
 This directory contains the configuration for the custom VibeCode code-server, which includes pre-installed extensions and configurations for an optimal development experience.
 
-## Features
+## Pre-installed AI Extensions
 
-### AI Coding Assistants
-- **Anthropic Claude Code** - Official Claude AI extension (requires API key)
-- **OpenAI ChatGPT** - Official OpenAI extension (requires API key)
-- **GitHub Copilot** - OpenAI Codex integration (requires subscription)
-- **GitHub Copilot Chat** - Chat interface for Copilot
-- **Codeium** - Free AI code completion (MIT)
-- **Cline** - Community Claude integration (Apache 2.0)
-- **VibeCode AI Assistant** - Multi-provider AI (OpenRouter, Claude, GPT, Gemini)
-- **VibeCode Inline Edit** - Cmd+K inline editing like Cursor
-- **VibeCode Codebase Chat** - Chat with your codebase
+This image comes with **18 AI coding assistants** pre-installed (all from Open VSX Registry):
+
+### Official AI Providers (4)
+1. **Anthropic Claude Code** - Official Claude AI assistant
+2. **OpenAI ChatGPT** - Official ChatGPT/Codex integration
+3. **Mistral AI** - Official Mistral AI extension (if available)
+4. **TabNine** - AI code completion
+
+### Open-Source AI Assistants (7)
+1. **Codeium** - Free AI code completion
+2. **Cline** (Claude Dev) - Advanced Claude integration
+3. **Kilo Code** - Open-source AI agent (Cline/Roo fork)
+4. **Roo Code** - AI coding assistant (Cline fork)
+5. **Rubberduck** - Free open-source AI assistant
+6. **Continue** - Open-source AI autopilot
+7. **Supermaven** - Fast AI autocomplete (1M token context)
+
+### Language Support (4)
+1. **Microsoft Python** - Python extension with AI features (MIT)
+2. **Clangd** - C/C++ language server
+
+### VibeCode Custom Extensions (3)
+1. **VibeCode AI Assistant** - Custom VibeCode features
+2. **VibeCode Inline Edit** - In-editor AI editing
+3. **VibeCode Codebase Chat** - Chat with your codebase
 
 **Note:** Official AI extensions require API keys or subscriptions. Configure them after first launch.
+
+### Extensions Available for Manual Installation
+
+The following extensions are NOT available on Open VSX and must be installed manually if you have access to the Microsoft Marketplace:
+
+- **GitHub Copilot** - Requires Microsoft Marketplace + paid GitHub subscription
+- **Microsoft Pylance** - Advanced Python type checking (Microsoft Marketplace only)
+- **Microsoft IntelliCode** - AI-assisted development (Microsoft Marketplace only)
+- **Amazon Q Developer** - AWS AI assistant (AWS Marketplace only)
+- **Google Cloud Code** - Google Cloud AI features (Google Marketplace only)
+- **Azure AI Toolkit** - Azure AI integration (Microsoft Marketplace only)
+
+To install these, you'll need to configure code-server to use the Microsoft Marketplace or install them manually via VSIX files.
 
 ### Developer Productivity Tools (MIT/BSD/Apache)
 - **Error Lens** - Inline error highlighting

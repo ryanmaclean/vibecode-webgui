@@ -11,6 +11,7 @@ echo "============================================================"
 IMAGE_NAME="${IMAGE_NAME:-vibecode-codeserver}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 DOCKERFILE="docker/code-server/Dockerfile"
+BUILDX_ARGS=${BUILDX_ARGS:-}
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -44,7 +45,7 @@ echo ""
 # Option 1: Build and load locally (single platform at a time)
 if [ "$1" == "local" ]; then
     echo -e "${YELLOW}Building ARM64 version...${NC}"
-    docker buildx build \
+    docker buildx build $BUILDX_ARGS \
         --platform linux/arm64 \
         -f "${DOCKERFILE}" \
         -t "${IMAGE_NAME}:${IMAGE_TAG}-arm64" \
@@ -55,7 +56,7 @@ if [ "$1" == "local" ]; then
     echo ""
     
     echo -e "${YELLOW}Building AMD64 version...${NC}"
-    docker buildx build \
+    docker buildx build $BUILDX_ARGS \
         --platform linux/amd64 \
         -f "${DOCKERFILE}" \
         -t "${IMAGE_NAME}:${IMAGE_TAG}-amd64" \
@@ -76,7 +77,7 @@ elif [ "$1" == "push" ]; then
     FULL_IMAGE="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
     
     echo -e "${YELLOW}Building and pushing to ${FULL_IMAGE}...${NC}"
-    docker buildx build \
+    docker buildx build $BUILDX_ARGS \
         --platform linux/amd64,linux/arm64 \
         -f "${DOCKERFILE}" \
         -t "${FULL_IMAGE}" \
@@ -94,14 +95,14 @@ elif [ "$1" == "export" ]; then
     
     echo -e "${YELLOW}Building and exporting to ${OUTPUT_DIR}...${NC}"
     
-    docker buildx build \
+    docker buildx build $BUILDX_ARGS \
         --platform linux/arm64 \
         -f "${DOCKERFILE}" \
         -t "${IMAGE_NAME}:${IMAGE_TAG}-arm64" \
         --output type=docker,dest="${OUTPUT_DIR}/${IMAGE_NAME}-arm64.tar" \
         .
-    
-    docker buildx build \
+
+    docker buildx build $BUILDX_ARGS \
         --platform linux/amd64 \
         -f "${DOCKERFILE}" \
         -t "${IMAGE_NAME}:${IMAGE_TAG}-amd64" \

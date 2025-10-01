@@ -9,7 +9,7 @@ import { logger } from '../logger';
 /**
  * Configuration for connection pool
  */
-export interface ConnectionPoolConfig {
+export interface ConnectionPoolConfig<T> {
   /**
    * Minimum number of connections to keep in the pool
    * Default: 2
@@ -61,17 +61,17 @@ export interface ConnectionPoolConfig {
   /**
    * Function to create a new connection
    */
-  createConnection: () => Promise<any>;
+  createConnection: () => Promise<T>;
 
   /**
    * Function to validate a connection
    */
-  validateConnectionFn?: (connection: any) => Promise<boolean>;
+  validateConnectionFn?: (connection: T) => Promise<boolean>;
 
   /**
    * Function to close a connection
    */
-  closeConnection: (connection: any) => Promise<void>;
+  closeConnection: (connection: T) => Promise<void>;
 }
 
 /**
@@ -95,7 +95,7 @@ export class ConnectionPool<T> {
     reject: (error: Error) => void;
     startTime: number;
   }> = [];
-  private config: Required<ConnectionPoolConfig>;
+  private config: Required<ConnectionPoolConfig<T>>;
   private pruneTimer: NodeJS.Timeout | null = null;
   private closed = false;
   private activeConnections = 0;
@@ -107,7 +107,7 @@ export class ConnectionPool<T> {
   /**
    * Default configuration
    */
-  private static readonly DEFAULT_CONFIG: Partial<ConnectionPoolConfig> = {
+  private static readonly DEFAULT_CONFIG: Partial<ConnectionPoolConfig<unknown>> = {
     minConnections: 2,
     maxConnections: 10,
     acquireTimeoutMs: 30000,
@@ -121,11 +121,11 @@ export class ConnectionPool<T> {
   /**
    * Create a new connection pool
    */
-  constructor(config: ConnectionPoolConfig) {
+  constructor(config: ConnectionPoolConfig<T>) {
     this.config = {
       ...ConnectionPool.DEFAULT_CONFIG,
       ...config
-    } as Required<ConnectionPoolConfig>;
+    } as Required<ConnectionPoolConfig<T>>;
 
     // Start pruning timer
     this.startPruneTimer();

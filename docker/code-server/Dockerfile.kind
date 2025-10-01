@@ -7,8 +7,10 @@ ARG STARSHIP_VERSION=1.23.0
 ARG ZOXIDE_VERSION=0.9.8
 
 USER root
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
+RUN set -eux; \
+  mkdir -p /tmp && chmod 1777 /tmp; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends \
     bat \
     curl \
     emacs-nox \
@@ -22,8 +24,10 @@ RUN apt-get update \
     python3-pip \
     python3-venv \
     ripgrep \
-    vim \
-  && rm -rf /var/lib/apt/lists/*
+    vim; \
+  rm -rf /var/lib/apt/lists/*
+
+RUN chmod 755 /usr/bin/code-server /usr/lib/code-server/bin/code-server
 
 RUN ln -sf /usr/bin/fdfind /usr/local/bin/fd && \
     ln -sf /usr/bin/exa /usr/local/bin/eza

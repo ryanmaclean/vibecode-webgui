@@ -6,6 +6,7 @@
 import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { metrics } from '../server-monitoring';
+import type { Redis } from 'ioredis';
 
 /**
  * Redis specific configuration options
@@ -27,7 +28,7 @@ export interface RedisVectorDatabaseConfig extends VectorDatabaseConfig {
  * Implements vector database operations using Redis/ValKey with vector similarity
  */
 export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
-  private redis: any = null; // Redis client
+  private redis: Redis | null = null; // Redis client
   protected redisConfig: RedisVectorDatabaseConfig;
 
   /**
