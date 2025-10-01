@@ -24,7 +24,7 @@ export interface CollaborationDocument {
 
 export interface CollaborationMessage {
   type: 'sync' | 'awareness' | 'auth' | 'error'
-  payload: any
+  payload: unknown
   documentId: string
   userId?: string
 }
@@ -87,7 +87,12 @@ export class CollaborationServer {
       // Handle awareness updates (cursor positions, user presence)
       socket.on('collab:awareness', (data: {
         documentId: string
-        awareness: any
+        awareness: {
+          cursor?: { line: number; ch: number };
+          selection?: { anchor: { line: number; ch: number }; head: { line: number; ch: number } };
+          name?: string;
+          color?: string;
+        }
         userId: string
       }) => {
         this.handleAwarenessUpdate(socket, data)
@@ -120,7 +125,13 @@ export class CollaborationServer {
   /**
    * Handle user joining a document
    */
-  private async joinDocument(socket: any, data: {
+  private async joinDocument(socket: {
+    join: (room: string) => void;
+    emit: (event: string, data: unknown) => void;
+    to: (room: string) => { emit: (event: string, data: unknown) => void };
+    userId?: string;
+    documentIds?: Set<string>;
+  }, data: {
     documentId: string
     projectId: string
     filePath: string
@@ -211,7 +222,11 @@ export class CollaborationServer {
   /**
    * Handle user leaving a document
    */
-  private leaveDocument(socket: any, documentId: string, userId: string): void {
+  private leaveDocument(socket: {
+    leave: (room: string) => void;
+    to: (room: string) => { emit: (event: string, data: unknown) => void };
+    documentIds?: Set<string>;
+  }, documentId: string, userId: string): void {
     const doc = this.documents.get(documentId)
     if (!doc) return
 
@@ -252,7 +267,9 @@ export class CollaborationServer {
   /**
    * Handle Yjs synchronization messages
    */
-  private handleSyncMessage(socket: any, data: {
+  private handleSyncMessage(socket: {
+    to: (room: string) => { emit: (event: string, data: unknown) => void };
+  }, data: {
     documentId: string
     message: Uint8Array
     userId: string
@@ -274,9 +291,16 @@ export class CollaborationServer {
   /**
    * Handle awareness updates (cursors, selections)
    */
-  private handleAwarenessUpdate(socket: any, data: {
+  private handleAwarenessUpdate(socket: {
+    to: (room: string) => { emit: (event: string, data: unknown) => void };
+  }, data: {
     documentId: string
-    awareness: any
+    awareness: {
+      cursor?: { line: number; ch: number };
+      selection?: { anchor: { line: number; ch: number }; head: { line: number; ch: number } };
+      name?: string;
+      color?: string;
+    }
     userId: string
   }): void {
     const doc = this.documents.get(data.documentId)
@@ -315,7 +339,12 @@ export class CollaborationServer {
   /**
    * Handle client disconnect
    */
-  private handleDisconnect(socket: any): void {
+  private handleDisconnect(socket: {
+    userId?: string;
+    documentIds?: Set<string>;
+    leave: (room: string) => void;
+    to: (room: string) => { emit: (event: string, data: unknown) => void };
+  }): void {
     if (socket.userId && socket.documentIds) {
       for (const documentId of socket.documentIds) {
         this.leaveDocument(socket, documentId, socket.userId)
