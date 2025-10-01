@@ -168,7 +168,7 @@ jobs:
           echo "Waiting for Redis..."
           timeout 30 bash -c 'until redis-cli -h localhost -p 6379 ping; do sleep 1; done'
 
-     - name: Run infrastructure tests
+      - name: Run infrastructure tests
         run: npm run test:root:infrastructure
         continue-on-error: true
 
@@ -179,6 +179,18 @@ jobs:
       - name: Run credentials tests
         run: npm run test:root:credentials
         continue-on-error: true
+
+      - name: Run unit tests with coverage
+        run: npm run test:unit -- --coverage --coverageReporters=lcov --coverageReporters=text-summary
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-coverage
+          path: |
+            coverage/lcov.info
+            coverage/coverage-summary.json
 
      - name: Run workflow tests
         run: npm run test:root:workflow

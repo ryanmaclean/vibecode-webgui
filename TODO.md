@@ -15,9 +15,11 @@
 - Message arrays properly typed for OpenAI SDK compatibility
 - Embedding response item typed as `{ embedding: number[] }`
 
-### Next Steps
 - [ ] Continue systematic reduction of remaining warnings
-- [ ] Target high-impact files with 8+ warnings
+- [ ] Target high-impact files with 8+ warnings (next batch: src/components/collaboration/WorkspaceSharing.tsx (19, mostly no-unused-vars), src/components/collaboration/CollaborativeEditor.tsx (18), src/components/MultimodalPromptInterface.tsx (17), src/components/workspace/CollaborativeWorkspace.tsx (17), src/lib/__tests__/auth.test.ts (17)).
+
+### Next Steps
+
 
 ## Agent Update (2025-10-01 03:54 UTC, Astro Docs Links Cleared)
 
@@ -113,7 +115,7 @@
 ### Next Steps
 - [x] Trim noisy console output in the vector pool tests (console.* mocked in tests/unit/db/vector-connection-pool.test.ts).
 - [ ] Decide whether to expand branch coverage for timeout/error paths or exclude them from unit coverage via `coveragePathIgnorePatterns`.
-- [ ] Introduce a coverage upload workflow (Codecov or similar) so the new suites report metrics automatically.
+- [x] Added a coverage artifact step (unit tests + lcov) to `.github/workflows/ci-simplified.yml`; follow-up to integrate with Codecov when tokens are available.
 
 ## Agent Update (2025-10-01 03:03 UTC, Connection Pool Alert Tests)
 
@@ -2160,7 +2162,6 @@ Local development infrastructure is now stable and functional. All immediate pri
 - [ ] After merging #249, repeat the validation flow for PRs #250 (framer-motion), #247 (@ai-sdk/openai), and #251 (tar-fs) to land the set.
 - [ ] Audit July 2025 remote branches (e.g., `origin/fix/auth-investigation`, `origin/cursor/identify-2025-online-trends-6363`) with owners and delete once confirmed obsolete.
 
-
 ## Agent Update (2025-09-29 20:55 UTC)
 
 - Terminated lingering `scripts/ingest-docs-to-rag.ts` processes to free the laptop.
@@ -2169,7 +2170,6 @@ Local development infrastructure is now stable and functional. All immediate pri
 
 ### Next Steps
 - [ ] Schedule full corpus ingestion when resource window allows and capture metrics/screenshots for issue #312.
-
 
 
 ### CI Update (2025-09-29 20:55 UTC)
@@ -2353,7 +2353,6 @@ description: Multi-agent coordination log (regenerated 2025-09-19)
 - Ran `npx prisma db push` against the container and executed `tests/integration/vector-search-rag-real.test.ts` with `DATABASE_URL=postgresql://vibecode:password@127.0.0.1:55432/vibecode`; all 14 assertions passed with OpenRouter + OpenAI embeddings under dd-trace.
 - Verified `scripts/smoke/openrouter-chat.js` and `tests/integration/real-openrouter-integration.test.ts` succeed using the keys in `.env.local`.
 - Documented that Azure Flexible Servers remain unreachable; keep using the local Postgres fallback (and KIND workflows) until networking is restored.
-
 
 ## Agent Update (2025-09-24 13:48 UTC)
 
@@ -3012,7 +3011,6 @@ git revert HEAD~17..HEAD
 
 **Please coordinate here before making large changes!** 🙏
 
-
 **Reminder**: All agents must coordinate exclusively via TODO.md. Update the handoff section before starting long-running tasks (e.g., ingestion, restructures) and sign your update with timestamp/UTC.
 
 ## Agent Update (2025-09-29 23:11 UTC)
@@ -3041,7 +3039,6 @@ git revert HEAD~17..HEAD
 
 - Dependabot PR #251 (tar-fs) still rests on commit b01e0276 (needs rebase onto `main` @ db038189). PR #241 (critters) is mergeable but one commit behind current `main`.
 - No local changes needed; waiting for Dependabot rebase before rerunning lint/type/unit.
-
 
 ## Agent Update (2025-09-29 23:34 UTC)
 
@@ -3100,11 +3097,9 @@ git revert HEAD~17..HEAD
 
 - Issue #316 updated with status summary (agentless enabled, ingestion succeeded locally, Trace Search still blocked pending API key rotation).
 
-
 ## Agent Update (2025-09-30 01:17 UTC)
 
 - Dependabot PR #322 (@ai-sdk/openai) remains on commit 8bbd9a29; needs rebase onto current main. Mergeable still `UNKNOWN`.
-
 
 ## Agent Update (2025-09-29 18:30 UTC) - Agent Cascade
 
@@ -3151,21 +3146,17 @@ If another agent needs Codeium features, use Monacopilot instead - it's better a
 
 - PID 82844 (scripts/ingest-docs-to-rag.ts) still running; ingest queue remains occupied.
 
-
 ## Agent Update (2025-09-30 01:41 UTC)
 
 - Lint run surfaced 3 errors from `tmp-codeium-example/` (prefer-const, no-namespace, ban-ts-comment). Need to investigate whether this directory should be ignored or cleaned.
-
 
 ## Agent Update (2025-09-30 01:42 UTC)
 
 - Type-check failing: `src/app/api/code-completion/route.ts` expects `CustomCopilotModel`, but route supplies plain strings; `CodeiumPlayground` references `monaco.version`. Need to decide whether to adjust types or add compatibility shims.
 
-
 ## Agent Update (2025-09-30 01:43 UTC)
 
 - Issue #315 updated: confirmed Azure PG remains blocked by firewall/private endpoint; local Docker fallback still the only workable option.
-
 
 ## Agent Update (2025-09-30 01:45 UTC)
 
