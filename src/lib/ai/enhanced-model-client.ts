@@ -42,7 +42,7 @@ export interface ChatCompletionResponse {
     totalTokens: number;
   };
   finishReason: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface EmbeddingResponse {
@@ -60,7 +60,7 @@ export interface EmbeddingResponse {
  */
 export class EnhancedAIClient {
   private defaultConfig: AIModelConfig;
-  private clients: Map<AIProvider, any> = new Map();
+  private clients: Map<AIProvider, OpenAI | { apiKey: string; endpoint?: string; region?: string; accessKeyId?: string; secretAccessKey?: string }> = new Map();
 
   constructor(defaultConfig: AIModelConfig) {
     this.defaultConfig = defaultConfig;
@@ -275,7 +275,7 @@ export class EnhancedAIClient {
   ): Promise<ChatCompletionResponse> {
     const response = await client.chat.completions.create({
       model: config.model,
-      messages: messages as any,
+      messages: messages as Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
       max_tokens: config.maxTokens || 4000,
       temperature: config.temperature || 0.7,
       top_p: config.topP || 1.0
@@ -305,7 +305,7 @@ export class EnhancedAIClient {
    * Handle Anthropic Claude API
    */
   private async handleAnthropic(
-    client: any,
+    client: { apiKey: string; endpoint?: string },
     messages: ChatMessage[],
     config: AIModelConfig
   ): Promise<ChatCompletionResponse> {
@@ -370,7 +370,7 @@ export class EnhancedAIClient {
   ): Promise<ChatCompletionResponse> {
     const response = await client.chat.completions.create({
       model: config.model,
-      messages: messages as any,
+      messages: messages as Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
       max_tokens: config.maxTokens || 4000,
       temperature: config.temperature || 0.7,
       stream: false
@@ -400,7 +400,7 @@ export class EnhancedAIClient {
    * Handle Google Gemini API
    */
   private async handleGemini(
-    client: any,
+    client: { apiKey: string; endpoint: string },
     messages: ChatMessage[],
     config: AIModelConfig
   ): Promise<ChatCompletionResponse> {
@@ -456,7 +456,7 @@ export class EnhancedAIClient {
    * Handle AWS Bedrock
    */
   private async handleBedrock(
-    client: any,
+    client: { region: string; accessKeyId: string; secretAccessKey: string },
     messages: ChatMessage[],
     config: AIModelConfig
   ): Promise<ChatCompletionResponse> {
@@ -501,7 +501,7 @@ export class EnhancedAIClient {
     });
 
     return {
-      embeddings: response.data.map((item: any) => item.embedding),
+      embeddings: response.data.map((item: { embedding: number[] }) => item.embedding),
       model: response.model,
       provider: finalConfig.provider,
       usage: {

@@ -1,3 +1,24 @@
+## Agent Update (2025-09-30, TypeScript `any` Warnings - Batch 10)
+
+**Batch 10 completed**: Fixed 24 warnings across 3 files (8 warnings each)
+- collaboration-server.ts: 8→0 warnings (Socket.IO parameter types, awareness state typing, message payload types)
+- vector-cache-adapter.ts: 8→0 warnings (metadata types, function parameters, wrapper return types)
+- enhanced-model-client.ts: 8→0 warnings (client map types, message types, provider-specific client interfaces)
+
+**Technical Patterns Applied**:
+- Socket.IO socket parameter typed with inline interface (join, emit, to methods)
+- Awareness state fully typed (cursor positions, selection ranges)
+- CollaborationMessage payload changed from `any` to `unknown`
+- Vector search wrapper functions with complete return type structures
+- Client map typed as `Map<AIProvider, OpenAI | { apiKey: string; endpoint?: string; ... }>`
+- Provider-specific client interfaces (Anthropic, Gemini, Bedrock)
+- Message arrays properly typed for OpenAI SDK compatibility
+- Embedding response item typed as `{ embedding: number[] }`
+
+### Next Steps
+- [ ] Continue systematic reduction of remaining warnings
+- [ ] Target high-impact files with 8+ warnings
+
 ## Agent Update (2025-10-01 03:54 UTC, Astro Docs Links Cleared)
 
 - Rebuilt the Astro docs after rewriting repo-relative links to on-site paths or GitHub blobs; `monitoring/dashboards/genai-vector-performance.json` now ships from `docs/public`.
@@ -6,8 +27,8 @@
 - Added GitHub backlinks for helper scripts (`docs/`, `.github/workflows`, `prisma/`, `src/lib/*`) so GitHub Pages no longer references repo-only files.
 
 ### Next Steps
-- [ ] Automate the link audit as part of docs CI (wrap the Python checker + `npm run build`).
-- [ ] Document the link-migration playbook alongside the planned docs verification runbook.
+- [x] Automate the link audit as part of docs CI (build docs + run `npm run docs:link-audit`).
+- [x] Document the link-migration playbook alongside the planned docs verification runbook. (See docs/runbooks/docs-verification.md.)
 
 ## Agent Update (2025-09-30, TypeScript `any` Warnings - Batch 9)
 
@@ -159,7 +180,7 @@
 
 ### Next Steps
 - [x] Subscribe to upstream code-server release feed so we automatically evaluate future tags (4.105+) — handled by `.github/workflows/code-server-release-monitor.yml` (daily cron + dispatch). Pending: workflow isn’t on `main` yet, so `gh workflow run` 404s until this file merges upstream.
-- [ ] Rebuild and push the multi-arch image once CI resources available (`scripts/build-codeserver-multiarch.sh`).
+- [ ] Rebuild and push the multi-arch image once CI resources available (`scripts/build-codeserver-multiarch.sh`). (2025-10-01 attempt failed: arm64 stage reports `❌ goose MISSING` during tool verification. See `/tmp/codeserver-build.log` and investigate installing goose with correct GOOS/GOARCH or downloading arm64 binaries.)
 
 ## Agent Update (2025-10-01 00:02 UTC, Local Repro)
 
