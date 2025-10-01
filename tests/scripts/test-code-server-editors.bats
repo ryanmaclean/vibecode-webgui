@@ -80,3 +80,49 @@ teardown() {
   [[ "$output" != *"pod-alpha"* ]]
   [[ "$output" != *"pod-beta"* ]]
 }
+
+@test "fails when no Ready pods found" {
+  export MOCK_KUBECTL_GET_EMPTY=1
+  run "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"No Ready pods found"* ]]
+}
+
+@test "fails when kubectl get pods fails" {
+  export MOCK_KUBECTL_GET_FAIL=1
+  run "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"kubectl get pods failed"* ]]
+}
+
+@test "emits structured status logs" {
+  run "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"tool=vim status=ok"* ]]
+  [[ "$output" == *"duration_ms="* ]]
+  [[ "$output" == *"message="* ]]
+}
+
+@test "handles permission denied errors" {
+  export MOCK_KUBECTL_EXEC_FAIL=1
+  export MOCK_KUBECTL_EXEC_FAIL_MSG='permission denied'
+  run "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"check failed"* ]]
+}
+
+@test "retries emit status=retry logs" {
+  export MOCK_KUBECTL_GET_SEQUENCE='pod-first|pod-second'
+  export MOCK_KUBECTL_EXEC_FAIL_ONCE='pod-first'
+  run "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"status=retry"* ]]
+}
+
+@test "respects custom timeout environment variables" {
+  export KUBE_WAIT_TIMEOUT=5s
+  export EDITOR_EXEC_TIMEOUT=10s
+  run "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"All tools verified."* ]]
+}
