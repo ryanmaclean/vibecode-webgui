@@ -51,6 +51,17 @@ jobs:
       - name: Validate documentation
         run: npm run docs:validate
 
+      - name: Install docs dependencies
+        run: npm ci --legacy-peer-deps
+        working-directory: docs
+
+      - name: Build Astro docs
+        run: npm run build
+        working-directory: docs
+
+      - name: Run static link audit
+        run: npm run docs:link-audit
+
       - name: Check for broken links
         uses: lycheeverse/lychee-action@v1
         with:
