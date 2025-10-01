@@ -52,7 +52,6 @@ RUN set -ex; \
     ripgrep \
     vim \
     neovim \
-    emacs-nox \
     elvish \
     xonsh \
     yash \
@@ -202,7 +201,6 @@ RUN set -e && \
     echo "🔍 Verifying installed tools..." && \
     echo "Testing vim..." && vim --version | head -1 && \
     echo "Testing nvim..." && nvim --version | head -1 && \
-    echo "Testing emacs..." && emacs --version | head -1 && \
     echo "Testing aider..." && aider --version && \
     echo "Testing goose..." && goose -version 2>&1 | grep -i goose && \
     echo "✅ All required tools verified!"
@@ -486,7 +484,7 @@ USER coder
 # Verify ALL required CLI tools are installed (build fails if any missing)
 RUN set -e && \
     echo "🔍 Verifying ALL required tools..." && \
-    for tool in vim nvim emacs nu delta chezmoi just stern helmfile helm kubectl kubectx kubens k9s sops glab; do \
+    for tool in vim nvim nu delta chezmoi just stern helmfile helm kubectl kubectx kubens k9s sops glab; do \
       command -v "$tool" >/dev/null && echo "✅ $tool" || { echo "❌ $tool MISSING"; exit 1; }; \
     done && \
     aider --version >/dev/null && echo "✅ aider" || { echo "❌ aider MISSING"; exit 1; } && \
