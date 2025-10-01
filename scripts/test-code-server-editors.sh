@@ -33,7 +33,21 @@ error() {
 }
 
 now_ms() {
-  date +%s%3N
+  if command -v gdate >/dev/null 2>&1; then
+    gdate +%s%3N
+    return
+  fi
+  local raw
+  raw=$(date +%s%3N 2>/dev/null || true)
+  if [[ $raw == *N ]]; then
+    python3 - <<'PYTIME'
+import time
+print(int(time.time() * 1000))
+PYTIME
+  else
+    printf '%s
+' "$raw"
+  fi
 }
 
 timeout_candidates=()
@@ -72,11 +86,16 @@ kubectl_wait_ready() {
   err_file=$(mktemp)
   local args=(wait --namespace "$NAMESPACE" --selector "$SELECTOR" --for=condition=Ready pod --timeout="$WAIT_TIMEOUT" --request-timeout="$REQUEST_TIMEOUT")
   if [[ $HAS_TIMEOUT -eq 1 ]]; then
+    set +e
     "$TIMEOUT_BIN" "$WAIT_TIMEOUT" kubectl "${args[@]}" >/dev/null 2>"$err_file"
+    rc=$?
+    set -e
   else
+    set +e
     kubectl "${args[@]}" >/dev/null 2>"$err_file"
+    rc=$?
+    set -e
   fi
-  rc=$?
   if [[ $rc -ne 0 ]]; then
     local err
     err=$(sanitize_message "$(<"$err_file")")
@@ -88,6 +107,7 @@ kubectl_wait_ready() {
 
 declare -a READY_PODS=()
 current_pod_index=0
+LAST_KUBECTL_ERROR=""
 
 mask_pod_name() {
   local name="$1"
@@ -115,16 +135,18 @@ masked_ready_list() {
   printf '%s' "$result"
 }
 
-read_pods_into_array() {
-  local command="$1"
-  local tmpfile rc line idx
-  tmpfile=$(mktemp)
-  eval "$command" >"$tmpfile"
+populate_ready_pods() {
+  local jsonpath="$1"
+  local err_file out_file rc line idx
+  READY_PODS=()
+  LAST_KUBECTL_ERROR=""
+  err_file=$(mktemp)
+  out_file=$(mktemp)
+  kubectl get pods     --namespace "$NAMESPACE"     --selector "$SELECTOR"     --field-selector=status.phase=Running     --output "jsonpath=${jsonpath}"     --request-timeout="$REQUEST_TIMEOUT"     >"$out_file" 2>"$err_file"
   rc=$?
   if [[ $rc -ne 0 ]]; then
-    local err
-    err=$(cat "$tmpfile")
-    rm -f "$tmpfile"
+    LAST_KUBECTL_ERROR=$(sanitize_message "$(<"$err_file")")
+    rm -f "$err_file" "$out_file"
     return $rc
   fi
   idx=0
@@ -133,38 +155,26 @@ read_pods_into_array() {
       READY_PODS[$idx]="$line"
       idx=$((idx + 1))
     fi
-  done <"$tmpfile"
-  READY_PODS=(${READY_PODS[@]})
-  rm -f "$tmpfile"
+  done <"$out_file"
+  rm -f "$err_file" "$out_file"
   return 0
 }
 
 refresh_ready_pods() {
-  READY_PODS=()
   kubectl_wait_ready
-  local cmd rc
-  cmd="kubectl get pods --namespace '$NAMESPACE' --selector '$SELECTOR' --field-selector=status.phase=Running --output jsonpath='{range .items[?(@.status.conditions[?(@.type=="Ready" && @.status=="True")])]}{.metadata.name}{"\n"}{end}' --request-timeout='$REQUEST_TIMEOUT' 2>/tmp/kubectl.err | awk 'NF'"
-  read_pods_into_array "$cmd"
-  rc=$?
-  if [[ $rc -ne 0 ]]; then
-    local err
-    err=$(cat /tmp/kubectl.err 2>/dev/null)
-    rm -f /tmp/kubectl.err
-    error "kubectl get pods failed (rc=$rc): $(sanitize_message "$err")"
-  fi
-  if [[ ${#READY_PODS[@]} -eq 0 ]]; then
-    cmd="kubectl get pods --namespace '$NAMESPACE' --selector '$SELECTOR' --field-selector=status.phase=Running --output jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' --request-timeout='$REQUEST_TIMEOUT' 2>/tmp/kubectl.err | awk 'NF'"
-    READY_PODS=()
-    read_pods_into_array "$cmd"
-    rc=$?
-    if [[ $rc -ne 0 ]]; then
-      local err
-      err=$(cat /tmp/kubectl.err 2>/dev/null)
-      rm -f /tmp/kubectl.err
-      error "kubectl get pods failed (rc=$rc): $(sanitize_message "$err")"
+  if ! populate_ready_pods '{range .items[?(@.status.conditions[?(@.type=="Ready" && @.status=="True")])]}{.metadata.name}{"
+"}{end}'; then
+    if ! populate_ready_pods '{range .items[*]}{.metadata.name}{"
+"}{end}'; then
+      error "kubectl get pods failed: ${LAST_KUBECTL_ERROR:-unknown error}"
     fi
   fi
-  rm -f /tmp/kubectl.err 2>/dev/null || true
+  if [[ ${#READY_PODS[@]} -eq 0 ]]; then
+    if ! populate_ready_pods '{range .items[*]}{.metadata.name}{"
+"}{end}'; then
+      error "kubectl get pods failed: ${LAST_KUBECTL_ERROR:-unknown error}"
+    fi
+  fi
   current_pod_index=0
   if [[ ${#READY_PODS[@]} -eq 0 ]]; then
     error "No Ready pods found for selector '$SELECTOR' in namespace '$NAMESPACE'."
@@ -193,11 +203,16 @@ run_pod_cmd() {
   out_file=$(mktemp)
   err_file=$(mktemp)
   if [[ $HAS_TIMEOUT -eq 1 ]]; then
+    set +e
     "$TIMEOUT_BIN" "$EXEC_TIMEOUT" kubectl exec "$pod" -n "$NAMESPACE" --request-timeout="$REQUEST_TIMEOUT" -- sh -lc "$command" >"$out_file" 2>"$err_file"
+    rc=$?
+    set -e
   else
+    set +e
     kubectl exec "$pod" -n "$NAMESPACE" --request-timeout="$REQUEST_TIMEOUT" -- sh -lc "$command" >"$out_file" 2>"$err_file"
+    rc=$?
+    set -e
   fi
-  rc=$?
   EXEC_STDOUT=$(<"$out_file")
   EXEC_STDERR=$(<"$err_file")
   rm -f "$out_file" "$err_file"
