@@ -1,3 +1,15 @@
+## Agent Update (2025-10-01 23:46 UTC)
+
+- Capped Playwright load: `fullyParallel` disabled, workers set to `CI ? 1 : 2`, kept `npm run dev` webServer with 180s timeout (`tests/e2e/playwright.config.ts`).
+- Consolidated SSE helpers by using `tests/e2e/helpers/createSSEStream.ts` in the reduced-motion spec and removing duplicate utils implementation.
+- Improved reduced-motion narration: live region now announces auto-scroll pause guidance; documentation (comprehensive testing, MCP Playwright, testing strategy, CHANGELOG) reflects the new coverage.
+- Playwright reduced-motion run still failing—dev server crashes while compiling Next.js (`.next/server/middleware.js` missing, swc mismatch warning). Needs follow-up before verification rerun.
+
+### Next Steps
+- [ ] Diagnose Next.js dev server startup errors (swc version mismatch, missing `.next` artifacts) blocking Playwright webServer.
+- [ ] Finalize SSE helper utility documentation/examples for other specs.
+- [ ] Extend docs to include troubleshooting notes for reduced-motion spec execution once server issue resolved.
+
 ## Agent Update (2025-10-01 23:30 UTC) - FINAL COORDINATION COMPLETE ✅
 
 **🎉 Code-Server v1.1.0 Multi-Stream Coordination COMPLETE - Issue #417 CLOSED**
@@ -111,42 +123,26 @@
 ### Additional Progress (2025-10-01 22:40 UTC)
 - Hardened `docker/code-server/Dockerfile`: Node tarball verification, Go checksum validation, cosign installation added.
 
-### Licensing Incident (2025-10-01 23:30 UTC) - CRITICAL
-- ❌ **GPL Violation Discovered**: GNU Emacs (GPL) was included in ALL v1.1.0 images
-- ✅ **Dockerfile Fixed**: Emacs removed, Node.js and Go now use checksum verification
-- ✅ **Documentation Updated**: CHANGELOG, README updated to remove Emacs references
-- ⏳ **REBUILD REQUIRED**: All 5 profiles need v1.1.1 rebuild (GPL-free)
+### Licensing Incident (2025-10-01 23:30 UTC) — CRITICAL
+- ❌ GNU Emacs (GPL) detected in all v1.1.0 images
+- ✅ Dockerfile patched: Emacs removed, Node/Go downloads hardened, cosign staged
+- ⏳ Rebuild required for `minimal`, `standard`, `ai`, `web`, `full`
+- ⚠️ Tag removal pending: lack `delete:packages`/Docker Hub delete scopes
 
-### Rebuild Plan (v1.1.1 - GPL-Free Release)
-**Status**: Waiting for Docker daemon to start
-
-**Profiles to Rebuild**:
-- [ ] minimal (400MB) - Has Emacs, needs rebuild
-- [ ] standard (700MB) - Has Emacs, needs rebuild  
-- [ ] ai (900MB) - Has Emacs, needs rebuild
-- [ ] web (600MB) - Has Emacs, needs rebuild
-- [ ] full (1.2GB) - Has Emacs, needs rebuild
-
-**Build Commands** (run after starting Docker):
-```bash
-# Build all profiles sequentially
-for profile in minimal standard ai web full; do
-  docker buildx build \
-    --platform linux/amd64,linux/arm64 \
-    -f docker/code-server/Dockerfile \
-    --build-arg PROFILE=$profile \
-    --build-arg VERSION=1.1.1 \
-    -t ghcr.io/ryanmaclean/vibecode-codeserver:1.1.1-$profile \
-    -t ghcr.io/ryanmaclean/vibecode-codeserver:$profile \
-    --push .
-done
-```
-
-**Post-Rebuild**:
-- [ ] Verify Emacs removed from all profiles
-- [ ] Update release notes for v1.1.1
-- [ ] Update GitHub issues #410, #416
-- [ ] Consider deprecating/removing v1.1.0 tags
+### Dev Infrastructure Upgrade Checklist
+1. **Registry cleanup**
+   - GHCR versions to retire: 532086486 (`full`/`latest`), 532080021 (`web`), 531338584 (`minimal`), 531327265 (`standard`), 531251775 (`ai`), 531300586 (`2025-10-01`), 531128805 (`1.0.0`).
+   - Docker Hub tags to retire: `full`, `web`, `minimal`, `standard`, `ai`, `latest`, `1.1.0-*`.
+   - Requires GH token with `delete:packages` scope and Docker Hub token with delete scope; fallback: mark tags inactive via PATCH.
+2. **Rebuild & publish updated profiles**
+   - Use `scripts/build-profiles.sh 1.1.1-devinfra <profile>` for `ai`, `web`, `full` (optionally `minimal`, `standard`).
+   - Capture manifests: `docker buildx imagetools inspect ghcr.io/ryanmaclean/vibecode-codeserver:ai-devinfra-$(date +%Y%m%d)` → append to `deployments/devinfra-manifests.log`.
+3. **Validation**
+   - `npm run test:scripts`, Docker-in-Docker smoke test, Dev Containers / Codespaces boot, Jetify Devbox shell.
+   - cosign verification once signature scripts merge.
+4. **Documentation & comms**
+   - Update CHANGELOG, release digest, DEPLOYMENT_REPORT highlighting Docker-on-Docker/Dev Containers/Devbox upgrade.
+   - Notify stakeholders (release, security, customer channels) once new tags live; schedule post-incident review.
 
 ### Active Streams (UPDATED)
 - **Release (#410)** – ✅ COMPLETE - All profiles deployed
