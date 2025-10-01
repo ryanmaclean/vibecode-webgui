@@ -19,6 +19,7 @@ setup() {
   unset MOCK_KUBECTL_EXEC_FAIL_ONCE
   unset MOCK_KUBECTL_EXEC_FAIL_MSG
   unset MOCK_TIMEOUT_EXIT
+  unset MOCK_KUBECTL_GET_EMPTY
 }
 
 teardown() {
@@ -31,6 +32,7 @@ teardown() {
   unset MOCK_KUBECTL_EXEC_FAIL_ONCE
   unset MOCK_KUBECTL_EXEC_FAIL_MSG
   unset MOCK_TIMEOUT_EXIT
+  unset MOCK_KUBECTL_GET_EMPTY
 }
 
 @test "succeeds when all editors present" {
@@ -79,4 +81,58 @@ teardown() {
   [[ "$output" == *"All tools verified."* ]]
   [[ "$output" != *"pod-alpha"* ]]
   [[ "$output" != *"pod-beta"* ]]
+}
+
+@test "emits structured telemetry for each tool" {
+  run "$SCRIPT"
+  [ "$status" -eq 0 ]
+  for tool in vim nvim emacs aider goose kubectl helm kubectx kubens; do
+    [[ "$output" == *"tool=$tool status=ok"* ]]
+  done
+  [[ "$output" =~ tool=vim\ status=ok\ duration_ms=[0-9]+ ]]
+  [[ "$output" =~ pod=pod-\*\*\*r-0 ]]
+}
+
+@test "emits retry telemetry before recovering" {
+  export MOCK_KUBECTL_GET_SEQUENCE='pod-alpha|pod-beta'
+  export MOCK_KUBECTL_EXEC_FAIL_ONCE='pod-alpha'
+  run "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"tool=vim status=retry"* ]]
+  [[ "$output" == *"tool=vim status=ok"* ]]
+}
+
+@test "masks secrets inside telemetry messages" {
+  export MOCK_KUBECTL_EXEC_FAIL=1
+  export MOCK_KUBECTL_EXEC_FAIL_MSG='kubectl exec failure password=supersecret token=abc123'
+  run "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"password=***"* ]]
+  [[ "$output" == *"token=***"* ]]
+  [[ "$output" != *"supersecret"* ]]
+  [[ "$output" != *"abc123"* ]]
+}
+
+@test "fails immediately when kubectl missing from PATH" {
+  PATH="/usr/bin:/bin"
+  run "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"kubectl is required but not found in PATH"* ]]
+}
+
+@test "exhausts Ready pods before reporting missing tool" {
+  export MOCK_KUBECTL_GET_SEQUENCE='pod-alpha|pod-beta|pod-gamma'
+  export MOCK_TOOL_MISSING=vim
+  run "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"tool=vim status=retry"* ]]
+  [[ "$output" == *"pod=pod-***mma"* ]]
+  [[ "$output" == *"vim check failed"* ]]
+}
+
+@test "handles empty Ready pod list gracefully" {
+  export MOCK_KUBECTL_GET_EMPTY=1
+  run "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"No Ready pods found for selector"* ]]
 }
