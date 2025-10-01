@@ -68,7 +68,7 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
       setLocalError(null)
       await save({
         theme: updates.theme ?? preferences.theme,
-        cliEditor: updates.cliEditor ?? preferences.cliEditor,
+        cliEditor: (updates.cliEditor ?? preferences.cliEditor) as "none" | "nano" | "vim" | "emacs" | "neovim",
         preferredIde: preferences.preferredIde,
         extensions: preferences.extensions,
         integrations: updates.integrations ?? preferences.integrations,

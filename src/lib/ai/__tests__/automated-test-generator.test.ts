@@ -35,7 +35,7 @@ jest.mock('@langchain/core/runnables', () => ({
 import { AutomatedTestGenerator, createTestGenerator, TestGenerationOptions } from '../automated-test-generator'
 
 // Type helper for accessing private members in tests
-type AutomatedTestGeneratorPrivate = AutomatedTestGenerator & {
+type AutomatedTestGeneratorPrivate = {
   testTemplates: Map<string, string>;
   parseAnalysisResult: (result: string) => unknown;
   parseTestSuiteResult: (result: string, options: TestGenerationOptions) => unknown;

@@ -90,14 +90,8 @@ jobs:
           path: ./docs/dist
 
       # --- Next.js Build Steps ---
-      - name: Abort – Next.js export not supported yet
-        if: steps.detect.outputs.docs_system == 'nextjs'
-        run: |
-          echo "::error::Next.js static export is currently unsupported. Use the Astro docs path or deploy the Next.js app via the platform pipelines."
-          exit 1
-
       - name: Setup Node.js for Next.js
-        if: false
+        if: steps.detect.outputs.docs_system == 'nextjs'
         uses: actions/setup-node@v4
         with:
           node-version: '18'
@@ -105,26 +99,27 @@ jobs:
           cache-dependency-path: './package-lock.json'
 
       - name: Install Next.js dependencies
-        if: false
+        if: steps.detect.outputs.docs_system == 'nextjs'
         run: npm ci
 
-      - name: Build Next.js site
-        if: false
+      - name: Build Next.js site (standalone)
+        if: steps.detect.outputs.docs_system == 'nextjs'
         run: npm run build
 
-      - name: Verify Next.js export artifact
-        if: false
+      - name: Prepare Next.js standalone bundle
+        if: steps.detect.outputs.docs_system == 'nextjs'
         run: |
-          if [ ! -d "./out" ]; then
-            echo "::error::Next.js export directory ./out not found. Set NEXT_OUTPUT_MODE=export or update the workflow artifact path before rerunning."
-            exit 1
-          fi
+          mkdir -p ./next-standalone/.next
+          rsync -a --delete ./.next/standalone/ ./next-standalone/
+          rsync -a ./next/static/ ./next-standalone/.next/static/
 
-      - name: Upload Next.js artifact
-        if: false
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload Next.js standalone artifact
+        if: steps.detect.outputs.docs_system == 'nextjs'
+        uses: actions/upload-artifact@v4
         with:
-          path: ./out
+          name: nextjs-standalone-${{ github.run_id }}
+          path: ./next-standalone
+          retention-days: 14
 
   deploy:
     environment:
@@ -132,7 +127,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && needs.build.outputs.docs_system == 'astro'
     timeout-minutes: 15
     steps:
       - name: Deploy to GitHub Pages
