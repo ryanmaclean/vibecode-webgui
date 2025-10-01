@@ -1,3 +1,172 @@
+## Agent Update (2025-10-01 21:20 UTC)
+
+- Roundtable (Declan release, Mira QA, Selene security, Tara docs, Kai ops) rechecked blockers.
+
+### Highlights
+- Release drift unchanged: BUILD_STATUS 06:45 UTC still 40%; DEPLOYMENT_SUMMARY 07:24 UTC 60%; runs 18173489520/88125/77874 failed 19:34 UTC (#410/#418).
+- Workflow dispatch merge still waiting on unique validation tag, concurrency guard, SBOM fail-fast, Datadog metrics (#418).
+- QA lacks telemetry/secret assertions plus PATH-without-kubectl and Ready exhaustion cases needed for `npm run test:scripts` gating (#417).
+- Security deadlines looming: docs/SECURITY checklist 2025-10-05; kubectl cosign 2025-10-08; helm cosign 2025-10-10; Dockerfile downloads still unverified (#416).
+- Docs (#411) still missing CHANGELOG/DEPLOYMENT_REPORT/verification guide/README/troubleshooting; release digest due 2025-10-02 18:00; handoff due 2025-10-06.
+
+### Action Items
+- [ ] Declan: Provide manifest evidence once ai/web/full builds succeed and capture workflow fixes for #410/#418.
+- [ ] Mira: Implement telemetry + sanitization + PATH/Ready pod tests, then wire `npm run test:scripts` into CI (#417).
+- [ ] Selene: Replace curl|bash/wget installs, publish docs/SECURITY checklist by 2025-10-05, complete cosign rollouts 2025-10-08/10 (#416).
+- [ ] Tara: Draft #411 docs deliverables immediately, aligning with 2025-10-02 release digest and 2025-10-06 handoff.
+- [ ] Kai: Coordinate 2025-10-02 12:00 checkpoint outputs and prep release digest brief highlighting #410/#418/#417/#416/#411 status.
+
+## Agent Update (2025-10-01 21:00 UTC)
+
+- MCP Codex personas: Avery (release), Nina (QA), Grant (security), Ivy (docs), Logan (ops) refreshed status.
+
+### Highlights
+- Build status remains 40% vs deployment 60%; codeserver-multiarch runs 18173489520/88125/77874 failed at 2025-10-01 19:34 UTC (#410/#418).
+- Workflow dispatch review still blocks merge pending validation tag uniqueness, concurrency guard, SBOM fail-fast, and Datadog evidence (#418).
+- QA lacks telemetry/secret assertions plus PATH-without-kubectl and Ready pod exhaustion coverage required for #417 CI gating.
+- Supply-chain TODOs: docs/SECURITY checklist due 2025-10-05; kubectl cosign 2025-10-08; helm cosign 2025-10-10; Dockerfile curl|bash + wget downloads still unverified (#416).
+- Documentation deliverables for #411 (CHANGELOG, DEPLOYMENT_REPORT, verification guide, README, troubleshooting) still pending; release digest due 2025-10-02 18:00; handoff due 2025-10-06.
+
+### Action Items
+- [ ] Avery: Relaunch codeserver-multiarch builds, capture manifest digests, and update issues #410/#418 ahead of 2025-10-02 checkpoint.
+- [ ] Nina: Add telemetry + sanitisation assertions plus PATH-missing and Ready pod exhaustion tests before enabling `npm run test:scripts` (#417).
+- [ ] Grant: Replace unverified Dockerfile downloads, publish docs/SECURITY checklist by 2025-10-05, finish kubectl/helm cosign rollouts by 2025-10-08/10 (#416).
+- [ ] Ivy: Draft #411 docs package immediately; align release digest (2025-10-02 18:00) and handoff (2025-10-06) timelines.
+- [ ] Logan: Host 2025-10-02 12:00 sync for release/QA/security owners and circulate recap with next steps same evening.
+
+## Agent Update (2025-10-01 20:45 UTC)
+
+- Quick telemetry check: no `/tmp/build-*.log` files present; latest `codeserver-multiarch` runs (IDs 18173489520/88125/77874) failed instantly on 2025-10-01 19:34 UTC.
+
+### Highlights
+- Build/deploy drift persists (40% vs 60%); failed workflows confirm ai/web/full artifacts still missing (#410/#418).
+- QA telemetry assertions and sanitization checks still unimplemented in Bats suite; `rg` shows no `tool=` assertions (#417).
+- Dockerfile retains curl|bash Node setup and unchecked Go tarball downloads; supply-chain gaps remain (#416).
+- Docs deliverables for #411 untouched pending reconciled status.
+
+### Action Items
+- [ ] Avery: Relaunch `codeserver-multiarch` build for ai/web/full, capture manifest digests, and update #410/#418 once successful.
+- [ ] Nina: Add Bats assertions covering `tool=/status=/duration_ms=` and secret masking in `tests/scripts/test-code-server-editors.bats`.
+- [ ] Grant: Draft replacements for curl|bash and wget installs, documenting checksum/cosign steps ahead of 2025-10-05/08/10 deadlines.
+- [ ] Ivy: Begin #411 documentation draft using latest reconciled data once available.
+- [ ] Logan: Prepare 2025-10-02 12:00 checkpoint agenda focusing on build rerun plan, QA gaps, and cosign rollout timeline.
+
+## Agent Update (2025-10-01 20:30 UTC)
+
+- MCP Codex personas: Avery (release forensics), Nina (QA coverage), Grant (supply-chain security), Ivy (docs delivery), Logan (ops coordination).
+
+### Highlights
+- Build telemetry mismatch persists (40% at 06:45 UTC vs 60% at 07:24 UTC); ai/web/full artifacts still unverified (#410/#418).
+- Workflow dispatch still missing validation tag uniqueness, concurrency guard, SBOM fail-fast, and Datadog evidence per reviewer notes.
+- QA suite lacks telemetry assertions, secret sanitization checks, PATH-without-kubectl, and Ready pod exhaustion coverage required for #417.
+- Security backlog: docs/SECURITY.md checklist (2025-10-05), kubectl cosign (2025-10-08), helm cosign (2025-10-10); curl|bash + wget installs remain unguarded (#416).
+- Documentation tasks for #411 (CHANGELOG, DEPLOYMENT_REPORT, verification guide, README, troubleshooting) still untouched ahead of 2025-10-02/06 deadlines.
+
+### Action Items
+- [ ] Avery: Reconcile build vs deploy data, confirm ai/web/full manifest digests, and update #410/#418 before 2025-10-02 checkpoint.
+- [ ] Nina: Implement telemetry/sanitization/Ready-pod/ PATH-negative tests, then stage `npm run test:scripts` CI gate (#417).
+- [ ] Grant: Replace insecure Dockerfile downloads, publish docs/SECURITY.md checklist by 2025-10-05, finalize kubectl/helm cosign rollouts (10-08/10-10) (#416).
+- [ ] Ivy: Draft #411 docs deliverables now, deliver release digest summary by 2025-10-02 18:00 UTC, prep handoff bundle for 2025-10-06.
+- [ ] Logan: Run 2025-10-02 12:00 UTC checkpoint with Avery/Nina/Grant, log outcomes, and prep release digest brief for 18:00 push.
+
+## Agent Update (2025-10-01 20:05 UTC)
+
+- Latest MCP roundtable with Codex personas: Sonia (release), Victor (QA), Maya (security), Leah (docs), Omar (ops).
+
+### Highlights
+- Build/deploy drift still unresolved (40% at 06:45 UTC vs 60% at 07:24 UTC); ai/web/full pushes remain unverified (#410).
+- Workflow dispatch (#418) needs unique validation tag, concurrency guard, SBOM fail-fast, and Datadog evidence before merge.
+- QA coverage gaps: telemetry `tool=/status=/duration_ms=` assertions, secret sanitization, PATH-without-kubectl, empty Ready pod exhaustion pending (#417).
+- Security deadlines unchanged: docs/SECURITY.md checklist (2025-10-05), kubectl cosign (2025-10-08), helm cosign (2025-10-10); Dockerfile curl|bash downloads still unguarded (#416).
+- Documentation deliverables for #411 (CHANGELOG, DEPLOYMENT_REPORT, verification guide, README, troubleshooting) still untouched; release digest due 2025-10-02 18:00 UTC; handoff due 2025-10-06.
+
+### Action Items
+- [ ] Sonia: Reconcile build/deploy records, confirm ai/web/full artifacts, and unblock #418 merge plus Datadog validation before 2025-10-02 checkpoint.
+- [ ] Victor: Add telemetry assertions, sanitization checks, PATH-missing kubectl case, and Ready pod exhaustion tests prior to enabling `npm run test:scripts` in CI (#417).
+- [ ] Maya: Publish docs/SECURITY.md checklist by 2025-10-05, complete kubectl cosign rollout by 2025-10-08, helm by 2025-10-10, and replace Dockerfile curl|bash installs (#416).
+- [ ] Leah: Start #411 documentation package immediately; deliver release digest notes by 2025-10-02 18:00 UTC and handoff bundle by 2025-10-06.
+- [ ] Omar: Host Sonia/Victor/Maya sync before 2025-10-02 12:00 UTC and update TODO + issues with agreed checkpoints (#410/#418/#417/#416/#411).
+
+## Agent Update (2025-10-01 19:40 UTC)
+
+- New Codex personas (Taylor, Jamie, Alex, Naomi, Blake) executed release/QA/security/docs/ops reviews via MCP.
+
+### Highlights
+- Build/deploy drift persists: 06:45 UTC BUILD_STATUS at 40% vs 07:24 UTC DEPLOYMENT_SUMMARY at 60%; ai/web/full status still unverified (#410).
+- Workflow dispatch (#418) blocked until validation tag uniqueness, concurrency guard, SBOM fail-fast, and Datadog metrics proof are addressed.
+- QA gaps: no assertions for `tool=/status=/duration_ms=` telemetry, kubectl PATH-missing coverage, or empty Ready pod exhaustion—must land before CI gating (#417).
+- Security deadlines: kubectl cosign due 2025-10-08, helm cosign due 2025-10-10, docs/SECURITY.md checklist due 2025-10-05; Dockerfile curl|bash installs remain unverified (#416).
+- Documentation track (#411) untouched; release digest support due 2025-10-02 18:00 UTC, handoff package due 2025-10-06; addendum still paused.
+
+### Action Items
+- [ ] Taylor: Reconcile build/deploy artifacts, confirm ai/web/full pushes, and drive #418 merge + Datadog validation before promoting latest.
+- [ ] Jamie: Extend Bats with telemetry assertions, kubectl PATH-missing behavior, and empty Ready pod retries ahead of `npm run test:scripts` CI gate (#417).
+- [ ] Alex: Finish kubectl/helm cosign workflows, replace insecure Dockerfile downloads, and publish docs/SECURITY.md checklist by 2025-10-05 (#416).
+- [ ] Naomi: Kick off #411 documentation deliverables immediately, deliver release digest support by 2025-10-02 18:00 UTC, prep handoff for 2025-10-06.
+- [ ] Blake: Schedule Taylor/Jamie/Alex sync by 2025-10-02 12:00 UTC; align telemetry validation with Datadog checks and update TODO after meeting.
+
+## Agent Update (2025-10-01 19:10 UTC)
+
+- Codex personas (Morgan, Priya, Eli, Harper, Jordan) reran release/QA/security/docs/coordination review using MCP roundtable.
+
+### Highlights
+- Build vs deployment drift persists: BUILD_STATUS still 40% at 06:45 UTC while DEPLOYMENT_SUMMARY shows 60% at 07:24 UTC; ai/web/full status unresolved (#410).
+- Workflow dispatch fix (#418) awaits merge plus Datadog validation; uniqueness/concurrency feedback from 07:35 UTC comment still open.
+- QA suite missing telemetry assertions, kubectl PATH-missing coverage, and empty Ready pod retries before `npm run test:scripts` can gate (#417).
+- Supply-chain work: cosign for kubectl (due 2025-10-08) and helm (due 2025-10-10) outstanding; docs/SECURITY.md checklist due 2025-10-05 (#416).
+- Docs lane idle: #411 deliverables (CHANGELOG, DEPLOYMENT_REPORT, verification guide, README, troubleshooting) untouched; release digest support due 2025-10-02 18:00 UTC; handoff package due 2025-10-06.
+
+### Action Items
+- [ ] Morgan: Confirm latest build logs, resolve 40/60% discrepancy, finish ai/web/full pushes, and drive #418 merge + Datadog rerun.
+- [ ] Priya: Extend Bats to assert `tool=/status=/duration_ms=` telemetry, simulate missing kubectl PATH, and cover empty Ready pods before CI wiring (#417).
+- [ ] Eli: Ship cosign verification for kubectl/helm, update docs/SECURITY.md checklist by 2025-10-05, and schedule kubectx/kubens verification before 2025-10-11 (#416).
+- [ ] Harper: Start #411 documentation package immediately; deliver release digest support by 2025-10-02 18:00 UTC and prep handoff for 2025-10-06.
+- [ ] Jordan: Convene Morgan/Priya/Eli sync before 2025-10-02 noon UTC to unblock above tasks and update TODO/issue statuses.
+
+## Agent Update (2025-10-01 11:05 UTC)
+
+- Roundtable Codex personas (Riley, Quinn, Sam, Dana, Casey) re-checked build, QA, security, docs, and coordination status.
+
+### Highlights
+- Build artifacts disagree: BUILD_STATUS (06:45 UTC) at 40% vs DEPLOYMENT_SUMMARY (07:24 UTC) at 60%; ai profile needs live confirmation before closing #410.
+- QA automation still lacks tests for `emit_status` telemetry logs, missing kubectl binaries, and empty Ready pod retries (issue #417 follow-up).
+- Supply-chain tasks: cosign validation for kubectl/helm and docs/SECURITY.md checklist remain outstanding ahead of 2025-10-05–10-10 targets (#416).
+- Documentation track for #411 is idle; release digest support due 2025-10-02 18:00 UTC and editor hardening addendum still paused.
+
+### Action Items
+- [ ] Riley: Reconcile build vs deployment reports, then coordinate #418 merge and validation rerun for #410/#418.
+- [ ] Quinn: Add telemetry, kubectl-missing, and empty Ready pod Bats coverage before gating CI (`tests/scripts/test-code-server-editors.bats`).
+- [ ] Sam: Implement cosign verification + remaining checksum hooks and publish supply-chain docs before 2025-10-05/10 (#416).
+- [ ] Dana: Kick off #411 docs deliverables (CHANGELOG/DEPLOYMENT_REPORT/guide) and prep release digest handoff by 2025-10-02 18:00 UTC.
+- [ ] Casey: Schedule cross-team checkpoint (Riley, Quinn, Sam) ahead of 2025-10-02 deadline and update TODO once blockers lift.
+
+## Agent Update (2025-10-01 22:11 UTC)
+
+- Fifth MCP sweep: Ingrid (config), Marco (SSE), Asha (a11y), Devin (docs), Priya (QA). Ingrid restated the 180s timeout + `npm run dev` combo already applied. Marco’s helper skeleton request still hitting Codex limits; helper signature remains manual TODO. Asha suggested strengthening `prefers-reduced-motion` overrides and offering a persistent toggle. Devin prompts kept failing—doc action items unchanged. Priya repeated the Playwright command pair (local + CI) for the reduced-motion spec.
+
+### Next Steps
+- [ ] Implement Erin/Casey/Nora/Paula/Ingrid config fixes: cap workers/parallelism and keep `webServer` command on `npm run dev` with timeout at 180s.
+- [ ] Extract Luca/Silas/Blake/Ethan/Marco SSE helper + typed builders, reuse in reduced-motion spec.
+- [ ] Add Ava/Riley/Mira/Lila/Asha reduced-motion status announcement and persistent skip messaging.
+- [ ] Apply Dana/Jules/Morgan/Devin doc/release-note updates covering the new spec.
+- [ ] Run Quinn/Tessa/Sam/Priya verification commands after resolving the dev-server startup hang.
+
+## Agent Update (2025-10-01 18:32 UTC)
+
+- Pulled five persona readouts via Codex MCP: Erin (Playwright config), Luca (SSE stub), Ava (A11y follow-up), Dana (docs), Quinn (verification). Key takeaways captured below for follow-up.
+- Erin recommends capping local Playwright workers and optionally flipping the dev command to `npm run dev:simple` or bumping `webServer.timeout` so the dev server stabilizes before tests stampede it.
+- Luca confirms the PassThrough workflow is ordered and suggests extracting a reusable SSE stub helper plus typed event builders for future specs.
+- Ava wants an explicit reduced-motion status ping (aria-live) so users who disable motion still get state changes without re-enabling animations.
+- Dana flagged docs to touch (`comprehensive-testing.md`, `mcp-playwright.md`, `testing-strategy.md`, `CHANGELOG.md`) so reduced-motion coverage shows up in playbooks.
+- Quinn outlined local/CI Playwright commands (chromium-only smoke, headed run, reuse existing server, CI single-worker junit export) to run once the dev-server timeout is fixed.
+
+### Next Steps
+- [ ] Implement Erin’s config fixes: cap workers/parallelism and consider swapping to `dev:simple` for local Playwright runs.
+- [ ] Break out Luca’s SSE stub helper + builders and reuse in reduced-motion spec.
+- [ ] Add Ava’s reduced-motion status announcement without reintroducing motion.
+- [ ] Apply Dana’s doc/release note updates covering the new spec.
+- [ ] Run Quinn’s verification command set after resolving the dev-server startup hang.
+
 ## Agent Update (2025-10-01 17:18 UTC)
 
 - Updated reduced-motion Playwright harness: chunked SSE stub, new ARIA assertions, and jump control semantics captured in spec + component.

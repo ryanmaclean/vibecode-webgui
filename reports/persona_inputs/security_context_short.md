@@ -1,0 +1,3 @@
+- SHA256 gates added 2025-10-01 for kubectl/helm/kubectx/kubens.
+- Pending: docs/SECURITY.md checklist (due 2025-10-05), kubectl cosign (2025-10-08), helm cosign (2025-10-10), kubectx/kubens final verification (2025-10-11).
+- Dockerfile still uses curl|bash for Node setup, wget for Go tarball, unverified KubeHound installer script.
