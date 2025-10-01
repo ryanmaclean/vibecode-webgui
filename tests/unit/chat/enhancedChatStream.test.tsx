@@ -1,7 +1,8 @@
 import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, beforeEach, afterEach, it, expect } from '@jest/globals'
+import { describe, beforeEach, afterEach, it, expect, beforeAll, afterAll } from '@jest/globals'
+import { TextDecoder as NodeTextDecoder } from 'util'
 import EnhancedChatInterface from '@/components/chat/EnhancedChatInterface'
 
 const createMatchMedia = (matches: boolean) => {
@@ -58,7 +59,21 @@ const clickSendButton = async (user: ReturnType<typeof userEvent.setup>) => {
 
 describe('EnhancedChatInterface streaming', () => {
   const originalMatchMedia = window.matchMedia
+  const originalTextDecoder = global.TextDecoder
   let fetchSpy: jest.SpyInstance
+
+  beforeAll(() => {
+    class PatchedTextDecoder extends NodeTextDecoder {
+      decode(input?: ArrayBufferView | ArrayBuffer | null, options?: TextDecodeOptions) {
+        if (typeof input === 'undefined' || input === null) {
+          return super.decode(new Uint8Array(), options as any)
+        }
+        return super.decode(input as ArrayBufferView, options as any)
+      }
+    }
+
+    global.TextDecoder = PatchedTextDecoder as unknown as typeof TextDecoder
+  })
 
   beforeEach(() => {
     window.matchMedia = createMatchMedia(false)
@@ -76,6 +91,10 @@ describe('EnhancedChatInterface streaming', () => {
   afterEach(() => {
     window.matchMedia = originalMatchMedia
     fetchSpy.mockRestore()
+  })
+
+  afterAll(() => {
+    global.TextDecoder = originalTextDecoder
   })
 
   it('merges chunked SSE payloads without dropping content', async () => {
