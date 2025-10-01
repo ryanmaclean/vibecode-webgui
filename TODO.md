@@ -1,12 +1,31 @@
-## Agent Update (2025-10-01 01:00 UTC, Next Docs Decision)
+## Agent Update (2025-10-01 02:05 UTC, Vector Pool Module Fix)
+
+- Replaced the `eval(require())` shim in `src/lib/db/connection-pool-alerts.ts` with a guarded dynamic import so the bundle retains the server-only vector pool while keeping the browser bundle clean.
+- `npm run build` (2025-10-01 02:04 UTC) now completes without the `[ConnectionPoolAlertService] Unable to load vector connection pool module` warning, so monitoring checks run during prerender again.
+- Warmed the module via `startMonitoring` so SSRed routes trigger the import early, with a graceful fallback for browsers.
+
+### Next Steps
+- [x] Add lightweight unit coverage for the alert service to exercise the new dynamic import path (mock module, assert skip behaviour on browsers). (Tracked in issue #403; see tests/unit/monitoring/connection-pool-alerts.test.ts.)
+- [x] Audit other monitoring helpers for `eval(require())` patterns and migrate them to the shared dynamic import approach (see issue #403 follow-ups). Quick `rg "eval(require"` sweep shows no additional instances as of 2025-10-01.
+
+## Agent Update (2025-10-01 01:07 UTC, Astro Syntax Cleanup)
+
+- Re-ran `npm run build` inside `docs/`; the run succeeded with a single warning about the `env` fence in `docs/src/content/docs/wiki-archive/monitoring/toto-integration.md`. Updated that fence to `bash` so the Astro build is warning-free going forward.
+- GitHub Pages remains Astro-only; Next.js deployment is tracked separately in issue draft #397.
+
+### Next Steps
+- [x] Re-run the workflow via `workflow_dispatch` (Astro mode) to confirm the guard step doesn’t impact the default path. (Run 18149455955 on 2025-10-01 succeeded; Astro publish OK, Next.js branch skipped by design.)
+- [ ] Close the loop on #397 once a server-backed Next.js deploy path is agreed.
+
+## Agent Update (2025-10-01 01:00 UTC, Next Docs Decision) — superseded
 
 - Sourced `.env.local` and ran both `npm run build` and `NEXT_OUTPUT_MODE=export npm run build`; the export attempt failed with `Cannot find module '.next/server/next-font-manifest.json'`, confirming the app cannot statically export yet.
-- Updated `next.config.mjs` to respect `NEXT_OUTPUT_MODE=export` for future work, and added a guard step in `.github/workflows/deploy-docs.yml` so the Next.js path now fails fast when `./out` is missing.
+- Updated `next.config.mjs` to respect `NEXT_OUTPUT_MODE=export` for future work, and (temporarily) added a guard step in `.github/workflows/deploy-docs.yml` so the Next.js path failed fast when `./out` was missing. Guard replaced by the 01:32 UTC artifact flow.
 - Logged the findings (00:51 + 00:56 UTC entries) in `docs/logs/workflow-issues/deploy-docs.md`, and pinned the pragmatic decision at 01:00 UTC: GitHub Pages stays Astro-only until we finish a real Next.js deployment path. The workflow now aborts immediately when `docs_system=nextjs`.
 
 ### Next Steps
 - [x] Spin up a separate issue/plan for deploying the Next.js app via a server-capable target (e.g., Azure, Vercel, or our existing platform pipeline) instead of GitHub Pages. (See docs/logs/issues/397-next-docs-deployment.md.)
-- [ ] Re-run the workflow via `workflow_dispatch` (Astro mode) to confirm the guard step doesn’t impact the default path. (Pending GitHub Action access.)
+- [x] Re-run the workflow via `workflow_dispatch` (Astro mode) to confirm the guard step doesn’t impact the default path. (Run 18149455955 on 2025-10-01 succeeded; Astro publish OK, Next.js branch skipped.)
 
 ## Agent Update (2025-10-01 00:47 UTC, Deploy Docs Validation)
 
@@ -15,7 +34,7 @@
 
 ### Next Steps
 - [x] Capture a Next.js variant build locally to confirm the dispatch flag path still works before we re-enable scheduled deploys.
-- [ ] Consider archiving the successful build artifact (dist/ snapshot) alongside the workflow issue draft for historical comparison.
+- [x] Consider archiving the successful build artifact (dist/ snapshot) alongside the workflow issue draft for historical comparison. Decision: keep repo lean; archive instructions added to docs/logs/workflow-issues/deploy-docs.md (2025-10-01 02:46 UTC entry).
 
 ## Agent Update (2025-10-01 00:04 UTC, Polyfill Applied)
 
@@ -33,7 +52,7 @@
 - Confirmed `monaco-editor@0.53.0` stays pinned in `package.json` and monacopilot integration still targets 0.53.
 
 ### Next Steps
-- [ ] Subscribe to upstream code-server release feed so we automatically evaluate future tags (4.105+).
+- [ ] Subscribe to upstream code-server release feed so we automatically evaluate future tags (4.105+) — see docs/logs/issues/code-server-release-monitor.md for the plan.
 - [ ] Rebuild and push the multi-arch image once CI resources available (`scripts/build-codeserver-multiarch.sh`).
 
 ## Agent Update (2025-10-01 00:02 UTC, Local Repro)
@@ -58,6 +77,19 @@
 - No markdown adjustments required; failure remains tied to known unit test flakiness.
 
 ### Next Steps
+
+## Agent Update (2025-10-01 02:34 UTC)
+
+- Rebuilt `docker/code-server/Dockerfile` with readable `code-server` perms (755) and bundled developer CLIs (vim, neovim, emacs-nox, aider-chat 0.84.0, goose-ai 0.9.11, langfuse<3) alongside the existing shell/tooling stack.
+- Produced multi-arch images (`docker build` arm64 + `docker buildx build --platform linux/amd64 … --load`), retagged the local build to `ghcr.io/ryanmaclean/vibecode-codeserver:latest` for downstream tests.
+- OrbStack sanity: `docker run … /bin/bash -lc 'vim/nvim/emacs/aider/goose --version …'` confirms all editors and CLIs resolve (bat via `batcat`).
+- KinD smoke: `./scripts/test-code-server-kind.sh` passes with the retagged image; Vim/Nvim/Emacs/Aider/Goose all present in the workspace pod and both port-forward + NodePort return 200.
+- Helm-on-KinD: `helm upgrade --install vibecode-platform … --set codeServer.image.tag=latest --set codeServer.persistence.enabled=false` succeeds; chart rolled out with the new image before being uninstalled for cleanup (MongoDB temporarily pending due to disabled storage).
+
+### Next Steps
+- [ ] Push the refreshed multi-arch image to GHCR and bump downstream manifests once CI lanes are green.
+- [ ] Replace the placeholder `datadog-secret` (api-key=`fakefakefake`) in `vibecode-platform` with real keys or remove it after automated smoke coverage lands.
+- [ ] Wire `scripts/test-code-server-kind.sh` into a CI job that tags/pushes the local build so the re-tag step isn’t needed manually.
 
 ## Agent Update (2025-09-30 23:59 UTC)
 
@@ -175,6 +207,11 @@
 - ✅ **Type Safety**: Reduced `any` usage in `voice-test/page.tsx` by fixing SpeechRecognition interface event handlers to use proper `void` return types.
 - ✅ **Build Success**: Production build now completes successfully with only minor warnings (metadataBase, SWC version mismatch).
 - ✅ **KinD Deployment**: Code-server pods running stable (2/2 Ready) with comprehensive 26-extension bundle including AI assistants, productivity tools, and Monaco 0.53 integration.
+- ✅ **Cosmos Adapter Implementation**: Implemented full Azure Cosmos DB vector database adapter with proper Azure SDK integration, vector search capabilities, and error handling.
+- ✅ **TypeScript Error Fixes**: Resolved onboarding component type issues and automated test generator intersection type problems.
+- ✅ **Component Export Fix**: Fixed missing default export in AIProjectGenerator component causing build failures.
+- ✅ **GCP Terraform Module**: Completed comprehensive Terraform module for GCP code-server cloud deployment with preemptible VMs, persistent disks, managed instance groups, health checks, and Cloud Scheduler automation.
+- ✅ **Cloud Deployment Progress**: Updated cloud workspace implementation documentation to reflect completed Terraform modules and Helm charts.
 
 ## Agent Update (2025-09-30 23:22 UTC)
 

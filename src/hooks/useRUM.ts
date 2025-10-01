@@ -5,16 +5,15 @@
 
 import React, { useCallback, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import RUMMonitoring from '@/lib/monitoring/rum-client'
 
 interface UseRUMReturn {
   // User tracking
-  trackAuth: (event: 'login' | 'logout' | 'signup' | 'password_reset', context?: Record<string, any>) => void
-  setUser: (user: { id?: string; name?: string; email?: string; [key: string]: any }) => void
-  
+  trackAuth: (event: 'login' | 'logout' | 'signup' | 'password_reset', context?: Record<string, unknown>) => void
+  setUser: (user: { id?: string; name?: string; email?: string; [key: string]: unknown }) => void
+
   // Workspace tracking
-  trackWorkspace: (action: string, workspaceId: string, metadata?: Record<string, any>) => void
+  trackWorkspace: (action: string, workspaceId: string, metadata?: Record<string, unknown>) => void
   
   // Code editor tracking
   trackCodeEditor: (action: string, context: {
@@ -44,17 +43,17 @@ interface UseRUMReturn {
   }) => void
   
   // Business metrics
-  trackBusinessMetric: (metric: string, value: number, attributes?: Record<string, any>) => void
-  
+  trackBusinessMetric: (metric: string, value: number, attributes?: Record<string, unknown>) => void
+
   // User journey tracking
-  trackJourney: (step: string, flow: string, metadata?: Record<string, any>) => void
-  
+  trackJourney: (step: string, flow: string, metadata?: Record<string, unknown>) => void
+
   // Error tracking
   trackError: (error: Error | string, context?: {
     component?: string;
     action?: string;
     severity?: 'low' | 'medium' | 'high' | 'critical';
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }) => void
   
   // Performance tracking
@@ -75,8 +74,8 @@ interface UseRUMReturn {
   }) => void
   
   // Generic action tracking
-  trackAction: (name: string, context?: Record<string, any>) => void
-  
+  trackAction: (name: string, context?: Record<string, unknown>) => void
+
   // Session info
   getSessionInfo: () => {
     sessionId?: string;
@@ -87,7 +86,6 @@ interface UseRUMReturn {
 
 export function useRUM(): UseRUMReturn {
   const { data: session } = useSession()
-  const router = useRouter()
 
   // Set user context when session changes
   useEffect(() => {
@@ -138,18 +136,18 @@ export function useRUM(): UseRUMReturn {
     }
   }, [])
 
-  const trackAuth = useCallback((event: 'login' | 'logout' | 'signup' | 'password_reset', context?: Record<string, any>) => {
+  const trackAuth = useCallback((event: 'login' | 'logout' | 'signup' | 'password_reset', context?: Record<string, unknown>) => {
     RUMMonitoring.trackAuth(event, {
       ...context,
       userId: session?.user?.id || session?.user?.email
     })
   }, [session])
 
-  const setUser = useCallback((user: { id?: string; name?: string; email?: string; [key: string]: any }) => {
+  const setUser = useCallback((user: { id?: string; name?: string; email?: string; [key: string]: unknown }) => {
     RUMMonitoring.setUser(user)
   }, [])
 
-  const trackWorkspace = useCallback((action: string, workspaceId: string, metadata?: Record<string, any>) => {
+  const trackWorkspace = useCallback((action: string, workspaceId: string, metadata?: Record<string, unknown>) => {
     RUMMonitoring.trackWorkspaceAction(action, workspaceId, {
       ...metadata,
       userId: session?.user?.id || session?.user?.email
@@ -196,14 +194,14 @@ export function useRUM(): UseRUMReturn {
     })
   }, [session])
 
-  const trackBusinessMetric = useCallback((metric: string, value: number, attributes?: Record<string, any>) => {
+  const trackBusinessMetric = useCallback((metric: string, value: number, attributes?: Record<string, unknown>) => {
     RUMMonitoring.trackBusinessMetric(metric, value, {
       ...attributes,
       userId: session?.user?.id || session?.user?.email
     })
   }, [session])
 
-  const trackJourney = useCallback((step: string, flow: string, metadata?: Record<string, any>) => {
+  const trackJourney = useCallback((step: string, flow: string, metadata?: Record<string, unknown>) => {
     RUMMonitoring.trackUserJourney(step, flow, {
       ...metadata,
       userId: session?.user?.id || session?.user?.email
@@ -214,7 +212,7 @@ export function useRUM(): UseRUMReturn {
     component?: string;
     action?: string;
     severity?: 'low' | 'medium' | 'high' | 'critical';
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }) => {
     RUMMonitoring.trackError(error, {
       ...context,
@@ -244,7 +242,7 @@ export function useRUM(): UseRUMReturn {
     })
   }, [session])
 
-  const trackAction = useCallback((name: string, context?: Record<string, any>) => {
+  const trackAction = useCallback((name: string, context?: Record<string, unknown>) => {
     RUMMonitoring.addAction(name, {
       ...context,
       userId: session?.user?.id || session?.user?.email,
