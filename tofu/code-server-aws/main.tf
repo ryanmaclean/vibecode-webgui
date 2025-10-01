@@ -454,7 +454,7 @@ resource "aws_scheduler_schedule" "codeserver_start" {
 
   target {
     arn      = aws_ecs_service.codeserver.id
-    role_arn = aws_iam_role.scheduler.arn
+    role_arn = aws_iam_role.scheduler[0].arn
 
     ecs_parameters {
       task_definition_arn = aws_ecs_task_definition.codeserver.arn
@@ -467,8 +467,4 @@ resource "aws_scheduler_schedule" "codeserver_start" {
     }
   }
 
-  tags = {
-    Name        = "${var.environment}-codeserver-start-schedule"
-    Environment = var.environment
-  }
 }

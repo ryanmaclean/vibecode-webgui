@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tooltip, TooltipProvider } from '@/components/ui/tooltip'
+import { createSSEDecoder } from '@/lib/ai/utils/sse-decoder'
 
 interface Message {
   id: string
@@ -52,33 +53,7 @@ interface ConversationApiResponse {
   }
 }
 
-type StreamContentChunk = {
-  type: 'content'
-  content: string
-}
-
-type StreamMetadataChunk = {
-  type: 'metadata'
-  metadata: Partial<NonNullable<AssistantMessage['metadata']>>
-}
-
-const isContentChunk = (value: unknown): value is StreamContentChunk => {
-  if (typeof value !== 'object' || value === null) return false
-  const chunk = value as Record<string, unknown>
-  return chunk.type === 'content' && typeof chunk.content === 'string'
-}
-
 const isAssistantMessage = (message: Message): message is AssistantMessage => message.from === 'assistant'
-
-const isMetadataChunk = (value: unknown): value is StreamMetadataChunk => {
-  if (typeof value !== 'object' || value === null) return false
-  const chunk = value as Record<string, unknown>
-  return (
-    chunk.type === 'metadata' &&
-    typeof chunk.metadata === 'object' &&
-    chunk.metadata !== null
-  )
-}
 
 const AVAILABLE_MODELS = [
   { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', context: '200K' },
@@ -463,79 +438,49 @@ export const EnhancedChatInterface = ({
       const decoder = new TextDecoder()
 
       if (reader) {
-        let bufferedText = ''
-        let pendingDataLines: string[] = []
-
-        const flushPendingData = () => {
-          if (pendingDataLines.length === 0) return
-
-          const dataPayload = pendingDataLines.join('\n')
-          pendingDataLines = []
-
-          if (!dataPayload) return
-
-          try {
-            const parsed: unknown = JSON.parse(dataPayload)
-
-            if (isContentChunk(parsed)) {
-              const buffer = contentBufferRef.current
-              buffer.chunks.push(parsed.content)
-              buffer.size += parsed.content.length
-              scheduleContentFlush()
-            } else if (isMetadataChunk(parsed)) {
-              flushContentBuffer(true)
-              updateLastAssistantMessage(message => ({
-                ...message,
-                metadata: {
-                  ...(message.metadata ?? {}),
-                  ...parsed.metadata
-                }
-              }))
-            }
-          } catch (streamError) {
-            console.warn('Failed to parse stream chunk', streamError)
+        const sseDecoder = createSSEDecoder({
+          onContentChunk: chunk => {
+            const buffer = contentBufferRef.current
+            buffer.chunks.push(chunk.content)
+            buffer.size += chunk.content.length
+            scheduleContentFlush()
+          },
+          onMetadataChunk: chunk => {
+            flushContentBuffer(true)
+            updateLastAssistantMessage(message => ({
+              ...message,
+              metadata: {
+                ...(message.metadata ?? {}),
+                ...(chunk.metadata as Partial<NonNullable<AssistantMessage['metadata']>>)
+              }
+            }))
+          },
+          onMalformedChunk: (error, rawPayload) => {
+            console.warn('Failed to parse stream chunk', error, rawPayload)
           }
-        }
+        })
 
         try {
           while (true) {
             const { done, value } = await reader.read()
 
             if (value) {
-              bufferedText += decoder.decode(value, { stream: true })
+              const decodedValue = decoder.decode(value, { stream: true })
+              sseDecoder.push(decodedValue)
             }
 
             if (done) {
-              bufferedText += decoder.decode()
-              bufferedText += '\n'
-            }
-
-            let newlineIndex = bufferedText.indexOf('\n')
-
-            while (newlineIndex !== -1) {
-              const rawLine = bufferedText.slice(0, newlineIndex)
-              bufferedText = bufferedText.slice(newlineIndex + 1)
-              const line = rawLine.replace(/\r$/, '')
-
-              if (line.trim() === '') {
-                flushPendingData()
-              } else if (line.startsWith('data:')) {
-                const dataValue = line.startsWith('data: ')
-                  ? line.slice(6)
-                  : line.slice(5)
-                pendingDataLines.push(dataValue)
+              const finalValue = decoder.decode()
+              if (finalValue) {
+                sseDecoder.push(finalValue)
               }
-
-              newlineIndex = bufferedText.indexOf('\n')
-            }
-
-            if (done) {
-              flushPendingData()
+              sseDecoder.finish()
               flushContentBuffer(true)
               break
             }
           }
         } finally {
+          sseDecoder.finish()
           try {
             await reader.cancel()
           } catch (cancelError) {
