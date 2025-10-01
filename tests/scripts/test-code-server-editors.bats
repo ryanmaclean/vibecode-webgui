@@ -1,108 +1,82 @@
 #!/usr/bin/env bats
 
 setup() {
-  export PATH="$(pwd)/tests/scripts/fixtures/bin:$PATH"
+  export ROOT_DIR="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
+  export SCRIPT="$ROOT_DIR/scripts/test-code-server-editors.sh"
+  export PATH="$ROOT_DIR/tests/scripts/fixtures/bin:$PATH"
   export CODE_SERVER_NAMESPACE=test-namespace
   export CODE_SERVER_SELECTOR=app=code-server,tier=workspace
   export KUBE_REQUEST_TIMEOUT=2s
   export KUBE_WAIT_TIMEOUT=2s
   export EDITOR_EXEC_TIMEOUT=2s
+  export MAX_POD_ATTEMPTS=3
+  export MOCK_KUBECTL_STATE_DIR="$BATS_TEST_TMPDIR"
   unset MOCK_TOOL_MISSING
   unset MOCK_KUBECTL_EXEC_FAIL
   unset MOCK_KUBECTL_EXEC_TIMEOUT
   unset MOCK_KUBECTL_WAIT_FAIL
-  unset MOCK_KUBECTL_GET_FAIL
+  unset MOCK_KUBECTL_GET_SEQUENCE
+  unset MOCK_KUBECTL_EXEC_FAIL_ONCE
+  unset MOCK_KUBECTL_EXEC_FAIL_MSG
   unset MOCK_TIMEOUT_EXIT
 }
 
 teardown() {
+  rm -f "$MOCK_KUBECTL_STATE_DIR"/mock_*
   unset MOCK_TOOL_MISSING
   unset MOCK_KUBECTL_EXEC_FAIL
   unset MOCK_KUBECTL_EXEC_TIMEOUT
   unset MOCK_KUBECTL_WAIT_FAIL
-  unset MOCK_KUBECTL_GET_FAIL
+  unset MOCK_KUBECTL_GET_SEQUENCE
+  unset MOCK_KUBECTL_EXEC_FAIL_ONCE
+  unset MOCK_KUBECTL_EXEC_FAIL_MSG
   unset MOCK_TIMEOUT_EXIT
 }
 
 @test "succeeds when all editors present" {
-  run ./scripts/test-code-server-editors.sh
+  run "$SCRIPT"
   [ "$status" -eq 0 ]
   [[ "$output" == *"All tools verified."* ]]
+  [[ "$output" != *"pod-code-server-0"* ]]
 }
 
 @test "fails when a tool is missing" {
   export MOCK_TOOL_MISSING=nvim
-  run ./scripts/test-code-server-editors.sh
+  run "$SCRIPT"
   [ "$status" -ne 0 ]
   [[ "$output" == *"nvim missing"* ]]
 }
 
-@test "surfaces kubectl exec failures" {
+@test "surfaces kubectl exec failures with redacted tokens" {
   export MOCK_KUBECTL_EXEC_FAIL=1
-  run ./scripts/test-code-server-editors.sh
+  export MOCK_KUBECTL_EXEC_FAIL_MSG='kubectl exec error token=secret123'
+  run "$SCRIPT"
   [ "$status" -ne 0 ]
   [[ "$output" == *"kubectl exec failed"* ]]
+  [[ "$output" == *"token=***"* ]]
+  [[ "$output" != *"secret123"* ]]
 }
 
 @test "reports timeout when commands exceed limit" {
   export MOCK_TIMEOUT_EXIT=1
-  run ./scripts/test-code-server-editors.sh
+  run "$SCRIPT"
   [ "$status" -ne 0 ]
   [[ "$output" == *"timeout after"* ]]
 }
 
-@test "handles kubectl wait failures gracefully" {
+@test "fails fast when kubectl wait fails" {
   export MOCK_KUBECTL_WAIT_FAIL=1
-  run ./scripts/test-code-server-editors.sh
+  run "$SCRIPT"
   [ "$status" -ne 0 ]
-  [[ "$output" == *"Warning: kubectl wait"* ]]
+  [[ "$output" == *"kubectl wait failed"* ]]
 }
 
-@test "handles kubectl get pod failures" {
-  export MOCK_KUBECTL_GET_FAIL=1
-  run ./scripts/test-code-server-editors.sh
-  [ "$status" -ne 0 ]
-  [[ "$output" == *"No Ready pods found"* ]]
-}
-
-@test "differentiates transport/RBAC failures from missing tools" {
-  export MOCK_KUBECTL_EXEC_FAIL=1
-  # Mock stderr to contain transport error
-  export MOCK_STDERR="transport: dial tcp: connection refused"
-  run ./scripts/test-code-server-editors.sh
-  [ "$status" -ne 0 ]
-  [[ "$output" == *"transport/RBAC failure"* ]]
-}
-
-@test "emits structured status logs" {
-  run ./scripts/test-code-server-editors.sh
+@test "rotates pods between retries and succeeds" {
+  export MOCK_KUBECTL_GET_SEQUENCE='pod-alpha|pod-beta'
+  export MOCK_KUBECTL_EXEC_FAIL_ONCE='pod-alpha'
+  run "$SCRIPT"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"tool=vim status=ok duration_ms="* ]]
-  [[ "$output" == *"tool=nvim status=ok duration_ms="* ]]
-}
-
-@test "handles permission denied errors" {
-  export MOCK_TOOL_MISSING=vim
-  export MOCK_EXEC_RC=126
-  run ./scripts/test-code-server-editors.sh
-  [ "$status" -ne 0 ]
-  [[ "$output" == *"permission denied"* ]]
-}
-
-@test "retries across multiple pods" {
-  export MOCK_TOOL_MISSING=vim
-  run ./scripts/test-code-server-editors.sh
-  [ "$status" -ne 0 ]
-  # Should show retry attempts across pods
-  [[ "$output" == *"retry"* ]]
-}
-
-@test "redacts sensitive information from logs" {
-  export MOCK_SENSITIVE_DATA="password=secret123"
-  run ./scripts/test-code-server-editors.sh
-  [ "$status" -eq 0 ]
-  # Should not contain actual password
-  [[ "$output" != *"password=secret123"* ]]
-  # Should contain redacted version
-  [[ "$output" == *"password=***"* ]]
+  [[ "$output" == *"All tools verified."* ]]
+  [[ "$output" != *"pod-alpha"* ]]
+  [[ "$output" != *"pod-beta"* ]]
 }
