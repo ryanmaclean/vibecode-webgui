@@ -15,6 +15,7 @@
 | @claudia.p | Draft ARM64 Playwright smoke addition (issue #409) | Pending | Requires runner allocation + checklist update. |
 | @platform-ops | Harden code-server editor smoke test (#415) | In progress | Add Ready pod gating, request timeouts, structured logs. |
 | @security | Verify kubernetes tooling downloads (#416) | Pending | Add checksum/signature validation + policy update. |
+| @config-team | Coordinate updated Azure/Valkey env templates (TODO(config-env-templates)) | In progress | Update env samples + docs; confirm secret sync + rollout notes. |
 
 ## Security Hardening Roadmap (Unsigned CLI Downloads)
 | TODO ID | Owner | Scope | Verification Path | Target |
@@ -29,7 +30,7 @@
 - Enable AI tooling parity CI matrix (see `docs/tooling/ai-tooling-parity.md`) when runner capacity is approved. (GH issue #413)
 - Emit `codeserver.kind.latency` + success metrics from `scripts/test-code-server-kind.sh` once secrets available.
 - Define Buildx cache retention policy and document in workflow issue log.
-- Monitor first nightly run after canary/promote inputs merge and capture results in release digest.
+- When workflow_dispatch lands on main, rerun `codeserver-multiarch` with `promote_latest=false`, then log results in release digest.
 - Publish code-server editor hardening addendum in docs once #415/#416 merge.
 
 ## Blocked / Watchlist
