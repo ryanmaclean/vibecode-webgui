@@ -5,6 +5,38 @@
 
 import { authOptions } from '../auth'
 
+// Type definitions for NextAuth providers and callbacks
+type CredentialsProvider = {
+  id: string;
+  name: string;
+  options?: {
+    authorize?: (credentials: unknown) => Promise<unknown>;
+  };
+  authorize?: (credentials: unknown) => Promise<unknown>;
+};
+
+type JWTCallback = (params: {
+  token: Record<string, unknown>;
+  user?: Record<string, unknown>;
+  account?: Record<string, unknown>;
+}) => Promise<Record<string, unknown>>;
+
+type SessionCallback = (params: {
+  session: Record<string, unknown>;
+  token?: Record<string, unknown>;
+  user: Record<string, unknown>;
+}) => Promise<Record<string, unknown>>;
+
+type SignInCallback = (params: {
+  user: Record<string, unknown>;
+  account: Record<string, unknown>;
+  profile?: Record<string, unknown>;
+  email?: Record<string, unknown>;
+  credentials?: Record<string, unknown>;
+}) => Promise<boolean>;
+
+type EventCallback = (params: Record<string, unknown>) => Promise<void>;
+
 // Mock environment variables
 const originalEnv = process.env
 
