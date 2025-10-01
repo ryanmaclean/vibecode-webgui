@@ -1,7 +1,9 @@
 import ConnectionPoolAlertService, {
   AlertSeverity,
   AlertType,
+  __loadVectorConnectionPoolModuleForTest,
   __resetVectorConnectionPoolModule,
+  __setBrowserEnvironmentForTest,
   __setVectorConnectionPoolModule,
 } from '../../../src/lib/db/connection-pool-alerts';
 
@@ -21,14 +23,17 @@ describe('ConnectionPoolAlertService dynamic module loading', () => {
   beforeEach(() => {
     resetServiceState();
     __resetVectorConnectionPoolModule();
+    __setBrowserEnvironmentForTest(null);
   });
 
   afterEach(() => {
     resetServiceState();
     __resetVectorConnectionPoolModule();
+    __setBrowserEnvironmentForTest(null);
   });
 
   it('gracefully skips monitoring work when the vector module is unavailable', () => {
+    __setBrowserEnvironmentForTest(false);
     const addAlertSpy = jest.spyOn(service, 'addAlert');
 
     (service as unknown as { checkConnectionPool: () => void }).checkConnectionPool();
@@ -38,6 +43,7 @@ describe('ConnectionPoolAlertService dynamic module loading', () => {
   });
 
   it('emits alerts when the vector module provides critical metrics', () => {
+    __setBrowserEnvironmentForTest(false);
     const getMetrics = jest.fn(() => ({
       poolSize: 10,
       activeConnections: 9,
@@ -65,5 +71,27 @@ describe('ConnectionPoolAlertService dynamic module loading', () => {
       true,
     );
     expect(getMetrics).toHaveBeenCalled();
+  });
+
+  it('returns null from dynamic import loader in browser mode', async () => {
+    __resetVectorConnectionPoolModule();
+    __setBrowserEnvironmentForTest(true);
+
+    await expect(__loadVectorConnectionPoolModuleForTest()).resolves.toBeNull();
+  });
+
+  it('returns cached module when running on the server', async () => {
+    const mockModule: VectorModule = {
+      VectorConnectionPoolFactory: {
+        getPool: jest.fn(),
+        createPool: jest.fn(),
+      },
+    } as unknown as VectorModule;
+
+    __resetVectorConnectionPoolModule();
+    __setBrowserEnvironmentForTest(false);
+    __setVectorConnectionPoolModule(mockModule);
+
+    await expect(__loadVectorConnectionPoolModuleForTest()).resolves.toBe(mockModule);
   });
 });
