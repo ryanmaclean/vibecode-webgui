@@ -104,7 +104,7 @@ export class DatabaseLogger implements DbLogger {
     options: LogOptions
   ): void {
     // Select console method based on level
-    let consoleMethod: (...data: any[]) => void;
+    let consoleMethod: (...data: unknown[]) => void;
     switch (level) {
       case LogLevel.ERROR:
         consoleMethod = console.error;
@@ -147,18 +147,18 @@ export class DatabaseLogger implements DbLogger {
     }
   }
   
-  private writeToLogFile(logEntry: any): void {
+  private writeToLogFile(_logEntry: Record<string, unknown>): void {
+    // To be implemented
+  }
+
+  private sendToMetrics(_logEntry: Record<string, unknown>): void {
     // To be implemented
   }
   
-  private sendToMetrics(logEntry: any): void {
-    // To be implemented
-  }
-  
-  public error(message: string, errorOrMetadata?: Error | Record<string, any>, metadata?: Record<string, any>): void {
+  public error(message: string, errorOrMetadata?: Error | Record<string, unknown>, metadata?: Record<string, unknown>): void {
     // Handle overloaded method signature
     let error: Error | undefined;
-    let combinedMetadata: Record<string, any> | undefined;
+    let combinedMetadata: Record<string, unknown> | undefined;
     
     if (errorOrMetadata instanceof Error) {
       error = errorOrMetadata;
@@ -175,28 +175,28 @@ export class DatabaseLogger implements DbLogger {
     });
   }
   
-  public warn(message: string, metadata?: Record<string, any>): void {
+  public warn(message: string, metadata?: Record<string, unknown>): void {
     this.log(message, {
       level: LogLevel.WARN,
       metadata
     });
   }
-  
-  public info(message: string, metadata?: Record<string, any>): void {
+
+  public info(message: string, metadata?: Record<string, unknown>): void {
     this.log(message, {
       level: LogLevel.INFO,
       metadata
     });
   }
-  
-  public debug(message: string, metadata?: Record<string, any>): void {
+
+  public debug(message: string, metadata?: Record<string, unknown>): void {
     this.log(message, {
       level: LogLevel.DEBUG,
       metadata
     });
   }
-  
-  public trace(message: string, metadata?: Record<string, any>): void {
+
+  public trace(message: string, metadata?: Record<string, unknown>): void {
     this.log(message, {
       level: LogLevel.TRACE,
       metadata
@@ -211,7 +211,7 @@ export class DatabaseLogger implements DbLogger {
       start: () => {
         startTime = Date.now();
       },
-      end: (message?: string, additionalMetadata?: Record<string, any>) => {
+      end: (message?: string, additionalMetadata?: Record<string, unknown>) => {
         endTime = Date.now();
         const elapsed = endTime - startTime;
         
