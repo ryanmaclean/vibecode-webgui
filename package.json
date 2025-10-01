@@ -132,7 +132,7 @@
     "@langchain/weaviate": "^0.2.1",
     "@modelcontextprotocol/sdk": "1.18.2",
     "@monaco-editor/react": "4.7.0",
-    "@mui/material": "^7.2.0",
+    "@mui/material": "^7.3.2",
     "@mui/x-charts": "^8.9.0",
     "@next/swc-darwin-arm64": "15.5.4",
     "@octokit/rest": "22.0.0",
