@@ -35,19 +35,22 @@ Centralise the cadence, validation, and observability expectations for shipping 
 ```
 
 ## Version & Tag Policy
+- Cross-check nightly/tag status via the shipping dashboard's ["Version & Cross-Links"](./shipping-dashboard.md#version--cross-links) section before promoting a new image.
 - **Stable tags:** `ghcr.io/<owner>/vibecode-codeserver:latest` and commit SHA tags promote only after the Ops sign-off checklist is completed.
 - **Nightly tag:** `:nightly` updates solely from the scheduled run; if a night fails, retain the previous nightly tag and record the miss in the release digest.
-- **Canary tags (planned):** `:amd64-canary` and `:arm64-canary` will stage traffic ahead of `:latest` once Release Engineering finalises safeguards (see placeholder in `docs/handoff/shipping-dashboard.md`).
+- **Canary tags (planned):** `:amd64-canary` and `:arm64-canary` will stage traffic ahead of `:latest` once Release Engineering finalises safeguards (see staging cues in [`docs/handoff/shipping-dashboard.md`](./shipping-dashboard.md#version--cross-links)).
 - **Release digests:** Each run logs to `docs/logs/releases/code-server/<YYYY-MM-DD>.md`; reference that entry in the `#shipping-dashboard` announcement.
 - **Rollback guidance:** Pending Ops update—will live in a dedicated subsection under the Rollback Trigger Matrix once authored.
 
 ## Cross-References
-- Shipping dashboard snapshot: `docs/handoff/shipping-dashboard.md` (owner roster, cadence).
+- Shipping dashboard snapshot: [`docs/handoff/shipping-dashboard.md`](./shipping-dashboard.md#version--cross-links) (owner roster, cadence, nightly status).
 - Optional tooling audit: `docs/logs/issues/docker-multiarch-audit.md` (architecture guard rationale).
 - Workflow tracker: `docs/logs/workflow-issues/docker-multiarch.yml.md` (job breakdown, observability hooks).
-- AI tooling parity plan: `docs/tooling/ai-tooling-parity.md`.
+- AI tooling parity plan: [`docs/tooling/ai-tooling-parity.md`](../tooling/ai-tooling-parity.md) (GH issue #413).
+- Observability runbook: [`docs/observability/codeserver-ci.md`](../observability/codeserver-ci.md) (GH issue #412).
 
 ## Canary & Promotion Safeguards (Release Engineering Draft)
+- Confirm planned canary staging windows against the shipping dashboard's ["Version & Cross-Links"](./shipping-dashboard.md#version--cross-links) before flipping traffic.
 - **Tag staging:** promote builds first to `:amd64-canary` / `:arm64-canary`, hold for a 60-minute observation window, then manually approve promotion to `:latest` via GitHub Actions environment protection.
 - **Success criteria:** <1% HTTP 5xx, <5% p95 latency regression versus prior stable, CPU/RAM variance within ±10%, synthetic checks green on both architectures.
 - **Rollback triggers:** Any success metric breaching threshold for ≥5 minutes, Datadog alert severity ≥ Warning, or Playwright smoke failure against canary URL—re-tag previous stable and re-run smoke before reopening promotion.

@@ -2,6 +2,11 @@
 
 ## 2025-10-01
 
+### Agent Codex (Observability & Release Automation) - 2025-10-01
+- Enabled canary promotion toggles in `.github/workflows/codeserver-multiarch.yml` (workflow_dispatch inputs) and added Datadog metric emission + canary tagging.
+- Updated `scripts/test-code-server-kind.sh` to emit `codeserver.kind.latency/success` metrics and events when Datadog secrets are present.
+- Created `docs/observability/codeserver-ci.md` runbook and logged tracking issues #412 (observability) and #413 (AI tooling parity).
+
 ### Agent Codex (Multiplayer Coordination) - 2025-10-01
 - Added version/tag policy, canary safeguard draft, and cross-links to `docs/handoff/code-server-release.md` + shipping dashboard.
 - Logged observability implementation plan and updated TODO automation notes.

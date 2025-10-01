@@ -10,17 +10,18 @@ _Last updated: 2025-10-01_
 | Deploy | Sasha Gomez (escalation mgr) | ⚠️ GitHub Actions deploy step disabled pending workflow enhancement | Re-enable once workflow updates merge |
 
 ## Key Links
-- Release handoff: `docs/handoff/code-server-release.md`
+- Release handoff: [`docs/handoff/code-server-release.md`](./code-server-release.md)
 - Workflow health: `.github/workflows/codeserver-multiarch.yml`
 - Workflow issue tracker: `docs/logs/workflow-issues/docker-multiarch.yml.md`
 - Cloud deployment log: `docs/logs/issues/code-server-cloud-deployment.md`
 
 ## Version & Cross-Links
-- Version/tag policy: see "Version & Tag Policy" in `docs/handoff/code-server-release.md`.
-- Canary plan draft: see "Canary & Promotion Safeguards" in `docs/handoff/code-server-release.md`.
+- Version/tag policy: follow ["Version & Tag Policy"](./code-server-release.md#version--tag-policy) for promotion steps and tag naming.
+- Canary plan draft: mirror ["Canary & Promotion Safeguards"](./code-server-release.md#canary--promotion-safeguards-release-engineering-draft) when staging `:canary` tags.
 - Optional install guard rails: `docs/logs/issues/docker-multiarch-audit.md`.
 - Workflow anatomy & telemetry hooks: `docs/logs/workflow-issues/docker-multiarch.yml.md`.
-- AI tooling parity plan: `docs/tooling/ai-tooling-parity.md`.
+- Observability runbook: [`docs/observability/codeserver-ci.md`](../observability/codeserver-ci.md) (GH issue #412).
+- AI tooling parity plan: [`docs/tooling/ai-tooling-parity.md`](../tooling/ai-tooling-parity.md) (GH issue #413).
 - Release digests live in `docs/logs/releases/code-server/`; always link the latest entry in the shipping thread.
 - Rollback playbook placeholder: update `docs/handoff/code-server-release.md` once Ops publishes the step-by-step reversal.
 
