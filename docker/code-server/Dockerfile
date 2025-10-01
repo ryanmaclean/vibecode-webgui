@@ -112,22 +112,25 @@ RUN wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz \
     && ln -s /usr/local/go/bin/go /usr/local/bin/go
 
 # Install AI CLI tools and database tools
-# 1. Goose for database migrations
-RUN CGO_ENABLED=0 go install github.com/pressly/goose/v3/cmd/goose@latest \
-    && echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> /home/coder/.bashrc \
-    && mkdir -p /home/coder/.vscode/extensions/goose-integration \
-    && echo 'alias goose="goose -dir /home/coder/workspace/migrations"' >> /home/coder/.bashrc
+# 1. Goose for database migrations (install as root, make accessible to coder user)
+RUN CGO_ENABLED=0 go install github.com/pressly/goose/v3/cmd/goose@latest && \
+    cp /root/go/bin/goose /usr/local/bin/goose && \
+    chmod 755 /usr/local/bin/goose && \
+    echo 'export PATH=$PATH:/usr/local/bin' >> /home/coder/.bashrc && \
+    mkdir -p /home/coder/.vscode/extensions/goose-integration && \
+    echo 'alias goose="goose -dir /home/coder/workspace/migrations"' >> /home/coder/.bashrc
 
 # 2. Aider - AI pair programming CLI
-RUN pip3 install --break-system-packages aider-chat
+RUN pip3 install --break-system-packages --no-cache-dir aider-chat
 
-# 3. Verify all required tools are installed
-RUN echo "🔍 Verifying installed tools..." && \
-    vim --version | head -1 && \
-    nvim --version | head -1 && \
-    emacs --version | head -1 && \
-    aider --version && \
-    { /root/go/bin/goose -version 2>&1 | head -1 || /root/go/bin/goose --help 2>&1 | head -1; } && \
+# 3. Verify all required tools are installed (MUST succeed or build fails)
+RUN set -e && \
+    echo "🔍 Verifying installed tools..." && \
+    echo "Testing vim..." && vim --version | head -1 && \
+    echo "Testing nvim..." && nvim --version | head -1 && \
+    echo "Testing emacs..." && emacs --version | head -1 && \
+    echo "Testing aider..." && aider --version && \
+    echo "Testing goose..." && goose -version 2>&1 | grep -i goose && \
     echo "✅ All required tools verified!"
 
 # Install Datadog tools
@@ -231,7 +234,16 @@ USER coder
 RUN pip3 install --break-system-packages 'python-lsp-server[all]' pylsp-mypy python-lsp-black
 
 # Install AI pair-programming CLIs for parity with KinD image
-RUN python3 -m pip install --break-system-packages --no-cache-dir aider-chat goose-ai 'langfuse<3'
+RUN python3 -m pip install --break-system-packages --no-cache-dir 'aider-chat==0.84.0' 'goose-ai==0.9.11' 'langfuse<3'
+
+# Verify key CLI tools are reachable for the coder user
+RUN echo "🔍 Verifying installed tools..." && \
+    vim --version | head -1 && \
+    nvim --version | head -1 && \
+    emacs --version | head -1 && \
+    aider --version && \
+    { /root/go/bin/goose -version 2>&1 | head -1 || /root/go/bin/goose --help 2>&1 | head -1; } && \
+    echo "✅ All required tools verified!"
 
 # 2. TypeScript/JavaScript LSP - needs root
 USER root
