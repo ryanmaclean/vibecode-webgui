@@ -1,6 +1,7 @@
 # AI Tooling Parity Plan (Draft – 2025-10-01)
 
 ## Goals
+_Tracking: GitHub issue #413._
 - Maintain aider/goose CLI parity across linux/amd64, linux/arm64, macOS (arm/x64), and Windows x64.
 - Validate bundled AI extensions end to end on each supported platform before releasing code-server images.
 - Publish minimum runtime requirements and manual QA evidence ahead of release sign-off.
