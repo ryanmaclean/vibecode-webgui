@@ -27,7 +27,7 @@ env:
 
 concurrency:
   group: codeserver-multiarch-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   validate:
@@ -62,7 +62,7 @@ jobs:
       - name: Set build metadata
         id: meta
         run: |
-          tag="ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:ci-${{ github.run_id }}"
+          tag="ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:ci-${{ github.run_id }}-${{ github.sha }}"
           echo "VALIDATION_TAG=$tag" >> "$GITHUB_ENV"
           echo "validation_tag=$tag" >> "$GITHUB_OUTPUT"
           echo "BUILD_DATE=${{ github.run_started_at }}" >> "$GITHUB_ENV"
@@ -209,18 +209,22 @@ jobs:
           EOF
 
       - name: Generate SBOM
+        id: sbom
         uses: anchore/sbom-action@v0
         with:
           image: ${{ needs.validate.outputs.validation_tag }}
           format: spdx-json
           output-file: sbom-code-server.spdx.json
+        continue-on-error: false
 
       - name: Upload SBOM artifact
+        if: steps.sbom.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: sbom-code-server-${{ github.run_id }}
           path: sbom-code-server.spdx.json
           sbom: true
+        continue-on-error: false
 
       - name: Verify aider/goose on amd64 image
         run: docker run --rm --platform linux/amd64 --entrypoint bash ${{ needs.validate.outputs.validation_tag }} -lc "aider --version && goose -version"
@@ -241,12 +245,17 @@ jobs:
           GITHUB_RUN_ID: ${{ github.run_id }}
           VALIDATION_TAG: ${{ needs.validate.outputs.validation_tag }}
         run: |
+          set -eo pipefail
           start_epoch=$(date -d '${{ github.run_started_at }}' +%s 2>/dev/null || date +%s)
           end_epoch=$(date +%s)
           duration=$(( end_epoch - start_epoch ))
-          datadog-ci metrics submit codeserver.build.duration "$duration" --type gauge --tags "workflow:codeserver-multiarch,repo:${GITHUB_REPOSITORY},run:${GITHUB_RUN_ID}"
-          datadog-ci metrics submit codeserver.build.success 1 --type gauge --tags "workflow:codeserver-multiarch,repo:${GITHUB_REPOSITORY},run:${GITHUB_RUN_ID}"
-          datadog-ci events post "code-server build complete" "Run ${GITHUB_RUN_ID} promoted ${VALIDATION_TAG}" --tags "workflow:codeserver-multiarch,repo:${GITHUB_REPOSITORY}"
+          echo "### Datadog Metrics Submission" >> "$GITHUB_STEP_SUMMARY"
+          echo "Submitting build metrics for run ${GITHUB_RUN_ID}..." >> "$GITHUB_STEP_SUMMARY"
+          datadog-ci metrics submit codeserver.build.duration "$duration" --type gauge --tags "workflow:codeserver-multiarch,repo:${GITHUB_REPOSITORY},run:${GITHUB_RUN_ID}" | tee -a "$GITHUB_STEP_SUMMARY"
+          datadog-ci metrics submit codeserver.build.success 1 --type gauge --tags "workflow:codeserver-multiarch,repo:${GITHUB_REPOSITORY},run:${GITHUB_RUN_ID}" | tee -a "$GITHUB_STEP_SUMMARY"
+          datadog-ci events post "code-server build complete" "Run ${GITHUB_RUN_ID} promoted ${VALIDATION_TAG}" --tags "workflow:codeserver-multiarch,repo:${GITHUB_REPOSITORY}" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Metrics submission completed at $(date)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Build duration: ${duration}s" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Summarise published tags
         run: |
