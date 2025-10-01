@@ -6,10 +6,10 @@
 - **Release (#410)** – ✅ CLOSED - All 5 profiles built and pushed to GHCR + Docker Hub
 - **Docs (#411)** – ✅ CLOSED - CHANGELOG, VERIFICATION_GUIDE, README, DEPLOYMENT_SUMMARY complete
 
-### 🔄 Remaining Streams  
-- **Workflow (#418)** – Validation tag/concurrency/SBOM/Datadog fixes (updated with completion status)
-- **QA (#417)** – Telemetry assertions, secret masking, PATH/Ready exhaustion tests (updated with verification guide)
-- **Security (#416)** – Checksum verification, cosign rollout, docs/SECURITY checklist (updated with current state)
+### 🔄 Remaining Streams (Plans Created)
+- **Workflow (#418)** – ✅ Fix plan created: validation tag, concurrency, SBOM fail-fast, Datadog metrics
+- **QA (#417)** – ✅ Test plan created: telemetry, secret masking, PATH errors, pod exhaustion
+- **Security (#416)** – ✅ Audit complete: 3 critical issues, 10 CLI tools need verification
 
 ### Deliverables
 - ✅ 5 optimized Docker images (minimal, standard, ai, web, full)
@@ -18,6 +18,11 @@
 - ✅ All CLI tools verified (vim, nvim, emacs, aider, goose, kubectl, helm, k9s, etc.)
 - ✅ Complete documentation suite
 - ✅ 49.71GB cleanup performed
+
+### Planning Documents Created
+- ✅ `docker/code-server/SECURITY_AUDIT.md` - Complete security audit with 3 critical issues identified
+- ✅ `tests/scripts/QA_TEST_PLAN.md` - Comprehensive test plan with 4 test suites
+- ✅ `.github/workflows/WORKFLOW_FIX_PLAN.md` - Workflow fixes for validation, concurrency, SBOM, Datadog
 
 ## Agent Update (2025-10-01 22:10 UTC)
 
