@@ -349,3 +349,9 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Authored `docs/runbooks/docs-verification.md` covering the build + link audit workflow and the link migration playbook so future CI failures have a documented remediation path.
 - Updated `.github/workflows/ci-simplified.yml` to run Jest with `--coverage` and upload the lcov summary as a GitHub artifact, establishing coverage reporting until Codecov tokens are provisioned.
 - Cataloged the next lint cleanup queue (`WorkspaceSharing.tsx`, `CollaborativeEditor.tsx`, `MultimodalPromptInterface.tsx`, `CollaborativeWorkspace.tsx`, `auth.test.ts`) with warning counts to guide the remaining TypeScript warning reduction.
+
+### Agent Codex - Code-Server Smoke Hardening (2025-10-01 07:56 UTC)
+- Installed shellcheck and bats-core on the CI laptop, re-enabled `code-server/ci/dev/lint-scripts.sh`, and expanded `tests/scripts/test-code-server-editors.bats` to cover timeouts, pod rotation, and missing tool paths.
+- Updated `scripts/test-code-server-editors.sh` to propagate `kubectl wait` failures, refresh Ready pod lists, mask pod identifiers in logs, and sanitize secret-like tokens.
+- Hardened `docker/code-server/Dockerfile` so helm/kubectl/kubectx/kubens installs verify upstream SHA-256 sums before copying binaries into the image.
+
