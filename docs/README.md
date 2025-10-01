@@ -39,4 +39,12 @@ Automatically deployed to GitHub Pages via Actions workflow.
 - [MCP Integration](./MCP_INTEGRATION.md) - Model Context Protocol
 - [Test Coverage Audit](./TEST_COVERAGE_AUDIT.md) - What's tested vs manual
 - [Testing Strategy](./TESTING_STRATEGY.md) - Test philosophy
+
+### Security Documentation
+- [Security Policy](./SECURITY.md) - Security policy and vulnerability reporting
+- [Security Checkout](./SECURITY_CHECKOUT.md) - Daily security achievements and status
+- [Security Testing](./SECURITY_TESTING.md) - Comprehensive security testing guide
+- [Security Quick Reference](./SECURITY_QUICK_REFERENCE.md) - Quick commands and status
+
+### Deployment
 - [Deployment Guide](./DEPLOYMENT_GUIDE.md) - Production deployment

@@ -10,8 +10,9 @@ This document outlines the testing strategy for the VibeCode WebGUI project, det
 4. [Unit Testing](#unit-testing)
 5. [Integration Testing](#integration-testing)
 6. [End-to-End Testing](#end-to-end-testing)
-7. [Testing in CI/CD](#testing-in-cicd)
-8. [Best Practices](#best-practices)
+7. [Security Testing](#security-testing)
+8. [Testing in CI/CD](#testing-in-cicd)
+9. [Best Practices](#best-practices)
 
 ## Testing Approach
 
@@ -21,6 +22,7 @@ VibeCode follows a comprehensive testing approach that combines several testing 
 - **Integration tests**: Testing interactions between modules and services
 - **End-to-End tests**: Testing complete user flows and journeys
 - **Accessibility tests**: Ensuring the application is accessible to all users
+- **Security tests**: Validating security controls, configurations, and detecting vulnerabilities
 
 Each type of test serves a specific purpose in our quality assurance process, and together they provide confidence in the reliability and correctness of our application.
 
@@ -209,6 +211,116 @@ afterAll(() => server.close());
 - Use descriptive test and describe blocks to document behavior
 - Keep test documentation up-to-date when implementation changes
 
+## Security Testing
+
+Security is a critical aspect of VibeCode's quality assurance process. Our security testing framework includes multiple layers of validation:
+
+### Infrastructure Security Tests
+
+**Location**: `tests/tofu/test_security_validation.py`
+
+Validates cloud infrastructure security configurations:
+- AWS security (IAM, encryption, security groups, VPC)
+- GCP security (service accounts, disk encryption, networking)
+- Hardcoded secret detection in Terraform files
+- Network security validation
+- IAM least privilege principles
+- Logging and monitoring configuration
+
+**Run Command**:
+```bash
+python3 tests/tofu/test_security_validation.py
+```
+
+### Application Security Tests
+
+**Location**: `tests/unit/security-input-validator.test.ts`
+
+Validates application-level security controls:
+- Input validation and sanitization
+- SQL injection prevention
+- XSS attack prevention
+- Path traversal blocking
+- File upload security
+- Prompt sanitization for AI queries
+
+**Run Command**:
+```bash
+npm test -- security-input-validator
+```
+
+### Security Monitoring Tests
+
+**Location**: `tests/security/monitoring-security.test.ts`
+
+Validates security event logging and monitoring:
+- Security event logging
+- Alert configuration
+- Audit trail completeness
+- Security metrics collection
+
+### Secret Scanning
+
+Automated secret detection runs in multiple layers:
+
+1. **Pre-commit Hooks**: TruffleHog prevents commits with secrets
+2. **CI/CD Pipeline**: GitHub Actions workflow (`.github/workflows/secret-scanning.yml`)
+3. **Manual Scripts**: `scripts/security-test.sh`, `scripts/security-audit.sh`
+
+**Patterns Detected**:
+- OpenAI/OpenRouter keys (sk-*)
+- Anthropic keys (sk-ant-*)
+- GitHub tokens (ghp_*, gho_*, etc.)
+- AWS access keys (AKIA*)
+- Datadog API keys
+- Google OAuth tokens (ya29.*)
+
+### Dependency Security
+
+**Vulnerability Scanning**:
+```bash
+npm audit
+```
+
+**Fix Vulnerabilities**:
+```bash
+npm audit fix
+```
+
+### Security Testing Best Practices
+
+1. **Run Security Tests Regularly**:
+   - Daily: `npm audit` and quick security checks
+   - Weekly: Full security audit with `./scripts/security-audit.sh`
+   - Monthly: Comprehensive security assessment
+
+2. **Never Commit Secrets**:
+   - Use environment variables
+   - Enable pre-commit hooks
+   - Review changes before committing
+
+3. **Validate All Input**:
+   - Test with malicious input patterns
+   - Verify size limits
+   - Check sanitization logic
+
+4. **Test Security Controls**:
+   - Authentication flows
+   - Authorization checks
+   - Rate limiting
+   - Session management
+
+5. **Monitor Security Metrics**:
+   - Track vulnerability count
+   - Monitor secret exposure
+   - Measure test coverage
+   - Review incident response times
+
+For detailed security testing information, see:
+- **[Security Testing Guide](./SECURITY_TESTING.md)** - Comprehensive security testing documentation
+- **[Security Checkout](./SECURITY_CHECKOUT.md)** - Daily security achievements and status
+- **[Security Policy](./SECURITY.md)** - Security policy and vulnerability reporting
+
 ## Conclusion
 
-This testing strategy is designed to ensure the quality, reliability, and accessibility of the VibeCode WebGUI application. By following these guidelines, we can maintain a high standard of code quality and user experience.
+This testing strategy is designed to ensure the quality, reliability, accessibility, and security of the VibeCode WebGUI application. By following these guidelines, we can maintain a high standard of code quality and user experience.
