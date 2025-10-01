@@ -100,6 +100,7 @@ export const EnhancedChatInterface = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const initialScrollBehaviorRef = useRef<string | null>(null)
   const autoScrollRef = useRef(true)
   const prefersReducedMotionRef = useRef(false)
   const contentBufferRef = useRef<{ chunks: string[]; size: number }>({ chunks: [], size: 0 })
@@ -169,6 +170,31 @@ export const EnhancedChatInterface = ({
       viewport.removeEventListener('scroll', handleScroll)
     }
   }, [])
+
+  useEffect(() => {
+    const root = scrollAreaRef.current
+    if (!root) return
+
+    const viewport = root.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null
+    if (!viewport) return
+
+    if (initialScrollBehaviorRef.current === null) {
+      initialScrollBehaviorRef.current = viewport.style.scrollBehavior || ''
+    }
+
+    if (prefersReducedMotion) {
+      viewport.dataset.prefersReducedMotion = 'true'
+      viewport.style.scrollBehavior = 'auto'
+    } else {
+      delete viewport.dataset.prefersReducedMotion
+      viewport.style.scrollBehavior = initialScrollBehaviorRef.current ?? ''
+    }
+
+    return () => {
+      viewport.style.scrollBehavior = initialScrollBehaviorRef.current ?? ''
+      delete viewport.dataset.prefersReducedMotion
+    }
+  }, [prefersReducedMotion])
 
   const maybeScrollToBottom = useCallback(() => {
     if (!autoScrollRef.current) return
@@ -675,7 +701,7 @@ export const EnhancedChatInterface = ({
                 data-testid="chat-jump-button"
                 aria-label="Jump to latest message"
                 aria-controls="chat-scroll-anchor"
-                className="pointer-events-auto shadow-md"
+                className="pointer-events-auto shadow-md motion-reduce:shadow-none motion-reduce:transition-none"
                 onClick={handleJumpToLatest}
               >
                 Jump to latest
