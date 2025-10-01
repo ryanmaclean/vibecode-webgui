@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+# Mock kubectl for testing scripts/test-code-server-editors.sh
+
+set -euo pipefail
+
+# Handle missing tool mock
+if [[ -n "${MOCK_TOOL_MISSING:-}" ]]; then
+  if [[ "$*" == *"$MOCK_TOOL_MISSING"* ]] || [[ "$*" == *"exec"* ]] && [[ -n "${MOCK_TOOL_MISSING}" ]]; then
+    exit 127
+  fi
+fi
+
+# Handle kubectl wait failures
+if [[ "${MOCK_KUBECTL_WAIT_FAIL:-0}" == "1" ]] && [[ "$*" == *"wait"* ]]; then
+  echo "Error: timed out waiting for the condition on pods/code-server" >&2
+  exit 1
+fi
+
+# Handle kubectl get pod failures
+if [[ -n "${MOCK_KUBECTL_GET_FAIL:-}" ]] && [[ "$*" == *"get pods"* ]]; then
+  echo "Error: failed to get pods" >&2
+  exit 1
+fi
+
+# Handle empty pod list
+if [[ -n "${MOCK_KUBECTL_GET_EMPTY:-}" ]] && [[ "$*" == *"get pods"* ]]; then
+  exit 0
+fi
+
+# Handle kubectl wait command
+if [[ "$*" == *"wait"* ]]; then
+  exit 0
+fi
+
+# Handle kubectl get pods with pod sequence for rotation
+if [[ "$*" == *"get pods"* ]]; then
+  if [[ -n "${MOCK_KUBECTL_GET_SEQUENCE:-}" ]]; then
+    STATE_FILE="${MOCK_KUBECTL_STATE_DIR:-/tmp}/mock_kubectl_sequence_idx"
+    SEQUENCE_IDX=0
+    if [[ -f "$STATE_FILE" ]]; then
+      SEQUENCE_IDX=$(cat "$STATE_FILE")
+    fi
+    
+    IFS='|' read -ra PODS <<< "$MOCK_KUBECTL_GET_SEQUENCE"
+    TOTAL_PODS=${#PODS[@]}
+    
+    if (( SEQUENCE_IDX < TOTAL_PODS )); then
+      POD_NAME="${PODS[$SEQUENCE_IDX]}"
+      echo "$POD_NAME"
+      echo $((SEQUENCE_IDX + 1)) > "$STATE_FILE"
+    fi
+    exit 0
+  fi
+  
+  # Default: return a single pod
+  echo "pod-code-server-0"
+  exit 0
+fi
+
+# Handle kubectl exec command
+if [[ "$*" == *"exec"* ]]; then
+  # Extract pod name from arguments
+  POD_NAME=""
+  for arg in "$@"; do
+    if [[ "$arg" == pod-* ]] || [[ "$arg" == *-code-server-* ]]; then
+      POD_NAME="$arg"
+      break
+    fi
+  done
+  
+  # Handle one-time exec failure for specific pod (for rotation test)
+  if [[ -n "${MOCK_KUBECTL_EXEC_FAIL_ONCE:-}" ]] && [[ "$POD_NAME" == "$MOCK_KUBECTL_EXEC_FAIL_ONCE" ]]; then
+    STATE_FILE="${MOCK_KUBECTL_STATE_DIR:-/tmp}/mock_kubectl_exec_failed_${POD_NAME}"
+    if [[ ! -f "$STATE_FILE" ]]; then
+      touch "$STATE_FILE"
+      if [[ -n "${MOCK_KUBECTL_EXEC_FAIL_MSG:-}" ]]; then
+        echo "$MOCK_KUBECTL_EXEC_FAIL_MSG" >&2
+      else
+        echo "Error: connection refused" >&2
+      fi
+      exit 1
+    fi
+  fi
+  
+  # Handle exec failures
+  if [[ "${MOCK_KUBECTL_EXEC_FAIL:-0}" == "1" ]]; then
+    if [[ -n "${MOCK_KUBECTL_EXEC_FAIL_MSG:-}" ]]; then
+      echo "$MOCK_KUBECTL_EXEC_FAIL_MSG" >&2
+    else
+      echo "Error: unable to upgrade connection" >&2
+    fi
+    exit 1
+  fi
+  
+  # Handle exec timeout
+  if [[ "${MOCK_KUBECTL_EXEC_TIMEOUT:-0}" == "1" ]]; then
+    sleep 10
+    exit 124
+  fi
+  
+  # Parse the command being executed
+  COMMAND=""
+  CAPTURE_CMD=0
+  for arg in "$@"; do
+    if [[ "$CAPTURE_CMD" == "1" ]]; then
+      COMMAND="$arg"
+      break
+    fi
+    if [[ "$arg" == "--" ]]; then
+      CAPTURE_CMD=1
+    fi
+  done
+  
+  # Handle missing tool check in pod
+  if [[ -n "${MOCK_TOOL_MISSING:-}" ]]; then
+    if [[ "$COMMAND" == *"$MOCK_TOOL_MISSING"* ]]; then
+      exit 127
+    fi
+  fi
+  
+  # Default: command succeeded
+  if [[ "$COMMAND" == *"--version"* ]] || [[ "$COMMAND" == *"--help"* ]]; then
+    TOOL_NAME=$(echo "$COMMAND" | grep -oP '(vim|nvim|emacs|aider|goose|kubectl|helm|kubectx|kubens)' | head -1)
+    echo "${TOOL_NAME:-tool} version 1.0.0"
+  fi
+  exit 0
+fi
+
+# Default: unknown command
+echo "Mock kubectl: unhandled command: $*" >&2
+exit 1

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Mock timeout command for testing scripts/test-code-server-editors.sh
+
+# If MOCK_TIMEOUT_EXIT is set, simulate timeout
+if [[ "${MOCK_TIMEOUT_EXIT:-0}" == "1" ]]; then
+  exit 124
+fi
+
+# Otherwise, just run the command without timeout
+shift  # Remove the timeout duration argument
+exec "$@"
