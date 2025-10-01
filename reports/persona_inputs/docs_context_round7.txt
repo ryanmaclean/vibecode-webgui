@@ -1,0 +1,3 @@
+- Build snapshot 06:45 UTC 40%; deployment snapshot 07:24 UTC 60%; docs must reconcile discrepancy.
+- Issue #411 pending: CHANGELOG, DEPLOYMENT_REPORT update, verification guide, README refresh, troubleshooting appendix.
+- Deadlines approaching: release digest 2025-10-02 18:00, docs handoff 2025-10-06.

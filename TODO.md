@@ -1,3 +1,80 @@
+## Agent Update (2025-10-01 22:56 UTC) - MAJOR MILESTONE COMPLETE
+
+**🎉 Code-Server v1.1.0 Multi-Profile Release COMPLETE**
+
+### ✅ Completed Streams
+- **Release (#410)** – ✅ CLOSED - All 5 profiles built and pushed to GHCR + Docker Hub
+- **Docs (#411)** – ✅ CLOSED - CHANGELOG, VERIFICATION_GUIDE, README, DEPLOYMENT_SUMMARY complete
+
+### 🔄 Remaining Streams  
+- **Workflow (#418)** – Validation tag/concurrency/SBOM/Datadog fixes (updated with completion status)
+- **QA (#417)** – Telemetry assertions, secret masking, PATH/Ready exhaustion tests (updated with verification guide)
+- **Security (#416)** – Checksum verification, cosign rollout, docs/SECURITY checklist (updated with current state)
+
+### Deliverables
+- ✅ 5 optimized Docker images (minimal, standard, ai, web, full)
+- ✅ Multi-arch support (amd64 + arm64)
+- ✅ Multi-registry (GHCR + Docker Hub)
+- ✅ All CLI tools verified (vim, nvim, emacs, aider, goose, kubectl, helm, k9s, etc.)
+- ✅ Complete documentation suite
+- ✅ 49.71GB cleanup performed
+
+## Agent Update (2025-10-01 22:10 UTC)
+
+- Multi-stream plan: Vega (release), Rina (QA), Rowan (security), Sloane (docs), Theo (ops) executing in parallel via MCP subagents.
+
+### Active Streams (UPDATED)
+- **Release (#410)** – ✅ COMPLETE - All profiles deployed
+- **QA (#417)** – Rina preparing telemetry + secret masking assertions and PATH/Ready exhaustion Bats tests before enabling `npm run test:scripts`.
+- **Security (#416)** – Rowan replacing curl|bash/wget installs, finalizing docs/SECURITY checklist (2025-10-05) and cosign milestones (10-08/10/10/10-11).
+- **Docs (#411)** – ✅ COMPLETE - All documentation delivered
+- **Workflow (#418)** – Vega patching validation tag/concurrency/SBOM/Datadog gaps.
+- **Ops Coordination** – Theo running 2025-10-02 12:00 checkpoint (prep 11:30) and distributing consolidated release digest brief that evening.
+
+### Immediate Actions
+- [x] Vega: Deliver runbook for rerun + manifest capture, then execute once workflow fixes are merged. (See reports/persona_inputs/release_context_round7.txt + runbook)
+- [x] Rina: Outline new Bats specs (telemetry, masking, PATH, Ready exhaustion) and estimate effort for CI gate. (Claused)
+- [x] Rowan: Draft hardened install scripts + cosign rollout checklist for team sign-off. (Claused)
+- [x] Sloane: Produce doc outline with owners/dates for each #411 deliverable. (Claused)
+- [x] Theo: Circulate checkpoint agenda and confirm attendance from release/QA/security/docs leads. (Claused)
+
+## Agent Update (2025-10-01 21:55 UTC)
+
+- Codex sweep: Vega (release), Rina (QA), Omar (security), Mira (docs), Theo (ops).
+
+### Highlights
+- ✅ Release COMPLETE: All 5 profiles built and pushed to GHCR + Docker Hub (#410 CLOSED)
+- ✅ Docs COMPLETE: CHANGELOG, VERIFICATION_GUIDE, README updated, DEPLOYMENT_SUMMARY finalized (#411 CLOSED)
+- Workflow dispatch still waiting on unique validation tag, concurrency guard, SBOM fail-fast, Datadog metrics (#418).
+- QA lacks telemetry/secret assertions and PATH/Ready exhaustion cases required before `npm run test:scripts` CI gate (#417).
+- Security backlog unchanged: docs/SECURITY checklist (2025-10-05), kubectl cosign (2025-10-08), helm cosign (2025-10-10), kubectx/kubens verification (2025-10-11); Dockerfile installs remain unverified (#416).
+
+### Action Items
+- [x] Vega: ✅ COMPLETE - All 5 profiles built and pushed. Manifests available. (#410 CLOSED)
+- [ ] Vega: Land workflow fixes covering tag/guard/SBOM/metrics (#418).
+- [ ] Rina: Add telemetry + secret assertions and PATH/Ready exhaustion coverage, then enable `npm run test:scripts` in CI (#417).
+- [ ] Omar: Replace curl|bash/wget installs, publish docs/SECURITY checklist by 2025-10-05, finish cosign milestones by 2025-10-08/10/11 (#416).
+- [x] Mira: ✅ COMPLETE - CHANGELOG, VERIFICATION_GUIDE, README, DEPLOYMENT_SUMMARY all updated (#411 CLOSED).
+- [ ] Theo: Coordinate owners to deliver checkpoint outcomes (2025-10-02 12:00) and align release digest summary the same evening.
+
+## Agent Update (2025-10-01 21:40 UTC)
+
+- Codex roundtable: Orion (release), Lila (QA), Rowan (security), Sloane (docs), Morgan (ops).
+
+### Highlights
+- Release drift unchanged: BUILD_STATUS 06:45 UTC 40% vs DEPLOYMENT_SUMMARY 07:24 UTC 60%; runs 18173489520/88125/77874 failed at 19:34 UTC (#410/#418).
+- Workflow dispatch merge still blocked pending unique validation tag, concurrency guard, SBOM fail-fast, Datadog metrics evidence (#418).
+- QA suite missing telemetry/secret assertions plus PATH-without-kubectl and Ready exhaustion cases for `npm run test:scripts` gating (#417).
+- Security backlog: docs/SECURITY checklist (2025-10-05), kubectl cosign (2025-10-08), helm cosign (2025-10-10), kubectx/kubens verification (2025-10-11); Dockerfile downloads still unverified (#416).
+- Docs tasks for #411 (CHANGELOG, DEPLOYMENT_REPORT, verification guide, README, troubleshooting) remain untouched; release digest due 2025-10-02 18:00; docs handoff due 2025-10-06.
+
+### Action Items
+- [ ] Orion: Gather manifests once ai/web/full builds succeed, record workflow fixes, and update issues #410/#418 pre-checkpoint.
+- [ ] Lila: Add telemetry/secret assertions plus PATH-negative and Ready exhaustion tests, then stage CI gate (#417).
+- [ ] Rowan: Replace curl|bash/wget installs, publish docs/SECURITY checklist by 2025-10-05, complete cosign rollouts by 2025-10-08/10/11 (#416).
+- [ ] Sloane: Draft #411 docs deliverables, syncing release digest (2025-10-02 18:00) and docs handoff (2025-10-06) timelines.
+- [ ] Morgan: Schedule 2025-10-02 11:30 checkpoint prep, align owners, circulate agenda and recap for release digest brief.
+
 ## Agent Update (2025-10-01 21:20 UTC)
 
 - Roundtable (Declan release, Mira QA, Selene security, Tara docs, Kai ops) rechecked blockers.

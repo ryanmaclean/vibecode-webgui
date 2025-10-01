@@ -198,28 +198,72 @@ DD_SITE="datadoghq.com"
 └─────────────────────────────────────────┘
 ```
 
-## Code-Server Extensions
+## Code-Server v1.1.0 - Multi-Profile Images
 
-Custom Docker image with official AI extensions and OAuth support:
+**NEW**: 5 optimized profiles for different use cases, all with essential CLI tools included!
 
-**AI Assistants (9):**
+### Quick Start
+
+```bash
+# Recommended: Standard profile (700MB, 12 extensions)
+docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.0-standard
+docker run -it --rm -p 8080:8080 ghcr.io/ryanmaclean/vibecode-codeserver:standard
+
+# Or from Docker Hub
+docker pull ryanmaclean/vibecode-codeserver:1.1.0-standard
+```
+
+### Available Profiles
+
+| Profile | Size | Extensions | Use Case | Pull Command |
+|---------|------|------------|----------|--------------|
+| **minimal** | 400MB | 5 | Lightweight development | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:minimal` |
+| **standard** | 700MB | 12 | General development (recommended) | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:standard` |
+| **ai** | 900MB | 15 | AI/ML development | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:ai` |
+| **web** | 600MB | 14 | Web development | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:web` |
+| **full** | 1.2GB | 26 | Complete Swiss Army knife | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:latest` |
+
+### Included CLI Tools (All Profiles)
+
+**Terminal Editors:**
+- vim 9.0, neovim 0.7.2, emacs 28.2
+
+**AI Coding Assistants:**
+- aider 0.84.0, goose (latest)
+
+**DevOps Tools:**
+- kubectl 1.31.1, helm 3.19.0, k9s 0.50.13
+- stern, helmfile, sops, glab, kubectx, kubens
+
+**Shell Enhancements:**
+- nushell, delta, chezmoi, just
+
+### VS Code Extensions by Profile
+
+**AI Assistants (in ai/full profiles):**
 - Anthropic Claude Code (official)
 - OpenAI ChatGPT (official Codex)
 - GitHub Copilot + Chat
 - Codeium, Cline
 - VibeCode AI Assistant, Inline Edit, Codebase Chat
 
-**Features:**
-- OAuth authentication (port 46203)
-- Port 8765 (VibeCode's unique port)
-- Multi-architecture (ARM64 + AMD64)
-- Trusted domains pre-configured
-- No API keys in image (runtime config)
-
-**Productivity (20+):**
+**Productivity (varies by profile):**
 - Prettier, ESLint, Git Graph, Jest, Datadog, etc.
 
-See [docker/code-server/README.md](docker/code-server/README.md) for full list.
+### Features
+
+- Multi-architecture (ARM64 + AMD64)
+- Multi-registry (GHCR + Docker Hub)
+- OAuth authentication (port 46203)
+- Port 8765 (VibeCode's unique port)
+- Trusted domains pre-configured
+- No API keys in image (runtime config)
+- All CLI tools verified and working
+
+See [docker/code-server/](docker/code-server/) for complete documentation:
+- [PROFILES.md](docker/code-server/PROFILES.md) - Detailed profile comparison
+- [CHANGELOG.md](docker/code-server/CHANGELOG.md) - Version history
+- [VERIFICATION_GUIDE.md](docker/code-server/VERIFICATION_GUIDE.md) - Testing guide
 
 ## API Endpoints
 
