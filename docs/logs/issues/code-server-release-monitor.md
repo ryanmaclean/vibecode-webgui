@@ -8,8 +8,8 @@ Keep track of upstream `coder/code-server` releases so we can rebuild our multi-
    - Subscribe to `https://github.com/coder/code-server/releases.atom` in our ops feed (Datadog event monitor or Slack webhook).
    - Alternatively, enable GitHub notification emails for `@ryanmaclean` + `@vibecode-devops`.
 2. **Automation Hook**
-   - Add a lightweight GitHub Action that runs daily (`schedule: cron`) and checks `gh release view coder/code-server --json tagName`. If the tag differs from the value in `docker/code-server/Dockerfile`, open an issue/PR via `peter-evans/create-issue-from-file`.
-   - Store the last synced tag in `.github/code-server-release.json` to avoid duplicate alerts.
+   - GitHub Action (`.github/workflows/code-server-release-monitor.yml`) runs daily + on demand, compares the Dockerfile tag to the latest upstream release, and opens a tracking issue when versions diverge.
+   - Workflow guards against duplicates by checking for an existing open issue with the same title before creating a new one.
 3. **Manual Checklist** (when notified)
    - Update base image tags in `docker/code-server/Dockerfile` and `Dockerfile.kind`.
    - Re-run `scripts/build-codeserver-multiarch.sh` (local or ACR) and push the manifest.
@@ -20,4 +20,4 @@ Keep track of upstream `coder/code-server` releases so we can rebuild our multi-
 - VibeCode DevOps / Platform team.
 
 ## Tracking
-- TODO references (2025-10-01 00:20 UTC entry).
+- TODO references (2025-10-01 00:20 UTC entry) – updated to reflect the live workflow.

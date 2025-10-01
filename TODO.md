@@ -1,3 +1,12 @@
+## Agent Update (2025-10-01 03:03 UTC, Connection Pool Alert Tests)
+
+- Added targeted unit tests at `tests/unit/monitoring/connection-pool-alerts.test.ts` to cover both the dynamic import fallback (module unavailable) and the critical-metric path using a stubbed vector pool factory.
+- Test run `npm run test -- tests/unit/monitoring/connection-pool-alerts.test.ts` (2025-10-01 03:02 UTC) passes; no new warnings beyond the existing SWC version notice.
+- Issue #403 can now track any additional assertions (e.g., browser guard) separately.
+
+### Next Steps
+- [ ] Expand the suite with a browser-mode regression test once we add a public hook to simulate `window` detection without reloading the module (#403 follow-up).
+
 ## Agent Update (2025-10-01 02:05 UTC, Vector Pool Module Fix)
 
 - Replaced the `eval(require())` shim in `src/lib/db/connection-pool-alerts.ts` with a guarded dynamic import so the bundle retains the server-only vector pool while keeping the browser bundle clean.
@@ -52,7 +61,7 @@
 - Confirmed `monaco-editor@0.53.0` stays pinned in `package.json` and monacopilot integration still targets 0.53.
 
 ### Next Steps
-- [ ] Subscribe to upstream code-server release feed so we automatically evaluate future tags (4.105+) — see docs/logs/issues/code-server-release-monitor.md for the plan.
+- [x] Subscribe to upstream code-server release feed so we automatically evaluate future tags (4.105+) — handled by `.github/workflows/code-server-release-monitor.yml` (daily cron + dispatch). Pending: workflow isn’t on `main` yet, so `gh workflow run` 404s until this file merges upstream.
 - [ ] Rebuild and push the multi-arch image once CI resources available (`scripts/build-codeserver-multiarch.sh`).
 
 ## Agent Update (2025-10-01 00:02 UTC, Local Repro)
@@ -142,7 +151,7 @@
 
 ## Agent Update (2025-09-30 - Current Session Extended)
 
-- Reduced TypeScript `any` warnings from 1,624 → 786 (-838 total, -126 from 12 files)
+- Reduced TypeScript `any` warnings from 1,624 → 1,339 (-285 total, -17.5% reduction)
 - **Previous Sessions**: Fixed 6 files (-115 warnings)
   - vector-db-error-handler-new.ts (23→0), database-error-patterns.ts (20→0), azureEmbeddingService.ts (20→0)
   - opentelemetry-config.ts (18→0), multimodal-agent.ts (17→0), db-logger.ts (17→0)
@@ -154,6 +163,10 @@
   - rum-client.ts (14→0): Created LayoutShiftEntry/FirstInputEntry interfaces for Web Vitals
   - metaplane-integration.ts (14→0): Created DataRow type for pipeline data
   - mcp/context7/interfaces.ts (14→0): Replaced all any with unknown across context dimensions
+- **Current Session Batch 3**: Fixed 3 files (-31 warnings)
+  - automated-test-generator.test.ts (14→0): Created AutomatedTestGeneratorPrivate type helper
+  - useRUM.ts (15→0): Replaced all Record<string, any> with Record<string, unknown>
+  - voice-test/page.tsx (2→0): Created WebkitWindow type for webkitAudioContext
 
 ### Technical Patterns Applied
 - ErrorLike interfaces for error handling
@@ -163,16 +176,18 @@
 - Query result interfaces for Prisma raw queries
 - Performance entry interfaces for Web Vitals tracking
 - DataRow type for data pipeline processing
+- Test type helpers for accessing private members
+- WebkitWindow type for vendor-prefixed browser APIs
 - Systematic replacement of `any` with `unknown` or specific types across all modules
 
 ### Progress Summary
-- Total files fixed: 12 files
-- Total warnings eliminated: 838 warnings (-51.6% from starting point)
-- Remaining warnings: 786 (48.4% of original)
+- Total files fixed: 15 files
+- Total warnings eliminated: 285 warnings (-17.5% from starting point)
+- Remaining warnings: 1,339 (82.5% of original)
 
 ### Next Steps
 - [ ] Continue reducing `any` usage in remaining high-impact files
-- [ ] Target files: automated-test-generator.test.ts (14), useRUM.ts (14), voice-test/page.tsx (13)
+- [ ] Target next batch: workspaces/[id]/page.tsx (2), wiki/[slug]/page.tsx (1), workspace/[id]/page.tsx (3)
 
 ## Agent Update (2025-09-30 23:35 UTC)
 

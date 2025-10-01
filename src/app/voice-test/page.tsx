@@ -133,7 +133,8 @@ export default function VoiceTestPage() {
     }
 
     // Test AudioContext
-    if (typeof AudioContext !== 'undefined' || typeof (window as any).webkitAudioContext !== 'undefined') {
+    type WebkitWindow = Window & { webkitAudioContext?: typeof AudioContext };
+    if (typeof AudioContext !== 'undefined' || typeof (window as WebkitWindow).webkitAudioContext !== 'undefined') {
       results.push({
         test: 'AudioContext',
         result: 'Available',
@@ -241,9 +242,10 @@ export default function VoiceTestPage() {
   const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
+
       // Set up audio context for visualization
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      type WebkitWindow = Window & { webkitAudioContext?: typeof AudioContext };
+      audioContextRef.current = new (window.AudioContext || (window as WebkitWindow).webkitAudioContext!)();
       analyserRef.current = audioContextRef.current.createAnalyser();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
