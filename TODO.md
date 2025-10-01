@@ -20,11 +20,11 @@
 ## Agent Update (2025-10-01 01:07 UTC, Astro Syntax Cleanup)
 
 - Re-ran `npm run build` inside `docs/`; the run succeeded with a single warning about the `env` fence in `docs/src/content/docs/wiki-archive/monitoring/toto-integration.md`. Updated that fence to `bash` so the Astro build is warning-free going forward.
-- GitHub Pages remains Astro-only; Next.js deployment is tracked separately in issue draft #397.
+- GitHub Pages remains Astro-only; Next.js deployment is tracked separately in issue #405 (see docs/runbooks/next-docs-deployment.md).
 
 ### Next Steps
 - [x] Re-run the workflow via `workflow_dispatch` (Astro mode) to confirm the guard step doesn’t impact the default path. (Run 18149455955 on 2025-10-01 succeeded; Astro publish OK, Next.js branch skipped by design.)
-- [ ] Close the loop on #397 once a server-backed Next.js deploy path is agreed.
+- [ ] Close the loop on #405 once a server-backed Next.js deploy path is agreed (awaiting platform pick + CI wiring).
 
 ## Agent Update (2025-10-01 01:00 UTC, Next Docs Decision) — superseded
 
@@ -33,7 +33,7 @@
 - Logged the findings (00:51 + 00:56 UTC entries) in `docs/logs/workflow-issues/deploy-docs.md`, and pinned the pragmatic decision at 01:00 UTC: GitHub Pages stays Astro-only until we finish a real Next.js deployment path. The workflow now aborts immediately when `docs_system=nextjs`.
 
 ### Next Steps
-- [x] Spin up a separate issue/plan for deploying the Next.js app via a server-capable target (e.g., Azure, Vercel, or our existing platform pipeline) instead of GitHub Pages. (See docs/logs/issues/397-next-docs-deployment.md.)
+- [x] Spin up a separate issue/plan for deploying the Next.js app via a server-capable target (e.g., Azure, Vercel, or our existing platform pipeline) instead of GitHub Pages. (See docs/logs/issues/405-next-docs-deployment.md.)
 - [x] Re-run the workflow via `workflow_dispatch` (Astro mode) to confirm the guard step doesn’t impact the default path. (Run 18149455955 on 2025-10-01 succeeded; Astro publish OK, Next.js branch skipped.)
 
 ## Agent Update (2025-10-01 00:47 UTC, Deploy Docs Validation)
@@ -151,7 +151,7 @@
 
 ## Agent Update (2025-09-30 - Current Session Extended)
 
-- Reduced TypeScript `any` warnings from 1,624 → 1,339 (-285 total, -17.5% reduction)
+- Reduced TypeScript `any` warnings from 1,624 → 1,305 (-319 total, -19.6% reduction)
 - **Previous Sessions**: Fixed 6 files (-115 warnings)
   - vector-db-error-handler-new.ts (23→0), database-error-patterns.ts (20→0), azureEmbeddingService.ts (20→0)
   - opentelemetry-config.ts (18→0), multimodal-agent.ts (17→0), db-logger.ts (17→0)
@@ -167,6 +167,10 @@
   - automated-test-generator.test.ts (14→0): Created AutomatedTestGeneratorPrivate type helper
   - useRUM.ts (15→0): Replaced all Record<string, any> with Record<string, unknown>
   - voice-test/page.tsx (2→0): Created WebkitWindow type for webkitAudioContext
+- **Current Session Batch 4**: Fixed 3 files (-47 warnings)
+  - terminal/ws/route.ts (10→0): Created WebSocketLike and TerminalMessage interfaces
+  - enhanced-project-templates.ts (3→0): Replaced options: any with _options: Record<string, unknown>
+  - PromptInterface.tsx (11→0): Fixed SpeechRecognition event handler return types (any → void)
 
 ### Technical Patterns Applied
 - ErrorLike interfaces for error handling
@@ -178,16 +182,20 @@
 - DataRow type for data pipeline processing
 - Test type helpers for accessing private members
 - WebkitWindow type for vendor-prefixed browser APIs
+- WebSocketLike interface for WebSocket typing
+- TerminalMessage interface for terminal communication
+- Event handler return types (void instead of any)
 - Systematic replacement of `any` with `unknown` or specific types across all modules
 
 ### Progress Summary
-- Total files fixed: 15 files
-- Total warnings eliminated: 285 warnings (-17.5% from starting point)
-- Remaining warnings: 1,339 (82.5% of original)
+- Total files fixed: 18 files
+- Total warnings eliminated: 319 warnings (-19.6% from starting point)
+- Remaining warnings: 1,305 (80.4% of original)
+- Session batches: 4 batches (12 files in current session)
 
 ### Next Steps
 - [ ] Continue reducing `any` usage in remaining high-impact files
-- [ ] Target next batch: workspaces/[id]/page.tsx (2), wiki/[slug]/page.tsx (1), workspace/[id]/page.tsx (3)
+- [ ] Target next batch: server-monitoring.ts (11), serena/interfaces.ts (11), database-logger.ts (11)
 
 ## Agent Update (2025-09-30 23:35 UTC)
 

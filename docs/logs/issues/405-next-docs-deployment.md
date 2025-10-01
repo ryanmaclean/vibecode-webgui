@@ -1,6 +1,6 @@
 # Issue Draft: Deploy Next.js Docs via Server-backed Pipeline
 
-**Tracking:** TODO #397 (follow-up to Next Docs Decision, 2025-10-01 01:00 UTC)
+**Tracking:** TODO #405 (follow-up to Next Docs Decision, 2025-10-01 01:00 UTC)
 
 ## Summary
 GitHub Pages will remain Astro-only. We need a dedicated deployment path for the Next.js documentation app that supports server-rendered routes, APIs, and instrumentation (Datadog, OpenTelemetry). The goal is to host the app on an environment that can run the Next.js standalone output without static export.
@@ -25,8 +25,8 @@ GitHub Pages will remain Astro-only. We need a dedicated deployment path for the
 - What is the scale/SLA for the docs site (impacts SKU choice)?
 
 ## Next Actions
-1. Align with infra owners on preferred platform.
-2. Draft deployment pipeline (GitHub Actions or external CI) executing build + deploy.
+1. Align with infra owners on preferred platform (Azure Web App vs. AWS App Runner) — see docs/runbooks/next-docs-deployment.md for initial guidance.
+2. Draft deployment pipeline (GitHub Actions) executing build + deploy to the chosen service.
 3. Implement smoke test script (curl + health endpoint) to run post-deploy.
 4. Update TODO.md once action plan agreed.
 

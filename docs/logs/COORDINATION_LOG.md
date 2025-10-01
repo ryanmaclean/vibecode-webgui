@@ -492,3 +492,10 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - KinD smoke test run locally; rollout succeeds with new amd64 image but editor/AI CLI checks fail (vim/nvim/emacs/aider/goose missing). Need updated image before gating passes.
 - Verified new code-server image in KinD: HTTP checks succeed but Vim/Nvim/Emacs/Aider/Goose binaries absent; smoke test still fails until image is rebuilt with those tools.
 - Latest code-server image still lacks vim/nvim/emacs/aider/goose; KinD smoke test fails on editor checks even though service is reachable.
+- **2025-10-01 03:03 UTC — Connection pool alert tests**
+  - Added `tests/unit/monitoring/connection-pool-alerts.test.ts` to cover dynamic import fallback vs. critical metric paths.
+  - Test command `npm run test -- tests/unit/monitoring/connection-pool-alerts.test.ts` passes (SWC mismatch warning only).
+  - Follow-up hooks (browser simulation) tracked in GitHub issue #403 and `docs/logs/issues/403-connection-pool-alert-tests.md`.
+- **2025-10-01 03:10 UTC — Next.js docs deployment runbook**
+  - Created `docs/runbooks/next-docs-deployment.md` outlining Azure Web App and AWS App Runner workflows for hosting the Next.js documentation site.
+  - Raised GitHub issue #405 to track platform selection and CI wiring; TODO updated accordingly.
