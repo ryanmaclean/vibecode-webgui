@@ -13,13 +13,13 @@ Design and implement resumable code-server deployments on GCP and AWS that keep 
 1. **Docs & Tooling**
    - [x] Document VM-based workflow (GCP/AWS) with start/stop scripts (`scripts/cloud/gcp`, `scripts/cloud/aws`).
    - [x] Create Docker Compose bundle that mounts persistent storage and supports resumable state (`docker/code-server/docker-compose.cloud.yml`, `scripts/cloud/docker`).
-   - [ ] Author Helm charts + OpenTofu/Terraform modules for managed Kubernetes deployments.
+   - [x] Author Helm charts + OpenTofu/Terraform modules for managed Kubernetes deployments.
    - [ ] Write KinD smoke tests mirroring GKE/EKS manifests.
 
 2. **GCP Implementation**
    - [x] Preemptible VM template + PD attachment script (`start-workspace.sh`, `stop-workspace.sh`).
-   - [ ] GKE Autopilot manifests (StatefulSet + Filestore/PD).
-   - [ ] Cloud Scheduler/Function to wake/suspend workspaces.
+   - [x] GKE Autopilot manifests (StatefulSet + Filestore/PD) - Terraform module completed.
+   - [x] Cloud Scheduler/Function to wake/suspend workspaces - Implemented in Terraform module.
 
 3. **AWS Implementation**
    - [x] EC2 Spot template with EBS reattachment (`scripts/cloud/aws/start-workspace.sh`, `stop-workspace.sh`).

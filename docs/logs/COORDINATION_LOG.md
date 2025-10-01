@@ -277,6 +277,11 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - `scripts/test-code-server-kind.sh` now fails because `/usr/bin/code-server` ships mode 700 for UID 1000 and the Datadog agent exits without an API key; created a placeholder `datadog-secret` (`api-key=fakefakefake`) for diagnostics and scaled the deployment down to 0 after capturing logs.
 - `helm upgrade --install vibecode-platform` (image override to GHCR) hit the same permission guard, while `scripts/validate-helm.sh` passed lint/template/security checks; runtime remains blocked pending a chmod or security-context fix.
 - Updated TODO.md with the permission follow-up, CLI parity gap, and action to restore the KinD smoke deployment once remediation lands.
+### 2025-10-01 02:34 UTC — code-server image retest
+- Dockerfile now chmods `/usr/bin/code-server`, installs vim/neovim/emacs-nox plus pinned aider 0.84.0 and goose-ai 0.9.11; multi-arch builds (`docker build` arm64 + `docker buildx build --platform linux/amd64 … --load`) completed and the arm64 artifact was re-tagged to `ghcr.io/ryanmaclean/vibecode-codeserver:latest`.
+- OrbStack check: `docker run --entrypoint /bin/bash … -lc 'vim/nvim/emacs/aider/goose --version'` confirms every editor/CLI resolves (bat exposed as `batcat`).
+- `scripts/test-code-server-kind.sh` passes end-to-end with the retagged image—port-forward/NodePort both return 200 and the helper reports Vim/Nvim/Emacs/Aider/Goose present inside the pod.
+- Helm smoke (`helm upgrade --install vibecode-platform … --set codeServer.image.tag=latest --set codeServer.persistence.enabled=false`) succeeded against KinD; MongoDB stayed Pending due to disabled PVCs, so the release was uninstalled after verification.
 ### Documentation Touchpoints
 - Coordination guidance now appears in `README.md`, `CONTRIBUTING.md`, and `AGENTS.md`; skim those before making sizable changes.
 - `docs/logs/README.md` now includes a reminder to log significant updates back in `TODO.md`.
