@@ -28,6 +28,14 @@
 
 - Multi-stream plan: Vega (release), Rina (QA), Rowan (security), Sloane (docs), Theo (ops) executing in parallel via MCP subagents.
 
+### Progress Notes (2025-10-01 22:25 UTC)
+- Script telemetry coverage implemented (six new Bats cases) and `npm run test:scripts` added to `main-branch-ci.yml`; local run passes.
+- Workflow dispatch patched per runbook (unique validation tag, concurrency cancel, SBOM fail-fast, Datadog summary).
+- Issue checkpoints updated (#410/#418/#417/#416/#411) with runbooks and scheduling details.
+
+### Additional Progress (2025-10-01 22:40 UTC)
+- Hardened `docker/code-server/Dockerfile`: Node tarball verification, Go checksum validation, cosign installation added.
+
 ### Active Streams (UPDATED)
 - **Release (#410)** – ✅ COMPLETE - All profiles deployed
 - **QA (#417)** – Rina preparing telemetry + secret masking assertions and PATH/Ready exhaustion Bats tests before enabling `npm run test:scripts`.
