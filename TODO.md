@@ -5,7 +5,7 @@
 - VSCode now defaults the Jest extension to `npm run test --`, with tasks for watch mode and the monitoring suite.
 
 ### Next Steps
-- [ ] Trim noisy console output in the vector pool tests (consider swapping test logger to a silent mock).
+- [x] Trim noisy console output in the vector pool tests (console.* mocked in tests/unit/db/vector-connection-pool.test.ts).
 - [ ] Decide whether to expand branch coverage for timeout/error paths or exclude them from unit coverage via `coveragePathIgnorePatterns`.
 - [ ] Introduce a coverage upload workflow (Codecov or similar) so the new suites report metrics automatically.
 
