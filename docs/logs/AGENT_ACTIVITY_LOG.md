@@ -1,10 +1,58 @@
 # Agent Activity Log
 
+## 2025-10-01
+
+### Agent Codex (Release Desk) - Code-Server Handoff Refresh
+- Drafted `docs/handoff/code-server-release.md` refresh covering cadence, validation gates, and escalation matrix.
+- Published `docs/handoff/shipping-dashboard.md` with Build/Test/Deploy snapshot and SLA summary.
+- Logged pending monitoring work (Datadog metrics + dashboard owner assignments) and tied TODO status to Status-at-a-Glance plan.
+
+### Agent Codex (Coordination) - Log Maintenance
+- Added 2025-10-01 entries to coordination artifacts (COORDINATION_LOG, TODO restructure plan).
+- Captured cross-arch build blockers (workflow re-enable sequence, Docker optional installs) for future agents.
+
+
 > **Purpose:** Historical record of agent work extracted from TODO.md  
-> **Last Updated:** 2025-09-29  
+> **Last Updated:** 2025-10-01  
 > **Extracted By:** Agent Cascade - Phase 19
 
 This log captures completed agent activities to keep TODO.md focused on current work.
+
+---
+
+## 2025-10-01
+
+### Agent Update – Enhanced Chat Lint Cleanup (05:57 UTC)
+- Cleared 15 ESLint warnings in `src/components/chat/EnhancedChatInterface.tsx`, tightened effect deps, and aligned shared UI tooltip contracts.
+- Added stream chunk type guards so SSE metadata merges stay type-safe and expose RAG context badges in the settings panel.
+- `npx eslint src/components/chat/EnhancedChatInterface.tsx` (05:56 UTC) now reports zero warnings.
+
+### Agent Update – TypeScript `any` Warnings Batch 11 (05:45 UTC)
+- Replaced residual `any` usage in `src/components/chat/HuggingFaceChatInterface.tsx` using typed helpers.
+- Simplified readiness flags, standardized metadata maps, and reduced warning backlog by five ahead of the next lint batch.
+- Next focus: monitoring tests (`src/lib/monitoring/__tests__/health-monitoring.test.ts`) and template utilities.
+
+### Agent Update – Astro Docs Link Repairs (03:54 UTC)
+- Rebuilt Astro docs after rewriting repo-relative links to site-relative URLs and GitHub blobs.
+- Updated `astro.config.mjs` sidebar, created local favicon, and logged audit report in `docs/logs/astro-link-audit-2025-10-01.md`.
+
+### Agent Update – Connection Pool Coverage (03:25 UTC)
+- Added `tests/unit/db/vector-connection-pool.test.ts` plus monitoring alert coverage, raising coverage for `vector-connection-pool.ts` and alert services to ~54% statements.
+- Enabled Jest extension defaults and archived targeted coverage command in TODO for reuse.
+
+### Agent Update – Connection Pool Alert Tests (03:03 UTC)
+- Added targeted alert unit tests covering dynamic import fallback and critical metric paths.
+- Ensured suite passes (`npm run test -- tests/unit/monitoring/connection-pool-alerts.test.ts`) and maintains ~54% statements coverage.
+
+### Agent Update – Vector Pool Module Fix (02:05 UTC)
+- Replaced `eval(require())` shim with guarded dynamic import in `src/lib/db/connection-pool-alerts.ts` to restore SSR health checks.
+- `npm run build` (02:04 UTC) now completes without vector pool warnings.
+
+### Platform Observability – Multi-Arch Release Prep (12:15 UTC)
+- Authored `docs/handoff/code-server-release.md` and `docs/handoff/shipping-dashboard.md` to codify release cadence, telemetry expectations, and ownership gaps.
+- Populated `docs/logs/workflow-issues/docker-multiarch.yml.md` and expanded `docs/logs/issues/code-server-cloud-deployment.md` with release checklist coverage.
+- Re-enabled `.github/workflows/codeserver-multiarch.yml` with nightly cron, path trigger, Buildx caching, KinD smoke gate, and Datadog metric hook.
+- Audited optional installs in `docker/code-server/Dockerfile` to skip unsupported tooling on arm64 while preserving aider/goose verification.
 
 ---
 

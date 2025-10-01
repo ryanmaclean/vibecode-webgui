@@ -21,3 +21,4 @@ Keep track of upstream `coder/code-server` releases so we can rebuild our multi-
 
 ## Tracking
 - TODO references (2025-10-01 00:20 UTC entry) – updated to reflect the live workflow.
+- 2025-10-01 06:15 UTC – Verified `.github/workflows/code-server-release-monitor.yml` against current upstream tag (`coder/code-server@v4.104.2`) via local curl check to ensure the monitor reports "in sync" before enabling automation.

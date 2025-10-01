@@ -1,21 +1,128 @@
 name: Build code-server multi-arch image
 
 on:
+  push:
+    paths:
+      - 'docker/code-server/**'
+      - 'scripts/build-codeserver-multiarch.sh'
+      - 'scripts/test-code-server-kind.sh'
+      - '.github/workflows/codeserver-multiarch.yml'
+  schedule:
+    - cron: '15 5 * * *'
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: vibecode-codeserver
+  CACHE_SCOPE: codeserver
+
+concurrency:
+  group: codeserver-multiarch-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  build-push:
+  validate:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
-
+      packages: read
+    outputs:
+      validation_tag: ${{ steps.meta.outputs.validation_tag }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint/type-check/unit tests
+        run: |
+          npm run lint
+          npm run type-check
+          npm run test:unit -- --runInBand
+
+      - name: Set build metadata
+        id: meta
+        run: |
+          tag="ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:ci-${{ github.run_id }}"
+          echo "VALIDATION_TAG=$tag" >> "$GITHUB_ENV"
+          echo "validation_tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "BUILD_DATE=${{ github.run_started_at }}" >> "$GITHUB_ENV"
+          echo "GIT_COMMIT=${{ github.sha }}" >> "$GITHUB_ENV"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build linux/amd64 validation image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/code-server/Dockerfile
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: ${{ env.VALIDATION_TAG }}
+          cache-from: type=gha,scope=${{ env.CACHE_SCOPE }}
+          cache-to: type=gha,scope=${{ env.CACHE_SCOPE }},mode=max
+          build-args: |
+            BUILD_DATE=${{ env.BUILD_DATE }}
+            GIT_COMMIT=${{ env.GIT_COMMIT }}
+
+      - name: Verify aider/goose on validation image
+        run: docker run --rm --entrypoint bash ${{ env.VALIDATION_TAG }} -lc "aider --version && goose -version"
+
+      - name: Create KinD cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: vibecode-ci
+          wait: true
+
+      - name: Run code-server KinD smoke test
+        env:
+          CODE_SERVER_IMAGE: ${{ env.VALIDATION_TAG }}
+          KIND_CLUSTER_NAME: vibecode-ci
+        run: ./scripts/test-code-server-kind.sh
+
+      - name: Collect KinD diagnostics
+        if: always()
+        run: |
+          mkdir -p artifacts/kind
+          kubectl get pods -A > artifacts/kind/pods.txt
+          kubectl describe deployment/code-server-kind -n vibecode-platform > artifacts/kind/deployment.txt || true
+          kubectl logs deployment/code-server-kind -n vibecode-platform > artifacts/kind/deployment.log || true
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kind-smoke-${{ github.run_id }}
+          path: artifacts/kind
+
+  build-push:
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.repository == 'ryanmaclean/vibecode-webgui'
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -24,22 +131,56 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - name: Prepare image tags
+        id: tags
+        run: |
+          latest="ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest"
+          sha_tag="ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          ci_tag="${{ needs.validate.outputs.validation_tag }}"
+          tags="$latest\n$sha_tag\n$ci_tag"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            nightly="ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:nightly"
+            tags="$tags\n$nightly"
+          fi
+          echo "tags<<'EOF'" >> "$GITHUB_OUTPUT"
+          printf '%b\n' "$tags" >> "$GITHUB_OUTPUT"
+          echo 'EOF' >> "$GITHUB_OUTPUT"
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and push
+      - name: Build and push multi-arch image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: docker/code-server/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=gha,scope=${{ env.CACHE_SCOPE }}
+          cache-to: type=gha,scope=${{ env.CACHE_SCOPE }},mode=max
           build-args: |
             BUILD_DATE=${{ github.run_started_at }}
             GIT_COMMIT=${{ github.sha }}
+          provenance: true
+          sbom: true
+
+      - name: Verify aider/goose on amd64 image
+        run: docker run --rm --platform linux/amd64 --entrypoint bash ${{ needs.validate.outputs.validation_tag }} -lc "aider --version && goose -version"
+
+      - name: Verify aider/goose on arm64 image
+        run: docker run --rm --platform linux/arm64 --entrypoint bash ${{ needs.validate.outputs.validation_tag }} -lc "aider --version && goose -version"
+
+      - name: Emit Datadog metrics
+        if: ${{ secrets.DD_API_KEY != '' }}
+        env:
+          DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
+          DATADOG_SITE: ${{ secrets.DD_SITE != '' && secrets.DD_SITE || 'datadoghq.com' }}
+        run: |
+          timestamp=$(date +%s)
+          npx @datadog/datadog-ci metric submit codeserver.build.duration --points "$timestamp:1" || echo "datadog metric submit skipped"
+
+      - name: Summarise published tags
+        run: |
+          cat <<'MARKDOWN' >> "$GITHUB_STEP_SUMMARY"
+          ### Code-server multi-arch publish
+          Tags pushed:
+          ${{ steps.tags.outputs.tags }}
+          MARKDOWN
