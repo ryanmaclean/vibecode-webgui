@@ -11,10 +11,10 @@
 # TODO
 
 ## Status at a Glance (2025-10-01)
-- **Workflow dispatch:** Waiting on merge of updated `.github/workflows/codeserver-multiarch.yml` (issue #418); rerun dispatch once landed.
+- **Workflow dispatch:** ✅ Updated `.github/workflows/codeserver-multiarch.yml` merged (issue #418). Ready to rerun dispatch with `promote_latest=false` to validate.
 - **Release blocker:** Hold promoting new `codeserver-multiarch` builds to `latest` until the guarded workflow has at least one clean nightly run with the image patch.
 - **Latest build:** `codeserver-multiarch` manual run 2025-10-01 05:52 UTC ✅ (CI tag only).
-- **Deploy:** Release tags paused pending workflow merge; Synology/KinD manual deploys healthy.
+- **Deploy:** Release tags paused pending workflow validation run; Synology/KinD manual deploys healthy.
 - **Observability:** Alert ownership assignment in progress via @alex.h; due 2025-10-03 with updates captured in `docs/handoff/shipping-dashboard.md`.
 - **Docs refreshed:** Handoff + shipping dashboard updated with version/canary sections; AI tooling parity plan added under `docs/tooling/`; coordination/activity logs include 2025-10-01 notes.
 - **MCP check:** `roundtable-ai/gemini_subagent` returned tool failures today; retry persona sync before closing #415/#417 documentation items.
@@ -22,7 +22,7 @@
 ## Active Work
 | Owner | Task | Status | Target | Notes |
 | --- | --- | --- | --- | --- |
-| @ryan.m | Merge workflow + Dockerfile changes, monitor first nightly run | In progress | 2025-10-02 05:15 UTC | Record metrics and artifact links in release digest after nightly confirms image patch. |
+| @ryan.m | ✅ Merge workflow changes, rerun with validation | Merged | 2025-10-02 05:15 UTC | Workflow updated with scoped validation tags, SBOM verification, and digest output. Next: rerun with `promote_latest=false` to validate metrics. |
 | @alex.h | Assign Datadog dashboard + alert owners | In progress | 2025-10-03 | Update `docs/handoff/shipping-dashboard.md` and observability monitors once contacts confirmed. |
 | @claudia.p | Draft ARM64 Playwright smoke addition (issue #409) | Pending | 2025-10-05 | Requires runner allocation + checklist update before QA parity sign-off. |
 | @platform-ops | Harden code-server editor smoke test (#415) | In progress | 2025-10-04 | Add Ready pod gating, request timeouts, structured logs ahead of doc addendum. |
@@ -43,7 +43,7 @@
 - Enable AI tooling parity CI matrix (see `docs/tooling/ai-tooling-parity.md`) when runner capacity is approved. (GH issue #413)
 - Emit `codeserver.kind.latency` + success metrics from `scripts/test-code-server-kind.sh` once secrets available.
 - Define Buildx cache retention policy and document in workflow issue log.
-- When workflow_dispatch lands on main, rerun `codeserver-multiarch` with `promote_latest=false`, then log results in release digest.
+- ✅ Workflow_dispatch updates merged; next: rerun `codeserver-multiarch` with `promote_latest=false`, then log results in release digest.
 - Publish code-server editor hardening addendum in docs once #415/#416 merge.
 - Retry Gemini persona sync for #415/#417 before drafting final documentation handoff.
 
