@@ -493,7 +493,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 }`;
   }
 
-  private getNextjsDependencies(options: any): Record<string, string> {
+  private getNextjsDependencies(_options: Record<string, unknown>): Record<string, string> {
     return {
       "next": "^14.0.0",
       "react": "^18.0.0",
@@ -523,7 +523,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
   }
 
-  private getNextjsEnvVars(options: any): Array<{ name: string; value: string; description: string }> {
+  private getNextjsEnvVars(_options: Record<string, unknown>): Array<{ name: string; value: string; description: string }> {
     return [
       { name: 'OPENAI_API_KEY', value: '', description: 'OpenAI API key for AI features' },
       { name: 'DATABASE_URL', value: '', description: 'Database connection string' },
@@ -531,7 +531,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     ];
   }
 
-  private getNextjsSetupInstructions(options: any): string[] {
+  private getNextjsSetupInstructions(_options: Record<string, unknown>): string[] {
     return [
       '1. Install dependencies: npm install',
       '2. Copy .env.example to .env.local and fill in your API keys',
@@ -560,7 +560,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Python ML Platform methods
-  private generatePythonRequirements(options: any): string {
+  private generatePythonRequirements(_options: Record<string, unknown>): string {
     return `fastapi==0.104.1
 uvicorn==0.24.0
 pydantic==2.5.0
@@ -655,7 +655,7 @@ if __name__ == "__main__":
     };
   }
 
-  private getPythonEnvVars(options: any): Array<{ name: string; value: string; description: string }> {
+  private getPythonEnvVars(_options: Record<string, unknown>): Array<{ name: string; value: string; description: string }> {
     return [
       { name: 'DATABASE_URL', value: '', description: 'Database connection string' },
       { name: 'MLFLOW_TRACKING_URI', value: '', description: 'MLflow tracking server URI' },
@@ -663,7 +663,7 @@ if __name__ == "__main__":
     ];
   }
 
-  private getPythonSetupInstructions(options: any): string[] {
+  private getPythonSetupInstructions(_options: Record<string, unknown>): string[] {
     return [
       '1. Create virtual environment: python -m venv venv',
       '2. Activate virtual environment: source venv/bin/activate (Linux/Mac) or venv\\Scripts\\activate (Windows)',
@@ -681,7 +681,7 @@ if __name__ == "__main__":
   }
 
   // Rust Web API methods
-  private generateCargoToml(projectName: string, options: any): string {
+  private generateCargoToml(projectName: string, _options: Record<string, unknown>): string {
     return `[package]
 name = "${projectName}"
 version = "0.1.0"
@@ -768,7 +768,7 @@ async fn health_check() -> StatusCode {
     };
   }
 
-  private getRustEnvVars(options: any): Array<{ name: string; value: string; description: string }> {
+  private getRustEnvVars(_options: Record<string, unknown>): Array<{ name: string; value: string; description: string }> {
     return [
       { name: 'DATABASE_URL', value: '', description: 'Database connection string' },
       { name: 'JWT_SECRET', value: '', description: 'JWT signing secret' },
@@ -776,7 +776,7 @@ async fn health_check() -> StatusCode {
     ];
   }
 
-  private getRustSetupInstructions(options: any): string[] {
+  private getRustSetupInstructions(_options: Record<string, unknown>): string[] {
     return [
       '1. Install Rust: https://rustup.rs/',
       '2. Install cargo-watch: cargo install cargo-watch',
