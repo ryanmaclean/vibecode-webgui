@@ -109,9 +109,18 @@ jobs:
       - name: Prepare Next.js standalone bundle
         if: steps.detect.outputs.docs_system == 'nextjs'
         run: |
+          set -euo pipefail
           mkdir -p ./next-standalone/.next
           rsync -a --delete ./.next/standalone/ ./next-standalone/
-          rsync -a ./next/static/ ./next-standalone/.next/static/
+          if [ -d "./.next/static" ]; then
+            rsync -a ./.next/static/ ./next-standalone/.next/static/
+          fi
+          if [ -d "./public" ]; then
+            rsync -a ./public/ ./next-standalone/public/
+          fi
+          if [ -d "./content/wiki" ]; then
+            rsync -a ./content/wiki/ ./next-standalone/content/wiki/
+          fi
 
       - name: Upload Next.js standalone artifact
         if: steps.detect.outputs.docs_system == 'nextjs'

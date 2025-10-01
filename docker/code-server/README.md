@@ -118,6 +118,12 @@ To install these, you'll need to configure code-server to use the Microsoft Mark
 - **Trusted domains pre-configured** - No annoying prompts for extension URLs (see [TRUSTED_DOMAINS.md](TRUSTED_DOMAINS.md))
 - CLI essentials pre-installed: `eza`, `ripgrep`, `fd`, `fzf`, `bat`, `hyperfine`, `lazygit`, `starship`, `zoxide`
 
+### Kubernetes Tooling Notes
+
+- `kubectl`, `helm`, `kubectx`, and `kubens` are available out of the box.
+- Bash, Zsh, and Fish completion scripts for both `kubectl` and `helm` are pre-generated under `/etc/bash_completion.d`, `/usr/share/zsh/site-functions`, and `/etc/fish/completions` respectively.
+- All of these tools operate on the active kubeconfig (default: `/home/coder/.kube/config`). No clusters or credentials ship with the container, so `kubectx`/`kubens` will report "no contexts" until you mount or create a kubeconfig with at least one context/namespace. Mount `~/.kube/config`, set `KUBECONFIG`, or copy a context into the workspace before relying on the tooling.
+
 ## Building the Image
 
 ### Multi-Architecture Build (Recommended)
