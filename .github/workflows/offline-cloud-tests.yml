@@ -1,0 +1,111 @@
+name: Offline Cloud Infrastructure Tests
+
+on:
+  pull_request:
+    paths:
+      - 'tofu/**'
+      - 'tests/tofu/**'
+      - '.github/workflows/offline-cloud-tests.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'tofu/**'
+      - 'tests/tofu/**'
+  workflow_dispatch:
+    inputs:
+      update_issue:
+        description: 'GitHub Issue number to update with results (optional)'
+        required: false
+        type: string
+
+jobs:
+  offline-cloud-tests:
+    name: Run Offline Cloud Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install OpenTofu
+        run: |
+          # Install OpenTofu for terraform operations
+          curl -fsSL https://get.opentofu.org/install-opentofu.sh | bash
+          tofu --version
+      
+      - name: Install Terraform (fallback)
+        if: failure()
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.9.0'
+      
+      - name: Make test scripts executable
+        run: |
+          chmod +x tests/tofu/offline-cloud-testing.sh
+      
+      - name: Run Offline Cloud Tests
+        id: offline_tests
+        run: |
+          cd tests/tofu
+          ./offline-cloud-testing.sh
+        continue-on-error: true
+      
+      - name: Run Python Test Suites
+        id: python_tests
+        run: |
+          cd tests/tofu
+          python3 -m unittest discover -s . -p "test_*.py" -v
+        continue-on-error: true
+      
+      - name: Generate Test Report
+        if: always()
+        run: |
+          cd tests/tofu
+          python3 github-integration.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ISSUE_NUMBER: ${{ github.event.inputs.update_issue || github.event.pull_request.number || '' }}
+      
+      - name: Upload Test Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: tests/tofu/test-report.json
+          retention-days: 30
+      
+      - name: Check Test Results
+        if: steps.offline_tests.outcome == 'failure' || steps.python_tests.outcome == 'failure'
+        run: |
+          echo "::error::Offline cloud infrastructure tests failed. Check the logs above for details."
+          exit 1
+      
+      - name: Post Success Comment
+        if: success() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ **Offline Cloud Infrastructure Tests Passed**\n\nAll cloud configuration tests completed successfully. Infrastructure changes are validated and ready for deployment.'
+            })
+      
+      - name: Post Failure Comment
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **Offline Cloud Infrastructure Tests Failed**\n\nSome cloud configuration tests failed. Please review the test results and fix any issues before merging.\n\nSee the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.'
+            })
