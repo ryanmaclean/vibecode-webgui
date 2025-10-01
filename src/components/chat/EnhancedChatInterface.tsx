@@ -24,6 +24,8 @@ interface Message {
   }
 }
 
+type AssistantMessage = Message & { from: 'assistant' }
+
 interface AttachmentFile {
   id: string
   name: string
@@ -57,7 +59,7 @@ type StreamContentChunk = {
 
 type StreamMetadataChunk = {
   type: 'metadata'
-  metadata: Partial<NonNullable<Message['metadata']>>
+  metadata: Partial<NonNullable<AssistantMessage['metadata']>>
 }
 
 const isContentChunk = (value: unknown): value is StreamContentChunk => {
@@ -65,6 +67,8 @@ const isContentChunk = (value: unknown): value is StreamContentChunk => {
   const chunk = value as Record<string, unknown>
   return chunk.type === 'content' && typeof chunk.content === 'string'
 }
+
+const isAssistantMessage = (message: Message): message is AssistantMessage => message.from === 'assistant'
 
 const isMetadataChunk = (value: unknown): value is StreamMetadataChunk => {
   if (typeof value !== 'object' || value === null) return false
@@ -84,6 +88,9 @@ const AVAILABLE_MODELS = [
   { id: 'meta-llama/llama-3.1-405b-instruct', name: 'Llama 3.1 405B', provider: 'Meta', context: '128K' },
   { id: 'google/gemini-pro-1.5', name: 'Gemini Pro 1.5', provider: 'Google', context: '2M' }
 ] as const
+
+const STREAM_FLUSH_THRESHOLD = 8192
+const STREAM_FLUSH_INTERVAL_MS = 48
 
 interface EnhancedChatInterfaceProps {
   conversationId?: string
@@ -109,6 +116,7 @@ export const EnhancedChatInterface = ({
   const [attachedFiles, setAttachedFiles] = useState<File[]>([])
   const [enableWebSearch, setEnableWebSearch] = useState(false)
   const [enableRAG, setEnableRAG] = useState(true)
+  const [showJumpButton, setShowJumpButton] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -116,6 +124,11 @@ export const EnhancedChatInterface = ({
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const autoScrollRef = useRef(true)
   const prefersReducedMotionRef = useRef(false)
+  const contentBufferRef = useRef<{ chunks: string[]; size: number }>({ chunks: [], size: 0 })
+  const flushTimeoutRef = useRef<number | null>(null)
+  const streamAbortRef = useRef<AbortController | null>(null)
+  const liveRegionRef = useRef<HTMLDivElement>(null)
+  const lastAnnouncedAssistantMessageIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     setContextFiles([...initialContext])
@@ -141,6 +154,20 @@ export const EnhancedChatInterface = ({
   }, [])
 
   useEffect(() => {
+    return () => {
+      if (streamAbortRef.current) {
+        streamAbortRef.current.abort()
+        streamAbortRef.current = null
+      }
+
+      if (flushTimeoutRef.current !== null) {
+        clearTimeout(flushTimeoutRef.current)
+        flushTimeoutRef.current = null
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     const root = scrollAreaRef.current
     if (!root) return
 
@@ -150,7 +177,9 @@ export const EnhancedChatInterface = ({
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = viewport
       const distanceFromBottom = scrollHeight - (scrollTop + clientHeight)
-      autoScrollRef.current = distanceFromBottom < 48
+      const isPinnedToBottom = distanceFromBottom < 48
+      autoScrollRef.current = isPinnedToBottom
+      setShowJumpButton(prev => (prev === !isPinnedToBottom ? prev : !isPinnedToBottom))
     }
 
     viewport.addEventListener('scroll', handleScroll)
@@ -162,14 +191,43 @@ export const EnhancedChatInterface = ({
   }, [])
 
   const maybeScrollToBottom = useCallback(() => {
-    if (!autoScrollRef.current || prefersReducedMotionRef.current) return
+    if (!autoScrollRef.current) return
+
+    if (prefersReducedMotionRef.current) {
+      autoScrollRef.current = false
+      setShowJumpButton(true)
+      return
+    }
 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [])
+    setShowJumpButton(false)
+  }, [setShowJumpButton])
 
   useEffect(() => {
     maybeScrollToBottom()
   }, [messages, maybeScrollToBottom])
+
+  useEffect(() => {
+    const lastMessage = messages.at(-1)
+    if (!lastMessage || !isAssistantMessage(lastMessage)) {
+      return
+    }
+
+    if (!lastMessage.content.trim()) {
+      return
+    }
+
+    if (lastAnnouncedAssistantMessageIdRef.current === lastMessage.id) {
+      return
+    }
+
+    lastAnnouncedAssistantMessageIdRef.current = lastMessage.id
+
+    const liveRegion = liveRegionRef.current
+    if (liveRegion) {
+      liveRegion.textContent = 'New assistant message available.'
+    }
+  }, [messages])
 
   const loadConversation = useCallback(async () => {
     if (!conversationId) return
@@ -230,21 +288,71 @@ export const EnhancedChatInterface = ({
     setAttachedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
-  const updateLastAssistantMessage = (updater: (message: Message) => Message) => {
+  const updateLastAssistantMessage = useCallback((updater: (message: AssistantMessage) => AssistantMessage) => {
     setMessages(prev => {
-      const lastIndex = prev.length - 1
-      if (lastIndex < 0) return prev
-
-      const lastMessage = prev[lastIndex]
-      if (lastMessage.from !== 'assistant') {
+      const lastMessage = prev.at(-1)
+      if (!lastMessage || !isAssistantMessage(lastMessage)) {
         return prev
       }
 
       const nextMessages = prev.slice()
-      nextMessages[lastIndex] = updater(lastMessage)
+      nextMessages[nextMessages.length - 1] = updater(lastMessage)
       return nextMessages
     })
-  }
+  }, [])
+
+  const clearFlushTimer = useCallback(() => {
+    if (flushTimeoutRef.current !== null) {
+      clearTimeout(flushTimeoutRef.current)
+      flushTimeoutRef.current = null
+    }
+  }, [])
+
+  const flushContentBuffer = useCallback((force = false) => {
+    const buffer = contentBufferRef.current
+    if (!buffer.size) {
+      if (force) {
+        clearFlushTimer()
+      }
+      return
+    }
+
+    if (!force && buffer.size < STREAM_FLUSH_THRESHOLD) {
+      return
+    }
+
+    const joined = buffer.chunks.join('')
+    buffer.chunks = []
+    buffer.size = 0
+
+    clearFlushTimer()
+
+    if (!joined) return
+
+    updateLastAssistantMessage(message => ({
+      ...message,
+      content: `${message.content}${joined}`
+    }))
+  }, [clearFlushTimer, updateLastAssistantMessage])
+
+  const scheduleContentFlush = useCallback(() => {
+    if (contentBufferRef.current.size >= STREAM_FLUSH_THRESHOLD) {
+      flushContentBuffer(true)
+      return
+    }
+
+    if (typeof window === 'undefined') {
+      flushContentBuffer(true)
+      return
+    }
+
+    if (flushTimeoutRef.current !== null) return
+
+    flushTimeoutRef.current = window.setTimeout(() => {
+      flushTimeoutRef.current = null
+      flushContentBuffer(true)
+    }, STREAM_FLUSH_INTERVAL_MS)
+  }, [flushContentBuffer])
 
   const sendMessage = async () => {
     if (!input.trim() && attachedFiles.length === 0) return
@@ -266,6 +374,17 @@ export const EnhancedChatInterface = ({
     setInput('')
     setAttachedFiles([])
     setIsStreaming(true)
+    setShowJumpButton(false)
+    contentBufferRef.current = { chunks: [], size: 0 }
+
+    if (streamAbortRef.current) {
+      streamAbortRef.current.abort()
+      streamAbortRef.current = null
+      clearFlushTimer()
+    }
+
+    const abortController = new AbortController()
+    streamAbortRef.current = abortController
 
     try {
       // First, upload any attached files
@@ -318,14 +437,15 @@ export const EnhancedChatInterface = ({
           files: attachedFiles.map(file => file.name),
           enableWebSearch,
           enableRAG
-        })
+        }),
+        signal: abortController.signal
       })
 
       if (!response.ok) {
         throw new Error('Failed to get AI response')
       }
 
-      const assistantMessage: Message = {
+      const assistantMessage: AssistantMessage = {
         id: `msg-${Date.now()}-assistant`,
         from: 'assistant',
         content: '',
@@ -358,11 +478,12 @@ export const EnhancedChatInterface = ({
             const parsed: unknown = JSON.parse(dataPayload)
 
             if (isContentChunk(parsed)) {
-              updateLastAssistantMessage(message => ({
-                ...message,
-                content: `${message.content}${parsed.content}`
-              }))
+              const buffer = contentBufferRef.current
+              buffer.chunks.push(parsed.content)
+              buffer.size += parsed.content.length
+              scheduleContentFlush()
             } else if (isMetadataChunk(parsed)) {
+              flushContentBuffer(true)
               updateLastAssistantMessage(message => ({
                 ...message,
                 metadata: {
@@ -410,10 +531,21 @@ export const EnhancedChatInterface = ({
 
             if (done) {
               flushPendingData()
+              flushContentBuffer(true)
               break
             }
           }
         } finally {
+          try {
+            await reader.cancel()
+          } catch (cancelError) {
+            if (!abortController.signal.aborted) {
+              console.warn('Failed to cancel stream reader', cancelError)
+            }
+          }
+
+          flushContentBuffer(true)
+
           try {
             reader.releaseLock()
           } catch (releaseError) {
@@ -422,16 +554,28 @@ export const EnhancedChatInterface = ({
         }
       }
     } catch (error) {
-      console.error('Failed to send message:', error)
-      // Add error message
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        from: 'assistant',
-        content: 'Sorry, I encountered an error while processing your message. Please try again.',
-        createdAt: new Date()
+      if (abortController.signal.aborted) {
+        // Intentional abort; no user-facing error.
+      } else {
+        console.error('Failed to send message:', error)
+        const errorMessage: Message = {
+          id: `error-${Date.now()}`,
+          from: 'assistant',
+          content: 'Sorry, I encountered an error while processing your message. Please try again.',
+          createdAt: new Date()
+        }
+        setMessages(prev => [...prev, errorMessage])
       }
-      setMessages(prev => [...prev, errorMessage])
     } finally {
+      if (streamAbortRef.current === abortController) {
+        streamAbortRef.current = null
+      }
+      contentBufferRef.current = { chunks: [], size: 0 }
+      clearFlushTimer()
+      if (abortController.signal.aborted) {
+        autoScrollRef.current = true
+        setShowJumpButton(false)
+      }
       setIsStreaming(false)
     }
   }
@@ -443,6 +587,14 @@ export const EnhancedChatInterface = ({
     }
   }
 
+  const handleJumpToLatest = useCallback(() => {
+    autoScrollRef.current = true
+    const behavior: ScrollBehavior = prefersReducedMotionRef.current ? 'auto' : 'smooth'
+    messagesEndRef.current?.scrollIntoView({ behavior })
+    messagesEndRef.current?.focus()
+    setShowJumpButton(false)
+  }, [setShowJumpButton])
+
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes'
     const k = 1024
@@ -453,6 +605,13 @@ export const EnhancedChatInterface = ({
 
   return (
     <TooltipProvider>
+      <div
+        ref={liveRegionRef}
+        aria-live="polite"
+        role="status"
+        className="sr-only"
+        data-testid="chat-live-region"
+      />
       <Card className={`flex flex-col h-full ${className}`}>
         {/* Header */}
         <CardContent className="flex-none p-4 border-b">
@@ -542,7 +701,19 @@ export const EnhancedChatInterface = ({
         </CardContent>
 
         {/* Messages Area */}
-        <CardContent className="flex-1 overflow-hidden p-0">
+        <CardContent className="relative flex-1 overflow-hidden p-0">
+          {showJumpButton && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
+              <Button
+                size="sm"
+                data-testid="chat-jump-button"
+                className="pointer-events-auto shadow-md"
+                onClick={handleJumpToLatest}
+              >
+                Jump to latest
+              </Button>
+            </div>
+          )}
           <ScrollArea ref={scrollAreaRef} className="h-full p-4">
             <div className="space-y-4">
               {messages.map((message) => (
@@ -648,7 +819,7 @@ export const EnhancedChatInterface = ({
                 </div>
               )}
               
-              <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} tabIndex={-1} data-testid="chat-scroll-anchor" />
             </div>
           </ScrollArea>
         </CardContent>

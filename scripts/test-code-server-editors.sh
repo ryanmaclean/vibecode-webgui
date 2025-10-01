@@ -5,10 +5,29 @@ log() {
   echo "==> $*"
 }
 
+emit_status() {
+  local tool="$1"
+  local status="$2"
+  local duration_ms="$3"
+  local message="$4"
+  message=${message//$'\n'/ }
+  printf 'tool=%s status=%s duration_ms=%s message="%s"\n' "$tool" "$status" "$duration_ms" "$message"
+}
+
 error() {
   echo "Error: $*" >&2
   exit 1
 }
+
+now_ms() {
+  date +%s%3N
+}
+
+TIMEOUT_BIN=${TIMEOUT_BIN:-timeout}
+HAS_TIMEOUT=0
+if command -v "$TIMEOUT_BIN" >/dev/null 2>&1; then
+  HAS_TIMEOUT=1
+fi
 
 if ! command -v kubectl >/dev/null 2>&1; then
   error "kubectl is required but not found in PATH"
@@ -16,34 +35,128 @@ fi
 
 NAMESPACE=${CODE_SERVER_NAMESPACE:-vibecode-platform}
 SELECTOR=${CODE_SERVER_SELECTOR:-app=code-server,tier=workspace}
+REQUEST_TIMEOUT=${KUBE_REQUEST_TIMEOUT:-30s}
+WAIT_TIMEOUT=${KUBE_WAIT_TIMEOUT:-60s}
+EXEC_TIMEOUT=${EDITOR_EXEC_TIMEOUT:-45s}
 
-log "Locating code-server pod in namespace '$NAMESPACE' (selector: $SELECTOR)"
-POD_NAME=$(kubectl get pods \
-  --namespace "$NAMESPACE" \
-  --selector "$SELECTOR" \
-  --output jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+log "Locating Ready code-server pods in namespace '$NAMESPACE' (selector: $SELECTOR)"
 
-if [[ -z "$POD_NAME" ]]; then
-  error "No code-server pod found. Ensure the deployment is running before testing editors."
+kubectl_wait_ready() {
+  local args=("wait" "--namespace" "$NAMESPACE" "--selector" "$SELECTOR" "--for=condition=Ready" "pod" "--timeout=$WAIT_TIMEOUT" "--request-timeout=$REQUEST_TIMEOUT")
+  if [[ $HAS_TIMEOUT -eq 1 ]]; then
+    "$TIMEOUT_BIN" "$WAIT_TIMEOUT" kubectl "${args[@]}" >/dev/null 2>&1 || true
+  else
+    kubectl "${args[@]}" >/dev/null 2>&1 || true
+  fi
+}
+
+kubectl_wait_ready
+
+mapfile -t READY_PODS < <(
+  kubectl get pods \
+    --namespace "$NAMESPACE" \
+    --selector "$SELECTOR" \
+    --field-selector=status.phase=Running \
+    --output jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' \
+    --request-timeout="$REQUEST_TIMEOUT" 2>/dev/null | awk 'NF'
+)
+
+if [[ ${#READY_PODS[@]} -eq 0 ]]; then
+  error "No Ready pods found for selector '$SELECTOR' in namespace '$NAMESPACE'."
 fi
 
-log "Testing terminal editors inside pod '$POD_NAME'"
+log "Found ${#READY_PODS[@]} Ready pod(s): ${READY_PODS[*]}"
+
+# Tracks pod list rotation so each check can retry on alternate pods.
+current_pod_index=0
+
+run_pod_cmd() {
+  local pod="$1"
+  local command="$2"
+  local out_file err_file
+  out_file=$(mktemp)
+  err_file=$(mktemp)
+  local rc
+
+  if [[ $HAS_TIMEOUT -eq 1 ]]; then
+    "$TIMEOUT_BIN" "$EXEC_TIMEOUT" kubectl exec "$pod" -n "$NAMESPACE" --request-timeout="$REQUEST_TIMEOUT" -- sh -lc "$command" >"$out_file" 2>"$err_file" || rc=$?
+  else
+    kubectl exec "$pod" -n "$NAMESPACE" --request-timeout="$REQUEST_TIMEOUT" -- sh -lc "$command" >"$out_file" 2>"$err_file" || rc=$?
+  fi
+
+  if [[ -z ${rc+x} ]]; then
+    rc=0
+  fi
+
+  EXEC_STDOUT=$(<"$out_file")
+  EXEC_STDERR=$(<"$err_file")
+  rm -f "$out_file" "$err_file"
+  return $rc
+}
+
+choose_next_pod() {
+  local pod
+  pod=${READY_PODS[$((current_pod_index % ${#READY_PODS[@]}))]}
+  current_pod_index=$((current_pod_index + 1))
+  printf '%s' "$pod"
+}
 
 check_tool() {
   local label="$1"
   local detect_cmd="$2"
   local version_cmd="$3"
+  local start_ms overall_rc=1 message=""
 
-  if kubectl exec "$POD_NAME" -n "$NAMESPACE" -- sh -lc "$detect_cmd"; then
-    local version_output
-    version_output=$(kubectl exec "$POD_NAME" -n "$NAMESPACE" -- sh -lc "$version_cmd" 2>/dev/null | head -n 1 || true)
-    if [[ -z "$version_output" ]]; then
-      echo "✅ $label available"
-    else
-      echo "✅ $label available — $version_output"
+  start_ms=$(now_ms)
+
+  local attempts=0
+  local pod
+  while [[ $attempts -lt ${#READY_PODS[@]} ]]; do
+    pod=$(choose_next_pod)
+    attempts=$((attempts + 1))
+
+    if run_pod_cmd "$pod" "$detect_cmd"; then
+      local version_output=""
+      if run_pod_cmd "$pod" "$version_cmd"; then
+        version_output=$(printf '%s' "$EXEC_STDOUT" | head -n 1)
+      else
+        # TODO(vibe-ops-101): consolidate version command fallback handling.
+        version_output="version command failed: $EXEC_STDERR"
+      fi
+      local end_ms shell_output
+      end_ms=$(now_ms)
+      shell_output=${version_output:-"available"}
+      shell_output=${shell_output//$'\n'/ }
+      echo "✅ $label available — $shell_output"
+      emit_status "$label" "ok" "$((end_ms - start_ms))" "pod=$pod"
+      overall_rc=0
+      break
     fi
-  else
-    echo "❌ $label missing"
+
+    local rc=$?
+    local end_ms
+    end_ms=$(now_ms)
+
+    if [[ $rc -eq 124 ]]; then
+      message="timeout after $EXEC_TIMEOUT (pod=$pod)"
+    elif [[ $rc -eq 137 ]]; then
+      message="command terminated (pod=$pod)"
+    elif [[ $rc -eq 127 ]]; then
+      message="missing ($label) (pod=$pod)"
+      emit_status "$label" "missing" "$((end_ms - start_ms))" "$message"
+      echo "❌ $label missing"
+      return 1
+    else
+      message="kubectl exec failed (rc=$rc) pod=$pod stderr=${EXEC_STDERR:-<none>}"
+    fi
+
+    emit_status "$label" "retry" "$((end_ms - start_ms))" "$message"
+  done
+
+  if [[ $overall_rc -ne 0 ]]; then
+    local clean_message
+    clean_message=${message//$'\n'/ }
+    echo "❌ $label check failed — $clean_message"
     return 1
   fi
 }
@@ -63,5 +176,5 @@ check_tool "kubens" "command -v kubens >/dev/null 2>&1" "kubens --help" || missi
 if [[ $missing -eq 0 ]]; then
   log "All tools verified."
 else
-  error "One or more required tools missing."
+  error "One or more required tools missing or checks failed."
 fi

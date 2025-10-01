@@ -13,6 +13,8 @@
 | @ryan.m | Merge workflow + Dockerfile changes, monitor first nightly run | In progress | Record metrics and artifact links in release digest. |
 | @alex.h | Assign Datadog dashboard + alert owners | In progress | Update `docs/handoff/shipping-dashboard.md` once assigned. |
 | @claudia.p | Draft ARM64 Playwright smoke addition (issue #409) | Pending | Requires runner allocation + checklist update. |
+| @platform-ops | Harden code-server editor smoke test (#415) | In progress | Add Ready pod gating, request timeouts, structured logs. |
+| @security | Verify kubernetes tooling downloads (#416) | Pending | Add checksum/signature validation + policy update. |
 
 ## Security Hardening Roadmap (Unsigned CLI Downloads)
 | TODO ID | Owner | Scope | Verification Path | Target |
@@ -28,6 +30,7 @@
 - Emit `codeserver.kind.latency` + success metrics from `scripts/test-code-server-kind.sh` once secrets available.
 - Define Buildx cache retention policy and document in workflow issue log.
 - Monitor first nightly run after canary/promote inputs merge and capture results in release digest.
+- Publish code-server editor hardening addendum in docs once #415/#416 merge.
 
 ## Blocked / Watchlist
 - ARM64 Playwright smoke pending hardware runners.
@@ -163,9 +166,9 @@ docker buildx ls
 - [x] Buffer SSE stream fragments and reuse the decoder in streaming mode so partial JSON lines aren't dropped (`src/components/chat/EnhancedChatInterface.tsx:289-326`).
 - [x] Respect `prefers-reduced-motion` and pause auto-scroll when the user isn't at the bottom (`src/components/chat/EnhancedChatInterface.tsx:121-127`).
 - [x] Add message-stream update helper to avoid re-mapping the entire array on every token (`src/components/chat/EnhancedChatInterface.tsx:298-323`).
-- [ ] Harden `updateLastAssistantMessage` typing so callers always receive an assistant message with populated `content`; consider `AssistantMessage` alias and `Array.at(-1)` guard.
-- [ ] Replace per-token string concatenation with buffered chunk flushes to eliminate O(n²) response assembly; target `<=8 KB` flush thresholds and reuse buffers between stream ticks.
-- [ ] Introduce AbortController-backed stream cancellation and reader cleanup on unmount; add scroll hysteresis reset during abort to prevent jump replays.
-- [ ] Add `aria-live="polite"` region plus "Jump to latest" button gated behind reduced-motion/auto-scroll pauses, keeping focus management accessible.
-- [ ] Ship Jest coverage for fragmented SSE payloads and keep-alive frames, and Playwright coverage for reduced-motion scroll gating + manual jump affordance.
+- [x] Harden `updateLastAssistantMessage` typing so callers always receive an assistant message with populated `content`; consider `AssistantMessage` alias and `Array.at(-1)` guard. (GH issue #414)
+- [x] Replace per-token string concatenation with buffered chunk flushes to eliminate O(n²) response assembly; target `<=8 KB` flush thresholds and reuse buffers between stream ticks. (GH issue #414)
+- [x] Introduce AbortController-backed stream cancellation and reader cleanup on unmount; add scroll hysteresis reset during abort to prevent jump replays. (GH issue #414)
+- [x] Add `aria-live="polite"` region plus "Jump to latest" button gated behind reduced-motion/auto-scroll pauses, keeping focus management accessible. (GH issue #414)
+- [ ] Ship Jest coverage for fragmented SSE payloads and keep-alive frames, and Playwright coverage for reduced-motion scroll gating + manual jump affordance. (GH issue #414)
 - [ ] Backfill unit + Playwright coverage for context badges and file upload flows per QA recommendations.
