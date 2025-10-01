@@ -1,74 +1,69 @@
-import type { VectorConnectionPool } from '@/lib/db/vector-connection-pool'
+import ConnectionPoolAlertService, {
+  AlertSeverity,
+  AlertType,
+  __resetVectorConnectionPoolModule,
+  __setVectorConnectionPoolModule,
+} from '../../../src/lib/db/connection-pool-alerts';
 
-describe('ConnectionPoolAlertService dynamic loading', () => {
-  const originalWindow = globalThis.window
+type VectorModule = typeof import('../../../src/lib/db/vector-connection-pool');
+
+describe('ConnectionPoolAlertService dynamic module loading', () => {
+  const service = ConnectionPoolAlertService.getInstance();
+
+  const resetServiceState = () => {
+    (service as unknown as { stopMonitoring: () => void }).stopMonitoring();
+    (service as unknown as { activeAlerts: Map<string, unknown> }).activeAlerts.clear();
+    (service as unknown as { alertHistory: unknown[] }).alertHistory = [];
+    (service as unknown as { lastAlertTimes: Map<string, number> }).lastAlertTimes.clear();
+    (service as unknown as { lastTimeoutCount: number }).lastTimeoutCount = 0;
+  };
 
   beforeEach(() => {
-    jest.useFakeTimers()
-    ;(globalThis as any).window = undefined
-  })
+    resetServiceState();
+    __resetVectorConnectionPoolModule();
+  });
 
   afterEach(() => {
-    jest.clearAllTimers()
-    jest.useRealTimers()
-    if (originalWindow !== undefined) {
-      ;(globalThis as any).window = originalWindow
-    } else {
-      delete (globalThis as any).window
-    }
-  })
+    resetServiceState();
+    __resetVectorConnectionPoolModule();
+  });
 
-  test('warms vector connection pool on the server', async () => {
-    const getPool = jest.fn<() => VectorConnectionPool | null, []>()
-    const createPool = jest.fn()
+  it('gracefully skips monitoring work when the vector module is unavailable', () => {
+    const addAlertSpy = jest.spyOn(service, 'addAlert');
+
+    (service as unknown as { checkConnectionPool: () => void }).checkConnectionPool();
+
+    expect(addAlertSpy).not.toHaveBeenCalled();
+    expect(service.getActiveAlerts()).toHaveLength(0);
+  });
+
+  it('emits alerts when the vector module provides critical metrics', () => {
     const getMetrics = jest.fn(() => ({
       poolSize: 10,
-      activeConnections: 2,
-      availableConnections: 8,
-      avgAcquireTime: 50,
-      totalTimeouts: 0,
-      waitingClients: 0,
-    }))
+      activeConnections: 9,
+      availableConnections: 1,
+      waitingClients: 3,
+      avgAcquireTime: 2500,
+      totalTimeouts: 25,
+    }));
 
-    const mockPool: Partial<VectorConnectionPool> = {
-      getMetrics,
-    }
+    const pool = { getMetrics };
+    const mockModule: VectorModule = {
+      VectorConnectionPoolFactory: {
+        getPool: jest.fn(() => pool),
+        createPool: jest.fn(() => pool),
+      },
+    } as unknown as VectorModule;
 
-    getPool.mockReturnValue(mockPool as VectorConnectionPool)
+    __setVectorConnectionPoolModule(mockModule);
 
-    await jest.isolateModulesAsync(async () => {
-      const module = await import('@/lib/db/connection-pool-alerts')
-      module.__setVectorConnectionPoolModule({
-        VectorConnectionPoolFactory: {
-          getPool,
-          createPool,
-        },
-      } as unknown as typeof import('@/lib/db/vector-connection-pool'))
+    (service as unknown as { checkConnectionPool: () => void }).checkConnectionPool();
 
-      const service = module.default.getInstance()
-      service.startMonitoring(10)
-
-      expect(getPool).toHaveBeenCalledTimes(1)
-      expect(createPool).not.toHaveBeenCalled()
-      expect(getMetrics).toHaveBeenCalledTimes(1)
-
-      service.stopMonitoring()
-      module.__resetVectorConnectionPoolModule()
-    })
-  })
-
-  test('gracefully handles missing vector pool module', async () => {
-    await jest.isolateModulesAsync(async () => {
-      const module = await import('@/lib/db/connection-pool-alerts')
-      module.__resetVectorConnectionPoolModule()
-
-      const service = module.default.getInstance()
-      expect(() => service.startMonitoring(10)).not.toThrow()
-
-      jest.advanceTimersByTime(50)
-      expect(service.getActiveAlerts()).toHaveLength(0)
-
-      service.stopMonitoring()
-    })
-  })
-})
+    const alerts = service.getActiveAlerts();
+    expect(alerts.length).toBeGreaterThan(0);
+    expect(alerts.some((alert) => alert.type === AlertType.POOL_UTILIZATION && alert.severity === AlertSeverity.CRITICAL)).toBe(
+      true,
+    );
+    expect(getMetrics).toHaveBeenCalled();
+  });
+});
