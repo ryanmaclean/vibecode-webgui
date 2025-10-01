@@ -205,8 +205,8 @@ jobs:
             [ -z "$tag" ] && continue
             docker buildx imagetools create --tag "$tag" ${{ needs.validate.outputs.validation_tag }}
           done <<'EOF'
-${{ steps.tags.outputs.promote_tags }}
-EOF
+          ${{ steps.tags.outputs.promote_tags }}
+          EOF
 
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
