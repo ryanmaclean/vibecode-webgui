@@ -24,6 +24,7 @@ output "scheduler_job_name" {
 }
 
 output "access_instructions" {
+  sensitive = true
   value = <<-EOT
     Code-server instances are running with the following configuration:
     - Environment: ${var.environment}

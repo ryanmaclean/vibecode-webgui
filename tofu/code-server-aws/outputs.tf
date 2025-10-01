@@ -54,6 +54,7 @@ output "scheduler_job_name" {
 }
 
 output "access_instructions" {
+  sensitive = true
   value = <<-EOT
     Code-server instances are running on AWS ECS Fargate Spot with the following configuration:
     - Environment: ${var.environment}
