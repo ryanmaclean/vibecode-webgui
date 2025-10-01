@@ -77,4 +77,4 @@ Scanned static output in `docs/dist/` after `npm run build`. Detected links that
 _Total unique missing paths: 353._
 
 ## Update 2025-10-01 20:54 UTC
-Rebuilt docs after link fixes and reran the local audit script — 0 missing links detected. Updated sidebar entries, migrated repo-relative links to on-site paths or GitHub blobs, and added a served copy of `monitoring/dashboards/genai-vector-performance.json`.
+Rebuilt docs after link fixes and reran the local audit script — 0 missing links detected. Updated sidebar entries, migrated repo-relative links to on-site paths or GitHub blobs, and added a served copy of `monitoring/dashboards/genai-vector-performance.json`. Wired the audit into docs-automation (build + `npm run docs:link-audit`) so GitHub Actions blocks on regressions.
