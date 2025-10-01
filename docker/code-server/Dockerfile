@@ -10,9 +10,9 @@ ARG DELTA_VERSION=0.18.2
 ARG CHEZMOI_VERSION=2.65.2
 ARG JUST_VERSION=1.43.0
 ARG STERN_VERSION=1.33.0
-ARG HELMFILE_VERSION=1.1.7
+ARG HELMFILE_VERSION=0.169.1
 ARG K9S_VERSION=0.50.13
-ARG SOPS_VERSION=3.11.0
+ARG SOPS_VERSION=3.9.3
 ARG GLAB_VERSION=1.22.0
 ARG PROFILE=full
 ARG BUILD_DATE
@@ -123,15 +123,29 @@ RUN npm install -g \
     eslint \
     ts-node
 
-# Install Go
-RUN wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz \
-    && tar -C /usr/local -xzf go1.22.4.linux-amd64.tar.gz \
-    && rm go1.22.4.linux-amd64.tar.gz \
-    && ln -s /usr/local/go/bin/go /usr/local/bin/go
+# Install Go (match architecture for multi-arch builds)
+ARG GO_VERSION=1.22.4
+RUN set -eux; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") GO_ARCH=amd64 ;; \
+      "linux/arm64") GO_ARCH=arm64 ;; \
+      *) echo "Unsupported platform for Go install: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    GO_TARBALL="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz"; \
+    wget "https://go.dev/dl/${GO_TARBALL}"; \
+    tar -C /usr/local -xzf "${GO_TARBALL}"; \
+    rm "${GO_TARBALL}"; \
+    ln -sf /usr/local/go/bin/go /usr/local/bin/go
 
 # Install AI CLI tools and database tools
 # 1. Goose for database migrations (install as root, make globally accessible)
-RUN CGO_ENABLED=0 GOBIN=/usr/local/bin go install github.com/pressly/goose/v3/cmd/goose@latest && \
+RUN set -eux; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") GO_ARCH=amd64 ;; \
+      "linux/arm64") GO_ARCH=arm64 ;; \
+      *) echo "Unsupported platform for goose install: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    CGO_ENABLED=0 GOOS=linux GOARCH="${GO_ARCH}" GOBIN=/usr/local/bin go install github.com/pressly/goose/v3/cmd/goose@latest && \
     chmod 755 /usr/local/bin/goose && \
     mkdir -p /home/coder/.vscode/extensions/goose-integration && \
     echo 'alias goose="goose -dir /home/coder/workspace/migrations"' >> /home/coder/.bashrc && \
@@ -269,7 +283,7 @@ RUN set -eux; \
         JUST_ARCH="x86_64-unknown-linux-musl"; \
         STERN_ARCH="linux_amd64"; \
         HELMFILE_ARCH="linux_amd64"; \
-        K9S_ARCH="Linux_x86_64"; \
+        K9S_ARCH="Linux_amd64"; \
         SOPS_SUFFIX="linux.amd64"; \
         GLAB_ARCH="Linux_x86_64"; \
         ;; \
