@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
   - Setup script (`scripts/setup-mcp-tracing.sh`) for dependency installation
   - Comprehensive documentation in `docs/MCP_DATADOG_INTEGRATION.md`
   - Reference configuration in `config/mcp_config.json`
+- **Reduced-motion Playwright coverage**: Added `tests/e2e/enhanced-chat/reduced-motion.spec.ts` with chunked SSE stub and accessibility assertions; updated `EnhancedChatInterface` streaming indicator and live region to support motion-sensitive users; documented coverage in testing guides.
 
 ### Fixed
 
