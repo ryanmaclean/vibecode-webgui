@@ -502,4 +502,7 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - **2025-10-01 03:18 UTC — Connection pool alert browser regression**
   - Extended `connection-pool-alerts.ts` with test-only browser overrides and loader helpers.
   - Added browser regression + loader tests (`tests/unit/monitoring/connection-pool-alerts.test.ts`); `npm run test -- tests/unit/monitoring/connection-pool-alerts.test.ts` passes.
-  - Updated issue #403 handoff log with the new coverage.
+  - Updated issue #403 handoff log with the new coverage; targeted coverage run shows the helper file ~54% statements and flags `vector-connection-pool.ts` for follow-up (exclude or add integration tests).
+- **2025-10-01 03:26 UTC — Vector pool unit coverage**
+  - Added `tests/unit/db/vector-connection-pool.test.ts` with a mocked `pg.Pool`, silencing console output during runs and raising module coverage to ~54% statements.
+  - TODO entry updated; pending decision on deeper branch coverage vs. ignore list, plus future coverage upload workflow.
