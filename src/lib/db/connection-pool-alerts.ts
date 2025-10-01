@@ -5,10 +5,17 @@
  */
 let VectorConnectionPoolFactoryModule: typeof import('./vector-connection-pool') | null = null;
 let vectorConnectionPoolPromise: Promise<typeof import('./vector-connection-pool') | null> | null = null;
-const isBrowser = typeof window !== 'undefined';
+let testIsBrowserOverride: boolean | null = null;
+
+function isBrowserEnvironment(): boolean {
+  if (testIsBrowserOverride !== null) {
+    return testIsBrowserOverride;
+  }
+  return typeof window !== 'undefined';
+}
 
 async function loadVectorConnectionPoolModule(): Promise<typeof import('./vector-connection-pool') | null> {
-  if (isBrowser) {
+  if (isBrowserEnvironment()) {
     return null;
   }
 
@@ -33,7 +40,7 @@ async function loadVectorConnectionPoolModule(): Promise<typeof import('./vector
   return vectorConnectionPoolPromise;
 }
 
-if (!isBrowser) {
+if (!isBrowserEnvironment()) {
   void loadVectorConnectionPoolModule();
 }
 
@@ -48,6 +55,21 @@ export function __setVectorConnectionPoolModule(
 export function __resetVectorConnectionPoolModule(): void {
   VectorConnectionPoolFactoryModule = null;
   vectorConnectionPoolPromise = null;
+  testIsBrowserOverride = null;
+}
+
+export function __setBrowserEnvironmentForTest(value: boolean | null): void {
+  testIsBrowserOverride = value;
+}
+
+export function __getBrowserEnvironmentForTest(): boolean {
+  return isBrowserEnvironment();
+}
+
+export async function __loadVectorConnectionPoolModuleForTest(): Promise<
+  typeof import('./vector-connection-pool') | null
+> {
+  return loadVectorConnectionPoolModule();
 }
 
 // Alert severity levels
@@ -236,6 +258,10 @@ export default class ConnectionPoolAlertService {
    * Check connection pool metrics and generate alerts
    */
   private checkConnectionPool(): void {
+    if (isBrowserEnvironment()) {
+      return;
+    }
+
     try {
       if (!VectorConnectionPoolFactoryModule) {
         void loadVectorConnectionPoolModule();
