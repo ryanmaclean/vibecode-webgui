@@ -223,3 +223,4 @@ examples/pydantic-ai-cli-agent/.env
 .agent-state/
 *.checkpoint
 
+tests/tofu/__pycache__/
