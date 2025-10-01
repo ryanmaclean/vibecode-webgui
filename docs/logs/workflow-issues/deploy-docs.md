@@ -21,4 +21,8 @@ The GitHub Pages deployment workflow supports both Astro and Next.js docs. It wa
 - TODO entry references the GitHub issue once filed.
 
 ## Progress Log
+- **2025-10-01 00:47 UTC:** Ran `npm run build` from `docs/` (Astro 5.13.7). Local build completed in ~5.5s and generated 249 pages without warnings, confirming the workflow's default Astro path remains healthy after the recent trigger tweaks. Output archived in local shell history for reference.
+- **2025-10-01 00:51 UTC:** Ran `npm run build` at repo root (Next.js 15.5.3) after sourcing `.env.local`. Build completed with existing dynamic `require` warnings but produced `.next/standalone` output (no `out/` directory), so the workflow's Next.js artifact upload step will currently fail unless we either add `next export` or point it at `.next/standalone`. Capture follow-up in TODO.
+- **2025-10-01 00:56 UTC:** Tried `NEXT_OUTPUT_MODE=export npm run build` (after updating `next.config.mjs` to honor the env flag). Build failed before export (`Cannot find module .../.next/server/next-font-manifest.json`), indicating the app is not ready for static export yet. Added a guard in `.github/workflows/deploy-docs.yml` so the Next.js path fails fast with a clear message until we fix the export pipeline.
+- **2025-10-01 01:00 UTC:** Chose the pragmatic path—leave GitHub Pages for Astro only. The workflow now errors immediately when `docs_system=nextjs`, and the downstream install/build/upload steps are disabled (set to `if: false`) until we either support static export or move the Next.js deploy elsewhere.
 - **2025-09-30:** Added dynamic docs system detection, weekly cron, and consistent gating for Astro/Next.js steps.

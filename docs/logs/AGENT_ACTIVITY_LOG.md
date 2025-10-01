@@ -263,3 +263,7 @@ This log captures completed agent activities to keep TODO.md focused on current 
 ## 2025-09-30 23:48 UTC
 - Estimated Datadog sidecar overhead (~200m CPU / 256Mi memory) and updated both Kind and production manifests with explicit resource requests/limits.
 - Documented total per-pod requests (~700m CPU / 1.25Gi memory) so cluster autoscaler calculations remain predictable until we gather live telemetry.
+## 2025-10-01 00:20 UTC
+- Bumped both `docker/code-server/Dockerfile` and `Dockerfile.kind` to `codercom/code-server:4.104.2-39` (latest upstream build as of 4 days ago).
+- Verified `package.json` still pins `monaco-editor@0.53.0`; Monacopilot integration unchanged.
+- TODO.md updated with follow-up to watch for future code-server releases and rebuild multi-arch image.

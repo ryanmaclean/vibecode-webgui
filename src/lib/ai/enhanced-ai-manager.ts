@@ -33,8 +33,9 @@ function getPgVectorModule(): PgVectorModule | null {
   if (!attemptedPgVectorLoad) {
     attemptedPgVectorLoad = true;
     try {
-      const nodeRequire = typeof eval === 'function' ? eval('require') : require;
-      cachedPgVectorModule = nodeRequire('./vector-stores/pgvector-client') as PgVectorModule;
+      // Use dynamic import instead of require to avoid webpack warnings
+      const modulePath = './vector-stores/pgvector-client';
+      cachedPgVectorModule = eval(`require('${modulePath}')`) as PgVectorModule;
     } catch (error) {
       console.warn('[EnhancedAIManager] PGVector module unavailable; continuing without vector support.', error);
       cachedPgVectorModule = null;
