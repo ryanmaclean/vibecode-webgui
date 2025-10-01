@@ -1,7 +1,7 @@
 # VibeCode pgvector + Datadog DBM Demo
 # Simple Makefile for easy discovery and execution
 
-.PHONY: demo help setup status vector dashboard clean build install
+.PHONY: demo help setup status vector dashboard clean build install test-security verify-tools
 
 # Default target - shows the TUI demo
 demo: build
@@ -45,6 +45,19 @@ clean:
 	@rm -rf bin/
 	@go clean
 
+# Test security verification
+test-security:
+	@echo "🔒 Testing tool download verification..."
+	@./tests/security/test-tool-verification.sh
+	@echo ""
+	@echo "🧪 Testing checksum failure detection..."
+	@./tests/security/test-checksum-failure.sh
+
+# Verify tool downloads in Dockerfile
+verify-tools:
+	@echo "🔍 Verifying tool download configuration..."
+	@./tests/security/test-tool-verification.sh
+
 # Show help
 help:
 	@echo ""
@@ -65,6 +78,11 @@ help:
 	@echo "  make install    📦 Install Go dependencies"
 	@echo "  make clean      🧹 Clean build artifacts"
 	@echo "  make help       ❓ Show this help"
+	@echo ""
+	@echo "🔒 Security:"
+	@echo ""
+	@echo "  make test-security  🔒 Run security verification tests"
+	@echo "  make verify-tools   🔍 Verify tool download configuration"
 	@echo ""
 	@echo "🎯 Quick Start:"
 	@echo "  1. make demo    (interactive TUI - best experience)"
