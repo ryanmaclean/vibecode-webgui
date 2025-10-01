@@ -222,16 +222,20 @@ resource "aws_security_group" "efs" {
 resource "aws_ecs_cluster" "codeserver" {
   name = "${var.environment}-codeserver-cluster"
 
+  tags = {
+    Name        = "${var.environment}-codeserver-cluster"
+    Environment = var.environment
+  }
+}
+
+resource "aws_ecs_cluster_capacity_providers" "codeserver" {
+  cluster_name = aws_ecs_cluster.codeserver.name
+
   capacity_providers = ["FARGATE_SPOT", "FARGATE"]
 
   default_capacity_provider_strategy {
     capacity_provider = "FARGATE_SPOT"
     weight           = 100
-  }
-
-  tags = {
-    Name        = "${var.environment}-codeserver-cluster"
-    Environment = var.environment
   }
 }
 

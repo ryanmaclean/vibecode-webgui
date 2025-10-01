@@ -499,3 +499,7 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - **2025-10-01 03:10 UTC — Next.js docs deployment runbook**
   - Created `docs/runbooks/next-docs-deployment.md` outlining Azure Web App and AWS App Runner workflows for hosting the Next.js documentation site.
   - Raised GitHub issue #405 to track platform selection and CI wiring; TODO updated accordingly.
+- **2025-10-01 03:18 UTC — Connection pool alert browser regression**
+  - Extended `connection-pool-alerts.ts` with test-only browser overrides and loader helpers.
+  - Added browser regression + loader tests (`tests/unit/monitoring/connection-pool-alerts.test.ts`); `npm run test -- tests/unit/monitoring/connection-pool-alerts.test.ts` passes.
+  - Updated issue #403 handoff log with the new coverage.

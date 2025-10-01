@@ -5,7 +5,7 @@
 - Issue #403 can now track any additional assertions (e.g., browser guard) separately.
 
 ### Next Steps
-- [ ] Expand the suite with a browser-mode regression test once we add a public hook to simulate `window` detection without reloading the module (#403 follow-up).
+- [x] Expand the suite with a browser-mode regression test once we add a public hook to simulate `window` detection without reloading the module (#403 follow-up). (See tests/unit/monitoring/connection-pool-alerts.test.ts and helper exports.)
 
 ## Agent Update (2025-10-01 02:05 UTC, Vector Pool Module Fix)
 
@@ -151,7 +151,7 @@
 
 ## Agent Update (2025-09-30 - Current Session Extended)
 
-- Reduced TypeScript `any` warnings from 1,624 → 1,305 (-319 total, -19.6% reduction)
+- Reduced TypeScript `any` warnings from 1,624 → 1,269 (-355 total, -21.9% reduction)
 - **Previous Sessions**: Fixed 6 files (-115 warnings)
   - vector-db-error-handler-new.ts (23→0), database-error-patterns.ts (20→0), azureEmbeddingService.ts (20→0)
   - opentelemetry-config.ts (18→0), multimodal-agent.ts (17→0), db-logger.ts (17→0)
@@ -167,10 +167,14 @@
   - automated-test-generator.test.ts (14→0): Created AutomatedTestGeneratorPrivate type helper
   - useRUM.ts (15→0): Replaced all Record<string, any> with Record<string, unknown>
   - voice-test/page.tsx (2→0): Created WebkitWindow type for webkitAudioContext
-- **Current Session Batch 4**: Fixed 3 files (-47 warnings)
+- **Current Session Batch 4**: Fixed 3 files (-24 warnings)
   - terminal/ws/route.ts (10→0): Created WebSocketLike and TerminalMessage interfaces
   - enhanced-project-templates.ts (3→0): Replaced options: any with _options: Record<string, unknown>
   - PromptInterface.tsx (11→0): Fixed SpeechRecognition event handler return types (any → void)
+- **Current Session Batch 5**: Fixed 3 files (-33 warnings)
+  - server-monitoring.ts (11→0): Created Tracer interface for dd-trace, replaced all Record<string, any>
+  - serena/interfaces.ts (11→0): Updated all tool/memory/metadata interfaces with Record<string, unknown>
+  - database-logger.ts (11→0): Fixed all logging method metadata parameters
 
 ### Technical Patterns Applied
 - ErrorLike interfaces for error handling
@@ -184,18 +188,19 @@
 - WebkitWindow type for vendor-prefixed browser APIs
 - WebSocketLike interface for WebSocket typing
 - TerminalMessage interface for terminal communication
+- Tracer interface for dd-trace monitoring
 - Event handler return types (void instead of any)
 - Systematic replacement of `any` with `unknown` or specific types across all modules
 
 ### Progress Summary
-- Total files fixed: 18 files
-- Total warnings eliminated: 319 warnings (-19.6% from starting point)
-- Remaining warnings: 1,305 (80.4% of original)
-- Session batches: 4 batches (12 files in current session)
+- Total files fixed: 21 files
+- Total warnings eliminated: 355 warnings (-21.9% from starting point)
+- Remaining warnings: 1,269 (78.1% of original)
+- Session batches: 5 batches (15 files in current session)
 
 ### Next Steps
 - [ ] Continue reducing `any` usage in remaining high-impact files
-- [ ] Target next batch: server-monitoring.ts (11), serena/interfaces.ts (11), database-logger.ts (11)
+- [ ] Target next batch: query-cache.ts (11), function-calling.ts (10), collaboration.ts (10)
 
 ## Agent Update (2025-09-30 23:35 UTC)
 
