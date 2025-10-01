@@ -157,43 +157,105 @@ DOCKERHUB_USERNAME="ryanmaclean"
 DOCKERHUB_TOKEN="your_dockerhub_token"
 REPO_NAME="vibecode-codeserver"
 
-# Function to delete Docker Hub tag
+# Function to delete Docker Hub tag with inactive fallback
 delete_dockerhub_tag() {
   local tag_name=$1
 
   echo "Attempting to delete Docker Hub tag: $tag_name"
 
-  # Delete tag (may fail if referenced by other manifests)
-  response=$(curl -s -w "%{http_code}" -o /tmp/response.json \
+  # Step 1: Try to delete the tag
+  delete_response=$(curl -s -w "%{http_code}" -o /tmp/delete_response.json \
     -X DELETE \
     -H "Authorization: Bearer $DOCKERHUB_TOKEN" \
     "https://hub.docker.com/v2/repositories/$DOCKERHUB_USERNAME/$REPO_NAME/tags/$tag_name/")
 
-  if [ "$response" = "204" ]; then
-    echo "✅ Deleted Docker Hub tag: $tag_name"
-  else
-    echo "❌ Failed to delete Docker Hub tag: $tag_name (HTTP $response)"
-    echo "   Response: $(cat /tmp/response.json)"
-
-    # Alternative: Add deprecation notice in description
-    echo "   Adding deprecation notice instead..."
-    deprecate_dockerhub_tag "$tag_name"
+  if [ "$delete_response" = "204" ]; then
+    echo "✅ Successfully deleted Docker Hub tag: $tag_name"
+    return 0
   fi
-}
 
-# Function to mark tag as deprecated (if deletion fails)
-deprecate_dockerhub_tag() {
-  local tag_name=$1
+  echo "❌ Failed to delete Docker Hub tag: $tag_name (HTTP $delete_response)"
+  echo "   Delete response: $(cat /tmp/delete_response.json)"
 
-  curl -X PATCH \
+  # Step 2: If deletion failed, try to mark tag as inactive
+  echo "   Attempting to mark tag as inactive..."
+
+  inactive_response=$(curl -s -w "%{http_code}" -o /tmp/inactive_response.json \
+    -X PATCH \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $DOCKERHUB_TOKEN" \
     -d '{
-      "full_description": "⚠️ **DEPRECATED**: This tag contains GPL-licensed Emacs and should not be used. Please use newer tags without Emacs for license compatibility."
+      "is_active": false
     }' \
-    "https://hub.docker.com/v2/repositories/$DOCKERHUB_USERNAME/$REPO_NAME/"
+    "https://hub.docker.com/v2/repositories/$DOCKERHUB_USERNAME/$REPO_NAME/tags/$tag_name/")
 
-  echo "✅ Added deprecation notice for: $tag_name"
+  if [ "$inactive_response" = "200" ]; then
+    echo "✅ Successfully marked tag as inactive: $tag_name"
+
+    # Step 3: Add deprecation notice to repository description
+    echo "   Adding repository-level deprecation notice..."
+    deprecate_dockerhub_repository "$tag_name"
+    return 0
+  fi
+
+  echo "❌ Failed to mark tag inactive: $tag_name (HTTP $inactive_response)"
+  echo "   Inactive response: $(cat /tmp/inactive_response.json)"
+
+  # Step 3: Final fallback - add deprecation notice to repository
+  echo "   Using repository description fallback..."
+  deprecate_dockerhub_repository "$tag_name"
+}
+
+# Function to add deprecation notice to repository (final fallback)
+deprecate_dockerhub_repository() {
+  local tag_name=$1
+
+  # Get current repository description
+  current_desc=$(curl -s \
+    -H "Authorization: Bearer $DOCKERHUB_TOKEN" \
+    "https://hub.docker.com/v2/repositories/$DOCKERHUB_USERNAME/$REPO_NAME/" | \
+    jq -r '.full_description // ""')
+
+  # Check if deprecation notice already exists
+  if echo "$current_desc" | grep -q "DEPRECATED TAGS"; then
+    echo "   Deprecation notice already exists, skipping repository update"
+    return 0
+  fi
+
+  # Prepend deprecation notice to existing description
+  new_description="⚠️ **DEPRECATED TAGS NOTICE**
+
+The following tags contain GPL-licensed Emacs and should NOT be used:
+- Tags containing Emacs: $tag_name (and others from v1.1.0 and earlier)
+- **Reason**: License compliance - GPL conflicts with project requirements
+- **Alternative**: Use v1.1.1+ tags which are Emacs-free and license-compliant
+
+**Migration Required**: Replace 'emacs' commands with 'vim' or 'nvim' in your workflows.
+
+---
+
+$current_description"
+
+  repo_response=$(curl -s -w "%{http_code}" -o /tmp/repo_response.json \
+    -X PATCH \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $DOCKERHUB_TOKEN" \
+    -d "{
+      \"full_description\": $(echo "$new_description" | jq -Rs .)
+    }" \
+    "https://hub.docker.com/v2/repositories/$DOCKERHUB_USERNAME/$REPO_NAME/")
+
+  if [ "$repo_response" = "200" ]; then
+    echo "✅ Added repository-level deprecation notice for: $tag_name"
+  else
+    echo "❌ Failed to update repository description (HTTP $repo_response)"
+    echo "   Repository response: $(cat /tmp/repo_response.json)"
+
+    # Final manual notice
+    echo "⚠️  MANUAL ACTION REQUIRED: Add deprecation notice to Docker Hub repository description"
+    echo "   Tag: $tag_name contains GPL-licensed Emacs"
+    echo "   Repository: https://hub.docker.com/r/$DOCKERHUB_USERNAME/$REPO_NAME"
+  fi
 }
 
 # Process identified tags
