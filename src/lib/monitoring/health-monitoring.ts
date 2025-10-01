@@ -72,7 +72,7 @@ logger.info('Winston logger initialized')
  * Custom metrics collector (compatible with Datadog)
  */
 class MetricsCollector {
-  private metrics: Record<string, any> = {}
+  private metrics: Record<string, number | number[]> = {}
 
   increment(name: string, tags: Record<string, string | number> = {}): void {
     console.log(`📊 Metric increment: ${name}`, tags)
@@ -93,10 +93,13 @@ class MetricsCollector {
     if (!this.metrics[name]) {
       this.metrics[name] = []
     }
-    this.metrics[name].push(value)
+    const existing = this.metrics[name];
+    if (Array.isArray(existing)) {
+      existing.push(value);
+    }
   }
 
-  getMetrics(): Record<string, any> {
+  getMetrics(): Record<string, number | number[]> {
     return this.metrics
   }
 }
@@ -141,7 +144,7 @@ class ApplicationLogger {
     ip?: string
     severity: 'info' | 'warn' | 'error' | 'critical'
     blocked?: boolean
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   }): void {
     logger.warn(`Security: ${event}`, {
       category: 'security',
@@ -163,7 +166,7 @@ class ApplicationLogger {
     workspaceId?: string
     feature?: string
     value?: number
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   }): void {
     logger.info(`Business: ${event}`, {
       category: 'business',
@@ -188,7 +191,7 @@ const appLogger = new ApplicationLogger()
 
 // Performance monitoring middleware for Express
 function performanceMiddleware() {
-  return (req: any, res: any, next: any) => {
+  return (req: { path: string; method: string; query: unknown; params: unknown }, res: { statusCode: number; on: (event: string, callback: () => void) => void }, next: () => void) => {
     const startTime = Date.now()
 
     res.on('finish', () => {
@@ -225,7 +228,7 @@ function getHealthCheck(): {
   timestamp: string
   uptime: number
   memory: NodeJS.MemoryUsage
-  metrics: Record<string, any>
+  metrics: Record<string, number | number[]>
 } {
   return {
     status: 'healthy',

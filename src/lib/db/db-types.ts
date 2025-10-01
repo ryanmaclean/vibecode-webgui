@@ -27,11 +27,11 @@ export enum LogCategory {
 // Database logger interface
 export interface DbLogger {
   log: (message: string, options?: LogOptions) => void;
-  error: (message: string, error?: Error, metadata?: Record<string, any>) => void;
-  warn: (message: string, metadata?: Record<string, any>) => void;
-  info: (message: string, metadata?: Record<string, any>) => void;
-  debug: (message: string, metadata?: Record<string, any>) => void;
-  trace: (message: string, metadata?: Record<string, any>) => void;
+  error: (message: string, error?: Error, metadata?: Record<string, unknown>) => void;
+  warn: (message: string, metadata?: Record<string, unknown>) => void;
+  info: (message: string, metadata?: Record<string, unknown>) => void;
+  debug: (message: string, metadata?: Record<string, unknown>) => void;
+  trace: (message: string, metadata?: Record<string, unknown>) => void;
   createTimer: (operation: string) => DbOperationTimer;
   setDefaultCategory: (category: LogCategory) => void;
   shouldLog: (level: LogLevel) => boolean;
@@ -43,15 +43,15 @@ export interface LogOptions {
   elapsed?: number;
   operation?: string;
   sql?: string;
-  params?: any;
-  metadata?: Record<string, any>;
+  params?: unknown;
+  metadata?: Record<string, unknown>;
   error?: Error;
   timestamp?: Date;
 }
 
 export interface DbOperationTimer {
   start: () => void;
-  end: (message?: string, additionalMetadata?: Record<string, any>) => number;
+  end: (message?: string, additionalMetadata?: Record<string, unknown>) => number;
   elapsed: () => number;
 }
 
