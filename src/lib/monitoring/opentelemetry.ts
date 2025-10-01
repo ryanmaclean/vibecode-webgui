@@ -18,15 +18,18 @@ const isLocalDev = process.env.NODE_ENV !== 'production'
 // Shareable type alias for dynamic require fallback
 type NodeRequireFn = typeof require
 
+// Type aliases for OpenTelemetry modules (loaded dynamically)
+type NodeSDKConstructor = new (config: unknown) => { start: () => void; shutdown: () => Promise<void> }
+type NodeSDKType = ReturnType<NodeSDKConstructor['prototype']['constructor']> | null
 
 // Conditional imports to prevent build-time errors in Docker
-let NodeSDK: any = null;
-let getNodeAutoInstrumentations: any = null;
-let OTLPTraceExporter: any = null;
-let PrometheusExporter: any = null;
-let Resource: any = null;
-let ATTR_SERVICE_NAME: any = null;
-let ATTR_SERVICE_VERSION: any = null;
+let NodeSDK: NodeSDKConstructor | null = null;
+let getNodeAutoInstrumentations: ((config?: unknown) => unknown[]) | null = null;
+let OTLPTraceExporter: (new (config?: unknown) => unknown) | null = null;
+let PrometheusExporter: (new (config?: unknown, callback?: () => void) => unknown) | null = null;
+let Resource: (new (attributes: Record<string, string>) => unknown) | null = null;
+let ATTR_SERVICE_NAME: string | null = null;
+let ATTR_SERVICE_VERSION: string | null = null;
 
 if (!isDockerBuild && !isLocalDev) {
   try {
@@ -58,7 +61,7 @@ const isServer = typeof window === 'undefined'
 const serviceName = 'vibecode-webgui'
 const serviceVersion = process.env.npm_package_version || '0.1.0'
 
-let otelSDK: any = null
+let otelSDK: NodeSDKType = null
 
 /**
  * Initialize OpenTelemetry instrumentation
@@ -125,7 +128,7 @@ export function initializeOpenTelemetry() {
           // Enable key instrumentations
           '@opentelemetry/instrumentation-http': {
             enabled: true,
-            requestHook: (span: any, request: any) => {
+            requestHook: (span: { setAttributes: (attrs: Record<string, string>) => void }, request: { headers: Record<string, string>; method?: string }) => {
               // Add custom attributes to HTTP spans
               span.setAttributes({
                 'vibecode.request.user_agent': request.headers['user-agent'] || 'unknown',
