@@ -93,8 +93,9 @@ Serve the VibeCode documentation experience rendered by the Next.js app under `s
 ## CI/CD Integration
 
 - `.github/workflows/deploy-next-docs.yml` builds the standalone artifact, packages it with `docker/Dockerfile.docs-next`, pushes the image to Azure Container Registry, and updates the Web App target. The workflow runs on pushes to `main`, via a nightly cron, or manually with `workflow_dispatch` inputs for environment and image tag overrides.
-- Configure GitHub environments (`docs-next-staging`, `docs-next-production`) with the following secrets: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `ACR_NAME`, `AZURE_RESOURCE_GROUP`, `AZURE_WEBAPP_NAME`, and optional `DOCS_NEXT_HEALTHCHECK_URL` when the health probe differs from `/api/readyz`.
+- Configure GitHub environments (`docs-next-staging`, `docs-next-production`) with the following secrets: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `ACR_NAME`, `AZURE_RESOURCE_GROUP`, `AZURE_WEBAPP_NAME`, and optional `DOCS_NEXT_HEALTHCHECK_URL` when the health probe differs from `/api/readyz`. Missing secrets now fail the workflow early, so re-run after vault rotation to confirm the guard passes.
 - The build job publishes a `next-docs-standalone` artifact (tarball containing `next-standalone/`) that can be downloaded for manual testing or alternate deployments.
+- Post-deploy smoke tests poll the health endpoint up to five times with an increasing delay (15s, 30s, 45s, 60s, 75s). If the App Service is routinely slow to warm, adjust `DOCS_NEXT_HEALTHCHECK_URL` to a lightweight probe or extend the retry window.
 
 ## Validation Checklist
 

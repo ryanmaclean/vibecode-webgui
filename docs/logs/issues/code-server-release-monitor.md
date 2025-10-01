@@ -10,6 +10,7 @@ Keep track of upstream `coder/code-server` releases so we can rebuild our multi-
 2. **Automation Hook**
    - GitHub Action (`.github/workflows/code-server-release-monitor.yml`) runs daily + on demand, compares the Dockerfile tag to the latest upstream release, and opens a tracking issue when versions diverge.
    - Workflow guards against duplicates by checking for an existing open issue with the same title before creating a new one.
+   - TODO: emit Datadog event + Slack webhook when a new release issue is opened so on-call can triage within one hour.
 3. **Manual Checklist** (when notified)
    - Update base image tags in `docker/code-server/Dockerfile` and `Dockerfile.kind`.
    - Re-run `scripts/build-codeserver-multiarch.sh` (local or ACR) and push the manifest.

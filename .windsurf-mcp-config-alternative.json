@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "puppeteer": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ],
+      "env": {}
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "env": {}
+    },
+    "roundtable-ai": {
+      "command": "python3.11",
+      "args": [
+        "-m",
+        "roundtable_mcp_server"
+      ],
+      "env": {
+        "CLI_MCP_SUBAGENTS": "codex,cursor,gemini"
+      }
+    }
+  }
+}

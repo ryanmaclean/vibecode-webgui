@@ -20,3 +20,4 @@ Optional tooling layers caused intermittent failures on ARM64 runners (QEMU time
 - Commit: _TBD_ (fill once PR merges).
 - Workflow issue tracker: `docs/logs/workflow-issues/docker-multiarch.yml.md`.
 - Handoff doc: `docs/handoff/code-server-release.md`.
+- Shipping dashboard snapshot: `docs/handoff/shipping-dashboard.md`.
