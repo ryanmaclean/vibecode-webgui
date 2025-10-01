@@ -4,13 +4,24 @@
  */
 
 import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { WebSocketServer } from 'ws'
-import { spawn, IPty } from 'node-pty'
 import { ClaudeCliIntegration } from '@/lib/claude-cli-integration'
 import { datadogMonitoring } from '@/lib/monitoring/enhanced-datadog-integration'
 import { terminalSessions, generateSessionId } from '@/lib/terminal/session-manager'
+import { spawn } from 'node-pty'
+
+// WebSocket types
+interface WebSocketLike {
+  send(data: string): void;
+  on(event: string, listener: (...args: unknown[]) => void): void;
+}
+
+interface TerminalMessage {
+  type: string;
+  cols?: number;
+  rows?: number;
+  data?: string;
+  command?: string;
+}
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -39,7 +50,7 @@ export async function GET(request: NextRequest) {
 }
 
 // WebSocket handler (this would be handled by your WebSocket server)
-const webSocketHandler = (ws: any, request: any) => {
+const webSocketHandler = (ws: WebSocketLike, request: { url: string }) => {
   const url = new URL(request.url, 'http://localhost')
   const workspaceId = url.searchParams.get('workspaceId')
   const userId = url.searchParams.get('userId') || 'anonymous'
@@ -100,7 +111,7 @@ const webSocketHandler = (ws: any, request: any) => {
   })
 
   // Handle create terminal
-  async function handleCreateTerminal(ws: any, message: any, workspaceId: string | null, userId: string) {
+  async function handleCreateTerminal(ws: WebSocketLike, message: TerminalMessage, workspaceId: string | null, userId: string) {
     try {
       if (!workspaceId) {
         ws.send(JSON.stringify({
@@ -202,7 +213,7 @@ const webSocketHandler = (ws: any, request: any) => {
   }
 
   // Handle terminal input
-  async function handleTerminalInput(ws: any, message: any, sessionId: string | null) {
+  async function handleTerminalInput(ws: WebSocketLike, message: TerminalMessage, sessionId: string | null) {
     if (!sessionId) return
 
     const session = terminalSessions.get(sessionId)
@@ -223,7 +234,7 @@ const webSocketHandler = (ws: any, request: any) => {
   }
 
   // Handle terminal resize
-  async function handleTerminalResize(ws: any, message: any, sessionId: string | null) {
+  async function handleTerminalResize(ws: WebSocketLike, message: TerminalMessage, sessionId: string | null) {
     if (!sessionId) return
 
     const session = terminalSessions.get(sessionId)
@@ -234,7 +245,7 @@ const webSocketHandler = (ws: any, request: any) => {
   }
 
   // Handle AI command
-  async function handleAICommand(ws: any, message: any, sessionId: string | null) {
+  async function handleAICommand(ws: WebSocketLike, message: TerminalMessage, sessionId: string | null) {
     if (!sessionId) return
 
     const session = terminalSessions.get(sessionId)
@@ -319,7 +330,7 @@ const webSocketHandler = (ws: any, request: any) => {
   }
 
   // Handle close terminal
-  async function handleCloseTerminal(ws: any, message: any, sessionId: string | null) {
+  async function handleCloseTerminal(ws: WebSocketLike, message: TerminalMessage, sessionId: string | null) {
     if (!sessionId) return
 
     const session = terminalSessions.get(sessionId)
@@ -338,7 +349,7 @@ const webSocketHandler = (ws: any, request: any) => {
   }
 
   // Offer AI suggestion based on command output
-  async function offerAISuggestion(ws: any, sessionId: string, output: string) {
+  async function offerAISuggestion(ws: WebSocketLike, sessionId: string, output: string) {
     const session = terminalSessions.get(sessionId)
     if (!session || !session.claude) return
 
