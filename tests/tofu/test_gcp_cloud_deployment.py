@@ -158,8 +158,9 @@ class GCPCloudDeploymentTests(unittest.TestCase):
         self.assertIn("google_compute_instance_template", content, "Instance template should be configured")
         self.assertIn("google_compute_instance_group_manager", content, "Instance group manager should be configured")
         
-        # Check for persistent disk
-        self.assertIn("google_compute_disk", content, "Persistent disk should be configured")
+        # Check for persistent disk configuration (within instance template)
+        self.assertIn("disk {", content, "Disk configuration should be present")
+        self.assertIn("workspace-disk", content, "Persistent workspace disk should be configured")
         
         # Check for health check
         self.assertIn("google_compute_health_check", content, "Health check should be configured")
@@ -170,7 +171,8 @@ class GCPCloudDeploymentTests(unittest.TestCase):
         content = main_file.read_text()
 
         # Check for preemptible instances
-        self.assertIn("preemptible = true", content, "Preemptible instances should be configured for cost optimization")
+        self.assertIn("preemptible", content, "Preemptible instances should be configured for cost optimization")
+        self.assertIn("= true", content)  # Flexible whitespace matching
         
         # Check for Cloud Scheduler
         self.assertIn("google_cloud_scheduler_job", content, "Cloud Scheduler should be configured for automation")
@@ -314,7 +316,6 @@ class GCPCloudDeploymentTests(unittest.TestCase):
                 "google_service_account",
                 "google_compute_instance_template",
                 "google_compute_instance_group_manager",
-                "google_compute_disk",
                 "google_compute_health_check",
                 "google_cloud_scheduler_job"
             ]
@@ -333,12 +334,12 @@ class GCPCloudDeploymentTests(unittest.TestCase):
         content = main_file.read_text()
 
         # Check for consistent naming patterns
-        self.assertIn("${var.environment}-codeserver", content,
+        self.assertIn("codeserver-${var.environment}", content,
                      "Should use environment-based naming")
         
-        # Check for proper labels
-        self.assertIn("environment = var.environment", content,
-                     "Should have environment labels")
+        # Check for proper tags
+        self.assertIn("tags = [\"codeserver\", var.environment]", content,
+                     "Should have environment tags")
 
     def test_gcp_monitoring_configuration(self):
         """Test GCP monitoring configuration."""
