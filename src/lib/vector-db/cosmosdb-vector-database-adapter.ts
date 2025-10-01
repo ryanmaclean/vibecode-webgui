@@ -27,10 +27,39 @@ export interface CosmosDbVectorDatabaseConfig extends VectorDatabaseConfig {
  * Azure Cosmos DB Vector Database Adapter
  * Implements vector database operations using Azure Cosmos DB with vector search
  */
+// Type aliases for Cosmos DB client (dynamically imported)
+interface CosmosClient {
+  database: (id: string) => CosmosDatabase;
+}
+
+interface CosmosDatabase {
+  container: (id: string) => CosmosContainer;
+  containers: {
+    createIfNotExists: (config: {
+      id: string;
+      partitionKey: string;
+      indexingPolicy: unknown;
+    }) => Promise<{ container: CosmosContainer }>;
+  };
+  read: () => Promise<unknown>;
+}
+
+interface CosmosContainer {
+  items: {
+    create: (document: unknown) => Promise<unknown>;
+    query: (querySpec: { query: string; parameters?: Array<{ name: string; value: unknown }> }) => {
+      fetchAll: () => Promise<{ resources: unknown[] }>;
+    };
+  };
+  item: (id: string, partitionKeyValue: unknown) => {
+    delete: () => Promise<unknown>;
+  };
+}
+
 export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
-  private client: any = null; // Cosmos DB client - will be typed when Azure SDK is imported
-  private database: any = null;
-  private container: any = null;
+  private client: CosmosClient | null = null;
+  private database: CosmosDatabase | null = null;
+  private container: CosmosContainer | null = null;
   // Using standalone handleVectorDBError function instead of class
   protected cosmosConfig: CosmosDbVectorDatabaseConfig;
 
@@ -181,10 +210,20 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       const { resources } = await this.container.items.query(querySpec).fetchAll();
       
       // Calculate cosine similarity for each result
-      const results = resources
-        .map((doc: any) => {
+      interface CosmosDocument {
+        id: string;
+        content: string;
+        fileId: number;
+        startLine?: number;
+        endLine?: number;
+        embedding?: number[];
+        metadata?: Record<string, unknown>;
+      }
+
+      const results = (resources as CosmosDocument[])
+        .map((doc) => {
           if (!doc.embedding || doc.embedding.length === 0) return null;
-          
+
           const similarity = this.calculateCosineSimilarity(embedding, doc.embedding);
           return {
             id: doc.id,
@@ -196,8 +235,8 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
             metadata: doc.metadata
           };
         })
-        .filter((result: any) => result && result.similarity >= threshold)
-        .sort((a: any, b: any) => b.similarity - a.similarity)
+        .filter((result): result is SearchResult => result !== null && result.similarity >= threshold)
+        .sort((a, b) => b.similarity - a.similarity)
         .slice(0, limit);
 
       if (this.config.enableLogging) {
@@ -344,8 +383,17 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       };
       
       const { resources } = await this.container.items.query(querySpec).fetchAll();
-      
-      const results = resources.map((doc: any) => ({
+
+      interface CosmosDocument {
+        id: string;
+        content: string;
+        fileId: number;
+        startLine?: number;
+        endLine?: number;
+        metadata?: Record<string, unknown>;
+      }
+
+      const results = (resources as CosmosDocument[]).map((doc) => ({
         id: doc.id,
         content: doc.content,
         fileId: doc.fileId,
