@@ -1,6 +1,7 @@
 # TODO
 
 ## Status at a Glance (2025-10-01)
+- **Workflow dispatch:** Waiting on merge of updated `.github/workflows/codeserver-multiarch.yml` (issue #418); rerun dispatch once landed.
 - **Release blocker:** Hold promoting new `codeserver-multiarch` builds to `latest` until the guarded workflow has at least one clean nightly run with the image patch.
 - **Latest build:** `codeserver-multiarch` manual run 2025-10-01 05:52 UTC ✅ (CI tag only).
 - **Deploy:** Release tags paused pending workflow merge; Synology/KinD manual deploys healthy.
