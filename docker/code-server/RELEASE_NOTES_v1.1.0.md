@@ -27,7 +27,6 @@ Five purpose-built profiles to match your workflow:
 **Terminal Editors:**
 - vim 9.0
 - neovim 0.7.2
-- emacs 28.2
 
 **AI Coding Assistants:**
 - aider 0.84.0
@@ -157,7 +156,6 @@ docker run --rm ghcr.io/ryanmaclean/vibecode-codeserver:standard bash -c "
   echo '=== Editors ===' &&
   vim --version | head -1 &&
   nvim --version | head -1 &&
-  emacs --version | head -1 &&
   
   echo '=== AI Tools ===' &&
   aider --version &&
