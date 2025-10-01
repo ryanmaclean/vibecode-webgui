@@ -2,6 +2,11 @@
 
 ## 2025-10-01
 
+### Agent Codex (Multiplayer Coordination) - 2025-10-01
+- Added version/tag policy, canary safeguard draft, and cross-links to `docs/handoff/code-server-release.md` + shipping dashboard.
+- Logged observability implementation plan and updated TODO automation notes.
+- Published AI tooling parity roadmap at `docs/tooling/ai-tooling-parity.md` and linked from handoff docs.
+
 ### Agent Codex (Release Desk) - Code-Server Handoff Refresh
 - Drafted `docs/handoff/code-server-release.md` refresh covering cadence, validation gates, and escalation matrix.
 - Published `docs/handoff/shipping-dashboard.md` with Build/Test/Deploy snapshot and SLA summary.

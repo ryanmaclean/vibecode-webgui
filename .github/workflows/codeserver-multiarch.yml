@@ -10,6 +10,15 @@ on:
   schedule:
     - cron: '15 5 * * *'
   workflow_dispatch:
+    inputs:
+      promote_canary:
+        description: 'Promote validation image to canary tags'
+        type: boolean
+        default: true
+      promote_latest:
+        description: 'Promote validation image to latest and stable tags'
+        type: boolean
+        default: true
 
 env:
   REGISTRY: ghcr.io
@@ -40,6 +49,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Datadog CLI
+        if: ${{ secrets.DD_API_KEY != '' }}
+        run: npm install -g @datadog/datadog-ci
+
       - name: Run lint/type-check/unit tests
         run: |
           npm run lint
@@ -61,14 +74,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build linux/amd64 validation image
+      - name: Build multi-arch validation image
+        id: build_validation
         uses: docker/build-push-action@v5
         with:
           context: .
           file: docker/code-server/Dockerfile
-          platforms: linux/amd64
-          load: true
-          push: false
+          platforms: linux/amd64,linux/arm64
+          push: true
           tags: ${{ env.VALIDATION_TAG }}
           cache-from: type=gha,scope=${{ env.CACHE_SCOPE }}
           cache-to: type=gha,scope=${{ env.CACHE_SCOPE }},mode=max
@@ -76,8 +89,11 @@ jobs:
             BUILD_DATE=${{ env.BUILD_DATE }}
             GIT_COMMIT=${{ env.GIT_COMMIT }}
 
-      - name: Verify aider/goose on validation image
-        run: docker run --rm --entrypoint bash ${{ env.VALIDATION_TAG }} -lc "aider --version && goose -version"
+      - name: Verify aider/goose on AMD64 image
+        run: docker run --rm --platform linux/amd64 --entrypoint bash ${{ env.VALIDATION_TAG }} -lc "aider --version && goose -version"
+
+      - name: Verify aider/goose on ARM64 image (qemu)
+        run: docker run --rm --platform linux/arm64 --entrypoint bash ${{ env.VALIDATION_TAG }} -lc "aider --version && goose -version"
 
       - name: Create KinD cluster
         uses: helm/kind-action@v1.10.0
@@ -89,6 +105,10 @@ jobs:
         env:
           CODE_SERVER_IMAGE: ${{ env.VALIDATION_TAG }}
           KIND_CLUSTER_NAME: vibecode-ci
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: ${{ secrets.DD_SITE }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
         run: ./scripts/test-code-server-kind.sh
 
       - name: Collect KinD diagnostics
@@ -134,32 +154,72 @@ jobs:
       - name: Prepare image tags
         id: tags
         run: |
-          latest="ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest"
-          sha_tag="ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          set -eo pipefail
+          image_root="ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}"
+          latest="$image_root:latest"
+          stable="$image_root:stable"
+          sha_tag="$image_root:${{ github.sha }}"
           ci_tag="${{ needs.validate.outputs.validation_tag }}"
-          tags="$latest\n$sha_tag\n$ci_tag"
+          promote_latest="${{ github.event_name != 'workflow_dispatch' || inputs.promote_latest == 'true' }}"
+          promote_tags="$sha_tag\n$ci_tag"
+          summary_tags="$sha_tag\n$ci_tag"
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            nightly="ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:nightly"
-            tags="$tags\n$nightly"
+            nightly="$image_root:nightly"
+            promote_tags="$promote_tags\n$nightly"
+            summary_tags="$summary_tags\n$nightly"
           fi
-          echo "tags<<'EOF'" >> "$GITHUB_OUTPUT"
-          printf '%b\n' "$tags" >> "$GITHUB_OUTPUT"
+          if [ "$promote_latest" = "true" ]; then
+            promote_tags="$promote_tags\n$latest\n$stable"
+            summary_tags="$summary_tags\n$latest\n$stable"
+          else
+            summary_tags="$summary_tags\n$latest (skipped)\n$stable (skipped)"
+          fi
+          echo "promote_tags<<'EOF'" >> "$GITHUB_OUTPUT"
+          printf '%b\n' "$promote_tags" >> "$GITHUB_OUTPUT"
+          echo 'EOF' >> "$GITHUB_OUTPUT"
+          echo "summary_tags<<'EOF'" >> "$GITHUB_OUTPUT"
+          printf '%b\n' "$summary_tags" >> "$GITHUB_OUTPUT"
           echo 'EOF' >> "$GITHUB_OUTPUT"
 
-      - name: Build and push multi-arch image
-        uses: docker/build-push-action@v5
+      - name: Promote validation tag to canary tags
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.promote_canary == false) }}
+        env:
+          VALIDATION_TAG: ${{ needs.validate.outputs.validation_tag }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -eo pipefail
+          manifest=$(docker buildx imagetools inspect "$VALIDATION_TAG" --raw)
+          amd64_digest=$(echo "$manifest" | jq -r '.manifests[] | select(.platform.os == "linux" and .platform.architecture == "amd64") | .digest')
+          arm64_digest=$(echo "$manifest" | jq -r '.manifests[] | select(.platform.os == "linux" and .platform.architecture == "arm64") | .digest')
+          if [ -z "$amd64_digest" ] || [ -z "$arm64_digest" ]; then
+            echo 'Failed to resolve per-architecture digests for canary promotion' >&2
+            exit 1
+          fi
+          docker buildx imagetools create --tag "ghcr.io/$OWNER/${{ env.IMAGE_NAME }}:amd64-canary" "$VALIDATION_TAG@$amd64_digest"
+          docker buildx imagetools create --tag "ghcr.io/$OWNER/${{ env.IMAGE_NAME }}:arm64-canary" "$VALIDATION_TAG@$arm64_digest"
+
+      - name: Promote validation tag to release tags
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.promote_latest == false) }}
+        run: |
+          while read -r tag; do
+            [ -z "$tag" ] && continue
+            docker buildx imagetools create --tag "$tag" ${{ needs.validate.outputs.validation_tag }}
+          done <<'EOF'
+${{ steps.tags.outputs.promote_tags }}
+EOF
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
         with:
-          context: .
-          file: docker/code-server/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.tags.outputs.tags }}
-          cache-from: type=gha,scope=${{ env.CACHE_SCOPE }}
-          cache-to: type=gha,scope=${{ env.CACHE_SCOPE }},mode=max
-          build-args: |
-            BUILD_DATE=${{ github.run_started_at }}
-            GIT_COMMIT=${{ github.sha }}
-          provenance: true
+          image: ${{ needs.validate.outputs.validation_tag }}
+          format: spdx-json
+          output-file: sbom-code-server.spdx.json
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-code-server-${{ github.run_id }}
+          path: sbom-code-server.spdx.json
           sbom: true
 
       - name: Verify aider/goose on amd64 image
@@ -168,19 +228,30 @@ jobs:
       - name: Verify aider/goose on arm64 image
         run: docker run --rm --platform linux/arm64 --entrypoint bash ${{ needs.validate.outputs.validation_tag }} -lc "aider --version && goose -version"
 
+      - name: Install Datadog CLI (build job)
+        if: ${{ secrets.DD_API_KEY != '' }}
+        run: npm install -g @datadog/datadog-ci
+
       - name: Emit Datadog metrics
         if: ${{ secrets.DD_API_KEY != '' }}
         env:
           DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
           DATADOG_SITE: ${{ secrets.DD_SITE != '' && secrets.DD_SITE || 'datadoghq.com' }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          VALIDATION_TAG: ${{ needs.validate.outputs.validation_tag }}
         run: |
-          timestamp=$(date +%s)
-          npx @datadog/datadog-ci metric submit codeserver.build.duration --points "$timestamp:1" || echo "datadog metric submit skipped"
+          start_epoch=$(date -d '${{ github.run_started_at }}' +%s 2>/dev/null || date +%s)
+          end_epoch=$(date +%s)
+          duration=$(( end_epoch - start_epoch ))
+          datadog-ci metrics submit codeserver.build.duration "$duration" --type gauge --tags "workflow:codeserver-multiarch,repo:${GITHUB_REPOSITORY},run:${GITHUB_RUN_ID}"
+          datadog-ci metrics submit codeserver.build.success 1 --type gauge --tags "workflow:codeserver-multiarch,repo:${GITHUB_REPOSITORY},run:${GITHUB_RUN_ID}"
+          datadog-ci events post "code-server build complete" "Run ${GITHUB_RUN_ID} promoted ${VALIDATION_TAG}" --tags "workflow:codeserver-multiarch,repo:${GITHUB_REPOSITORY}"
 
       - name: Summarise published tags
         run: |
           cat <<'MARKDOWN' >> "$GITHUB_STEP_SUMMARY"
           ### Code-server multi-arch publish
           Tags pushed:
-          ${{ steps.tags.outputs.tags }}
+          ${{ steps.tags.outputs.summary_tags }}
           MARKDOWN

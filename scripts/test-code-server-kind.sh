@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SMOKE_START=$(date +%s)
+
 CLUSTER_NAME=${KIND_CLUSTER_NAME:-vibecode-test}
 NAMESPACE=vibecode-platform
 SERVICE=code-server-kind
@@ -58,3 +60,12 @@ CODE_SERVER_NAMESPACE="$NAMESPACE" CODE_SERVER_SELECTOR="app=code-server,tier=wo
   ./scripts/test-code-server-editors.sh
 
 echo "✅ code-server reachable via port-forward and NodePort"
+
+SMOKE_END=$(date +%s)
+if [ -n "${DD_API_KEY:-}" ] && command -v datadog-ci >/dev/null 2>&1; then
+  duration=$(( SMOKE_END - SMOKE_START ))
+  export DATADOG_SITE="${DATADOG_SITE:-datadoghq.com}"
+  datadog-ci metrics submit codeserver.kind.latency "$duration" --type gauge --tags "arch:amd64,cluster:${KIND_CLUSTER_NAME:-vibecode-ci},repo:${GITHUB_REPOSITORY:-local},run:${GITHUB_RUN_ID:-local},image:${CODE_SERVER_IMAGE:-unknown}"
+  datadog-ci metrics submit codeserver.kind.success 1 --type gauge --tags "arch:amd64,cluster:${KIND_CLUSTER_NAME:-vibecode-ci},repo:${GITHUB_REPOSITORY:-local},run:${GITHUB_RUN_ID:-local},image:${CODE_SERVER_IMAGE:-unknown}"
+  datadog-ci events post "code-server KinD smoke success" "Image ${CODE_SERVER_IMAGE:-unknown} validated in ${duration}s" --tags "cluster:${KIND_CLUSTER_NAME:-vibecode-ci},workflow:codeserver-multiarch,repo:${GITHUB_REPOSITORY:-local}"
+fi
