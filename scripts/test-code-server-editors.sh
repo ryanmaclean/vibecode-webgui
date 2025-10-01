@@ -87,7 +87,6 @@ kubectl_wait_ready() {
 }
 
 declare -a READY_PODS=()
-declare -A POD_MASKS=()
 current_pod_index=0
 
 mask_pod_name() {
@@ -102,43 +101,75 @@ mask_pod_name() {
   printf '%s***%s' "$head" "$tail"
 }
 
-refresh_ready_pods() {
-  kubectl_wait_ready
-  local err_file rc
-  err_file=$(mktemp)
-  mapfile -t READY_PODS < <(
-    kubectl get pods       --namespace "$NAMESPACE"       --selector "$SELECTOR"       --field-selector=status.phase=Running       --output jsonpath='{range .items[?(@.status.conditions[?(@.type=="Ready" && @.status=="True")])]}{.metadata.name}{"
-"}{end}'       --request-timeout="$REQUEST_TIMEOUT" 2>"$err_file" | awk 'NF'
-  )
+masked_ready_list() {
+  local result=""
+  local pod masked
+  for pod in "${READY_PODS[@]}"; do
+    masked=$(mask_pod_name "$pod")
+    if [[ -n "$result" ]]; then
+      result="$result $masked"
+    else
+      result="$masked"
+    fi
+  done
+  printf '%s' "$result"
+}
+
+read_pods_into_array() {
+  local command="$1"
+  local tmpfile rc line idx
+  tmpfile=$(mktemp)
+  eval "$command" >"$tmpfile"
   rc=$?
-  local err
-  err=$(<"$err_file")
-  rm -f "$err_file"
   if [[ $rc -ne 0 ]]; then
+    local err
+    err=$(cat "$tmpfile")
+    rm -f "$tmpfile"
+    return $rc
+  fi
+  idx=0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ -n "$line" ]]; then
+      READY_PODS[$idx]="$line"
+      idx=$((idx + 1))
+    fi
+  done <"$tmpfile"
+  READY_PODS=(${READY_PODS[@]})
+  rm -f "$tmpfile"
+  return 0
+}
+
+refresh_ready_pods() {
+  READY_PODS=()
+  kubectl_wait_ready
+  local cmd rc
+  cmd="kubectl get pods --namespace '$NAMESPACE' --selector '$SELECTOR' --field-selector=status.phase=Running --output jsonpath='{range .items[?(@.status.conditions[?(@.type=="Ready" && @.status=="True")])]}{.metadata.name}{"\n"}{end}' --request-timeout='$REQUEST_TIMEOUT' 2>/tmp/kubectl.err | awk 'NF'"
+  read_pods_into_array "$cmd"
+  rc=$?
+  if [[ $rc -ne 0 ]]; then
+    local err
+    err=$(cat /tmp/kubectl.err 2>/dev/null)
+    rm -f /tmp/kubectl.err
     error "kubectl get pods failed (rc=$rc): $(sanitize_message "$err")"
   fi
   if [[ ${#READY_PODS[@]} -eq 0 ]]; then
-    err_file=$(mktemp)
-    mapfile -t READY_PODS < <(
-      kubectl get pods         --namespace "$NAMESPACE"         --selector "$SELECTOR"         --field-selector=status.phase=Running         --output jsonpath='{range .items[*]}{.metadata.name}{"
-"}{end}'         --request-timeout="$REQUEST_TIMEOUT" 2>"$err_file" | awk 'NF'
-    )
+    cmd="kubectl get pods --namespace '$NAMESPACE' --selector '$SELECTOR' --field-selector=status.phase=Running --output jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' --request-timeout='$REQUEST_TIMEOUT' 2>/tmp/kubectl.err | awk 'NF'"
+    READY_PODS=()
+    read_pods_into_array "$cmd"
     rc=$?
-    err=$(<"$err_file")
-    rm -f "$err_file"
     if [[ $rc -ne 0 ]]; then
+      local err
+      err=$(cat /tmp/kubectl.err 2>/dev/null)
+      rm -f /tmp/kubectl.err
       error "kubectl get pods failed (rc=$rc): $(sanitize_message "$err")"
     fi
   fi
-  POD_MASKS=()
-  for pod in "${READY_PODS[@]}"; do
-    POD_MASKS["$pod"]=$(mask_pod_name "$pod")
-  done
+  rm -f /tmp/kubectl.err 2>/dev/null || true
   current_pod_index=0
   if [[ ${#READY_PODS[@]} -eq 0 ]]; then
     error "No Ready pods found for selector '$SELECTOR' in namespace '$NAMESPACE'."
   fi
-  log "Tracking ${#READY_PODS[@]} Ready pod(s): ${POD_MASKS[*]}"
+  log "Tracking ${#READY_PODS[@]} Ready pod(s): $(masked_ready_list)"
 }
 
 choose_next_pod() {
@@ -150,15 +181,6 @@ choose_next_pod() {
   local pod="${READY_PODS[$idx]}"
   current_pod_index=$(( current_pod_index + 1 ))
   printf '%s' "$pod"
-}
-
-masked_pod() {
-  local pod="$1"
-  if [[ -n ${POD_MASKS[$pod]:-} ]]; then
-    printf '%s' "${POD_MASKS[$pod]}"
-  else
-    printf '%s' "$pod"
-  fi
 }
 
 EXEC_STDOUT=""
@@ -202,7 +224,7 @@ check_tool() {
     fi
     local pod masked start_ms end_ms rc shell_output
     pod=$(choose_next_pod)
-    masked=$(masked_pod "$pod")
+    masked=$(mask_pod_name "$pod")
     start_ms=$(now_ms)
     if run_pod_cmd "$pod" "$detect_cmd"; then
       shell_output=""
@@ -214,7 +236,7 @@ check_tool() {
       end_ms=$(now_ms)
       shell_output=${shell_output//$'
 '/ }
-      echo "✅ $label available — ${shell_output:-available}" "(pod=${masked})"
+      echo "✅ $label available — ${shell_output:-available} (pod=${masked})"
       emit_status "$label" "ok" "$(( end_ms - start_ms ))" "pod=${masked}"
       overall_rc=0
       break
