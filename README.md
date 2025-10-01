@@ -102,6 +102,8 @@ The code-server editor smoke test hardening shipped today (Ready pod gating, kub
 - [#416](https://github.com/ryanmaclean/vibecode-webgui/issues/416): add checksum/signature verification for kubectl/helm/kubectx/kubens and redact stderr output before it reaches shared telemetry.
 - [#417](https://github.com/ryanmaclean/vibecode-webgui/issues/417): expand the Bats suite to cover pod rotation, “no Ready pod” errors, structured status parsing, and timeout overrides.
 
+- ✅ 2025-10-01: Shellcheck/bats now installed in the KinD playbook; `scripts/test-code-server-editors.sh` surfaces `kubectl wait`/timeout failures, masks pod IDs, and Dockerfile installs for helm/kubectl/kubectx/kubens now verify upstream checksums (tracks #415/#416/#417).
+
 Heads-up: attempts to gather end-of-day guidance via `roundtable-ai/gemini_subagent` currently fail even though the CLI reports the agent as available. Re-run those persona prompts once the MCP server recognises Gemini again.
 
 ## Screenshots

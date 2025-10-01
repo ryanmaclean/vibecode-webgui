@@ -14,6 +14,7 @@ ARG STERN_VERSION=1.33.0
 ARG HELMFILE_VERSION=0.169.1
 ARG HELM_VERSION=3.19.0
 ARG KUBECTL_VERSION=1.31.1
+ARG KUBECTX_VERSION=0.9.5
 ARG K9S_VERSION=0.50.13
 ARG SOPS_VERSION=3.9.3
 ARG GLAB_VERSION=1.22.0
@@ -390,12 +391,15 @@ RUN set -eux; \
     chmod 755 /usr/local/bin/helmfile; \
     rm -rf /tmp/helmfile.tar.gz /tmp/helmfile*; \
     echo "Installing helm ${HELM_VERSION}"; \
-    # TODO(sec-hardening-helm): swap to checksum + signature verification for helm tarball (see TODO.md)
-    curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-${HELM_TAR_ARCH}.tar.gz" -o /tmp/helm.tar.gz; \
+    HELM_ARCHIVE="helm-v${HELM_VERSION}-${HELM_TAR_ARCH}.tar.gz"; \
+    curl -fsSL "https://get.helm.sh/${HELM_ARCHIVE}" -o /tmp/helm.tar.gz; \
+    curl -fsSL "https://get.helm.sh/${HELM_ARCHIVE}.sha256sum" -o /tmp/helm.sha256sum; \
+    HELM_SUM=$(awk '{print $1}' /tmp/helm.sha256sum); \
+    echo "${HELM_SUM}  /tmp/helm.tar.gz" | sha256sum --check --status; \
     tar -xzf /tmp/helm.tar.gz -C /tmp; \
     cp "/tmp/${HELM_TAR_DIR}/helm" /usr/local/bin/helm; \
     chmod 755 /usr/local/bin/helm; \
-    rm -rf /tmp/helm.tar.gz "/tmp/${HELM_TAR_DIR}"; \
+    rm -rf /tmp/helm.tar.gz "/tmp/${HELM_TAR_DIR}" /tmp/helm.sha256sum; \
     echo "Installing k9s ${K9S_VERSION}"; \
     curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/k9s_${K9S_ARCH}.tar.gz" -o /tmp/k9s.tar.gz; \
     tar -xzf /tmp/k9s.tar.gz -C /tmp; \
@@ -411,16 +415,34 @@ RUN set -eux; \
     find /tmp -type f -name "glab" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/glab; \
     chmod 755 /usr/local/bin/glab; \
     rm -rf /tmp/glab.tar.gz /tmp/glab*; \
-    # TODO(sec-hardening-kubens): verify kubens download via pinned checksum or cosign prior to install
-    curl -fsSL https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens -o /usr/local/bin/kubens; \
-    chmod 755 /usr/local/bin/kubens; \
-    # TODO(sec-hardening-kubectx): verify kubectx download via pinned checksum or cosign prior to install
-    curl -fsSL "https://raw.githubusercontent.com/ahmetb/kubectx/master/kubectx" -o /usr/local/bin/kubectx; \
-    chmod 755 /usr/local/bin/kubectx; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") KUBE_SHORT_ARCH=linux_x86_64 ;; \
+      "linux/arm64") KUBE_SHORT_ARCH=linux_arm64 ;; \
+      *) echo "Unsupported platform: $TARGETPLATFORM" >&2; exit 1 ;; \
+    esac; \
+    KUBECTX_BASE="https://github.com/ahmetb/kubectx/releases/download/v${KUBECTX_VERSION}"; \
+    KUBECTX_ARCHIVE="kubectx_v${KUBECTX_VERSION}_${KUBE_SHORT_ARCH}.tar.gz"; \
+    curl -fsSL "${KUBECTX_BASE}/${KUBECTX_ARCHIVE}" -o /tmp/${KUBECTX_ARCHIVE}; \
+    curl -fsSL "${KUBECTX_BASE}/checksums.txt" -o /tmp/kubectx-checksums.txt; \
+    KUBECTX_SUM=$(grep "  ${KUBECTX_ARCHIVE}$" /tmp/kubectx-checksums.txt | awk '{print $1}'); \
+    echo "${KUBECTX_SUM}  /tmp/${KUBECTX_ARCHIVE}" | sha256sum --check --status; \
+    tar -xzf /tmp/${KUBECTX_ARCHIVE} -C /tmp; \
+    install -m755 /tmp/kubectx /usr/local/bin/kubectx; \
+    rm -rf /tmp/${KUBECTX_ARCHIVE} /tmp/kubectx /tmp/kubectx-checksums.txt; \
+    KUBENS_ARCHIVE="kubens_v${KUBECTX_VERSION}_${KUBE_SHORT_ARCH}.tar.gz"; \
+    curl -fsSL "${KUBECTX_BASE}/${KUBENS_ARCHIVE}" -o /tmp/${KUBENS_ARCHIVE}; \
+    curl -fsSL "${KUBECTX_BASE}/checksums.txt" -o /tmp/kubens-checksums.txt; \
+    KUBENS_SUM=$(grep "  ${KUBENS_ARCHIVE}$" /tmp/kubens-checksums.txt | awk '{print $1}'); \
+    echo "${KUBENS_SUM}  /tmp/${KUBENS_ARCHIVE}" | sha256sum --check --status; \
+    tar -xzf /tmp/${KUBENS_ARCHIVE} -C /tmp; \
+    install -m755 /tmp/kubens /usr/local/bin/kubens; \
+    rm -rf /tmp/${KUBENS_ARCHIVE} /tmp/kubens /tmp/kubens-checksums.txt; \
     echo "Installing kubectl ${KUBECTL_VERSION} for ${KUBECTL_ARCH}"; \
-    # TODO(sec-hardening-kubectl): layer in sha256sum + cosign verification for kubectl binary fetch
-    curl -fsSL "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/${KUBECTL_ARCH}/kubectl" -o /usr/local/bin/kubectl; \
-    chmod 755 /usr/local/bin/kubectl
+    curl -fsSL "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/${KUBECTL_ARCH}/kubectl" -o /tmp/kubectl; \
+    curl -fsSL "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/${KUBECTL_ARCH}/kubectl.sha256" -o /tmp/kubectl.sha256; \
+    echo "$(cat /tmp/kubectl.sha256)  /tmp/kubectl" | sha256sum --check --status; \
+    install -m755 /tmp/kubectl /usr/local/bin/kubectl; \
+    rm -f /tmp/kubectl /tmp/kubectl.sha256
 USER coder
 
 # Verify ALL required CLI tools are installed (build fails if any missing)
