@@ -28,6 +28,11 @@ kubectl get namespace "$NAMESPACE" >/dev/null 2>&1 || kubectl create namespace "
 echo "==> Applying k8s manifest"
 kubectl apply -f k8s/code-server-kind.yaml >/dev/null
 
+if [ "${CODE_SERVER_IMAGE:-ghcr.io/ryanmaclean/vibecode-codeserver:latest}" != "ghcr.io/ryanmaclean/vibecode-codeserver:latest" ]; then
+  echo "==> Patching deployment to use ${CODE_SERVER_IMAGE}"
+  kubectl set image deployment/$SERVICE -n "$NAMESPACE" code-server=${CODE_SERVER_IMAGE} >/dev/null
+fi
+
 echo "==> Restarting deployment to pick up latest image"
 kubectl rollout restart deployment/$SERVICE -n "$NAMESPACE" >/dev/null
 

@@ -1,6 +1,19 @@
 # Issue: Affordable Cloud Workspaces (GCP & AWS)
 
 ## Summary
+
+## Release Cadence & Checklists (2025-10-01)
+- Ship window: Wednesdays 17:00 UTC (see `docs/handoff/code-server-release.md`).
+- Nightly validation: `codeserver-multiarch` schedule 05:15 UTC; note results in `docs/handoff/shipping-dashboard.md`.
+- Pre-release gates: multi-arch workflow green, KinD smoke pass, observability dashboards reviewed.
+- Post-release tasks: update release digest, confirm cloud cost dashboards, archive TODO entries.
+
+## Shipping Checklist
+1. Verify GHCR digests match latest run (see handoff doc).
+2. Re-run `scripts/build-codeserver-multiarch.sh push ghcr.io/ryanmaclean` if cloud deployment requires manual rebuild.
+3. Validate Docker Compose + KinD flows before touching GCP/AWS Terraform modules.
+4. Update shipping dashboard Build/Test/Deploy rows and call out any blocked cloud targets.
+
 Design and implement resumable code-server deployments on GCP and AWS that keep monthly costs low while preserving developer sessions. The plan relies on spot/preemptible compute, persistent workspace volumes, and automated stop/start flows based on activity.
 
 ## Goals
@@ -33,6 +46,14 @@ Design and implement resumable code-server deployments on GCP and AWS that keep 
 5. **Monitoring & Cost Controls**
    - [ ] Emit metrics (CPU, workspace idle timers) to Datadog/Cloud Monitoring.
    - [ ] Document cost dashboards and alerting (monthly spend, idle runtimes).
+
+## Release Checklist (Updated 2025-10-01)
+- [ ] Confirm latest `codeserver-multiarch` workflow passed nightly smoke (KinD + port-forward).
+- [ ] Validate `shipping-dashboard` weekly entry captures code-server cloud rollout status.
+- [ ] Ensure Datadog monitors `codeserver.build.duration.p95` and `codeserver.kind.smoke.failure` have on-call owners assigned.
+- [ ] Publish release digest under `docs/logs/releases/code-server/<date>.md` and link in `docs/handoff/code-server-release.md`.
+- [ ] Verify Terraform/OpenTofu modules pin the new image tag for GCP/AWS blue/green deploys.
+- [ ] Re-run `scripts/test-code-server-kind.sh` against staging cluster before production promotion.
 
 ## References
 - TODO.md entries (2025-09-30) summarising autoscaling updates.

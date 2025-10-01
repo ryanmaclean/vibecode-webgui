@@ -1,13 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare, Wand2, FileText, Image, Paperclip, Search, Zap, Globe } from 'lucide-react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { Send, Bot, User, Settings, Sparkles, MessageSquare, FileText, Image as ImageIcon, Paperclip, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipProvider } from '@/components/ui/tooltip'
 
 interface Message {
   id: string
@@ -40,6 +39,52 @@ interface WebSearchResult {
   relevance: number
 }
 
+interface ConversationApiMessage extends Omit<Message, 'createdAt'> {
+  createdAt: string
+}
+
+interface ConversationApiResponse {
+  success: boolean
+  conversation?: {
+    messages: ConversationApiMessage[]
+  }
+}
+
+type StreamContentChunk = {
+  type: 'content'
+  content: string
+}
+
+type StreamMetadataChunk = {
+  type: 'metadata'
+  metadata: Partial<NonNullable<Message['metadata']>>
+}
+
+const isContentChunk = (value: unknown): value is StreamContentChunk => {
+  if (typeof value !== 'object' || value === null) return false
+  const chunk = value as Record<string, unknown>
+  return chunk.type === 'content' && typeof chunk.content === 'string'
+}
+
+const isMetadataChunk = (value: unknown): value is StreamMetadataChunk => {
+  if (typeof value !== 'object' || value === null) return false
+  const chunk = value as Record<string, unknown>
+  return (
+    chunk.type === 'metadata' &&
+    typeof chunk.metadata === 'object' &&
+    chunk.metadata !== null
+  )
+}
+
+const AVAILABLE_MODELS = [
+  { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', context: '200K' },
+  { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku', provider: 'Anthropic', context: '200K' },
+  { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI', context: '128K' },
+  { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI', context: '128K' },
+  { id: 'meta-llama/llama-3.1-405b-instruct', name: 'Llama 3.1 405B', provider: 'Meta', context: '128K' },
+  { id: 'google/gemini-pro-1.5', name: 'Gemini Pro 1.5', provider: 'Google', context: '2M' }
+] as const
+
 interface EnhancedChatInterfaceProps {
   conversationId?: string
   workspaceId?: string
@@ -69,31 +114,21 @@ export const EnhancedChatInterface = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Available AI models from OpenRouter
-  const availableModels = [
-    { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', context: '200K' },
-    { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku', provider: 'Anthropic', context: '200K' },
-    { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI', context: '128K' },
-    { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI', context: '128K' },
-    { id: 'meta-llama/llama-3.1-405b-instruct', name: 'Llama 3.1 405B', provider: 'Meta', context: '128K' },
-    { id: 'google/gemini-pro-1.5', name: 'Gemini Pro 1.5', provider: 'Google', context: '2M' }
-  ]
+  useEffect(() => {
+    setContextFiles([...initialContext])
+  }, [initialContext])
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages, scrollToBottom])
 
-  useEffect(() => {
-    if (conversationId) {
-      loadConversation()
-    }
-  }, [conversationId])
+  const loadConversation = useCallback(async () => {
+    if (!conversationId) return
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  const loadConversation = async () => {
     try {
       const response = await fetch('/api/chat/mongodb-simple', {
         method: 'POST',
@@ -108,22 +143,39 @@ export const EnhancedChatInterface = ({
         })
       })
 
-      const data = await response.json()
-      if (data.success && data.conversation) {
-        setMessages(data.conversation.messages.map((msg: any) => ({
-          ...msg,
-          createdAt: new Date(msg.createdAt)
-        })))
+      if (!response.ok) {
+        throw new Error('Failed to load conversation')
+      }
+
+      const data: ConversationApiResponse = await response.json()
+      if (data.success && data.conversation?.messages) {
+        setMessages(
+          data.conversation.messages.map<Message>((msg) => ({
+            ...msg,
+            createdAt: new Date(msg.createdAt)
+          }))
+        )
       }
     } catch (error) {
       console.error('Failed to load conversation:', error)
     }
-  }
+  }, [conversationId])
+
+  useEffect(() => {
+    if (conversationId) {
+      void loadConversation()
+    }
+  }, [conversationId, loadConversation])
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || [])
+    const files = Array.from(event.target.files ?? [])
     setAttachedFiles(prev => [...prev, ...files])
-    
+    setContextFiles(prev => {
+      const next = new Set(prev)
+      files.forEach(file => next.add(file.name))
+      return Array.from(next)
+    })
+
     if (onFileUpload && event.target.files) {
       onFileUpload(event.target.files)
     }
@@ -241,28 +293,35 @@ export const EnhancedChatInterface = ({
             if (line.startsWith('data: ')) {
               const data = line.slice(6)
               try {
-                const parsed = JSON.parse(data)
-                
-                if (parsed.type === 'content') {
-                  setMessages(prev => prev.map((msg, index) => 
-                    index === prev.length - 1 
-                      ? { ...msg, content: msg.content + parsed.content }
-                      : msg
-                  ))
-                } else if (parsed.type === 'metadata') {
-                  setMessages(prev => prev.map((msg, index) => 
-                    index === prev.length - 1 
-                      ? { 
-                          ...msg, 
-                          metadata: { 
-                            ...msg.metadata, 
-                            ...parsed.metadata 
-                          }
+                const parsed: unknown = JSON.parse(data)
+                if (isContentChunk(parsed)) {
+                  setMessages(prev => {
+                    const lastIndex = prev.length - 1
+                    if (lastIndex < 0) return prev
+                    return prev.map((msg, index) =>
+                      index === lastIndex
+                        ? { ...msg, content: `${msg.content}${parsed.content}` }
+                        : msg
+                    )
+                  })
+                } else if (isMetadataChunk(parsed)) {
+                  setMessages(prev => {
+                    const lastIndex = prev.length - 1
+                    if (lastIndex < 0) return prev
+                    return prev.map((msg, index) => {
+                      if (index !== lastIndex) return msg
+
+                      return {
+                        ...msg,
+                        metadata: {
+                          ...(msg.metadata ?? {}),
+                          ...parsed.metadata
                         }
-                      : msg
-                  ))
+                      }
+                    })
+                  })
                 }
-              } catch (e) {
+              } catch {
                 // Skip invalid JSON
                 continue
               }
@@ -321,7 +380,7 @@ export const EnhancedChatInterface = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableModels.map(model => (
+                  {AVAILABLE_MODELS.map(model => (
                     <SelectItem key={model.id} value={model.id}>
                       <div className="flex flex-col">
                         <span>{model.name}</span>
@@ -372,6 +431,20 @@ export const EnhancedChatInterface = ({
                   {enableRAG ? 'Enabled' : 'Disabled'}
                 </Button>
               </div>
+              {contextFiles.length > 0 && (
+                <div className="pt-3 border-t border-gray-200 space-y-2">
+                  <span className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Active Context Files
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {contextFiles.map(fileName => (
+                      <Badge key={fileName} variant="secondary" className="text-xs">
+                        {fileName}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -410,7 +483,7 @@ export const EnhancedChatInterface = ({
                               {message.files.map((file) => (
                                 <div key={file.id} className="flex items-center space-x-2 p-2 bg-black/10 rounded">
                                   {file.type === 'image' ? (
-                                    <Image className="w-4 h-4" />
+                                    <ImageIcon aria-hidden="true" className="w-4 h-4" />
                                   ) : (
                                     <FileText className="w-4 h-4" />
                                   )}
@@ -499,7 +572,7 @@ export const EnhancedChatInterface = ({
                   <div key={index} className="flex items-center justify-between p-2 bg-white rounded border">
                     <div className="flex items-center space-x-2">
                       {file.type.startsWith('image/') ? (
-                        <Image className="w-4 h-4" />
+                        <ImageIcon aria-hidden="true" className="w-4 h-4" />
                       ) : (
                         <FileText className="w-4 h-4" />
                       )}
@@ -543,7 +616,6 @@ export const EnhancedChatInterface = ({
                 onChange={handleFileUpload}
                 className="hidden"
               />
-              
               <Tooltip content="Attach files">
                 <Button
                   variant="outline"

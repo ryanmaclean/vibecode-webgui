@@ -2,6 +2,7 @@
 FROM codercom/code-server:4.104.2
 
 ARG TARGETPLATFORM
+ARG TARGETARCH
 ARG LAZYGIT_VERSION=0.55.1
 ARG STARSHIP_VERSION=1.23.0
 ARG ZOXIDE_VERSION=0.9.8
@@ -11,6 +12,8 @@ ARG CHEZMOI_VERSION=2.65.2
 ARG JUST_VERSION=1.43.0
 ARG STERN_VERSION=1.33.0
 ARG HELMFILE_VERSION=0.169.1
+ARG HELM_VERSION=3.19.0
+ARG KUBECTL_VERSION=1.31.1
 ARG K9S_VERSION=0.50.13
 ARG SOPS_VERSION=3.9.3
 ARG GLAB_VERSION=1.22.0
@@ -38,6 +41,7 @@ RUN set -ex; \
     apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
+    bash-completion \
     fish \
     exa \
     git \
@@ -179,17 +183,60 @@ RUN npm install -g @datadog/datadog-ci
 RUN echo "Skipping vector agent install for local build"
 
 # 4. KubeHound (Kubernetes security) - optional
-RUN curl -sSfL https://raw.githubusercontent.com/DataDog/kubehound/main/install.sh | sh || echo "KubeHound not available, skipping"
+RUN set -eux; \
+    case "${TARGETARCH:-amd64}" in \
+      amd64) \
+        curl -sSfL https://raw.githubusercontent.com/DataDog/kubehound/main/install.sh | sh || echo "KubeHound not available, skipping" \
+        ;; \
+      arm64) \
+        echo "KubeHound install skipped for arm64" \
+        ;; \
+      *) \
+        echo "KubeHound install skipped for ${TARGETARCH:-unknown}" \
+        ;; \
+    esac
 
 # 5. Stratus Red Team (security testing) - optional
-RUN pip3 install --break-system-packages stratus-red-team || echo "Stratus Red Team not available, skipping"
+RUN set -eux; \
+    case "${TARGETARCH:-amd64}" in \
+      amd64) \
+        pip3 install --break-system-packages stratus-red-team || echo "Stratus Red Team not available, skipping" \
+        ;; \
+      arm64) \
+        echo "Stratus Red Team skipped for arm64" \
+        ;; \
+      *) \
+        echo "Stratus Red Team skipped for ${TARGETARCH:-unknown}" \
+        ;; \
+    esac
 
 # 6. Eppo (feature flagging) - optional
-RUN (curl -sL https://packagecloud.io/install/repositories/eppo/eppo-server/script.deb.sh | bash && \
-    apt-get install -y eppo-agent) || echo "Eppo not available, skipping"
+RUN set -eux; \
+    case "${TARGETARCH:-amd64}" in \
+      amd64) \
+        (curl -sL https://packagecloud.io/install/repositories/eppo/eppo-server/script.deb.sh | bash && apt-get install -y eppo-agent) || echo "Eppo not available, skipping" \
+        ;; \
+      arm64) \
+        echo "Eppo agent install skipped for arm64" \
+        ;; \
+      *) \
+        echo "Eppo agent install skipped for ${TARGETARCH:-unknown}" \
+        ;; \
+    esac
 
 # 7. Toto (test observability) - optional
-RUN pip3 install --break-system-packages datadog-toto || echo "Datadog Toto not available, skipping"
+RUN set -eux; \
+    case "${TARGETARCH:-amd64}" in \
+      amd64) \
+        pip3 install --break-system-packages datadog-toto || echo "Datadog Toto not available, skipping" \
+        ;; \
+      arm64) \
+        echo "Datadog Toto skipped for arm64" \
+        ;; \
+      *) \
+        echo "Datadog Toto skipped for ${TARGETARCH:-unknown}" \
+        ;; \
+    esac
 
 # Create workspace and set permissions
 WORKDIR /home/coder/workspace
@@ -283,6 +330,9 @@ RUN set -eux; \
         JUST_ARCH="x86_64-unknown-linux-musl"; \
         STERN_ARCH="linux_amd64"; \
         HELMFILE_ARCH="linux_amd64"; \
+        HELM_TAR_ARCH="linux-amd64"; \
+        HELM_TAR_DIR="linux-amd64"; \
+        KUBECTL_ARCH="linux/amd64"; \
         K9S_ARCH="Linux_amd64"; \
         SOPS_SUFFIX="linux.amd64"; \
         GLAB_ARCH="Linux_x86_64"; \
@@ -294,6 +344,9 @@ RUN set -eux; \
         JUST_ARCH="aarch64-unknown-linux-musl"; \
         STERN_ARCH="linux_arm64"; \
         HELMFILE_ARCH="linux_arm64"; \
+        HELM_TAR_ARCH="linux-arm64"; \
+        HELM_TAR_DIR="linux-arm64"; \
+        KUBECTL_ARCH="linux/arm64"; \
         K9S_ARCH="Linux_arm64"; \
         SOPS_SUFFIX="linux.arm64"; \
         GLAB_ARCH="Linux_arm64"; \
@@ -336,6 +389,12 @@ RUN set -eux; \
     find /tmp -type f -name "helmfile" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/helmfile; \
     chmod 755 /usr/local/bin/helmfile; \
     rm -rf /tmp/helmfile.tar.gz /tmp/helmfile*; \
+    echo "Installing helm ${HELM_VERSION}"; \
+    curl -fsSL "https://get.helm.sh/helm-v${HELM_VERSION}-${HELM_TAR_ARCH}.tar.gz" -o /tmp/helm.tar.gz; \
+    tar -xzf /tmp/helm.tar.gz -C /tmp; \
+    cp "/tmp/${HELM_TAR_DIR}/helm" /usr/local/bin/helm; \
+    chmod 755 /usr/local/bin/helm; \
+    rm -rf /tmp/helm.tar.gz "/tmp/${HELM_TAR_DIR}"; \
     echo "Installing k9s ${K9S_VERSION}"; \
     curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/k9s_${K9S_ARCH}.tar.gz" -o /tmp/k9s.tar.gz; \
     tar -xzf /tmp/k9s.tar.gz -C /tmp; \
@@ -353,20 +412,46 @@ RUN set -eux; \
     rm -rf /tmp/glab.tar.gz /tmp/glab*; \
     curl -fsSL https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens -o /usr/local/bin/kubens; \
     chmod 755 /usr/local/bin/kubens
+RUN set -eux; \
+    curl -fsSL "https://raw.githubusercontent.com/ahmetb/kubectx/master/kubectx" -o /usr/local/bin/kubectx; \
+    chmod 755 /usr/local/bin/kubectx; \
+    echo "Installing kubectl ${KUBECTL_VERSION}"; \
+    curl -fsSL "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/${KUBECTL_ARCH}/kubectl" -o /usr/local/bin/kubectl; \
+    chmod 755 /usr/local/bin/kubectl
 USER coder
 
 # Verify ALL required CLI tools are installed (build fails if any missing)
 RUN set -e && \
     echo "🔍 Verifying ALL required tools..." && \
-    for tool in vim nvim emacs nu delta chezmoi just stern helmfile k9s sops glab kubens; do \
+    for tool in vim nvim emacs nu delta chezmoi just stern helmfile helm kubectl kubectx kubens k9s sops glab; do \
       command -v "$tool" >/dev/null && echo "✅ $tool" || { echo "❌ $tool MISSING"; exit 1; }; \
     done && \
     aider --version >/dev/null && echo "✅ aider" || { echo "❌ aider MISSING"; exit 1; } && \
     /usr/local/bin/goose -version >/dev/null 2>&1 && echo "✅ goose" || { echo "❌ goose MISSING"; exit 1; } && \
     echo "✅ All required tools verified!"
 
-# 2. TypeScript/JavaScript LSP - needs root
+# Generate shell completions for kubectl/helm when available
 USER root
+RUN set -eux; \
+    mkdir -p /etc/bash_completion.d /usr/share/zsh/site-functions /etc/fish/completions; \
+    if command -v kubectl >/dev/null 2>&1; then \
+      kubectl completion bash > /etc/bash_completion.d/kubectl && \
+      kubectl completion zsh > /usr/share/zsh/site-functions/_kubectl && \
+      kubectl completion fish > /etc/fish/completions/kubectl.fish; \
+      chmod 644 /etc/bash_completion.d/kubectl /usr/share/zsh/site-functions/_kubectl /etc/fish/completions/kubectl.fish; \
+    else \
+      echo "kubectl not installed; skipping completion generation"; \
+    fi; \
+    if command -v helm >/dev/null 2>&1; then \
+      helm completion bash > /etc/bash_completion.d/helm && \
+      helm completion zsh > /usr/share/zsh/site-functions/_helm && \
+      helm completion fish > /etc/fish/completions/helm.fish; \
+      chmod 644 /etc/bash_completion.d/helm /usr/share/zsh/site-functions/_helm /etc/fish/completions/helm.fish; \
+    else \
+      echo "helm not installed; skipping completion generation"; \
+    fi
+
+# 2. TypeScript/JavaScript LSP - needs root
 RUN npm install -g typescript-language-server vscode-langservers-extracted
 
 # 3. Rust LSP (rust-analyzer)

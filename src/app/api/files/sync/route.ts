@@ -462,12 +462,3 @@ function recordBroadcastMetrics({
 function sanitizeTagValue(value: string): string {
   return value.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '_').slice(0, 64)
 }
-
-export const __TEST__ = {
-  handleSubscription,
-  recordSubscriptionSuccess,
-  recordSubscriptionError,
-  recordRemovalMetrics,
-  recordBroadcastMetrics,
-  sanitizeTagValue,
-}
