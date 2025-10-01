@@ -52,7 +52,6 @@ RUN set -ex; \
     ripgrep \
     vim \
     neovim \
-    emacs-nox \
     elvish \
     xonsh \
     yash \
@@ -114,9 +113,26 @@ RUN set -eux; \
     apt-get install -y --no-install-recommends /tmp/zoxide.deb; \
     rm -rf /tmp/zoxide.deb /var/lib/apt/lists/*
 
-# Install Node.js 18 LTS
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs
+# Install Node.js 18 LTS (verified download)
+RUN set -eux; \
+    NODE_VERSION="18.18.0"; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") NODE_ARCH=x64 ;; \
+      "linux/arm64") NODE_ARCH=arm64 ;; \
+      *) echo "Unsupported platform for Node.js: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    NODE_TARBALL="node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"; \
+    cd /tmp; \
+    curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/${NODE_TARBALL}"; \
+    curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt"; \
+    grep "${NODE_TARBALL}" SHASUMS256.txt | sha256sum --check --strict -; \
+    mkdir -p /usr/local/lib/nodejs; \
+    tar -xJf "${NODE_TARBALL}" -C /usr/local/lib/nodejs --strip-components=1; \
+    ln -sf /usr/local/lib/nodejs/bin/node /usr/local/bin/node; \
+    ln -sf /usr/local/lib/nodejs/bin/npm /usr/local/bin/npm; \
+    ln -sf /usr/local/lib/nodejs/bin/npx /usr/local/bin/npx; \
+    rm -rf /tmp/*; \
+    node --version; npm --version
 
 # Install global npm packages
 RUN npm install -g \
@@ -128,6 +144,24 @@ RUN npm install -g \
     eslint \
     ts-node
 
+# Install cosign for binary verification
+ARG COSIGN_VERSION=2.2.4
+RUN set -eux; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") COSIGN_ARCH=amd64 ;; \
+      "linux/arm64") COSIGN_ARCH=arm64 ;; \
+      *) echo "Unsupported platform for cosign: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    COSIGN_BINARY="cosign-linux-${COSIGN_ARCH}"; \
+    cd /tmp; \
+    curl -fsSLO "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/${COSIGN_BINARY}"; \
+    curl -fsSLO "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/${COSIGN_BINARY}.sha256"; \
+    sha256sum --check --strict "${COSIGN_BINARY}.sha256"; \
+    chmod +x "${COSIGN_BINARY}"; \
+    mv "${COSIGN_BINARY}" /usr/local/bin/cosign; \
+    rm -f "${COSIGN_BINARY}.sha256"; \
+    cosign version
+
 # Install Go (match architecture for multi-arch builds)
 ARG GO_VERSION=1.22.4
 RUN set -eux; \
@@ -137,9 +171,12 @@ RUN set -eux; \
       *) echo "Unsupported platform for Go install: $TARGETPLATFORM"; exit 1 ;; \
     esac; \
     GO_TARBALL="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz"; \
+    cd /tmp; \
     wget "https://go.dev/dl/${GO_TARBALL}"; \
+    wget "https://go.dev/dl/${GO_TARBALL}.sha256"; \
+    sha256sum --check --strict "${GO_TARBALL}.sha256"; \
     tar -C /usr/local -xzf "${GO_TARBALL}"; \
-    rm "${GO_TARBALL}"; \
+    rm -f "${GO_TARBALL}" "${GO_TARBALL}.sha256"; \
     ln -sf /usr/local/go/bin/go /usr/local/bin/go
 
 # Install AI CLI tools and database tools
@@ -164,7 +201,6 @@ RUN set -e && \
     echo "🔍 Verifying installed tools..." && \
     echo "Testing vim..." && vim --version | head -1 && \
     echo "Testing nvim..." && nvim --version | head -1 && \
-    echo "Testing emacs..." && emacs --version | head -1 && \
     echo "Testing aider..." && aider --version && \
     echo "Testing goose..." && goose -version 2>&1 | grep -i goose && \
     echo "✅ All required tools verified!"
@@ -448,7 +484,7 @@ USER coder
 # Verify ALL required CLI tools are installed (build fails if any missing)
 RUN set -e && \
     echo "🔍 Verifying ALL required tools..." && \
-    for tool in vim nvim emacs nu delta chezmoi just stern helmfile helm kubectl kubectx kubens k9s sops glab; do \
+    for tool in vim nvim nu delta chezmoi just stern helmfile helm kubectl kubectx kubens k9s sops glab; do \
       command -v "$tool" >/dev/null && echo "✅ $tool" || { echo "❌ $tool MISSING"; exit 1; }; \
     done && \
     aider --version >/dev/null && echo "✅ aider" || { echo "❌ aider MISSING"; exit 1; } && \
