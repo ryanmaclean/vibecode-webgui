@@ -1,7 +1,14 @@
-import { Server as SocketIOServer } from 'socket.io'
+import { Server as SocketIOServer, Socket } from 'socket.io'
 import { Server as HTTPServer } from 'http'
 import { mongodbChatService } from './chat-mongodb'
 import { datadogMetrics } from '../monitoring/datadog-metrics'
+
+// Extended socket interface with custom properties
+interface ExtendedSocket extends Socket {
+  userId?: string
+  workspaceId?: string
+  conversationId?: string
+}
 
 export interface CollaborativeUser {
   id: string
@@ -31,7 +38,7 @@ export interface CollaborationEvent {
   userId: string
   workspaceId: string
   conversationId?: string
-  data?: any
+  data?: Record<string, unknown>
   timestamp: Date
 }
 
@@ -100,10 +107,10 @@ export class CollaborationService {
   }
 
   private async handleUserJoinWorkspace(
-    socket: any, 
-    workspaceId: string, 
-    userId: string, 
-    userName: string, 
+    socket: ExtendedSocket,
+    workspaceId: string,
+    userId: string,
+    userName: string,
     conversationId?: string
   ) {
     try {
@@ -174,7 +181,7 @@ export class CollaborationService {
     }
   }
 
-  private async handleUserLeaveWorkspace(socket: any, workspaceId: string, userId: string) {
+  private async handleUserLeaveWorkspace(socket: ExtendedSocket, workspaceId: string, userId: string) {
     try {
       const workspace = this.workspaces.get(workspaceId)
       if (!workspace) return
@@ -213,7 +220,7 @@ export class CollaborationService {
     }
   }
 
-  private handleTypingStart(socket: any, data: { conversationId: string }) {
+  private handleTypingStart(socket: ExtendedSocket, data: { conversationId: string }) {
     const { conversationId } = data
     const { userId, workspaceId } = socket
 
@@ -235,7 +242,7 @@ export class CollaborationService {
     })
   }
 
-  private handleTypingStop(socket: any, data: { conversationId: string }) {
+  private handleTypingStop(socket: ExtendedSocket, data: { conversationId: string }) {
     const { conversationId } = data
     const { userId, workspaceId } = socket
 
@@ -253,7 +260,7 @@ export class CollaborationService {
     })
   }
 
-  private handleCursorMove(socket: any, data: { x: number, y: number, messageId?: string }) {
+  private handleCursorMove(socket: ExtendedSocket, data: { x: number, y: number, messageId?: string }) {
     const { userId, workspaceId } = socket
     if (!userId || !workspaceId) return
 
@@ -274,7 +281,7 @@ export class CollaborationService {
     })
   }
 
-  private handleMessageDraft(socket: any, data: { conversationId: string, content: string }) {
+  private handleMessageDraft(socket: ExtendedSocket, data: { conversationId: string, content: string }) {
     const { conversationId, content } = data
     const { userId } = socket
 
@@ -287,7 +294,7 @@ export class CollaborationService {
     })
   }
 
-  private async handleFileShare(socket: any, data: { fileName: string, fileSize: number, conversationId: string }) {
+  private async handleFileShare(socket: ExtendedSocket, data: { fileName: string, fileSize: number, conversationId: string }) {
     const { fileName, fileSize, conversationId } = data
     const { userId, workspaceId } = socket
 
@@ -309,7 +316,7 @@ export class CollaborationService {
     }
   }
 
-  private handleDisconnect(socket: any) {
+  private handleDisconnect(socket: ExtendedSocket) {
     const { userId, workspaceId } = socket
     if (userId && workspaceId) {
       this.handleUserLeaveWorkspace(socket, workspaceId, userId)
@@ -318,7 +325,7 @@ export class CollaborationService {
   }
 
   // Broadcast message to all users in a conversation
-  async broadcastMessage(conversationId: string, message: any, excludeUserId?: string) {
+  async broadcastMessage(conversationId: string, message: Record<string, unknown>, excludeUserId?: string) {
     if (!this.io) return
 
     const messageData = {
