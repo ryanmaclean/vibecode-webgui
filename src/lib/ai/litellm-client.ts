@@ -19,7 +19,10 @@ export interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'function';
   content: string;
   name?: string;
-  function_call?: any;
+  function_call?: {
+    name: string;
+    arguments: string;
+  };
 }
 
 export interface ChatCompletionRequest {
@@ -33,8 +36,12 @@ export interface ChatCompletionRequest {
   stream?: boolean;
   stop?: string[];
   user?: string;
-  functions?: any[];
-  function_call?: any;
+  functions?: Array<{
+    name: string;
+    description?: string;
+    parameters?: Record<string, unknown>;
+  }>;
+  function_call?: 'auto' | 'none' | { name: string };
 }
 
 export interface ChatCompletionResponse {
@@ -301,7 +308,15 @@ export class LiteLLMClient {
    */
   async getModels(): Promise<ModelInfo[]> {
     try {
-      const response = await this.makeRequest<{ data: any[] }>('/models');
+      const response = await this.makeRequest<{ data: Array<{
+        id: string;
+        max_tokens?: number;
+        supports_streaming?: boolean;
+        supports_function_calling?: boolean;
+        supports_vision?: boolean;
+        input_cost_per_token?: number;
+        output_cost_per_token?: number;
+      }> }>('/models');
       
       return response.data.map(model => ({
         name: model.id,
@@ -360,7 +375,10 @@ export class LiteLLMClient {
    */
   async streamChatCompletion(
     request: ChatCompletionRequest,
-    onChunk: (chunk: any) => void,
+    onChunk: (chunk: {
+      choices?: Array<{ delta?: { content?: string } }>;
+      usage?: { total_tokens: number };
+    }) => void,
     userId?: string,
     projectId?: number
   ): Promise<void> {
@@ -490,7 +508,12 @@ export class LiteLLMClient {
         timeframe
       });
 
-      const response = await this.makeRequest<any>(`/usage?${params}`);
+      const response = await this.makeRequest<{
+        requests: number;
+        tokens: { input: number; output: number; total: number };
+        cost: number;
+        models: Record<string, { requests: number; tokens: number; cost: number }>;
+      }>(`/usage?${params}`);
       return response;
     } catch (error) {
       console.error('Failed to get usage stats:', error);
@@ -514,7 +537,10 @@ export class LiteLLMClient {
     const startTime = Date.now();
 
     try {
-      const response = await this.makeRequest<any>('/health');
+      const response = await this.makeRequest<{
+        status?: 'healthy' | 'degraded' | 'unhealthy';
+        models?: Record<string, 'healthy' | 'unhealthy'>;
+      }>('/health');
       const latency = Date.now() - startTime;
 
       return {
@@ -556,7 +582,7 @@ export class LiteLLMClient {
     return response.json();
   }
 
-  private getCacheKey(operation: string, params: any): string {
+  private getCacheKey(operation: string, params: Record<string, unknown>): string {
     const hash = this.hashContent(JSON.stringify(params));
     return `litellm:${operation}:${hash}`;
   }
@@ -639,7 +665,7 @@ export class LiteLLMClient {
     cost?: number;
     durationMs: number;
     status: string;
-    response?: any;
+    response?: { content?: string; message?: ChatMessage };
     error?: string;
   }) {
     try {
@@ -663,7 +689,7 @@ export class LiteLLMClient {
     }
   }
 
-  private handleError(error: any): Error {
+  private handleError(error: unknown): Error {
     if (error instanceof Error) {
       return error;
     }
