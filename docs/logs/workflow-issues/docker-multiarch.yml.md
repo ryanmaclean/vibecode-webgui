@@ -25,7 +25,8 @@
    - Generates an SBOM (`sbom-code-server.spdx.json`) for the CI tag and uploads it as an artifact.
 
 ## Observability Hooks
-- Datadog metrics placeholders (`codeserver.build.duration`, `codeserver.kind.smoke`) still require `DD_API_KEY`/`DD_SITE` secrets.
+- Workflow emits `codeserver.build.duration`/`codeserver.build.success` when Datadog secrets are present (GitHub issue #412).
+- KinD smoke script publishes `codeserver.kind.latency`/`codeserver.kind.success` metrics + event when `datadog-ci` is available.
 - KinD logs retained as `kind-smoke-<run id>` artifacts; confirm retention ≥14 days.
 - Release digest template lives in `docs/handoff/code-server-release.md`; ensure each run appends an entry.
 
