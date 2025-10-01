@@ -97,6 +97,16 @@ Serve the VibeCode documentation experience rendered by the Next.js app under `s
 - The build job publishes a `next-docs-standalone` artifact (tarball containing `next-standalone/`) that can be downloaded for manual testing or alternate deployments.
 - Post-deploy smoke tests poll the health endpoint up to five times with an increasing delay (15s, 30s, 45s, 60s, 75s). If the App Service is routinely slow to warm, adjust `DOCS_NEXT_HEALTHCHECK_URL` to a lightweight probe or extend the retry window.
 
+## Observability & Diagnostics
+
+- **GitHub Actions**: Use the run summary to review console output and step timings. For a quick tail from the terminal, run `gh run watch --exit-status --workflow deploy-next-docs.yml --branch main`.
+- **Workflow artifacts**: The `next-docs-standalone` artifact retains for 7 days; download it (`gh run download --name next-docs-standalone --dir dist/rollbacks`) when preparing an immediate rollback image.
+- **Azure App Service logs**: Stream container output with `az webapp log tail --name vibecode-docs-next --resource-group rg-vibecode-docs`. For historical inspection, pull the latest bundle via `az webapp log download --name vibecode-docs-next --resource-group rg-vibecode-docs --log-file docs-next-logs.zip` and open `LogFiles/Application/docker.log`.
+- **Datadog dashboards**: Observability is publishing a Docs Next overview board (folder `Observability/Docs`) that charts `azure.app_service.http.5xx`, `azure.app_service.cpu.usage`, and `trace.next.render` filtered by `resource_group:rg-vibecode-docs`. Request the dash slug in `#observability-help` if it is missing.
+- **Datadog monitors**: Subscribe to the `docs-next smoke check` and `docs-next 5xx error rate` monitors (Datadog Manage → Monitors → Shared With Team) so alerts land in `#docs-infra-alerts`. If those monitors have not been created yet, file an Observability ticket referencing GitHub issue #405.
+
+> TODO (Observability, track via #405): Capture approved retention windows for GitHub logs/artifacts, Datadog logs, and the rollback image registry so the runbook can include explicit expiry expectations.
+
 ## Validation Checklist
 
 - [ ] GitHub Actions run publishes the container image and records the digest in the summary.
@@ -110,4 +120,5 @@ Serve the VibeCode documentation experience rendered by the Next.js app under `s
 If deploys fail or traffic spikes exhaust the single instance:
 - Page the Docs Infra Guild (`#docs-infra-alerts` on Slack).
 - Engage Cloud Platform on-call for scaling changes to the App Service plan or App Runner configuration.
+- If Datadog monitors stay red after the smoke retry window, collect the failing GitHub Actions run URL, the App Service log bundle, and a screenshot of the Docs Next dashboard before handing off to Observability on-call (`#observability-oncall`).
 - Reference GitHub issue #405 for the current action items and historical context.

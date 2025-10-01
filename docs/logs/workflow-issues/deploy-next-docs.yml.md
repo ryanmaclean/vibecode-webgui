@@ -22,7 +22,16 @@ Automates deployment of the Next.js documentation experience (pulled from `src/`
 ## Outputs & Observability
 - Publishes the deployed image reference and resolved App Service URL to the workflow summary.
 - Curl-based smoke test retries five times (15s, 30s, 45s, 60s, 75s) before failing the job if the health endpoint stays unavailable.
+- Stream deployment logs via `az webapp log tail --name vibecode-docs-next --resource-group rg-vibecode-docs`; the downloaded bundle places container output in `LogFiles/Application/docker.log`.
+- Datadog dashboard (folder `Observability/Docs`) will track `azure.app_service.http.5xx`, `trace.next.render`, and container CPU for this service; request the slug from Observability if it is not yet shared.
+- Subscribe to the `docs-next smoke check` and `docs-next 5xx error rate` monitors so alerts land in `#docs-infra-alerts`; file an Observability ticket referencing #405 if those monitors are still pending.
 
 ## Follow-up Checks
 - Confirm Datadog logs/traces show the new deployment within 5 minutes.
 - Run `npm run docs:link-audit` locally if wiki content changed substantially.
+
+## Escalation
+- Collect the failing run URL, the App Service log bundle, and a Datadog snapshot before paging the Docs Infra Guild (`#docs-infra-alerts`).
+- Loop in Observability on-call (`#observability-oncall`) when monitors remain red after the smoke test retries.
+
+> TODO (#405): Add explicit retention/rollback guidance once Observability finalises log, artifact, and image expiry windows for docs-next.

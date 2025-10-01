@@ -23,6 +23,7 @@
     "test:unit": "jest --testPathPatterns=tests/unit",
     "test:integration": "jest --testPathPatterns=tests/integration",
     "test:ws": "jest --testPathPatterns=tests/integration/websocket",
+    "test:scripts": "bats tests/scripts/",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:production": "BASE_URL=https://vibecode.eastus2.cloudapp.azure.com playwright test --config=playwright.config.production.ts",

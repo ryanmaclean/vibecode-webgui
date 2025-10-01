@@ -11,6 +11,10 @@ emit_status() {
   local duration_ms="$3"
   local message="$4"
   message=${message//$'\n'/ }
+  # Redact sensitive information from logs
+  message=${message//password=[^[:space:]]*/password=***}
+  message=${message//token=[^[:space:]]*/token=***}
+  message=${message//key=[^[:space:]]*/key=***}
   printf 'tool=%s status=%s duration_ms=%s message="%s"\n' "$tool" "$status" "$duration_ms" "$message"
 }
 
@@ -44,9 +48,15 @@ log "Locating Ready code-server pods in namespace '$NAMESPACE' (selector: $SELEC
 kubectl_wait_ready() {
   local args=("wait" "--namespace" "$NAMESPACE" "--selector" "$SELECTOR" "--for=condition=Ready" "pod" "--timeout=$WAIT_TIMEOUT" "--request-timeout=$REQUEST_TIMEOUT")
   if [[ $HAS_TIMEOUT -eq 1 ]]; then
-    "$TIMEOUT_BIN" "$WAIT_TIMEOUT" kubectl "${args[@]}" >/dev/null 2>&1 || true
+    "$TIMEOUT_BIN" "$WAIT_TIMEOUT" kubectl "${args[@]}" >/dev/null 2>&1 || {
+      log "Warning: kubectl wait timed out after $WAIT_TIMEOUT"
+      return 1
+    }
   else
-    kubectl "${args[@]}" >/dev/null 2>&1 || true
+    kubectl "${args[@]}" >/dev/null 2>&1 || {
+      log "Warning: kubectl wait failed"
+      return 1
+    }
   fi
 }
 
@@ -60,6 +70,22 @@ mapfile -t READY_PODS < <(
     --output jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' \
     --request-timeout="$REQUEST_TIMEOUT" 2>/dev/null | awk 'NF'
 )
+
+# Additional check for pods with Ready condition
+mapfile -t READY_CONDITION_PODS < <(
+  kubectl get pods \
+    --namespace "$NAMESPACE" \
+    --selector "$SELECTOR" \
+    --field-selector=status.phase=Running \
+    --output jsonpath='{range .items[?(@.status.conditions[?(@.type=="Ready" && @.status=="True")])]}{.metadata.name}{"\n"}{end}' \
+    --request-timeout="$REQUEST_TIMEOUT" 2>/dev/null | awk 'NF'
+)
+
+# Use Ready condition pods if available, otherwise fall back to Running pods
+if [[ ${#READY_CONDITION_PODS[@]} -gt 0 ]]; then
+  READY_PODS=("${READY_CONDITION_PODS[@]}")
+  log "Using pods with Ready condition: ${READY_PODS[*]}"
+fi
 
 if [[ ${#READY_PODS[@]} -eq 0 ]]; then
   error "No Ready pods found for selector '$SELECTOR' in namespace '$NAMESPACE'."
@@ -146,6 +172,15 @@ check_tool() {
       emit_status "$label" "missing" "$((end_ms - start_ms))" "$message"
       echo "❌ $label missing"
       return 1
+    elif [[ $rc -eq 126 ]]; then
+      message="permission denied or binary not executable (pod=$pod)"
+    elif [[ $rc -eq 1 ]]; then
+      # Check if it's a transport/RBAC failure vs missing tool
+      if [[ "$EXEC_STDERR" == *"transport"* ]] || [[ "$EXEC_STDERR" == *"rbac"* ]] || [[ "$EXEC_STDERR" == *"forbidden"* ]]; then
+        message="transport/RBAC failure (rc=$rc) pod=$pod stderr=${EXEC_STDERR:-<none>}"
+      else
+        message="tool execution failed (rc=$rc) pod=$pod stderr=${EXEC_STDERR:-<none>}"
+      fi
     else
       message="kubectl exec failed (rc=$rc) pod=$pod stderr=${EXEC_STDERR:-<none>}"
     fi
