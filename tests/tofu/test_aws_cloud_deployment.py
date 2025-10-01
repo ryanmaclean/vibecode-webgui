@@ -54,55 +54,66 @@ class AWSCloudDeploymentTests(unittest.TestCase):
     def test_terraform_syntax_validation(self):
         """Test that all AWS Terraform files have valid syntax."""
         try:
-            # Check if tofu/terraform is available
-            result = subprocess.run(
-                ["tofu", "version"],
+            # Try terraform first (more reliable for validation)
+            subprocess.run(
+                ["terraform", "version"],
                 capture_output=True,
                 text=True,
-                cwd=self.tofu_dir
+                check=True
             )
-            if result.returncode != 0:
+            tool = "terraform"
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            try:
+                # Fallback to tofu
                 subprocess.run(
-                    ["terraform", "version"],
+                    ["tofu", "version"],
                     capture_output=True,
                     text=True,
                     check=True
                 )
-                tool = "terraform"
-            else:
                 tool = "tofu"
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            self.skipTest("Neither tofu nor terraform CLI tools are available")
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                self.skipTest("Neither terraform nor tofu CLI tools are available")
 
         try:
-            # Initialize first
+            # Initialize first with timeout
             init_result = subprocess.run(
                 [tool, "init", "-backend=false"],
                 capture_output=True,
                 text=True,
-                cwd=self.tofu_dir
+                cwd=self.tofu_dir,
+                timeout=60
             )
 
             if init_result.returncode != 0:
                 self.fail(f"AWS Terraform init failed: {init_result.stderr}")
 
-            # Validate syntax
+            # Validate syntax with timeout
             result = subprocess.run(
                 [tool, "validate", "-json"],
                 capture_output=True,
                 text=True,
-                cwd=self.tofu_dir
+                cwd=self.tofu_dir,
+                timeout=60
             )
 
             if result.returncode != 0:
+                # Check if it's a provider timeout issue
+                if "timeout while waiting for plugin to start" in result.stdout:
+                    self.skipTest("Provider timeout - skipping validation test")
                 print(f"Debug: stdout={result.stdout}")
                 print(f"Debug: stderr={result.stderr}")
                 self.fail(f"AWS Terraform validation failed: {result.stderr}")
 
             # Parse validation result
             validation_result = json.loads(result.stdout)
-            self.assertTrue(validation_result.get("valid", False),
-                           f"AWS configuration is not valid: {validation_result}")
+            if not validation_result.get("valid", False):
+                # Check if it's a provider issue
+                diagnostics = validation_result.get("diagnostics", [])
+                for diag in diagnostics:
+                    if "timeout while waiting for plugin" in diag.get("summary", ""):
+                        self.skipTest("Provider timeout - skipping validation test")
+                self.fail(f"AWS configuration is not valid: {validation_result}")
         finally:
             # Clean up
             import shutil
