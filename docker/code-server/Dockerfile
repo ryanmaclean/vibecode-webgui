@@ -253,9 +253,9 @@ RUN pip3 install --break-system-packages 'python-lsp-server[all]' pylsp-mypy pyt
 # Install AI pair-programming CLIs for parity with KinD image
 RUN python3 -m pip install --break-system-packages --no-cache-dir 'aider-chat==0.84.0' 'goose-ai==0.9.11' 'langfuse<3'
 
-# Install additional permissively licensed shells and DevOps CLIs (optional - non-fatal)
+# Install additional permissively licensed shells and DevOps CLIs
 USER root
-RUN set -eu; \
+RUN set -eux; \
     PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}"; \
     case "$PLATFORM" in \
       linux/aarch64) PLATFORM="linux/arm64" ;; \
