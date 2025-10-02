@@ -46,3 +46,25 @@ open demos/web-interface.html
 ## Monitoring assets
 
 Datadog dashboards, values files, and supporting assets now live under `ops/monitoring/`. Import the dashboards with `datadog-ci` per `docs/DATADOG_MONITORING_CONFIGURATION.md`.
+
+## Fast OpenVSCode microVM
+
+The prebuilt OpenVSCode microVM used for instant IDE boot is packaged as a GitHub Release asset:
+
+- Release tag: [`fast-openvscode-vm-v0.1.0`](https://github.com/ryanmaclean/vibecode-webgui/releases/tag/fast-openvscode-vm-v0.1.0)
+- Archive contents: kernel (`vmlinuz-host`), initramfs, rootfs, and helper downloads.
+
+To rebuild the package locally, run:
+
+```bash
+scripts/release/package-fast-openvscode-vm.sh
+```
+
+This creates a timestamped archive in `dist/` along with a SHA256 checksum. Upload the generated files to a new release via:
+
+```bash
+gh release create fast-openvscode-vm-v<new-version> dist/fast-openvscode-vm-*.tar.gz dist/fast-openvscode-vm-*.tar.gz.sha256 \
+  --title "Fast OpenVSCode VM v<new-version>" --notes "<summary>"
+```
+
+The packaging script intentionally ignores the VM sources via `.gitignore`, so the repository remains lightweight for other collaborators.
