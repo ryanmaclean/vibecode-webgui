@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning'
+import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 import { logger } from '@/lib/logger'
 
 interface RouteParams {
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('❌ Failed to get workspace:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to get workspace',
         message: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -81,7 +81,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('❌ Failed to delete workspace:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to delete workspace',
         message: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -98,7 +98,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // For now, we'll just return the current status
     // TODO: Implement workspace updates (scaling, configuration changes)
-    
+
     const workspaceService = new WorkspaceProvisioningService()
     const workspace = await workspaceService.getWorkspaceStatus(workspaceId)
 
@@ -118,7 +118,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('❌ Failed to update workspace:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to update workspace',
         message: error instanceof Error ? error.message : 'Unknown error'
       },
