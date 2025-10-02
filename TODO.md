@@ -192,3 +192,61 @@
 
 ### Active Streams (UPDATED)
 > Archived historical coordination notes to docs/logs/AGENT_ACTIVITY_LOG.md#2025-10-01-coordination-archive.
+
+## Agent Tasks - High Priority (2025-10-01 19:46 PDT)
+
+### Agent 1: Docker Build Fix
+**Priority**: CRITICAL
+**Time**: 2-3 hours
+- [ ] Fix Dockerfile Go installation (currently failing)
+- [ ] Fix cosign checksum verification
+- [ ] Test minimal profile build end-to-end
+- [ ] Once working, build all 5 profiles (minimal, standard, ai, web, full)
+- [ ] Verify images in GHCR
+- [ ] Close #453, #454
+
+### Agent 2: Datadog Consolidation
+**Priority**: HIGH
+**Time**: 1-2 hours
+- [ ] Complete tracer.init() consolidation in instrumentation.ts
+- [ ] Remove duplicate init from health-monitoring.ts
+- [ ] Remove duplicate init from enhanced-datadog-integration.ts
+- [ ] Add unified service tagging (DD_ENV, DD_VERSION, DD_GIT_COMMIT_SHA)
+- [ ] Test that tracing still works
+- [ ] Close #464
+
+### Agent 3: Modern CLI Tools
+**Priority**: MEDIUM
+**Time**: 1 hour
+- [ ] Add helix editor to Dockerfile (10MB)
+- [ ] Add micro editor to Dockerfile (5MB)
+- [ ] Add lazygit to Dockerfile (15MB)
+- [ ] Add bat, eza, dust to Dockerfile
+- [ ] Test tools work in container
+- [ ] Update README with new tools
+- [ ] Close #463
+
+### Agent 4: Production Minification
+**Priority**: HIGH
+**Time**: 30 min
+- [ ] Enable minification in next.config.js
+- [ ] Test build size reduction
+- [ ] Verify production build works
+- [ ] Document bundle size improvement
+- [ ] Close #442
+
+### Agent 5: Documentation Updates
+**Priority**: MEDIUM
+**Time**: 30 min
+- [ ] Create user documentation (#433)
+- [ ] Update deployment docs (#436)
+- [ ] Add troubleshooting guide (#461)
+- [ ] Close documentation issues
+
+### Agent 6: Security Enhancements
+**Priority**: MEDIUM
+**Time**: 1 hour
+- [ ] Add Zod validation to critical API routes (#462)
+- [ ] Complete security audit tasks (#457)
+- [ ] Implement branch protection (#455)
+- [ ] Document security improvements
