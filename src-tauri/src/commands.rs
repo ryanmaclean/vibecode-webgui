@@ -1,4 +1,5 @@
 use crate::docker;
+use crate::mdns::{DiscoveredService, VibeCodeService};
 use tauri::command;
 
 #[command]
@@ -72,4 +73,32 @@ pub async fn get_docker_status() -> Result<serde_json::Value, String> {
 #[command]
 pub async fn get_docker_info() -> Result<serde_json::Value, String> {
     docker::get_docker_info().await
+}
+
+// mDNS/Bonjour Service Discovery Commands
+
+#[command]
+pub async fn start_mdns_service(user_name: String, port: u16) -> Result<String, String> {
+    let service = VibeCodeService::new(&user_name).map_err(|e| e.to_string())?;
+
+    service.advertise(port).map_err(|e| e.to_string())?;
+
+    Ok(format!("Advertising as: {}'s VibeCode on port {}", user_name, port))
+}
+
+#[command]
+pub async fn discover_vibecode_sessions() -> Result<Vec<DiscoveredService>, String> {
+    // Create a temporary service instance for discovery
+    let service = VibeCodeService::new("discovery").map_err(|e| e.to_string())?;
+
+    service.discover().map_err(|e| e.to_string())
+}
+
+#[command]
+pub async fn stop_mdns_service(user_name: String) -> Result<String, String> {
+    let service = VibeCodeService::new(&user_name).map_err(|e| e.to_string())?;
+
+    service.shutdown().map_err(|e| e.to_string())?;
+
+    Ok("mDNS service stopped".to_string())
 }
