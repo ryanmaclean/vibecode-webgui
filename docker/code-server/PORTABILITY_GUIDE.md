@@ -390,7 +390,7 @@ echo "📦 Creating offline bundle"
 
 # Copy deployment files
 cp docker-compose.yml "${BUNDLE_DIR}/"
-cp .env.example "${BUNDLE_DIR}/.env.template"
+cp .env.example "${BUNDLE_DIR}/"
 cp -r k8s "${BUNDLE_DIR}/"
 cp docker/code-server/*.md "${BUNDLE_DIR}/"
 
@@ -405,16 +405,16 @@ echo "🚀 Installing VibeCode Code-Server (Offline)"
 ./scripts/import-offline.sh images
 
 # Configure environment
-if [ ! -f .env ]; then
-  echo "Creating .env from template..."
-  cp .env.template .env
-  echo "⚠️  Please edit .env with your configuration"
+if [ ! -f .env.local ]; then
+  echo "Creating .env.local from template..."
+  cp .env.example .env.local
+  echo "⚠️  Please edit .env.local with your configuration"
 fi
 
 echo "✅ Installation complete!"
 echo ""
 echo "Next steps:"
-echo "1. Edit .env with your configuration"
+echo "1. Edit .env.local with your configuration"
 echo "2. Run: docker compose up -d"
 echo "3. Access: http://localhost:8765"
 EOF
