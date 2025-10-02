@@ -81,70 +81,70 @@ type LegacyCredential = {
 const RAW_LEGACY_CREDENTIALS: LegacyCredential[] = [
   {
     email: 'admin@vibecode.dev',
-    passwordHash: '$2b$12$qo0EN.rzLm0zbOXZdboWjez7ZKaw2GkLrbYchTbw03dFe/uccMiAi',
+    passwordHash: '$2b$12$JXIxHKb5sd8aZDt2pQNHhujlkBoXGXvJBfdJgOZ1uo.WAXN3mKFwK',
     id: 'legacy-admin',
     name: 'Admin User',
     role: 'admin'
   },
   {
     email: 'lead@vibecode.dev',
-    passwordHash: '$2b$12$g697JibrvwAvIs1fXs1KBuTPO5NKLB.KVFTMGohMyZmk3uTxwAUn.',
+    passwordHash: '$2b$12$8s/hbVhcb/mddOBDmQbrou/bEZYO.ZAkyEacFBzrctq7Y/4VJeVCW',
     id: 'legacy-lead',
     name: 'Lead User',
     role: 'admin'
   },
   {
     email: 'developer@vibecode.dev',
-    passwordHash: '$2b$12$n04yVkPPN7Na0HIxXrSHwONnhjxxP3YAXra.K2TrC0y7n5kGi5bQG',
+    passwordHash: '$2b$12$r4Xn9ELPKKmRGpxTIyOI/uB1mlJAIn7xvsWNVcvl46eJzIxDbLQmq',
     id: 'legacy-developer',
     name: 'Developer User',
     role: 'developer'
   },
   {
     email: 'frontend@vibecode.dev',
-    passwordHash: '$2b$12$kG2ubaHRQdQVyK5tzMSyr.Yo57DdkzsNyZDcOqBr2kzENynktfecW',
+    passwordHash: '$2b$12$LRBZBNR5.yxr7htTzN9YOORMf0v/p/0FSINKWZAc6Ycsqf1pvZF3a',
     id: 'legacy-frontend',
     name: 'Frontend User',
     role: 'user'
   },
   {
     email: 'backend@vibecode.dev',
-    passwordHash: '$2b$12$WIj9UARAHX2ito8jL5oPI.h/XiKHf9PmyJFuTelt7SHE6ONsVXZKO',
+    passwordHash: '$2b$12$x1Sv.4HYUjhDrDl/SOMEEeupl5YkhkmLXrfQOueHd0kiiojNQiG/u',
     id: 'legacy-backend',
     name: 'Backend User',
     role: 'user'
   },
   {
     email: 'fullstack@vibecode.dev',
-    passwordHash: '$2b$12$5xWu7e.3ldu8YjlnfXmBSenLkbajVGGEl1EVYWzpnm.nGRSsE9geC',
+    passwordHash: '$2b$12$Ta7FBadbTaW8Wkfho/6IS.K.QfpsxLZOBgWvMBBfuaNU/0QFK7baa',
     id: 'legacy-fullstack',
     name: 'Fullstack User',
     role: 'user'
   },
   {
     email: 'designer@vibecode.dev',
-    passwordHash: '$2b$12$LwAbz1hNgH9ngbdvPzYB0OdVGI8rqEap6k5/3jy1F4l5DZbCPCYru',
+    passwordHash: '$2b$12$opn030TNnwgVqH4Sx3dOOusQLNGXhAOfyrBMch3ToRkJfpBNMq9si',
     id: 'legacy-designer',
     name: 'Designer User',
     role: 'user'
   },
   {
     email: 'tester@vibecode.dev',
-    passwordHash: '$2b$12$PFf2UcrEmunxK/KIZRyyX.vz4kgbm5SnVa5LMPEzzHc93f.kBQf2.',
+    passwordHash: '$2b$12$U1YlGAYFkH9Wq9PK3QEfaeydHGu0JwC2DOhdxVd7H1T9xz9VQ/xke',
     id: 'legacy-tester',
     name: 'Tester User',
     role: 'user'
   },
   {
     email: 'devops@vibecode.dev',
-    passwordHash: '$2b$12$/a3ckShFnrkGlDwQECpNqeCTVw5dfS9r8UU6b6OLFmq6gVxaWz7Pa',
+    passwordHash: '$2b$12$eF2PIhYtOTP00qhe.Fx1beFv/oN2mndValdjICgh7zoQpPq2T6F0a',
     id: 'legacy-devops',
     name: 'DevOps User',
     role: 'user'
   },
   {
     email: 'security@vibecode.dev',
-    passwordHash: '$2b$12$cofOXkrYmKoxIs9pyLRDBuxsb/GyRSrJpFBWFiBkiGdN0nMcXwxSa',
+    passwordHash: '$2b$12$LbKqHWaLHDzcMXpi4iTAG./bQAfiZG10C9BqeLXcTe9yT1F2QR/Lm',
     id: 'legacy-security',
     name: 'Security User',
     role: 'user'
