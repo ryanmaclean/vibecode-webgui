@@ -5,6 +5,23 @@ All notable changes to the VibeCode code-server Docker images will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2025-10-01
+
+### Removed
+
+- **Emacs**: Removed from all profiles for GPL license compliance
+  - Maintains permissive license-only policy (MIT, Apache 2.0, BSD)
+  - vim and neovim remain available as terminal editor alternatives
+
+### Changed
+
+- Updated all documentation to reference v1.1.1 tags
+- All images now fully GPL-free with permissive licenses only
+
+### Security
+
+- **License Compliance**: Verified all remaining tools use only permissive licenses
+
 ## [1.1.0] - 2025-10-01
 
 ### Added
