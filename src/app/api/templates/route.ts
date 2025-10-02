@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 interface ProjectTemplate {
   id: string
@@ -111,7 +112,7 @@ function App() {
   return (
     <div className="app">
       <h1>Todo App</h1>
-      
+
       <div className="input-section">
         <input
           type="text"
@@ -125,19 +126,19 @@ function App() {
       </div>
 
       <div className="filter-section">
-        <button 
+        <button
           onClick={() => setFilter('all')}
           className={filter === 'all' ? 'active' : ''}
         >
           All ({todos.length})
         </button>
-        <button 
+        <button
           onClick={() => setFilter('active')}
           className={filter === 'active' ? 'active' : ''}
         >
           Active ({todos.filter(t => !t.completed).length})
         </button>
-        <button 
+        <button
           onClick={() => setFilter('completed')}
           className={filter === 'completed' ? 'active' : ''}
         >
@@ -154,7 +155,7 @@ function App() {
               onChange={() => toggleTodo(todo.id)}
             />
             <span className="todo-text">{todo.text}</span>
-            <button 
+            <button
               onClick={() => deleteTodo(todo.id)}
               className="delete-button"
             >
@@ -166,7 +167,7 @@ function App() {
 
       {filteredTodos.length === 0 && (
         <p className="empty-message">
-          {filter === 'all' ? 'No todos yet. Add one above!' : 
+          {filter === 'all' ? 'No todos yet. Add one above!' :
            filter === 'active' ? 'No active todos!' : 'No completed todos!'}
         </p>
       )}
@@ -596,6 +597,10 @@ Happy coding! 🐍`
 
 export async function GET() {
   try {
+    logger.debug('Fetching templates list', {
+      templateCount: templates.length
+    })
+
     return NextResponse.json({
       templates,
       count: templates.length,
@@ -606,7 +611,10 @@ export async function GET() {
       }
     })
   } catch (error) {
-    console.error('Templates API error:', error)
+    logger.error('Templates API error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     return NextResponse.json(
       { error: 'Failed to fetch templates' },
       { status: 500 }
@@ -615,6 +623,7 @@ export async function GET() {
 }
 
 export async function POST() {
+  logger.warn('Template creation endpoint called but not implemented')
   return NextResponse.json(
     { error: 'Template creation not implemented yet' },
     { status: 501 }
