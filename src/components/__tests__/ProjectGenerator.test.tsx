@@ -8,7 +8,9 @@ jest.mock('@/hooks/useProjectGenerator');
 
 const mockUseProjectGenerator = useProjectGenerator as jest.MockedFunction<typeof useProjectGenerator>;
 
-describe.skip('ProjectGenerator - Complex Mocking Issues', () => {
+describe.skip('ProjectGenerator - Needs Test Updates', () => {
+  // Tests need to be updated to match the current component structure
+  // The component has been refactored and the test selectors are outdated
   const mockGenerateProject = jest.fn();
   const mockCancelGeneration = jest.fn();
   const mockUpdateProgress = jest.fn();

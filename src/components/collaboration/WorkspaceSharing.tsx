@@ -10,6 +10,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Share2,
@@ -255,12 +256,14 @@ export default function WorkspaceSharing({
         <div className="flex items-center gap-3">
           {/* Avatar */}
           <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium overflow-hidden">
               {member.userAvatar ? (
-                <img
+                <Image
                   src={member.userAvatar}
                   alt={member.userName}
-                  className="w-full h-full rounded-full object-cover"
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
                 />
               ) : (
                 member.userName.charAt(0).toUpperCase()
@@ -415,10 +418,12 @@ export default function WorkspaceSharing({
                 title={member.userName}
               >
                 {member.userAvatar ? (
-                  <img
+                  <Image
                     src={member.userAvatar}
                     alt={member.userName}
-                    className="w-full h-full rounded-full object-cover"
+                    width={24}
+                    height={24}
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   member.userName.charAt(0).toUpperCase()
