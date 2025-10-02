@@ -440,11 +440,15 @@ RUN set -eux; \
     chmod 755 /usr/local/bin/just; \
     rm -rf /tmp/just.tar.gz /tmp/just-*; \
     echo "Installing stern ${STERN_VERSION}"; \
-    curl -fsSL "https://github.com/stern/stern/releases/download/v${STERN_VERSION}/stern_${STERN_VERSION}_${STERN_ARCH}.tar.gz" -o /tmp/stern.tar.gz; \
+    STERN_ARCHIVE="stern_${STERN_VERSION}_${STERN_ARCH}.tar.gz"; \
+    curl -fsSL "https://github.com/stern/stern/releases/download/v${STERN_VERSION}/${STERN_ARCHIVE}" -o /tmp/stern.tar.gz; \
+    curl -fsSL "https://github.com/stern/stern/releases/download/v${STERN_VERSION}/checksums.txt" -o /tmp/stern.checksums.txt; \
+    grep "${STERN_ARCHIVE}" /tmp/stern.checksums.txt | awk '{print $1 "  /tmp/stern.tar.gz"}' > /tmp/stern.sha256; \
+    sha256sum --check --strict /tmp/stern.sha256; \
     tar -xzf /tmp/stern.tar.gz -C /tmp; \
     find /tmp -type f -name "stern" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/stern; \
     chmod 755 /usr/local/bin/stern; \
-    rm -rf /tmp/stern.tar.gz /tmp/stern*; \
+    rm -rf /tmp/stern.tar.gz /tmp/stern* /tmp/stern.checksums.txt /tmp/stern.sha256; \
     echo "Installing helmfile ${HELMFILE_VERSION}"; \
     curl -fsSL "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_${HELMFILE_ARCH}.tar.gz" -o /tmp/helmfile.tar.gz; \
     tar -xzf /tmp/helmfile.tar.gz -C /tmp; \
