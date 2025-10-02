@@ -3,7 +3,7 @@
 # Architecture: ARM64/AMD64 multi-platform
 # Profile: minimal (5 essential extensions + Theia AI)
 
-FROM theiaide/theia:1.60.0
+FROM elswork/theia:latest
 
 LABEL org.opencontainers.image.title="VibeCode Theia Minimal" \
       org.opencontainers.image.description="Theia IDE with AI assistants and minimal extensions" \

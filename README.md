@@ -1,6 +1,21 @@
 # VibeCode
-
 AI-powered development platform. Next.js 15 + Monaco 0.53.0 + pgvector + Kubernetes.
+
+## Quick Start
+
+```bash
+# macOS: Native Apple Virtualization.framework
+./scripts/macos-vm/install.sh
+./bin/vibecode-vm
+
+# Linux ARM64 (requires KVM)
+curl -sL https://github.com/ryanmaclean/vibecode-webgui/releases/download/cloud-hypervisor-v1.0.0-alpha/vibecode-cloud-hypervisor-binaries-v1.0.0.tar.gz | tar xz
+sudo ./deploy-production.sh
+sudo systemctl start vibecode-vm
+
+# Docker (any platform)
+docker run -d -p 3000:3000 vibecode/webgui:latest
+```
 
 ## Tech Stack
 
@@ -13,6 +28,47 @@ AI-powered development platform. Next.js 15 + Monaco 0.53.0 + pgvector + Kuberne
 - **Testing:** Comprehensive offline cloud infrastructure testing framework
 
 ## Quick Install
+
+### macOS Native VM (Recommended)
+
+**Requirements**: macOS 13+ (Ventura), Apple Silicon or Intel
+
+```bash
+# Clone repository
+git clone https://github.com/ryanmaclean/vibecode-webgui
+cd vibecode-webgui
+
+# One-command install (downloads kernel, builds binary, configures service)
+./scripts/macos-vm/install.sh
+
+# Start VM
+./bin/vibecode-vm
+```
+
+**What it does**:
+- Downloads Linux kernel (34MB) and initramfs (8.3MB) to `~/.vibecode/vm/`
+- Builds native Swift binary using Virtualization.framework
+- Creates 20GB disk image for VM
+- Configures launchd service for auto-start
+
+**Access**: Open http://localhost:8080 for code-server
+
+**Service management**:
+```bash
+# Start as background service
+launchctl load ~/Library/LaunchAgents/com.vibecode.vm.plist
+launchctl start com.vibecode.vm
+
+# Stop service
+launchctl stop com.vibecode.vm
+
+# View logs
+tail -f ~/.vibecode/vm/stdout.log
+```
+
+**Performance**: Sub-2-second boot, 4GB RAM, 4 CPU cores, native Apple hypervisor
+
+See [macos-vm/README.md](macos-vm/README.md) for troubleshooting and configuration.
 
 ### Docker
 ```bash

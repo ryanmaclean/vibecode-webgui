@@ -1,0 +1,143 @@
+{
+  "$schema": "./kernel-parameters.schema.json",
+  "version": "1.0.0",
+  "description": "Apple Silicon M-Series kernel optimization parameters",
+  "profiles": {
+    "default": {
+      "name": "Default - Balanced Performance",
+      "scheduler": {
+        "cluster_aware": true,
+        "governor": "schedutil",
+        "cpu_isolation": "1-3",
+        "rcu_nocbs": "1-3"
+      },
+      "memory": {
+        "transparent_hugepages": "always",
+        "thp_defrag": "defer+madvise",
+        "cma_size": "512M",
+        "swappiness": 10
+      },
+      "io_scheduler": {
+        "default": "bfq",
+        "multiqueue": true,
+        "nvme_multipath": true
+      },
+      "virtio": {
+        "vsock_transport": "vhost",
+        "zero_copy_tx": true
+      },
+      "thermal": {
+        "boost_enabled": true,
+        "max_cstate": 1
+      },
+      "security": {
+        "kpti": true,
+        "spectre_v2": "on",
+        "spec_store_bypass": "on"
+      },
+      "performance": {
+        "tickless": true,
+        "nohz_full": true
+      }
+    },
+    "ml_acceleration": {
+      "name": "ML Acceleration - Neural Engine Compatible",
+      "extends": "default",
+      "arm64": {
+        "disable_pointer_auth": true,
+        "disable_bti": true
+      },
+      "scheduler": {
+        "governor": "performance"
+      },
+      "memory": {
+        "transparent_hugepages": "always",
+        "cma_size": "1024M"
+      }
+    },
+    "power_efficient": {
+      "name": "Power Efficient - Maximize Battery Life",
+      "scheduler": {
+        "cluster_aware": true,
+        "governor": "powersave",
+        "cpu_isolation": null,
+        "rcu_nocbs": null
+      },
+      "memory": {
+        "transparent_hugepages": "madvise",
+        "thp_defrag": "never",
+        "cma_size": "256M",
+        "swappiness": 60
+      },
+      "thermal": {
+        "boost_enabled": false,
+        "max_cstate": 9
+      },
+      "performance": {
+        "tickless": true,
+        "nohz_full": false
+      }
+    },
+    "high_performance": {
+      "name": "High Performance - Maximum Throughput",
+      "scheduler": {
+        "cluster_aware": true,
+        "governor": "performance",
+        "cpu_isolation": "1-7",
+        "rcu_nocbs": "1-7"
+      },
+      "memory": {
+        "transparent_hugepages": "always",
+        "thp_defrag": "always",
+        "cma_size": "2048M",
+        "swappiness": 0
+      },
+      "io_scheduler": {
+        "default": "none",
+        "multiqueue": true,
+        "nvme_multipath": true
+      },
+      "thermal": {
+        "boost_enabled": true,
+        "max_cstate": 0
+      },
+      "performance": {
+        "tickless": false,
+        "nohz_full": false
+      }
+    }
+  },
+  "hardware_specific": {
+    "m1": {
+      "cpu_cores": {
+        "performance": [0, 1, 2, 3],
+        "efficiency": [4, 5, 6, 7]
+      },
+      "recommended_profile": "default"
+    },
+    "m2": {
+      "cpu_cores": {
+        "performance": [0, 1, 2, 3, 4, 5, 6, 7],
+        "efficiency": [8, 9, 10, 11]
+      },
+      "recommended_profile": "default"
+    },
+    "m3": {
+      "cpu_cores": {
+        "performance": [0, 1, 2, 3, 4, 5, 6, 7],
+        "efficiency": [8, 9, 10, 11]
+      },
+      "recommended_profile": "high_performance"
+    }
+  },
+  "validation": {
+    "required_kernel_version": "6.6.0",
+    "required_config_options": [
+      "CONFIG_TRANSPARENT_HUGEPAGE",
+      "CONFIG_VIRTIO_VSOCKETS",
+      "CONFIG_VHOST_VSOCK",
+      "CONFIG_SCHED_CLUSTER",
+      "CONFIG_IOSCHED_BFQ"
+    ]
+  }
+}

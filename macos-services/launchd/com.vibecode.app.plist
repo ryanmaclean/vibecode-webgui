@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- ===================================================================
+         VibeCode Menu Bar App - LaunchAgent Configuration
+         Location: ~/Library/LaunchAgents/com.vibecode.app.plist
+         Purpose: User-facing UI and session management
+         =================================================================== -->
+
+    <!-- Service Identity -->
+    <key>Label</key>
+    <string>com.vibecode.app</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Applications/VibeCode.app/Contents/MacOS/VibeCode</string>
+        <string>--background</string>
+    </array>
+
+    <!-- User Context Launch -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Keep Alive Configuration -->
+    <key>KeepAlive</key>
+    <dict>
+        <!-- Restart if crashes -->
+        <key>SuccessfulExit</key>
+        <false/>
+
+        <!-- Don't restart if user explicitly quits -->
+        <key>Crashed</key>
+        <true/>
+    </dict>
+
+    <!-- Launch only in GUI sessions (not SSH) -->
+    <key>LimitLoadToSessionType</key>
+    <array>
+        <string>Aqua</string> <!-- macOS GUI session -->
+    </array>
+
+    <!-- Process Type -->
+    <key>ProcessType</key>
+    <string>Interactive</string>
+
+    <!-- Low priority (user app) -->
+    <key>Nice</key>
+    <integer>0</integer>
+
+    <!-- Logging -->
+    <key>StandardOutPath</key>
+    <string>/tmp/vibecode-app.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/vibecode-app.error.log</string>
+
+    <!-- Environment -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>VIBECODE_UI_MODE</key>
+        <string>menubar</string>
+
+        <key>DD_SERVICE</key>
+        <string>vibecode-app</string>
+
+        <key>DD_ENV</key>
+        <string>production</string>
+    </dict>
+
+    <!-- Throttling -->
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <!-- Exit timeout (graceful shutdown) -->
+    <key>ExitTimeOut</key>
+    <integer>5</integer>
+
+    <!-- Disabled by default (user must enable) -->
+    <key>Disabled</key>
+    <false/>
+
+</dict>
+</plist>
