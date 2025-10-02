@@ -1325,8 +1325,9 @@ export default function LandingPage() {
                           isListening && "bg-green-100 text-green-600"
                         )}
                         disabled={isRecording}
+                        aria-label={isListening ? "Stop voice recognition" : "Start voice recognition"}
                       >
-                        {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                        {isListening ? <MicOff className="w-4 h-4" aria-hidden="true" /> : <Mic className="w-4 h-4" aria-hidden="true" />}
                       </Button>
                     )}
 
@@ -1341,11 +1342,12 @@ export default function LandingPage() {
                           isRecording && "bg-red-100 text-red-600"
                         )}
                         disabled={isListening}
+                        aria-label={isRecording ? "Stop audio recording" : "Start audio recording"}
                       >
-                        <Radio className="w-4 h-4" />
+                        <Radio className="w-4 h-4" aria-hidden="true" />
                       </Button>
                     )}
-                    
+
                     {/* File Upload */}
                     {currentModel?.supportsFiles && (
                       <Button
@@ -1353,11 +1355,12 @@ export default function LandingPage() {
                         size="sm"
                         onClick={() => fileInputRef.current?.click()}
                         className="p-1 h-8 w-8"
+                        aria-label="Attach file"
                       >
-                        <Paperclip className="w-4 h-4" />
+                        <Paperclip className="w-4 h-4" aria-hidden="true" />
                       </Button>
                     )}
-                    
+
                     {/* Prompt Enhancement */}
                     <Button
                       variant="ghost"
@@ -1365,8 +1368,9 @@ export default function LandingPage() {
                       onClick={enhancePrompt}
                       disabled={!input.trim() || isTyping}
                       className="p-1 h-8 w-8"
+                      aria-label="Enhance prompt with AI suggestions"
                     >
-                      <Zap className="w-4 h-4" />
+                      <Zap className="w-4 h-4" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>
