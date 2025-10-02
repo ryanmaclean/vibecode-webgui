@@ -37,3 +37,6 @@
 - Fix the HTTP reset on `/` first ([issue #552](https://github.com/ryanmaclean/vibecode-webgui/issues/552)) before chasing additional boot-time wins.
 - Automate the timing harness and build the arm64 variant via [issue #553](https://github.com/ryanmaclean/vibecode-webgui/issues/553).
 - When you add new findings, log them under `archive/agents/` so other agents can pick up the thread quickly.
+- Keep the upstream OpenVSCode tarballs out of git; if you need a fresh build, download into `fast-openvscode-vm/downloads/` and regenerate the initramfs following the doc.
+- The temporary harness uses `nc` to spot when the port is live (~0.5 s). Once HTTP is fixed, promote that into `scripts/benchmarks/vscode_microvm.sh` and emit metrics to Datadog (same flags as other benchmark scripts).
+- Consider snapshot/resume or pre-warmed guests for the “feels-native” experience after the cold-start handshake is reliable.
