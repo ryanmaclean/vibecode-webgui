@@ -1,6 +1,53 @@
 /**
- * Monitoring Metrics API Endpoint
- * Provides detailed metrics and performance data
+ * @description Monitoring Metrics API Endpoint - Provides comprehensive system metrics including CPU, memory, disk, network I/O, and business metrics. Supports both retrieval and submission of metrics data.
+ * @route GET /api/monitoring/metrics
+ * @route POST /api/monitoring/metrics
+ * @access Private (requires monitoring authentication)
+ *
+ * @param {NextRequest} request - Next.js request object with optional authentication headers
+ *
+ * @returns {Response} GET returns comprehensive metrics including:
+ *   - cpu: { usage: number } - CPU usage in milliseconds
+ *   - memory: { used: number, total: number, percentage: number } - Memory metrics in MB
+ *   - diskUsage: { used: number, total: number } - Disk usage metrics
+ *   - networkIO: { bytesIn: number, bytesOut: number } - Network I/O metrics
+ *   - activeUsers: number - Current active users
+ *   - avgResponseTime: number - Average response time in milliseconds
+ *   - errorRate: number - Error rate percentage
+ *   - uptime: number - System uptime in seconds
+ *   - business: { user_sessions: number, api_calls: number, database_queries: number, cache_hit_rate: number }
+ *
+ * @returns {Response} POST accepts metric submissions with body:
+ *   - type: 'response_time' | 'error' | 'user_activity' | 'network_io'
+ *   - data: { duration?: number, bytesIn?: number, bytesOut?: number }
+ *
+ * @example
+ * // GET Request - Retrieve current metrics
+ * GET /api/monitoring/metrics
+ * Headers: { Authorization: "Bearer <token>" }
+ *
+ * // Response
+ * {
+ *   "cpu": { "usage": 45 },
+ *   "memory": { "used": 512, "total": 2048, "percentage": 25 },
+ *   "avgResponseTime": 123,
+ *   "errorRate": 0.5,
+ *   "uptime": 86400
+ * }
+ *
+ * // POST Request - Submit response time metric
+ * POST /api/monitoring/metrics
+ * {
+ *   "type": "response_time",
+ *   "data": { "duration": 250 }
+ * }
+ *
+ * // Response
+ * { "success": true }
+ *
+ * @throws {401} Unauthorized - Missing or invalid monitoring authentication
+ * @throws {400} Invalid request - Unknown metric type or invalid payload
+ * @throws {500} Internal server error - Failed to fetch or update metrics
  */
 
 import type { NextRequest } from 'next/server'

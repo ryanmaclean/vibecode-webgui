@@ -1,6 +1,55 @@
 /**
- * Monitoring Dashboard API Endpoint
- * Provides comprehensive monitoring data and health status
+ * @description Monitoring Dashboard API - Provides comprehensive system monitoring dashboard with health checks, system metrics, terminal sessions, and configuration status. Central endpoint for operations monitoring.
+ * @route GET /api/monitoring/dashboard
+ * @access Private (requires monitoring authentication)
+ *
+ * @param {NextRequest} request - Next.js request with query parameters:
+ *   - timeframe: '15m' | '1h' | '24h' - Time range for metrics (default: '1h')
+ *   - logs: 'true' | 'false' - Include recent activity logs (default: false, dev only)
+ *
+ * @returns {Response} Returns comprehensive dashboard data:
+ *   - timestamp: string - Current timestamp
+ *   - timeframe: string - Selected timeframe
+ *   - health: { database, redis, aiService, overall } - Health check results
+ *   - system: { memory, uptime, node_version, platform } - System metrics
+ *   - sessions: { active, details } - Terminal session information
+ *   - monitoring: { datadog_configured, service, env, version } - Monitoring configuration
+ *   - activity: { recent_commands, recent_ai_requests, alerts_triggered } - Recent activity
+ *
+ * @example
+ * // GET Request - Dashboard overview
+ * GET /api/monitoring/dashboard?timeframe=1h
+ * Headers: { Authorization: "Bearer <token>" }
+ *
+ * // Response
+ * {
+ *   "timestamp": "2025-10-01T00:00:00.000Z",
+ *   "timeframe": "1h",
+ *   "health": {
+ *     "database": { "status": "healthy", "responseTime": 45 },
+ *     "redis": { "status": "healthy", "connected": true },
+ *     "aiService": { "status": "healthy", "latency": 250 },
+ *     "overall": "healthy"
+ *   },
+ *   "system": {
+ *     "memory": { "used": 512, "total": 2048, "usage_percent": 25 },
+ *     "uptime": { "seconds": 86400, "human": "1d 0h 0m" },
+ *     "node_version": "v20.9.0",
+ *     "platform": "linux"
+ *   },
+ *   "sessions": {
+ *     "active": 3,
+ *     "details": [...]
+ *   },
+ *   "monitoring": {
+ *     "datadog_configured": true,
+ *     "service": "vibecode-webgui",
+ *     "env": "production"
+ *   }
+ * }
+ *
+ * @throws {401} Unauthorized - Missing or invalid monitoring authentication
+ * @throws {500} Internal server error - Failed to fetch monitoring data
  */
 
 import { NextRequest, NextResponse } from 'next/server'

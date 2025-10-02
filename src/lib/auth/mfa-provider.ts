@@ -7,6 +7,7 @@
 import { z } from 'zod'
 import * as speakeasy from 'speakeasy'
 import * as QRCode from 'qrcode'
+import { createChildLogger } from '@/lib/logger'
 
 export interface MFADevice {
   id: string
@@ -69,6 +70,7 @@ export class MFAProvider {
   private challenges: Map<string, MFAChallenge> = new Map()
   private backupCodes: Map<string, string[]> = new Map() // userId -> codes
   private failedAttempts: Map<string, { count: number, lockedUntil?: Date }> = new Map()
+  private logger = createChildLogger({ module: 'auth', scope: 'mfa' })
 
   constructor() {
     // Cleanup expired challenges every 5 minutes
@@ -291,7 +293,15 @@ export class MFAProvider {
               d.email ? this.maskEmail(d.email) : undefined
     }))
 
-    this.logger.info('MFA challenge created', { userId, challengeId, challengeType })
+    const challengeLog = {
+      userId,
+      challengeId,
+      challengeType: challenge.challengeType,
+      deviceId: selectedDevice.id,
+      deviceType: selectedDevice.type,
+    }
+
+    this.logger.info('MFA challenge created', challengeLog)
 
     return {
       challengeId,
@@ -335,6 +345,9 @@ export class MFAProvider {
         this.logger.info('MFA verification successful via backup code', {
           userId: challenge.userId,
           challengeId,
+          deviceId: challenge.deviceId,
+          factor: 'backup',
+          remainingBackupCodes,
         })
         
         return {
@@ -375,7 +388,7 @@ export class MFAProvider {
       this.logger.info('MFA verification successful', {
         userId: challenge.userId,
         challengeId,
-        deviceId,
+        deviceId: device.id,
         deviceType: device.type,
       })
       
@@ -390,6 +403,8 @@ export class MFAProvider {
       this.logger.warn('MFA verification failed', {
         userId: challenge.userId,
         challengeId,
+        deviceId: challenge.deviceId,
+        deviceType: device.type,
         attempts: challenge.attempts,
         maxAttempts: challenge.maxAttempts,
       })

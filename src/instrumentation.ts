@@ -3,6 +3,8 @@
  * Initializes Datadog tracing exactly once when running in the Node.js runtime.
  */
 
+type NodeCreateRequire = (typeof import('module'))['createRequire']
+let requireModule: ReturnType<NodeCreateRequire> | null = null
 let initializationPromise: Promise<void> | null = null
 
 const isNodeRuntime = () => !process.env.NEXT_RUNTIME || process.env.NEXT_RUNTIME === 'nodejs'
@@ -31,6 +33,28 @@ async function initializeDatadogTracer() {
     return
   }
 
+  if (!requireModule) {
+    try {
+      const { createRequire } = await import(/* webpackIgnore: true */ 'node:module')
+      requireModule = createRequire(import.meta.url)
+    } catch (error) {
+      console.error('❌ Datadog tracer initialization failed', error)
+      return
+    }
+  }
+
+  try {
+    requireModule!.resolve('dd-trace')
+  } catch (error) {
+    if (isModuleNotFoundError(error, 'dd-trace')) {
+      console.warn('⚠️ dd-trace not installed; skipping Datadog instrumentation')
+      return
+    }
+
+    console.error('❌ Datadog tracer initialization failed', error)
+    return
+  }
+
   try {
     const tracerModule = await import('dd-trace')
     const tracer = tracerModule.default
@@ -50,11 +74,6 @@ async function initializeDatadogTracer() {
 
     console.log('✅ Datadog tracer initialized in instrumentation.ts')
   } catch (error) {
-    if (isModuleNotFoundError(error, 'dd-trace')) {
-      console.warn('⚠️ dd-trace not installed; skipping Datadog instrumentation')
-      return
-    }
-
     console.error('❌ Datadog tracer initialization failed', error)
   }
 }

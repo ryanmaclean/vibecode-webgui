@@ -1,6 +1,68 @@
 /**
- * Real User Monitoring (RUM) API Endpoint
- * Provides RUM data collection and analysis
+ * @description Real User Monitoring (RUM) API - Provides RUM configuration, health status, and client-side analytics tracking. Supports session replay, user interactions, web vitals, and feature usage tracking for comprehensive user experience monitoring.
+ * @route GET /api/monitoring/rum
+ * @route POST /api/monitoring/rum
+ * @access Public (client-side RUM collection)
+ *
+ * @param {NextRequest} request - Next.js request with query parameters:
+ *   - action: 'config' | 'health' | 'features' - Action to perform (GET only)
+ *
+ * @returns {Response} GET with action=config returns RUM configuration:
+ *   - rum: { enabled, applicationId, site, service, env, version, features, sampling } - RUM config
+ *   - timestamp: string - Current timestamp
+ *   - status: 'success' - Request status
+ *
+ * @returns {Response} GET with action=health returns RUM health status:
+ *   - healthy: boolean - Configuration status
+ *   - status: 'configured' | 'missing-config' - Configuration state
+ *   - configuration: { hasApplicationId, hasClientToken, site } - Config details
+ *   - features: { sessionReplay, userTracking, performanceMonitoring, errorTracking } - Feature status
+ *
+ * @returns {Response} GET with action=features returns available features:
+ *   - features: { [key]: { enabled, description }} - RUM feature catalog
+ *
+ * @returns {Response} POST tracks RUM events with body:
+ *   - action: 'track_conversion' | 'track_feature_usage' | 'track_user_journey' | 'track_performance'
+ *   - data: { type, value, userId, feature, flow, step, metric, context } - Event data
+ *
+ * @example
+ * // GET Request - RUM configuration
+ * GET /api/monitoring/rum?action=config
+ *
+ * // Response
+ * {
+ *   "rum": {
+ *     "enabled": true,
+ *     "applicationId": "abc123",
+ *     "site": "datadoghq.com",
+ *     "service": "vibecode-webgui",
+ *     "features": {
+ *       "sessionReplay": true,
+ *       "userInteractions": true,
+ *       "webVitals": true
+ *     }
+ *   }
+ * }
+ *
+ * // POST Request - Track conversion
+ * POST /api/monitoring/rum
+ * {
+ *   "action": "track_conversion",
+ *   "data": { "type": "signup", "value": 1, "userId": "user_123" }
+ * }
+ *
+ * // Response
+ * { "success": true, "message": "Conversion tracked successfully" }
+ *
+ * // POST Request - Track feature usage
+ * POST /api/monitoring/rum
+ * {
+ *   "action": "track_feature_usage",
+ *   "data": { "feature": "code_editor", "action": "save", "userId": "user_123" }
+ * }
+ *
+ * @throws {400} Invalid action - Unknown action type
+ * @throws {500} Internal server error - RUM API or tracking error
  */
 
 import { NextRequest, NextResponse } from 'next/server'
