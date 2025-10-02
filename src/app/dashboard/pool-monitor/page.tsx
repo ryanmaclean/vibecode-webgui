@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AlertLevel } from '@/lib/db/connection-pool-monitor';
+import { DashboardWidgetGridSkeleton, TableWidgetSkeleton, ListWidgetSkeleton } from '@/components/skeletons';
 
 interface PoolStatus {
   size: number;
@@ -187,11 +188,34 @@ export default function PoolMonitorDashboard() {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl font-semibold text-gray-900">Connection Pool Monitor</h1>
-          <div className="mt-4 p-4 rounded-md bg-white shadow">
-            <div className="flex justify-center items-center h-32">
-              <p className="text-gray-500">Loading monitoring data...</p>
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-semibold text-gray-900">Connection Pool Monitor</h1>
+            <div className="flex space-x-4 items-center">
+              <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-9 w-20 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-9 w-32 bg-gray-200 rounded animate-pulse"></div>
             </div>
+          </div>
+
+          {/* Summary Cards Skeleton */}
+          <DashboardWidgetGridSkeleton count={4} />
+
+          {/* Pool Status Skeleton */}
+          <div className="mt-8">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Connection Pools</h2>
+            <ListWidgetSkeleton items={3} />
+          </div>
+
+          {/* Alerts Skeleton */}
+          <div className="mt-8">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Alerts</h2>
+            <ListWidgetSkeleton items={4} />
+          </div>
+
+          {/* Recommendations Skeleton */}
+          <div className="mt-8">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Recommendations</h2>
+            <ListWidgetSkeleton items={2} />
           </div>
         </div>
       </div>

@@ -2,11 +2,7 @@
  * Deployment tools for MCP
  */
 
-interface DeployProjectArgs {
-  workspaceId: string
-  environment: string
-  buildCommand?: string
-}
+import type { DeployProjectArgs } from '../types.js';
 
 export async function deployProject(args: DeployProjectArgs) {
   const { workspaceId, environment, buildCommand } = args;
