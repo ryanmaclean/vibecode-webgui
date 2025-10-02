@@ -102,27 +102,16 @@ jobs:
           profile="${{ matrix.profile }}"
           owner="${{ github.repository_owner }}"
           
-          # GHCR tags
-          ghcr_tags="ghcr.io/${owner}/${{ env.IMAGE_NAME }}:${version}-${profile}"
-          ghcr_tags="${ghcr_tags},ghcr.io/${owner}/${{ env.IMAGE_NAME }}:${profile}"
+          # GHCR tags only for now
+          tags="ghcr.io/${owner}/${{ env.IMAGE_NAME }}:${version}-${profile},ghcr.io/${owner}/${{ env.IMAGE_NAME }}:${profile}"
           
-          # Docker Hub tags
-          dockerhub_tags="${owner}/${{ env.IMAGE_NAME }}:${version}-${profile}"
-          dockerhub_tags="${dockerhub_tags},${owner}/${{ env.IMAGE_NAME }}:${profile}"
-          
-          # Special handling for 'full' profile (also tag as 'latest')
+          # Special handling for 'full' profile
           if [ "$profile" = "full" ]; then
-            ghcr_tags="${ghcr_tags},ghcr.io/${owner}/${{ env.IMAGE_NAME }}:${version}"
-            ghcr_tags="${ghcr_tags},ghcr.io/${owner}/${{ env.IMAGE_NAME }}:latest"
-            dockerhub_tags="${dockerhub_tags},${owner}/${{ env.IMAGE_NAME }}:${version}"
-            dockerhub_tags="${dockerhub_tags},${owner}/${{ env.IMAGE_NAME }}:latest"
+            tags="${tags},ghcr.io/${owner}/${{ env.IMAGE_NAME }}:${version},ghcr.io/${owner}/${{ env.IMAGE_NAME }}:latest"
           fi
           
-          # Combine all tags
-          all_tags="${ghcr_tags},${dockerhub_tags}"
-          
-          echo "tags=$all_tags" >> "$GITHUB_OUTPUT"
-          echo "Tags for $profile: $all_tags"
+          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+          echo "Tags: $tags"
 
       - name: Build and push ${{ matrix.profile }} profile
         id: build
