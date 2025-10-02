@@ -61,6 +61,9 @@ const datadogStubAliases = {
   '@opentelemetry/exporter-prometheus': require.resolve('./src/stubs/opentelemetry-exporter-prometheus.js'),
   '@opentelemetry/resources': require.resolve('./src/stubs/opentelemetry-resources.js'),
   '@opentelemetry/semantic-conventions': require.resolve('./src/stubs/opentelemetry-semantic-conventions.js'),
+  '@opentelemetry/api': require.resolve('./src/stubs/opentelemetry-api.js'),
+  '@opentelemetry/core': require.resolve('./src/stubs/opentelemetry-core.js'),
+  '@opentelemetry/instrumentation': require.resolve('./src/stubs/opentelemetry-instrumentation.js'),
 }
 
 const serverExternalPackages = [
