@@ -221,7 +221,8 @@
     "weaviate-ts-client": "^2.2.0",
     "winston": "3.17.0",
     "ws": "^8.18.3",
-    "zod": "3.25.76"
+    "zod": "3.25.76",
+    "zustand": "4.5.7"
   },
   "overrides": {
     "@vercel/postgres": "^0.10.0",

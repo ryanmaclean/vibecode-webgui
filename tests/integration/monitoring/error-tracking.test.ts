@@ -6,8 +6,8 @@
  */
 
 import { logger } from '@/lib/logger';
-import { trackError, trackApiError, trackDatabaseError, trackAuthError, trackValidationError, trackPerformanceIssue } from './error-tracking';
-import { createComponentErrorTracker, DatabaseErrorTracker, AuthErrorTracker, FileErrorTracker, AIErrorTracker } from './error-tracking-utils';
+import { trackError, trackApiError, trackDatabaseError, trackAuthError, trackValidationError, trackPerformanceIssue } from '@/lib/monitoring/error-tracking';
+import { createComponentErrorTracker, DatabaseErrorTracker, AuthErrorTracker, FileErrorTracker, AIErrorTracker } from '@/lib/monitoring/error-tracking-utils';
 
 // Test configuration
 const TEST_CONFIG = {

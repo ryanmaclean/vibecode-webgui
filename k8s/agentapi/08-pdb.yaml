@@ -1,0 +1,13 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: code-server-workspace-pdb
+  namespace: vibecode-platform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: code-server
+      component: workspace
+
+  unhealthyPodEvictionPolicy: IfHealthyBudget
