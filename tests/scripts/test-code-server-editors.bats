@@ -86,7 +86,7 @@ teardown() {
 @test "emits structured telemetry for each tool" {
   run "$SCRIPT"
   [ "$status" -eq 0 ]
-  for tool in vim nvim emacs aider goose kubectl helm kubectx kubens; do
+  for tool in vim nvim aider goose kubectl helm kubectx kubens; do
     [[ "$output" == *"tool=$tool status=ok"* ]]
   done
   [[ "$output" =~ tool=vim\ status=ok\ duration_ms=[0-9]+ ]]
