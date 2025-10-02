@@ -85,7 +85,7 @@ ssh snas "docker pull ryanmaclean/vibecode-codeserver:1.1.0-standard"
 ```
 vim: 9.0
 neovim: 0.7.2
-emacs: 28.2
+
 aider: 0.84.0
 goose: latest
 kubectl: 1.31.1
@@ -124,7 +124,7 @@ k9s: 0.50.13
 ```bash
 docker pull ryanmaclean/vibecode-codeserver:standard
 docker run -it --rm ryanmaclean/vibecode-codeserver:standard bash -c "
-  vim --version && nvim --version && emacs --version && 
+  vim --version && nvim --version && 
   aider --version && goose -version
 "
 ```
