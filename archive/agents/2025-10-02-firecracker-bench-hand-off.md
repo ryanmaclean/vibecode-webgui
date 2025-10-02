@@ -12,6 +12,7 @@
 - `scripts/benchmarks/emit_to_datadog.py` — consumes JSON results and sends metrics (or dry-run) to DogStatsD.
 - `scripts/benchmarks/_dogstatsd.py` — shared minimal client + helpers.
 - Firecracker resources staged in `scripts/benchmarks/firecracker/` with `.gitignore` to keep binaries/rootfs local.
+- Fast OpenVSCode microVM release (`fast-openvscode-vm-v0.1.0`) published with rebuild script `scripts/release/package-fast-openvscode-vm.sh` and instructions in `demos/README.md`.
 
 ## Open Work / Next Steps
 1. Configure local/CI runs to point at Datadog Agent and verify metrics ingestion.
