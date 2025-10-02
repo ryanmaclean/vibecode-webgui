@@ -86,10 +86,14 @@ RUN set -eux; \
       "linux/arm64") ARCH=Linux_arm64 ;; \
       *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
     esac; \
-    curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_${ARCH}.tar.gz" -o /tmp/lazygit.tar.gz; \
+    LAZYGIT_ARCHIVE="lazygit_${LAZYGIT_VERSION}_${ARCH}.tar.gz"; \
+    curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/${LAZYGIT_ARCHIVE}" -o /tmp/lazygit.tar.gz; \
+    curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/checksums.txt" -o /tmp/lazygit.checksums.txt; \
+    grep "${LAZYGIT_ARCHIVE}" /tmp/lazygit.checksums.txt | awk '{print $1 "  /tmp/lazygit.tar.gz"}' > /tmp/lazygit.sha256; \
+    sha256sum --check --strict /tmp/lazygit.sha256; \
     tar -xf /tmp/lazygit.tar.gz -C /tmp lazygit; \
     install -m755 /tmp/lazygit /usr/local/bin/lazygit; \
-    rm -rf /tmp/lazygit.tar.gz /tmp/lazygit
+    rm -rf /tmp/lazygit.tar.gz /tmp/lazygit /tmp/lazygit.checksums.txt /tmp/lazygit.sha256
 
 RUN set -eux; \
     case "$TARGETPLATFORM" in \
@@ -272,19 +276,10 @@ RUN set -eux; \
         ;; \
     esac
 
-# 6. Eppo (feature flagging) - optional
-RUN set -eux; \
-    case "${TARGETARCH:-amd64}" in \
-      amd64) \
-        (curl -sL https://packagecloud.io/install/repositories/eppo/eppo-server/script.deb.sh | bash && apt-get install -y eppo-agent) || echo "Eppo not available, skipping" \
-        ;; \
-      arm64) \
-        echo "Eppo agent install skipped for arm64" \
-        ;; \
-      *) \
-        echo "Eppo agent install skipped for ${TARGETARCH:-unknown}" \
-        ;; \
-    esac
+# 6. Eppo (feature flagging) - REMOVED due to unverified curl|bash security issue
+# See: docker/code-server/SECURITY_AUDIT.md - Issue #3
+# Alternative: Use environment variables for feature flags or install manually if needed
+RUN echo "Eppo agent removed - use environment-based feature flags or manual installation"
 
 # 7. Toto (test observability) - optional
 RUN set -eux; \
@@ -450,11 +445,15 @@ RUN set -eux; \
     chmod 755 /usr/local/bin/stern; \
     rm -rf /tmp/stern.tar.gz /tmp/stern* /tmp/stern.checksums.txt /tmp/stern.sha256; \
     echo "Installing helmfile ${HELMFILE_VERSION}"; \
-    curl -fsSL "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_${HELMFILE_ARCH}.tar.gz" -o /tmp/helmfile.tar.gz; \
+    HELMFILE_ARCHIVE="helmfile_${HELMFILE_VERSION}_${HELMFILE_ARCH}.tar.gz"; \
+    curl -fsSL "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/${HELMFILE_ARCHIVE}" -o /tmp/helmfile.tar.gz; \
+    curl -fsSL "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_checksums.txt" -o /tmp/helmfile.checksums.txt; \
+    grep "${HELMFILE_ARCHIVE}" /tmp/helmfile.checksums.txt | awk '{print $1 "  /tmp/helmfile.tar.gz"}' > /tmp/helmfile.sha256; \
+    sha256sum --check --strict /tmp/helmfile.sha256; \
     tar -xzf /tmp/helmfile.tar.gz -C /tmp; \
     find /tmp -type f -name "helmfile" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/helmfile; \
     chmod 755 /usr/local/bin/helmfile; \
-    rm -rf /tmp/helmfile.tar.gz /tmp/helmfile*; \
+    rm -rf /tmp/helmfile.tar.gz /tmp/helmfile* /tmp/helmfile.checksums.txt /tmp/helmfile.sha256; \
     echo "Installing helm ${HELM_VERSION}"; \
     HELM_ARCHIVE="helm-v${HELM_VERSION}-${HELM_TAR_ARCH}.tar.gz"; \
     curl -fsSL "https://get.helm.sh/${HELM_ARCHIVE}" -o /tmp/helm.tar.gz; \
@@ -487,11 +486,15 @@ RUN set -eux; \
     curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.${SOPS_SUFFIX}" -o /usr/local/bin/sops; \
     chmod 755 /usr/local/bin/sops; \
     echo "Installing glab ${GLAB_VERSION}"; \
-    curl -fsSL "https://github.com/profclems/glab/releases/download/v${GLAB_VERSION}/glab_${GLAB_VERSION}_${GLAB_ARCH}.tar.gz" -o /tmp/glab.tar.gz; \
+    GLAB_ARCHIVE="glab_${GLAB_VERSION}_${GLAB_ARCH}.tar.gz"; \
+    curl -fsSL "https://github.com/profclems/glab/releases/download/v${GLAB_VERSION}/${GLAB_ARCHIVE}" -o /tmp/glab.tar.gz; \
+    curl -fsSL "https://github.com/profclems/glab/releases/download/v${GLAB_VERSION}/glab_${GLAB_VERSION}_checksums.txt" -o /tmp/glab.checksums.txt; \
+    grep "${GLAB_ARCHIVE}" /tmp/glab.checksums.txt | awk '{print $1 "  /tmp/glab.tar.gz"}' > /tmp/glab.sha256; \
+    sha256sum --check --strict /tmp/glab.sha256; \
     tar -xzf /tmp/glab.tar.gz -C /tmp; \
     find /tmp -type f -name "glab" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/glab; \
     chmod 755 /usr/local/bin/glab; \
-    rm -rf /tmp/glab.tar.gz /tmp/glab*; \
+    rm -rf /tmp/glab.tar.gz /tmp/glab* /tmp/glab.checksums.txt /tmp/glab.sha256; \
     case "$TARGETPLATFORM" in \
       "linux/amd64") KUBE_SHORT_ARCH=linux_x86_64 ;; \
       "linux/arm64") KUBE_SHORT_ARCH=linux_arm64 ;; \

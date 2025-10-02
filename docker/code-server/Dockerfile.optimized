@@ -20,6 +20,10 @@ ARG KUBECTX_VERSION=0.9.5
 ARG K9S_VERSION=0.50.13
 ARG SOPS_VERSION=3.9.3
 ARG GLAB_VERSION=1.22.0
+ARG HELIX_VERSION=24.07
+ARG MICRO_VERSION=2.0.14
+ARG EZA_VERSION=0.20.16
+ARG DUST_VERSION=1.1.1
 ARG PROFILE=full
 ARG BUILD_DATE
 ARG GIT_COMMIT
@@ -44,15 +48,14 @@ RUN set -ex && \
     mkdir -p /tmp && chmod 1777 /tmp && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        ca-certificates curl bash-completion fish exa git zsh openssh-client \
+        ca-certificates curl bash-completion fish git zsh openssh-client \
         hyperfine ripgrep vim neovim elvish xonsh yash busybox age gh kubectx \
         sudo wget gnupg build-essential python3-pip python3-venv jq fzf bat \
         fd-find unzip xz-utils apt-transport-https software-properties-common clangd && \
     rm -rf /var/lib/apt/lists/* && \
     # Permissions and symlinks
     chmod 755 /usr/bin/code-server /usr/lib/code-server/bin/code-server && \
-    ln -sf /usr/bin/fdfind /usr/local/bin/fd && \
-    ln -sf /usr/bin/exa /usr/local/bin/eza
+    ln -sf /usr/bin/fdfind /usr/local/bin/fd
 
 # Layer 2: Install all CLI tools in one consolidated layer
 RUN set -eux && \
@@ -135,6 +138,39 @@ RUN set -eux && \
     # Install glab
     curl -fsSL "https://github.com/profclems/glab/releases/download/v${GLAB_VERSION}/glab_${GLAB_VERSION}_${GLAB_ARCH}.tar.gz" -o /tmp/glab.tar.gz && \
     tar -xzf /tmp/glab.tar.gz -C /tmp && find /tmp -type f -name "glab" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/glab && chmod 755 /usr/local/bin/glab && \
+    # Install helix editor
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") HELIX_ARCH=x86_64 ;; \
+      "linux/arm64") HELIX_ARCH=aarch64 ;; \
+    esac && \
+    curl -fsSL "https://github.com/helix-editor/helix/releases/download/${HELIX_VERSION}/helix-${HELIX_VERSION}-${HELIX_ARCH}-linux.tar.xz" -o /tmp/helix.tar.xz && \
+    tar -xJf /tmp/helix.tar.xz -C /tmp && \
+    cp -r /tmp/helix-${HELIX_VERSION}-${HELIX_ARCH}-linux/hx /usr/local/bin/ && \
+    cp -r /tmp/helix-${HELIX_VERSION}-${HELIX_ARCH}-linux/runtime /usr/local/lib/helix-runtime && \
+    chmod 755 /usr/local/bin/hx && \
+    # Install micro editor
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") MICRO_ARCH=amd64 ;; \
+      "linux/arm64") MICRO_ARCH=arm64 ;; \
+    esac && \
+    curl -fsSL "https://github.com/zyedidia/micro/releases/download/v${MICRO_VERSION}/micro-${MICRO_VERSION}-linux-${MICRO_ARCH}.tar.gz" -o /tmp/micro.tar.gz && \
+    tar -xzf /tmp/micro.tar.gz -C /tmp && \
+    cp /tmp/micro-${MICRO_VERSION}/micro /usr/local/bin/ && \
+    chmod 755 /usr/local/bin/micro && \
+    # Install eza (modern ls replacement)
+    curl -fsSL "https://github.com/eza-community/eza/releases/download/v${EZA_VERSION}/eza_${HELIX_ARCH}-unknown-linux-gnu.tar.gz" -o /tmp/eza.tar.gz && \
+    tar -xzf /tmp/eza.tar.gz -C /tmp && \
+    cp /tmp/eza /usr/local/bin/ && \
+    chmod 755 /usr/local/bin/eza && \
+    # Install dust (du replacement)
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") DUST_ARCH=x86_64 ;; \
+      "linux/arm64") DUST_ARCH=aarch64 ;; \
+    esac && \
+    curl -fsSL "https://github.com/bootandy/dust/releases/download/v${DUST_VERSION}/dust-v${DUST_VERSION}-${DUST_ARCH}-unknown-linux-musl.tar.gz" -o /tmp/dust.tar.gz && \
+    tar -xzf /tmp/dust.tar.gz -C /tmp && \
+    cp /tmp/dust-v${DUST_VERSION}-${DUST_ARCH}-unknown-linux-musl/dust /usr/local/bin/ && \
+    chmod 755 /usr/local/bin/dust && \
     # Install cosign
     curl -fsSLO "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-${COSIGN_ARCH}" && \
     curl -fsSLO "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign_checksums.txt" && \
@@ -393,7 +429,7 @@ RUN cd /home/coder/.vscode/extensions/vibecode-ai-assistant && \
     npm install && (npm run build || npm run compile || echo "No build script") && \
     # Verify ALL required CLI tools
     echo "Verifying ALL required tools..." && \
-    for tool in vim nvim nu delta chezmoi just stern helmfile helm kubectl kubectx kubens k9s sops glab; do \
+    for tool in vim nvim nu delta chezmoi just stern helmfile helm kubectl kubectx kubens k9s sops glab hx micro eza dust bat lazygit; do \
       command -v "$tool" >/dev/null && echo "$tool OK" || { echo "$tool MISSING"; exit 1; }; \
     done && \
     aider --version >/dev/null && echo "aider OK" || { echo "aider MISSING"; exit 1; } && \
@@ -401,6 +437,7 @@ RUN cd /home/coder/.vscode/extensions/vibecode-ai-assistant && \
     echo "All tools verified successfully"
 
 ENV SHELL=/bin/bash
+ENV HELIX_RUNTIME=/usr/local/lib/helix-runtime
 WORKDIR /home/coder/workspace
 
 EXPOSE 8765

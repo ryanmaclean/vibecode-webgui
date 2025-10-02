@@ -162,7 +162,7 @@ RAW_LEGACY_CREDENTIALS.forEach((credential) => {
   const passwordHash = credential.passwordHash.trim()
 
   if (!isValidBcryptHash(passwordHash)) {
-    console.warn('⚠️ Legacy credential misconfigured with invalid bcrypt hash', {
+    credentialsLogger.warn('Legacy credential misconfigured with invalid bcrypt hash', {
       email: trimmedEmail,
       credentialId: credential.id,
     })
@@ -170,7 +170,7 @@ RAW_LEGACY_CREDENTIALS.forEach((credential) => {
   }
 
   if (LEGACY_CREDENTIALS_BY_EMAIL.has(normalizedEmail)) {
-    console.warn('⚠️ Duplicate legacy credential detected; later entry ignored', {
+    credentialsLogger.warn('Duplicate legacy credential detected; later entry ignored', {
       email: trimmedEmail,
       credentialId: credential.id,
     })
@@ -182,7 +182,7 @@ RAW_LEGACY_CREDENTIALS.forEach((credential) => {
     email: trimmedEmail,
     passwordHash,
   })
-  console.debug('[auth] stored legacy credential', { email: trimmedEmail })
+  credentialsLogger.debug('Stored legacy credential', { email: trimmedEmail })
 })
 
 // Build providers dynamically so missing OAuth credentials do not break local auth flows.
@@ -371,7 +371,7 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      console.log('🔄 JWT callback:', {
+      authLogger.debug('JWT callback', {
         hasUser: !!user,
         hasToken: !!token,
         provider: account?.provider,
@@ -390,12 +390,12 @@ export const authOptions: NextAuthOptions = {
         if (account?.provider === 'google') {
           token.googleId = user.googleId
         }
-        console.log('✅ JWT token updated with user:', { id: token.id, role: token.role })
+        authLogger.debug('JWT token updated with user', { id: token.id, role: token.role })
       }
       return token
     },
     async session({ session, token }) {
-      console.log('📋 Session callback:', {
+      authLogger.debug('Session callback', {
         hasSession: !!session,
         hasToken: !!token,
         tokenId: token?.id,
@@ -416,7 +416,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string
         session.user.email = token.email as string
         session.user.name = token.name as string
-        console.log('✅ Session updated with token:', { id: session.user.id, role: session.user.role })
+        authLogger.debug('Session updated with token', { id: session.user.id, role: session.user.role })
       }
       return session
     },
@@ -434,10 +434,15 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signIn({ user, account }) {
-      console.log(`User ${user.email} signed in via ${account?.provider}`)
+      authLogger.info('User signed in', {
+        email: user.email,
+        provider: account?.provider,
+      })
     },
     async signOut({ token }) {
-      console.log(`User ${token?.email} signed out`)
+      authLogger.info('User signed out', {
+        email: token?.email,
+      })
     },
   },
   debug: process.env.NODE_ENV === 'development',
