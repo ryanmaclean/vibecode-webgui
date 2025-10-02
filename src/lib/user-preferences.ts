@@ -3,7 +3,6 @@ import { z } from 'zod'
 export const themeOptionSchema = z.enum(['light', 'dark', 'auto'])
 export type ThemeOption = z.infer<typeof themeOptionSchema>
 
-export const cliEditorOptionSchema = z.enum(['vim', 'neovim', 'emacs', 'nano', 'none'])
 export type CliEditorOption = z.infer<typeof cliEditorOptionSchema>
 
 export const ideOptionSchema = z.enum(['vs-code', 'windsurf', 'code-server', 'browser-only'])
