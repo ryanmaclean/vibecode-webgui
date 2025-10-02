@@ -48,8 +48,8 @@
 
 - [x] ✅ Diagnose Next.js dev server startup errors - COMPLETE
 - [x] Finalize SSE helper utility documentation/examples for other specs (docs/src/content/docs/testing-strategy.md and docs/src/content/docs/mcp-playwright.md — refreshed streaming helper usage 2025-10-02)
-- [ ] Rerun Playwright reduced-motion spec now that dev server is stable
-- [ ] Extend docs to include troubleshooting notes for reduced-motion spec execution
+- [ ] Rerun Playwright reduced-motion spec now that dev server is stable _(blocked: dev server still exits when `dd-trace` is absent; rerun once `DD_ENABLED=false` workaround verifies or tracer is installed)_
+- [x] Extend docs to include troubleshooting notes for reduced-motion spec execution (added Datadog bypass guidance in `docs/src/content/docs/mcp-playwright.md`)
 
 ## Agent Update (2025-10-01 23:46 UTC)
 
