@@ -202,7 +202,7 @@ export function SkeletonDemo() {
             All skeleton components respect the <code className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">prefers-reduced-motion</code> media query.
           </p>
           <p className="text-sm text-gray-700 dark:text-gray-300">
-            To test: Enable "Reduce motion" in your operating system's accessibility settings.
+            To test: Enable &quot;Reduce motion&quot; in your operating system&apos;s accessibility settings.
           </p>
           <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400 space-y-1">
             <li>macOS: System Preferences → Accessibility → Display → Reduce motion</li>
@@ -231,10 +231,10 @@ export function SkeletonDemo() {
               ✓ ARIA Attributes
             </h3>
             <ul className="text-sm space-y-1 text-gray-600 dark:text-gray-400">
-              <li><code>role="status"</code> - Identifies loading region</li>
-              <li><code>aria-busy="true"</code> - Indicates active loading</li>
+              <li><code>role=&quot;status&quot;</code> - Identifies loading region</li>
+              <li><code>aria-busy=&quot;true&quot;</code> - Indicates active loading</li>
               <li><code>aria-label</code> - Provides context for screen readers</li>
-              <li><code>aria-live="polite"</code> - Announces updates</li>
+              <li><code>aria-live=&quot;polite&quot;</code> - Announces updates</li>
             </ul>
           </div>
 
@@ -294,7 +294,7 @@ export function SkeletonDemo() {
               <strong>Reduced Motion:</strong> Enable system preference and verify animations disable
             </li>
             <li>
-              <strong>Keyboard Navigation:</strong> Ensure loading states don't trap focus</li>
+              <strong>Keyboard Navigation:</strong> Ensure loading states don&apos;t trap focus</li>
             <li>
               <strong>Color Contrast:</strong> Use browser DevTools to verify contrast ratios</li>
           </ul>

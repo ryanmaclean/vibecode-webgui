@@ -14,7 +14,7 @@ const isDockerBuild = (
 let pathModule: any = null;
 try {
   // Use eval to avoid bundlers complaining about Node built-ins in edge/dev environments
-  // eslint-disable-next-line no-eval
+   
   const dynamicRequire = eval('require');
   pathModule = dynamicRequire('path');
 } catch (error) {

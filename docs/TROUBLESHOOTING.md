@@ -14,6 +14,9 @@ Comprehensive troubleshooting guide for common development, deployment, and oper
 - [Monitoring and Observability](#monitoring-and-observability)
 - [Performance Issues](#performance-issues)
 - [Security and Authentication](#security-and-authentication)
+- [AI Provider and Completion Issues](#ai-provider-and-completion-issues)
+- [Code-Server Deployment](#code-server-deployment)
+- [Log File Locations](#log-file-locations)
 
 ## Quick Diagnostics
 
@@ -1264,6 +1267,382 @@ const ContentSecurityPolicy = `
 // Use next/script with nonce attribute
 ```
 
+## AI Provider and Completion Issues
+
+### Issue: OpenAI API Rate Limits
+
+**Symptoms:**
+- "Rate limit exceeded" errors
+- AI completions failing
+- 429 status codes from OpenAI
+
+**Diagnosis:**
+```bash
+# Check API key configuration
+grep OPENAI_API_KEY .env
+
+# Test API connectivity
+curl https://api.openai.com/v1/models \
+  -H "Authorization: Bearer $OPENAI_API_KEY" | jq
+```
+
+**Solutions:**
+
+1. **Implement Request Caching**
+   ```bash
+   # Enable Redis caching for AI completions
+   ENABLE_AI_CACHE=true
+   AI_CACHE_TTL=3600  # 1 hour cache
+
+   # Verify Redis is running
+   redis-cli ping
+   ```
+
+2. **Use Rate Limit Headers**
+   ```javascript
+   // Monitor rate limits in application logs
+   grep "x-ratelimit-remaining" logs/application.log
+   ```
+
+3. **Implement Exponential Backoff**
+   ```bash
+   # Check retry configuration
+   AI_RETRY_MAX_ATTEMPTS=3
+   AI_RETRY_DELAY_MS=1000
+   AI_RETRY_BACKOFF_MULTIPLIER=2
+   ```
+
+### Issue: Monaco AI Completion Not Working
+
+**Symptoms:**
+- Monacopilot suggestions not appearing
+- Console errors about AI provider
+- Editor completions timeout
+
+**Diagnosis:**
+```bash
+# Verify Monacopilot installation
+npm list monacopilot monaco-editor
+
+# Check version lock
+cat .monaco-version-lock
+
+# Run Monaco tests
+npm run test:unit:monaco
+```
+
+**Solutions:**
+
+1. **Verify Configuration**
+   ```javascript
+   // In editor configuration, ensure:
+   NEXT_PUBLIC_AI_COMPLETION_ENABLED=true
+   NEXT_PUBLIC_AI_PROVIDER=openai
+   ```
+
+2. **Check API Endpoint**
+   ```bash
+   # Test AI completion endpoint
+   curl -X POST http://localhost:3000/api/ai/complete \
+     -H "Content-Type: application/json" \
+     -d '{"prompt": "function hello", "language": "javascript"}'
+   ```
+
+3. **Enable Debug Logging**
+   ```bash
+   # Start dev server with AI debug logs
+   DEBUG=monacopilot:* npm run dev
+   ```
+
+### Issue: Vector Search Not Returning Results
+
+**Symptoms:**
+- Semantic search returns empty results
+- pgvector queries slow or timing out
+- Embedding generation failures
+
+**Diagnosis:**
+```bash
+# Check pgvector extension
+psql -U username -d vibecode_dev -c "\dx vector"
+
+# Verify embeddings table
+psql -U username -d vibecode_dev -c "SELECT COUNT(*) FROM rag_chunks;"
+
+# Test embedding dimensions
+psql -U username -d vibecode_dev -c "SELECT vector_dims(embedding) FROM rag_chunks LIMIT 1;"
+```
+
+**Solutions:**
+
+1. **Rebuild Vector Index**
+   ```sql
+   -- Drop and recreate index
+   DROP INDEX IF EXISTS rag_chunks_embedding_idx;
+
+   -- Create HNSW index (faster than IVFFlat)
+   CREATE INDEX rag_chunks_embedding_idx ON rag_chunks
+   USING hnsw (embedding vector_cosine_ops)
+   WITH (m = 16, ef_construction = 64);
+   ```
+
+2. **Verify Embedding Service**
+   ```bash
+   # Test embedding generation
+   curl -X POST http://localhost:3000/api/embeddings \
+     -H "Content-Type: application/json" \
+     -d '{"text": "test document"}'
+   ```
+
+3. **Check Vector Database Connection**
+   ```bash
+   # Verify database supports pgvector
+   docker exec vibecode-db psql -U postgres -d vibecode_dev -c "SELECT * FROM pg_extension WHERE extname='vector';"
+   ```
+
+## Code-Server Deployment
+
+### Issue: Code-Server Container Won't Start
+
+**Symptoms:**
+- Container exits immediately
+- "Failed to start code-server" errors
+- Authentication issues
+
+**Diagnosis:**
+```bash
+# Check container logs
+docker logs vibecode-codeserver
+
+# Verify container status
+docker ps -a | grep codeserver
+
+# Check volume mounts
+docker inspect vibecode-codeserver | jq '.[0].Mounts'
+```
+
+**Solutions:**
+
+1. **Fix Authentication Configuration**
+   ```bash
+   # Set authentication method in docker-compose.yml
+   CODE_SERVER_AUTH=password
+   CODE_SERVER_PASSWORD=your-secure-password
+
+   # Or use token authentication
+   CODE_SERVER_AUTH=token
+   CODE_SERVER_TOKEN=your-secure-token
+   ```
+
+2. **Volume Permission Issues**
+   ```bash
+   # Fix workspace permissions
+   sudo chown -R 1000:1000 ./workspace
+
+   # Or run as root (not recommended for production)
+   docker compose run --user=root vibecode-codeserver
+   ```
+
+3. **Port Conflicts**
+   ```bash
+   # Check if port 8080 is in use
+   lsof -i :8080
+
+   # Change port in docker-compose.yml
+   ports:
+     - "8081:8080"  # Use alternative port
+   ```
+
+### Issue: Extensions Not Loading in Code-Server
+
+**Symptoms:**
+- AI extensions (Claude Code, Continue) not available
+- Extensions fail to install
+- Extension marketplace not accessible
+
+**Diagnosis:**
+```bash
+# List installed extensions
+docker exec vibecode-codeserver code-server --list-extensions
+
+# Check extension directory
+docker exec vibecode-codeserver ls -la ~/.local/share/code-server/extensions/
+
+# View extension logs
+docker exec vibecode-codeserver cat ~/.local/share/code-server/logs/*/exthost*/output*
+```
+
+**Solutions:**
+
+1. **Install Extensions via CLI**
+   ```bash
+   # Install extensions manually
+   docker exec vibecode-codeserver code-server --install-extension anthropics.claude-code
+   docker exec vibecode-codeserver code-server --install-extension continue.continue
+   docker exec vibecode-codeserver code-server --install-extension openai.chatgpt
+
+   # Restart container
+   docker compose restart vibecode-codeserver
+   ```
+
+2. **Use Extension Marketplace**
+   ```bash
+   # Configure marketplace in settings
+   CODE_SERVER_EXTENSIONS_GALLERY='{"serviceUrl":"https://open-vsx.org/vscode/gallery","itemUrl":"https://open-vsx.org/vscode/item"}'
+   ```
+
+3. **Pre-install Extensions in Dockerfile**
+   ```dockerfile
+   # See docker/code-server/PROFILES.md for profile options
+   # Build with extensions profile
+   docker build -f docker/code-server/Dockerfile --target extensions -t vibecode-codeserver:extensions .
+   ```
+
+### Issue: Code-Server Workspace Not Persisting
+
+**Symptoms:**
+- Changes lost after container restart
+- Workspace files disappear
+- Git repositories not persisting
+
+**Solutions:**
+```bash
+# 1. Verify volume configuration in docker-compose.yml
+services:
+  vibecode-codeserver:
+    volumes:
+      - ./workspace:/home/coder/project
+      - codeserver-data:/home/coder/.local/share/code-server
+
+# 2. Create named volume
+docker volume create codeserver-data
+
+# 3. Backup workspace before restart
+docker exec vibecode-codeserver tar czf /tmp/workspace-backup.tar.gz /home/coder/project
+docker cp vibecode-codeserver:/tmp/workspace-backup.tar.gz ./backup/
+
+# 4. Check volume permissions
+docker exec vibecode-codeserver ls -la /home/coder/project
+```
+
+## Log File Locations
+
+### Application Logs
+
+**Development:**
+```bash
+# Console output (stdout/stderr)
+npm run dev 2>&1 | tee logs/dev.log
+
+# Next.js build logs
+.next/build-manifest.json
+.next/trace
+
+# Application logs (if configured)
+logs/application.log
+logs/error.log
+logs/combined.log
+```
+
+**Docker Deployment:**
+```bash
+# Container logs
+docker compose logs -f vibecode
+docker compose logs --tail=100 vibecode
+
+# Save logs to file
+docker compose logs vibecode > logs/docker-app.log
+
+# Database logs
+docker compose logs postgres > logs/postgres.log
+
+# Redis logs
+docker compose logs redis > logs/redis.log
+
+# Code-server logs
+docker compose logs vibecode-codeserver > logs/codeserver.log
+```
+
+**Kubernetes Deployment:**
+```bash
+# Pod logs
+kubectl logs -f deployment/vibecode -n vibecode-platform
+kubectl logs --tail=100 vibecode-pod-xyz -n vibecode-platform
+
+# Save to file
+kubectl logs deployment/vibecode -n vibecode-platform > logs/k8s-app.log
+
+# Previous container logs (if crashed)
+kubectl logs vibecode-pod-xyz --previous -n vibecode-platform
+
+# Multiple containers in pod
+kubectl logs vibecode-pod-xyz -c app-container -n vibecode-platform
+kubectl logs vibecode-pod-xyz -c datadog-agent -n vibecode-platform
+```
+
+### Datadog Logs
+
+**Query Application Logs:**
+```bash
+# View logs in Datadog UI
+# https://app.datadoghq.com/logs
+
+# Query via API
+curl -X POST "https://api.datadoghq.com/api/v2/logs/events/search" \
+  -H "DD-API-KEY: ${DD_API_KEY}" \
+  -H "DD-APPLICATION-KEY: ${DD_APP_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filter": {
+      "query": "service:vibecode-webgui status:error",
+      "from": "now-1h",
+      "to": "now"
+    }
+  }'
+
+# Common log queries
+# - Errors: status:error service:vibecode-webgui
+# - Performance: @http.duration:>1000 service:vibecode-webgui
+# - Database: source:postgres @db.statement:*
+# - AI completions: @ai.provider:* @ai.duration:*
+```
+
+### Test Logs
+
+```bash
+# Jest test results
+npm test > logs/test-results.log 2>&1
+
+# Playwright test results
+npx playwright test --reporter=json > logs/playwright-report.json
+test-results/  # HTML reports and screenshots
+
+# E2E test artifacts
+tests/e2e/.artifacts/
+tests/e2e/screenshots/
+tests/e2e/videos/
+
+# Performance test results
+logs/lighthouse/
+logs/performance/
+```
+
+### Build and CI Logs
+
+```bash
+# Local build logs
+npm run build 2>&1 | tee logs/build.log
+
+# Docker build logs
+docker build . 2>&1 | tee logs/docker-build.log
+
+# GitHub Actions logs
+# Available at: https://github.com/ryanmaclean/vibecode-webgui/actions
+
+# CI artifacts
+.github/workflows/artifacts/
+```
+
 ## Getting Additional Help
 
 ### Collecting Debug Information
@@ -1336,3 +1715,4 @@ kubectl logs -f deployment/vibecode
 **Note**: This troubleshooting guide is based on real issues encountered in the VibeCode project. If you encounter an issue not covered here, please open a GitHub issue to help us improve this guide.
 
 **Last Updated**: 2025-10-01
+**Enhanced**: 2025-10-01 - Added AI provider, code-server deployment, and log location sections
