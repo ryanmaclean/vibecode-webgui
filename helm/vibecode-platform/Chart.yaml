@@ -35,3 +35,11 @@ dependencies:
       - mongodb
       - database
       - nosql
+  - name: keycloak
+    version: "25.2.0"  # Enterprise SSO option
+    repository: "https://charts.bitnami.com/bitnami"
+    alias: keycloak
+    condition: keycloak.enabled
+    tags:
+      - sso
+      - identity

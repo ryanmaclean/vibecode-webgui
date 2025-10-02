@@ -2,47 +2,113 @@
  * Code analysis tools for MCP
  */
 
-interface SearchCodeArgs {
-  query: string
-  workspaceId: string
-  language?: string
-}
+import { vectorStore } from '../../lib/vector-db/vector-store-service.js';
+import { prisma } from '../../lib/prisma.js';
+import type { SearchCodeArgs, AnalyzeCodeArgs } from '../types.js';
 
+/**
+ * Search code semantically using vector search
+ * @param args - Search parameters including query, optional workspaceId and language
+ * @returns Search results with file paths, line numbers, and snippets
+ */
 export async function searchCode(args: SearchCodeArgs) {
   const { query, workspaceId, language } = args;
 
-  // TODO: Integrate with actual vector search
-  return {
-    content: [
-      {
-        type: 'text',
-        text: JSON.stringify(
-          {
-            success: true,
-            query,
-            workspaceId,
-            language,
-            results: [
-              {
-                file: 'src/components/Button.tsx',
-                line: 15,
-                snippet: 'export function Button({ children, onClick }: ButtonProps) {',
-                score: 0.95,
-              },
-            ],
-          },
-          null,
-          2
-        ),
-      },
-    ],
-  };
-}
+  try {
+    // Initialize vector store if needed
+    await vectorStore.initialize();
 
-interface AnalyzeCodeArgs {
-  workspaceId: string
-  filePath: string
-  checks?: string[]
+    // Convert workspace_id (string) to numeric id if provided
+    let numericWorkspaceId: number | undefined;
+    if (workspaceId) {
+      const workspace = await prisma.workspace.findUnique({
+        where: { workspace_id: workspaceId },
+        select: { id: true }
+      });
+
+      if (!workspace) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  success: false,
+                  error: `Workspace not found: ${workspaceId}`,
+                  query,
+                  results: []
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      }
+
+      numericWorkspaceId = workspace.id;
+    }
+
+    // Perform vector search
+    const searchResults = await vectorStore.search(query, {
+      workspaceId: numericWorkspaceId,
+      limit: 10,
+      threshold: 0.7
+    });
+
+    // Transform results to match expected MCP response format
+    const results = searchResults.map(result => ({
+      file: result.chunk.metadata.fileName,
+      line: result.chunk.metadata.startLine || 0,
+      snippet: result.chunk.content,
+      score: result.similarity,
+      language: result.chunk.metadata.language,
+      startLine: result.chunk.metadata.startLine,
+      endLine: result.chunk.metadata.endLine,
+      fileId: result.chunk.metadata.fileId
+    }));
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              success: true,
+              query,
+              workspaceId,
+              language,
+              resultsCount: results.length,
+              results
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  } catch (error) {
+    console.error('Error in searchCode:', error);
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error occurred',
+              query,
+              workspaceId,
+              results: []
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  }
 }
 
 export async function analyzeCode(args: AnalyzeCodeArgs) {

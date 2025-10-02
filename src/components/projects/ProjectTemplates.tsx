@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -18,6 +18,7 @@ import {
   getPopularTemplates,
   searchTemplates
 } from '@/lib/project-templates'
+import { ProjectTemplateSkeleton } from '@/components/skeletons'
 
 interface ProjectTemplatesProps {
   onTemplateSelect?: (template: ProjectTemplate) => void
@@ -31,6 +32,7 @@ export function ProjectTemplates({ onTemplateSelect, onCreateProject }: ProjectT
   const [selectedFramework, setSelectedFramework] = useState<string>('all')
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null)
   const [projectName, setProjectName] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
 
   const filteredTemplates = useMemo(() => {
     let templates = Object.values(PROJECT_TEMPLATES)
@@ -64,6 +66,14 @@ export function ProjectTemplates({ onTemplateSelect, onCreateProject }: ProjectT
       default: return 'bg-gray-100 text-gray-800'
     }
   }
+
+  // Simulate initial load (in real app, this would fetch from API)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleTemplateSelect = (template: ProjectTemplate) => {
     setSelectedTemplate(template)
@@ -144,54 +154,66 @@ export function ProjectTemplates({ onTemplateSelect, onCreateProject }: ProjectT
         </TabsList>
 
         <TabsContent value="all" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredTemplates.map(template => (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                onSelect={() => handleTemplateSelect(template)}
-                isSelected={selectedTemplate?.id === template.id}
-              />
-            ))}
-          </div>
+          {isLoading ? (
+            <ProjectTemplateSkeleton count={6} />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity duration-200 ease-in">
+              {filteredTemplates.map(template => (
+                <TemplateCard
+                  key={template.id}
+                  template={template}
+                  onSelect={() => handleTemplateSelect(template)}
+                  isSelected={selectedTemplate?.id === template.id}
+                />
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="popular" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {popularTemplates.map(template => (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                onSelect={() => handleTemplateSelect(template)}
-                isSelected={selectedTemplate?.id === template.id}
-              />
-            ))}
-          </div>
+          {isLoading ? (
+            <ProjectTemplateSkeleton count={6} />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity duration-200 ease-in">
+              {popularTemplates.map(template => (
+                <TemplateCard
+                  key={template.id}
+                  template={template}
+                  onSelect={() => handleTemplateSelect(template)}
+                  isSelected={selectedTemplate?.id === template.id}
+                />
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="categories" className="mt-6">
-          <div className="space-y-8">
-            {TEMPLATE_CATEGORIES.map(category => {
-              const categoryTemplates = getTemplatesByCategory(category)
-              if (categoryTemplates.length === 0) return null
+          {isLoading ? (
+            <ProjectTemplateSkeleton count={9} />
+          ) : (
+            <div className="space-y-8 transition-opacity duration-200 ease-in">
+              {TEMPLATE_CATEGORIES.map(category => {
+                const categoryTemplates = getTemplatesByCategory(category)
+                if (categoryTemplates.length === 0) return null
 
-              return (
-                <div key={category}>
-                  <h3 className="text-xl font-semibold mb-4">{category}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {categoryTemplates.map(template => (
-                      <TemplateCard
-                        key={template.id}
-                        template={template}
-                        onSelect={() => handleTemplateSelect(template)}
-                        isSelected={selectedTemplate?.id === template.id}
-                      />
-                    ))}
+                return (
+                  <div key={category}>
+                    <h3 className="text-xl font-semibold mb-4">{category}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {categoryTemplates.map(template => (
+                        <TemplateCard
+                          key={template.id}
+                          template={template}
+                          onSelect={() => handleTemplateSelect(template)}
+                          isSelected={selectedTemplate?.id === template.id}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
