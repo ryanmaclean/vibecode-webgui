@@ -198,7 +198,7 @@ DD_SITE="datadoghq.com"
 └─────────────────────────────────────────┘
 ```
 
-## Code-Server v1.1.0 - Multi-Profile Images
+## Code-Server v1.1.1 - GPL-Free Multi-Profile Images
 
 **NEW**: 5 optimized profiles for different use cases, all with essential CLI tools included!
 
@@ -206,11 +206,11 @@ DD_SITE="datadoghq.com"
 
 ```bash
 # Recommended: Standard profile (700MB, 12 extensions)
-docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.0-standard
+docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.1-standard
 docker run -it --rm -p 8080:8080 ghcr.io/ryanmaclean/vibecode-codeserver:standard
 
 # Or from Docker Hub
-docker pull ryanmaclean/vibecode-codeserver:1.1.0-standard
+docker pull ryanmaclean/vibecode-codeserver:1.1.1-standard
 ```
 
 ### Available Profiles

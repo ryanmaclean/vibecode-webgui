@@ -1,4 +1,4 @@
-# Code-Server v1.1.0 Verification Guide
+# Code-Server v1.1.1 Verification Guide
 
 This guide provides comprehensive verification steps for all code-server profiles and tools.
 
@@ -9,13 +9,13 @@ This guide provides comprehensive verification steps for all code-server profile
 ```bash
 # Verify all profiles on GHCR
 for profile in minimal standard ai web full; do
-  docker manifest inspect ghcr.io/ryanmaclean/vibecode-codeserver:1.1.0-$profile > /dev/null 2>&1 && \
+  docker manifest inspect ghcr.io/ryanmaclean/vibecode-codeserver:1.1.1-$profile > /dev/null 2>&1 && \
     echo "✅ $profile" || echo "❌ $profile MISSING"
 done
 
 # Verify all profiles on Docker Hub
 for profile in minimal standard ai web full; do
-  docker manifest inspect ryanmaclean/vibecode-codeserver:1.1.0-$profile > /dev/null 2>&1 && \
+  docker manifest inspect ryanmaclean/vibecode-codeserver:1.1.1-$profile > /dev/null 2>&1 && \
     echo "✅ $profile" || echo "❌ $profile MISSING"
 done
 ```
@@ -26,7 +26,7 @@ done
 
 ```bash
 # Pull the image
-docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.0-standard
+docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.1-standard
 
 # Verify all tools
 docker run --rm ghcr.io/ryanmaclean/vibecode-codeserver:standard bash -c "
@@ -64,7 +64,7 @@ docker run --rm ghcr.io/ryanmaclean/vibecode-codeserver:standard bash -c "
 ### AI Profile
 
 ```bash
-docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.0-ai
+docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.1-ai
 
 docker run --rm ghcr.io/ryanmaclean/vibecode-codeserver:ai bash -c "
   echo '=== AI Tools ===' &&
@@ -77,7 +77,7 @@ docker run --rm ghcr.io/ryanmaclean/vibecode-codeserver:ai bash -c "
 ### Web Profile
 
 ```bash
-docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.0-web
+docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.1-web
 
 docker run --rm ghcr.io/ryanmaclean/vibecode-codeserver:web bash -c "
   echo '=== Web Development Tools ===' &&
@@ -181,7 +181,7 @@ ssh your-nas-hostname
 
 ```bash
 # Pull standard profile
-docker pull ryanmaclean/vibecode-codeserver:1.1.0-standard
+docker pull ryanmaclean/vibecode-codeserver:1.1.1-standard
 
 # Verify tools
 docker run --rm ryanmaclean/vibecode-codeserver:standard bash -c "
@@ -204,7 +204,7 @@ docker run -it --rm -p 8080:8080 \
 ```bash
 # Create deployment
 kubectl create deployment code-server \
-  --image=ghcr.io/ryanmaclean/vibecode-codeserver:1.1.0-standard
+  --image=ghcr.io/ryanmaclean/vibecode-codeserver:1.1.1-standard
 
 # Expose service
 kubectl expose deployment code-server --port=8080 --type=LoadBalancer
@@ -238,7 +238,7 @@ set -e
 PROFILES=("minimal" "standard" "ai" "web" "full")
 REGISTRY="${1:-ghcr.io/ryanmaclean}"
 IMAGE_NAME="vibecode-codeserver"
-VERSION="1.1.0"
+VERSION="1.1.1"
 
 echo "🔍 Verifying all code-server profiles..."
 echo ""
@@ -276,10 +276,10 @@ chmod +x verify-all-profiles.sh
 
 ```bash
 # Check if image exists
-docker manifest inspect ghcr.io/ryanmaclean/vibecode-codeserver:1.1.0-standard
+docker manifest inspect ghcr.io/ryanmaclean/vibecode-codeserver:1.1.1-standard
 
 # Try Docker Hub instead
-docker pull ryanmaclean/vibecode-codeserver:1.1.0-standard
+docker pull ryanmaclean/vibecode-codeserver:1.1.1-standard
 ```
 
 ### Tool Not Working
