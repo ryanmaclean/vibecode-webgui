@@ -22,6 +22,44 @@ mongodb:
       cpu: 2000m
       memory: 4Gi
 
+# Enterprise SSO (optional)
+keycloak:
+  enabled: false
+  replicaCount: 1
+  production: true
+  proxy: edge
+
+  auth:
+    adminUser: admin
+    existingSecret: keycloak-admin-credentials
+    existingSecretPasswordKey: admin-password
+
+  postgresql:
+    enabled: false
+
+  externalDatabase:
+    host: vector-db
+    port: 5432
+    database: keycloak
+    schema: public
+    user: keycloak
+    existingSecret: keycloak-db-credentials
+    existingSecretUserKey: username
+    existingSecretPasswordKey: password
+
+  metrics:
+    enabled: true
+
+  ingress:
+    enabled: false
+    hostname: sso.vibecode.local
+    ingressClassName: nginx
+    annotations: {}
+    extraHosts: []
+    tls: true
+    extraTls: []
+    secrets: []
+
 # Global configuration
 global:
   namespace: vibecode-platform

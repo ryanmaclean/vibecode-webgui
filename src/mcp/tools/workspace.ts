@@ -2,11 +2,7 @@
  * Workspace management tools for MCP
  */
 
-interface CreateWorkspaceArgs {
-  name: string
-  template: string
-  description?: string
-}
+import type { CreateWorkspaceArgs } from '../types.js';
 
 export async function createWorkspace(args: CreateWorkspaceArgs) {
   const { name, template, description } = args;
