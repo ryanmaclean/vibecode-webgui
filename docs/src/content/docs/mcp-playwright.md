@@ -298,6 +298,25 @@ The accessibility testing framework covers:
 
 > 💡 **Streaming Tip**: Use `createSSEStream` from `tests/e2e/helpers/createSSEStream.ts` whenever the reduced-motion scenarios need deterministic SSE traffic. Pass an explicit `chunk` string array that mirrors the announcements you expect, tune the optional `delayMs` (milliseconds) to control pacing, and rely on the returned `{ stream, completionPromise }` pair to fulfill routes while still awaiting completion.
 
+#### Troubleshooting the Reduced-Motion Spec
+
+- **Missing `dd-trace` during server boot**: The Next.js instrumentation will attempt to load Datadog's tracer whenever the dev server launches. If you have not installed `dd-trace`, prefix the command with `DD_ENABLED=false` (or `SKIP_MONITORING=true`) so the instrumentation short-circuits during local test runs:
+
+  ```bash
+  DD_ENABLED=false npx playwright test tests/e2e/enhanced-chat/reduced-motion.spec.ts
+  ```
+
+  Install the tracer (`npm install dd-trace`) before enabling Datadog in CI or production-like runs.
+
+- **Stuck `.next` build output**: If you still see `Invalid or unexpected token` from `.next/server/middleware.js`, remove the build artifacts and retry:
+
+  ```bash
+  rm -rf .next
+  PLAYWRIGHT_TEST=true npm run dev:simple
+  ```
+
+  Once the dev server starts cleanly, re-run the spec.
+
 ## Integration with Context7 and Sequential Thinking
 
 MCP Playwright integrates with other MCP components to create a more powerful and comprehensive testing framework.
