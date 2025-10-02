@@ -223,3 +223,8 @@ examples/pydantic-ai-cli-agent/.env
 .agent-state/
 *.checkpoint
 
+# Tauri
+src-tauri/target/
+src-tauri/Cargo.lock
+src-tauri/WixTools/
+
