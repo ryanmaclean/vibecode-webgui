@@ -198,10 +198,7 @@ DD_SITE="datadoghq.com"
 └─────────────────────────────────────────┘
 ```
 
-## Code-Server v1.1.1 - Multi-Profile Images (GPL-Free)
-
-> **DEPRECATION WARNING**: v1.1.0 is DEPRECATED due to GPL license violation (Emacs included).
-> All users MUST migrate to v1.1.1. See [docker/code-server/DEPRECATION_NOTICE_v1.1.0.md](docker/code-server/DEPRECATION_NOTICE_v1.1.0.md)
+## Code-Server v1.1.1 - GPL-Free Multi-Profile Images
 
 **NEW**: 5 optimized profiles for different use cases, all with essential CLI tools included!
 
@@ -220,16 +217,16 @@ docker pull ryanmaclean/vibecode-codeserver:1.1.1-standard
 
 | Profile | Size | Extensions | Use Case | Pull Command |
 |---------|------|------------|----------|--------------|
-| **minimal** | 400MB | 5 | Lightweight development | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.1-minimal` |
-| **standard** | 700MB | 12 | General development (recommended) | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.1-standard` |
-| **ai** | 900MB | 15 | AI/ML development | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.1-ai` |
-| **web** | 600MB | 14 | Web development | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.1-web` |
-| **full** | 1.2GB | 26 | Complete Swiss Army knife | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.1-full` |
+| **minimal** | 400MB | 5 | Lightweight development | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:minimal` |
+| **standard** | 700MB | 12 | General development (recommended) | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:standard` |
+| **ai** | 900MB | 15 | AI/ML development | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:ai` |
+| **web** | 600MB | 14 | Web development | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:web` |
+| **full** | 1.2GB | 26 | Complete Swiss Army knife | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:latest` |
 
 ### Included CLI Tools (All Profiles)
 
 **Terminal Editors:**
-- vim 9.0, neovim 0.7.2 (Emacs removed in v1.1.1 due to GPL license)
+- vim 9.0, neovim 0.7.2
 
 **AI Coding Assistants:**
 - aider 0.84.0, goose (latest)
@@ -303,7 +300,6 @@ npm run lint               # ESLint
 - [Docker Deployment](docs/DOCKER_DEPLOYMENT.md)
 - [Test Coverage](docs/TEST_COVERAGE_AUDIT.md)
 - [Kubernetes Guide](docs/azure-aks-deployment.md)
-- [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
 
 ## Contributing
 

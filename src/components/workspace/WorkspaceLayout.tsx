@@ -197,7 +197,7 @@ export default function WorkspaceLayout({
             onMouseDown={() => handleMouseDown('terminal')}
           />
 
-                   {/* Enhanced Terminal with AI Integration - Lazy Loaded */}
+          {/* Enhanced Terminal with AI Integration - Lazy Loaded */}
           <div className="min-h-40" style={{ height: `${terminalHeight}px` }}>
             <EnhancedTerminal
               workspaceId={workspaceId}
