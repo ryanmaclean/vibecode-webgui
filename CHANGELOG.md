@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **Code-Server AI Extensions Updated** (2025-10-01):
+  - **Cline (saoudrizwan.claude-dev)**: Updated to v3.32.6
+    - Autonomous coding agent with MCP support
+    - Multi-provider support (OpenRouter, Anthropic, OpenAI, etc.)
+    - 3.2M+ active developers
+  - **Continue (continue.continue)**: Updated to v1.3.15
+    - Open-source AI code agent
+    - Custom model configuration support
+    - Community tools and plugins
+  - Extensions installed in `ai` and `full` profiles
+  - Multi-arch builds (AMD64 + ARM64) with automated verification
+  - Documentation: `claudedocs/CODE_SERVER_EXTENSIONS_UPDATE_2025-10-01.md`
+  - Verification script: `scripts/verify-codeserver-extensions.sh`
+
 ## DEPRECATION NOTICE
 
 ### v1.1.0 Code-Server Images - DEPRECATED (2025-10-01)
