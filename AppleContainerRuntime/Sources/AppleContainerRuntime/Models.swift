@@ -12,6 +12,7 @@ struct ContainerConfiguration: Codable, Sendable {
     let environmentVariables: [String: String]
     let volumeMounts: [VolumeMount]
     let removeOnExit: Bool
+    let enableMLAcceleration: Bool
 
     init(
         image: String,
@@ -21,7 +22,8 @@ struct ContainerConfiguration: Codable, Sendable {
         portMappings: [PortMapping] = [],
         environmentVariables: [String: String] = [:],
         volumeMounts: [VolumeMount] = [],
-        removeOnExit: Bool = false
+        removeOnExit: Bool = false,
+        enableMLAcceleration: Bool = false
     ) {
         self.image = image
         self.name = name
@@ -31,6 +33,7 @@ struct ContainerConfiguration: Codable, Sendable {
         self.environmentVariables = environmentVariables
         self.volumeMounts = volumeMounts
         self.removeOnExit = removeOnExit
+        self.enableMLAcceleration = enableMLAcceleration
     }
 }
 

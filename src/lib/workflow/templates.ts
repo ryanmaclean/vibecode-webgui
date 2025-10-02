@@ -39,10 +39,6 @@ export const codeReviewWorkflow: WorkflowDefinition = {
         model: 'claude-3-5-sonnet-20241022',
         task: 'Analyze code quality, identify issues, and suggest improvements for: ${input.files}',
         workspace: '${input.workspace}',
-        outputs: {
-          issues: 'output.issues',
-          suggestions: 'output.suggestions',
-        },
       },
       position: { x: 100, y: 100 },
     },
@@ -78,7 +74,6 @@ export const codeReviewWorkflow: WorkflowDefinition = {
         model: 'claude-3-5-sonnet-20241022',
         task: 'Fix the following issues: ${nodes.analyze.issues}',
         workspace: '${input.workspace}',
-        files: '${input.files}',
       },
       position: { x: 100, y: 300 },
     },

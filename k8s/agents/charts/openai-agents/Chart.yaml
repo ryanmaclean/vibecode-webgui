@@ -1,0 +1,22 @@
+apiVersion: v2
+name: openai-agents
+description: OpenAI Agents orchestration platform for VibeCode
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+- openai
+- agents
+- ai
+- kubernetes
+- vibecode
+home: https://github.com/ryanmaclean/vibecode-webgui
+sources:
+- https://github.com/ryanmaclean/vibecode-webgui/tree/main/k8s/agents
+maintainers:
+- name: VibeCode DevOps Team
+  email: devops@vibecode.io
+icon: https://raw.githubusercontent.com/ryanmaclean/vibecode-webgui/main/public/logo.png
+annotations:
+  category: AI/ML
+  licenses: MIT
