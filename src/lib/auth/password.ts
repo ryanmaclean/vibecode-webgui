@@ -36,25 +36,20 @@ export const hashPassword = async (plain: string, saltRounds: number = DEFAULT_S
 }
 
 export const verifyPassword = async (plain: string, hash: string): Promise<boolean> => {
-  if (!isNonEmptyString(plain)) {
+  if (!isNonEmptyString(plain) || typeof hash !== 'string') {
     return false
-  }
-
-  if (!isNonEmptyString(hash)) {
-    throw new Error('Hash must be a non-empty string')
   }
 
   const normalizedHash = normalizeHash(hash)
 
   if (!isValidBcryptHash(normalizedHash)) {
-    throw new Error('Invalid bcrypt hash format')
+    return false
   }
 
   try {
     return await bcrypt.compare(plain, normalizedHash)
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    throw new Error(`Failed to verify bcrypt hash: ${message}`)
+  } catch {
+    return false
   }
 }
 
