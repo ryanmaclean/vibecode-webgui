@@ -1,3 +1,14 @@
+## Agent Update (2025-10-02 21:19 UTC)
+
+- Assembled a 69MB gzip-compressed initramfs (BusyBox+glibc) that boots the preloaded OpenVSCode Server and logs readiness inside KVM; port forwarding now confirms listener availability in ~0.5s.
+- Added init diagnostics (hostname/DHCP logging, readiness polling) and copied the host kernel into `fast-openvscode-vm/vmlinuz-host` for repeatable launches.
+- Installed `qemu-system-x86` under passwordless sudo and scripted a host-side harness to time `nc` port probes; HTTP GETs still reset (likely missing workbench handshake), so browser access needs a follow-up tweak.
+
+### Next Steps
+- [ ] Patch the init script or server flags so an HTTP request to `/` returns 200 (investigate `--connection-token`, static asset path, or reverse proxy health endpoint).
+- [ ] Automate the timing harness as a reusable benchmark (`scripts/benchmarks/vscode_microvm.sh`) and feed metrics into Datadog dashboards.
+- [ ] Build a matching arm64 initramfs and validate under Apple Containerization / Virtualization.framework once the handshake issue is solved.
+
 ## Agent Update (2025-09-28 16:42 UTC)
 
 - Rebuilt `scripts/setup-test-env.sh`, `scripts/test-monitoring.sh`, and `scripts/deploy-kind-with-monitoring.sh` around the shared bootstrap/logging helpers; removed hard-coded paths/ANSI blocks and resolved ShellCheck warnings (SC1090/SC2016, quoting, Mac-specific sed).
