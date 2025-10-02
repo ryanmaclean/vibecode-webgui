@@ -155,11 +155,13 @@ RUN set -eux; \
     COSIGN_BINARY="cosign-linux-${COSIGN_ARCH}"; \
     cd /tmp; \
     curl -fsSLO "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/${COSIGN_BINARY}"; \
-    curl -fsSLO "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/${COSIGN_BINARY}.sha256"; \
-    sha256sum --check --strict "${COSIGN_BINARY}.sha256"; \
+    curl -fsSLO "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign_checksums.txt"; \
+    awk -v target="${COSIGN_BINARY}" '$2 == target {print $0}' cosign_checksums.txt > cosign.sha256; \
+    if [ ! -s cosign.sha256 ]; then echo "Checksum for ${COSIGN_BINARY} not found"; exit 1; fi; \
+    sha256sum --check --strict cosign.sha256; \
     chmod +x "${COSIGN_BINARY}"; \
     mv "${COSIGN_BINARY}" /usr/local/bin/cosign; \
-    rm -f "${COSIGN_BINARY}.sha256"; \
+    rm -f cosign_checksums.txt cosign.sha256; \
     cosign version
 
 # Install Go (match architecture for multi-arch builds)

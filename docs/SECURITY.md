@@ -19,6 +19,16 @@ All downloads must be verified prior to installation or baking into container im
 
 The steps below assume a Unix-like workstation or CI runner with `curl`, `sha256sum`, `cosign`, and `jq` available. Replace `<VERSION>` placeholders before running.
 
+### cosign binary (checksums flow)
+
+1. `export COSIGN_VERSION=v2.3.1` (or the desired release tag).
+2. `curl -fsSLO https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64`
+3. `curl -fsSLO https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign_checksums.txt`
+4. `grep "cosign-linux-amd64" cosign_checksums.txt | sha256sum --check --ignore-missing`
+5. Append the verification output and command transcript to `security/verifications/$(date +%F)-cosign.log` (for example, `security/verifications/2025-10-02-cosign.log`) using `tee -a` so auditors can review the checksum parsing results.
+
+Store the downloaded checksum manifest with the verification logs, and if the checksum fails stop immediately and escalate to Maya. Successful runs should leave the full command history in the dated log for traceability.
+
 ### kubectl (deadline: 2025-10-08)
 
 **Download**

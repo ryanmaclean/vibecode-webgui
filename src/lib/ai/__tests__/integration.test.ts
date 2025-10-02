@@ -43,8 +43,8 @@ describe('AI Integration', () => {
     expect(ai.docs).toBeDefined();
   });
 
-  it.skip('should add and retrieve prompts', async () => {
-    // This test requires real AI integration - skipping for now
+  it('should add and retrieve prompts', async () => {
+    // Test with mocked AI integration
     const testPrompt = {
       name: 'test-prompt',
       description: 'A test prompt',
@@ -58,7 +58,7 @@ describe('AI Integration', () => {
     expect(prompt).toBeDefined();
     expect(prompt.id).toBeDefined();
     expect(prompt.name).toBe('test-prompt');
-    
+
     const retrievedPrompt = await ai.prompts.getPrompt(prompt.id);
     expect(retrievedPrompt).toBeDefined();
     expect(retrievedPrompt?.name).toBe('test-prompt');

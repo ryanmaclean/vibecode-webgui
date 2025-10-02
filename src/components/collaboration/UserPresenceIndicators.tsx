@@ -10,6 +10,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, Activity, Clock, Wifi, WifiOff } from 'lucide-react'
 import { useCollaboration } from '../../hooks/useCollaboration'
@@ -267,9 +268,11 @@ export default function UserPresenceIndicators({
           style={{ backgroundColor: user.userColor }}
         >
           {user.userAvatar ? (
-            <img
+            <Image
               src={user.userAvatar}
               alt={user.userName}
+              width={32}
+              height={32}
               className="w-full h-full object-cover"
             />
           ) : (
