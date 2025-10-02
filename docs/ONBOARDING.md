@@ -84,7 +84,6 @@ src/components/OnboardingCheck.tsx
 ```typescript
 interface OnboardingData {
   theme: 'light' | 'dark' | 'auto'
-  cliEditor: 'vim' | 'neovim' | 'emacs' | 'nano' | 'none'
   extensions: string[]
   integrations: {
     github?: boolean

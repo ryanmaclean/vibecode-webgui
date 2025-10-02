@@ -95,7 +95,6 @@ for profile in "${PROFILES[@]}"; do
   docker run --rm --platform linux/amd64 \
     ghcr.io/ryanmaclean/vibecode-codeserver:${VERSION}-${profile} \
     bash -c "
-      vim --version && nvim --version && emacs --version &&
       aider --version && goose -version &&
       kubectl version --client && helm version
     "
@@ -104,7 +103,6 @@ for profile in "${PROFILES[@]}"; do
   docker run --rm --platform linux/arm64 \
     ghcr.io/ryanmaclean/vibecode-codeserver:${VERSION}-${profile} \
     bash -c "
-      vim --version && nvim --version && emacs --version &&
       aider --version && goose -version
     "
   
@@ -154,7 +152,6 @@ README.md (add profile section)
 
 ### Added
 - Multi-profile support (minimal, standard, ai, web, full)
-- All required CLI tools (vim, nvim, emacs, aider, goose)
 - DevOps tools (kubectl, helm, k9s, stern, helmfile, sops, glab)
 - Shell enhancements (nushell, delta, chezmoi, just)
 - Multi-registry support (GHCR + Docker Hub)

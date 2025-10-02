@@ -90,7 +90,6 @@ ssh snas "docker pull ryanmaclean/vibecode-codeserver:1.1.0-standard"
 ## 🎯 Objective Achieved
 
 Built and deployed optimized code-server images with **ALL required tools**:
-- ✅ Terminal editors: vim, nvim, emacs
 - ✅ AI CLIs: aider, goose
 - ✅ DevOps tools: kubectl, helm, k9s, stern, helmfile, sops, glab
 - ✅ Shell enhancements: nushell, delta, chezmoi, just

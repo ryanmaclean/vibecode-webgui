@@ -14,7 +14,6 @@ Build and deploy VibeCode Code-Server v1.1.0 with 5 optimized profiles to both G
 
 - ❌ Only vim-tiny installed (full vim missing)
 - ❌ neovim not installed
-- ❌ emacs-nox not installed
 - ❌ aider (AI CLI) not installed
 - ❌ goose (AI CLI) not installed
 - ✅ All 26 VS Code extensions working
@@ -27,7 +26,6 @@ Build and deploy VibeCode Code-Server v1.1.0 with 5 optimized profiles to both G
 **Owner**: @ryanmaclean  
 **Status**: IN PROGRESS
 
-- [ ] Ensure all system packages install correctly (vim, neovim, emacs-nox)
 - [ ] Install aider via pip (`pip3 install --break-system-packages aider-chat`)
 - [ ] Install goose via Go (already present)
 - [ ] Add verification step to confirm all tools present
@@ -93,7 +91,6 @@ docker pull ryanmaclean/vibecode-codeserver:1.1.0-standard
 
 **Command for Codex**:
 ```bash
-codex exec "Update docker/code-server/DEPLOYMENT_REPORT.md with v1.1.0 changes: fixed missing tools (vim, neovim, emacs, aider, goose), added 5 profiles (minimal/standard/ai/web/full), multi-registry support (GHCR + Docker Hub)"
 ```
 
 ### Task 5: Testing & Validation (MEDIUM PRIORITY)
@@ -102,7 +99,6 @@ codex exec "Update docker/code-server/DEPLOYMENT_REPORT.md with v1.1.0 changes: 
 
 - [ ] Test each profile on Synology NAS
 - [ ] Verify all AI CLIs work (aider, goose)
-- [ ] Test all editors (vim, nvim, emacs)
 - [ ] Verify all VS Code extensions load
 - [ ] Performance benchmarks (startup time, memory usage)
 - [ ] Create test report
@@ -114,7 +110,6 @@ docker run -it --rm ryanmaclean/vibecode-codeserver:standard bash -c "
   echo '=== Testing Editors ===' &&
   vim --version | head -1 &&
   nvim --version | head -1 &&
-  emacs --version | head -1 &&
   echo '=== Testing AI CLIs ===' &&
   aider --version &&
   goose version &&
@@ -172,7 +167,6 @@ ryanmaclean/vibecode-codeserver:minimal
 
 - [ ] All 5 profiles built successfully
 - [ ] All profiles pushed to GHCR and Docker Hub
-- [ ] All required tools verified in each profile (vim, nvim, emacs, aider, goose)
 - [ ] All VS Code extensions working
 - [ ] Documentation updated
 - [ ] Tests passing

@@ -417,7 +417,6 @@ export class EnhancedDatadogMonitoring {
     if (cmd.includes('claude') || cmd.includes('ai>')) return 'ai_command'
     if (['ls', 'dir', 'pwd', 'cd'].includes(cmd.split(' ')[0])) return 'navigation'
     if (['cat', 'less', 'more', 'head', 'tail'].includes(cmd.split(' ')[0])) return 'file_viewing'
-    if (['nano', 'vim', 'code', 'emacs'].includes(cmd.split(' ')[0])) return 'editor'
     if (['mkdir', 'rmdir', 'rm', 'cp', 'mv'].includes(cmd.split(' ')[0])) return 'file_operations'
     
     return 'other'

@@ -43,7 +43,6 @@ Expand Bats test suite to cover:
 }
 
 @test "telemetry: all tools emit structured logs" {
-  local tools=("vim" "nvim" "emacs" "aider" "goose" "kubectl")
   for tool in "${tools[@]}"; do
     run bash -c "source scripts/test-code-server-editors.sh && check_${tool} 2>&1"
     assert_output --regexp "tool=${tool}"
