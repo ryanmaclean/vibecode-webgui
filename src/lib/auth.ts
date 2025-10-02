@@ -7,7 +7,7 @@ import { NextAuthOptions } from 'next-auth'
 import GithubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { verifyPassword, isValidBcryptHash } from './auth/password'
+import { hashPassword, isValidBcryptHash, verifyPassword } from './auth/password'
 
 /**
  * CRITICAL SECURITY VALIDATION: NEXTAUTH_SECRET
@@ -52,32 +52,6 @@ if (NEXTAUTH_SECRET.length < 32) {
 
 console.log('✅ NEXTAUTH_SECRET validation passed: secure secret configured')
 
-let timingSafeHashPromise: Promise<string> | null = null
-
-const getTimingSafeHash = async (): Promise<string> => {
-  if (!timingSafeHashPromise) {
-    timingSafeHashPromise = hashPassword('timing-safe-placeholder')
-  }
-
-  return timingSafeHashPromise
-}
-
-const performTimingSafeCompare = async (password: string) => {
-  try {
-    const dummyHash = await getTimingSafeHash()
-    await verifyPassword(password, dummyHash)
-  } catch (error) {
-    console.warn('Timing-safe bcrypt comparison failed', error)
-  }
-}
-
-// Security: fallback hash keeps response timing consistent when user lookup fails.
-const DUMMY_PASSWORD_HASH = '$2b$12$eUlS0dNKrMxLdkPgDJZdpuHlNCn/KkheBmEzKE2.yOrembE1ccsV.'
-
-if (!isValidBcryptHash(DUMMY_PASSWORD_HASH)) {
-  throw new Error('Dummy password hash is misconfigured: invalid bcrypt format')
-}
-
 type LegacyCredential = {
   email: string
   passwordHash: string
@@ -85,6 +59,9 @@ type LegacyCredential = {
   name: string
   role: string
 }
+
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0
 
 /**
  * Security: legacy dev credentials are stored as bcrypt hashes (12 rounds).
@@ -278,10 +255,17 @@ providers.push(
         }
 
         console.info('Legacy credentials authentication succeeded')
-
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        }
       },
     })
 )
+
+
 
 export const authOptions: NextAuthOptions = {
   // adapter: PrismaAdapter(prisma), // Disabled for file-based development
