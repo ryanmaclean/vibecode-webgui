@@ -1,0 +1,59 @@
+name: Test Theia ARM64 Minimal
+
+on:
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: vibecode-theia
+
+jobs:
+  build-theia-arm64:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Theia ARM64 minimal image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/theia/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/vibecode-theia:test-arm64-minimal
+            ghcr.io/${{ github.repository_owner }}/vibecode-theia:test-arm64-minimal-${{ github.sha }}
+          build-args: |
+            VERSION=test-arm64-minimal
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+            GIT_COMMIT=${{ github.sha }}
+
+      - name: Test deployment info
+        run: |
+          echo "✅ Theia ARM64 minimal image built successfully!"
+          echo ""
+          echo "Pull with Apple container:"
+          echo "  gh auth token | container registry login ghcr.io --username ${{ github.actor }} --password-stdin"
+          echo "  container images pull ghcr.io/${{ github.repository_owner }}/vibecode-theia:test-arm64-minimal"
+          echo ""
+          echo "Run on port 3000:"
+          echo "  container run -d --name vibecode-theia -p 3000:3000 -v \$(pwd):/home/project ghcr.io/${{ github.repository_owner }}/vibecode-theia:test-arm64-minimal"
+          echo ""
+          echo "Access at: http://localhost:3000"
