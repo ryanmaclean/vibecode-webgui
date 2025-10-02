@@ -2,6 +2,8 @@
 
 Sloane (Documentation) captured Maya's supply-chain verification plan in this checklist so the engineering and release teams can execute repeatable, auditable verification before promoting CLI tooling into any environment. Owners must keep this document current with every release cycle.
 
+- [2025-10-02] Issue #445: Legacy WebGUI credentials now hashed with bcrypt; database-backed auth still pending for full migration.
+
 ## Supply Chain Verification Overview
 
 All downloads must be verified prior to installation or baking into container images. Record the command output from the verification scripts listed below inside CI job artifacts and quarterly audit notes.

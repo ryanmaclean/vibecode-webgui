@@ -43,9 +43,7 @@ Total .env files: 31
 
 ### Template Files (Reference Only)
 ```
-.env.example            # Comprehensive template with all variables
-.env.local.example      # Development-focused template
-.env.template           # Legacy template (deprecated, for compatibility)
+.env.example            # Comprehensive template with all variables (single source of truth)
 ```
 
 ### File Precedence (Next.js Standard)
@@ -474,9 +472,7 @@ Migration is considered successful when:
 
 | File | Purpose | Status |
 |------|---------|--------|
-| `.env.example` | Comprehensive template, all variables documented | **Primary template** |
-| `.env.local.example` | Development-focused template | Keep for reference |
-| `.env.template` | Legacy template | Deprecated, keep for compatibility |
+| `.env.example` | Comprehensive template, all variables documented | **Primary template - single source of truth** |
 
 ## Appendix B: Environment Variable Audit
 

@@ -48,9 +48,7 @@ git reset --hard pre-config-migration-$(date +%Y%m%d)
 .env.test.local         # ✅ Testing: Use this
 
 # Template files (committed, no real secrets)
-.env.example            # 📖 Comprehensive reference
-.env.local.example      # 📖 Development template
-.env.template           # 📖 Legacy compatibility
+.env.example            # 📖 Comprehensive reference and primary template
 ```
 
 ## Environment Precedence (Next.js)
