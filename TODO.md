@@ -126,7 +126,8 @@
 ### Licensing Incident (2025-10-01 23:30 UTC) — CRITICAL
 - ❌ GNU Emacs (GPL) detected in all v1.1.0 images
 - ✅ Dockerfile patched: Emacs removed, Node/Go downloads hardened, cosign staged
-- ⏳ Rebuild required for `minimal`, `standard`, `ai`, `web`, `full`
+- 🚀 **Rebuild TRIGGERED**: GitHub Actions workflow `codeserver-profiles.yml` dispatched at 23:36 UTC
+- ⏳ Building all 5 profiles (minimal, standard, ai, web, full) as v1.1.1
 - ⚠️ Tag removal pending: lack `delete:packages`/Docker Hub delete scopes
 
 ### Dev Infrastructure Upgrade Checklist
