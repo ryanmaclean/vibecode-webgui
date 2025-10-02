@@ -122,7 +122,7 @@ test("handles streaming responses", async ({ page }) => {
 });
 ```
 
-The optional `delayMs` argument inserts a pause between chunks so specs can validate UI behaviour over time. Reuse this helper for new streaming tests instead of duplicating ad hoc stream logic.
+The optional `delayMs` argument inserts a pause between chunks so specs can validate UI behaviour over time. Remember to keep each scripted entry terminated with `\n\n` so the Playwright route forwards discrete SSE events, and reuse this helper for new streaming tests instead of duplicating ad hoc stream logic.
 
 > ⚙️ **Datadog Instrumentation Tip**: When running streaming specs locally, export `DD_ENABLED=false` (or install `dd-trace`) before launching the dev server so the instrumentation layer does not block Playwright from starting.
 
