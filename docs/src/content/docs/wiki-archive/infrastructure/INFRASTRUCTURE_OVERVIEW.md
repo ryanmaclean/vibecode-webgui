@@ -44,7 +44,7 @@ VibeCode is designed as a **cloud-native, scalable platform** that can be deploy
 - **Automatic testing** and security scanning
 - **Production-ready** with monitoring and alerting
 
-**📖 Documentation**: [DEPLOYMENT.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/infrastructure/DEPLOYMENT.md#automated-cicd-deployment-recommended)
+**📖 Documentation**: [DEPLOYMENT.md](./DEPLOYMENT.md#automated-cicd-deployment-recommended)
 
 ### 2. **Kubernetes (Production)**
 - **Helm charts** for easy deployment and management
@@ -52,9 +52,9 @@ VibeCode is designed as a **cloud-native, scalable platform** that can be deploy
 - **Load balancing** and service mesh capabilities
 - **Multi-environment** support (dev, staging, prod)
 
-**📖 Documentation**: [DEPLOYMENT.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/infrastructure/DEPLOYMENT.md#kubernetes-deployment)
-**📁 Manifests**: [`/k8s/`](https://github.com/ryanmaclean/vibecode-webgui/tree/main/k8s)
-**📦 Helm Charts**: [`/helm/vibecode-platform/`](https://github.com/ryanmaclean/vibecode-webgui/tree/main/helm/vibecode-platform)
+**📖 Documentation**: [DEPLOYMENT.md](./DEPLOYMENT.md#kubernetes-deployment)
+**📁 Manifests**: [`/k8s/`](../../k8s/)
+**📦 Helm Charts**: [`/helm/vibecode-platform/`](../../helm/vibecode-platform/)
 
 ### 3. **Docker (Development/Testing)**
 - **Single container** for simple deployments
@@ -62,7 +62,7 @@ VibeCode is designed as a **cloud-native, scalable platform** that can be deploy
 - **Production-ready** configurations included
 - **Easy local development** setup
 
-**📖 Documentation**: [DEPLOYMENT.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/infrastructure/DEPLOYMENT.md#docker-deployment)
+**📖 Documentation**: [DEPLOYMENT.md](./DEPLOYMENT.md#docker-deployment)
 
 ### 4. **Self-Hosted Server**
 - **Traditional server** deployment
@@ -70,7 +70,7 @@ VibeCode is designed as a **cloud-native, scalable platform** that can be deploy
 - **NGINX reverse proxy**
 - **Manual scaling** and maintenance
 
-**📖 Documentation**: [DEPLOYMENT.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/infrastructure/DEPLOYMENT.md#self-hosted-server)
+**📖 Documentation**: [DEPLOYMENT.md](./DEPLOYMENT.md#self-hosted-server)
 
 ## ☁️ Cloud Infrastructure
 
@@ -81,8 +81,8 @@ VibeCode is designed as a **cloud-native, scalable platform** that can be deploy
 - **Application Gateway** for load balancing
 - **Key Vault** for secret management
 
-**📁 Terraform**: [`/infrastructure/terraform/azure/`](https://github.com/ryanmaclean/vibecode-webgui/tree/main/infrastructure/terraform/azure)
-**📖 Documentation**: [Azure Infrastructure README](https://github.com/ryanmaclean/vibecode-webgui/blob/main/infrastructure/terraform/azure/README.md)
+**📁 Terraform**: [`/infrastructure/terraform/azure/`](../../infrastructure/terraform/azure/)
+**📖 Documentation**: [Azure Infrastructure README](../../infrastructure/terraform/azure/README.md)
 
 ### Multi-Cloud Support
 - **Kubernetes-native** design works on any cloud
@@ -98,8 +98,8 @@ VibeCode is designed as a **cloud-native, scalable platform** that can be deploy
 - **Monitoring and security** configuration
 - **Environment-specific** configurations
 
-**📁 Files**: [`/infrastructure/terraform/`](https://github.com/ryanmaclean/vibecode-webgui/tree/main/infrastructure/terraform)
-**📖 Examples**: [terraform.tfvars.example](https://github.com/ryanmaclean/vibecode-webgui/blob/main/infrastructure/terraform/azure/terraform.tfvars.example)
+**📁 Files**: [`/infrastructure/terraform/`](../../infrastructure/terraform/)
+**📖 Examples**: [terraform.tfvars.example](../../infrastructure/terraform/azure/terraform.tfvars.example)
 
 ### Helm Charts
 - **Application deployment** and configuration
@@ -107,8 +107,8 @@ VibeCode is designed as a **cloud-native, scalable platform** that can be deploy
 - **Dependency management** and updates
 - **Production-ready** configurations
 
-**📁 Charts**: [`/helm/`](https://github.com/ryanmaclean/vibecode-webgui/tree/main/helm)
-**📖 Documentation**: [Platform Chart README](https://github.com/ryanmaclean/vibecode-webgui/blob/main/helm/vibecode-platform/README.md)
+**📁 Charts**: [`/helm/`](../../helm/)
+**📖 Documentation**: [Platform Chart README](../../helm/vibecode-platform/README.md)
 
 ### Kubernetes Manifests
 - **Raw YAML** configurations
@@ -116,7 +116,7 @@ VibeCode is designed as a **cloud-native, scalable platform** that can be deploy
 - **Testing and validation** manifests
 - **Development** configurations
 
-**📁 Manifests**: [`/k8s/`](https://github.com/ryanmaclean/vibecode-webgui/tree/main/k8s)
+**📁 Manifests**: [`/k8s/`](../../k8s/)
 
 ## 📊 Monitoring & Observability
 
@@ -126,7 +126,7 @@ VibeCode is designed as a **cloud-native, scalable platform** that can be deploy
 - **Custom metrics** and dashboards
 - **Alerting** and notification
 
-**📖 Documentation**: [DATADOG_MONITORING.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/infrastructure/DATADOG_MONITORING.md)
+**📖 Documentation**: [DATADOG_MONITORING.md](./DATADOG_MONITORING.md)
 
 ### OpenTelemetry
 - **Vendor-neutral** observability
@@ -134,7 +134,7 @@ VibeCode is designed as a **cloud-native, scalable platform** that can be deploy
 - **Metrics, traces, and logs**
 - **Multi-backend** support
 
-**📖 Documentation**: [OPENTELEMETRY_INTEGRATION.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/infrastructure/OPENTELEMETRY_INTEGRATION.md)
+**📖 Documentation**: [OPENTELEMETRY_INTEGRATION.md](./OPENTELEMETRY_INTEGRATION.md)
 
 ### Built-in Monitoring
 - **Health check endpoints**
@@ -226,7 +226,7 @@ VibeCode is designed as a **cloud-native, scalable platform** that can be deploy
 
 ### Production Deployment
 1. **Choose deployment method** (Kubernetes recommended)
-2. **Set up environment variables** (see [DEPLOYMENT.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/infrastructure/DEPLOYMENT.md))
+2. **Set up environment variables** (see [DEPLOYMENT.md](./DEPLOYMENT.md))
 3. **Configure monitoring** (Datadog + OpenTelemetry)
 4. **Deploy with Helm** or CI/CD pipeline
 5. **Verify deployment** with health checks
@@ -247,18 +247,18 @@ VibeCode is designed as a **cloud-native, scalable platform** that can be deploy
 
 ## 🔗 Related Documentation
 
-- **[DEPLOYMENT.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/infrastructure/DEPLOYMENT.md)** - Complete deployment guide
-- **[DATADOG_MONITORING.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/infrastructure/DATADOG_MONITORING.md)** - Monitoring setup
-- **[OPENTELEMETRY_INTEGRATION.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/infrastructure/OPENTELEMETRY_INTEGRATION.md)** - Observability
-- **[CONSOLIDATED_DOCUMENTATION.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/infrastructure/CONSOLIDATED_DOCUMENTATION.md)** - General documentation
-- **[Helm Chart README](https://github.com/ryanmaclean/vibecode-webgui/blob/main/helm/vibecode-platform/README.md)** - Helm deployment
-- **[Azure Infrastructure README](https://github.com/ryanmaclean/vibecode-webgui/blob/main/infrastructure/terraform/azure/README.md)** - Cloud setup
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide
+- **[DATADOG_MONITORING.md](./DATADOG_MONITORING.md)** - Monitoring setup
+- **[OPENTELEMETRY_INTEGRATION.md](./OPENTELEMETRY_INTEGRATION.md)** - Observability
+- **[CONSOLIDATED_DOCUMENTATION.md](./CONSOLIDATED_DOCUMENTATION.md)** - General documentation
+- **[Helm Chart README](../../helm/vibecode-platform/README.md)** - Helm deployment
+- **[Azure Infrastructure README](../../infrastructure/terraform/azure/README.md)** - Cloud setup
 
 ## 📞 Support & Resources
 
 - **GitHub Issues**: [Report bugs or request features](https://github.com/ryanmaclean/vibecode-webgui/issues)
 - **GitHub Discussions**: [Ask questions and share ideas](https://github.com/ryanmaclean/vibecode-webgui/discussions)
-- **Documentation**: [Browse all documentation](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/infrastructure/DOCUMENTATION_INDEX.md)
+- **Documentation**: [Browse all documentation](./DOCUMENTATION_INDEX.md)
 - **Wiki**: [Community-maintained knowledge base](https://github.com/ryanmaclean/vibecode-webgui/wiki)
 
 ---

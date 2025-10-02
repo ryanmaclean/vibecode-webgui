@@ -1,0 +1,214 @@
+# Datadog metrics configuration for vector database monitoring
+# To be used with datadog-agent in Kubernetes deployments
+
+init_config:
+
+instances:
+  - host: %%host%%
+    port: 5432
+    username: %%env_DD_POSTGRES_USER%%
+    password: %%env_DD_POSTGRES_PASS%%
+    dbname: %%env_DD_POSTGRES_DBNAME%%
+    ssl: require
+    
+    # Connect using an UNIX socket (host must begin with a /)
+    # connect_timeout: 10
+    
+    # Only collect metrics from specific tables and schemas (or all schemas)
+    # relations:
+    #   - relation_name: document_embeddings
+    #     schemas:
+    #       - public
+    
+    # Collect per-table metrics for these tables
+    table_count_limit: 200
+    
+    # Custom metrics for vector database operations
+    custom_metrics:
+      - descriptors:
+          - [rag_schema, table]
+        metrics:
+          - name: vector.dimensions
+            query: |
+              SELECT t.schemaname AS rag_schema,
+                     t.tablename AS table,
+                     array_length(a.embedding, 1) AS vector_dimensions
+              FROM pg_catalog.pg_tables t
+              JOIN document_embeddings a ON t.tablename = 'document_embeddings'
+              LIMIT 1;
+            columns:
+              - name: rag_schema
+                type: tag
+              - name: table
+                type: tag
+              - name: vector_dimensions
+                type: gauge
+            
+      - descriptors:
+          - [rag_schema, table]
+        metrics:
+          - name: vector.count
+            query: |
+              SELECT schemaname AS rag_schema,
+                     relname AS table,
+                     n_live_tup AS vector_count
+              FROM pg_stat_user_tables
+              WHERE relname = 'document_embeddings';
+            columns:
+              - name: rag_schema
+                type: tag
+              - name: table
+                type: tag
+              - name: vector_count
+                type: gauge
+      
+      - descriptors:
+          - [rag_schema, table]
+        metrics:
+          - name: vector.search.latency
+            query: |
+              SELECT schemaname AS rag_schema,
+                     relname AS table,
+                     EXTRACT(EPOCH FROM (now() - stats_reset))/NULLIF(seq_scan, 0) AS avg_latency
+              FROM pg_stat_user_tables
+              WHERE relname = 'document_embeddings' AND seq_scan > 0;
+            columns:
+              - name: rag_schema
+                type: tag
+              - name: table
+                type: tag
+              - name: avg_latency
+                type: gauge
+      
+      - descriptors:
+          - [index_type]
+        metrics:
+          - name: vector.index.size
+            query: |
+              SELECT
+                CASE 
+                  WHEN indexdef LIKE '%ivfflat%' THEN 'ivfflat'
+                  WHEN indexdef LIKE '%hnsw%' THEN 'hnsw'
+                  ELSE 'other'
+                END AS index_type,
+                pg_relation_size(i.indexrelid) AS index_size
+              FROM pg_indexes ix
+              JOIN pg_class i ON i.relname = ix.indexname
+              WHERE ix.tablename = 'document_embeddings' AND ix.indexdef LIKE '%embedding%';
+            columns:
+              - name: index_type
+                type: tag
+              - name: index_size
+                type: gauge
+      
+      - descriptors:
+          - []
+        metrics:
+          - name: vector.embedding_operations
+            query: |
+              SELECT 
+                COALESCE(COUNT(*), 0) AS embedding_operations
+              FROM pg_stat_activity
+              WHERE query LIKE '%embedding%' AND query LIKE '%INSERT%';
+            columns:
+              - name: embedding_operations
+                type: gauge
+      
+      - descriptors:
+          - []
+        metrics:
+          - name: vector.search_operations
+            query: |
+              SELECT 
+                COALESCE(COUNT(*), 0) AS search_operations
+              FROM pg_stat_activity
+              WHERE query LIKE '%embedding%' AND query LIKE '%ORDER BY%<=>%';
+            columns:
+              - name: search_operations
+                type: gauge
+      
+      - descriptors:
+          - [status]
+        metrics:
+          - name: vector.extension.status
+            query: |
+              SELECT
+                CASE WHEN EXISTS (
+                  SELECT 1 FROM pg_extension WHERE extname = 'vector'
+                ) THEN 'installed' ELSE 'missing' END AS status,
+                1 AS value;
+            columns:
+              - name: status
+                type: tag
+              - name: value
+                type: gauge
+      
+      # Performance metrics for vector operations
+      - descriptors:
+          - []
+        metrics:
+          - name: vector.connection_pool.size
+            query: |
+              SELECT COUNT(*) AS connection_count
+              FROM pg_stat_activity
+              WHERE application_name LIKE 'vector%';
+            columns:
+              - name: connection_count
+                type: gauge
+      
+      - descriptors:
+          - [operation_type]
+        metrics:
+          - name: vector.operations.count
+            query: |
+              SELECT
+                CASE
+                  WHEN query LIKE '%INSERT%' THEN 'insert'
+                  WHEN query LIKE '%SELECT%' AND query LIKE '%<=>%' THEN 'search'
+                  WHEN query LIKE '%UPDATE%' THEN 'update'
+                  WHEN query LIKE '%DELETE%' THEN 'delete'
+                  ELSE 'other'
+                END AS operation_type,
+                COUNT(*) AS operation_count
+              FROM pg_stat_activity
+              WHERE query LIKE '%embedding%'
+              GROUP BY operation_type;
+            columns:
+              - name: operation_type
+                type: tag
+              - name: operation_count
+                type: gauge
+      
+      # Cache hit ratio for vector tables
+      - descriptors:
+          - [table]
+        metrics:
+          - name: vector.cache.hit_ratio
+            query: |
+              SELECT
+                relname AS table,
+                CASE
+                  WHEN heap_blks_hit + heap_blks_read = 0 THEN 0
+                  ELSE heap_blks_hit::float / (heap_blks_hit + heap_blks_read)
+                END AS hit_ratio
+              FROM pg_statio_user_tables
+              WHERE relname = 'document_embeddings';
+            columns:
+              - name: table
+                type: tag
+              - name: hit_ratio
+                type: gauge
+
+# Log collection
+logs:
+  - type: file
+    path: /var/log/postgresql/*.log
+    service: vector-db
+    source: postgresql
+    log_processing_rules:
+      - type: multi_line
+        name: log_start_with_date
+        pattern: \d{4}-\d{2}-\d{2}
+      - type: exclude_at_match
+        name: exclude_debug_logs
+        pattern: DEBUG

@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { trackApiError } from '../lib/monitoring/error-tracking';
+import { trackApiError, trackError } from '../lib/monitoring/error-tracking';
 
 export interface ErrorTrackingMiddlewareOptions {
   /**
@@ -39,7 +39,7 @@ export interface ErrorTrackingMiddlewareOptions {
  * Wrap API route handlers with error tracking
  */
 export function withErrorTracking<R extends Response = NextResponse>(
-  handler: (request: NextRequest, context?: unknown) => Promise<R>,
+  handler: (request: NextRequest, context?: any) => Promise<R>,
   options: ErrorTrackingMiddlewareOptions = {}
 ) {
   const {
@@ -50,9 +50,9 @@ export function withErrorTracking<R extends Response = NextResponse>(
     maxBodySize = 1024 * 10 // 10KB default
   } = options;
 
-  return async (request: NextRequest, context?: unknown): Promise<R> => {
+  return async (request: NextRequest, context?: any): Promise<R> => {
     const startTime = Date.now();
-    let requestBody: string | null = null;
+    let requestBody: any = null;
 
     try {
       // Extract request details for tracking
@@ -133,11 +133,11 @@ export function withErrorTracking<R extends Response = NextResponse>(
 /**
  * Error tracking wrapper for API routes that return JSON
  */
-export function withJsonErrorTracking<T = unknown>(
-  handler: (request: NextRequest, context?: unknown) => Promise<T>,
+export function withJsonErrorTracking<T = any>(
+  handler: (request: NextRequest, context?: any) => Promise<T>,
   options: ErrorTrackingMiddlewareOptions = {}
 ) {
-  return withErrorTracking(async (request: NextRequest, context?: unknown) => {
+  return withErrorTracking(async (request: NextRequest, context?: any) => {
     try {
       const result = await handler(request, context);
       return NextResponse.json(result);
@@ -168,12 +168,12 @@ export function withJsonErrorTracking<T = unknown>(
 /**
  * Error tracking wrapper for API routes that handle specific HTTP methods
  */
-export function withMethodErrorTracking<T = unknown>(
-  handler: (request: NextRequest, context?: unknown) => Promise<NextResponse<T>>,
+export function withMethodErrorTracking<T = any>(
+  handler: (request: NextRequest, context?: any) => Promise<NextResponse<T>>,
   allowedMethods: string[] = ['GET'],
   options: ErrorTrackingMiddlewareOptions = {}
 ) {
-  return withErrorTracking(async (request: NextRequest, context?: unknown) => {
+  return withErrorTracking(async (request: NextRequest, context?: any) => {
     if (!allowedMethods.includes(request.method)) {
       const error = new Error(`Method ${request.method} not allowed`);
       trackApiError(
@@ -204,7 +204,7 @@ export function trackApiRouteError(
   request: NextRequest,
   error: Error,
   statusCode: number = 500,
-  additionalContext: Record<string, unknown> = {}
+  additionalContext: Record<string, any> = {}
 ): void {
   trackApiError(
     new URL(request.url).pathname,
@@ -226,7 +226,7 @@ export function trackValidationError(
   request: NextRequest,
   field: string,
   error: Error,
-  additionalContext: Record<string, unknown> = {}
+  additionalContext: Record<string, any> = {}
 ): void {
   trackApiRouteError(request, error, 400, {
     validation_field: field,
@@ -241,7 +241,7 @@ export function trackValidationError(
 export function trackAuthError(
   request: NextRequest,
   error: Error,
-  additionalContext: Record<string, unknown> = {}
+  additionalContext: Record<string, any> = {}
 ): void {
   trackApiRouteError(request, error, 401, {
     error_type: 'authentication',

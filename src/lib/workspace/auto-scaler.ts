@@ -85,7 +85,7 @@ export interface ScalingAction {
   createdAt: Date
   completedAt?: Date
   error?: string
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
 }
 
 export interface AutoScalingConfig {
@@ -133,8 +133,13 @@ export class WorkspaceAutoScaler {
       ...config
     }
 
-    // Resource limits are configured via this.config.resourceLimits
-    // No need to store a separate defaultWorkspaceLimits object
+    // Convert resource limits to workspace limits format
+    const defaultWorkspaceLimits = {
+      maxCpu: this.config.resourceLimits.maxCpuPerWorkspace,
+      maxMemory: this.config.resourceLimits.maxMemoryPerWorkspace,
+      maxDisk: 100000, // 100GB default
+      maxInstances: this.config.resourceLimits.maxInstancesPerWorkspace
+    }
 
     if (this.config.enabled) {
       this.startAutoScaling()
@@ -251,7 +256,7 @@ export class WorkspaceAutoScaler {
   private async evaluateRuleCondition(
     rule: ScalingRule,
     metrics: WorkspaceMetrics,
-    _resources: WorkspaceResources
+    resources: WorkspaceResources
   ): Promise<boolean> {
     const { condition } = rule
     const metricValue = metrics[condition.metric]

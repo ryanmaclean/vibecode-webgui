@@ -1,0 +1,6 @@
+{
+  "generated_at": "20250924T134745Z",
+  "query": "avg:postgresql.connections{env:kind,service:vibecode-postgres} by {db}",
+  "window_seconds": 900,
+  "series": []
+}

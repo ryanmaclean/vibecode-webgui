@@ -7,7 +7,7 @@
  * 
  * Designed for production AI workloads with comprehensive observability features.
  */
-import { Pool, PoolClient, PoolConfig, QueryResult, QueryResultRow } from 'pg';
+import { Pool, PoolClient, PoolConfig } from 'pg';
 import { DefaultAzureCredential } from '@azure/identity';
 import { metrics } from '../server-monitoring';
 import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
@@ -244,9 +244,9 @@ export class AzurePostgresConnection {
   /**
    * Execute a query with automatic retries
    */
-  async executeQuery<T extends QueryResultRow = QueryResultRow>(
+  async executeQuery<T = any>(
     queryText: string,
-    params: readonly unknown[] = [],
+    params: any[] = [],
     options: {
       retryCount?: number;
       useTransaction?: boolean;
@@ -265,14 +265,14 @@ export class AzurePostgresConnection {
         client = await this.getClient();
         const startTime = Date.now();
         
-        let queryResult: QueryResult<T>;
+        let queryResult: any;
         
         if (useTransaction) {
           await client.query('BEGIN');
-          queryResult = await client.query<T>(queryText, params);
+          queryResult = await client.query(queryText, params);
           await client.query('COMMIT');
         } else {
-          queryResult = await client.query<T>(queryText, params);
+          queryResult = await client.query(queryText, params);
         }
         
         if (this.config.enableMetrics) {
@@ -280,7 +280,7 @@ export class AzurePostgresConnection {
           metrics.increment('azure_postgres.query.success');
         }
         
-        return queryResult.rows;
+        return queryResult.rows as T[];
       } catch (error) {
         if (this.config.enableMetrics) {
           metrics.increment('azure_postgres.query.error');
@@ -595,9 +595,9 @@ export class AzurePostgresConnection {
   /**
    * Helper function to run EXPLAIN ANALYZE and get query plan
    */
-  async explainQuery(query: string, params: readonly unknown[] = []): Promise<string> {
+  async explainQuery(query: string, params: any[] = []): Promise<string> {
     const explainQuery = `EXPLAIN (ANALYZE, VERBOSE, BUFFERS, FORMAT JSON) ${query}`;
-    const result = await this.executeQuery<Record<string, unknown>>(explainQuery, params);
+    const result = await this.executeQuery<{ [key: string]: any }>(explainQuery, params);
     return JSON.stringify(result[0], null, 2);
   }
   

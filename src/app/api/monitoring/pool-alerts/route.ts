@@ -102,74 +102,8 @@ function checkPoolAlerts(poolStatus: any, thresholds: PoolAlertThresholds = DEFA
 }
 
 /**
- * @description Database Connection Pool Alerts API - Monitors PostgreSQL connection pool utilization and generates alerts when thresholds are exceeded. Integrates with Datadog Database Monitoring for real-time database metrics.
- * @route GET /api/monitoring/pool-alerts
- * @route POST /api/monitoring/pool-alerts
- * @access Private (requires authentication)
- *
- * @param {NextRequest} request - Next.js request object
- *
- * @returns {Response} GET returns connection pool alerts:
- *   - alerts: Array<{ poolKey, severity, message, utilizationPercent, availableConnections }> - Active alerts
- *   - dbmEnabled: boolean - Datadog DBM status
- *   - connectionMetrics: { activeConnections, maxConnections, idleConnections, utilizationPercent } - Pool metrics
- *   - alertCount: number - Total alert count
- *   - criticalAlerts: number - Critical severity count
- *   - warningAlerts: number - Warning severity count
- *
- * @returns {Response} POST configures alert thresholds with body:
- *   - thresholds: { warningThreshold, criticalThreshold, minAvailableConnections } - Alert configuration
- *
- * @example
- * // GET Request - Check pool alerts
  * GET /api/monitoring/pool-alerts
- * Headers: { Authorization: "Bearer <token>" }
- *
- * // Response
- * {
- *   "alerts": [
- *     {
- *       "poolKey": "postgres-main",
- *       "severity": "warning",
- *       "message": "Database connection pool approaching capacity (82.5% utilization, 2 available)",
- *       "activeConnections": 33,
- *       "totalConnections": 40,
- *       "utilizationPercent": 82.5,
- *       "availableConnections": 2
- *     }
- *   ],
- *   "dbmEnabled": true,
- *   "connectionMetrics": {
- *     "activeConnections": 33,
- *     "maxConnections": 100,
- *     "idleConnections": 7,
- *     "utilizationPercent": 82.5
- *   },
- *   "alertCount": 1,
- *   "criticalAlerts": 0,
- *   "warningAlerts": 1
- * }
- *
- * // POST Request - Configure thresholds
- * POST /api/monitoring/pool-alerts
- * {
- *   "thresholds": {
- *     "warningThreshold": 80,
- *     "criticalThreshold": 90,
- *     "minAvailableConnections": 2
- *   }
- * }
- *
- * // Response
- * {
- *   "message": "Alert thresholds configured successfully",
- *   "thresholds": { "warningThreshold": 80, "criticalThreshold": 90 }
- * }
- *
- * @throws {401} Unauthorized - Authentication required
- * @throws {400} Invalid thresholds - Validation failed (e.g., warning >= critical)
- * @throws {500} Internal server error - Failed to check pool alerts
- * @throws {503} Service unavailable - Datadog DBM not enabled
+ * Check database metrics using Datadog DBM and return any active alerts
  */
 export async function GET(request: NextRequest) {
   try {

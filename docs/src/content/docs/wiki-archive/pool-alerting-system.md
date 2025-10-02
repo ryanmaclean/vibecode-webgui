@@ -43,19 +43,19 @@ Implemented a comprehensive automatic alerting system for database connection po
 
 ### API Endpoints
 
-#### `GET /api/monitoring/overview/pool-alerts`
+#### `GET /api/monitoring/pool-alerts`
 - Fetches current pool status and active alerts
 - Supports custom threshold parameters
 - Returns structured alert data with severity levels
 
-#### `POST /api/monitoring/overview/pool-alerts`  
+#### `POST /api/monitoring/pool-alerts`  
 - Configure alert thresholds dynamically
 - Validates threshold ranges and logic
 - Requires authentication for security
 
 ### Dashboard Integration
 
-**Location**: `/monitoring/overview/database`
+**Location**: `/monitoring/database`
 
 **Features**:
 - Active alerts section with severity-based styling
@@ -97,14 +97,14 @@ Database connection completely fails
 ## Usage Examples
 
 ### Viewing Alerts
-1. Navigate to `/monitoring/overview/database`
+1. Navigate to `/monitoring/database`
 2. Active alerts appear at the top in red/yellow cards
 3. Connection pools show visual indicators for utilization levels
 4. Auto-refresh keeps data current every 10 seconds
 
 ### Configuring Thresholds
 ```typescript
-POST /api/monitoring/overview/pool-alerts
+POST /api/monitoring/pool-alerts
 {
   "thresholds": {
     "warningThreshold": 75,
@@ -123,8 +123,8 @@ POST /api/monitoring/overview/pool-alerts
 ## Technical Architecture
 
 ### Components Created
-1. **`/api/monitoring/overview/pool-alerts/route.ts`** - Alert detection and configuration API
-2. **`/monitoring/overview/database/page.tsx`** - Enhanced dashboard with alerts UI
+1. **`/api/monitoring/pool-alerts/route.ts`** - Alert detection and configuration API
+2. **`/monitoring/database/page.tsx`** - Enhanced dashboard with alerts UI
 3. **Enhanced DatadogIntegration** - Pool-specific metrics and events
 4. **`test-pool-alerts.cjs`** - Validation and testing script
 

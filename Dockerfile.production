@@ -1,0 +1,200 @@
+# syntax=docker/dockerfile:1.4
+# Multi-stage production Dockerfile with source maps for Datadog Dynamic Instrumentation
+# Optimized for AKS deployment with security best practices
+
+# ===== Build Stage =====
+FROM node:20-slim AS base
+WORKDIR /app
+
+# Install dependencies needed for building
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+
+
+# ===== Dependencies Stage =====
+FROM base AS deps
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install dependencies (production only)
+RUN npm install --omit=dev --legacy-peer-deps --force \
+  && npm cache clean --force
+
+# ===== Builder Stage =====
+FROM base AS builder
+
+# Copy package files
+COPY package.json package-lock.json* ./
+COPY prisma ./prisma
+
+# Install all dependencies needed for build
+RUN npm install --legacy-peer-deps --force
+
+# Generate Prisma client for the build step
+RUN npx prisma generate
+
+# Copy source code
+COPY . .
+
+# Set build environment variables
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV GENERATE_SOURCEMAP=true
+
+# Configure Next.js for source maps
+ENV NEXT_BUILD_SOURCEMAP=true
+
+# Build the application with source maps
+RUN npm run build
+
+# ===== Production Stage =====
+FROM node:20-slim AS runner
+
+# Install security updates and required packages
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+        dumb-init \
+        curl \
+        tini && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+WORKDIR /app
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+
+# Datadog APM and Dynamic Instrumentation configuration
+ENV DD_TRACE_ENABLED=true
+ENV DD_RUNTIME_METRICS_ENABLED=true
+ENV DD_PROFILING_ENABLED=true
+ENV DD_LOGS_INJECTION=true
+ENV DD_DYNAMIC_INSTRUMENTATION_ENABLED=true
+ENV DD_SOURCE_MAP_PATH=/app/source-maps
+
+# Security headers
+ENV DD_APPSEC_ENABLED=true
+ENV DD_IAST_ENABLED=true
+ENV DD_APPSEC_RULES_FILE=/app/appsec-rules.json
+
+# Copy built application from builder
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+
+# Copy source maps for Dynamic Instrumentation
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./source-maps/.next
+COPY --from=builder --chown=nextjs:nodejs /app/src ./source-maps/src
+
+# Provide runtime instrumentation entrypoint
+COPY --from=builder --chown=nextjs:nodejs /app/src/instrument.cjs ./instrument.cjs
+
+# Copy production dependencies
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+# Ensure generated Prisma client ships with the runtime image
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+
+# Ensure writable directory for Datadog trace logs
+RUN mkdir -p /app/logs && chown nextjs:nodejs /app/logs
+
+# Write Datadog AppSec rules to disk
+RUN cat <<'EOF' > /app/appsec-rules.json
+{
+  "version": "2.2",
+  "metadata": {
+    "rules_version": "1.0.0"
+  },
+  "rules": [
+    {
+      "id": "vibecode-001",
+      "name": "Block SQL injection attempts",
+      "tags": {
+        "type": "security_scanner",
+        "category": "attack_attempt"
+      },
+      "conditions": [
+        {
+          "parameters": {
+            "inputs": [
+              { "address": "server.request.query" },
+              { "address": "server.request.body" }
+            ],
+            "regex": "(?i)(union|select|insert|update|delete|drop|create|alter)\\s"
+          },
+          "operator": "match_regex"
+        }
+      ],
+      "transformers": [],
+      "on_match": ["block"]
+    }
+  ]
+}
+EOF
+
+# Write health check script
+RUN cat <<'EOF' > /app/healthcheck.js
+const http = require('http');
+
+const options = {
+  hostname: 'localhost',
+  port: 3000,
+  path: '/api/health',
+  method: 'GET',
+  timeout: 5000
+};
+
+const req = http.request(options, (res) => {
+  if (res.statusCode === 200) {
+    process.exit(0);
+  } else {
+    console.error(`Health check failed with status: ${res.statusCode}`);
+    process.exit(1);
+  }
+});
+
+req.on('error', (err) => {
+  console.error(`Health check error: ${err.message}`);
+  process.exit(1);
+});
+
+req.on('timeout', () => {
+  console.error('Health check timeout');
+  req.destroy();
+  process.exit(1);
+});
+
+req.end();
+EOF
+
+# Set proper permissions
+RUN chmod +x healthcheck.js
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD node /app/healthcheck.js
+
+# Use tini as init system to handle signals properly
+ENTRYPOINT ["tini", "--"]
+
+# Start the application
+CMD ["node", "server.js"]

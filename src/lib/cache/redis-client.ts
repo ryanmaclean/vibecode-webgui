@@ -34,7 +34,7 @@ interface RedisCommands {
 // Pipeline interface
 interface Pipeline {
   setex(key: string, seconds: number, value: string): Pipeline;
-  exec(): Promise<[Error | null, unknown][]>;
+  exec(): Promise<[Error | null, any][]>;
 }
 
 // Combined Redis type with command extensions
@@ -78,7 +78,7 @@ const getValkeyConfig = () => {
 const config = getValkeyConfig();
 
 // Create Valkey client with optimized settings (using Redis-compatible ioredis client)
-let redisClient: Redis | null = null;
+let redisClient: any = null;
 
 try {
   if ('url' in config) {
@@ -163,7 +163,7 @@ export const CacheTTL = {
  * Enhanced cache operations with performance monitoring
  */
 export class CacheManager {
-  private redis: Redis | null;
+  private redis: any;
 
   constructor() {
     this.redis = redisClient;
@@ -172,7 +172,7 @@ export class CacheManager {
   /**
    * Get value from cache with metrics
    */
-  async get<T = unknown>(key: string): Promise<T | null> {
+  async get<T = any>(key: string): Promise<T | null> {
     if (!this.redis) return null;
 
     const startTime = Date.now();
@@ -200,7 +200,7 @@ export class CacheManager {
   /**
    * Set value in cache with TTL and metrics
    */
-  async set(key: string, value: unknown, ttl: number = CacheTTL.MEDIUM): Promise<boolean> {
+  async set(key: string, value: any, ttl: number = CacheTTL.MEDIUM): Promise<boolean> {
     if (!this.redis) return false;
 
     const startTime = Date.now();
@@ -231,7 +231,7 @@ export class CacheManager {
       const keys = Array.isArray(key) ? key : [key];
       await this.redis.del(...keys);
       
-      metrics.increment('cache.delete', { count: keys.length });
+      metrics.increment('cache.delete', { count: keys.length as any });
       return true;
     } catch (error) {
       metrics.increment('cache.delete.error');
@@ -258,7 +258,7 @@ export class CacheManager {
   /**
    * Get multiple keys at once
    */
-  async mget<T = unknown>(keys: string[]): Promise<(T | null)[]> {
+  async mget<T = any>(keys: string[]): Promise<(T | null)[]> {
     if (!this.redis || keys.length === 0) return [];
 
     try {
@@ -273,7 +273,7 @@ export class CacheManager {
   /**
    * Set multiple keys at once
    */
-  async mset(pairs: Array<{ key: string; value: unknown; ttl?: number }>): Promise<boolean> {
+  async mset(pairs: Array<{ key: string; value: any; ttl?: number }>): Promise<boolean> {
     if (!this.redis || pairs.length === 0) return false;
 
     try {
@@ -285,7 +285,7 @@ export class CacheManager {
       }
       
       await pipeline.exec();
-      metrics.increment('cache.mset.success', { count: pairs.length });
+      metrics.increment('cache.mset.success', { count: pairs.length as any });
       return true;
     } catch (error) {
       metrics.increment('cache.mset.error');
@@ -412,7 +412,7 @@ export const cache = new CacheManager();
 /**
  * Cache wrapper for functions with automatic key generation
  */
-export function withCache<T extends unknown[], R>(
+export function withCache<T extends any[], R>(
   fn: (...args: T) => Promise<R>,
   keyGenerator: (...args: T) => string,
   ttl: number = CacheTTL.MEDIUM

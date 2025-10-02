@@ -8,11 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './ui/resizable';
-import {
-  Send,
-  Sparkles,
-  Code,
-  Eye,
+import { 
+  Send, 
+  Sparkles, 
+  Code, 
+  Eye, 
   Globe,
   Download,
   Github,
@@ -74,17 +74,17 @@ interface SpeechRecognition extends EventTarget {
   interimResults: boolean;
   lang: string;
   maxAlternatives: number;
-  onaudioend: ((this: SpeechRecognition, ev: Event) => void) | null;
-  onaudiostart: ((this: SpeechRecognition, ev: Event) => void) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => void) | null;
-  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => void) | null;
-  onnomatch: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
-  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
-  onsoundend: ((this: SpeechRecognition, ev: Event) => void) | null;
-  onsoundstart: ((this: SpeechRecognition, ev: Event) => void) | null;
-  onspeechend: ((this: SpeechRecognition, ev: Event) => void) | null;
-  onspeechstart: ((this: SpeechRecognition, ev: Event) => void) | null;
-  onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onaudioend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onaudiostart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
+  onnomatch: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
+  onsoundend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onsoundstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onspeechend: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onspeechstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
   serviceURI: string;
   start(): void;
   stop(): void;
@@ -1325,9 +1325,8 @@ export default function LandingPage() {
                           isListening && "bg-green-100 text-green-600"
                         )}
                         disabled={isRecording}
-                        aria-label={isListening ? "Stop voice recognition" : "Start voice recognition"}
                       >
-                        {isListening ? <MicOff className="w-4 h-4" aria-hidden="true" /> : <Mic className="w-4 h-4" aria-hidden="true" />}
+                        {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                       </Button>
                     )}
 
@@ -1342,12 +1341,11 @@ export default function LandingPage() {
                           isRecording && "bg-red-100 text-red-600"
                         )}
                         disabled={isListening}
-                        aria-label={isRecording ? "Stop audio recording" : "Start audio recording"}
                       >
-                        <Radio className="w-4 h-4" aria-hidden="true" />
+                        <Radio className="w-4 h-4" />
                       </Button>
                     )}
-
+                    
                     {/* File Upload */}
                     {currentModel?.supportsFiles && (
                       <Button
@@ -1355,12 +1353,11 @@ export default function LandingPage() {
                         size="sm"
                         onClick={() => fileInputRef.current?.click()}
                         className="p-1 h-8 w-8"
-                        aria-label="Attach file"
                       >
-                        <Paperclip className="w-4 h-4" aria-hidden="true" />
+                        <Paperclip className="w-4 h-4" />
                       </Button>
                     )}
-
+                    
                     {/* Prompt Enhancement */}
                     <Button
                       variant="ghost"
@@ -1368,9 +1365,8 @@ export default function LandingPage() {
                       onClick={enhancePrompt}
                       disabled={!input.trim() || isTyping}
                       className="p-1 h-8 w-8"
-                      aria-label="Enhance prompt with AI suggestions"
                     >
-                      <Zap className="w-4 h-4" aria-hidden="true" />
+                      <Zap className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>

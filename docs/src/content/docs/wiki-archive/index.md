@@ -43,19 +43,19 @@ VibeCode is a comprehensive AI-powered development platform that transforms how 
   
   Complete API documentation with examples, authentication, and interactive testing
 
-- **🤖 [AI Features](/genai-integration/)**
+- **🤖 [AI Features](/ai-integration/)**
   
   Learn how to leverage AI features for code generation, analysis, and intelligent assistance
 
-- **🛠️ [Development Guide](/developer-guide/)**
+- **🛠️ [Development Guide](/development/)**
   
   Development guides, best practices, and detailed contribution guidelines
 
-- **🚀 [Deployment](/production-deployment-guide/)**
+- **🚀 [Deployment](/deployment/)**
   
   Deploy VibeCode to production with Docker, Kubernetes, and cloud providers
 
-- **📊 [Monitoring](/monitoring/overview/)**
+- **📊 [Monitoring](/monitoring/)**
   
   Set up observability, metrics, and monitoring for your VibeCode deployment
 

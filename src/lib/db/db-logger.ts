@@ -2,21 +2,20 @@
 // Provides structured logging for database operations
 
 import { PrismaClient } from '@prisma/client';
-import type { Prisma } from '@prisma/client';
 
 interface Logger {
-  debug: (...args: unknown[]) => void;
-  info: (...args: unknown[]) => void;
-  warn: (...args: unknown[]) => void;
-  error: (...args: unknown[]) => void;
+  debug: (...args: any[]) => void;
+  info: (...args: any[]) => void;
+  warn: (...args: any[]) => void;
+  error: (...args: any[]) => void;
 }
 
 // Create a default logger
 const defaultLogger: Logger = {
-  debug: (...args: unknown[]) => console.debug('[DB]', ...args),
-  info: (...args: unknown[]) => console.info('[DB]', ...args),
-  warn: (...args: unknown[]) => console.warn('[DB]', ...args),
-  error: (...args: unknown[]) => console.error('[DB]', ...args),
+  debug: (...args: any[]) => console.debug('[DB]', ...args),
+  info: (...args: any[]) => console.info('[DB]', ...args),
+  warn: (...args: any[]) => console.warn('[DB]', ...args),
+  error: (...args: any[]) => console.error('[DB]', ...args),
 };
 
 // Use default logger
@@ -27,7 +26,7 @@ function setupExternalLogger() {
   // Try to dynamically import at runtime - we can't statically check this
   // so we need to use dynamic imports and runtime type checking
   import('@/lib/logger')
-    .then((loggerModule: { createLogger?: (name: string) => Logger; debug?: (...args: unknown[]) => void; info?: (...args: unknown[]) => void; warn?: (...args: unknown[]) => void; error?: (...args: unknown[]) => void }) => {
+    .then((loggerModule: any) => {
       if (typeof loggerModule.createLogger === 'function') {
         const externalLogger = loggerModule.createLogger('database');
         if (
@@ -114,9 +113,20 @@ export function configureDbLogging(options: Partial<DbLoggingOptions>) {
   logger.info('Database logging configured', { options: globalOptions });
 }
 
-// Define Prisma event types using official Prisma definitions
-type PrismaQueryEvent = Prisma.QueryEvent;
-type PrismaLogEvent = Prisma.LogEvent;
+// Define Prisma event types
+interface PrismaQueryEvent {
+  timestamp: Date;
+  query: string;
+  params: string;
+  duration: number;
+  target: string;
+}
+
+interface PrismaLogEvent {
+  timestamp: Date;
+  message: string;
+  target: string;
+}
 
 /**
  * Create a Prisma client with logging middleware
@@ -302,11 +312,11 @@ export async function executeWithLogging<T>(
 /**
  * Create a function wrapper that logs execution
  */
-export function withDbLogging<T extends (...args: unknown[]) => Promise<unknown>>(
+export function withDbLogging<T extends (...args: any[]) => Promise<any>>(
   type: DbOperationType,
   message: string,
   fn: T,
-  details?: Record<string, unknown>,
+  details?: Record<string, any>,
   level: LogLevel = LogLevel.INFO
 ): T {
   return (async (...args: Parameters<T>) => {
@@ -328,7 +338,7 @@ export function withDbLogging<T extends (...args: unknown[]) => Promise<unknown>
  */
 export function logDbConnection(
   event: 'connect' | 'disconnect' | 'pool_add' | 'pool_remove',
-  details?: Record<string, unknown>,
+  details?: Record<string, any>,
   level: LogLevel = LogLevel.INFO
 ) {
   if (!globalOptions.logConnections || level > globalOptions.level!) {
@@ -348,7 +358,7 @@ export function logDbConnection(
  */
 export function logDbTransaction(
   event: 'begin' | 'commit' | 'rollback',
-  details?: Record<string, unknown>,
+  details?: Record<string, any>,
   level: LogLevel = LogLevel.INFO
 ) {
   logDbOperation(
@@ -372,7 +382,7 @@ export function getDbLoggingConfig(): DbLoggingOptions {
 export function logSlowQuery(
   query: string,
   duration: number,
-  params?: unknown,
+  params?: any,
   threshold: number = globalOptions.slowQueryThreshold!
 ) {
   if (duration <= threshold) {
@@ -400,15 +410,12 @@ export function enhancePrismaWithLogging(
   options?: Partial<DbLoggingOptions>
 ): PrismaClient {
   const loggingOptions = { ...globalOptions, ...options };
-  const eventAwareClient = prisma as PrismaClient<
-    Prisma.PrismaClientOptions,
-    'query'
-  >;
   
   // Add event handlers if possible
   try {
     if (loggingOptions.logQueries && loggingOptions.level! >= LogLevel.DEBUG) {
-      eventAwareClient.$on('query', (e: PrismaQueryEvent) => {
+      // @ts-expect-error - Adding event handlers to an existing client might not be supported
+      prisma.$on('query', (e: PrismaQueryEvent) => {
         const durationMs = e.duration;
         
         // Determine log level based on query duration

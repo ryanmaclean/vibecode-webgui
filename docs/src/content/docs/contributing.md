@@ -24,7 +24,7 @@ If you're new to open source or VibeCode, check out our [Good First Issues](http
 
 ## Code of Conduct
 
-This project adheres to our [Code of Conduct](https://github.com/ryanmaclean/vibecode-webgui/blob/main/CODE_OF_CONDUCT.md). By participating, you're expected to uphold this code. Please report any unacceptable behavior to [conduct@vibecode.dev](mailto:conduct@vibecode.dev).
+This project adheres to our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you're expected to uphold this code. Please report any unacceptable behavior to [conduct@vibecode.dev](mailto:conduct@vibecode.dev).
 
 ## Getting Started
 
@@ -173,7 +173,7 @@ Before creating an issue, please:
 
 ## License
 
-By contributing to VibeCode, you agree that your contributions will be licensed under the [MIT License](https://github.com/ryanmaclean/vibecode-webgui/blob/main/LICENSE).
+By contributing to VibeCode, you agree that your contributions will be licensed under the [MIT License](LICENSE).
 
 ---
 

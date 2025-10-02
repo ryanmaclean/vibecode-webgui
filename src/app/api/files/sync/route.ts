@@ -10,29 +10,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import tracer from 'dd-trace'
 import { WebSocketServer, WebSocket } from 'ws'
 import { getFileSystemInstance } from '@/lib/file-system-operations'
-import type { FileSystemConfig, FileSyncEvent, SecureFileSystemOperations } from '@/lib/file-system-operations'
-import { parseFileSyncMessage } from '@/lib/file-sync/websocket'
-import { subscriptionManager } from '@/lib/file-sync/subscription-manager'
-
-type StatsdClient = {
-  increment: (metric: string, value?: number, tags?: Record<string, string>) => void
-  histogram: (metric: string, value: number, tags?: Record<string, string>) => void
-}
-
-const statsd = tracer?.dogstatsd as StatsdClient | undefined
+import type { FileSystemConfig, FileSyncEvent } from '@/lib/file-system-operations'
+import { prisma } from '@/lib/prisma'
+import { vectorStore } from '@/lib/vector-store'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
-// WebSocket connections per workspace (used for wide broadcasts)
-const workspaceConnections = new Map<string, Set<WebSocket>>()
-
-type RealtimeFileSystem = SecureFileSystemOperations & {
-  handleFileUpdate?: (payload: unknown) => void
+interface WebSocketMessage {
+  type: string;
+  payload?: any; // To be refined in future implementations
 }
+
+// WebSocket connections per workspace
+const workspaceConnections = new Map<string, Set<WebSocket>>()
 
 export async function GET(request: NextRequest) {
   try {
@@ -134,7 +127,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function createFilesInWorkspace(workspaceId: string, files: Array<{path: string, content: string, type: string}>) {
-  const { spawn } = await import('node:child_process')
+  const { spawn } = require('child_process')
   const namespace = 'vibecode'
 
   // Create a temporary pod to handle file creation
@@ -252,36 +245,18 @@ if (!global.wss) {
         enableRealTimeSync: true,
         conflictResolution: 'auto-merge'
       }
-      const fileSystem: RealtimeFileSystem = getFileSystemInstance(fsConfig)
+      const fileSystem = getFileSystemInstance(fsConfig)
 
       // Event handler for file sync events
       const handleFileSyncEvent = (event: FileSyncEvent) => {
         const connections = workspaceConnections.get(workspaceId)
-        const targeted = new Set<WebSocket>(
-          subscriptionManager.getSubscribers(workspaceId, event.metadata.path),
-        )
-
         if (connections) {
           connections.forEach(client => {
             if (client.readyState === WebSocket.OPEN) {
-              targeted.add(client)
+              client.send(JSON.stringify(event))
             }
           })
         }
-
-        const payload = JSON.stringify(event)
-        targeted.forEach(client => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(payload)
-          }
-        })
-
-        recordBroadcastMetrics({
-          workspaceId,
-          path: event.metadata.path,
-          targeted: targeted.size,
-          totalConnections: connections?.size ?? 0,
-        })
       }
 
       // Subscribe to file system events
@@ -291,15 +266,11 @@ if (!global.wss) {
       // Handle incoming messages
       ws.on('message', (data: string) => {
         try {
-          const message = parseFileSyncMessage(data)
-          if (!message) {
-            console.warn('Unrecognized WebSocket message payload:', data)
-            return
-          }
+          const message: WebSocketMessage = JSON.parse(data)
 
           switch (message.type) {
             case 'file-update':
-              fileSystem.handleFileUpdate?.(message.payload)
+              (fileSystem as any).handleFileUpdate?.(message.payload)
               break
 
             case 'ping':
@@ -307,8 +278,12 @@ if (!global.wss) {
               break
 
             case 'subscribe-file':
-              handleSubscription(ws, workspaceId, message.payload.path)
+              // Subscribe to specific file changes
+              // TODO: Implement file-specific subscriptions
               break
+
+            default:
+              console.warn('Unknown WebSocket message type:', message.type)
           }
         } catch (error) {
           console.error('Failed to process WebSocket message:', error)
@@ -327,10 +302,6 @@ if (!global.wss) {
 
         fileSystem.off('file-sync', handleFileSyncEvent)
         fileSystem.off('conflict-detected', handleFileSyncEvent)
-        const removed = subscriptionManager.removeForWorkspace(workspaceId, ws)
-        if (removed > 0) {
-          recordRemovalMetrics(workspaceId, removed)
-        }
       })
 
       // Send initial connection confirmation
@@ -346,32 +317,6 @@ if (!global.wss) {
       ws.close(1011, 'Internal server error')
     }
   })
-}
-
-function handleSubscription(socket: WebSocket, workspaceId: string, rawPath: string) {
-  const outcome = subscriptionManager.subscribe(workspaceId, rawPath, socket)
-
-  if (!outcome.ok) {
-    recordSubscriptionError(workspaceId, outcome.reason)
-    socket.send(
-      JSON.stringify({
-        type: 'error',
-        reason: outcome.reason,
-        timestamp: new Date(),
-      }),
-    )
-    return
-  }
-
-  recordSubscriptionSuccess(workspaceId, outcome.path)
-  socket.send(
-    JSON.stringify({
-      type: 'subscribed',
-      workspaceId,
-      path: outcome.path,
-      timestamp: new Date(),
-    }),
-  )
 }
 
 /**
@@ -403,62 +348,4 @@ export async function OPTIONS(_request: NextRequest) {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   })
-}
-
-function recordSubscriptionSuccess(workspaceId: string, path: string) {
-  if (!statsd) {
-    return
-  }
-  statsd.increment('filesync.subscription.success', 1, {
-    workspace: sanitizeTagValue(workspaceId),
-    path: sanitizeTagValue(path),
-  })
-}
-
-function recordSubscriptionError(workspaceId: string, reason: string) {
-  if (!statsd) {
-    return
-  }
-  statsd.increment('filesync.subscription.error', 1, {
-    workspace: sanitizeTagValue(workspaceId),
-    reason: sanitizeTagValue(reason),
-  })
-}
-
-function recordRemovalMetrics(workspaceId: string, count: number) {
-  if (!statsd) {
-    return
-  }
-  statsd.increment('filesync.subscription.removed', count, {
-    workspace: sanitizeTagValue(workspaceId),
-  })
-}
-
-function recordBroadcastMetrics({
-  workspaceId,
-  path,
-  targeted,
-  totalConnections,
-}: {
-  workspaceId: string
-  path?: string
-  targeted: number
-  totalConnections: number
-}) {
-  if (!statsd) {
-    return
-  }
-  const tags: Record<string, string> = {
-    workspace: sanitizeTagValue(workspaceId),
-    connections: String(totalConnections),
-  }
-  if (path) {
-    tags.path = sanitizeTagValue(path)
-  }
-  statsd.increment('filesync.broadcast.events', 1, tags)
-  statsd.histogram('filesync.broadcast.targets', targeted, tags)
-}
-
-function sanitizeTagValue(value: string): string {
-  return value.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '_').slice(0, 64)
 }

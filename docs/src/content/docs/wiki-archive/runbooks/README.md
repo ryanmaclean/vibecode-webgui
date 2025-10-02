@@ -11,33 +11,33 @@ This directory contains operational runbooks for incident response, troubleshoot
 ## 📚 Available Runbooks
 
 ### Critical Incidents
-- [Service Down](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/service-down.md) - Complete service outage response
-- [High Error Rate](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/high-error-rate.md) - Elevated 5xx error responses
-- [Database Issues](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/database-issues.md) - PostgreSQL connection and performance problems
-- [Security Incident](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/security-incident.md) - Security breach or vulnerability response
+- [Service Down](./service-down.md) - Complete service outage response
+- [High Error Rate](./high-error-rate.md) - Elevated 5xx error responses
+- [Database Issues](./database-issues.md) - PostgreSQL connection and performance problems
+- [Security Incident](./security-incident.md) - Security breach or vulnerability response
 
 ### Performance Issues
-- [High Latency](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/high-latency.md) - API response time degradation
-- [High Memory Usage](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/high-memory.md) - Memory consumption issues
-- [CPU Throttling](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/cpu-throttling.md) - High CPU utilization
-- [Database Connection Pool](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/db-connections.md) - Connection pool exhaustion
+- [High Latency](./high-latency.md) - API response time degradation
+- [High Memory Usage](./high-memory.md) - Memory consumption issues
+- [CPU Throttling](./cpu-throttling.md) - High CPU utilization
+- [Database Connection Pool](./db-connections.md) - Connection pool exhaustion
 
 ### Data & AI Issues
-- [AI Model Performance](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/ai-model-performance.md) - Code suggestion quality degradation
-- [AI Project Generation](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/ai-project-generation.md) - AI project generation workflow failures
-- [Workspace Provisioning](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/workspace-provisioning.md) - Code-server workspace creation issues
-- [Data Pipeline Issues](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/data-pipeline-issues.md) - Metaplane data observability alerts
-- [Data Quality Failures](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/data-quality.md) - Data quality check failures
+- [AI Model Performance](./ai-model-performance.md) - Code suggestion quality degradation
+- [AI Project Generation](./ai-project-generation.md) - AI project generation workflow failures
+- [Workspace Provisioning](./workspace-provisioning.md) - Code-server workspace creation issues
+- [Data Pipeline Issues](./data-pipeline-issues.md) - Metaplane data observability alerts
+- [Data Quality Failures](./data-quality.md) - Data quality check failures
 
 ### Infrastructure Issues
-- [Container Issues](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/container-issues.md) - Docker/Kubernetes container problems
-- [Network Issues](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/network-issues.md) - Network connectivity problems
-- [Storage Issues](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/storage-issues.md) - Persistent volume and storage problems
+- [Container Issues](./container-issues.md) - Docker/Kubernetes container problems
+- [Network Issues](./network-issues.md) - Network connectivity problems
+- [Storage Issues](./storage-issues.md) - Persistent volume and storage problems
 
 ### Monitoring & Alerting
-- [Alert Fatigue](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/alert-fatigue.md) - Managing noisy alerts
-- [Monitoring System Down](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/monitoring-down.md) - Datadog or monitoring issues
-- [SLO Breach](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/runbooks/slo-breach.md) - Service level objective violations
+- [Alert Fatigue](./alert-fatigue.md) - Managing noisy alerts
+- [Monitoring System Down](./monitoring-down.md) - Datadog or monitoring issues
+- [SLO Breach](./slo-breach.md) - Service level objective violations
 
 ## 🚨 Incident Response Process
 
@@ -163,7 +163,7 @@ WHERE (now() - pg_stat_activity.query_start) > interval '10 minutes';
 
 ```bash
 # Main application health
-curl -s http://localhost:3000/api/monitoring/overview/health | jq
+curl -s http://localhost:3000/api/monitoring/health | jq
 
 # AI project generation health
 curl -s http://localhost:3000/api/ai/generate-project -X POST \
@@ -177,13 +177,13 @@ curl -s http://localhost:3000/api/code-server/session | jq
 curl -s http://localhost:3001/health | jq
 
 # Database connectivity
-curl -s http://localhost:3000/api/monitoring/overview/health | jq '.checks.database'
+curl -s http://localhost:3000/api/monitoring/health | jq '.checks.database'
 
 # Redis connectivity
-curl -s http://localhost:3000/api/monitoring/overview/health | jq '.checks.redis'
+curl -s http://localhost:3000/api/monitoring/health | jq '.checks.redis'
 
 # Datadog integration
-curl -s http://localhost:3000/api/monitoring/overview/health | jq '.checks.datadog'
+curl -s http://localhost:3000/api/monitoring/health | jq '.checks.datadog'
 ```
 
 ## 📊 Key Metrics & Dashboards

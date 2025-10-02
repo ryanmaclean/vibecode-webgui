@@ -6,19 +6,11 @@
 
 import { createLogger, format, transports } from 'winston';
 
-// Tracer interface for dd-trace
-interface Tracer {
-  init: (options?: unknown) => void;
-  setTag: (key: string, value: unknown) => void;
-  addTags: (tags: Record<string, unknown>) => void;
-  span: (name: string, options?: unknown) => { finish: () => void };
-}
-
 // Import tracer from instrument.ts to avoid double initialization
-let tracer: Tracer;
+let tracer: any;
 try {
-  tracer = require('dd-trace') as Tracer;
-} catch {
+  tracer = require('dd-trace');
+} catch (e) {
   console.log('⚠️ Datadog tracer not available, using mock');
   tracer = {
     init: () => {},
@@ -147,8 +139,8 @@ class MetricsCollector {
   /**
    * Get all current metrics
    */
-  getMetrics(): Record<string, unknown> {
-    const result: Record<string, unknown> = {}
+  getMetrics(): Record<string, any> {
+    const result: Record<string, any> = {}
     this.metrics.forEach((value, key) => {
       result[key] = value
     })
@@ -424,7 +416,7 @@ class ApplicationLogger {
     ip?: string
     userAgent?: string
     severity: 'low' | 'medium' | 'high' | 'critical'
-    details?: Record<string, unknown>
+    details?: Record<string, any>
     blocked?: boolean
   }): void {
     const level = context.severity === 'critical' ? 'error' :
@@ -462,7 +454,7 @@ class ApplicationLogger {
     workspaceId?: string
     feature?: string
     value?: number
-    metadata?: Record<string, unknown>
+    metadata?: Record<string, any>
   }): void {
     logger.info(`Business: ${event}`, {
       category: 'business',
@@ -494,7 +486,7 @@ class ApplicationLogger {
     cacheHit?: boolean
     pooled?: boolean
     error?: string
-    details?: Record<string, unknown>
+    details?: Record<string, any>
   }): void {
     const level = context.error ? 'error' : 'info';
     
@@ -571,7 +563,7 @@ class ApplicationLogger {
   /**
    * Log errors
    */
-  logError(message: string, error: Error, context?: Record<string, unknown>): void {
+  logError(message: string, error: Error, context?: Record<string, any>): void {
     logger.error(message, {
       category: 'error',
       error: error.message,
@@ -589,7 +581,7 @@ const appLogger = new ApplicationLogger()
 
 // Performance monitoring middleware for Express
 function performanceMiddleware() {
-  return (req: { method: string; url: string; ip?: string }, res: { statusCode: number; on: (event: string, listener: () => void) => void }, next: () => void) => {
+  return (req: any, res: any, next: any) => {
     const startTime = Date.now()
 
     res.on('finish', () => {
@@ -639,7 +631,7 @@ function getHealthCheck(): {
     usage: number
     cores: number
   }
-  metrics: Record<string, unknown>
+  metrics: Record<string, any>
 } {
   const memUsage = process.memoryUsage()
   const totalMemory = memUsage.heapTotal + memUsage.external

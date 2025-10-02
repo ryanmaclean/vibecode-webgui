@@ -1,143 +1,93 @@
 #!/usr/bin/env bash
-# Kubernetes Database Deployment Setup Script
-# This script sets up a PostgreSQL database with pgvector in Kubernetes
-# Author: Database Engineering Team
+# Deploy PostgreSQL + pgvector with monitoring-ready configuration in Kubernetes.
 
-set -e
+set -euo pipefail
 
-# Configuration
-export NAMESPACE=${NAMESPACE:-"vibecode-db"}
-export RELEASE_NAME=${RELEASE_NAME:-"vector-db"}
-export POSTGRES_VERSION=${POSTGRES_VERSION:-"15.4.0"}
-export STORAGE_CLASS=${STORAGE_CLASS:-"standard"}
-export REPLICAS=${REPLICAS:-3}
-export VECTOR_EXTENSION_VERSION=${VECTOR_EXTENSION_VERSION:-"0.5.1"}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/bootstrap.sh"
+bootstrap_init "${SCRIPT_DIR}"
+# shellcheck disable=SC1091
+source "${LIB_DIR}/logging.sh"
 
-# Colors for output
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[0;33m'
-NC='\033[0m' # No Color
+REPO_ROOT="$(cd "${SCRIPTS_ROOT}/.." && pwd)"
+cd "$REPO_ROOT"
 
-echo -e "${GREEN}Kubernetes PostgreSQL/pgvector Deployment Script${NC}"
-echo "==============================================="
-echo "Setting up PostgreSQL with pgvector in Kubernetes"
-echo "Namespace: $NAMESPACE"
-echo "Release name: $RELEASE_NAME"
-echo "PostgreSQL version: $POSTGRES_VERSION"
-echo "Storage class: $STORAGE_CLASS"
-echo "Replicas: $REPLICAS"
-echo "pgvector version: $VECTOR_EXTENSION_VERSION"
-echo "==============================================="
+NAMESPACE=${NAMESPACE:-"vibecode-db"}
+RELEASE_NAME=${RELEASE_NAME:-"vector-db"}
+POSTGRES_VERSION=${POSTGRES_VERSION:-"15.4.0"}
+STORAGE_CLASS=${STORAGE_CLASS:-"standard"}
+REPLICAS=${REPLICAS:-3}
+VECTOR_EXTENSION_VERSION=${VECTOR_EXTENSION_VERSION:-"0.5.1"}
 
-# Check if kubectl is available
-if ! command -v kubectl &> /dev/null; then
-    echo -e "${RED}Error: kubectl command not found. Please install kubectl.${NC}"
+log_step "Kubernetes PostgreSQL/pgvector Deployment"
+log_info "Namespace: ${NAMESPACE}"
+log_info "Release name: ${RELEASE_NAME}"
+log_info "PostgreSQL version: ${POSTGRES_VERSION}"
+log_info "Storage class: ${STORAGE_CLASS}"
+log_info "Replicas: ${REPLICAS}"
+log_info "pgvector version: ${VECTOR_EXTENSION_VERSION}"
+
+require_cmd() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    log_error "Required command '$1' not available."
     exit 1
+  fi
+}
+
+require_cmd kubectl
+require_cmd helm
+require_cmd openssl
+require_cmd git
+
+log_step "Ensuring namespace ${NAMESPACE}"
+if kubectl get namespace "$NAMESPACE" >/dev/null 2>&1; then
+  log_info "Namespace ${NAMESPACE} already exists"
+else
+  kubectl create namespace "$NAMESPACE"
+  log_success "Created namespace ${NAMESPACE}"
 fi
 
-# Check if helm is available
-if ! command -v helm &> /dev/null; then
-    echo -e "${RED}Error: helm command not found. Please install helm.${NC}"
-    exit 1
-fi
+log_step "Adding/updating Helm repositories"
+helm repo add bitnami https://charts.bitnami.com/bitnami >/dev/null 2>&1 || true
+helm repo add datadog https://helm.datadoghq.com >/dev/null 2>&1 || true
+helm repo update >/dev/null
+log_success "Helm repositories refreshed"
 
-# Function to create namespace if it doesn't exist
-create_namespace() {
-    local namespace=$1
-    
-    echo -e "${YELLOW}Creating namespace $namespace if it doesn't exist...${NC}"
-    
-    if kubectl get namespace "$namespace" &> /dev/null; then
-        echo -e "${GREEN}Namespace $namespace already exists${NC}"
-    else
-        kubectl create namespace "$namespace"
-        echo -e "${GREEN}Namespace $namespace created${NC}"
-    fi
+VALUES_FILE="${RELEASE_NAME}-values.yaml"
+CONFIGMAP_NAME="${RELEASE_NAME}-init-scripts"
+SECRET_NAME="${RELEASE_NAME}-credentials"
+CREDENTIALS_FILE="${RELEASE_NAME}-credentials.txt"
+INIT_DIR="init-scripts"
+
+cleanup() {
+  rm -rf "$INIT_DIR"
+  rm -f "$VALUES_FILE"
 }
+trap cleanup EXIT
 
-# Function to add bitnami helm repo if it doesn't exist
-add_helm_repos() {
-    echo -e "${YELLOW}Adding required Helm repositories...${NC}"
-    
-    if ! helm repo list | grep -q "bitnami"; then
-        helm repo add bitnami https://charts.bitnami.com/bitnami
-    fi
-    
-    if ! helm repo list | grep -q "datadog"; then
-        helm repo add datadog https://helm.datadoghq.com
-    fi
-    
-    helm repo update
-    echo -e "${GREEN}Helm repositories updated${NC}"
-}
+log_step "Creating initialization scripts ConfigMap"
+rm -rf "$INIT_DIR"
+mkdir -p "$INIT_DIR"
 
-# Function to create PostgreSQL secrets
-create_postgres_secrets() {
-    local namespace=$1
-    local release=$2
-    
-    echo -e "${YELLOW}Creating PostgreSQL secrets in namespace $namespace...${NC}"
-    
-    # Generate random passwords
-    local postgres_password=$(openssl rand -hex 12)
-    local replication_password=$(openssl rand -hex 12)
-    
-    # Create secret
-    kubectl create secret generic "$release-credentials" \
-        --namespace="$namespace" \
-        --from-literal=postgres-password="$postgres_password" \
-        --from-literal=replication-password="$replication_password" \
-        --dry-run=client -o yaml | kubectl apply -f -
-    
-    echo -e "${GREEN}PostgreSQL secrets created in namespace $namespace${NC}"
-    
-    # Save credentials to a local file (for testing purposes)
-    echo "PostgreSQL Credentials (for testing only)" > "$release-credentials.txt"
-    echo "POSTGRES_PASSWORD: $postgres_password" >> "$release-credentials.txt"
-    echo "REPLICATION_PASSWORD: $replication_password" >> "$release-credentials.txt"
-    
-    chmod 600 "$release-credentials.txt"
-    echo -e "${YELLOW}Credentials saved to $release-credentials.txt (keep this secure!)${NC}"
-}
-
-# Function to create ConfigMap with init scripts for pgvector
-create_init_configmap() {
-    local namespace=$1
-    local release=$2
-    
-    echo -e "${YELLOW}Creating ConfigMap with initialization scripts...${NC}"
-    
-    # Create directory for init scripts
-    mkdir -p init-scripts
-    
-    # Create init script for pgvector
-    cat > init-scripts/init-pgvector.sh <<EOF
-#!/bin/bash
+cat > "$INIT_DIR/init-pgvector.sh" <<'INIT_SH'
+#!/usr/bin/env bash
 set -e
 
-echo "Installing pgvector extension version $VECTOR_EXTENSION_VERSION"
-
-# Update package lists
+echo "Installing pgvector extension"
 apt-get update
-
-# Install build essentials and PostgreSQL development packages
 apt-get install -y build-essential postgresql-server-dev-$PG_MAJOR git
-
-# Clone and build pgvector
 cd /tmp
-git clone --branch v$VECTOR_EXTENSION_VERSION https://github.com/pgvector/pgvector.git
+git clone --depth 1 --branch "v$VECTOR_EXTENSION_VERSION" https://github.com/pgvector/pgvector.git
 cd pgvector
 make
 make install
+psql <<SQL
+CREATE EXTENSION IF NOT EXISTS vector;
+SQL
+INIT_SH
 
-# Create extension in the database
-echo "CREATE EXTENSION IF NOT EXISTS vector;" | psql
-EOF
-    
-    # Create script for setting up test tables
-    cat > init-scripts/setup-test-tables.sql <<EOF
--- Create test tables for vector database
+cat > "$INIT_DIR/setup-test-tables.sql" <<'INIT_SQL'
 CREATE TABLE IF NOT EXISTS document_embeddings (
     id SERIAL PRIMARY KEY,
     document_id VARCHAR(255) UNIQUE NOT NULL,
@@ -154,7 +104,6 @@ CREATE TABLE IF NOT EXISTS document_embeddings (
 CREATE INDEX IF NOT EXISTS document_embeddings_document_id_idx ON document_embeddings(document_id);
 CREATE INDEX IF NOT EXISTS document_embeddings_embedding_idx ON document_embeddings USING ivfflat (embedding vector_l2_ops);
 
--- Create a table for testing connection routing
 CREATE TABLE IF NOT EXISTS connection_routing_test (
     id SERIAL PRIMARY KEY,
     operation_type VARCHAR(50) NOT NULL,
@@ -162,46 +111,45 @@ CREATE TABLE IF NOT EXISTS connection_routing_test (
     node_name TEXT NOT NULL,
     data JSONB DEFAULT '{}'
 );
-EOF
-    
-    # Create ConfigMap
-    kubectl create configmap "$release-init-scripts" \
-        --namespace="$namespace" \
-        --from-file=init-scripts/ \
-        --dry-run=client -o yaml | kubectl apply -f -
-    
-    echo -e "${GREEN}ConfigMap with initialization scripts created${NC}"
-}
+INIT_SQL
 
-# Function to create custom values file for PostgreSQL helm chart
-create_values_file() {
-    local release=$1
-    local replicas=$2
-    local storage_class=$3
-    
-    echo -e "${YELLOW}Creating custom values file for PostgreSQL Helm chart...${NC}"
-    
-    cat > "$release-values.yaml" <<EOF
-global:
-  storageClass: "$storage_class"
-  postgresql:
-    auth:
-      existingSecret: "$release-credentials"
-      username: postgres
-      database: vibecode
+kubectl create configmap "$CONFIGMAP_NAME" \
+  --namespace "$NAMESPACE" \
+  --from-file="$INIT_DIR" \
+  --dry-run=client -o yaml | kubectl apply -f -
+log_success "ConfigMap ${CONFIGMAP_NAME} applied"
 
+log_step "Generating PostgreSQL credentials"
+POSTGRES_PASSWORD=$(openssl rand -hex 12)
+REPLICATION_PASSWORD=$(openssl rand -hex 12)
+
+kubectl create secret generic "$SECRET_NAME" \
+  --namespace "$NAMESPACE" \
+  --from-literal=postgres-password="$POSTGRES_PASSWORD" \
+  --from-literal=replication-password="$REPLICATION_PASSWORD" \
+  --dry-run=client -o yaml | kubectl apply -f -
+log_success "Secret ${SECRET_NAME} applied"
+
+echo "PostgreSQL Credentials (testing only)" > "$CREDENTIALS_FILE"
+echo "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" >> "$CREDENTIALS_FILE"
+echo "REPLICATION_PASSWORD=${REPLICATION_PASSWORD}" >> "$CREDENTIALS_FILE"
+chmod 600 "$CREDENTIALS_FILE"
+log_warn "Credentials saved locally at ${CREDENTIALS_FILE}. Remove after use."
+
+log_step "Writing Helm values file"
+cat > "$VALUES_FILE" <<EOF
 architecture: replication
 primary:
   initdb:
-    scriptsConfigMap: "$release-init-scripts"
+    scriptsConfigMap: "$CONFIGMAP_NAME"
     user: postgres
   extraEnvVars:
     - name: PG_MAJOR
       value: "${POSTGRES_VERSION%%.*}"
   containerSecurityContext:
     allowPrivilegeEscalation: true
-  podSecurityContext:
-    fsGroup: 1001
+  persistence:
+    size: 10Gi
   resources:
     requests:
       memory: 1Gi
@@ -209,8 +157,6 @@ primary:
     limits:
       memory: 2Gi
       cpu: 1000m
-  persistence:
-    size: 10Gi
   service:
     type: ClusterIP
   livenessProbe:
@@ -223,185 +169,55 @@ primary:
     failureThreshold: 3
 
 readReplicas:
-  replicaCount: $((replicas - 1))
+  replicaCount: $((REPLICAS - 1))
   extraEnvVars:
     - name: PG_MAJOR
       value: "${POSTGRES_VERSION%%.*}"
+  persistence:
+    size: 10Gi
   resources:
     requests:
       memory: 1Gi
       cpu: 500m
-    limits:
-      memory: 2Gi
-      cpu: 1000m
-  persistence:
-    size: 10Gi
-  service:
-    type: ClusterIP
-  livenessProbe:
-    initialDelaySeconds: 60
-    periodSeconds: 20
-    failureThreshold: 6
-  readinessProbe:
-    initialDelaySeconds: 30
-    periodSeconds: 10
-    failureThreshold: 3
 
 metrics:
   enabled: true
   serviceMonitor:
     enabled: true
-  prometheusRule:
-    enabled: true
-    rules:
-      - alert: PostgreSQLHighConnectionCount
-        expr: sum(pg_stat_activity_count{instance=~"$instance"}) > 100
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          description: "PostgreSQL instance has more than 100 connections"
-          summary: "High number of connections in PostgreSQL"
-      - alert: PostgreSQLReplicationLag
-        expr: pg_replication_lag_bytes{instance=~"$instance"} > 10000000
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          description: "PostgreSQL replication lag is high"
-          summary: "PostgreSQL replication is lagging"
 
 volumePermissions:
   enabled: true
+
+global:
+  postgresql:
+    auth:
+      existingSecret: "$SECRET_NAME"
+      username: postgres
+      database: vibecode
+  storageClass: "$STORAGE_CLASS"
 EOF
-    
-    echo -e "${GREEN}Values file created: $release-values.yaml${NC}"
-}
 
-# Function to install PostgreSQL with Helm
-install_postgres() {
-    local namespace=$1
-    local release=$2
-    local values_file=$3
-    
-    echo -e "${YELLOW}Installing PostgreSQL with Helm...${NC}"
-    
-    helm upgrade --install "$release" bitnami/postgresql \
-        --namespace="$namespace" \
-        --version="$POSTGRES_VERSION" \
-        --values="$values_file" \
-        --timeout 10m0s
-    
-    echo -e "${GREEN}PostgreSQL installation completed${NC}"
-}
+log_success "Values file ${VALUES_FILE} created"
 
-# Function to install Datadog agent
-install_datadog() {
-    local namespace=$1
-    
-    echo -e "${YELLOW}Installing Datadog agent...${NC}"
-    
-    # Create Datadog values file
-    cat > datadog-values.yaml <<EOF
-datadog:
-  apiKey: ${DATADOG_API_KEY:-"YOUR_API_KEY"}
-  appKey: ${DATADOG_APP_KEY:-"YOUR_APP_KEY"}
-  logs:
-    enabled: true
-    containerCollectAll: true
-  apm:
-    enabled: true
-  processAgent:
-    enabled: true
-  kubelet:
-    tlsVerify: false
+log_step "Installing PostgreSQL via Helm"
+helm upgrade --install "$RELEASE_NAME" bitnami/postgresql   --namespace "$NAMESPACE"   --version "$POSTGRES_VERSION"   --values "$VALUES_FILE"   --timeout 10m0s
+log_success "Helm release ${RELEASE_NAME} applied"
 
-agents:
-  containers:
-    agent:
-      resources:
-        requests:
-          cpu: 100m
-          memory: 256Mi
-        limits:
-          cpu: 200m
-          memory: 512Mi
-  tolerations:
-    - operator: Exists
+log_step "Waiting for PostgreSQL pods"
+kubectl rollout status statefulset "${RELEASE_NAME}-postgresql" -n "$NAMESPACE" --timeout=5m
+log_success "PostgreSQL statefulset ready"
 
-clusterAgent:
-  enabled: true
-  metricsProvider:
-    enabled: true
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 200m
-      memory: 512Mi
+cleanup
 
-kube-state-metrics:
-  enabled: true
-EOF
-    
-    # Install Datadog agent
-    if [ -z "${DATADOG_API_KEY}" ]; then
-        echo -e "${YELLOW}Skipping Datadog installation (DATADOG_API_KEY not provided)${NC}"
-        echo -e "${YELLOW}To install Datadog, run this script with DATADOG_API_KEY and DATADOG_APP_KEY set${NC}"
-    else
-        helm upgrade --install datadog datadog/datadog \
-            --namespace="$namespace" \
-            --values=datadog-values.yaml
-        
-        echo -e "${GREEN}Datadog agent installation completed${NC}"
-    fi
-}
+log_step "Summary"
+log_success "Primary + replicas deployed under namespace ${NAMESPACE}"
+log_success "Credentials stored in Secret ${SECRET_NAME}"
+log_success "Init scripts packaged in ConfigMap ${CONFIGMAP_NAME}"
+log_success "Local credential file: ${CREDENTIALS_FILE}"
 
-# Function to wait for PostgreSQL to be ready
-wait_for_postgres() {
-    local namespace=$1
-    local release=$2
-    
-    echo -e "${YELLOW}Waiting for PostgreSQL to be ready...${NC}"
-    
-    kubectl wait --namespace="$namespace" \
-        --for=condition=ready pod \
-        --selector="app.kubernetes.io/instance=$release,app.kubernetes.io/name=postgresql" \
-        --timeout=300s
-    
-    echo -e "${GREEN}PostgreSQL is ready${NC}"
-}
+log_info "Next steps:"
+log_info "  • Remove ${CREDENTIALS_FILE} when no longer needed"
+log_info "  • Configure Datadog monitoring: scripts/setup-postgres-datadog-monitoring.sh"
+log_info "  • Validate replication: kubectl exec -n ${NAMESPACE} statefulset/${RELEASE_NAME}-postgresql -- psql"
 
-# Function to print connection information
-print_connection_info() {
-    local namespace=$1
-    local release=$2
-    
-    echo -e "${GREEN}PostgreSQL with pgvector has been deployed successfully!${NC}"
-    echo -e "${YELLOW}Connection Information:${NC}"
-    echo "Primary: $release-postgresql-primary.$namespace.svc.cluster.local:5432"
-    echo "Read Replicas: $release-postgresql-readreplicas.$namespace.svc.cluster.local:5432"
-    echo ""
-    echo "To connect to the primary from inside the cluster:"
-    echo "kubectl run $release-postgresql-client --rm --tty -i --restart='Never' --namespace $namespace --image docker.io/bitnami/postgresql:$POSTGRES_VERSION --env=\"PGPASSWORD=\$(kubectl get secret --namespace $namespace $release-credentials -o jsonpath='{.data.postgres-password}' | base64 -d)\" --command -- psql --host $release-postgresql-primary -U postgres -d vibecode -p 5432"
-    echo ""
-    echo "To forward the primary port to your local machine:"
-    echo "kubectl port-forward --namespace $namespace svc/$release-postgresql-primary 5432:5432"
-    echo ""
-    echo "To forward a read replica port to your local machine:"
-    echo "kubectl port-forward --namespace $namespace svc/$release-postgresql-readreplicas 5433:5432"
-}
-
-# Main execution
-create_namespace "$NAMESPACE"
-add_helm_repos
-create_postgres_secrets "$NAMESPACE" "$RELEASE_NAME"
-create_init_configmap "$NAMESPACE" "$RELEASE_NAME"
-create_values_file "$RELEASE_NAME" "$REPLICAS" "$STORAGE_CLASS"
-install_postgres "$NAMESPACE" "$RELEASE_NAME" "$RELEASE_NAME-values.yaml"
-install_datadog "$NAMESPACE"
-wait_for_postgres "$NAMESPACE" "$RELEASE_NAME"
-print_connection_info "$NAMESPACE" "$RELEASE_NAME"
-
-echo -e "${GREEN}Setup completed successfully!${NC}"
+log_success "Kubernetes pgvector deployment complete"

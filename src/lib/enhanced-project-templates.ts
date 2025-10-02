@@ -321,7 +321,7 @@ export class EnhancedProjectTemplates {
   // Helper methods for generating specific file content
   // (These would be implemented with actual template content)
 
-  private generateNextjsPackageJson(projectName: string, _options: Record<string, unknown>): string {
+  private generateNextjsPackageJson(projectName: string, options: any): string {
     return JSON.stringify({
       name: projectName,
       version: "0.1.0",
@@ -345,7 +345,7 @@ export class EnhancedProjectTemplates {
     }, null, 2);
   }
 
-  private generateNextjsConfig(_options: Record<string, unknown>): string {
+  private generateNextjsConfig(options: any): string {
     return `/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -399,7 +399,7 @@ module.exports = {
     }, null, 2);
   }
 
-  private generateEnvExample(_options: Record<string, unknown>): string {
+  private generateEnvExample(options: any): string {
     return `# AI Provider Configuration
 OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
@@ -493,7 +493,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 }`;
   }
 
-  private getNextjsDependencies(_options: Record<string, unknown>): Record<string, string> {
+  private getNextjsDependencies(options: any): Record<string, string> {
     return {
       "next": "^14.0.0",
       "react": "^18.0.0",
@@ -523,7 +523,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
   }
 
-  private getNextjsEnvVars(_options: Record<string, unknown>): Array<{ name: string; value: string; description: string }> {
+  private getNextjsEnvVars(options: any): Array<{ name: string; value: string; description: string }> {
     return [
       { name: 'OPENAI_API_KEY', value: '', description: 'OpenAI API key for AI features' },
       { name: 'DATABASE_URL', value: '', description: 'Database connection string' },
@@ -531,7 +531,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     ];
   }
 
-  private getNextjsSetupInstructions(_options: Record<string, unknown>): string[] {
+  private getNextjsSetupInstructions(options: any): string[] {
     return [
       '1. Install dependencies: npm install',
       '2. Copy .env.example to .env.local and fill in your API keys',
@@ -560,7 +560,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Python ML Platform methods
-  private generatePythonRequirements(_options: Record<string, unknown>): string {
+  private generatePythonRequirements(options: any): string {
     return `fastapi==0.104.1
 uvicorn==0.24.0
 pydantic==2.5.0
@@ -655,7 +655,7 @@ if __name__ == "__main__":
     };
   }
 
-  private getPythonEnvVars(_options: Record<string, unknown>): Array<{ name: string; value: string; description: string }> {
+  private getPythonEnvVars(options: any): Array<{ name: string; value: string; description: string }> {
     return [
       { name: 'DATABASE_URL', value: '', description: 'Database connection string' },
       { name: 'MLFLOW_TRACKING_URI', value: '', description: 'MLflow tracking server URI' },
@@ -663,7 +663,7 @@ if __name__ == "__main__":
     ];
   }
 
-  private getPythonSetupInstructions(_options: Record<string, unknown>): string[] {
+  private getPythonSetupInstructions(options: any): string[] {
     return [
       '1. Create virtual environment: python -m venv venv',
       '2. Activate virtual environment: source venv/bin/activate (Linux/Mac) or venv\\Scripts\\activate (Windows)',
@@ -681,7 +681,7 @@ if __name__ == "__main__":
   }
 
   // Rust Web API methods
-  private generateCargoToml(projectName: string, _options: Record<string, unknown>): string {
+  private generateCargoToml(projectName: string, options: any): string {
     return `[package]
 name = "${projectName}"
 version = "0.1.0"
@@ -768,7 +768,7 @@ async fn health_check() -> StatusCode {
     };
   }
 
-  private getRustEnvVars(_options: Record<string, unknown>): Array<{ name: string; value: string; description: string }> {
+  private getRustEnvVars(options: any): Array<{ name: string; value: string; description: string }> {
     return [
       { name: 'DATABASE_URL', value: '', description: 'Database connection string' },
       { name: 'JWT_SECRET', value: '', description: 'JWT signing secret' },
@@ -776,7 +776,7 @@ async fn health_check() -> StatusCode {
     ];
   }
 
-  private getRustSetupInstructions(_options: Record<string, unknown>): string[] {
+  private getRustSetupInstructions(options: any): string[] {
     return [
       '1. Install Rust: https://rustup.rs/',
       '2. Install cargo-watch: cargo install cargo-watch',

@@ -361,9 +361,9 @@ helm upgrade vibecode-prod ./helm/vibecode-platform \
 
 ## 🔗 Related Documentation
 
-- [Helm Deployment Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/helm-deployment-guide.md) - Complete deployment instructions
-- [Storage Sizing Analysis](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/storage-sizing-analysis.md) - Storage optimization strategy
-- [KIND Troubleshooting Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/kind-troubleshooting.md) - Local development setup
+- [Helm Deployment Guide](./helm-deployment-guide) - Complete deployment instructions
+- [Storage Sizing Analysis](./storage-sizing-analysis) - Storage optimization strategy
+- [KIND Troubleshooting Guide](./kind-troubleshooting) - Local development setup
 
 ---
 

@@ -13,25 +13,15 @@ const isDockerBuild = (
   process.env.DD_ENABLED === 'false'
 );
 
-// Type aliases for dynamically loaded OpenTelemetry modules
-type WebTracerProviderConstructor = new (config: { resource: unknown }) => {
-  addSpanProcessor: (processor: unknown) => void;
-  register: () => void;
-  getTracer: (name: string) => { startSpan: (name: string, options?: { attributes?: Record<string, string | number | boolean> }) => unknown };
-};
-type ResourceConstructor = new (attributes: Record<string, string>) => unknown;
-type BatchSpanProcessorConstructor = new (exporter: unknown, config?: unknown) => unknown;
-type OTLPTraceExporterConstructor = new (config?: { url?: string; headers?: Record<string, string> }) => unknown;
-
 // Conditional imports to prevent build-time errors in Docker
-let WebTracerProvider: WebTracerProviderConstructor | null = null;
-let Resource: ResourceConstructor | null = null;
-let ATTR_SERVICE_NAME: string | null = null;
-let ATTR_SERVICE_VERSION: string | null = null;
-let getWebAutoInstrumentations: ((config?: unknown) => unknown[]) | null = null;
-let registerInstrumentations: ((config: { instrumentations: unknown[] }) => void) | null = null;
-let BatchSpanProcessor: BatchSpanProcessorConstructor | null = null;
-let OTLPTraceExporter: OTLPTraceExporterConstructor | null = null;
+let WebTracerProvider: any = null;
+let Resource: any = null;
+let ATTR_SERVICE_NAME: any = null;
+let ATTR_SERVICE_VERSION: any = null;
+let getWebAutoInstrumentations: any = null;
+let registerInstrumentations: any = null;
+let BatchSpanProcessor: any = null;
+let OTLPTraceExporter: any = null;
 
 if (!isDockerBuild) {
   try {
@@ -61,8 +51,7 @@ const isBrowser = typeof window !== 'undefined'
 const serviceName = 'vibecode-webgui-client'
 const serviceVersion = process.env.NEXT_PUBLIC_APP_VERSION || '0.1.0'
 
-type WebTracerProviderType = ReturnType<WebTracerProviderConstructor['prototype']['constructor']> | null;
-let webTracerProvider: WebTracerProviderType = null
+let webTracerProvider: any = null
 
 /**
  * Initialize OpenTelemetry for browser/client-side

@@ -207,8 +207,8 @@ node scripts/test-llm-observability-final.js
 
 ## 🔗 Related Documentation
 
-- [Environment Variables Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/env-variables.md)
-- [Deployment Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/DEPLOYMENT.md)
-- [Database Schema](https://github.com/ryanmaclean/vibecode-webgui/blob/main/prisma/schema.prisma)
-- [Vector Store Documentation](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/lib/vector-store.ts)
-- [LLM Observability Setup](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/lib/datadog-llm.ts)
+- [Environment Variables Guide](ENV_VARIABLES.md)
+- [Deployment Guide](docs/DEPLOYMENT.md)
+- [Database Schema](prisma/schema.prisma)
+- [Vector Store Documentation](src/lib/vector-store.ts)
+- [LLM Observability Setup](src/lib/datadog-llm.ts)

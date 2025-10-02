@@ -35,7 +35,7 @@ description: AI CLI TOOLS IMPLEMENTATION SUMMARY documentation
    - ✅ AI command processing and session management tests
    - ✅ Terminal resizing and WebSocket connection tests
 
-5. **Datadog Monitoring Integration** (`src/lib/monitoring/overview/enhanced-datadog-integration.ts`)
+5. **Datadog Monitoring Integration** (`src/lib/monitoring/enhanced-datadog-integration.ts`)
    - ✅ Enhanced monitoring for terminal sessions and AI usage
    - ✅ Tracking for Claude CLI commands and OpenRouter API calls
    - ✅ Performance metrics for AI suggestions

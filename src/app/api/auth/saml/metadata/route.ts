@@ -5,7 +5,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createSAMLProvider } from '@/lib/auth/saml-provider'
-import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,30 +16,15 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const provider = searchParams.get('provider') || 'okta'
 
-    logger.debug('SAML metadata requested', {
-      provider,
-      url: req.url
-    })
-
     const samlProvider = createSAMLProvider(provider)
-
+    
     if (!samlProvider) {
-      logger.warn('SAML provider not configured', {
-        provider,
-        requestedUrl: req.url
-      })
-
       return NextResponse.json({
         error: `SAML provider '${provider}' not configured`
       }, { status: 404 })
     }
 
     const metadata = samlProvider.getServiceProviderMetadata()
-
-    logger.info('SAML metadata generated successfully', {
-      provider,
-      metadataLength: metadata.length
-    })
 
     return new NextResponse(metadata, {
       headers: {
@@ -49,12 +33,8 @@ export async function GET(req: NextRequest) {
       }
     })
   } catch (error) {
-    logger.error('SAML metadata generation failed', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      url: req.url
-    })
-
+    console.error('SAML metadata error:', error)
+    
     return NextResponse.json({
       error: 'Failed to generate SAML metadata',
       details: error instanceof Error ? error.message : 'Unknown error'

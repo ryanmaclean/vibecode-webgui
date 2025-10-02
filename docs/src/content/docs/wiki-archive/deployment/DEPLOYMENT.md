@@ -187,7 +187,7 @@ helm install vibecode vibecode/vibecode-platform -f values.yaml
 
 ```bash
 # Set up KIND cluster
-./scripts/kind-setup.sh setup
+npm run kind:setup  # wraps ./scripts/kind-setup.sh
 
 # Deploy to KIND
 kubectl apply -k k8s/
