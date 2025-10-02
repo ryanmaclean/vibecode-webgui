@@ -35,16 +35,16 @@ This log captures friction points to help improve developer experience and ident
 **Owner:** Observability
 
 ### ESLint Flat Config Migration
-**Date:** 2025-09-30  
-**Blocker:** `npm run lint -- --quiet` fails because ESLint 9 expects `eslint.config.*` while the repo still uses `.eslintrc.*`.  
+**Date:** 2025-09-30
+**Blocker:** `npm run lint -- --quiet` fails because ESLint 9 expects `eslint.config.*` while the repo still uses `.eslintrc.*`.
 **Details:**
 - Command exits with "ESLint couldn't find an eslint.config.(js|mjs|cjs)"
 - Lint script does not set `ESLINT_USE_FLAT_CONFIG=false`
 - ESLint 9 is already installed (per package.json)
 
-**Workaround:** Pending — options include adding `ESLINT_USE_FLAT_CONFIG=false` to the lint script or migrating configs to the new flat format.  
+**Workaround:** Pending — options include adding `ESLINT_USE_FLAT_CONFIG=false` to the lint script or migrating configs to the new flat format.
 - NOTE: When migrating, place `eslint.config.mjs` at the repository root so `npm run lint` and CI workflows resolve it without additional flags.
-**Status:** BLOCKED - Needs configuration migration or environment override  
+**Status:** RESOLVED - Config migrated and placed in root directory
 **Owner:** Tooling
 
 ---
@@ -86,15 +86,28 @@ This log captures friction points to help improve developer experience and ident
 **Resolved By:** Agent Cascade (Phases 16-18)
 
 ### Multi-Agent File Conflicts
-**Date:** 2025-09-29  
-**Issue:** Multiple agents moving files simultaneously causing conflicts  
+**Date:** 2025-09-29
+**Issue:** Multiple agents moving files simultaneously causing conflicts
 **Resolution:**
 - Established coordination protocol in TODO.md
 - 4-step process: Read, Declare, Claim, Execute
 - All agents now coordinate via TODO.md before file moves
 
-**Impact:** Zero conflicts with 3+ agents working simultaneously  
+**Impact:** Zero conflicts with 3+ agents working simultaneously
 **Resolved By:** Agent coordination protocol
+
+### ESLint Config Location Requirement
+**Date:** 2025-09-30
+**Issue:** During Phase 23 cleanup, `eslint.config.mjs` was moved to `configs/` directory, breaking linter functionality
+**Resolution:**
+- Moved `eslint.config.mjs` back to project root in Phase 27
+- ESLint 9 flat config format requires config file at repository root
+- Tool cannot resolve config when placed in subdirectories
+
+**Learning:** Configuration file location is tool-specific and not always flexible
+**Impact:** Lint commands now work correctly across local development and CI workflows
+**Resolved By:** Phase 27 cleanup
+**Documentation:** Some config files (ESLint 9 flat config, TypeScript config) have mandatory location requirements
 
 ---
 
