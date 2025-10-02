@@ -45,7 +45,7 @@ docker-compose up -d
 
 - Prefer `DD_*` variables; legacy `DATADOG_*` are still supported as fallback.
 - Frontend RUM uses `NEXT_PUBLIC_DD_*` with fallback to `NEXT_PUBLIC_DATADOG_*`.
-- Centralized resolver: `src/lib/monitoring/overview/datadog-env.ts`.
+- Centralized resolver: `src/lib/monitoring/datadog-env.ts`.
 
 ## 🐳 Docker Compose Configuration
 
@@ -125,11 +125,11 @@ Legacy variables (`DATADOG_*`, `NEXT_PUBLIC_DATADOG_*`) are still recognized for
 
 ### Frontend RUM in local dev
 
-- __Init location__: `src/app/providers.tsx` in a client `useEffect`, using `getRUMPublicConfig()` from `src/lib/monitoring/overview/datadog-env.ts` and `RUMMonitoring.initializeWithTracking(...)` from `src/lib/monitoring/overview/rum-client.ts`.
+- __Init location__: `src/app/providers.tsx` in a client `useEffect`, using `getRUMPublicConfig()` from `src/lib/monitoring/datadog-env.ts` and `RUMMonitoring.initializeWithTracking(...)` from `src/lib/monitoring/rum-client.ts`.
 - __Enable in dev__: set `NEXT_PUBLIC_ENABLE_RUM_IN_DEV=true` in `.env`. Requires `NEXT_PUBLIC_DD_APPLICATION_ID` and `NEXT_PUBLIC_DD_CLIENT_TOKEN`.
 - __Defaults__: `service: vibecode-webgui`, `defaultPrivacyLevel: mask-user-input`, `trackUserInteractions: true`, `trackResources: true`, `trackLongTasks: true`, session replay 100% in dev.
 - __Logs__: Browser logs are initialized via `datadogLogs.init(...)` in `providers.tsx` with `forwardErrorsToLogs: true`.
-- __Alternative component (optional)__: `src/components/monitoring/overview/DatadogRUM.tsx` also initializes RUM and tracks views on route changes. Do not use both at the same time to avoid double initialization.
+- __Alternative component (optional)__: `src/components/monitoring/DatadogRUM.tsx` also initializes RUM and tracks views on route changes. Do not use both at the same time to avoid double initialization.
 
 #### Verify RUM locally
 1) In the browser console, confirm you see: `VibeCode RUM monitoring initialized successfully` (or the RUM init log).
@@ -153,7 +153,7 @@ Legacy variables (`DATADOG_*`, `NEXT_PUBLIC_DATADOG_*`) are still recognized for
 ./tests/docker-compose-tests.sh
 
 # Test complete pipeline
-./scripts/run-all-tests.sh
+npm run tests:all  # wraps ./scripts/run-all-tests.sh
 
 # Validate Kubernetes Datadog coverage (KIND/MicroK8s/AKS values)
 npm run test:k8s -- datadog-k8s-config.test.ts
@@ -190,7 +190,7 @@ datadogRum.startSessionReplayRecording?.()
 - **Valkey & PostgreSQL Telemetry** — Helm values keep `redisdb` and `postgres` integrations in `confd`, and `k8s/valkey-deployment.yaml` ships Datadog autodiscovery annotations. Run `npm run test:k8s -- datadog-k8s-config.test.ts` to confirm.
 - **Logs, Traces, Profiling, AppSec/IAST/SCA** — Application containers export Datadog security flags (`DD_APPSEC_ENABLED`, `DD_IAST_ENABLED`, profiling) and the agents have runtime + compliance modules enabled. Verify with `kubectl -n datadog exec daemonset/datadog-agent -- agent status`.
 - **Real User Monitoring (RUM)** — Set `NEXT_PUBLIC_ENABLE_RUM_IN_DEV=true`, reload the app, and confirm `browser-rum` requests in DevTools.
-- **Datadog Synthetics** — Execute `npm run test:synthetics` (or the CI workflow) to run the browser/API monitors stored in `datadog-synthetics.json` and `tests/datadog/*.synthetics.json`.
+- **Datadog Synthetics** — Execute `npm run test:synthetics` (or the CI workflow) to run the browser/API monitors stored in `ops/monitoring/datadog-synthetics.json` and `tests/datadog/*.synthetics.json`.
 - **Database Query Analytics (DBM)** — Run `npm run verify:datadog-dbm` to test query metric ingestion and Postgres log collection.
 - **Dedicated Azure PostgreSQL DBM Agents** — Apply `k8s/datadog-dbmon.yaml` (dev/staging/prod deployments) so each flexible server has a single-purpose Datadog agent.
   - Populate the external secrets `datadog/dbmon/{dev|staging|prod}` in Key Vault with `api-key`, `app-key`, `db-host`, `db-name`, `db-user`, and `db-password`.
@@ -341,7 +341,7 @@ docker-compose logs -f datadog-agent
 ### Before Production Deployment
 1. **Test Complete Pipeline**:
    ```bash
-   ./scripts/run-all-tests.sh
+   npm run tests:all  # wraps ./scripts/run-all-tests.sh
    ```
 
 2. **Validate Parity**:
@@ -358,9 +358,9 @@ docker-compose logs -f datadog-agent
 
 ## 📚 Related Documentation
 
-- [DATADOG_MONITORING_CONFIGURATION.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/DATADOG_MONITORING_CONFIGURATION.md) - Complete monitoring setup
-- [COMPREHENSIVE_TESTING_GUIDE.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/COMPREHENSIVE_TESTING_GUIDE.md) - Testing all components
-- [README.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/README.md) - Project overview and setup
+- [DATADOG_MONITORING_CONFIGURATION.md](./DATADOG_MONITORING_CONFIGURATION.md) - Complete monitoring setup
+- [COMPREHENSIVE_TESTING_GUIDE.md](./COMPREHENSIVE_TESTING_GUIDE.md) - Testing all components
+- [README.md](./README.md) - Project overview and setup
 
 ---
 

@@ -488,7 +488,7 @@ kubectl top pods -n vibecode
 ### **Quick Commands**
 ```bash
 # Start everything
-./scripts/kind-setup.sh
+npm run kind:setup  # wraps ./scripts/kind-setup.sh
 
 # Check status
 kubectl get all -n vibecode
@@ -511,7 +511,7 @@ kind delete cluster --name=vibecode-test
 # Nuclear option - reset everything
 kind delete clusters --all
 docker system prune -af
-./scripts/kind-setup.sh
+npm run kind:setup  # wraps ./scripts/kind-setup.sh
 ```
 
 ---

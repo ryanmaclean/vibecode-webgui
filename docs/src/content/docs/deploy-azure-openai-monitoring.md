@@ -61,7 +61,7 @@ terraform apply -target=module.azure_openai_monitoring
 
 ### Alert Thresholds
 
-Customize alert thresholds in `infrastructure/monitoring/overview/azure_openai.tf`:
+Customize alert thresholds in `infrastructure/monitoring/azure_openai.tf`:
 
 ```hcl
 module "azure_openai_monitoring" {
@@ -77,7 +77,7 @@ module "azure_openai_monitoring" {
 
 ### Notification Channels
 
-Update the Slack channel in `infrastructure/monitoring/overview/azure_openai.tf`:
+Update the Slack channel in `infrastructure/monitoring/azure_openai.tf`:
 
 ```hcl
 slack_channel = var.environment == "production" ? "#alerts-ai" : "#alerts-dev"
@@ -143,6 +143,6 @@ For issues with the monitoring setup, contact the AI Engineering team or open an
 
 ## Related Documentation
 
-- [Azure OpenAI Monitoring Overview](/azure-openai-monitoring/
-- [Production Deployment Guide](/production-deployment-guide/
-- [Kubernetes Secrets Automation](/kubernetes-secrets-automation/
+- [Azure OpenAI Monitoring Overview](./azure-openai-monitoring/)
+- [Production Deployment Guide](./production-deployment-guide/)
+- [Kubernetes Secrets Automation](./kubernetes-secrets-automation/)

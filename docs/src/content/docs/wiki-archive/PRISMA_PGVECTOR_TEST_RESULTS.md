@@ -181,7 +181,7 @@ The database is already in sync with your Prisma schema.
 
 ### Files Updated for pgvector Compatibility
 
-1. **`scripts/kind-setup.sh`**: Updated to `pgvector/pgvector:pg16`
+1. **`scripts/kind-setup.sh`** (run via `npm run kind:setup`): Updated to `pgvector/pgvector:pg16`
 2. **`docker-compose.production.yml`**: Updated to `pgvector/pgvector:pg16` 
 3. **`k8s/postgres-deployment.yaml`**: Updated to `pgvector/pgvector:pg16`
 4. **`src/components/projects/ProjectScaffolder.tsx`**: Updated to `pgvector/pgvector:pg16`
@@ -261,7 +261,7 @@ model RAGChunk {
 
 ## 🔗 Related Documentation
 
-- [Datadog Compatibility Summary](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/DATADOG_COMPATIBILITY_SUMMARY.md)
-- [Environment Variables Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/ENV_VARIABLES.md)  
-- [Helm Deployment Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/helm-deployment-guide.md)
-- [PostgreSQL Init Script](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/infrastructure/postgres/init.sql) 
+- [Datadog Compatibility Summary](./DATADOG_COMPATIBILITY_SUMMARY.md)
+- [Environment Variables Guide](./ENV_VARIABLES.md)  
+- [Helm Deployment Guide](./helm-deployment-guide.md)
+- [PostgreSQL Init Script](./infrastructure/postgres/init.sql) 

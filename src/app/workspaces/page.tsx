@@ -5,8 +5,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
-import { WorkspaceCardGridSkeleton } from '@/components/skeletons'
+import { useState } from 'react'
 
 export default function WorkspacesPage() {
   const [workspaces, setWorkspaces] = useState([
@@ -19,20 +18,10 @@ export default function WorkspacesPage() {
   const [formError, setFormError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [showTemplateModal, setShowTemplateModal] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isCreating, setIsCreating] = useState(false)
 
-  const isTestEnvironment = typeof window !== 'undefined' &&
-                           (window.location.hostname === 'localhost' ||
+  const isTestEnvironment = typeof window !== 'undefined' && 
+                           (window.location.hostname === 'localhost' || 
                             window.location.hostname === '127.0.0.1')
-
-  // Simulate initial load
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 800)
-    return () => clearTimeout(timer)
-  }, [])
 
   const handleCreateWorkspace = () => {
     setShowCreateModal(true)
@@ -47,36 +36,30 @@ export default function WorkspacesPage() {
     workspace.description.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const handleSubmitWorkspace = async () => {
+  const handleSubmitWorkspace = () => {
     setFormError('')
-
+    
     if (!createForm.name.trim()) {
       setFormError('Workspace name is required')
       return
     }
-
+    
     if (createForm.name.trim().length < 3) {
       setFormError('Workspace name must be at least 3 characters')
       return
     }
-
-    setIsCreating(true)
-
-    // Simulate async operation
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
+    
     const newWorkspace = {
       id: Date.now(),
       name: createForm.name.trim(),
       description: createForm.description.trim() || 'Created for E2E testing',
       createdAt: new Date()
     }
-
+    
     setWorkspaces([...workspaces, newWorkspace])
     setShowCreateModal(false)
     setCreateForm({ name: '', description: '' })
-    setIsCreating(false)
-
+    
     // Navigate to new workspace for E2E tests
     if (isTestEnvironment) {
       window.location.href = `/workspaces/${newWorkspace.id}`
@@ -128,15 +111,11 @@ export default function WorkspacesPage() {
             placeholder="Search workspaces..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            disabled={isLoading}
-            className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Search workspaces"
+            className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
-        {isLoading ? (
-          <WorkspaceCardGridSkeleton count={3} />
-        ) : filteredWorkspaces.length === 0 ? (
+        {filteredWorkspaces.length === 0 ? (
           <div data-testid="empty-workspaces" className="text-center py-12">
             <div className="text-gray-500">
               <h3 className="text-lg font-medium text-gray-900 mb-2">No workspaces found</h3>
@@ -144,7 +123,7 @@ export default function WorkspacesPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 transition-opacity duration-200 ease-in">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredWorkspaces.map((workspace) => (
               <div
                 key={workspace.id}
@@ -248,19 +227,9 @@ export default function WorkspacesPage() {
                 <button
                   data-testid="submit-workspace"
                   onClick={handleSubmitWorkspace}
-                  disabled={isCreating}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  aria-label={isCreating ? 'Creating workspace' : 'Create workspace'}
-                  aria-busy={isCreating}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {isCreating ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" aria-hidden="true"></div>
-                      <span>Creating...</span>
-                    </>
-                  ) : (
-                    'Create Workspace'
-                  )}
+                  Create Workspace
                 </button>
                 <button
                   onClick={() => {
@@ -268,8 +237,7 @@ export default function WorkspacesPage() {
                     setCreateForm({ name: '', description: '' })
                     setFormError('')
                   }}
-                  disabled={isCreating}
-                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
                   Cancel
                 </button>

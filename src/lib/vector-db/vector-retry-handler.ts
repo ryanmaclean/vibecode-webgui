@@ -4,7 +4,7 @@
  */
 
 import { logger } from '../logger';
-import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler-new';
+import { VectorDBError, VectorDBErrorType } from './vector-db-error-handler';
 
 /**
  * Retry configuration interface
@@ -67,7 +67,6 @@ export class RetryHandler {
   private failures: { timestamp: number; error: Error }[] = [];
   private circuitBroken = false;
   private circuitBrokenUntil = 0;
-  private errorHandler: VectorDbErrorHandler;
   private readonly DEFAULT_CONFIG: RetryConfig = {
     maxRetries: 3,
     baseDelay: 1000,
@@ -82,11 +81,9 @@ export class RetryHandler {
   /**
    * Create a new retry handler
    * @param config Retry configuration
-   * @param provider Provider name for error handler
    */
-  constructor(config: Partial<RetryConfig> = {}, provider: string = 'retry-handler') {
+  constructor(config: Partial<RetryConfig> = {}) {
     this.config = { ...this.DEFAULT_CONFIG, ...config };
-    this.errorHandler = new VectorDbErrorHandler(provider);
   }
 
   /**
@@ -102,17 +99,7 @@ export class RetryHandler {
   ): Promise<T> {
     // Check if circuit is broken
     if (this.isCircuitBroken()) {
-      throw this.errorHandler.handleError(
-        new Error(`Circuit broken for operation: ${operationName}. Too many recent failures.`),
-        operationName,
-        VectorDbErrorType.SERVICE,
-        false,
-        {
-          circuitBroken: true,
-          failureCount: this.failures.length,
-          resetAfterMs: Math.max(0, this.circuitBrokenUntil - Date.now())
-        }
-      );
+      throw new Error(`Circuit broken for operation: ${operationName}. Too many recent failures.`);
     }
 
     let attempt = 0;
@@ -135,17 +122,7 @@ export class RetryHandler {
         // Check if we should break the circuit
         if (this.shouldBreakCircuit()) {
           this.breakCircuit();
-          throw this.errorHandler.handleError(
-            new Error(`Circuit broken for operation: ${operationName}. Too many recent failures.`),
-            operationName,
-            VectorDbErrorType.SERVICE,
-            false,
-            {
-              circuitBroken: true,
-              failureCount: this.failures.length,
-              resetAfterMs: this.config.circuitResetTimeMs
-            }
-          );
+          throw new Error(`Circuit broken for operation: ${operationName}. Too many recent failures.`);
         }
         
         // Check if we've reached max retries
@@ -163,20 +140,7 @@ export class RetryHandler {
             error: err.message, 
             stack: err.stack 
           });
-          
-          // If the error is already a VectorDbError, just throw it
-          if (err instanceof VectorDbError) {
-            throw err;
-          }
-          
-          // Otherwise, wrap it with our error handler
-          throw this.errorHandler.handleError(
-            err,
-            operationName,
-            undefined, // Let the error handler determine the type
-            false,
-            { retryAttempt: attempt }
-          );
+          throw err;
         }
         
         // Calculate delay for next retry
@@ -200,19 +164,7 @@ export class RetryHandler {
       stack: lastError?.stack 
     });
     
-    // If the last error is already a VectorDbError, just throw it
-    if (lastError instanceof VectorDbError) {
-      throw lastError;
-    }
-    
-    // Otherwise, wrap it with our error handler
-    throw this.errorHandler.handleError(
-      lastError || new Error(`Unknown error in operation: ${operationName}`),
-      operationName,
-      undefined, // Let the error handler determine the type
-      false,
-      { maxRetries: this.config.maxRetries, allRetriesFailed: true }
-    );
+    throw lastError || new Error(`Unknown error in operation: ${operationName}`);
   }
 
   /**
@@ -220,15 +172,48 @@ export class RetryHandler {
    * @param error The error to check
    */
   private isErrorRetryable(error: Error): boolean {
-      // If it's a VectorDbError, check if it's retryable based on error type
-      if (error instanceof VectorDbError) {
-        return (error.details && 'retryable' in error.details && error.details.retryable === true) || 
-               error.type === VectorDbErrorType.CONNECTION_FAILED ||
-               error.type === VectorDbErrorType.TIMEOUT;
+    // If it's a VectorDBError, use its classification
+    if (error instanceof VectorDBError) {
+      // Connection errors are always retryable
+      if (error.type === VectorDBErrorType.CONNECTION_FAILED) {
+        return true;
+      }
+      
+      // Query errors might be retryable if they're timeouts or deadlocks
+      if (error.type === VectorDBErrorType.QUERY_FAILED) {
+        const msg = error.message.toLowerCase();
+        return (
+          msg.includes('timeout') || 
+          msg.includes('deadlock') || 
+          msg.includes('too many connections') ||
+          msg.includes('connection reset')
+        );
+      }
+      
+      // Authorization errors are not retryable without config changes
+      if (error.type === VectorDBErrorType.AUTHORIZATION_ERROR) {
+        return false;
+      }
+      
+      // Default for other vector DB errors
+      return false;
     }
     
-    // Otherwise, use the error handler to check if it's retryable
-    return this.errorHandler.isRetryableError(error);
+    // For generic errors, check common patterns
+    const msg = error.message.toLowerCase();
+    
+    return (
+      msg.includes('timeout') || 
+      msg.includes('connection') || 
+      msg.includes('network') ||
+      msg.includes('econnreset') ||
+      msg.includes('socket') ||
+      msg.includes('too many requests') ||
+      msg.includes('rate limit') ||
+      msg.includes('429') || // HTTP 429 Too Many Requests
+      msg.includes('503') || // HTTP 503 Service Unavailable
+      msg.includes('unavailable')
+    );
   }
 
   /**
@@ -334,7 +319,3 @@ export class RetryHandler {
     };
   }
 }
-
-// Legacy types for backward compatibility
-import { VectorDBErrorType } from './vector-db-error-handler';
-export { VectorDBErrorType };

@@ -223,11 +223,11 @@ All three Tailwind CSS v4 approaches are fully tested and production-ready. The 
 This comprehensive guide is part of a complete documentation suite covering all aspects of Tailwind CSS v4 implementation:
 
 ### 📖 Related Documentation
-- [**Tailwind CSS v4 Migration Notes**](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/tailwind-v4-migration-notes.md) - Complete migration journey and troubleshooting
-- [**Tailwind CSS v4 Success Guide**](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/tailwind-v4-success.md) - Production-ready implementation guide  
-- [**Tailwind CSS v4 Testing Report**](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/tailwind-v4-testing-report.md) - Comprehensive test results across all environments
-- [**x86-64 Production Test Report**](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/x86-production-test-report.md) - Production architecture verification
-- [**Comprehensive Environment Test Report**](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/comprehensive-environment-test-report.md) - Complete validation across local dev, Docker, KIND, and Kubernetes
+- [**Tailwind CSS v4 Migration Notes**](./tailwind-v4-migration-notes) - Complete migration journey and troubleshooting
+- [**Tailwind CSS v4 Success Guide**](./tailwind-v4-success) - Production-ready implementation guide  
+- [**Tailwind CSS v4 Testing Report**](./tailwind-v4-testing-report) - Comprehensive test results across all environments
+- [**x86-64 Production Test Report**](./x86-production-test-report) - Production architecture verification
+- [**Comprehensive Environment Test Report**](./comprehensive-environment-test-report) - Complete validation across local dev, Docker, KIND, and Kubernetes
 
 ### 🏗️ Architecture Overview
 The implementation strategy provides three production-ready approaches:
@@ -280,7 +280,7 @@ text
 
 Create Markdown files inside /content/wiki/
 
-Example: /content/wiki/.md
+Example: /content/wiki/home.md
 
 text
 ---
@@ -364,7 +364,7 @@ const { title } = Astro.props;
   </head>
   <body>
     <header>
-      <h1><a href="/wiki/">Wiki</a></h1>
+      <h1><a href="/wiki/home">Wiki</a></h1>
     </header>
     <main>
       <slot />
@@ -408,7 +408,7 @@ xml
 In your markdown files, use this syntax for links:
 
 text
-[Some Page](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki/some-page-template.md) (placeholder link)
+[Some Page](/wiki/some-page) (placeholder link)
 
 If some-page.md does not exist, it will route to /wiki/new?slug=some-page, prompting a page creation.
 
@@ -418,9 +418,9 @@ You can also add styles to show “red” links if a page is missing, using a cu
 bash
 npm run dev
 
-Visit http://localhost:4321/wiki/
+Visit http://localhost:4321/wiki/home
 
-Try creating a new link in the markdown like [New Page](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki/_blank.md) — visiting this link will prompt the creation of that page. (This is a placeholder link)
+Try creating a new link in the markdown like [New Page](/wiki/my-new-page) — visiting this link will prompt the creation of that page. (This is a placeholder link)
 ✅ Summary
 
     Markdown files are stored in /content/wiki.
@@ -550,7 +550,7 @@ const { title } = Astro.props;
   </head>
   <body>
     <header>
-      <h1><a href="/wiki/">Wiki</a></h1>
+      <h1><a href="/wiki/home">Wiki</a></h1>
     </header>
     <main>
       <slot />
@@ -558,7 +558,7 @@ const { title } = Astro.props;
   </body>
 </html>
 
-Add Sample Markdown Page (/content/wiki/.md):
+Add Sample Markdown Page (/content/wiki/home.md):
 
     text
     ---

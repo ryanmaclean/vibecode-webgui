@@ -1,342 +1,324 @@
-# VibeCode
+<div align="center">
 
-AI-powered development platform. Next.js 15 + Monaco 0.53.0 + pgvector + Kubernetes.
+# 🐘 VibeCode Platform
 
-## Tech Stack
+**pgvector on PostgreSQL + Kubernetes + Datadog Database Monitoring**
 
-- **Frontend:** Next.js 15, React 19, TypeScript, Tailwind CSS
-- **Editor:** Monaco 0.53.0 with Monacopilot AI completion
-- **Database:** PostgreSQL 16 + pgvector (HNSW indexes)
-- **AI:** OpenAI, Anthropic, Gemini, Groq, DeepSeek
-- **Infra:** Kubernetes (AKS), Docker, Helm
-- **Monitoring:** Datadog (APM, DBM, RUM, Logs)
-- **Testing:** Comprehensive offline cloud infrastructure testing framework
+[![Demo](https://img.shields.io/badge/Demo-Live-brightgreen?style=for-the-badge&logo=play)](./DEMO.sh)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-blue?style=for-the-badge&logo=kubernetes)](https://kubernetes.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-336791?style=for-the-badge&logo=postgresql)](https://github.com/pgvector/pgvector)
+[![Datadog](https://img.shields.io/badge/Datadog-DBM-632CA6?style=for-the-badge&logo=datadog)](https://www.datadoghq.com/)
 
-## Quick Install
+</div>
 
-### Docker
-```bash
-docker run -d -p 3000:3000 vibecode/webgui:latest
-```
-
-### Docker Compose
-```bash
-curl -O https://raw.githubusercontent.com/ryanmaclean/vibecode-webgui/main/docker-compose.yml
-docker compose --project-name vibecode up -d
-```
-
-For a persistent “cloud workspace” variant with resumable state, try the experimental bundle:
+## 🚀 **One-Click Demo**
 
 ```bash
-git clone https://github.com/ryanmaclean/vibecode-webgui
-cd vibecode-webgui
-CODE_SERVER_PASSWORD=changeme scripts/cloud/docker/start-compose.sh
-```
-Shelled-out volumes live under `workspace/` and `config/`; run `scripts/cloud/docker/stop-compose.sh` to tear down.
-
-> Tip: Run `docker compose -f docker-compose.yml config` first to validate the stack, and see [docker/code-server/DEPLOYMENT_GUIDE.md](docker/code-server/DEPLOYMENT_GUIDE.md#option-2-docker-compose-recommended) for full guidance.
-
-### Kubernetes (KinD)
-```bash
-kind create cluster --name vibecode
-kubectl apply -f https://raw.githubusercontent.com/ryanmaclean/vibecode-webgui/main/k8s/vibecode-kind.yaml
-kubectl port-forward svc/vibecode 3000:80
+./DEMO.sh
 ```
 
-### Local Development
-```bash
-git clone https://github.com/ryanmaclean/vibecode-webgui
-cd vibecode-webgui
-npm install
-npm run dev
-```
+**See pgvector + PostgreSQL + Datadog DBM in action in 30 seconds.**
 
-> 2025-10-01 update: Browser bundles now alias Datadog/OpenTelemetry packages to lightweight stubs. If `npm run dev:simple` still fails, finish the TypeScript fixes called out in TODO.md before retrying so the `/tools/codeium` smoke test can complete.
-
-## Features
-
-- **Cmd+K Inline Edit** - Natural language code transformations
-- **Codebase Chat** - Ask questions about your code (vector search)
-- **AI Completion** - Multi-provider support (OpenAI/Anthropic/etc)
-- **7-Step Onboarding** - Theme, workspace, extensions, integrations
-- **53+ Extensions** - Continue, Codeium, Cline, Aider, Prettier, ESLint, etc
-- **MCP Server** - Model Context Protocol for Windsurf/Claude Desktop
-- **Vector Search** - Semantic code search with pgvector + HNSW
-- **Offline Testing** - Comprehensive cloud infrastructure validation without cloud resources
-
-## Testing
-
-### Offline Cloud Infrastructure Testing
-
-Our comprehensive offline testing framework validates cloud infrastructure configurations without creating actual cloud resources:
+> Note: To see Datadog metrics in the demo, create a `.env.local` with your Datadog API key before running.
 
 ```bash
-# Run comprehensive offline tests
-./tests/tofu/offline-cloud-testing.sh
-
-# Run specific test suites
-npm run test:scripts  # Bats tests for shell scripts
-python3 tests/tofu/test_aws_cloud_deployment.py -v
-python3 tests/tofu/test_gcp_cloud_deployment.py -v
-python3 tests/tofu/test_security_validation.py -v
+cat > .env.local << 'EOF'
+DD_API_KEY=REPLACE_WITH_YOUR_KEY
+DD_SITE=datadoghq.com
+EOF
 ```
 
-**Test Coverage:**
-- **AWS ECS/Fargate**: 12 comprehensive test cases with retry logic
-- **GCP Compute Engine**: 12 comprehensive test cases with validation
-- **Security Validation**: Comprehensive security best practices testing
-- **Shell Script Testing**: Bats test suite for script validation
-- **GitHub Integration**: Automated issue updates and test reporting
+---
 
-**Benefits:**
-- **Cost Savings**: No cloud resources created during testing
-- **Fast Feedback**: Tests run in seconds with comprehensive validation
-- **Security**: Automated security validation and secret detection
-- **CI/CD Ready**: GitHub Actions integration ready
+## 🏗️ **Deployment Status**
 
-## Daily Checkpoint — 2025-10-01
+[![Live Demo](https://img.shields.io/badge/🚀%20Live%20Demo-ONLINE-brightgreen?style=for-the-badge)](https://vibecode.eastus2.cloudapp.azure.com)
+[![Infrastructure Tests](https://img.shields.io/badge/Infrastructure%20Tests-✅%20Passing-brightgreen?style=for-the-badge)](./tests/tofu/)
+[![OpenTofu](https://img.shields.io/badge/OpenTofu-v1.7.3-blue?style=for-the-badge&logo=terraform)](https://opentofu.org/)
+[![Azure AKS](https://img.shields.io/badge/Azure%20AKS-DEPLOYED-brightgreen?style=for-the-badge&logo=microsoft-azure)](https://azure.microsoft.com/en-us/services/kubernetes-service/)
 
-The code-server editor smoke test hardening shipped today (Ready pod gating, kubectl timeouts, structured logging), but three follow-ups remain before closing the loop:
+### 🌐 **Production Deployment**
+- **Live Application**: [https://vibecode.eastus2.cloudapp.azure.com](https://vibecode.eastus2.cloudapp.azure.com)
+- **AKS Cluster**: `vibecode-prod-aks-6c3db0e6` (East US 2)
+- **Container Registry**: `vibecodecr6c3db0e6.azurecr.io`
+- **Application Version**: `v0.2.0`
+- **Database**: PostgreSQL 15 with pgvector (in-cluster)
+- **Monitoring**: Datadog with Database Monitoring enabled
 
-- [#415](https://github.com/ryanmaclean/vibecode-webgui/issues/415): propagate `kubectl wait` errors, refresh the Ready pod list between retries, mask pod identifiers in logs, and install `shellcheck`/`bats` locally + in CI.
-- [#416](https://github.com/ryanmaclean/vibecode-webgui/issues/416): add checksum/signature verification for kubectl/helm/kubectx/kubens and redact stderr output before it reaches shared telemetry.
-- [#417](https://github.com/ryanmaclean/vibecode-webgui/issues/417): expand the Bats suite to cover pod rotation, “no Ready pod” errors, structured status parsing, and timeout overrides.
-
-- ✅ 2025-10-01: Shellcheck/bats now installed in the KinD playbook; `scripts/test-code-server-editors.sh` surfaces `kubectl wait`/timeout failures, masks pod IDs, and Dockerfile installs for helm/kubectl/kubectx/kubens now verify upstream checksums (tracks #415/#416/#417).
-
-Heads-up: attempts to gather end-of-day guidance via `roundtable-ai/gemini_subagent` currently fail even though the CLI reports the agent as available. Re-run those persona prompts once the MCP server recognises Gemini again.
-
-## Screenshots
-
-### Monaco Editor with AI Completion
-![Monaco Editor](docs/screenshots/monaco-editor.png)
-
-### Codebase Chat
-![Codebase Chat](docs/screenshots/codebase-chat.png)
-
-### Onboarding Flow
-![Onboarding](docs/screenshots/onboarding.png)
-
-## Deployment
-
-See [DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md) for:
-- macOS (Intel + Apple Silicon)
-- Linux (Ubuntu/Debian/Fedora/Arch)
-- Windows (Desktop + Server)
-- QNAP, Synology, Asustor NAS
-- Docker Compose
-- Kubernetes (KinD + Production)
-
-### Cloud Workspaces (code-server)
-
-We are standardising low-cost, resumable developer workspaces on both Google Cloud Platform and AWS. Key points:
-
-| Cloud | Minimal Footprint | Persistent Storage | Auth | Notes |
-|-------|------------------|--------------------|------|-------|
-| **GCP** | Preemptible `e2-small` VM running code-server in Docker | Regional Persistent Disk per user (50 GiB) | Cloud HTTPS LB + Identity-Aware Proxy | Stop the VM when idle; snapshot PD nightly. |
-|       | GKE Autopilot deployment on Spot nodes (multi-user) | Filestore Basic HDD or PD PVC | IAP/OAuth proxy | Use StatefulSet for disk reattachment. |
-| **AWS** | EC2 `t4g.small` Spot instance + Docker | gp3 EBS per user (50 GiB) | ALB + Amazon Cognito | Lambda watcher stops idle instances; attach EBS on resume. |
-|       | ECS Fargate Spot (or EKS + Spot node groups) | EFS One Zone (IA) shared workspaces | Cognito/OIDC proxy | Suspend tasks when no active sessions. |
-
-Next deliverables:
-
-- ✅ Docker Compose + stop/start scripts for single-user VMs (`scripts/cloud/gcp`, `scripts/cloud/aws`, `scripts/cloud/docker`).
-- Kind/GKE/EKS manifests with Filestore/EFS-backed StatefulSets.
-- Helm chart modules + Terraform/OpenTofu stacks for managed rollout.
-- Idle detection hooks (WebSocket + CPU) that trigger Scheduler/Lambda jobs to shut down workloads.
-
-Progress is tracked in [docs/logs/issues/code-server-cloud-deployment.md](docs/logs/issues/code-server-cloud-deployment.md).
-
-Current tooling:
-
-- `scripts/cloud/gcp/*`, `scripts/cloud/aws/*` – launch/stop Spot or preemptible VMs with persistent disks.
-- `docker/code-server/docker-compose.cloud.yml` + `scripts/cloud/docker/*` – resumable Compose bundle for local testing.
-- `helm/code-server-cloud/` – experimental Helm chart parameterised for persistence and Datadog sidecar.
-- `tofu/code-server-gke`, `tofu/code-server-eks` – OpenTofu modules that install the chart onto existing clusters.
-- `scripts/cloud/kind/test-cloud-chart.sh` – quick KinD smoke test mirroring the cloud chart.
-
-## Environment Variables
+### 🚀 **Quick Deploy to Azure AKS**
 
 ```bash
-# Required
-DATABASE_URL="postgresql://user:pass@host:5432/vibecode"
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="$(openssl rand -base64 32)"
+# 1. Create AKS cluster
+./scripts/create-aks-cluster.sh
 
-# Optional - AI Providers
-OPENAI_API_KEY="sk-..."
-ANTHROPIC_API_KEY="sk-ant-..."
-GOOGLE_AI_API_KEY="..."
+# 2. Configure DNS with Azure public IP
+./scripts/create-public-ip.sh
 
-# Optional - Monitoring
-DD_API_KEY="..."
-DD_SITE="datadoghq.com"
+# 3. Deploy full stack (ingress, app, SSL)
+./scripts/deploy-vibecode.sh
+
+# 4. Setup Datadog monitoring
+export DD_API_KEY=your_datadog_api_key
+./scripts/setup-aks-datadog-monitoring.sh
 ```
 
-## Architecture
+For advanced options and detailed guidance, see the [AKS Deployment Guide](./docs/aks-datadog-monitoring-guide.md).
 
-```text
-┌─────────────────────────────────────────┐
-│  Next.js 15 App (React 19)             │
-│  ├─ Monaco 0.53.0 + Monacopilot        │
-│  ├─ AI Completion API                  │
-│  └─ Vector Search API                  │
-└─────────────────────────────────────────┘
-                  ↓
-┌─────────────────────────────────────────┐
-│  PostgreSQL 16 + pgvector               │
-│  ├─ HNSW indexes                        │
-│  ├─ User preferences                    │
-│  └─ Code embeddings                     │
-└─────────────────────────────────────────┘
-                  ↓
-┌─────────────────────────────────────────┐
-│  Datadog Monitoring                     │
-│  ├─ APM (traces)                        │
-│  ├─ DBM (query samples)                 │
-│  └─ RUM (user sessions)                 │
-└─────────────────────────────────────────┘
-```
+> **Note:** Make sure you have Azure CLI (`az`) and kubectl installed and configured. If using OpenTofu, see the section below about remote state management.
 
-## Code-Server v1.1.1 - GPL-Free Multi-Profile Images
+### 📈 **Datadog Monitoring Setup**
 
-**NEW**: 5 optimized profiles for different use cases, all with essential CLI tools included!
-
-### Quick Start
+The platform comes with comprehensive Datadog monitoring:
 
 ```bash
-# Recommended: Standard profile (700MB, 12 extensions)
-docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.1-standard
-docker run -it --rm -p 8080:8080 ghcr.io/ryanmaclean/vibecode-codeserver:standard
+# Set your Datadog API key
+export DD_API_KEY=your_datadog_api_key
+export DD_SITE=datadoghq.com  # Optional, defaults to datadoghq.com
 
-# Or from Docker Hub
-docker pull ryanmaclean/vibecode-codeserver:1.1.1-standard
+# Deploy Datadog monitoring stack
+./scripts/setup-aks-datadog-monitoring.sh --cluster-name vibecode-prod-aks-6c3db0e6
+
+# Validate Database Monitoring (after application is deployed)
+./scripts/verify-datadog-dbm.sh
 ```
 
-### Available Profiles
+The monitoring stack includes:
+- Node Agent with APM, logs, and process monitoring
+- Cluster Agent for Kubernetes metrics
+- Database Monitoring (DBM) for PostgreSQL and pgvector
+- Custom dashboards for vector search monitoring
+- System Probe for network monitoring
 
-| Profile | Size | Extensions | Use Case | Pull Command |
-|---------|------|------------|----------|--------------|
-| **minimal** | 400MB | 5 | Lightweight development | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:minimal` |
-| **standard** | 700MB | 12 | General development (recommended) | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:standard` |
-| **ai** | 900MB | 15 | AI/ML development | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:ai` |
-| **web** | 600MB | 14 | Web development | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:web` |
-| **full** | 1.2GB | 26 | Complete Swiss Army knife | `docker pull ghcr.io/ryanmaclean/vibecode-codeserver:latest` |
+For troubleshooting and advanced configuration, see the [Datadog Monitoring Guide](./docs/aks-datadog-monitoring-guide.md).
 
-### Included CLI Tools (All Profiles)
+### 📚 **Seed the RAG Dataset**
 
-**Terminal Editors:**
-- vim 9.0, neovim 0.7.2
-
-**AI Coding Assistants:**
-- aider 0.84.0, goose (latest)
-
-**DevOps Tools:**
-- kubectl 1.31.1, helm 3.19.0, k9s 0.50.13
-- stern, helmfile, sops, glab, kubectx, kubens
-
-**Shell Enhancements:**
-- nushell, delta, chezmoi, just
-
-### VS Code Extensions by Profile
-
-**AI Assistants (in ai/full profiles):**
-- Anthropic Claude Code (official)
-- OpenAI ChatGPT (official Codex)
-- GitHub Copilot + Chat
-- Codeium, Cline
-- VibeCode AI Assistant, Inline Edit, Codebase Chat
-
-**Productivity (varies by profile):**
-- Prettier, ESLint, Git Graph, Jest, Datadog, etc.
-
-### Features
-
-- Multi-architecture (ARM64 + AMD64)
-- Multi-registry (GHCR + Docker Hub)
-- OAuth authentication (port 46203)
-- Port 8765 (VibeCode's unique port)
-- Trusted domains pre-configured
-- No API keys in image (runtime config)
-- All CLI tools verified and working
-
-See [docker/code-server/](docker/code-server/) for complete documentation:
-- [PROFILES.md](docker/code-server/PROFILES.md) - Detailed profile comparison
-- [CHANGELOG.md](docker/code-server/CHANGELOG.md) - Version history
-- [VERIFICATION_GUIDE.md](docker/code-server/VERIFICATION_GUIDE.md) - Testing guide
-
-## API Endpoints
+The `RAGChunk` Prisma model now stores embeddings directly as `vector(1536)` values, so once PostgreSQL is reachable you should:
 
 ```bash
-# AI Completion
-curl -X POST http://localhost:3000/api/code-completion \
-  -H "Content-Type: application/json" \
-  -d '{"prompt":"write a function","provider":"openai"}'
-
-# Vector Search
-curl -X POST http://localhost:3000/api/search/vector \
-  -H "Content-Type: application/json" \
-  -d '{"query":"authentication logic","limit":5}'
-
-# User Preferences
-curl http://localhost:3000/api/user/preferences
+npx prisma generate
+npx prisma migrate deploy
+./scripts/generate-vector-activity.sh           # or your preferred seeding script
+npx ts-node scripts/verify-rag-functionality.ts # optional: smoke test retrieval
 ```
 
-## Testing
+This loads demo content into pgvector and verifies the Lovable-style chat flows before the Datadog dashboards go live.
+
+### 🗄️ **Harden OpenTofu State (Azure Storage)**
+
+To keep disaster-recovery work from deleting the local `terraform.tfstate`, migrate the stack to Azure Blob Storage:
 
 ```bash
-npm run test:unit          # Unit tests
-npm run test:integration   # Integration tests
-npm run test:e2e           # E2E tests (Playwright)
-npm run type-check         # TypeScript
-npm run lint               # ESLint
+# one-time provisioning of the remote backend
+./scripts/create-remote-state-storage.sh \
+  RESOURCE_GROUP=rg-vibecode-tofu-state \
+  STORAGE_ACCOUNT_NAME=vibecodetfstate01 \
+  CONTAINER_NAME=opentofu-state
+
+# copy the sample backend config and initialize
+cp tofu/backend.tf.example tofu/backend.tf
+tofu init -migrate-state
 ```
 
-## Documentation
+After migration, future `tofu plan/apply` runs will use the blob container (`opentofu-state`) instead of the fragile local file.
 
-- [Onboarding Guide](docs/ONBOARDING.md)
-- [Monaco Integration](docs/MONACOPILOT_INTEGRATION.md)
-- [MCP Server](docs/MCP_INTEGRATION.md)
-- [Docker Deployment](docs/DOCKER_DEPLOYMENT.md)
-- [Test Coverage](docs/TEST_COVERAGE_AUDIT.md)
-- [Kubernetes Guide](docs/azure-aks-deployment.md)
+### ☁️ **App Service Stack (Preview)**
 
-## Contributing
+The new `tofu/appservice/` project provisions an Azure PaaS alternative (Storage + App Service + Function App + Postgres Flexible Server + Monitoring). To experiment locally:
 
 ```bash
-# Fork, clone, create branch
-git checkout -b feature/your-feature
-
-# Make changes, test
-npm run test
-npm run type-check
-
-# Commit, push, PR
-git commit -m "feat: your feature"
-git push origin feature/your-feature
+cd tofu/appservice
+cp appservice.tfvars.example appservice.auto.tfvars            # customise project name, env, passwords
+tofu init                                                      # uses backend.tf.sample or local state
+tofu plan                                                      # review the PaaS resources
 ```
 
-## License
+Modules currently implemented:
+- `modules/storage` – Storage account, private uploads container, ingestion queue
+- `modules/app_service` – Linux App Service Plan & Web App (managed identity, monitoring settings)
+- `modules/function_app` – Consumption plan Function App for queue-triggered PDF processing
 
-MIT
+Remaining work: populate monitoring, Key Vault, and Azure OpenAI modules plus application deployment scripts (see `TODO.md` for the active follow-ups).
 
-## Links
+### 🧪 **Production Testing**
 
-- [Live Demo](https://vibecode.eastus2.cloudapp.azure.com)
-- [Documentation](docs/)
-- [Issues](https://github.com/ryanmaclean/vibecode-webgui/issues)
-- [Discussions](https://github.com/ryanmaclean/vibecode-webgui/discussions)
+Test against the live deployment:
 
-### 📌 CI/CD Workflow Coverage
-- Tracking issues: see `docs/logs/WORKFLOW_TRACKING.md` (maps each `.github/workflows/*.yml` to issue #355–#395).
-- Draft issue blurbs live in `docs/logs/workflow-issues/` for quick copy/paste when filing.
+```bash
+# Quick smoke test (7 core tests)
+npm run test:production:smoke
 
-## Daily Check-out (2025-10-01)
+# Full E2E test suite (448 tests)
+npm run test:e2e:production
 
-- Config Guardian: captured env-template follow-ups in `TODO(config-env-templates)` and issue #416 (reconfirm hostnames, restore VALKEY/REDIS alias mapping, rotate secrets).
-- Workflow SRE: logged recommendations in issue #418 to scope validation tags per run, enforce concurrency, and fail on SBOM upload errors before promotion.
-- Observability Lead: noted doc/runbook updates for deploy-next-docs smoke-test logs, dashboards, and rollback steps in issue #405 and the Observability Callouts of `TODO.md`.
-- Docs Steward: refreshed the Status at a Glance table, Agent Update summary, and assigned owners/dates for outstanding lint/testing actions in `TODO.md`.
-- Docker Buildsmith: recorded install/cleanup improvements for kubectl/kubectx/kubens in issue #416 ahead of the security hardening backlog.
+# Integration tests (database, AI, monitoring)
+npm run test:integration:production
 
-Next pass: implement the workflow/env/doc adjustments above, rerun `codeserver-multiarch` with `promote_latest=false`, and close out the outstanding TODO items.
+# Complete test suite
+npm run test:production:all
+```
+
+### 📊 **Infrastructure Components**
+- **AKS cluster** with dual node pools (system + user)
+- **PostgreSQL with pgvector** deployed in-cluster
+- **Datadog monitoring** with database monitoring (DBM)
+- **Network policies** and security hardening
+- **Rollback mechanisms** for deployment failures
+- **SSL/TLS** via Let's Encrypt with cert-manager
+
+### 💸 **Minimize Your AKS Footprint**
+- Keep the system node pool at the platform minimum (two Linux nodes on a 4-vCPU, 4+ GB SKU such as `Standard_D4as_v5`) and taint it so only control-plane add-ons schedule there.
+- Run application workloads on a separate user pool with the cluster autoscaler `minCount` set to `0` so it scales to zero when idle.
+- Stop and start the cluster (`az aks stop` / `az aks start`) during predictable downtimes to avoid paying for compute while the environment is quiet.
+- Stay on the AKS Free tier unless you need an uptime SLA—the control plane remains free and you only pay for the agent nodes that are running.
+
+---
+
+## ✨ **What This Demonstrates**
+
+<table>
+<tr>
+<td width="50%">
+
+### 🎯 **Core Demo**
+- **pgvector** for semantic search
+- **PostgreSQL** on Kubernetes  
+- **Datadog Database Monitoring**
+- **Real-time vector metrics**
+- **Query performance analysis**
+
+</td>
+<td width="50%">
+
+### 📊 **What You'll See**
+- 120 documents with embeddings
+- Vector similarity searches
+- Custom Datadog metrics
+- Query samples & explain plans
+- Performance dashboards
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🎮 **Quick Start Options**
+
+| Method | Command | Description |
+|--------|---------|-------------|
+| **🚀 Interactive Demo** | `./DEMO.sh` | Full TUI experience |
+| **⚡ Direct Setup** | `make setup` | Setup pgvector + DBM |
+| **🎯 Generate Activity** | `make vector` | Create vector data |
+| **📊 View Dashboard** | `make dashboard` | Open Datadog |
+| **☁️ Deploy to AKS** | `./scripts/deploy-vibecode.sh` | Full production deployment |
+
+> **Repo hygiene:** Housekeeping helpers now live under `scripts/util/` (for example `scripts/util/cleanup-root.sh`, `scripts/util/optimize-github-actions.sh`) so the repository root stays focused on app/runtime assets.
+
+---
+
+## 🏗️ **Architecture**
+
+```mermaid
+graph TB
+    subgraph "Azure Kubernetes Service"
+        A[VibeCode App] --> B[PostgreSQL + pgvector]
+        B --> C[Datadog Agent]
+        I[NGINX Ingress] --> A
+        I --> D[Let's Encrypt/cert-manager]
+    end
+    C --> E[Datadog Platform]
+    E --> F[Database Monitoring]
+    E --> G[APM Traces]
+    E --> H[Logs]
+    F --> J[Query Samples]
+    F --> K[Performance Metrics]
+    F --> L[Vector Metrics]
+```
+
+---
+
+## 📈 **Monitoring Capabilities**
+
+<details>
+<summary><b>🔍 Click to see what gets monitored</b></summary>
+
+### Vector-Specific Metrics
+- `postgresql.pgvector.vector_count` - Total embeddings stored
+- `postgresql.pgvector.table_size` - Storage utilization  
+- `postgresql.pgvector.index.*` - IVFFLAT index performance
+
+### Database Performance
+- Query execution times and explain plans
+- Index usage and efficiency
+- Connection pool monitoring
+- Lock contention analysis
+
+### Custom Queries Tracked
+```sql
+-- Vector similarity search
+SELECT embedding <=> '[0.1,0.2,0.3]'::vector FROM documents;
+
+-- Hybrid search (vector + text)
+SELECT * FROM documents WHERE content @@ 'query' 
+ORDER BY embedding <=> '[...]'::vector;
+```
+
+### Infrastructure Monitoring
+- Node CPU, memory, and disk usage
+- Kubernetes pod resource utilization
+- AKS cluster health metrics
+- Network traffic patterns
+
+### Application Performance
+- API response times
+- Error rates
+- Throughput metrics
+- User experience metrics
+
+</details>
+
+---
+
+## 🎯 **Perfect For**
+
+- **Database Teams**: Monitoring pgvector in production
+- **ML Engineers**: Vector database performance optimization  
+- **DevOps**: Kubernetes + PostgreSQL + monitoring stack
+- **Datadog Users**: Custom DBM metrics and dashboards
+- **Cloud Architects**: Azure AKS deployment patterns
+
+---
+
+## 🔧 **Requirements**
+
+- Kubernetes cluster (AKS, Docker Desktop, KIND, minikube)
+- `kubectl` and `az` CLI configured
+- Helm for package management
+- Optional: Datadog API key for full monitoring
+
+---
+
+## 📋 **What Happens in the Demo**
+
+1. **🔍 Verification**: Checks PostgreSQL + pgvector setup
+2. **⚙️ Configuration**: Sets up Datadog DBM monitoring
+3. **🎯 Data Generation**: Creates 120 sample documents with embeddings
+4. **🔄 Activity Simulation**: Runs vector similarity searches
+5. **📊 Monitoring**: Shows real metrics in Datadog dashboard
+
+---
+
+<div align="center">
+
+**🚀 Ready to see pgvector monitoring in action?**
+
+### [`./DEMO.sh`](./DEMO.sh)
+
+*Supports both interactive TUI and simple menu modes*
+
+---
+
+<sub>Built with ❤️ for the Datadog + PostgreSQL + Kubernetes community</sub>
+
+</div>

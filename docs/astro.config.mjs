@@ -49,10 +49,7 @@ export default defineConfig({
           label: 'Database & Storage',
           items: [
             { label: 'PostgreSQL + pgvector', link: '/prisma-pgvector/' },
-            {
-              label: 'PostgreSQL Test Results',
-              link: 'https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/PRISMA_PGVECTOR_TEST_RESULTS.md',
-            },
+            { label: 'PostgreSQL Test Results', link: '/PRISMA_PGVECTOR_TEST_RESULTS/' },
             { label: 'PostgreSQL GenAI Demo', link: '/postgresql-genai-demo-guide/' },
             { label: 'PostgreSQL Sample Queries', link: '/postgresql-sample-queries/' },
           ]
@@ -68,11 +65,8 @@ export default defineConfig({
             { label: 'Overview', link: '/monitoring/overview/' },
             { label: 'Azure OpenAI Monitoring', link: '/azure-openai-monitoring/' },
             { label: 'Deploy Azure OpenAI Monitoring', link: '/deploy-azure-openai-monitoring/' },
-            {
-              label: 'Datadog Configuration',
-              link: '/wiki-archive/datadog_monitoring_configuration/',
-            },
-            { label: 'Datadog Local Development', link: '/datadog-local-development/' },
+            { label: 'Datadog Configuration', link: '/DATADOG_MONITORING_CONFIGURATION/' },
+            { label: 'Datadog Local Development', link: '/DATADOG_LOCAL_DEVELOPMENT/' },
             { label: 'Datadog Compatibility', link: '/datadog-compatibility/' },
           ]
         },

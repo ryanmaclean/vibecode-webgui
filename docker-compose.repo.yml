@@ -1,0 +1,108 @@
+version: "3.9"
+
+# Repo-level compose to run WebGUI + AI Gateway locally with optional services.
+# Keep demo services optional to avoid licensing surprises.
+
+services:
+  webgui:
+    build:
+      context: .
+    image: vibecode/webgui:local
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXTAUTH_URL=http://localhost:3000
+      - HOSTNAME=0.0.0.0
+      - DD_IAST_ENABLED=true
+      # Gateway base URL for the UI if applicable
+      - GATEWAY_BASE_URL=http://localhost:3001
+    depends_on:
+      - gateway
+    profiles:
+      - core
+      - full
+      - obs-demo
+
+  gateway:
+    build:
+      context: ./services/ai-gateway
+    image: vibecode/ai-gateway:local
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - API_KEYS=${API_KEYS:-vbai_dev_key_1}
+      - JWT_SECRET=${JWT_SECRET:-local_jwt_secret}
+      - PROVIDERS_ENABLED=${PROVIDERS_ENABLED:-openrouter}
+      # Providers (populate as needed from your shell or .env)
+      - OPENROUTER_API_KEY
+      - OPENROUTER_REFERRER
+      - OPENROUTER_TITLE
+      - OPENAI_API_KEY
+      - AZURE_OPENAI_ENDPOINT
+      - AZURE_OPENAI_API_KEY
+      - AZURE_OPENAI_DEPLOYMENTS
+      - HUGGINGFACE_API_TOKEN
+      - OLLAMA_HOST=http://ollama:11434
+      # OTEL (neutral)
+      - ENABLE_TRACING=${ENABLE_TRACING:-true}
+      - TRACE_SAMPLE_RATE=${TRACE_SAMPLE_RATE:-0.5}
+      - DD_ENV=${DD_ENV:-dev}
+      - DD_SERVICE=${DD_SERVICE:-vibecode-ai-gateway}
+      - DD_IAST_ENABLED=true
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-vibecode-ai-gateway}
+      - OTEL_RESOURCE_ATTRIBUTES=${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment=${DD_ENV:-dev}}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      - OTEL_EXPORTER_OTLP_HEADERS=${OTEL_EXPORTER_OTLP_HEADERS:-}
+      # Local convenience
+      - DISABLE_REDIS=${DISABLE_REDIS:-true}
+      - ALLOW_START_WITHOUT_REDIS=${ALLOW_START_WITHOUT_REDIS:-true}
+    depends_on:
+      - redis
+    profiles:
+      - core
+      - full
+      - obs-demo
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    profiles:
+      - full
+      - obs-demo
+
+  # Optional local model runtime
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+    profiles:
+      - ollama
+      - obs-demo
+
+  # Optional OpenWebUI demo
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    depends_on:
+      - ollama
+    ports:
+      - "3002:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+    profiles:
+      - obs-demo
+
+volumes:
+  redis_data:
+  ollama_data:

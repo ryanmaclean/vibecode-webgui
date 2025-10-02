@@ -176,7 +176,7 @@ The database is already in sync with your Prisma schema.
 
 ### Files Updated for pgvector Compatibility
 
-1. **`scripts/kind-setup.sh`**: Updated to `pgvector/pgvector:pg16`
+1. **`scripts/kind-setup.sh`** (run via `npm run kind:setup`): Updated to `pgvector/pgvector:pg16`
 2. **`docker-compose.production.yml`**: Updated to `pgvector/pgvector:pg16` 
 3. **`k8s/postgres-deployment.yaml`**: Updated to `pgvector/pgvector:pg16`
 4. **`src/components/projects/ProjectScaffolder.tsx`**: Updated to `pgvector/pgvector:pg16`

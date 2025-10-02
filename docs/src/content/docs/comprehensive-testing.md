@@ -127,10 +127,10 @@ npm install @datadog/browser-rum
 - ❌ Third-party service tests (MISSING)
 
 🌐 E2E LAYER (Playwright)
-- ✅ Reduced-motion accessibility spec covering Enhanced Chat jump control (`tests/e2e/enhanced-chat/reduced-motion.spec.ts`)
 - ❌ User journey tests (MISSING)
 - ❌ Cross-browser compatibility (MISSING)  
 - ❌ Performance benchmarks (MISSING)
+- ❌ Accessibility validation (MISSING)
 ```
 
 #### **Immediate Test Fixes Required:**

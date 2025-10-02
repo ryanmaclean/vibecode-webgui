@@ -2,19 +2,13 @@ name: Datadog Trace Verification
 
 on:
   schedule:
-    - cron: '15 * * * *'
+    - cron: '0 * * * *'
   workflow_dispatch:
-
-concurrency:
-  group: datadog-trace-verify
-  cancel-in-progress: false
 
 jobs:
   trace-search:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      DD_SITE: ${{ secrets.DD_SITE || 'datadoghq.com' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,28 +32,15 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Abort when Datadog secrets missing
-        if: ${{ secrets.DD_API_KEY == '' || secrets.DD_APP_KEY == '' }}
-        run: |
-          echo "::notice::Skipping trace verification because DD_API_KEY or DD_APP_KEY is not configured."
-          echo "Set DD_API_KEY/DD_APP_KEY (and optional DD_SITE) to enable the Datadog trace search check."
-          exit 0
-
       - name: Verify trace search
-        if: ${{ secrets.DD_API_KEY != '' && secrets.DD_APP_KEY != '' }}
         env:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-        run: |
-          set -euo pipefail
-          npm run monitoring:trace 2>&1 | tee datadog-trace-search.log
+        run: npm run monitoring:trace
 
       - name: Upload trace search artefacts
-        if: ${{ always() && (secrets.DD_API_KEY != '' && secrets.DD_APP_KEY != '') }}
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: datadog-trace-search
-          path: |
-            datadog/trace-search/*.json
-            datadog-trace-search.log
-          if-no-files-found: warn
+          path: datadog/trace-search/*.json

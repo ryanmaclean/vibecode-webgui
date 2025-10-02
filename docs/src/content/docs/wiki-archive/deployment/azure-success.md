@@ -107,4 +107,4 @@ PGPASSWORD="..." psql "host=...postgres.database.azure.com sslmode=require"
 
 **Status**: 🔄 **MVP VALIDATED** - Foundation established but production hardening required.
 
-**See**: [HONEST_PRODUCTION_READINESS.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/deployment/HONEST_PRODUCTION_READINESS.md) for detailed gap analysis.
+**See**: [HONEST_PRODUCTION_READINESS.md](./HONEST_PRODUCTION_READINESS.md) for detailed gap analysis.

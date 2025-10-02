@@ -148,7 +148,7 @@ Select option (1-8) or 'q' to quit:
 The main KIND setup script now automatically suggests Docker Doctor when Docker issues are detected:
 
 ```bash
-./scripts/kind-setup.sh
+npm run kind:setup  # wraps ./scripts/kind-setup.sh
 
 # If Docker issues detected:
 💡 Docker issues detected? Try Docker Doctor:
@@ -247,7 +247,7 @@ Docker Desktop won't install or start at all
 ### **Files Enhanced**
 - `KIND_TROUBLESHOOTING_GUIDE.md` - Added Docker Doctor references
 - `scripts/README.md` - Updated with Docker Doctor usage
-- `scripts/kind-setup.sh` - Integration with Docker Doctor
+- `scripts/kind-setup.sh` - Integration with Docker Doctor (also available via `npm run kind:setup`)
 - **New:** `DOCKER_TROUBLESHOOTING_SUMMARY.md` - This document
 
 ### **Friction Log Updated**
@@ -290,7 +290,7 @@ All Docker troubleshooting steps documented with:
 
 ### **For VibeCode Development:**
 1. Use Docker Doctor to ensure Docker is healthy
-2. Run: `./scripts/kind-setup.sh` for complete KIND environment
+2. Run: `npm run kind:setup` for complete KIND environment
 3. Enjoy reliable local Kubernetes development
 
 ---

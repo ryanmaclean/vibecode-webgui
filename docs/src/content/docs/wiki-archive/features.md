@@ -103,4 +103,4 @@ Vector embeddings are used throughout the platform for:
 
 ## Getting Started
 
-Ready to explore these features? Check out our [Getting Started Guide](/getting-started/) to begin your VibeCode journey.
+Ready to explore these features? Check out our [Getting Started Guide](/wiki/getting-started) to begin your VibeCode journey.

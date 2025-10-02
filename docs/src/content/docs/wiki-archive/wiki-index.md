@@ -13,69 +13,69 @@ Welcome to the comprehensive VibeCode documentation. This wiki provides complete
 ## 📋 Quick Navigation
 
 ### 🚀 Getting Started
-- **[README](https://github.com/ryanmaclean/vibecode-webgui/blob/main/README.md)** - Project overview and quick start
-- **[KIND Setup Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/kind-troubleshooting-guide.md)** - Local Kubernetes environment
-- **[Docker Troubleshooting](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/docker-troubleshooting-summary.md)** - Docker Doctor TUI documentation
+- **[README](README.md)** - Project overview and quick start
+- **[KIND Setup Guide](KIND_TROUBLESHOOTING_GUIDE.md)** - Local Kubernetes environment
+- **[Docker Troubleshooting](DOCKER_TROUBLESHOOTING_SUMMARY.md)** - Docker Doctor TUI documentation
 
 ### 🎨 Tailwind CSS v4 Implementation
-- **[Tailwind CSS v4 Migration Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/wiki.md)** - Complete implementation guide with three production-ready approaches
-- **[Tailwind CSS v4 Success Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/tailwind-v4-success.md)** - Production-ready implementation details
-- **[Tailwind CSS v4 Testing Report](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/tailwind-v4-testing-report.md)** - Comprehensive test results across all environments
-- **[x86-64 Production Test Report](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/x86-production-test-report.md)** - Production architecture verification
-- **[Comprehensive Environment Test Report](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/comprehensive-environment-test-report.md)** - Complete validation across local dev, Docker, KIND, and Kubernetes
-- **[Migration Notes](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/tailwind-v4-migration-notes.md)** - Complete migration journey and resolution
+- **[Tailwind CSS v4 Migration Guide](./wiki)** - Complete implementation guide with three production-ready approaches
+- **[Tailwind CSS v4 Success Guide](./tailwind-v4-success)** - Production-ready implementation details
+- **[Tailwind CSS v4 Testing Report](./tailwind-v4-testing-report)** - Comprehensive test results across all environments
+- **[x86-64 Production Test Report](./x86-production-test-report)** - Production architecture verification
+- **[Comprehensive Environment Test Report](./comprehensive-environment-test-report)** - Complete validation across local dev, Docker, KIND, and Kubernetes
+- **[Migration Notes](./tailwind-v4-migration-notes)** - Complete migration journey and resolution
 
 ### 🏗️ Development & Operations
-- **[Project Roadmap](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/project-todo.md)** - Technical roadmap and development tasks
-- **[Repository Scan Report](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/reports/repository_scan_report_july_2025.md)** - Current project status
-- **[Enhanced AI Features](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/enhanced-ai-features.md)** - New AI capabilities
-- **[Missing AI Libraries Analysis](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/missing-ai-libraries-analysis.md)** - AI ecosystem gaps
-- **[Authentication Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/authentication-summary.md)** - Security implementation
-- **[Testing Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/authentication-testing-guide.md)** - Authentication testing
-- **[Consolidated Documentation](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/consolidated-documentation.md)** - Complete documentation index
+- **[Project Roadmap](./project-todo)** - Technical roadmap and development tasks
+- **[Repository Scan Report](REPOSITORY_SCAN_REPORT_JULY_2025.md)** - Current project status
+- **[Enhanced AI Features](ENHANCED_AI_FEATURES.md)** - New AI capabilities
+- **[Missing AI Libraries Analysis](MISSING_AI_LIBRARIES_ANALYSIS.md)** - AI ecosystem gaps
+- **[Authentication Guide](AUTHENTICATION_SUMMARY.md)** - Security implementation
+- **[Testing Guide](AUTHENTICATION_TESTING_GUIDE.md)** - Authentication testing
+- **[Consolidated Documentation](./consolidated-documentation)** - Complete documentation index
 
 ### 🔧 Infrastructure & Deployment
-- **[Helm Deployment Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/helm-deployment-guide.md)** - Production-ready Helm charts with environment scaling
-- **[Storage Sizing Analysis](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/storage-sizing-analysis.md)** - Right-sized storage allocation for cost optimization
-- **[Helm Scaling Analysis](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/helm-scaling-analysis.md)** - Complete resource scaling strategy
-- **[Azure Infrastructure](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/azure-infrastructure-summary.md)** - Cloud deployment
-- **[Production Status](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/wiki_index/production-status.md)** - Current production state
-- **[Comprehensive Testing](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/comprehensive-testing-assessment.md)** - Test coverage analysis
-- **[Container Manifest](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/container-manifest.md)** - Container configurations
+- **[Helm Deployment Guide](./helm-deployment-guide)** - Production-ready Helm charts with environment scaling
+- **[Storage Sizing Analysis](./storage-sizing-analysis)** - Right-sized storage allocation for cost optimization
+- **[Helm Scaling Analysis](./helm-scaling-analysis)** - Complete resource scaling strategy
+- **[Azure Infrastructure](AZURE_INFRASTRUCTURE_SUMMARY.md)** - Cloud deployment
+- **[Production Status](production-status.md)** - Current production state
+- **[Comprehensive Testing](COMPREHENSIVE_TESTING_ASSESSMENT.md)** - Test coverage analysis
+- **[Container Manifest](CONTAINER_MANIFEST.md)** - Container configurations
 
 ### 🤖 AI & Machine Learning
-- **[GenAI Integration](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/genai-integration-architecture.md)** - AI architecture
-- **[GenAI Enhancement Summary](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/genai-enhancement-summary.md)** - Recent AI improvements
-- **[AI CLI Tools Implementation](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/ai_cli_tools_implementation_summary.md)** - CLI AI features
-- **[Docker Model Runner](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/docker-model-runner-setup.md)** - AI model deployment
+- **[GenAI Integration](GENAI_INTEGRATION_ARCHITECTURE.md)** - AI architecture
+- **[GenAI Enhancement Summary](GENAI_ENHANCEMENT_SUMMARY.md)** - Recent AI improvements
+- **[AI CLI Tools Implementation](AI_CLI_TOOLS_IMPLEMENTATION_SUMMARY.md)** - CLI AI features
+- **[Docker Model Runner](DOCKER_MODEL_RUNNER_SETUP.md)** - AI model deployment
 
 ### 📊 Data & Integrations
-- **[Prisma pgvector Tests](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/PRISMA_PGVECTOR_TEST_RESULTS.md)** - Vector database integration
-- **[Redis/Valkey Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/wiki_index/REDIS_VALKEY_INTEGRATION_GUIDE.md)** - Caching implementation
-- **[Temporal Integration](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/temporal-integration-summary.md)** - Workflow orchestration
-- **[Datadog Compatibility](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/datadog-compatibility-summary.md)** - Monitoring setup
+- **[Prisma pgvector Tests](PRISMA_PGVECTOR_TEST_RESULTS.md)** - Vector database integration
+- **[Redis/Valkey Guide](REDIS_VALKEY_INTEGRATION_GUIDE.md)** - Caching implementation
+- **[Temporal Integration](TEMPORAL_INTEGRATION_SUMMARY.md)** - Workflow orchestration
+- **[Datadog Compatibility](DATADOG_COMPATIBILITY_SUMMARY.md)** - Monitoring setup
 
 ### 🔌 Extensions & Tools
-- **[VS Code Extension Config](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/vscode-extension-configuration.md)** - Extension setup
-- **[Mastra Integration](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/mastra-integration-guide.md)** - Framework integration
-- **[Microsoft Extensions](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/microsoft-vscode-extensions-mit-bsd.md)** - Licensed extensions
-- **[Third Party Notices](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/third-party-notices-extensions.md)** - Legal compliance
+- **[VS Code Extension Config](VSCODE_EXTENSION_CONFIGURATION.md)** - Extension setup
+- **[Mastra Integration](MASTRA_INTEGRATION_GUIDE.md)** - Framework integration
+- **[Microsoft Extensions](MICROSOFT_VSCODE_EXTENSIONS_MIT_BSD.md)** - Licensed extensions
+- **[Third Party Notices](THIRD_PARTY_NOTICES_EXTENSIONS.md)** - Legal compliance
 
 ### 📈 Monitoring & Optimization
-- **[Test Infrastructure](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/test-infrastructure-summary.md)** - Testing framework
-- **[Pre-commit Optimization](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/precommit-optimization-summary.md)** - Development workflow
-- **[Comprehensive Test Report](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/comprehensive-test-report.md)** - Latest test results
-- **[KIND Validation](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/kind-validation-report.md)** - Environment validation
+- **[Test Infrastructure](TEST_INFRASTRUCTURE_SUMMARY.md)** - Testing framework
+- **[Pre-commit Optimization](PRECOMMIT_OPTIMIZATION_SUMMARY.md)** - Development workflow
+- **[Comprehensive Test Report](COMPREHENSIVE_TEST_REPORT.md)** - Latest test results
+- **[KIND Validation](KIND_VALIDATION_REPORT.md)** - Environment validation
 
 ### 📝 Configuration & Environment
-- **[Environment Variables](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/env-variables.md)** - Configuration guide
-- **[Development Credentials](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/development-credentials.md)** - Local development setup
-- **[Documentation Plan](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/docs-consolidation-plan.md)** - Documentation strategy
+- **[Environment Variables](ENV_VARIABLES.md)** - Configuration guide
+- **[Development Credentials](DEVELOPMENT_CREDENTIALS.md)** - Local development setup
+- **[Documentation Plan](DOCS_CONSOLIDATION_PLAN.md)** - Documentation strategy
 
 ### 📜 Legal & Compliance
-- **[License Sweep](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/license-sweep-genai-libraries.md)** - GenAI library licenses
-- **[Contributing Guidelines](https://github.com/ryanmaclean/vibecode-webgui/blob/main/CONTRIBUTING.md)** - How to contribute
-- **[Code of Conduct](https://github.com/ryanmaclean/vibecode-webgui/blob/main/CODE_OF_CONDUCT.md)** - Community standards
+- **[License Sweep](LICENSE_SWEEP_GENAI_LIBRARIES.md)** - GenAI library licenses
+- **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute
+- **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community standards
 
 ## 🔄 Recent Updates
 
@@ -99,7 +99,7 @@ Welcome to the comprehensive VibeCode documentation. This wiki provides complete
 ./scripts/docker-doctor.sh diagnose
 
 # Start KIND environment
-./scripts/kind-setup.sh
+npm run kind:setup  # wraps ./scripts/kind-setup.sh
 
 # Access application
 kubectl port-forward -n vibecode svc/vibecode-service 3000:3000
@@ -112,7 +112,7 @@ cd docs && npm run build
 
 - **Issues:** [GitHub Issues](https://github.com/vibecode/webgui/issues)
 - **Documentation:** This wiki
-- **Status:** [Production Status](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/wiki_index/production-status.md)
+- **Status:** [Production Status](production-status.md)
 
 ---
 

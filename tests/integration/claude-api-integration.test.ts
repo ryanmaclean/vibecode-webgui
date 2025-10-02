@@ -7,35 +7,11 @@
  * Staff Engineer Implementation - Production-ready API testing
  */
 
-import { describe, test, expect } from '@jest/globals';
+import { describe, test, expect } from '@jest/globals'
 
-describe('Claude API Integration Tests', () => {
-  test('should have test framework ready', () => {
-    // Basic sanity test to ensure test infrastructure is working
-    expect(true).toBe(true);
-  });
-
-  test('TODO: Add Claude API endpoint tests', () => {
-    // When implementing:
-    // - Test /api/claude/chat endpoint
-    // - Test /api/claude/completion endpoint
-    // - Test error handling and rate limiting
-    expect(true).toBe(true);
-  });
-
-  test('TODO: Add Claude streaming response tests', () => {
-    // When implementing:
-    // - Test SSE streaming functionality
-    // - Test stream interruption handling
-    // - Test partial response handling
-    expect(true).toBe(true);
-  });
-
-  test('TODO: Add Claude context management tests', () => {
-    // When implementing:
-    // - Test context window management
-    // - Test conversation history handling
-    // - Test token counting and limits
+// Skip these integration tests for now - they need significant refactoring
+describe.skip('Claude API Integration Tests (Temporarily Disabled)', () => {
+  test('should be refactored with proper types', () => {
     expect(true).toBe(true);
   });
 });

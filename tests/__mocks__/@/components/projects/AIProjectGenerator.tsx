@@ -98,7 +98,7 @@ export function AIProjectGenerator({
       <div className="max-w-4xl mx-auto p-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-green-700">Project &ldquo;{generatedProject.projectStructure.name}&rdquo; generated successfully!</CardTitle>
+            <CardTitle className="text-green-700">Project "{generatedProject.projectStructure.name}" generated successfully!</CardTitle>
             <CardDescription>Your project has been created and is ready for development</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -240,10 +240,10 @@ export function AIProjectGenerator({
           <div className="mt-8 pt-6 border-t">
             <h3 className="text-sm font-medium text-gray-700 mb-2">Example Project Ideas:</h3>
             <div className="text-sm text-gray-600 space-y-1">
-              <p>&ldquo;Create a task management app with drag-and-drop functionality&rdquo;</p>
-              <p>&ldquo;Build a real-time chat application with user authentication&rdquo;</p>
-              <p>&ldquo;Generate a blog platform with markdown support and comments&rdquo;</p>
-              <p>&ldquo;Create an e-commerce site with product catalog and payment integration&rdquo;</p>
+              <p>"Create a task management app with drag-and-drop functionality"</p>
+              <p>"Build a real-time chat application with user authentication"</p>
+              <p>"Generate a blog platform with markdown support and comments"</p>
+              <p>"Create an e-commerce site with product catalog and payment integration"</p>
             </div>
           </div>
         </CardContent>

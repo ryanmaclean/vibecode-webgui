@@ -7,6 +7,7 @@
 
 import { describe, it, expect, afterEach, jest } from '@jest/globals'
 import { JSDOM } from 'jsdom'
+// @ts-ignore
 import { axe, toHaveNoViolations, configureAxe } from 'jest-axe'
 
 // @ts-expect-error -- jest-axe types are not compatible with the latest Jest version

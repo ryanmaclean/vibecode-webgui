@@ -585,7 +585,7 @@ npm run db:status
 npm run perf:cache
 
 # Check cache health
-curl http://localhost:3000/api/monitoring/overview/performance?action=cache
+curl http://localhost:3000/api/monitoring/performance?action=cache
 ```
 
 ### AI Gateway Issues
@@ -618,10 +618,10 @@ npm run perf:database
 
 ### Essential Reading
 
-1. **[Developer Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/DEVELOPER_GUIDE.md)** - Comprehensive technical documentation
-2. **[API Documentation](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/API.md)** - Auto-generated API reference
-3. **[Security Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/security-guide.md)** - Security best practices
-4. **[Performance Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/performance-guide.md)** - Optimization strategies
+1. **[Developer Guide](./DEVELOPER_GUIDE.md)** - Comprehensive technical documentation
+2. **[API Documentation](./API.md)** - Auto-generated API reference
+3. **[Security Guide](./security-guide.md)** - Security best practices
+4. **[Performance Guide](./performance-guide.md)** - Optimization strategies
 
 ### External Resources
 

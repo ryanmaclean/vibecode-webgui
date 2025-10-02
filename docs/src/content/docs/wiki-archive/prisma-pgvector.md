@@ -183,7 +183,7 @@ The database is already in sync with your Prisma schema.
 
 ### Files Updated for pgvector Compatibility
 
-1. **`scripts/kind-setup.sh`**: Updated to `pgvector/pgvector:pg16`
+1. **`scripts/kind-setup.sh`** (run via `npm run kind:setup`): Updated to `pgvector/pgvector:pg16`
 2. **`docker-compose.production.yml`**: Updated to `pgvector/pgvector:pg16` 
 3. **`k8s/postgres-deployment.yaml`**: Updated to `pgvector/pgvector:pg16`
 4. **`src/components/projects/ProjectScaffolder.tsx`**: Updated to `pgvector/pgvector:pg16`
@@ -277,10 +277,10 @@ model RAGChunk {
 
 ## 🔗 Related Documentation
 
-- **[Production Deployment Guide](/production-deployment-guide/)** - Complete production deployment with PostgreSQL + pgvector
-- **[Kubernetes Secrets Automation](/kubernetes-secrets-automation/)** - Secure database credential management
-- **[Azure OpenAI Monitoring](/azure-openai-monitoring/)** - Monitor AI operations with pgvector performance metrics
-- **[Helm Deployment Guide](/helm-deployment-guide/)** - Kubernetes deployment instructions
-- **[PostgreSQL Test Results](/wiki-archive/prisma_pgvector_test_results/)** - Detailed testing validation
-- **[PostgreSQL GenAI Demo](/postgresql-genai-demo-guide/)** - AI workflow examples
-- **[Environment Variables Guide](/ENV_VARIABLES/)** - Configuration reference 
+- **[Production Deployment Guide](./production-deployment-guide/)** - Complete production deployment with PostgreSQL + pgvector
+- **[Kubernetes Secrets Automation](./kubernetes-secrets-automation/)** - Secure database credential management
+- **[Azure OpenAI Monitoring](./azure-openai-monitoring/)** - Monitor AI operations with pgvector performance metrics
+- **[Helm Deployment Guide](./helm-deployment-guide/)** - Kubernetes deployment instructions
+- **[PostgreSQL Test Results](./PRISMA_PGVECTOR_TEST_RESULTS/)** - Detailed testing validation
+- **[PostgreSQL GenAI Demo](./postgresql-genai-demo-guide/)** - AI workflow examples
+- **[Environment Variables Guide](./ENV_VARIABLES/)** - Configuration reference 
