@@ -1,0 +1,52 @@
+# SwiftLint Configuration
+# Agent 23 - Shopify Standards
+
+included:
+  - Sources
+  - Tests
+
+excluded:
+  - .build
+  - .swiftpm
+  - vendored-deps
+
+disabled_rules:
+  - trailing_whitespace
+  - line_length # Handled by swift-format
+
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - explicit_type_interface
+  - closure_spacing
+  - operator_usage_whitespace
+  - vertical_whitespace_closing_braces
+  - vertical_whitespace_opening_braces
+
+identifier_name:
+  min_length: 1
+  max_length: 50
+  excluded:
+    - id
+    - URL
+    - url
+
+type_name:
+  min_length: 3
+  max_length: 50
+
+function_body_length:
+  warning: 60
+  error: 100
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+nesting:
+  type_level:
+    warning: 3
+  statement_level:
+    warning: 5
+
+reporter: "xcode"

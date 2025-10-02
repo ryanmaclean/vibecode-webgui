@@ -242,6 +242,62 @@ final class ContainerRuntime: @unchecked Sendable {
 
     // MARK: - VM Configuration
 
+    private func createOptimizedBootCommandLine(config: ContainerConfiguration) -> String {
+        var params: [String] = []
+
+        // Base parameters
+        params.append("console=hvc0")
+        params.append("root=/dev/vda")
+        params.append("rw")
+        params.append("quiet")
+        params.append("loglevel=3")
+
+        // === Apple Silicon M-Series Optimizations ===
+
+        // 1. CPU Scheduler - P/E-Core Awareness
+        params.append("sched_cluster=1")
+        params.append("cpufreq.default_governor=schedutil")
+
+        // 2. Unified Memory - Transparent Hugepages
+        params.append("transparent_hugepage=always")
+        params.append("thp_defrag=defer+madvise")
+
+        // 3. I/O Scheduler - NVMe Optimization
+        params.append("scsi_mod.use_blk_mq=1")
+        params.append("nvme_core.multipath=Y")
+        params.append("elevator=bfq")
+
+        // 4. VirtIO VSOCK - Zero-Copy I/O
+        params.append("virtio_vsock.transport=vhost")
+        params.append("vhost_vsock.experimental_zcopytx=1")
+
+        // 5. Thermal Management
+        params.append("cpufreq.boost=1")
+        params.append("processor.max_cstate=1")
+
+        // 6. Page Table Isolation (Security)
+        params.append("kpti=1")
+        params.append("spectre_v2=on")
+        params.append("spec_store_bypass_disable=on")
+
+        // 7. Memory Management
+        params.append("cma=512M")
+        params.append("vm.swappiness=10")
+
+        // 8. Performance Hints
+        params.append("nohz=on")
+        params.append("nohz_full=1-3")
+        params.append("rcu_nocbs=1-3")
+
+        // 9. Neural Engine Workarounds (for ML workloads)
+        if config.enableMLAcceleration {
+            params.append("arm64.nopauth")
+            params.append("arm64.nobti")
+        }
+
+        return params.joined(separator: " ")
+    }
+
     private func createVMConfiguration(
         imageBundle: URL,
         config: ContainerConfiguration,
@@ -259,10 +315,10 @@ final class ContainerRuntime: @unchecked Sendable {
         let platform = VZGenericPlatformConfiguration()
         vmConfig.platform = platform
 
-        // Boot loader
+        // Boot loader with optimized kernel parameters
         let bootloader = VZLinuxBootLoader(kernelURL: imageBundle.appendingPathComponent("vmlinuz"))
         bootloader.initialRamdiskURL = imageBundle.appendingPathComponent("initrd")
-        bootloader.commandLine = "console=hvc0 root=/dev/vda rw"
+        bootloader.commandLine = createOptimizedBootCommandLine(config: config)
         vmConfig.bootLoader = bootloader
 
         // Storage - Root filesystem
