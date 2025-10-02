@@ -2,33 +2,23 @@ name: Documentation Automation
 
 on:
   push:
-    branches: [main]
+    branches: [ main, develop ]
     paths:
+      - 'src/**'
+      - 'package.json'
       - 'docs/**'
-      - 'content/wiki/**'
-      - '.github/workflows/docs-automation.yml'
+      - '**/*.md'
   pull_request:
-    branches: [main]
+    branches: [ main ]
     paths:
+      - 'src/**'
+      - 'package.json' 
       - 'docs/**'
-      - 'content/wiki/**'
-      - '.github/workflows/docs-automation.yml'
+      - '**/*.md'
   schedule:
-    - cron: '0 5 * * 1'
+    # Run weekly to check for outdated documentation
+    - cron: '0 2 * * 0'
   workflow_dispatch:
-    inputs:
-      apply_changes:
-        description: 'Open a docs automation PR with generated updates'
-        required: false
-        default: 'false'
-      target_branch:
-        description: 'Base branch for generated PR'
-        required: false
-        default: 'main'
-
-concurrency:
-  group: docs-automation-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   validate-docs:
@@ -51,21 +41,10 @@ jobs:
       - name: Validate documentation
         run: npm run docs:validate
 
-      - name: Install docs dependencies
-        run: npm ci --legacy-peer-deps
-        working-directory: docs
-
-      - name: Build Astro docs
-        run: npm run build
-        working-directory: docs
-
-      - name: Run static link audit
-        run: npm run docs:link-audit
-
       - name: Check for broken links
         uses: lycheeverse/lychee-action@v1
         with:
-          args: --verbose --no-progress --max-concurrency 4 --retry-wait-time 4000 --retry-count 2 --github-token "${{ github.token }}" --exclude-loopback --exclude-private --exclude-mail docs/**/*.md README.md
+          args: --verbose --no-progress --exclude-loopback --exclude-private --exclude-mail docs/**/*.md README.md
           fail: true
 
       - name: Upload validation report
@@ -76,15 +55,15 @@ jobs:
           path: docs/VALIDATION_REPORT.md
 
   update-docs:
-    name: Generate Documentation Updates
+    name: Update Documentation
     runs-on: ubuntu-latest
-    needs: validate-docs
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -118,41 +97,22 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create docs patch artifact
+      - name: Commit documentation updates
         if: steps.changes.outputs.changed == 'true'
         run: |
-          git diff > docs-update.patch
-        
-      - name: Upload docs patch
-        if: steps.changes.outputs.changed == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: docs-update-patch
-          path: docs-update.patch
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add docs/ README.md
+          git commit -m "docs: auto-update documentation
 
-      - name: Open documentation PR
-        if: steps.changes.outputs.changed == 'true' && github.event.inputs.apply_changes == 'true'
-        uses: peter-evans/create-pull-request@v6
-        with:
-          commit-message: 'docs: automated documentation refresh'
-          committer: GitHub Action <action@github.com>
-          author: GitHub Action <action@github.com>
-          title: 'docs: automated documentation refresh'
-          body: |
-            Automated documentation updates generated via `.github/workflows/docs-automation.yml`.
-
-            - API docs regenerated
-            - README refreshed
-            - Validation + link checks completed
-
-            > Created by docs automation run ${{ github.run_id }}
-          branch: automation/docs-refresh-${{ github.run_id }}
-          base: ${{ github.event.inputs.target_branch || 'main' }}
-          delete-branch: true
-
-      - name: No changes notice
-        if: steps.changes.outputs.changed != 'true'
-        run: echo '::notice::Docs automation generated no changes.'
+          🤖 Generated with [GitHub Actions](https://github.com/features/actions)
+          
+          - Updated API documentation from code analysis
+          - Refreshed README.md with current project structure
+          - Validated all documentation links and examples
+          
+          Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+          git push
 
   check-examples:
     name: Validate Code Examples

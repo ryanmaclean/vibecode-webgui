@@ -140,7 +140,7 @@ curl -X GET "https://api.datadoghq.com/api/v1/validate" \
 
 ## Next Steps
 
-- [Architecture Overview](/wiki-archive/infrastructure/infrastructure_overview/) - Understand the system design
+- [Architecture Overview](/architecture/overview/) - Understand the system design
 - [Monitoring Setup](/monitoring/overview/) - Configure observability
-- [Azure Deployment](/azure-infrastructure/) - Deploy to production
-- [Contributing](/contributing/) - Join the development
+- [Azure Deployment](/deployment/azure/) - Deploy to production
+- [Contributing](/development/contributing/) - Join the development

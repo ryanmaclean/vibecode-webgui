@@ -174,7 +174,7 @@ kubectl create secret generic datadog-secret -n monitoring \
   --from-literal=app-key=your-production-dd-app-key
 
 # Apply production monitoring
-kubectl apply -f infrastructure/kubernetes/monitoring/overview/production/
+kubectl apply -f infrastructure/kubernetes/monitoring/production/
 ```
 
 - The Helm values in `k8s/datadog-values.yaml` keep `datadog.networkMonitoring.enabled: true` and `systemProbe.enabled: true`; do not disable them because they power Cloud Network Monitoring dashboards.
@@ -462,12 +462,12 @@ Your VibeCode platform now has **enterprise-grade GitOps automation** that provi
 
 ## 📚 Related Documentation
 
-- **[PostgreSQL + pgvector Setup](/prisma-pgvector/)** - Complete database setup with vector search capabilities
-- **[Kubernetes Secrets Automation](/kubernetes-secrets-automation/)** - Enterprise-grade secrets management
-- **[Helm Deployment Guide](/helm-deployment-guide/)** - Detailed Kubernetes deployment instructions
-- **[Azure OpenAI Monitoring](/azure-openai-monitoring/)** - Comprehensive monitoring setup for Azure OpenAI services
-- **[Deploy Azure OpenAI Monitoring](/deploy-azure-openai-monitoring/)** - Step-by-step deployment guide for Azure OpenAI monitoring
-- **[Datadog Monitoring Configuration](/wiki-archive/datadog_monitoring_configuration/)** - Production monitoring setup
+- **[PostgreSQL + pgvector Setup](./prisma-pgvector/)** - Complete database setup with vector search capabilities
+- **[Kubernetes Secrets Automation](./kubernetes-secrets-automation/)** - Enterprise-grade secrets management
+- **[Helm Deployment Guide](./helm-deployment-guide/)** - Detailed Kubernetes deployment instructions
+- **[Azure OpenAI Monitoring](./azure-openai-monitoring/)** - Comprehensive monitoring setup for Azure OpenAI services
+- **[Deploy Azure OpenAI Monitoring](./deploy-azure-openai-monitoring/)** - Step-by-step deployment guide for Azure OpenAI monitoring
+- **[Datadog Monitoring Configuration](./DATADOG_MONITORING_CONFIGURATION/)** - Production monitoring setup
 
 ---
 

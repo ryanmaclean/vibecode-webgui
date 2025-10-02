@@ -5,8 +5,6 @@
 
 import { metrics } from '../server-monitoring';
 import { cache, CacheKeys, CacheTTL } from '../cache/valkey-client';
-import { logger } from '../logger';
-
 
 export interface PerformanceMetric {
   timestamp: number;
@@ -294,9 +292,9 @@ export class PerformanceCollector {
       const cacheKey = `metrics:recent:${Date.now()}`;
       await cache.set(cacheKey, metrics, CacheTTL.HOUR);
       
-      logger.info(`Flushed ${metrics.length} performance metrics`);
+      console.log(`Flushed ${metrics.length} performance metrics`);
     } catch (error) {
-      logger.error('Failed to flush metrics:', { error: error });
+      console.error('Failed to flush metrics:', error);
     }
   }
 
@@ -313,9 +311,9 @@ export class PerformanceCollector {
       const cacheKey = `webvitals:recent:${Date.now()}`;
       await cache.set(cacheKey, vitals, CacheTTL.HOUR);
       
-      logger.info(`Flushed ${vitals.length} Web Vitals metrics`);
+      console.log(`Flushed ${vitals.length} Web Vitals metrics`);
     } catch (error) {
-      logger.error('Failed to flush Web Vitals:', { error: error });
+      console.error('Failed to flush Web Vitals:', error);
     }
   }
 
@@ -332,9 +330,9 @@ export class PerformanceCollector {
       const cacheKey = `api_metrics:recent:${Date.now()}`;
       await cache.set(cacheKey, apiMetrics, CacheTTL.HOUR);
       
-      logger.info(`Flushed ${apiMetrics.length} API metrics`);
+      console.log(`Flushed ${apiMetrics.length} API metrics`);
     } catch (error) {
-      logger.error('Failed to flush API metrics:', { error: error });
+      console.error('Failed to flush API metrics:', error);
     }
   }
 
@@ -440,7 +438,7 @@ export function trackAPIPerformance(
 
   // Log slow requests
   if (duration > 5000) { // 5 seconds
-    logger.warn(`Slow API request detected: ${method} ${endpoint} - ${duration}ms`);
+    console.warn(`Slow API request detected: ${method} ${endpoint} - ${duration}ms`);
   }
 }
 
@@ -496,12 +494,12 @@ export function trackAIOperation(
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  logger.info('Shutting down performance collector...');
+  console.log('Shutting down performance collector...');
   performanceCollector.stopBufferFlush();
 });
 
 process.on('SIGINT', () => {
-  logger.info('Shutting down performance collector...');
+  console.log('Shutting down performance collector...');
   performanceCollector.stopBufferFlush();
 });
 

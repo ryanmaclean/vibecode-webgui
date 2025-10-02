@@ -5,16 +5,12 @@
 
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import PromptInterface from '@/components/PromptInterface'
-import { Button } from '@/components/ui/button'
-import { OnboardingDrawer } from '@/components/onboarding/OnboardingDrawer'
+import Link from 'next/link'
 
 export default function Home() {
   const { isAuthenticated, isLoading, user, logout } = useAuth()
-  const [showOnboarding, setShowOnboarding] = useState(false)
 
   if (isLoading) {
     return (
@@ -101,15 +97,6 @@ export default function Home() {
               >
                 Template Marketplace
               </Link>
-              <Link
-                href="/tools/codeium"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Codeium Playground
-              </Link>
-              <Button variant="secondary" size="sm" onClick={() => setShowOnboarding(true)}>
-                Welcome
-              </Button>
               
               {/* User Menu */}
               <div className="relative" data-testid="user-menu">
@@ -135,7 +122,6 @@ export default function Home() {
           <PromptInterface />
         </div>
       </div>
-      <OnboardingDrawer open={showOnboarding} onClose={() => setShowOnboarding(false)} />
     </div>
   )
 }

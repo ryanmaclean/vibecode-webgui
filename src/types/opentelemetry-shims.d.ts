@@ -18,36 +18,32 @@ declare module '@opentelemetry/resources' {
 
 declare module '@opentelemetry/sdk-node' {
   export class NodeSDK {
-    constructor(config?: Record<string, unknown>)
+    constructor(config?: any)
     start(): void
     shutdown(): Promise<void>
   }
 }
 
 declare module '@opentelemetry/auto-instrumentations-node' {
-  export function getNodeAutoInstrumentations(
-    config?: Record<string, unknown>,
-  ): Record<string, unknown>
+  export function getNodeAutoInstrumentations(config?: any): any
 }
 
 declare module '@opentelemetry/sdk-trace-web' {
   export class WebTracerProvider {
-    constructor(config?: Record<string, unknown>)
-    getTracer(name: string): unknown
-    addSpanProcessor(processor: unknown): void
+    constructor(config?: any)
+    getTracer(name: string): any
+    addSpanProcessor(processor: any): void
     register(): void
   }
 }
 
 declare module '@opentelemetry/auto-instrumentations-web' {
-  export function getWebAutoInstrumentations(
-    config?: Record<string, unknown>,
-  ): Record<string, unknown>
+  export function getWebAutoInstrumentations(config?: any): any
 }
 
 declare module '@opentelemetry/sdk-trace-base' {
   export class BatchSpanProcessor {
-    constructor(exporter: unknown, config?: Record<string, unknown>)
+    constructor(exporter: any, config?: any)
   }
 }
 

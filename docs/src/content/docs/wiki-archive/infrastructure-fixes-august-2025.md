@@ -116,7 +116,7 @@ this.datadogApiKey = process.env.DD_API_KEY || process.env.DATADOG_API_KEY
 this.datadogSite = process.env.DD_SITE || process.env.DATADOG_SITE || 'datadoghq.com'
 ```
 
-#### Datadog RUM Component (`src/components/monitoring/overview/DatadogRUM.tsx`)
+#### Datadog RUM Component (`src/components/monitoring/DatadogRUM.tsx`)
 ```typescript
 // Fixed application ID variable
 applicationId: process.env.NEXT_PUBLIC_DD_APPLICATION_ID ||
@@ -190,4 +190,4 @@ With all critical infrastructure issues resolved, the platform is now ready for:
 - [Quick Start Guide](/guides/quick-start/) - Updated setup instructions
 - [Monitoring Overview](/monitoring/overview/) - Datadog integration details
 - [Authentication Testing](/authentication-testing/) - Security implementation
-- [Project TODO](/project-todo/) - Updated project status and achievements
+- [Project TODO](/todo/) - Updated project status and achievements

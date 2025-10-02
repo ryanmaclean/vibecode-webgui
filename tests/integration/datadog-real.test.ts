@@ -6,7 +6,7 @@
 
 
 jest.unmock('node-fetch');
-// @ts-expect-error -- node-fetch has no TypeScript declarations in this environment
+// @ts-ignore
 global.fetch = require('node-fetch');
 
 import fetch from 'node-fetch';

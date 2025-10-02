@@ -12,15 +12,15 @@ datasource db {
 
 // Users and Authentication
 model User {
-  id         Int      @id @default(autoincrement())
-  email      String   @unique
-  name       String?
-  role       String   @default("user") // user, admin
-  avatar     String?
-  github_id  String?  @unique
-  google_id  String?  @unique
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  name        String?
+  role        String   @default("user") // user, admin
+  avatar      String?
+  github_id   String?  @unique
+  google_id   String?  @unique
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
   // Relations
   sessions    Session[]
@@ -30,7 +30,6 @@ model User {
   uploads     Upload[]
   ai_requests AIRequest[]
   rag_chunks  RAGChunk[]
-  preferences UserPreference?
 
   @@map("users")
 }
@@ -52,16 +51,16 @@ model Session {
 
 // Workspaces and Projects
 model Workspace {
-  id                 Int       @id @default(autoincrement())
-  name               String
-  description        String?
-  user_id            Int
-  status             String    @default("active") // active, archived, deleting
-  workspace_id       String    @unique // External workspace identifier
-  url                String? // code-server URL
+  id           Int      @id @default(autoincrement())
+  name         String
+  description  String?
+  user_id      Int
+  status       String   @default("active") // active, archived, deleting
+  workspace_id String   @unique // External workspace identifier
+  url          String?  // code-server URL
   dbm_last_sample_at DateTime? // Tracks last time DBM sample was recorded
-  created_at         DateTime  @default(now())
-  updated_at         DateTime  @updatedAt
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
 
   // Relations
   user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -81,17 +80,17 @@ model Project {
   description  String?
   user_id      Int
   workspace_id Int?
-  language     String? // typescript, javascript, python, etc.
-  framework    String? // react, vue, express, fastapi, etc.
-  template     String? // Template used to generate project
-  ai_prompt    String? // Original AI prompt used for generation
+  language     String?  // typescript, javascript, python, etc.
+  framework    String?  // react, vue, express, fastapi, etc.
+  template     String?  // Template used to generate project
+  ai_prompt    String?  // Original AI prompt used for generation
   status       String   @default("active") // active, archived, generating
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
   // Relations
-  user        User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  workspace   Workspace?  @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  user        User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace   Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
   files       File[]
   ai_requests AIRequest[]
   rag_chunks  RAGChunk[]
@@ -106,12 +105,12 @@ model File {
   id           Int      @id @default(autoincrement())
   name         String
   path         String
-  content      String? // File content for small files
-  size         Int? // File size in bytes
+  content      String?  // File content for small files
+  size         Int?     // File size in bytes
   mime_type    String?
-  language     String? // Detected programming language
-  lines        Int? // Number of lines
-  checksum     String? // Content hash
+  language     String?  // Detected programming language
+  lines        Int?     // Number of lines
+  checksum     String?  // Content hash
   user_id      Int
   workspace_id Int?
   project_id   Int?
@@ -133,22 +132,22 @@ model File {
 
 // RAG Chunks for vector search (simplified without pgvector)
 model RAGChunk {
-  id           Int                          @id @default(autoincrement())
-  content      String // Chunk text content
-  metadata     Json? // Additional metadata
-  file_id      Int?
-  user_id      Int
+  id          Int      @id @default(autoincrement())
+  content     String   // Chunk text content
+  metadata    Json?    // Additional metadata
+  file_id     Int?
+  user_id     Int
   workspace_id Int?
-  project_id   Int?
-  chunk_index  Int? // Position within file
-  token_count  Int? // Number of tokens
-  start_line   Int? // Start line in file
-  end_line     Int? // End line in file
-  tokens       Int? // Token count (alias for token_count)
-  chunk_id     String? // External chunk identifier
-  embedding    Unsupported("vector(1536)")?
-  created_at   DateTime                     @default(now())
-  updated_at   DateTime                     @updatedAt
+  project_id  Int?
+  chunk_index Int?     // Position within file
+  token_count Int?     // Number of tokens
+  start_line  Int?     // Start line in file
+  end_line    Int?     // End line in file
+  tokens      Int?     // Token count (alias for token_count)
+  chunk_id    String?  // External chunk identifier
+  embedding   Unsupported("vector(1536)")?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
   // Relations
   file      File?      @relation(fields: [file_id], references: [id], onDelete: Cascade)
@@ -164,66 +163,48 @@ model RAGChunk {
 }
 
 model RAGIngestJob {
-  id                  String    @id @default(uuid())
-  uploadId            Int?      @map("upload_id")
-  upload              Upload?   @relation(fields: [uploadId], references: [id], onDelete: SetNull)
-  blobName            String    @map("blob_name")
-  storageContainer    String    @map("storage_container")
-  originalFileName    String    @map("original_file_name")
-  size                Int
-  status              String    @default("queued")
-  queueName           String?   @map("queue_name")
-  userIdentifier      String?   @map("user_identifier")
-  workspaceIdentifier String?   @map("workspace_identifier")
-  projectIdentifier   String?   @map("project_identifier")
-  chunkCount          Int       @default(0) @map("chunk_count")
-  error               String?
-  requestedAt         DateTime  @default(now()) @map("requested_at")
-  startedAt           DateTime? @map("started_at")
-  completedAt         DateTime? @map("completed_at")
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
+  id          String   @id @default(uuid())
+  uploadId    Int?     @map("upload_id")
+  upload      Upload?  @relation(fields: [uploadId], references: [id], onDelete: SetNull)
+  blobName    String   @map("blob_name")
+  storageContainer String @map("storage_container")
+  originalFileName String @map("original_file_name")
+  size        Int
+  status      String   @default("queued")
+  queueName   String?  @map("queue_name")
+  userIdentifier      String? @map("user_identifier")
+  workspaceIdentifier String? @map("workspace_identifier")
+  projectIdentifier   String? @map("project_identifier")
+  chunkCount Int      @default(0) @map("chunk_count")
+  error       String?
+  requestedAt DateTime @default(now()) @map("requested_at")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@index([status])
   @@index([requestedAt])
   @@map("rag_ingest_jobs")
 }
 
-model UserPreference {
-  id                   Int      @id @default(autoincrement())
-  user_id              Int      @unique
-  theme                String   @default("auto")
-  cli_editor           String   @default("none")
-  preferred_ide        String   @default("vs-code")
-  extensions           Json     @default("[]")
-  integrations         Json     @default("{}")
-  ai_providers         Json     @default("[]")
-  onboarding_completed Boolean  @default(false)
-  created_at           DateTime @default(now())
-  updated_at           DateTime @updatedAt
-
-  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
-
-  @@map("user_preferences")
-}
-
 model Upload {
-  id            Int      @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   original_name String
-  stored_name   String   @unique
-  path          String
-  size          Int
-  mime_type     String
-  user_id       Int
-  workspace_id  Int?
-  status        String   @default("uploaded") // uploaded, processing, processed, error
-  metadata      Json? // Additional metadata
-  created_at    DateTime @default(now())
+  stored_name  String   @unique
+  path         String
+  size         Int
+  mime_type    String
+  user_id      Int
+  workspace_id Int?
+  status       String   @default("uploaded") // uploaded, processing, processed, error
+  metadata     Json?    // Additional metadata
+  created_at   DateTime @default(now())
 
   // Relations
-  user       User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  workspace  Workspace?     @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
-  ingestJobs RAGIngestJob[]
+  user        User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace   Workspace?     @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  ingestJobs  RAGIngestJob[]
 
   @@index([user_id])
   @@index([workspace_id])
@@ -233,22 +214,22 @@ model Upload {
 
 // AI Integration and Requests
 model AIRequest {
-  id            Int       @id @default(autoincrement())
-  user_id       Int
-  project_id    Int?
-  request_type  String // generate_project, chat, completion, etc.
-  prompt        String
-  model         String // anthropic/claude-3.5-sonnet, etc.
-  provider      String // openrouter, anthropic, openai
-  input_tokens  Int?
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  project_id   Int?
+  request_type String   // generate_project, chat, completion, etc.
+  prompt       String
+  model        String   // anthropic/claude-3.5-sonnet, etc.
+  provider     String   // openrouter, anthropic, openai
+  input_tokens Int?
   output_tokens Int?
-  cost          Float? // Cost in USD
-  duration_ms   Int? // Request duration
-  status        String    @default("pending") // pending, completed, error, cancelled
-  response      Json? // AI response data
-  error         String? // Error message if failed
-  created_at    DateTime  @default(now())
-  completed_at  DateTime?
+  cost         Float?   // Cost in USD
+  duration_ms  Int?     // Request duration
+  status       String   @default("pending") // pending, completed, error, cancelled
+  response     Json?    // AI response data
+  error        String?  // Error message if failed
+  created_at   DateTime @default(now())
+  completed_at DateTime?
 
   // Relations
   user    User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
@@ -265,9 +246,9 @@ model AIRequest {
 model Event {
   id         Int      @id @default(autoincrement())
   user_id    Int?
-  event_type String // page_view, api_call, error, etc.
-  event_name String // Specific event name
-  properties Json? // Event properties
+  event_type String   // page_view, api_call, error, etc.
+  event_name String   // Specific event name
+  properties Json?    // Event properties
   session_id String?
   ip_address String?
   user_agent String?
@@ -280,12 +261,12 @@ model Event {
 }
 
 model SystemMetric {
-  id          Int      @id @default(autoincrement())
-  metric_name String // cpu_usage, memory_usage, disk_usage, etc.
-  value       Float
-  unit        String? // percentage, bytes, ms, etc.
-  tags        Json? // Additional tags for filtering
-  created_at  DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  metric_name String  // cpu_usage, memory_usage, disk_usage, etc.
+  value      Float
+  unit       String?  // percentage, bytes, ms, etc.
+  tags       Json?    // Additional tags for filtering
+  created_at DateTime @default(now())
 
   @@index([metric_name])
   @@index([created_at])
@@ -294,12 +275,12 @@ model SystemMetric {
 
 // Configuration and Settings
 model Setting {
-  id          Int      @id @default(autoincrement())
-  key         String   @unique
-  value       String
-  type        String   @default("string") // string, number, boolean, json
+  id         Int      @id @default(autoincrement())
+  key        String   @unique
+  value      String
+  type       String   @default("string") // string, number, boolean, json
   description String?
-  updated_at  DateTime @updatedAt
+  updated_at DateTime @updatedAt
 
   @@map("settings")
 }

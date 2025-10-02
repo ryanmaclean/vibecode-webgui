@@ -11,15 +11,7 @@ const isDockerBuild = (
   process.env.DD_ENABLED === 'false'
 );
 
-let pathModule: any = null;
-try {
-  // Use eval to avoid bundlers complaining about Node built-ins in edge/dev environments
-   
-  const dynamicRequire = eval('require');
-  pathModule = dynamicRequire('path');
-} catch (error) {
-  // path module not available (likely edge/dev build)
-}
+const path = require('path');
 const truthy = ['1', 'true', 'yes', 'on'];
 const falsy = ['0', 'false', 'no', 'off'];
 
@@ -55,13 +47,9 @@ function getTracer() {
     
     // Only import monitoring modules if not in Docker build
     let initializeOpenTelemetry, getServiceEnvVersion, getDatadogSite;
-   
+    
     try {
-      const otelModulePath = process.env.NODE_ENV === 'production'
-        ? './lib/monitoring/opentelemetry'
-        : './lib/monitoring/opentelemetry.stub'
-
-      const opentelemetryModule = require(otelModulePath);
+      const opentelemetryModule = require('./lib/monitoring/opentelemetry');
       initializeOpenTelemetry = opentelemetryModule.initializeOpenTelemetry;
     } catch (e) {
       console.log('⚠️ OpenTelemetry module not available');
@@ -70,15 +58,10 @@ function getTracer() {
     
     const envModuleCandidates = [
       './lib/monitoring/datadog-env.shared.js',
+      path.join(__dirname ?? '.', 'lib', 'monitoring', 'datadog-env.shared.js'),
+      path.join(__dirname ?? '.', 'src', 'lib', 'monitoring', 'datadog-env.shared.js'),
+      path.join(process.cwd(), 'src', 'lib', 'monitoring', 'datadog-env.shared.js'),
     ];
-
-    if (pathModule) {
-      envModuleCandidates.push(
-        pathModule.join(__dirname ?? '.', 'lib', 'monitoring', 'datadog-env.shared.js'),
-        pathModule.join(__dirname ?? '.', 'src', 'lib', 'monitoring', 'datadog-env.shared.js'),
-        pathModule.join(process.cwd(), 'src', 'lib', 'monitoring', 'datadog-env.shared.js'),
-      )
-    }
 
     for (const candidate of envModuleCandidates) {
       try {
@@ -108,14 +91,8 @@ function getTracer() {
 
     const hasDatadogApiKey = Boolean(process.env.DD_API_KEY || process.env.DATADOG_API_KEY);
 
-    // Determine if we should use agentless mode for both tracing and LLM observability
-    let agentlessEnabled = parseFlag(process.env.DD_AGENTLESS_ENABLED, false);
-    if (!process.env.DD_AGENTLESS_ENABLED && hasDatadogApiKey) {
-      agentlessEnabled = true;
-    }
-
     let llmObservabilityAgentless = parseFlag(process.env.DD_LLMOBS_AGENTLESS_ENABLED, false);
-    if (!process.env.DD_LLMOBS_AGENTLESS_ENABLED && agentlessEnabled) {
+    if (!process.env.DD_LLMOBS_AGENTLESS_ENABLED && hasDatadogApiKey) {
       llmObservabilityAgentless = true;
     }
 
@@ -124,16 +101,15 @@ function getTracer() {
       llmObservabilityEnabled = true;
     }
 
-    if ((agentlessEnabled || llmObservabilityAgentless) && !hasDatadogApiKey) {
-      console.warn('⚠️ Agentless mode requested but DD_API_KEY is missing');
-      agentlessEnabled = false;
+    if (llmObservabilityAgentless && !hasDatadogApiKey) {
+      console.warn('⚠️ Agentless LLM Observability requested but DD_API_KEY is missing');
       llmObservabilityAgentless = false;
     }
 
     const mlApp = process.env.DD_LLMOBS_ML_APP || 'vibecode-ai';
 
-    // Build the tracer configuration object
-    const tracerConfig: any = {
+    // Initialize the tracer with LLM observability support
+    tracer.init({
       // Docs: https://docs.datadoghq.com/tracing/trace_collection/library_config/nodejs/
       logInjection: true,
       profiling: true,
@@ -145,10 +121,10 @@ function getTracer() {
       // Correlate DBM and APM by propagating service info into SQL comments
       // Docs: https://docs.datadoghq.com/database_monitoring/connect_dbm_and_apm/
       dbmPropagationMode: process.env.DD_DBM_PROPAGATION_MODE || 'full',
-
+      
       // Enhanced sampling for better observability
       sampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-
+      
       // Experimental, typed flags only. LLM Observability is controlled via env vars
       // (e.g., DD_LLMOBS_ENABLED, DD_API_KEY, DD_SITE) and is not configured here
       experimental: {
@@ -160,14 +136,14 @@ function getTracer() {
         agentlessEnabled: llmObservabilityEnabled && llmObservabilityAgentless,
         mlApp,
       },
-
+      
       // Database monitoring - using type assertion for plugins config
       plugins: true, // Enable all plugins by default
-
+      
       // Plugin-specific configuration
       // Note: These will be applied on top of the default configuration
       // when the plugins are required
-
+      
       // Tag all traces with deployment info
       tags: {
         'deployment.environment': env,
@@ -178,26 +154,8 @@ function getTracer() {
         'ml.app': mlApp,
         'llm.observability.enabled': String(llmObservabilityEnabled),
         'llm.observability.agentless': String(llmObservabilityAgentless),
-        'agentless.enabled': String(agentlessEnabled)
       }
-    };
-
-    // Add agentless configuration if enabled
-    if (agentlessEnabled && hasDatadogApiKey) {
-      console.log('🌐 Configuring Datadog agentless mode - traces will be sent directly to Datadog');
-      tracerConfig.traceUrl = `https://api.${site}/api/v2/traces`;
-      tracerConfig.exporterOptions = {
-        url: `https://api.${site}/api/v2/traces`,
-        headers: {
-          'DD-API-KEY': process.env.DD_API_KEY || process.env.DATADOG_API_KEY
-        }
-      };
-    } else if (!agentlessEnabled) {
-      console.log('🔗 Using Datadog agent mode - traces will be sent to local agent on 127.0.0.1:8126');
-    }
-
-    // Initialize the tracer with the configuration
-    tracer.init(tracerConfig);
+    });
 
     if (llmObservabilityEnabled) {
       try {

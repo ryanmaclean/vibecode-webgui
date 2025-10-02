@@ -154,16 +154,13 @@ export async function POST(request: NextRequest) {
 
       let ragContext = ''
       let ragSources: RAGSourceSummary[] = []
-      let workspaceDbId: number | undefined
+      let workspaceDbId: number | null = null
 
-      const workspaceNumericId = typeof workspaceId === 'string' ? Number.parseInt(workspaceId, 10) : workspaceId
-      const workspaceInternalId = Number.isFinite(workspaceNumericId) ? Number(workspaceNumericId) : undefined
-      const numericUserId = typeof userId === 'number' ? userId : undefined
-
-      if (!allowTestBypass && includeRag && workspaceInternalId && numericUserId && userPrompt) {
+      if (!allowTestBypass && includeRag && workspaceId && userPrompt) {
+        const numericUserId = userId as number;
         const workspace = await prisma.workspace.findFirst({
           where: {
-            id: workspaceInternalId,
+            workspace_id: workspaceId,
             user_id: numericUserId
           }
         })
@@ -177,7 +174,7 @@ export async function POST(request: NextRequest) {
             threshold: 0.6
           })
 
-          ragSources = searchResults.map((result) => ({
+          ragSources = searchResults.map(result => ({
             content: result.chunk.content,
             similarity: result.similarity,
             metadata: result.chunk.metadata
@@ -193,12 +190,10 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      const workspaceIdentifier = workspaceInternalId ?? workspaceId ?? null
-
       logAIInteraction(request, 'chat_request', {
         model,
         message_count: messages.length,
-        workspace_id: workspaceIdentifier,
+        workspace_id: workspaceId,
         rag_context_included: String(Boolean(ragContext)),
         rag_chunk_count: String(ragSources.length),
         stream
@@ -236,6 +231,7 @@ export async function POST(request: NextRequest) {
         cost?: { total_cost?: number };
       };
 
+      const fallbackResult = llmOutcome as Partial<ChatCompletionFallbackResult> | LiteLLMResponse;
       const defaultLiteLLMResponse: LiteLLMResponse = {
         id: 'fallback-response',
         object: 'chat.completion',
@@ -258,32 +254,17 @@ export async function POST(request: NextRequest) {
         },
       };
 
-      const isLiteLLMResponse = (value: unknown): value is LiteLLMResponse => {
-        return Boolean(value) && typeof value === 'object' && 'choices' in (value as Record<string, unknown>);
-      };
+      const llmResponse: LiteLLMResponse = (fallbackResult && typeof fallbackResult === 'object' && 'response' in fallbackResult)
+        ? (fallbackResult.response as LiteLLMResponse)
+        : (fallbackResult as LiteLLMResponse | undefined) ?? defaultLiteLLMResponse;
 
-      const isFallbackResult = (value: unknown): value is ChatCompletionFallbackResult => {
-        return Boolean(value) && typeof value === 'object' && 'response' in (value as Record<string, unknown>);
-      };
+      const modelUsed = (fallbackResult && typeof fallbackResult === 'object' && 'modelUsed' in fallbackResult)
+        ? (fallbackResult as { modelUsed?: string }).modelUsed ?? llmResponse.model ?? model
+        : llmResponse.model ?? model;
 
-      const rawOutcome = llmOutcome as unknown;
-
-      let llmResponse: LiteLLMResponse = defaultLiteLLMResponse;
-      let fallbackModel: string | undefined;
-      let fallbackProvider: string | undefined;
-
-      if (isFallbackResult(rawOutcome)) {
-        if (isLiteLLMResponse(rawOutcome.response)) {
-          llmResponse = rawOutcome.response;
-        }
-        fallbackModel = rawOutcome.modelUsed ?? rawOutcome.response?.model;
-        fallbackProvider = rawOutcome.provider;
-      } else if (isLiteLLMResponse(rawOutcome)) {
-        llmResponse = rawOutcome;
-      }
-
-      const modelUsed = fallbackModel ?? llmResponse.model ?? model;
-      const providerUsed = fallbackProvider ?? 'litellm';
+      const providerUsed = (fallbackResult && typeof fallbackResult === 'object' && 'provider' in fallbackResult)
+        ? (fallbackResult as { provider?: string }).provider ?? 'litellm'
+        : 'litellm';
       const processingTime = Date.now() - startTime
 
       if (llmResponse.usage) {
@@ -316,7 +297,7 @@ export async function POST(request: NextRequest) {
           duration_ms: processingTime,
           status: 'completed',
           response: responsePayload,
-          project_id: workspaceDbId
+          project_id: undefined
         })
       } catch (loggingError) {
         console.warn('[AI_CHAT] Failed to persist AI request log', loggingError)
@@ -333,7 +314,7 @@ export async function POST(request: NextRequest) {
         provider: providerUsed,
         processing_time_ms: processingTime,
         response_length: llmResponse.choices?.[0]?.message?.content?.length || 0,
-        workspace_id: workspaceIdentifier,
+        workspace_id: workspaceId,
         rag_context_included: String(Boolean(ragContext)),
         rag_chunk_count: String(ragSources.length)
       })

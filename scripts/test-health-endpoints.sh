@@ -14,12 +14,12 @@ TIMEOUT=${TIMEOUT:-5}
 RETRIES=${RETRIES:-3}
 VERBOSE=${VERBOSE:-true}
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/bootstrap.sh"
+bootstrap_init "${SCRIPT_DIR}"
+# shellcheck disable=SC1091
+source "${LIB_DIR}/logging.sh"
 
 show_help() {
   echo "Usage: $0 [options]"
@@ -66,11 +66,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo -e "${BLUE}=== VibeCode Health Check Testing ===${NC}"
-echo -e "Base URL: ${BASE_URL}"
-echo -e "Timeout: ${TIMEOUT}s"
-echo -e "Retries: ${RETRIES}"
-echo
+log_step "VibeCode Health Check Testing"
+log_info "Base URL: ${BASE_URL}"
+log_info "Timeout: ${TIMEOUT}s"
+log_info "Retries: ${RETRIES}"
+printf '\n'
 
 # Function to test an endpoint with retries
 test_endpoint() {
@@ -84,17 +84,19 @@ test_endpoint() {
   local end_time=0
   local time_taken=0
   
-  echo -e "${YELLOW}Testing endpoint: ${endpoint}${NC}"
+  log_info "Testing endpoint: ${endpoint}"
   
-  while [ $attempt -le $RETRIES ] && [ "$success" = false ]; do
-    if [ $attempt -gt 1 ]; then
-      echo -e "  Retry $((attempt-1)) of ${RETRIES}..."
+  local max_retries="${RETRIES}"
+
+  while (( attempt <= max_retries )) && [ "$success" = false ]; do
+    if (( attempt > 1 )); then
+      log_warn "Retry $((attempt-1)) of ${max_retries}..."
     fi
     
     start_time=$(date +%s%3N)
     
     # Make the HTTP request
-    response=$(curl -s -o - -w "%{http_code}" -m $TIMEOUT "$url" 2>/dev/null || echo "000")
+    response=$(curl -s -o - -w "%{http_code}" -m "$TIMEOUT" "$url" 2>/dev/null || echo "000")
     status_code=${response: -3}
     content=${response:0:${#response}-3}
     
@@ -103,32 +105,32 @@ test_endpoint() {
     
     if [[ $status_code =~ ^2[0-9][0-9]$ ]]; then
       success=true
-      echo -e "  ${GREEN}✅ Success (${status_code}) - ${time_taken}ms${NC}"
+      log_success "Success (${status_code}) - ${time_taken}ms"
       
       if [ "$VERBOSE" = true ]; then
         # Pretty-print JSON if possible
         if command -v jq &> /dev/null; then
-          echo -e "  ${BLUE}Response:${NC}"
+          log_info "Response:"
           echo "$content" | jq . || echo "$content"
         else
-          echo -e "  ${BLUE}Response:${NC} $content"
+          log_info "Response: $content"
         fi
       fi
       
       # Check for health/ready status in the response
       if echo "$content" | grep -q '"status":"healthy"' || echo "$content" | grep -q '"status":"ready"'; then
-        echo -e "  ${GREEN}✅ Service reports healthy/ready${NC}"
+        log_success "Service reports healthy/ready"
       elif echo "$content" | grep -q '"status":"unhealthy"' || echo "$content" | grep -q '"status":"not ready"'; then
-        echo -e "  ${RED}❌ Service reports unhealthy/not ready${NC}"
+        log_error "Service reports unhealthy/not ready"
         success=false
       else
-        echo -e "  ${YELLOW}⚠️ Could not determine health status from response${NC}"
+        log_warn "Could not determine health status from response"
       fi
       
     else
-      echo -e "  ${RED}❌ Failed (${status_code}) - ${time_taken}ms${NC}"
+      log_error "Failed (${status_code}) - ${time_taken}ms"
       if [ "$VERBOSE" = true ] && [ -n "$content" ]; then
-        echo -e "  ${BLUE}Response:${NC} $content"
+        log_info "Response: $content"
       fi
     fi
     
@@ -153,19 +155,19 @@ for endpoint in "${ENDPOINTS[@]}"; do
   else
     failure_count=$((failure_count + 1))
   fi
-  echo
+  printf '\n'
 done
 
 # Summary
-echo -e "${BLUE}=== Test Summary ===${NC}"
-echo -e "Total endpoints tested: $((success_count + failure_count))"
-echo -e "${GREEN}✅ Successful: ${success_count}${NC}"
-echo -e "${RED}❌ Failed: ${failure_count}${NC}"
+log_step "Test Summary"
+log_info "Total endpoints tested: $((success_count + failure_count))"
+log_success "Successful: ${success_count}"
+log_info "Failed: ${failure_count}"
 
-if [ $failure_count -eq 0 ]; then
-  echo -e "${GREEN}All health endpoints are responding correctly!${NC}"
+if [ "$failure_count" -eq 0 ]; then
+  log_success "All health endpoints are responding correctly!"
   exit 0
 else
-  echo -e "${RED}Some health endpoints failed to respond correctly.${NC}"
+  log_error "Some health endpoints failed to respond correctly."
   exit 1
 fi

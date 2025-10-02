@@ -1,50 +1,31 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 # Local Development Setup with Datadog Monitoring
 # Ensures dev/stg/prd parity by including monitoring in local development
 
-echo "🚀 VibeCode Local Development Setup with Monitoring"
-echo "===================================================="
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/bootstrap.sh"
+bootstrap_init "${SCRIPT_DIR}"
+# shellcheck disable=SC1091
+source "${LIB_DIR}/logging.sh"
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+BASE_DIR="${BASE_DIR:-${SCRIPTS_ROOT}}"
 
-BASE_DIR="/Users/ryan.maclean/vibecode-webgui"
+log_step "VibeCode Local Development Setup with Monitoring"
 
-# Helper functions
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-log_success() {
-    echo -e "${GREEN}[PASS]${NC} $1"
-}
-
-log_warning() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[FAIL]${NC} $1"
-}
-
+# shellcheck disable=SC2329
 cleanup() {
-    echo -e "\n${YELLOW}Cleaning up...${NC}"
-    cd "$BASE_DIR"
-    docker-compose down &>/dev/null || true
+    log_warn "Cleaning up docker-compose stack..."
+    (cd "$BASE_DIR" && docker-compose down &>/dev/null) || true
 }
 
 trap cleanup EXIT
 
 cd "$BASE_DIR"
 
-echo -e "\n${BLUE}1. Prerequisites Check${NC}"
-echo "------------------------"
+log_step "1. Prerequisites Check"
 
 # Check Docker
 if docker --version &>/dev/null; then
@@ -69,7 +50,7 @@ else
     log_warning "Node.js 20+ recommended for local development"
 fi
 
-echo -e "\n${BLUE}2. Environment Configuration${NC}"
+log_step "2. Environment Configuration"
 echo "-------------------------------"
 
 # Ensure environment file exists: prefer .env, fall back to .env.local
@@ -99,7 +80,7 @@ if [ -n "$ENV_FILE" ]; then
     fi
 fi
 
-echo -e "\n${BLUE}3. Docker Compose Stack with Monitoring${NC}"
+log_step "3. Docker Compose Stack with Monitoring"
 echo "---------------------------------------------"
 
 # Validate Docker Compose configuration
@@ -120,7 +101,7 @@ else
     exit 1
 fi
 
-echo -e "\n${BLUE}4. Building and Starting Services${NC}"
+log_step "4. Building and Starting Services"
 echo "-----------------------------------"
 
 # Build all services
@@ -135,7 +116,7 @@ docker-compose up -d
 log_info "Waiting for services to initialize..."
 sleep 30
 
-echo -e "\n${BLUE}5. Service Health Checks${NC}"
+log_step "5. Service Health Checks"
 echo "-------------------------"
 
 # Check docs service
@@ -182,7 +163,7 @@ else
     log_error "Datadog agent failed to start"
 fi
 
-echo -e "\n${BLUE}6. Monitoring Integration Validation${NC}"
+log_step "6. Monitoring Integration Validation"
 echo "--------------------------------------"
 
 # Check APM port
@@ -206,10 +187,9 @@ else
     log_warning "Check Datadog agent logs for potential issues"
 fi
 
-echo -e "\n${BLUE}7. Development Environment Status${NC}"
-echo "-----------------------------------"
+log_step "7. Development Environment Status"
 
-echo -e "\n${GREEN}🎯 Development Environment Ready!${NC}"
+log_success "🎯 Development Environment Ready!"
 echo ""
 echo "📋 Service URLs:"
 echo "  📚 Documentation: http://localhost:8080"

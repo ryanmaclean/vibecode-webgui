@@ -1,40 +1,25 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
 # VibeCode KIND Deployment with Full Monitoring Stack
 # Deploys docs service + Datadog monitoring for dev/stg/prd parity
 
-echo "🚀 VibeCode KIND Deployment with Monitoring"
-echo "============================================="
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/bootstrap.sh"
+bootstrap_init "${SCRIPT_DIR}"
+# shellcheck disable=SC1091
+source "${LIB_DIR}/logging.sh"
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+REPO_ROOT="$(cd "${SCRIPTS_ROOT}/.." && pwd)"
+
+log_step "VibeCode KIND Deployment with Monitoring"
+cd "$REPO_ROOT"
 
 # Configuration
 CLUSTER_NAME="vibecode-test"
 NAMESPACE="vibecode"
 DATADOG_NAMESPACE="datadog"
-
-# Helper functions
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-log_success() {
-    echo -e "${GREEN}[PASS]${NC} $1"
-}
-
-log_warning() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[FAIL]${NC} $1"
-}
 
 # Check if KIND cluster exists
 log_info "Checking KIND cluster..."
@@ -57,14 +42,14 @@ log_success "Namespaces created"
 
 # Build and load docs image
 log_info "Building and loading docs image..."
-cd /Users/ryan.maclean/vibecode-webgui/docs
+cd "${REPO_ROOT}/docs"
 docker build -t vibecode-docs:latest .
 kind load docker-image vibecode-docs:latest --name "$CLUSTER_NAME"
 log_success "Docs image built and loaded"
 
 # Deploy docs service
 log_info "Deploying docs service..."
-cd /Users/ryan.maclean/vibecode-webgui
+cd "${REPO_ROOT}"
 kubectl apply -f k8s/docs-deployment.yaml
 log_success "Docs service deployed"
 
@@ -277,17 +262,18 @@ else
 fi
 
 # Display status
-echo ""
-echo "🎯 Deployment Status:"
-echo "  ☸️  KIND Cluster: $CLUSTER_NAME"
-echo "  📚 Docs Service: $(kubectl get deployment vibecode-docs -n $NAMESPACE -o jsonpath='{.status.readyReplicas}')/$(kubectl get deployment vibecode-docs -n $NAMESPACE -o jsonpath='{.spec.replicas}') replicas ready"
-echo "  📊 Datadog Agent: $DATADOG_PODS pods deployed"
-echo ""
-echo "🔗 Access URLs:"
-echo "  📚 Docs: kubectl port-forward -n $NAMESPACE svc/vibecode-docs-service 8080:80"
-echo "  📊 Datadog: Agents sending data to local environment tags"
-echo ""
-echo "✅ VibeCode KIND deployment with monitoring complete!"
-echo "   Ready for dev/stg/prd parity testing"
+printf '\n'
+log_step "Deployment Status"
+log_info "  ☸️  KIND Cluster: ${CLUSTER_NAME}"
+log_info "  📚 Docs Service: $(kubectl get deployment vibecode-docs -n "$NAMESPACE" -o jsonpath='{.status.readyReplicas}')/$(kubectl get deployment vibecode-docs -n "$NAMESPACE" -o jsonpath='{.spec.replicas}') replicas ready"
+DATADOG_PODS=$(kubectl get pods -n "$DATADOG_NAMESPACE" -l app=datadog-agent --no-headers 2>/dev/null | wc -l)
+log_info "  📊 Datadog Agent: ${DATADOG_PODS} pods deployed"
+printf '\n'
+log_step "Access URLs"
+log_info "  📚 Docs: kubectl port-forward -n ${NAMESPACE} svc/vibecode-docs-service 8080:80"
+log_info "  📊 Datadog: Agents emitting metrics with env tags"
+printf '\n'
+log_success "VibeCode KIND deployment with monitoring complete"
+log_info "Ready for dev/stg/prd parity testing"
 
 exit 0

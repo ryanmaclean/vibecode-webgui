@@ -6,7 +6,7 @@
 import OpenAI from 'openai';
 import { VectorDatabaseFactory } from './vector-database-factory';
 import { VectorDatabaseInterface } from './vector-database-interface';
-import { SearchOptions, SearchResult } from './vector-types';
+import { SearchOptions, SearchResult, VectorChunk } from './vector-types';
 
 /**
  * Vector Store Service

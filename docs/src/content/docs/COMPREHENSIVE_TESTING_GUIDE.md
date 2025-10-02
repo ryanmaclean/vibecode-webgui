@@ -50,7 +50,7 @@ tests/
 scripts/
 ├── test-all-components.sh       # Comprehensive component matrix
 ├── test-complete-deployment.sh  # End-to-end pipeline
-├── run-all-tests.sh            # Master test orchestrator
+├── run-all-tests.sh            # Master test orchestrator (npm run tests:all)
 └── deploy-kind-with-monitoring.sh # KIND deployment with monitoring
 ```
 
@@ -59,7 +59,7 @@ scripts/
 ### Quick Start
 ```bash
 # Run all tests across all environments
-./scripts/run-all-tests.sh
+npm run tests:all  # wraps ./scripts/run-all-tests.sh
 
 # Run specific test suites
 ./tests/local-dev-tests.sh           # Local development
@@ -326,7 +326,7 @@ cd docs/
 ./tests/integration-tests.sh
 
 # 6. Complete pipeline validation
-./scripts/run-all-tests.sh
+npm run tests:all  # wraps ./scripts/run-all-tests.sh
 ```
 
 ### CI/CD Integration
@@ -359,7 +359,7 @@ Each test script provides:
 
 ### Master Test Results
 ```bash
-./scripts/run-all-tests.sh
+npm run tests:all  # wraps ./scripts/run-all-tests.sh
 ```
 Provides comprehensive results matrix:
 - Individual test suite results
@@ -462,10 +462,10 @@ Before deploying to production, ensure:
 
 ## 📚 Related Documentation
 
-- [WIKI_INDEX.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/WIKI_INDEX.md) - Complete documentation index
-- [DATADOG_MONITORING_CONFIGURATION.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/DATADOG_MONITORING_CONFIGURATION.md) - Monitoring setup
-- [COMPONENT_ONBOARDING_CHECKLIST.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/COMPONENT_ONBOARDING_CHECKLIST.md) - Component guidelines
-- [README.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/README.md) - Project overview
+- [WIKI_INDEX.md](./WIKI_INDEX.md) - Complete documentation index
+- [DATADOG_MONITORING_CONFIGURATION.md](./DATADOG_MONITORING_CONFIGURATION.md) - Monitoring setup
+- [COMPONENT_ONBOARDING_CHECKLIST.md](./COMPONENT_ONBOARDING_CHECKLIST.md) - Component guidelines
+- [README.md](./README.md) - Project overview
 
 ---
 
