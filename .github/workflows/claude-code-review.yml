@@ -10,10 +10,6 @@ on:
     #   - "src/**/*.js"
     #   - "src/**/*.jsx"
 
-concurrency:
-  group: claude-code-review-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: true
-
 jobs:
   claude-review:
     # Optional: Filter by PR author
@@ -23,8 +19,6 @@ jobs:
     #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
     
     runs-on: ubuntu-latest
-    outputs:
-      has_token: ${{ steps.validate.outputs.has_token }}
     permissions:
       contents: read
       pull-requests: read
@@ -32,25 +26,13 @@ jobs:
       id-token: write
     
     steps:
-      - name: Ensure Claude token configured
-        id: validate
-        run: |
-          if [ -z "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}" ]; then
-            echo "::notice::Skipping Claude review because CLAUDE_CODE_OAUTH_TOKEN secret is not configured."
-            echo "has_token=0" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "has_token=1" >> "$GITHUB_OUTPUT"
-
       - name: Checkout repository
-        if: steps.validate.outputs.has_token == '1'
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Run Claude Code Review
         id: claude-review
-        if: steps.validate.outputs.has_token == '1'
         uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -93,3 +75,4 @@ jobs:
           # if: |
           #   !contains(github.event.pull_request.title, '[skip-review]') &&
           #   !contains(github.event.pull_request.title, '[WIP]')
+

@@ -15,10 +15,6 @@ on:
     - cron: '0 2 * * 0'
   workflow_dispatch:
 
-concurrency:
-  group: dependency-compat-${{ github.ref }}-${{ github.event_name }}
-  cancel-in-progress: true
-
 jobs:
   dependency-compatibility:
     runs-on: ubuntu-latest
@@ -61,34 +57,19 @@ jobs:
           npm ls --depth=1 2>&1 | grep -E "(UNMET|missing|invalid)" || echo "✅ All peer dependencies satisfied"
           
       - name: Test build with current dependencies
-        id: build
         run: |
-          set +e
           echo "🏗️  Testing build compatibility..."
           npm run build
-          status=$?
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
-      
+          
       - name: Run dependency-specific tests
-        id: dep-tests
         run: |
-          set +e
           echo "🧪 Running dependency compatibility tests..."
           npm run test:unit -- --testNamePattern="dependency|import|require" --passWithNoTests
-          status=$?
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
           
       - name: Check TypeScript compatibility
-        id: typecheck
         run: |
-          set +e
           echo "📝 Checking TypeScript compatibility..."
           npm run type-check
-          status=$?
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
           
       - name: Generate dependency report
         run: |
@@ -105,24 +86,6 @@ jobs:
           name: dependency-reports-node-${{ matrix.node-version }}
           path: reports/
           retention-days: 30
-
-      - name: Summary for Node ${{ matrix.node-version }}
-        run: |
-          echo "### Node ${{ matrix.node-version }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- npm audit: see logs" >> "$GITHUB_STEP_SUMMARY"
-          build_status=${{ steps.build.outputs.status || '0' }}
-          tests_status=${{ steps.dep-tests.outputs.status || '0' }}
-          type_status=${{ steps.typecheck.outputs.status || '0' }}
-          icon() {
-            if [ "$1" = '0' ]; then
-              echo '✅'
-            else
-              echo '⚠️'
-            fi
-          }
-          echo "- build: $(icon "$build_status") (exit $build_status)" >> "$GITHUB_STEP_SUMMARY"
-          echo "- tests: $(icon "$tests_status") (exit $tests_status)" >> "$GITHUB_STEP_SUMMARY"
-          echo "- type-check: $(icon "$type_status") (exit $type_status)" >> "$GITHUB_STEP_SUMMARY"
 
   dependency-update-check:
     runs-on: ubuntu-latest

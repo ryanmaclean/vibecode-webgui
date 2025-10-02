@@ -365,7 +365,7 @@ kubectl top pod pod-name -n production
 kubectl exec -it pod-name -n production -- psql -h postgresql -U postgres
 
 # Check connection pool status
-curl https://vibecode.com/api/monitoring/overview/database
+curl https://vibecode.com/api/monitoring/database
 ```
 
 #### Performance Issues

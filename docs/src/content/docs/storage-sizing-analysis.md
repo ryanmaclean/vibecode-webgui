@@ -245,6 +245,6 @@ alerts:
 
 ## 🔗 Related Documentation
 
-- [Helm Deployment Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/helm-deployment-guide.md) - Complete Helm deployment with storage configuration
-- [Helm Scaling Analysis](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/helm-scaling-analysis.md) - Resource scaling strategy across environments
-- [Production Status Report](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/production-status-report) - Current deployment metrics
+- [Helm Deployment Guide](./helm-deployment-guide) - Complete Helm deployment with storage configuration
+- [Helm Scaling Analysis](./helm-scaling-analysis) - Resource scaling strategy across environments
+- [Production Status Report](./production-status-report) - Current deployment metrics

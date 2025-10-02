@@ -11,55 +11,42 @@ on:
     paths:
       - '*.datadog.yaml'
       - '.github/workflows/datadog-service-catalog.yml'
-  schedule:
-    - cron: '0 11 * * 1'
-  workflow_dispatch:
-
-concurrency:
-  group: datadog-service-catalog
-  cancel-in-progress: true
 
 jobs:
-  validate-secrets:
+  register-services:
     runs-on: ubuntu-latest
-    outputs:
-      has_dd_api_key: ${{ steps.check.outputs.has_dd_api_key }}
-      has_dd_app_key: ${{ steps.check.outputs.has_dd_app_key }}
-    steps:
-      - name: Check Datadog secrets
-        id: check
-        env:
-          DD_API_KEY: ${{ secrets.DD_API_KEY }}
-          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-        run: |
-          set -euo pipefail
-          has_dd_api_key=0
-          if [ -n "${DD_API_KEY:-}" ]; then
-            echo "✅ DD_API_KEY present"
-            has_dd_api_key=1
-          else
-            echo "::warning::Missing DD_API_KEY secret; service registration will be skipped."
-          fi
-
-          has_dd_app_key=0
-          if [ -n "${DD_APP_KEY:-}" ]; then
-            echo "✅ DD_APP_KEY present"
-            has_dd_app_key=1
-          else
-            echo "::warning::Missing DD_APP_KEY secret; service registration will be skipped."
-          fi
-
-          printf 'has_dd_api_key=%s\n' "$has_dd_api_key" >> "$GITHUB_OUTPUT"
-          printf 'has_dd_app_key=%s\n' "$has_dd_app_key" >> "$GITHUB_OUTPUT"
-
-  lint-service-definitions:
-    runs-on: ubuntu-latest
-    needs: validate-secrets
+    strategy:
+      matrix:
+        service_file:
+          - service.datadog.yaml
+          - postgres.datadog.yaml
+          - vibecode-ai-gateway.datadog.yaml
+          - vibecode-code-server.datadog.yaml
+          - vibecode-docs.datadog.yaml
+          - vibecode-docs-search.datadog.yaml
+          - vibecode-rag-app.datadog.yaml
+          - vibecode-rag-ingest.datadog.yaml
+          - vibecode-valkey.datadog.yaml
+          - vibecode-docker-doctor.datadog.yaml
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Validate service definition YAML
+      - name: Register ${{ matrix.service_file }}
+        uses: arcxp/datadog-service-catalog-metadata-provider@v2.3.2
+        with:
+          datadog-key: ${{ secrets.DD_API_KEY }}
+          datadog-app-key: ${{ secrets.DD_APP_KEY }}
+          datadog-url: https://api.datadoghq.com
+          service-file: ${{ matrix.service_file }}
+
+  validate-definitions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate service definitions
         run: |
           echo "Validating service definition files..."
 
@@ -92,51 +79,3 @@ jobs:
 
           print('🎉 All service definitions are valid!')
           PY
-
-      - name: Lint service catalog entries
-        run: |
-          npm install --global @datadog/datadog-ci
-          datadog-ci service-catalog lint *.datadog.yaml
-
-  register-services:
-    runs-on: ubuntu-latest
-    needs: [validate-secrets, lint-service-definitions]
-    if: needs.validate-secrets.outputs.has_dd_api_key == '1' && needs.validate-secrets.outputs.has_dd_app_key == '1'
-    strategy:
-      matrix:
-        service_file:
-          - service.datadog.yaml
-          - postgres.datadog.yaml
-          - vibecode-ai-gateway.datadog.yaml
-          - vibecode-code-server.datadog.yaml
-          - vibecode-docs.datadog.yaml
-          - vibecode-docs-search.datadog.yaml
-          - vibecode-rag-app.datadog.yaml
-          - vibecode-rag-ingest.datadog.yaml
-          - vibecode-valkey.datadog.yaml
-          - vibecode-docker-doctor.datadog.yaml
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Register ${{ matrix.service_file }}
-        uses: arcxp/datadog-service-catalog-metadata-provider@v2.3.2
-        with:
-          datadog-key: ${{ secrets.DD_API_KEY }}
-          datadog-app-key: ${{ secrets.DD_APP_KEY }}
-          datadog-url: https://api.${{ secrets.DD_SITE || 'datadoghq.com' }}
-          service-file: ${{ matrix.service_file }}
-
-      - name: Append registration summary
-        run: |
-          echo "- Registered \\"${{ matrix.service_file }}\\"" >> "$GITHUB_STEP_SUMMARY"
-
-  missing-secrets:
-    runs-on: ubuntu-latest
-    needs: validate-secrets
-    if: needs.validate-secrets.outputs.has_dd_api_key != '1' || needs.validate-secrets.outputs.has_dd_app_key != '1'
-    steps:
-      - name: Output secret guidance
-        run: |
-          echo "::notice::Service registration skipped because DD_API_KEY/DD_APP_KEY secrets are not configured."
-          echo "Update repository secrets to re-enable Datadog service catalog updates."

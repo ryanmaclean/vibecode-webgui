@@ -5,7 +5,7 @@
 
 import { EventEmitter } from 'events'
 
-export interface CacheEntry<T = unknown> {
+export interface CacheEntry<T = any> {
   key: string
   value: T
   timestamp: number
@@ -283,8 +283,8 @@ export class QueryCache extends EventEmitter {
    */
   public async warmUp(warmUpData: Array<{
     key: string
-    value: unknown
-    options?: Record<string, unknown>
+    value: any
+    options?: any
   }>): Promise<void> {
     console.log(`🔥 Warming up cache with ${warmUpData.length} entries...`)
     
@@ -444,7 +444,7 @@ export class QueryCache extends EventEmitter {
   /**
    * Estimate object size in bytes
    */
-  private estimateSize(obj: unknown): number {
+  private estimateSize(obj: any): number {
     try {
       return JSON.stringify(obj).length * 2 // Rough estimate (UTF-16)
     } catch {
@@ -455,7 +455,7 @@ export class QueryCache extends EventEmitter {
   /**
    * Compress data (placeholder - in production use a real compression library)
    */
-  private async compress(data: unknown): Promise<{ __compressed: boolean; data: string }> {
+  private async compress(data: any): Promise<any> {
     // In production, use a library like 'lz-string' or 'pako'
     return {
       __compressed: true,
@@ -466,7 +466,7 @@ export class QueryCache extends EventEmitter {
   /**
    * Decompress data
    */
-  private async decompress(compressedData: unknown): Promise<unknown> {
+  private async decompress(compressedData: any): Promise<any> {
     if (this.isCompressed(compressedData)) {
       return JSON.parse(compressedData.data)
     }
@@ -476,7 +476,7 @@ export class QueryCache extends EventEmitter {
   /**
    * Check if data is compressed
    */
-  private isCompressed(data: unknown): data is { __compressed: boolean; data: string } {
+  private isCompressed(data: any): boolean {
     return data && typeof data === 'object' && data.__compressed === true
   }
 
@@ -572,7 +572,7 @@ export const cacheUtils = {
   /**
    * Generate cache key for database queries
    */
-  databaseQueryKey: (sql: string, params?: unknown[]) => {
+  databaseQueryKey: (sql: string, params?: any[]) => {
     const paramStr = params ? JSON.stringify(params) : ''
     return `db_query:${Buffer.from(sql + paramStr).toString('base64')}`
   },
@@ -588,7 +588,7 @@ export const cacheUtils = {
   /**
    * Generate cache key for API responses
    */
-  apiResponseKey: (endpoint: string, params?: unknown) => {
+  apiResponseKey: (endpoint: string, params?: any) => {
     const paramStr = params ? JSON.stringify(params) : ''
     return `api:${Buffer.from(endpoint + paramStr).toString('base64')}`
   }

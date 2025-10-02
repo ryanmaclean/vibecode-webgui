@@ -16,7 +16,7 @@ jest.mock('@/lib/semantic-kernel-client', () => ({
 }))
 
 describe('Semantic Kernel Agent Integration', () => {
-  let mockSemanticKernelClient: any;
+  let mockSemanticKernelClient: any
 
   beforeEach(() => {
     jest.clearAllMocks()

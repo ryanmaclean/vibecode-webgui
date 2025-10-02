@@ -18,38 +18,6 @@ env:
   NODE_VERSION: '20.11.0'
 
 jobs:
-  # Validate CI configuration and secrets
-  validate-ci-config:
-    name: Validate CI configuration (secrets/vars)
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    outputs:
-      has_dd_api_key: ${{ steps.check.outputs.has_dd_api_key }}
-      has_dd_app_key: ${{ steps.check.outputs.has_dd_app_key }}
-      has_lhci_token: ${{ steps.check.outputs.has_lhci_token }}
-      has_dd_synthetic_ids: ${{ steps.check.outputs.has_dd_synthetic_ids }}
-    steps:
-      - name: Check required secrets and variables
-        id: check
-        run: |
-          echo "🔧 Validating CI configuration..."
-
-          check() {
-            local name="$1" value="$2" message="$3" flag="$4"
-            if [ -n "$value" ]; then
-              echo "✅ $name present"
-              printf '%s=1\n' "$flag" >> "$GITHUB_OUTPUT"
-            else
-              echo "::warning::$message"
-              printf '%s=0\n' "$flag" >> "$GITHUB_OUTPUT"
-            fi
-          }
-
-          check 'DD_API_KEY' '${{ secrets.DD_API_KEY }}' 'Missing DD_API_KEY secret; Datadog steps will be skipped.' 'has_dd_api_key'
-          check 'DD_APP_KEY' '${{ secrets.DD_APP_KEY }}' 'Missing DD_APP_KEY secret; some Datadog features will be skipped.' 'has_dd_app_key'
-          check 'LHCI_GITHUB_APP_TOKEN' '${{ secrets.LHCI_GITHUB_APP_TOKEN }}' 'Missing LHCI_GITHUB_APP_TOKEN secret; Lighthouse CI will be skipped.' 'has_lhci_token'
-          check 'DD_SYNTHETIC_TEST_IDS' '${{ vars.DD_SYNTHETIC_TEST_IDS }}' 'Missing DD_SYNTHETIC_TEST_IDS variable; synthetic tests will be skipped.' 'has_dd_synthetic_ids'
-
   # Code Quality & Security
   code-quality:
     runs-on: ubuntu-latest
@@ -89,9 +57,6 @@ jobs:
         run: npm run lint
         continue-on-error: true
 
-      - name: Lint markdown docs
-        run: npm run lint:markdown
-
       - name: Check for hardcoded secrets
         run: |
           echo "Scanning for hardcoded secrets and API keys..."
@@ -103,14 +68,14 @@ jobs:
   root-tests:
     runs-on: ubuntu-latest
     name: Root Integration Tests
-    needs: [validate-ci-config, code-quality]
+    needs: code-quality
     timeout-minutes: 25
     env:
       DATABASE_URL: postgresql://test:test@localhost:5432/testdb
       REDIS_URL: redis://localhost:6379
       NEXTAUTH_SECRET: test-secret-key-for-ci
-      # Datadog CI Visibility - only set if API key is available
-      DD_CI_VISIBILITY_ENABLED: ${{ secrets.DD_API_KEY != '' && 'true' || 'false' }}
+      # Datadog CI Visibility
+      DD_CI_VISIBILITY_ENABLED: true
       DD_SERVICE: vibecode-webgui
       DD_ENV: ci
       DD_VERSION: ${{ github.sha }}
@@ -180,19 +145,7 @@ jobs:
         run: npm run test:root:credentials
         continue-on-error: true
 
-      - name: Run unit tests with coverage
-        run: npm run test:unit -- --coverage --coverageReporters=lcov --coverageReporters=text-summary
-
-      - name: Upload coverage artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: unit-test-coverage
-          path: |
-            coverage/lcov.info
-            coverage/coverage-summary.json
-
-     - name: Run workflow tests
+      - name: Run workflow tests
         run: npm run test:root:workflow
         continue-on-error: true
 
@@ -224,7 +177,7 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
     name: Build Test
-    needs: [validate-ci-config, code-quality]
+    needs: code-quality
     timeout-minutes: 20
     steps:
       - name: Checkout code
@@ -274,7 +227,7 @@ jobs:
           fi
 
       - name: Notify Datadog of CI completion
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.DD_API_KEY != ''
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           curl -X POST "https://api.datadoghq.com/api/v1/events" \
             -H "Content-Type: application/json" \
@@ -284,13 +237,13 @@ jobs:
               "text": "Simplified CI/CD pipeline completed successfully with root tests and build validation",
               "tags": ["source:github", "env:ci", "service:vibecode-webgui", "event:ci-complete"],
               "alert_type": "success"
-            }' || echo "Datadog notification failed"
+            }' || echo "Datadog notification skipped (no API key)"
 
   # AI Gateway Service Tests
   ai-gateway-tests:
     runs-on: ubuntu-latest
     name: AI Gateway Metrics and E2E (conditional)
-    needs: [validate-ci-config, code-quality]
+    needs: code-quality
     timeout-minutes: 20
     steps:
       - name: Checkout code

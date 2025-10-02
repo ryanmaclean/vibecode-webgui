@@ -17,8 +17,6 @@ on:
       - 'monitoring/**'
       - 'database/**'
       - '.github/workflows/db-monitoring-deployment.yml'
-  schedule:
-    - cron: '30 5 * * 2'
   workflow_dispatch:
     inputs:
       environment:
@@ -50,85 +48,22 @@ jobs:
       DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
       DD_APP_KEY: ${{ secrets.DD_APP_KEY || secrets.DATADOG_APP_KEY || '' }}
       POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS || '' }}
-      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL || '' }}
-    outputs:
-      has_dd_api_key: ${{ steps.check.outputs.has_dd_api_key }}
-      has_dd_app_key: ${{ steps.check.outputs.has_dd_app_key }}
-      has_postgres: ${{ steps.check.outputs.has_postgres }}
-      has_azure: ${{ steps.check.outputs.has_azure }}
-      has_slack: ${{ steps.check.outputs.has_slack }}
     steps:
       - name: Check required secrets
-        id: check
         run: |
-          set -euo pipefail
-          has_dd_api_key=0
-          has_dd_app_key=0
-          has_postgres=0
-          has_azure=0
-          has_slack=0
-
-          if [ -n "${DD_API_KEY}" ]; then
-            echo "✅ DD_API_KEY present"
-            has_dd_api_key=1
-          else
-            echo "::warning::Missing DD_API_KEY; Datadog steps will be skipped."
+          missing=0
+          for key in DD_API_KEY DD_APP_KEY POSTGRES_CONNECTION; do
+            if [ -z "${!key}" ]; then
+              echo "::warning::Missing secret for $key; related steps will be skipped."
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 0 ]; then
+            echo "All required secrets present."
           fi
-
-          if [ -n "${DD_APP_KEY}" ]; then
-            echo "✅ DD_APP_KEY present"
-            has_dd_app_key=1
-          else
-            echo "::warning::Missing DD_APP_KEY; Datadog dashboards cannot be updated."
-          fi
-
-          if [ -n "${POSTGRES_CONNECTION}" ]; then
-            echo "✅ Postgres connection configured"
-            has_postgres=1
-          else
-            echo "::warning::Missing POSTGRES_CONNECTION_STRING; database validation and benchmarks will be skipped."
-          fi
-
-          if [ -n "${AZURE_CREDENTIALS}" ]; then
-            echo "✅ Azure credentials present"
-            has_azure=1
-          else
-            echo "::warning::Missing AZURE_CREDENTIALS; Azure deployments will be skipped."
-          fi
-
-          if [ -n "${SLACK_WEBHOOK}" ]; then
-            echo "✅ Slack webhook configured"
-            has_slack=1
-          else
-            echo "::notice::No Slack webhook configured; deployment notifications will be muted."
-          fi
-
-          printf 'has_dd_api_key=%s\n' "$has_dd_api_key" >> "$GITHUB_OUTPUT"
-          printf 'has_dd_app_key=%s\n' "$has_dd_app_key" >> "$GITHUB_OUTPUT"
-          printf 'has_postgres=%s\n' "$has_postgres" >> "$GITHUB_OUTPUT"
-          printf 'has_azure=%s\n' "$has_azure" >> "$GITHUB_OUTPUT"
-          printf 'has_slack=%s\n' "$has_slack" >> "$GITHUB_OUTPUT"
-
-  missing-secrets:
-    runs-on: ubuntu-latest
-    needs: validate-ci-config
-    if: >-
-      needs.validate-ci-config.outputs.has_postgres != '1' ||
-      needs.validate-ci-config.outputs.has_dd_api_key != '1' ||
-      needs.validate-ci-config.outputs.has_dd_app_key != '1'
-    steps:
-      - name: Skip heavy jobs
-        run: |
-          echo "::notice::Skipping database monitoring workflow because required secrets are missing."
-          echo "Postgres configured: ${{ needs.validate-ci-config.outputs.has_postgres }}"
-          echo "Datadog API key configured: ${{ needs.validate-ci-config.outputs.has_dd_api_key }}"
-          echo "Datadog APP key configured: ${{ needs.validate-ci-config.outputs.has_dd_app_key }}"
 
   validate-database-schema:
     runs-on: ubuntu-latest
-    needs: validate-ci-config
-    if: needs.validate-ci-config.outputs.has_postgres == '1'
     timeout-minutes: 10
     env:
       POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
@@ -145,12 +80,12 @@ jobs:
         run: npm ci
       
       - name: Validate PostgreSQL schema
-        if: needs.validate-ci-config.outputs.has_postgres == '1'
+        if: ${{ env.POSTGRES_CONNECTION != '' }}
         run: |
           npm run db:validate-schema
           
       - name: Check for pgvector extension
-        if: needs.validate-ci-config.outputs.has_postgres == '1'
+        if: ${{ env.POSTGRES_CONNECTION != '' }}
         run: |
           node -e "
           const { Pool } = require('pg');
@@ -183,8 +118,7 @@ jobs:
 
   validate-vector-index:
     runs-on: ubuntu-latest
-    needs: [validate-ci-config, validate-database-schema]
-    if: needs.validate-ci-config.outputs.has_postgres == '1'
+    needs: validate-database-schema
     timeout-minutes: 10
     env:
       POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
@@ -201,7 +135,7 @@ jobs:
         run: npm ci
       
       - name: Check vector indexes
-        if: needs.validate-ci-config.outputs.has_postgres == '1'
+        if: ${{ env.POSTGRES_CONNECTION != '' }}
         run: |
           node -e "
           const { Pool } = require('pg');
@@ -236,7 +170,6 @@ jobs:
           "
       
       - name: Validate monitoring dashboards
-        if: needs.validate-ci-config.outputs.has_dd_api_key == '1'
         run: |
           echo "Validating Datadog dashboard definitions..."
           for file in monitoring/dashboards/*.json; do
@@ -247,8 +180,7 @@ jobs:
 
   benchmark-vector-performance:
     runs-on: ubuntu-latest
-    needs: [validate-ci-config, validate-vector-index]
-    if: needs.validate-ci-config.outputs.has_postgres == '1'
+    needs: validate-vector-index
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v3
@@ -263,7 +195,6 @@ jobs:
         run: npm ci
       
       - name: Run vector search benchmark
-        if: needs.validate-ci-config.outputs.has_postgres == '1'
         run: |
           node scripts/benchmark-vector-search.js
       
@@ -275,8 +206,7 @@ jobs:
 
   verify-monitoring-prerequisites:
     runs-on: ubuntu-latest
-    needs: [validate-ci-config, benchmark-vector-performance]
-    if: needs.validate-ci-config.outputs.has_dd_api_key == '1' || needs.validate-ci-config.outputs.has_azure == '1'
+    needs: benchmark-vector-performance
     timeout-minutes: 10
     env:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS || '' }}
@@ -335,8 +265,8 @@ jobs:
 
   deploy-monitoring:
     runs-on: ubuntu-latest
-    needs: [validate-ci-config, verify-monitoring-prerequisites]
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.validate-ci-config.outputs.has_azure == '1'
+    needs: verify-monitoring-prerequisites
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 30
     env:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS || '' }}
@@ -479,7 +409,7 @@ jobs:
 
   generate-monitoring-report:
     runs-on: ubuntu-latest
-    needs: [validate-ci-config, deploy-monitoring]
+    needs: deploy-monitoring
     if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     timeout-minutes: 5
     steps:
@@ -537,7 +467,7 @@ jobs:
 
   notify-deployment:
     runs-on: ubuntu-latest
-    needs: [validate-ci-config, deploy-monitoring, generate-monitoring-report]
+    needs: [deploy-monitoring, generate-monitoring-report]
     if: always()
     timeout-minutes: 5
     env:
@@ -545,7 +475,7 @@ jobs:
       SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
     steps:
       - name: Notify deployment status
-        if: env.SLACK_WEBHOOK_URL != ''
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
         uses: slackapi/slack-github-action@v1.23.0
         with:
           payload: |
@@ -566,16 +496,12 @@ jobs:
                     "text": "*Environment:* ${{ env.ENVIRONMENT }}\n*Status:* ${{ needs.deploy-monitoring.result == 'success' && 'Succeeded ✅' || 'Failed ❌' }}"
                   }
                 },
-              {
-                "type": "section",
-                "text": {
-                  "type": "mrkdwn",
-                  "text": "See the <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|workflow run> for more details."
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "See the <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|workflow run> for more details."
+                  }
                 }
-              }
-            ]
-          }
-
-      - name: Slack webhook missing notice
-        if: env.SLACK_WEBHOOK_URL == ''
-        run: echo '::notice::Slack webhook not configured; skipping monitoring deployment notification.'
+              ]
+            }

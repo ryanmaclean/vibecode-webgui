@@ -383,19 +383,14 @@ export function EnhancedAIChatInterface({
         ))}
         
         {isLoading && (
-          <div className="flex gap-3 max-w-3xl mr-auto" role="status" aria-label="AI is responding">
-            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white flex-shrink-0">
-              <Bot className="h-4 w-4" aria-hidden="true" />
+          <div className="flex gap-3 max-w-3xl mr-auto">
+            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white">
+              <Bot className="h-4 w-4" />
             </div>
-            <div className="bg-white border rounded-lg px-4 py-3 shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-500" aria-hidden="true"></div>
-                <span className="text-sm text-gray-600 font-medium">AI is thinking...</span>
-              </div>
-              <div className="space-y-2">
-                <div className="h-3 bg-gray-200 rounded animate-pulse w-48"></div>
-                <div className="h-3 bg-gray-200 rounded animate-pulse w-36"></div>
-                <div className="h-3 bg-gray-200 rounded animate-pulse w-40"></div>
+            <div className="bg-white border rounded-lg px-4 py-2">
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-500"></div>
+                <span className="text-sm text-gray-500">AI is thinking...</span>
               </div>
             </div>
           </div>
@@ -414,20 +409,14 @@ export function EnhancedAIChatInterface({
           placeholder="Ask me about your code, request new features, or get help with debugging..."
           className="flex-1 min-h-[50px] max-h-32 resize-none"
           disabled={isLoading}
-          aria-label="Message input"
         />
         <Button
           onClick={sendMessage}
           disabled={!input.trim() || isLoading}
           size="lg"
           className="px-4"
-          aria-label="Send message"
         >
-          {isLoading ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" aria-hidden="true"></div>
-          ) : (
-            <Send className="h-4 w-4" aria-hidden="true" />
-          )}
+          <Send className="h-4 w-4" />
         </Button>
       </div>
 

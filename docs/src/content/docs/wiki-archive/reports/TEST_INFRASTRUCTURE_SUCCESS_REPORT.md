@@ -87,7 +87,7 @@ Execution Time: 76.202 seconds (STABLE - no crashes or timeouts)
 
 ## Systematic Improvement Path
 
-All remaining issues are documented in [TODO.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/reports/TODO.md) with:
+All remaining issues are documented in [TODO.md](./TODO.md) with:
 - **Specific root causes identified**
 - **Targeted solutions outlined** 
 - **Priority levels assigned**

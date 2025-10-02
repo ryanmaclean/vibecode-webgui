@@ -5,48 +5,6 @@ description: Comprehensive guide for fixing CI/CD pipeline issues
 
 # 🔧 CI/CD Pipeline Fix Guide
 
-## 🔒 **CI/CD Secret Hardening (Latest Update)**
-
-The CI/CD pipelines now include hardening to gracefully handle missing secrets and variables, preventing hard failures.
-
-### **New Hardening Features:**
-
-1. **Early Validation Job**: All workflows now include a `validate-ci-config` job that checks for required secrets/variables without exposing their values
-2. **Conditional Step Guards**: Steps requiring secrets are now guarded with `if:` conditions
-3. **Environment Scoping**: Deploy jobs use environment-scoped secrets for better security
-4. **Clear Guidance**: Missing secrets trigger warnings with setup instructions instead of failures
-
-### **Required Secrets & Variables:**
-
-#### **Core Datadog Integration:**
-- `DD_API_KEY` (secret): Required for Datadog CI Visibility and monitoring
-- `DD_APP_KEY` (secret): Required for advanced Datadog features  
-- `DD_SYNTHETIC_TEST_IDS` (variable): Required for synthetic test execution
-
-#### **Lighthouse CI:**
-- `LHCI_GITHUB_APP_TOKEN` (secret): Required for Lighthouse CI performance testing
-
-#### **Azure Deployment:**
-- `AZURE_CLIENT_ID` (secret): Required for Azure authentication
-- `AZURE_TENANT_ID` (secret): Required for Azure authentication
-- `AZURE_SUBSCRIPTION_ID` (secret): Required for Azure authentication
-- `ACR_USERNAME` (secret): Required for Azure Container Registry
-- `ACR_PASSWORD` (secret): Required for Azure Container Registry
-- `KUBE_CONFIG` (secret): Required for Kubernetes deployments
-
-### **Behavior Changes:**
-
-- **Before**: Missing secrets caused hard pipeline failures
-- **Now**: Missing secrets result in "skipped" steps with informative warnings
-- **Validation**: Each workflow validates its requirements and provides setup guidance
-
-### **Setup Instructions:**
-
-1. **Repository Secrets**: Go to Settings → Secrets and Variables → Actions
-2. **Add Required Secrets**: Follow the guidance messages from failed validation jobs
-3. **Environment Variables**: Configure in Settings → Secrets and Variables → Actions → Variables
-4. **Environment Scoping**: Production deployments use environment-scoped secrets
-
 ## 🎯 **Root Cause: Missing Git Metadata for Datadog Test Visibility**
 
 The CI/CD pipelines are failing to show test results in Datadog because Git metadata is missing from test runs. This prevents tests from appearing in the "Tests" tab in Datadog.
@@ -154,37 +112,6 @@ Added comprehensive Git metadata collection:
    [ -n "$DD_APP_KEY" ] && echo "DD_APP_KEY is set" || echo "DD_APP_KEY is missing"
    ```
 
-4. **Check Secret Validation**:
-   ```bash
-   # Check the validate-ci-config job output for missing secrets:
-   # This job will show warnings for any missing required secrets
-   # without exposing the actual secret values
-   ```
-
-### **CI Pipeline Hardening:**
-
-The pipelines now include automatic validation and graceful handling of missing secrets:
-
-```yaml
-# Example validation job (automatically added to workflows)
-validate-ci-config:
-  name: Validate CI configuration (secrets/vars)
-  runs-on: ubuntu-latest
-  steps:
-    - name: Check required secrets and variables
-      run: |
-        if [ -z "${{ secrets.DD_API_KEY }}" ]; then
-          echo "::warning::Missing DD_API_KEY secret; Datadog steps will be skipped."
-        fi
-        # Additional validation checks...
-```
-
-**Benefits:**
-- ✅ No more hard failures due to missing secrets
-- ✅ Clear guidance on what secrets need to be configured
-- ✅ Steps automatically skip when prerequisites are missing
-- ✅ Environment-scoped secrets for deploy jobs
-
 ### **Manual Override (if needed):**
 
 If automatic detection fails, set manually:
@@ -198,25 +125,12 @@ env:
 
 ## 📊 **Success Metrics**
 
-### **Before Hardening:**
-- ❌ Pipeline failures due to missing secrets
-- ❌ No clear guidance when secrets are missing  
-- ❌ Hard failures block development workflow
-
-### **After Hardening:**
-- ✅ Graceful handling of missing secrets
-- ✅ Clear warnings and setup guidance
-- ✅ Steps show "skipped" status instead of failing
-- ✅ Development workflow continues unimpeded
-
-### **Test Visibility (Original Fix):**
-
-#### **Before Fix:**
+### **Before Fix:**
 - ❌ 100% pipeline failure rate
 - ❌ No test visibility in Datadog
 - ❌ Missing Git attribution
 
-#### **After Fix:**
+### **After Fix (Expected):**
 - ✅ At least one working pipeline
 - ✅ Tests visible in Datadog "Tests" tab
 - ✅ Proper Git metadata attribution
@@ -224,4 +138,4 @@ env:
 
 ---
 
-**This comprehensive fix addresses both the fundamental test visibility issues AND the operational problems caused by missing secrets. The CI/CD pipeline now provides a better developer experience with clear guidance and graceful degradation.**
+**This fix addresses the fundamental issue preventing CI/CD test visibility in Datadog. Once implemented, we can focus on fixing individual test failures with proper tracking and attribution.**

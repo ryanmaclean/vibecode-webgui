@@ -6,14 +6,8 @@ declare module 'next-auth/jwt' {
     role?: string | null;
     email?: string | null;
     name?: string | null;
-    [key: string]: unknown;
+    [key: string]: any;
   }
 
-  export interface GetTokenParams {
-    req: unknown;
-    secret?: string;
-    raw?: boolean;
-  }
-
-  export function getToken(params: GetTokenParams): Promise<JWT | null>;
+  export function getToken(params: any): Promise<JWT | null>;
 }

@@ -53,41 +53,41 @@ x-api-key: <your_api_key>
 ## API Categories
 
 ### 🤖 AI Services
-- **[/api/ai/chat](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/chat/route.ts)** - AI chat completions
-- **[/api/ai/generate-project](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/generate-project/route.ts)** - Generate projects from prompts
-- **[/api/ai/search](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/ai/search/route.ts)** - Vector search for RAG
-- **[/api/claude/chat](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/claude/chat/route.ts)** - Claude-specific chat endpoint
+- **[/api/ai/chat](/api/ai/chat)** - AI chat completions
+- **[/api/ai/generate-project](/api/ai/generate-project)** - Generate projects from prompts
+- **[/api/ai/search](/api/ai/search)** - Vector search for RAG
+- **[/api/claude/chat](/api/claude/chat)** - Claude-specific chat endpoint
 
 ### 🔒 Authentication
-- **[/api/auth/[...nextauth]](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/auth/[...nextauth]/route.ts)** - NextAuth.js endpoints
-- **[/api/auth/mfa/setup](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/auth/mfa/setup/route.ts)** - Multi-factor authentication setup
-- **[/api/auth/saml/sso](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/auth/saml/sso/route.ts)** - SAML SSO integration
+- **[/api/auth/[...nextauth]](/api/auth/[...nextauth])** - NextAuth.js endpoints
+- **[/api/auth/mfa/setup](/api/auth/mfa/setup)** - Multi-factor authentication setup
+- **[/api/auth/saml/sso](/api/auth/saml/sso)** - SAML SSO integration
 
 ### 📂 File Management
-- **[/api/files](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/files/route.ts)** - File CRUD operations
-- **[/api/files/sync](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/files/sync/route.ts)** - Real-time file synchronization
+- **[/api/files](/api/files)** - File CRUD operations
+- **[/api/files/sync](/api/files/sync)** - Real-time file synchronization
 
 ### 📊 Monitoring
-- **[/api/monitoring/overview/dashboard](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/dashboard/route.ts)** - Monitoring dashboard data
-- **[/api/monitoring/overview/metrics](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/metrics/route.ts)** - Performance metrics
-- **[/api/monitoring/overview/security](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/monitoring/overview/security/route.ts)** - Security monitoring
+- **[/api/monitoring/dashboard](/api/monitoring/dashboard)** - Monitoring dashboard data
+- **[/api/monitoring/metrics](/api/monitoring/metrics)** - Performance metrics
+- **[/api/monitoring/security](/api/monitoring/security)** - Security monitoring
 
 ### 🛠️ Development Tools
-- **[/api/code-server/session](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/code-server/session/route.ts)** - Code server management
-- **[/api/terminal/session](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/terminal/session/route.ts)** - Terminal sessions
-- **[/api/terminal/ws](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/terminal/ws/route.ts)** - WebSocket terminal connection
+- **[/api/code-server/session](/api/code-server/session)** - Code server management
+- **[/api/terminal/session](/api/terminal/session)** - Terminal sessions
+- **[/api/terminal/ws](/api/terminal/ws)** - WebSocket terminal connection
 
 ### 💬 Chat & Communication
-- **[/api/chat/stream](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/chat/stream/route.ts)** - Streaming chat
-- **[/api/chat/mongodb](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/chat/mongodb/route.ts)** - Persistent chat storage
+- **[/api/chat/stream](/api/chat/stream)** - Streaming chat
+- **[/api/chat/mongodb](/api/chat/mongodb)** - Persistent chat storage
 
 ### 🎯 Project Management
-- **[/api/projects/template](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/projects/template/route.ts)** - Template-based project generation
-- **[/api/templates](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/templates/route.ts)** - Template management
+- **[/api/projects/template](/api/projects/template)** - Template-based project generation
+- **[/api/templates](/api/templates)** - Template management
 
 ### ⚡ Health & Diagnostics
-- **[/api/health](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/health/route.ts)** - Comprehensive health check
-- **[/api/health/simple](https://github.com/ryanmaclean/vibecode-webgui/blob/main/src/app/api/health/simple/route.ts)** - Simple health check
+- **[/api/health](/api/health)** - Comprehensive health check
+- **[/api/health/simple](/api/health/simple)** - Simple health check
 
 ## Common Response Format
 
@@ -198,7 +198,7 @@ print(data)
 - **Python**: `pip install vibecode-api`
 - **Go**: `go get github.com/vibecode/go-client`
 
-For detailed endpoint documentation, see the [auto-generated API docs](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/API.md).
+For detailed endpoint documentation, see the [auto-generated API docs](./API.md).
 
 ---
 

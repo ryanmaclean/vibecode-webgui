@@ -12,9 +12,9 @@ declare module 'weaviate-ts-client' {
 
   export interface WeaviateClient {
     misc(): { liveChecker(): { do(): Promise<void> } }
-    schema?: Record<string, unknown>
-    batch(): { objectsBatcher(): Record<string, unknown> }
-    data?: Record<string, unknown>
+    schema?: any
+    batch(): { objectsBatcher(): any }
+    data?: any
   }
 
   const _default: {

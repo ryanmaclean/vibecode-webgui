@@ -79,7 +79,7 @@ const stats = await vectorStore.getStats();
 
 Set these environment variables to configure the vector database:
 
-```bash
+```
 # Provider Selection
 VECTOR_DB_PROVIDER=postgres  # postgres, sqlserver, cosmosdb, redis
 

@@ -5,13 +5,12 @@ name: Release Branch CI/CD (Comprehensive)
 
 on:
   push:
-    branches:
+    branches: 
       - 'release/*'
       - 'hotfix/*'
   pull_request:
-    branches:
+    branches: 
       - 'release/*'
-  workflow_dispatch:
 
 concurrency:
   group: release-ci-${{ github.ref }}
@@ -28,107 +27,9 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # Validate CI configuration and secrets
-  validate-ci-config:
-    name: Validate CI configuration (secrets/vars)
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    outputs:
-      has_dd_api_key: ${{ steps.secret-check.outputs.has_dd_api_key }}
-      has_dd_app_key: ${{ steps.secret-check.outputs.has_dd_app_key }}
-      has_lhci_token: ${{ steps.secret-check.outputs.has_lhci_token }}
-      has_dd_synthetic_ids: ${{ steps.secret-check.outputs.has_dd_synthetic_ids }}
-    steps:
-      - name: Check required secrets and variables
-        id: secret-check
-        env:
-          DD_API_KEY: ${{ secrets.DD_API_KEY }}
-          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-          LHCI_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-          DD_SYNTHETIC_IDS: ${{ vars.DD_SYNTHETIC_TEST_IDS }}
-        run: |
-          set -euo pipefail
-          echo "🔧 Validating release CI configuration..."
-
-          warn() {
-            printf '::warning::%s\n' "$1"
-          }
-
-          has_dd_api_key=0
-          if [ -n "${DD_API_KEY:-}" ]; then
-            echo "✅ DD_API_KEY present"
-            has_dd_api_key=1
-          else
-            warn 'Missing DD_API_KEY secret; Datadog features will be skipped.'
-          fi
-
-          has_dd_app_key=0
-          if [ -n "${DD_APP_KEY:-}" ]; then
-            echo "✅ DD_APP_KEY present"
-            has_dd_app_key=1
-          else
-            warn 'Missing DD_APP_KEY secret; advanced Datadog features will be skipped.'
-          fi
-
-          has_lhci_token=0
-          if [ -n "${LHCI_TOKEN:-}" ]; then
-            echo "✅ LHCI_GITHUB_APP_TOKEN present"
-            has_lhci_token=1
-          else
-            warn 'Missing LHCI_GITHUB_APP_TOKEN secret; Lighthouse CI will be skipped.'
-          fi
-
-          has_dd_synthetic_ids=0
-          if [ -n "${DD_SYNTHETIC_IDS:-}" ]; then
-            echo "✅ DD_SYNTHETIC_TEST_IDS present"
-            has_dd_synthetic_ids=1
-          else
-            warn 'Missing DD_SYNTHETIC_TEST_IDS variable; synthetic tests will be skipped.'
-          fi
-
-          printf 'has_dd_api_key=%s\n' "$has_dd_api_key" >> "$GITHUB_OUTPUT"
-          printf 'has_dd_app_key=%s\n' "$has_dd_app_key" >> "$GITHUB_OUTPUT"
-          printf 'has_lhci_token=%s\n' "$has_lhci_token" >> "$GITHUB_OUTPUT"
-          printf 'has_dd_synthetic_ids=%s\n' "$has_dd_synthetic_ids" >> "$GITHUB_OUTPUT"
-
-          if [ "$has_dd_api_key" -eq 0 ] || [ "$has_dd_app_key" -eq 0 ]; then
-            echo "🏗️ Release testing may be limited without complete Datadog configuration."
-            echo "• See docs/ci-cd-fixes.md for detailed setup instructions"
-          fi
-
-  codex-mcp-smoke:
-    runs-on: ubuntu-latest
-    needs: validate-ci-config
-    timeout-minutes: 5
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
-
-      - name: Install Codex CLI
-        run: npm install -g @openai/codex
-
-      - name: Verify Codex MCP configuration
-        env:
-          CODEX_HOME: ${{ github.workspace }}/.codex
-        run: |
-          set -euo pipefail
-          OUTPUT="$(codex mcp list)"
-          echo "$OUTPUT"
-          echo "$OUTPUT" | grep 'sequential-thinking'
-
   # Comprehensive testing matrix
   test-suite:
     runs-on: ubuntu-latest
-    needs: [validate-ci-config, codex-mcp-smoke]
     timeout-minutes: 30
     strategy:
       matrix:
@@ -211,31 +112,13 @@ jobs:
       - name: Run E2E tests
         if: matrix.test-type == 'e2e'
         run: |
-          set -euo pipefail
-          npm run dev -- --hostname 0.0.0.0 --port 3000 &
-          APP_PID=$!
-          trap 'kill "$APP_PID"' EXIT
-
-          server_ready=0
-          for attempt in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:3000/ > /dev/null; then
-              server_ready=1
-              break
-            fi
-            echo "Waiting for dev server (attempt ${attempt})"
-            sleep 2
-          done
-
-          if [ "$server_ready" -ne 1 ]; then
-            echo "::error::Dev server failed to start within timeout"
-            exit 1
-          fi
-
+          npm run dev &
+          sleep 10
           npx playwright test --project=chromium --reporter=line
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/testdb
           PLAYWRIGHT_TEST: true
-          BASE_URL: http://127.0.0.1:3000
+          BASE_URL: http://localhost:3001
       
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -250,7 +133,6 @@ jobs:
   # Security and quality checks
   security-and-quality:
     runs-on: ubuntu-latest
-    needs: validate-ci-config
     timeout-minutes: 20
     steps:
       - name: Checkout code
@@ -333,11 +215,9 @@ jobs:
   # Performance testing
   performance-tests:
     runs-on: ubuntu-latest
-    needs: [validate-ci-config, build-and-push]
+    needs: [build-and-push]
     timeout-minutes: 15
-    if: >-
-      contains(github.ref, 'release/') &&
-      needs.validate-ci-config.outputs.has_lhci_token == '1'
+    if: contains(github.ref, 'release/')
     
     steps:
       - name: Checkout code

@@ -20,8 +20,8 @@ on:
         default: 'staging'
         type: choice
         options:
-          - staging
-          - production
+        - staging
+        - production
       force_deploy:
         description: 'Force deployment even if tests fail'
         required: false
@@ -31,146 +31,36 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-
-concurrency:
-  group: gitops-${{ github.ref }}
-  cancel-in-progress: true
+ 
+  
 jobs:
   # Early validation of required secrets/vars (non-fatal)
- validate-ci-config:
+  validate-ci-config:
     name: Validate CI configuration (secrets/vars)
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    outputs:
-      has_dd_api_key: ${{ steps.secret-check.outputs.has_dd_api_key }}
-      has_dd_app_key: ${{ steps.secret-check.outputs.has_dd_app_key }}
-      has_snyk_token: ${{ steps.secret-check.outputs.has_snyk_token }}
-      has_azure_client: ${{ steps.secret-check.outputs.has_azure_client }}
-      has_azure_tenant: ${{ steps.secret-check.outputs.has_azure_tenant }}
-      has_azure_subscription: ${{ steps.secret-check.outputs.has_azure_subscription }}
-      has_resource_group: ${{ steps.secret-check.outputs.has_resource_group }}
-      has_cluster_credentials: ${{ steps.secret-check.outputs.has_cluster_credentials }}
-      has_kubeconfig_staging: ${{ steps.secret-check.outputs.has_kubeconfig_staging }}
-      has_kubeconfig_prod: ${{ steps.secret-check.outputs.has_kubeconfig_prod }}
-    env:
-      DD_API_KEY: ${{ secrets.DD_API_KEY }}
-      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP || '' }}
-      AKS_CLUSTER_NAME: ${{ vars.AKS_CLUSTER_NAME || '' }}
-      KUBECONFIG_STAGING: ${{ secrets.KUBECONFIG_STAGING }}
-      KUBECONFIG_PRODUCTION: ${{ secrets.KUBECONFIG_PRODUCTION }}
     steps:
       - name: Check required secrets and variables
-        id: secret-check
         shell: bash
+        continue-on-error: true
         run: |
-          set -euo pipefail
-
-          has_dd_api_key=0
-          if [ -n "${DD_API_KEY:-}" ]; then
-            echo "✅ Found secret: DD_API_KEY"
-            has_dd_api_key=1
+          missing=0
+          if [ -z "${{ secrets.DD_API_KEY }}" ]; then echo " Missing secret: DD_API_KEY"; missing=1; else echo " Found secret: DD_API_KEY"; fi
+          if [ -z "${{ secrets.DD_APP_KEY }}" ]; then echo " Missing secret: DD_APP_KEY"; missing=1; else echo " Found secret: DD_APP_KEY"; fi
+          if [ "$missing" -eq 0 ]; then
+            echo " All required Datadog secrets are present."
           else
-            echo "::warning::Missing secret: DD_API_KEY (Datadog notifications and CI visibility will be skipped)."
+            echo " One or more secrets are missing. Datadog-dependent steps will be skipped."
           fi
-
-          has_dd_app_key=0
-          if [ -n "${DD_APP_KEY:-}" ]; then
-            echo "✅ Found secret: DD_APP_KEY"
-            has_dd_app_key=1
-          else
-            echo "::warning::Missing secret: DD_APP_KEY (advanced Datadog steps will be skipped)."
-          fi
-
-          has_snyk_token=0
-          if [ -n "${SNYK_TOKEN:-}" ]; then
-            echo "✅ Found secret: SNYK_TOKEN"
-            has_snyk_token=1
-          else
-            echo "::warning::Missing secret: SNYK_TOKEN (Snyk scan will be skipped)."
-          fi
-
-          printf 'has_dd_api_key=%s\n' "$has_dd_api_key" >> "$GITHUB_OUTPUT"
-          printf 'has_dd_app_key=%s\n' "$has_dd_app_key" >> "$GITHUB_OUTPUT"
-          printf 'has_snyk_token=%s\n' "$has_snyk_token" >> "$GITHUB_OUTPUT"
-
-          has_azure_client=0
-          if [ -n "${AZURE_CLIENT_ID:-}" ]; then
-            echo "✅ Found secret: AZURE_CLIENT_ID"
-            has_azure_client=1
-          else
-            echo "::warning::Missing secret: AZURE_CLIENT_ID (AKS deploy will be skipped)."
-          fi
-
-          has_azure_tenant=0
-          if [ -n "${AZURE_TENANT_ID:-}" ]; then
-            echo "✅ Found secret: AZURE_TENANT_ID"
-            has_azure_tenant=1
-          else
-            echo "::warning::Missing secret: AZURE_TENANT_ID (AKS deploy will be skipped)."
-          fi
-
-          has_azure_subscription=0
-          if [ -n "${AZURE_SUBSCRIPTION_ID:-}" ]; then
-            echo "✅ Found secret: AZURE_SUBSCRIPTION_ID"
-            has_azure_subscription=1
-          else
-            echo "::warning::Missing secret: AZURE_SUBSCRIPTION_ID (AKS deploy will be skipped)."
-          fi
-
-          has_resource_group=0
-          if [ -n "${AZURE_RESOURCE_GROUP:-}" ]; then
-            echo "✅ Found variable: AZURE_RESOURCE_GROUP"
-            has_resource_group=1
-          else
-            echo "::warning::Missing vars.AZURE_RESOURCE_GROUP (deployment will be skipped)."
-          fi
-
-          has_cluster=0
-          if [ -n "${AKS_CLUSTER_NAME:-}" ]; then
-            echo "✅ Found variable: AKS_CLUSTER_NAME"
-            has_cluster=1
-          else
-            echo "::warning::Missing vars.AKS_CLUSTER_NAME (deployment will be skipped)."
-          fi
-
-          printf 'has_azure_client=%s\n' "$has_azure_client" >> "$GITHUB_OUTPUT"
-          printf 'has_azure_tenant=%s\n' "$has_azure_tenant" >> "$GITHUB_OUTPUT"
-          printf 'has_azure_subscription=%s\n' "$has_azure_subscription" >> "$GITHUB_OUTPUT"
-          printf 'has_resource_group=%s\n' "$has_resource_group" >> "$GITHUB_OUTPUT"
-          printf 'has_cluster_credentials=%s\n' "$has_cluster" >> "$GITHUB_OUTPUT"
-
-          has_kube_staging=0
-          if [ -n "${KUBECONFIG_STAGING:-}" ]; then
-            has_kube_staging=1
-          else
-            echo "::notice::Missing KUBECONFIG_STAGING secret; staging deployment will be skipped."
-          fi
-
-          has_kube_prod=0
-          if [ -n "${KUBECONFIG_PRODUCTION:-}" ]; then
-            has_kube_prod=1
-          else
-            echo "::notice::Missing KUBECONFIG_PRODUCTION secret; production deployment will be skipped."
-          fi
-
-          printf 'has_kubeconfig_staging=%s\n' "$has_kube_staging" >> "$GITHUB_OUTPUT"
-          printf 'has_kubeconfig_prod=%s\n' "$has_kube_prod" >> "$GITHUB_OUTPUT"
 
   # Security and Quality Gates
   security-scan:
     name: Security Analysis
     runs-on: ubuntu-latest
-    needs: validate-ci-config
-    if: github.event_name != 'workflow_dispatch' || inputs.force_deploy != 'true'
+    if: github.event_name != 'workflow_dispatch' || inputs.force_deploy == false
     env:
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
       DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-      DD_SITE: ${{ secrets.DD_SITE || 'datadoghq.com' }}
       # Cloud Network Monitoring for GitHub Actions
       DD_SYSTEM_PROBE_NETWORK_ENABLED: true
       DD_PROCESS_AGENT_ENABLED: true
@@ -201,21 +91,16 @@ jobs:
           sarif_file: 'trivy-results.sarif'
 
       - name: Run Snyk to check for vulnerabilities
-        if: needs.validate-ci-config.outputs.has_snyk_token == '1'
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high
 
-      - name: Skip Snyk scan (token missing)
-        if: needs.validate-ci-config.outputs.has_snyk_token != '1'
-        run: echo '::notice::Snyk scan skipped because SNYK_TOKEN is not configured.'
-
       - name: Notify Datadog of security scan
-        if: always() && needs.validate-ci-config.outputs.has_dd_api_key == '1'
+        if: always() && env.DD_API_KEY != ''
         run: |
-          curl -X POST "https://api.${{ env.DD_SITE }}/api/v1/events" \
+          curl -X POST "https://api.datadoghq.com/api/v1/events" \
             -H "Content-Type: application/json" \
             -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
             -d @- << 'EOF'
@@ -234,16 +119,10 @@ jobs:
     name: Build and Test
     runs-on: ubuntu-latest
     needs: [security-scan, validate-ci-config]
-    if: >-
-      always() && (
-        needs.security-scan.result == 'success' ||
-        needs.security-scan.result == 'skipped' ||
-        (github.event_name == 'workflow_dispatch' && inputs.force_deploy == 'true')
-      )
+    if: always() && (needs.security-scan.result == 'success' || github.event.inputs.force_deploy == 'true')
     env:
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
       DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-      DD_SITE: ${{ secrets.DD_SITE || 'datadoghq.com' }}
       # Cloud Network Monitoring for GitHub Actions
       DD_SYSTEM_PROBE_NETWORK_ENABLED: true
       DD_PROCESS_AGENT_ENABLED: true
@@ -452,10 +331,7 @@ jobs:
     name: Deploy to Staging
     runs-on: ubuntu-latest
     needs: [infrastructure-plan, build-and-test, validate-ci-config]
-    if: >-
-      github.ref == 'refs/heads/develop' &&
-      needs.build-and-test.result == 'success' &&
-      needs.validate-ci-config.outputs.has_kubeconfig_staging == '1'
+    if: github.ref == 'refs/heads/develop' && needs.build-and-test.result == 'success'
     environment:
       name: staging
       url: https://vibecode-webgui-staging.yourdomain.com
@@ -542,10 +418,7 @@ jobs:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: [infrastructure-plan, build-and-test, e2e-tests, validate-ci-config]
-    if: >-
-      github.ref == 'refs/heads/main' &&
-      (needs.e2e-tests.result == 'success' || github.event.inputs.force_deploy == 'true') &&
-      needs.validate-ci-config.outputs.has_kubeconfig_prod == '1'
+    if: github.ref == 'refs/heads/main' && (needs.e2e-tests.result == 'success' || github.event.inputs.force_deploy == 'true')
     environment:
       name: production
       url: https://vibecode-webgui.yourdomain.com
@@ -733,19 +606,6 @@ jobs:
             -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
             -H "DD-APPLICATION-KEY: ${{ env.DD_APP_KEY }}" \
             -d '{"query":"avg:kubernetes.pods.running{service:vibecode-webgui,environment:production}"}'
-
-  missing-azure-secrets:
-    name: Missing Azure prerequisites
-    runs-on: ubuntu-latest
-    needs: validate-ci-config
-    if: >-
-      needs.validate-ci-config.outputs.has_azure_client != '1' ||
-      needs.validate-ci-config.outputs.has_azure_tenant != '1' ||
-      needs.validate-ci-config.outputs.has_azure_subscription != '1' ||
-      needs.validate-ci-config.outputs.has_resource_group != '1' ||
-      needs.validate-ci-config.outputs.has_cluster_credentials != '1'
-    steps:
-      - run: echo '::notice::Skipping GitOps deployment because required Azure credentials or variables are missing.'
 
   # Rollback capability
   rollback:
