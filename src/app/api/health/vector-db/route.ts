@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '../../../../lib/logger';
+
 // import { vectorDBService } from '@/lib/vector-db/VectorDBService';
 
 export async function GET(request: NextRequest) {
@@ -31,7 +33,7 @@ Timestamp: ${response.timestamp}
         return NextResponse.json(response);
 
     } catch (error) {
-        console.error('Vector database health check failed:', error);
+        logger.error('Vector database health check failed:', { error: error });
 
         const errorResponse = {
             status: 'error',
