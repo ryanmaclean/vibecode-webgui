@@ -1,0 +1,4 @@
+# Ignore large runtime artifacts downloaded for Firecracker benchmarks
+*
+!.gitignore
+!microvm-config.json
