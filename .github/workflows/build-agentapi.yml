@@ -1,0 +1,310 @@
+name: Build AgentAPI Multi-Arch Images
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docker/agentapi/**'
+      - '.github/workflows/build-agentapi.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'docker/agentapi/**'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v0.1.0)'
+        required: false
+        default: 'latest'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-agentapi
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=VibeCode AgentAPI
+            org.opencontainers.image.description=HTTP API for controlling AI coding agents
+            org.opencontainers.image.vendor=VibeCode
+            org.opencontainers.image.licenses=MIT
+
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./docker/agentapi
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            AGENTAPI_VERSION=${{ github.event.inputs.version || '0.1.0' }}
+            BUILD_DATE=${{ steps.meta.outputs.created }}
+            GIT_COMMIT=${{ github.sha }}
+
+      - name: Run Trivy security scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+        if: always()
+
+      - name: Run container structure test
+        run: |
+          # Install container-structure-test
+          curl -LO https://storage.googleapis.com/container-structure-test/latest/container-structure-test-linux-amd64
+          chmod +x container-structure-test-linux-amd64
+          sudo mv container-structure-test-linux-amd64 /usr/local/bin/container-structure-test
+
+          # Create test config
+          cat > container-test.yaml <<EOF
+          schemaVersion: '2.0.0'
+
+          commandTests:
+            - name: 'agentapi version'
+              command: '/usr/local/bin/agentapi'
+              args: ['--help']
+              exitCode: 0
+
+            - name: 'python3 available'
+              command: 'python3'
+              args: ['--version']
+              exitCode: 0
+
+            - name: 'aider installed'
+              command: 'aider'
+              args: ['--version']
+              exitCode: 0
+
+          fileExistenceTests:
+            - name: 'agentapi binary exists'
+              path: '/usr/local/bin/agentapi'
+              shouldExist: true
+              permissions: '-rwxr-xr-x'
+
+            - name: 'health check script exists'
+              path: '/home/coder/.agentapi/health-check.sh'
+              shouldExist: true
+              permissions: '-rwxr-xr-x'
+
+            - name: 'config file exists'
+              path: '/home/coder/.agentapi/config.yaml'
+              shouldExist: true
+
+          metadataTest:
+            exposedPorts: ["3284"]
+            workdir: '/home/coder'
+            user: 'coder'
+          EOF
+
+          # Run tests
+          container-structure-test test \
+            --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }} \
+            --config container-test.yaml
+        if: github.event_name != 'pull_request'
+
+      - name: Test image functionality
+        run: |
+          # Start container
+          docker run -d \
+            --name agentapi-test \
+            -p 3284:3284 \
+            -e AGENTAPI_HOST=0.0.0.0 \
+            -e AGENTAPI_PORT=3284 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+
+          # Wait for startup
+          sleep 10
+
+          # Test health endpoint
+          curl -f http://localhost:3284/health || exit 1
+
+          # Test metrics endpoint
+          curl -f http://localhost:3284/metrics || exit 1
+
+          # Test agents list endpoint
+          curl -f http://localhost:3284/v1/agents || exit 1
+
+          # Check logs
+          docker logs agentapi-test
+
+          # Cleanup
+          docker stop agentapi-test
+          docker rm agentapi-test
+        if: github.event_name != 'pull_request'
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          format: spdx-json
+          output-file: agentapi-sbom.spdx.json
+        if: github.event_name != 'pull_request'
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentapi-sbom
+          path: agentapi-sbom.spdx.json
+        if: github.event_name != 'pull_request'
+
+      - name: Create release notes
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          cat > release-notes.md <<EOF
+          # AgentAPI Release
+
+          **Version**: ${{ steps.meta.outputs.version }}
+          **Commit**: ${{ github.sha }}
+          **Built**: ${{ steps.meta.outputs.created }}
+
+          ## Images
+
+          \`\`\`bash
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          \`\`\`
+
+          ## Platforms
+
+          - linux/amd64
+          - linux/arm64
+
+          ## Features
+
+          - HTTP API for agent control (Aider, Goose, Cline)
+          - Real-time output streaming via Server-Sent Events
+          - Prometheus metrics endpoint
+          - Health check and monitoring
+          - Multi-arch container support
+
+          ## Usage
+
+          \`\`\`bash
+          # Docker Compose
+          docker-compose -f docker/docker-compose.agentapi.yml up -d
+
+          # Kubernetes
+          kubectl apply -f k8s/code-server-agentapi.yaml
+          \`\`\`
+
+          ## Documentation
+
+          See [docker/agentapi/README.md](https://github.com/${{ github.repository }}/blob/main/docker/agentapi/README.md)
+          EOF
+
+          cat release-notes.md
+
+      - name: Upload release notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+  test-kubernetes:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create KinD cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: agentapi-test
+          config: k8s/kind-vibecode-local.yaml
+
+      - name: Load image into KinD
+        run: |
+          kind load docker-image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-push.outputs.version }} \
+            --name agentapi-test
+
+      - name: Deploy to KinD
+        run: |
+          # Create namespace
+          kubectl create namespace vibecode-platform
+
+          # Create secrets
+          kubectl create secret generic code-server-config \
+            --from-literal=password=test123 \
+            -n vibecode-platform
+
+          # Deploy
+          kubectl apply -f k8s/code-server-agentapi.yaml
+
+          # Wait for deployment
+          kubectl wait --for=condition=available --timeout=300s \
+            deployment/code-server-workspace -n vibecode-platform
+
+      - name: Test deployment
+        run: |
+          # Get pod name
+          POD=$(kubectl get pod -n vibecode-platform -l app=code-server -o jsonpath='{.items[0].metadata.name}')
+
+          # Check agentapi health
+          kubectl exec -n vibecode-platform $POD -c agentapi -- \
+            curl -f http://127.0.0.1:3284/health
+
+          # Check logs
+          kubectl logs -n vibecode-platform $POD -c agentapi --tail=50
+
+      - name: Cleanup
+        if: always()
+        run: |
+          kubectl delete namespace vibecode-platform --ignore-not-found=true
+          kind delete cluster --name agentapi-test

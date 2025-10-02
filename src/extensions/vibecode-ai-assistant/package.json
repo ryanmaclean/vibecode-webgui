@@ -139,6 +139,42 @@
         "title": "AI Model Orchestration",
         "category": "VibeCode",
         "icon": "$(organization)"
+      },
+      {
+        "command": "vibecode.agentComplete",
+        "title": "Agent: Complete Code",
+        "category": "VibeCode",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "vibecode.agentExplain",
+        "title": "Agent: Explain Code",
+        "category": "VibeCode",
+        "icon": "$(info)"
+      },
+      {
+        "command": "vibecode.agentFix",
+        "title": "Agent: Fix Issues",
+        "category": "VibeCode",
+        "icon": "$(wrench)"
+      },
+      {
+        "command": "vibecode.agentRefactor",
+        "title": "Agent: Refactor Code",
+        "category": "VibeCode",
+        "icon": "$(symbol-method)"
+      },
+      {
+        "command": "vibecode.agentChat",
+        "title": "Agent: Chat with AI",
+        "category": "VibeCode",
+        "icon": "$(comment)"
+      },
+      {
+        "command": "vibecode.agentAnalyze",
+        "title": "Agent: Analyze Code",
+        "category": "VibeCode",
+        "icon": "$(search)"
       }
     ],
     "menus": {
@@ -330,6 +366,37 @@
           "type": "boolean",
           "default": true,
           "description": "Enable streaming responses for faster feedback",
+          "scope": "window"
+        },
+        "vibecode.agentApiUrl": {
+          "type": "string",
+          "default": "http://localhost:3000/api",
+          "description": "Agent API base URL",
+          "scope": "window"
+        },
+        "vibecode.agentWsUrl": {
+          "type": "string",
+          "default": "ws://localhost:3000/api/ws",
+          "description": "Agent API WebSocket URL",
+          "scope": "window"
+        },
+        "vibecode.agentModel": {
+          "type": "string",
+          "default": "claude-3-5-sonnet-20241022",
+          "description": "Agent LLM model",
+          "enum": [
+            "claude-3-5-sonnet-20241022",
+            "claude-3-5-haiku-20241022",
+            "gpt-4o",
+            "gpt-4o-mini",
+            "deepseek-chat"
+          ],
+          "scope": "window"
+        },
+        "vibecode.debug": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug logging",
           "scope": "window"
         }
       }

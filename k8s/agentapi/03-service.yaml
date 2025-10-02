@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-server-workspace
+  namespace: vibecode-platform
+  labels:
+    app.kubernetes.io/name: vibecode
+    app.kubernetes.io/component: workspace
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  selector:
+    app: code-server
+    component: workspace
+  ports:
+    - name: ide
+      port: 8765
+      targetPort: 8765
+      protocol: TCP
+
+    - name: agentapi
+      port: 3284
+      targetPort: 3284
+      protocol: TCP
+
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-server-headless
+  namespace: vibecode-platform
+  labels:
+    app.kubernetes.io/name: vibecode
+    app.kubernetes.io/component: workspace
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: code-server
+    component: workspace
+  ports:
+    - name: ide
+      port: 8765
+      targetPort: 8765

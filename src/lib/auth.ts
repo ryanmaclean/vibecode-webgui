@@ -12,7 +12,7 @@ import { createChildLogger } from '@/lib/logger'
 
 var loggerContext = globalThis as Record<string, unknown>
 
-var getNextAuthLogger = function (): ReturnType<typeof createChildLogger> {
+var getNextAuthLogger = function () {
   const existing = loggerContext.__NEXT_AUTH_LOGGER as ReturnType<typeof createChildLogger> | undefined
   if (existing) {
     return existing
@@ -22,7 +22,7 @@ var getNextAuthLogger = function (): ReturnType<typeof createChildLogger> {
   return created
 }
 
-var getCredentialsLogger = function (): ReturnType<typeof createChildLogger> {
+var getCredentialsLogger = function () {
   const existing = loggerContext.__NEXT_AUTH_CREDENTIALS_LOGGER as ReturnType<typeof createChildLogger> | undefined
   if (existing) {
     return existing
