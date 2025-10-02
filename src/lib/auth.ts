@@ -8,6 +8,33 @@ import GithubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { isValidBcryptHash, verifyPassword } from './auth/password'
+import { createChildLogger } from '@/lib/logger'
+
+var loggerContext = globalThis as Record<string, unknown>
+
+var getNextAuthLogger = function (): ReturnType<typeof createChildLogger> {
+  const existing = loggerContext.__NEXT_AUTH_LOGGER as ReturnType<typeof createChildLogger> | undefined
+  if (existing) {
+    return existing
+  }
+  const created = createChildLogger({ module: 'auth', scope: 'next-auth' })
+  loggerContext.__NEXT_AUTH_LOGGER = created
+  return created
+}
+
+var getCredentialsLogger = function (): ReturnType<typeof createChildLogger> {
+  const existing = loggerContext.__NEXT_AUTH_CREDENTIALS_LOGGER as ReturnType<typeof createChildLogger> | undefined
+  if (existing) {
+    return existing
+  }
+  const created = createChildLogger({
+    module: 'auth',
+    scope: 'next-auth',
+    strategy: 'credentials',
+  })
+  loggerContext.__NEXT_AUTH_CREDENTIALS_LOGGER = created
+  return created
+}
 
 /**
  * CRITICAL SECURITY VALIDATION: NEXTAUTH_SECRET
@@ -50,7 +77,7 @@ if (NEXTAUTH_SECRET.length < 32) {
   )
 }
 
-console.log('✅ NEXTAUTH_SECRET validation passed: secure secret configured')
+getNextAuthLogger().info('NEXTAUTH_SECRET validation passed: secure secret configured')
 
 const DUMMY_HASH = '$2b$12$eUlS0dNKrMxLdkPgDJZdpuHlNCn/KkheBmEzKE2.yOrembE1ccsV.'
 
@@ -65,7 +92,9 @@ const performTimingSafeCompare = async (password: string | undefined): Promise<v
   try {
     await verifyPassword(password ?? '', DUMMY_HASH)
   } catch (error) {
-    console.warn('Timing-safe bcrypt comparison failed', { error })
+    getCredentialsLogger().warn('Timing-safe bcrypt comparison failed', {
+      error: error instanceof Error ? error.message : error,
+    })
   }
 }
 
@@ -162,7 +191,7 @@ RAW_LEGACY_CREDENTIALS.forEach((credential) => {
   const passwordHash = credential.passwordHash.trim()
 
   if (!isValidBcryptHash(passwordHash)) {
-    credentialsLogger.warn('Legacy credential misconfigured with invalid bcrypt hash', {
+    getCredentialsLogger().warn('Legacy credential misconfigured with invalid bcrypt hash', {
       email: trimmedEmail,
       credentialId: credential.id,
     })
@@ -170,7 +199,7 @@ RAW_LEGACY_CREDENTIALS.forEach((credential) => {
   }
 
   if (LEGACY_CREDENTIALS_BY_EMAIL.has(normalizedEmail)) {
-    credentialsLogger.warn('Duplicate legacy credential detected; later entry ignored', {
+    getCredentialsLogger().warn('Duplicate legacy credential detected; later entry ignored', {
       email: trimmedEmail,
       credentialId: credential.id,
     })
@@ -182,7 +211,7 @@ RAW_LEGACY_CREDENTIALS.forEach((credential) => {
     email: trimmedEmail,
     passwordHash,
   })
-  credentialsLogger.debug('Stored legacy credential', { email: trimmedEmail })
+  getCredentialsLogger().debug('Stored legacy credential', { email: trimmedEmail })
 })
 
 // Build providers dynamically so missing OAuth credentials do not break local auth flows.
@@ -206,7 +235,7 @@ if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
     })
   )
 } else if (process.env.NODE_ENV !== 'production') {
-  console.warn('GitHub OAuth provider disabled: missing GITHUB_ID/GITHUB_SECRET env vars')
+  getNextAuthLogger().warn('GitHub OAuth provider disabled: missing GITHUB_ID/GITHUB_SECRET env vars')
 }
 
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
@@ -227,7 +256,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     })
   )
 } else if (process.env.NODE_ENV !== 'production') {
-  console.warn('Google OAuth provider disabled: missing GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET env vars')
+  getNextAuthLogger().warn('Google OAuth provider disabled: missing GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET env vars')
 }
 
 /**
@@ -252,96 +281,91 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
  * - Implement password reset flow
  * - Add account lockout after failed attempts
  */
-providers.push(
-  CredentialsProvider({
-      credentials: {
-        email: { label: 'Email', type: 'text' },
-        password: { label: 'Password', type: 'password' },
-      },
-      async authorize(credentials) {
-        const emailInput = credentials?.email
-        const passwordInput = typeof credentials?.password === 'string' ? credentials.password : ''
+const credentialsProvider = CredentialsProvider({
+  credentials: {
+    email: { label: 'Email', type: 'text' },
+    password: { label: 'Password', type: 'password' },
+  },
+  async authorize(credentials) {
+    const emailInput = credentials?.email
+    const passwordInput = typeof credentials?.password === 'string' ? credentials.password : ''
+    const logger = getCredentialsLogger()
 
-        console.debug('[auth] authorize attempt', {
-          hasEmail: typeof emailInput === 'string',
-          hasPassword: passwordInput.length > 0,
-        })
+    if (!isNonEmptyString(emailInput)) {
+      await performTimingSafeCompare(passwordInput)
+      logger.warn('Credentials login rejected: missing or invalid email')
+      return null
+    }
 
-        if (!isNonEmptyString(emailInput)) {
-          await performTimingSafeCompare(passwordInput)
-          console.warn('❌ Credentials login rejected: missing or invalid email')
-          return null
-        }
+    if (!isNonEmptyString(passwordInput)) {
+      await performTimingSafeCompare(passwordInput)
+      logger.warn('Credentials login rejected: missing password')
+      return null
+    }
 
-        if (!isNonEmptyString(passwordInput)) {
-          await performTimingSafeCompare(passwordInput)
-          console.warn('❌ Credentials login rejected: missing password')
-          return null
-        }
+    const normalizedEmail = emailInput.trim().toLowerCase()
+    const user = LEGACY_CREDENTIALS_BY_EMAIL.get(normalizedEmail)
 
-        const normalizedEmail = emailInput.trim().toLowerCase()
-        const user = LEGACY_CREDENTIALS_BY_EMAIL.get(normalizedEmail)
+    if (!user) {
+      await performTimingSafeCompare(passwordInput)
+      logger.warn('Credentials login rejected: user not found', {
+        normalizedEmail,
+        inputEmail: emailInput,
+      })
+      return null
+    }
 
-        console.debug('[auth] legacy lookup', {
+    const passwordHash = user.passwordHash.trim()
+
+    if (!isValidBcryptHash(passwordHash)) {
+      await performTimingSafeCompare(passwordInput)
+      logger.warn('Credentials login rejected: stored hash invalid', {
+        credentialId: user.id,
+        userEmail: user.email,
+      })
+      return null
+    }
+
+    try {
+      const isValid = await verifyPassword(passwordInput, passwordHash)
+
+      if (!isValid) {
+        await performTimingSafeCompare(passwordInput)
+        logger.warn('Credentials login rejected: password mismatch', {
           normalizedEmail,
-          userFound: !!user,
+          userId: user.id,
         })
+        return null
+      }
 
-        if (!user) {
-          await performTimingSafeCompare(passwordInput)
-          console.warn('⚠️ Credentials login rejected: user not found', { email: normalizedEmail })
-          return null
-        }
-
-        const passwordHash = user.passwordHash.trim()
-        console.debug('[auth] verifying legacy credential', { email: normalizedEmail, passwordInput })
-
-        if (!isValidBcryptHash(passwordHash)) {
-          await performTimingSafeCompare(passwordInput)
-          console.warn('❌ Credentials login rejected: stored hash invalid', {
-            credentialId: user.id,
-            email: user.email,
-          })
-          return null
-        }
-
-        try {
-          const isValid = await verifyPassword(passwordInput, passwordHash)
-          console.debug('[auth] verify result', { email: normalizedEmail, isValid })
-
-          if (!isValid) {
-            await performTimingSafeCompare(passwordInput)
-            console.warn('⚠️ Credentials login rejected: password mismatch', { email: normalizedEmail })
-            return null
-          }
-
-          console.log('✅ Credentials login succeeded', { userId: user.id })
-          return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-          }
-        } catch (error) {
-          await performTimingSafeCompare(passwordInput)
-          console.warn('❌ Credentials login rejected: verification error', {
-            email: normalizedEmail,
-            credentialId: user.id,
-            error: error instanceof Error ? error.message : 'unknown-error',
-          })
-          return null
-        }
-      },
-    })
-)
-
-const credentialsProvider = providers.find((provider) => provider.id === 'credentials')
-console.debug('[auth] credentials provider wired', {
-  hasAuthorize: typeof credentialsProvider?.authorize === 'function',
+      logger.info('Credentials login succeeded', {
+        userId: user.id,
+        userEmail: user.email,
+      })
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      }
+    } catch (error) {
+      await performTimingSafeCompare(passwordInput)
+      logger.error('Credentials login rejected: verification error', {
+        normalizedEmail,
+        credentialId: user.id,
+        userEmail: user.email,
+        error: error instanceof Error ? error.message : 'unknown-error',
+      })
+      return null
+    }
+  },
 })
-if (credentialsProvider?.authorize) {
-  console.debug('[auth] authorize fn', credentialsProvider.authorize.toString())
+
+if (typeof credentialsProvider.options?.authorize === 'function') {
+  credentialsProvider.authorize = credentialsProvider.options.authorize
 }
+
+providers.push(credentialsProvider)
 
 export const authOptions: NextAuthOptions = {
   // adapter: PrismaAdapter(prisma), // Disabled for file-based development
@@ -371,7 +395,7 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      authLogger.debug('JWT callback', {
+      getNextAuthLogger().debug('JWT callback', {
         hasUser: !!user,
         hasToken: !!token,
         provider: account?.provider,
@@ -390,16 +414,19 @@ export const authOptions: NextAuthOptions = {
         if (account?.provider === 'google') {
           token.googleId = user.googleId
         }
-        authLogger.debug('JWT token updated with user', { id: token.id, role: token.role })
+        getNextAuthLogger().debug('JWT token updated with user', {
+          userId: token.id,
+          userRole: token.role,
+        })
       }
       return token
     },
     async session({ session, token }) {
-      authLogger.debug('Session callback', {
+      getNextAuthLogger().debug('Session callback', {
         hasSession: !!session,
         hasToken: !!token,
         tokenId: token?.id,
-        sessionUserId: session?.user?.id
+        sessionUserId: session?.user?.id,
       })
 
       if (!session.user) {
@@ -416,7 +443,10 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string
         session.user.email = token.email as string
         session.user.name = token.name as string
-        authLogger.debug('Session updated with token', { id: session.user.id, role: session.user.role })
+        getNextAuthLogger().debug('Session updated with token', {
+          userId: session.user.id,
+          userRole: session.user.role,
+        })
       }
       return session
     },
@@ -434,13 +464,15 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signIn({ user, account }) {
-      authLogger.info('User signed in', {
+      getNextAuthLogger().info('User signed in', {
+        userId: user.id,
         email: user.email,
         provider: account?.provider,
       })
     },
     async signOut({ token }) {
-      authLogger.info('User signed out', {
+      getNextAuthLogger().info('User signed out', {
+        userId: token?.id,
         email: token?.email,
       })
     },

@@ -223,3 +223,7 @@ examples/pydantic-ai-cli-agent/.env
 .agent-state/
 *.checkpoint
 
+
+# Rust build artifacts
+src-tauri/target/
+

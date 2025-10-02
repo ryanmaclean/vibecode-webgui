@@ -1,6 +1,68 @@
 /**
- * Security Monitoring API Endpoint
- * Provides real-time security status and metrics
+ * @description Security Monitoring API - Provides real-time security status, threat detection metrics, and administrative controls for security monitoring. Tracks blocked IPs, rate limiting, authentication status, and security events.
+ * @route GET /api/monitoring/security
+ * @route POST /api/monitoring/security
+ * @access Private (requires admin role)
+ *
+ * @param {NextRequest} request - Next.js request with authentication token
+ *
+ * @returns {Response} GET returns comprehensive security metrics:
+ *   - timestamp: string - Current timestamp
+ *   - status: 'healthy' | 'warning' | 'critical' - Overall security status
+ *   - checks: { authentication, rateLimit, inputValidation, cors, headers } - Security check results
+ *   - stats: { blockedIPs, allowedOrigins, rateLimitedRequests, suspiciousActivities } - Security statistics
+ *   - recentEvents: Array<{ timestamp, type, severity, message }> - Recent security events
+ *   - recommendations: string[] - Security improvement recommendations
+ *
+ * @returns {Response} POST executes security actions with body:
+ *   - action: 'block_ip' | 'reset_counters' | 'test_alert'
+ *   - ip: string - IP address for block_ip action
+ *   - reason: string - Optional reason for IP block
+ *
+ * @example
+ * // GET Request - Security status
+ * GET /api/monitoring/security
+ * Headers: { Authorization: "Bearer <admin_token>" }
+ *
+ * // Response
+ * {
+ *   "timestamp": "2025-10-01T00:00:00.000Z",
+ *   "status": "healthy",
+ *   "checks": {
+ *     "authentication": true,
+ *     "rateLimit": true,
+ *     "inputValidation": true
+ *   },
+ *   "stats": {
+ *     "blockedIPs": 5,
+ *     "rateLimitedRequests": 125,
+ *     "suspiciousActivities": 3
+ *   },
+ *   "recentEvents": [...],
+ *   "recommendations": ["Enable middleware rate limiting"]
+ * }
+ *
+ * // POST Request - Block IP
+ * POST /api/monitoring/security
+ * {
+ *   "action": "block_ip",
+ *   "ip": "192.168.1.100",
+ *   "reason": "Suspicious activity detected"
+ * }
+ *
+ * // Response
+ * { "success": true, "message": "IP 192.168.1.100 blocked" }
+ *
+ * // POST Request - Reset counters
+ * POST /api/monitoring/security
+ * { "action": "reset_counters" }
+ *
+ * // Response
+ * { "success": true, "message": "Counters reset" }
+ *
+ * @throws {403} Forbidden - Admin access required
+ * @throws {400} Invalid action - Unknown action or missing required parameters
+ * @throws {500} Internal server error - Security monitoring error
  */
 
 import { NextRequest, NextResponse } from 'next/server';

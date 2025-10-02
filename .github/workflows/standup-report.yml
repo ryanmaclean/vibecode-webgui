@@ -18,19 +18,6 @@ on:
         description: 'Slack channel to post to'
         required: false
         default: '#standup'
-    inputs:
-      create_issue:
-        description: 'Create standup GitHub issue'
-        required: false
-        default: 'true'
-      post_to_slack:
-        description: 'Post report to Slack'
-        required: false
-        default: 'true'
-      slack_channel:
-        description: 'Slack channel to post to'
-        required: false
-        default: '#standup'
 
 concurrency:
   group: standup-report
@@ -41,23 +28,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Needed for git log
-
-      - name: Setup GitHub CLI
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
-
-      - name: Install GitHub CLI
-        run: |
-          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-          && sudo apt update \
-          && sudo apt install gh -y
 
       - name: Generate standup report
         id: standup
@@ -99,8 +72,8 @@ jobs:
           if [ -n "${{ steps.issue.outputs.issue_url }}" ]; then
             echo "- Issue: ${{ steps.issue.outputs.issue_url }}" >> "$GITHUB_STEP_SUMMARY"
           fi
-          if [ secrets.SLACK_WEBHOOK_URL == '' ]; then
+          if [ -z "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
             echo "- Slack: webhook not configured" >> "$GITHUB_STEP_SUMMARY"
-          elif github.event_name == 'workflow_dispatch' && inputs.post_to_slack != 'true'; then
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ inputs.post_to_slack }}" != "true" ]; then
             echo "- Slack: skipped via workflow input" >> "$GITHUB_STEP_SUMMARY"
           fi
