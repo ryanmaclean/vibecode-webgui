@@ -142,6 +142,7 @@ Contributors will be:
 - **GitHub Issues**: For bugs and feature requests
 - **GitHub Discussions**: For questions and ideas
 - **Demo Issues**: Run `./DEMO.sh` and choose "Help & Troubleshooting"
+- **Troubleshooting Guide**: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for common issues and solutions
 
 ## 📄 License
 
