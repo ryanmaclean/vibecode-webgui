@@ -5,7 +5,32 @@ All notable changes to the VibeCode code-server Docker images will be documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] - 2025-10-01
+## DEPRECATION NOTICE
+
+### [1.1.0] - DEPRECATED (2025-10-01)
+
+**STATUS**: DEPRECATED - DO NOT USE
+
+This version contains GPL-licensed GNU Emacs which violates MIT license compatibility.
+All users MUST migrate to v1.1.1 immediately.
+
+See [DEPRECATION_NOTICE_v1.1.0.md](DEPRECATION_NOTICE_v1.1.0.md) for complete details.
+
+## [1.1.1] - 2025-10-01
+
+### Changed
+- **CRITICAL**: Removed GNU Emacs (GPL license) - use vim/neovim instead
+- Fixed Node.js installation security (checksum verification)
+- Fixed Go installation security (checksum verification)
+- Fixed cosign checksum verification
+- Updated all documentation to reference v1.1.1
+
+### Security
+- All downloads now verify checksums
+- Removed GPL-licensed software
+- Enhanced security audit compliance
+
+## [1.1.0] - 2025-10-01 [DEPRECATED]
 
 ### Added
 
