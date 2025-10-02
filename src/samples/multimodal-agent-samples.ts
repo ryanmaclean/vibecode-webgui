@@ -9,7 +9,7 @@
  * - Agentic task automation
  */
 
-import { MultimodalAgent, MultimodalInput, AgentContext, UserPreferences, ProjectMetadata } from '../lib/multimodal-agent';
+import { MultimodalAgent, MultimodalInput, AgentContext } from '../lib/multimodal-agent';
 
 export interface SampleScenario {
   id: string;
