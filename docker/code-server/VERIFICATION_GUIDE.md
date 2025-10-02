@@ -33,7 +33,6 @@ docker run --rm ghcr.io/ryanmaclean/vibecode-codeserver:standard bash -c "
   echo '=== Terminal Editors ===' &&
   vim --version | head -1 &&
   nvim --version | head -1 &&
-  emacs --version | head -1 &&
   
   echo '' &&
   echo '=== AI Coding Assistants ===' &&
@@ -163,7 +162,6 @@ docker run -it --rm \
 # Inside the container, test:
 vim
 nvim
-emacs
 aider --help
 goose -h
 kubectl version
@@ -187,7 +185,7 @@ docker pull ryanmaclean/vibecode-codeserver:1.1.0-standard
 
 # Verify tools
 docker run --rm ryanmaclean/vibecode-codeserver:standard bash -c "
-  vim --version && nvim --version && emacs --version &&
+  vim --version && nvim --version &&
   aider --version && goose -version &&
   kubectl version --client && helm version
 "
@@ -255,7 +253,6 @@ for profile in "${PROFILES[@]}"; do
   docker run --rm $REGISTRY/$IMAGE_NAME:$VERSION-$profile bash -c "
     vim --version > /dev/null 2>&1 && echo '✅ vim' || echo '❌ vim' &&
     nvim --version > /dev/null 2>&1 && echo '✅ nvim' || echo '❌ nvim' &&
-    emacs --version > /dev/null 2>&1 && echo '✅ emacs' || echo '❌ emacs' &&
     aider --version > /dev/null 2>&1 && echo '✅ aider' || echo '❌ aider' &&
     goose -version > /dev/null 2>&1 && echo '✅ goose' || echo '❌ goose'
   "

@@ -118,7 +118,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    ```bash
    # Test the new tools
    docker run -it --rm ghcr.io/ryanmaclean/vibecode-codeserver:standard bash -c "
-     vim --version && nvim --version && emacs --version &&
+     vim --version && nvim --version &&
      aider --version && goose -version &&
      kubectl version --client && helm version
    "
