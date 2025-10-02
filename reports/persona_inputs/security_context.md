@@ -64,7 +64,6 @@
 
 **🎯 FINAL PUSH - ALL BUILDS ACTIVE**
 
-**🎯 OBJECTIVE**: Build and deploy 5 optimized code-server profiles with ALL required tools (vim, nvim, emacs, aider, goose, kubectl, helm, k9s, etc.)
 
 **📊 BUILD STATUS** (Using GitHub Actions for faster/more reliable builds):
 
@@ -180,7 +179,6 @@ RUN set -e && \
     echo "🔍 Verifying installed tools..." && \
     echo "Testing vim..." && vim --version | head -1 && \
     echo "Testing nvim..." && nvim --version | head -1 && \
-    echo "Testing emacs..." && emacs --version | head -1 && \
     echo "Testing aider..." && aider --version && \
     echo "Testing goose..." && goose -version 2>&1 | grep -i goose && \
     echo "✅ All required tools verified!"

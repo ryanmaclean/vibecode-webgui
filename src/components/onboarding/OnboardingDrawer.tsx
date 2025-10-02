@@ -10,7 +10,6 @@ import { useUserPreferences } from '@/providers/UserPreferencesProvider'
 const cliEditors = [
   { label: 'Vim', value: 'vim' },
   { label: 'Neovim', value: 'neovim' },
-  { label: 'Emacs', value: 'emacs' },
   { label: 'code-server', value: 'code-server' },
 ]
 
@@ -68,7 +67,6 @@ export function OnboardingDrawer({ open, onClose }: OnboardingDrawerProps) {
       setLocalError(null)
       await save({
         theme: updates.theme ?? preferences.theme,
-        cliEditor: (updates.cliEditor ?? preferences.cliEditor) as "none" | "nano" | "vim" | "emacs" | "neovim",
         preferredIde: preferences.preferredIde,
         extensions: preferences.extensions,
         integrations: updates.integrations ?? preferences.integrations,

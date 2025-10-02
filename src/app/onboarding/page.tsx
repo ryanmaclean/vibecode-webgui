@@ -381,7 +381,6 @@ export default function OnboardingPage() {
               {[
                 { value: 'vim' as CliEditorOption, label: 'Vim', description: 'Classic modal editing.' },
                 { value: 'neovim' as CliEditorOption, label: 'Neovim', description: 'Modern Vim with Lua plugins.' },
-                { value: 'emacs' as CliEditorOption, label: 'Emacs', description: 'Extensible, programmable editor.' },
                 { value: 'nano' as CliEditorOption, label: 'Nano', description: 'Simple and friendly.' },
                 { value: 'none' as CliEditorOption, label: 'Skip', description: 'I will stay in the browser IDE.' },
               ].map((editor) => (

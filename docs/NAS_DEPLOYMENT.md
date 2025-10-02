@@ -128,7 +128,6 @@ Inside the container:
 ```bash
 docker exec -it vibecode-code-server /bin/bash
 sudo apt-get update
-sudo apt-get install -y neovim emacs-nox
 pipx install aider-chat  # optional AI CLI helper
 ```
 
