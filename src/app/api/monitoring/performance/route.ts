@@ -1,6 +1,81 @@
 /**
- * Performance Monitoring API Endpoint
- * Provides performance metrics and optimization insights
+ * @description Performance Monitoring API - Provides performance metrics, health checks, and tracking for load tests, web vitals, API performance, and resource loading. Supports submission of Lighthouse audits and synthetic test results.
+ * @route GET /api/monitoring/performance
+ * @route POST /api/monitoring/performance
+ * @access Public
+ *
+ * @param {NextRequest} request - Next.js request with query parameters:
+ *   - action: 'report' | 'health' - Action to perform (GET only)
+ *   - timeframe: '15m' | '1h' | '24h' - Time range for metrics (default: '1h')
+ *
+ * @returns {Response} GET with action=report returns performance report:
+ *   - timeframe: string - Report time range
+ *   - metrics: { responseTime, throughput, errorRate, cpuUsage, memoryUsage } - Performance metrics
+ *   - recommendations: string[] - Optimization recommendations
+ *   - status: 'operational' - System status
+ *   - critical_issues: Array<Issue> - Critical performance issues
+ *
+ * @returns {Response} GET with action=health returns quick health check:
+ *   - healthy: boolean - System health status
+ *   - status: 'healthy' | 'degraded' - Performance state
+ *   - issues: Array<Issue> - Critical issues requiring attention
+ *   - recommendations: string[] - Top optimization recommendations
+ *
+ * @returns {Response} POST submits performance data with body:
+ *   - type: 'load_test_results' | 'synthetic_test_results' | 'lighthouse_results' | 'web_vitals' | 'api_performance' | 'resource_performance'
+ *   - data: varies by type - Performance test results or metrics
+ *
+ * @example
+ * // GET Request - Performance report
+ * GET /api/monitoring/performance?action=report&timeframe=1h
+ *
+ * // Response
+ * {
+ *   "timeframe": "1h",
+ *   "metrics": {
+ *     "responseTime": 85.3,
+ *     "throughput": 850,
+ *     "errorRate": 0.8,
+ *     "cpuUsage": 45.2,
+ *     "memoryUsage": 62.5
+ *   },
+ *   "recommendations": ["Optimize database queries", "Add caching layer"],
+ *   "status": "operational",
+ *   "critical_issues": []
+ * }
+ *
+ * // POST Request - Submit web vitals
+ * POST /api/monitoring/performance
+ * {
+ *   "type": "web_vitals",
+ *   "data": {
+ *     "metric": "LCP",
+ *     "value": 2.5,
+ *     "rating": "good",
+ *     "navigationType": "navigate"
+ *   }
+ * }
+ *
+ * // Response
+ * { "success": true, "message": "Web Vitals metric recorded" }
+ *
+ * // POST Request - Submit Lighthouse results
+ * POST /api/monitoring/performance
+ * {
+ *   "type": "lighthouse_results",
+ *   "data": {
+ *     "performance": 95,
+ *     "accessibility": 100,
+ *     "bestPractices": 92,
+ *     "seo": 100
+ *   }
+ * }
+ *
+ * // Response
+ * { "success": true, "audit_passed": true, "message": "Lighthouse audit processed: PASSED" }
+ *
+ * @throws {400} Invalid action or performance data type
+ * @throws {500} Internal server error - Performance API or submission error
  */
 
 import { NextRequest, NextResponse } from 'next/server'
