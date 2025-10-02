@@ -90,6 +90,30 @@ End-to-End (E2E) tests simulate real user behavior and test the application as a
 - **Run Command**: `npm run test:e2e`
 - **Key Scenario**: Reduced-motion Enhanced Chat flow (`tests/e2e/enhanced-chat/reduced-motion.spec.ts`) verifies manual jump controls when auto-scroll is paused
 
+#### Streaming Test Utilities
+
+Use `tests/e2e/helpers/createSSEStream.ts` to simulate server-sent events without wiring a live backend. The helper returns a Node `PassThrough` stream and a `completionPromise` so tests can await the scripted stream finishing.
+
+```typescript
+import { createSSEStream } from "../helpers/createSSEStream";
+
+const scriptedChunks = [
+  'data: {"type":"chunk","text":"Hello"}\n\n',
+  'data: {"type":"chunk","text":"World"}\n\n',
+  'data: {"type":"done"}\n\n',
+];
+
+const { stream, completionPromise } = createSSEStream(scriptedChunks, 150);
+await route.fulfill({
+  status: 200,
+  headers: { "content-type": "text/event-stream" },
+  body: stream,
+});
+await completionPromise;
+```
+
+The optional `delayMs` argument inserts a pause between chunks so specs can validate UI behaviour over time. When adding new streaming tests, reuse this helper instead of duplicating ad-hoc stream logic.
+
 #### Simulating server-sent events
 
 Use the Playwright helper at `tests/e2e/helpers/createSSEStream.ts` to stream scripted SSE payloads without a bespoke mock server. The utility returns a `stream` you can pass to `route.fulfill` plus a `completionPromise` to await so the mock flushes cleanly before assertions run.
