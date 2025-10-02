@@ -58,6 +58,9 @@ if (!isValidBcryptHash(DUMMY_HASH)) {
   throw new Error('Dummy password hash is misconfigured: invalid bcrypt format')
 }
 
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0
+
 const performTimingSafeCompare = async (password: string | undefined): Promise<void> => {
   try {
     await verifyPassword(password ?? '', DUMMY_HASH)
@@ -259,6 +262,11 @@ providers.push(
         const emailInput = credentials?.email
         const passwordInput = typeof credentials?.password === 'string' ? credentials.password : ''
 
+        console.debug('[auth] authorize attempt', {
+          hasEmail: typeof emailInput === 'string',
+          hasPassword: passwordInput.length > 0,
+        })
+
         if (!isNonEmptyString(emailInput)) {
           await performTimingSafeCompare(passwordInput)
           console.warn('❌ Credentials login rejected: missing or invalid email')
@@ -273,6 +281,11 @@ providers.push(
 
         const normalizedEmail = emailInput.trim().toLowerCase()
         const user = LEGACY_CREDENTIALS_BY_EMAIL.get(normalizedEmail)
+
+        console.debug('[auth] legacy lookup', {
+          normalizedEmail,
+          userFound: !!user,
+        })
 
         if (!user) {
           await performTimingSafeCompare(passwordInput)
@@ -321,6 +334,14 @@ providers.push(
       },
     })
 )
+
+const credentialsProvider = providers.find((provider) => provider.id === 'credentials')
+console.debug('[auth] credentials provider wired', {
+  hasAuthorize: typeof credentialsProvider?.authorize === 'function',
+})
+if (credentialsProvider?.authorize) {
+  console.debug('[auth] authorize fn', credentialsProvider.authorize.toString())
+}
 
 export const authOptions: NextAuthOptions = {
   // adapter: PrismaAdapter(prisma), // Disabled for file-based development
