@@ -242,6 +242,37 @@ export class VectorDbErrorHandler {
     retryable?: boolean,
     additionalContext: VectorDBErrorDetails = {}
   ): VectorDBError {
+    // Check for Azure PostgreSQL specific pgvector errors first
+    if (this.isAzurePgVectorError(error)) {
+      const message = (error instanceof Error)
+        ? error.message
+        : (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string')
+          ? error.message
+          : 'Azure PostgreSQL pgvector extension error';
+
+      const azureContext = {
+        ...additionalContext,
+        azure: true,
+        pgvectorError: true,
+        requiresAdminAction: true,
+        ...(typeof retryable === 'boolean' ? { retryable } : {}),
+      };
+
+      const azureError = new VectorDBError(
+        message,
+        VectorDBErrorType.INITIALIZATION,
+        operation,
+        this.provider,
+        azureContext
+      );
+
+      if (typeof retryable === 'boolean') {
+        azureError.retryable = retryable;
+      }
+
+      return azureError;
+    }
+
     // Categorize if no explicit type provided (use local fallback to avoid circular imports)
     const resolvedType = errorType ?? this.categorizeFallback(error);
 
@@ -339,6 +370,29 @@ export class VectorDbErrorHandler {
     return (
       code === 'ETIMEDOUT' || status === 408 || status === 504 ||
       msg.includes('timeout') || msg.includes('timed out')
+    );
+  }
+
+  /**
+   * Check if an error is related to Azure PostgreSQL pgvector limitations
+   */
+  private isAzurePgVectorError(error: unknown): boolean {
+    if (!error) return false;
+    const message = String((typeof error === 'object' && error !== null && 'message' in error) ? error.message : '').toLowerCase();
+
+    // Check for Azure PostgreSQL specific pgvector errors
+    return (
+      message.includes('vector') &&
+      (
+        message.includes('shared_preload_libraries') ||
+        message.includes('extension "vector" is not available') ||
+        message.includes('extension vector does not exist') ||
+        message.includes('could not open extension control file "vector.control"') ||
+        message.includes('serverparametertocmsunallowedparametervalue') ||
+        message.includes('value \'vector\' is invalid for server parameter') ||
+        message.includes('operator does not exist: vector') ||
+        message.includes('type "vector" does not exist')
+      )
     );
   }
 

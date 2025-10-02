@@ -174,8 +174,8 @@ RUN set -eux; \
     esac; \
     GO_TARBALL="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz"; \
     cd /tmp; \
-    wget "https://go.dev/dl/${GO_TARBALL}"; \
-    wget "https://go.dev/dl/${GO_TARBALL}.sha256"; \
+    curl -fsSLo "${GO_TARBALL}" "https://dl.google.com/go/${GO_TARBALL}"; \
+    curl -fsSLo "${GO_TARBALL}.sha256" "https://dl.google.com/go/${GO_TARBALL}.sha256"; \
     sha256sum --check --strict "${GO_TARBALL}.sha256"; \
     tar -C /usr/local -xzf "${GO_TARBALL}"; \
     rm -f "${GO_TARBALL}" "${GO_TARBALL}.sha256"; \

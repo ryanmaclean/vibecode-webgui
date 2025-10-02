@@ -6,6 +6,8 @@
 import { cache, CacheKeys, CacheTTL } from '../cache/valkey-client';
 import { trackAIOperation } from '../performance/metrics-collector';
 import { logAIRequest } from '../prisma';
+import { logger } from '../logger';
+
 
 export interface LiteLLMConfig {
   baseURL: string;
@@ -331,7 +333,7 @@ export class LiteLLMClient {
         quality: this.assessModelQuality(model.id)
       }));
     } catch (error) {
-      console.error('Failed to fetch models:', error);
+      logger.error('Failed to fetch models:', { error: error });
       return this.getFallbackModels();
     }
   }
@@ -440,7 +442,7 @@ export class LiteLLMClient {
                   totalTokens = chunk.usage.total_tokens;
                 }
               } catch (parseError) {
-                console.warn('Failed to parse SSE chunk:', parseError);
+                logger.warn('Failed to parse SSE chunk:', { data: parseError });
               }
             }
           }
@@ -516,7 +518,7 @@ export class LiteLLMClient {
       }>(`/usage?${params}`);
       return response;
     } catch (error) {
-      console.error('Failed to get usage stats:', error);
+      logger.error('Failed to get usage stats:', { error: error });
       return {
         requests: 0,
         tokens: { input: 0, output: 0, total: 0 },
@@ -685,7 +687,7 @@ export class LiteLLMClient {
         error: data.error
       });
     } catch (error) {
-      console.error('Failed to log AI request:', error);
+      logger.error('Failed to log AI request:', { error: error });
     }
   }
 
