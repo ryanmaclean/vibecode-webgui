@@ -41,7 +41,6 @@ export const verifyPassword = async (plain: string, hash: string): Promise<boole
   }
 
   const normalizedHash = normalizeHash(hash)
-
   if (!isValidBcryptHash(normalizedHash)) {
     return false
   }

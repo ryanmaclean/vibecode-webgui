@@ -1,117 +1,177 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+/**
+ * Base Skeleton Component
+ * Provides loading state visual feedback with WCAG 2.1 AA compliance
+ *
+ * Accessibility Features:
+ * - ARIA attributes (role="status", aria-busy, aria-label)
+ * - Reduced motion support (respects prefers-reduced-motion)
+ * - Screen reader announcements with aria-live
+ * - Semantic HTML structure
+ * - Proper contrast ratios for visibility
+ *
+ * @see https://www.w3.org/WAI/WCAG21/Understanding/animation-from-interactions
+ */
 
-export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
+import { cn } from '@/lib/utils'
+
+interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
-   * Accessibility label for screen readers
+   * Optional loading label for screen readers
+   * @default "Loading..."
    */
-  "aria-label"?: string
+  'aria-label'?: string
   /**
-   * Whether to show a shimmer animation effect
-   * @default true
+   * Politeness level for screen reader announcements
+   * @default "polite"
    */
-  shimmer?: boolean
+  'aria-live'?: 'polite' | 'assertive' | 'off'
+  /**
+   * Disable animation (useful for testing or when animation is not desired)
+   * @default false
+   */
+  noAnimation?: boolean
+}
+
+export function Skeleton({
+  className,
+  'aria-label': ariaLabel = 'Loading...',
+  'aria-live': ariaLive = 'polite',
+  noAnimation = false,
+  ...props
+}: SkeletonProps) {
+  return (
+    <div
+      role="status"
+      aria-label={ariaLabel}
+      aria-busy="true"
+      aria-live={ariaLive}
+      className={cn(
+        // Base styles
+        'rounded-md bg-gray-200 dark:bg-gray-700',
+        // Animation with reduced motion support
+        !noAnimation && 'animate-pulse motion-reduce:animate-none',
+        // Fallback for reduced motion - subtle opacity variation
+        !noAnimation && 'motion-reduce:opacity-70',
+        className
+      )}
+      {...props}
+    />
+  )
 }
 
 /**
- * Skeleton component for loading states
- *
- * Provides visual feedback while content is loading with:
- * - Pulse animation for smooth loading indication
- * - Optional shimmer effect for enhanced visual feedback
- * - Theme-aware styling (light/dark mode support)
- * - Full accessibility support with ARIA attributes
- * - Customizable via className prop
- *
- * @example
- * ```tsx
- * // Basic usage
- * <Skeleton className="h-4 w-full" />
- *
- * // Card skeleton
- * <Card>
- *   <CardHeader>
- *     <Skeleton className="h-6 w-2/3" />
- *     <Skeleton className="h-4 w-1/2" />
- *   </CardHeader>
- * </Card>
- *
- * // With shimmer effect
- * <Skeleton className="h-20 w-20 rounded-full" shimmer />
- *
- * // Custom accessibility label
- * <Skeleton className="h-4 w-full" aria-label="Loading user profile" />
- * ```
+ * Skeleton variant with smooth fade-in transition
+ * Use when content will appear after loading completes
  */
-const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
-  ({
-    className,
-    shimmer = true,
-    "aria-label": ariaLabel = "Loading content",
-    ...props
-  }, ref) => {
+export function SkeletonWithFade({
+  className,
+  'aria-label': ariaLabel = 'Loading...',
+  'aria-live': ariaLive = 'polite',
+  noAnimation = false,
+  ...props
+}: SkeletonProps) {
+  return (
+    <div
+      role="status"
+      aria-label={ariaLabel}
+      aria-busy="true"
+      aria-live={ariaLive}
+      className={cn(
+        // Base styles
+        'rounded-md bg-gray-200 dark:bg-gray-700',
+        // Animation with reduced motion support
+        !noAnimation && 'animate-pulse motion-reduce:animate-none',
+        // Smooth transition
+        'transition-opacity duration-200 ease-in',
+        // Fallback for reduced motion
+        !noAnimation && 'motion-reduce:opacity-70',
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+/**
+ * Skeleton text line component
+ * Pre-configured for text content loading states
+ */
+export function SkeletonText({
+  className,
+  lines = 1,
+  'aria-label': ariaLabel = 'Loading text content...',
+  ...props
+}: SkeletonProps & { lines?: number }) {
+  if (lines === 1) {
     return (
-      <div
-        ref={ref}
-        role="status"
-        aria-live="polite"
-        aria-busy="true"
+      <Skeleton
+        className={cn('h-4 w-full', className)}
         aria-label={ariaLabel}
-        className={cn(
-          "relative overflow-hidden rounded-md bg-gray-200 dark:bg-gray-800",
-          "animate-pulse",
-          shimmer && [
-            "before:absolute before:inset-0",
-            "before:-translate-x-full before:animate-shimmer",
-            "before:bg-gradient-to-r",
-            "before:from-transparent before:via-gray-300/20 dark:before:via-gray-700/20 before:to-transparent",
-          ],
-          className
-        )}
         {...props}
-      >
-        <span className="sr-only">{ariaLabel}</span>
-      </div>
+      />
     )
   }
-)
-Skeleton.displayName = "Skeleton"
 
-/**
- * Skeleton variants for common UI patterns
- */
-export const SkeletonVariants = {
-  /**
-   * Text line skeleton
-   */
-  Text: ({ className, ...props }: SkeletonProps) => (
-    <Skeleton className={cn("h-4 w-full", className)} {...props} />
-  ),
-
-  /**
-   * Avatar/circular skeleton
-   */
-  Avatar: ({ className, ...props }: SkeletonProps) => (
-    <Skeleton className={cn("h-12 w-12 rounded-full", className)} {...props} />
-  ),
-
-  /**
-   * Button skeleton
-   */
-  Button: ({ className, ...props }: SkeletonProps) => (
-    <Skeleton className={cn("h-10 w-24", className)} {...props} />
-  ),
-
-  /**
-   * Card skeleton
-   */
-  Card: ({ className, ...props }: SkeletonProps) => (
-    <div className={cn("space-y-3", className)}>
-      <Skeleton className="h-24 w-full" {...props} />
-      <Skeleton className="h-4 w-2/3" {...props} />
-      <Skeleton className="h-4 w-1/2" {...props} />
+  return (
+    <div
+      role="status"
+      aria-label={ariaLabel}
+      aria-busy="true"
+      className="space-y-2"
+    >
+      {Array.from({ length: lines }).map((_, i) => (
+        <Skeleton
+          key={i}
+          className={cn(
+            'h-4',
+            // Last line is typically shorter
+            i === lines - 1 ? 'w-4/5' : 'w-full',
+            className
+          )}
+          aria-label={`Loading line ${i + 1} of ${lines}`}
+        />
+      ))}
     </div>
-  ),
+  )
 }
 
-export { Skeleton }
+/**
+ * Skeleton card component
+ * Pre-configured for card-based layouts
+ */
+export function SkeletonCard({
+  className,
+  'aria-label': ariaLabel = 'Loading card...',
+  ...props
+}: SkeletonProps) {
+  return (
+    <div
+      role="status"
+      aria-label={ariaLabel}
+      aria-busy="true"
+      className={cn(
+        'rounded-lg border border-gray-200 dark:border-gray-700 p-6 space-y-4',
+        className
+      )}
+      {...props}
+    >
+      {/* Card header */}
+      <div className="space-y-2">
+        <Skeleton className="h-6 w-3/4" aria-label="Loading title" />
+        <Skeleton className="h-4 w-full" aria-label="Loading description" />
+      </div>
+
+      {/* Card content */}
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-5/6" />
+      </div>
+
+      {/* Card footer */}
+      <div className="flex justify-between">
+        <Skeleton className="h-4 w-24" aria-label="Loading metadata" />
+        <Skeleton className="h-8 w-20" aria-label="Loading action button" />
+      </div>
+    </div>
+  )
+}

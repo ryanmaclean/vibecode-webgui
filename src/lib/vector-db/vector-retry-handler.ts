@@ -4,7 +4,7 @@
  */
 
 import { logger } from '../logger';
-import { VectorDBError, VectorDBErrorType, VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
+import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler-new';
 
 /**
  * Retry configuration interface
@@ -159,16 +159,16 @@ export class RetryHandler {
           this.isErrorRetryable(err);
         
         if (!retryable) {
-          logger.warn(`Non-retryable error in operation "${operationName}":`, {
-            error: err.message,
-            stack: err.stack
+          logger.warn(`Non-retryable error in operation "${operationName}":`, { 
+            error: err.message, 
+            stack: err.stack 
           });
-
+          
           // If the error is already a VectorDbError, just throw it
           if (err instanceof VectorDbError) {
             throw err;
           }
-
+          
           // Otherwise, wrap it with our error handler
           throw this.errorHandler.handleError(
             err,
@@ -195,16 +195,16 @@ export class RetryHandler {
     }
     
     // If we got here, all retries failed
-    logger.error(`All ${this.config.maxRetries} retry attempts failed for operation "${operationName}":`, {
-      error: lastError?.message,
-      stack: lastError?.stack
+    logger.error(`All ${this.config.maxRetries} retry attempts failed for operation "${operationName}":`, { 
+      error: lastError?.message, 
+      stack: lastError?.stack 
     });
-
+    
     // If the last error is already a VectorDbError, just throw it
     if (lastError instanceof VectorDbError) {
       throw lastError;
     }
-
+    
     // Otherwise, wrap it with our error handler
     throw this.errorHandler.handleError(
       lastError || new Error(`Unknown error in operation: ${operationName}`),
@@ -220,40 +220,13 @@ export class RetryHandler {
    * @param error The error to check
    */
   private isErrorRetryable(error: Error): boolean {
-    // If it's a VectorDbError (new style), check if it's retryable based on error type
-    if (error instanceof VectorDbError) {
-      return (error.details && 'retryable' in error.details && error.details.retryable === true) ||
-             error.type === VectorDbErrorType.CONNECTION_FAILED ||
-             error.type === VectorDbErrorType.TIMEOUT;
+      // If it's a VectorDbError, check if it's retryable based on error type
+      if (error instanceof VectorDbError) {
+        return (error.details && 'retryable' in error.details && error.details.retryable === true) || 
+               error.type === VectorDbErrorType.CONNECTION_FAILED ||
+               error.type === VectorDbErrorType.TIMEOUT;
     }
-
-    // If it's a VectorDBError (old style), use its classification for backward compatibility
-    if (error instanceof VectorDBError) {
-      // Connection errors are always retryable
-      if (error.type === VectorDBErrorType.CONNECTION_FAILED) {
-        return true;
-      }
-
-      // Query errors might be retryable if they're timeouts or deadlocks
-      if (error.type === VectorDBErrorType.QUERY_FAILED) {
-        const msg = error.message.toLowerCase();
-        return (
-          msg.includes('timeout') ||
-          msg.includes('deadlock') ||
-          msg.includes('too many connections') ||
-          msg.includes('connection reset')
-        );
-      }
-
-      // Authorization errors are not retryable without config changes
-      if (error.type === VectorDBErrorType.AUTHORIZATION_ERROR) {
-        return false;
-      }
-
-      // Default for other vector DB errors
-      return false;
-    }
-
+    
     // Otherwise, use the error handler to check if it's retryable
     return this.errorHandler.isRetryableError(error);
   }
@@ -361,3 +334,7 @@ export class RetryHandler {
     };
   }
 }
+
+// Legacy types for backward compatibility
+import { VectorDBErrorType } from './vector-db-error-handler';
+export { VectorDBErrorType };
