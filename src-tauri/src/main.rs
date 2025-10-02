@@ -3,6 +3,7 @@
 
 mod commands;
 mod docker;
+mod mdns;
 
 use tauri::Manager;
 
@@ -16,6 +17,10 @@ fn main() {
             commands::check_docker,
             commands::get_docker_version,
             commands::get_docker_status,
+            commands::get_docker_info,
+            commands::start_mdns_service,
+            commands::discover_vibecode_sessions,
+            commands::stop_mdns_service,
         ])
         .setup(|app| {
             #[cfg(debug_assertions)]
