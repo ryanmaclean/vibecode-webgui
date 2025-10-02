@@ -2,11 +2,7 @@
  * Testing tools for MCP
  */
 
-interface RunTestsArgs {
-  workspaceId: string
-  testType?: string
-  pattern?: string
-}
+import type { RunTestsArgs } from '../types.js';
 
 export async function runTests(args: RunTestsArgs) {
   const { workspaceId, testType = 'all', pattern } = args;
