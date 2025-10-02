@@ -47,7 +47,7 @@
 ### Next Steps
 
 - [x] ✅ Diagnose Next.js dev server startup errors - COMPLETE
-- [x] Finalize SSE helper utility documentation/examples for other specs (docs/src/content/docs/testing-strategy.md, docs/src/content/docs/mcp-playwright.md)
+- [x] Finalize SSE helper utility documentation/examples for other specs (docs/src/content/docs/testing-strategy.md and docs/src/content/docs/mcp-playwright.md — updated 2025-10-02)
 - [ ] Rerun Playwright reduced-motion spec now that dev server is stable
 - [ ] Extend docs to include troubleshooting notes for reduced-motion spec execution
 
