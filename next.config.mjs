@@ -107,7 +107,7 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
     formats: ['image/webp', 'image/avif'],
-    unoptimized: true,
+    unoptimized: false,
   },
   compress: true,
   skipTrailingSlashRedirect: true,
@@ -268,7 +268,7 @@ const nextConfig = {
 
     config.optimization = {
       ...config.optimization,
-      minimize: false,
+      minimize: !dev,
     }
 
     if (!dev && !isServer && Array.isArray(config.optimization?.minimizer)) {
