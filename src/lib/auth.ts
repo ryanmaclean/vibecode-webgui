@@ -258,27 +258,47 @@ providers.push(
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          console.warn('❌ Credentials login rejected: missing parameters')
+        const emailInput = credentials?.email
+        const passwordInput = typeof credentials?.password === 'string' ? credentials.password : ''
+
+        if (!isNonEmptyString(emailInput)) {
+          await performTimingSafeCompare(passwordInput)
+          console.warn('❌ Credentials login rejected: missing or invalid email')
           return null
         }
 
-        const password = credentials.password
-        const normalizedEmail = credentials.email.trim().toLowerCase()
+        if (!isNonEmptyString(passwordInput)) {
+          await performTimingSafeCompare(passwordInput)
+          console.warn('❌ Credentials login rejected: missing password')
+          return null
+        }
+
+        const normalizedEmail = emailInput.trim().toLowerCase()
+        const user = LEGACY_CREDENTIALS_BY_EMAIL.get(normalizedEmail)
+
+        if (!user) {
+          await performTimingSafeCompare(passwordInput)
+          console.warn('⚠️ Credentials login rejected: user not found', { email: normalizedEmail })
+          return null
+        }
+
+        const passwordHash = user.passwordHash.trim()
+
+        if (!isValidBcryptHash(passwordHash)) {
+          await performTimingSafeCompare(passwordInput)
+          console.warn('❌ Credentials login rejected: stored hash invalid', {
+            credentialId: user.id,
+            email: user.email,
+          })
+          return null
+        }
 
         try {
-          const user = LEGACY_CREDENTIALS_BY_EMAIL.get(normalizedEmail)
-
-          if (!user) {
-            await performTimingSafeCompare(password)
-            console.warn('⚠️ Credentials login rejected: user not found', { email: normalizedEmail })
-            return null
-          }
-
-          const isValid = await verifyPassword(password, user.passwordHash)
+          const isValid = await verifyPassword(passwordInput, passwordHash)
 
           if (!isValid) {
-            console.warn('⚠️ Credentials login rejected: invalid password', { email: normalizedEmail })
+            await performTimingSafeCompare(passwordInput)
+            console.warn('⚠️ Credentials login rejected: password mismatch', { email: normalizedEmail })
             return null
           }
 
@@ -290,10 +310,11 @@ providers.push(
             role: user.role,
           }
         } catch (error) {
-          await performTimingSafeCompare(password)
+          await performTimingSafeCompare(passwordInput)
           console.warn('❌ Credentials login rejected: verification error', {
             email: normalizedEmail,
-            error,
+            credentialId: user.id,
+            error: error instanceof Error ? error.message : 'unknown-error',
           })
           return null
         }
