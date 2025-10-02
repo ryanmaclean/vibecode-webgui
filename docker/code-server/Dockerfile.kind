@@ -13,7 +13,6 @@ RUN set -eux; \
   apt-get install -y --no-install-recommends \
     bat \
     curl \
-    emacs-nox \
     exa \
     fd-find \
     fish \
