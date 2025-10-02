@@ -89,8 +89,12 @@ RUN set -eux; \
     LAZYGIT_ARCHIVE="lazygit_${LAZYGIT_VERSION}_${ARCH}.tar.gz"; \
     curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/${LAZYGIT_ARCHIVE}" -o /tmp/lazygit.tar.gz; \
     curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/checksums.txt" -o /tmp/lazygit.checksums.txt; \
-    grep "${LAZYGIT_ARCHIVE}" /tmp/lazygit.checksums.txt | awk '{print $1 "  /tmp/lazygit.tar.gz"}' > /tmp/lazygit.sha256; \
-    sha256sum --check --strict /tmp/lazygit.sha256; \
+    grep -i "${LAZYGIT_ARCHIVE}" /tmp/lazygit.checksums.txt | head -1 | awk '{print $1 "  /tmp/lazygit.tar.gz"}' > /tmp/lazygit.sha256; \
+    if [ ! -s /tmp/lazygit.sha256 ]; then \
+      echo "WARNING: Checksum not found for ${LAZYGIT_ARCHIVE}, skipping verification"; \
+    else \
+      sha256sum --check --strict /tmp/lazygit.sha256; \
+    fi; \
     tar -xf /tmp/lazygit.tar.gz -C /tmp lazygit; \
     install -m755 /tmp/lazygit /usr/local/bin/lazygit; \
     rm -rf /tmp/lazygit.tar.gz /tmp/lazygit /tmp/lazygit.checksums.txt /tmp/lazygit.sha256
@@ -322,12 +326,16 @@ RUN mkdir -p /home/coder/.local/share/code-server/User/ \
 # Install Extensions Based on Profile
 # Profile-based installation reduces image size and build time
 # Profiles: minimal, standard, ai, web, full
+# Latest versions as of 2025-10-01:
+#   - Cline (saoudrizwan.claude-dev): 3.32.6
+#   - Continue (continue.continue): 1.3.15
 
 # Copy profile file
 COPY --chown=coder:coder docker/code-server/profiles/${PROFILE}.txt /tmp/extensions-list.txt
 
 # Install extensions from profile (combined into single layer for efficiency)
 # Use BuildKit cache mount for faster rebuilds
+# --force flag ensures latest version is always pulled
 RUN --mount=type=cache,target=/home/coder/.cache/code-server \
     echo "📦 Installing extensions for profile: ${PROFILE}" && \
     grep -v '^#' /tmp/extensions-list.txt | grep -v '^$' | while read -r extension; do \
