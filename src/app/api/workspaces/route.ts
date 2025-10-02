@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
+import { WorkspaceServiceFactory } from '@/lib/services/workspace-service-factory'
 import { z } from 'zod'
 
 const CreateWorkspaceRequestSchema = z.object({
@@ -27,20 +27,10 @@ export async function POST(request: NextRequest) {
 
     console.log(`📝 Creating workspace for project: "${validatedRequest.projectName}"`)
 
-    // Check if Kubernetes is available
-    if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
-      console.error('❌ Kubernetes not configured')
-      return NextResponse.json(
-        { 
-          error: 'Workspace service not available',
-          message: 'Kubernetes cluster not configured. Please deploy to AKS first.'
-        },
-        { status: 503 }
-      )
-    }
-
-    // Initialize workspace provisioning service
-    const workspaceService = new WorkspaceProvisioningService()
+    // Get appropriate workspace service (auto-detects runtime)
+    const workspaceService = await WorkspaceServiceFactory.getService()
+    const runtime = await WorkspaceServiceFactory.detectRuntime()
+    console.log(`🔧 Using runtime: ${runtime}`)
 
     // Create workspace
     const startTime = Date.now()
@@ -116,15 +106,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const workspaceId = searchParams.get('id')
 
-    // Check if Kubernetes is available
-    if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
-      return NextResponse.json({
-        available: false,
-        reason: 'Kubernetes cluster not configured'
-      })
-    }
-
-    const workspaceService = new WorkspaceProvisioningService()
+    // Get appropriate workspace service (auto-detects runtime)
+    const workspaceService = await WorkspaceServiceFactory.getService()
+    const runtime = await WorkspaceServiceFactory.detectRuntime()
 
     if (workspaceId) {
       // Get specific workspace
