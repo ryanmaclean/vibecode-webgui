@@ -47,17 +47,31 @@ function ensureWebSocketServer() {
         return
       }
 
-      const shell = process.env.SHELL || '/bin/bash'
+      /**
+       * SECURITY FIX: Whitelist environment variables (fixes #439)
+       * 
+       * Previous implementation exposed ALL process.env to spawned shell,
+       * including secrets like NEXTAUTH_SECRET, OPENAI_API_KEY, DATABASE_URL.
+       * 
+       * Now only safe, necessary variables are passed to the terminal.
+       */
+      const allowedEnv = {
+        TERM: 'xterm-256color',
+        COLORTERM: 'truecolor',
+        HOME: '/home/workspace',
+        USER: 'workspace',
+        PATH: '/usr/local/bin:/usr/bin:/bin',
+        LANG: 'en_US.UTF-8',
+        LC_ALL: 'en_US.UTF-8',
+      }
+
+      const shell = '/bin/bash'
       const ptyProcess = spawn(shell, [], {
         name: 'xterm-256color',
         cols: 80,
         rows: 30,
-        env: {
-          ...process.env,
-          TERM: 'xterm-256color',
-          COLORTERM: 'truecolor',
-          PATH: process.env.PATH || ''
-        }
+        env: allowedEnv,
+        cwd: '/workspace'
       })
 
       activeProcesses.set(workspaceId, { process: ptyProcess, ws })
