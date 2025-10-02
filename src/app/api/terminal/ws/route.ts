@@ -160,18 +160,29 @@ const webSocketHandler = (ws: WebSocketLike, request: { url: string }) => {
       const cols = isFiniteNumber(message.cols) ? message.cols : 120
       const rows = isFiniteNumber(message.rows) ? message.rows : 30
 
+      /**
+       * SECURITY FIX: Whitelist environment variables (fixes #439)
+       * Only pass safe, necessary variables to terminal - no secrets
+       */
+      const allowedEnv = {
+        TERM: 'xterm-256color',
+        COLORTERM: 'truecolor',
+        HOME: '/home/workspace',
+        USER: 'workspace',
+        PATH: '/usr/local/bin:/usr/bin:/bin',
+        LANG: 'en_US.UTF-8',
+        LC_ALL: 'en_US.UTF-8',
+        WORKSPACE_ID: workspaceId,
+        USER_ID: userId,
+      }
+
       // Create PTY process
       const ptyProcess = spawn(process.platform === 'win32' ? 'cmd.exe' : 'bash', [], {
         name: 'xterm-256color',
         cols,
         rows,
         cwd: workspaceDir,
-        env: {
-          ...process.env,
-          TERM: 'xterm-256color',
-          WORKSPACE_ID: workspaceId,
-          USER_ID: userId
-        }
+        env: allowedEnv
       })
 
       // Set up Claude integration
