@@ -3,7 +3,6 @@
 **🎉 CRITICAL FIX: Next.js Dev Server Startup Issue RESOLVED**
 
 ### ✅ Issue Resolution
-
 - **Problem**: Conflicting Next.js config files (`next.config.js` and `next.config.mjs`) causing middleware compilation errors
 - **Root Cause**: Invalid webpack externals configuration generating `module.exports = @opentelemetry/api;` syntax error
 - **Impact**: Dev server failing to start, blocking all Playwright tests and development work
@@ -31,7 +30,6 @@
    - Includes troubleshooting guide, maintenance notes, verification steps
 
 ### ✅ Verification Results
-
 - Dev server starts successfully with `npm run dev`
 - Running on http://localhost:3002
 - No middleware compilation errors
@@ -40,16 +38,14 @@
 - Datadog integration ready
 
 ### 📝 Known Non-Critical Warnings
-
 - Webpack cache warnings (benign, will self-resolve)
 - SWC version mismatch (compatible versions, no impact)
 
 ### Next Steps
-
 - [x] ✅ Diagnose Next.js dev server startup errors - COMPLETE
-- [x] Finalize SSE helper utility documentation/examples for other specs (docs/src/content/docs/testing-strategy.md and docs/src/content/docs/mcp-playwright.md — refreshed streaming helper usage 2025-10-02)
-- [ ] Rerun Playwright reduced-motion spec now that dev server is stable _(blocked: dev server still exits when `dd-trace` is absent; rerun once `DD_ENABLED=false` workaround verifies or tracer is installed)_
-- [x] Extend docs to include troubleshooting notes for reduced-motion spec execution (added Datadog bypass guidance in `docs/src/content/docs/mcp-playwright.md`)
+- [ ] Finalize SSE helper utility documentation/examples for other specs
+- [ ] Rerun Playwright reduced-motion spec now that dev server is stable
+- [ ] Extend docs to include troubleshooting notes for reduced-motion spec execution
 
 ## Agent Update (2025-10-01 23:46 UTC)
 
@@ -63,7 +59,6 @@
 **🎉 Code-Server v1.1.0 Multi-Stream Coordination COMPLETE - Issue #417 CLOSED**
 
 ### ✅ Final Status Summary
-
 - **5 of 5 Issues ADDRESSED** (4 CLOSED, 1 at 75%)
 - **95% Overall Completion**
 - **Multi-Agent Coordination Success**: 5 parallel agents delivered on schedule
@@ -71,16 +66,15 @@
 
 ### 📊 Issue Completion Status
 
-| Issue         | Status         | Progress | Agent              | Notes                                                                           |
-| ------------- | -------------- | -------- | ------------------ | ------------------------------------------------------------------------------- |
-| #410 Release  | ✅ CLOSED      | 100%     | Agent 1 (Build)    | All 5 profiles built & pushed to GHCR + Docker Hub                              |
-| #411 Docs     | ✅ CLOSED      | 100%     | Agent 2 (Docs)     | CHANGELOG, VERIFICATION_GUIDE, README, DEPLOYMENT_SUMMARY complete              |
-| #418 Workflow | ✅ CLOSED      | 100%     | Agent 3 (DevOps)   | Workflow enhancements verified in commit 8390b436                               |
-| #417 QA       | ✅ CLOSED      | 100%     | Agent 3 (QA)       | All 12 Bats tests passing, closed with completion summary                       |
-| #416 Security | 🔄 IN PROGRESS | 75%      | Agent 3 (Security) | Node.js/Go fixes committed; remaining: cosign scripts, docs/SECURITY, CI guards |
+| Issue | Status | Progress | Agent | Notes |
+|-------|--------|----------|-------|-------|
+| #410 Release | ✅ CLOSED | 100% | Agent 1 (Build) | All 5 profiles built & pushed to GHCR + Docker Hub |
+| #411 Docs | ✅ CLOSED | 100% | Agent 2 (Docs) | CHANGELOG, VERIFICATION_GUIDE, README, DEPLOYMENT_SUMMARY complete |
+| #418 Workflow | ✅ CLOSED | 100% | Agent 3 (DevOps) | Workflow enhancements verified in commit 8390b436 |
+| #417 QA | ✅ CLOSED | 100% | Agent 3 (QA) | All 12 Bats tests passing, closed with completion summary |
+| #416 Security | 🔄 IN PROGRESS | 75% | Agent 3 (Security) | Node.js/Go fixes committed; remaining: cosign scripts, docs/SECURITY, CI guards |
 
 ### ✅ Completed Deliverables
-
 - **Release (#410)** – All 5 profiles built and pushed to GHCR + Docker Hub
 - **Docs (#411)** – CHANGELOG, VERIFICATION_GUIDE, README, DEPLOYMENT_SUMMARY complete
 - **Workflow (#418)** – SHA validation tags, build metrics, enhanced CI workflow (commit 8390b436)
@@ -88,7 +82,6 @@
 - **Remediation Plan** – ✅ COMPLETE - Comprehensive 678-line document at `REMEDIATION_PLAN.md`
 
 ### 🔄 Remaining Work (#416 Security - 25%)
-
 - [ ] Cosign verification scripts for kubectl/helm (due 2025-10-08/10)
 - [ ] docs/SECURITY.md checklist (due 2025-10-05)
 - [ ] CI security validation gates
@@ -96,7 +89,6 @@
 ### 🤖 Multi-Agent Coordination Success
 
 **Agent Distribution & Performance**:
-
 - **Agent 1 (Build)**: Issue #410 - 100% complete (5 profiles, multi-arch, multi-registry)
 - **Agent 2 (Docs)**: Issue #411 - 100% complete (CHANGELOG, guides, summaries)
 - **Agent 3 (DevOps)**: Issue #418 - 100% complete (workflow enhancements, CI metrics)
@@ -105,20 +97,17 @@
 - **Agent 4 (Documentation)**: Checkpoint coordination and TODO.md updates
 
 **Coordination Metrics**:
-
 - **Completion Rate**: 95% overall (4/5 issues closed, 1 at 75%)
 - **Schedule Adherence**: 100% (all agents delivered on timeline)
 - **Parallel Efficiency**: 5 concurrent work streams coordinated successfully
 - **Quality Gates**: All tests passing, lint clean, security hardening in progress
 
 **Success Factors**:
-
 1. Clear issue-based work distribution
 2. Parallel execution without blocking dependencies
 3. Comprehensive testing at each stage
 4. Documentation synchronized with code changes
-   **Lessons Learned**:
-
+**Lessons Learned**:
 - Multi-agent coordination effective for complex, multi-domain releases
 - Clear issue ownership prevents work overlap and conflicts
 - Phased security hardening allows incremental validation
@@ -130,7 +119,7 @@
 - GNU Emacs (GPL) detected in all v1.1.0 images
 - Dockerfile patched: Emacs removed, Node/Go downloads hardened, cosign staged
 - All Emacs references removed from project (0 remaining in code/docs)
-- **Rebuild BLOCKED**:
+- **Rebuild BLOCKED**: 
   - GitHub Actions workflow_dispatch not executing (events accepted but no runs created)
   - Docker daemon not running locally (cannot build locally)
 - **ACTION REQUIRED**: Start Docker/OrbStack OR manually trigger workflow via GitHub UI
@@ -139,7 +128,6 @@
 - 49.71GB cleanup performed
 
 ### Planning Documents Created
-
 - `docker/code-server/SECURITY_AUDIT.md` - Complete security audit with 3 critical issues identified
 - ✅ `.github/workflows/WORKFLOW_FIX_PLAN.md` - Workflow fixes for validation, concurrency, SBOM, Datadog
 
@@ -148,7 +136,6 @@
 **Overall Progress**: 35% → 95% completion in coordinated multi-agent execution
 
 **Before (2025-10-01 22:10 UTC)**:
-
 - 0 of 5 issues closed
 - Release: 40% (builds in progress)
 - Docs: 0% (not started)
@@ -157,7 +144,6 @@
 - Security: Audit complete only
 
 **After (2025-10-01 23:15 UTC)**:
-
 - 4 of 5 issues closed (80%)
 - Release (#410): ✅ 100% CLOSED
 - Docs (#411): ✅ 100% CLOSED
@@ -176,21 +162,17 @@
 - Multi-stream plan: Vega (release), Rina (QA), Rowan (security), Sloane (docs), Theo (ops) executing in parallel via MCP subagents.
 
 ### Progress Notes (2025-10-01 22:25 UTC)
-
 - Script telemetry coverage implemented (six new Bats cases) and `npm run test:scripts` added to `main-branch-ci.yml`; local run passes.
 - Workflow dispatch patched per runbook (unique validation tag, concurrency cancel, SBOM fail-fast, Datadog summary).
 - Issue checkpoints updated (#410/#418/#417/#416/#411) with runbooks and scheduling details.
 
 ### Additional Progress (2025-10-01 22:40 UTC)
-
 - Hardened `docker/code-server/Dockerfile`: Node tarball verification, Go checksum validation, cosign installation added.
 
 ### System Upgrade Coordination (2025-10-02)
-
 > Historical details archived at `docs/logs/AGENT_ACTIVITY_LOG.md#2025-10-01-coordination-archive`.
 
 #### Dev Infrastructure Upgrade Checklist
-
 1. **Registry cleanup (owner action required)**
    - GHCR versions to retire: 532086486 (`full`/`latest`), 532080021 (`web`), 531338584 (`minimal`), 531327265 (`standard`), 531251775 (`ai`), 531300586 (`2025-10-01`), 531128805 (`1.0.0`).
    - Docker Hub tags to retire: `full`, `web`, `minimal`, `standard`, `ai`, `latest`, `1.1.0-*`.
@@ -209,221 +191,62 @@
    - Notify release/security/customer channels once clean tags live; schedule post-incident review and archive old artifact references.
 
 ### Active Streams (UPDATED)
-
 > Archived historical coordination notes to docs/logs/AGENT_ACTIVITY_LOG.md#2025-10-01-coordination-archive.
 
-## Apple Containerization Integration Plan (CRITICAL)
+## Agent Tasks - High Priority (2025-10-01 19:46 PDT)
 
-### Phase 1: Proof of Concept (Week 1)
-
-**Owner**: Agent #7 - Apple Containerization
+### Agent 1: Docker Build Fix
 **Priority**: CRITICAL
-**Time**: 40 hours
+**Time**: 2-3 hours
+- [ ] Fix Dockerfile Go installation (currently failing)
+- [ ] Fix cosign checksum verification
+- [ ] Test minimal profile build end-to-end
+- [ ] Once working, build all 5 profiles (minimal, standard, ai, web, full)
+- [ ] Verify images in GHCR
+- [ ] Close #453, #454
 
-- [ ] Set up macOS 15 beta environment
-- [ ] Install Apple Containerization framework
-- [ ] Build optimized Linux kernel for containers
-- [ ] Test basic container creation/destruction
-- [ ] Run code-server in Apple container
-- [ ] Measure performance metrics (startup time, memory, CPU)
-- [ ] Compare vs Docker Desktop performance
-- [ ] Document findings and blockers
-
-**Success Criteria**: code-server running in Apple container with sub-second start
-
-### Phase 2: VibeCode Integration (Week 2-3)
-
-**Owner**: Agent #7 - Apple Containerization
+### Agent 2: Datadog Consolidation
 **Priority**: HIGH
-**Time**: 60 hours
+**Time**: 1-2 hours
+- [ ] Complete tracer.init() consolidation in instrumentation.ts
+- [ ] Remove duplicate init from health-monitoring.ts
+- [ ] Remove duplicate init from enhanced-datadog-integration.ts
+- [ ] Add unified service tagging (DD_ENV, DD_VERSION, DD_GIT_COMMIT_SHA)
+- [ ] Test that tracing still works
+- [ ] Close #464
 
-- [ ] Add runtime detection (Apple vs Docker vs OrbStack)
-- [ ] Create Apple Containerization backend adapter
-- [ ] Implement workspace provisioning for Apple containers
-- [ ] Add dedicated IP management per container
-- [ ] Integrate with existing workspace service
-- [ ] Add health checks and monitoring
-- [ ] Test multi-workspace scenarios
-- [ ] Performance optimization for Apple Silicon
-
-**Success Criteria**: Full workspace lifecycle on Apple Containerization
-
-### Phase 3: Production Readiness (Week 4)
-
-**Owner**: Agent #7 - Apple Containerization
-**Priority**: HIGH
-**Time**: 40 hours
-
-- [ ] Error handling and recovery
-- [ ] Resource limits and quotas
-- [ ] Security hardening
-- [ ] Logging and observability
-- [ ] Documentation (setup, troubleshooting)
-- [ ] User guide for macOS developers
-- [ ] CI/CD integration
-- [ ] Beta testing with real users
-
-**Success Criteria**: Production-ready Apple Containerization support
-
-### Phase 4: Marketing & Launch (Week 5)
-
-**Owner**: Agent #8 - Marketing & Developer Relations
+### Agent 3: Modern CLI Tools
 **Priority**: MEDIUM
-**Time**: 20 hours
+**Time**: 1 hour
+- [ ] Add helix editor to Dockerfile (10MB)
+- [ ] Add micro editor to Dockerfile (5MB)
+- [ ] Add lazygit to Dockerfile (15MB)
+- [ ] Add bat, eza, dust to Dockerfile
+- [ ] Test tools work in container
+- [ ] Update README with new tools
+- [ ] Close #463
 
-- [ ] Blog post: "First Cloud IDE for Apple Containerization"
-- [ ] Technical deep-dive article
-- [ ] Performance comparison (vs Docker Desktop)
-- [ ] Video demo and walkthrough
-- [ ] Apple developer community outreach
-- [ ] Conference talk submissions
-- [ ] Social media campaign
-- [ ] Press release
-
-**Success Criteria**: Market awareness, developer adoption
-
-## Container OS Ecosystem Expansion
-
-### Talos Linux Integration (#467)
-
-**Owner**: Agent #9 - Container OS Integrations
+### Agent 4: Production Minification
 **Priority**: HIGH
-**Time**: 30 hours
+**Time**: 30 min
+- [ ] Enable minification in next.config.js
+- [ ] Test build size reduction
+- [ ] Verify production build works
+- [ ] Document bundle size improvement
+- [ ] Close #442
 
-- [ ] Deploy VibeCode on Talos cluster
-- [ ] Test API-only access patterns
-- [ ] Document Talos-specific setup
-- [ ] Create Talos deployment manifests
-- [ ] Performance testing
-- [ ] Case study: "Development on Talos Linux"
-- [ ] Blog post
-- [ ] Community engagement
-
-### AWS Bottlerocket Support (#468)
-
-**Owner**: Agent #9 - Container OS Integrations
-**Priority**: HIGH
-**Time**: 30 hours
-
-- [ ] Test on EKS with Bottlerocket nodes
-- [ ] AWS service integration (S3, RDS, etc)
-- [ ] Create Bottlerocket-optimized images
-- [ ] AWS Marketplace listing preparation
-- [ ] Documentation for EKS deployment
-- [ ] Cost analysis and optimization
-- [ ] AWS partner program application
-- [ ] Launch on AWS Marketplace
-
-### macOS Runtime Support (#466)
-
-**Owner**: Agent #10 - macOS Developer Experience
+### Agent 5: Documentation Updates
 **Priority**: MEDIUM
-**Time**: 20 hours
+**Time**: 30 min
+- [ ] Create user documentation (#433)
+- [ ] Update deployment docs (#436)
+- [ ] Add troubleshooting guide (#461)
+- [ ] Close documentation issues
 
-- [ ] Test on OrbStack
-- [ ] Test on Colima
-- [ ] Test on Rancher Desktop
-- [ ] Test on Podman Desktop
-- [ ] Runtime auto-detection script
-- [ ] Performance comparison matrix
-- [ ] Setup guides for each runtime
-- [ ] Update README with macOS instructions
-
-## Technical Debt & Quality
-
-### Remaining console.log Cleanup (#448)
-
-**Owner**: Agent #11 - Code Quality
+### Agent 6: Security Enhancements
 **Priority**: MEDIUM
-**Time**: 15 hours
-
-- [ ] Replace console.log in remaining 44 API routes
-- [ ] Add structured logging throughout
-- [ ] Ensure Datadog integration
-- [ ] Test log aggregation
-- [ ] Document logging standards
-
-### Docker Build Fixes (#453)
-
-**Owner**: Agent #1 - Docker Build
-**Priority**: HIGH
-**Time**: 10 hours
-
-- [ ] Fix Go installation in Dockerfile
-- [ ] Fix cosign verification
-- [ ] Test all 5 profiles
-- [ ] Push to GHCR
-- [ ] Verify GPL-free status
-- [ ] Update documentation
-
-### Datadog Consolidation (#464)
-
-**Owner**: Agent #2 - Datadog
-**Priority**: HIGH
-**Time**: 8 hours
-
-- [ ] Complete tracer.init() consolidation
-- [ ] Add unified service tagging
-- [ ] Test tracing works end-to-end
-- [ ] Document Datadog setup
-- [ ] Add monitoring best practices
-
-## Agent Assignments
-
-### Agent #7: Apple Containerization Lead
-
-- Focus: Phases 1-3 of Apple Containerization
-- Timeline: 4 weeks
-- Deliverable: Production-ready Apple container support
-
-### Agent #8: Marketing & DevRel
-
-- Focus: Phase 4 + ongoing community
-- Timeline: Ongoing
-- Deliverable: Market leadership position
-
-### Agent #9: Container OS Integrations
-
-- Focus: Talos, Bottlerocket, Flatcar
-- Timeline: 6 weeks
-- Deliverable: Multi-platform container OS support
-
-### Agent #10: macOS Developer Experience
-
-- Focus: All macOS runtimes
-- Timeline: 2 weeks
-- Deliverable: Best-in-class macOS support
-
-### Agent #11: Code Quality
-
-- Focus: Technical debt, logging, testing
-- Timeline: Ongoing
-- Deliverable: Production-grade codebase
-
-## Success Metrics
-
-### Q4 2024 Goals
-
-- ✅ Apple Containerization proof of concept
-- ✅ Talos Linux deployment guide
-- ✅ AWS Bottlerocket testing complete
-- ✅ All macOS runtimes supported
-- ✅ Zero console.log in API routes
-- ✅ Docker builds working
-
-### Q1 2025 Goals
-
-- Production Apple Containerization support
-- AWS Marketplace listing
-- 1000+ macOS developers using VibeCode
-- Conference talks accepted
-- Industry recognition as container-native IDE
-
-## Timeline Overview
-
-**Week 1**: Apple Containerization POC
-**Week 2-3**: Apple integration development
-**Week 4**: Production readiness
-**Week 5**: Marketing launch
-**Week 6-8**: Container OS expansion (Talos, Bottlerocket)
-**Ongoing**: Code quality, documentation, community
+**Time**: 1 hour
+- [ ] Add Zod validation to critical API routes (#462)
+- [ ] Complete security audit tasks (#457)
+- [ ] Implement branch protection (#455)
+- [ ] Document security improvements

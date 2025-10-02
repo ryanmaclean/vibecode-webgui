@@ -5,9 +5,11 @@ import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './ui/resizable';
 import {
+  Send,
   Sparkles,
   Code,
   Eye,
@@ -20,26 +22,28 @@ import {
   RefreshCw,
   Play,
   Bot,
+  User,
+  Paperclip,
   Image,
   FileText,
+  Zap,
   Settings,
   DollarSign,
   Clock,
   Database,
   Cpu,
+  AlertCircle,
+  CheckCircle,
   FileCode,
+  Upload,
   Mic,
+  MicOff,
   Volume2,
-  Headphones
+  Headphones,
+  Radio
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { DEMO_PROMPTS } from '@/data/demo-prompts';
-import MessageList from './MessageList';
-import InputArea from './InputArea';
-import { MODELS } from './PromptInterface/config/models.config';
-import { MCP_SERVERS } from './PromptInterface/config/mcp-servers.config';
-import { MOCK_RESPONSES } from './PromptInterface/config/mock-responses.config';
-import { useAuthState } from './PromptInterface/hooks/useAuthState';
 
 // Voice recognition interfaces
 interface SpeechRecognitionEvent extends Event {
@@ -152,30 +156,172 @@ interface MCPServer {
   url?: string;
 }
 
-export default function PromptInterface() {
-  // Authentication & BYOK State (extracted to custom hook)
-  const {
-    isAuthenticated,
-    showAuthModal,
-    authMode,
-    userEmail,
-    userPassword,
-    apiKeys,
-    showApiKeySetup,
-    setIsAuthenticated,
-    setShowAuthModal,
-    setAuthMode,
-    setUserEmail,
-    setUserPassword,
-    setApiKeys,
-    setShowApiKeySetup,
-    handleAuth: handleAuthHook,
-    handleApiKeySetup,
-    saveApiKeys: saveApiKeysHook,
-    closeAuthModal,
-    getApiKeyForModel,
-  } = useAuthState();
+const MODELS: ModelConfig[] = [
+  // Docker Model Runner Local Models (from the blog post)
+  {
+    id: 'ai/smollm2:360M-Q4_K_M',
+    name: 'SmolLM2 360M (Local)',
+    provider: 'Docker Model Runner',
+    supportsImages: false,
+    supportsFiles: true,
+    supportsAudio: false,
+    maxTokens: 2048,
+    inputCostPer1k: 0, // Local models are free
+    outputCostPer1k: 0,
+    contextWindow: 8192
+  },
+  {
+    id: 'ai/llama3.2:1b-Q4_K_M',
+    name: 'Llama 3.2 1B (Local)',
+    provider: 'Docker Model Runner',
+    supportsImages: false,
+    supportsFiles: true,
+    supportsAudio: false,
+    maxTokens: 2048,
+    inputCostPer1k: 0,
+    outputCostPer1k: 0,
+    contextWindow: 8192
+  },
+  {
+    id: 'ai/qwen2.5-coder:1.5b-Q4_K_M',
+    name: 'Qwen2.5 Coder 1.5B (Local)',
+    provider: 'Docker Model Runner',
+    supportsImages: false,
+    supportsFiles: true,
+    supportsAudio: false,
+    maxTokens: 4096,
+    inputCostPer1k: 0,
+    outputCostPer1k: 0,
+    contextWindow: 16384
+  },
+  // Cloud models for comparison
+  {
+    id: 'anthropic/claude-3.5-sonnet',
+    name: 'Claude 3.5 Sonnet',
+    provider: 'Anthropic',
+    supportsImages: true,
+    supportsFiles: true,
+    supportsAudio: false,
+    maxTokens: 8192,
+    inputCostPer1k: 0.003,
+    outputCostPer1k: 0.015,
+    contextWindow: 200000
+  },
+  {
+    id: 'openai/gpt-4-vision',
+    name: 'GPT-4 Vision',
+    provider: 'OpenAI',
+    supportsImages: true,
+    supportsFiles: true,
+    supportsAudio: true,
+    maxTokens: 4096,
+    inputCostPer1k: 0.01,
+    outputCostPer1k: 0.03,
+    contextWindow: 128000
+  },
+  {
+    id: 'google/gemini-2.0-flash',
+    name: 'Gemini 2.0 Flash',
+    provider: 'Google',
+    supportsImages: true,
+    supportsFiles: true,
+    supportsAudio: true,
+    maxTokens: 8192,
+    inputCostPer1k: 0.000125,
+    outputCostPer1k: 0.000375,
+    contextWindow: 1000000
+  }
+];
 
+const MCP_SERVERS: MCPServer[] = [
+  {
+    id: 'filesystem',
+    name: 'File System',
+    description: 'Read and write files in workspace',
+    status: 'connected',
+    tools: ['read_file', 'write_file', 'list_directory', 'create_file'],
+    url: 'http://localhost:3001'
+  },
+  {
+    id: 'database',
+    name: 'Database',
+    description: 'Query and modify database',
+    status: 'connected',
+    tools: ['execute_query', 'get_schema', 'insert_data'],
+    url: 'http://localhost:3002'
+  },
+  {
+    id: 'web-search',
+    name: 'Web Search',
+    description: 'Search the web for information',
+    status: 'connected',
+    tools: ['search_web', 'fetch_url', 'extract_content'],
+    url: 'http://localhost:3003'
+  },
+  {
+    id: 'voice-processor',
+    name: 'Voice Processor',
+    description: 'Transcribe audio files and voice input via Docker Model Runner',
+    status: 'connected',
+    tools: ['transcribe_audio', 'voice_to_text', 'speech_analysis'],
+    url: 'http://localhost:3004'
+  },
+  {
+    id: 'model-runner',
+    name: 'Docker Model Runner',
+    description: 'Local LLM inference with Docker AI',
+    status: 'connected',
+    tools: ['text_generation', 'code_completion', 'local_inference'],
+    url: 'http://localhost:12434'
+  }
+];
+
+const MOCK_RESPONSES = [
+  {
+    content: "I'll help you build that! Let me start by creating a modern React application with the components you described.",
+    codeGenerated: true,
+    components: ["Header", "Hero Section", "Feature Cards"],
+    framework: "React + TypeScript",
+    tokens: 256,
+    cost: 0.003,
+    model: "claude-3.5-sonnet",
+    duration: 1200
+  },
+  {
+    content: "Perfect! I've generated the landing page with a responsive design using Tailwind CSS and shadcn/ui components.",
+    deploymentUrl: "https://your-app-preview.vercel.app",
+    components: ["Navigation", "Hero", "Features", "CTA"],
+    tokens: 342,
+    cost: 0.004,
+    model: "claude-3.5-sonnet",
+    duration: 1800
+  },
+  {
+    content: "Great! Now I'll add the contact form with validation and integrate it with your backend API using React Hook Form.",
+    codeGenerated: true,
+    components: ["Contact Form", "Form Validation", "API Integration"],
+    framework: "React + TypeScript",
+    tokens: 418,
+    cost: 0.005,
+    model: "claude-3.5-sonnet",
+    duration: 2100
+  }
+];
+
+export default function PromptInterface() {
+  // Authentication & BYOK State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(true); // Start with auth required
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
+  const [userEmail, setUserEmail] = useState('');
+  const [userPassword, setUserPassword] = useState('');
+  const [apiKeys, setApiKeys] = useState({
+    openai: '',
+    anthropic: '',
+    google: ''
+  });
+  const [showApiKeySetup, setShowApiKeySetup] = useState(false);
+  
   // Template marketplace integration
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [selectedDemoPromptId, setSelectedDemoPromptId] = useState<string>('');
@@ -216,6 +362,18 @@ export default function PromptInterface() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load saved API keys on mount
+  useEffect(() => {
+    const savedKeys = localStorage.getItem('vibecode_api_keys');
+    if (savedKeys) {
+      try {
+        setApiKeys(JSON.parse(savedKeys));
+      } catch (error) {
+        console.error('Error loading saved API keys:', error);
+      }
+    }
+  }, []);
 
   // Check for selected template from marketplace
   useEffect(() => {
@@ -505,40 +663,180 @@ export default function PromptInterface() {
     }, Math.random() * 2000 + 1000);
   };
 
-  // Wrapper functions for authentication (delegate to hook)
+  // Authentication functions
   const handleAuth = async (e: React.FormEvent) => {
-    await handleAuthHook(e, selectedModel, setMessages, setIsTyping);
+    e.preventDefault();
+    if (!userEmail || !userPassword) return;
 
-    // Post-auth logic: Check if using cloud models without API keys
-    const cloudModel = MODELS.find(m => m.id === selectedModel);
-    const needsApiKey = cloudModel && cloudModel.provider !== 'Docker Model Runner' &&
-                       !getApiKeyForModel(cloudModel.provider);
+    setIsTyping(true);
 
-    if (needsApiKey && isAuthenticated) {
-      setMessages(prev => [...prev, {
-        id: "api-key-prompt",
-        type: "assistant",
-        content: `🔑 **API Key Setup Required**
+    try {
+      // Track login attempt
+      await fetch('/api/auth/login-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'login_attempt',
+          email: userEmail,
+          provider: 'local',
+          sessionId: `session_${Date.now()}`,
+          loginMethod: 'password'
+        })
+      });
 
-You've selected **${cloudModel.name}** which requires an API key.
+      // Simulate authentication delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // For demo - always succeed
+      setIsAuthenticated(true);
+      setShowAuthModal(false);
+      
+      // Track successful login
+      await fetch('/api/auth/login-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'login_success',
+          userId: `user_${Date.now()}`,
+          email: userEmail,
+          provider: 'local',
+          sessionId: `session_${Date.now()}`,
+          loginMethod: 'password'
+        })
+      });
+
+      // Initialize welcome messages
+      const welcomeMessages: Message[] = [
+        {
+          id: "welcome-1",
+          type: "assistant",
+          content: `🎉 **Welcome ${authMode === 'signup' ? 'to' : 'back to'} VibeCode AI!** 
+          
+🌟 **Open Source AI Development Platform**
+          
+I'm your intelligent development assistant with access to:
+
+🤖 **Local Models** - Free SmolLM2, Llama 3.2, Qwen2.5 Coder via Docker
+🔑 **BYOK Support** - Use your own OpenAI, Anthropic, or Google API keys  
+🎤 **Voice Input** - Speak naturally or upload audio files
+📁 **File Processing** - Images, documents, code files
+🔧 **MCP Servers** - Database, filesystem, web search integrations
+📊 **Analytics** - Track usage, costs, and performance
+
+What would you like to build today?`,
+          timestamp: new Date(),
+          metadata: {
+            tokens: 180,
+            cost: 0,
+            model: selectedModel,
+          }
+        }
+      ];
+
+      // Check if using cloud models without API keys
+      const cloudModel = MODELS.find(m => m.id === selectedModel);
+      const needsApiKey = cloudModel && cloudModel.provider !== 'Docker Model Runner' && 
+                         !getApiKeyForModel(cloudModel.provider);
+
+      if (needsApiKey) {
+        welcomeMessages.push({
+          id: "api-key-prompt",
+          type: "assistant",
+          content: `🔑 **API Key Setup Required**
+
+You've selected **${cloudModel.name}** which requires an API key. 
 
 **Option 1:** Use our free local models (SmolLM2, Llama 3.2, Qwen2.5)
 **Option 2:** Add your ${cloudModel.provider} API key for premium features
 
 Would you like to set up your API keys now?`,
-        timestamp: new Date(),
-        metadata: {
-          tokens: 80,
-          cost: 0,
-          model: selectedModel,
-        }
-      }]);
-      setShowApiKeySetup(true);
+          timestamp: new Date(),
+          metadata: {
+            tokens: 80,
+            cost: 0,
+            model: selectedModel,
+          }
+        });
+        setShowApiKeySetup(true);
+      }
+
+      setMessages(welcomeMessages);
+      
+    } catch (error) {
+      console.error('Auth error:', error);
+      
+      // Track failed login
+      await fetch('/api/auth/login-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'login_failure',
+          email: userEmail,
+          provider: 'local',
+          sessionId: `session_${Date.now()}`,
+          loginMethod: 'password',
+          error: 'authentication_failed'
+        })
+      });
+    }
+
+    setIsTyping(false);
+  };
+
+  const getApiKeyForModel = (provider: string): string => {
+    switch (provider) {
+      case 'OpenAI': return apiKeys.openai;
+      case 'Anthropic': return apiKeys.anthropic;
+      case 'Google': return apiKeys.google;
+      default: return '';
     }
   };
 
+  const handleApiKeySetup = () => {
+    setShowApiKeySetup(true);
+  };
+
   const saveApiKeys = () => {
-    saveApiKeysHook(setMessages, selectedModel);
+    // Save to localStorage for demo (in production, save securely)
+    localStorage.setItem('vibecode_api_keys', JSON.stringify(apiKeys));
+    setShowApiKeySetup(false);
+    
+    const confirmMessage: Message = {
+      id: `api-keys-saved-${Date.now()}`,
+      type: "assistant",
+      content: `✅ **API Keys Saved Successfully!**
+
+Your keys are stored locally and encrypted. You can now use premium cloud models:
+
+${apiKeys.openai ? '🟢 OpenAI GPT models available' : ''}
+${apiKeys.anthropic ? '🟢 Anthropic Claude models available' : ''}
+${apiKeys.google ? '🟢 Google Gemini models available' : ''}
+
+Ready to build something amazing!`,
+      timestamp: new Date(),
+      metadata: {
+        tokens: 60,
+        cost: 0,
+        model: selectedModel,
+      }
+    };
+
+    setMessages(prev => [...prev, confirmMessage]);
+  };
+
+  const closeAuthModal = () => {
+    // Can't close auth modal until authenticated in BYOK model
+    if (!isAuthenticated) return;
+    setShowAuthModal(false);
+    setUserEmail('');
+    setUserPassword('');
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   const getDeviceClasses = () => {
@@ -956,29 +1254,161 @@ export default function LandingPage() {
             </div>
             
             {/* Enhanced Input with Voice and Attachments */}
-            <InputArea
-              input={input}
-              onInputChange={setInput}
-              onSend={handleSend}
-              onEnhancePrompt={enhancePrompt}
-              isTyping={isTyping}
-              attachments={attachments}
-              onRemoveAttachment={removeAttachment}
-              fileInputRef={fileInputRef}
-              onFileUpload={handleFileUpload}
-              currentModel={currentModel}
-              voiceSupported={voiceSupported}
-              isListening={isListening}
-              isRecording={isRecording}
-              interimTranscript={interimTranscript}
-              voiceLevel={voiceLevel}
-              onStartVoiceRecognition={startVoiceRecognition}
-              onStopVoiceRecognition={stopVoiceRecognition}
-              onStartAudioRecording={startAudioRecording}
-              onStopAudioRecording={stopAudioRecording}
-              estimateTokens={estimateTokens}
-              estimateCost={estimateCost}
-            />
+            <div className="p-4 border-t border-border/50">
+              {/* Voice Level Indicator */}
+              {(isListening || isRecording) && (
+                <div className="mb-3 flex items-center gap-2">
+                  <div className={cn(
+                    "w-3 h-3 rounded-full animate-pulse",
+                    isListening ? "bg-green-500" : "bg-red-500"
+                  )} />
+                  <span className="text-sm text-muted-foreground">
+                    {isListening ? "Listening..." : "Recording..."}
+                    {interimTranscript && ` "${interimTranscript}"`}
+                  </span>
+                  {isRecording && (
+                    <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="h-full bg-red-500 transition-all duration-100"
+                        style={{ width: `${voiceLevel}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Attachments Preview */}
+              {attachments.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {attachments.map((attachment) => (
+                    <div key={attachment.id} className="flex items-center gap-2 p-2 bg-muted rounded border group">
+                      {attachment.type === 'image' && <Image className="w-4 h-4" />}
+                      {attachment.type === 'code' && <FileCode className="w-4 h-4" />}
+                      {attachment.type === 'document' && <FileText className="w-4 h-4" />}
+                      {attachment.type === 'audio' && <Headphones className="w-4 h-4" />}
+                      <span className="text-sm truncate max-w-24">{attachment.name}</span>
+                      {attachment.type === 'audio' && (
+                        <span className="text-xs text-muted-foreground">
+                          🎵 Audio
+                        </span>
+                      )}
+                      <button
+                        onClick={() => removeAttachment(attachment.id)}
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-opacity"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Type, upload files, or speak to me..."
+                    className="min-h-12 max-h-32 resize-none pr-32"
+                    disabled={isTyping}
+                  />
+                  <div className="absolute bottom-2 right-2 flex gap-1">
+                    {/* Voice Recognition Button */}
+                    {voiceSupported && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={isListening ? stopVoiceRecognition : startVoiceRecognition}
+                        className={cn(
+                          "p-1 h-8 w-8",
+                          isListening && "bg-green-100 text-green-600"
+                        )}
+                        disabled={isRecording}
+                        aria-label={isListening ? "Stop voice recognition" : "Start voice recognition"}
+                      >
+                        {isListening ? <MicOff className="w-4 h-4" aria-hidden="true" /> : <Mic className="w-4 h-4" aria-hidden="true" />}
+                      </Button>
+                    )}
+
+                    {/* Audio Recording Button */}
+                    {currentModel?.supportsAudio && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={isRecording ? stopAudioRecording : startAudioRecording}
+                        className={cn(
+                          "p-1 h-8 w-8",
+                          isRecording && "bg-red-100 text-red-600"
+                        )}
+                        disabled={isListening}
+                        aria-label={isRecording ? "Stop audio recording" : "Start audio recording"}
+                      >
+                        <Radio className="w-4 h-4" aria-hidden="true" />
+                      </Button>
+                    )}
+
+                    {/* File Upload */}
+                    {currentModel?.supportsFiles && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-1 h-8 w-8"
+                        aria-label="Attach file"
+                      >
+                        <Paperclip className="w-4 h-4" aria-hidden="true" />
+                      </Button>
+                    )}
+
+                    {/* Prompt Enhancement */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={enhancePrompt}
+                      disabled={!input.trim() || isTyping}
+                      className="p-1 h-8 w-8"
+                      aria-label="Enhance prompt with AI suggestions"
+                    >
+                      <Zap className="w-4 h-4" aria-hidden="true" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={handleSend} 
+                  disabled={(!input.trim() && attachments.length === 0) || isTyping}
+                  className="bg-gradient-to-r from-purple-500 to-blue-600 hover:opacity-90"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              {/* Input Info */}
+              <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-3">
+                  <span>Press Enter to send, Shift+Enter for new line</span>
+                  {input && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      ~{estimateTokens(input)} tokens
+                    </span>
+                  )}
+                  {voiceSupported && (
+                    <span className="flex items-center gap-1">
+                      <Mic className="w-3 h-3" />
+                      Voice ready
+                    </span>
+                  )}
+                </div>
+                {currentModel && input && (
+                  <span className="flex items-center gap-1">
+                    <DollarSign className="w-3 h-3" />
+                    ~${estimateCost(estimateTokens(input), currentModel).toFixed(4)}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         </ResizablePanel>
         

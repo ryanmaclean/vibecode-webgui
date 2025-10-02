@@ -5,6 +5,9 @@
  */
 
 import { z } from 'zod'
+import { createChildLogger } from '@/lib/logger'
+
+const samlLogger = createChildLogger({ module: 'auth', scope: 'saml' })
 
 export interface SAMLConfig {
   entityId: string
@@ -158,10 +161,12 @@ export class SAMLProvider {
       // Extract user information
       const user = this.extractUserFromAssertion(assertion)
       
-      console.log('✅ SAML authentication successful for user:', user.email)
+      samlLogger.info('SAML authentication successful', { email: user.email })
       return user
     } catch (error) {
-      console.error('SAML response processing failed:', error)
+      samlLogger.error('SAML response processing failed', {
+        error: error instanceof Error ? error.message : error,
+      })
       throw new Error(`SAML authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -513,7 +518,7 @@ export function createSAMLProvider(providerId: string): SAMLProvider | null {
 
   const config = providers[providerId as keyof typeof providers]
   if (!config || !config.entityId || !config.singleSignOnUrl || !config.x509Certificate) {
-    console.warn(`SAML provider ${providerId} not configured or missing required environment variables`)
+    samlLogger.warn('SAML provider not configured or missing environment variables', { providerId })
     return null
   }
 
