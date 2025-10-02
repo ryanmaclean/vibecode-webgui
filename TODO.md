@@ -182,9 +182,15 @@
    - Run `scripts/build-profiles.sh 1.1.1-devinfra <profile>` for `minimal`, `standard`, `ai`, `web`, `full` after cleanup.
    - Append digests to `deployments/devinfra-manifests.log` via `docker buildx imagetools inspect ... >> deployments/devinfra-manifests.log`.
    - Apply tag format `1.1.1-devinfra-$(date +%Y%m%d)` for audit clarity.
+  - [ ] [2025-10-02 01:02 UTC] Rebuild run #18180120072 failed at 2025-10-02 01:03:51 UTC because the latest cosign release no longer ships per-architecture `.sha256` artifacts. Evidence captured in `logs/codeserver-profiles/18180120072-build.log` and `logs/codeserver-profiles/18180120072-summary.json`. Follow-up: adjust the Dockerfile to parse `cosign_checksums.txt`, sync with supply-chain to republish the checksum asset, update the install step naming, requeue the workflow once the fix lands on `main`, capture image digests, and rerun the validation suite.
+  - [ ] [2025-10-02 01:15 UTC] Re-dispatch run #18180349503 failed at 2025-10-02 01:17:28 UTC because GitHub Actions still builds from remote `main` (missing the checksum fix). Comment left on issue #404 with the failure log; rerun after the Dockerfile patch merges.
 3. **Validation suite**
-   - `npm run test:scripts`, Docker-in-Docker smoke (`docker run --privileged ... docker version`).
-   - Dev Containers check (`devcontainer up`), Jetify Devbox check (`devbox shell --config devbox.json`).
+   - `npm run test:scripts`.
+   - Docker-in-Docker smoke (**BLOCKED — pending refreshed Docker-in-Docker base images**).
+     - Draft command: `docker run --privileged --rm docker:27.1.1-dind dockerd --help`
+     - Dependencies: host Docker Engine with `--privileged` support, local user access to the Docker socket, and network egress to pull `docker:27.1.1-dind`.
+   - Dev Containers check (**BLOCKED — pending new devcontainer image**). Draft command: `devcontainer up`.
+   - Jetify Devbox check (**BLOCKED — pending new Devbox image**). Draft command: `devbox shell --config devbox.json`.
    - cosign verification scripts for kubectl/helm/kubectx/kubens once merged.
 4. **Documentation & communications**
    - Update CHANGELOG, release digest, DEPLOYMENT_REPORT focusing on Docker-on-Docker, Dev Containers, Devbox upgrades.
@@ -192,3 +198,24 @@
 
 ### Active Streams (UPDATED)
 > Archived historical coordination notes to docs/logs/AGENT_ACTIVITY_LOG.md#2025-10-01-coordination-archive.
+
+## Current Status (2025-10-02 01:22 UTC)
+
+### Builds In Progress
+- All 5 profiles triggered with fixed Dockerfile
+- Cosign checksum issue resolved
+- Pushing to GHCR + Docker Hub
+
+### GitHub Issues Created
+- #453: Verify v1.1.1 GPL-free builds
+- #454: Deprecate v1.1.0 GPL-tainted images
+- #455: Security hardening (branch protection, environment secrets)
+- #456: Update documentation for v1.1.1
+- #457: Complete security audit tasks
+
+### Next Actions
+1. Monitor builds for completion
+2. Verify images in both registries
+3. Test for Emacs absence
+4. Update documentation
+5. Deprecate v1.1.0 tags
