@@ -29,7 +29,8 @@ ARG BUILD_DATE
 ARG GIT_COMMIT
 ARG VERSION=1.2.0
 ARG COSIGN_VERSION=2.2.4
-ARG GO_VERSION=1.22.4
+ARG GO_VERSION=1.25.1
+ARG GO_SHA256=7716a0d940a0f6ae8e1f3b3f4f36299dc53e31b16840dbd171254312c41ca12e
 ARG POCKETBASE_VERSION=0.24.4
 
 # Metadata
@@ -209,13 +210,12 @@ RUN set -eux && \
     rm -rf /tmp/* && \
     node --version && npm --version && \
     # Install Go
-    GO_TARBALL="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" && \
+    GO_TARBALL="go${GO_VERSION}.linux-amd64.tar.gz" && \
     cd /tmp && \
-    curl -fsSLo "${GO_TARBALL}" "https://dl.google.com/go/${GO_TARBALL}" && \
-    curl -fsSLo "${GO_TARBALL}.sha256" "https://dl.google.com/go/${GO_TARBALL}.sha256" && \
-    sha256sum --check --strict "${GO_TARBALL}.sha256" && \
+    curl -fsSL "https://go.dev/dl/${GO_TARBALL}" -o "${GO_TARBALL}" && \
+    echo "${GO_SHA256}  ${GO_TARBALL}" | sha256sum -c - && \
     tar -C /usr/local -xzf "${GO_TARBALL}" && \
-    rm -f "${GO_TARBALL}" "${GO_TARBALL}.sha256" && \
+    rm -f "${GO_TARBALL}" && \
     ln -sf /usr/local/go/bin/go /usr/local/bin/go
 
 # Layer 5: Install Helm with verification and kubectl with kubectx
