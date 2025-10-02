@@ -211,3 +211,203 @@
 ### Active Streams (UPDATED)
 
 > Archived historical coordination notes to docs/logs/AGENT_ACTIVITY_LOG.md#2025-10-01-coordination-archive.
+
+## Apple Containerization Integration Plan (CRITICAL)
+
+### Phase 1: Proof of Concept (Week 1)
+**Owner**: Agent #7 - Apple Containerization
+**Priority**: CRITICAL
+**Time**: 40 hours
+
+- [ ] Set up macOS 15 beta environment
+- [ ] Install Apple Containerization framework
+- [ ] Build optimized Linux kernel for containers
+- [ ] Test basic container creation/destruction
+- [ ] Run code-server in Apple container
+- [ ] Measure performance metrics (startup time, memory, CPU)
+- [ ] Compare vs Docker Desktop performance
+- [ ] Document findings and blockers
+
+**Success Criteria**: code-server running in Apple container with sub-second start
+
+### Phase 2: VibeCode Integration (Week 2-3)
+**Owner**: Agent #7 - Apple Containerization
+**Priority**: HIGH
+**Time**: 60 hours
+
+- [ ] Add runtime detection (Apple vs Docker vs OrbStack)
+- [ ] Create Apple Containerization backend adapter
+- [ ] Implement workspace provisioning for Apple containers
+- [ ] Add dedicated IP management per container
+- [ ] Integrate with existing workspace service
+- [ ] Add health checks and monitoring
+- [ ] Test multi-workspace scenarios
+- [ ] Performance optimization for Apple Silicon
+
+**Success Criteria**: Full workspace lifecycle on Apple Containerization
+
+### Phase 3: Production Readiness (Week 4)
+**Owner**: Agent #7 - Apple Containerization
+**Priority**: HIGH
+**Time**: 40 hours
+
+- [ ] Error handling and recovery
+- [ ] Resource limits and quotas
+- [ ] Security hardening
+- [ ] Logging and observability
+- [ ] Documentation (setup, troubleshooting)
+- [ ] User guide for macOS developers
+- [ ] CI/CD integration
+- [ ] Beta testing with real users
+
+**Success Criteria**: Production-ready Apple Containerization support
+
+### Phase 4: Marketing & Launch (Week 5)
+**Owner**: Agent #8 - Marketing & Developer Relations
+**Priority**: MEDIUM
+**Time**: 20 hours
+
+- [ ] Blog post: "First Cloud IDE for Apple Containerization"
+- [ ] Technical deep-dive article
+- [ ] Performance comparison (vs Docker Desktop)
+- [ ] Video demo and walkthrough
+- [ ] Apple developer community outreach
+- [ ] Conference talk submissions
+- [ ] Social media campaign
+- [ ] Press release
+
+**Success Criteria**: Market awareness, developer adoption
+
+## Container OS Ecosystem Expansion
+
+### Talos Linux Integration (#467)
+**Owner**: Agent #9 - Container OS Integrations
+**Priority**: HIGH
+**Time**: 30 hours
+
+- [ ] Deploy VibeCode on Talos cluster
+- [ ] Test API-only access patterns
+- [ ] Document Talos-specific setup
+- [ ] Create Talos deployment manifests
+- [ ] Performance testing
+- [ ] Case study: "Development on Talos Linux"
+- [ ] Blog post
+- [ ] Community engagement
+
+### AWS Bottlerocket Support (#468)
+**Owner**: Agent #9 - Container OS Integrations
+**Priority**: HIGH
+**Time**: 30 hours
+
+- [ ] Test on EKS with Bottlerocket nodes
+- [ ] AWS service integration (S3, RDS, etc)
+- [ ] Create Bottlerocket-optimized images
+- [ ] AWS Marketplace listing preparation
+- [ ] Documentation for EKS deployment
+- [ ] Cost analysis and optimization
+- [ ] AWS partner program application
+- [ ] Launch on AWS Marketplace
+
+### macOS Runtime Support (#466)
+**Owner**: Agent #10 - macOS Developer Experience
+**Priority**: MEDIUM
+**Time**: 20 hours
+
+- [ ] Test on OrbStack
+- [ ] Test on Colima
+- [ ] Test on Rancher Desktop
+- [ ] Test on Podman Desktop
+- [ ] Runtime auto-detection script
+- [ ] Performance comparison matrix
+- [ ] Setup guides for each runtime
+- [ ] Update README with macOS instructions
+
+## Technical Debt & Quality
+
+### Remaining console.log Cleanup (#448)
+**Owner**: Agent #11 - Code Quality
+**Priority**: MEDIUM
+**Time**: 15 hours
+
+- [ ] Replace console.log in remaining 44 API routes
+- [ ] Add structured logging throughout
+- [ ] Ensure Datadog integration
+- [ ] Test log aggregation
+- [ ] Document logging standards
+
+### Docker Build Fixes (#453)
+**Owner**: Agent #1 - Docker Build
+**Priority**: HIGH
+**Time**: 10 hours
+
+- [ ] Fix Go installation in Dockerfile
+- [ ] Fix cosign verification
+- [ ] Test all 5 profiles
+- [ ] Push to GHCR
+- [ ] Verify GPL-free status
+- [ ] Update documentation
+
+### Datadog Consolidation (#464)
+**Owner**: Agent #2 - Datadog
+**Priority**: HIGH
+**Time**: 8 hours
+
+- [ ] Complete tracer.init() consolidation
+- [ ] Add unified service tagging
+- [ ] Test tracing works end-to-end
+- [ ] Document Datadog setup
+- [ ] Add monitoring best practices
+
+## Agent Assignments
+
+### Agent #7: Apple Containerization Lead
+- Focus: Phases 1-3 of Apple Containerization
+- Timeline: 4 weeks
+- Deliverable: Production-ready Apple container support
+
+### Agent #8: Marketing & DevRel
+- Focus: Phase 4 + ongoing community
+- Timeline: Ongoing
+- Deliverable: Market leadership position
+
+### Agent #9: Container OS Integrations
+- Focus: Talos, Bottlerocket, Flatcar
+- Timeline: 6 weeks
+- Deliverable: Multi-platform container OS support
+
+### Agent #10: macOS Developer Experience
+- Focus: All macOS runtimes
+- Timeline: 2 weeks
+- Deliverable: Best-in-class macOS support
+
+### Agent #11: Code Quality
+- Focus: Technical debt, logging, testing
+- Timeline: Ongoing
+- Deliverable: Production-grade codebase
+
+## Success Metrics
+
+### Q4 2024 Goals
+- ✅ Apple Containerization proof of concept
+- ✅ Talos Linux deployment guide
+- ✅ AWS Bottlerocket testing complete
+- ✅ All macOS runtimes supported
+- ✅ Zero console.log in API routes
+- ✅ Docker builds working
+
+### Q1 2025 Goals
+- Production Apple Containerization support
+- AWS Marketplace listing
+- 1000+ macOS developers using VibeCode
+- Conference talks accepted
+- Industry recognition as container-native IDE
+
+## Timeline Overview
+
+**Week 1**: Apple Containerization POC
+**Week 2-3**: Apple integration development
+**Week 4**: Production readiness
+**Week 5**: Marketing launch
+**Week 6-8**: Container OS expansion (Talos, Bottlerocket)
+**Ongoing**: Code quality, documentation, community
+
