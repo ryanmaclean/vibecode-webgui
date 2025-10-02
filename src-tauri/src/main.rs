@@ -3,6 +3,8 @@
 
 mod commands;
 mod docker;
+mod mdns;
+mod menu;
 
 use tauri::Manager;
 
@@ -16,8 +18,20 @@ fn main() {
             commands::check_docker,
             commands::get_docker_version,
             commands::get_docker_status,
+            commands::get_docker_info,
+            commands::start_mdns_service,
+            commands::discover_vibecode_sessions,
+            commands::stop_mdns_service,
+            commands::start_containers,
+            commands::stop_containers,
+            commands::restart_containers,
         ])
         .setup(|app| {
+            // Initialize system tray
+            if let Err(e) = menu::create_system_tray(app.handle()) {
+                eprintln!("Failed to create system tray: {}", e);
+            }
+
             #[cfg(debug_assertions)]
             {
                 let window = app.get_webview_window("main").unwrap();

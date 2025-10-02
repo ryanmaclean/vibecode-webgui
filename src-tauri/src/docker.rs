@@ -1,4 +1,5 @@
 use bollard::Docker;
+use bollard::container::ListContainersOptions;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -55,6 +56,101 @@ pub async fn get_docker_info() -> Result<serde_json::Value, String> {
         }
         Err(e) => Err(format!("Cannot connect to Docker: {}", e)),
     }
+}
+
+pub async fn start_containers() -> Result<String, String> {
+    let docker = Docker::connect_with_local_defaults()
+        .map_err(|e| format!("Cannot connect to Docker: {}", e))?;
+
+    // List all stopped containers with vibecode prefix
+    let mut filters = std::collections::HashMap::new();
+    filters.insert("name", vec!["vibecode"]);
+
+    let options = ListContainersOptions {
+        all: true,
+        filters,
+        ..Default::default()
+    };
+
+    let containers = docker.list_containers(Some(options)).await
+        .map_err(|e| format!("Failed to list containers: {}", e))?;
+
+    let mut started_count = 0;
+    for container in containers {
+        if let Some(id) = container.id {
+            if let Some(state) = container.state {
+                if state != "running" {
+                    docker.start_container::<String>(&id, None).await
+                        .map_err(|e| format!("Failed to start container {}: {}", id, e))?;
+                    started_count += 1;
+                }
+            }
+        }
+    }
+
+    Ok(format!("Started {} container(s)", started_count))
+}
+
+pub async fn stop_containers() -> Result<String, String> {
+    let docker = Docker::connect_with_local_defaults()
+        .map_err(|e| format!("Cannot connect to Docker: {}", e))?;
+
+    // List all running containers with vibecode prefix
+    let mut filters = std::collections::HashMap::new();
+    filters.insert("name", vec!["vibecode"]);
+
+    let options = ListContainersOptions {
+        all: true,
+        filters,
+        ..Default::default()
+    };
+
+    let containers = docker.list_containers(Some(options)).await
+        .map_err(|e| format!("Failed to list containers: {}", e))?;
+
+    let mut stopped_count = 0;
+    for container in containers {
+        if let Some(id) = container.id {
+            if let Some(state) = container.state {
+                if state == "running" {
+                    docker.stop_container(&id, None).await
+                        .map_err(|e| format!("Failed to stop container {}: {}", id, e))?;
+                    stopped_count += 1;
+                }
+            }
+        }
+    }
+
+    Ok(format!("Stopped {} container(s)", stopped_count))
+}
+
+pub async fn restart_containers() -> Result<String, String> {
+    let docker = Docker::connect_with_local_defaults()
+        .map_err(|e| format!("Cannot connect to Docker: {}", e))?;
+
+    // List all containers with vibecode prefix
+    let mut filters = std::collections::HashMap::new();
+    filters.insert("name", vec!["vibecode"]);
+
+    let options = ListContainersOptions {
+        all: true,
+        filters,
+        ..Default::default()
+    };
+
+    let containers = docker.list_containers(Some(options)).await
+        .map_err(|e| format!("Failed to list containers: {}", e))?;
+
+    let mut restarted_count = 0;
+    for container in containers {
+        if let Some(id) = container.id {
+            docker.restart_container(&id, None).await
+                .map_err(|e| format!("Failed to restart container {}: {}", id, e))?;
+            restarted_count += 1;
+        }
+    }
+
+    Ok(format!("Restarted {} container(s)", restarted_count))
 }
 
 #[cfg(test)]

@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Providers from './providers';
 import Script from 'next/script';
+import { TauriMenuBarProvider } from '@/components/TauriMenuBarProvider';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
 // const geistSans = Geist({
@@ -60,6 +61,7 @@ export default function RootLayout({
         className="antialiased"
       >
         <Providers>
+          <TauriMenuBarProvider />
           {children}
         </Providers>
       </body>
