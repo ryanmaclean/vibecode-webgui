@@ -30,7 +30,8 @@ ARG GIT_COMMIT
 ARG VERSION=1.2.0
 ARG COSIGN_VERSION=2.2.4
 ARG GO_VERSION=1.25.1
-ARG GO_SHA256=7716a0d940a0f6ae8e1f3b3f4f36299dc53e31b16840dbd171254312c41ca12e
+ARG GO_SHA256_AMD64=7716a0d940a0f6ae8e1f3b3f4f36299dc53e31b16840dbd171254312c41ca12e
+ARG GO_SHA256_ARM64=df6bd33cbd1e6a3fdd0a1c56d19ad8c1f44ae90b2d3f22e7e6dd2d06e099f1c3
 ARG POCKETBASE_VERSION=0.24.4
 
 # Metadata
@@ -209,8 +210,13 @@ RUN set -eux && \
     ln -sf /usr/local/lib/nodejs/bin/npx /usr/local/bin/npx && \
     rm -rf /tmp/* && \
     node --version && npm --version && \
-    # Install Go
-    GO_TARBALL="go${GO_VERSION}.linux-amd64.tar.gz" && \
+    # Install Go with platform-specific architecture
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") GO_ARCH=amd64; GO_SHA256="${GO_SHA256_AMD64}" ;; \
+      "linux/arm64") GO_ARCH=arm64; GO_SHA256="${GO_SHA256_ARM64}" ;; \
+      *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
+    esac && \
+    GO_TARBALL="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" && \
     cd /tmp && \
     curl -fsSL "https://go.dev/dl/${GO_TARBALL}" -o "${GO_TARBALL}" && \
     echo "${GO_SHA256}  ${GO_TARBALL}" | sha256sum -c - && \
