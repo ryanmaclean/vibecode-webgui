@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { AIProjectGenerator } from '@/lib/services/ai-project-generator'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 const ProjectGenerationRequestSchema = z.object({
   prompt: z.string().min(10, 'Prompt must be at least 10 characters'),
@@ -17,18 +18,18 @@ const ProjectGenerationRequestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🚀 AI Project Generation API called')
+    logger.info('AI Project Generation API called')
 
     // Parse and validate request
     const body = await request.json()
     const validatedRequest = ProjectGenerationRequestSchema.parse(body)
 
-    console.log(`📝 Generating project for prompt: "${validatedRequest.prompt}"`)
+    logger.info('Generating project', { prompt: validatedRequest.prompt.substring(0, 100), framework: validatedRequest.framework })
 
     // Check for required API key
     const openaiApiKey = process.env.OPENAI_API_KEY || process.env.AZURE_OPENAI_API_KEY
     if (!openaiApiKey) {
-      console.error('❌ No OpenAI API key configured')
+      logger.error('No OpenAI API key configured')
       return NextResponse.json(
         { error: 'AI service not configured. Please set OPENAI_API_KEY.' },
         { status: 500 }
@@ -43,9 +44,12 @@ export async function POST(request: NextRequest) {
     const generatedProject = await generator.generateProject(validatedRequest)
     const generationTime = Date.now() - startTime
 
-    console.log(`✅ Project generated successfully in ${generationTime}ms`)
-    console.log(`📊 Generated project: ${generatedProject.name} (${generatedProject.framework})`)
-    console.log(`📁 Files generated: ${Object.keys(generatedProject.structure).length}`)
+    logger.info('Project generated successfully', {
+      generationTime,
+      projectName: generatedProject.name,
+      framework: generatedProject.framework,
+      filesGenerated: Object.keys(generatedProject.structure).length
+    })
 
     // Return generated project
     return NextResponse.json({
