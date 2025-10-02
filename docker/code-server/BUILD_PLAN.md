@@ -14,14 +14,14 @@ Build and deploy 5 optimized code-server profiles to GHCR and Docker Hub, fixing
 ### Missing in v1.0.0:
 - ❌ vim (only vim-tiny)
 - ❌ neovim
-- ❌ emacs-nox
+- ❌ 
 - ❌ aider (AI CLI)
 - ❌ goose (partially - not in PATH)
 
 ### Fixed in v1.1.0:
 - ✅ Full vim installed via apt
 - ✅ neovim installed via apt
-- ✅ emacs-nox installed via apt
+- ✅  installed via apt
 - ✅ aider installed via pip (`pip3 install --break-system-packages aider-chat`)
 - ✅ goose installed via Go (with PATH fix)
 - ✅ Verification step added to catch missing tools
@@ -37,7 +37,7 @@ Build and deploy 5 optimized code-server profiles to GHCR and Docker Hub, fixing
 - dbaeumer.vscode-eslint
 - esbenp.prettier-vscode
 
-**Tools**: vim, nvim, emacs, aider, goose, git, python3
+**Tools**: vim, nvim, aider, goose, git, python3
 
 ### 2. Standard (700MB) ⭐ RECOMMENDED
 **Use Case**: General development, most users  
@@ -103,7 +103,6 @@ docker run -it --rm ryanmaclean/vibecode-codeserver:standard bash -c "
   echo '=== Editors ===' &&
   vim --version | head -1 &&
   nvim --version | head -1 &&
-  emacs --version | head -1 &&
   echo '=== AI CLIs ===' &&
   aider --version &&
   goose version &&
@@ -210,14 +209,14 @@ codex exec "Research additional AI CLI tools for code-server"
 ### For Cursor Agent
 ```bash
 # Test standard profile
-docker run -it --rm ryanmaclean/vibecode-codeserver:standard bash -c "vim --version && nvim --version && emacs --version && aider --version && goose version"
+docker run -it --rm ryanmaclean/vibecode-codeserver:standard bash -c "vim --version && nvim --version && aider --version && goose version"
 ```
 
 ## 📈 Success Metrics
 
 - ✅ All 5 profiles build successfully
 - ✅ All profiles < expected size (minimal 400MB, standard 700MB, etc.)
-- ✅ All required tools verified (vim, nvim, emacs, aider, goose)
+- ✅ All required tools verified (vim, nvim, aider, goose)
 - ✅ All VS Code extensions working
 - ✅ Images available on both GHCR and Docker Hub
 - ✅ Deployed to Synology NAS
