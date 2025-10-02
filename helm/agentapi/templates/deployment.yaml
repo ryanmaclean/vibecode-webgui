@@ -1,0 +1,239 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agentapi.fullname" . }}
+  labels:
+    {{- include "agentapi.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    {{- toYaml .Values.updateStrategy | nindent 4 }}
+  selector:
+    matchLabels:
+      {{- include "agentapi.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "agentapi.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "agentapi.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+
+      {{- if .Values.initContainers }}
+      initContainers:
+        {{- toYaml .Values.initContainers | nindent 8 }}
+      {{- end }}
+
+      containers:
+        # Main container: code-server IDE
+        {{- if .Values.codeserver.enabled }}
+        - name: code-server
+          image: "{{ .Values.codeserver.image.repository }}:{{ .Values.codeserver.image.tag }}"
+          imagePullPolicy: {{ .Values.codeserver.image.pullPolicy }}
+          args:
+            - --bind-addr
+            - 0.0.0.0:{{ .Values.codeserver.service.targetPort }}
+            - --auth
+            - password
+            - /home/coder/workspace
+          ports:
+            - name: ide
+              containerPort: {{ .Values.codeserver.service.targetPort }}
+              protocol: TCP
+          env:
+            {{- toYaml .Values.codeserver.env | nindent 12 }}
+            - name: AGENTAPI_HOST
+              value: "127.0.0.1"
+            - name: AGENTAPI_PORT
+              value: "{{ .Values.agentapi.config.port }}"
+          resources:
+            {{- toYaml .Values.codeserver.resources | nindent 12 }}
+          volumeMounts:
+            - name: workspace
+              mountPath: /home/coder/workspace
+            - name: terminal-data
+              mountPath: /tmp/terminals
+            - name: config
+              mountPath: /home/coder/.config
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.codeserver.service.targetPort }}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.codeserver.service.targetPort }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+        {{- end }}
+
+        # Sidecar: AgentAPI for agent control
+        {{- if .Values.agentapi.enabled }}
+        - name: agentapi
+          image: "{{ .Values.agentapi.image.repository }}:{{ .Values.agentapi.image.tag }}"
+          imagePullPolicy: {{ .Values.agentapi.image.pullPolicy }}
+          args:
+            - --config
+            - /etc/agentapi/config.yaml
+          ports:
+            - name: api
+              containerPort: {{ .Values.agentapi.config.port }}
+              protocol: TCP
+            {{- if .Values.monitoring.prometheus.enabled }}
+            - name: metrics
+              containerPort: {{ .Values.monitoring.prometheus.port }}
+              protocol: TCP
+            {{- end }}
+          env:
+            - name: AGENTAPI_HOST
+              value: "{{ .Values.agentapi.config.host }}"
+            - name: AGENTAPI_PORT
+              value: "{{ .Values.agentapi.config.port }}"
+            - name: AGENTAPI_LOG_LEVEL
+              value: "{{ .Values.agentapi.config.logLevel }}"
+            - name: AGENTAPI_MAX_CONCURRENT_AGENTS
+              value: "{{ .Values.agentapi.config.maxConcurrentAgents }}"
+            - name: AGENTAPI_AGENT_TIMEOUT
+              value: "{{ .Values.agentapi.config.agentTimeout }}"
+            {{- if or .Values.externalPostgresql.enabled .Values.postgresql.enabled }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentapi.fullname" . }}-db
+                  key: database-url
+            {{- end }}
+            {{- if or .Values.externalRedis.enabled .Values.redis.enabled }}
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "agentapi.fullname" . }}-redis
+                  key: redis-url
+            {{- end }}
+          resources:
+            {{- toYaml .Values.agentapi.resources | nindent 12 }}
+          volumeMounts:
+            - name: workspace
+              mountPath: /home/coder/workspace
+              readOnly: true
+            - name: terminal-data
+              mountPath: /tmp/terminals
+            - name: agentapi-config
+              mountPath: /etc/agentapi
+          {{- if .Values.agentapi.healthCheck.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - /etc/agentapi/health-check.sh
+            initialDelaySeconds: {{ .Values.agentapi.healthCheck.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.agentapi.healthCheck.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.agentapi.healthCheck.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.agentapi.healthCheck.livenessProbe.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.agentapi.config.port }}
+            initialDelaySeconds: {{ .Values.agentapi.healthCheck.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.agentapi.healthCheck.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.agentapi.healthCheck.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.agentapi.healthCheck.readinessProbe.failureThreshold }}
+          {{- end }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+        {{- end }}
+
+        # Optional Sidecar: Datadog monitoring
+        {{- if .Values.monitoring.datadog.enabled }}
+        - name: datadog-agent
+          image: gcr.io/datadoghq/agent:7
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.monitoring.datadog.apiKeySecretName }}
+                  key: api-key
+                  optional: true
+            - name: DD_SITE
+              value: {{ .Values.monitoring.datadog.site }}
+            - name: DD_ENV
+              value: {{ .Values.monitoring.datadog.env }}
+            - name: DD_SERVICE
+              value: code-server-workspace
+            - name: DD_LOGS_ENABLED
+              value: "true"
+            - name: DD_APM_ENABLED
+              value: "true"
+            - name: DD_PROCESS_AGENT_ENABLED
+              value: "true"
+            - name: DD_KUBERNETES_KUBELET_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+        {{- end }}
+
+      volumes:
+        - name: workspace
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "agentapi.fullname" . }}-workspace
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: terminal-data
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: config
+          emptyDir: {}
+        - name: agentapi-config
+          configMap:
+            name: {{ include "agentapi.fullname" . }}-config
+            defaultMode: 0755
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
