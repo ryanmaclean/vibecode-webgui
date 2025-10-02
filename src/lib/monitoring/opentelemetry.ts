@@ -34,7 +34,7 @@ let ATTR_SERVICE_VERSION: string | null = null;
 if (!isDockerBuild && !isLocalDev) {
   try {
     // Dynamic imports to prevent static analysis issues and keep dev builds lightweight
-    // eslint-disable-next-line no-eval
+     
     const dynamicRequire = eval('require') as NodeRequireFn;
     const sdkNode = dynamicRequire('@opentelemetry/sdk-node');
     const autoInstrumentations = dynamicRequire('@opentelemetry/auto-instrumentations-node');

@@ -225,11 +225,19 @@ export class MFAProvider {
       device.lastUsed = new Date()
       this.devices.set(deviceId, device)
       
-      console.log(`✅ MFA device activated: ${device.name} (${device.type})`)
+      this.logger.info('MFA device activated', {
+        userId: device.userId,
+        deviceName: device.name,
+        deviceType: device.type,
+      })
       return true
     }
 
-    console.log(`❌ MFA setup verification failed for device: ${device.name}`)
+    this.logger.warn('MFA setup verification failed', {
+      userId: device.userId,
+      deviceName: device.name,
+      deviceType: device.type,
+    })
     return false
   }
 
@@ -283,7 +291,7 @@ export class MFAProvider {
               d.email ? this.maskEmail(d.email) : undefined
     }))
 
-    console.log(`🔐 MFA challenge created for user ${userId}, challengeId: ${challengeId}`)
+    this.logger.info('MFA challenge created', { userId, challengeId, challengeType })
 
     return {
       challengeId,
@@ -324,7 +332,10 @@ export class MFAProvider {
         this.challenges.delete(challengeId)
         const remainingBackupCodes = this.backupCodes.get(challenge.userId)?.length || 0
         
-        console.log(`✅ MFA verification successful with backup code for user ${challenge.userId}`)
+        this.logger.info('MFA verification successful via backup code', {
+          userId: challenge.userId,
+          challengeId,
+        })
         
         return {
           success: true,
@@ -361,7 +372,12 @@ export class MFAProvider {
       this.challenges.delete(challengeId)
       this.clearRateLimit(challenge.userId)
       
-      console.log(`✅ MFA verification successful for user ${challenge.userId} using ${device.type}`)
+      this.logger.info('MFA verification successful', {
+        userId: challenge.userId,
+        challengeId,
+        deviceId,
+        deviceType: device.type,
+      })
       
       return {
         success: true,
@@ -371,7 +387,12 @@ export class MFAProvider {
     } else {
       this.recordFailedAttempt(challenge.userId)
       
-      console.log(`❌ MFA verification failed for user ${challenge.userId}, attempts: ${challenge.attempts}/${challenge.maxAttempts}`)
+      this.logger.warn('MFA verification failed', {
+        userId: challenge.userId,
+        challengeId,
+        attempts: challenge.attempts,
+        maxAttempts: challenge.maxAttempts,
+      })
       
       return {
         success: false,
@@ -402,7 +423,11 @@ export class MFAProvider {
     }
 
     this.devices.delete(deviceId)
-    console.log(`🗑️  MFA device removed: ${device.name} (${device.type})`)
+    this.logger.info('MFA device removed', {
+      userId: device.userId,
+      deviceName: device.name,
+      deviceType: device.type,
+    })
     return true
   }
 
@@ -413,7 +438,7 @@ export class MFAProvider {
     const backupCodes = this.generateBackupCodes()
     this.backupCodes.set(userId, backupCodes)
     
-    console.log(`🔑 New backup codes generated for user ${userId}`)
+    this.logger.info('MFA backup codes regenerated', { userId })
     return backupCodes
   }
 
@@ -436,7 +461,9 @@ export class MFAProvider {
     // Store the code temporarily (in real app, use Redis or database)
     this.storeTempCode(deviceId, code, 'sms')
     
-    console.log(`📱 SMS code sent to ${this.maskPhoneNumber(phoneNumber)}: ${code}`)
+    this.logger.info('SMS verification code sent', {
+      phoneNumber: this.maskPhoneNumber(phoneNumber),
+    })
   }
 
   private async sendEmailVerification(email: string, deviceId: string): Promise<void> {
@@ -446,7 +473,9 @@ export class MFAProvider {
     // Store the code temporarily
     this.storeTempCode(deviceId, code, 'email')
     
-    console.log(`📧 Email code sent to ${this.maskEmail(email)}: ${code}`)
+    this.logger.info('Email verification code sent', {
+      email: this.maskEmail(email),
+    })
   }
 
   private async verifySMSToken(deviceId: string, token: string): Promise<boolean> {
