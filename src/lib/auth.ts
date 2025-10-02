@@ -7,7 +7,7 @@ import { NextAuthOptions } from 'next-auth'
 import GithubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { hashPassword, isValidBcryptHash, verifyPassword } from './auth/password'
+import { verifyPassword, isValidBcryptHash } from './auth/password'
 
 /**
  * CRITICAL SECURITY VALIDATION: NEXTAUTH_SECRET
@@ -52,18 +52,30 @@ if (NEXTAUTH_SECRET.length < 32) {
 
 console.log('✅ NEXTAUTH_SECRET validation passed: secure secret configured')
 
-const TIMING_SAFE_DUMMY_HASH = '$2b$12$eUlS0dNKrMxLdkPgDJZdpuHlNCn/KkheBmEzKE2.yOrembE1ccsV.'
+let timingSafeHashPromise: Promise<string> | null = null
 
-if (!isValidBcryptHash(TIMING_SAFE_DUMMY_HASH)) {
-  throw new Error('Timing-safe dummy hash is misconfigured: invalid bcrypt format')
+const getTimingSafeHash = async (): Promise<string> => {
+  if (!timingSafeHashPromise) {
+    timingSafeHashPromise = hashPassword('timing-safe-placeholder')
+  }
+
+  return timingSafeHashPromise
 }
 
-const performTimingSafeCompare = async (password: string): Promise<void> => {
+const performTimingSafeCompare = async (password: string) => {
   try {
-    await verifyPassword(password ?? '', TIMING_SAFE_DUMMY_HASH)
+    const dummyHash = await getTimingSafeHash()
+    await verifyPassword(password, dummyHash)
   } catch (error) {
-    console.warn('Timing-safe bcrypt comparison failed', { error })
+    console.warn('Timing-safe bcrypt comparison failed', error)
   }
+}
+
+// Security: fallback hash keeps response timing consistent when user lookup fails.
+const DUMMY_PASSWORD_HASH = '$2b$12$eUlS0dNKrMxLdkPgDJZdpuHlNCn/KkheBmEzKE2.yOrembE1ccsV.'
+
+if (!isValidBcryptHash(DUMMY_PASSWORD_HASH)) {
+  throw new Error('Dummy password hash is misconfigured: invalid bcrypt format')
 }
 
 type LegacyCredential = {
@@ -78,7 +90,7 @@ type LegacyCredential = {
  * Security: legacy dev credentials are stored as bcrypt hashes (12 rounds).
  * Hashes map to the retired local passwords tracked in issue #438.
  */
-const LEGACY_CREDENTIALS: LegacyCredential[] = [
+const RAW_LEGACY_CREDENTIALS: LegacyCredential[] = [
   {
     email: 'admin@vibecode.dev',
     passwordHash: '$2b$12$tcrKFARakE8oWr7Z9oBY1OVu2czU5B3AMy2mQBYWNKY/RAwZVvLwS',
@@ -151,6 +163,12 @@ const LEGACY_CREDENTIALS: LegacyCredential[] = [
   },
 ]
 
+const LEGACY_CREDENTIALS: LegacyCredential[] = RAW_LEGACY_CREDENTIALS.map((credential) => ({
+  ...credential,
+  email: credential.email.trim().toLowerCase(),
+  passwordHash: credential.passwordHash.trim(),
+}))
+
 LEGACY_CREDENTIALS.forEach((credential) => {
   if (!isValidBcryptHash(credential.passwordHash)) {
     console.warn('⚠️ Legacy credential misconfigured with invalid bcrypt hash', {
@@ -160,8 +178,8 @@ LEGACY_CREDENTIALS.forEach((credential) => {
   }
 })
 
-const LEGACY_CREDENTIAL_LOOKUP = new Map<string, LegacyCredential>(
-  LEGACY_CREDENTIALS.map((credential) => [credential.email.toLowerCase(), credential])
+const LEGACY_CREDENTIALS_BY_EMAIL = new Map<string, LegacyCredential>(
+  LEGACY_CREDENTIALS.map((credential) => [credential.email, credential])
 )
 
 // Build providers dynamically so missing OAuth credentials do not break local auth flows.
@@ -239,50 +257,28 @@ providers.push(
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          console.warn('❌ Credentials login rejected: missing parameters')
+          console.warn('Credentials authentication failed: missing input')
           return null
         }
 
-        const password = credentials.password
         const normalizedEmail = credentials.email.trim().toLowerCase()
+        const user = LEGACY_CREDENTIALS.find((cred) => cred.email === normalizedEmail)
 
-        try {
-          const user = LEGACY_CREDENTIALS_BY_EMAIL.get(normalizedEmail)
-
-          if (!user) {
-            await performTimingSafeCompare(password)
-            console.warn('⚠️ Credentials login rejected: user not found', { email: normalizedEmail })
-            return null
-          }
-
-          if (!isValidBcryptHash(user.passwordHash)) {
-            await performTimingSafeCompare(password)
-            console.warn('❌ Credentials login rejected: stored hash is invalid', { email: user.email })
-            return null
-          }
-
-          const isValid = await verifyPassword(password, user.passwordHash)
-
-          if (!isValid) {
-            console.warn('⚠️ Credentials login rejected: invalid password', { email: normalizedEmail })
-            return null
-          }
-
-          console.log('✅ Credentials login succeeded', { userId: user.id })
-          return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-          }
-        } catch (error) {
-          await performTimingSafeCompare(password)
-          console.warn('❌ Credentials login rejected: unexpected error during verification', {
-            email: normalizedEmail,
-            error,
-          })
+        if (!user) {
+          await verifyPassword(credentials.password, TIMING_SAFE_DUMMY_HASH)
+          console.warn('Credentials authentication failed')
           return null
         }
+
+        const isValid = await verifyPassword(credentials.password, user.passwordHash)
+
+        if (!isValid) {
+          console.warn('Credentials authentication failed')
+          return null
+        }
+
+        console.info('Legacy credentials authentication succeeded')
+
       },
     })
 )
