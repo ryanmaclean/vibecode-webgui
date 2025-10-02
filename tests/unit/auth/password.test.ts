@@ -1,53 +1,44 @@
-import { hashPassword, verifyPassword, isValidBcryptHash } from '@/lib/auth/password'
+import { hashPassword, isValidBcryptHash, verifyPassword } from '@/lib/auth/password'
 
-describe('auth/password utilities', () => {
-  describe('hashPassword', () => {
-    it('produces a bcrypt hash that verifies with the original password', async () => {
-      const password = 'Str0ng-P@ssword!'
-      const hash = await hashPassword(password)
+describe('auth password utilities', () => {
+  const bcryptPattern = /^\$2[aby]\$12\$[./A-Za-z0-9]{53}$/
 
-      expect(hash).toMatch(/^\$2[aby]\$12\$/)
-      await expect(verifyPassword(password, hash)).resolves.toBe(true)
-    })
+  it('hashPassword returns a bcrypt hash with the default rounds', async () => {
+    const hash = await hashPassword('correct horse battery staple')
 
-    it('rejects empty password input', async () => {
-      await expect(hashPassword('')).rejects.toThrow('Password must be a non-empty string')
-    })
+    expect(hash).toMatch(bcryptPattern)
+    expect(isValidBcryptHash(hash)).toBe(true)
   })
 
-  describe('verifyPassword', () => {
-    it('returns false when the password does not match', async () => {
-      const hash = await hashPassword('OriginalP@ssw0rd')
-      await expect(verifyPassword('DifferentP@ssw0rd', hash)).resolves.toBe(false)
-    })
+  it('verifyPassword resolves true when hash matches the plaintext', async () => {
+    const hash = await hashPassword('correct horse battery staple')
 
-    it('returns false for an invalid hash input without throwing', async () => {
-      await expect(verifyPassword('some-password', 'not-a-bcrypt-hash')).resolves.toBe(false)
-    })
-
-    it('trims incoming hashes before validation', async () => {
-      const password = 'TrimTest#123'
-      const hash = await hashPassword(password)
-      await expect(verifyPassword(password, `  ${hash}\n`)).resolves.toBe(true)
-    })
+    await expect(verifyPassword('correct horse battery staple', hash)).resolves.toBe(true)
   })
 
-  describe('isValidBcryptHash', () => {
-    it('identifies valid bcrypt hashes', async () => {
-      const hash = await hashPassword('AnotherP@ssw0rd')
-      expect(isValidBcryptHash(hash)).toBe(true)
-    })
+  it('verifyPassword resolves false when the password is wrong', async () => {
+    const hash = await hashPassword('correct horse battery staple')
 
-    it('returns false for malformed hashes', () => {
-      const invalidSamples = ['not-a-hash', '$2a$03$toolowroundsrestofhash', '']
-      invalidSamples.forEach((sample) => {
-        expect(isValidBcryptHash(sample)).toBe(false)
-      })
-    })
+    await expect(verifyPassword('wrong battery staple', hash)).resolves.toBe(false)
+  })
 
-    it('treats hashes with surrounding whitespace as valid after trimming', async () => {
-      const hash = await hashPassword('Whitespace#456')
-      expect(isValidBcryptHash(`\n${hash}  `)).toBe(true)
-    })
+  it('verifyPassword rejects when the hash is not a bcrypt hash', async () => {
+    await expect(verifyPassword('anything', 'not-a-bcrypt-hash'))
+      .rejects.toThrow('Invalid bcrypt hash format')
+  })
+
+  it('isValidBcryptHash accurately validates hashes', async () => {
+    const validHash = await hashPassword('some password', 12)
+
+    expect(isValidBcryptHash(validHash)).toBe(true)
+    expect(isValidBcryptHash('')).toBe(false)
+    expect(isValidBcryptHash('$2b$03$tooLowRoundsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')).toBe(false)
+    expect(isValidBcryptHash('$2y$12$short')).toBe(false)
+    expect(isValidBcryptHash('plain-text-password')).toBe(false)
+  })
+
+  it('hashPassword throws for invalid inputs', async () => {
+    await expect(hashPassword('')).rejects.toThrow('Password must be a non-empty string')
+    await expect(hashPassword('valid', 2)).rejects.toThrow('Salt rounds must be an integer between')
   })
 })

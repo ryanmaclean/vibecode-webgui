@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /**
  * VibeCode MCP Server
- * 
+ *
  * Exposes VibeCode operations as MCP tools for AI agents.
  * Compatible with Windsurf, Claude Desktop, and other MCP clients.
- * 
+ *
+ * SECURITY: All requests require JWT authentication
+ *
  * @see https://modelcontextprotocol.io/
  */
 
@@ -17,12 +19,26 @@ import {
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
+// Authentication utilities
+import { authenticateRequest, AuthenticationError, type UserContext } from '../lib/auth/jwt-utils.js';
+
 // Tool implementations
 import { createWorkspace, listWorkspaces } from './tools/workspace.js';
 import { runTests } from './tools/testing.js';
 import { deployProject } from './tools/deployment.js';
 import { searchCode, analyzeCode } from './tools/code-analysis.js';
 import { generateCode } from './tools/code-generation.js';
+
+// Type validation schemas
+import {
+  CreateWorkspaceArgsSchema,
+  RunTestsArgsSchema,
+  DeployProjectArgsSchema,
+  SearchCodeArgsSchema,
+  AnalyzeCodeArgsSchema,
+  GenerateCodeArgsSchema,
+  validateToolArgs,
+} from './types.js';
 
 // Unused exports for future implementation
 // getTestResults, getDeploymentStatus
@@ -193,35 +209,113 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 });
 
 /**
- * Handle tool calls
+ * Authentication middleware for tool calls
+ *
+ * Verifies JWT token and extracts user context before executing tools.
+ * Tokens can be provided via:
+ * - VIBECODE_TOKEN environment variable (recommended for stdio)
+ * - token or authToken parameter in request
+ */
+async function authenticateToolCall(args: Record<string, unknown>): Promise<UserContext> {
+  try {
+    const userContext = await authenticateRequest(args);
+    console.error(`✅ Authenticated: ${userContext.email} (${userContext.role})`);
+    return userContext;
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      console.error(`❌ Authentication failed: ${error.code} - ${error.message}`);
+      if (error.details) {
+        console.error(`   Details:`, error.details);
+      }
+    } else {
+      console.error(`❌ Authentication error:`, error);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Handle tool calls with authentication and type-safe validation
+ *
+ * SECURITY: All tool calls require valid JWT authentication
  */
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
   try {
+    // Ensure args is defined
+    const argsRecord = (args ?? {}) as Record<string, unknown>;
+
+    // SECURITY: Authenticate request before executing any tool
+    await authenticateToolCall(argsRecord);
+
+    // Execute tool with validated context
     switch (name) {
-      case 'create-workspace':
-        return await createWorkspace(args);
+      case 'create-workspace': {
+        const validatedArgs = validateToolArgs(CreateWorkspaceArgsSchema, argsRecord);
+        return await createWorkspace(validatedArgs);
+      }
 
-      case 'run-tests':
-        return await runTests(args);
+      case 'run-tests': {
+        const validatedArgs = validateToolArgs(RunTestsArgsSchema, argsRecord);
+        return await runTests(validatedArgs);
+      }
 
-      case 'deploy-project':
-        return await deployProject(args);
+      case 'deploy-project': {
+        const validatedArgs = validateToolArgs(DeployProjectArgsSchema, argsRecord);
+        return await deployProject(validatedArgs);
+      }
 
-      case 'search-code':
-        return await searchCode(args);
+      case 'search-code': {
+        const validatedArgs = validateToolArgs(SearchCodeArgsSchema, argsRecord);
+        return await searchCode(validatedArgs);
+      }
 
-      case 'analyze-code':
-        return await analyzeCode(args);
+      case 'analyze-code': {
+        const validatedArgs = validateToolArgs(AnalyzeCodeArgsSchema, argsRecord);
+        return await analyzeCode(validatedArgs);
+      }
 
-      case 'generate-code':
-        return await generateCode(args);
+      case 'generate-code': {
+        const validatedArgs = validateToolArgs(GenerateCodeArgsSchema, argsRecord);
+        return await generateCode(validatedArgs);
+      }
 
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
   } catch (error) {
+    // Handle authentication errors with clear messages
+    if (error instanceof AuthenticationError) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `🔒 Authentication Error: ${error.message}\n\nCode: ${error.code}\n\nTo authenticate:\n1. Obtain a JWT token from VibeCode web UI\n2. Set environment variable: export VIBECODE_TOKEN=<your-token>\n3. Retry your request`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    // Handle Zod validation errors with detailed messages
+    if (error && typeof error === 'object' && 'issues' in error) {
+      const zodError = error as { issues: Array<{ path: string[]; message: string }> };
+      const validationErrors = zodError.issues
+        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+        .join(', ');
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Validation Error: ${validationErrors}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
     return {
       content: [
         {
@@ -342,12 +436,22 @@ VibeCode is an AI-powered development platform with live VS Code experience.
  * Start server
  */
 async function main() {
+  // Validate authentication configuration
+  if (!process.env.NEXTAUTH_SECRET) {
+    console.error('❌ CRITICAL: NEXTAUTH_SECRET environment variable is not set');
+    console.error('   Authentication will fail without this secret');
+    console.error('   Set NEXTAUTH_SECRET before starting the MCP server');
+    process.exit(1);
+  }
+
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('VibeCode MCP Server running on stdio');
+  console.error('🚀 VibeCode MCP Server running on stdio');
+  console.error('🔒 Authentication: ENABLED (JWT required)');
+  console.error('💡 Set VIBECODE_TOKEN environment variable to authenticate');
 }
 
 main().catch((error) => {
-  console.error('Server error:', error);
+  console.error('❌ Server error:', error);
   process.exit(1);
 });

@@ -1,0 +1,77 @@
+# KinD Configuration for Cloud Workspace Smoke Tests
+# Mirrors GCP/AWS production setup for local testing
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: vibecode-smoke-test
+
+# Multi-node cluster to simulate spot instance behavior
+nodes:
+  # Control plane
+  - role: control-plane
+    image: kindest/node:v1.28.0
+    kubeadmConfigPatches:
+    - |
+      kind: InitConfiguration
+      nodeRegistration:
+        kubeletExtraArgs:
+          node-labels: "ingress-ready=true"
+    extraPortMappings:
+    # Expose ingress controller
+    - containerPort: 80
+      hostPort: 8080
+      protocol: TCP
+    - containerPort: 443
+      hostPort: 8443
+      protocol: TCP
+
+  # Worker nodes to simulate spot instances
+  - role: worker
+    image: kindest/node:v1.28.0
+    labels:
+      cloud.google.com/gke-spot: "true"
+      eks.amazonaws.com/capacityType: "SPOT"
+      workload: code-server
+    extraMounts:
+    # Mount local directory to simulate persistent storage
+    - hostPath: ./test-workspaces
+      containerPath: /mnt/workspaces
+      readOnly: false
+
+  - role: worker
+    image: kindest/node:v1.28.0
+    labels:
+      cloud.google.com/gke-spot: "true"
+      eks.amazonaws.com/capacityType: "SPOT"
+      workload: code-server
+    extraMounts:
+    - hostPath: ./test-workspaces
+      containerPath: /mnt/workspaces
+      readOnly: false
+
+  # On-demand node for critical workloads
+  - role: worker
+    image: kindest/node:v1.28.0
+    labels:
+      cloud.google.com/gke-spot: "false"
+      eks.amazonaws.com/capacityType: "ON_DEMAND"
+      workload: critical
+
+# Networking configuration
+networking:
+  # Service CIDR (mirrors production)
+  serviceSubnet: "10.2.0.0/20"
+  # Pod CIDR (mirrors production)
+  podSubnet: "10.1.0.0/16"
+  # Disable default CNI
+  disableDefaultCNI: false
+
+# Feature gates
+featureGates:
+  "EphemeralContainers": true
+  "PodSecurity": true
+  "ServerSideApply": true
+
+# Runtime configuration
+runtimeConfig:
+  "api/all": "true"
