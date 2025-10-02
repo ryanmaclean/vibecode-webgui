@@ -8,6 +8,49 @@ import GithubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
 
+/**
+ * CRITICAL SECURITY VALIDATION: NEXTAUTH_SECRET
+ *
+ * NextAuth requires a secure secret for JWT signing and session encryption.
+ * Without a strong secret, sessions can be forged, leading to authentication bypass.
+ *
+ * Security Requirements:
+ * - NEXTAUTH_SECRET must be defined (never undefined or empty)
+ * - Must be at least 32 characters long (cryptographic minimum)
+ * - Should be randomly generated (use: openssl rand -base64 32)
+ */
+const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET
+
+if (!NEXTAUTH_SECRET) {
+  throw new Error(
+    '🚨 CRITICAL SECURITY ERROR: NEXTAUTH_SECRET is not defined!\n\n' +
+    'NextAuth requires a secret for JWT signing and session encryption.\n' +
+    'Without it, your application is vulnerable to session forgery attacks.\n\n' +
+    'To fix this:\n' +
+    '1. Generate a secure secret: openssl rand -base64 32\n' +
+    '2. Add to your .env file: NEXTAUTH_SECRET=<generated-secret>\n' +
+    '3. Restart your application\n\n' +
+    'See: https://next-auth.js.org/configuration/options#secret'
+  )
+}
+
+if (NEXTAUTH_SECRET.length < 32) {
+  throw new Error(
+    `🚨 CRITICAL SECURITY ERROR: NEXTAUTH_SECRET is too weak!\n\n` +
+    `Current length: ${NEXTAUTH_SECRET.length} characters\n` +
+    `Required minimum: 32 characters\n\n` +
+    `Your current secret is cryptographically insufficient for secure session management.\n` +
+    `This makes your application vulnerable to brute force and session forgery attacks.\n\n` +
+    `To fix this:\n` +
+    `1. Generate a secure secret: openssl rand -base64 32\n` +
+    `2. Replace your .env value: NEXTAUTH_SECRET=<generated-secret>\n` +
+    `3. Restart your application\n\n` +
+    `See: https://next-auth.js.org/configuration/options#secret`
+  )
+}
+
+console.log('✅ NEXTAUTH_SECRET validation passed: secure secret configured')
+
 type LegacyCredential = {
   email: string
   password: string
@@ -108,7 +151,7 @@ providers.push(
 
 export const authOptions: NextAuthOptions = {
   // adapter: PrismaAdapter(prisma), // Disabled for file-based development
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: NEXTAUTH_SECRET,
   // cookies: {
   //   sessionToken: {
   //     name: `__Secure-next-auth.session-token`,
