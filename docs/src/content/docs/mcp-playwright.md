@@ -296,9 +296,7 @@ The accessibility testing framework covers:
 5. **Form Accessibility**: Ensure forms have proper labels and error states
 6. **Reduced-Motion Chat Flow**: Validate Enhanced Chat’s manual jump control and live-region announcements (`tests/e2e/enhanced-chat/reduced-motion.spec.ts`)
 
-> 💡 **Streaming Tip**: Use `createSSEStream` from `tests/e2e/helpers/createSSEStream.ts` when scripting LLM or event-stream responses. The helper accepts an array of SSE chunks and an optional delay (milliseconds) and returns `{ stream, completionPromise }`, allowing tests to fulfill Playwright routes with deterministic streaming behaviour while still awaiting completion.
-
-> **Tip:** Reach for `tests/e2e/helpers/createSSEStream.ts` whenever the reduced-motion scenarios need deterministic SSE traffic. Provide the helper a chunk array that mirrors the announcements you expect, and tune the optional `delayMs` to simulate pacing between events without writing custom timers inside the spec.
+> 💡 **Streaming Tip**: Use `createSSEStream` from `tests/e2e/helpers/createSSEStream.ts` whenever the reduced-motion scenarios need deterministic SSE traffic. Pass an explicit `chunk` string array that mirrors the announcements you expect, tune the optional `delayMs` (milliseconds) to control pacing, and rely on the returned `{ stream, completionPromise }` pair to fulfill routes while still awaiting completion.
 
 ## Integration with Context7 and Sequential Thinking
 

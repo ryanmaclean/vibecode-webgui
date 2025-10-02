@@ -47,7 +47,7 @@
 ### Next Steps
 
 - [x] ✅ Diagnose Next.js dev server startup errors - COMPLETE
-- [x] Finalize SSE helper utility documentation/examples for other specs (docs/src/content/docs/testing-strategy.md and docs/src/content/docs/mcp-playwright.md — updated 2025-10-02)
+- [x] Finalize SSE helper utility documentation/examples for other specs (docs/src/content/docs/testing-strategy.md and docs/src/content/docs/mcp-playwright.md — refreshed streaming helper usage 2025-10-02)
 - [ ] Rerun Playwright reduced-motion spec now that dev server is stable
 - [ ] Extend docs to include troubleshooting notes for reduced-motion spec execution
 
@@ -215,6 +215,7 @@
 ## Apple Containerization Integration Plan (CRITICAL)
 
 ### Phase 1: Proof of Concept (Week 1)
+
 **Owner**: Agent #7 - Apple Containerization
 **Priority**: CRITICAL
 **Time**: 40 hours
@@ -231,6 +232,7 @@
 **Success Criteria**: code-server running in Apple container with sub-second start
 
 ### Phase 2: VibeCode Integration (Week 2-3)
+
 **Owner**: Agent #7 - Apple Containerization
 **Priority**: HIGH
 **Time**: 60 hours
@@ -247,6 +249,7 @@
 **Success Criteria**: Full workspace lifecycle on Apple Containerization
 
 ### Phase 3: Production Readiness (Week 4)
+
 **Owner**: Agent #7 - Apple Containerization
 **Priority**: HIGH
 **Time**: 40 hours
@@ -263,6 +266,7 @@
 **Success Criteria**: Production-ready Apple Containerization support
 
 ### Phase 4: Marketing & Launch (Week 5)
+
 **Owner**: Agent #8 - Marketing & Developer Relations
 **Priority**: MEDIUM
 **Time**: 20 hours
@@ -281,6 +285,7 @@
 ## Container OS Ecosystem Expansion
 
 ### Talos Linux Integration (#467)
+
 **Owner**: Agent #9 - Container OS Integrations
 **Priority**: HIGH
 **Time**: 30 hours
@@ -295,6 +300,7 @@
 - [ ] Community engagement
 
 ### AWS Bottlerocket Support (#468)
+
 **Owner**: Agent #9 - Container OS Integrations
 **Priority**: HIGH
 **Time**: 30 hours
@@ -309,6 +315,7 @@
 - [ ] Launch on AWS Marketplace
 
 ### macOS Runtime Support (#466)
+
 **Owner**: Agent #10 - macOS Developer Experience
 **Priority**: MEDIUM
 **Time**: 20 hours
@@ -325,6 +332,7 @@
 ## Technical Debt & Quality
 
 ### Remaining console.log Cleanup (#448)
+
 **Owner**: Agent #11 - Code Quality
 **Priority**: MEDIUM
 **Time**: 15 hours
@@ -336,6 +344,7 @@
 - [ ] Document logging standards
 
 ### Docker Build Fixes (#453)
+
 **Owner**: Agent #1 - Docker Build
 **Priority**: HIGH
 **Time**: 10 hours
@@ -348,6 +357,7 @@
 - [ ] Update documentation
 
 ### Datadog Consolidation (#464)
+
 **Owner**: Agent #2 - Datadog
 **Priority**: HIGH
 **Time**: 8 hours
@@ -361,26 +371,31 @@
 ## Agent Assignments
 
 ### Agent #7: Apple Containerization Lead
+
 - Focus: Phases 1-3 of Apple Containerization
 - Timeline: 4 weeks
 - Deliverable: Production-ready Apple container support
 
 ### Agent #8: Marketing & DevRel
+
 - Focus: Phase 4 + ongoing community
 - Timeline: Ongoing
 - Deliverable: Market leadership position
 
 ### Agent #9: Container OS Integrations
+
 - Focus: Talos, Bottlerocket, Flatcar
 - Timeline: 6 weeks
 - Deliverable: Multi-platform container OS support
 
 ### Agent #10: macOS Developer Experience
+
 - Focus: All macOS runtimes
 - Timeline: 2 weeks
 - Deliverable: Best-in-class macOS support
 
 ### Agent #11: Code Quality
+
 - Focus: Technical debt, logging, testing
 - Timeline: Ongoing
 - Deliverable: Production-grade codebase
@@ -388,6 +403,7 @@
 ## Success Metrics
 
 ### Q4 2024 Goals
+
 - ✅ Apple Containerization proof of concept
 - ✅ Talos Linux deployment guide
 - ✅ AWS Bottlerocket testing complete
@@ -396,6 +412,7 @@
 - ✅ Docker builds working
 
 ### Q1 2025 Goals
+
 - Production Apple Containerization support
 - AWS Marketplace listing
 - 1000+ macOS developers using VibeCode
@@ -410,4 +427,3 @@
 **Week 5**: Marketing launch
 **Week 6-8**: Container OS expansion (Talos, Bottlerocket)
 **Ongoing**: Code quality, documentation, community
-
