@@ -160,7 +160,7 @@ jobs:
           stable="$image_root:stable"
           sha_tag="$image_root:${{ github.sha }}"
           ci_tag="${{ needs.validate.outputs.validation_tag }}"
-          promote_latest="${{ github.event_name != 'workflow_dispatch' || inputs.promote_latest == 'true' }}"
+          promote_latest="${{ github.event_name != 'workflow_dispatch' || github.event.inputs.promote_latest == true || github.event.inputs.promote_latest == 'true' }}"
           promote_tags="$sha_tag\n$ci_tag"
           summary_tags="$sha_tag\n$ci_tag"
           if [ "${{ github.event_name }}" = "schedule" ]; then
@@ -182,7 +182,7 @@ jobs:
           echo 'EOF' >> "$GITHUB_OUTPUT"
 
       - name: Promote validation tag to canary tags
-        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.promote_canary == false) }}
+        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.promote_canary == false) }}
         env:
           VALIDATION_TAG: ${{ needs.validate.outputs.validation_tag }}
           OWNER: ${{ github.repository_owner }}
@@ -199,7 +199,7 @@ jobs:
           docker buildx imagetools create --tag "ghcr.io/$OWNER/${{ env.IMAGE_NAME }}:arm64-canary" "$VALIDATION_TAG@$arm64_digest"
 
       - name: Promote validation tag to release tags
-        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.promote_latest == false) }}
+        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.promote_latest == false) }}
         run: |
           while read -r tag; do
             [ -z "$tag" ] && continue

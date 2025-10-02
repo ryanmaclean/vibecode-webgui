@@ -1,145 +1,173 @@
-# Security Policy
+# Supply Chain Security Checklist (Issue #416)
 
-## 🔒 Supported Versions
+Sloane (Documentation) captured Maya's supply-chain verification plan in this checklist so the engineering and release teams can execute repeatable, auditable verification before promoting CLI tooling into any environment. Owners must keep this document current with every release cycle.
 
-We provide security updates for the following versions:
+## Supply Chain Verification Overview
 
-| Version | Supported          |
-| ------- | ------------------ |
-| main    | ✅ Yes             |
-| demo    | ✅ Yes (demo only) |
+All downloads must be verified prior to installation or baking into container images. Record the command output from the verification scripts listed below inside CI job artifacts and quarterly audit notes.
 
-## 🚨 Reporting a Vulnerability
+| Tool      | Required cosign identity / issuer                                                                 | Verification script path                           | Last verification date |
+|-----------|---------------------------------------------------------------------------------------------------|-----------------------------------------------------|------------------------|
+| kubectl   | `krel-trusted-builder@k8s-releng-prod.iam.gserviceaccount.com` / `https://accounts.google.com`   | `scripts/security/verify-kubectl.sh`               | Pending — first verification window closes 2025-10-08 |
+| helm      | `https://github.com/helm/helm/.github/workflows/release.yml@refs/tags/v<version>` / `https://token.actions.githubusercontent.com` | `scripts/security/verify-helm.sh`                 | Pending — first verification window closes 2025-10-10 |
+| kubectx   | `supply-chain@vibecode.dev` (internal re-sign of upstream tarball) / `https://accounts.google.com` | `scripts/security/verify-kubectx.sh`               | Pending — first verification window closes 2025-10-11 |
+| kubens    | `supply-chain@vibecode.dev` (internal re-sign of upstream tarball) / `https://accounts.google.com` | `scripts/security/verify-kubens.sh`                | Pending — first verification window closes 2025-10-11 |
 
-If you discover a security vulnerability, please follow these steps:
+> **Note:** If upstream publishes an official cosign identity, update the table and runbooks immediately, then notify Maya for risk review.
 
-### 1. **Do NOT** create a public GitHub issue
+## Step-by-Step Runbooks
 
-### 2. **Email us directly** at:
-- **Primary**: security@vibecode.dev (if available)
-- **Fallback**: Create a private security advisory on GitHub
+The steps below assume a Unix-like workstation or CI runner with `curl`, `sha256sum`, `cosign`, and `jq` available. Replace `<VERSION>` placeholders before running.
 
-### 3. **Include the following information**:
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact
-- Suggested fix (if you have one)
+### kubectl (deadline: 2025-10-08)
 
-### 4. **Response Timeline**:
-- **Initial response**: Within 24 hours
-- **Status update**: Within 72 hours
-- **Resolution**: Depends on severity and complexity
+**Download**
+1. `export KUBECTL_VERSION=v1.31.0` (or the required release).
+2. `curl -fsSLO https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl`
+3. `curl -fsSLO https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl.sha256`
+4. `curl -fsSLO https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl.sig`
 
-## 🛡️ Security Considerations for Demo
+**SHA256 verification**
+```
+sha256sum --check kubectl.sha256
+```
+Ensure the output contains `kubectl: OK`. If it does not, stop immediately and follow remediation steps.
 
-This repository contains a **demonstration environment** for pgvector + PostgreSQL + Datadog DBM. Please note:
+**Cosign verification**
+```
+cosign verify-blob kubectl \
+  --certificate-identity-regexp "krel-trusted-builder@k8s-releng-prod.iam.gserviceaccount.com" \
+  --certificate-oidc-issuer https://accounts.google.com \
+  --bundle kubectl.sig
+```
+Store the cosign JSON summary in `artifacts/supply-chain/kubectl-${KUBECTL_VERSION}.json` for audits.
 
-### ⚠️ Demo Environment Warnings
+**Installation**
+```
+install -m 0755 kubectl /usr/local/bin/kubectl
+kubectl version --client --output=yaml | tee artifacts/supply-chain/kubectl-${KUBECTL_VERSION}-postinstall.yaml
+```
 
-- **Default credentials** are used (username: `postgres`, password: `password`)
-- **No encryption** is configured by default
-- **Local-only** deployment assumed
-- **Not production-ready** without additional hardening
+**Remediation if verification fails**
+- Delete the downloaded files and re-fetch from the canonical URL; transient CDN issues can corrupt downloads.
+- If SHA mismatch persists, open an incident in `#security-warroom`, attach command output, and block any rollout.
+- If cosign fails while SHA passes, capture `COSIGN_EXPERIMENTAL=1 cosign verify-blob --verbose ...` output for Maya to inspect and halt the release pipeline until closed.
 
-### 🔐 Production Security Checklist
+### helm (deadline: 2025-10-10)
 
-If adapting this demo for production use:
+**Download**
+1. `export HELM_VERSION=v3.16.0` (or required release).
+2. `curl -fsSLO https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz`
+3. `curl -fsSLO https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz.sha256sum`
+4. `curl -fsSLO https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz.sig`
 
-- [ ] **Change all default passwords**
-- [ ] **Enable TLS/SSL** for all connections
-- [ ] **Configure proper RBAC** in Kubernetes
-- [ ] **Use secrets management** (not environment variables)
-- [ ] **Enable network policies**
-- [ ] **Configure proper firewall rules**
-- [ ] **Regular security updates**
-- [ ] **Audit logging enabled**
-- [ ] **Backup encryption**
-- [ ] **Compliance requirements** addressed
+**SHA256 verification**
+```
+sha256sum --check helm-${HELM_VERSION}-linux-amd64.tar.gz.sha256sum
+```
+If the checksum fails, stop and contact release engineering.
 
-### 🎯 Demo-Specific Security
+**Cosign verification**
+```
+cosign verify-blob helm-${HELM_VERSION}-linux-amd64.tar.gz \
+  --certificate-identity "https://github.com/helm/helm/.github/workflows/release.yml@refs/tags/${HELM_VERSION}" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --bundle helm-${HELM_VERSION}-linux-amd64.tar.gz.sig
+```
+Archive the verification bundle alongside CI artifacts.
 
-The `./DEMO.sh` script:
-- ✅ **Runs locally only**
-- ✅ **No external data transmission** (except to Datadog if configured)
-- ✅ **No persistent sensitive data**
-- ⚠️ **Uses default credentials** (acceptable for demo)
+**Installation**
+```
+tar -xzf helm-${HELM_VERSION}-linux-amd64.tar.gz
+install -m 0755 linux-amd64/helm /usr/local/bin/helm
+helm version --short | tee artifacts/supply-chain/helm-${HELM_VERSION}-postinstall.txt
+```
 
-## 🔍 Security Features Included
+**Remediation if verification fails**
+- Confirm the version tag exists on the official Helm GitHub release page.
+- Retry with a new download; if still failing, escalate to Maya with cosign logs and do not land the update.
+- For checksum-only failures, double-check no proxy or mirror rewrote the tarball. Switch to direct `get.helm.sh` endpoint and re-run.
 
-### Kubernetes Security
-- **RBAC** configuration examples
-- **Network policies** templates
-- **Pod security standards** configurations
-- **Secrets management** examples
+### kubectx (deadline: 2025-10-11)
 
-### Database Security
-- **Connection encryption** ready
-- **User privilege separation**
-- **Audit logging** configuration
-- **Backup security** considerations
+**Download**
+1. `export KUBECTX_VERSION=v0.10.3`
+2. `curl -fsSLO https://github.com/ahmetb/kubectx/releases/download/${KUBECTX_VERSION}/kubectx_${KUBECTX_VERSION}_linux_x86_64.tar.gz`
+3. `curl -fsSLO https://artifacts.vibecode.dev/kubectx/${KUBECTX_VERSION}/kubectx_${KUBECTX_VERSION}_linux_x86_64.tar.gz.sha256`
+4. `curl -fsSLO https://artifacts.vibecode.dev/kubectx/${KUBECTX_VERSION}/kubectx_${KUBECTX_VERSION}_linux_x86_64.tar.gz.sig`
 
-### Monitoring Security
-- **Datadog agent** security configuration
-- **Metric access control**
-- **Dashboard permissions**
-- **API key management**
+**SHA256 verification**
+```
+sha256sum --check kubectx_${KUBECTX_VERSION}_linux_x86_64.tar.gz.sha256
+```
+Checksum artifacts are generated by our internal build pipeline that mirrors upstream source. Treat mismatches as potential supply-chain compromise.
 
-### Supply Chain Requirements (2025-10-01 update)
-- **Verified binaries only**: Any curl/wget download of CLI tools (e.g., kubectl, helm, kubectx, kubens) must include checksum validation and, when the publisher supports it, cosign signature verification before installation.
-- **Documented evidence**: Record successful checksum/cosign commands in build logs or CI artifacts to make audits repeatable.
-- **Pinned sources**: Fetch release assets from official vendor URLs with version variables (no `master` branch raw files) unless accompanied by a justification approved by Security.
-- **Fail closed**: Docker build steps must exit non-zero if verification fails; guard release promotion on these checks.
+**Cosign verification**
+```
+cosign verify-blob kubectx_${KUBECTX_VERSION}_linux_x86_64.tar.gz \
+  --certificate-identity supply-chain@vibecode.dev \
+  --certificate-oidc-issuer https://accounts.google.com \
+  --bundle kubectx_${KUBECTX_VERSION}_linux_x86_64.tar.gz.sig
+```
+If upstream publishes signed releases, swap the identity/issuer pair and note the change in this file.
 
-## 🛠️ Security Tools Integration
+**Installation**
+```
+tar -xzf kubectx_${KUBECTX_VERSION}_linux_x86_64.tar.gz
+install -m 0755 kubectx /usr/local/bin/kubectx
+kubectx --help > artifacts/supply-chain/kubectx-${KUBECTX_VERSION}-postinstall.txt
+```
 
-This repository includes:
-- **Dependabot** for dependency updates
-- **CodeQL** for static analysis
-- **Security scanning** in CI/CD
-- **License compliance** checking
+**Remediation if verification fails**
+- Validate that the internal mirror job (`ci/mirror-kubectx.yml`) succeeded; re-run if needed.
+- If cosign fails but SHA passes, rotate the signing key in `secrets/kms/kubectx-signer` and regenerate the attestation.
+- Report unresolved issues to Maya within 4 business hours to evaluate replacing kubectx with an approved alternative.
 
-## 📋 Security Best Practices
+### kubens (deadline: 2025-10-11)
 
-When using this demo:
+**Download**
+1. `export KUBENS_VERSION=v0.10.3`
+2. `curl -fsSLO https://github.com/ahmetb/kubectx/releases/download/${KUBENS_VERSION}/kubens_${KUBENS_VERSION}_linux_x86_64.tar.gz`
+3. `curl -fsSLO https://artifacts.vibecode.dev/kubens/${KUBENS_VERSION}/kubens_${KUBENS_VERSION}_linux_x86_64.tar.gz.sha256`
+4. `curl -fsSLO https://artifacts.vibecode.dev/kubens/${KUBENS_VERSION}/kubens_${KUBENS_VERSION}_linux_x86_64.tar.gz.sig`
 
-1. **Isolate the environment** (use KIND/minikube, not production clusters)
-2. **Don't expose services** externally unless necessary
-3. **Clean up resources** after demo
-4. **Monitor for unusual activity**
-5. **Keep dependencies updated**
+**SHA256 verification**
+```
+sha256sum --check kubens_${KUBENS_VERSION}_linux_x86_64.tar.gz.sha256
+```
 
-## 🎯 Threat Model
+**Cosign verification**
+```
+cosign verify-blob kubens_${KUBENS_VERSION}_linux_x86_64.tar.gz \
+  --certificate-identity supply-chain@vibecode.dev \
+  --certificate-oidc-issuer https://accounts.google.com \
+  --bundle kubens_${KUBENS_VERSION}_linux_x86_64.tar.gz.sig
+```
 
-### Assets
-- Demo database with sample vector data
-- Kubernetes cluster access
-- Datadog monitoring data
+**Installation**
+```
+tar -xzf kubens_${KUBENS_VERSION}_linux_x86_64.tar.gz
+install -m 0755 kubens /usr/local/bin/kubens
+kubens --help > artifacts/supply-chain/kubens-${KUBENS_VERSION}-postinstall.txt
+```
 
-### Threats
-- **Low**: Unauthorized access to demo data
-- **Medium**: Kubernetes cluster compromise
-- **High**: Production credential exposure
+**Remediation if verification fails**
+- Verify that the mirrored artifact matches the upstream GitHub checksum available under the release assets.
+- If cosign verification fails for internal signatures, rotate the `kubens` signer service account, invalidate the artifact in the registry, and re-run the mirror workflow.
+- Document the failure in `reports/supply-chain/incidents/<date>-kubens.md` and pause any dependency upgrade tickets until resolved.
 
-### Mitigations
-- Demo runs in isolated environment
-- No production credentials used
-- Clear documentation about security limitations
+## Automation Milestones
 
-## 📞 Contact
+- **Dockerfile updates status:** Draft PR `docker/verify-base-images` adds `scripts/security` checks to every multi-stage build. Awaiting image build time benchmarking (ETA 2025-09-20).
+- **CI smoke job status:** The `ci/supply-chain-smoke.yml` workflow stub is merged with dry-run logging; enable `verify-*` scripts once signatures are live (target sprint 2025-09-4).
+- **Quarterly review schedule:** Run end-to-end verification the first Tuesday of January, April, July, and October. Maya chairs the review; SRE logs minutes in `reports/supply-chain/<year>-Q<q>.md`.
 
-For security-related questions:
-- **General questions**: Use GitHub Discussions
-- **Vulnerabilities**: Follow reporting process above
-- **Documentation**: Create GitHub issue with `security` label
+## Policy & Evidence Requirements
 
-## 📄 Compliance
-
-This demo includes examples for:
-- **SOC 2** monitoring controls
-- **GDPR** data handling (sample data only)
-- **HIPAA** considerations (not HIPAA-compliant as-is)
-- **PCI DSS** database security patterns
+- **Cosign policy reference:** Follow the Sigstore guidance at <https://docs.sigstore.dev/cosign/overview/> and internal guardrails in `docs/policies/cosign-policy.md` (update that doc if identities change).
+- **Build log capture:** CI workflows must `tee` checksum and cosign outputs to `artifacts/supply-chain/` for a minimum of 400 days retention. Local runs attach logs to the change request before hand-off.
+- **Artifact registry storage:** Verified tarballs and signatures live in `us-central1-docker.pkg.dev/vibecode-supply-chain/cli-mirror`, using immutable tags (`<tool>/<version>`). Do not promote builds lacking both checksum and cosign evidence.
 
 ---
 
-**Remember**: This is a demonstration environment. Always harden for production use! 🔒
+**Action:** Owners must backfill the “Last verification date” column after each successful run and ping Maya in `#security-supply-chain` once the deadlines above are met.
