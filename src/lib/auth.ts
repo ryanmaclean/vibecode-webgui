@@ -234,6 +234,9 @@ providers.push(
           return null
         }
 
+        const normalizedEmail = credentials.email.trim().toLowerCase()
+        const password = credentials.password
+
         const user = LEGACY_CREDENTIALS_BY_EMAIL.get(normalizedEmail)
 
         if (!user) {
