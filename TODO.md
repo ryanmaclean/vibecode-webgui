@@ -3,6 +3,7 @@
 **🎉 CRITICAL FIX: Next.js Dev Server Startup Issue RESOLVED**
 
 ### ✅ Issue Resolution
+
 - **Problem**: Conflicting Next.js config files (`next.config.js` and `next.config.mjs`) causing middleware compilation errors
 - **Root Cause**: Invalid webpack externals configuration generating `module.exports = @opentelemetry/api;` syntax error
 - **Impact**: Dev server failing to start, blocking all Playwright tests and development work
@@ -30,6 +31,7 @@
    - Includes troubleshooting guide, maintenance notes, verification steps
 
 ### ✅ Verification Results
+
 - Dev server starts successfully with `npm run dev`
 - Running on http://localhost:3002
 - No middleware compilation errors
@@ -38,12 +40,14 @@
 - Datadog integration ready
 
 ### 📝 Known Non-Critical Warnings
+
 - Webpack cache warnings (benign, will self-resolve)
 - SWC version mismatch (compatible versions, no impact)
 
 ### Next Steps
+
 - [x] ✅ Diagnose Next.js dev server startup errors - COMPLETE
-- [ ] Finalize SSE helper utility documentation/examples for other specs
+- [x] Finalize SSE helper utility documentation/examples for other specs (docs/src/content/docs/testing-strategy.md, docs/src/content/docs/mcp-playwright.md)
 - [ ] Rerun Playwright reduced-motion spec now that dev server is stable
 - [ ] Extend docs to include troubleshooting notes for reduced-motion spec execution
 
@@ -59,6 +63,7 @@
 **🎉 Code-Server v1.1.0 Multi-Stream Coordination COMPLETE - Issue #417 CLOSED**
 
 ### ✅ Final Status Summary
+
 - **5 of 5 Issues ADDRESSED** (4 CLOSED, 1 at 75%)
 - **95% Overall Completion**
 - **Multi-Agent Coordination Success**: 5 parallel agents delivered on schedule
@@ -66,15 +71,16 @@
 
 ### 📊 Issue Completion Status
 
-| Issue | Status | Progress | Agent | Notes |
-|-------|--------|----------|-------|-------|
-| #410 Release | ✅ CLOSED | 100% | Agent 1 (Build) | All 5 profiles built & pushed to GHCR + Docker Hub |
-| #411 Docs | ✅ CLOSED | 100% | Agent 2 (Docs) | CHANGELOG, VERIFICATION_GUIDE, README, DEPLOYMENT_SUMMARY complete |
-| #418 Workflow | ✅ CLOSED | 100% | Agent 3 (DevOps) | Workflow enhancements verified in commit 8390b436 |
-| #417 QA | ✅ CLOSED | 100% | Agent 3 (QA) | All 12 Bats tests passing, closed with completion summary |
-| #416 Security | 🔄 IN PROGRESS | 75% | Agent 3 (Security) | Node.js/Go fixes committed; remaining: cosign scripts, docs/SECURITY, CI guards |
+| Issue         | Status         | Progress | Agent              | Notes                                                                           |
+| ------------- | -------------- | -------- | ------------------ | ------------------------------------------------------------------------------- |
+| #410 Release  | ✅ CLOSED      | 100%     | Agent 1 (Build)    | All 5 profiles built & pushed to GHCR + Docker Hub                              |
+| #411 Docs     | ✅ CLOSED      | 100%     | Agent 2 (Docs)     | CHANGELOG, VERIFICATION_GUIDE, README, DEPLOYMENT_SUMMARY complete              |
+| #418 Workflow | ✅ CLOSED      | 100%     | Agent 3 (DevOps)   | Workflow enhancements verified in commit 8390b436                               |
+| #417 QA       | ✅ CLOSED      | 100%     | Agent 3 (QA)       | All 12 Bats tests passing, closed with completion summary                       |
+| #416 Security | 🔄 IN PROGRESS | 75%      | Agent 3 (Security) | Node.js/Go fixes committed; remaining: cosign scripts, docs/SECURITY, CI guards |
 
 ### ✅ Completed Deliverables
+
 - **Release (#410)** – All 5 profiles built and pushed to GHCR + Docker Hub
 - **Docs (#411)** – CHANGELOG, VERIFICATION_GUIDE, README, DEPLOYMENT_SUMMARY complete
 - **Workflow (#418)** – SHA validation tags, build metrics, enhanced CI workflow (commit 8390b436)
@@ -82,6 +88,7 @@
 - **Remediation Plan** – ✅ COMPLETE - Comprehensive 678-line document at `REMEDIATION_PLAN.md`
 
 ### 🔄 Remaining Work (#416 Security - 25%)
+
 - [ ] Cosign verification scripts for kubectl/helm (due 2025-10-08/10)
 - [ ] docs/SECURITY.md checklist (due 2025-10-05)
 - [ ] CI security validation gates
@@ -89,6 +96,7 @@
 ### 🤖 Multi-Agent Coordination Success
 
 **Agent Distribution & Performance**:
+
 - **Agent 1 (Build)**: Issue #410 - 100% complete (5 profiles, multi-arch, multi-registry)
 - **Agent 2 (Docs)**: Issue #411 - 100% complete (CHANGELOG, guides, summaries)
 - **Agent 3 (DevOps)**: Issue #418 - 100% complete (workflow enhancements, CI metrics)
@@ -97,17 +105,20 @@
 - **Agent 4 (Documentation)**: Checkpoint coordination and TODO.md updates
 
 **Coordination Metrics**:
+
 - **Completion Rate**: 95% overall (4/5 issues closed, 1 at 75%)
 - **Schedule Adherence**: 100% (all agents delivered on timeline)
 - **Parallel Efficiency**: 5 concurrent work streams coordinated successfully
 - **Quality Gates**: All tests passing, lint clean, security hardening in progress
 
 **Success Factors**:
+
 1. Clear issue-based work distribution
 2. Parallel execution without blocking dependencies
 3. Comprehensive testing at each stage
 4. Documentation synchronized with code changes
-**Lessons Learned**:
+   **Lessons Learned**:
+
 - Multi-agent coordination effective for complex, multi-domain releases
 - Clear issue ownership prevents work overlap and conflicts
 - Phased security hardening allows incremental validation
@@ -119,7 +130,7 @@
 - GNU Emacs (GPL) detected in all v1.1.0 images
 - Dockerfile patched: Emacs removed, Node/Go downloads hardened, cosign staged
 - All Emacs references removed from project (0 remaining in code/docs)
-- **Rebuild BLOCKED**: 
+- **Rebuild BLOCKED**:
   - GitHub Actions workflow_dispatch not executing (events accepted but no runs created)
   - Docker daemon not running locally (cannot build locally)
 - **ACTION REQUIRED**: Start Docker/OrbStack OR manually trigger workflow via GitHub UI
@@ -128,6 +139,7 @@
 - 49.71GB cleanup performed
 
 ### Planning Documents Created
+
 - `docker/code-server/SECURITY_AUDIT.md` - Complete security audit with 3 critical issues identified
 - ✅ `.github/workflows/WORKFLOW_FIX_PLAN.md` - Workflow fixes for validation, concurrency, SBOM, Datadog
 
@@ -136,6 +148,7 @@
 **Overall Progress**: 35% → 95% completion in coordinated multi-agent execution
 
 **Before (2025-10-01 22:10 UTC)**:
+
 - 0 of 5 issues closed
 - Release: 40% (builds in progress)
 - Docs: 0% (not started)
@@ -144,6 +157,7 @@
 - Security: Audit complete only
 
 **After (2025-10-01 23:15 UTC)**:
+
 - 4 of 5 issues closed (80%)
 - Release (#410): ✅ 100% CLOSED
 - Docs (#411): ✅ 100% CLOSED
@@ -162,17 +176,21 @@
 - Multi-stream plan: Vega (release), Rina (QA), Rowan (security), Sloane (docs), Theo (ops) executing in parallel via MCP subagents.
 
 ### Progress Notes (2025-10-01 22:25 UTC)
+
 - Script telemetry coverage implemented (six new Bats cases) and `npm run test:scripts` added to `main-branch-ci.yml`; local run passes.
 - Workflow dispatch patched per runbook (unique validation tag, concurrency cancel, SBOM fail-fast, Datadog summary).
 - Issue checkpoints updated (#410/#418/#417/#416/#411) with runbooks and scheduling details.
 
 ### Additional Progress (2025-10-01 22:40 UTC)
+
 - Hardened `docker/code-server/Dockerfile`: Node tarball verification, Go checksum validation, cosign installation added.
 
 ### System Upgrade Coordination (2025-10-02)
+
 > Historical details archived at `docs/logs/AGENT_ACTIVITY_LOG.md#2025-10-01-coordination-archive`.
 
 #### Dev Infrastructure Upgrade Checklist
+
 1. **Registry cleanup (owner action required)**
    - GHCR versions to retire: 532086486 (`full`/`latest`), 532080021 (`web`), 531338584 (`minimal`), 531327265 (`standard`), 531251775 (`ai`), 531300586 (`2025-10-01`), 531128805 (`1.0.0`).
    - Docker Hub tags to retire: `full`, `web`, `minimal`, `standard`, `ai`, `latest`, `1.1.0-*`.
@@ -191,4 +209,5 @@
    - Notify release/security/customer channels once clean tags live; schedule post-incident review and archive old artifact references.
 
 ### Active Streams (UPDATED)
+
 > Archived historical coordination notes to docs/logs/AGENT_ACTIVITY_LOG.md#2025-10-01-coordination-archive.
