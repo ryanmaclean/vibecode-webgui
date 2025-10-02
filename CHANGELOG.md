@@ -4,6 +4,48 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Features
+- Automated changelog generation workflow with git-cliff integration
+- Conventional commits enforcement and validation
+- Manual changelog generation script with version detection
+
+### Documentation
+- Add comprehensive CHANGELOG_GUIDE.md with conventional commit format
+- Document semantic versioning strategy and best practices
+- Include troubleshooting and configuration examples
+
+### CI/CD
+- GitHub Actions workflow for automated changelog on release
+- Workflow dispatch for manual changelog generation
+- Automatic release notes update integration
+
+## DEPRECATION NOTICE
+
+### v1.1.0 Code-Server Images - DEPRECATED (2025-10-01)
+
+**STATUS**: DEPRECATED - DO NOT USE
+
+**Reason**: v1.1.0 code-server images contain GPL-licensed GNU Emacs, violating MIT license compatibility.
+
+**Action Required**: All users must migrate to v1.1.1 immediately.
+
+**Migration**: Replace all `1.1.0` tags with `1.1.1`:
+```bash
+# Old (DEPRECATED)
+docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.0-standard
+
+# New (GPL-free)
+docker pull ghcr.io/ryanmaclean/vibecode-codeserver:1.1.1-standard
+```
+
+**Details**: See [docker/code-server/DEPRECATION_NOTICE_v1.1.0.md](docker/code-server/DEPRECATION_NOTICE_v1.1.0.md)
+
+**Timeline**: v1.1.0 images scheduled for registry removal after 30-day transition period.
+
+**Affected Images**:
+- GHCR version IDs: 532086486, 532080021, 531338584, 531327265, 531251775
+- Docker Hub: All 1.1.0-tagged images
+
 ## [v1.2.0] - 2025-10-01
 
 ### Added
