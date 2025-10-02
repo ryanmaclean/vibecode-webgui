@@ -1,0 +1,216 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Apple Container Runtime Configuration",
+  "type": "object",
+  "required": ["runtime", "defaults"],
+  "properties": {
+    "runtime": {
+      "type": "object",
+      "required": ["version", "dataDirectory"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "dataDirectory": {
+          "type": "string"
+        },
+        "imageCacheDirectory": {
+          "type": "string"
+        },
+        "logDirectory": {
+          "type": "string"
+        }
+      }
+    },
+    "defaults": {
+      "type": "object",
+      "properties": {
+        "cpuCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "memorySize": {
+          "type": "integer",
+          "minimum": 536870912,
+          "description": "Memory in bytes (minimum 512MB)"
+        },
+        "startupTimeout": {
+          "type": "integer",
+          "minimum": 1000,
+          "description": "Startup timeout in milliseconds"
+        },
+        "shutdownTimeout": {
+          "type": "integer",
+          "minimum": 1000,
+          "description": "Shutdown timeout in milliseconds"
+        },
+        "enableRosetta": {
+          "type": "boolean"
+        }
+      }
+    },
+    "networking": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["nat", "bridged", "host"]
+        },
+        "ipRange": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+\\.\\d+/\\d+$"
+        },
+        "enableIPv6": {
+          "type": "boolean"
+        },
+        "dns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "properties": {
+        "driver": {
+          "type": "string",
+          "enum": ["virtio", "nvme"]
+        },
+        "defaultSize": {
+          "type": "integer",
+          "minimum": 1073741824,
+          "description": "Default disk size in bytes (minimum 1GB)"
+        },
+        "enableCompression": {
+          "type": "boolean"
+        },
+        "snapshotSupport": {
+          "type": "boolean"
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "enableSecureBoot": {
+          "type": "boolean"
+        },
+        "allowHostAccess": {
+          "type": "boolean"
+        },
+        "isolationLevel": {
+          "type": "string",
+          "enum": ["standard", "strict", "minimal"]
+        }
+      }
+    },
+    "monitoring": {
+      "type": "object",
+      "properties": {
+        "enableMetrics": {
+          "type": "boolean"
+        },
+        "metricsPort": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 65535
+        },
+        "healthCheckInterval": {
+          "type": "integer",
+          "minimum": 10
+        },
+        "enableCrashReports": {
+          "type": "boolean"
+        }
+      }
+    },
+    "registry": {
+      "type": "object",
+      "properties": {
+        "mirrors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "insecureRegistries": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "credentials": {
+          "type": "object"
+        }
+      }
+    },
+    "images": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["reference"],
+        "properties": {
+          "reference": {
+            "type": "string"
+          },
+          "autoUpdate": {
+            "type": "boolean"
+          },
+          "updateInterval": {
+            "type": "integer",
+            "minimum": 3600
+          }
+        }
+      }
+    },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "cpuCount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "memorySize": {
+            "type": "integer",
+            "minimum": 536870912
+          },
+          "diskSize": {
+            "type": "integer",
+            "minimum": 1073741824
+          }
+        }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "maxConcurrentContainers": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxTotalCpus": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "maxTotalMemory": {
+          "type": "integer",
+          "minimum": 1073741824
+        },
+        "perContainerCpuLimit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "perContainerMemoryLimit": {
+          "type": "integer",
+          "minimum": 536870912
+        }
+      }
+    }
+  }
+}
