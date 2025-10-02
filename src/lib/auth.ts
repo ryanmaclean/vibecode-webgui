@@ -7,7 +7,7 @@ import { NextAuthOptions } from 'next-auth'
 import GithubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { isValidBcryptHash, verifyPassword } from './auth/password'
+import { verifyPassword } from './auth/password'
 
 /**
  * CRITICAL SECURITY VALIDATION: NEXTAUTH_SECRET
@@ -52,6 +52,9 @@ if (NEXTAUTH_SECRET.length < 32) {
 
 console.log('✅ NEXTAUTH_SECRET validation passed: secure secret configured')
 
+// Security: fallback hash keeps response timing consistent when user lookup fails.
+const DUMMY_PASSWORD_HASH = '$2b$12$eUlS0dNKrMxLdkPgDJZdpuHlNCn/KkheBmEzKE2.yOrembE1ccsV.'
+
 type LegacyCredential = {
   email: string
   passwordHash: string
@@ -67,70 +70,70 @@ type LegacyCredential = {
 const RAW_LEGACY_CREDENTIALS: LegacyCredential[] = [
   {
     email: 'admin@vibecode.dev',
-    passwordHash: '$2b$12$pMyxE.NRJoiGYWSzVebm3.5Vlad0gvRIPrqUwrvLlpXTp/b8/d9.C',
+    passwordHash: '$2b$12$tcrKFARakE8oWr7Z9oBY1OVu2czU5B3AMy2mQBYWNKY/RAwZVvLwS',
     id: 'legacy-admin',
     name: 'Admin User',
     role: 'admin'
   },
   {
     email: 'lead@vibecode.dev',
-    passwordHash: '$2b$12$zMUsAm5inokc1/ZNgRXppetr37FegSjGFZaovC5kWXlwJvUmnt8yC',
+    passwordHash: '$2b$12$h1goW0vtFerclLRKx8guwuDStknjNeebM.6tyWhJavoRHBFSPpm6S',
     id: 'legacy-lead',
     name: 'Lead User',
     role: 'admin'
   },
   {
     email: 'developer@vibecode.dev',
-    passwordHash: '$2b$12$yNB0zb5qHYJrydbDk4ZFZuK4tI7g/88d/71eLgQCAaNInmqp.U5VK',
+    passwordHash: '$2b$12$oRffAl7NXCYNO1fubfFuE.BSJs53JgsLc1ftPXyL90mIVAvjomf8e',
     id: 'legacy-developer',
     name: 'Developer User',
     role: 'developer'
   },
   {
     email: 'frontend@vibecode.dev',
-    passwordHash: '$2b$12$SbR94KZlf2puGAtITY3Dd.08prDxl3AXWQKK/OZEhsgIc6ib9XScq',
+    passwordHash: '$2b$12$Y.kMzW2lsknwySnzDuIMUekKTtSt6KKErqOpfHr6tQBMQ/R40Aatm',
     id: 'legacy-frontend',
     name: 'Frontend User',
     role: 'user'
   },
   {
     email: 'backend@vibecode.dev',
-    passwordHash: '$2b$12$ZUF3uFrG5o.ZNE3KeeD8/.iMSd91tk13qb6DflfbZP/eZ17/YDzDi',
+    passwordHash: '$2b$12$6YpfPxyakFgsJWyYoXNNReuSAnOHu6/vFYj26aIQKKcoPGMm9sgKi',
     id: 'legacy-backend',
     name: 'Backend User',
     role: 'user'
   },
   {
     email: 'fullstack@vibecode.dev',
-    passwordHash: '$2b$12$D2FU5Xr0gEPs1WXJRd56Hu3dEgp8YHjvyMdLEcQW49HqnN44WR/e6',
+    passwordHash: '$2b$12$DsvNFersPGsG4j.SKBIK7.h/ca/iwN77sALiJqz3ZIbk1Qj5LQuiG',
     id: 'legacy-fullstack',
     name: 'Fullstack User',
     role: 'user'
   },
   {
     email: 'designer@vibecode.dev',
-    passwordHash: '$2b$12$rcy91wqtlK20fi4V639McuzZG6aFzhzW25jSHVjj4s2nspDKE6Cru',
+    passwordHash: '$2b$12$MEhPXnEDLFYIeB.DjzHVMOmopO/lNxGXqiOuwFWvsrsmZFB459pD.',
     id: 'legacy-designer',
     name: 'Designer User',
     role: 'user'
   },
   {
     email: 'tester@vibecode.dev',
-    passwordHash: '$2b$12$q58mPB7T6X7x7yO2FnS3wOV9mSsW5.e/17Pu/SVcoQVbTrjg62iQO',
+    passwordHash: '$2b$12$bjeItaLU5Ho9Lett0NXoaO4j1lV80vMxks7XGWzdNUYseRvuEAiPu',
     id: 'legacy-tester',
     name: 'Tester User',
     role: 'user'
   },
   {
     email: 'devops@vibecode.dev',
-    passwordHash: '$2b$12$SZuywcKjIdW7I1sFfTnI..e.0Ov2RlemnDyLAuao4YX0ox.CLiIFm',
+    passwordHash: '$2b$12$PzW0N5atiwud3Gg1qIe7uuNpGouOJuZJopbImbicUdmF6vqRSdTaq',
     id: 'legacy-devops',
     name: 'DevOps User',
     role: 'user'
   },
   {
     email: 'security@vibecode.dev',
-    passwordHash: '$2b$12$Z5CFHuYBzOhcOANHZS1OKuffhEU.LaOlWLiiyiIH2iEz47iL3DPIa',
+    passwordHash: '$2b$12$NpgFM7g9G0hDgAT7UDnsouP4Zsx/Dq3Ju6Pbeyjva.ZJVpqPWkvg.',
     id: 'legacy-security',
     name: 'Security User',
     role: 'user'
@@ -151,7 +154,7 @@ LEGACY_CREDENTIALS.forEach((credential) => {
   }
 })
 
-const LEGACY_CREDENTIALS_BY_EMAIL = new Map<string, LegacyCredential>(
+const LEGACY_CREDENTIAL_LOOKUP = new Map<string, LegacyCredential>(
   LEGACY_CREDENTIALS.map((credential) => [credential.email.toLowerCase(), credential])
 )
 
@@ -230,39 +233,27 @@ providers.push(
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          console.warn('❌ Credentials login rejected: missing parameters')
+          console.warn('Credentials authentication failed: missing input')
           return null
         }
 
         const normalizedEmail = credentials.email.trim().toLowerCase()
-        const password = credentials.password
-
-        const user = LEGACY_CREDENTIALS_BY_EMAIL.get(normalizedEmail)
+        const user = LEGACY_CREDENTIALS.find((cred) => cred.email === normalizedEmail)
 
         if (!user) {
-          await performTimingSafeCompare(password) // Use dummy hash to equalize timing for missing users
-          console.warn('⚠️ Credentials login rejected')
+          await verifyPassword(credentials.password, TIMING_SAFE_DUMMY_HASH)
+          console.warn('Credentials authentication failed')
           return null
         }
 
-        if (!isValidBcryptHash(user.passwordHash)) {
-          await performTimingSafeCompare(password)
-          console.warn('❌ Credentials login rejected')
+        const isValid = await verifyPassword(credentials.password, user.passwordHash)
+
+        if (!isValid) {
+          console.warn('Credentials authentication failed')
           return null
         }
 
-        try {
-          const isValid = await verifyPassword(password, user.passwordHash)
-
-          if (!isValid) {
-            console.warn('⚠️ Credentials login rejected')
-            return null
-          }
-        } catch (error) {
-          await performTimingSafeCompare(password)
-          console.warn('❌ Credentials login rejected: verification error', { error })
-          return null
-        }
+        console.info('Legacy credentials authentication succeeded')
 
         console.log('✅ Credentials login succeeded', { userId: user.id })
         return {
