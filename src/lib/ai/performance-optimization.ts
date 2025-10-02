@@ -7,6 +7,8 @@ import { ChatOpenAI } from '@langchain/openai';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { z } from 'zod';
 import { extractText } from './utils/langchain';
+import { logger } from '../logger';
+
 
 export interface PerformanceIssue {
   id: string;
@@ -353,7 +355,7 @@ export class PerformanceOptimization {
       issues.push(...aiIssues);
 
     } catch (error) {
-      console.error('AI performance analysis failed:', error);
+      logger.error('AI performance analysis failed:', { error: error });
     }
 
     return issues;
@@ -402,7 +404,7 @@ export class PerformanceOptimization {
       }
 
     } catch (error) {
-      console.error('Failed to parse AI response:', error);
+      logger.error('Failed to parse AI response:', { error: error });
     }
 
     return issues;
