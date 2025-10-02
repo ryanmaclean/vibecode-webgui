@@ -312,8 +312,6 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - `helm upgrade --install vibecode-platform` (image override to GHCR) hit the same permission guard, while `scripts/validate-helm.sh` passed lint/template/security checks; runtime remains blocked pending a chmod or security-context fix.
 - Updated TODO.md with the permission follow-up, CLI parity gap, and action to restore the KinD smoke deployment once remediation lands.
 ### 2025-10-01 02:34 UTC — code-server image retest
-- Dockerfile now chmods `/usr/bin/code-server`, installs vim/neovim/emacs-nox plus pinned aider 0.84.0 and goose-ai 0.9.11; multi-arch builds (`docker build` arm64 + `docker buildx build --platform linux/amd64 … --load`) completed and the arm64 artifact was re-tagged to `ghcr.io/ryanmaclean/vibecode-codeserver:latest`.
-- OrbStack check: `docker run --entrypoint /bin/bash … -lc 'vim/nvim/emacs/aider/goose --version'` confirms every editor/CLI resolves (bat exposed as `batcat`).
 - `scripts/test-code-server-kind.sh` passes end-to-end with the retagged image—port-forward/NodePort both return 200 and the helper reports Vim/Nvim/Emacs/Aider/Goose present inside the pod.
 - Helm smoke (`helm upgrade --install vibecode-platform … --set codeServer.image.tag=latest --set codeServer.persistence.enabled=false`) succeeded against KinD; MongoDB stayed Pending due to disabled PVCs, so the release was uninstalled after verification.
 ### Documentation Touchpoints
@@ -324,15 +322,11 @@ This log captures how multiple agents successfully coordinated work to avoid con
 ### 2025-09-30 01:36 UTC — Code-server editor smoke test
 - `kubectl port-forward -n vibecode-platform svc/code-server-kind 3100:8080`
 - `curl -I http://localhost:3100` (expect 302) and `curl -sf http://localhost:3100/healthz` (expect 200)
-- `kubectl exec -n vibecode-platform deployment/code-server-kind -- sh -lc 'sudo apt-get update && sudo apt-get install -y neovim emacs-nox'`
-- Verify with `kubectl exec ... -- sh -lc 'vim --version | head -n 1'`, `nvim --version`, `emacs --version`
 - 2025-09-30 01:55 UTC — Extended /api/code-completion providers (Gemini CLI, Aider, GooseAI, Project4) and refreshed docs/env samples.
 - 2025-09-30 02:35 UTC — Added DeepSeek, OpenRouter, Anthropic, Google AI Studio, Azure OpenAI, Amazon Bedrock, and Google Vertex handlers to `/api/code-completion`; `.env.local.example` and Monacopilot guide updated with new keys.
 - Verification still required: supply provider credentials, run `npm run type-check`, and exercise `/api/code-completion` against each new provider once keys are in place.
 
 ### 2025-09-30 02:50 UTC — Code-server editor verification script
-- Added `scripts/test-code-server-editors.sh` to locate the KinD code-server pod and assert `vim`, `nvim`, and `emacs` availability.
-- Reinstalled editors in the running pod (`sudo apt-get install -y vim neovim emacs-nox`) so the helper reports success even after image rollouts.
 - Next follow-up: bake editors into the image or integrate the script into CI to surface regressions automatically.
 
 ### 2025-09-30 03:05 UTC — Code-server KinD smoke test updated
@@ -523,9 +517,7 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - Cost monitor workflow now queries GitHub billing minutes (requires GH_BILLING_PAT) and posts Slack notification when configured.
 - Verified `scripts/verify-trace-search.py` locally using httpbin 404; summary shows `not_found` status and workflow exits cleanly.
 - Added secrets checklist to `docs/logs/workflow-issues/gitops-deployment.yml.md` to guide credential audit.
-- KinD smoke test run locally; rollout succeeds with new amd64 image but editor/AI CLI checks fail (vim/nvim/emacs/aider/goose missing). Need updated image before gating passes.
 - Verified new code-server image in KinD: HTTP checks succeed but Vim/Nvim/Emacs/Aider/Goose binaries absent; smoke test still fails until image is rebuilt with those tools.
-- Latest code-server image still lacks vim/nvim/emacs/aider/goose; KinD smoke test fails on editor checks even though service is reachable.
 - **2025-10-01 03:03 UTC — Connection pool alert tests**
   - Added `tests/unit/monitoring/connection-pool-alerts.test.ts` to cover dynamic import fallback vs. critical metric paths.
   - Test command `npm run test -- tests/unit/monitoring/connection-pool-alerts.test.ts` passes (SWC mismatch warning only).
@@ -551,5 +543,4 @@ This log captures how multiple agents successfully coordinated work to avoid con
 - README updated to highlight the pre-baked completions and reiterate kubeconfig mounting requirements; TODO entry closed with timestamped notes.
 
 ### 2025-10-01 06:55 UTC — KinD smoke script coverage bump
-- Expanded `scripts/test-code-server-editors.sh` so the KinD smoke test now asserts `kubectl`, `helm`, `kubectx`, and `kubens` binaries exist in the workspace container (alongside vim/nvim/emacs/aider/goose).
 - TODO.md updated to record the enhanced coverage; wiring the script into CI remains open.

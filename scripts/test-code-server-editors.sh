@@ -295,7 +295,6 @@ missing=0
 
 check_tool "vim" "command -v vim >/dev/null 2>&1" "vim --version" || missing=1
 check_tool "nvim" "command -v nvim >/dev/null 2>&1" "nvim --version" || missing=1
-check_tool "emacs" "command -v emacs >/dev/null 2>&1" "emacs --version" || missing=1
 check_tool "aider" "command -v aider >/dev/null 2>&1" "aider --version || aider --help" || missing=1
 check_tool "goose" "command -v goose >/dev/null 2>&1" "goose --version || goose --help" || missing=1
 check_tool "kubectl" "command -v kubectl >/dev/null 2>&1" "kubectl version --client --short" || missing=1
