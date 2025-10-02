@@ -46,6 +46,9 @@ import { cn } from '../lib/utils';
 import { DEMO_PROMPTS } from '@/data/demo-prompts';
 import MessageList from './MessageList';
 import InputArea from './InputArea';
+import { MODELS } from './PromptInterface/config/models.config';
+import { MCP_SERVERS } from './PromptInterface/config/mcp-servers.config';
+import { MOCK_RESPONSES } from './PromptInterface/config/mock-responses.config';
 
 // Voice recognition interfaces
 interface SpeechRecognitionEvent extends Event {
@@ -157,158 +160,6 @@ interface MCPServer {
   tools: string[];
   url?: string;
 }
-
-const MODELS: ModelConfig[] = [
-  // Docker Model Runner Local Models (from the blog post)
-  {
-    id: 'ai/smollm2:360M-Q4_K_M',
-    name: 'SmolLM2 360M (Local)',
-    provider: 'Docker Model Runner',
-    supportsImages: false,
-    supportsFiles: true,
-    supportsAudio: false,
-    maxTokens: 2048,
-    inputCostPer1k: 0, // Local models are free
-    outputCostPer1k: 0,
-    contextWindow: 8192
-  },
-  {
-    id: 'ai/llama3.2:1b-Q4_K_M',
-    name: 'Llama 3.2 1B (Local)',
-    provider: 'Docker Model Runner',
-    supportsImages: false,
-    supportsFiles: true,
-    supportsAudio: false,
-    maxTokens: 2048,
-    inputCostPer1k: 0,
-    outputCostPer1k: 0,
-    contextWindow: 8192
-  },
-  {
-    id: 'ai/qwen2.5-coder:1.5b-Q4_K_M',
-    name: 'Qwen2.5 Coder 1.5B (Local)',
-    provider: 'Docker Model Runner',
-    supportsImages: false,
-    supportsFiles: true,
-    supportsAudio: false,
-    maxTokens: 4096,
-    inputCostPer1k: 0,
-    outputCostPer1k: 0,
-    contextWindow: 16384
-  },
-  // Cloud models for comparison
-  {
-    id: 'anthropic/claude-3.5-sonnet',
-    name: 'Claude 3.5 Sonnet',
-    provider: 'Anthropic',
-    supportsImages: true,
-    supportsFiles: true,
-    supportsAudio: false,
-    maxTokens: 8192,
-    inputCostPer1k: 0.003,
-    outputCostPer1k: 0.015,
-    contextWindow: 200000
-  },
-  {
-    id: 'openai/gpt-4-vision',
-    name: 'GPT-4 Vision',
-    provider: 'OpenAI',
-    supportsImages: true,
-    supportsFiles: true,
-    supportsAudio: true,
-    maxTokens: 4096,
-    inputCostPer1k: 0.01,
-    outputCostPer1k: 0.03,
-    contextWindow: 128000
-  },
-  {
-    id: 'google/gemini-2.0-flash',
-    name: 'Gemini 2.0 Flash',
-    provider: 'Google',
-    supportsImages: true,
-    supportsFiles: true,
-    supportsAudio: true,
-    maxTokens: 8192,
-    inputCostPer1k: 0.000125,
-    outputCostPer1k: 0.000375,
-    contextWindow: 1000000
-  }
-];
-
-const MCP_SERVERS: MCPServer[] = [
-  {
-    id: 'filesystem',
-    name: 'File System',
-    description: 'Read and write files in workspace',
-    status: 'connected',
-    tools: ['read_file', 'write_file', 'list_directory', 'create_file'],
-    url: 'http://localhost:3001'
-  },
-  {
-    id: 'database',
-    name: 'Database',
-    description: 'Query and modify database',
-    status: 'connected',
-    tools: ['execute_query', 'get_schema', 'insert_data'],
-    url: 'http://localhost:3002'
-  },
-  {
-    id: 'web-search',
-    name: 'Web Search',
-    description: 'Search the web for information',
-    status: 'connected',
-    tools: ['search_web', 'fetch_url', 'extract_content'],
-    url: 'http://localhost:3003'
-  },
-  {
-    id: 'voice-processor',
-    name: 'Voice Processor',
-    description: 'Transcribe audio files and voice input via Docker Model Runner',
-    status: 'connected',
-    tools: ['transcribe_audio', 'voice_to_text', 'speech_analysis'],
-    url: 'http://localhost:3004'
-  },
-  {
-    id: 'model-runner',
-    name: 'Docker Model Runner',
-    description: 'Local LLM inference with Docker AI',
-    status: 'connected',
-    tools: ['text_generation', 'code_completion', 'local_inference'],
-    url: 'http://localhost:12434'
-  }
-];
-
-const MOCK_RESPONSES = [
-  {
-    content: "I'll help you build that! Let me start by creating a modern React application with the components you described.",
-    codeGenerated: true,
-    components: ["Header", "Hero Section", "Feature Cards"],
-    framework: "React + TypeScript",
-    tokens: 256,
-    cost: 0.003,
-    model: "claude-3.5-sonnet",
-    duration: 1200
-  },
-  {
-    content: "Perfect! I've generated the landing page with a responsive design using Tailwind CSS and shadcn/ui components.",
-    deploymentUrl: "https://your-app-preview.vercel.app",
-    components: ["Navigation", "Hero", "Features", "CTA"],
-    tokens: 342,
-    cost: 0.004,
-    model: "claude-3.5-sonnet",
-    duration: 1800
-  },
-  {
-    content: "Great! Now I'll add the contact form with validation and integrate it with your backend API using React Hook Form.",
-    codeGenerated: true,
-    components: ["Contact Form", "Form Validation", "API Integration"],
-    framework: "React + TypeScript",
-    tokens: 418,
-    cost: 0.005,
-    model: "claude-3.5-sonnet",
-    duration: 2100
-  }
-];
 
 export default function PromptInterface() {
   // Authentication & BYOK State
