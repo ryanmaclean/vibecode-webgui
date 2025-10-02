@@ -5,11 +5,9 @@ import { Badge } from './ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './ui/resizable';
 import {
-  Send,
   Sparkles,
   Code,
   Eye,
@@ -22,25 +20,17 @@ import {
   RefreshCw,
   Play,
   Bot,
-  User,
-  Paperclip,
   Image,
   FileText,
-  Zap,
   Settings,
   DollarSign,
   Clock,
   Database,
   Cpu,
-  AlertCircle,
-  CheckCircle,
   FileCode,
-  Upload,
   Mic,
-  MicOff,
   Volume2,
-  Headphones,
-  Radio
+  Headphones
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { DEMO_PROMPTS } from '@/data/demo-prompts';
@@ -49,6 +39,7 @@ import InputArea from './InputArea';
 import { MODELS } from './PromptInterface/config/models.config';
 import { MCP_SERVERS } from './PromptInterface/config/mcp-servers.config';
 import { MOCK_RESPONSES } from './PromptInterface/config/mock-responses.config';
+import { useAuthState } from './PromptInterface/hooks/useAuthState';
 
 // Voice recognition interfaces
 interface SpeechRecognitionEvent extends Event {
@@ -162,19 +153,29 @@ interface MCPServer {
 }
 
 export default function PromptInterface() {
-  // Authentication & BYOK State
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(true); // Start with auth required
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
-  const [userEmail, setUserEmail] = useState('');
-  const [userPassword, setUserPassword] = useState('');
-  const [apiKeys, setApiKeys] = useState({
-    openai: '',
-    anthropic: '',
-    google: ''
-  });
-  const [showApiKeySetup, setShowApiKeySetup] = useState(false);
-  
+  // Authentication & BYOK State (extracted to custom hook)
+  const {
+    isAuthenticated,
+    showAuthModal,
+    authMode,
+    userEmail,
+    userPassword,
+    apiKeys,
+    showApiKeySetup,
+    setIsAuthenticated,
+    setShowAuthModal,
+    setAuthMode,
+    setUserEmail,
+    setUserPassword,
+    setApiKeys,
+    setShowApiKeySetup,
+    handleAuth: handleAuthHook,
+    handleApiKeySetup,
+    saveApiKeys: saveApiKeysHook,
+    closeAuthModal,
+    getApiKeyForModel,
+  } = useAuthState();
+
   // Template marketplace integration
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [selectedDemoPromptId, setSelectedDemoPromptId] = useState<string>('');
@@ -215,18 +216,6 @@ export default function PromptInterface() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  // Load saved API keys on mount
-  useEffect(() => {
-    const savedKeys = localStorage.getItem('vibecode_api_keys');
-    if (savedKeys) {
-      try {
-        setApiKeys(JSON.parse(savedKeys));
-      } catch (error) {
-        console.error('Error loading saved API keys:', error);
-      }
-    }
-  }, []);
 
   // Check for selected template from marketplace
   useEffect(() => {
@@ -516,173 +505,40 @@ export default function PromptInterface() {
     }, Math.random() * 2000 + 1000);
   };
 
-  // Authentication functions
+  // Wrapper functions for authentication (delegate to hook)
   const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userEmail || !userPassword) return;
+    await handleAuthHook(e, selectedModel, setMessages, setIsTyping);
 
-    setIsTyping(true);
+    // Post-auth logic: Check if using cloud models without API keys
+    const cloudModel = MODELS.find(m => m.id === selectedModel);
+    const needsApiKey = cloudModel && cloudModel.provider !== 'Docker Model Runner' &&
+                       !getApiKeyForModel(cloudModel.provider);
 
-    try {
-      // Track login attempt
-      await fetch('/api/auth/login-tracking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event: 'login_attempt',
-          email: userEmail,
-          provider: 'local',
-          sessionId: `session_${Date.now()}`,
-          loginMethod: 'password'
-        })
-      });
+    if (needsApiKey && isAuthenticated) {
+      setMessages(prev => [...prev, {
+        id: "api-key-prompt",
+        type: "assistant",
+        content: `🔑 **API Key Setup Required**
 
-      // Simulate authentication delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // For demo - always succeed
-      setIsAuthenticated(true);
-      setShowAuthModal(false);
-      
-      // Track successful login
-      await fetch('/api/auth/login-tracking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event: 'login_success',
-          userId: `user_${Date.now()}`,
-          email: userEmail,
-          provider: 'local',
-          sessionId: `session_${Date.now()}`,
-          loginMethod: 'password'
-        })
-      });
-
-      // Initialize welcome messages
-      const welcomeMessages: Message[] = [
-        {
-          id: "welcome-1",
-          type: "assistant",
-          content: `🎉 **Welcome ${authMode === 'signup' ? 'to' : 'back to'} VibeCode AI!** 
-          
-🌟 **Open Source AI Development Platform**
-          
-I'm your intelligent development assistant with access to:
-
-🤖 **Local Models** - Free SmolLM2, Llama 3.2, Qwen2.5 Coder via Docker
-🔑 **BYOK Support** - Use your own OpenAI, Anthropic, or Google API keys  
-🎤 **Voice Input** - Speak naturally or upload audio files
-📁 **File Processing** - Images, documents, code files
-🔧 **MCP Servers** - Database, filesystem, web search integrations
-📊 **Analytics** - Track usage, costs, and performance
-
-What would you like to build today?`,
-          timestamp: new Date(),
-          metadata: {
-            tokens: 180,
-            cost: 0,
-            model: selectedModel,
-          }
-        }
-      ];
-
-      // Check if using cloud models without API keys
-      const cloudModel = MODELS.find(m => m.id === selectedModel);
-      const needsApiKey = cloudModel && cloudModel.provider !== 'Docker Model Runner' && 
-                         !getApiKeyForModel(cloudModel.provider);
-
-      if (needsApiKey) {
-        welcomeMessages.push({
-          id: "api-key-prompt",
-          type: "assistant",
-          content: `🔑 **API Key Setup Required**
-
-You've selected **${cloudModel.name}** which requires an API key. 
+You've selected **${cloudModel.name}** which requires an API key.
 
 **Option 1:** Use our free local models (SmolLM2, Llama 3.2, Qwen2.5)
 **Option 2:** Add your ${cloudModel.provider} API key for premium features
 
 Would you like to set up your API keys now?`,
-          timestamp: new Date(),
-          metadata: {
-            tokens: 80,
-            cost: 0,
-            model: selectedModel,
-          }
-        });
-        setShowApiKeySetup(true);
-      }
-
-      setMessages(welcomeMessages);
-      
-    } catch (error) {
-      console.error('Auth error:', error);
-      
-      // Track failed login
-      await fetch('/api/auth/login-tracking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event: 'login_failure',
-          email: userEmail,
-          provider: 'local',
-          sessionId: `session_${Date.now()}`,
-          loginMethod: 'password',
-          error: 'authentication_failed'
-        })
-      });
+        timestamp: new Date(),
+        metadata: {
+          tokens: 80,
+          cost: 0,
+          model: selectedModel,
+        }
+      }]);
+      setShowApiKeySetup(true);
     }
-
-    setIsTyping(false);
-  };
-
-  const getApiKeyForModel = (provider: string): string => {
-    switch (provider) {
-      case 'OpenAI': return apiKeys.openai;
-      case 'Anthropic': return apiKeys.anthropic;
-      case 'Google': return apiKeys.google;
-      default: return '';
-    }
-  };
-
-  const handleApiKeySetup = () => {
-    setShowApiKeySetup(true);
   };
 
   const saveApiKeys = () => {
-    // Save to localStorage for demo (in production, save securely)
-    localStorage.setItem('vibecode_api_keys', JSON.stringify(apiKeys));
-    setShowApiKeySetup(false);
-    
-    const confirmMessage: Message = {
-      id: `api-keys-saved-${Date.now()}`,
-      type: "assistant",
-      content: `✅ **API Keys Saved Successfully!**
-
-Your keys are stored locally and encrypted. You can now use premium cloud models:
-
-${apiKeys.openai ? '🟢 OpenAI GPT models available' : ''}
-${apiKeys.anthropic ? '🟢 Anthropic Claude models available' : ''}
-${apiKeys.google ? '🟢 Google Gemini models available' : ''}
-
-Ready to build something amazing!`,
-      timestamp: new Date(),
-      metadata: {
-        tokens: 60,
-        cost: 0,
-        model: selectedModel,
-      }
-    };
-
-    setMessages(prev => [...prev, confirmMessage]);
-  };
-
-  const closeAuthModal = () => {
-    // Can't close auth modal until authenticated in BYOK model
-    if (!isAuthenticated) return;
-    setShowAuthModal(false);
-    setUserEmail('');
-    setUserPassword('');
+    saveApiKeysHook(setMessages, selectedModel);
   };
 
   const getDeviceClasses = () => {
