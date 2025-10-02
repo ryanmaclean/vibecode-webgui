@@ -1,20 +1,24 @@
 name: Build code-server multi-profile images
 
 on:
+  push:
+    paths:
+      - '.github/workflows/codeserver-profiles.yml'
+      - 'docker/code-server/Dockerfile'
   workflow_dispatch:
     inputs:
       profiles:
         description: 'Profiles to build (comma-separated: minimal,standard,ai,web,full or "all")'
         required: true
-        default: 'all'
+        default: 'minimal'
       version:
         description: 'Version tag (e.g., 1.1.0)'
         required: true
-        default: '1.1.0'
+        default: '1.1.1'
       push_to_dockerhub:
         description: 'Also push to Docker Hub'
         type: boolean
-        default: true
+        default: false
 
 env:
   REGISTRY_GHCR: ghcr.io
@@ -36,7 +40,7 @@ jobs:
       - name: Determine profiles to build
         id: matrix
         run: |
-          input="${{ github.event.inputs.profiles }}"
+          input="${{ github.event.inputs.profiles || 'minimal' }}"
           if [ "$input" = "all" ]; then
             profiles='["minimal","standard","ai","web","full"]'
           else
@@ -49,7 +53,7 @@ jobs:
       - name: Set version
         id: version
         run: |
-          version="${{ github.event.inputs.version }}"
+          version="${{ github.event.inputs.version || '1.1.1' }}"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "Version: $version"
 
@@ -85,7 +89,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
-        if: ${{ github.event.inputs.push_to_dockerhub == 'true' && secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        if: ${{ (github.event.inputs.push_to_dockerhub == 'true' || github.event_name == 'push') && secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
         uses: docker/login-action@v3
         with:
           registry: docker.io
