@@ -172,30 +172,22 @@ RUN set -eux; \
     rm -f cosign_checksums.txt cosign.sha256; \
     cosign version
 
-# Install Go (match architecture for multi-arch builds)
-ARG GO_VERSION=1.22.4
+# Install Go with hardcoded checksums (reliable verification)
+ARG GO_VERSION=1.25.1
+ARG GO_SHA256_AMD64=7716a0d940a0f6ae8e1f3b3f4f36299dc53e31b16840dbd171254312c41ca12e
+ARG GO_SHA256_ARM64=c8e8472107052d98816689f5c8fef35a28ef6bb0b0e91d58b0b637cc80dc38e0
 RUN set -eux; \
     case "$TARGETPLATFORM" in \
-      "linux/amd64") GO_ARCH=amd64 ;; \
-      "linux/arm64") GO_ARCH=arm64 ;; \
+      "linux/amd64") GO_ARCH=amd64; GO_SHA256="${GO_SHA256_AMD64}" ;; \
+      "linux/arm64") GO_ARCH=arm64; GO_SHA256="${GO_SHA256_ARM64}" ;; \
       *) echo "Unsupported platform for Go install: $TARGETPLATFORM"; exit 1 ;; \
     esac; \
     GO_TARBALL="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz"; \
     cd /tmp; \
-    wget "https://go.dev/dl/${GO_TARBALL}"; \
-    # Try to download and verify checksum, skip if unavailable
-    if wget "https://go.dev/dl/checksums.txt" 2>/dev/null; then \
-        grep "${GO_TARBALL}" checksums.txt | head -1 | awk '{print $1 "  " $2}' > go.sha256; \
-        if [ -s go.sha256 ]; then \
-            sha256sum --check --strict go.sha256; \
-        else \
-            echo "WARNING: Checksum not found in checksums.txt for ${GO_TARBALL}, skipping verification"; \
-        fi; \
-    else \
-        echo "WARNING: Could not download checksums.txt, skipping Go verification"; \
-    fi; \
+    curl -fsSL "https://go.dev/dl/${GO_TARBALL}" -o "${GO_TARBALL}"; \
+    echo "${GO_SHA256}  ${GO_TARBALL}" | sha256sum -c -; \
     tar -C /usr/local -xzf "${GO_TARBALL}"; \
-    rm -f "${GO_TARBALL}" checksums.txt go.sha256; \
+    rm -f "${GO_TARBALL}"; \
     ln -sf /usr/local/go/bin/go /usr/local/bin/go; \
     go version
 
