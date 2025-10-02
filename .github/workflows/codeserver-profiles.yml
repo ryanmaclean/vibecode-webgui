@@ -89,7 +89,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
-        if: ${{ (github.event.inputs.push_to_dockerhub == 'true' || github.event_name == 'push') && secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        if: false  # Disabled - no Docker Hub credentials
         uses: docker/login-action@v3
         with:
           registry: docker.io
@@ -103,34 +103,18 @@ jobs:
           profile="${{ matrix.profile }}"
           owner="${{ github.repository_owner }}"
           
-          # GHCR tags
+          # GHCR tags only (Docker Hub disabled)
           ghcr_tags="ghcr.io/${owner}/${{ env.IMAGE_NAME }}:${version}-${profile}"
           ghcr_tags="${ghcr_tags},ghcr.io/${owner}/${{ env.IMAGE_NAME }}:${profile}"
-          
-          # Docker Hub tags (if enabled and credentials available)
-          if [ "${{ github.event.inputs.push_to_dockerhub }}" = "true" ] && [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ]; then
-            dockerhub_tags="${owner}/${{ env.IMAGE_NAME }}:${version}-${profile}"
-            dockerhub_tags="${dockerhub_tags},${owner}/${{ env.IMAGE_NAME }}:${profile}"
-            all_tags="${ghcr_tags},${dockerhub_tags}"
-          else
-            all_tags="${ghcr_tags}"
-          fi
           
           # Special handling for 'full' profile (also tag as 'latest')
           if [ "$profile" = "full" ]; then
             ghcr_tags="${ghcr_tags},ghcr.io/${owner}/${{ env.IMAGE_NAME }}:${version}"
             ghcr_tags="${ghcr_tags},ghcr.io/${owner}/${{ env.IMAGE_NAME }}:latest"
-            if [ "${{ github.event.inputs.push_to_dockerhub }}" = "true" ]; then
-              dockerhub_tags="${dockerhub_tags},${owner}/${{ env.IMAGE_NAME }}:${version}"
-              dockerhub_tags="${dockerhub_tags},${owner}/${{ env.IMAGE_NAME }}:latest"
-              all_tags="${ghcr_tags},${dockerhub_tags}"
-            else
-              all_tags="${ghcr_tags}"
-            fi
           fi
           
-          echo "tags=$all_tags" >> "$GITHUB_OUTPUT"
-          echo "Tags for $profile: $all_tags"
+          echo "tags=$ghcr_tags" >> "$GITHUB_OUTPUT"
+          echo "Tags for $profile: $ghcr_tags"
 
       - name: Build and push ${{ matrix.profile }} profile
         id: build
