@@ -30,3 +30,10 @@
 - Copy `.env.local.example` to `.env.local`; keep secrets out of git and tailor extra `.env` files per environment.
 - Datadog requires `DD_API_KEY` and `DD_SITE`; validate telemetry with the `npm run monitoring:*` scripts before shipping.
 - Adjust Kubernetes or Terraform defaults in `k8s/` and `tofu/terraform.tfvars` rather than editing live manifests; document credential handling in the PR.
+
+## Micro-VM Prototype Notes (2025-10-02)
+- Working tree lives in `fast-openvscode-vm/` (ignored); only docs and agent logs get checked in.
+- Boot recipe, measurements, and follow-up work are documented in `docs/virtualization/openvscode-microvm.md` and `archive/agents/2025-10-02-openvscode-microvm.md`.
+- Fix the HTTP reset on `/` first ([issue #552](https://github.com/ryanmaclean/vibecode-webgui/issues/552)) before chasing additional boot-time wins.
+- Automate the timing harness and build the arm64 variant via [issue #553](https://github.com/ryanmaclean/vibecode-webgui/issues/553).
+- When you add new findings, log them under `archive/agents/` so other agents can pick up the thread quickly.
