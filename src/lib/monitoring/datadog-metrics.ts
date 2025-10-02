@@ -201,6 +201,18 @@ export class DatadogMetricsService {
     this.sendMetric('vibecode.user.actions', 1, tags, options?.timestamp)
   }
 
+  // Generic increment method for counters
+  increment(metricName: string, value: number = 1, tags?: Partial<DatadogTags>, options?: MetricOptions) {
+    const mergedTags = this.mergeTags({ ...tags, ...options?.tags })
+    this.sendMetric(metricName, value, mergedTags, options?.timestamp)
+  }
+
+  // Generic histogram method for distributions
+  histogram(metricName: string, value: number, tags?: Partial<DatadogTags>, options?: MetricOptions) {
+    const mergedTags = this.mergeTags({ ...tags, ...options?.tags })
+    this.sendMetric(metricName, value, mergedTags, options?.timestamp)
+  }
+
   // Helper methods for categorization
   private categorizeMessageSize(length: number): string {
     if (length < 100) return 'small'

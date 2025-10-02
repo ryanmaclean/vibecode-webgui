@@ -33,13 +33,75 @@ function getMonitor(): ConnectionPoolMonitor {
 }
 
 /**
- * GET /api/monitoring/pool
- * 
- * Returns connection pool monitoring data including:
- * - Metrics for all pools
- * - Alerts (active or all based on query param)
- * - Recommendations
- * - Pool status
+ * @description Connection Pool Monitoring API - Provides real-time monitoring data for database connection pools including metrics, alerts, recommendations, and pool status. Supports both JSON and text output formats.
+ * @route GET /api/monitoring/pool
+ * @route POST /api/monitoring/pool
+ * @access Public
+ *
+ * @param {NextRequest} request - Next.js request with query parameters:
+ *   - format: 'json' | 'text' - Response format (default: 'json')
+ *   - all_alerts: 'true' | 'false' - Include acknowledged alerts (default: false)
+ *
+ * @returns {Response} GET returns connection pool monitoring data:
+ *   - timestamp: string - Current timestamp
+ *   - pools: { count, status } - Pool summary and detailed status
+ *   - metrics: Map<poolName, PoolMetrics> - Per-pool metrics
+ *   - alerts: { count, critical, warning, info, items } - Active alerts
+ *   - recommendations: { count, items } - Optimization recommendations
+ *
+ * @returns {Response} POST performs pool actions with query parameters:
+ *   - action: 'acknowledge' | 'implement' - Action to perform
+ *   - id: string - Alert or recommendation ID
+ *   - user: string - User performing action (for acknowledge)
+ *
+ * @example
+ * // GET Request - Pool monitoring (JSON)
+ * GET /api/monitoring/pool?format=json
+ *
+ * // Response
+ * {
+ *   "timestamp": "2025-10-01T00:00:00.000Z",
+ *   "pools": {
+ *     "count": 3,
+ *     "status": {
+ *       "pool1": { "size": 10, "inUse": 5, "available": 5, "waitingClients": 0 }
+ *     }
+ *   },
+ *   "metrics": {...},
+ *   "alerts": {
+ *     "count": 2,
+ *     "critical": 0,
+ *     "warning": 2,
+ *     "items": [...]
+ *   },
+ *   "recommendations": {
+ *     "count": 3,
+ *     "items": [...]
+ *   }
+ * }
+ *
+ * // GET Request - Text format
+ * GET /api/monitoring/pool?format=text
+ *
+ * // Response (text/plain)
+ * Connection Pool Monitoring Report
+ * ================================
+ * Timestamp: 2025-10-01T00:00:00.000Z
+ * Total Pools: 3
+ * ...
+ *
+ * // POST Request - Acknowledge alert
+ * POST /api/monitoring/pool?action=acknowledge&id=alert_123&user=admin
+ *
+ * // Response
+ * {
+ *   "success": true,
+ *   "message": "Alert alert_123 acknowledged by admin"
+ * }
+ *
+ * @throws {400} Invalid action or missing required parameters
+ * @throws {404} Alert or recommendation not found
+ * @throws {500} Internal server error - Failed to get connection pool monitoring data
  */
 export async function GET(request: NextRequest) {
   try {

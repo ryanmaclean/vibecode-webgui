@@ -1,6 +1,67 @@
 /**
- * Cache Monitoring and Management API
- * Provides cache statistics, management operations, and health monitoring
+ * @description Cache Monitoring and Management API - Provides comprehensive cache statistics, health monitoring, and management operations for query and vector caches. Includes cache metrics, entry management, tag-based invalidation, and optimization recommendations.
+ * @route GET /api/monitoring/cache
+ * @route POST /api/monitoring/cache
+ * @access Private (requires monitoring authentication)
+ *
+ * @param {NextRequest} request - Next.js request with query parameters:
+ *   - operation: 'stats' | 'metrics' | 'entries' - Specific operation to perform
+ *   - tag: string - Tag filter for 'entries' operation
+ *
+ * @returns {Response} GET returns cache overview with:
+ *   - health: { status: 'healthy' | 'warning' | 'critical', hitRate, utilizationPercent } - Cache health status
+ *   - performance: { totalHits, totalMisses, averageAccessTime, hitRatePercent } - Performance metrics
+ *   - storage: { totalEntries, totalSize, maxEntries, maxSize, memoryUsage } - Storage utilization
+ *   - maintenance: { evictionCount, expiredCount, cleanupEnabled, compressionEnabled } - Maintenance info
+ *   - analytics: { topKeys, sizeDistribution, typeDistribution, oldestEntry } - Usage analytics
+ *   - recommendations: Array<{ type, priority, message, action }> - Optimization recommendations
+ *
+ * @returns {Response} POST executes cache operations with body:
+ *   - operation: 'clear' | 'invalidate_tag' | 'invalidate_key' | 'warm_up' | 'set'
+ *   - tag: string - Tag for invalidation operations
+ *   - key: string - Key for invalidation or set operations
+ *   - data: any - Data for warm_up or set operations
+ *   - options: CacheOptions - Options for set operation
+ *
+ * @example
+ * // GET Request - Cache overview
+ * GET /api/monitoring/cache
+ * Headers: { Authorization: "Bearer <token>" }
+ *
+ * // Response
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "health": { "status": "healthy", "hitRate": 0.85, "utilizationPercent": 45 },
+ *     "performance": { "totalHits": 1500, "totalMisses": 265, "hitRatePercent": 85 },
+ *     "storage": { "totalEntries": 230, "totalSize": 2048576 },
+ *     "recommendations": [...]
+ *   }
+ * }
+ *
+ * // GET Request - Get entries by tag
+ * GET /api/monitoring/cache?operation=entries&tag=user_data
+ *
+ * // Response
+ * { "success": true, "data": { "tag": "user_data", "count": 15, "entries": [...] }}
+ *
+ * // POST Request - Clear all cache
+ * POST /api/monitoring/cache
+ * { "operation": "clear" }
+ *
+ * // Response
+ * { "success": true, "operation": "clear", "result": { "message": "Cache cleared successfully" }}
+ *
+ * // POST Request - Invalidate by tag
+ * POST /api/monitoring/cache
+ * { "operation": "invalidate_tag", "tag": "stale_data" }
+ *
+ * // Response
+ * { "success": true, "result": { "message": "Invalidated 12 entries with tag: stale_data" }}
+ *
+ * @throws {401} Unauthorized - Missing or invalid monitoring authentication
+ * @throws {400} Invalid request - Unknown operation or missing required parameters
+ * @throws {500} Internal server error - Failed to fetch or execute cache operation
  */
 
 import { NextRequest, NextResponse } from 'next/server'
