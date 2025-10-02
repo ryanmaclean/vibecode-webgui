@@ -470,11 +470,15 @@ RUN set -eux; \
     chmod 755 /usr/local/bin/helm; \
     rm -rf /tmp/helm.tar.gz "/tmp/${HELM_TAR_DIR}" /tmp/helm.sha256sum /tmp/helm.sha256sum.sig /tmp/helm.sha256sum.pem; \
     echo "Installing k9s ${K9S_VERSION}"; \
-    curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/k9s_${K9S_ARCH}.tar.gz" -o /tmp/k9s.tar.gz; \
+    K9S_ARCHIVE="k9s_${K9S_ARCH}.tar.gz"; \
+    curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/${K9S_ARCHIVE}" -o /tmp/k9s.tar.gz; \
+    curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/checksums.txt" -o /tmp/k9s.checksums.txt; \
+    grep "${K9S_ARCHIVE}" /tmp/k9s.checksums.txt | awk '{print $1 "  /tmp/k9s.tar.gz"}' > /tmp/k9s.sha256; \
+    sha256sum --check --strict /tmp/k9s.sha256; \
     tar -xzf /tmp/k9s.tar.gz -C /tmp; \
     find /tmp -type f -name "k9s" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/k9s; \
     chmod 755 /usr/local/bin/k9s; \
-    rm -rf /tmp/k9s.tar.gz /tmp/k9s*; \
+    rm -rf /tmp/k9s.tar.gz /tmp/k9s* /tmp/k9s.checksums.txt /tmp/k9s.sha256; \
     echo "Installing sops ${SOPS_VERSION}"; \
     curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.${SOPS_SUFFIX}" -o /usr/local/bin/sops; \
     chmod 755 /usr/local/bin/sops; \
