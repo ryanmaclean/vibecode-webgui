@@ -90,7 +90,7 @@ if [ "$STATUS" = "completed" ]; then
     CREATED_EPOCH=$(date -d "$CREATED_AT" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$CREATED_AT" +%s 2>/dev/null || echo 0)
     UPDATED_EPOCH=$(date -d "$UPDATED_AT" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$UPDATED_AT" +%s 2>/dev/null || echo 0)
     
-    if [ $CREATED_EPOCH -gt 0 ] && [ $UPDATED_EPOCH -gt 0 ]; then
+    if [ "$CREATED_EPOCH" -gt 0 ] && [ "$UPDATED_EPOCH" -gt 0 ]; then
         DURATION=$((UPDATED_EPOCH - CREATED_EPOCH))
         DURATION_MIN=$((DURATION / 60))
         
