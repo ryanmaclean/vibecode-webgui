@@ -50,7 +50,7 @@ ps aux | grep "docker buildx build" | grep -v grep
 - ✅ Strict verification (build fails if tools missing)
 
 ### Tools Included (All Profiles)
-- ✅ **Editors**: vim, nvim, emacs
+- ✅ **Editors**: vim, nvim
 - ✅ **AI CLIs**: aider, goose
 - ✅ **DevOps**: kubectl, helm, k9s, stern, helmfile, sops, glab
 - ✅ **Shell**: nushell, delta, chezmoi, just
@@ -95,7 +95,6 @@ docker run -it --rm ghcr.io/ryanmaclean/vibecode-codeserver:standard bash -c "
   echo '=== Testing Tools ===' &&
   vim --version | head -1 &&
   nvim --version | head -1 &&
-  emacs --version | head -1 &&
   aider --version &&
   goose -version &&
   kubectl version --client &&
@@ -172,7 +171,7 @@ Restart IDE to load MCP server, then use:
 
 - ✅ **Multi-arch**: Works on amd64 and arm64
 - ✅ **Multi-registry**: GHCR + Docker Hub
-- ✅ **All Tools**: vim, nvim, emacs, aider, goose, kubectl, helm, k9s, etc.
+- ✅ **All Tools**: vim, nvim, aider, goose, kubectl, helm, k9s, etc.
 - ✅ **Optimized**: Profile-based sizing (400MB to 1.2GB)
 - ✅ **Verified**: All tools tested and working
 - ✅ **Documented**: Complete guides and runbooks

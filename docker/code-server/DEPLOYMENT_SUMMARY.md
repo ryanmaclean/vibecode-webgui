@@ -7,7 +7,7 @@
 ## 🎯 Objective Achieved
 
 Built and deployed optimized code-server images with **ALL required tools**:
-- ✅ Terminal editors: vim, nvim, emacs
+- ✅ Terminal editors: vim, nvim
 - ✅ AI CLIs: aider, goose
 - ✅ DevOps tools: kubectl, helm, k9s, stern, helmfile, sops, glab
 - ✅ Shell enhancements: nushell, delta, chezmoi, just
@@ -98,7 +98,6 @@ docker run -it --rm ryanmaclean/vibecode-codeserver:standard bash -c "
   echo '=== Editors ===' &&
   vim --version | head -1 &&
   nvim --version | head -1 &&
-  emacs --version | head -1 &&
   echo '=== AI CLIs ===' &&
   aider --version &&
   goose -version &&
