@@ -113,6 +113,31 @@ jobs:
             echo "tags=ghcr.io/ryanmaclean/vibecode-codeserver:${VERSION}-full,ghcr.io/ryanmaclean/vibecode-codeserver:full,ghcr.io/ryanmaclean/vibecode-codeserver:${VERSION},ghcr.io/ryanmaclean/vibecode-codeserver:latest" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Record build start
+        id: build_start
+        run: |
+          echo "start_time=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+          # Emit Datadog build start event if credentials available
+          if [ -n "${{ secrets.DD_API_KEY }}" ]; then
+            curl -X POST "https://api.${{ secrets.DD_SITE || 'datadoghq.com' }}/api/v1/events" \
+              -H "Content-Type: application/json" \
+              -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+              -d '{
+                "title": "Code-Server Build Started: ${{ matrix.profile }}",
+                "text": "Build started for profile ${{ matrix.profile }} on architectures amd64,arm64",
+                "tags": [
+                  "service:code-server",
+                  "profile:${{ matrix.profile }}",
+                  "version:${{ needs.prepare.outputs.version }}",
+                  "git_sha:${{ github.sha }}",
+                  "workflow:${{ github.workflow }}",
+                  "run_id:${{ github.run_id }}"
+                ],
+                "alert_type": "info"
+              }' || echo "Datadog event submission skipped"
+          fi
+
       - name: Build and push ${{ matrix.profile }} profile
         id: build
         uses: docker/build-push-action@v5
@@ -129,6 +154,102 @@ jobs:
             VERSION=${{ needs.prepare.outputs.version }}
             BUILD_DATE=${{ github.event.repository.updated_at }}
             GIT_COMMIT=${{ github.sha }}
+
+      - name: Record push completion
+        id: push_complete
+        run: |
+          push_end=$(date +%s)
+          build_end=${{ steps.build_start.outputs.start_time }}
+          push_duration=$((push_end - build_end))
+          echo "push_duration=${push_duration}" >> "$GITHUB_OUTPUT"
+          echo "Registry push duration: ${push_duration}s"
+
+      - name: Calculate build duration and emit metrics
+        if: always()
+        run: |
+          end_time=$(date +%s)
+          start_time=${{ steps.build_start.outputs.start_time }}
+          duration=$((end_time - start_time))
+
+          build_status="${{ job.status }}"
+          status_value=1
+          if [ "$build_status" != "success" ]; then
+            status_value=0
+          fi
+
+          echo "Build duration: ${duration}s"
+          echo "Build status: $build_status"
+
+          # Submit Datadog metrics if credentials available
+          if [ -n "${{ secrets.DD_API_KEY }}" ]; then
+            timestamp=$(date +%s)
+
+            # Build duration metric
+            curl -X POST "https://api.${{ secrets.DD_SITE || 'datadoghq.com' }}/api/v2/series" \
+              -H "Content-Type: application/json" \
+              -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+              -d '{
+                "series": [{
+                  "metric": "codeserver.build.duration",
+                  "type": 0,
+                  "points": [{
+                    "timestamp": '"$timestamp"',
+                    "value": '"$duration"'
+                  }],
+                  "tags": [
+                    "service:code-server",
+                    "profile:${{ matrix.profile }}",
+                    "version:${{ needs.prepare.outputs.version }}",
+                    "git_sha:${{ github.sha }}",
+                    "workflow:${{ github.workflow }}",
+                    "status:'"$build_status"'"
+                  ]
+                }]
+              }' || echo "Datadog duration metric submission failed"
+
+            # Build status metric
+            curl -X POST "https://api.${{ secrets.DD_SITE || 'datadoghq.com' }}/api/v2/series" \
+              -H "Content-Type: application/json" \
+              -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+              -d '{
+                "series": [{
+                  "metric": "codeserver.build.status",
+                  "type": 0,
+                  "points": [{
+                    "timestamp": '"$timestamp"',
+                    "value": '"$status_value"'
+                  }],
+                  "tags": [
+                    "service:code-server",
+                    "profile:${{ matrix.profile }}",
+                    "version:${{ needs.prepare.outputs.version }}",
+                    "git_sha:${{ github.sha }}",
+                    "workflow:${{ github.workflow }}",
+                    "status:'"$build_status"'"
+                  ]
+                }]
+              }' || echo "Datadog status metric submission failed"
+
+            # Build completion event
+            curl -X POST "https://api.${{ secrets.DD_SITE || 'datadoghq.com' }}/api/v1/events" \
+              -H "Content-Type: application/json" \
+              -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+              -d '{
+                "title": "Code-Server Build '"$build_status"': ${{ matrix.profile }}",
+                "text": "Build '"$build_status"' for profile ${{ matrix.profile }} in '"$duration"'s",
+                "tags": [
+                  "service:code-server",
+                  "profile:${{ matrix.profile }}",
+                  "version:${{ needs.prepare.outputs.version }}",
+                  "git_sha:${{ github.sha }}",
+                  "workflow:${{ github.workflow }}",
+                  "status:'"$build_status"'"
+                ],
+                "alert_type": "'"$([ "$build_status" = "success" ] && echo "success" || echo "error")"'"
+              }' || echo "Datadog completion event submission failed"
+          else
+            echo "Datadog credentials not available - metrics not submitted"
+          fi
 
       - name: Verify tools on amd64
         run: |
@@ -154,6 +275,154 @@ jobs:
             echo '✅ All tools verified on arm64'
           "
 
+      - name: Collect image metrics
+        id: image_metrics
+        run: |
+          tag="ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ matrix.profile }}"
+
+          # Get image size for amd64
+          amd64_size=$(docker image inspect --format='{{.Size}}' "${tag}" --platform linux/amd64 2>/dev/null || echo "0")
+          amd64_size_mb=$((amd64_size / 1024 / 1024))
+
+          # Get image size for arm64
+          arm64_size=$(docker image inspect --format='{{.Size}}' "${tag}" --platform linux/arm64 2>/dev/null || echo "0")
+          arm64_size_mb=$((arm64_size / 1024 / 1024))
+
+          # Get layer count for amd64
+          amd64_layers=$(docker image inspect --format='{{len .RootFS.Layers}}' "${tag}" --platform linux/amd64 2>/dev/null || echo "0")
+
+          # Get layer count for arm64
+          arm64_layers=$(docker image inspect --format='{{len .RootFS.Layers}}' "${tag}" --platform linux/arm64 2>/dev/null || echo "0")
+
+          echo "AMD64: ${amd64_size_mb}MB with ${amd64_layers} layers"
+          echo "ARM64: ${arm64_size_mb}MB with ${arm64_layers} layers"
+
+          echo "amd64_size=${amd64_size_mb}" >> "$GITHUB_OUTPUT"
+          echo "arm64_size=${arm64_size_mb}" >> "$GITHUB_OUTPUT"
+          echo "amd64_layers=${amd64_layers}" >> "$GITHUB_OUTPUT"
+          echo "arm64_layers=${arm64_layers}" >> "$GITHUB_OUTPUT"
+
+      - name: Submit image metrics to Datadog
+        if: always()
+        run: |
+          if [ -n "${{ secrets.DD_API_KEY }}" ]; then
+            timestamp=$(date +%s)
+
+            # AMD64 image size
+            curl -X POST "https://api.${{ secrets.DD_SITE || 'datadoghq.com' }}/api/v2/series" \
+              -H "Content-Type: application/json" \
+              -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+              -d '{
+                "series": [{
+                  "metric": "codeserver.build.image_size",
+                  "type": 0,
+                  "points": [{
+                    "timestamp": '"$timestamp"',
+                    "value": '"${{ steps.image_metrics.outputs.amd64_size }}"'
+                  }],
+                  "tags": [
+                    "service:code-server",
+                    "profile:${{ matrix.profile }}",
+                    "architecture:amd64",
+                    "version:${{ needs.prepare.outputs.version }}",
+                    "git_sha:${{ github.sha }}"
+                  ]
+                }]
+              }' || echo "AMD64 size metric failed"
+
+            # ARM64 image size
+            curl -X POST "https://api.${{ secrets.DD_SITE || 'datadoghq.com' }}/api/v2/series" \
+              -H "Content-Type: application/json" \
+              -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+              -d '{
+                "series": [{
+                  "metric": "codeserver.build.image_size",
+                  "type": 0,
+                  "points": [{
+                    "timestamp": '"$timestamp"',
+                    "value": '"${{ steps.image_metrics.outputs.arm64_size }}"'
+                  }],
+                  "tags": [
+                    "service:code-server",
+                    "profile:${{ matrix.profile }}",
+                    "architecture:arm64",
+                    "version:${{ needs.prepare.outputs.version }}",
+                    "git_sha:${{ github.sha }}"
+                  ]
+                }]
+              }' || echo "ARM64 size metric failed"
+
+            # AMD64 layer count
+            curl -X POST "https://api.${{ secrets.DD_SITE || 'datadoghq.com' }}/api/v2/series" \
+              -H "Content-Type: application/json" \
+              -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+              -d '{
+                "series": [{
+                  "metric": "codeserver.build.layers",
+                  "type": 0,
+                  "points": [{
+                    "timestamp": '"$timestamp"',
+                    "value": '"${{ steps.image_metrics.outputs.amd64_layers }}"'
+                  }],
+                  "tags": [
+                    "service:code-server",
+                    "profile:${{ matrix.profile }}",
+                    "architecture:amd64",
+                    "version:${{ needs.prepare.outputs.version }}",
+                    "git_sha:${{ github.sha }}"
+                  ]
+                }]
+              }' || echo "AMD64 layer metric failed"
+
+            # ARM64 layer count
+            curl -X POST "https://api.${{ secrets.DD_SITE || 'datadoghq.com' }}/api/v2/series" \
+              -H "Content-Type: application/json" \
+              -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+              -d '{
+                "series": [{
+                  "metric": "codeserver.build.layers",
+                  "type": 0,
+                  "points": [{
+                    "timestamp": '"$timestamp"',
+                    "value": '"${{ steps.image_metrics.outputs.arm64_layers }}"'
+                  }],
+                  "tags": [
+                    "service:code-server",
+                    "profile:${{ matrix.profile }}",
+                    "architecture:arm64",
+                    "version:${{ needs.prepare.outputs.version }}",
+                    "git_sha:${{ github.sha }}"
+                  ]
+                }]
+              }' || echo "ARM64 layer metric failed"
+
+            # Registry push duration
+            curl -X POST "https://api.${{ secrets.DD_SITE || 'datadoghq.com' }}/api/v2/series" \
+              -H "Content-Type: application/json" \
+              -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+              -d '{
+                "series": [{
+                  "metric": "codeserver.build.push_duration",
+                  "type": 0,
+                  "points": [{
+                    "timestamp": '"$timestamp"',
+                    "value": '"${{ steps.push_complete.outputs.push_duration }}"'
+                  }],
+                  "tags": [
+                    "service:code-server",
+                    "profile:${{ matrix.profile }}",
+                    "version:${{ needs.prepare.outputs.version }}",
+                    "git_sha:${{ github.sha }}",
+                    "registry:ghcr"
+                  ]
+                }]
+              }' || echo "Push duration metric failed"
+
+            echo "Image metrics submitted to Datadog"
+          else
+            echo "Datadog credentials not available - image metrics not submitted"
+          fi
+
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
@@ -176,27 +445,39 @@ jobs:
         run: |
           cat <<'MARKDOWN' >> "$GITHUB_STEP_SUMMARY"
           # Code-Server Multi-Profile Build Complete
-          
+
           ## Version: ${{ needs.prepare.outputs.version }}
-          
+
           ## Profiles Built:
           ${{ needs.prepare.outputs.profiles }}
-          
+
           ## Registries:
           - ✅ GitHub Container Registry (GHCR)
           ${{ github.event.inputs.push_to_dockerhub == 'true' && '- ✅ Docker Hub' || '- ⏭️ Docker Hub (skipped)' }}
-          
+
           ## Pull Commands:
           ```bash
           # Pull from GHCR
           docker pull ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-<profile>
-          
+
           # Pull from Docker Hub (if enabled)
           docker pull ${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}-<profile>
           ```
-          
+
           ## Test Command:
           ```bash
           docker run -it --rm ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:standard bash
           ```
+
+          ## Datadog Metrics
+          Instrumented with comprehensive build observability:
+          - **codeserver.build.duration**: Build time per profile
+          - **codeserver.build.status**: Success/failure rate tracking
+          - **codeserver.build.image_size**: Image size per architecture (amd64, arm64)
+          - **codeserver.build.layers**: Layer count validation
+          - **codeserver.build.push_duration**: Registry push performance
+
+          View metrics in [Datadog Dashboard](https://app.datadoghq.com/dashboard/code-server-builds) (requires credentials)
+
+          Tags: `service:code-server`, `profile:[profile]`, `version:${{ needs.prepare.outputs.version }}`, `git_sha:${{ github.sha }}`
           MARKDOWN

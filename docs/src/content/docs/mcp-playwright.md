@@ -25,10 +25,10 @@ By providing a structured framework for UI testing, MCP Playwright helps ensure 
 MCP Playwright is built on top of the Playwright testing framework and extends its capabilities with additional structure and integration with other MCP components. The core configuration is defined in `playwright.config.ts`:
 
 ```typescript
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
-  testDir: './',
+  testDir: "./",
   /* Run tests in files in parallel */
   fullyParallel: false,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -39,54 +39,54 @@ export default defineConfig({
   workers: process.env.CI ? 1 : 2,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
-    ['html'],
-    ['json', { outputFile: 'test-results/e2e-results.json' }],
-    ['junit', { outputFile: 'test-results/e2e-results.xml' }]
+    ["html"],
+    ["json", { outputFile: "test-results/e2e-results.json" }],
+    ["junit", { outputFile: "test-results/e2e-results.xml" }],
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.BASE_URL || "http://localhost:3000",
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+    trace: "on-first-retry",
 
     /* Take screenshot on failure */
-    screenshot: 'only-on-failure',
+    screenshot: "only-on-failure",
 
     /* Record video on failure */
-    video: 'retain-on-failure',
+    video: "retain-on-failure",
   },
 
   /* Configure projects for major browsers */
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
     },
     {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
     },
     {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
     },
     /* Test against mobile viewports. */
     {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
+      name: "Mobile Chrome",
+      use: { ...devices["Pixel 5"] },
     },
     {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
+      name: "Mobile Safari",
+      use: { ...devices["iPhone 12"] },
     },
   ],
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
+    command: "npm run dev",
+    url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 180 * 1000,
   },
@@ -137,49 +137,49 @@ tests/
 MCP Playwright tests follow a structured approach that makes them readable, maintainable, and reliable. Here's an example of a basic smoke test:
 
 ```typescript
-import { test, expect } from '@playwright/test'
+import { test, expect } from "@playwright/test";
 
-test.describe('Smoke Tests', () => {
-  test('should load homepage successfully', async ({ page }) => {
-    await page.goto('/')
-    
+test.describe("Smoke Tests", () => {
+  test("should load homepage successfully", async ({ page }) => {
+    await page.goto("/");
+
     // Verify page loads without errors
-    await expect(page).toHaveTitle(/VibeCode/)
-    
-    // Check for main navigation elements
-    const navigation = page.locator('nav')
-    if (await navigation.isVisible()) {
-      await expect(navigation).toBeVisible()
-    }
-    
-    // Should not show any obvious error messages
-    const errorElements = page.locator('[data-testid*="error"]')
-    const errorCount = await errorElements.count()
-    expect(errorCount).toBe(0)
-  })
+    await expect(page).toHaveTitle(/VibeCode/);
 
-  test('should handle responsive design', async ({ page }) => {
+    // Check for main navigation elements
+    const navigation = page.locator("nav");
+    if (await navigation.isVisible()) {
+      await expect(navigation).toBeVisible();
+    }
+
+    // Should not show any obvious error messages
+    const errorElements = page.locator('[data-testid*="error"]');
+    const errorCount = await errorElements.count();
+    expect(errorCount).toBe(0);
+  });
+
+  test("should handle responsive design", async ({ page }) => {
     // Test desktop viewport
-    await page.setViewportSize({ width: 1200, height: 800 })
-    await page.goto('/')
-    await expect(page).toHaveTitle(/VibeCode/)
-    
+    await page.setViewportSize({ width: 1200, height: 800 });
+    await page.goto("/");
+    await expect(page).toHaveTitle(/VibeCode/);
+
     // Test tablet viewport
-    await page.setViewportSize({ width: 768, height: 1024 })
-    await page.reload()
-    await expect(page).toHaveTitle(/VibeCode/)
-    
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.reload();
+    await expect(page).toHaveTitle(/VibeCode/);
+
     // Test mobile viewport
-    await page.setViewportSize({ width: 375, height: 667 })
-    await page.reload()
-    await expect(page).toHaveTitle(/VibeCode/)
-    
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.reload();
+    await expect(page).toHaveTitle(/VibeCode/);
+
     // Page should still be functional on all viewport sizes
-    const errorElements = page.locator('[data-testid*="error"]')
-    const errorCount = await errorElements.count()
-    expect(errorCount).toBe(0)
-  })
-})
+    const errorElements = page.locator('[data-testid*="error"]');
+    const errorCount = await errorElements.count();
+    expect(errorCount).toBe(0);
+  });
+});
 ```
 
 ### Best Practices for Writing Tests
@@ -200,7 +200,7 @@ export class LoginPage {
   constructor(private page: Page) {}
 
   async goto() {
-    await this.page.goto('/auth/signin');
+    await this.page.goto("/auth/signin");
   }
 
   async login(email: string, password: string) {
@@ -216,10 +216,10 @@ export class LoginPage {
 }
 
 // tests/e2e/auth/authentication.test.ts
-import { test, expect } from '@playwright/test';
-import { LoginPage } from '../../pages/LoginPage';
+import { test, expect } from "@playwright/test";
+import { LoginPage } from "../../pages/LoginPage";
 
-test.describe('Authentication', () => {
+test.describe("Authentication", () => {
   let loginPage: LoginPage;
 
   test.beforeEach(async ({ page }) => {
@@ -227,14 +227,16 @@ test.describe('Authentication', () => {
     await loginPage.goto();
   });
 
-  test('should show error with invalid credentials', async () => {
-    await loginPage.login('invalid@example.com', 'wrongpassword');
+  test("should show error with invalid credentials", async () => {
+    await loginPage.login("invalid@example.com", "wrongpassword");
     const errorMessage = await loginPage.getErrorMessage();
-    expect(errorMessage).toContain('Invalid email or password');
+    expect(errorMessage).toContain("Invalid email or password");
   });
 
-  test('should redirect to dashboard after successful login', async ({ page }) => {
-    await loginPage.login('test@example.com', 'correctpassword');
+  test("should redirect to dashboard after successful login", async ({
+    page,
+  }) => {
+    await loginPage.login("test@example.com", "correctpassword");
     await expect(page).toHaveURL(/dashboard/);
   });
 });
@@ -246,34 +248,38 @@ MCP Playwright includes robust accessibility testing using axe-core to ensure WC
 
 ```typescript
 // Example of integrating axe-core with Playwright
-import { test, expect } from '@playwright/test';
-import { createPlaywrightAxeTest } from 'axe-playwright';
+import { test, expect } from "@playwright/test";
+import { createPlaywrightAxeTest } from "axe-playwright";
 
 const axeTest = createPlaywrightAxeTest({ playwright: { test, expect } });
 
-test.describe('Accessibility Testing', () => {
-  test('homepage should not have accessibility violations', async ({ page }) => {
-    await page.goto('/');
+test.describe("Accessibility Testing", () => {
+  test("homepage should not have accessibility violations", async ({
+    page,
+  }) => {
+    await page.goto("/");
     await axeTest.run(page, {
       // Specify which WCAG standards to test against
       runOnly: {
-        type: 'tag',
-        values: ['wcag2a', 'wcag2aa']
-      }
+        type: "tag",
+        values: ["wcag2a", "wcag2aa"],
+      },
     });
   });
 
-  test('dashboard should not have accessibility violations', async ({ page }) => {
+  test("dashboard should not have accessibility violations", async ({
+    page,
+  }) => {
     // Login first
     // ...
 
-    await page.goto('/dashboard');
+    await page.goto("/dashboard");
     await axeTest.run(page, {
       // Use WCAG 2.1 AA rules
       runOnly: {
-        type: 'tag',
-        values: ['wcag21aa']
-      }
+        type: "tag",
+        values: ["wcag21aa"],
+      },
     });
   });
 });
@@ -290,6 +296,27 @@ The accessibility testing framework covers:
 5. **Form Accessibility**: Ensure forms have proper labels and error states
 6. **Reduced-Motion Chat Flow**: Validate Enhanced Chat’s manual jump control and live-region announcements (`tests/e2e/enhanced-chat/reduced-motion.spec.ts`)
 
+> 💡 **Streaming Tip**: Use `createSSEStream` from `tests/e2e/helpers/createSSEStream.ts` whenever the reduced-motion scenarios need deterministic SSE traffic. Pass an explicit `chunk` string array that mirrors the announcements you expect, tune the optional `delayMs` (milliseconds) to control pacing, and rely on the returned `{ stream, completionPromise }` pair to fulfill routes while still awaiting completion.
+
+#### Troubleshooting the Reduced-Motion Spec
+
+- **Missing `dd-trace` during server boot**: The Next.js instrumentation will attempt to load Datadog's tracer whenever the dev server launches. If you have not installed `dd-trace`, prefix the command with `DD_ENABLED=false` (or `SKIP_MONITORING=true`) so the instrumentation short-circuits during local test runs:
+
+  ```bash
+  DD_ENABLED=false npx playwright test tests/e2e/enhanced-chat/reduced-motion.spec.ts
+  ```
+
+  Install the tracer (`npm install dd-trace`) before enabling Datadog in CI or production-like runs.
+
+- **Stuck `.next` build output**: If you still see `Invalid or unexpected token` from `.next/server/middleware.js`, remove the build artifacts and retry:
+
+  ```bash
+  rm -rf .next
+  PLAYWRIGHT_TEST=true npm run dev:simple
+  ```
+
+  Once the dev server starts cleanly, re-run the spec.
+
 ## Integration with Context7 and Sequential Thinking
 
 MCP Playwright integrates with other MCP components to create a more powerful and comprehensive testing framework.
@@ -299,53 +326,55 @@ MCP Playwright integrates with other MCP components to create a more powerful an
 Context7 enhances Playwright tests by providing rich contextual information during test execution. This allows tests to be more aware of the system state, user context, and environment.
 
 ```typescript
-import { test, expect } from '@playwright/test';
-import { Context7Manager } from '../../lib/context7';
+import { test, expect } from "@playwright/test";
+import { Context7Manager } from "../../lib/context7";
 
-test.describe('Context-Aware Testing', () => {
+test.describe("Context-Aware Testing", () => {
   let context: Context7Manager;
 
   test.beforeEach(async () => {
     context = new Context7Manager();
   });
 
-  test('should personalize dashboard based on user context', async ({ page }) => {
+  test("should personalize dashboard based on user context", async ({
+    page,
+  }) => {
     // Set up user context
     context.updateUserContext({
-      userId: 'test@example.com',
+      userId: "test@example.com",
       profile: {
-        expertise: 'advanced',
-        theme: 'dark',
-        language: 'en',
-        timezone: 'America/New_York'
+        expertise: "advanced",
+        theme: "dark",
+        language: "en",
+        timezone: "America/New_York",
       },
-      permissions: ['admin', 'developer']
+      permissions: ["admin", "developer"],
     });
 
     // Log in and navigate to dashboard
-    await page.goto('/auth/signin');
-    await page.fill('#email', 'test@example.com');
-    await page.fill('#password', 'password123');
+    await page.goto("/auth/signin");
+    await page.fill("#email", "test@example.com");
+    await page.fill("#password", "password123");
     await page.click('button[type="submit"]');
-    
+
     // Update spatial context
     context.updateSpatialContext({
-      currentLocation: '/dashboard',
-      navigationPath: ['/auth/signin', '/dashboard']
+      currentLocation: "/dashboard",
+      navigationPath: ["/auth/signin", "/dashboard"],
     });
 
     // Verify dashboard is personalized according to user context
-    await expect(page.locator('.theme-dark')).toBeVisible();
-    await expect(page.locator('.admin-panel')).toBeVisible();
-    await expect(page.locator('.advanced-tools')).toBeVisible();
+    await expect(page.locator(".theme-dark")).toBeVisible();
+    await expect(page.locator(".admin-panel")).toBeVisible();
+    await expect(page.locator(".advanced-tools")).toBeVisible();
 
     // Update context with user actions
-    context.recordUserAction('viewed_dashboard');
-    
+    context.recordUserAction("viewed_dashboard");
+
     // Use context for conditional testing
-    if (context.getUserContext().permissions.includes('admin')) {
+    if (context.getUserContext().permissions.includes("admin")) {
       // Verify admin-specific elements
-      await expect(page.locator('.user-management')).toBeVisible();
+      await expect(page.locator(".user-management")).toBeVisible();
     }
   });
 });
@@ -356,69 +385,74 @@ test.describe('Context-Aware Testing', () => {
 Sequential Thinking helps structure complex test scenarios in a logical, step-by-step manner, making tests more maintainable and easier to understand.
 
 ```typescript
-import { test, expect } from '@playwright/test';
-import { SequentialThinkingProcess } from '../../lib/sequential-thinking';
+import { test, expect } from "@playwright/test";
+import { SequentialThinkingProcess } from "../../lib/sequential-thinking";
 
-test.describe('AI Project Generation', () => {
-  test('should generate a complete project from description', async ({ page }) => {
+test.describe("AI Project Generation", () => {
+  test("should generate a complete project from description", async ({
+    page,
+  }) => {
     const thinking = new SequentialThinkingProcess();
-    
+
     // Step 1: Navigate to project generator
-    thinking.addThought(
-      'Navigate to the project generator page',
-      1,
-      5
-    );
-    await page.goto('/project-generator');
+    thinking.addThought("Navigate to the project generator page", 1, 5);
+    await page.goto("/project-generator");
     await expect(page).toHaveTitle(/Project Generator/);
-    
+
     // Step 2: Enter project description
     thinking.addThought(
-      'Enter a detailed project description for a React web application',
+      "Enter a detailed project description for a React web application",
       2,
-      5
+      5,
     );
-    await page.fill('#project-description', 'Create a React web application with a dashboard that displays real-time data from an API, includes user authentication, and has a dark/light theme toggle.');
-    
+    await page.fill(
+      "#project-description",
+      "Create a React web application with a dashboard that displays real-time data from an API, includes user authentication, and has a dark/light theme toggle.",
+    );
+
     // Step 3: Select project type and technologies
     thinking.addThought(
-      'Select appropriate project type and technologies',
+      "Select appropriate project type and technologies",
       3,
-      5
+      5,
     );
-    await page.selectOption('#project-type', 'web');
-    await page.check('#tech-react');
-    await page.check('#tech-node');
-    
+    await page.selectOption("#project-type", "web");
+    await page.check("#tech-react");
+    await page.check("#tech-node");
+
     // Step 4: Generate project
-    thinking.addThought(
-      'Submit the form to generate the project',
-      4,
-      5
-    );
-    await page.click('button.primary');
-    
+    thinking.addThought("Submit the form to generate the project", 4, 5);
+    await page.click("button.primary");
+
     // Step 5: Verify project generation
     thinking.addThought(
-      'Verify that the project is generated successfully with all requested features',
+      "Verify that the project is generated successfully with all requested features",
       5,
-      5
+      5,
     );
-    
+
     // Wait for generation to complete
-    await page.waitForSelector('#generation-complete', { timeout: 60000 });
-    
+    await page.waitForSelector("#generation-complete", { timeout: 60000 });
+
     // Verify project structure
-    await expect(page.locator('#project-files')).toContainText('package.json');
-    await expect(page.locator('#project-files')).toContainText('src/App.js');
-    await expect(page.locator('#project-files')).toContainText('src/components/Dashboard.js');
-    await expect(page.locator('#project-files')).toContainText('src/components/Auth.js');
-    await expect(page.locator('#project-files')).toContainText('src/components/ThemeToggle.js');
-    
+    await expect(page.locator("#project-files")).toContainText("package.json");
+    await expect(page.locator("#project-files")).toContainText("src/App.js");
+    await expect(page.locator("#project-files")).toContainText(
+      "src/components/Dashboard.js",
+    );
+    await expect(page.locator("#project-files")).toContainText(
+      "src/components/Auth.js",
+    );
+    await expect(page.locator("#project-files")).toContainText(
+      "src/components/ThemeToggle.js",
+    );
+
     // Verify AI explanation
-    await expect(page.locator('#ai-explanation')).toContainText('React');
-    await expect(page.locator('#ai-explanation')).toContainText('authentication');
-    await expect(page.locator('#ai-explanation')).toContainText('theme');
+    await expect(page.locator("#ai-explanation")).toContainText("React");
+    await expect(page.locator("#ai-explanation")).toContainText(
+      "authentication",
+    );
+    await expect(page.locator("#ai-explanation")).toContainText("theme");
   });
 });
 ```
@@ -428,141 +462,151 @@ test.describe('AI Project Generation', () => {
 The true power of MCP Playwright comes when combining Context7 and Sequential Thinking:
 
 ```typescript
-import { test, expect } from '@playwright/test';
-import { Context7Manager } from '../../lib/context7';
-import { SequentialThinkingProcess } from '../../lib/sequential-thinking';
+import { test, expect } from "@playwright/test";
+import { Context7Manager } from "../../lib/context7";
+import { SequentialThinkingProcess } from "../../lib/sequential-thinking";
 
-test.describe('Collaborative Workspace Testing', () => {
+test.describe("Collaborative Workspace Testing", () => {
   let context: Context7Manager;
   let thinking: SequentialThinkingProcess;
-  
+
   test.beforeEach(async () => {
     context = new Context7Manager();
     thinking = new SequentialThinkingProcess();
   });
-  
-  test('should create and share collaborative workspace', async ({ page, browser }) => {
+
+  test("should create and share collaborative workspace", async ({
+    page,
+    browser,
+  }) => {
     // Set up user context
     context.updateUserContext({
-      userId: 'test@example.com',
-      authStatus: 'authenticated',
-      permissions: ['create_workspace', 'invite_users']
+      userId: "test@example.com",
+      authStatus: "authenticated",
+      permissions: ["create_workspace", "invite_users"],
     });
-    
+
     // Step 1: Navigate to workspaces
-    thinking.addThought(
-      'Navigate to the workspaces page',
-      1,
-      7
-    );
-    await page.goto('/workspaces');
+    thinking.addThought("Navigate to the workspaces page", 1, 7);
+    await page.goto("/workspaces");
     context.updateSpatialContext({
-      currentLocation: '/workspaces',
-      navigationPath: ['/workspaces']
+      currentLocation: "/workspaces",
+      navigationPath: ["/workspaces"],
     });
-    
+
     // Step 2: Create new workspace
-    thinking.addThought(
-      'Create a new collaborative workspace',
-      2,
-      7
-    );
-    await page.click('#create-workspace');
-    await page.fill('#workspace-name', 'Test Collaboration');
-    await page.click('#create-button');
-    context.recordUserAction('created_workspace');
-    
+    thinking.addThought("Create a new collaborative workspace", 2, 7);
+    await page.click("#create-workspace");
+    await page.fill("#workspace-name", "Test Collaboration");
+    await page.click("#create-button");
+    context.recordUserAction("created_workspace");
+
     // Step 3: Verify workspace creation
     thinking.addThought(
-      'Verify that the workspace was created successfully',
+      "Verify that the workspace was created successfully",
       3,
-      7
+      7,
     );
-    await page.waitForSelector('#workspace-created');
-    const workspaceId = await page.getAttribute('#workspace-created', 'data-workspace-id');
+    await page.waitForSelector("#workspace-created");
+    const workspaceId = await page.getAttribute(
+      "#workspace-created",
+      "data-workspace-id",
+    );
     expect(workspaceId).toBeTruthy();
-    
+
     context.updateTaskContext({
       currentTask: {
-        id: 'test-collaboration',
-        type: 'workspace-creation',
-        description: 'Testing collaborative workspace',
-        startTime: Date.now()
+        id: "test-collaboration",
+        type: "workspace-creation",
+        description: "Testing collaborative workspace",
+        startTime: Date.now(),
       },
       taskParameters: {
-        workspaceId
-      }
+        workspaceId,
+      },
     });
-    
+
     // Step 4: Invite another user
-    thinking.addThought(
-      'Invite another user to the workspace',
-      4,
-      7
-    );
-    await page.click('#invite-users');
-    await page.fill('#invite-email', 'collaborator@example.com');
-    await page.click('#send-invite');
-    context.recordUserAction('invited_user');
-    
+    thinking.addThought("Invite another user to the workspace", 4, 7);
+    await page.click("#invite-users");
+    await page.fill("#invite-email", "collaborator@example.com");
+    await page.click("#send-invite");
+    context.recordUserAction("invited_user");
+
     // Step 5: Create a second browser context for the collaborator
     thinking.addThought(
-      'Simulate the collaborator joining the workspace',
+      "Simulate the collaborator joining the workspace",
       5,
-      7
+      7,
     );
     const collaboratorContext = await browser.newContext();
     const collaboratorPage = await collaboratorContext.newPage();
-    
+
     // Log in as collaborator
-    await collaboratorPage.goto('/auth/signin');
-    await collaboratorPage.fill('#email', 'collaborator@example.com');
-    await collaboratorPage.fill('#password', 'password123');
+    await collaboratorPage.goto("/auth/signin");
+    await collaboratorPage.fill("#email", "collaborator@example.com");
+    await collaboratorPage.fill("#password", "password123");
     await collaboratorPage.click('button[type="submit"]');
-    
+
     // Accept invitation
-    await collaboratorPage.click('#accept-invitation');
-    
+    await collaboratorPage.click("#accept-invitation");
+
     // Step 6: Test real-time collaboration
     thinking.addThought(
-      'Test real-time collaboration between the two users',
+      "Test real-time collaboration between the two users",
       6,
-      7
+      7,
     );
-    
+
     // First user creates a document
-    await page.click('#create-document');
-    await page.fill('#document-title', 'Collaborative Doc');
-    await page.fill('#document-content', 'Initial content');
-    await page.click('#save-document');
-    context.recordUserAction('created_document');
-    
+    await page.click("#create-document");
+    await page.fill("#document-title", "Collaborative Doc");
+    await page.fill("#document-content", "Initial content");
+    await page.click("#save-document");
+    context.recordUserAction("created_document");
+
     // Wait for document to appear for collaborator
-    await collaboratorPage.waitForSelector('#document-list');
-    await collaboratorPage.click('text=Collaborative Doc');
-    
+    await collaboratorPage.waitForSelector("#document-list");
+    await collaboratorPage.click("text=Collaborative Doc");
+
     // Collaborator edits the document
-    await collaboratorPage.fill('#document-content', 'Updated content by collaborator');
-    await collaboratorPage.click('#save-document');
-    
+    await collaboratorPage.fill(
+      "#document-content",
+      "Updated content by collaborator",
+    );
+    await collaboratorPage.click("#save-document");
+
     // Verify first user sees the changes
-    await expect(page.locator('#document-content')).toHaveValue('Updated content by collaborator');
-    
+    await expect(page.locator("#document-content")).toHaveValue(
+      "Updated content by collaborator",
+    );
+
     // Step 7: Verify collaboration history
     thinking.addThought(
-      'Verify collaboration history is recorded correctly',
+      "Verify collaboration history is recorded correctly",
       7,
-      7
+      7,
     );
-    await page.click('#view-history');
-    await expect(page.locator('#history-list')).toContainText('Test Collaboration created');
-    await expect(page.locator('#history-list')).toContainText('invited collaborator@example.com');
-    await expect(page.locator('#history-list')).toContainText('Collaborative Doc created');
-    await expect(page.locator('#history-list')).toContainText('Collaborative Doc edited');
-    
+    await page.click("#view-history");
+    await expect(page.locator("#history-list")).toContainText(
+      "Test Collaboration created",
+    );
+    await expect(page.locator("#history-list")).toContainText(
+      "invited collaborator@example.com",
+    );
+    await expect(page.locator("#history-list")).toContainText(
+      "Collaborative Doc created",
+    );
+    await expect(page.locator("#history-list")).toContainText(
+      "Collaborative Doc edited",
+    );
+
     // Update context with completion
     context.updateTaskContext({
-      completedTasks: [...context.getTaskContext().completedTasks, 'test-collaboration']
+      completedTasks: [
+        ...context.getTaskContext().completedTasks,
+        "test-collaboration",
+      ],
     });
   });
 });
@@ -579,35 +623,35 @@ name: E2E Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   playwright:
-    name: 'Playwright Tests'
+    name: "Playwright Tests"
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
-          cache: 'npm'
-          
+          node-version: "18"
+          cache: "npm"
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
-        
+
       - name: Run Playwright tests
         run: npm run test:e2e
         env:
           CI: true
-          
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v3
@@ -635,16 +679,16 @@ These reports can be aggregated and analyzed to track test coverage, failure tre
 MCP Playwright supports visual regression testing to catch unexpected UI changes:
 
 ```typescript
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test('visual comparison of homepage', async ({ page }) => {
-  await page.goto('/');
-  
+test("visual comparison of homepage", async ({ page }) => {
+  await page.goto("/");
+
   // Compare current page with baseline
-  await expect(page).toHaveScreenshot('homepage.png', {
+  await expect(page).toHaveScreenshot("homepage.png", {
     // Options for screenshot comparison
     threshold: 0.2, // Allow small differences
-    maxDiffPixelRatio: 0.01 // Max percentage of pixels that can differ
+    maxDiffPixelRatio: 0.01, // Max percentage of pixels that can differ
   });
 });
 ```
@@ -654,23 +698,23 @@ test('visual comparison of homepage', async ({ page }) => {
 Combine API and UI testing for more efficient tests:
 
 ```typescript
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test('API-driven UI testing', async ({ page, request }) => {
+test("API-driven UI testing", async ({ page, request }) => {
   // Set up data via API
-  const response = await request.post('/api/data', {
+  const response = await request.post("/api/data", {
     data: {
-      name: 'Test Item',
-      value: 42
-    }
+      name: "Test Item",
+      value: 42,
+    },
   });
   expect(response.ok()).toBeTruthy();
   const { id } = await response.json();
-  
+
   // Verify UI shows the created data
   await page.goto(`/items/${id}`);
-  await expect(page.locator('#item-name')).toHaveText('Test Item');
-  await expect(page.locator('#item-value')).toHaveText('42');
+  await expect(page.locator("#item-name")).toHaveText("Test Item");
+  await expect(page.locator("#item-value")).toHaveText("42");
 });
 ```
 
@@ -679,8 +723,8 @@ test('API-driven UI testing', async ({ page, request }) => {
 Use a structured approach to test data:
 
 ```typescript
-import { test as base, expect } from '@playwright/test';
-import { TestDataManager } from '../../utils/test-data-manager';
+import { test as base, expect } from "@playwright/test";
+import { TestDataManager } from "../../utils/test-data-manager";
 
 // Extend the base test with test data
 const test = base.extend({
@@ -689,17 +733,17 @@ const test = base.extend({
     await dataManager.setup();
     await use(dataManager);
     await dataManager.cleanup();
-  }
+  },
 });
 
-test('use managed test data', async ({ page, testData }) => {
+test("use managed test data", async ({ page, testData }) => {
   // Create test data
-  const user = await testData.createUser({ role: 'admin' });
+  const user = await testData.createUser({ role: "admin" });
   const project = await testData.createProject({ owner: user.id });
-  
+
   // Test with the created data
   await page.goto(`/projects/${project.id}`);
-  await expect(page.locator('#project-title')).toHaveText(project.name);
+  await expect(page.locator("#project-title")).toHaveText(project.name);
 });
 ```
 
@@ -708,22 +752,22 @@ test('use managed test data', async ({ page, testData }) => {
 Measure and verify performance metrics:
 
 ```typescript
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test('page load performance', async ({ page }) => {
+test("page load performance", async ({ page }) => {
   // Enable performance metrics
-  await page.evaluate(() => performance.mark('test-start'));
-  
+  await page.evaluate(() => performance.mark("test-start"));
+
   // Navigate to the page
-  await page.goto('/dashboard');
-  
+  await page.goto("/dashboard");
+
   // Mark the end and measure
   const metrics = await page.evaluate(() => {
-    performance.mark('test-end');
-    performance.measure('page-load', 'test-start', 'test-end');
-    return performance.getEntriesByType('measure')[0].duration;
+    performance.mark("test-end");
+    performance.measure("page-load", "test-start", "test-end");
+    return performance.getEntriesByType("measure")[0].duration;
   });
-  
+
   // Assert on performance
   expect(metrics).toBeLessThan(2000); // Page should load in less than 2 seconds
 });

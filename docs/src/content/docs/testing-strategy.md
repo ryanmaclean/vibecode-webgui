@@ -42,10 +42,10 @@ Unit tests focus on testing individual functions, components, or classes in isol
 Example unit test:
 
 ```typescript
-import { sum } from '../math-utils';
+import { sum } from "../math-utils";
 
-describe('sum function', () => {
-  it('should add two numbers correctly', () => {
+describe("sum function", () => {
+  it("should add two numbers correctly", () => {
     expect(sum(1, 2)).toBe(3);
   });
 });
@@ -62,10 +62,10 @@ Integration tests verify that different parts of the application work correctly 
 Example integration test:
 
 ```typescript
-import { MongoDBChatService } from '../../src/lib/services/chat-mongodb';
-import { createMockDatabase } from '../utils/mock-db';
+import { MongoDBChatService } from "../../src/lib/services/chat-mongodb";
+import { createMockDatabase } from "../utils/mock-db";
 
-describe('MongoDBChatService', () => {
+describe("MongoDBChatService", () => {
   let service: MongoDBChatService;
   let mockDb: any;
 
@@ -74,9 +74,9 @@ describe('MongoDBChatService', () => {
     service = new MongoDBChatService(mockDb);
   });
 
-  it('should create a new chat session', async () => {
-    const result = await service.createSession('user123');
-    expect(result.userId).toBe('user123');
+  it("should create a new chat session", async () => {
+    const result = await service.createSession("user123");
+    expect(result.userId).toBe("user123");
   });
 });
 ```
@@ -90,17 +90,53 @@ End-to-End (E2E) tests simulate real user behavior and test the application as a
 - **Run Command**: `npm run test:e2e`
 - **Key Scenario**: Reduced-motion Enhanced Chat flow (`tests/e2e/enhanced-chat/reduced-motion.spec.ts`) verifies manual jump controls when auto-scroll is paused
 
+#### Streaming Test Utilities
+
+Use `tests/e2e/helpers/createSSEStream.ts` to simulate server-sent events without wiring a live backend. The helper returns a Node `PassThrough` stream alongside a `completionPromise` so tests can await the scripted stream finishing.
+
+```typescript
+import { test } from "@playwright/test";
+import { createSSEStream } from "../helpers/createSSEStream";
+
+const scriptedChunks = [
+  'data: {"type":"started"}\n\n',
+  'data: {"delta":"Hello"}\n\n',
+  'data: {"done":true}\n\n',
+];
+
+test("handles streaming responses", async ({ page }) => {
+  await page.route("**/chat/stream", async (route) => {
+    const { stream, completionPromise } = createSSEStream(scriptedChunks, 50);
+
+    await route.fulfill({
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+      body: stream,
+    });
+
+    await completionPromise;
+  });
+
+  await page.goto("/workspace");
+  // assertions...
+});
+```
+
+The optional `delayMs` argument inserts a pause between chunks so specs can validate UI behaviour over time. Remember to keep each scripted entry terminated with `\n\n` so the Playwright route forwards discrete SSE events, and reuse this helper for new streaming tests instead of duplicating ad hoc stream logic.
+
+> ⚙️ **Datadog Instrumentation Tip**: When running streaming specs locally, export `DD_ENABLED=false` (or install `dd-trace`) before launching the dev server so the instrumentation layer does not block Playwright from starting.
+
 Example E2E test:
 
 ```typescript
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test('user can log in and access dashboard', async ({ page }) => {
-  await page.goto('/login');
-  await page.fill('[data-testid="email-input"]', 'user@example.com');
-  await page.fill('[data-testid="password-input"]', 'password');
+test("user can log in and access dashboard", async ({ page }) => {
+  await page.goto("/login");
+  await page.fill('[data-testid="email-input"]', "user@example.com");
+  await page.fill('[data-testid="password-input"]', "password");
   await page.click('[data-testid="login-button"]');
-  await expect(page).toHaveURL('/dashboard');
+  await expect(page).toHaveURL("/dashboard");
 });
 ```
 
@@ -187,21 +223,21 @@ Example mocking:
 
 ```typescript
 // Mock a module
-jest.mock('uuid', () => ({
-  v4: jest.fn(() => 'test-uuid-123')
+jest.mock("uuid", () => ({
+  v4: jest.fn(() => "test-uuid-123"),
 }));
 
 // Mock a function
-const mockFunction = jest.fn().mockReturnValue('mocked value');
+const mockFunction = jest.fn().mockReturnValue("mocked value");
 
 // Mock a fetch request with MSW
-import { rest } from 'msw';
-import { setupServer } from 'msw/node';
+import { rest } from "msw";
+import { setupServer } from "msw/node";
 
 const server = setupServer(
-  rest.get('/api/data', (req, res, ctx) => {
-    return res(ctx.json({ data: 'mocked data' }));
-  })
+  rest.get("/api/data", (req, res, ctx) => {
+    return res(ctx.json({ data: "mocked data" }));
+  }),
 );
 
 beforeAll(() => server.listen());

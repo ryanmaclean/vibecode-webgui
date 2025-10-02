@@ -74,11 +74,65 @@ const developmentFormat = winston.format.combine(
 );
 
 /**
- * Custom format for production - JSON structured logs
+ * Sensitive data patterns to filter from logs
+ */
+const SENSITIVE_PATTERNS = [
+  /password/i,
+  /token/i,
+  /secret/i,
+  /api[_-]?key/i,
+  /auth/i,
+  /bearer/i,
+  /credential/i,
+  /private[_-]?key/i,
+  /access[_-]?key/i,
+  /session[_-]?id/i,
+];
+
+/**
+ * Filter sensitive data from log metadata
+ */
+const filterSensitiveData = winston.format((info) => {
+  const sanitize = (obj: any): any => {
+    if (!obj || typeof obj !== 'object') return obj;
+
+    if (Array.isArray(obj)) {
+      return obj.map(sanitize);
+    }
+
+    const sanitized: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      // Check if key matches sensitive patterns
+      const isSensitive = SENSITIVE_PATTERNS.some(pattern => pattern.test(key));
+
+      if (isSensitive) {
+        sanitized[key] = '[REDACTED]';
+      } else if (value && typeof value === 'object') {
+        sanitized[key] = sanitize(value);
+      } else {
+        sanitized[key] = value;
+      }
+    }
+    return sanitized;
+  };
+
+  // Sanitize the entire info object
+  const { level, message, timestamp, ...metadata } = info;
+  return {
+    level,
+    message,
+    timestamp,
+    ...sanitize(metadata),
+  };
+});
+
+/**
+ * Custom format for production - JSON structured logs with security filtering
  */
 const productionFormat = winston.format.combine(
   winston.format.timestamp(),
   winston.format.errors({ stack: true }),
+  filterSensitiveData(),
   winston.format.json()
 );
 
@@ -199,6 +253,25 @@ export const logger: WinstonLogger = createLogger();
  */
 export const createChildLogger = (metadata: Record<string, unknown>): WinstonLogger => {
   return logger.child(metadata);
+};
+
+/**
+ * Create a request logger with request ID for tracing
+ *
+ * @example
+ * ```typescript
+ * const requestLogger = createRequestLogger('req-123', { userId: '456' });
+ * requestLogger.info('Processing user request');
+ * ```
+ */
+export const createRequestLogger = (
+  requestId: string,
+  metadata?: Record<string, unknown>
+): WinstonLogger => {
+  return createChildLogger({
+    requestId,
+    ...metadata,
+  });
 };
 
 /**
