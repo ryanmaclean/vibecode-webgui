@@ -834,13 +834,6 @@ Ready to build something amazing!`,
     setUserPassword('');
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
   const getDeviceClasses = () => {
     switch (deviceView) {
       case "mobile":
