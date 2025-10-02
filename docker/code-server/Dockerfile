@@ -175,7 +175,7 @@ RUN set -eux; \
 # Install Go with hardcoded checksums (reliable verification)
 ARG GO_VERSION=1.25.1
 ARG GO_SHA256_AMD64=7716a0d940a0f6ae8e1f3b3f4f36299dc53e31b16840dbd171254312c41ca12e
-ARG GO_SHA256_ARM64=c8e8472107052d98816689f5c8fef35a28ef6bb0b0e91d58b0b637cc80dc38e0
+ARG GO_SHA256_ARM64=65a3e34fb2126f55b34e1edfc709121660e1be2dee6bdf405fc399a63a95a87d
 RUN set -eux; \
     case "$TARGETPLATFORM" in \
       "linux/amd64") GO_ARCH=amd64; GO_SHA256="${GO_SHA256_AMD64}" ;; \
