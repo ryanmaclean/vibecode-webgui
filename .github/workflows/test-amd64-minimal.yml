@@ -43,12 +43,12 @@ jobs:
             BUILD_DATE=${{ github.event.repository.updated_at }}
             GIT_COMMIT=${{ github.sha }}
 
-      - name: Test info
+      - name: Test pull image
         run: |
           echo "✅ AMD64 minimal image built successfully!"
           echo ""
-          echo "Pull with:"
+          echo "Pull with Docker:"
           echo "  docker pull ghcr.io/${{ github.repository_owner }}/vibecode-codeserver:test-amd64-minimal"
           echo ""
-          echo "Run with:"
-          echo "  docker run -d -p 9000:8080 -e PASSWORD=vibecode2025 ghcr.io/${{ github.repository_owner }}/vibecode-codeserver:test-amd64-minimal"
+          echo "Run on port 9000:"
+          echo "  docker run -d --name vibecode-amd64 -p 9000:8080 -e PASSWORD=vibecode2025 ghcr.io/${{ github.repository_owner }}/vibecode-codeserver:test-amd64-minimal"
