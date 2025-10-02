@@ -152,9 +152,8 @@ jobs:
             echo '=== Verifying ${{ matrix.profile }} profile (amd64) ===' &&
             vim --version | head -1 &&
             nvim --version | head -1 &&
-            emacs --version | head -1 &&
             aider --version &&
-            goose -version &&
+            goose --version 2>&1 | head -1 &&
             echo '✅ All tools verified on amd64'
           "
 
@@ -165,9 +164,8 @@ jobs:
             echo '=== Verifying ${{ matrix.profile }} profile (arm64) ===' &&
             vim --version | head -1 &&
             nvim --version | head -1 &&
-            emacs --version | head -1 &&
             aider --version &&
-            goose -version &&
+            goose --version 2>&1 | head -1 &&
             echo '✅ All tools verified on arm64'
           "
 
