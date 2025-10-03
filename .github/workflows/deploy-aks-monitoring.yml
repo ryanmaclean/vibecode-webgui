@@ -1,5 +1,6 @@
 name: Deploy to AKS with Datadog Monitoring
 
+# Only run manually to avoid failures on missing Azure credentials
 on:
   workflow_dispatch:
     inputs:
@@ -48,7 +49,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check required secrets
+        id: secrets
+        run: |
+          missing=0
+          if [ -z "${{ secrets.AZURE_CLIENT_ID }}" ]; then
+            echo "::warning::Missing AZURE_CLIENT_ID secret"
+            missing=1
+          fi
+          if [ -z "${{ secrets.AZURE_TENANT_ID }}" ]; then
+            echo "::warning::Missing AZURE_TENANT_ID secret"
+            missing=1
+          fi
+          if [ -z "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]; then
+            echo "::warning::Missing AZURE_SUBSCRIPTION_ID secret"
+            missing=1
+          fi
+          if [ "$missing" -eq 1 ]; then
+            echo "::error::AKS deployment skipped due to missing Azure credentials"
+            echo "Configure secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID"
+            exit 1
+          fi
+          echo "secrets_available=true" >> "$GITHUB_OUTPUT"
+
       - name: Azure Login
+        if: steps.secrets.outputs.secrets_available == 'true'
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
