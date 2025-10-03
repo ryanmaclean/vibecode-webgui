@@ -21,6 +21,7 @@ const nextConfig = {
       '@langchain/core/documents': require.resolve('./src/lib/ai/stubs/langchain-documents.ts'),
     }
 
+    // Configure fallbacks for client-side bundle
     if (!isServer) {
       config.resolve.fallback = {
         ...(config.resolve.fallback || {}),
@@ -29,6 +30,10 @@ const nextConfig = {
         net: false,
         dns: false,
         child_process: false,
+        os: false,
+        path: false,
+        crypto: false,
+        monacopilot: false,
       }
     }
 
@@ -53,18 +58,46 @@ const nextConfig = {
       }
     }
 
+    // Exclude monaco-editor from Babel transpilation (it has complex regex that Babel can't process)
+    if (!dev && !isServer) {
+      const oneOfRule = config.module.rules.find((rule) => typeof rule.oneOf === 'object');
+
+      if (oneOfRule) {
+        const babelRule = oneOfRule.oneOf.find((rule) => {
+          return rule.use && rule.use.loader && rule.use.loader.includes('babel-loader');
+        });
+
+        if (babelRule) {
+          babelRule.exclude = [
+            /node_modules\/monaco-editor/,
+            ...(Array.isArray(babelRule.exclude) ? babelRule.exclude : [babelRule.exclude]).filter(Boolean)
+          ];
+        }
+      }
+    }
+
     config.externals = config.externals || []
-    config.externals.push({
-      pg: 'commonjs pg',
-      'pg-native': 'commonjs pg-native',
-      'pg-connection-string': 'commonjs pg-connection-string',
-    })
+
+    if (isServer) {
+      // Server-only externals
+      config.externals.push({
+        pg: 'commonjs pg',
+        'pg-native': 'commonjs pg-native',
+        'pg-connection-string': 'commonjs pg-connection-string',
+        'dd-trace': 'commonjs dd-trace',
+        '@datadog/libdatadog': 'commonjs @datadog/libdatadog',
+      })
+    }
 
     return config
   },
 
   // Server external packages (moved from experimental)
-  serverExternalPackages: ['@datadog/browser-rum'],
+  serverExternalPackages: [
+    '@datadog/browser-rum',
+    'dd-trace',
+    '@datadog/libdatadog',
+  ],
 
   // Environment variables for Datadog
   env: {

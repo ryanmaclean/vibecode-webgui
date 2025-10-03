@@ -9,11 +9,15 @@
   },
   "scripts": {
     "postinstall": "node scripts/ensure-native-binaries.js",
-  "setup": "node scripts/setup-development.js",
-  "kind:setup": "./scripts/kind-setup.sh",
+    "setup": "node scripts/setup-development.js",
+    "kind:setup": "./scripts/kind-setup.sh",
     "dev": "next dev",
     "dev:simple": "next dev",
     "build": "next build",
+    "build:export": "NEXT_CONFIG_FILE=next.config.tauri.js next build",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
     "start": "next start",
     "start:dd": "node --require ./src/instrument.ts node_modules/.bin/next start",
     "lint": "eslint .",
@@ -22,8 +26,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:unit": "jest --testPathPatterns=tests/unit",
-  "test:integration": "jest --testPathPatterns=tests/integration",
-  "tests:all": "./scripts/run-all-tests.sh",
+    "test:integration": "jest --testPathPatterns=tests/integration",
+    "tests:all": "./scripts/run-all-tests.sh",
     "test:ws": "jest --testPathPatterns=tests/integration/websocket",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
@@ -54,9 +58,9 @@
     "generate:vector-activity": "scripts/generate-vector-activity.sh",
     "demo": "make demo",
     "demo:setup": "make setup",
-  "test:synthetics": "datadog-ci synthetics run-tests -c ops/monitoring/datadog-synthetics.json",
-  "test:monitoring:production": "jest --testPathPatterns=tests/production/.*monitoring.*\\.test\\.(ts|js)$",
-  "tests:monitoring:legacy": "LEGACY_AUTH_SMOKE=true npx playwright test tests/e2e/auth/legacy-credentials.test.ts",
+    "test:synthetics": "datadog-ci synthetics run-tests -c ops/monitoring/datadog-synthetics.json",
+    "test:monitoring:production": "jest --testPathPatterns=tests/production/.*monitoring.*\\.test\\.(ts|js)$",
+    "tests:monitoring:legacy": "LEGACY_AUTH_SMOKE=true npx playwright test tests/e2e/auth/legacy-credentials.test.ts",
     "test:monitoring:health": "jest --testPathPatterns=tests/unit/health-check.test.ts",
     "test:security": "jest --testPathPatterns=\"tests/security/.*\\.test\\.(ts|tsx|js|jsx)$\"",
     "test:fix": "npm run setup && npm install --legacy-peer-deps",
@@ -69,15 +73,15 @@
     "monitoring:setup": "npx tsx scripts/setup-datadog-monitoring.ts",
     "monitoring:health": "curl -s http://localhost:3000/api/monitoring/dashboard | jq '.health'",
     "monitoring:metrics": "curl -s http://localhost:3000/api/monitoring/metrics?config=true | jq",
-    "monitoring:trace": "python3 scripts/verify-trace-search.py --config configs/trace-search-checks.json",
+    "monitoring:trace": "python3 scripts/verify-trace-search-batch.py --config configs/trace-search-checks.json",
     "test:performance": "node scripts/run-performance-tests.js",
-  "test:performance:synthetic": "npx @datadog/datadog-ci synthetics run-tests --config ops/monitoring/datadog-synthetics.json",
-  "test:performance:lighthouse": "npx lighthouse-ci autorun",
-  "test:performance:ci": "BASE_URL=http://localhost:3000 npm run test:performance",
-  "performance:synthetic": "BASE_URL=http://localhost:3000 npm run test:performance:synthetic",
-  "performance:monitor": "curl -s http://localhost:3000/api/monitoring/dashboard | jq '.performance'",
-  "jobs:update-free-models": "node -r dd-trace/init scripts/jobs/update-openrouter-free-models.js",
-  "otel:setup": "npx tsx scripts/setup-opentelemetry.ts",
+    "test:performance:synthetic": "npx @datadog/datadog-ci synthetics run-tests --config ops/monitoring/datadog-synthetics.json",
+    "test:performance:lighthouse": "npx lighthouse-ci autorun",
+    "test:performance:ci": "BASE_URL=http://localhost:3000 npm run test:performance",
+    "performance:synthetic": "BASE_URL=http://localhost:3000 npm run test:performance:synthetic",
+    "performance:monitor": "curl -s http://localhost:3000/api/monitoring/dashboard | jq '.performance'",
+    "jobs:update-free-models": "node -r dd-trace/init scripts/jobs/update-openrouter-free-models.js",
+    "otel:setup": "npx tsx scripts/setup-opentelemetry.ts",
     "otel:config": "curl -s http://localhost:3000/api/monitoring/otel-config | jq",
     "otel:health": "curl -s http://localhost:3000/api/monitoring/otel-config?action=health | jq",
     "otel:metrics": "curl -s http://localhost:9090/metrics",
@@ -200,18 +204,9 @@
     "weaviate-ts-client": "^2.2.0",
     "winston": "3.17.0",
     "ws": "^8.18.3",
-    "zod": "3.25.76"
-  },
-  "overrides": {
-    "@vercel/postgres": "^0.10.0",
-    "@vercel/kv": "^3.0.0",
-    "ignore": "^7.0.5",
-    "tmp": "^0.2.4",
-    "@octokit/openapi-types": "24.0.0",
-    "@tremor/react": {
-      "react": "^19.0.0",
-      "react-dom": "^19.0.0"
-    }
+    "zod": "3.25.76",
+    "lightningcss-darwin-arm64": "1.30.1",
+    "@tailwindcss/oxide-darwin-arm64": "4.1.13"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.10.2",
@@ -226,6 +221,7 @@
     "@opentelemetry/winston-transport": "0.14.0",
     "@playwright/test": "1.54.2",
     "@tailwindcss/postcss": "4.1.13",
+    "@tauri-apps/cli": "^2.1.0",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.7.0",
     "@testing-library/react": "16.3.0",
@@ -267,5 +263,16 @@
     "typescript": "5.8.3",
     "y-websocket": "3.0.0",
     "yjs": "13.6.27"
+  },
+  "overrides": {
+    "@vercel/postgres": "^0.10.0",
+    "@vercel/kv": "^3.0.0",
+    "ignore": "^7.0.5",
+    "tmp": "^0.2.4",
+    "@octokit/openapi-types": "24.0.0",
+    "@tremor/react": {
+      "react": "^19.0.0",
+      "react-dom": "^19.0.0"
+    }
   }
 }
