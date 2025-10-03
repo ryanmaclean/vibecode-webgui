@@ -2,7 +2,7 @@
 const nextConfig = {
   // Enable source maps in production for Datadog Dynamic Instrumentation
   productionBrowserSourceMaps: true,
-  
+
   // Webpack configuration for source maps
   webpack: (config, { dev, isServer }) => {
     // Enable source maps in production
@@ -39,7 +39,7 @@ const nextConfig = {
         // Keep source maps readable
         minimize: true,
       }
-      
+
       // Preserve function names for better debugging via minimizer
       if (config.optimization.minimizer) {
         config.optimization.minimizer.forEach((minimizer) => {
@@ -79,8 +79,8 @@ const nextConfig = {
 
   // Output configuration for standalone deployment
   output: 'standalone',
-  
-  // Security headers
+
+  // Security headers - Enhanced with HSTS and CSP
   async headers() {
     return [
       {
@@ -101,6 +101,31 @@ const nextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin'
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+          },
+          // HSTS - Force HTTPS for 1 year
+          ...(process.env.NODE_ENV === 'production' ? [{
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload'
+          }] : []),
+          // Content Security Policy
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https: blob:",
+              "font-src 'self' data:",
+              "connect-src 'self' https://api.openai.com https://api.anthropic.com https://openrouter.ai wss: ws:",
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "upgrade-insecure-requests"
+            ].join('; ')
           }
         ]
       }
@@ -126,7 +151,7 @@ const nextConfig = {
 
   // Compression
   compress: true,
-  
+
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -134,9 +159,9 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  
+
   // Power-ups for production (swcMinify is now default)
-  
+
   // Disable x-powered-by header
   poweredByHeader: false,
 
