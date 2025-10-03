@@ -42,6 +42,7 @@
     "test:monitoring:e2e": "playwright test tests/e2e/monitoring-dashboard.test.ts",
     "test:monitoring:k8s": "jest --testPathPatterns=tests/k8s/monitoring-deployment\\.test\\.(ts|js)$",
     "test:monitoring:security": "jest --testPathPatterns=tests/security/monitoring-security\\.test\\.(ts|js)$",
+    "test:root:infrastructure": "jest --testPathPatterns=tests/infrastructure --maxWorkers=1",
     "test:complete": "jest --testPathPatterns=tests/complete",
     "test:pre-commit": "./scripts/pre-commit-tests.sh",
     "test:ab-compare": "tsx tests/performance/run-ab-test.ts",
