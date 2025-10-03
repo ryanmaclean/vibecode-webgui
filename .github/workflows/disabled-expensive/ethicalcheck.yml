@@ -1,3 +1,27 @@
+# WORKFLOW DISABLED - Action Repository Not Available
+#
+# Date Disabled: 2025-10-02
+# Reason: The apisec-inc/ethicalcheck-action repository returns 404 (not found)
+# Impact: Workflow was failing on every push/PR to main branch
+#
+# This workflow was a template/demo configuration using placeholder values:
+# - Demo API URL: http://netbanking.apisec.ai:8080/v2/api-docs
+# - Placeholder email: xxx@apisec.ai
+#
+# RECOMMENDED ALTERNATIVES for API Security Testing:
+# 1. OWASP ZAP (Zed Attack Proxy) - https://github.com/zaproxy/action-full-scan
+# 2. Snyk API Security - https://github.com/snyk/actions
+# 3. StackHawk API Security - https://github.com/stackhawk/hawkscan-action
+# 4. 42Crunch API Security - https://github.com/42Crunch/api-security-audit-action
+#
+# To re-enable API security testing:
+# 1. Configure actual API endpoints (not demo URLs)
+# 2. Choose an alternative action from above
+# 3. Set up required secrets/authentication
+# 4. Move to .github/workflows/ and rename to .yml
+#
+# ==================== ORIGINAL WORKFLOW BELOW ====================
+#
 # This workflow uses actions that are not certified by GitHub.
 # They are provided by a third-party and are governed by
 # separate terms of service, privacy policy, and support
