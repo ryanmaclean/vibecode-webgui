@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,15 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Loader2,
-  Code,
-  TestTube,
-  Lightbulb,
-  FileText,
-  Zap,
-  Shield,
-  Gauge,
+import { 
+  Loader2, 
+  Code, 
+  TestTube, 
+  Lightbulb, 
+  FileText, 
+  Zap, 
+  Shield, 
+  Gauge, 
   Database,
   CheckCircle,
   AlertTriangle,
@@ -151,7 +150,7 @@ export function UserProfile({ user, onEdit }: UserProfileProps) {
     <div className="user-profile">
       <div className="avatar">
         {user.avatar ? (
-          <Image src={user.avatar} alt={user.name} width={48} height={48} />
+          <img src={user.avatar} alt={user.name} />
         ) : (
           <div className="default-avatar">{user.name[0]}</div>
         )}

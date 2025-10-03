@@ -6,8 +6,6 @@
 import { cache, CacheKeys, CacheTTL } from '../cache/valkey-client';
 import { trackAIOperation } from '../performance/metrics-collector';
 import { logAIRequest } from '../prisma';
-import { logger } from '../logger';
-
 
 export interface LiteLLMConfig {
   baseURL: string;
@@ -21,10 +19,7 @@ export interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'function';
   content: string;
   name?: string;
-  function_call?: {
-    name: string;
-    arguments: string;
-  };
+  function_call?: any;
 }
 
 export interface ChatCompletionRequest {
@@ -38,12 +33,8 @@ export interface ChatCompletionRequest {
   stream?: boolean;
   stop?: string[];
   user?: string;
-  functions?: Array<{
-    name: string;
-    description?: string;
-    parameters?: Record<string, unknown>;
-  }>;
-  function_call?: 'auto' | 'none' | { name: string };
+  functions?: any[];
+  function_call?: any;
 }
 
 export interface ChatCompletionResponse {
@@ -310,15 +301,7 @@ export class LiteLLMClient {
    */
   async getModels(): Promise<ModelInfo[]> {
     try {
-      const response = await this.makeRequest<{ data: Array<{
-        id: string;
-        max_tokens?: number;
-        supports_streaming?: boolean;
-        supports_function_calling?: boolean;
-        supports_vision?: boolean;
-        input_cost_per_token?: number;
-        output_cost_per_token?: number;
-      }> }>('/models');
+      const response = await this.makeRequest<{ data: any[] }>('/models');
       
       return response.data.map(model => ({
         name: model.id,
@@ -333,7 +316,7 @@ export class LiteLLMClient {
         quality: this.assessModelQuality(model.id)
       }));
     } catch (error) {
-      logger.error('Failed to fetch models:', { error: error });
+      console.error('Failed to fetch models:', error);
       return this.getFallbackModels();
     }
   }
@@ -377,10 +360,7 @@ export class LiteLLMClient {
    */
   async streamChatCompletion(
     request: ChatCompletionRequest,
-    onChunk: (chunk: {
-      choices?: Array<{ delta?: { content?: string } }>;
-      usage?: { total_tokens: number };
-    }) => void,
+    onChunk: (chunk: any) => void,
     userId?: string,
     projectId?: number
   ): Promise<void> {
@@ -442,7 +422,7 @@ export class LiteLLMClient {
                   totalTokens = chunk.usage.total_tokens;
                 }
               } catch (parseError) {
-                logger.warn('Failed to parse SSE chunk:', { data: parseError });
+                console.warn('Failed to parse SSE chunk:', parseError);
               }
             }
           }
@@ -510,15 +490,10 @@ export class LiteLLMClient {
         timeframe
       });
 
-      const response = await this.makeRequest<{
-        requests: number;
-        tokens: { input: number; output: number; total: number };
-        cost: number;
-        models: Record<string, { requests: number; tokens: number; cost: number }>;
-      }>(`/usage?${params}`);
+      const response = await this.makeRequest<any>(`/usage?${params}`);
       return response;
     } catch (error) {
-      logger.error('Failed to get usage stats:', { error: error });
+      console.error('Failed to get usage stats:', error);
       return {
         requests: 0,
         tokens: { input: 0, output: 0, total: 0 },
@@ -539,10 +514,7 @@ export class LiteLLMClient {
     const startTime = Date.now();
 
     try {
-      const response = await this.makeRequest<{
-        status?: 'healthy' | 'degraded' | 'unhealthy';
-        models?: Record<string, 'healthy' | 'unhealthy'>;
-      }>('/health');
+      const response = await this.makeRequest<any>('/health');
       const latency = Date.now() - startTime;
 
       return {
@@ -584,7 +556,7 @@ export class LiteLLMClient {
     return response.json();
   }
 
-  private getCacheKey(operation: string, params: Record<string, unknown>): string {
+  private getCacheKey(operation: string, params: any): string {
     const hash = this.hashContent(JSON.stringify(params));
     return `litellm:${operation}:${hash}`;
   }
@@ -667,7 +639,7 @@ export class LiteLLMClient {
     cost?: number;
     durationMs: number;
     status: string;
-    response?: { content?: string; message?: ChatMessage };
+    response?: any;
     error?: string;
   }) {
     try {
@@ -687,11 +659,11 @@ export class LiteLLMClient {
         error: data.error
       });
     } catch (error) {
-      logger.error('Failed to log AI request:', { error: error });
+      console.error('Failed to log AI request:', error);
     }
   }
 
-  private handleError(error: unknown): Error {
+  private handleError(error: any): Error {
     if (error instanceof Error) {
       return error;
     }

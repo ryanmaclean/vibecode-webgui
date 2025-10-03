@@ -46,7 +46,7 @@ class PerformanceTestRunner {
   async runDatadogSyntheticTests() {
     console.log('🐕 Running Datadog Synthetic tests...');
     
-    const configFile = path.join(__dirname, '../datadog-synthetics.json');
+    const configFile = path.join(__dirname, '../ops/monitoring/datadog-synthetics.json');
     const outputFile = path.join(OUTPUT_DIR, 'datadog-synthetic-results.json');
     
     try {

@@ -5,75 +5,47 @@ on:
     # Run every weekday at 9:00 AM UTC
     - cron: '0 9 * * 1-5'
   workflow_dispatch:
-    inputs:
-      create_issue:
-        description: 'Create standup GitHub issue'
-        required: false
-        default: 'true'
-      post_to_slack:
-        description: 'Post report to Slack'
-        required: false
-        default: 'true'
-      slack_channel:
-        description: 'Slack channel to post to'
-        required: false
-        default: '#standup'
-
-concurrency:
-  group: standup-report
-  cancel-in-progress: true
 
 jobs:
   generate-standup:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Needed for git log
 
-      - name: Generate standup report
-        id: standup
-        run: |
-          set -euo pipefail
-          REPORT="$(./scripts/standup-report.sh)"
-          {
-            echo 'report<<EOF'
-            echo "$REPORT"
-            echo 'EOF'
-          } >> "$GITHUB_OUTPUT"
+      - name: Setup GitHub CLI
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
 
-      - name: Create GitHub issue
-        id: issue
-        if: ${{ github.event_name != 'workflow_dispatch' || inputs.create_issue == 'true' }}
+      - name: Install GitHub CLI
+        run: |
+          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+          && sudo apt update \
+          && sudo apt install gh -y
+
+      - name: Generate Standup Report
+        id: standup
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ISSUE_URL=$(gh issue create \
+          # Create report
+          REPORT=$(./scripts/standup-report.sh)
+          
+          # Create a GitHub issue with the standup report
+          gh issue create \
             --title "Standup Report $(date +'%Y-%m-%d')" \
-            --body "${{ steps.standup.outputs.report }}" \
-            --label "standup" \
-            --json url \
-            --jq '.url')
-          echo "issue_url=$ISSUE_URL" >> "$GITHUB_OUTPUT"
-
-      - name: Post to Slack
-        if: ${{ (github.event_name != 'workflow_dispatch' || inputs.post_to_slack == 'true') && secrets.SLACK_WEBHOOK_URL != '' }}
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: |
-          CHANNEL=${{ github.event_name == 'workflow_dispatch' && inputs.slack_channel || '#standup' }}
-          printf '%s' "${{ steps.standup.outputs.report }}" | jq -Rs --arg channel "$CHANNEL" '{channel: $channel, text: .}' | \
-            curl -X POST -H 'Content-type: application/json' --data @- "$SLACK_WEBHOOK_URL"
-
-      - name: Standup summary
-        run: |
-          echo "### Standup Report" >> "$GITHUB_STEP_SUMMARY"
-          if [ -n "${{ steps.issue.outputs.issue_url }}" ]; then
-            echo "- Issue: ${{ steps.issue.outputs.issue_url }}" >> "$GITHUB_STEP_SUMMARY"
-          fi
-          if [ -z "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
-            echo "- Slack: webhook not configured" >> "$GITHUB_STEP_SUMMARY"
-          elif [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ inputs.post_to_slack }}" != "true" ]; then
-            echo "- Slack: skipped via workflow input" >> "$GITHUB_STEP_SUMMARY"
+            --body "$REPORT" \
+            --label "standup"
+          
+          # Post to Slack (if configured)
+          if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+            echo "$REPORT" | jq -Rs --arg channel "#standup" '{channel: $channel, text: .}' | \
+            curl -X POST -H 'Content-type: application/json' \
+            --data @- "${{ secrets.SLACK_WEBHOOK_URL }}"
           fi

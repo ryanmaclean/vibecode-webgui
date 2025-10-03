@@ -219,7 +219,7 @@ check_kubernetes_configs() {
     
     local k8s_files=(
         "k8s/datadog-values.yaml"
-        "datadog-values.yaml"
+        "ops/monitoring/datadog-values.yaml"
     )
     
     local all_good=true

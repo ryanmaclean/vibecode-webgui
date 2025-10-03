@@ -31,7 +31,7 @@ The dependency compatibility testing system helps maintain a stable and secure d
 - Automated issue creation for available updates
 - Artifact uploads for debugging
 
-### 2. Local Compatibility Checker (`scripts/check-dependency-compatibility.mjs`)
+### 2. Local Compatibility Checker (`scripts/check-dependency-compatibility.js`)
 
 A comprehensive Node.js script that performs all compatibility checks locally.
 
@@ -44,7 +44,7 @@ npm run deps:check
 npm run deps:check:ci
 
 # Direct script execution with options
-node scripts/check-dependency-compatibility.mjs [--skip-phantom] [--no-exit]
+node scripts/check-dependency-compatibility.js [--skip-phantom] [--no-exit]
 ```
 
 **Checks Performed:**
@@ -151,7 +151,7 @@ schedule:
 npm run deps:check:ci
 
 # Skip specific checks in CI by modifying the script
-node scripts/check-dependency-compatibility.mjs --skip-phantom --no-exit
+node scripts/check-dependency-compatibility.js --skip-phantom --no-exit
 ```
 
 ## Integration with Development Workflow

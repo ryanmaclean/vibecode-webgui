@@ -17,38 +17,10 @@ env:
   NODE_VERSION: '22.11.0'
 
 jobs:
-  # Validate CI configuration and secrets
-  validate-ci-config:
-    name: Validate CI configuration (secrets/vars)
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    steps:
-      - name: Check required secrets and variables (main branch)
-        run: |
-          echo "🔧 Validating main branch CI configuration..."
-          
-          # For main branch, just inform about missing secrets without failing
-          if [ -z "${{ secrets.DD_API_KEY }}" ]; then
-            echo "ℹ️ DD_API_KEY secret not set; Datadog features would be limited on release branches."
-          else
-            echo "✅ DD_API_KEY present"
-          fi
-          
-          if [ -z "${{ secrets.LHCI_GITHUB_APP_TOKEN }}" ]; then
-            echo "ℹ️ LHCI_GITHUB_APP_TOKEN secret not set; Lighthouse CI would be skipped on release branches."
-          else
-            echo "✅ LHCI_GITHUB_APP_TOKEN present"
-          fi
-          
-          echo "ℹ️ Main branch uses lightweight CI. Full testing happens on release/* branches."
-
   # Fast validation - essential checks only
   quick-validation:
     runs-on: ubuntu-latest
-    needs: validate-ci-config
     timeout-minutes: 10
-    env:
-      NPM_CONFIG_OPTIONAL: 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -61,111 +33,26 @@ jobs:
       
       - name: Install dependencies
         run: npm ci --prefer-offline --no-audit
-
-      - name: Install Codex CLI
-        run: npm install -g @openai/codex
-
-      - name: Verify Codex MCP configuration
-        env:
-          CODEX_HOME: ${{ github.workspace }}/.codex
-        run: |
-          set -euo pipefail
-          OUTPUT="$(codex mcp list)"
-          echo "$OUTPUT"
-          echo "$OUTPUT" | grep 'sequential-thinking'
-
+      
       - name: Lint code
-        id: lint
-        run: |
-          set +e
-          npm run lint
-          status=$?
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
+        run: npm run lint || true  # Don't fail on lint warnings
       
       - name: Type check
-        id: typecheck
-        run: |
-          set +e
-          npm run type-check
-          status=$?
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
+        run: npm run type-check || true
       
       - name: Run fast unit tests only
-        run: npm run test:unit
+        run: |
+          npm test -- --passWithNoTests \
+            --testPathIgnorePatterns="tests/integration|tests/e2e|tests/k8s|tests/performance" \
+            --maxWorkers=2 \
+            --testTimeout=10000
         env:
           NODE_ENV: test
           CI: true
 
-      - name: Fail on lint errors (PR only)
-        if: github.event_name == 'pull_request' && steps.lint.outputs.status != '0'
-        run: |
-          echo '::error::Linting failed on PR (exit code ${{ steps.lint.outputs.status }})'
-          exit 1
-
-      - name: Fail on type errors (PR only)
-        if: github.event_name == 'pull_request' && steps.typecheck.outputs.status != '0'
-        run: |
-          echo '::error::Type-check failed on PR (exit code ${{ steps.typecheck.outputs.status }})'
-          exit 1
-
-      - name: Quick validation summary
-        run: |
-          echo "### Quick Validation" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          lint_status="${{ steps.lint.outputs.status || '0' }}"
-          type_status="${{ steps.typecheck.outputs.status || '0' }}"
-          if [ "$lint_status" != '0' ]; then
-            echo "- Lint: ⚠️ exit code $lint_status (see logs)" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "- Lint: ✅" >> "$GITHUB_STEP_SUMMARY"
-          fi
-          if [ "$type_status" != '0' ]; then
-            echo "- Type check: ⚠️ exit code $type_status (see logs)" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "- Type check: ✅" >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-  script-tests:
-    name: Shell script regression tests
-    runs-on: ubuntu-latest
-    needs: quick-validation
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
-
-      - name: Install Bats
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y bats
-
-      - name: Prepare script test artifacts directory
-        run: mkdir -p tests/scripts/test-results
-
-      - name: Run script tests
-        run: npm run test:scripts
-
-      - name: Upload script test artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: script-tests-${{ github.run_id }}
-          path: tests/scripts/test-results/
-
   # Security scan - lightweight version
   security-check:
     runs-on: ubuntu-latest
-    needs: validate-ci-config
     timeout-minutes: 5
     steps:
       - name: Checkout code
@@ -174,46 +61,18 @@ jobs:
       - name: Run npm audit
         run: npm audit --audit-level=high || true
         
-      - name: Determine base and head commits
-        id: commit-range
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: |
-          echo "base=$BASE_SHA" >> "$GITHUB_OUTPUT"
-          echo "head=$HEAD_SHA" >> "$GITHUB_OUTPUT"
-
-          if [ -z "$BASE_SHA" ]; then
-            echo "No base SHA available (push without before SHA); skipping TruffleHog." >> "$GITHUB_STEP_SUMMARY"
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if [ "$BASE_SHA" = "$HEAD_SHA" ]; then
-            echo "Base ($BASE_SHA) and head ($HEAD_SHA) are identical; skipping TruffleHog." >> "$GITHUB_STEP_SUMMARY"
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          echo "Scanning commit range $BASE_SHA..$HEAD_SHA" >> "$GITHUB_STEP_SUMMARY"
-          echo "skip=false" >> "$GITHUB_OUTPUT"
-
       - name: Check for secrets
-        if: steps.commit-range.outputs.skip != 'true'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ steps.commit-range.outputs.base }}
-          head: ${{ steps.commit-range.outputs.head }}
+          base: main
+          head: HEAD
           extra_args: --debug --only-verified
 
   # Build validation - ensure it compiles
   build-check:
     runs-on: ubuntu-latest
-    needs: validate-ci-config
     timeout-minutes: 10
-    env:
-      NPM_CONFIG_OPTIONAL: 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

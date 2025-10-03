@@ -29,10 +29,6 @@ on:
         default: false
         type: boolean
 
-concurrency:
-  group: deploy-aks-monitoring-${{ github.ref }}
-  cancel-in-progress: true
-
 permissions:
   id-token: write
   contents: read
@@ -46,90 +42,8 @@ env:
   NAMESPACE: ${{ github.event.inputs.namespace }}
 
 jobs:
-  # Validate CI configuration and secrets
-  validate-ci-config:
-    name: Validate deployment configuration
-    runs-on: ubuntu-latest  
-    timeout-minutes: 2
-    outputs:
-      has_azure_client: ${{ steps.check.outputs.has_azure_client }}
-      has_azure_tenant: ${{ steps.check.outputs.has_azure_tenant }}
-      has_azure_subscription: ${{ steps.check.outputs.has_azure_subscription }}
-      has_acr_name: ${{ steps.check.outputs.has_acr_name }}
-      has_dd_api_key: ${{ steps.check.outputs.has_dd_api_key }}
-      has_dd_app_key: ${{ steps.check.outputs.has_dd_app_key }}
-    steps:
-      - name: Check required secrets and variables
-        id: check
-        run: |
-          echo "🔧 Validating AKS deployment configuration..."
-          missing=0
-          
-          # Check Azure secrets
-          if [ -z "${{ secrets.AZURE_CLIENT_ID }}" ]; then
-            echo "::warning::Missing AZURE_CLIENT_ID secret; deployment will be skipped."
-            echo "has_azure_client=0" >> "$GITHUB_OUTPUT"
-            missing=1
-          else
-            echo "✅ AZURE_CLIENT_ID present"
-            echo "has_azure_client=1" >> "$GITHUB_OUTPUT"
-          fi
-          
-          if [ -z "${{ secrets.AZURE_TENANT_ID }}" ]; then
-            echo "::warning::Missing AZURE_TENANT_ID secret; deployment will be skipped."
-            echo "has_azure_tenant=0" >> "$GITHUB_OUTPUT"
-            missing=1
-          else
-            echo "✅ AZURE_TENANT_ID present"
-            echo "has_azure_tenant=1" >> "$GITHUB_OUTPUT"
-          fi
-          
-          if [ -z "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]; then
-            echo "::warning::Missing AZURE_SUBSCRIPTION_ID secret; deployment will be skipped."
-            echo "has_azure_subscription=0" >> "$GITHUB_OUTPUT"
-            missing=1
-          else
-            echo "✅ AZURE_SUBSCRIPTION_ID present"
-            echo "has_azure_subscription=1" >> "$GITHUB_OUTPUT"
-          fi
-          
-          if [ -z "${{ secrets.ACR_NAME }}" ]; then
-            echo "::warning::Missing ACR_NAME secret; container image push will be skipped."
-            echo "has_acr_name=0" >> "$GITHUB_OUTPUT"
-          else
-            echo "✅ ACR_NAME present"
-            echo "has_acr_name=1" >> "$GITHUB_OUTPUT"
-          fi
-          
-          # Check Datadog secrets
-          if [ -z "${{ secrets.DD_API_KEY }}" ]; then
-            echo "::notice::Missing DD_API_KEY secret; monitoring setup will be skipped."
-            echo "has_dd_api_key=0" >> "$GITHUB_OUTPUT"
-          else
-            echo "✅ DD_API_KEY present"
-            echo "has_dd_api_key=1" >> "$GITHUB_OUTPUT"
-          fi
-          
-          if [ -z "${{ secrets.DD_APP_KEY }}" ]; then
-            echo "::notice::Missing DD_APP_KEY secret; some monitoring features will be limited."
-            echo "has_dd_app_key=0" >> "$GITHUB_OUTPUT"
-          else
-            echo "✅ DD_APP_KEY present"
-            echo "has_dd_app_key=1" >> "$GITHUB_OUTPUT"
-          fi
-
-          if [ $missing -eq 1 ]; then
-            echo ""
-            echo "::notice::Required Azure secrets missing; downstream deployment steps will be skipped."
-          fi
-
   deploy-aks:
     runs-on: ubuntu-latest
-    needs: validate-ci-config
-    if: needs.validate-ci-config.outputs.has_azure_client == '1' &&
-        needs.validate-ci-config.outputs.has_azure_tenant == '1' &&
-        needs.validate-ci-config.outputs.has_azure_subscription == '1'
-    environment: production
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -242,7 +156,6 @@ jobs:
           EOF
 
       - name: Deploy application
-        if: needs.validate-ci-config.outputs.has_acr_name == '1'
         run: |
           if ! kubectl get namespace ${{ env.NAMESPACE }} &>/dev/null; then
             kubectl create namespace ${{ env.NAMESPACE }}
@@ -272,11 +185,13 @@ jobs:
           kubectl rollout status deployment/vibecode-app -n ${{ env.NAMESPACE }} --timeout=300s
 
       - name: Setup Datadog monitoring
-        if: >-
-          !github.event.inputs.skip_datadog &&
-          needs.validate-ci-config.outputs.has_dd_api_key == '1' &&
-          needs.validate-ci-config.outputs.has_dd_app_key == '1'
+        if: ${{ !github.event.inputs.skip_datadog }}
         run: |
+          if [ -z "${{ secrets.DD_API_KEY }}" ]; then
+            echo "Datadog API key not set. Skipping Datadog setup."
+            exit 0
+          fi
+          
           # Set Datadog API key as an environment variable
           export DD_API_KEY="${{ secrets.DD_API_KEY }}"
           export DD_SITE="${{ secrets.DD_SITE || 'datadoghq.com' }}"
@@ -321,25 +236,10 @@ jobs:
           echo "Deployment completed successfully!"
           echo "Access the application at: https://vibecode.eastus2.cloudapp.azure.com"
 
-  missing-azure-secrets:
-    runs-on: ubuntu-latest
-    needs: validate-ci-config
-    if: needs.validate-ci-config.outputs.has_azure_client != '1' ||
-        needs.validate-ci-config.outputs.has_azure_tenant != '1' ||
-        needs.validate-ci-config.outputs.has_azure_subscription != '1'
-    steps:
-      - name: Report missing Azure secrets
-        run: |
-          echo '::notice::Skipping AKS deployment because AZURE_CLIENT_ID/TENANT_ID/SUBSCRIPTION_ID secrets are not configured.'
-
   validate-dbm:
     runs-on: ubuntu-latest
     needs: deploy-aks
-    if: >-
-      !github.event.inputs.skip_datadog &&
-      needs.validate-ci-config.outputs.has_dd_api_key == '1' &&
-      needs.validate-ci-config.outputs.has_dd_app_key == '1'
-    environment: production
+    if: ${{ !github.event.inputs.skip_datadog && secrets.DD_API_KEY != '' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

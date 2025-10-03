@@ -1,24 +1,13 @@
 name: CI/CD Error Tracking Integration
 
 on:
+  push:
+    branches: [ main, develop ]
   pull_request:
     branches: [ main ]
-    paths:
-      - 'scripts/**'
-      - 'src/lib/automation/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/error-tracking-integration.yml'
-  workflow_dispatch:
-    inputs:
-      apply_changes:
-        description: 'Allow the workflow to open a PR with regenerated error-tracking instrumentation'
-        required: false
-        default: 'false'
-
-concurrency:
-  group: error-tracking-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_run:
+    workflows: ["CI/CD Error Tracking Integration"]
+    types: [completed]
 
 env:
   DD_ERROR_TRACKING_ENABLED: true
@@ -28,61 +17,9 @@ env:
   DD_API_KEY: ${{ secrets.DD_API_KEY }}
 
 jobs:
-  missing-secrets:
-    runs-on: ubuntu-latest
-    name: Report missing Datadog secrets
-    needs: validate-secrets
-    if: >-
-      needs.validate-secrets.outputs.has_dd_api_key != '1' ||
-      needs.validate-secrets.outputs.has_dd_app_key != '1'
-    steps:
-      - name: Output guidance
-        run: |
-          echo "::notice::Skipping Datadog error tracking automation because DD_API_KEY/DD_APP_KEY secrets are not configured."
-          echo "Add the required secrets to re-enable scripting updates and verification."
-
-  validate-secrets:
-    runs-on: ubuntu-latest
-    name: Validate Datadog secrets
-    outputs:
-      has_dd_api_key: ${{ steps.check.outputs.has_dd_api_key }}
-      has_dd_app_key: ${{ steps.check.outputs.has_dd_app_key }}
-    steps:
-      - name: Check Datadog secrets
-        id: check
-        env:
-          DD_API_KEY: ${{ secrets.DD_API_KEY }}
-          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-        run: |
-          set -euo pipefail
-          warn() { printf '::warning::%s\n' "$1"; }
-
-          has_dd_api_key=0
-          if [ -n "${DD_API_KEY:-}" ]; then
-            echo "✅ DD_API_KEY present"
-            has_dd_api_key=1
-          else
-            warn 'Missing DD_API_KEY; workflow will run in validation-only mode.'
-          fi
-
-          has_dd_app_key=0
-          if [ -n "${DD_APP_KEY:-}" ]; then
-            echo "✅ DD_APP_KEY present"
-            has_dd_app_key=1
-          else
-            warn 'Missing DD_APP_KEY; workflow will run in validation-only mode.'
-          fi
-
-          printf 'has_dd_api_key=%s\n' "$has_dd_api_key" >> "$GITHUB_OUTPUT"
-          printf 'has_dd_app_key=%s\n' "$has_dd_app_key" >> "$GITHUB_OUTPUT"
-
   error-tracking-setup:
     runs-on: ubuntu-latest
     name: Setup Error Tracking
-    needs: validate-secrets
-    if: >-
-      needs.validate-secrets.outputs.has_dd_api_key == '1' &&
-      needs.validate-secrets.outputs.has_dd_app_key == '1'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -116,10 +53,7 @@ jobs:
   integrate-scripts:
     runs-on: ubuntu-latest
     name: Integrate Error Tracking into Scripts
-    needs: [validate-secrets, error-tracking-setup]
-    if: >-
-      needs.validate-secrets.outputs.has_dd_api_key == '1' &&
-      needs.validate-secrets.outputs.has_dd_app_key == '1'
+    needs: error-tracking-setup
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -151,56 +85,20 @@ jobs:
             exit 1
           fi
           echo "✅ Error tracking modules verified"
-      
-      - name: Prepare instrumentation changes
-        id: prepare
+
+      - name: Commit Integration Changes
+        if: github.ref == 'refs/heads/main'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add scripts/lib/ src/lib/automation/
-          if git diff --staged --quiet; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "ℹ️ No instrumentation changes detected"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            git status --short
-            git diff --staged > instrumentation.patch
-            echo "patch_path=instrumentation.patch" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Upload instrumentation diff
-        if: steps.prepare.outputs.changed == 'true' && !(github.event_name == 'workflow_dispatch' && inputs.apply_changes == 'true')
-        uses: actions/upload-artifact@v4
-        with:
-          name: error-tracking-integration-diff
-          path: ${{ steps.prepare.outputs.patch_path }}
-
-      - name: Open instrumentation pull request
-        if: steps.prepare.outputs.changed == 'true' && github.event_name == 'workflow_dispatch' && inputs.apply_changes == 'true'
-        uses: peter-evans/create-pull-request@v6
-        with:
-          commit-message: 'chore: apply error tracking instrumentation'
-          committer: GitHub Action <action@github.com>
-          author: GitHub Action <action@github.com>
-          title: 'chore: apply error tracking instrumentation'
-          body: |
-            Automated update adding Datadog error tracking hooks.
-
-            - generated by `.github/workflows/error-tracking-integration.yml`
-            - includes scripts/lib and src/lib automation updates
-
-            <!-- skip downstream workflows -->
-          branch: automation/error-tracking-${{ github.run_id }}
-          delete-branch: true
+          git diff --staged --quiet || git commit -m "🤖 Auto-integrate error tracking into scripts [skip ci]"
+          git push || echo "⚠️ Could not push changes"
 
   test-integration:
     runs-on: ubuntu-latest
     name: Test Error Tracking Integration
-    needs: [validate-secrets, integrate-scripts]
-    if: >-
-      needs.validate-secrets.outputs.has_dd_api_key == '1' &&
-      needs.validate-secrets.outputs.has_dd_app_key == '1' &&
-      needs.integrate-scripts.result != 'skipped'
+    needs: integrate-scripts
     strategy:
       matrix:
         test-type: [shell, node, python]
@@ -268,7 +166,7 @@ jobs:
   deployment-error-tracking:
     runs-on: ubuntu-latest
     name: Deploy with Error Tracking
-    needs: [validate-secrets, test-integration]
+    needs: test-integration
     if: github.ref == 'refs/heads/main'
     environment: production
     steps:
@@ -304,7 +202,7 @@ jobs:
   monitor-deployment:
     runs-on: ubuntu-latest
     name: Monitor Deployment Errors
-    needs: [validate-secrets, deployment-error-tracking]
+    needs: deployment-error-tracking
     if: always()
     steps:
       - name: Checkout code

@@ -16,10 +16,10 @@ import { QueryAnalyzer } from './query-analyzer';
 import { DatabasePool, DatabasePoolClient, DatabasePoolFactory, DefaultDatabasePoolFactory } from './connection-router';
 // Use a simple logger implementation as fallback
 const createLogger = (name: string) => ({
-  info: (message: string, ...args: unknown[]) => console.log(`[${name}] INFO: ${message}`, ...args),
-  error: (message: string, ...args: unknown[]) => console.error(`[${name}] ERROR: ${message}`, ...args),
-  warn: (message: string, ...args: unknown[]) => console.warn(`[${name}] WARN: ${message}`, ...args),
-  debug: (message: string, ...args: unknown[]) => console.debug(`[${name}] DEBUG: ${message}`, ...args),
+  info: (message: string, ...args: any[]) => console.log(`[${name}] INFO: ${message}`, ...args),
+  error: (message: string, ...args: any[]) => console.error(`[${name}] ERROR: ${message}`, ...args),
+  warn: (message: string, ...args: any[]) => console.warn(`[${name}] WARN: ${message}`, ...args),
+  debug: (message: string, ...args: any[]) => console.debug(`[${name}] DEBUG: ${message}`, ...args),
 });
 
 const DEFAULT_CONFIG: ShardingConfig = {
@@ -278,7 +278,7 @@ export class VectorShardingManager {
    */
   public async executeOnShard(
     query: string, 
-    params: ReadonlyArray<unknown> = [], 
+    params: any[] = [], 
     shardId: string
   ): Promise<QueryResult> {
     await this.ensureInitialized();
@@ -348,7 +348,7 @@ export class VectorShardingManager {
    */
   public async executeQuery(
     query: string, 
-    params: ReadonlyArray<unknown> = []
+    params: any[] = []
   ): Promise<QueryResult> {
     await this.ensureInitialized();
     
@@ -376,7 +376,7 @@ export class VectorShardingManager {
    */
   private async executeOnAllShards(
     query: string, 
-    params: ReadonlyArray<unknown> = []
+    params: any[] = []
   ): Promise<QueryResult> {
     const activeShards = this.config.shards.filter(
       shard => shard.status === ShardStatus.ACTIVE
@@ -422,7 +422,7 @@ export class VectorShardingManager {
    */
   private async executeWriteQuery(
     query: string, 
-    params: ReadonlyArray<unknown> = []
+    params: any[] = []
   ): Promise<QueryResult> {
     // Extract table and potentially a primary key or vector ID from the query
     const tableName = this.queryAnalyzer.extractTableName(query);
@@ -448,7 +448,7 @@ export class VectorShardingManager {
    */
   private async executeVectorWriteQuery(
     query: string, 
-    params: ReadonlyArray<unknown> = []
+    params: any[] = []
   ): Promise<QueryResult> {
     // In a real implementation, you would extract the vector ID from the query
     // and determine which shards should receive the write based on the consistency level
@@ -529,7 +529,7 @@ export class VectorShardingManager {
    */
   private async executeReadQuery(
     query: string, 
-    params: ReadonlyArray<unknown> = []
+    params: any[] = []
   ): Promise<QueryResult> {
     // For vector search queries, execute with special handling
     if (this.queryAnalyzer.isVectorSearchQuery(query)) {
@@ -566,7 +566,7 @@ export class VectorShardingManager {
    */
   private async executeVectorReadQuery(
     query: string, 
-    params: ReadonlyArray<unknown> = []
+    params: any[] = []
   ): Promise<QueryResult> {
     // Determine which shards to query based on read consistency
     let targetShards: ShardInfo[];

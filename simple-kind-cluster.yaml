@@ -1,0 +1,42 @@
+# Simplified KIND cluster configuration for VibeCode platform testing
+# Single node cluster with essential port mappings
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: vibecode-simple
+
+nodes:
+# Single control plane node (acts as both control plane and worker)
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  # HTTP Ingress
+  - containerPort: 80
+    hostPort: 8080
+    protocol: TCP
+  # HTTPS Ingress  
+  - containerPort: 443
+    hostPort: 8443
+    protocol: TCP
+  # MongoDB access
+  - containerPort: 27017
+    hostPort: 27017
+    protocol: TCP
+  # Redis access
+  - containerPort: 6379
+    hostPort: 6379
+    protocol: TCP
+  # Chat-UI direct access
+  - containerPort: 3000
+    hostPort: 3000
+    protocol: TCP
+
+# Networking configuration
+networking:
+  podSubnet: "10.244.0.0/16"
+  serviceSubnet: "10.96.0.0/16"

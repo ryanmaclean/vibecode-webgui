@@ -49,7 +49,7 @@ All images are published to GitHub Container Registry (GHCR):
 - **Security**: Non-root nginx user
 
 ### 5. **Development Environment** (`vibecode-dev`)
-- **Dockerfile**: `docker/developer-guide/Dockerfile`
+- **Dockerfile**: `docker/development/Dockerfile`
 - **Base**: `node:18-alpine`
 - **Purpose**: Local development container
 - **Ports**: `3000`

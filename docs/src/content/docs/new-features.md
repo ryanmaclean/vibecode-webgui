@@ -316,12 +316,12 @@ services:
 
 ## 🔗 Related Documentation
 
-- **[Enhanced AI Features](/enhanced-ai-features/)** - Detailed AI system documentation
-- **[Vector Database Guide](/prisma-pgvector/)** - pgvector setup and usage
-- **[Monitoring Setup](/monitoring/overview/)** - Complete observability guide
-- **[Production Deployment](/production-deployment-guide/)** - Deployment instructions
-- **[API Reference](/api-reference/)** - Complete API documentation
-- **[Environment Variables](/env-variables/)** - Configuration guide
+- **[Enhanced AI Features](./enhanced-ai-features/)** - Detailed AI system documentation
+- **[Vector Database Guide](./prisma-pgvector/)** - pgvector setup and usage
+- **[Monitoring Setup](./monitoring/overview/)** - Complete observability guide
+- **[Production Deployment](./production-deployment-guide/)** - Deployment instructions
+- **[API Reference](./api-reference/)** - Complete API documentation
+- **[Environment Variables](./env-variables/)** - Configuration guide
 
 ---
 

@@ -7,14 +7,11 @@
 
 import { datadogLogs } from '@datadog/browser-logs'
 
-// Type for data rows in the pipeline
-export type DataRow = Record<string, unknown>;
-
 export interface DataPipelineConfig {
   name: string
   source: string
   destination: string
-  schema: Record<string, unknown>
+  schema: Record<string, any>
   qualityChecks: DataQualityCheck[]
   freshnessSLA: number // minutes
   volumeThresholds: {
@@ -93,7 +90,7 @@ export class MetaplaneDataObservability {
   /**
    * Monitor data quality for a specific pipeline
    */
-  async monitorPipeline(pipelineName: string, data: DataRow[]): Promise<DataObservabilityMetrics> {
+  async monitorPipeline(pipelineName: string, data: any[]): Promise<DataObservabilityMetrics> {
     const pipeline = this.pipelines.get(pipelineName)
     if (!pipeline) {
       throw new Error(`Pipeline ${pipelineName} not registered`)
@@ -150,7 +147,7 @@ export class MetaplaneDataObservability {
    */
   private async detectAnomaliesWithAI(
     pipelineName: string,
-    data: DataRow[],
+    data: any[],
     metrics: DataObservabilityMetrics
   ): Promise<DataAnomaly[]> {
     try {
@@ -173,8 +170,8 @@ export class MetaplaneDataObservability {
         throw new Error(`AI anomaly detection failed: ${response.statusText}`)
       }
 
-      const result = await response.json() as { anomalies: Array<{ confidence: number; description: string; affected_rows?: number; suggested_action?: string }> };
-      return result.anomalies.map((anomaly) => ({
+      const result = await response.json()
+      return result.anomalies.map((anomaly: any) => ({
         type: 'ai_detected',
         severity: anomaly.confidence > 0.8 ? 'high' : 'medium',
         description: anomaly.description,
@@ -194,7 +191,7 @@ export class MetaplaneDataObservability {
   /**
    * Run individual data quality check
    */
-  private async runQualityCheck(check: DataQualityCheck, data: DataRow[]): Promise<{
+  private async runQualityCheck(check: DataQualityCheck, data: any[]): Promise<{
     passed: boolean
     message: string
     affectedRows: number
@@ -223,7 +220,7 @@ export class MetaplaneDataObservability {
     }
   }
 
-  private checkNullRate(check: DataQualityCheck, data: DataRow[]): {
+  private checkNullRate(check: DataQualityCheck, data: any[]): {
     passed: boolean
     message: string
     affectedRows: number
@@ -246,7 +243,7 @@ export class MetaplaneDataObservability {
     }
   }
 
-  private checkDuplicateRate(check: DataQualityCheck, data: DataRow[]): {
+  private checkDuplicateRate(check: DataQualityCheck, data: any[]): {
     passed: boolean
     message: string
     affectedRows: number
@@ -275,7 +272,7 @@ export class MetaplaneDataObservability {
     }
   }
 
-  private checkSchemaDrift(check: DataQualityCheck, data: DataRow[]): {
+  private checkSchemaDrift(check: DataQualityCheck, data: any[]): {
     passed: boolean
     message: string
     affectedRows: number
@@ -300,7 +297,7 @@ export class MetaplaneDataObservability {
     }
   }
 
-  private checkVolume(check: DataQualityCheck, data: DataRow[]): {
+  private checkVolume(check: DataQualityCheck, data: any[]): {
     passed: boolean
     message: string
     affectedRows: number
@@ -320,7 +317,7 @@ export class MetaplaneDataObservability {
     }
   }
 
-  private checkFreshness(check: DataQualityCheck, data: DataRow[]): {
+  private checkFreshness(check: DataQualityCheck, data: any[]): {
     passed: boolean
     message: string
     affectedRows: number
@@ -337,7 +334,7 @@ export class MetaplaneDataObservability {
     }
   }
 
-  private runCustomCheck(check: DataQualityCheck, data: DataRow[]): {
+  private runCustomCheck(check: DataQualityCheck, data: any[]): {
     passed: boolean
     message: string
     affectedRows: number
@@ -353,7 +350,7 @@ export class MetaplaneDataObservability {
     }
   }
 
-  private calculateFreshness(data: DataRow[]): number {
+  private calculateFreshness(data: any[]): number {
     if (data.length === 0) return Infinity
 
     // Assume data has a timestamp field
@@ -370,7 +367,7 @@ export class MetaplaneDataObservability {
     return (now - mostRecent) / (1000 * 60) // minutes
   }
 
-  private calculateSchemaVersion(data: DataRow[]): string {
+  private calculateSchemaVersion(data: any[]): string {
     if (data.length === 0) return 'empty'
 
     const schema = Object.keys(data[0]).sort().join(',')
@@ -398,7 +395,7 @@ export class MetaplaneDataObservability {
     return Math.max(0, 100 - penalty)
   }
 
-  private getSuggestedAction(check: DataQualityCheck, result: { passed: boolean; message: string; affectedRows: number; value: number }): string {
+  private getSuggestedAction(check: DataQualityCheck, result: any): string {
     switch (check.type) {
       case 'null_rate':
         return 'Review data ingestion pipeline for missing values'

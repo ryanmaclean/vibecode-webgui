@@ -256,7 +256,7 @@ services:
 
 ### **Health Check Endpoints**
 - **`/api/health`** - Complete system status with new AI components
-- **`/api/monitoring/overview/metrics`** - Real-time performance metrics
+- **`/api/monitoring/metrics`** - Real-time performance metrics
 - **`/api/ai/provider-health`** - AI provider status and failover
 - **`/api/ollama/models`** - Local model availability
 

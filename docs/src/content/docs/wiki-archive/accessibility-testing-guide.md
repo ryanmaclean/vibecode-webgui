@@ -109,7 +109,7 @@ TEST_URL=https://staging.vibecode.com ./scripts/run-accessibility-tests.sh
 - **Projects** (`/projects`) - Project management interface
 - **HuggingFace Chat** (`/chat/huggingface`) - AI chat interface
 - **Collaborative Chat** (`/chat/collaborative`) - Real-time collaboration
-- **Monitoring Dashboard** (`/monitoring/overview/dashboard`) - System monitoring
+- **Monitoring Dashboard** (`/monitoring/dashboard`) - System monitoring
 
 ### Components Tested
 - **AI Project Generator** - Project creation workflow

@@ -4,57 +4,13 @@
  */
 
 import { NextRequest } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { WebSocketServer } from 'ws'
+import { spawn, IPty } from 'node-pty'
 import { ClaudeCliIntegration } from '@/lib/claude-cli-integration'
 import { datadogMonitoring } from '@/lib/monitoring/enhanced-datadog-integration'
 import { terminalSessions, generateSessionId } from '@/lib/terminal/session-manager'
-import { spawn } from 'node-pty'
-
-// WebSocket types
-interface WebSocketLike {
-  send(data: string): void;
-  on(event: string, listener: (...args: unknown[]) => void): void;
-}
-
-type TerminalMessageType =
-  | 'create-terminal'
-  | 'terminal-input'
-  | 'terminal-resize'
-  | 'ai-command'
-  | 'close-terminal'
-
-type TerminalAICommand = 'chat' | 'analyze' | 'explain' | 'generate'
-
-interface TerminalMessage {
-  type: TerminalMessageType;
-  cols?: number;
-  rows?: number;
-  data?: string;
-  command?: string;
-  commandType?: TerminalAICommand;
-  mode?: TerminalAICommand;
-}
-
-const TERMINAL_AI_COMMANDS: ReadonlySet<TerminalAICommand> = new Set([
-  'chat',
-  'analyze',
-  'explain',
-  'generate',
-])
-
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === 'string'
-}
-
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value)
-}
-
-function resolveAICommand(value: unknown): TerminalAICommand {
-  if (typeof value === 'string' && TERMINAL_AI_COMMANDS.has(value as TerminalAICommand)) {
-    return value as TerminalAICommand
-  }
-  return 'chat'
-}
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -83,7 +39,7 @@ export async function GET(request: NextRequest) {
 }
 
 // WebSocket handler (this would be handled by your WebSocket server)
-const webSocketHandler = (ws: WebSocketLike, request: { url: string }) => {
+const webSocketHandler = (ws: any, request: any) => {
   const url = new URL(request.url, 'http://localhost')
   const workspaceId = url.searchParams.get('workspaceId')
   const userId = url.searchParams.get('userId') || 'anonymous'
@@ -144,7 +100,7 @@ const webSocketHandler = (ws: WebSocketLike, request: { url: string }) => {
   })
 
   // Handle create terminal
-  async function handleCreateTerminal(ws: WebSocketLike, message: TerminalMessage, workspaceId: string | null, userId: string) {
+  async function handleCreateTerminal(ws: any, message: any, workspaceId: string | null, userId: string) {
     try {
       if (!workspaceId) {
         ws.send(JSON.stringify({
@@ -156,33 +112,19 @@ const webSocketHandler = (ws: WebSocketLike, request: { url: string }) => {
       
       const sessionId = generateSessionId()
       const workspaceDir = `/workspaces/${workspaceId}`
-
-      const cols = isFiniteNumber(message.cols) ? message.cols : 120
-      const rows = isFiniteNumber(message.rows) ? message.rows : 30
-
-      /**
-       * SECURITY FIX: Whitelist environment variables (fixes #439)
-       * Only pass safe, necessary variables to terminal - no secrets
-       */
-      const allowedEnv = {
-        TERM: 'xterm-256color',
-        COLORTERM: 'truecolor',
-        HOME: '/home/workspace',
-        USER: 'workspace',
-        PATH: '/usr/local/bin:/usr/bin:/bin',
-        LANG: 'en_US.UTF-8',
-        LC_ALL: 'en_US.UTF-8',
-        WORKSPACE_ID: workspaceId,
-        USER_ID: userId,
-      }
-
+      
       // Create PTY process
       const ptyProcess = spawn(process.platform === 'win32' ? 'cmd.exe' : 'bash', [], {
         name: 'xterm-256color',
-        cols,
-        rows,
+        cols: message.cols || 120,
+        rows: message.rows || 30,
         cwd: workspaceDir,
-        env: allowedEnv
+        env: {
+          ...process.env,
+          TERM: 'xterm-256color',
+          WORKSPACE_ID: workspaceId,
+          USER_ID: userId
+        }
       })
 
       // Set up Claude integration
@@ -260,62 +202,39 @@ const webSocketHandler = (ws: WebSocketLike, request: { url: string }) => {
   }
 
   // Handle terminal input
-  async function handleTerminalInput(ws: WebSocketLike, message: TerminalMessage, sessionId: string | null) {
+  async function handleTerminalInput(ws: any, message: any, sessionId: string | null) {
     if (!sessionId) return
 
     const session = terminalSessions.get(sessionId)
-    if (!session) {
-      return
-    }
+    if (session) {
+      session.lastActivity = new Date()
+      session.pty.write(message.data)
 
-    if (!isNonEmptyString(message.data)) {
-      ws.send(JSON.stringify({
-        type: 'error',
-        message: 'Terminal input payload missing'
-      }))
-      return
-    }
-
-    const payload = message.data
-    session.lastActivity = new Date()
-    session.pty.write(payload)
-
-    // Track command execution if it's a complete command
-    if (payload.includes('\n') || payload.includes('\r')) {
-      const startTime = Date.now()
-      setTimeout(() => {
-        const executionTime = Date.now() - startTime
-        datadogMonitoring.trackTerminalCommand(sessionId, payload.trim(), executionTime)
-      }, 100)
+      // Track command execution if it's a complete command
+      if (message.data.includes('\n') || message.data.includes('\r')) {
+        const startTime = Date.now()
+        // Simple command execution time tracking (will be improved with actual timing)
+        setTimeout(() => {
+          const executionTime = Date.now() - startTime
+          datadogMonitoring.trackTerminalCommand(sessionId, message.data.trim(), executionTime)
+        }, 100)
+      }
     }
   }
 
   // Handle terminal resize
-  async function handleTerminalResize(ws: WebSocketLike, message: TerminalMessage, sessionId: string | null) {
+  async function handleTerminalResize(ws: any, message: any, sessionId: string | null) {
     if (!sessionId) return
 
     const session = terminalSessions.get(sessionId)
-    if (!session) {
-      return
+    if (session) {
+      session.lastActivity = new Date()
+      session.pty.resize(message.cols, message.rows)
     }
-
-    const cols = isFiniteNumber(message.cols) ? message.cols : null
-    const rows = isFiniteNumber(message.rows) ? message.rows : null
-
-    if (cols === null || rows === null) {
-      ws.send(JSON.stringify({
-        type: 'error',
-        message: 'Resize event missing dimensions'
-      }))
-      return
-    }
-
-    session.lastActivity = new Date()
-    session.pty.resize(cols, rows)
   }
 
   // Handle AI command
-  async function handleAICommand(ws: WebSocketLike, message: TerminalMessage, sessionId: string | null) {
+  async function handleAICommand(ws: any, message: any, sessionId: string | null) {
     if (!sessionId) return
 
     const session = terminalSessions.get(sessionId)
@@ -323,69 +242,60 @@ const webSocketHandler = (ws: WebSocketLike, request: { url: string }) => {
 
     try {
       session.lastActivity = new Date()
-
-      const commandText = isNonEmptyString(message.command) ? message.command : ''
-      if (!commandText.trim()) {
-        ws.send(JSON.stringify({
-          type: 'ai-error',
-          sessionId,
-          error: 'AI command payload missing',
-        }))
-        return
-      }
-
-      const requestedType = message.commandType ?? message.mode
-      const commandType = resolveAICommand(requestedType)
+      
+      const { command, type = 'chat' } = message
       const startTime = Date.now()
 
       let response
-      switch (commandType) {
+      switch (type) {
         case 'explain':
-          response = await session.claude.explainCode(commandText, 'bash')
+          response = await session.claude.explainCode(command, 'bash')
           break
         case 'generate':
-          response = await session.claude.generateCode(commandText)
+          response = await session.claude.generateCode(command)
           break
         case 'analyze':
           response = await session.claude.executeCommand({
             command: 'analyze',
-            input: commandText
+            input: command
           })
           break
-        case 'chat':
         default:
-          response = await session.claude.chatWithClaude(commandText, session.aiContext)
+          response = await session.claude.chatWithClaude(command, session.aiContext)
       }
 
       const responseTime = Date.now() - startTime
 
+      // Track AI usage in Datadog
       datadogMonitoring.trackAIUsage(
         sessionId,
-        commandType,
+        type,
         'anthropic',
-        'claude-3-5-sonnet',
+        'claude-3-5-sonnet', // Could be made configurable
         responseTime,
         response.metadata?.tokens
       )
 
+      // Track Claude CLI specific metrics
       datadogMonitoring.trackClaudeCodeCLI(
         sessionId,
-        commandType,
+        type,
         response.success,
         responseTime,
         response.success ? undefined : 'api_error'
       )
 
       if (response.success) {
-        session.aiContext.push(commandText, response.output)
+        // Add to AI context
+        session.aiContext.push(command, response.output)
         if (session.aiContext.length > 20) {
-          session.aiContext = session.aiContext.slice(-20)
+          session.aiContext = session.aiContext.slice(-20) // Keep last 20 entries
         }
 
         ws.send(JSON.stringify({
           type: 'ai-response',
           sessionId,
-          command: commandText,
+          command,
           response: response.output,
           metadata: response.metadata
         }))
@@ -393,7 +303,7 @@ const webSocketHandler = (ws: WebSocketLike, request: { url: string }) => {
         ws.send(JSON.stringify({
           type: 'ai-error',
           sessionId,
-          command: commandText,
+          command,
           error: response.error
         }))
       }
@@ -402,14 +312,14 @@ const webSocketHandler = (ws: WebSocketLike, request: { url: string }) => {
       ws.send(JSON.stringify({
         type: 'ai-error',
         sessionId,
-        command: isNonEmptyString(message.command) ? message.command : undefined,
+        command: message.command,
         error: 'AI service unavailable'
       }))
     }
   }
 
   // Handle close terminal
-  async function handleCloseTerminal(ws: WebSocketLike, message: TerminalMessage, sessionId: string | null) {
+  async function handleCloseTerminal(ws: any, message: any, sessionId: string | null) {
     if (!sessionId) return
 
     const session = terminalSessions.get(sessionId)
@@ -428,7 +338,7 @@ const webSocketHandler = (ws: WebSocketLike, request: { url: string }) => {
   }
 
   // Offer AI suggestion based on command output
-  async function offerAISuggestion(ws: WebSocketLike, sessionId: string, output: string) {
+  async function offerAISuggestion(ws: any, sessionId: string, output: string) {
     const session = terminalSessions.get(sessionId)
     if (!session || !session.claude) return
 
@@ -464,3 +374,4 @@ const webSocketHandler = (ws: WebSocketLike, request: { url: string }) => {
     }
   }
 }
+

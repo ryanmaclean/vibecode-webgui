@@ -47,6 +47,7 @@
   {  "name": "ESLint",  "crawlerStart": "https://eslint.org/docs/latest/",  "crawlerPrefix": "https://eslint.org/docs/latest/"},
   {  "name": "Elasticsearch",  "crawlerStart": "https://www.elastic.co/guide/en/enterprise-search/current/index.html",  "crawlerPrefix": "https://www.elastic.co/guide/en/enterprise-search/current/"},
   {  "name": "Electron",  "crawlerStart": "https://www.electronjs.org/docs/latest/",  "crawlerPrefix": "https://www.electronjs.org/docs/latest/"},
+  {  "name": "Emacs",  "crawlerStart": "https://www.gnu.org/software/emacs/manual/html_node/emacs/",  "crawlerPrefix": "https://www.gnu.org/software/emacs/manual/html_node/emacs/"},
   {  "name": "Expo",  "crawlerStart": "https://docs.expo.dev/",  "crawlerPrefix": "https://docs.expo.dev/"},
   {  "name": "Express",  "crawlerStart": "https://expressjs.com/en/5x/api.html",  "crawlerPrefix": "https://expressjs.com/en/5x/"},
   {  "name": "FFmpeg",  "crawlerStart": "https://ffmpeg.org/ffmpeg.html",  "crawlerPrefix": "https://ffmpeg.org/ffmpeg.html"},

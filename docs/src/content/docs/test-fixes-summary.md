@@ -54,7 +54,7 @@ description: Summary of test infrastructure improvements and fixes
 
 ### 🚀 **KEY TECHNICAL IMPLEMENTATIONS**
 
-#### 1. **Monitoring Dashboard** (`/src/app/monitoring/overview/page.tsx`)
+#### 1. **Monitoring Dashboard** (`/src/app/monitoring/page.tsx`)
 ```typescript
 // Complete implementation with all E2E test requirements:
 - Health status cards with service monitoring
@@ -181,7 +181,7 @@ npx playwright test tests/e2e/simple-test.spec.ts --project=chromium
 ```
 
 ### Key Files Modified/Created:
-- `src/app/monitoring/overview/page.tsx` - Complete monitoring dashboard
+- `src/app/monitoring/page.tsx` - Complete monitoring dashboard
 - `src/app/workspaces/page.tsx` - Workspace listing and management
 - `src/app/workspaces/[id]/page.tsx` - Individual workspace interface
 - `src/app/auth/e2e-test/page.tsx` - E2E authentication system

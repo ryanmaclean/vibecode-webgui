@@ -39,7 +39,7 @@ The standardized error handling implementation introduces significant changes to
 ### Actions:
 1. Apply changes to non-critical production adapters:
    - Redis vector adapter
-   - Enhanced vector adapter
+   - Enhanced vector adapter 
    - Cognitive Search adapter
 2. Enable error logging and metrics collection
 3. Monitor error rates and patterns for 1 week

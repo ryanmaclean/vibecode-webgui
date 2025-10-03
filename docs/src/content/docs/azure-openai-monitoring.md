@@ -135,4 +135,4 @@ This document outlines the monitoring setup for Azure OpenAI services using Data
 - [Datadog Azure Integration](https://docs.datadoghq.com/integrations/azure/)
 - [Azure OpenAI Monitoring](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/monitoring)
 - [Datadog Custom Metrics](https://docs.datadoghq.com/metrics/custom_metrics/)
-- [Azure OpenAI Deployment Guide](/deploy-azure-openai-monitoring/
+- [Azure OpenAI Deployment Guide](./deploy-azure-openai-monitoring/)

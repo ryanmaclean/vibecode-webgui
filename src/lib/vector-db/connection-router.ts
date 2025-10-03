@@ -1,4 +1,4 @@
-import { Pool, QueryResult, QueryResultRow } from 'pg';
+import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { getDatabaseLogger } from '../db/database-logger';
 
 /**
@@ -6,7 +6,7 @@ import { getDatabaseLogger } from '../db/database-logger';
  * This allows for dependency injection and easier testing
  */
 export interface DatabasePool {
-  query<T extends QueryResultRow = QueryResultRow>(query: string, params?: ReadonlyArray<unknown>): Promise<QueryResult<T>>;
+  query<T extends QueryResultRow = any>(query: string, params?: any[]): Promise<QueryResult<T>>;
   connect(): Promise<DatabasePoolClient>;
   end(): Promise<void>;
   totalCount: number;
@@ -17,7 +17,7 @@ export interface DatabasePool {
  * Interface for database pool client operations
  */
 export interface DatabasePoolClient {
-  query<T extends QueryResultRow = QueryResultRow>(query: string, params?: ReadonlyArray<unknown>): Promise<QueryResult<T>>;
+  query<T extends QueryResultRow = any>(query: string, params?: any[]): Promise<QueryResult<T>>;
   release(): void;
 }
 
@@ -289,9 +289,9 @@ export class VectorDBConnectionRouter {
    * @param options Routing options
    * @returns Query result
    */
-  public async routeQuery<T extends QueryResultRow = QueryResultRow>(
+  public async routeQuery<T extends QueryResultRow = any>(
     query: string,
-    params: ReadonlyArray<unknown> = [],
+    params: any[] = [],
     options: QueryRoutingOptions = {}
   ): Promise<QueryResult<T>> {
     // Check if we're in a transaction
@@ -325,9 +325,9 @@ export class VectorDBConnectionRouter {
    * @param params Query parameters
    * @returns Query result
    */
-  private async routeToPrimary<T extends QueryResultRow = QueryResultRow>(
+  private async routeToPrimary<T extends QueryResultRow = any>(
     query: string,
-    params: ReadonlyArray<unknown> = []
+    params: any[] = []
   ): Promise<QueryResult<T>> {
     const startTime = Date.now();
     
@@ -361,9 +361,9 @@ export class VectorDBConnectionRouter {
    * @param options Routing options
    * @returns Query result
    */
-  private async routeToReadReplica<T extends QueryResultRow = QueryResultRow>(
+  private async routeToReadReplica<T extends QueryResultRow = any>(
     query: string,
-    params: ReadonlyArray<unknown> = [],
+    params: any[] = [],
     _options: QueryRoutingOptions = {}
   ): Promise<QueryResult<T>> {
     // If no replicas available, fall back to primary
@@ -377,7 +377,7 @@ export class VectorDBConnectionRouter {
     // Select a healthy replica using round-robin with health check
     const healthyReplicas = Array.from(this.replicaHealth.entries())
       .filter(([_, status]) => status.isHealthy)
-      .map(([key]) => {
+      .map(([key, _]) => {
         // Extract index from key format "replica-{index}-{host}:{port}"
         const index = parseInt(key.split('-')[1], 10);
         return index;
@@ -629,7 +629,7 @@ export class VectorDBConnectionRouter {
     const replicaStatus = Array.from(this.replicaHealth.entries())
       .map(([key, status]) => {
         // Extract index and connection info from key format "replica-{index}-{host}:{port}"
-        const [, indexStr, hostPort] = key.split('-');
+        const [_, indexStr, hostPort] = key.split('-');
         const index = parseInt(indexStr, 10);
         const [host, portStr] = hostPort.split(':');
         const port = parseInt(portStr, 10);

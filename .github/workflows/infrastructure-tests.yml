@@ -15,11 +15,6 @@ on:
       - 'scripts/deploy-aks.py'
       - 'tests/**'
       - '.github/workflows/infrastructure-tests.yml'
-  workflow_dispatch:
-
-concurrency:
-  group: infrastructure-tests-${{ github.ref }}
-  cancel-in-progress: true
 
 env:
   # Test configuration
@@ -28,70 +23,9 @@ env:
   AZURE_CLI_VERSION: "2.53.0"
 
 jobs:
-  validate-secrets:
-    name: Validate infrastructure secrets
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      has_azure_creds: ${{ steps.check.outputs.has_azure_creds }}
-      has_postgres_connection: ${{ steps.check.outputs.has_postgres_connection }}
-      has_dd_api_key: ${{ steps.check.outputs.has_dd_api_key }}
-      has_dd_app_key: ${{ steps.check.outputs.has_dd_app_key }}
-    steps:
-      - name: Check required secrets
-        id: check
-        env:
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION }}
-          DD_API_KEY: ${{ secrets.DD_API_KEY }}
-          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-        run: |
-          set -euo pipefail
-          warn() { printf '::warning::%s\n' "$1"; }
-
-          has_azure_creds=1
-          for name in AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_SECRET AZURE_SUBSCRIPTION_ID; do
-            if [ -z "${!name:-}" ]; then
-              warn "Missing $name secret; infra integration tests will be skipped."
-              has_azure_creds=0
-            fi
-          done
-
-          has_postgres_connection=1
-          if [ -z "${POSTGRES_CONNECTION:-}" ]; then
-            warn 'Missing POSTGRES_CONNECTION secret; database validation will be skipped.'
-            has_postgres_connection=0
-          fi
-
-          has_dd_api_key=1
-          if [ -z "${DD_API_KEY:-}" ]; then
-            warn 'Missing DD_API_KEY secret; Datadog telemetry checks will be skipped.'
-            has_dd_api_key=0
-          fi
-
-          has_dd_app_key=1
-          if [ -z "${DD_APP_KEY:-}" ]; then
-            warn 'Missing DD_APP_KEY secret; Datadog dashboards cannot be updated.'
-            has_dd_app_key=0
-          fi
-
-          printf 'has_azure_creds=%s\n' "$has_azure_creds" >> "$GITHUB_OUTPUT"
-          printf 'has_postgres_connection=%s\n' "$has_postgres_connection" >> "$GITHUB_OUTPUT"
-          printf 'has_dd_api_key=%s\n' "$has_dd_api_key" >> "$GITHUB_OUTPUT"
-          printf 'has_dd_app_key=%s\n' "$has_dd_app_key" >> "$GITHUB_OUTPUT"
-
-          if [ "$has_azure_creds" -eq 0 ] || [ "$has_postgres_connection" -eq 0 ]; then
-            echo '::notice::Infra workflow will run unit tests only until secrets are restored.'
-          fi
-
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    needs: validate-secrets
-    timeout-minutes: 30
 
     steps:
       - name: Checkout code
@@ -145,11 +79,7 @@ jobs:
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    needs: [validate-secrets, unit-tests]
-    timeout-minutes: 45
-    if: >-
-      needs.validate-secrets.outputs.has_azure_creds == '1' &&
-      needs.validate-secrets.outputs.has_postgres_connection == '1'
+    needs: unit-tests
 
     steps:
       - name: Checkout code
@@ -196,13 +126,7 @@ jobs:
   e2e-tests:
     name: E2E Tests (Validation Only)
     runs-on: ubuntu-latest
-    needs: [validate-secrets, unit-tests, integration-tests]
-    timeout-minutes: 60
-    if: >-
-      needs.validate-secrets.outputs.has_azure_creds == '1' &&
-      needs.validate-secrets.outputs.has_postgres_connection == '1' &&
-      needs.validate-secrets.outputs.has_dd_api_key == '1' &&
-      needs.validate-secrets.outputs.has_dd_app_key == '1'
+    needs: [unit-tests, integration-tests]
 
     steps:
       - name: Checkout code

@@ -283,12 +283,12 @@ npm run start
 
 ### Health Checks
 ```bash
-curl http://localhost:3000/api/monitoring/overview/performance?action=health
+curl http://localhost:3000/api/monitoring/performance?action=health
 ```
 
 ## Getting Help
 
-- **Documentation**: Check [API Reference](/wiki-archive/api-reference/) for endpoint details
-- **Features**: Explore [Features Overview](/features/) for capabilities
-- **Getting Started**: Follow [Getting Started Guide](/getting-started/) for setup
-- **Project Structure**: Understand the codebase with [Project Structure](/project-structure/)
+- **Documentation**: Check [API Reference](/wiki/api-reference) for endpoint details
+- **Features**: Explore [Features Overview](/wiki/features) for capabilities
+- **Getting Started**: Follow [Getting Started Guide](/wiki/getting-started) for setup
+- **Project Structure**: Understand the codebase with [Project Structure](/wiki/project-structure)

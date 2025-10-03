@@ -184,6 +184,6 @@ If you encounter issues with pgvector on Azure PostgreSQL:
 ## For More Information
 
 For more detailed information, refer to:
-- [docs/azure-postgres-pgvector-guide.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/azure-postgres-pgvector-guide.md)
-- [docs/postgres-vector-troubleshooting.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/postgres-vector-troubleshooting.md)
+- [docs/azure-postgres-pgvector-guide.md](docs/azure-postgres-pgvector-guide.md)
+- [docs/postgres-vector-troubleshooting.md](docs/postgres-vector-troubleshooting.md)
 - [Azure PostgreSQL Documentation](https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/)

@@ -54,7 +54,7 @@ OTEL_PROMETHEUS_ENDPOINT=/metrics
 
 # Client-side tracking
 NEXT_PUBLIC_OTEL_ENABLED=true
-NEXT_PUBLIC_OTEL_EXPORTER_URL=/api/monitoring/overview/traces
+NEXT_PUBLIC_OTEL_EXPORTER_URL=/api/monitoring/traces
 
 # Datadog integration (optional)
 DD_API_KEY=your_datadog_api_key_here
@@ -76,7 +76,7 @@ npm run dev
 
 ### Server-Side Instrumentation
 
-**File**: `src/lib/monitoring/overview/opentelemetry.ts`
+**File**: `src/lib/monitoring/opentelemetry.ts`
 
 - **Auto-instrumentation**: HTTP, Express, FS operations
 - **OTLP Exporter**: Sends traces to Datadog Agent or other backends
@@ -91,7 +91,7 @@ npm run dev
 
 ### Client-Side Instrumentation
 
-**File**: `src/lib/monitoring/overview/opentelemetry-client.ts`
+**File**: `src/lib/monitoring/opentelemetry-client.ts`
 
 - **Browser Tracing**: Tracks user interactions, page loads, API calls
 - **Fetch/XHR Instrumentation**: Automatic API call tracking
@@ -106,12 +106,12 @@ npm run dev
 
 ### API Endpoints
 
-#### 1. Trace Collection (`/api/monitoring/overview/traces`)
+#### 1. Trace Collection (`/api/monitoring/traces`)
 - Receives OTLP trace data from client-side
 - Processes and forwards traces to Datadog
 - Converts client spans to Datadog metrics
 
-#### 2. Configuration (`/api/monitoring/overview/otel-config`)
+#### 2. Configuration (`/api/monitoring/otel-config`)
 - Provides OpenTelemetry configuration and status
 - Health checks for exporters and instrumentation
 - Connection testing for OTLP endpoints
@@ -156,7 +156,7 @@ export async function processAIRequest(prompt: string) {
 ### Custom Client-Side Tracking
 
 ```typescript
-import { createUserInteractionSpan, trackPageNavigation } from '@/lib/monitoring/overview/opentelemetry-client'
+import { createUserInteractionSpan, trackPageNavigation } from '@/lib/monitoring/opentelemetry-client'
 
 // Track user interactions
 function handleButtonClick() {
@@ -272,16 +272,16 @@ OpenTelemetry metrics are integrated with performance testing:
 3. **Client-Side Traces Not Received**:
    - Verify `NEXT_PUBLIC_OTEL_ENABLED=true`
    - Check browser console for CORS errors
-   - Confirm `/api/monitoring/overview/traces` endpoint is accessible
+   - Confirm `/api/monitoring/traces` endpoint is accessible
 
 ### Debug Commands
 
 ```bash
 # Check OpenTelemetry status
-curl -s http://localhost:3000/api/monitoring/overview/otel-config?action=status | jq
+curl -s http://localhost:3000/api/monitoring/otel-config?action=status | jq
 
 # View trace collection endpoint
-curl -s http://localhost:3000/api/monitoring/overview/traces
+curl -s http://localhost:3000/api/monitoring/traces
 
 # Test OTLP connection
 npm run otel:config | jq '.datadog_integration'

@@ -26,7 +26,7 @@ jest.mock('child_process', () => ({
       stdout: { on: jest.fn() },
       stderr: { on: jest.fn() },
       stdin: { write: jest.fn(), end: jest.fn() },
-      on: jest.fn().mockImplementation((event: string, callback: (...args: unknown[]) => void) => {
+      on: jest.fn().mockImplementation((event: string, callback: Function) => {
         if (event === 'close') {
           // Simulate successful process completion
           setTimeout(() => callback(0), 10)
