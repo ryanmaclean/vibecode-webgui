@@ -187,7 +187,7 @@
     "qrcode": "1.5.4",
     "react": "19.1.1",
     "react-dom": "19.1.1",
-    "react-hook-form": "^7.60.0",
+    "react-hook-form": "^7.63.0",
     "react-resizable-panels": "^3.0.3",
     "redis": "5.8.1",
     "socket.io": "4.8.1",
