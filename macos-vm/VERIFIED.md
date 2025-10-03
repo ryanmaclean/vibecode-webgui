@@ -81,7 +81,7 @@ To fully verify VM boot:
 
 ## Files Created
 
-```
+```text
 ~/.vibecode/vm/
 ├── vmlinuz (34MB)           # Linux kernel
 ├── initramfs (8.3MB)        # Initial ramdisk
