@@ -5,63 +5,8 @@ import { AzureEmbeddingService } from '@/lib/ai/azureEmbeddingService';
 import { getEmbeddingService } from '@/lib/monitoring/embedding-service-manager';
 
 /**
- * @description Embedding Service Monitoring API - Returns comprehensive metrics for Azure OpenAI embedding operations including API call statistics, token usage, cost tracking, and rate limit information. Supports both JSON and Prometheus export formats.
- * @route GET /api/monitoring/embeddings
- * @route POST /api/monitoring/embeddings
- * @route DELETE /api/monitoring/embeddings/metrics
- * @access Private (requires authentication)
- *
- * @param {NextRequest} request - Next.js request with query parameters:
- *   - format: 'json' | 'prometheus' - Response format (default: 'json')
- *   - detailed: 'true' | 'false' - Include detailed usage report (default: false)
- *
- * @returns {Response} GET returns embedding metrics:
- *   - timestamp: string - Current timestamp
- *   - service: 'azure-embedding' | 'openai-embedding' - Active service
- *   - status: 'active' - Service status
- *   - monitoringEnabled: boolean - Monitoring capability status
- *   - metrics: { totalCalls, successRate, avgLatency, errorRate } - Basic metrics
- *   - recentCalls: Array<{ timestamp, duration, success, tokens, cost, errorType }> - Recent API calls
- *   - rateLimits: { remaining, max, utilizationPercentage, resetTimestamp } - Rate limit info (detailed mode)
- *
- * @returns {Response} POST configures alert thresholds with body:
- *   - thresholds: { errorRate, latency, tokenUsage, cost } - Alert configuration
- *
- * @returns {Response} DELETE resets metrics to clean slate
- *
- * @example
- * // GET Request - Basic metrics
  * GET /api/monitoring/embeddings
- * Headers: { Authorization: "Bearer <token>" }
- *
- * // Response
- * {
- *   "timestamp": "2025-10-01T00:00:00.000Z",
- *   "service": "azure-embedding",
- *   "status": "active",
- *   "monitoringEnabled": true,
- *   "metrics": { "totalCalls": 1500, "successRate": 98.5, "avgLatency": 125 },
- *   "recentCalls": [...]
- * }
- *
- * // GET Request - Detailed with Prometheus format
- * GET /api/monitoring/embeddings?format=prometheus&detailed=true
- *
- * // Response (text/plain)
- * # HELP azure_embedding_requests_total Total number of embedding requests
- * # TYPE azure_embedding_requests_total counter
- * azure_embedding_requests_total{service="azure-embedding"} 1500
- *
- * // POST Request - Configure alerts
- * POST /api/monitoring/embeddings
- * { "thresholds": { "errorRate": 5, "latency": 200, "tokenUsage": 10000 }}
- *
- * // Response
- * { "message": "Alert thresholds updated successfully", "thresholds": {...} }
- *
- * @throws {401} Unauthorized - Authentication required
- * @throws {400} Invalid request - Missing or invalid thresholds
- * @throws {500} Internal server error - Failed to fetch or update metrics
+ * Returns comprehensive embedding service metrics and usage data
  */
 export async function GET(request: NextRequest) {
   try {

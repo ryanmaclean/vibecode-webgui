@@ -14,18 +14,18 @@ export interface FunctionDefinition {
 
 export interface FunctionCall {
   name: string
-  arguments: Record<string, unknown>
+  arguments: Record<string, any>
 }
 
 export interface FunctionResult {
   success: boolean
-  result?: unknown
+  result?: any
   error?: string
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, any>
 }
 
 export class FunctionCallingService {
-  private functions: Map<string, (args: Record<string, unknown>) => Promise<FunctionResult>> = new Map()
+  private functions: Map<string, (args: any) => Promise<FunctionResult>> = new Map()
 
   constructor() {
     this.registerBuiltinFunctions()
@@ -177,7 +177,7 @@ export class FunctionCallingService {
 
   registerFunction(
     definition: FunctionDefinition,
-    implementation: (args: Record<string, unknown>) => Promise<FunctionResult>
+    implementation: (args: any) => Promise<FunctionResult>
   ) {
     this.functions.set(definition.name, implementation)
   }
@@ -209,7 +209,7 @@ export class FunctionCallingService {
   }
 
   // Built-in function implementations
-  private async webSearch(args: Record<string, unknown>): Promise<FunctionResult> {
+  private async webSearch(args: any): Promise<FunctionResult> {
     try {
       const { webSearchService } = await import('./web-search')
       const results = await webSearchService.searchWeb(args.query, {
@@ -233,7 +233,7 @@ export class FunctionCallingService {
     }
   }
 
-  private async createFile(args: Record<string, unknown>): Promise<FunctionResult> {
+  private async createFile(args: any): Promise<FunctionResult> {
     try {
       const fs = await import('fs').then(m => m.promises)
       const path = await import('path')
@@ -264,7 +264,7 @@ export class FunctionCallingService {
     }
   }
 
-  private async executeCode(args: Record<string, unknown>): Promise<FunctionResult> {
+  private async executeCode(args: any): Promise<FunctionResult> {
     try {
       // This is a simplified implementation - in production, you'd want proper sandboxing
       const { spawn } = await import('child_process')
@@ -358,7 +358,7 @@ export class FunctionCallingService {
     }
   }
 
-  private async listFiles(args: Record<string, unknown>): Promise<FunctionResult> {
+  private async listFiles(args: any): Promise<FunctionResult> {
     try {
       const fs = await import('fs').then(m => m.promises)
       const path = await import('path')
@@ -408,7 +408,7 @@ export class FunctionCallingService {
     }
   }
 
-  private async installPackage(args: Record<string, unknown>): Promise<FunctionResult> {
+  private async installPackage(args: any): Promise<FunctionResult> {
     try {
       const { spawn } = await import('child_process')
       const path = await import('path')

@@ -19,11 +19,6 @@ on:
       - 'Makefile'
       - 'go.mod'
       - 'go.sum'
-  workflow_dispatch:
-
-concurrency:
-  group: demo-validation-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   validate-demo:
@@ -115,7 +110,7 @@ jobs:
   integration-test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -131,62 +126,20 @@ jobs:
           cluster_name: demo-test
           kubectl_version: v1.28.0
 
-      - name: Mark start time
-        run: echo "DEMO_START=$(date +%s)" >> "$GITHUB_ENV"
-
       - name: Build demo
         run: make build
 
       - name: Test script dry-run mode
-        id: dbm-script
         run: |
-          set +e
-          timeout 30 scripts/verify-datadog-dbm.sh
-          status=$?
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
-
+          # Test scripts can run without actual infrastructure
+          timeout 30 scripts/verify-datadog-dbm.sh || echo "Expected timeout or failure without infrastructure"
+          
       - name: Test demo binary exists and runs
-        id: demo-help
         run: |
-          set +e
-          ./bin/vibecode-demo --help
-          status=$?
-          echo "status=$status" >> "$GITHUB_OUTPUT"
-          exit 0
+          ./bin/vibecode-demo --help || echo "Demo binary exists but may need infrastructure"
 
       - name: Validate package.json scripts
         run: |
           grep -q '"demo"' package.json
           grep -q '"demo:setup"' package.json
           npm run demo --help || echo "Expected to fail without infrastructure"
-
-      - name: Upload integration logs
-        if: always()
-        run: |
-          mkdir -p demo-logs
-          [ -f demo.log ] && mv demo.log demo-logs/ || true
-          kind export logs demo-logs/kind-logs || true
-        continue-on-error: true
-      - name: Publish integration artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: demo-validation-logs
-          path: demo-logs
-          retention-days: 14
-
-      - name: Integration summary
-        if: always()
-        run: |
-          end=$(date +%s)
-          duration=$(( end - DEMO_START ))
-          mins=$(( duration / 60 ))
-          secs=$(( duration % 60 ))
-          dbm_status='${{ steps.dbm-script.outputs.status || "0" }}'
-          demo_status='${{ steps.demo-help.outputs.status || "0" }}'
-          icon() { [ "$1" = "0" ] && echo "✅" || echo "⚠️"; }
-          echo "### Demo Integration" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Duration: ${duration}s (${mins}m ${secs}s)" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Datadog script: $(icon "$dbm_status") (exit $dbm_status)" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Demo help: $(icon "$demo_status") (exit $demo_status)" >> "$GITHUB_STEP_SUMMARY"

@@ -6,8 +6,6 @@
 import { z } from 'zod';
 import { llmObservability } from '@/lib/datadog-llm';
 import type { Span } from 'dd-trace';
-import { logger } from '../logger';
-
 
 export const generateProjectSchema = z.object({
   prompt: z.string().min(1, 'Project prompt is required'),
@@ -126,7 +124,7 @@ Generate a new project based on the following prompt.
 
         if (!response.ok) {
           const errorBody = await response.text();
-          logger.error('OpenRouter API Error:', { arg1: response.status, errorBody: errorBody });
+          console.error('OpenRouter API Error:', response.status, errorBody);
           span?.setTag('error', true);
           span?.setTag('error.message', `OpenRouter API failed with status ${response.status}`);
           span?.setTag('error.stack', errorBody);
@@ -185,7 +183,7 @@ Generate a new project based on the following prompt.
         return result;
 
       } catch (error: unknown) {
-        logger.error('Error during AI project generation:', { error: error });
+        console.error('Error during AI project generation:', error);
         span?.setTag('error', true);
         if (error instanceof Error) {
             span?.setTag('error.message', error.message);

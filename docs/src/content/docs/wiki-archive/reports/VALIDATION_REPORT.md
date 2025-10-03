@@ -176,7 +176,7 @@ description: Auto-generated placeholder. Update as needed.
 🚫 **ERROR** (line 46): Broken link: ../SECURITY.md
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 53): Broken link: ./monitoring/overview/overview.md
+🚫 **ERROR** (line 53): Broken link: ./monitoring/overview.md
    *Suggestion: Check if the linked file exists and update the path*
 
 🚫 **ERROR** (line 54): Broken link: ../PERFORMANCE_METRICS.md
@@ -209,16 +209,16 @@ description: Auto-generated placeholder. Update as needed.
 🚫 **ERROR** (line 78): Broken link: ./tools/cli.md
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 79): Broken link: ./developer-guide/api-testing.md
+🚫 **ERROR** (line 79): Broken link: ./development/api-testing.md
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 82): Broken link: ./developer-guide/extensions.md
+🚫 **ERROR** (line 82): Broken link: ./development/extensions.md
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 83): Broken link: ./developer-guide/plugins.md
+🚫 **ERROR** (line 83): Broken link: ./development/plugins.md
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 84): Broken link: ./developer-guide/integrations.md
+🚫 **ERROR** (line 84): Broken link: ./development/integrations.md
    *Suggestion: Check if the linked file exists and update the path*
 
 🚫 **ERROR** (line 89): Broken link: ./ai/model-integration.md
@@ -296,7 +296,7 @@ description: Auto-generated placeholder. Update as needed.
 🚫 **ERROR** (line 141): Broken link: ../SECURITY.md
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 144): Broken link: ./monitoring/overview/overview.md
+🚫 **ERROR** (line 144): Broken link: ./monitoring/overview.md
    *Suggestion: Check if the linked file exists and update the path*
 
 🚫 **ERROR** (line 145): Broken link: ./operations/backup-recovery.md
@@ -909,9 +909,9 @@ description: Auto-generated placeholder. Update as needed.
 ℹ️ **INFO** (line 78): Version 1.2.3 may be outdated (current: 0.1.0)
    *Suggestion: Consider updating version number*
 
-### content/wiki/.md
+### content/wiki/home.md
 
-🚫 **ERROR** (line 16): Broken link: https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki/_blank.md
+🚫 **ERROR** (line 16): Broken link: /wiki/my-new-page
    *Suggestion: Check if the linked file exists and update the path*
 
 ### code-server/ci/README.md
@@ -1070,10 +1070,10 @@ description: Auto-generated placeholder. Update as needed.
 
 ### archive/root-md-files/wiki.md
 
-🚫 **ERROR** (line 170): Broken link: https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki/some-page-template.md
+🚫 **ERROR** (line 170): Broken link: /wiki/some-page
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 182): Broken link: https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki/_blank.md
+🚫 **ERROR** (line 182): Broken link: /wiki/my-new-page
    *Suggestion: Check if the linked file exists and update the path*
 
 🚫 **ERROR** (line 330): Broken link: /wiki/sample-page
@@ -1614,10 +1614,10 @@ description: Auto-generated placeholder. Update as needed.
 🚫 **ERROR** (line 230): Broken link: ./comprehensive-environment-test-report
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 411): Broken link: https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki/some-page-template.md
+🚫 **ERROR** (line 411): Broken link: /wiki/some-page
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 423): Broken link: https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki/_blank.md
+🚫 **ERROR** (line 423): Broken link: /wiki/my-new-page
    *Suggestion: Check if the linked file exists and update the path*
 
 🚫 **ERROR** (line 571): Broken link: /wiki/sample-page
@@ -1973,7 +1973,7 @@ description: Auto-generated placeholder. Update as needed.
 🚫 **ERROR** (line 188): Broken link: /authentication-testing/
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 189): Broken link: /project-todo/
+🚫 **ERROR** (line 189): Broken link: /todo/
    *Suggestion: Check if the linked file exists and update the path*
 
 ### docs/src/content/docs/helm-scaling-analysis.md
@@ -2578,29 +2578,29 @@ description: Auto-generated placeholder. Update as needed.
 🚫 **ERROR** (line 480): npm script "install:prod:ai-tools" not found
    *Suggestion: Add the script to package.json or update documentation*
 
-### docs/src/content/docs/monitoring/overview/overview.md
+### docs/src/content/docs/monitoring/overview.md
 
-🚫 **ERROR** (line 84): Broken link: https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/monitoring/overview.md#prometheus-configuration
+🚫 **ERROR** (line 84): Broken link: /monitoring/prometheus/
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 85): Broken link: https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/database/vector-database-sharding.md
+🚫 **ERROR** (line 85): Broken link: /monitoring/vector/
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 86): Broken link: /wiki-archive/monitoring/opentelemetry_integration/
+🚫 **ERROR** (line 86): Broken link: /monitoring/opentelemetry/
    *Suggestion: Check if the linked file exists and update the path*
 
 ### docs/src/content/docs/guides/quick-start.md
 
-🚫 **ERROR** (line 144): Broken link: /wiki-archive/infrastructure/infrastructure_overview/
+🚫 **ERROR** (line 144): Broken link: /architecture/overview/
    *Suggestion: Check if the linked file exists and update the path*
 
 🚫 **ERROR** (line 145): Broken link: /monitoring/overview/
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 146): Broken link: /azure-infrastructure/
+🚫 **ERROR** (line 146): Broken link: /deployment/azure/
    *Suggestion: Check if the linked file exists and update the path*
 
-🚫 **ERROR** (line 147): Broken link: /contributing/
+🚫 **ERROR** (line 147): Broken link: /development/contributing/
    *Suggestion: Check if the linked file exists and update the path*
 
 ## Statistics

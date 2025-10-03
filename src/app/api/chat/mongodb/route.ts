@@ -3,8 +3,6 @@ import { mongodbChatService } from '@/lib/services/chat-mongodb'
 import { getToken } from 'next-auth/jwt'
 import { logger } from '@/lib/monitoring'
 
-type AuthToken = Exclude<Awaited<ReturnType<typeof getToken>>, null>
-
 export async function POST(request: NextRequest) {
   try {
     // Get authentication token with development bypass support
@@ -16,14 +14,13 @@ export async function POST(request: NextRequest) {
       const testUserRole = request.headers.get('x-test-user-role')
       
       if (testUserId) {
-        const placeholderToken: AuthToken = {
+        token = {
           sub: testUserId,
           id: testUserId,
           role: testUserRole || 'developer',
           email: `test-${testUserId}@vibecode.dev`,
           name: `Test User ${testUserId}`
-        }
-        token = placeholderToken
+        } as any
       }
     }
     
@@ -150,14 +147,13 @@ export async function GET(request: NextRequest) {
       const testUserRole = request.headers.get('x-test-user-role')
       
       if (testUserId) {
-        const placeholderToken: AuthToken = {
+        token = {
           sub: testUserId,
           id: testUserId,
           role: testUserRole || 'developer',
           email: `test-${testUserId}@vibecode.dev`,
           name: `Test User ${testUserId}`
-        }
-        token = placeholderToken
+        } as any
       }
     }
     

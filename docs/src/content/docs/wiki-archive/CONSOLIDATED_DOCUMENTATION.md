@@ -635,7 +635,7 @@ curl -f http://localhost:3000/api/ai/chat/enhanced
 npm run monitoring:health
 
 # Test metric submission
-curl -X POST http://localhost:3000/api/monitoring/overview/metrics \
+curl -X POST http://localhost:3000/api/monitoring/metrics \
   -H "Content-Type: application/json" \
   -d '{"type": "gauge", "name": "test.metric", "value": 42}'
 ```
@@ -646,7 +646,7 @@ curl -X POST http://localhost:3000/api/monitoring/overview/metrics \
 npm run otel:config
 
 # Verify trace collection
-curl -s http://localhost:3000/api/monitoring/overview/traces
+curl -s http://localhost:3000/api/monitoring/traces
 ```
 
 ### Debugging Commands
@@ -657,10 +657,10 @@ curl -s http://localhost:3000/api/monitoring/overview/traces
 curl http://localhost:3000/api/health
 
 # Monitoring dashboard
-curl http://localhost:3000/api/monitoring/overview/dashboard | jq
+curl http://localhost:3000/api/monitoring/dashboard | jq
 
 # OpenTelemetry status
-curl http://localhost:3000/api/monitoring/overview/otel-config?action=health | jq
+curl http://localhost:3000/api/monitoring/otel-config?action=health | jq
 ```
 
 **Kubernetes Debugging:**
@@ -718,10 +718,10 @@ npm run test:performance:lighthouse
 - **Kubernetes**: 1.28+
 
 ### Related Documentation
-- **[Documentation Index](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/DOCUMENTATION_INDEX.md)** - Complete documentation navigation
-- **[Datadog Monitoring](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/DATADOG_MONITORING.md)** - Detailed monitoring setup
-- **[OpenTelemetry Integration](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/OPENTELEMETRY_INTEGRATION.md)** - Observability configuration
-- **[README.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/README.md)** - Project overview and quick start
+- **[Documentation Index](./DOCUMENTATION_INDEX.md)** - Complete documentation navigation
+- **[Datadog Monitoring](./DATADOG_MONITORING.md)** - Detailed monitoring setup
+- **[OpenTelemetry Integration](./OPENTELEMETRY_INTEGRATION.md)** - Observability configuration
+- **[README.md](../README.md)** - Project overview and quick start
 
 ### Last Updated
 This document was last updated on August 8, 2025, as part of the documentation consolidation effort (Issue #86).

@@ -54,26 +54,6 @@
 			"options": {
 				"cwd": "${workspaceFolder}/azure-functions"
 			}
-		},
-		{
-			"type": "shell",
-			"label": "Test: connection pool alerts",
-			"command": "npm run test -- tests/unit/monitoring/connection-pool-alerts.test.ts",
-			"group": {
-				"kind": "test",
-				"isDefault": false
-			},
-			"problemMatcher": []
-		},
-		{
-			"type": "shell",
-			"label": "Test: jest watch",
-			"command": "npm run test -- --watch",
-			"group": {
-				"kind": "test",
-				"isDefault": true
-			},
-			"problemMatcher": []
 		}
 	]
 }

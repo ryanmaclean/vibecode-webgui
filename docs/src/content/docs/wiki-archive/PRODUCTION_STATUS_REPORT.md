@@ -237,7 +237,7 @@ npm run test:real-apis
 docker-compose up -d
 
 # Check resource usage
-curl http://localhost:3000/api/monitoring/overview/metrics
+curl http://localhost:3000/api/monitoring/metrics
 
 # Health check
 curl http://localhost:3000/api/health

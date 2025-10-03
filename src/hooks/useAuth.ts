@@ -8,7 +8,7 @@
 import { useSession, signIn, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect } from 'react'
-import { AuthState, LoginCredentials, OAuthProvider, User } from '@/types/auth'
+import { AuthState, LoginCredentials, OAuthProvider } from '@/types/auth'
 
 const OAUTH_PROVIDERS: OAuthProvider[] = [
   {
@@ -29,24 +29,20 @@ export function useAuth() {
   const { data: session, status } = useSession()
   const router = useRouter()
 
-  const normalizedUser: User | null = session?.user
-    ? {
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.name,
-        avatar_url: session.user.image ?? undefined,
-        role: session.user.role === 'admin' ? 'admin' : 'user',
-        created_at: new Date(), // Placeholder until server provides timestamps
-        updated_at: new Date(),
-        login_count: 0,
-        is_active: true,
-      }
-    : null
-
   const authState: AuthState = {
     isLoading: status === 'loading',
     isAuthenticated: !!session,
-    user: normalizedUser,
+    user: session?.user ? {
+      id: session.user.id,
+      email: session.user.email,
+      name: session.user.name,
+      avatar_url: session.user.image,
+      role: session.user.role as 'admin' | 'user',
+      created_at: new Date(), // This would come from the database
+      updated_at: new Date(),
+      login_count: 0,
+      is_active: true,
+    } : null,
     session: null, // This would be populated with active coding session
     error: null,
   }

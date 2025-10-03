@@ -42,35 +42,6 @@ interface VectorMetrics {
   vectorIndexes: VectorIndex[];
 }
 
-// Query result interfaces
-interface PgVectorQueryResult {
-  installed: boolean;
-  version: string | null;
-}
-
-interface EmbeddingStatsQueryResult {
-  total_embeddings: number | bigint;
-  avg_content_size: number | null;
-  latest_embedding: Date | string | null;
-  avg_dimension: number | null;
-}
-
-interface VectorSearchQueryResult {
-  vector_searches: number | bigint | null;
-  vectors_scanned: number | bigint | null;
-  index_searches: number | bigint | null;
-  vectors_fetched_by_index: number | bigint | null;
-  vectors_inserted: number | bigint | null;
-  vectors_updated: number | bigint | null;
-  vectors_deleted: number | bigint | null;
-}
-
-interface VectorIndexQueryResult {
-  indexname: string;
-  indexdef: string;
-  index_size: number | bigint | null;
-}
-
 export async function GET(_request: NextRequest) {
   const collector = getMetricsCollector();
   const poolStatus = getConnectionPoolStatus();
@@ -166,10 +137,9 @@ export async function GET(_request: NextRequest) {
         (SELECT extversion FROM pg_extension WHERE extname = 'vector') as version
       `;
       
-      const pgvectorResultArray = pgvectorResult as PgVectorQueryResult[];
       const pgvectorStatus: PgVectorStatus = {
-        installed: pgvectorResultArray[0]?.installed || false,
-        version: pgvectorResultArray[0]?.version || null
+        installed: (pgvectorResult as any[])[0]?.installed || false,
+        version: (pgvectorResult as any[])[0]?.version || null
       };
       
       // Get vector table stats if pgvector is installed
@@ -189,12 +159,11 @@ export async function GET(_request: NextRequest) {
             FROM document_embeddings
           `;
           
-          const embeddingStatsArray = embeddingStatsResult as EmbeddingStatsQueryResult[];
           embeddings = {
-            total_embeddings: Number(embeddingStatsArray[0]?.total_embeddings || 0),
-            avg_content_size: Number(embeddingStatsArray[0]?.avg_content_size || 0),
-            latest_embedding: String(embeddingStatsArray[0]?.latest_embedding || null),
-            avg_dimension: Number(embeddingStatsArray[0]?.avg_dimension || 0),
+            total_embeddings: Number((embeddingStatsResult as any[])[0]?.total_embeddings || 0),
+            avg_content_size: Number((embeddingStatsResult as any[])[0]?.avg_content_size || 0),
+            latest_embedding: (embeddingStatsResult as any[])[0]?.latest_embedding || null,
+            avg_dimension: Number((embeddingStatsResult as any[])[0]?.avg_dimension || 0),
           };
           
           // Get vector search stats from pg_stat_user_tables
@@ -211,16 +180,15 @@ export async function GET(_request: NextRequest) {
             WHERE relname = 'document_embeddings'
           `;
           
-          const vectorSearchArray = vectorSearchResult as VectorSearchQueryResult[];
-          if (vectorSearchArray.length > 0) {
+          if ((vectorSearchResult as any[]).length > 0) {
             vectorSearchStats = {
-              vector_searches: Number(vectorSearchArray[0]?.vector_searches || 0),
-              vectors_scanned: Number(vectorSearchArray[0]?.vectors_scanned || 0),
-              index_searches: Number(vectorSearchArray[0]?.index_searches || 0),
-              vectors_fetched_by_index: Number(vectorSearchArray[0]?.vectors_fetched_by_index || 0),
-              vectors_inserted: Number(vectorSearchArray[0]?.vectors_inserted || 0),
-              vectors_updated: Number(vectorSearchArray[0]?.vectors_updated || 0),
-              vectors_deleted: Number(vectorSearchArray[0]?.vectors_deleted || 0),
+              vector_searches: Number((vectorSearchResult as any[])[0]?.vector_searches || 0),
+              vectors_scanned: Number((vectorSearchResult as any[])[0]?.vectors_scanned || 0),
+              index_searches: Number((vectorSearchResult as any[])[0]?.index_searches || 0),
+              vectors_fetched_by_index: Number((vectorSearchResult as any[])[0]?.vectors_fetched_by_index || 0),
+              vectors_inserted: Number((vectorSearchResult as any[])[0]?.vectors_inserted || 0),
+              vectors_updated: Number((vectorSearchResult as any[])[0]?.vectors_updated || 0),
+              vectors_deleted: Number((vectorSearchResult as any[])[0]?.vectors_deleted || 0),
             };
           }
           
@@ -235,7 +203,7 @@ export async function GET(_request: NextRequest) {
               AND indexdef LIKE '%embedding%'
           `;
           
-          (vectorIndexResult as VectorIndexQueryResult[]).forEach(idx => {
+          (vectorIndexResult as any[]).forEach(idx => {
             vectorIndexes.push({
               name: idx.indexname,
               definition: idx.indexdef,

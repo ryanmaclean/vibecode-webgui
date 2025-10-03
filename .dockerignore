@@ -19,8 +19,6 @@
 !scripts/**
 !src/**
 !docs/**
-!docker/**
-!extensions/**
 !instrument.cjs
 !Dockerfile.production
 !Dockerfile.ingest

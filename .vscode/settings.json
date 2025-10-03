@@ -6,10 +6,5 @@
     "debug.internalConsoleOptions": "neverOpen",
     "azureFunctions.projectLanguageModel": 4,
     "azureFunctions.preDeployTask": "npm prune (functions)",
-    "azureFunctions.projectSubpath": "azure-functions",
-    "jest.jestCommandLine": "npm run test --",
-    "jest.autoRun": {
-        "watch": true,
-        "onSave": "test-file"
-    }
+    "azureFunctions.projectSubpath": "azure-functions"
 }

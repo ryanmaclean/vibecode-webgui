@@ -6,28 +6,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import axios, { isAxiosError } from 'axios';
-
-interface AxiosErrorPayload {
-  status?: number;
-  message: string;
-}
-
-function describeAxiosError(error: unknown): AxiosErrorPayload {
-  if (isAxiosError(error)) {
-    const status = error.response?.status;
-    const message = typeof error.response?.data === 'string'
-      ? error.response.data
-      : JSON.stringify(error.response?.data ?? error.message);
-    return { status, message };
-  }
-
-  if (error instanceof Error) {
-    return { message: error.message };
-  }
-
-  return { message: String(error) };
-}
+import axios from 'axios';
 
 function getEnv(name: string, fallback?: string) {
   return process.env[name] || (fallback ?? '');
@@ -65,9 +44,10 @@ async function main() {
       // Create dashboard
       const resp = await axios.post(`${baseUrl}/api/v1/dashboard`, dashboardBody, { headers });
       console.log(`✅ Dashboard created: ${resp.data?.url || resp.data?.id || dashboardBody.title}`);
-    } catch (error) {
-      const { status, message } = describeAxiosError(error);
-      console.warn(`⚠️ Dashboard apply failed (${status ?? 'unknown'}): ${message}`);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const msg = err?.response?.data || err?.message;
+      console.warn(`⚠️ Dashboard apply failed (${status}): ${JSON.stringify(msg)}`);
     }
   } else {
     console.warn(`⚠️ Dashboard file not found: ${dashboardPath}`);
@@ -83,9 +63,10 @@ async function main() {
       try {
         const resp = await axios.post(`${baseUrl}/api/v1/monitor`, monitorBody, { headers });
         console.log(`✅ Monitor created: ${resp.data?.id || monitorBody.name}`);
-      } catch (error) {
-        const { status, message } = describeAxiosError(error);
-        console.warn(`⚠️ Monitor apply failed (${status ?? 'unknown'}): ${message}`);
+      } catch (err: any) {
+        const status = err?.response?.status;
+        const msg = err?.response?.data || err?.message;
+        console.warn(`⚠️ Monitor apply failed (${status}): ${JSON.stringify(msg)}`);
       }
     }
   } else {
@@ -95,10 +76,7 @@ async function main() {
   console.log('Done. Note: This script creates new dashboards/monitors and may be non-idempotent.');
 }
 
-main().catch((error) => {
-  const { status, message } = describeAxiosError(error);
-  console.error(
-    `💥 Failed to apply AI Gateway monitoring${status ? ` (status ${status})` : ''}: ${message}`,
-  );
+main().catch((e) => {
+  console.error('💥 Failed to apply AI Gateway monitoring:', e);
   process.exit(1);
 });

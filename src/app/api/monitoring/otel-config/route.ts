@@ -1,72 +1,6 @@
 /**
- * @description OpenTelemetry Configuration API - Provides configuration information, health status, and connection testing for OpenTelemetry integration with OTLP exporters and Prometheus metrics.
- * @route GET /api/monitoring/otel-config
- * @route POST /api/monitoring/otel-config
- * @access Public
- *
- * @param {NextRequest} request - Next.js request with query parameters:
- *   - action: 'config' | 'health' | 'metrics' | 'status' - Action to perform (GET only)
- *
- * @returns {Response} GET with action=config returns OpenTelemetry configuration:
- *   - serviceName: string - Service name for traces
- *   - exporters: { otlp, prometheus } - Exporter configuration
- *   - instrumentations: string[] - Enabled instrumentations
- *   - status: 'active' | 'disabled' | 'unavailable' - SDK status
- *
- * @returns {Response} GET with action=health returns health status:
- *   - healthy: boolean - Overall health status
- *   - status: 'healthy' | 'unhealthy' - Health state
- *   - details: { opentelemetry, exporters, datadog_integration } - Component health
- *
- * @returns {Response} GET with action=metrics returns available metrics list:
- *   - available_metrics: string[] - List of tracked metrics
- *   - prometheus_endpoint: string - Prometheus scrape endpoint
- *   - otlp_endpoint: string - OTLP trace endpoint
- *
- * @returns {Response} POST with action=reload_config attempts configuration reload (requires restart)
- * @returns {Response} POST with action=test_connection tests OTLP endpoint connectivity
- *
- * @example
- * // GET Request - Configuration
- * GET /api/monitoring/otel-config?action=config
- *
- * // Response
- * {
- *   "serviceName": "vibecode-webgui",
- *   "exporters": {
- *     "otlp": { "endpoint": "http://localhost:4318/v1/traces", "status": "configured" },
- *     "prometheus": { "port": "9090", "status": "configured" }
- *   },
- *   "status": "active"
- * }
- *
- * // GET Request - Health check
- * GET /api/monitoring/otel-config?action=health
- *
- * // Response
- * {
- *   "healthy": true,
- *   "status": "healthy",
- *   "details": {
- *     "opentelemetry": { "initialized": true, "status": "running" },
- *     "datadog_integration": { "enabled": true, "status": "enabled" }
- *   }
- * }
- *
- * // POST Request - Test connection
- * POST /api/monitoring/otel-config
- * { "action": "test_connection" }
- *
- * // Response
- * {
- *   "success": true,
- *   "endpoint": "http://localhost:4318/v1/traces",
- *   "status": 200,
- *   "message": "OTLP endpoint is reachable"
- * }
- *
- * @throws {400} Invalid action - Unknown action type
- * @throws {500} Internal server error - Failed to retrieve OpenTelemetry configuration
+ * OpenTelemetry Configuration API Endpoint
+ * Provides configuration information and health status for OpenTelemetry integration
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -81,21 +15,23 @@ const isDockerBuild = (
   process.env.DD_ENABLED === 'false'
 );
 
-// Force dynamic rendering to prevent static analysis during build
-export const dynamic = 'force-dynamic'
+// Conditional imports to prevent build-time errors in Docker
+let getOpenTelemetryConfig: any = null;
+let otelSDK: any = null;
 
-async function loadOpenTelemetryModule() {
+if (!isDockerBuild) {
   try {
-    const opentelemetryModule = await import('../../../../lib/monitoring/opentelemetry');
-    return {
-      getOpenTelemetryConfig: opentelemetryModule.getOpenTelemetryConfig,
-      otelSDK: opentelemetryModule.otelSDK
-    };
+    // Dynamic imports to prevent static analysis issues
+    const opentelemetryModule = require('../../../../lib/monitoring/opentelemetry');
+    getOpenTelemetryConfig = opentelemetryModule.getOpenTelemetryConfig;
+    otelSDK = opentelemetryModule.otelSDK;
   } catch {
     console.log('⚠️ OpenTelemetry module not available, monitoring disabled');
-    return { getOpenTelemetryConfig: null, otelSDK: null };
   }
 }
+
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   // If in Docker build, return a simple response
@@ -110,9 +46,6 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const action = searchParams.get('action') || 'config'
-
-    // Load OpenTelemetry modules dynamically
-    const { getOpenTelemetryConfig, otelSDK } = await loadOpenTelemetryModule();
 
     // Check if OpenTelemetry modules are available
     if (!getOpenTelemetryConfig || !otelSDK) {

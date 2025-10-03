@@ -81,7 +81,7 @@ Welcome to the comprehensive VibeCode documentation. This wiki provides complete
 ./scripts/docker-doctor.sh diagnose
 
 # Start KIND environment
-./scripts/kind-setup.sh
+npm run kind:setup  # wraps ./scripts/kind-setup.sh
 
 # Access application
 kubectl port-forward -n vibecode svc/vibecode-service 3000:3000

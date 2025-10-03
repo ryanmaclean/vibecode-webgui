@@ -30,7 +30,7 @@ To ensure consistent configuration across app, infra, and docs:
 - Prefer `DD_*` variables for all Datadog configuration.
 - Legacy `DATADOG_*` variables are still supported as fallback.
 - Frontend RUM uses public vars `NEXT_PUBLIC_DD_*` with fallback to legacy `NEXT_PUBLIC_DATADOG_*`.
-- Centralized resolver: `src/lib/monitoring/overview/datadog-env.ts` handles DD_* first with DATADOG_* fallback and safe mismatch warnings.
+- Centralized resolver: `src/lib/monitoring/datadog-env.ts` handles DD_* first with DATADOG_* fallback and safe mismatch warnings.
 
 Examples:
 
@@ -79,12 +79,12 @@ NEXT_PUBLIC_ENABLE_RUM_IN_DEV=false
   - `SKIP_MONITORING` (force-disable all monitoring)
   - `DOCKER_BUILD` (disable monitoring during image builds)
 
-All resolution is centralized in `src/lib/monitoring/overview/datadog-env.ts` and emits safe warnings when DD_* and DATADOG_* are both set and differ.
+All resolution is centralized in `src/lib/monitoring/datadog-env.ts` and emits safe warnings when DD_* and DATADOG_* are both set and differ.
 
 ### Client-side RUM initialization and gating
 
 - __Primary entry points__:
-  - `src/components/monitoring/overview/DatadogRUM.tsx` uses `getRUMPublicConfig()` and guards with `NODE_ENV==='production'` or `NEXT_PUBLIC_ENABLE_RUM_IN_DEV==='true'` before `datadogRum.init()`.
+  - `src/components/monitoring/DatadogRUM.tsx` uses `getRUMPublicConfig()` and guards with `NODE_ENV==='production'` or `NEXT_PUBLIC_ENABLE_RUM_IN_DEV==='true'` before `datadogRum.init()`.
   - `src/app/providers.tsx` initializes RUM via `RUMMonitoring.initializeWithTracking()` and `@datadog/browser-logs` with the same gating.
 - __PII-safe defaults__: `defaultPrivacyLevel: 'mask-user-input'`, production `sessionReplaySampleRate=20` (100 in dev).
 - __Verification__:
@@ -93,14 +93,14 @@ All resolution is centralized in `src/lib/monitoring/overview/datadog-env.ts` an
 
 ### Server-side tracing initialization and gating
 
-- __Where it's initialized__: `src/instrument.ts` dynamically requires `dd-trace`, resolves `{ env, service, version }` via `getServiceEnvVersion()` from `src/lib/monitoring/overview/datadog-env.ts`, and calls `tracer.init({ ... })`.
+- __Where it's initialized__: `src/instrument.ts` dynamically requires `dd-trace`, resolves `{ env, service, version }` via `getServiceEnvVersion()` from `src/lib/monitoring/datadog-env.ts`, and calls `tracer.init({ ... })`.
 - __Enabled by default__: Monitoring is enabled in production and development by default. It is only disabled when one of these explicit flags/contexts is set:
   - `DOCKER_BUILD==='true'`
   - `SKIP_MONITORING==='true'`
   - `CI==='true'` or `GITHUB_ACTIONS==='true'`
   - `OTEL_ENABLED==='false'`
   - `DD_ENABLED==='false'`
-- __OpenTelemetry__: If `OTEL_ENABLED==='true'` and `NODE_ENV!=='test'`, `initializeOpenTelemetry()` from `src/lib/monitoring/overview/opentelemetry.ts` runs before `dd-trace` initialization.
+- __OpenTelemetry__: If `OTEL_ENABLED==='true'` and `NODE_ENV!=='test'`, `initializeOpenTelemetry()` from `src/lib/monitoring/opentelemetry.ts` runs before `dd-trace` initialization.
 - __Sampling__: `sampleRate` is `0.1` in production and `1.0` otherwise.
 - __Tags__: Global tags include `deployment.environment`, `service.name`, `service.version`, `git.commit.sha`, and `git.repository.url`.
 - __Verification__:
@@ -253,13 +253,13 @@ kubectl top pods -n vibecode
 
 - __Workflow__: `.github/workflows/ci.yml`
   - Job: "Monitoring & Health Validation" builds and starts the app, then probes:
-    - `GET /api/monitoring/overview/dashboard` and checks `.health`
-    - `GET /api/monitoring/overview/metrics?config=true` and checks `.monitoring`
-    - `GET /api/monitoring/overview/otel-config` and `...action=health`
+    - `GET /api/monitoring/dashboard` and checks `.health`
+    - `GET /api/monitoring/metrics?config=true` and checks `.monitoring`
+    - `GET /api/monitoring/otel-config` and `...action=health`
   - Also asserts existence of key files:
-    - `src/lib/monitoring/overview/enhanced-datadog-integration.ts`
-    - `src/lib/monitoring/overview/advanced-datadog-dashboards.ts`
-    - `src/lib/monitoring/overview/alerts-configuration.ts`
+    - `src/lib/monitoring/enhanced-datadog-integration.ts`
+    - `src/lib/monitoring/advanced-datadog-dashboards.ts`
+    - `src/lib/monitoring/alerts-configuration.ts`
     - `scripts/setup-datadog-monitoring.ts`
     - `docs/DATADOG_MONITORING.md`
 

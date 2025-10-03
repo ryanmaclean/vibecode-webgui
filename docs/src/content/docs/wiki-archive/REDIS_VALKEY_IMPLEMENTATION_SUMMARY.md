@@ -203,8 +203,8 @@ terraform apply
 
 ## 🆘 **Support Resources**
 
-- **[Redis Integration Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/REDIS_VALKEY_INTEGRATION_GUIDE.md)**: Complete implementation guide
-- **[Azure Terraform Guide](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/infrastructure/terraform/azure/README.md)**: Infrastructure documentation
+- **[Redis Integration Guide](./REDIS_VALKEY_INTEGRATION_GUIDE.md)**: Complete implementation guide
+- **[Azure Terraform Guide](./infrastructure/terraform/azure/README.md)**: Infrastructure documentation
 - **[Service Comparison](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/)**: Microsoft Azure Redis docs
 - **[Valkey Documentation](https://valkey.io)**: Open source Redis fork
 

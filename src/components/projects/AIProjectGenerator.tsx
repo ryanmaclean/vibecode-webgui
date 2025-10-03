@@ -85,5 +85,3 @@ export function AIProjectGenerator({
     </Card>
   )
 }
-
-export default AIProjectGenerator

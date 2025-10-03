@@ -26,7 +26,7 @@ spec:
         image: vibecode/code-server:latest
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8765
+        - containerPort: 8080
           name: http
         env:
         - name: PASSWORD
@@ -53,53 +53,21 @@ spec:
         livenessProbe:
           httpGet:
             path: /
-            port: 8765
+            port: 8080
           initialDelaySeconds: 10
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /
-            port: 8765
+            port: 8080
           initialDelaySeconds: 5
           periodSeconds: 5
-      - name: datadog-agent
-        image: gcr.io/datadoghq/agent:7
-        imagePullPolicy: IfNotPresent
-        env:
-        - name: DD_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: datadog-secret
-              key: api-key
-              optional: true
-        - name: DD_SITE
-          value: datadoghq.com
-        - name: DD_ENV
-          value: production
-        - name: DD_SERVICE
-          value: vibecode-code-server
-        - name: KUBERNETES
-          value: "true"
-        volumeMounts:
-      - name: datadog-config
-        mountPath: /etc/datadog-agent/datadog.yaml
-        subPath: datadog.yaml
-      resources:
-        requests:
-          cpu: "200m"
-          memory: "256Mi"
-        limits:
-          cpu: "500m"
-          memory: "512Mi"
       volumes:
       - name: workspace
         persistentVolumeClaim:
           claimName: code-server-workspace
       - name: config
         emptyDir: {}
-      - name: datadog-config
-        configMap:
-          name: datadog-agent-config
 ---
 apiVersion: v1
 kind: Service
@@ -112,7 +80,7 @@ metadata:
 spec:
   ports:
   - port: 80
-    targetPort: 8765
+    targetPort: 8080
     name: http
   selector:
     app: vibecode-code-server

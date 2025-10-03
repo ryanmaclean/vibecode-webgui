@@ -15,9 +15,6 @@ runtime/
 coverage/
 *.lcov
 
-# Archive directory for old test scripts and results
-archive/
-
 # nyc test coverage
 .nyc_output
 
@@ -133,7 +130,6 @@ Thumbs.db
 
 # Logs
 logs
-!docs/logs
 *.log
 
 # Temporary files
@@ -158,7 +154,6 @@ go.work
 # Test artifacts
 coverage.xml
 test-results/
-tests/e2e/test-results/
 junit.xml
 
 # Performance test results
@@ -210,20 +205,10 @@ secrets/
 *.sublime-*
 .atom/
 
-# MCP Server logs
-mcp-server.log
-*.mcp.log
-roundtable_mcp_server.log
+docs/node_modules/
+!docs/node_modules/.keep
+**/.venv/
+templates/python/zenml-basic-pipeline/.venv/
 
-# Pydantic AI
-examples/pydantic-ai-cli-agent/workspace/
-examples/pydantic-ai-cli-agent/.env
-
-# Agent checkpoints
-.agent-state/
-*.checkpoint
-
-
-# Rust build artifacts
-src-tauri/target/
-
+# Large VM build artifacts
+fast-openvscode-vm/

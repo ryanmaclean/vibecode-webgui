@@ -279,16 +279,16 @@ export default function WorkspacePage() {
         <div className="flex-1">
           <div className="p-6">
             <div data-testid="code-editor" className="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm">
-              <div className="mb-2">{`// VibeCode E2E Test Environment`}</div>
-              <div className="mb-2">{`// Workspace: ${workspace.name}`}</div>
-              <div className="mb-2">{`// Files: ${files.length}`}</div>
-              <div className="mb-4">{'console.log(\'E2E testing workspace ready\');'}</div>
+              <div className="mb-2">// VibeCode E2E Test Environment</div>
+              <div className="mb-2">// Workspace: {workspace.name}</div>
+              <div className="mb-2">// Files: {files.length}</div>
+              <div className="mb-4">console.log('E2E testing workspace ready');</div>
               
               {selectedFile && (
                 <div>
-                  <div className="text-blue-400">{`// ${selectedFile}`}</div>
+                  <div className="text-blue-400">// {selectedFile}</div>
                   <div className="text-white">
-                    {files.find((f) => f.name === selectedFile)?.content || `// File content would appear here`}
+                    {files.find(f => f.name === selectedFile)?.content || '// File content would appear here'}
                   </div>
                 </div>
               )}
@@ -425,7 +425,7 @@ export default function WorkspacePage() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Delete File</h3>
-            <p className="text-gray-600 mb-4">Are you sure you want to delete &quot;<span className="font-semibold">{selectedFile}</span>&quot;?</p>
+            <p className="text-gray-600 mb-4">Are you sure you want to delete "{selectedFile}"?</p>
             
             <div className="flex space-x-3">
               <button
@@ -554,7 +554,7 @@ export default function WorkspacePage() {
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Delete Workspace</h3>
             <p className="text-gray-600 mb-4">
-              This action cannot be undone. Type &quot;<span className="font-semibold">{workspace.name}</span>&quot; to confirm deletion.
+              This action cannot be undone. Type "{workspace.name}" to confirm deletion.
             </p>
             
             <div className="mb-4">

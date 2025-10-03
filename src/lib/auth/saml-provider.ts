@@ -5,9 +5,6 @@
  */
 
 import { z } from 'zod'
-import { createChildLogger } from '@/lib/logger'
-
-const samlLogger = createChildLogger({ module: 'auth', scope: 'saml' })
 
 export interface SAMLConfig {
   entityId: string
@@ -148,13 +145,12 @@ export class SAMLProvider {
    * Process SAML response from IdP
    */
   async processResponse(samlResponse: string, relayState?: string): Promise<SAMLUser> {
-    let assertion: SAMLAssertion | null = null
     try {
       // Decode base64 response
       const decodedResponse = Buffer.from(samlResponse, 'base64').toString('utf-8')
       
       // Parse XML and validate
-      assertion = await this.parseSAMLResponse(decodedResponse)
+      const assertion = await this.parseSAMLResponse(decodedResponse)
       
       // Validate assertion
       this.validateAssertion(assertion)
@@ -162,20 +158,10 @@ export class SAMLProvider {
       // Extract user information
       const user = this.extractUserFromAssertion(assertion)
       
-      samlLogger.info('SAML authentication successful', {
-        email: user.email,
-        issuer: assertion.issuer,
-        sessionIndex: assertion.sessionIndex,
-        relayState,
-      })
+      console.log('✅ SAML authentication successful for user:', user.email)
       return user
     } catch (error) {
-      samlLogger.error('SAML response processing failed', {
-        issuer: assertion?.issuer,
-        destination: assertion?.destination,
-        relayState,
-        error: error instanceof Error ? error.message : error,
-      })
+      console.error('SAML response processing failed:', error)
       throw new Error(`SAML authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -527,14 +513,7 @@ export function createSAMLProvider(providerId: string): SAMLProvider | null {
 
   const config = providers[providerId as keyof typeof providers]
   if (!config || !config.entityId || !config.singleSignOnUrl || !config.x509Certificate) {
-    const missing: string[] = []
-    if (!config?.entityId) missing.push('entityId')
-    if (!config?.singleSignOnUrl) missing.push('singleSignOnUrl')
-    if (!config?.x509Certificate) missing.push('x509Certificate')
-    samlLogger.warn('SAML provider not configured or missing environment variables', {
-      providerId,
-      missing,
-    })
+    console.warn(`SAML provider ${providerId} not configured or missing required environment variables`)
     return null
   }
 

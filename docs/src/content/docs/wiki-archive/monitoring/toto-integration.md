@@ -26,7 +26,7 @@ npm install --save-dev @datadog/toto
 
 2. Set up environment variables in your `.env` file:
 
-```bash
+```env
 DD_API_KEY=your_api_key_here
 DD_APP_KEY=your_app_key_here
 DD_SITE=datadoghq.com  # or your Datadog site

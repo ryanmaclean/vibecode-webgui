@@ -9,22 +9,6 @@ import fs from 'fs/promises';
 import path from 'path';
 import { glob } from 'glob';
 
-interface PackageJson {
-  name?: string;
-  version?: string;
-  license?: string;
-  description?: string;
-  homepage?: string;
-  repository?: { url?: string } | string;
-  scripts?: Record<string, string>;
-  dependencies?: Record<string, string>;
-  devDependencies?: Record<string, string>;
-  engines?: {
-    node?: string;
-    npm?: string;
-  };
-}
-
 interface ProjectStructure {
   directories: string[];
   apiRoutes: string[];
@@ -37,7 +21,7 @@ interface ProjectStructure {
 
 class ReadmeUpdater {
   private projectRoot = process.cwd();
-  private packageJson: PackageJson = {};
+  private packageJson: any;
   private structure: ProjectStructure = {
     directories: [],
     apiRoutes: [],
@@ -59,14 +43,14 @@ class ReadmeUpdater {
   }
 
   private async loadPackageJson() {
-    const packageJsonPath = path.join(this.projectRoot, 'package.json');
-
     try {
-      const content = await fs.readFile(packageJsonPath, 'utf-8');
-      this.packageJson = JSON.parse(content) as PackageJson;
+      const content = await fs.readFile(
+        path.join(this.projectRoot, 'package.json'),
+        'utf-8'
+      );
+      this.packageJson = JSON.parse(content);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to load package.json: ${message}`);
+      throw new Error('Failed to load package.json');
     }
   }
 
@@ -103,8 +87,7 @@ class ReadmeUpdater {
         }
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.warn(`Failed to read project directories: ${message}`);
+      console.warn('Failed to read project directories');
     }
 
     return dirs.sort();

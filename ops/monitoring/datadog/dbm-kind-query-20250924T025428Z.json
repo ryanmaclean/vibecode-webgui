@@ -1,0 +1,64 @@
+{
+  "from": 1758681568,
+  "to": 1758682468,
+  "queries": {
+    "connections": "avg:postgresql.connections{service:vibecode-postgres,env:kind}",
+    "rows_returned": "avg:postgresql.rows_returned{service:vibecode-postgres,env:kind}",
+    "db_size": "avg:postgresql.db_size{service:vibecode-postgres,env:kind}",
+    "index_scans": "avg:postgresql.index_scans{service:vibecode-postgres,env:kind}"
+  },
+  "results": {
+    "connections": {
+      "status": "ok",
+      "res_type": "time_series",
+      "resp_version": 1,
+      "query": "avg:postgresql.connections{service:vibecode-postgres,env:kind}",
+      "from_date": 1758681568000,
+      "to_date": 1758682468000,
+      "series": [],
+      "values": [],
+      "times": [],
+      "message": "",
+      "group_by": []
+    },
+    "rows_returned": {
+      "status": "ok",
+      "res_type": "time_series",
+      "resp_version": 1,
+      "query": "avg:postgresql.rows_returned{service:vibecode-postgres,env:kind}",
+      "from_date": 1758681568000,
+      "to_date": 1758682468000,
+      "series": [],
+      "values": [],
+      "times": [],
+      "message": "",
+      "group_by": []
+    },
+    "db_size": {
+      "status": "ok",
+      "res_type": "time_series",
+      "resp_version": 1,
+      "query": "avg:postgresql.db_size{service:vibecode-postgres,env:kind}",
+      "from_date": 1758681568000,
+      "to_date": 1758682468000,
+      "series": [],
+      "values": [],
+      "times": [],
+      "message": "",
+      "group_by": []
+    },
+    "index_scans": {
+      "status": "ok",
+      "res_type": "time_series",
+      "resp_version": 1,
+      "query": "avg:postgresql.index_scans{service:vibecode-postgres,env:kind}",
+      "from_date": 1758681568000,
+      "to_date": 1758682468000,
+      "series": [],
+      "values": [],
+      "times": [],
+      "message": "",
+      "group_by": []
+    }
+  }
+}

@@ -11,23 +11,23 @@ Welcome to the VibeCode Platform Wiki! This comprehensive guide will help you un
 
 New to VibeCode? Start here:
 
-- **[Getting Started](/getting-started/)** - Installation, setup, and first steps
-- **[Features Overview](/features/)** - Discover VibeCode's capabilities
-- **[Project Structure](/project-structure/)** - Understand the codebase organization
+- **[Getting Started](/wiki/getting-started)** - Installation, setup, and first steps
+- **[Features Overview](/wiki/features)** - Discover VibeCode's capabilities
+- **[Project Structure](/wiki/project-structure)** - Understand the codebase organization
 
 ## 📚 Documentation
 
 ### Development
-- **[Getting Started](/getting-started/)** - Installation, setup, and first steps
-- **[Developer Guide](/wiki-archive/developer-guide/)** - Comprehensive development documentation
-- **[Testing Guide](/testing-guide/)** - Complete testing strategy and organization
-- **[Development Scripts](/development-scripts/)** - Complete reference of npm commands
-- **[API Reference](/wiki-archive/api-reference/)** - REST API endpoints and usage
-- **[Project Structure](/project-structure/)** - Codebase organization guide
+- **[Getting Started](/wiki/getting-started)** - Installation, setup, and first steps
+- **[Developer Guide](/wiki/developer-guide)** - Comprehensive development documentation
+- **[Testing Guide](/wiki/testing-guide)** - Complete testing strategy and organization
+- **[Development Scripts](/wiki/development-scripts)** - Complete reference of npm commands
+- **[API Reference](/wiki/api-reference)** - REST API endpoints and usage
+- **[Project Structure](/wiki/project-structure)** - Codebase organization guide
 
 ### Deployment & Operations
-- **[Production Deployment](/production-deployment/)** - Production deployment guide
-- **[Features Overview](/features/)** - AI capabilities, cloud deployment, security
+- **[Production Deployment](/wiki/production-deployment)** - Production deployment guide
+- **[Features Overview](/wiki/features)** - AI capabilities, cloud deployment, security
 
 ## 🎯 Key Capabilities
 
@@ -68,8 +68,8 @@ New to VibeCode? Start here:
 
 Ready to contribute? Check out our development workflow:
 
-1. **Setup**: Follow the [Getting Started Guide](/getting-started/)
-2. **Development**: Use [Development Scripts](/development-scripts/)
+1. **Setup**: Follow the [Getting Started Guide](/wiki/getting-started)
+2. **Development**: Use [Development Scripts](/wiki/development-scripts)
 3. **Testing**: Run comprehensive test suites
 4. **Deployment**: Follow production deployment guides
 
@@ -78,10 +78,10 @@ Ready to contribute? Check out our development workflow:
 Need help? Here are your options:
 
 - **Documentation**: Browse the wiki sections above
-- **API Reference**: Check [API Reference](/wiki-archive/api-reference/) for endpoint details
+- **API Reference**: Check [API Reference](/wiki/api-reference) for endpoint details
 - **Health Checks**: Run `npm run monitoring:health`
 - **GitHub Issues**: Report bugs and request features
 
 ---
 
-**Ready to get started?** Begin with our [Getting Started Guide](/getting-started/) to set up your development environment and start building with VibeCode!
+**Ready to get started?** Begin with our [Getting Started Guide](/wiki/getting-started) to set up your development environment and start building with VibeCode!

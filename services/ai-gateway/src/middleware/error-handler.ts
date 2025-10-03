@@ -145,7 +145,7 @@ export const errorHandler = (
     res.status(statusCode).json(errorResponse);
 };
 
-export const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown> | void) => {
+export const asyncHandler = (fn: Function) => {
     return (req: Request, res: Response, next: NextFunction) => {
         Promise.resolve(fn(req, res, next)).catch(next);
     };

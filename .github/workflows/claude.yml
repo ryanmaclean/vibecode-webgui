@@ -10,10 +10,6 @@ on:
   pull_request_review:
     types: [submitted]
 
-concurrency:
-  group: claude-responder
-  cancel-in-progress: false
-
 jobs:
   claude:
     if: |
@@ -22,8 +18,6 @@ jobs:
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
-    outputs:
-      has_token: ${{ steps.validate-token.outputs.has_token }}
     permissions:
       contents: read
       pull-requests: read
@@ -31,25 +25,13 @@ jobs:
       id-token: write
       actions: read # Required for Claude to read CI results on PRs
     steps:
-      - name: Validate Claude token
-        id: validate-token
-        run: |
-          if [ -z "${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}" ]; then
-            echo "::notice::Skipping @claude responder because CLAUDE_CODE_OAUTH_TOKEN secret is not configured."
-            echo "has_token=0" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "has_token=1" >> "$GITHUB_OUTPUT"
-
       - name: Checkout repository
-        if: steps.validate-token.outputs.has_token == '1'
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Run Claude Code
         id: claude
-        if: steps.validate-token.outputs.has_token == '1'
         uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -79,3 +61,4 @@ jobs:
           # Optional: Custom environment variables for Claude
           # claude_env: |
           #   NODE_ENV: test
+
