@@ -160,7 +160,7 @@ Project templates for code generation:
 
 ## Getting Started
 
-- **Setup**: Follow [Getting Started Guide](/getting-started/)
-- **Development**: Use [Development Scripts](/development-scripts/)
-- **API**: Check [API Reference](/wiki-archive/api-reference/)
-- **Features**: Explore [Features Overview](/features/)
+- **Setup**: Follow [Getting Started Guide](/wiki/getting-started)
+- **Development**: Use [Development Scripts](/wiki/development-scripts)
+- **API**: Check [API Reference](/wiki/api-reference)
+- **Features**: Explore [Features Overview](/wiki/features)

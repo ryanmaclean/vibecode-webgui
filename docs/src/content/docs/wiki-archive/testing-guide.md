@@ -208,12 +208,12 @@ DEBUG=vibecode:* npm run test:root
 - [Jest Documentation](https://jestjs.io/docs/getting-started)
 - [Playwright Documentation](https://playwright.dev/docs/intro)
 - [Testing Library Documentation](https://testing-library.com/docs/)
-- [CI/CD Pipeline](/production-deployment/)
+- [CI/CD Pipeline](/wiki/production-deployment)
 
 ---
 
 **Need Help?** 
 - Check the [troubleshooting section](#troubleshooting)
-- Review [API documentation](/wiki-archive/api-reference/)
+- Review [API documentation](/wiki/api-reference)
 - Run health checks: `npm run monitoring:health`
 - View test results: `npm run test:e2e:report`

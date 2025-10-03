@@ -172,10 +172,10 @@ Build production applications:
 
 Now that you have VibeCode running:
 
-1. **[Explore AI Features](/genai-integration/)** - Learn about advanced AI capabilities
-2. **[Read the Developer Guide](/developer-guide/)** - Understand the architecture and contribute
+1. **[Explore AI Features](/ai-integration/)** - Learn about advanced AI capabilities
+2. **[Read the Developer Guide](/development/)** - Understand the architecture and contribute
 3. **[Check the API Reference](/api-reference/)** - Integrate with external services
-4. **[Set up Monitoring](/monitoring/overview/)** - Add observability to your deployment
+4. **[Set up Monitoring](/monitoring/)** - Add observability to your deployment
 
 ## Troubleshooting
 
@@ -205,13 +205,13 @@ Now that you have VibeCode running:
 ## Next Steps
 
 **🔧 Production Setup**
-- **[Production Deployment Guide](/production-deployment-guide/)** - Deploy to production with enterprise features
-- **[Azure OpenAI Monitoring](/azure-openai-monitoring/)** - Set up comprehensive monitoring for AI operations
-- **[PostgreSQL + pgvector](/prisma-pgvector/)** - Configure vector database for AI features
+- **[Production Deployment Guide](./production-deployment-guide/)** - Deploy to production with enterprise features
+- **[Azure OpenAI Monitoring](./azure-openai-monitoring/)** - Set up comprehensive monitoring for AI operations
+- **[PostgreSQL + pgvector](./prisma-pgvector/)** - Configure vector database for AI features
 
 **🚀 Advanced Features**
-- **[Kubernetes Secrets Automation](/kubernetes-secrets-automation/)** - Enterprise-grade secret management
-- **[Developer Guide](/developer-guide/)** - In-depth development workflows
+- **[Kubernetes Secrets Automation](./kubernetes-secrets-automation/)** - Enterprise-grade secret management
+- **[Developer Guide](./developer-guide/)** - In-depth development workflows
 
 ---
 

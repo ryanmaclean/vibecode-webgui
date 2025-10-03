@@ -234,10 +234,10 @@ MONITORING_ENABLED=true
 - Security scanning tools (Datadog, etc.)
 
 ### **Recommended Templates**
-- [Component Dockerfile Template](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/templates/Dockerfile.template)
-- [Kubernetes Manifest Template](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/templates/k8s-manifest.template)
-- [GitHub Actions Template](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/templates/github-actions.template)
-- [Helm Chart Template](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/templates/helm-chart.template)
+- [Component Dockerfile Template](./templates/Dockerfile.template)
+- [Kubernetes Manifest Template](./templates/k8s-manifest.template)
+- [GitHub Actions Template](./templates/github-actions.template)
+- [Helm Chart Template](./templates/helm-chart.template)
 
 ### **Validation Scripts**
 - `./scripts/validate-onboarding.sh` - Automated checklist validation

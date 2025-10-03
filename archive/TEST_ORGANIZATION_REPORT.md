@@ -70,7 +70,7 @@ Generated: 2025-08-07T19:39:51.714Z
 - `test:monitoring:security`: jest --testPathPattern=tests/security/monitoring-security\.test\.(ts|js)$
 - `test:complete`: jest --testPathPattern=tests/complete
 - `test:pre-commit`: ./scripts/pre-commit-tests.sh
-- `test:synthetics`: datadog-ci synthetics run-tests -c datadog-synthetics.json
+- `test:synthetics`: datadog-ci synthetics run-tests -c ops/monitoring/datadog-synthetics.json
 - `test:monitoring:production`: jest --testPathPattern=tests/production/.*monitoring.*\.test\.(ts|js)$
 - `test:monitoring:health`: jest --testPathPattern=tests/unit/health-check.test.ts
 

@@ -10,12 +10,6 @@ Thanks for your interest in contributing! This project demonstrates **pgvector +
 4. **Make your changes**
 5. **Test the demo still works**: `./DEMO.sh`
 
-## 🤝 Coordinate Before You Ship
-
-- **Read [`TODO.md`](./TODO.md)** to see which work areas are already claimed and follow the live coordination protocol.
-- **Scan [`docs/logs/`](./docs/logs/)** for the latest activity, decision, and friction logs so you don’t redo or conflict with recent work.
-- If you’re planning large file moves or automation changes, document your intent in `TODO.md` first so other agents can adjust.
-
 ## 🎯 What We're Looking For
 
 ### High-Priority Contributions
@@ -47,6 +41,12 @@ npm run dev
 # 4. Run tests
 npm test
 ```
+
+## 🗂️ Script Conventions
+
+- **Use shared helpers**: new or updated shell scripts should source `scripts/lib/bootstrap.sh` and `scripts/lib/logging.sh` so logging stays consistent (`log_info`, `log_success`, `log_warn`, etc.).
+- **Maintenance utilities**: housekeeping helpers now live under `scripts/util/` (for example `scripts/util/cleanup-root.sh`, `scripts/util/optimize-github-actions.sh`). Reference these paths instead of the old root-level scripts in docs or issues.
+- **Temporary files**: prefer `mktemp` with trap-based cleanup when generating config or secret manifests inside scripts; see `scripts/setup-postgres-datadog-monitoring.sh` for an example pattern.
 
 ## 📋 Contribution Guidelines
 
@@ -142,7 +142,6 @@ Contributors will be:
 - **GitHub Issues**: For bugs and feature requests
 - **GitHub Discussions**: For questions and ideas
 - **Demo Issues**: Run `./DEMO.sh` and choose "Help & Troubleshooting"
-- **Troubleshooting Guide**: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for common issues and solutions
 
 ## 📄 License
 

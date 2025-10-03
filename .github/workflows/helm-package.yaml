@@ -19,6 +19,8 @@ jobs:
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python for ddtrace
         uses: actions/setup-python@v5
@@ -29,6 +31,7 @@ jobs:
         run: |
           pip install --user ddtrace
           helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo add coder-vscode https://coder-vscode.github.io/helm
 
       - name: Helm lint
         run: |

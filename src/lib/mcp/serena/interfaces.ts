@@ -23,13 +23,13 @@ export interface SerenaProjectConfig {
  * Serena tool configuration
  */
 export interface SerenaToolConfig {
-  id: string;                            // Tool identifier
-  name: string;                          // Tool name
-  type: string;                          // Tool type
-  command?: string;                      // Command to execute
-  apiEndpoint?: string;                  // API endpoint for the tool
-  parameters?: Record<string, unknown>;  // Tool parameters
-  enabled: boolean;                      // Whether the tool is enabled
+  id: string;                        // Tool identifier
+  name: string;                      // Tool name
+  type: string;                      // Tool type
+  command?: string;                  // Command to execute
+  apiEndpoint?: string;              // API endpoint for the tool
+  parameters?: Record<string, any>;  // Tool parameters
+  enabled: boolean;                  // Whether the tool is enabled
 }
 
 /**
@@ -82,7 +82,7 @@ export interface SerenaMemoryEntry {
   timestamp: number;                                  // Entry timestamp
   type: 'code' | 'command' | 'file' | 'insight';      // Entry type
   content: string;                                    // Entry content
-  metadata: Record<string, unknown>;                  // Additional metadata
+  metadata: Record<string, any>;                      // Additional metadata
   projectId: string;                                  // Associated project
   embedding?: number[];                               // Vector embedding
   tags: string[];                                     // Entry tags
@@ -105,7 +105,7 @@ export interface SerenaCodeFile {
   content: string;                                    // File content
   language: string;                                   // Programming language
   lastModified: number;                               // Last modification timestamp
-  metadata: Record<string, unknown>;                  // Additional metadata
+  metadata: Record<string, any>;                      // Additional metadata
 }
 
 /**
@@ -135,7 +135,7 @@ export interface ISerenaProjectManager {
  */
 export interface ISerenaCodeServerClient {
   // Server management
-  startServer(projectId: string, options?: Record<string, unknown>): Promise<string>;
+  startServer(projectId: string, options?: any): Promise<string>;
   stopServer(projectId: string): Promise<boolean>;
   restartServer(projectId: string): Promise<boolean>;
   getServerStatus(projectId: string): Promise<'running' | 'stopped' | 'error'>;
@@ -182,13 +182,13 @@ export interface ISerenaMemoryStore {
   }): Promise<SerenaSearchResult[]>;
   
   // Analysis operations
-  getProjectInsights(projectId: string): Promise<Record<string, unknown>>;
+  getProjectInsights(projectId: string): Promise<any>;
   getSessionHistory(projectId: string, sessionId: string): Promise<SerenaMemoryEntry[]>;
-
+  
   // Memory maintenance
   pruneMemory(projectId: string, olderThan?: number): Promise<number>;
-  exportMemory(projectId: string): Promise<Record<string, unknown>>;
-  importMemory(projectId: string, data: Record<string, unknown>): Promise<boolean>;
+  exportMemory(projectId: string): Promise<any>;
+  importMemory(projectId: string, data: any): Promise<boolean>;
 }
 
 /**
@@ -198,16 +198,16 @@ export interface ISerenaTool {
   id: string;                           // Tool identifier
   name: string;                         // Tool name
   description: string;                  // Tool description
-
+  
   // Tool execution
-  execute(params: Record<string, unknown>): Promise<unknown>;
-
+  execute(params: any): Promise<any>;
+  
   // Tool management
   isEnabled(): boolean;
   enable(): void;
   disable(): void;
-  configure(config: Record<string, unknown>): void;
-
+  configure(config: any): void;
+  
   // Tool metadata
-  getMetadata(): Record<string, unknown>;
+  getMetadata(): any;
 }

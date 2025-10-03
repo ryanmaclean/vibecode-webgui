@@ -1,103 +1,13 @@
-import path from 'path'
-import { createRequire } from 'module'
-import { fileURLToPath } from 'url'
-
-const require = createRequire(import.meta.url)
-const webpack = require('webpack')
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-const outputMode = process.env.NEXT_OUTPUT_MODE === 'export' ? 'export' : 'standalone'
-if (process.env.NEXT_OUTPUT_MODE === 'export') {
-  console.info('[next.config] output mode: export')
-}
-
-const securityHeaders = [
-  { key: 'X-DNS-Prefetch-Control', value: 'on' },
-  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
-  { key: 'X-XSS-Protection', value: '1; mode=block' },
-  { key: 'X-Frame-Options', value: 'DENY' },
-  { key: 'X-Content-Type-Options', value: 'nosniff' },
-  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
-  {
-    key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.datadoghq-browser-agent.com https://cdn.jsdelivr.net https://unpkg.com",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-      "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: https: blob:",
-      "connect-src 'self' https://api.openrouter.ai https://api.openai.com https://api.anthropic.com https://browser-intake-datadoghq.com wss: ws:",
-      "worker-src 'self' blob:",
-      "frame-src 'self'",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "frame-ancestors 'self'",
-      'upgrade-insecure-requests',
-    ].join('; '),
-  },
-]
-
-const apiHeaders = [
-  ...securityHeaders,
-  {
-    key: 'Access-Control-Allow-Origin',
-    value: process.env.NODE_ENV === 'development' ? '*' : 'https://vibecode.dev',
-  },
-  { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
-  { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization, X-Requested-With' },
-  { key: 'Access-Control-Max-Age', value: '86400' },
-]
-
-const datadogStubAliases = {
-  'dd-trace': require.resolve('./src/stubs/dd-trace.js'),
-  './instrument': require.resolve('./src/stubs/instrument-browser.js'),
-  './instrument.ts': require.resolve('./src/stubs/instrument-browser.js'),
-  '@opentelemetry/sdk-node': require.resolve('./src/stubs/opentelemetry-sdk-node.js'),
-  '@opentelemetry/auto-instrumentations-node': require.resolve('./src/stubs/opentelemetry-auto.js'),
-  '@opentelemetry/exporter-otlp-http': require.resolve('./src/stubs/opentelemetry-exporter-otlp-http.js'),
-  '@opentelemetry/exporter-prometheus': require.resolve('./src/stubs/opentelemetry-exporter-prometheus.js'),
-  '@opentelemetry/resources': require.resolve('./src/stubs/opentelemetry-resources.js'),
-  '@opentelemetry/semantic-conventions': require.resolve('./src/stubs/opentelemetry-semantic-conventions.js'),
-  '@opentelemetry/api': require.resolve('./src/stubs/opentelemetry-api.js'),
-  '@opentelemetry/core': require.resolve('./src/stubs/opentelemetry-core.js'),
-  '@opentelemetry/instrumentation': require.resolve('./src/stubs/opentelemetry-instrumentation.js'),
-}
-
-const serverExternalPackages = [
-  '@datadog/browser-rum',
-  'dd-trace',
-  '@datadog/libdatadog',
-  '@datadog/native-appsec',
-  '@datadog/native-metrics',
-  '@datadog/native-iast-taint-tracking',
-  '@datadog/pprof',
-  'ansi-color',
-  '@opentelemetry/exporter-jaeger',
-]
-
-const datadogResourceRegExp = /^(dd-trace|@datadog\/libdatadog|@datadog\/native-appsec|@datadog\/native-metrics|ansi-color|@opentelemetry\/exporter-jaeger)$/
-
-const ensureArray = (value) => {
-  if (!value) return []
-  return Array.isArray(value) ? value : [value]
-}
-
-const addUniqueStrings = (target, values) => {
-  values.forEach((value) => {
-    if (!target.includes(value)) {
-      target.push(value)
-    }
-  })
-}
-
 /** @type {import('next').NextConfig} */
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const nextConfig = {
-  productionBrowserSourceMaps: true,
   reactStrictMode: true,
-  output: outputMode,
+  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -105,48 +15,107 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['localhost'],
-    formats: ['image/webp', 'image/avif'],
-    unoptimized: false,
+    unoptimized: true,
   },
-  compress: true,
+
+  // Skip static analysis of API routes to prevent ERR_INVALID_URL during build
   skipTrailingSlashRedirect: true,
   skipMiddlewareUrlNormalize: true,
+  
+
+
+  // Force app router and disable problematic features
   experimental: {
+    // Disable ISR completely
     isrFlushToDisk: false,
   },
+
+  
   trailingSlash: false,
-  env: {
-    DD_DYNAMIC_INSTRUMENTATION_ENABLED: process.env.DD_DYNAMIC_INSTRUMENTATION_ENABLED || 'false',
-    DD_PROFILING_ENABLED: process.env.DD_PROFILING_ENABLED || 'false',
-    DD_LOGS_INJECTION: process.env.DD_LOGS_INJECTION || 'false',
-    DD_TRACE_ENABLED: process.env.DD_TRACE_ENABLED || 'false',
-    DD_ENV: process.env.DD_ENV || 'development',
-    DD_SERVICE: process.env.DD_SERVICE || 'vibecode-webgui',
-    DD_VERSION: process.env.DD_VERSION || '1.0.0',
-  },
-  poweredByHeader: false,
-  serverExternalPackages,
+  generateBuildId: () => 'build',
+
+  // Disable basePath for now to fix routing issues
+  // basePath: process.env.BUILDING === 'true' ? '' : (process.env.NODE_ENV === 'production' ? '/vibecode-webgui' : ''),
+
+  // Security headers configuration
   async headers() {
+    const securityHeaders = [
+      {
+        key: 'X-DNS-Prefetch-Control',
+        value: 'on'
+      },
+      {
+        key: 'Strict-Transport-Security',
+        value: 'max-age=63072000; includeSubDomains; preload'
+      },
+      {
+        key: 'X-XSS-Protection',
+        value: '1; mode=block'
+      },
+      {
+        key: 'X-Frame-Options',
+        value: 'SAMEORIGIN'
+      },
+      {
+        key: 'X-Content-Type-Options',
+        value: 'nosniff'
+      },
+      {
+        key: 'Referrer-Policy',
+        value: 'origin-when-cross-origin'
+      },
+      {
+        key: 'Permissions-Policy',
+        value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+      },
+      {
+        key: 'Content-Security-Policy',
+        value: [
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.datadoghq-browser-agent.com https://cdn.jsdelivr.net https://unpkg.com",
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+          "font-src 'self' https://fonts.gstatic.com",
+          "img-src 'self' data: https: blob:",
+          "connect-src 'self' https://api.openrouter.ai https://api.openai.com https://api.anthropic.com https://browser-intake-datadoghq.com wss: ws:",
+          "worker-src 'self' blob:",
+          "frame-src 'self'",
+          "object-src 'none'",
+          "base-uri 'self'",
+          "form-action 'self'",
+          "frame-ancestors 'self'",
+          "upgrade-insecure-requests"
+        ].join('; ')
+      }
+    ];
+
     return [
       {
         source: '/(.*)',
-        headers: securityHeaders,
+        headers: securityHeaders
       },
       {
         source: '/api/(.*)',
-        headers: apiHeaders,
-      },
-    ]
-  },
-  async redirects() {
-    return [
-      {
-        source: '/health',
-        destination: '/api/health',
-        permanent: true,
-      },
-    ]
+        headers: [
+          ...securityHeaders,
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: process.env.NODE_ENV === 'development' ? '*' : 'https://vibecode.dev'
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS'
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization, X-Requested-With'
+          },
+          {
+            key: 'Access-Control-Max-Age',
+            value: '86400'
+          }
+        ]
+      }
+    ];
   },
   async rewrites() {
     return [
@@ -157,71 +126,21 @@ const nextConfig = {
             ? 'http://code-server:8080/:path*'
             : 'http://localhost:8080/:path*',
       },
-    ]
+    ];
   },
-  generateBuildId: async () => {
-    if (process.env.GIT_COMMIT) {
-      return process.env.GIT_COMMIT
-    }
-    return `build-${Date.now()}`
-  },
-  webpack: (config, { dev, isServer }) => {
-    if (!dev) {
-      config.devtool = 'source-map'
-    }
-
-    config.plugins = config.plugins || []
-    const hasIgnorePlugin = config.plugins.some(
-      (plugin) =>
-        plugin?.constructor?.name === 'IgnorePlugin' &&
-        plugin.options?.resourceRegExp?.toString() === datadogResourceRegExp.toString()
-    )
-    if (!hasIgnorePlugin) {
-      config.plugins.push(
-        new webpack.IgnorePlugin({
-          resourceRegExp: datadogResourceRegExp,
-        })
-      )
-    }
-
-    config.resolve = config.resolve || {}
-    config.resolve.alias = {
-      ...(config.resolve.alias || {}),
-      '@': path.join(__dirname, 'src'),
-      '@langchain/openai': require.resolve('./src/lib/ai/stubs/langchain-openai.ts'),
-      '@langchain/core/prompts': require.resolve('./src/lib/ai/stubs/langchain-prompts.ts'),
-      '@langchain/core/output_parsers': require.resolve('./src/lib/ai/stubs/langchain-output-parsers.ts'),
-      '@langchain/core/runnables': require.resolve('./src/lib/ai/stubs/langchain-runnables.ts'),
-      '@langchain/core/messages': require.resolve('./src/lib/ai/stubs/langchain-messages.ts'),
-      '@langchain/core/documents': require.resolve('./src/lib/ai/stubs/langchain-documents.ts'),
-    }
-
-    if (!isServer) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        ...datadogStubAliases,
-        pg: false,
-        redis: false,
-      }
-    } else if (dev) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        'dd-trace': datadogStubAliases['dd-trace'],
-      }
-    }
-
+  webpack: (config, { isServer }) => {
+    // Disable minification to fix webpack error with zod v4
+    config.optimization = {
+      ...config.optimization,
+      minimize: false,
+    };
     config.resolve.fallback = {
-      ...(config.resolve.fallback || {}),
+      ...config.resolve.fallback,
       fs: false,
-      os: false,
-      path: false,
-      tls: false,
       net: false,
-      dns: false,
-      child_process: false,
-      stream: false,
-      events: false,
+      tls: false,
       fsevents: false,
+      // OpenTelemetry modules causing static build issues
       '@opentelemetry/sdk-node': false,
       '@opentelemetry/auto-instrumentations-node': false,
       '@opentelemetry/exporter-otlp-http': false,
@@ -235,69 +154,58 @@ const nextConfig = {
       '@opentelemetry/auto-instrumentations-web': false,
       '@opentelemetry/sdk-trace-base': false,
       '@opentelemetry/sdk-metrics': false,
+    };
+
+    // Explicitly handle path aliases
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.join(__dirname, 'src'),
+      pg: false,
+      redis: false,
+    };
+
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        pg: false,
+        redis: false,
+      };
     }
 
-    const externals = ensureArray(config.externals)
-    addUniqueStrings(externals, [
-      '@datadog/libdatadog',
-      '@datadog/native-appsec',
-      '@datadog/native-metrics',
-      'dd-trace',
-      'ansi-color',
-      '@opentelemetry/exporter-jaeger',
-      '@opentelemetry/sdk-node',
-      '@opentelemetry/auto-instrumentations-node',
-      '@opentelemetry/exporter-otlp-http',
-      '@opentelemetry/exporter-prometheus',
-      '@opentelemetry/resources',
-      '@opentelemetry/semantic-conventions',
-      '@opentelemetry/core',
-      '@opentelemetry/api',
-      '@opentelemetry/instrumentation',
-      '@opentelemetry/sdk-trace-web',
-      '@opentelemetry/auto-instrumentations-web',
-      '@opentelemetry/sdk-trace-base',
-      '@opentelemetry/sdk-metrics',
-    ])
-    externals.push({
-      pg: 'commonjs pg',
-      'pg-native': 'commonjs pg-native',
-      'pg-connection-string': 'commonjs pg-connection-string',
-    })
-    config.externals = externals
-
-    config.optimization = {
-      ...config.optimization,
-      minimize: !dev,
+    // Exclude OpenTelemetry modules from bundling entirely
+    config.externals = config.externals || [];
+    if (Array.isArray(config.externals)) {
+      config.externals.push(
+        '@opentelemetry/sdk-node',
+        '@opentelemetry/auto-instrumentations-node',
+        '@opentelemetry/exporter-otlp-http',
+        '@opentelemetry/exporter-prometheus',
+        '@opentelemetry/resources',
+        '@opentelemetry/semantic-conventions',
+        '@opentelemetry/core',
+        '@opentelemetry/api',
+        '@opentelemetry/instrumentation',
+        '@opentelemetry/sdk-trace-web',
+        '@opentelemetry/auto-instrumentations-web',
+        '@opentelemetry/sdk-trace-base',
+        '@opentelemetry/sdk-metrics'
+      );
     }
 
-    if (!dev && !isServer && Array.isArray(config.optimization?.minimizer)) {
-      config.optimization.minimizer.forEach((minimizer) => {
-        if (minimizer?.constructor?.name === 'TerserPlugin') {
-          minimizer.options = minimizer.options || {}
-          minimizer.options.terserOptions = {
-            ...(minimizer.options.terserOptions || {}),
-            keep_fnames: true,
-          }
-        }
-      })
-    }
+    // Fix for camelcase module causing webpack errors
+    config.module.rules.push({
+      test: /node_modules\/camelcase/,
+      use: 'null-loader'
+    });
 
-    config.module = config.module || {}
-    config.module.rules = config.module.rules || []
-    config.module.rules.push(
-      {
-        test: /node_modules\/camelcase/,
-        use: 'null-loader',
-      },
-      {
-        test: /vendor-chunks\/@opentelemetry/,
-        use: 'null-loader',
-      }
-    )
+    // Ignore OpenTelemetry vendor chunks
+    config.module.rules.push({
+      test: /vendor-chunks\/@opentelemetry/,
+      use: 'null-loader'
+    });
 
-    return config
+    return config;
   },
-}
+};
 
-export default nextConfig
+export default nextConfig;

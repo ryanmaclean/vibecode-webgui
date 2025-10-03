@@ -4,72 +4,15 @@
  * Provides alerting functionality for database connection pool monitoring
  */
 let VectorConnectionPoolFactoryModule: typeof import('./vector-connection-pool') | null = null;
-let vectorConnectionPoolPromise: Promise<typeof import('./vector-connection-pool') | null> | null = null;
-let testIsBrowserOverride: boolean | null = null;
+const isBrowser = typeof window !== 'undefined';
 
-function isBrowserEnvironment(): boolean {
-  if (testIsBrowserOverride !== null) {
-    return testIsBrowserOverride;
+if (!isBrowser) {
+  try {
+    const nodeRequire = typeof eval === 'function' ? eval('require') : require;
+    VectorConnectionPoolFactoryModule = nodeRequire('./vector-connection-pool');
+  } catch (error) {
+    console.warn('[ConnectionPoolAlertService] Unable to load vector connection pool module', error);
   }
-  return typeof window !== 'undefined';
-}
-
-async function loadVectorConnectionPoolModule(): Promise<typeof import('./vector-connection-pool') | null> {
-  if (isBrowserEnvironment()) {
-    return null;
-  }
-
-  if (VectorConnectionPoolFactoryModule) {
-    return VectorConnectionPoolFactoryModule;
-  }
-
-  if (!vectorConnectionPoolPromise) {
-    vectorConnectionPoolPromise = import('./vector-connection-pool')
-      .then((module) => {
-        VectorConnectionPoolFactoryModule = module;
-        return module;
-      })
-      .catch((error) => {
-        console.warn('[ConnectionPoolAlertService] Unable to load vector connection pool module', error);
-        VectorConnectionPoolFactoryModule = null;
-        vectorConnectionPoolPromise = null;
-        return null;
-      });
-  }
-
-  return vectorConnectionPoolPromise;
-}
-
-if (!isBrowserEnvironment()) {
-  void loadVectorConnectionPoolModule();
-}
-
-// Test helpers
-export function __setVectorConnectionPoolModule(
-  module: typeof import('./vector-connection-pool') | null,
-): void {
-  VectorConnectionPoolFactoryModule = module;
-  vectorConnectionPoolPromise = null;
-}
-
-export function __resetVectorConnectionPoolModule(): void {
-  VectorConnectionPoolFactoryModule = null;
-  vectorConnectionPoolPromise = null;
-  testIsBrowserOverride = null;
-}
-
-export function __setBrowserEnvironmentForTest(value: boolean | null): void {
-  testIsBrowserOverride = value;
-}
-
-export function __getBrowserEnvironmentForTest(): boolean {
-  return isBrowserEnvironment();
-}
-
-export async function __loadVectorConnectionPoolModuleForTest(): Promise<
-  typeof import('./vector-connection-pool') | null
-> {
-  return loadVectorConnectionPoolModule();
 }
 
 // Alert severity levels
@@ -219,16 +162,14 @@ export default class ConnectionPoolAlertService {
     if (this.isMonitoringActive) {
       return;
     }
-
-    void loadVectorConnectionPoolModule();
-
+    
     this.isMonitoringActive = true;
-
+    
     // Set up monitoring interval
     this.monitoringInterval = setInterval(() => {
       this.checkConnectionPool();
     }, intervalMs);
-
+    
     // Initial check
     this.checkConnectionPool();
   }
@@ -258,13 +199,8 @@ export default class ConnectionPoolAlertService {
    * Check connection pool metrics and generate alerts
    */
   private checkConnectionPool(): void {
-    if (isBrowserEnvironment()) {
-      return;
-    }
-
     try {
       if (!VectorConnectionPoolFactoryModule) {
-        void loadVectorConnectionPoolModule();
         // Running in a browser or vector pool factory unavailable; skip heavy checks
         return;
       }

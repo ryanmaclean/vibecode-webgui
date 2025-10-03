@@ -7,7 +7,6 @@ import { chromium, FullConfig } from '@playwright/test';
 
 async function globalSetup(config: FullConfig) {
   const { baseURL } = config.projects[0].use;
-  const targetBaseURL = baseURL || 'http://localhost:3000';
   
   console.log('🚀 Setting up E2E test environment...');
   
@@ -19,7 +18,7 @@ async function globalSetup(config: FullConfig) {
   try {
     // Wait for the application to be ready
     console.log('⏳ Waiting for application to be available...');
-    await page.goto(targetBaseURL, { 
+    await page.goto(baseURL || 'http://localhost:3000', { 
       waitUntil: 'networkidle',
       timeout: 60000 
     });
@@ -28,7 +27,7 @@ async function globalSetup(config: FullConfig) {
     await setupTestAuth(page);
 
     // Verify critical services are available
-    await verifyServices(page, targetBaseURL);
+    await verifyServices(page);
 
     console.log('✅ E2E test environment setup complete');
 
@@ -57,12 +56,12 @@ async function setupTestAuth(page: any) {
   }
 }
 
-async function verifyServices(page: any, baseURL: string) {
+async function verifyServices(page: any) {
   console.log('🔍 Verifying critical services...');
   
   // Check API health endpoint
   try {
-    const response = await page.request.get(`${baseURL}/api/health`);
+    const response = await page.request.get('/api/health');
     if (!response.ok()) {
       throw new Error(`Health check failed: ${response.status()}`);
     }
@@ -73,12 +72,8 @@ async function verifyServices(page: any, baseURL: string) {
 
   // Verify UI is interactive
   const body = await page.locator('body').first();
-  try {
-    await body.waitFor({ state: 'visible', timeout: 10000 });
-    console.log('✅ UI is interactive');
-  } catch (error: any) {
-    console.warn('⚠️ UI visibility check timed out:', error?.message ?? error);
-  }
+  await body.waitFor({ state: 'visible', timeout: 10000 });
+  console.log('✅ UI is interactive');
 }
 
 export default globalSetup;

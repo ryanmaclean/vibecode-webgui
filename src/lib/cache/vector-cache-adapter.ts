@@ -9,7 +9,7 @@ export interface CachedVectorResult {
   documents: Array<{
     id: string
     content: string
-    metadata: Record<string, unknown>
+    metadata: any
     similarity: number
   }>
   cached: boolean
@@ -36,12 +36,7 @@ export class VectorCacheAdapter {
    * Cache and retrieve vector search results
    */
   async searchWithCache(
-    searchFunction: () => Promise<Array<{
-      id: string;
-      content: string;
-      metadata: Record<string, unknown>;
-      similarity: number;
-    }>>,
+    searchFunction: () => Promise<any[]>,
     query: string,
     options: {
       collection?: string
@@ -167,7 +162,7 @@ export class VectorCacheAdapter {
   async queryWithCache<T>(
     queryFunction: () => Promise<T>,
     sql: string,
-    params?: unknown[],
+    params?: any[],
     options: {
       ttl?: number
       tags?: string[]
@@ -225,7 +220,7 @@ export class VectorCacheAdapter {
   async apiCallWithCache<T>(
     apiFunction: () => Promise<T>,
     endpoint: string,
-    params?: unknown,
+    params?: any,
     options: {
       ttl?: number
       tags?: string[]
@@ -294,7 +289,7 @@ export class VectorCacheAdapter {
   async warmUpCommonQueries(commonQueries: Array<{
     type: 'vector' | 'embedding' | 'database' | 'api'
     key: string
-    data: unknown
+    data: any
     ttl?: number
   }>): Promise<void> {
     console.log(`🔥 Warming up cache with ${commonQueries.length} common queries...`)
@@ -364,40 +359,40 @@ export const cacheIntegration = {
   /**
    * Wrap any vector search function with caching
    */
-  wrapVectorSearch: (searchFn: (query: string, options?: Record<string, unknown>) => Promise<Array<{
-    id: string;
-    content: string;
-    metadata: Record<string, unknown>;
-    similarity: number;
-  }>> | Array<{
-    id: string;
-    content: string;
-    metadata: Record<string, unknown>;
-    similarity: number;
-  }>) => {
-    return async (query: string, options: Record<string, unknown> = {}) => {
-      const executor = async () => await Promise.resolve(searchFn(query, options))
-      return vectorCacheAdapter.searchWithCache(executor, query, options)
+  wrapVectorSearch: (searchFn: Function) => {
+    return async (query: string, options: any = {}) => {
+      return vectorCacheAdapter.searchWithCache(
+        () => searchFn(query, options),
+        query,
+        options
+      )
     }
   },
 
   /**
    * Wrap any embedding function with caching
    */
-  wrapEmbeddingGeneration: (embeddingFn: (text: string, options?: Record<string, unknown>) => Promise<number[]> | number[]) => {
-    return async (text: string, options: Record<string, unknown> = {}) => {
-      const executor = async () => await Promise.resolve(embeddingFn(text, options))
-      return vectorCacheAdapter.generateEmbeddingWithCache(executor, text, options)
+  wrapEmbeddingGeneration: (embeddingFn: Function) => {
+    return async (text: string, options: any = {}) => {
+      return vectorCacheAdapter.generateEmbeddingWithCache(
+        () => embeddingFn(text, options),
+        text,
+        options
+      )
     }
   },
 
   /**
    * Wrap any database query function with caching
    */
-  wrapDatabaseQuery: <T>(queryFn: (sql: string, params?: unknown[], options?: Record<string, unknown>) => Promise<T> | T) => {
-    return async (sql: string, params: unknown[] = [], options: Record<string, unknown> = {}) => {
-      const executor = async () => await Promise.resolve(queryFn(sql, params, options))
-      return vectorCacheAdapter.queryWithCache(executor, sql, params, options)
+  wrapDatabaseQuery: (queryFn: Function) => {
+    return async (sql: string, params?: any[], options: any = {}) => {
+      return vectorCacheAdapter.queryWithCache(
+        () => queryFn(sql, params),
+        sql,
+        params,
+        options
+      )
     }
   }
 }

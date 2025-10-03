@@ -4,16 +4,6 @@ import { getRUMPublicConfig } from './datadog-env'
 // Define allowed site values according to Datadog RUM documentation
 type DatadogSite = 'datadoghq.com' | 'us3.datadoghq.com' | 'us5.datadoghq.com' | 'datadoghq.eu' | 'ddog-gov.com' | 'ap1.datadoghq.com';
 
-// Performance entry interfaces for Web Vitals
-interface LayoutShiftEntry extends PerformanceEntry {
-  hadRecentInput: boolean;
-  value: number;
-}
-
-interface FirstInputEntry extends PerformanceEntry {
-  processingStart: number;
-}
-
 interface RUMConfig {
   applicationId: string;
   clientToken: string;
@@ -48,7 +38,7 @@ class RUMMonitoring {
         this.initialized = true;
         return;
       }
-    } catch {
+    } catch (e) {
       // If getInternalContext fails, continue with initialization
     }
 
@@ -139,7 +129,7 @@ class RUMMonitoring {
   /**
    * Set user information for RUM tracking
    */
-  static setUser(user: { id?: string; name?: string; email?: string; [key: string]: unknown }) {
+  static setUser(user: { id?: string; name?: string; email?: string; [key: string]: any }) {
     if (!this.initialized) return;
 
     try {
@@ -157,7 +147,7 @@ class RUMMonitoring {
   /**
    * Add custom attribute to RUM
    */
-  static addAttribute(key: string, value: unknown) {
+  static addAttribute(key: string, value: any) {
     if (!this.initialized) return;
 
     try {
@@ -170,7 +160,7 @@ class RUMMonitoring {
   /**
    * Track custom action
    */
-  static addAction(name: string, context?: Record<string, unknown>) {
+  static addAction(name: string, context?: Record<string, any>) {
     if (!this.initialized) return;
 
     try {
@@ -183,12 +173,12 @@ class RUMMonitoring {
   /**
    * Track custom error
    */
-  static addError(error: Error | string, context?: Record<string, unknown>) {
+  static addError(error: Error | string, context?: Record<string, any>) {
     if (!this.initialized) return;
 
     try {
       datadogRum.addError(error, context);
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('[RUM] Failed to add error:', error);
     }
   }
@@ -196,7 +186,7 @@ class RUMMonitoring {
   /**
    * Track feature flag usage
    */
-  static addFeatureFlag(key: string, value: unknown) {
+  static addFeatureFlag(key: string, value: any) {
     if (!this.initialized) return;
 
     try {
@@ -246,7 +236,7 @@ class RUMMonitoring {
   /**
    * Track business metrics and conversions
    */
-  static trackBusinessMetric(metric: string, value: number, attributes?: Record<string, unknown>) {
+  static trackBusinessMetric(metric: string, value: number, attributes?: Record<string, any>) {
     this.addAction(`business.${metric}`, {
       value,
       ...attributes,
@@ -258,7 +248,7 @@ class RUMMonitoring {
   /**
    * Track workspace interactions
    */
-  static trackWorkspaceAction(action: string, workspaceId: string, metadata?: Record<string, unknown>) {
+  static trackWorkspaceAction(action: string, workspaceId: string, metadata?: Record<string, any>) {
     this.addAction(`workspace.${action}`, {
       workspaceId,
       ...metadata,
@@ -270,7 +260,7 @@ class RUMMonitoring {
   /**
    * Track authentication events
    */
-  static trackAuth(event: 'login' | 'logout' | 'signup' | 'password_reset', context?: Record<string, unknown>) {
+  static trackAuth(event: 'login' | 'logout' | 'signup' | 'password_reset', context?: Record<string, any>) {
     this.addAction(`auth.${event}`, {
       ...context,
       timestamp: Date.now(),
@@ -320,7 +310,7 @@ class RUMMonitoring {
   /**
    * Track user journey and flows
    */
-  static trackUserJourney(step: string, flow: string, metadata?: Record<string, unknown>) {
+  static trackUserJourney(step: string, flow: string, metadata?: Record<string, any>) {
     this.addAction(`journey.${flow}.${step}`, {
       flow,
       step,
@@ -358,7 +348,7 @@ class RUMMonitoring {
     userId?: string;
     workspaceId?: string;
     severity?: 'low' | 'medium' | 'high' | 'critical';
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   }) {
     const errorContext = {
       ...context,
@@ -385,12 +375,12 @@ class RUMMonitoring {
           this.trackPerformance({ largestContentfulPaint: entry.startTime });
         }
         
-        if (entry.entryType === 'layout-shift' && !(entry as LayoutShiftEntry).hadRecentInput) {
-          this.trackPerformance({ cumulativeLayoutShift: (entry as LayoutShiftEntry).value });
+        if (entry.entryType === 'layout-shift' && !(entry as any).hadRecentInput) {
+          this.trackPerformance({ cumulativeLayoutShift: (entry as any).value });
         }
-
+        
         if (entry.entryType === 'first-input') {
-          this.addAttribute('performance.firstInputDelay', (entry as FirstInputEntry).processingStart - entry.startTime);
+          this.addAttribute('performance.firstInputDelay', (entry as any).processingStart - entry.startTime);
         }
       });
     });

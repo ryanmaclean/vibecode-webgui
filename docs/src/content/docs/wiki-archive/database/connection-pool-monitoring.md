@@ -27,9 +27,9 @@ The `ConnectionPoolMonitor` is the central component that monitors connection po
 The system provides REST API endpoints for accessing monitoring data and managing alerts.
 
 **Key endpoints:**
-- `/api/monitoring/overview/pool` - Get monitoring data including pool status, alerts, and recommendations
-- `/api/monitoring/overview/pool?action=acknowledge&id={alertId}` - Acknowledge an alert
-- `/api/monitoring/overview/pool?action=implement&id={recommendationId}` - Implement a recommendation
+- `/api/monitoring/pool` - Get monitoring data including pool status, alerts, and recommendations
+- `/api/monitoring/pool?action=acknowledge&id={alertId}` - Acknowledge an alert
+- `/api/monitoring/pool?action=implement&id={recommendationId}` - Implement a recommendation
 
 ### 3. Dashboard
 

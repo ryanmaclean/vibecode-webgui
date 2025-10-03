@@ -32,32 +32,6 @@ const buttonVariants = cva(
   }
 )
 
-/**
- * Button component props extending native button attributes
- *
- * @property {boolean} asChild - When true, renders as a Slot component to merge props with child
- * @property {string} type - Button type attribute, defaults to "button" to prevent accidental form submissions
- *
- * @accessibility
- * - Includes focus-visible ring for keyboard navigation
- * - Disabled state prevents pointer events and reduces opacity
- * - For icon-only buttons, always provide aria-label
- * - All ARIA attributes from ButtonHTMLAttributes are supported
- *
- * @example
- * ```tsx
- * // Standard button
- * <Button variant="default">Click me</Button>
- *
- * // Icon-only button (requires aria-label)
- * <Button aria-label="Delete item" size="icon">
- *   <Trash className="h-4 w-4" aria-hidden="true" />
- * </Button>
- *
- * // Submit button in form
- * <Button type="submit">Submit</Button>
- * ```
- */
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
@@ -65,13 +39,12 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, type = "button", ...props }, ref) => {
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
-        type={type}
         {...props}
       />
     )
