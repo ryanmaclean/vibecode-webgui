@@ -2,6 +2,9 @@ name: Helm Package
 
 on:
   push:
+    branches:
+      - main
+      - develop
     paths:
       - 'charts/**'
       - 'helm/**'
@@ -10,12 +13,27 @@ on:
     paths:
       - 'charts/**'
       - 'helm/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  CHART_PATH: charts/litellm-pgvector
 
 jobs:
   lint-and-package:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      chart-version: ${{ steps.version.outputs.chart-version }}
+      chart-name: ${{ steps.version.outputs.chart-name }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
@@ -32,19 +50,124 @@ jobs:
           pip install --user ddtrace
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo add coder-vscode https://coder-vscode.github.io/helm
+          helm repo update
+
+      - name: Generate chart version
+        id: version
+        run: |
+          # Use semantic versioning based on git tags or commit count
+          BASE_VERSION=$(grep '^version:' ${{ env.CHART_PATH }}/Chart.yaml | awk '{print $2}')
+          GIT_COMMIT_SHORT=$(git rev-parse --short HEAD)
+
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            CHART_VERSION="${BASE_VERSION}"
+          else
+            CHART_VERSION="${BASE_VERSION}-${GITHUB_REF_NAME//\//-}.${GIT_COMMIT_SHORT}"
+          fi
+
+          echo "chart-version=${CHART_VERSION}" >> $GITHUB_OUTPUT
+          echo "chart-name=litellm-pgvector" >> $GITHUB_OUTPUT
+          echo "Chart version: ${CHART_VERSION}"
+
+      - name: Update chart version
+        run: |
+          sed -i "s/^version:.*/version: ${{ steps.version.outputs.chart-version }}/" ${{ env.CHART_PATH }}/Chart.yaml
+          cat ${{ env.CHART_PATH }}/Chart.yaml
+
+      - name: Helm dependency update
+        run: |
+          helm dependency update ${{ env.CHART_PATH }}
 
       - name: Helm lint
         run: |
-          helm lint charts/litellm-pgvector
+          helm lint ${{ env.CHART_PATH }}
+
+      - name: Helm template validation
+        run: |
+          helm template test-release ${{ env.CHART_PATH }} > /tmp/template-output.yaml
+          echo "Generated Kubernetes manifests:"
+          cat /tmp/template-output.yaml
 
       - name: Helm package
         run: |
           mkdir -p _packages
-          helm dependency update charts/litellm-pgvector
-          helm package charts/litellm-pgvector --destination _packages
+          helm package ${{ env.CHART_PATH }} --destination _packages
+          ls -lh _packages/
 
       - name: Upload chart artifact
         uses: actions/upload-artifact@v4
         with:
           name: helm-charts
+          path: _packages/*.tgz
+          retention-days: 30
+
+  publish-chart:
+    name: Publish to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: lint-and-package
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+          fetch-depth: 0
+
+      - name: Download chart artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: helm-charts
+          path: charts
+
+      - name: Update Helm repository index
+        run: |
+          cd gh-pages
+          mkdir -p charts
+          cp ../charts/*.tgz charts/
+          helm repo index charts --url https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/charts
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add charts/
+          git commit -m "Update Helm chart: ${{ needs.lint-and-package.outputs.chart-name }}@${{ needs.lint-and-package.outputs.chart-version }}" || echo "No changes to commit"
+          git push
+
+  test-chart:
+    name: Test Chart Installation
+    runs-on: ubuntu-latest
+    needs: lint-and-package
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Download chart artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: helm-charts
           path: _packages
+
+      - name: Install kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
+      - name: Create kind cluster
+        run: |
+          kind create cluster --name helm-test --wait 5m
+
+      - name: Test chart installation
+        run: |
+          helm install test-release _packages/*.tgz --wait --timeout 5m --debug
+          kubectl get all
+
+      - name: Cleanup
+        if: always()
+        run: |
+          kind delete cluster --name helm-test

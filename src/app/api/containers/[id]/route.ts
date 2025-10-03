@@ -1,6 +1,6 @@
 /**
  * Individual Container Management API
- * 
+ *
  * Endpoints for managing a specific container
  */
 
@@ -8,11 +8,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { appleContainer } from '@/lib/container/apple-container'
+import { validatePathParams } from '@/lib/api/validation/middleware'
+import { containerIdSchema } from '@/lib/api/validation/schemas'
 
 /**
  * GET /api/containers/[id]
  * Get container details or logs
- * 
+ *
  * Query params:
  * - logs=true: Get container logs instead of details
  */
@@ -27,14 +29,20 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const containerId = params.id
+    // Validate path parameters
+    const validation = validatePathParams(params, containerIdSchema)
+    if (!validation.success) {
+      return validation.error as NextResponse
+    }
+
+    const { id: containerId } = validation.data
     const { searchParams } = new URL(req.url)
     const getLogs = searchParams.get('logs') === 'true'
 
     // Return logs if requested
     if (getLogs) {
       const logsResult = await appleContainer.logs(containerId)
-      
+
       if (!logsResult.success) {
         return NextResponse.json(
           { error: logsResult.error || 'Failed to get logs' },
@@ -83,11 +91,17 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const containerId = params.id
+    // Validate path parameters
+    const validation = validatePathParams(params, containerIdSchema)
+    if (!validation.success) {
+      return validation.error as NextResponse
+    }
+
+    const { id: containerId } = validation.data
 
     // Stop container first
     const stopResult = await appleContainer.stop(containerId)
-    
+
     if (!stopResult.success) {
       // Container might already be stopped, continue to remove
       console.warn('Failed to stop container:', stopResult.error)
