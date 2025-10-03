@@ -13,7 +13,7 @@
  */
 
 import { execSync } from 'child_process'
-import { createChildLogger } from '@/lib/logger'
+import { createChildLogger } from './logger'
 
 const logger = createChildLogger({ module: 'security', scope: 'keychain' })
 
@@ -52,9 +52,11 @@ export async function setSecret(
   }
 
   try {
-    // Use security command-line tool to interact with Keychain
-    // In production, use native Swift/Objective-C bridge for better performance
-    const command = [
+    // Properly escape value for shell
+    const escapedValue = value.replace(/'/g, "'\\''")
+
+    // Build command parts as array to avoid shell escaping issues
+    const commandParts = [
       'security',
       'add-generic-password',
       '-s',
@@ -62,17 +64,20 @@ export async function setSecret(
       '-a',
       opts.account,
       '-w',
-      value,
+      `'${escapedValue}'`,
       '-U', // Update if exists
-      '-T',
-      '', // Allow access by all applications (remove for stricter access)
     ]
 
+    // Access control: Allow all applications for development
+    // In production, use -T to restrict access to specific applications
+    commandParts.push('-A')
+
     if (opts.accessGroup) {
-      command.push('-G', opts.accessGroup)
+      commandParts.push('-G')
+      commandParts.push(opts.accessGroup)
     }
 
-    execSync(command.join(' '), { encoding: 'utf8' })
+    execSync(commandParts.join(' '), { encoding: 'utf8', shell: '/bin/bash' })
 
     logger.info('Secret stored in Keychain', {
       service: opts.service,
@@ -118,6 +123,7 @@ export async function getSecret(
     const result = execSync(command.join(' '), {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'ignore'], // Suppress stderr
+      shell: '/bin/bash',
     })
 
     logger.debug('Secret retrieved from Keychain', {
@@ -167,7 +173,7 @@ export async function deleteSecret(
       opts.account,
     ]
 
-    execSync(command.join(' '), { encoding: 'utf8' })
+    execSync(command.join(' '), { encoding: 'utf8', shell: '/bin/bash' })
 
     logger.info('Secret deleted from Keychain', {
       service: opts.service,

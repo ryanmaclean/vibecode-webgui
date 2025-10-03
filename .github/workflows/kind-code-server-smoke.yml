@@ -42,6 +42,22 @@ jobs:
 
       - name: Smoke test code-server deployment
         run: |
+          if [ ! -f "scripts/test-code-server-kind.sh" ]; then
+            echo "::error::Script not found: scripts/test-code-server-kind.sh"
+            exit 1
+          fi
+
+          if [ ! -f "k8s/code-server-kind.yaml" ]; then
+            echo "::error::Manifest not found: k8s/code-server-kind.yaml"
+            exit 1
+          fi
+
+          # Check if Dockerfile exists for local build
+          if [ ! -f "docker/code-server/Dockerfile.kind" ]; then
+            echo "::warning::Dockerfile.kind not found, skipping local build"
+            export SKIP_CODE_SERVER_BUILD=true
+          fi
+
           chmod +x scripts/test-code-server-kind.sh
           ./scripts/test-code-server-kind.sh
 
