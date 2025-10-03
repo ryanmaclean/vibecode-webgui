@@ -713,7 +713,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [deploy-staging, performance-tests]
-    if: github.ref == 'refs/heads/main' || github.event.inputs.deploy_env == 'prod'
+    if: |
+      (github.ref == 'refs/heads/main' || github.event.inputs.deploy_env == 'prod') &&
+      vars.K8S_DEPLOYMENT_ENABLED == 'true' &&
+      (needs.deploy-staging.result == 'success' || needs.deploy-staging.result == 'skipped') &&
+      (needs.performance-tests.result == 'success' || needs.performance-tests.result == 'skipped')
     environment:
       name: production
       url: https://vibecode.io
