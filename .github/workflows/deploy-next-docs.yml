@@ -1,17 +1,21 @@
 name: Deploy Next Docs
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'src/app/wiki/**'
-      - 'content/wiki/**'
-      - '.github/workflows/deploy-next-docs.yml'
-      - '.github/workflows/deploy-docs.yml'
-      - 'docker/Dockerfile.docs-next'
-      - 'next.config.js'
-      - 'package.json'
-      - 'package-lock.json'
+  # Disabled push trigger until Azure secrets are configured
+  # Re-enable by uncommenting when secrets are available:
+  # AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID,
+  # ACR_NAME, AZURE_RESOURCE_GROUP, AZURE_WEBAPP_NAME
+  # push:
+  #   branches: [ main ]
+  #   paths:
+  #     - 'src/app/wiki/**'
+  #     - 'content/wiki/**'
+  #     - '.github/workflows/deploy-next-docs.yml'
+  #     - '.github/workflows/deploy-docs.yml'
+  #     - 'docker/Dockerfile.docs-next'
+  #     - 'next.config.js'
+  #     - 'package.json'
+  #     - 'package-lock.json'
   workflow_dispatch:
     inputs:
       environment:

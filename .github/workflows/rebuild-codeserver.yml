@@ -1,5 +1,7 @@
 name: Rebuild and Publish code-server Multi-Arch Images
 
+# Manual trigger only - scheduled runs commented out
+# Uncomment schedule block to enable nightly automated rebuilds
 on:
   workflow_dispatch:
     inputs:
@@ -15,9 +17,9 @@ on:
         description: 'Update docs/logs/issues/code-server-cloud-deployment.md with new digest'
         type: boolean
         default: true
-  schedule:
-    # Nightly rebuild at 05:15 UTC (disabled by default, enable via workflow_dispatch)
-    - cron: '15 5 * * *'
+  # schedule:
+  #   # Nightly rebuild at 05:15 UTC (disabled by default, enable via workflow_dispatch)
+  #   - cron: '15 5 * * *'
 
 env:
   REGISTRY: ghcr.io
