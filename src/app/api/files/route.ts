@@ -14,6 +14,16 @@ import { prisma } from '@/lib/prisma'
 import { vectorStore } from '@/lib/vector-store'
 import { getFileSystemInstance } from '@/lib/file-system-operations'
 import type { FileSystemConfig } from '@/lib/file-system-operations'
+import {
+  validateQueryParams,
+  validateRequestBody
+} from '@/lib/api/validation/middleware'
+import {
+  fileReadSchema,
+  fileCreateSchema,
+  fileUpdateSchema,
+  fileDeleteSchema
+} from '@/lib/api/validation/schemas'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -29,17 +39,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { searchParams } = new URL(request.url)
-    const workspaceId = searchParams.get('workspaceId')
-    const filePath = searchParams.get('path')
-    const action = searchParams.get('action') || 'read'
-
-    if (!workspaceId) {
-      return NextResponse.json(
-        { error: 'Workspace ID is required' },
-        { status: 400 }
-      )
+    // Validate query parameters
+    const validation = validateQueryParams(request, fileReadSchema)
+    if (!validation.success) {
+      return validation.error as NextResponse
     }
+
+    const { workspaceId, path: filePath, action } = validation.data
 
     // Validate workspace access
     if (!await hasWorkspaceAccess(session.user.id, workspaceId)) {
@@ -62,13 +68,6 @@ export async function GET(request: NextRequest) {
 
     switch (action) {
       case 'read':
-        if (!filePath) {
-          return NextResponse.json(
-            { error: 'File path is required for read operation' },
-            { status: 400 }
-          )
-        }
-
         try {
           const { content, metadata } = await fileSystem.readFile(filePath)
           return NextResponse.json({
@@ -106,13 +105,6 @@ export async function GET(request: NextRequest) {
         }
 
       case 'metadata':
-        if (!filePath) {
-          return NextResponse.json(
-            { error: 'File path is required for metadata operation' },
-            { status: 400 }
-          )
-        }
-
         const metadata = fileSystem.getFileMetadata(filePath)
         if (!metadata) {
           return NextResponse.json(
@@ -156,15 +148,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
-    const { workspaceId, path: filePath, content, action = 'create' } = body
-
-    if (!workspaceId || !filePath) {
-      return NextResponse.json(
-        { error: 'Workspace ID and file path are required' },
-        { status: 400 }
-      )
+    // Validate request body
+    const validation = await validateRequestBody(request, fileCreateSchema)
+    if (!validation.success) {
+      return validation.error as NextResponse
     }
+
+    const { workspaceId, path: filePath, content, action } = validation.data
 
     // Validate workspace access
     if (!await hasWorkspaceAccess(session.user.id, workspaceId)) {
@@ -187,13 +177,6 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'create':
-        if (typeof content !== 'string') {
-          return NextResponse.json(
-            { error: 'Content is required for create operation' },
-            { status: 400 }
-          )
-        }
-
         try {
           const metadata = await fileSystem.createFile(filePath, content)
           return NextResponse.json({
@@ -275,15 +258,13 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
-    const { workspaceId, path: filePath, content, expectedVersion } = body
-
-    if (!workspaceId || !filePath || typeof content !== 'string') {
-      return NextResponse.json(
-        { error: 'Workspace ID, file path, and content are required' },
-        { status: 400 }
-      )
+    // Validate request body
+    const validation = await validateRequestBody(request, fileUpdateSchema)
+    if (!validation.success) {
+      return validation.error as NextResponse
     }
+
+    const { workspaceId, path: filePath, content, expectedVersion } = validation.data
 
     // Validate workspace access
     if (!await hasWorkspaceAccess(session.user.id, workspaceId)) {
@@ -354,16 +335,13 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const { searchParams } = new URL(request.url)
-    const workspaceId = searchParams.get('workspaceId')
-    const filePath = searchParams.get('path')
-
-    if (!workspaceId || !filePath) {
-      return NextResponse.json(
-        { error: 'Workspace ID and file path are required' },
-        { status: 400 }
-      )
+    // Validate query parameters
+    const validation = validateQueryParams(request, fileDeleteSchema)
+    if (!validation.success) {
+      return validation.error as NextResponse
     }
+
+    const { workspaceId, path: filePath } = validation.data
 
     // Validate workspace access
     if (!await hasWorkspaceAccess(session.user.id, workspaceId)) {

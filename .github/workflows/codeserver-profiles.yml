@@ -44,8 +44,8 @@ jobs:
           if [ "$input" = "all" ]; then
             profiles='["minimal","standard","ai","web","full"]'
           else
-            # Convert comma-separated to JSON array
-            profiles=$(echo "$input" | jq -R -s -c 'split(",") | map(select(length > 0))')
+            # Convert comma-separated to JSON array (strip whitespace and newlines)
+            profiles=$(echo -n "$input" | jq -R -c 'split(",") | map(select(length > 0) | gsub("^\\s+|\\s+$"; ""))')
           fi
           echo "profiles=$profiles" >> "$GITHUB_OUTPUT"
           echo "Building profiles: $profiles"
@@ -89,6 +89,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
+        if: github.event.inputs.push_to_dockerhub == 'true' && secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != ''
         uses: docker/login-action@v3
         with:
           registry: docker.io

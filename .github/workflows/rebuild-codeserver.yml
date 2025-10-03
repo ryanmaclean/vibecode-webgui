@@ -111,7 +111,7 @@ jobs:
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -159,11 +159,11 @@ jobs:
           push-to-registry: true
 
       - name: Install Datadog CI
-        if: secrets.DD_API_KEY != ''
+        if: ${{ secrets.DD_API_KEY != '' }}
         run: npm install -g @datadog/datadog-ci
 
       - name: Emit build metrics to Datadog
-        if: secrets.DD_API_KEY != ''
+        if: ${{ secrets.DD_API_KEY != '' }}
         env:
           DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
           DATADOG_SITE: ${{ secrets.DD_SITE || 'datadoghq.com' }}
@@ -280,7 +280,7 @@ jobs:
           retention-days: 7
 
       - name: Emit smoke test metrics to Datadog
-        if: always() && secrets.DD_API_KEY != ''
+        if: ${{ always() && secrets.DD_API_KEY != '' }}
         env:
           DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
           DATADOG_SITE: ${{ secrets.DD_SITE || 'datadoghq.com' }}
@@ -425,7 +425,7 @@ jobs:
           \`\`\`"
 
       - name: Emit failure metrics to Datadog
-        if: secrets.DD_API_KEY != ''
+        if: ${{ secrets.DD_API_KEY != '' }}
         env:
           DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
           DATADOG_SITE: ${{ secrets.DD_SITE || 'datadoghq.com' }}
