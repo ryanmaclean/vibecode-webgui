@@ -213,3 +213,11 @@ templates/python/zenml-basic-pipeline/.venv/
 # Large VM build artifacts
 fast-openvscode-vm/
 src-tauri/target/
+
+# MiniVim kernel build artifacts
+artifacts/minivim/work/
+bench-images/minivim/bzImage-*
+bench-images/minivim/Image-*
+bench-images/minivim/zImage-*
+bench-images/minivim/cpuinfo-*.txt
+bench-images/minivim/*.tar.xz
