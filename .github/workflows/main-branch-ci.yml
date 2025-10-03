@@ -57,15 +57,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+        with:
+          fetch-depth: 2  # Fetch HEAD and parent for comparison
+
       - name: Run npm audit
         run: npm audit --audit-level=high || true
-        
+
       - name: Check for secrets
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: main
+          base: HEAD~1
           head: HEAD
           extra_args: --debug --only-verified
 
