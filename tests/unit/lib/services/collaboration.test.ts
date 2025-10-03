@@ -28,3 +28,8 @@ describe('CollaborationService', () => {
   let service: CollaborationService;
   let mockHttpServer: any;
   let mockSocketIO: any;
+
+  it('should be defined', () => {
+    expect(CollaborationService).toBeDefined()
+  })
+})
