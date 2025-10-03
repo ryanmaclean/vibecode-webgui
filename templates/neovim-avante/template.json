@@ -1,0 +1,98 @@
+{
+  "name": "Neovim + Avante.nvim (Cursor AI)",
+  "description": "Minimal Neovim environment with Avante.nvim for Cursor AI-like code editing. Perfect for fast, AI-powered development.",
+  "version": "1.0.0",
+  "category": "editor",
+  "tags": ["neovim", "ai", "cursor", "avante", "minimal", "fast"],
+  "author": "VibeCode Team",
+  "icon": "🚀",
+  "difficulty": "intermediate",
+  "estimatedSetupTime": "< 3 seconds",
+  
+  "features": [
+    "Neovim v0.10.2 with Lua and Tree-sitter",
+    "Avante.nvim for AI-powered editing",
+    "Cursor AI-like experience",
+    "Ultra-fast boot (< 3 seconds)",
+    "Minimal footprint (13-20 MB)",
+    "Git support for version control",
+    "BusyBox utilities",
+    "Network-enabled for AI APIs"
+  ],
+  
+  "requirements": {
+    "memory": "512MB",
+    "storage": "50MB",
+    "network": true
+  },
+  
+  "environment": {
+    "EDITOR": "nvim",
+    "VISUAL": "nvim",
+    "TERM": "xterm-256color",
+    "XDG_CONFIG_HOME": "/root/.config",
+    "XDG_DATA_HOME": "/root/.local/share"
+  },
+  
+  "files": {
+    "kernel": "bench-images/minivim/bzImage-x86_64-6.17",
+    "initramfs": "bench-images/busybox/busybox-neovim-avante-initrd.cpio.gz",
+    "config": ".config/nvim/init.lua"
+  },
+  
+  "commands": {
+    "start": "nvim",
+    "help": "nvim --help",
+    "tutorial": "nvim +Tutor",
+    "health": "nvim +checkhealth"
+  },
+  
+  "aiProviders": [
+    {
+      "name": "OpenAI",
+      "envVar": "OPENAI_API_KEY",
+      "models": ["gpt-4", "gpt-3.5-turbo"]
+    },
+    {
+      "name": "Anthropic Claude",
+      "envVar": "ANTHROPIC_API_KEY",
+      "models": ["claude-3-opus", "claude-3-sonnet"]
+    },
+    {
+      "name": "GitHub Copilot",
+      "envVar": "GITHUB_TOKEN",
+      "models": ["copilot"]
+    }
+  ],
+  
+  "quickStart": {
+    "steps": [
+      "Set your AI API key: export OPENAI_API_KEY='your-key'",
+      "Start Neovim: nvim",
+      "Open a file: nvim test.py",
+      "Ask AI: :AvanteAsk 'How do I optimize this?'",
+      "Edit with AI: :AvanteEdit 'Add error handling'"
+    ]
+  },
+  
+  "documentation": {
+    "readme": "templates/neovim-avante/README.md",
+    "guide": "docs/virtualization/minivim-neovim-integration.md",
+    "avante": "https://github.com/yetone/avante.nvim"
+  },
+  
+  "performance": {
+    "bootTime": "< 3s",
+    "memoryUsage": "~200MB",
+    "diskUsage": "~50MB"
+  },
+  
+  "useCases": [
+    "AI-powered code editing",
+    "Fast prototyping",
+    "Code review with AI",
+    "Learning and experimentation",
+    "Performance benchmarking",
+    "Minimal development environment"
+  ]
+}
