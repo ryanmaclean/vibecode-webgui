@@ -18,3 +18,6 @@ describe('Input Validator Module', () => {
   })
 
   afterEach(() => {
+    consoleSpy.mockRestore()
+  })
+})
