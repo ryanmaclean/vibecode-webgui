@@ -5,6 +5,7 @@
  */
 
 import { z } from 'zod'
+import { randomBytes } from 'crypto'
 
 export interface SAMLConfig {
   entityId: string
@@ -104,7 +105,7 @@ export class SAMLProvider {
   } {
     const requestId = this.generateId()
     const timestamp = new Date().toISOString()
-    
+
     const samlRequest = this.buildAuthRequest({
       id: requestId,
       timestamp,
@@ -117,7 +118,7 @@ export class SAMLProvider {
     })
 
     const encodedRequest = this.base64UrlEncode(samlRequest)
-    
+
     // Build redirect URL
     const params = new URLSearchParams({
       SAMLRequest: encodedRequest
@@ -148,16 +149,16 @@ export class SAMLProvider {
     try {
       // Decode base64 response
       const decodedResponse = Buffer.from(samlResponse, 'base64').toString('utf-8')
-      
+
       // Parse XML and validate
       const assertion = await this.parseSAMLResponse(decodedResponse)
-      
+
       // Validate assertion
       this.validateAssertion(assertion)
-      
+
       // Extract user information
       const user = this.extractUserFromAssertion(assertion)
-      
+
       console.log('✅ SAML authentication successful for user:', user.email)
       return user
     } catch (error) {
@@ -184,7 +185,7 @@ export class SAMLProvider {
 
     const requestId = this.generateId()
     const timestamp = new Date().toISOString()
-    
+
     const logoutRequest = this.buildLogoutRequest({
       id: requestId,
       timestamp,
@@ -196,7 +197,7 @@ export class SAMLProvider {
     })
 
     const encodedRequest = this.base64UrlEncode(logoutRequest)
-    
+
     const params = new URLSearchParams({
       SAMLRequest: encodedRequest
     })
@@ -220,25 +221,25 @@ export class SAMLProvider {
 <md:EntityDescriptor
   xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
   entityID="${this.serviceProviderConfig.entityId}">
-  
+
   <md:SPSSODescriptor
     AuthnRequestsSigned="${this.config.signRequests}"
     WantAssertionsSigned="true"
     protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
-    
+
     <md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:${this.config.nameIdFormat}</md:NameIDFormat>
-    
+
     <md:AssertionConsumerService
       Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
       Location="${this.serviceProviderConfig.assertionConsumerServiceUrl}"
       index="1" />
-    
+
     ${this.serviceProviderConfig.singleLogoutUrl ? `
     <md:SingleLogoutService
       Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
       Location="${this.serviceProviderConfig.singleLogoutUrl}" />
     ` : ''}
-    
+
     ${this.serviceProviderConfig.certificate ? `
     <md:KeyDescriptor use="signing">
       <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
@@ -248,7 +249,7 @@ export class SAMLProvider {
       </ds:KeyInfo>
     </md:KeyDescriptor>
     ` : ''}
-    
+
   </md:SPSSODescriptor>
 </md:EntityDescriptor>`
   }
@@ -278,13 +279,13 @@ export class SAMLProvider {
   ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
   ${params.forceAuthn ? 'ForceAuthn="true"' : ''}
   ${params.allowCreate !== undefined ? `AllowCreate="${params.allowCreate}"` : ''}>
-  
+
   <saml:Issuer>${params.issuer}</saml:Issuer>
-  
+
   <samlp:NameIDPolicy
     Format="urn:oasis:names:tc:SAML:2.0:nameid-format:${params.nameIdFormat}"
     AllowCreate="true" />
-    
+
 </samlp:AuthnRequest>`
   }
 
@@ -308,15 +309,15 @@ export class SAMLProvider {
   Version="2.0"
   IssueInstant="${params.timestamp}"
   Destination="${params.destination}">
-  
+
   <saml:Issuer>${params.issuer}</saml:Issuer>
-  
+
   <saml:NameID Format="urn:oasis:names:tc:SAML:2.0:nameid-format:${params.nameIdFormat}">
     ${params.nameId}
   </saml:NameID>
-  
+
   ${params.sessionIndex ? `<samlp:SessionIndex>${params.sessionIndex}</samlp:SessionIndex>` : ''}
-  
+
 </samlp:LogoutRequest>`
   }
 
@@ -327,12 +328,12 @@ export class SAMLProvider {
     // In a real implementation, you would use a proper XML parser like xml2js
     // and validate the signature using the IdP's certificate
     // This is a simplified version for demonstration
-    
+
     // Extract key information from XML (this is very basic parsing)
     const nameIdMatch = xml.match(/<saml:NameID[^>]*>([^<]+)<\/saml:NameID>/)
     const sessionIndexMatch = xml.match(/SessionIndex="([^"]+)"/)
     const issuerMatch = xml.match(/<saml:Issuer[^>]*>([^<]+)<\/saml:Issuer>/)
-    
+
     if (!nameIdMatch || !issuerMatch) {
       throw new Error('Invalid SAML response: missing required elements')
     }
@@ -341,11 +342,11 @@ export class SAMLProvider {
     const attributes: Record<string, string | string[]> = {}
     const attributeRegex = /<saml:Attribute[^>]+Name="([^"]+)"[^>]*>[\s\S]*?<saml:AttributeValue[^>]*>([^<]+)<\/saml:AttributeValue>[\s\S]*?<\/saml:Attribute>/g
     let attributeMatch
-    
+
     while ((attributeMatch = attributeRegex.exec(xml)) !== null) {
       const attrName = attributeMatch[1]
       const attrValue = attributeMatch[2]
-      
+
       if (attributes[attrName]) {
         if (Array.isArray(attributes[attrName])) {
           (attributes[attrName] as string[]).push(attrValue)
@@ -375,22 +376,22 @@ export class SAMLProvider {
    */
   private validateAssertion(assertion: SAMLAssertion): void {
     const now = new Date()
-    
+
     // Check time validity
     if (now < assertion.conditions.notBefore) {
       throw new Error('SAML assertion not yet valid')
     }
-    
+
     if (now > assertion.conditions.notOnOrAfter) {
       throw new Error('SAML assertion expired')
     }
-    
+
     // Check issuer
-    if (assertion.issuer !== this.config.entityId && 
+    if (assertion.issuer !== this.config.entityId &&
         assertion.issuer !== this.config.singleSignOnUrl.replace(/\/[^\/]*$/, '')) {
       throw new Error('Invalid SAML assertion issuer')
     }
-    
+
     // Additional validations would go here (signature verification, etc.)
   }
 
@@ -399,7 +400,7 @@ export class SAMLProvider {
    */
   private extractUserFromAssertion(assertion: SAMLAssertion): SAMLUser {
     const mapping = this.config.attributeMapping
-    
+
     const email = this.getAttributeValue(assertion.attributes, mapping.email) || assertion.nameId
     if (!email) {
       throw new Error('No email found in SAML assertion')
@@ -408,7 +409,7 @@ export class SAMLProvider {
     const firstName = this.getAttributeValue(assertion.attributes, mapping.firstName)
     const lastName = this.getAttributeValue(assertion.attributes, mapping.lastName)
     const displayName = this.getAttributeValue(assertion.attributes, mapping.displayName)
-    
+
     let name = displayName
     if (!name && firstName && lastName) {
       name = `${firstName} ${lastName}`
@@ -417,10 +418,10 @@ export class SAMLProvider {
       name = email.split('@')[0] // Fallback to email prefix
     }
 
-    const groups = mapping.groups ? 
+    const groups = mapping.groups ?
       this.getAttributeValues(assertion.attributes, mapping.groups) : []
-    
-    const roles = mapping.roles ? 
+
+    const roles = mapping.roles ?
       this.getAttributeValues(assertion.attributes, mapping.roles) : []
 
     return {
@@ -441,14 +442,20 @@ export class SAMLProvider {
   /**
    * Helper methods
    */
+
+  /**
+   * Generate cryptographically secure request ID
+   * SECURITY: Uses crypto.randomBytes() instead of Math.random()
+   */
   private generateId(): string {
-    return `_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const randomHex = randomBytes(8).toString('hex');
+    return `_${Date.now()}_${randomHex}`;
   }
 
   private getNameIdFormat(): string {
     const formats = {
       emailAddress: 'emailAddress',
-      persistent: 'persistent', 
+      persistent: 'persistent',
       transient: 'transient',
       unspecified: 'unspecified'
     }
@@ -467,14 +474,14 @@ export class SAMLProvider {
 
   private getAttributeValue(attributes: Record<string, string | string[]>, key?: string): string | undefined {
     if (!key || !attributes[key]) return undefined
-    
+
     const value = attributes[key]
     return Array.isArray(value) ? value[0] : value
   }
 
   private getAttributeValues(attributes: Record<string, string | string[]>, key?: string): string[] {
     if (!key || !attributes[key]) return []
-    
+
     const value = attributes[key]
     return Array.isArray(value) ? value : [value]
   }
