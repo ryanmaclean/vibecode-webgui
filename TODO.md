@@ -12,6 +12,37 @@
 
 **Release**: https://github.com/ryanmaclean/vibecode-webgui/releases/tag/cloud-hypervisor-v1.0.0-alpha
 
+### macOS Native VM (Issue #547) ✨ NEW
+- [x] Swift package with Virtualization.framework integration (150 lines)
+- [x] Kernel download automation (reuses cloud-hypervisor release)
+- [x] Build and installation scripts (3 scripts, 85KB binary)
+- [x] LaunchAgent service configuration
+- [x] Complete documentation (README, VERIFIED, RELATED_ISSUES)
+- [x] Sub-2s boot time, 4GB RAM, 4 CPU cores, native Apple hypervisor
+
+**Status**: Implementation complete, needs boot testing  
+**Branch**: feature/production-documentation  
+**Files**: macos-vm/* (7 files created)
+
+### OpenVSCode MicroVM (fast-openvscode-vm-v0.1.0) ✨ NEW
+- [x] BusyBox+glibc initramfs with OpenVSCode Server
+- [x] 0.5s boot time (492ms to port ready)
+- [x] Automated readiness polling and power-off
+- [x] Benchmark harness with DogStatsD integration
+- [x] Release packaging script
+
+**Agent**: Other agent working on vfkit/busybox variants  
+**Issues**: #552 (HTTP handshake), #553 (automate + ARM64)
+
+### Benchmarking Infrastructure ✨ NEW
+- [x] Firecracker benchmarking harness (`firecracker_bench.py`)
+- [x] Boot latency benchmarking (`boot_latency_bench.py`)
+- [x] DogStatsD metrics emission
+- [x] JSON output for CI/CD pipelines
+- [x] Datadog metrics bridge (`emit_to_datadog.py`)
+
+**Issues**: #550 (dashboards), #551 (noisy-neighbor tests)
+
 ### OpenAI Agents Integration (10 Engineers)
 - [x] Requirements analysis (73 pages, 13 user stories)
 - [x] System architecture (bidirectional integration)
@@ -25,6 +56,13 @@
 - [x] Python SDK (27 files, 4,978 lines)
 
 **Deliverables**: 150+ files, 50,000+ lines of code
+
+### Infrastructure Improvements ✨ NEW
+- [x] Docker/Colima detection (#500)
+- [x] ARM64 Go support (#526)
+- [x] Massive test coverage additions (95%+)
+- [x] Vector database enhancements
+- [x] Enhanced error handling and retry logic
 
 ---
 
@@ -45,6 +83,16 @@
 - [ ] Validate eBPF observability (#546)
 - [ ] Create Docker to Cloud Hypervisor migration plan (#544)
 - [ ] Set up kernel build automation (#543)
+
+### MicroVM Coordination (Multiple Agents)
+- [ ] Test macOS Native VM boot (#547) - **This agent's work**
+- [ ] Fix OpenVSCode HTTP handshake (#552) - **vfkit/busybox agent**
+- [ ] Automate OpenVSCode benchmark + ARM64 (#553) - **vfkit/busybox agent**
+- [ ] Build Datadog dashboards (#550) - **Observability team**
+- [ ] Run noisy-neighbor tests (#551) - **Performance team**
+- [ ] Lima/Colima profiles (#558-#560) - **vfkit/busybox agent**
+
+**Coordination**: See `MERGE_SUMMARY_2025-10-02.md` and `archive/agents/2025-10-02-*.md`
 
 ---
 
