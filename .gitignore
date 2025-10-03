@@ -212,3 +212,4 @@ templates/python/zenml-basic-pipeline/.venv/
 
 # Large VM build artifacts
 fast-openvscode-vm/
+src-tauri/target/
