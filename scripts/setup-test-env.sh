@@ -1,115 +1,129 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+# GenAI demo environment bootstrapper
 
-# Colors for output
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+set -euo pipefail
 
-echo -e "${GREEN}🚀 Setting up test environment for GenAI demo...${NC}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/bootstrap.sh"
+bootstrap_init "${SCRIPT_DIR}"
+# shellcheck disable=SC1091
+source "${LIB_DIR}/logging.sh"
 
-# Check if Azure CLI is installed
-if ! command -v az &> /dev/null; then
-    echo -e "${RED}❌ Azure CLI is not installed. Please install it from https://docs.microsoft.com/en-us/cli/azure/install-azure-cli${NC}"
+REPO_ROOT="$(cd "${SCRIPTS_ROOT}/.." && pwd)"
+cd "$REPO_ROOT"
+
+log_step "VibeCode GenAI Demo – Environment Setup"
+
+require_cmd() {
+  local cmd=$1
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    log_error "Required command '$cmd' is not available."
     exit 1
+  fi
+}
+
+log_step "1. Validating prerequisites"
+require_cmd az
+require_cmd docker-compose
+require_cmd npm
+require_cmd openssl
+
+if ! az account show >/dev/null 2>&1; then
+  log_warn "Azure CLI not logged in – invoking 'az login'"
+  az login || {
+    log_error "Azure login failed. Please run 'az login' manually and retry."
+    exit 1
+  }
 fi
 
-# Check Azure login status
-if ! az account show &> /dev/null; then
-    echo -e "${YELLOW}⚠️  Not logged into Azure. Attempting to log in...${NC}"
-    if ! az login; then
-        echo -e "${RED}❌ Azure login failed. Please log in using 'az login' and try again.${NC}"
-        exit 1
-    fi
-fi
-
-# Get Azure subscription details
 SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 TENANT_ID=$(az account show --query tenantId -o tsv)
+SUBSCRIPTION_NAME=$(az account show --query name -o tsv)
 
-if [ -z "$SUBSCRIPTION_ID" ] || [ -z "$TENANT_ID" ]; then
-    echo -e "${RED}❌ Failed to get Azure subscription details. Please check your Azure login.${NC}"
-    exit 1
+if [[ -z "$SUBSCRIPTION_ID" || -z "$TENANT_ID" ]]; then
+  log_error "Unable to resolve Azure subscription details."
+  exit 1
 fi
 
-echo -e "${GREEN}✅ Using Azure subscription: $(az account show --query name -o tsv) (${SUBSCRIPTION_ID})${NC}"
+log_success "Using Azure subscription: ${SUBSCRIPTION_NAME} (${SUBSCRIPTION_ID})"
+export AZURE_SUBSCRIPTION_ID="$SUBSCRIPTION_ID"
+export AZURE_TENANT_ID="$TENANT_ID"
 
-# Set environment variables for Azure
-export AZURE_SUBSCRIPTION_ID=$SUBSCRIPTION_ID
-export AZURE_TENANT_ID=$TENANT_ID
-
-# 1. Start required services
-echo -e "\n${GREEN}1. Starting Docker services...${NC}"
+log_step "2. Starting local Docker services (db, datadog-agent)"
 docker-compose up -d db datadog-agent
 
-# 2. Wait for PostgreSQL to be ready
-echo -e "\n${GREEN}2. Waiting for PostgreSQL to be ready...${NC}
-MAX_RETRIES=30
+log_step "3. Waiting for PostgreSQL to become ready"
+MAX_RETRIES=${MAX_RETRIES:-30}
 COUNTER=0
-
-until docker-compose exec -T db pg_isready -U vibecode || [ $COUNTER -eq $MAX_RETRIES ]; do
-  echo -n "."
-  sleep 2
-  COUNTER=$((COUNTER+1))
-done
-
-if [ $COUNTER -eq $MAX_RETRIES ]; then
-    echo -e "\n${RED}❌ Timed out waiting for PostgreSQL to be ready${NC}"
+until docker-compose exec -T db pg_isready -U vibecode >/dev/null 2>&1; do
+  if (( COUNTER >= MAX_RETRIES )); then
+    log_error "Timed out waiting for PostgreSQL readiness."
     exit 1
-fi
+  fi
+  sleep 2
+  ((COUNTER++))
+done
+log_success "PostgreSQL is ready"
 
-echo -e "\n${GREEN}✅ PostgreSQL is ready!${NC}"
-
-# 3. Install dependencies
-echo -e "\n${GREEN}3. Installing dependencies...${NC}
-if [ ! -d "node_modules" ]; then
-    npm install --legacy-peer-deps
+log_step "4. Installing npm dependencies"
+if [[ ! -d node_modules ]]; then
+  npm install --legacy-peer-deps
 else
-    echo -e "${YELLOW}⚠️  node_modules directory already exists. Skipping npm install.${NC}"
+  log_warn "node_modules already present – skipping npm install"
 fi
 
-# 4. Run database migrations
-echo -e "\n${GREEN}4. Running database migrations...${NC}
-if ! npx prisma migrate status | grep -q 'Database schema is up to date'; then
-    npx prisma migrate deploy
+log_step "5. Running Prisma migrations"
+if npx prisma migrate status | grep -q 'Database schema is up to date'; then
+  log_warn "Database schema already up to date"
 else
-    echo -e "${YELLOW}⚠️  Database schema is already up to date.${NC}"
+  npx prisma migrate deploy
 fi
 
-# 5. Install tsx if not already installed
-echo -e "\n${GREEN}5. Setting up test environment...${NC}
-npm install -g tsx
+log_step "6. Ensuring tsx is available"
+npm install -g tsx >/dev/null 2>&1 || log_warn "Global tsx install failed – continuing (make sure tsx is available in PATH)"
 
-# 6. Set up test data
-echo -e "\n${GREEN}6. Setting up test data...${NC}
+log_step "7. Seeding demo database"
 npx tsx scripts/setup-demo-db.ts
 
-# 7. Set up Azure environment variables
-echo -e "\n${GREEN}7. Setting up Azure environment...${NC}
-# Create .env file if it doesn't exist
-if [ ! -f .env ]; then
-    cp .env.example .env
-    echo -e "${GREEN}✅ Created .env file from .env.example${NC}
+ENV_FILE=".env"
+log_step "8. Preparing environment file (${ENV_FILE})"
+if [[ ! -f "$ENV_FILE" ]]; then
+  cp .env.example "$ENV_FILE"
+  log_success "Created ${ENV_FILE} from template"
 else
-    echo -e "${YELLOW}⚠️  .env file already exists. Skipping creation.${NC}"
+  log_warn "${ENV_FILE} already exists – keeping existing values"
 fi
 
-# Update .env with Azure credentials
-if [ -n "$AZURE_OPENAI_ENDPOINT" ] && [ -n "$AZURE_OPENAI_API_KEY" ]; then
-    echo -e "\n${GREEN}✅ Using Azure OpenAI credentials from environment variables${NC}
-    # Update .env with Azure OpenAI credentials
-    sed -i '' -e "s|AZURE_OPENAI_ENDPOINT=.*|AZURE_OPENAI_ENDPOINT=$AZURE_OPENAI_ENDPOINT|" .env
-    sed -i '' -e "s|AZURE_OPENAI_API_KEY=.*|AZURE_OPENAI_API_KEY=$AZURE_OPENAI_API_KEY|" .env
+update_env_var() {
+  local key=$1
+  local value=$2
+  if [[ -z "$value" ]]; then
+    return
+  fi
+  if grep -q "^${key}=" "$ENV_FILE"; then
+    if sed --version >/dev/null 2>&1; then
+      sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
+    else
+      sed -i '' "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
+    fi
+  else
+    printf '%s=%s\n' "$key" "$value" >> "$ENV_FILE"
+  fi
+}
+
+if [[ -n "${AZURE_OPENAI_ENDPOINT:-}" && -n "${AZURE_OPENAI_API_KEY:-}" ]]; then
+  log_success "Applying Azure OpenAI credentials to ${ENV_FILE}"
+  update_env_var "AZURE_OPENAI_ENDPOINT" "$AZURE_OPENAI_ENDPOINT"
+  update_env_var "AZURE_OPENAI_API_KEY" "$AZURE_OPENAI_API_KEY"
 else
-    echo -e "\n${YELLOW}⚠️  Azure OpenAI credentials not found in environment variables.${NC}"
-    echo -e "${YELLOW}   Please set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY in your environment.${NC}"
+  log_warn "Azure OpenAI credentials not detected – update ${ENV_FILE} manually (AZURE_OPENAI_ENDPOINT / AZURE_OPENAI_API_KEY)."
 fi
 
-# 8. Run tests
-echo -e "\n${GREEN}8. Running tests...${NC}
+log_step "9. Running demo tests"
 npm test tests/genai-workflow.test.ts
 
-echo -e "\n${GREEN}✅ Test environment setup complete!${NC}"
-echo -e "\nTo start the demo application, run: ${GREEN}npm run dev${NC}"
-echo -e "To run the demo script: ${GREEN}cd demo && npx ts-node genai-workflow.ts${NC}"
+log_success "Test environment setup complete"
+log_info "Next steps:"
+log_info "  • Start the demo app: npm run dev"
+log_info "  • Run the workflow script: cd demos && npx ts-node genai-workflow.ts"

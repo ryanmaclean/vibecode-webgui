@@ -15,7 +15,7 @@ description: DATADOG COMPATIBILITY SUMMARY documentation
 
 ### Updated Configurations
 
-#### 1. Main Datadog Agent (`datadog-agent.yaml`)
+#### 1. Main Datadog Agent (`ops/monitoring/datadog-agent-lean.yaml`)
 ```yaml
 features:
   orchestratorExplorer:
@@ -29,7 +29,7 @@ override:
       tag: "7.66.1"  # Meets >=7.33.0 requirement
 ```
 
-#### 2. Kubernetes Values (`k8s/datadog-values.yaml`)
+#### 2. Kubernetes Values (`ops/monitoring/datadog-values.yaml`)
 ```yaml
 clusterAgent:
   enabled: true
@@ -63,7 +63,7 @@ Multiple deployment methods were using inconsistent PostgreSQL images:
 
 ### Files Updated ✅
 
-1. **KIND Setup**: `scripts/kind-setup.sh`
+1. **KIND Setup**: `scripts/kind-setup.sh` (run via `npm run kind:setup`)
    ```yaml
    image: pgvector/pgvector:pg16  # was postgres:16-alpine
    ```

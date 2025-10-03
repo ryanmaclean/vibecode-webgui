@@ -5,7 +5,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
-import { logger } from '@/lib/logger'
 
 interface RouteParams {
   params: Promise<{
@@ -17,7 +16,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params
     const workspaceId = id
-    logger.info('Getting workspace status', { workspaceId })
+    console.log(`🔍 Getting workspace status: ${workspaceId}`)
 
     // Check if Kubernetes is available
     if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
@@ -45,7 +44,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('❌ Failed to get workspace:', error)
     return NextResponse.json(
-      {
+      { 
         error: 'Failed to get workspace',
         message: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -58,7 +57,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params
     const workspaceId = id
-    logger.info('Deleting workspace', { workspaceId })
+    console.log(`🗑️ Deleting workspace: ${workspaceId}`)
 
     // Check if Kubernetes is available
     if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
@@ -71,7 +70,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const workspaceService = new WorkspaceProvisioningService()
     await workspaceService.deleteWorkspace(workspaceId)
 
-    logger.info('Workspace deleted successfully', { workspaceId })
+    console.log(`✅ Workspace deleted: ${workspaceId}`)
 
     return NextResponse.json({
       success: true,
@@ -81,7 +80,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('❌ Failed to delete workspace:', error)
     return NextResponse.json(
-      {
+      { 
         error: 'Failed to delete workspace',
         message: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -94,11 +93,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params
     const workspaceId = id
-    logger.info('Updating workspace', { workspaceId })
+    console.log(`🔄 Updating workspace: ${workspaceId}`)
 
     // For now, we'll just return the current status
     // TODO: Implement workspace updates (scaling, configuration changes)
-
+    
     const workspaceService = new WorkspaceProvisioningService()
     const workspace = await workspaceService.getWorkspaceStatus(workspaceId)
 
@@ -118,7 +117,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('❌ Failed to update workspace:', error)
     return NextResponse.json(
-      {
+      { 
         error: 'Failed to update workspace',
         message: error instanceof Error ? error.message : 'Unknown error'
       },

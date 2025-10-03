@@ -3,7 +3,7 @@
  */
 
 declare module '@xterm/addon-webgl' {
-  import type { ITerminalAddon, Terminal } from '@xterm/xterm';
+  import { ITerminalAddon } from '@xterm/xterm';
 
   /**
    * An xterm.js addon that provides a WebGL-based renderer for faster performance.
@@ -19,7 +19,7 @@ declare module '@xterm/addon-webgl' {
      * Activates the addon.
      * @param terminal The terminal instance the addon is attached to.
      */
-    activate(terminal: Terminal): void;
+    activate(terminal: any): void;
 
     /**
      * Disposes the addon.

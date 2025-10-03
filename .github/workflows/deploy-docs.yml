@@ -3,18 +3,13 @@ name: Deploy Documentation to GitHub Pages
 on:
   push:
     branches: [main]
-    paths:
-      - 'docs/**'
-      - 'content/wiki/**'
-      - '.github/workflows/deploy-docs.yml'
+    # Always build docs on main branch pushes to keep them up to date
   pull_request:
     branches: [main]
     paths:
       - 'docs/**'
       - 'content/wiki/**'
       - '.github/workflows/deploy-docs.yml'
-  schedule:
-    - cron: '0 4 * * 1'
   workflow_dispatch:
     inputs:
       docs_system:
@@ -39,8 +34,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    outputs:
-      docs_system: ${{ steps.detect.outputs.docs_system }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,21 +45,8 @@ jobs:
           enablement: true
 
       # --- Astro Build Steps ---
-      - name: Detect docs system
-        id: detect
-        run: |
-          system='${{ github.event.inputs.docs_system || '' }}'
-          if [ -z "$system" ]; then
-            if [ -f docs/package.json ]; then
-              system='astro'
-            else
-              system='nextjs'
-            fi
-          fi
-          echo "docs_system=$system" >> "$GITHUB_OUTPUT"
-
       - name: Setup Node.js for Astro
-        if: steps.detect.outputs.docs_system == 'astro'
+        if: ${{ github.event_name == 'push' || github.event.inputs.docs_system == 'astro' }}
         uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -74,24 +54,24 @@ jobs:
           cache-dependency-path: './docs/package-lock.json'
 
       - name: Install Astro dependencies
-        if: steps.detect.outputs.docs_system == 'astro'
+        if: ${{ github.event_name == 'push' || github.event.inputs.docs_system == 'astro' }}
         run: npm ci
         working-directory: ./docs
 
       - name: Build Astro site
-        if: steps.detect.outputs.docs_system == 'astro'
+        if: ${{ github.event_name == 'push' || github.event.inputs.docs_system == 'astro' }}
         run: npm run build
         working-directory: ./docs
 
       - name: Upload Astro artifact
-        if: steps.detect.outputs.docs_system == 'astro'
+        if: ${{ github.event_name == 'push' || github.event.inputs.docs_system == 'astro' }}
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./docs/dist
 
       # --- Next.js Build Steps ---
       - name: Setup Node.js for Next.js
-        if: steps.detect.outputs.docs_system == 'nextjs'
+        if: ${{ github.event.inputs.docs_system == 'nextjs' }}
         uses: actions/setup-node@v4
         with:
           node-version: '18'
@@ -99,36 +79,18 @@ jobs:
           cache-dependency-path: './package-lock.json'
 
       - name: Install Next.js dependencies
-        if: steps.detect.outputs.docs_system == 'nextjs'
+        if: ${{ github.event.inputs.docs_system == 'nextjs' }}
         run: npm ci
 
-      - name: Build Next.js site (standalone)
-        if: steps.detect.outputs.docs_system == 'nextjs'
+      - name: Build Next.js site
+        if: ${{ github.event.inputs.docs_system == 'nextjs' }}
         run: npm run build
 
-      - name: Prepare Next.js standalone bundle
-        if: steps.detect.outputs.docs_system == 'nextjs'
-        run: |
-          set -euo pipefail
-          mkdir -p ./next-standalone/.next
-          rsync -a --delete ./.next/standalone/ ./next-standalone/
-          if [ -d "./.next/static" ]; then
-            rsync -a ./.next/static/ ./next-standalone/.next/static/
-          fi
-          if [ -d "./public" ]; then
-            rsync -a ./public/ ./next-standalone/public/
-          fi
-          if [ -d "./content/wiki" ]; then
-            rsync -a ./content/wiki/ ./next-standalone/content/wiki/
-          fi
-
-      - name: Upload Next.js standalone artifact
-        if: steps.detect.outputs.docs_system == 'nextjs'
-        uses: actions/upload-artifact@v4
+      - name: Upload Next.js artifact
+        if: ${{ github.event.inputs.docs_system == 'nextjs' }}
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: nextjs-standalone-${{ github.run_id }}
-          path: ./next-standalone
-          retention-days: 14
+          path: ./out
 
   deploy:
     environment:
@@ -136,7 +98,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/main' && needs.build.outputs.docs_system == 'astro'
+    if: github.ref == 'refs/heads/main'
     timeout-minutes: 15
     steps:
       - name: Deploy to GitHub Pages

@@ -20,24 +20,24 @@ The enhanced monitoring system provides:
 
 ### Core Components
 
-1. **Enhanced Datadog Integration** (`src/lib/monitoring/overview/enhanced-datadog-integration.ts`)
+1. **Enhanced Datadog Integration** (`src/lib/monitoring/enhanced-datadog-integration.ts`)
    - Comprehensive APM tracing with dd-trace
    - Custom metrics via StatsD
    - AI-specific monitoring for Claude Code CLI and OpenRouter
 
-2. **Dashboard Management** (`src/lib/monitoring/overview/advanced-datadog-dashboards.ts`)
+2. **Dashboard Management** (`src/lib/monitoring/advanced-datadog-dashboards.ts`)
    - Three specialized dashboards
    - Automated dashboard creation via API
    - Widget configuration for key metrics
 
-3. **Alerts Configuration** (`src/lib/monitoring/overview/alerts-configuration.ts`)
+3. **Alerts Configuration** (`src/lib/monitoring/alerts-configuration.ts`)
    - Critical alerts for AI services, infrastructure, and user experience
    - Automated monitor creation
    - Escalation and notification management
 
 4. **API Endpoints**
-   - `/api/monitoring/overview/dashboard` - Real-time health and metrics
-   - `/api/monitoring/overview/metrics` - Custom metric submission
+   - `/api/monitoring/dashboard` - Real-time health and metrics
+   - `/api/monitoring/metrics` - Custom metric submission
 
 ## Quick Start
 
@@ -74,7 +74,7 @@ npm run monitoring:health
 
 - **Frontend Dashboard**: `http://localhost:3000/monitoring` (Health tab)
 - **Datadog Dashboards**: Check your Datadog account for new VibeCode dashboards
-- **API Health**: `http://localhost:3000/api/monitoring/overview/dashboard`
+- **API Health**: `http://localhost:3000/api/monitoring/dashboard`
 
 ## Dashboards
 
@@ -186,7 +186,7 @@ datadogMonitoring.trackSystemPerformance()
 
 ```bash
 # Submit custom metrics via API
-curl -X POST http://localhost:3000/api/monitoring/overview/metrics \
+curl -X POST http://localhost:3000/api/monitoring/metrics \
   -H "Content-Type: application/json" \
   -d '{
     "type": "counter",
@@ -252,7 +252,7 @@ The system performs active health checks for:
 
 ### Monitoring Dashboard Component
 
-The `MonitoringDashboard` component (`src/components/monitoring/overview/MonitoringDashboard.tsx`) provides:
+The `MonitoringDashboard` component (`src/components/monitoring/MonitoringDashboard.tsx`) provides:
 
 - **Health Tab**: Real-time service health with visual indicators
 - **Overview Tab**: Legacy system metrics overview
@@ -263,7 +263,7 @@ The `MonitoringDashboard` component (`src/components/monitoring/overview/Monitor
 ### Usage in Pages
 
 ```tsx
-import MonitoringDashboard from '@/components/monitoring/overview/MonitoringDashboard'
+import MonitoringDashboard from '@/components/monitoring/MonitoringDashboard'
 
 export default function MonitoringPage() {
   return (
@@ -294,13 +294,13 @@ npm run monitoring:setup
 
 ```bash
 # Test dashboard endpoint
-curl http://localhost:3000/api/monitoring/overview/dashboard | jq
+curl http://localhost:3000/api/monitoring/dashboard | jq
 
 # Test metrics endpoint
-curl http://localhost:3000/api/monitoring/overview/metrics?config=true | jq
+curl http://localhost:3000/api/monitoring/metrics?config=true | jq
 
 # Submit test metrics
-curl -X POST http://localhost:3000/api/monitoring/overview/metrics \
+curl -X POST http://localhost:3000/api/monitoring/metrics \
   -H "Content-Type: application/json" \
   -d '{"type": "gauge", "name": "test.metric", "value": 42}'
 ```
@@ -365,10 +365,10 @@ NEXT_PUBLIC_DD_APPLICATION_ID=your-app-id       # falls back to NEXT_PUBLIC_DATA
 npm run monitoring:metrics
 
 # Test health endpoints
-curl -v http://localhost:3000/api/monitoring/overview/dashboard
+curl -v http://localhost:3000/api/monitoring/dashboard
 
 # Verify metric submission
-curl -X POST http://localhost:3000/api/monitoring/overview/metrics \
+curl -X POST http://localhost:3000/api/monitoring/metrics \
   -H "Content-Type: application/json" \
   -d '{"type": "event", "name": "Debug Test", "metadata": {"test": true}}'
 ```

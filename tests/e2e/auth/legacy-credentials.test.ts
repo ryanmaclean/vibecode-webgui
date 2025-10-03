@@ -1,12 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, request as playwrightRequest } from '@playwright/test';
 
-interface LegacyCredential {
-  email: string;
-  password: string;
-  label: string;
-}
-
-const DEFAULT_CREDENTIALS: LegacyCredential[] = [
+const DEFAULT_CREDENTIALS = [
   { email: 'admin@vibecode.dev', password: 'admin123', label: 'Admin' },
   { email: 'lead@vibecode.dev', password: 'lead123', label: 'Lead' },
   { email: 'developer@vibecode.dev', password: 'dev123', label: 'Developer' },
@@ -20,68 +14,68 @@ const DEFAULT_CREDENTIALS: LegacyCredential[] = [
 ];
 
 const shouldRun = process.env.LEGACY_AUTH_SMOKE === 'true';
+const baseURL = process.env.LEGACY_AUTH_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
 
-const credentials: LegacyCredential[] = (() => {
-  if (!process.env.LEGACY_AUTH_CREDENTIALS) {
-    return DEFAULT_CREDENTIALS
-  }
-
+let credentials = DEFAULT_CREDENTIALS;
+if (process.env.LEGACY_AUTH_CREDENTIALS) {
   try {
-    const parsed = JSON.parse(process.env.LEGACY_AUTH_CREDENTIALS)
+    const parsed = JSON.parse(process.env.LEGACY_AUTH_CREDENTIALS);
     if (Array.isArray(parsed)) {
-      return parsed as LegacyCredential[]
+      credentials = parsed;
     }
   } catch (error) {
-    console.warn('Failed to parse LEGACY_AUTH_CREDENTIALS env variable:', error)
+    console.warn('Failed to parse LEGACY_AUTH_CREDENTIALS env variable:', error);
   }
+}
 
-  return DEFAULT_CREDENTIALS
-})()
-
-test.describe('Legacy authentication credential smoke', () => {
+test.describe('Legacy authentication credential smoke (API)', () => {
   test.skip(!shouldRun, 'Set LEGACY_AUTH_SMOKE=true to run the legacy credential smoke tests.');
 
-  test('credentials API is reachable', async ({ request }) => {
-    const csrfResp = await request.get('/api/auth/csrf')
-    expect(csrfResp.status()).toBeLessThan(500)
-  })
+  test('sign-in page responds', async () => {
+    const api = await playwrightRequest.newContext({ baseURL });
+    const response = await api.get('/auth/signin');
+    expect(response.status(), 'GET /auth/signin').toBeGreaterThanOrEqual(200);
+    expect(response.status(), 'GET /auth/signin').toBeLessThan(500);
+  });
 
-  credentials.forEach((cred) => {
-    test(`credential flow: ${cred.label}`, async ({ request }) => {
-      const csrfResp = await request.get('/api/auth/csrf')
-      test.skip(!csrfResp.ok(), 'Skipping legacy smoke: /api/auth/csrf unavailable')
+  for (const cred of credentials) {
+    test(`credential flow: ${cred.label}`, async () => {
+      const api = await playwrightRequest.newContext({ baseURL });
 
-      const csrfJson = await csrfResp.json()
-      const csrfToken = csrfJson?.csrfToken
-      test.skip(!csrfToken, 'Skipping legacy smoke: csrf token missing')
+      const csrfResp = await api.get('/api/auth/csrf');
+      expect(csrfResp.ok(), 'csrf ok').toBeTruthy();
+      const csrfJson = await csrfResp.json();
+      expect(csrfJson?.csrfToken, 'csrf token').toBeTruthy();
 
-      const signinResp = await request.post('/api/auth/signin/credentials', {
+      const signinResp = await api.post('/api/auth/signin/credentials', {
         form: {
-          csrfToken,
+          csrfToken: csrfJson.csrfToken,
           email: cred.email,
           password: cred.password,
-          callbackUrl: '/',
-          json: 'true',
+          callbackUrl: `${baseURL}/`
         },
-      })
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
 
-      const status = signinResp.status()
-      expect.soft(status).toBeLessThan(500)
+      expect.soft([200, 302, 400, 401, 403]).toContain(signinResp.status());
 
-      if (status === 200 || status === 302) {
-        const sessionResp = await request.get('/api/auth/session')
-        if (!sessionResp.ok()) {
-          test.info().annotations.push({ type: 'legacy-auth-session-missing', description: `${cred.email} missing session (status ${sessionResp.status()})` })
-          return
+      if (signinResp.status() === 200 || signinResp.status() === 302) {
+        const sessionResp = await api.get('/api/auth/session');
+        if (sessionResp.ok()) {
+          const sessionJson = await sessionResp.json().catch(() => undefined);
+          if (sessionJson?.user?.email !== cred.email) {
+            test.info().annotations.push({
+              type: 'warning',
+              description: `Session email mismatch for ${cred.email}`,
+            });
+          }
+        } else {
+          test.info().annotations.push({
+            type: 'warning',
+            description: `Session lookup failed for ${cred.email} (status ${sessionResp.status()})`,
+          });
         }
-
-        const sessionJson = await sessionResp.json()
-        if (sessionJson?.user?.email !== cred.email) {
-          test.info().annotations.push({ type: 'legacy-auth-session-mismatch', description: `${cred.email} received ${sessionJson?.user?.email ?? 'undefined'}` })
-        }
-      } else {
-        test.info().annotations.push({ type: 'legacy-auth-not-configured', description: `${cred.email} returned ${status}` })
       }
-    })
-  })
+    });
+  }
 });

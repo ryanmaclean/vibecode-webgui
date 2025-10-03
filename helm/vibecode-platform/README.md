@@ -137,28 +137,6 @@ helm install vibecode-platform . \
 | `monitoring.prometheus.port` | Metrics port | `9090` |
 | `monitoring.grafana.enabled` | Enable Grafana dashboard | `true` |
 
-### Enterprise SSO (Optional)
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `keycloak.enabled` | Deploy Bitnami Keycloak subchart | `false` |
-| `keycloak.auth.existingSecret` | Secret containing Keycloak admin credentials | `keycloak-admin-credentials` |
-| `keycloak.externalDatabase.host` | External Postgres hostname (e.g. pgvector service) | `vector-db` |
-| `keycloak.externalDatabase.existingSecret` | Secret holding DB username/password | `keycloak-db-credentials` |
-| `keycloak.ingress.hostname` | Hostname for SSO ingress | `sso.vibecode.local` |
-
-The Bitnami Keycloak dependency is disabled by default. Provide the referenced secrets (admin credentials and database credentials) before enabling SSO. For a turn-key enterprise install, use the supplied overrides:
-
-```bash
-helm install vibecode-platform . \
-  --namespace vibecode-platform \
-  --create-namespace \
-  --values values.yaml \
-  --values values-enterprise.yaml
-```
-
-Ensure the `keycloak-db-credentials` secret includes `username` and `password` keys that point to the provisioned pgvector database user, and that the ingress host matches your enterprise DNS.
-
 ## User Management
 
 ### Creating Users

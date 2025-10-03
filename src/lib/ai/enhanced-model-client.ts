@@ -12,8 +12,6 @@
  */
 
 import { OpenAI } from 'openai';
-import { logger } from '../logger';
-
 
 export type AIProvider = 'openrouter' | 'azure-openai' | 'anthropic' | 'ollama' | 'gemini' | 'bedrock';
 
@@ -44,7 +42,7 @@ export interface ChatCompletionResponse {
     totalTokens: number;
   };
   finishReason: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, any>;
 }
 
 export interface EmbeddingResponse {
@@ -62,7 +60,7 @@ export interface EmbeddingResponse {
  */
 export class EnhancedAIClient {
   private defaultConfig: AIModelConfig;
-  private clients: Map<AIProvider, OpenAI | { apiKey: string; endpoint?: string; region?: string; accessKeyId?: string; secretAccessKey?: string }> = new Map();
+  private clients: Map<AIProvider, any> = new Map();
 
   constructor(defaultConfig: AIModelConfig) {
     this.defaultConfig = defaultConfig;
@@ -212,18 +210,18 @@ export class EnhancedAIClient {
     try {
       return await this.createChatCompletionWithProvider(messages, finalConfig);
     } catch (error) {
-      logger.warn(`Primary provider ${finalConfig.provider} failed:`, { error: error });
+      console.warn(`Primary provider ${finalConfig.provider} failed:`, error);
       
       // Fallback strategy
       const fallbackProviders = this.getFallbackProviders(finalConfig.provider);
       
       for (const fallbackProvider of fallbackProviders) {
         try {
-          logger.info(`Trying fallback provider: ${fallbackProvider}`);
+          console.log(`Trying fallback provider: ${fallbackProvider}`);
           const fallbackConfig = { ...finalConfig, provider: fallbackProvider };
           return await this.createChatCompletionWithProvider(messages, fallbackConfig);
         } catch (fallbackError) {
-          logger.warn(`Fallback provider ${fallbackProvider} failed:`, { data: fallbackError });
+          console.warn(`Fallback provider ${fallbackProvider} failed:`, fallbackError);
           continue;
         }
       }
@@ -277,7 +275,7 @@ export class EnhancedAIClient {
   ): Promise<ChatCompletionResponse> {
     const response = await client.chat.completions.create({
       model: config.model,
-      messages: messages as Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+      messages: messages as any,
       max_tokens: config.maxTokens || 4000,
       temperature: config.temperature || 0.7,
       top_p: config.topP || 1.0
@@ -307,7 +305,7 @@ export class EnhancedAIClient {
    * Handle Anthropic Claude API
    */
   private async handleAnthropic(
-    client: { apiKey: string; endpoint?: string },
+    client: any,
     messages: ChatMessage[],
     config: AIModelConfig
   ): Promise<ChatCompletionResponse> {
@@ -372,7 +370,7 @@ export class EnhancedAIClient {
   ): Promise<ChatCompletionResponse> {
     const response = await client.chat.completions.create({
       model: config.model,
-      messages: messages as Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+      messages: messages as any,
       max_tokens: config.maxTokens || 4000,
       temperature: config.temperature || 0.7,
       stream: false
@@ -402,7 +400,7 @@ export class EnhancedAIClient {
    * Handle Google Gemini API
    */
   private async handleGemini(
-    client: { apiKey: string; endpoint: string },
+    client: any,
     messages: ChatMessage[],
     config: AIModelConfig
   ): Promise<ChatCompletionResponse> {
@@ -458,7 +456,7 @@ export class EnhancedAIClient {
    * Handle AWS Bedrock
    */
   private async handleBedrock(
-    client: { region: string; accessKeyId: string; secretAccessKey: string },
+    client: any,
     messages: ChatMessage[],
     config: AIModelConfig
   ): Promise<ChatCompletionResponse> {
@@ -503,7 +501,7 @@ export class EnhancedAIClient {
     });
 
     return {
-      embeddings: response.data.map((item: { embedding: number[] }) => item.embedding),
+      embeddings: response.data.map((item: any) => item.embedding),
       model: response.model,
       provider: finalConfig.provider,
       usage: {

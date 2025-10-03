@@ -40,7 +40,7 @@ const getValkeyConfig = () => {
 const config = getValkeyConfig();
 
 // Create Valkey client with optimized settings (using Redis-compatible ioredis client)
-let valkeyClient: Redis | null = null;
+let valkeyClient: any = null;
 
 try {
   if ('url' in config) {
@@ -125,7 +125,7 @@ export const CacheTTL = {
  * Enhanced cache operations with performance monitoring using Valkey
  */
 export class ValkeyManager {
-  private client: Redis | null;
+  private client: any;
 
   constructor() {
     this.client = valkeyClient;
@@ -134,7 +134,7 @@ export class ValkeyManager {
   /**
    * Get value from cache with metrics
    */
-  async get<T = unknown>(key: string): Promise<T | null> {
+  async get<T = any>(key: string): Promise<T | null> {
     if (!this.client) return null;
 
     const startTime = Date.now();
@@ -162,7 +162,7 @@ export class ValkeyManager {
   /**
    * Set value in cache with TTL and metrics
    */
-  async set(key: string, value: unknown, ttl: number = CacheTTL.MEDIUM): Promise<boolean> {
+  async set(key: string, value: any, ttl: number = CacheTTL.MEDIUM): Promise<boolean> {
     if (!this.client) return false;
 
     const startTime = Date.now();
@@ -193,7 +193,7 @@ export class ValkeyManager {
       const keys = Array.isArray(key) ? key : [key];
       await this.client.del(...keys);
       
-      metrics.increment('cache.delete', { count: keys.length });
+      metrics.increment('cache.delete', { count: keys.length as any });
       return true;
     } catch (error) {
       metrics.increment('cache.delete.error');
@@ -220,7 +220,7 @@ export class ValkeyManager {
   /**
    * Get multiple keys at once
    */
-  async mget<T = unknown>(keys: string[]): Promise<(T | null)[]> {
+  async mget<T = any>(keys: string[]): Promise<(T | null)[]> {
     if (!this.client || keys.length === 0) return [];
 
     try {
@@ -235,7 +235,7 @@ export class ValkeyManager {
   /**
    * Set multiple keys at once
    */
-  async mset(pairs: Array<{ key: string; value: unknown; ttl?: number }>): Promise<boolean> {
+  async mset(pairs: Array<{ key: string; value: any; ttl?: number }>): Promise<boolean> {
     if (!this.client || pairs.length === 0) return false;
 
     try {
@@ -247,7 +247,7 @@ export class ValkeyManager {
       }
       
       await pipeline.exec();
-      metrics.increment('cache.mset.success', { count: pairs.length });
+      metrics.increment('cache.mset.success', { count: pairs.length as any });
       return true;
     } catch (error) {
       metrics.increment('cache.mset.error');
@@ -374,7 +374,7 @@ export const cache = new ValkeyManager();
 /**
  * Cache wrapper for functions with automatic key generation
  */
-export function withCache<T extends unknown[], R>(
+export function withCache<T extends any[], R>(
   fn: (...args: T) => Promise<R>,
   keyGenerator: (...args: T) => string,
   ttl: number = CacheTTL.MEDIUM

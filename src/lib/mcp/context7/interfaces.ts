@@ -12,7 +12,7 @@ export interface TemporalContext {
   actionHistory: Array<{              // Record of user actions
     action: string;                   // What action was performed
     timestamp: number;                // When it occurred
-    metadata?: unknown;               // Additional action-specific data
+    metadata?: any;                   // Additional action-specific data
   }>;
   frequencyMap: Record<string, number>; // Action frequency counts
   durations: Record<string, number>;    // Task/process durations
@@ -44,8 +44,8 @@ export interface SpatialContext {
  * State context - current application state and configuration
  */
 export interface StateContext {
-  applicationState: Record<string, unknown>; // Key-value state store
-  configuration: Record<string, unknown>;    // App configuration
+  applicationState: Record<string, any>;     // Key-value state store
+  configuration: Record<string, any>;        // App configuration
   featureFlags: Record<string, boolean>;     // Enabled/disabled features
   systemStatus: {                            // System status
     online: boolean;                         // Network connectivity
@@ -61,13 +61,13 @@ export interface StateContext {
 export interface SemanticContext {
   entities: Map<string, {                   // Named entities
     type: string;                           // Entity type
-    attributes: Record<string, unknown>;    // Entity attributes
+    attributes: Record<string, any>;        // Entity attributes
     relationships?: Record<string, string[]>; // Related entities
   }>;
   topics: Map<string, number>;              // Active topics with relevance scores
   tags: string[];                           // Semantic tags
   taxonomies: Record<string, string[]>;     // Categorization systems
-  knowledgeGraph?: unknown;                 // Structured knowledge representation
+  knowledgeGraph?: any;                     // Structured knowledge representation
 }
 
 /**
@@ -80,13 +80,13 @@ export interface UserContext {
     email?: string;                        // User email
     role?: string;                         // User role
     expertise: 'beginner' | 'intermediate' | 'advanced'; // Skill level
-    preferences: Record<string, unknown>;  // User preferences
+    preferences: Record<string, any>;      // User preferences
   };
   authStatus: 'anonymous' | 'authenticated' | 'verified'; // Authentication status
   permissions: string[];                   // User permissions
   behaviors: {                             // Observed behavioral patterns
-    preferences: Record<string, unknown>;  // Inferred preferences
-    patterns: Record<string, unknown>;     // Usage patterns
+    preferences: Record<string, any>;      // Inferred preferences
+    patterns: Record<string, any>;         // Usage patterns
   };
   goals?: string[];                        // Current user goals
 }
@@ -102,7 +102,7 @@ export interface TaskContext {
     progress: number;                      // Completion percentage (0-100)
     startTime?: number;                    // When task was started
     deadline?: number;                     // Task deadline
-    metadata?: Record<string, unknown>;    // Additional task data
+    metadata?: Record<string, any>;        // Additional task data
   };
   taskStack: Array<{                       // Stack of tasks (for nested tasks)
     id: string;
@@ -170,8 +170,8 @@ export interface Context7InitOptions {
  * Storage provider interface for Context7
  */
 export interface Context7StorageProvider {
-  save(key: string, data: unknown): Promise<boolean>;
-  load(key: string): Promise<unknown | null>;
+  save(key: string, data: any): Promise<boolean>;
+  load(key: string): Promise<any | null>;
   delete(key: string): Promise<boolean>;
   clear(): Promise<boolean>;
 }
@@ -197,7 +197,7 @@ export interface IContext7Manager {
   updateTaskContext(update: Partial<TaskContext>): void;
   updateEnvironmentalContext(update: Partial<EnvironmentalContext>): void;
   
-  recordUserAction(action: string, metadata?: unknown): void;
+  recordUserAction(action: string, metadata?: any): any;
   
   serialize(): string;
   deserialize(serialized: string): boolean;
@@ -212,5 +212,5 @@ export interface Context7AIService {
    * @param context - The full context from the Context7Manager.
    * @returns A promise that resolves to an AI-generated response.
    */
-  processContext(context: Context7InitOptions): Promise<unknown>;
+  processContext(context: Context7InitOptions): Promise<any>;
 }

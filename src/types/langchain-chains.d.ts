@@ -1,30 +1,15 @@
 declare module 'langchain/chains' {
-  export type ChainInput = Record<string, unknown>;
-  export type ChainOutput = Record<string, unknown> & { text?: string };
-
   export class BaseRetriever {
-    constructor(...args: unknown[]);
-    invoke(query: string, options?: ChainInput): Promise<ChainOutput>;
-  }
-
-  export interface RetrievalQAChainOptions {
-    returnSourceDocuments?: boolean;
-    prompt?: unknown;
-    verbose?: boolean;
-    callbacks?: unknown[];
+    constructor(...args: any[]);
+    invoke(query: string, options?: any): Promise<any>;
   }
 
   export class RetrievalQAChain {
-    static fromLLM(
-      model: unknown,
-      retriever: BaseRetriever,
-      options?: RetrievalQAChainOptions,
-    ): RetrievalQAChain;
-    call(input: ChainInput): Promise<ChainOutput>;
+    static fromLLM(model: any, retriever: any, options?: any): RetrievalQAChain;
+    call(input: any): Promise<{ text: string }>;
   }
 
   export class PromptTemplate {
     static fromTemplate(template: string): PromptTemplate;
-    format(values: ChainInput): string;
   }
 }

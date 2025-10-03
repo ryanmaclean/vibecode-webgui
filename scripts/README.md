@@ -6,11 +6,19 @@
 
 This directory contains scripts to set up and manage a local Kubernetes development environment using KIND (Kubernetes in Docker) for VibeCode development.
 
+### Directory Layout
+
+| Path | Purpose |
+|------|---------|
+| `lib/` | Shared Bash helpers (logging, bootstrap, KIND orchestration). |
+| `tests/` | Regression harnesses for Datadog, Azure, and bootstrap validation. |
+| `util/` | Repository maintenance and consolidation utilities formerly in the repo root. |
+
 ## 📁 Scripts
 
 | Script | Purpose | Usage |
 |--------|---------|--------|
-| `kind-setup.sh` | 🎯 **Main script** - Complete automated setup | `./scripts/kind-setup.sh` |
+| `kind-setup.sh` | 🎯 **Main script** - Complete automated setup | `npm run kind:setup` |
 | `docker-doctor.sh` | 🏥 **Docker TUI** - Interactive Docker troubleshooting | `./scripts/docker-doctor.sh` |
 | `kind-env-check.sh` | 🔍 Environment validation | `./scripts/kind-env-check.sh` |
 | `kind-cleanup.sh` | 🧹 Clean previous installations | `./scripts/kind-cleanup.sh` |
@@ -24,7 +32,7 @@ This directory contains scripts to set up and manage a local Kubernetes developm
 ### Option 1: One-Command Setup
 ```bash
 # Complete automated setup (recommended)
-./scripts/kind-setup.sh
+npm run kind:setup
 
 # If Docker issues are detected, use Docker Doctor:
 ./scripts/docker-doctor.sh
@@ -210,7 +218,7 @@ kubectl rollout restart deployment/vibecode-webgui -n vibecode
 # Nuclear option - reset everything
 kind delete clusters --all
 docker system prune -af
-./scripts/kind-setup.sh
+npm run kind:setup
 ```
 
 ## 📖 Documentation

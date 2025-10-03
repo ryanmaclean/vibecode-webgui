@@ -1,18 +1,10 @@
 /**
- * @deprecated This file has been consolidated into vector-retry-handler.ts
- * Please import from './vector-retry-handler' instead
- *
- * This file will be removed in a future release.
- * All functionality has been merged into the canonical retry handler.
- *
- * Migration: Change imports from './vector-retry-handler-new' to './vector-retry-handler'
- *
  * Vector Database Error Handler
  * Enhanced error handling for vector database operations with retry mechanism
  */
 
 import { logger } from '../logger';
-import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
+import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler-new';
 
 /**
  * Retry configuration interface

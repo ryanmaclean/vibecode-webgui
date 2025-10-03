@@ -45,9 +45,10 @@ Recent API calls to `https://api.datadoghq.com/api/v2/apm/traces/events/search` 
    ENABLE_REAL_AI_TESTS=true RUN_REAL_OPENROUTER_TESTS=true \
      node -r dd-trace/init scripts/smoke/openrouter-chat.js
 
-   npm run monitoring:trace
+   ddtrace-run python3 scripts/verify-trace-search.py \
+     --service vibecode-webgui-smoke --env production --window 1h
    ```
-   - The helper script reads `configs/trace-search-checks.json` and writes results to `datadog/trace-search/`.
+   - `scripts/verify-trace-search.py` prints the first ten hits and exits non-zero if none are returned.
 
 5. **Capture evidence**
    - Save the JSON response under `datadog/` with timestamp.
@@ -68,9 +69,8 @@ DATADOG_TRACE_SEARCH_BASE_URL=http://127.0.0.1:5005 \
 
 This keeps CI green while you coordinate the official fix; remember to disable the mock once real access is available.
 
-6. **Automation**
-   - Workflow `.github/workflows/datadog-trace-verify.yml` runs hourly (and on demand) using the npm script above. Ensure `DD_API_KEY` / `DD_APP_KEY` secrets stay in GitHub Actions and monitor runs for failures.
-   - Update `TODO.md` entries once automation is passing.
+6. **Close the TODO items**
+   - Update `TODO.md` entries referencing the blocker and mark them complete.
 
 ## Rollback
 

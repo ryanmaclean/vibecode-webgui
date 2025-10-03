@@ -1,60 +1,6 @@
 /**
- * @description Azure Embedding Service Monitoring API - Provides comprehensive monitoring for Azure OpenAI embedding operations including rate limits, connection pool health, and API metrics. Supports both JSON and text output formats.
- * @route GET /api/monitoring/azure-embedding
- * @access Private (requires authentication, optionally admin-only)
- *
- * @param {NextRequest} req - Next.js request with query parameters:
- *   - format: 'json' | 'text' - Response format (default: 'json')
- *   - include: 'all' | 'pools' | 'api' | 'rate_limits' - Data to include (default: 'all')
- *
- * @returns {Response} Returns Azure embedding service metrics:
- *   - timestamp: string - Current timestamp
- *   - status: 'ok' | 'warning' - Service status
- *   - service: 'azure_embedding' - Service identifier
- *   - rateLimits: { remaining, max, utilizationPercentage, isApproachingLimit, resetTimestamp } - Rate limit info
- *   - connectionPools: { total, healthy, warning, critical, overallStatus, pools } - Pool health
- *
- * @example
- * // GET Request - All metrics (JSON)
- * GET /api/monitoring/azure-embedding?include=all&format=json
- * Headers: { Authorization: "Bearer <token>" }
- *
- * // Response
- * {
- *   "timestamp": "2025-10-01T00:00:00.000Z",
- *   "status": "ok",
- *   "service": "azure_embedding",
- *   "rateLimits": {
- *     "remaining": 8500,
- *     "max": 10000,
- *     "utilizationPercentage": 15,
- *     "isApproachingLimit": false
- *   },
- *   "connectionPools": {
- *     "total": 3,
- *     "healthy": 3,
- *     "overallStatus": "healthy",
- *     "pools": [...]
- *   }
- * }
- *
- * // GET Request - Text format
- * GET /api/monitoring/azure-embedding?format=text
- *
- * // Response (text/plain)
- * Azure Embedding Service Monitor - OK
- * ------------------------------------------------------------------
- * Timestamp: 2025-10-01T00:00:00.000Z
- * Status: ok
- *
- * Rate Limits:
- * - Remaining: 8500/10000 (15.0% used)
- * - Resets At: 2025-10-01T01:00:00.000Z
- * - Status: OK
- *
- * @throws {401} Unauthorized - Authentication required
- * @throws {403} Forbidden - Admin access required (when RESTRICT_METRICS_TO_ADMIN=true)
- * @throws {500} Internal server error - Failed to retrieve monitoring data
+ * Azure Embedding Service Monitoring API
+ * Provides monitoring endpoints for Azure OpenAI embedding service and connection pool metrics
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -65,6 +11,10 @@ import { authOptions } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic'; // No caching for monitoring data
 
+/**
+ * GET /api/monitoring/azure-embedding
+ * Returns metrics for Azure embedding operations
+ */
 export async function GET(req: NextRequest) {
   try {
     // Check authentication

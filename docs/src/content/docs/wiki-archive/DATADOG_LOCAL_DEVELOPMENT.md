@@ -44,7 +44,7 @@ docker-compose up -d
 
 - Prefer `DD_*` variables; legacy `DATADOG_*` are still supported as fallback.
 - Frontend RUM uses `NEXT_PUBLIC_DD_*` with fallback to `NEXT_PUBLIC_DATADOG_*`.
-- Centralized resolver: `src/lib/monitoring/overview/datadog-env.ts`.
+- Centralized resolver: `src/lib/monitoring/datadog-env.ts`.
 
 ## 🐳 Docker Compose Configuration
 
@@ -121,11 +121,11 @@ Legacy variables (`DATADOG_*`, `NEXT_PUBLIC_DATADOG_*`) are still recognized for
 
 ### Frontend RUM in local dev
 
-- __Init location__: `src/app/providers.tsx` in a client `useEffect`, using `getRUMPublicConfig()` from `src/lib/monitoring/overview/datadog-env.ts` and `RUMMonitoring.initializeWithTracking(...)` from `src/lib/monitoring/overview/rum-client.ts`.
+- __Init location__: `src/app/providers.tsx` in a client `useEffect`, using `getRUMPublicConfig()` from `src/lib/monitoring/datadog-env.ts` and `RUMMonitoring.initializeWithTracking(...)` from `src/lib/monitoring/rum-client.ts`.
 - __Enable in dev__: set `NEXT_PUBLIC_ENABLE_RUM_IN_DEV=true` in `.env`. Requires `NEXT_PUBLIC_DD_APPLICATION_ID` and `NEXT_PUBLIC_DD_CLIENT_TOKEN`.
 - __Defaults__: `service: vibecode-webgui`, `defaultPrivacyLevel: mask-user-input`, `trackUserInteractions: true`, `trackResources: true`, `trackLongTasks: true`, session replay 100% in dev.
 - __Logs__: Browser logs are initialized via `datadogLogs.init(...)` in `providers.tsx` with `forwardErrorsToLogs: true`.
-- __Alternative component (optional)__: `src/components/monitoring/overview/DatadogRUM.tsx` also initializes RUM and tracks views on route changes. Do not use both at the same time to avoid double initialization.
+- __Alternative component (optional)__: `src/components/monitoring/DatadogRUM.tsx` also initializes RUM and tracks views on route changes. Do not use both at the same time to avoid double initialization.
 
 #### Verify RUM locally
 1) In the browser console, confirm you see: `VibeCode RUM monitoring initialized successfully` (or the RUM init log).
@@ -149,7 +149,7 @@ Legacy variables (`DATADOG_*`, `NEXT_PUBLIC_DATADOG_*`) are still recognized for
 ./tests/docker-compose-tests.sh
 
 # Test complete pipeline
-./scripts/run-all-tests.sh
+npm run tests:all  # wraps ./scripts/run-all-tests.sh
 ```
 
 ### Manual Verification
@@ -281,7 +281,7 @@ docker-compose logs -f datadog-agent
 ### Before Production Deployment
 1. **Test Complete Pipeline**:
    ```bash
-   ./scripts/run-all-tests.sh
+   npm run tests:all  # wraps ./scripts/run-all-tests.sh
    ```
 
 2. **Validate Parity**:
@@ -298,9 +298,9 @@ docker-compose logs -f datadog-agent
 
 ## 📚 Related Documentation
 
-- [DATADOG_MONITORING_CONFIGURATION.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/DATADOG_MONITORING_CONFIGURATION.md) - Complete monitoring setup
-- [COMPREHENSIVE_TESTING_GUIDE.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/COMPREHENSIVE_TESTING_GUIDE.md) - Testing all components
-- [README.md](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/src/content/docs/wiki-archive/README.md) - Project overview and setup
+- [DATADOG_MONITORING_CONFIGURATION.md](./DATADOG_MONITORING_CONFIGURATION.md) - Complete monitoring setup
+- [COMPREHENSIVE_TESTING_GUIDE.md](./COMPREHENSIVE_TESTING_GUIDE.md) - Testing all components
+- [README.md](./README.md) - Project overview and setup
 
 ---
 

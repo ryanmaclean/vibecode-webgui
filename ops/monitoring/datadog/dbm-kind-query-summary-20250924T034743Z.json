@@ -1,0 +1,13 @@
+{
+  "generated_at": "20250924T034743Z",
+  "query": "avg:postgresql.connections{env:kind,host:postgres-service.vibecode-platform.svc.cluster.local,service:vibecode-postgres}",
+  "window_seconds": 900,
+  "series": [
+    {
+      "points": 11,
+      "min": 3,
+      "max": 3,
+      "avg": 3
+    }
+  ]
+}

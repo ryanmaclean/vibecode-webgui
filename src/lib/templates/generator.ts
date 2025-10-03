@@ -212,18 +212,8 @@ function generateSetupInstructions(
   return instructions
 }
 
-// Template variables interface
-export interface TemplateVariables {
-  projectName: string
-  packageName: string
-  description: string
-  author: string
-  license: string
-  gitRepository: string
-}
-
 // Template-specific file generators
-async function generateReactTypeScriptFiles(variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateReactTypeScriptFiles(variables: any): Promise<TemplateFile[]> {
   return [
     {
       path: 'package.json',
@@ -480,7 +470,7 @@ dist-ssr
   ]
 }
 
-async function generateNextJsFiles(variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateNextJsFiles(variables: any): Promise<TemplateFile[]> {
   return [
     {
       path: 'package.json',
@@ -579,7 +569,7 @@ export default function RootLayout({
 }
 
 // Placeholder implementations for other template generators
-async function generateExpressApiFiles(variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateExpressApiFiles(variables: any): Promise<TemplateFile[]> {
   return [
     {
       path: 'package.json',
@@ -600,7 +590,7 @@ async function generateExpressApiFiles(variables: TemplateVariables): Promise<Te
   ]
 }
 
-async function generateFastApiFiles(variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateFastApiFiles(variables: any): Promise<TemplateFile[]> {
   return [
     {
       path: 'requirements.txt',
@@ -615,7 +605,7 @@ pydantic==2.3.0`
   ]
 }
 
-async function generateVueFiles(variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateVueFiles(variables: any): Promise<TemplateFile[]> {
   return [
     {
       path: 'package.json',
@@ -629,47 +619,47 @@ async function generateVueFiles(variables: TemplateVariables): Promise<TemplateF
   ]
 }
 
-async function generateMernStackFiles(variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateMernStackFiles(variables: any): Promise<TemplateFile[]> {
   return []
 }
 
-async function generateNextJsSupabaseFiles(variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateNextJsSupabaseFiles(variables: any): Promise<TemplateFile[]> {
   return []
 }
 
-async function generateReactNativeFiles(variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateReactNativeFiles(variables: any): Promise<TemplateFile[]> {
   return []
 }
 
-async function generateDataScienceFiles(variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateDataScienceFiles(variables: any): Promise<TemplateFile[]> {
   return []
 }
 
-async function generateMicroservicesFiles(variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateMicroservicesFiles(variables: any): Promise<TemplateFile[]> {
   return []
 }
 
-async function generateElectronFiles(variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateElectronFiles(variables: any): Promise<TemplateFile[]> {
   return []
 }
 
-async function generateGraphQLFiles(variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateGraphQLFiles(variables: any): Promise<TemplateFile[]> {
   return []
 }
 
-async function generateFlutterFiles(variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateFlutterFiles(variables: any): Promise<TemplateFile[]> {
   return []
 }
 
-async function generateServerlessFiles(variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateServerlessFiles(variables: any): Promise<TemplateFile[]> {
   return []
 }
 
-async function generateBlockchainFiles(variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateBlockchainFiles(variables: any): Promise<TemplateFile[]> {
   return []
 }
 
-async function generateGenericFiles(template: ProjectTemplate, variables: TemplateVariables): Promise<TemplateFile[]> {
+async function generateGenericFiles(template: ProjectTemplate, variables: any): Promise<TemplateFile[]> {
   return [
     {
       path: 'README.md',

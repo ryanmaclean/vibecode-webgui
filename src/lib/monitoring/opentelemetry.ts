@@ -13,35 +13,24 @@ const isDockerBuild = (
   process.env.DD_ENABLED === 'false'
 );
 
-const isLocalDev = process.env.NODE_ENV !== 'production'
-
-// Shareable type alias for dynamic require fallback
-type NodeRequireFn = typeof require
-
-// Type aliases for OpenTelemetry modules (loaded dynamically)
-type NodeSDKConstructor = new (config: unknown) => { start: () => void; shutdown: () => Promise<void> }
-type NodeSDKType = ReturnType<NodeSDKConstructor['prototype']['constructor']> | null
-
 // Conditional imports to prevent build-time errors in Docker
-let NodeSDK: NodeSDKConstructor | null = null;
-let getNodeAutoInstrumentations: ((config?: unknown) => unknown[]) | null = null;
-let OTLPTraceExporter: (new (config?: unknown) => unknown) | null = null;
-let PrometheusExporter: (new (config?: unknown, callback?: () => void) => unknown) | null = null;
-let Resource: (new (attributes: Record<string, string>) => unknown) | null = null;
-let ATTR_SERVICE_NAME: string | null = null;
-let ATTR_SERVICE_VERSION: string | null = null;
+let NodeSDK: any = null;
+let getNodeAutoInstrumentations: any = null;
+let OTLPTraceExporter: any = null;
+let PrometheusExporter: any = null;
+let Resource: any = null;
+let ATTR_SERVICE_NAME: any = null;
+let ATTR_SERVICE_VERSION: any = null;
 
-if (!isDockerBuild && !isLocalDev) {
+if (!isDockerBuild) {
   try {
-    // Dynamic imports to prevent static analysis issues and keep dev builds lightweight
-     
-    const dynamicRequire = eval('require') as NodeRequireFn;
-    const sdkNode = dynamicRequire('@opentelemetry/sdk-node');
-    const autoInstrumentations = dynamicRequire('@opentelemetry/auto-instrumentations-node');
-    const otlpExporter = dynamicRequire('@opentelemetry/exporter-otlp-http');
-    const prometheusExporter = dynamicRequire('@opentelemetry/exporter-prometheus');
-    const resources = dynamicRequire('@opentelemetry/resources');
-    const semanticConventions = dynamicRequire('@opentelemetry/semantic-conventions');
+    // Dynamic imports to prevent static analysis issues
+    const sdkNode = require('@opentelemetry/sdk-node');
+    const autoInstrumentations = require('@opentelemetry/auto-instrumentations-node');
+    const otlpExporter = require('@opentelemetry/exporter-otlp-http');
+    const prometheusExporter = require('@opentelemetry/exporter-prometheus');
+    const resources = require('@opentelemetry/resources');
+    const semanticConventions = require('@opentelemetry/semantic-conventions');
     
     NodeSDK = sdkNode.NodeSDK;
     getNodeAutoInstrumentations = autoInstrumentations.getNodeAutoInstrumentations;
@@ -61,7 +50,7 @@ const isServer = typeof window === 'undefined'
 const serviceName = 'vibecode-webgui'
 const serviceVersion = process.env.npm_package_version || '0.1.0'
 
-let otelSDK: NodeSDKType = null
+let otelSDK: any = null
 
 /**
  * Initialize OpenTelemetry instrumentation
@@ -128,7 +117,7 @@ export function initializeOpenTelemetry() {
           // Enable key instrumentations
           '@opentelemetry/instrumentation-http': {
             enabled: true,
-            requestHook: (span: { setAttributes: (attrs: Record<string, string>) => void }, request: { headers: Record<string, string>; method?: string }) => {
+            requestHook: (span: any, request: any) => {
               // Add custom attributes to HTTP spans
               span.setAttributes({
                 'vibecode.request.user_agent': request.headers['user-agent'] || 'unknown',
