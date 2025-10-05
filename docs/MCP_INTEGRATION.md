@@ -234,3 +234,4 @@ chmod +x src/mcp/server.ts
 - [MCP Specification](https://modelcontextprotocol.io/)
 - [MCP SDK](https://github.com/modelcontextprotocol/sdk)
 - [Example Servers](https://github.com/modelcontextprotocol/servers)
+- [Zen MCP Server](https://github.com/BeehiveInnovations/zen-mcp-server) - Mindfulness and focus tools for AI workflows

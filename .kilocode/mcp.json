@@ -9,6 +9,16 @@
       "alwaysAllow": [
         "sequentialthinking"
       ]
+    },
+    "zen": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@beehiveinnovations/zen-mcp-server"
+      ],
+      "alwaysAllow": [
+        "zen"
+      ]
     }
   }
 }
