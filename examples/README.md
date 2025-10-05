@@ -1,6 +1,16 @@
 # Code Examples
 
-This directory contains practical examples demonstrating how to use various features of the VibeCode WebGUI platform.
+This directory contains example code and implementations for various VibeCode features.
+
+## MCP Servers
+
+See [mcp-servers/](./mcp-servers/) for comprehensive MCP server integration examples:
+
+- **Zen MCP Server** - Mindfulness and focus tools for AI workflows
+  - Neovim configuration with Avante.nvim
+  - VSCode/Cursor/Windsurf setup
+  - VSCodium web apps deployment
+  - Sample prompts for Zen + Codex, Claude, OpenCode, and Gemini of the VibeCode WebGUI platform.
 
 ## 📁 Directory Structure
 

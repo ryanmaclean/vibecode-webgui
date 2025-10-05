@@ -48,6 +48,7 @@ npm run type-check   # TypeScript check
 - **Architecture & Development**: See [wiki/](./wiki/) directory
 - **API Documentation**: Available in docs/ after `npm run docs:build`
 - **Testing Strategy**: [wiki/TEST_INFRASTRUCTURE_SUCCESS_REPORT.md](./wiki/TEST_INFRASTRUCTURE_SUCCESS_REPORT.md)
+- **MCP Server Examples**: [examples/mcp-servers/](./examples/mcp-servers/) - Integration guides for Zen, Neovim, VSCode, and more
 
 ## Key Features
 

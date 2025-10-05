@@ -1,0 +1,18 @@
+{
+  "mcp.servers": {
+    "zen": {
+      "command": "npx",
+      "args": ["-y", "@beehiveinnovations/zen-mcp-server"],
+      "env": {
+        "NODE_ENV": "production",
+        "ZEN_CONFIG_PATH": "${userHome}/.config/zen-mcp"
+      }
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    }
+  },
+  "mcp.autoStart": true,
+  "mcp.logLevel": "info"
+}
