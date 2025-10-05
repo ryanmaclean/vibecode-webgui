@@ -1,0 +1,85 @@
+name: MiniVim Kernel Builds
+
+on:
+  push:
+    branches:
+      - minivim-refresh
+  workflow_dispatch:
+
+env:
+  KERNEL_VERSION: 6.17
+  BUSYBOX_INITRD: bench-images/minivim/busybox-vi-initrd.cpio.gz
+
+jobs:
+  build:
+    name: Build ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            packages: >-
+              build-essential clang lld llvm curl bc flex bison libncurses-dev
+              libssl-dev libelf-dev dwarves ccache
+            cross: ""
+          - arch: arm64
+            packages: >-
+              build-essential clang lld llvm curl bc flex bison libncurses-dev
+              libssl-dev libelf-dev dwarves ccache gcc-aarch64-linux-gnu
+            cross: aarch64-linux-gnu-
+          - arch: armv7
+            packages: >-
+              build-essential clang lld llvm curl bc flex bison libncurses-dev
+              libssl-dev libelf-dev dwarves ccache gcc-arm-linux-gnueabihf
+            cross: arm-linux-gnueabihf-
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.packages }}
+
+      - name: Prepare BusyBox initrd
+        if: ${{ matrix.arch == 'x86_64' }}
+        run: |
+          mkdir -p artifacts/minivim/work
+          if [ ! -f "$BUSYBOX_INITRD" ]; then
+            cp bench-images/busybox/busybox-initramfs.cpio.gz "$BUSYBOX_INITRD"
+          fi
+
+      - name: Build MiniVim kernel
+        env:
+          SKIP_MRPROPER: 0
+          CROSS_COMPILE: ${{ matrix.cross }}
+        run: |
+          export MINIVIM_JOBS=${MINIVIM_JOBS:-$(nproc)}
+          ./scripts/benchmarks/build-minivim-kernel.sh ${{ matrix.arch }} $KERNEL_VERSION
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p output
+          cp bench-images/minivim/cpuinfo-${{ matrix.arch }}.txt output/ || true
+          case "${{ matrix.arch }}" in
+            x86_64)
+              cp bench-images/minivim/bzImage-${{ matrix.arch }}-$KERNEL_VERSION output/
+              ;;
+            arm64)
+              cp bench-images/minivim/Image-${{ matrix.arch }}-$KERNEL_VERSION output/
+              ;;
+            armv7)
+              cp bench-images/minivim/zImage-${{ matrix.arch }}-$KERNEL_VERSION output/
+              ;;
+          esac
+          if [ -f "$BUSYBOX_INITRD" ]; then
+            cp "$BUSYBOX_INITRD" output/
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: minivim-${{ matrix.arch }}
+          path: output/
