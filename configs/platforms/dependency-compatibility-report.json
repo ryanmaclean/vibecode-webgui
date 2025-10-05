@@ -1,0 +1,22 @@
+{
+  "timestamp": "2025-09-17T18:22:56.555Z",
+  "summary": {
+    "conflicts": 0,
+    "security": false,
+    "peer_issues": 0,
+    "phantom": 0,
+    "outdated": 0,
+    "errors": 2
+  },
+  "details": {
+    "conflicts": [],
+    "security": [],
+    "outdated": [],
+    "phantom": [],
+    "peer": [],
+    "errors": [
+      "outdated-check-failed",
+      "typescript-check-failed"
+    ]
+  }
+}

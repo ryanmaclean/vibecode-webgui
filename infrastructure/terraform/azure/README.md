@@ -109,6 +109,9 @@ azure_region = "East US 2"
 datadog_api_key = "your-datadog-api-key"
 datadog_app_key = "your-datadog-app-key"
 
+# Optional: keep Terraform in sync with rotated DB credentials
+# postgres_admin_password_override = "<value from Key Vault postgres-admin-password>"
+
 # Optional: Domain configuration
 domain_name = "app.vibecode.com"
 ```

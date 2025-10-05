@@ -1,0 +1,46 @@
+name: Monitor code-server releases
+
+on:
+  schedule:
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-release:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+
+    steps:
+      - name: Fetch latest upstream tag
+        id: latest
+        run: |
+          TAG=$(curl -s https://api.github.com/repos/coder/code-server/releases/latest | jq -r '.tag_name')
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Compare with Dockerfile base
+        id: compare
+        run: |
+          current=$(grep '^FROM codercom/code-server:' docker/code-server/Dockerfile | cut -d':' -f3)
+          latest=${{ steps.latest.outputs.tag }}
+          if [[ "$latest" != "$current" ]]; then
+            echo "update_needed=true" >> $GITHUB_OUTPUT
+            echo "latest_tag=$latest" >> $GITHUB_OUTPUT
+            echo "current_tag=$current" >> $GITHUB_OUTPUT
+          else
+            echo "update_needed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Open issue if update needed
+        if: steps.compare.outputs.update_needed == 'true'
+        run: |
+          issue_title="Update code-server base image to ${{ steps.compare.outputs.latest_tag }}"
+          issue_body=$(cat <<EOB
+Latest upstream code-server release: ${{ steps.compare.outputs.latest_tag }}
+Current Dockerfile base: ${{ steps.compare.outputs.current_tag }}
+
+Please update docker/code-server/Dockerfile and Dockerfile.kind, rebuild multi-arch image, and verify Monaco integration.
+EOB
+          )
+          gh issue create --title "$issue_title" --body "$issue_body"

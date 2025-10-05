@@ -1,0 +1,243 @@
+{
+  "builtTestProducts" : [
+
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.VibeCodeVM-arm64-apple-macosx15.0-debug.module" : {
+      "executable" : "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "fileList" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources",
+      "importPath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/Sources/main.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources"
+        }
+      ],
+      "isLibrary" : false,
+      "moduleName" : "VibeCodeVM",
+      "moduleOutputPath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules/VibeCodeVM.swiftmodule",
+      "objects" : [
+        "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j10",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-Xfrontend",
+        "-entry-point-function-name",
+        "-Xfrontend",
+        "VibeCodeVM_main",
+        "-parse-as-library",
+        "-color-diagnostics",
+        "-swift-version",
+        "5",
+        "-I",
+        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+        "-L",
+        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+        "-plugin-path",
+        "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "macos_vm"
+      ],
+      "outputFileMapPath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules/VibeCodeVM.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/ryan.maclean/vibecode-webgui/macos-vm/Sources/main.swift"
+      ],
+      "tempsPath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build",
+      "wholeModuleOptimization" : false
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "VibeCodeVM" : [
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "-module-name",
+      "VibeCodeVM",
+      "-package-name",
+      "macos_vm",
+      "-c",
+      "/Users/ryan.maclean/vibecode-webgui/macos-vm/Sources/main.swift",
+      "-I",
+      "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j10",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-Xfrontend",
+      "-entry-point-function-name",
+      "-Xfrontend",
+      "VibeCodeVM_main",
+      "-parse-as-library",
+      "-color-diagnostics",
+      "-swift-version",
+      "5",
+      "-I",
+      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+      "-L",
+      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+      "-plugin-path",
+      "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "macos_vm",
+      "-driver-use-frontend-path",
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "VibeCodeVM" : [
+
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+
+  },
+  "traitConfiguration" : {
+    "default" : {
+
+    }
+  },
+  "writeCommands" : {
+    "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/Sources/main.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources"
+    },
+    "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+    },
+    "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm-entitlement.plist" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<entitlement-plist>"
+        },
+        {
+          "kind" : "virtual",
+          "name" : "<com.apple.security.get-task-allow>"
+        }
+      ],
+      "outputFilePath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm-entitlement.plist"
+    },
+    "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm.product/Objects.LinkFileList"
+    }
+  }
+}

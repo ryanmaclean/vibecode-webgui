@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openai-agents
+  labels:
+    name: openai-agents
+    environment: multi
+    monitoring: enabled
+    istio-injection: enabled
+  annotations:
+    description: "OpenAI Agents orchestration namespace"
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: openai-agents-quota
+  namespace: openai-agents
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: 40Gi
+    limits.cpu: "40"
+    limits.memory: 80Gi
+    persistentvolumeclaims: "10"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: openai-agents-limits
+  namespace: openai-agents
+spec:
+  limits:
+  - max:
+      cpu: "4"
+      memory: 8Gi
+    min:
+      cpu: "100m"
+      memory: 128Mi
+    default:
+      cpu: "1"
+      memory: 2Gi
+    defaultRequest:
+      cpu: "500m"
+      memory: 1Gi
+    type: Container

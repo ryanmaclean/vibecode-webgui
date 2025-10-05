@@ -1,0 +1,6 @@
+{
+  "generated_at": "20250924T043756Z",
+  "query": "avg:postgresql.query_duration{env:kind,host:postgres-service.vibecode-platform.svc.cluster.local,service:vibecode-postgres}",
+  "window_seconds": 900,
+  "series": []
+}

@@ -92,7 +92,7 @@ conditionalDescribe('Real Datadog Integration Tests (NO MOCKING)', () => {
   }, 10000);
 });
 
-// Test to verify our tests are not over-mocked
+// Test to verify our tests are properly configured for real integration testing
 describe('Test Quality Validation', () => {
   test('should not have extensive mocking in critical integration tests', () => {
     // This test ensures we're not falling into the over-mocking trap

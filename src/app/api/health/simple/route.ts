@@ -1,7 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic' // Ensure we get fresh data on every request
-
+/**
+ * Simple health check endpoint for E2E testing
+ * Returns basic status without external dependencies
+ */
 export async function GET() {
   try {
     // Safe system metric collection with fallbacks

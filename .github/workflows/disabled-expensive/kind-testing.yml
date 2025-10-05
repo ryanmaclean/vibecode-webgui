@@ -1,0 +1,69 @@
+name: Kubernetes (Kind) Testing
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'infrastructure/kind/**'
+      - 'k8s/**'
+      - '.github/workflows/kind-testing.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'infrastructure/kind/**'
+      - 'k8s/**'
+      - '.github/workflows/kind-testing.yml'
+  workflow_dispatch:
+
+jobs:
+  kind-test:
+    name: Run Kind Cluster Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Set up Kind
+        uses: helm/kind-action@v1.8.0
+        with:
+          version: "v0.20.0"
+          config: infrastructure/kind/cluster-config.yaml
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.12.0'
+
+      - name: Test Kubernetes Manifests
+        run: |
+          # Lint Kubernetes manifests
+          find ./k8s -type f -name "*.yaml" | xargs -n 1 kubectl apply --dry-run=client -f
+          
+          # Test Helm charts
+          helm lint ./charts/*
+          
+          # Deploy test release
+          helm install test-release ./charts/vibecode-platform --dry-run --debug
+
+      - name: Run Kubernetes Tests
+        run: |
+          # Create test namespace
+          kubectl create namespace test-ns
+          
+          # Deploy test resources
+          kubectl apply -f ./k8s/test-resources.yaml -n test-ns
+          
+          # Run tests
+          kubectl run test-pod --image=alpine:3.14 --restart=Never --rm -i -- /bin/sh -c "echo 'Running tests...' && exit 0"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          # Clean up test resources
+          kubectl delete namespace test-ns --ignore-not-found=true

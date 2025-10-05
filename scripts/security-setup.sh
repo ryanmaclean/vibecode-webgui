@@ -1,108 +1,87 @@
-#!/bin/bash
-# VibeCode Security Setup Script
-# This script helps set up proper secrets management for the platform
+#!/usr/bin/env bash
+# VibeCode security bootstrap: provisions namespaces, secrets, and local env files.
 
-set -e
+set -euo pipefail
 
-echo "🔐 VibeCode Security Setup"
-echo "=========================="
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/bootstrap.sh"
+bootstrap_init "${SCRIPT_DIR}"
+# shellcheck disable=SC1091
+source "${LIB_DIR}/logging.sh"
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+REPO_ROOT="$(cd "${SCRIPTS_ROOT}/.." && pwd)"
+cd "$REPO_ROOT"
 
-# Check if kubectl is available
-if ! command -v kubectl &> /dev/null; then
-    echo -e "${RED}❌ kubectl is not installed or not in PATH${NC}"
-    echo "Please install kubectl and ensure it's configured"
+log_step "🔐 VibeCode Security Setup"
+
+require_cmd() {
+  local cmd=$1
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    log_error "Required command '$cmd' not found in PATH."
     exit 1
-fi
-
-# Check if KIND cluster is running
-if ! kubectl cluster-info &> /dev/null; then
-    echo -e "${YELLOW}⚠️  No Kubernetes cluster detected${NC}"
-    echo "Creating KIND cluster for development..."
-
-    # Check if kind is available
-    if ! command -v kind &> /dev/null; then
-        echo -e "${RED}❌ KIND is not installed${NC}"
-        echo "Please install KIND: https://kind.sigs.k8s.io/docs/user/quick-start/#installation"
-        exit 1
-    fi
-
-    # Create KIND cluster
-    kind create cluster --name vibecode-dev --config k8s/kind-config.yaml
-    echo -e "${GREEN}✅ KIND cluster created${NC}"
-fi
-
-echo -e "${BLUE}📋 Setting up namespaces...${NC}"
-
-# Create required namespaces
-kubectl create namespace vibecode-platform --dry-run=client -o yaml | kubectl apply -f -
-kubectl create namespace datadog --dry-run=client -o yaml | kubectl apply -f -
-kubectl create namespace authelia --dry-run=client -o yaml | kubectl apply -f -
-kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
-
-echo -e "${GREEN}✅ Namespaces created${NC}"
-
-echo -e "${BLUE}🔑 Setting up secrets...${NC}"
-
-# Function to prompt for secret if not in environment
-prompt_for_secret() {
-    local var_name=$1
-    local prompt_text=$2
-    local current_value="${!var_name}"
-
-    if [[ -z "$current_value" ]]; then
-        echo -e "${YELLOW}Please enter $prompt_text:${NC}"
-        read -s input_value
-        export $var_name="$input_value"
-    fi
+  fi
 }
 
-# Prompt for required secrets
-prompt_for_secret "DD_API_KEY" "your Datadog API key"
-prompt_for_secret "OPENROUTER_API_KEY" "your OpenRouter API key"
-prompt_for_secret "CLAUDE_API_KEY" "your Claude API key (or press enter to skip)"
+require_cmd kubectl
+require_cmd openssl
 
-# Generate random secrets
-echo -e "${BLUE}🎲 Generating random secrets...${NC}"
+if ! kubectl cluster-info >/dev/null 2>&1; then
+  log_warn "No active Kubernetes cluster detected; creating KIND cluster 'vibecode-dev'."
+  require_cmd kind
+  kind create cluster --name vibecode-dev --config k8s/kind-config.yaml
+  log_success "KIND cluster vibecode-dev created"
+fi
+
+log_step "📋 Ensuring namespaces"
+for ns in vibecode-platform datadog authelia monitoring; do
+  kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+  log_info "Namespace '${ns}' available"
+done
+
+log_step "🔑 Gathering secrets"
+prompt_for_secret() {
+  local var_name=$1
+  local prompt_text=$2
+  local current_value="${!var_name:-}"
+  if [[ -z "$current_value" ]]; then
+    read -rsp "${prompt_text}: " input_value
+    printf '\n'
+    export "$var_name=$input_value"
+  fi
+}
+
+prompt_for_secret DD_API_KEY "Enter Datadog API key"
+prompt_for_secret OPENROUTER_API_KEY "Enter OpenRouter API key"
+prompt_for_secret CLAUDE_API_KEY "Enter Claude API key (optional)"
+
+log_step "🎲 Generating local secrets"
 DD_CLUSTER_AGENT_TOKEN=$(openssl rand -base64 32 | tr -d '\n')
 JWT_SECRET=$(openssl rand -base64 32 | tr -d '\n')
 SESSION_SECRET=$(openssl rand -base64 32 | tr -d '\n')
 NEXTAUTH_SECRET=$(openssl rand -base64 32 | tr -d '\n')
 
-# Create Datadog secrets
-echo -e "${BLUE}📊 Creating Datadog secrets...${NC}"
+log_step "📊 Creating Datadog secrets"
 kubectl create secret generic datadog-secret \
-    --from-literal=api-key="$DD_API_KEY" \
-    --namespace=datadog \
-    --dry-run=client -o yaml | kubectl apply -f -
+  --from-literal=api-key="$DD_API_KEY" \
+  -n datadog --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl create secret generic datadog-cluster-agent-secret \
-    --from-literal=token="$DD_CLUSTER_AGENT_TOKEN" \
-    --namespace=datadog \
-    --dry-run=client -o yaml | kubectl apply -f -
+  --from-literal=token="$DD_CLUSTER_AGENT_TOKEN" \
+  -n datadog --dry-run=client -o yaml | kubectl apply -f -
 
-# Create AI integration secrets
-echo -e "${BLUE}🤖 Creating AI integration secrets...${NC}"
+log_step "🤖 Creating AI integration secrets"
 kubectl create secret generic ai-gateway-secret \
-    --from-literal=openrouter-api-key="$OPENROUTER_API_KEY" \
-    --from-literal=claude-api-key="${CLAUDE_API_KEY:-}" \
-    --namespace=vibecode-platform \
-    --dry-run=client -o yaml | kubectl apply -f -
+  --from-literal=openrouter-api-key="$OPENROUTER_API_KEY" \
+  --from-literal=claude-api-key="${CLAUDE_API_KEY:-}" \
+  -n vibecode-platform --dry-run=client -o yaml | kubectl apply -f -
 
-# Create authentication secrets
-echo -e "${BLUE}🔐 Creating authentication secrets...${NC}"
+log_step "🔐 Creating authentication secrets"
 kubectl create secret generic auth-secrets \
-    --from-literal=jwt-secret="$JWT_SECRET" \
-    --from-literal=session-secret="$SESSION_SECRET" \
-    --from-literal=nextauth-secret="$NEXTAUTH_SECRET" \
-    --namespace=vibecode-platform \
-    --dry-run=client -o yaml | kubectl apply -f -
+  --from-literal=jwt-secret="$JWT_SECRET" \
+  --from-literal=session-secret="$SESSION_SECRET" \
+  --from-literal=nextauth-secret="$NEXTAUTH_SECRET" \
+  -n vibecode-platform --dry-run=client -o yaml | kubectl apply -f -
 
 # Create local .env file (preferred). You may also create .env.local for local-only overrides.
 echo -e "${BLUE}📝 Creating local environment file...${NC}"
@@ -116,33 +95,24 @@ DD_SITE=datadoghq.com
 DD_ENV=development
 DD_SERVICE=vibecode-webgui
 DD_VERSION=1.0.0
-
-# AI Integration
 OPENROUTER_API_KEY=$OPENROUTER_API_KEY
 CLAUDE_API_KEY=${CLAUDE_API_KEY:-}
-
-# Authentication
 JWT_SECRET=$JWT_SECRET
 SESSION_SECRET=$SESSION_SECRET
 NEXTAUTH_SECRET=$NEXTAUTH_SECRET
 NEXTAUTH_URL=http://localhost:3000
-
-# Database
 DATABASE_URL=postgresql://vibecode:vibecode123@localhost:5432/vibecode_dev
 REDIS_URL=redis://localhost:6379
-
-# Development
 NODE_ENV=development
 PORT=3000
 VITE_PORT=5173
 ENABLE_DEBUG_LOGGING=true
 ENABLE_DATADOG_INTEGRATION_TESTS=false
-
-# Kubernetes
 KUBECONFIG=$HOME/.kube/config
 KUBERNETES_NAMESPACE=vibecode-platform
 PLATFORM_DOMAIN=vibecode.dev
-EOF
+EOF_ENV
+log_success "Updated ${ENV_FILE}"
 
 # Ensure .gitignore includes environment files
 if ! grep -q "^\.env$" .gitignore 2>/dev/null; then

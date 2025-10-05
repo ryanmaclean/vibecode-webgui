@@ -58,7 +58,7 @@ Multiple deployment methods were using inconsistent PostgreSQL images:
 
 ### Files Updated ✅
 
-1. **KIND Setup**: `scripts/kind-setup.sh`
+1. **KIND Setup**: `scripts/kind-setup.sh` (run via `npm run kind:setup`)
    ```yaml
    image: pgvector/pgvector:pg16  # was postgres:16-alpine
    ```

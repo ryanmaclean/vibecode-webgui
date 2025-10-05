@@ -1,47 +1,43 @@
+# Ignore everything by default to minimize build context
+**
+
+# Allow only what the ingestion image needs
+!package.json
+!package-lock.json
+!next.config.js
+!next.config.mjs
+!next.config.ts
+!tailwind.config.js
+!tailwind.config.mjs
+!postcss.config.js
+!postcss.config.mjs
+!babel.config.js
+!tsconfig.json
+!next-env.d.ts
+!public/**
+!prisma/**
+!scripts/**
+!src/**
+!docs/**
+!instrument.cjs
+!Dockerfile.production
+!Dockerfile.ingest
+!.npmrc
+
+# Explicitly ignore large/unneeded directories even if whitelisted higher up
 node_modules
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
+.next
+out
 coverage
-*.lcov
-
-# Logs
-logs
-*.log
-
-# Environment variables
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Build outputs
-.next/
-out/
-build/
-dist/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
+playwright-report
+playwright/.cache
+__cache__
+.cache
+.tmp
+.temp
+.venv
+venv
 .DS_Store
-Thumbs.db
-
-# Git
 .git
 .gitignore
 README.md

@@ -88,7 +88,6 @@ WORKDIR /app
 # Set environment for production
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
 
 # Copy only the necessary production artifacts from the builder stage.
 # The distroless image has a default non-root user 'nonroot' (uid: 65532).

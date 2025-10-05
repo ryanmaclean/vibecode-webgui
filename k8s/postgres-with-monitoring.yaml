@@ -1,0 +1,266 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-config
+  namespace: vibecode-platform
+data:
+  init.sql: |
+    -- Ensure required extensions
+    CREATE EXTENSION IF NOT EXISTS vector;
+    CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+
+    -- Create datadog monitoring user
+    CREATE USER datadog WITH PASSWORD 'datadog_monitoring_password';
+    GRANT SELECT ON pg_stat_database TO datadog;
+    GRANT SELECT ON pg_stat_user_tables TO datadog;
+    GRANT SELECT ON pg_stat_user_indexes TO datadog;
+    GRANT SELECT ON pg_statio_user_tables TO datadog;
+    GRANT SELECT ON pg_statio_user_indexes TO datadog;
+    GRANT SELECT ON pg_stat_activity TO datadog;
+    GRANT SELECT ON pg_stat_statements TO datadog;
+    GRANT SELECT ON pg_stat_replication TO datadog;
+    GRANT SELECT ON pg_locks TO datadog;
+    GRANT CONNECT ON DATABASE vibecode TO datadog;
+    GRANT pg_monitor TO datadog;
+    GRANT pg_read_all_stats TO datadog;
+    GRANT pg_read_all_settings TO datadog;
+    GRANT EXECUTE ON FUNCTION pg_catalog.pg_ls_dir(text) TO datadog;
+    GRANT EXECUTE ON FUNCTION pg_catalog.pg_stat_file(text) TO datadog;
+    GRANT EXECUTE ON FUNCTION pg_catalog.pg_ls_waldir() TO datadog;
+    GRANT EXECUTE ON FUNCTION pg_catalog.pg_ls_dir(text, boolean, boolean) TO datadog;
+    GRANT SELECT ON pg_stat_all_tables TO datadog;
+    GRANT SELECT ON pg_stat_all_indexes TO datadog;
+
+    
+    
+    -- Create monitoring health function
+    CREATE OR REPLACE FUNCTION datadog_monitoring_health()
+    RETURNS TABLE(
+        check_name TEXT,
+        status TEXT,
+        message TEXT
+    ) AS $$
+    BEGIN
+        -- Check if datadog user exists
+        IF EXISTS (SELECT 1 FROM pg_user WHERE usename = 'datadog') THEN
+            RETURN QUERY SELECT 'datadog_user'::TEXT, 'OK'::TEXT, 'Datadog user exists'::TEXT;
+        ELSE
+            RETURN QUERY SELECT 'datadog_user'::TEXT, 'ERROR'::TEXT, 'Datadog user missing'::TEXT;
+        END IF;
+        
+        -- Check if pg_stat_statements is enabled
+        IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_stat_statements') THEN
+            RETURN QUERY SELECT 'pg_stat_statements'::TEXT, 'OK'::TEXT, 'Extension enabled'::TEXT;
+        ELSE
+            RETURN QUERY SELECT 'pg_stat_statements'::TEXT, 'ERROR'::TEXT, 'Extension missing'::TEXT;
+        END IF;
+        
+        -- Check database connectivity
+        RETURN QUERY SELECT 'connectivity'::TEXT, 'OK'::TEXT, 'Database accessible'::TEXT;
+    END;
+    $$ LANGUAGE plpgsql;
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: vibecode-platform
+type: Opaque
+data:
+  POSTGRES_PASSWORD: dmliZWNvZGVfcGFzc3dvcmQ=  # vibecode_password
+  POSTGRES_USER: dmliZWNvZGU=  # vibecode
+  POSTGRES_DB: dmliZWNvZGU=  # vibecode
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: vibecode-platform
+  labels:
+    app: postgres
+    component: database
+    tier: storage
+    monitoring: datadog
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+        component: database
+        tier: storage
+        monitoring: datadog
+      annotations:
+        # Datadog Autodiscovery annotations for PostgreSQL monitoring
+        ad.datadoghq.com/postgres.check_names: |
+          ["postgres"]
+        ad.datadoghq.com/postgres.init_configs: |
+          [{}]
+        ad.datadoghq.com/postgres.instances: |
+          [{
+            "host": "%%host%%",
+            "port": 5432,
+            "username": "datadog",
+            "password": "datadog_monitoring_password",
+            "dbm": true,
+            "collect_schemas": {"enabled": true, "collection_interval": 600},
+            "collect_activity": {"enabled": true, "collection_interval": 10},
+            "collect_settings": {"enabled": true, "collection_interval": 600},
+            "relations": [{"relation_regex": ".*", "relkind": ["r", "i", "S"]}],
+            "database_autodiscovery": {
+              "enabled": true,
+              "include": ["vibecode", "postgres"],
+              "exclude": ["template.*", "rdsadmin"]
+            },
+            "custom_queries": [{
+              "metric_prefix": "vibecode.postgres.tables",
+              "query": "SELECT schemaname, tablename, n_tup_ins, n_tup_upd, n_tup_del, n_live_tup, n_dead_tup FROM pg_stat_user_tables",
+              "columns": [
+                {"name": "schema", "type": "tag"},
+                {"name": "table", "type": "tag"},
+                {"name": "vibecode.postgres.table.inserts", "type": "gauge"},
+                {"name": "vibecode.postgres.table.updates", "type": "gauge"},
+                {"name": "vibecode.postgres.table.deletes", "type": "gauge"},
+                {"name": "vibecode.postgres.table.live_tuples", "type": "gauge"},
+                {"name": "vibecode.postgres.table.dead_tuples", "type": "gauge"}
+              ],
+              "tags": ["env:kind", "service:vibecode", "database:vibecode"]
+            }, {
+              "metric_prefix": "vibecode.postgres.indexes",
+              "query": "SELECT schemaname, tablename, indexname, idx_tup_read, idx_tup_fetch FROM pg_stat_user_indexes",
+              "columns": [
+                {"name": "schema", "type": "tag"},
+                {"name": "table", "type": "tag"},
+                {"name": "index", "type": "tag"},
+                {"name": "vibecode.postgres.index.tuples_read", "type": "gauge"},
+                {"name": "vibecode.postgres.index.tuples_fetched", "type": "gauge"}
+              ],
+              "tags": ["env:kind", "service:vibecode", "database:vibecode"]
+            }],
+            "tags": [
+              "env:kind",
+              "service:vibecode-webgui",
+              "application:vibecode-platform",
+              "version:1.0.0",
+              "database:vibecode",
+              "component:postgres"
+            ]
+          }]
+        ad.datadoghq.com/postgres.logs: |
+          [{
+            "source": "postgresql",
+            "service": "vibecode-postgres",
+            "log_processing_rules": [{
+              "type": "multi_line",
+              "name": "new_log_start_with_date",
+              "pattern": "\\d{4}\\-\\d{2}\\-\\d{2} \\d{2}:\\d{2}:\\d{2}"
+            }]
+          }]
+    spec:
+      containers:
+      - name: postgres
+        image: pgvector/pgvector:pg16
+        args:
+        - -c
+        - shared_preload_libraries=pg_stat_statements,vector
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_DB
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: POSTGRES_PASSWORD
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        - name: postgres-init-config
+          mountPath: /docker-entrypoint-initdb.d
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "50m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - vibecode
+            - -d
+            - vibecode
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - vibecode
+            - -d
+            - vibecode
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: postgres-storage
+        emptyDir: {}
+      - name: postgres-init-config
+        configMap:
+          name: postgres-init-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: vibecode-platform
+  labels:
+    app: postgres
+    component: database
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-nodeport
+  namespace: vibecode-platform
+  labels:
+    app: postgres
+    component: database
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+    nodePort: 30001
+    protocol: TCP
+  type: NodePort
