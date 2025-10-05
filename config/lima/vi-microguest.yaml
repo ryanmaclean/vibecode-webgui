@@ -4,12 +4,12 @@
 
 vmType: "vz"
 os: "Linux" 
-arch: "x86_64"
+arch: "aarch64"
 
-# Use minimal Alpine Linux
+# Use minimal Alpine Linux for ARM
 images:
-  - location: "https://dl-cdn.alpinelinux.org/alpine/v3.18/releases/x86_64/alpine-virt-3.18.4-x86_64.iso"
-    arch: "x86_64"
+  - location: "https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/aarch64/alpine-virt-3.19.1-aarch64.iso"
+    arch: "aarch64"
 
 # Minimal resources
 cpus: 1
