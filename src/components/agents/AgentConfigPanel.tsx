@@ -233,7 +233,7 @@ export function AgentConfigPanel({
               Agent Configuration
             </CardTitle>
             <CardDescription>
-              Configure your AI agent's behavior and capabilities
+              Configure your AI agent&apos;s behavior and capabilities
             </CardDescription>
           </div>
           {saveStatus !== 'idle' && (

@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 'use client';
 
 import { datadogRum } from '@datadog/browser-rum';
