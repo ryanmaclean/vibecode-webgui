@@ -9,6 +9,19 @@ The Model Context Protocol is a standardized way for AI models to interact with 
 - Claude Desktop
 - Other MCP-compatible AI clients
 
+## Example MCP Servers
+
+For detailed examples of MCP server integration, see [examples/mcp-servers/](../examples/mcp-servers/).
+
+### Zen MCP Server
+
+The [Zen MCP Server](https://github.com/BeehiveInnovations/zen-mcp-server) provides mindfulness and focus tools for AI workflows. See [examples/mcp-servers/zen-mcp-server/](../examples/mcp-servers/zen-mcp-server/) for:
+
+- **Neovim configuration** with Avante.nvim
+- **VSCode/Cursor/Windsurf** setup
+- **VSCodium web apps** deployment
+- **Sample prompts** for Zen + Codex, Claude, OpenCode, and Gemini
+
 ## Available Tools
 
 ### 1. create-workspace

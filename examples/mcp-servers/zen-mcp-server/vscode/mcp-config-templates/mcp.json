@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "zen": {
+      "command": "npx",
+      "args": ["-y", "@beehiveinnovations/zen-mcp-server"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${workspaceFolder}"
+      ]
+    }
+  }
+}
