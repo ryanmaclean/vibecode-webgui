@@ -92,7 +92,8 @@ export abstract class BaseAgentAdapter {
 
   protected generateSessionId(): string {
     const type = this.config.type;
-    const randomHex = Math.random().toString(16).substring(2, 10);
+    const crypto = require('crypto');
+    const randomHex = crypto.randomBytes(4).toString('hex');
     return `${type}-${randomHex}`;
   }
 

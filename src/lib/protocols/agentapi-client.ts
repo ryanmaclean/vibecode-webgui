@@ -316,7 +316,7 @@ export class AgentAPIClient {
    * Strip ANSI escape codes from output
    */
   private stripANSI(text: string): string {
-    // eslint-disable-next-line no-control-regex
+     
     return text.replace(/\x1b\[[0-9;]*m/g, '');
   }
 
