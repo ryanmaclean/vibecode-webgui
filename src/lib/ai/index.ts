@@ -127,13 +127,13 @@ export class AIIntegration {
     const retriever = {
       getRelevantDocuments: async (query: string) => {
         const results = await this.search.semanticSearch(query, 'prompts');
-        return results.map(result => new Document({
+        return results.map(result => ({
           pageContent: result.content,
           metadata: result.metadata || {}
-        }));
+        })) as unknown as Awaited<ReturnType<VectorStoreRetriever['getRelevantDocuments']>>;
       },
-      addDocuments: async (documents: Document[]) => {
-        await this.search.addDocuments(documents, 'prompts');
+      addDocuments: async (documents: Array<{ pageContent: string; metadata?: Record<string, unknown> }>) => {
+        await this.search.addDocuments(documents as any, 'prompts');
       }
     } as unknown as VectorStoreRetriever; // Type assertion to match the expected interface
     this.prompts = new PromptManager(retriever);

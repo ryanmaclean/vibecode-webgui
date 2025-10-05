@@ -1,0 +1,28 @@
+{
+  "name": "vibecode-queue-worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p .",
+    "start": "npm run build && func start",
+    "lint": "eslint --ext .ts src",
+    "deploy": "npm run build && func azure functionapp publish $FUNCTION_APP_NAME"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.4.0",
+    "@azure/openai": "^1.0.0-beta.11",
+    "@azure/storage-blob": "^12.18.0",
+    "@azure/storage-queue": "^12.13.0",
+    "pdf-parse": "^1.1.1",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.12",
+    "eslint": "^9.14.0",
+    "eslint-config-standard-with-typescript": "^43.0.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-n": "^17.13.2",
+    "eslint-plugin-promise": "^7.1.0",
+    "typescript": "^5.5.4"
+  }
+}

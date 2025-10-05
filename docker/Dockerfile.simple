@@ -1,0 +1,8 @@
+FROM node:20-alpine
+WORKDIR /app
+ENV DD_IAST_ENABLED=true
+COPY package.json ./
+RUN yarn install --production
+COPY . .
+EXPOSE 3000
+CMD ["node", "-e", "require('http').createServer((req,res) => res.end('VibeCode Test Container')).listen(3000, () => console.log('Test server running on port 3000'))"]

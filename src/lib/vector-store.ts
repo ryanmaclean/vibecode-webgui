@@ -33,14 +33,46 @@ interface SearchResult {
 
 class VectorStore {
   private openai: OpenAI | null = null
+  private embeddingService: EmbeddingServiceType | null = null
+  private embeddingProviderLabel = 'unconfigured'
+  private openrouterEmbeddingModel = process.env.OPENROUTER_EMBEDDING_MODEL || 'text-embedding-3-small'
+  private useLocalEmbeddings = process.env.USE_LOCAL_EMBEDDINGS === 'true'
+  private localEmbeddingDimensions = parseInt(process.env.LOCAL_EMBEDDING_DIM || '1536', 10)
 
   constructor() {
-    // Initialize OpenAI client for embeddings
-    if (process.env.OPENROUTER_API_KEY) {
+    if (!isBuilding && prisma) {
+      try {
+        if (this.useLocalEmbeddings) {
+          this.embeddingProviderLabel = 'local-hash'
+          this.embeddingService = null
+        } else {
+          const factory = new EmbeddingServiceFactory(prisma)
+          this.embeddingService = factory.createEmbeddingServiceFromEnv()
+
+          if (process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_DEPLOYMENT_NAME) {
+            this.embeddingProviderLabel = 'azure-openai'
+          } else if (process.env.OPENROUTER_API_KEY && process.env.OPENAI_API_KEY) {
+            this.embeddingProviderLabel = 'openrouter-byok'
+          } else if (process.env.OPENAI_API_KEY) {
+            this.embeddingProviderLabel = 'openai'
+          } else {
+            this.embeddingProviderLabel = 'custom'
+          }
+        }
+      } catch (error) {
+        console.warn('Embedding service initialization failed; falling back to OpenRouter/local', error)
+        this.embeddingService = null
+      }
+    }
+
+    if (!this.useLocalEmbeddings && !this.embeddingService && process.env.OPENROUTER_API_KEY) {
+      const allowBrowserClient = process.env.ALLOW_TEST_OPENAI === 'true' || process.env.NODE_ENV === 'test'
       this.openai = new OpenAI({
         baseURL: 'https://openrouter.ai/api/v1',
         apiKey: process.env.OPENROUTER_API_KEY,
+        dangerouslyAllowBrowser: allowBrowserClient,
       })
+      this.embeddingProviderLabel = 'openrouter'
     }
   }
 
@@ -54,8 +86,26 @@ class VectorStore {
 
     const startTime = Date.now()
     try {
+      if (this.useLocalEmbeddings) {
+        const embedding = generateLocalEmbedding(text, this.localEmbeddingDimensions)
+        const duration = Date.now() - startTime
+        console.log(`Embedding (local-hash) generated in ${duration}ms for ${text.length} chars`)
+        return embedding
+      }
+
+      if (this.embeddingService) {
+        const embedding = await this.embeddingService.generateEmbedding(text)
+        const duration = Date.now() - startTime
+        console.log(`Embedding (${this.embeddingProviderLabel}) generated in ${duration}ms for ${text.length} chars`)
+        return embedding
+      }
+
+      if (!this.openai) {
+        throw new Error('No embedding provider configured. Configure Azure/OpenAI/OpenRouter credentials.')
+      }
+
       const response = await this.openai.embeddings.create({
-        model: 'text-embedding-3-small', // Using OpenAI embedding model via OpenRouter
+        model: this.openrouterEmbeddingModel,
         input: text,
       })
 
@@ -114,7 +164,27 @@ class VectorStore {
     }
     
     try {
-      // Delete existing chunks for this file
+      const fileInfo = await prisma.file.findUnique({
+        where: { id: fileId },
+        select: {
+          name: true,
+          language: true,
+          workspace_id: true,
+          project_id: true,
+          user_id: true,
+          workspace: {
+            select: {
+              workspace_id: true,
+              name: true
+            }
+          }
+        }
+      })
+
+      if (!fileInfo || !fileInfo.user_id) {
+        throw new Error(`Unable to locate file metadata or owner for file ${fileId}`)
+      }
+
       await prisma.rAGChunk.deleteMany({
         where: { file_id: fileId }
       })
@@ -133,17 +203,62 @@ class VectorStore {
           
           // Use raw SQL to insert with pgvector embedding
           await prisma.$executeRawUnsafe(`
-            INSERT INTO rag_chunks (file_id, chunk_id, content, start_line, end_line, tokens, embedding, metadata, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7::vector, $8, NOW())
+            INSERT INTO rag_chunks (
+              file_id,
+              user_id,
+              workspace_id,
+              project_id,
+              chunk_id,
+              content,
+              start_line,
+              end_line,
+              tokens,
+              token_count,
+              chunk_index,
+              embedding,
+              metadata,
+              created_at,
+              updated_at
+            )
+            VALUES (
+              $1,
+              $2,
+              $3,
+              $4,
+              $5,
+              $6,
+              $7,
+              $8,
+              $9,
+              $10,
+              $11,
+              $12::vector,
+              $13::jsonb,
+              NOW(),
+              NOW()
+            )
           `, 
             fileId,
+            fileInfo.user_id,
+            fileInfo.workspace_id || null,
+            fileInfo.project_id || null,
             chunkId,
             chunk.content,
             chunk.startLine || null,
             chunk.endLine || null,
             chunk.tokens,
+            chunk.tokens,
+            i + j,
             embeddingString,
-            JSON.stringify({ generatedAt: new Date().toISOString() })
+            JSON.stringify({
+              generatedAt: new Date().toISOString(),
+              provider: this.embeddingProviderLabel,
+              workspaceSlug: fileInfo?.workspace?.workspace_id,
+              workspaceId: fileInfo?.workspace_id,
+              workspaceName: fileInfo?.workspace?.name,
+              fileName: fileInfo?.name,
+              language: fileInfo?.language
+            })
           )
         }
 
@@ -323,17 +438,17 @@ class VectorStore {
         }
       })
 
-      return chunks.map(chunk => ({
+      return chunks.filter(chunk => chunk.chunk_id && chunk.file_id && chunk.file).map(chunk => ({
         chunk: {
-          id: chunk.chunk_id,
+          id: chunk.chunk_id!,
           content: chunk.content,
           embedding: [],
           metadata: {
-            fileId: chunk.file_id,
-            fileName: chunk.file.name,
+            fileId: chunk.file_id!,
+            fileName: chunk.file!.name,
             startLine: chunk.start_line || undefined,
             endLine: chunk.end_line || undefined,
-            language: chunk.file.language || undefined,
+            language: chunk.file!.language || undefined,
             tokens: chunk.tokens || 0
           }
         },

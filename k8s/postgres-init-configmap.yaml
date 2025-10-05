@@ -8,8 +8,9 @@ data:
     -- Initialize VibeCode WebGUI database schema
     -- This script sets up the core tables for the AI-powered development platform
 
-    -- Enable UUID extension
+    -- Enable required extensions
     CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    CREATE EXTENSION IF NOT EXISTS vector;
 
     -- Users table for authentication and user management
     CREATE TABLE users (

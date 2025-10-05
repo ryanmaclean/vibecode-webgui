@@ -62,8 +62,8 @@ export const authOptions: NextAuthOptions = {
   // },
   providers: [
     GithubProvider({
-      clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!,
+      clientId: process.env.GITHUB_ID,
+      clientSecret: process.env.GITHUB_SECRET,
       profile(profile) {
         return {
           id: profile.id.toString(),
@@ -74,10 +74,17 @@ export const authOptions: NextAuthOptions = {
           githubId: profile.id.toString(),
         }
       },
-    }),
+    })
+  )
+} else if (process.env.NODE_ENV !== 'production') {
+  console.warn('GitHub OAuth provider disabled: missing GITHUB_ID/GITHUB_SECRET env vars')
+}
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  providers.push(
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       profile(profile) {
         return {
           id: profile.sub,
@@ -116,8 +123,25 @@ export const authOptions: NextAuthOptions = {
           return null
         }
       },
-    }),
-  ],
+    })
+)
+
+export const authOptions: NextAuthOptions = {
+  // adapter: PrismaAdapter(prisma), // Disabled for file-based development
+  secret: process.env.NEXTAUTH_SECRET,
+  // cookies: {
+  //   sessionToken: {
+  //     name: `__Secure-next-auth.session-token`,
+  //     options: {
+  //       httpOnly: true,
+  //       sameSite: 'lax',
+  //       path: '/',
+  //       secure: process.env.NODE_ENV === 'production',
+  //       domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined
+  //     }
+  //   }
+  // },
+  providers,
   session: {
     strategy: 'jwt',
   },

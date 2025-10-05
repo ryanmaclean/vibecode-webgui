@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monacopilot Test - Monaco 0.53.0</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1e1e1e;
+            color: #fff;
+        }
+        #status {
+            padding: 15px;
+            background: #252526;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        #status h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        .status-item {
+            margin: 5px 0;
+            padding: 8px;
+            background: #2d2d30;
+            border-radius: 4px;
+        }
+        .success { color: #4ec9b0; }
+        .error { color: #f48771; }
+        .warning { color: #dcdcaa; }
+        #editor {
+            height: 600px;
+            border: 2px solid #3c3c3c;
+            border-radius: 8px;
+        }
+        .instructions {
+            margin-top: 20px;
+            padding: 15px;
+            background: #0e639c;
+            border-radius: 8px;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions code {
+            background: #1e1e1e;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div id="status">
+        <h1>🚀 Monacopilot Integration Test</h1>
+        <div class="status-item" id="monaco-status">Loading Monaco Editor...</div>
+        <div class="status-item" id="monacopilot-status">Waiting for Monaco...</div>
+        <div class="status-item" id="api-status">Checking API...</div>
+    </div>
+
+    <div id="editor"></div>
+
+    <div class="instructions">
+        <strong>📝 How to Test AI Completion:</strong>
+        <ol>
+            <li>Start typing code in the editor above</li>
+            <li>Wait 1-2 seconds for AI suggestions (gray text will appear)</li>
+            <li>Press <code>Tab</code> to accept the suggestion</li>
+            <li>Try typing: <code>function hello</code> or <code>const fetchData = async</code></li>
+        </ol>
+        <p><strong>Note:</strong> This requires an AI API key configured in your backend.</p>
+    </div>
+
+    <!-- Load Monaco from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.53.0/min/vs/loader.js"></script>
+    
+    <!-- Load Monacopilot from CDN -->
+    <script src="https://unpkg.com/monacopilot@1.2.7/dist/index.global.js"></script>
+
+    <script>
+        const updateStatus = (id, message, type = 'success') => {
+            const el = document.getElementById(id);
+            el.innerHTML = message;
+            el.className = `status-item ${type}`;
+        };
+
+        // Configure Monaco loader
+        require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.53.0/min/vs' } });
+
+        require(['vs/editor/editor.main'], function () {
+            try {
+                // Monaco loaded successfully
+                updateStatus('monaco-status', '✅ Monaco Editor 0.53.0 loaded successfully', 'success');
+
+                // Create editor
+                const editor = monaco.editor.create(document.getElementById('editor'), {
+                    value: `// Monacopilot Test - Monaco 0.53.0
+// Start typing to test AI completion
+
+function example() {
+    // Try typing: const data = 
+    // Or: function hello
+    
+}
+
+// Test async function
+async function fetchData() {
+    // Start typing here...
+}
+`,
+                    language: 'typescript',
+                    theme: 'vs-dark',
+                    automaticLayout: true,
+                    fontSize: 14,
+                    minimap: { enabled: false },
+                });
+
+                // Try to setup Monacopilot
+                try {
+                    if (typeof Monacopilot !== 'undefined' && Monacopilot.registerCompletion) {
+                        Monacopilot.registerCompletion(monaco, editor, {
+                            endpoint: '/api/code-completion',
+                            language: 'typescript',
+                        });
+                        updateStatus('monacopilot-status', '✅ Monacopilot 1.2.7 registered successfully', 'success');
+                    } else {
+                        updateStatus('monacopilot-status', '⚠️ Monacopilot loaded but registerCompletion not found', 'warning');
+                    }
+                } catch (err) {
+                    updateStatus('monacopilot-status', `❌ Monacopilot error: ${err.message}`, 'error');
+                }
+
+                // Check API
+                fetch('/api/code-completion')
+                    .then(res => res.json())
+                    .then(data => {
+                        updateStatus('api-status', `✅ API Ready: ${data.provider}/${data.model}`, 'success');
+                    })
+                    .catch(err => {
+                        updateStatus('api-status', `⚠️ API not available: ${err.message} (AI completion won't work)`, 'warning');
+                    });
+
+            } catch (err) {
+                updateStatus('monaco-status', `❌ Monaco error: ${err.message}`, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

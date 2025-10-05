@@ -1,0 +1,131 @@
+# Datadog Helm Values for MicroK8s clusters
+# Enables full observability including network monitoring for edge deployments
+
+datadog:
+  apiKeyExistingSecret: datadog-secret
+  appKeyExistingSecret: datadog-secret
+  site: "datadoghq.com"
+  clusterName: "vibecode-microk8s"
+
+  logs:
+    enabled: true
+    containerCollectAll: true
+    containerCollectUsingFiles: true
+
+  apm:
+    portEnabled: true
+    socketEnabled: true
+
+  processAgent:
+    enabled: true
+
+  networkMonitoring:
+    enabled: true
+
+  databaseMonitoring:
+    enabled: true
+
+  orchestratorExplorer:
+    enabled: true
+
+  collectEvents: true
+
+  kubeStateMetricsCore:
+    enabled: true
+  kubeStateMetricsScrape:
+    enabled: true
+
+  env:
+    - name: DD_APPSEC_ENABLED
+      value: "true"
+    - name: DD_IAST_ENABLED
+      value: "true"
+    - name: DD_IAST_REQUEST_SAMPLING
+      value: "1.0"
+    - name: DD_PROFILING_ENABLED
+      value: "true"
+    - name: DD_TRACE_SAMPLE_RATE
+      value: "1"
+    - name: DD_TRACE_ENABLED
+      value: "true"
+    - name: DD_LOGS_ENABLED
+      value: "true"
+    - name: DD_APM_FEATURES
+      value: "appsec,profiling,ci_visibility"
+
+  confd:
+    redisdb.yaml: |
+      init_config:
+      instances:
+        - host: valkey-service.vibecode-platform.svc.cluster.local
+          port: 6379
+          password: ${DD_VALKEY_PASSWORD:-${DATADOG_VALKEY_PASSWORD}}
+          tags:
+            - env:microk8s
+            - service:vibecode-valkey
+            - component:cache
+    postgres.yaml: |
+      init_config:
+      instances:
+        - host: postgres-service.vibecode-platform.svc.cluster.local
+          port: 5432
+          username: datadog
+          password: datadog_monitoring_password
+          dbname: vibecode
+          dbm: true
+          tags:
+            - env:microk8s
+            - service:vibecode-postgres
+            - component:database
+
+  tags:
+    - "env:microk8s"
+    - "cluster:microk8s"
+    - "project:vibecode"
+
+agents:
+  image:
+    tag: "7.66.1"
+  useHostNetwork: true
+  containers:
+    agent:
+      env:
+        - name: DD_APM_ENABLED
+          value: "true"
+        - name: DD_LOGS_ENABLED
+          value: "true"
+        - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+          value: "true"
+        - name: DD_PROCESS_AGENT_ENABLED
+          value: "true"
+        - name: DD_SYSTEM_PROBE_NETWORK_ENABLED
+          value: "true"
+  tolerations:
+    - operator: "Exists"
+
+clusterAgent:
+  enabled: true
+  replicas: 1
+  metricsProvider:
+    enabled: true
+  clusterChecks:
+    enabled: true
+
+systemProbe:
+  enabled: true
+  enableTCPQueueLength: true
+  enableOOMKill: true
+  enableHTTPMonitoring: true
+  collectDNSStats: true
+  seccomp: "unconfined"
+  appArmor: "unconfined"
+
+securityAgent:
+  enabled: true
+  runtime:
+    enabled: true
+  compliance:
+    enabled: true
+
+networkMonitoring:
+  enabled: true

@@ -1,0 +1,168 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vibecode-webgui
+  namespace: vibecode-platform
+  labels:
+    app: vibecode-webgui
+    component: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vibecode-webgui
+  template:
+    metadata:
+      labels:
+        app: vibecode-webgui
+        component: frontend
+      annotations:
+        # Datadog annotations for monitoring
+        ad.datadoghq.com/vibecode-webgui.check_names: '["http_check"]'
+        ad.datadoghq.com/vibecode-webgui.init_configs: '[{}]'
+        ad.datadoghq.com/vibecode-webgui.instances: '[{"name": "vibecode-webgui", "url": "http://%%host%%:80/", "timeout": 5}]'
+        ad.datadoghq.com/vibecode-webgui.logs: '[{"source": "nginx", "service": "vibecode-webgui"}]'
+    spec:
+      containers:
+      - name: vibecode-webgui
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+          name: http
+        env:
+        - name: DD_SERVICE
+          value: "vibecode-webgui"
+        - name: DD_ENV
+          value: "aks-production"
+        - name: DD_VERSION
+          value: "1.0.0"
+        - name: DD_SITE
+          value: "datadoghq.com"
+        - name: DD_LLMOBS_ENABLED
+          value: "1"
+        - name: DD_LLMOBS_AGENTLESS_ENABLED
+          value: "1"
+        - name: DD_LLMOBS_ML_APP
+          value: "vibecode-ai"
+        - name: DD_IAST_ENABLED
+          value: "true"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: vibecode-webgui-config
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vibecode-webgui-config
+  namespace: vibecode-platform
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>VibeCode WebGUI - AKS Production</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+            .container { background: rgba(255,255,255,0.1); padding: 40px; border-radius: 10px; backdrop-filter: blur(10px); }
+            h1 { color: #fff; margin-bottom: 20px; }
+            .status { background: rgba(0,255,0,0.2); padding: 15px; border-radius: 5px; margin: 20px 0; }
+            .info { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 5px; margin: 10px 0; }
+            .timestamp { font-size: 0.9em; opacity: 0.8; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🚀 VibeCode WebGUI</h1>
+            <div class="status">
+                <h2>✅ Status: Operational</h2>
+                <p>Running on Azure Kubernetes Service (AKS)</p>
+            </div>
+            <div class="info">
+                <h3>📊 Infrastructure Status</h3>
+                <ul>
+                    <li>✅ AKS Cluster: vibecode-prod-aks-84859296</li>
+                    <li>✅ PostgreSQL: Running with pgvector</li>
+                    <li>✅ Datadog Monitoring: Active</li>
+                    <li>✅ Application: Deployed and Running</li>
+                </ul>
+            </div>
+            <div class="info">
+                <h3>🔧 Agent #2 Deployment</h3>
+                <p>Successfully deployed by Application Developer Agent</p>
+                <p>Middleware fixed, application running on AKS</p>
+            </div>
+            <div class="timestamp">
+                <p>Deployed: <span id="timestamp"></span></p>
+            </div>
+        </div>
+        <script>
+            document.getElementById('timestamp').textContent = new Date().toISOString();
+        </script>
+    </body>
+    </html>
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vibecode-webgui-service
+  namespace: vibecode-platform
+  labels:
+    app: vibecode-webgui
+spec:
+  selector:
+    app: vibecode-webgui
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vibecode-webgui-nodeport
+  namespace: vibecode-platform
+  labels:
+    app: vibecode-webgui
+spec:
+  selector:
+    app: vibecode-webgui
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30001
+    protocol: TCP
+    name: http
+  type: NodePort

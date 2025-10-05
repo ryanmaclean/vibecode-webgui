@@ -17,9 +17,10 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
+  storageClassName: standard
   resources:
     requests:
-      storage: 1Gi
+      storage: 50Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -41,6 +42,15 @@ spec:
       containers:
       - name: postgres
         image: pgvector/pgvector:pg16
+        args:
+        - -c
+        - shared_preload_libraries=pg_stat_statements,vector
+        - -c
+        - pg_stat_statements.max=5000
+        - -c
+        - pg_stat_statements.track=all
+        - -c
+        - track_activity_query_size=2048
         ports:
         - containerPort: 5432
         env:
@@ -59,11 +69,20 @@ spec:
             configMapKeyRef:
               name: postgres-config
               key: POSTGRES_PASSWORD
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
         volumeMounts:
         - name: postgres-storage
           mountPath: /var/lib/postgresql/data
         - name: init-db
           mountPath: /docker-entrypoint-initdb.d
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
         readinessProbe:
           exec:
             command:
@@ -101,7 +120,8 @@ spec:
   selector:
     app: postgres
   ports:
-    - port: 5432
+    - name: postgres
+      port: 5432
       targetPort: 5432
-      nodePort: 30001
-  type: NodePort
+      protocol: TCP
+  type: ClusterIP

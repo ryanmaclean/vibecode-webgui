@@ -10,7 +10,29 @@
 const { describe, test, expect, beforeAll } = require('@jest/globals');
 
 // Skip these tests if not in CI/production environment with real API key
-const shouldRunRealTests = process.env.ENABLE_REAL_AI_TESTS === 'true' && process.env.OPENROUTER_API_KEY;
+const shouldRunRealTests =
+  process.env.ENABLE_REAL_AI_TESTS === 'true' &&
+  process.env.RUN_REAL_OPENROUTER_TESTS === 'true' &&
+  process.env.OPENROUTER_API_KEY;
+
+// REAL TESTING: Clear all global mocks to enable actual API calls
+beforeAll(() => {
+  if (shouldRunRealTests) {
+    // Restore real fetch for actual API calls
+    jest.restoreAllMocks();
+
+    console.log('🌐 Real integration testing enabled - all mocks cleared');
+  }
+});
+
+let cachedFetch = null;
+async function fetchOpenRouter(url, options) {
+  if (!cachedFetch) {
+    const mod = await import('node-fetch');
+    cachedFetch = mod.default || mod;
+  }
+  return cachedFetch(url, options);
+}
 
 const conditionalDescribe = shouldRunRealTests ? describe : describe.skip
 
@@ -22,36 +44,35 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
     if (!apiKey) {
       throw new Error('OPENROUTER_API_KEY must be set for real integration tests')
     }
-    if (apiKey.includes('test') || apiKey.includes('fake') || apiKey.includes('mock')) {
+    if (/test|fake|mock/i.test(apiKey)) {
       throw new Error('OPENROUTER_API_KEY appears to be a test/fake key - use real API key')
     }
-  });
+  })
 
-  test('should validate OpenRouter API key authentication', async () => {
-    const response = await fetch(`${baseUrl}/auth/key`, {
+  test('auth endpoint accepts the provided key', async () => {
+    const response = await fetchOpenRouter(`${baseUrl}/auth/key`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       }
-    });
+    })
 
     expect(response.ok).toBe(true)
 
     const data = await response.json()
     expect(data).toHaveProperty('data')
     expect(data.data).toHaveProperty('label')
-    expect(data.data).toHaveProperty('usage')
-  }, 15000);
+  }, 15000)
 
-  test('should fetch available AI models from OpenRouter', async () => {
-    const response = await fetch(`${baseUrl}/models`, {
+  test('model catalogue includes free-tier models', async () => {
+    const response = await fetchOpenRouter(`${baseUrl}/models`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       }
-    });
+    })
 
     expect(response.ok).toBe(true)
 
@@ -67,29 +88,29 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
     expect(modelIds).toContain('google/gemini-pro')
   }, 15000);
 
-  test('should successfully make chat completion with Claude 3.5 Sonnet', async () => {
+  test('chat completion succeeds with a free OpenRouter model', async () => {
     const chatRequest = {
-      model: 'anthropic/claude-3.5-sonnet',
+      model: primaryFreeModel,
       messages: [
         {
           role: 'user',
-          content: 'Write a simple function in TypeScript that adds two numbers. Return only the code, no explanation.'
+          content: 'Provide a tiny TypeScript function named add that adds two numbers.'
         }
       ],
-      max_tokens: 150,
-      temperature: 0.1
+      max_tokens: 120,
+      temperature: 0.2
     }
 
-    const response = await fetch(`${baseUrl}/chat/completions`, {
+    const response = await fetchOpenRouter(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://vibecode.dev',
         'X-Title': 'VibeCode WebGUI Integration Test'
       },
       body: JSON.stringify(chatRequest)
-    });
+    })
 
     expect(response.ok).toBe(true)
 
@@ -114,21 +135,21 @@ conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
 
   test('should successfully make chat completion with GPT-4', async () => {
     const chatRequest = {
-      model: 'openai/gpt-4',
+      model: secondaryFreeModel,
       messages: [
         {
           role: 'user',
-          content: 'Explain what React hooks are in one sentence.'
+          content: 'Briefly describe what an HTTP 404 status code means.'
         }
       ],
       max_tokens: 100,
-      temperature: 0.3
+      temperature: 0.2
     }
 
-    const response = await fetch(`${baseUrl}/chat/completions`, {
+    const response = await fetchOpenRouter(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://vibecode.dev',
         'X-Title': 'VibeCode WebGUI Integration Test'

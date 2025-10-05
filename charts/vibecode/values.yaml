@@ -1,0 +1,272 @@
+# Default values for the VibeCode WebGUI Helm chart.
+# These settings are intentionally environment-agnostic so the chart renders
+# successfully with `helm template` and `helm lint` out of the box. Override as
+# needed when deploying to a real cluster.
+
+global:
+  imageRegistry: ""
+  location: "eastus2"
+
+image:
+  registry: ""
+  repository: "vibecode-webgui"
+  tag: "latest"
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+replicaCount: 1
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+resources: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+  annotations: {}
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: vibecode.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+podLabels: {}
+podAnnotations: {}
+
+nodeSelector: {}
+affinity: {}
+tolerations: []
+
+livenessProbe:
+  httpGet:
+    path: /api/health
+    port: 3000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /api/health
+    port: 3000
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+startupProbe: {}
+
+env:
+  NODE_ENV: production
+  DD_ENV: production
+  DD_SERVICE: vibecode-webgui
+  DD_VERSION: "1.0.0"
+  DD_TRACE_ENABLED: "false"
+  DD_LOGS_INJECTION: "false"
+  DD_IAST_ENABLED: "true"
+  DD_RUNTIME_METRICS_ENABLED: "false"
+  DD_DYNAMIC_INSTRUMENTATION_ENABLED: "false"
+  DD_SOURCE_MAP: "false"
+  DD_PROFILING_ENABLED: "false"
+  DD_SITE: datadoghq.com
+  DD_AGENT_HOST: datadog-agent.datadog.svc.cluster.local
+  DD_TRACE_AGENT_PORT: "8126"
+  DD_LLMOBS_ENABLED: "0"
+  DD_LLMOBS_AGENTLESS_ENABLED: "0"
+  DD_LLMOBS_ML_APP: "vibecode-ai"
+
+freeModelUpdater:
+  enabled: true
+  schedule: "0 */12 * * *"
+  maxFreeModels: 10
+  minWorkingModels: 3
+  syncConfigMap: true
+  backoffLimit: 1
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  ttlSecondsAfterFinished: 86400
+  configMap:
+    name: ""
+    jsonKey: models.json
+    textKey: models.txt
+    mountPath: /etc/vibecode/free-llm-models
+    filePath: /etc/vibecode/free-llm-models/models.txt
+  initialModels:
+    - deepseek/deepseek-chat-v3.1:free
+    - openai/gpt-oss-20b:free
+    - openai/gpt-oss-120b:free
+    - x-ai/grok-4-fast:free
+    - nvidia/nemotron-nano-9b-v2:free
+  env: {}
+  resources: {}
+  annotations: {}
+  podAnnotations: {}
+
+monitoring:
+  prometheus:
+    enabled: false
+    port: 9090
+    path: /metrics
+    serviceMonitor:
+      enabled: false
+      interval: 30s
+      scrapeTimeout: 10s
+      additionalLabels: {}
+  datadog:
+    enabled: false
+    annotations: {}
+
+configFiles:
+  app.json: |
+    {
+      "name": "VibeCode",
+      "environment": "production"
+    }
+
+envSecrets:
+  database-url: ""
+  nextauth-secret: ""
+  openrouter-api-key: ""
+  dd-api-key: ""
+
+secrets:
+  enabled: false
+  provider: kubernetes
+  keyVault:
+    name: ""
+    resourceGroup: ""
+    subscriptionId: ""
+    tenantId: ""
+  keys: []
+
+database:
+  host: ""
+  port: 5432
+  name: vibecode
+  username: ""
+  password: ""
+  ssl: true
+
+redis:
+  enabled: false
+  host: ""
+  port: 6379
+  ssl: false
+
+aiGateway:
+  enabled: false
+  replicaCount: 2
+  image:
+    repository: vibecode-ai-gateway
+    tag: latest
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  secretName: ""
+  env: {}
+  readinessProbe:
+    path: /health
+    initialDelaySeconds: 10
+    periodSeconds: 15
+    timeoutSeconds: 1
+    failureThreshold: 3
+  livenessProbe:
+    path: /health/live
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 1
+    failureThreshold: 3
+  resources: {}
+  service:
+    type: ClusterIP
+    port: 3001
+    targetPort: 3001
+    annotations: {}
+  ingress:
+    enabled: false
+    className: nginx
+    annotations: {}
+    host: ""
+    path: /ai-gateway(/|$)(.*)
+    pathType: ImplementationSpecific
+    tls: []
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+persistence:
+  enabled: false
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 20Gi
+  mountPath: /app/uploads
+  annotations: {}
+
+initContainers: []
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+rbac:
+  create: false
+  rules: []
+
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  maxUnavailable: ""
+
+networkPolicy:
+  enabled: false
+  policyTypes: []
+  ingress: []
+  egress: []
+
+backup:
+  enabled: false
+  schedule: "0 2 * * *"
+  retention: "30d"
+  storageAccount: ""
+  containerName: ""
+
+migrations:
+  enabled: false
+  image:
+    repository: vibecode-webgui
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  command: []
+  args: []
+  env: []
+  resources: {}
+  activeDeadlineSeconds: 600
+  restartPolicy: OnFailure
+  backoffLimit: 3
+
+serviceMesh:
+  enabled: false
+
+networkPolicyExtraLabels: {}

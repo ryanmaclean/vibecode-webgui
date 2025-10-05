@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
+import { Switch } from './ui/switch';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './ui/resizable';
 import { 
   Send, 
@@ -42,6 +43,7 @@ import {
   Radio
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { DEMO_PROMPTS } from '@/data/demo-prompts';
 
 // Voice recognition interfaces
 interface SpeechRecognitionEvent extends Event {
@@ -458,6 +460,19 @@ export default function PromptInterface() {
   const estimateCost = (tokens: number, model: ModelConfig): number => {
     return (tokens * model.inputCostPer1k) / 1000;
   };
+
+  const handleDemoPromptChange = (value: string) => {
+    setSelectedDemoPromptId(value);
+    if (!value) {
+      return;
+    }
+    const prompt = DEMO_PROMPTS.find(item => item.id === value);
+    if (prompt) {
+      setInput(prompt.prompt);
+    }
+  };
+
+  const selectedDemoPrompt = useMemo(() => DEMO_PROMPTS.find(item => item.id === selectedDemoPromptId) || null, [selectedDemoPromptId]);
 
   // Voice input controls
   const startVoiceRecognition = useCallback(() => {
@@ -1008,6 +1023,81 @@ export default function LandingPage() {
                   </span>
                 )}
               </p>
+              <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Workspace ID
+                  </label>
+                  <Input
+                    value={workspaceId}
+                    onChange={(event) => setWorkspaceId(event.target.value)}
+                    placeholder="lovable-demo"
+                    className="mt-1"
+                  />
+                </div>
+                <div className="border border-border/50 rounded-lg p-3 bg-muted/40 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      RAG Context
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Toggle semantic retrieval for responses
+                    </p>
+                  </div>
+                  <Switch
+                    checked={ragEnabled}
+                    onCheckedChange={(checked) => setRagEnabled(checked)}
+                    aria-label="Toggle RAG context"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Demo Prompt
+                  </label>
+                  <Select value={selectedDemoPromptId} onValueChange={handleDemoPromptChange}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Choose a Lovable-style scenario" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {DEMO_PROMPTS.map(prompt => (
+                        <SelectItem key={prompt.id} value={prompt.id}>
+                          {prompt.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Preload conversational flows used in the conference demo.
+                  </p>
+                </div>
+              </div>
+
+              {selectedDemoPrompt && (
+                <div className="mt-3 border border-border/50 rounded-lg bg-muted/40 p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{selectedDemoPrompt.title}</p>
+                      <p className="text-xs text-muted-foreground">{selectedDemoPrompt.useCase}</p>
+                    </div>
+                    <Badge variant="outline">Lovable.ai Flow</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">{selectedDemoPrompt.description}</p>
+                  {selectedDemoPrompt.contextExamples && selectedDemoPrompt.contextExamples.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Context Notes</p>
+                      <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+                        {selectedDemoPrompt.contextExamples.map((item, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <span className="mt-[2px]">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
             {/* Messages */}

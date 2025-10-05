@@ -1,0 +1,294 @@
+# VibeCode Application Kubernetes Resources
+# This file defines the application deployment, but uses Helm for easier updates
+
+# Application secrets (managed by OpenTofu for security)
+resource "kubernetes_secret" "vibecode_app_secrets" {
+  metadata {
+    name      = "vibecode-secrets"
+    namespace = kubernetes_namespace.vibecode_platform.metadata[0].name
+  }
+
+  data = {
+    DATABASE_URL    = "postgresql://vibecode:${random_password.postgres_password.result}@postgres-service.${kubernetes_namespace.vibecode_platform.metadata[0].name}.svc.cluster.local:5432/vibecode"
+    NEXTAUTH_SECRET = var.nextauth_secret
+    NODE_ENV        = var.environment
+
+    # Datadog configuration
+    DD_API_KEY = var.datadog_api_key
+    DD_APP_KEY = var.datadog_app_key
+    DD_SITE    = var.datadog_site
+    DD_ENV     = var.environment
+    DD_SERVICE = "vibecode-webgui"
+    DD_VERSION = var.app_image_tag
+
+    # External API keys
+    OPENROUTER_API_KEY    = var.openrouter_api_key
+    AZURE_OPENAI_API_KEY  = var.azure_openai_api_key
+    AZURE_OPENAI_ENDPOINT = var.azure_openai_endpoint
+  }
+
+  type = "Opaque"
+
+  depends_on = [kubernetes_namespace.vibecode_platform]
+}
+
+# ConfigMap for application configuration
+resource "kubernetes_config_map" "vibecode_app_config" {
+  metadata {
+    name      = "vibecode-config"
+    namespace = kubernetes_namespace.vibecode_platform.metadata[0].name
+  }
+
+  data = {
+    # Application configuration
+    PORT                    = "3000"
+    NODE_ENV                = var.environment
+    NEXT_TELEMETRY_DISABLED = "1"
+
+    # Datadog Dynamic Instrumentation
+    DD_DYNAMIC_INSTRUMENTATION_ENABLED = "true"
+    DD_PROFILING_ENABLED               = "true"
+    DD_LOGS_INJECTION                  = "true"
+    DD_TRACE_ENABLED                   = "true"
+    DD_RUNTIME_METRICS_ENABLED         = "true"
+    DD_SOURCE_MAP_PATH                 = "/app/source-maps"
+    DD_UPLOAD_SOURCE_MAPS              = "true"
+    DD_SITE                            = var.datadog_site
+    DD_LLMOBS_ENABLED                  = var.llm_observability_enabled ? "1" : "0"
+    DD_LLMOBS_AGENTLESS_ENABLED        = var.llm_observability_agentless ? "1" : "0"
+    DD_LLMOBS_ML_APP                   = var.llm_observability_ml_app
+
+    # Security settings
+    DD_REDACTION_RULES = jsonencode([
+      {
+        name        = "redact-secrets"
+        pattern     = "(?i)(password|secret|token|key)\\s*[=:]\\s*['\"]?([^\\s'\"]+)"
+        replacement = "$1=***REDACTED***"
+      },
+      {
+        name        = "redact-database-urls"
+        pattern     = "postgresql://[^@]+@[^/]+/\\w+"
+        replacement = "postgresql://***:***@***/**"
+      },
+      {
+        name        = "redact-api-keys"
+        pattern     = "sk-[a-zA-Z0-9]{32,}"
+        replacement = "sk-***REDACTED***"
+      }
+    ])
+
+    # Performance settings
+    NODE_OPTIONS = "--max-old-space-size=2048"
+  }
+
+  depends_on = [kubernetes_namespace.vibecode_platform]
+}
+
+# Service Account for application
+resource "kubernetes_service_account" "vibecode_app" {
+  metadata {
+    name      = "vibecode-app"
+    namespace = kubernetes_namespace.vibecode_platform.metadata[0].name
+
+    labels = {
+      app     = "vibecode-webgui"
+      version = var.app_image_tag
+    }
+
+    annotations = {
+      # Azure Workload Identity (if using managed identity)
+      "azure.workload.identity/client-id" = azurerm_user_assigned_identity.aks_identity.client_id
+    }
+  }
+
+  depends_on = [kubernetes_namespace.vibecode_platform]
+}
+
+# Role for application (minimal permissions)
+resource "kubernetes_role" "vibecode_app" {
+  metadata {
+    name      = "vibecode-app"
+    namespace = kubernetes_namespace.vibecode_platform.metadata[0].name
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["pods", "services", "endpoints"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["secrets", "configmaps"]
+    verbs      = ["get", "list"]
+  }
+
+  depends_on = [kubernetes_namespace.vibecode_platform]
+}
+
+# RoleBinding for application
+resource "kubernetes_role_binding" "vibecode_app" {
+  metadata {
+    name      = "vibecode-app"
+    namespace = kubernetes_namespace.vibecode_platform.metadata[0].name
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role.vibecode_app.metadata[0].name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account.vibecode_app.metadata[0].name
+    namespace = kubernetes_namespace.vibecode_platform.metadata[0].name
+  }
+
+  depends_on = [
+    kubernetes_role.vibecode_app,
+    kubernetes_service_account.vibecode_app
+  ]
+}
+
+# Network Policy for application security
+resource "kubernetes_network_policy" "vibecode_app" {
+  metadata {
+    name      = "vibecode-app-network-policy"
+    namespace = kubernetes_namespace.vibecode_platform.metadata[0].name
+  }
+
+  spec {
+    pod_selector {
+      match_labels = {
+        app = "vibecode-webgui"
+      }
+    }
+
+    policy_types = ["Ingress", "Egress"]
+
+    # Ingress rules
+    ingress {
+      from {
+        # Allow traffic from ingress controller namespace (managed by AKS)
+        namespace_selector {
+          match_labels = {
+            "kubernetes.io/metadata.name" = "ingress-nginx"
+          }
+        }
+        pod_selector {
+          match_labels = {
+            app = "ingress-nginx"
+          }
+        }
+      }
+
+      from {
+        # Allow traffic from same namespace
+        namespace_selector {
+          match_labels = {
+            name = kubernetes_namespace.vibecode_platform.metadata[0].name
+          }
+        }
+      }
+
+      ports {
+        port     = "3000"
+        protocol = "TCP"
+      }
+    }
+
+    # Egress rules
+    egress {
+      # Allow DNS queries to kube-dns inside kube-system namespace
+      to {
+        namespace_selector {
+          match_labels = {
+            "kubernetes.io/metadata.name" = "kube-system"
+          }
+        }
+        pod_selector {
+          match_labels = {
+            "k8s-app" = "kube-dns"
+          }
+        }
+      }
+      ports {
+        port     = "53"
+        protocol = "UDP"
+      }
+      ports {
+        port     = "53"
+        protocol = "TCP"
+      }
+    }
+
+    egress {
+      # Allow HTTPS for external APIs (Datadog, Azure, etc.)
+      to {
+        ip_block {
+          cidr = "0.0.0.0/0"
+        }
+      }
+      ports {
+        port     = "443"
+        protocol = "TCP"
+      }
+    }
+
+    egress {
+      # Allow PostgreSQL (cover postgres and postgres-simple labels)
+      to {
+        pod_selector {
+          match_expressions {
+            key      = "app"
+            operator = "In"
+            values   = ["postgres", "postgres-simple"]
+          }
+        }
+      }
+      ports {
+        port     = "5432"
+        protocol = "TCP"
+      }
+    }
+
+    egress {
+      # Allow Datadog agent (DogStatsD/APM) in monitoring namespace
+      to {
+        namespace_selector {
+          match_labels = {
+            "kubernetes.io/metadata.name" = "datadog"
+          }
+        }
+        pod_selector {
+          match_labels = {
+            app = "datadog-agent"
+          }
+        }
+      }
+      ports {
+        port     = "8126"
+        protocol = "TCP"
+      }
+    }
+  }
+
+  depends_on = [kubernetes_namespace.vibecode_platform]
+}
+
+# Output application configuration for external tools
+output "vibecode_app_service_account" {
+  description = "Service account name for VibeCode application"
+  value       = kubernetes_service_account.vibecode_app.metadata[0].name
+}
+
+output "vibecode_app_secrets_name" {
+  description = "Secret name containing application configuration"
+  value       = kubernetes_secret.vibecode_app_secrets.metadata[0].name
+}
+
+output "vibecode_app_config_name" {
+  description = "ConfigMap name containing application configuration"
+  value       = kubernetes_config_map.vibecode_app_config.metadata[0].name
+}

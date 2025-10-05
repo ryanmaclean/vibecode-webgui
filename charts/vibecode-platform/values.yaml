@@ -100,6 +100,10 @@ postgresql:
     tag: pg16
   persistence:
     size: 8Gi
+  pgStatStatements:
+    max: 5000
+    track: all
+    trackActivityQuerySize: 2048
 
 redis:
   enabled: true

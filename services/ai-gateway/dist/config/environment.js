@@ -31,7 +31,9 @@ exports.config = {
     openrouter: {
         apiKey: process.env.OPENROUTER_API_KEY,
         baseUrl: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
-        timeout: parseInt(process.env.OPENROUTER_TIMEOUT || '60000', 10)
+        timeout: parseInt(process.env.OPENROUTER_TIMEOUT || '60000', 10),
+        referrer: process.env.OPENROUTER_REFERRER || 'https://vibecode.dev',
+        title: process.env.OPENROUTER_TITLE || 'VibeCode AI Gateway'
     },
     auth: {
         jwtSecret: process.env.JWT_SECRET,
