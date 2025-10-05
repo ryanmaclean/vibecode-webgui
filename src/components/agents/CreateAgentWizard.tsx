@@ -201,7 +201,7 @@ function DetailsStep({ data, onChange }: DetailsStepProps) {
       <div className="text-center space-y-2">
         <h3 className="text-lg font-medium">Configure Your Agent</h3>
         <p className="text-sm text-muted-foreground">
-          Customize the agent's behavior and capabilities
+          Customize the agent&apos;s behavior and capabilities
         </p>
       </div>
 

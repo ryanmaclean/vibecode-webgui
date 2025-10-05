@@ -13,6 +13,13 @@
         "-y",
         "@modelcontextprotocol/server-sequential-thinking"
       ]
+    },
+    "zen": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@beehiveinnovations/zen-mcp-server"
+      ]
     }
   }
 }

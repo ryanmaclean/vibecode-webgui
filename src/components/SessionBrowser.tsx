@@ -57,7 +57,7 @@ export function SessionBrowser({ className = '' }: SessionBrowserProps) {
 
       {sessions.length === 0 && !loading && !error && (
         <div className="py-8 text-center text-gray-400">
-          No sessions found. Click "Refresh" to scan the network.
+          No sessions found. Click &quot;Refresh&quot; to scan the network.
         </div>
       )}
 
