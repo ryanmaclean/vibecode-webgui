@@ -154,6 +154,9 @@ monitoring:
     enabled: true
     port: 9090
     path: /metrics
+    # ServiceMonitor resources (requires Prometheus Operator CRDs)
+    serviceMonitor:
+      enabled: false  # Disabled by default to avoid CRD dependency
 
   # Grafana dashboards
   grafana:

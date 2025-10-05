@@ -1,0 +1,81 @@
+AgentAPI has been deployed successfully!
+
+{{ if .Values.ingress.enabled }}
+Your workspace is accessible at:
+{{- range .Values.ingress.hosts }}
+  https://{{ .host }}
+{{- end }}
+{{ else }}
+To access your workspace, run these commands:
+
+  export POD_NAME=$(kubectl get pods -n {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "agentapi.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+
+  # Port forward IDE (code-server)
+  kubectl port-forward -n {{ .Release.Namespace }} $POD_NAME 8765:{{ .Values.codeserver.service.targetPort }}
+
+  # Port forward AgentAPI
+  kubectl port-forward -n {{ .Release.Namespace }} $POD_NAME 3284:{{ .Values.agentapi.config.port }}
+
+Then access:
+  - IDE: http://localhost:8765
+  - AgentAPI: http://localhost:3284
+{{ end }}
+
+Deployment Information:
+- Release Name: {{ .Release.Name }}
+- Namespace: {{ .Release.Namespace }}
+- Environment: {{ .Values.global.environment }}
+- Cloud Provider: {{ .Values.global.cloudProvider }}
+
+Components Deployed:
+{{- if .Values.codeserver.enabled }}
+  ✓ Code-server IDE ({{ .Values.codeserver.image.repository }}:{{ .Values.codeserver.image.tag }})
+{{- end }}
+{{- if .Values.agentapi.enabled }}
+  ✓ AgentAPI Sidecar ({{ .Values.agentapi.image.repository }}:{{ .Values.agentapi.image.tag }})
+{{- end }}
+{{- if .Values.postgresql.enabled }}
+  ✓ PostgreSQL (embedded subchart)
+{{- else if .Values.externalPostgresql.enabled }}
+  ✓ PostgreSQL (external: {{ .Values.externalPostgresql.host }})
+{{- end }}
+{{- if .Values.redis.enabled }}
+  ✓ Redis (embedded subchart)
+{{- else if .Values.externalRedis.enabled }}
+  ✓ Redis (external: {{ .Values.externalRedis.host }})
+{{- end }}
+
+Verification Commands:
+
+1. Check pod status:
+   kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "agentapi.name" . }}
+
+2. View logs (code-server):
+   kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "agentapi.name" . }} -c code-server
+
+3. View logs (agentapi):
+   kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "agentapi.name" . }} -c agentapi
+
+4. Run health check:
+   kubectl exec -n {{ .Release.Namespace }} $POD_NAME -c agentapi -- /etc/agentapi/health-check.sh
+
+5. Test AgentAPI endpoint:
+   kubectl exec -n {{ .Release.Namespace }} $POD_NAME -c agentapi -- curl http://127.0.0.1:{{ .Values.agentapi.config.port }}/health
+
+Supported Agents:
+{{- range .Values.agentapi.agents }}
+{{- if .enabled }}
+  - {{ .name }} ({{ .command }})
+{{- end }}
+{{- end }}
+
+Next Steps:
+1. Access your workspace via the URLs above
+2. Create an agent using the AgentAPI
+3. Start coding with AI assistance!
+
+For more information:
+  - Documentation: https://github.com/vibecode/vibecode-webgui/tree/main/docs
+  - Support: devops@vibecode.dev
+  - Chart Version: {{ .Chart.Version }}
+  - App Version: {{ .Chart.AppVersion }}

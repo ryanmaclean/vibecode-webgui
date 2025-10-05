@@ -1,0 +1,254 @@
+# VibeCode AKS Helm Chart Values
+# Production-ready configuration for Azure Kubernetes Service
+
+# Application configuration
+app:
+  name: vibecode
+  version: "1.0.0"
+
+# Container image configuration
+image:
+  repository: "" # Will be set by OpenTofu (ACR login server)
+  tag: "latest"
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+# Application deployment configuration
+deployment:
+  replicaCount: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 2000m
+    memory: 4Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-backend-protocol: http
+
+# Ingress configuration for AKS
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  hosts:
+    - host: vibecode.eastus2.cloudapp.azure.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: vibecode-tls
+      hosts:
+        - vibecode.eastus2.cloudapp.azure.com
+
+# Environment variables
+env:
+  NODE_ENV: production
+  NEXT_TELEMETRY_DISABLED: "1"
+  DD_SITE: datadoghq.com
+  DD_LLMOBS_ENABLED: "1"
+  DD_LLMOBS_AGENTLESS_ENABLED: "1"
+  DD_LLMOBS_ML_APP: "vibecode-ai"
+  # Database connection will be injected by OpenTofu
+  # Datadog configuration will be injected by OpenTofu
+  # AI service keys will be injected by OpenTofu
+
+# Secrets (will be created by OpenTofu)
+secrets:
+  name: vibecode-secrets
+  create: false # OpenTofu creates the secret
+
+# ConfigMap for application configuration
+configMap:
+  name: vibecode-config
+  data:
+    app.json: |
+      {
+        "name": "VibeCode Platform",
+        "version": "1.0.0",
+        "environment": "production",
+        "features": {
+          "aiGeneration": true,
+          "workspaces": true,
+          "monitoring": true
+        }
+      }
+
+# Persistent storage for application data
+persistence:
+  enabled: true
+  storageClass: managed-csi
+  accessMode: ReadWriteOnce
+  size: 20Gi
+  mountPath: /app/data
+
+# Health checks
+healthChecks:
+  livenessProbe:
+    enabled: true
+    path: /api/health
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 10
+    failureThreshold: 3
+  readinessProbe:
+    enabled: true
+    path: /api/health
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+# Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 1000
+
+# Node selection and tolerations for AKS
+nodeSelector:
+  kubernetes.io/os: linux
+
+tolerations:
+  - key: "kubernetes.azure.com/scalesetpriority"
+    operator: "Equal"
+    value: "spot"
+    effect: "NoSchedule"
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - vibecode
+          topologyKey: kubernetes.io/hostname
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations:
+    azure.workload.identity/client-id: "" # Will be set by OpenTofu
+  name: vibecode
+
+# RBAC
+rbac:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources: ["configmaps", "secrets"]
+      verbs: ["get", "list"]
+    - apiGroups: [""]
+      resources: ["pods"]
+      verbs: ["get", "list", "create", "delete"]
+    - apiGroups: ["apps"]
+      resources: ["deployments"]
+      verbs: ["get", "list", "create", "delete"]
+
+# Monitoring and observability
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    port: 9090
+    path: /metrics
+  datadog:
+    enabled: true
+    annotations:
+      ad.datadoghq.com/vibecode.check_names: '["http_check"]'
+      ad.datadoghq.com/vibecode.init_configs: '[{}]'
+      ad.datadoghq.com/vibecode.instances: |
+        [
+          {
+            "name": "vibecode-health-check",
+            "url": "http://%%host%%:%%port%%/api/health",
+            "timeout": 5
+          }
+        ]
+      ad.datadoghq.com/vibecode.logs: |
+        [
+          {
+            "source": "nodejs",
+            "service": "vibecode",
+            "log_processing_rules": [
+              {
+                "type": "mask_sequences",
+                "name": "mask_api_keys",
+                "replace_placeholder": "[MASKED]",
+                "pattern": "(api[_-]?key['\"]?\\s*[:=]\\s*['\"]?)\\w+(['\"]?)"
+              }
+            ]
+          }
+        ]
+
+# Network policies (if needed)
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+  egress:
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 5432
+
+# Additional labels to be applied to all resources
+labels:
+  app.kubernetes.io/part-of: vibecode-platform
+  app.kubernetes.io/managed-by: helm
+
+# Additional annotations to be applied to all resources
+annotations:
+  deployment.kubernetes.io/revision: "1"

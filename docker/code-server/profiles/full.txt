@@ -1,0 +1,36 @@
+# Full Profile - 26 extensions (~1.2GB)
+# Everything included (current build)
+# Updated: 2025-10-01
+
+# AI Assistants (11)
+# Latest versions: Cline 3.32.6, Continue 1.3.15
+anthropic.claude-code
+openai.chatgpt
+github.copilot-chat
+codeium.codeium
+saoudrizwan.claude-dev
+kilocode.kilo-code
+rooveterinaryinc.roo-cline
+rubberduck.rubberduck-vscode
+continue.continue
+supermaven.supermaven
+tabnine.tabnine-vscode
+
+# Languages (4)
+ms-python.python
+ms-python.debugpy
+ms-vscode.vscode-typescript-next
+llvm-vs-code-extensions.vscode-clangd
+
+# Development Tools (11)
+dbaeumer.vscode-eslint
+esbenp.prettier-vscode
+usernamehw.errorlens
+pkief.material-icon-theme
+mhutchie.git-graph
+orta.vscode-jest
+redhat.vscode-yaml
+bradlc.vscode-tailwindcss
+humao.rest-client
+mikestead.dotenv
+yzhang.markdown-all-in-one

@@ -74,7 +74,7 @@ describe('Production Readiness Validation (Complete)', () => {
 
     expect(deployment).toContain('initContainers:');
     expect(deployment).toContain('wait-for-postgres');
-    expect(deployment).toContain('wait-for-redis');
+    expect(deployment).toContain('wait-for-valkey');
   });
 });
 
@@ -84,11 +84,11 @@ describe('Docker Configuration Validation (Complete)', () => {
     expect(fs.existsSync(dockerfilePath)).toBe(true);
 
     const dockerfile = fs.readFileSync(dockerfilePath, 'utf8');
-    expect(dockerfile).toContain('FROM node:18-alpine');
+    expect(dockerfile).toContain('FROM node:20-alpine');
     expect(dockerfile).toContain('WORKDIR /app');
     expect(dockerfile).toContain('COPY package');
-    expect(dockerfile).toContain('npm ci');
-    expect(dockerfile).toContain('npm run build');
+    expect(dockerfile).toContain('yarn install');
+    expect(dockerfile).toContain('yarn build');
   });
 
   test('should have .dockerignore file', async () => {
@@ -184,7 +184,7 @@ describe('Security Configuration Validation (Complete)', () => {
 
     const envExample = fs.readFileSync(envExamplePath, 'utf8');
     expect(envExample).toContain('DD_API_KEY');
-    expect(envExample).toContain('NEXTAUTH_SECRET');
+    expect(envExample).toContain('JWT_SECRET');
   });
 
   test('should have proper gitignore configuration', async () => {

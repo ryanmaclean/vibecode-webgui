@@ -1,0 +1,13 @@
+{
+  "datadog_synthetic_tests": [],
+  "lighthouse_audits": [],
+  "overall_passed": false,
+  "timestamp": "2025-09-20T04:44:25.941Z",
+  "summary": {
+    "total_synthetic_tests": 0,
+    "total_lighthouse_audits": 0,
+    "synthetic_passed": 0,
+    "lighthouse_passed": 0,
+    "overall_performance_score": 24
+  }
+}

@@ -1,0 +1,157 @@
+datadog:
+  site: "datadoghq.com"
+  apiKeyExistingSecret: "datadog-secret"
+
+  tags:
+    - "env:developement"
+    - "service:vibecode-webgui"
+    - "application:vibecode-platform"
+    - "team:platform"
+
+  env:
+    - name: DD_ENV
+      value: "developement"
+    - name: DD_SERVICE
+      value: "vibecode-webgui"
+    - name: DD_VERSION
+      value: "kind"
+    - name: DD_HOSTNAME
+      value: "vibecode-local"
+    - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+      value: "true"
+    - name: DD_APM_ENABLED
+      value: "true"
+    - name: DD_LOGS_ENABLED
+      value: "true"
+    - name: DD_APPSEC_ENABLED
+      value: "true"
+    - name: DD_IAST_ENABLED
+      value: "true"
+    - name: DD_IAST_REQUEST_SAMPLING
+      value: "1.0"
+    - name: DD_PROFILING_ENABLED
+      value: "true"
+    - name: DD_TRACE_SAMPLE_RATE
+      value: "1"
+    - name: DD_TRACE_ENABLED
+      value: "true"
+    - name: DD_APM_FEATURES
+      value: "appsec,profiling,ci_visibility"
+
+  apm:
+    enabled: true
+
+  logs:
+    enabled: true
+    containerCollectAll: true
+    containerCollectUsingFiles: true
+
+  processAgent:
+    enabled: true
+    processCollection: true
+
+  databaseMonitoring:
+    enabled: true
+    postgres:
+      enabled: true
+      instances:
+        - dbm: true
+          host: vibecode-postgres-postgresql.vibecode.svc.cluster.local
+          port: 5432
+          username: datadog
+          password: ${DD_POSTGRES_PASSWORD:-${DATADOG_POSTGRES_PASSWORD}}
+          dbname: vibecode
+          ssl: false
+          tags:
+            - "env:developement"
+            - "service:vibecode-webgui"
+            - "application:vibecode-platform"
+
+  otelCollector:
+    enabled: true
+    ports:
+      - containerPort: 4317
+        hostPort: 4317
+        name: "otel-grpc"
+      - containerPort: 4318
+        hostPort: 4318
+        name: "otel-http"
+
+  networkMonitoring:
+    enabled: true
+
+  collectEvents: true
+
+  kubeStateMetricsCore:
+    enabled: true
+  kubeStateMetricsScrape:
+    enabled: true
+
+  confd:
+    redisdb.yaml: |
+      init_config:
+      instances:
+        - host: valkey-service.vibecode-platform.svc.cluster.local
+          port: 6379
+          tags:
+            - env:developement
+            - service:vibecode-valkey
+            - component:cache
+    postgres.yaml: |
+      init_config:
+      instances:
+        - host: postgres-service.vibecode-platform.svc.cluster.local
+          port: 5432
+          username: datadog
+          password: datadog_monitoring_password
+          dbname: vibecode
+          dbm: true
+          tags:
+            - env:developement
+            - service:vibecode-postgres
+            - component:database
+
+clusterAgent:
+  enabled: true
+  tokenExistingSecret: "datadog-cluster-agent-secret"
+
+agents:
+  useHostNetwork: true
+  containers:
+    agent:
+      env:
+        - name: DD_APM_ENABLED
+          value: "true"
+        - name: DD_LOGS_ENABLED
+          value: "true"
+        - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+          value: "true"
+
+systemProbe:
+  enabled: true
+  enableTCPQueueLength: true
+  enableHTTPMonitoring: true
+  collectDNSStats: true
+  seccomp: "unconfined"
+  appArmor: "unconfined"
+
+securityAgent:
+  enabled: true
+  runtime:
+    enabled: true
+  compliance:
+    enabled: true
+
+kubeStateMetrics:
+  enabled: true
+
+kube-state-metrics:
+  rbac:
+    create: true
+
+clusterChecksRunner:
+  enabled: true
+
+providers:
+  aks:
+    enabled: false

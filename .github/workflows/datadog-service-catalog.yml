@@ -1,0 +1,81 @@
+name: Datadog Service Catalog Registration
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '*.datadog.yaml'
+      - '.github/workflows/datadog-service-catalog.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '*.datadog.yaml'
+      - '.github/workflows/datadog-service-catalog.yml'
+
+jobs:
+  register-services:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service_file:
+          - service.datadog.yaml
+          - postgres.datadog.yaml
+          - vibecode-ai-gateway.datadog.yaml
+          - vibecode-code-server.datadog.yaml
+          - vibecode-docs.datadog.yaml
+          - vibecode-docs-search.datadog.yaml
+          - vibecode-rag-app.datadog.yaml
+          - vibecode-rag-ingest.datadog.yaml
+          - vibecode-valkey.datadog.yaml
+          - vibecode-docker-doctor.datadog.yaml
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Register ${{ matrix.service_file }}
+        uses: arcxp/datadog-service-catalog-metadata-provider@v2.3.2
+        with:
+          datadog-key: ${{ secrets.DD_API_KEY }}
+          datadog-app-key: ${{ secrets.DD_APP_KEY }}
+          datadog-url: https://api.datadoghq.com
+          service-file: ${{ matrix.service_file }}
+
+  validate-definitions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate service definitions
+        run: |
+          echo "Validating service definition files..."
+
+          python3 - <<'PY'
+          import glob
+          import sys
+          import yaml
+
+          files = sorted(glob.glob('*.datadog.yaml'))
+          if not files:
+              print('❌ No Datadog service definition files found')
+              sys.exit(1)
+
+          required_fields = {'schema-version', 'dd-service', 'team'}
+
+          for file in files:
+              try:
+                  with open(file, 'r', encoding='utf-8') as handle:
+                      data = yaml.safe_load(handle) or {}
+
+                  missing = required_fields - data.keys()
+                  if missing:
+                      print(f"❌ {file}: Missing required fields: {', '.join(sorted(missing))}")
+                      sys.exit(1)
+
+                  print(f"✅ {file}: Valid service definition")
+              except Exception as exc:
+                  print(f"❌ {file}: Invalid YAML - {exc}")
+                  sys.exit(1)
+
+          print('🎉 All service definitions are valid!')
+          PY

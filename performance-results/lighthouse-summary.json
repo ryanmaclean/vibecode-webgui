@@ -1,0 +1,38 @@
+{
+  "timestamp": "2025-09-20T04:45:16.406Z",
+  "total_pages": 4,
+  "passed": 0,
+  "failed": 4,
+  "average_score": 45.75,
+  "critical_pages_status": {
+    "total": 2,
+    "passed": 0,
+    "all_passed": false
+  },
+  "results": [
+    {
+      "page": "homepage",
+      "score": 46,
+      "passed": false,
+      "critical": true
+    },
+    {
+      "page": "workspace",
+      "score": 45,
+      "passed": false,
+      "critical": true
+    },
+    {
+      "page": "projects",
+      "score": 46,
+      "passed": false,
+      "critical": false
+    },
+    {
+      "page": "monitoring",
+      "score": 46,
+      "passed": false,
+      "critical": false
+    }
+  ]
+}

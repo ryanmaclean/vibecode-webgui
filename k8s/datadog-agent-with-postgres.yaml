@@ -1,0 +1,255 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: datadog-secret
+  namespace: datadog
+type: Opaque
+data:
+  api-key: ZHVtbXkta2V5LWZvci1sb2NhbC1kZXY=  # dummy-key-for-local-dev
+  app-key: ZHVtbXktYXBwLWtleS1mb3ItbG9jYWwtZGV2  # dummy-app-key-for-local-dev
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datadog-postgres-config
+  namespace: datadog
+data:
+  postgres.yaml: |
+    init_config:
+    instances:
+      - host: host.docker.internal
+        port: 5432
+        username: datadog
+        password: datadog_monitoring_password
+        dbm: true
+        collect_schemas:
+          enabled: true
+          collection_interval: 600
+        collect_activity:
+          enabled: true
+          collection_interval: 10
+        collect_settings:
+          enabled: true
+          collection_interval: 600
+        relations:
+          - relation_regex: ".*"
+            relkind: ["r", "i", "S"]
+        database_autodiscovery:
+          enabled: true
+          include: ["vibecode", "postgres"]
+          exclude: ["template.*", "rdsadmin"]
+        custom_queries:
+          - metric_prefix: "vibecode.postgres.tables"
+            query: "SELECT schemaname, relname as tablename, n_tup_ins, n_tup_upd, n_tup_del, n_live_tup, n_dead_tup FROM pg_stat_user_tables"
+            columns:
+              - name: "schema"
+                type: "tag"
+              - name: "table"
+                type: "tag"
+              - name: "vibecode.postgres.table.inserts"
+                type: "gauge"
+              - name: "vibecode.postgres.table.updates"
+                type: "gauge"
+              - name: "vibecode.postgres.table.deletes"
+                type: "gauge"
+              - name: "vibecode.postgres.table.live_tuples"
+                type: "gauge"
+              - name: "vibecode.postgres.table.dead_tuples"
+                type: "gauge"
+            tags: ["env:kind", "service:vibecode", "database:vibecode"]
+          - metric_prefix: "vibecode.postgres.indexes"
+            query: "SELECT schemaname, relname as tablename, indexrelname as indexname, idx_tup_read, idx_tup_fetch FROM pg_stat_user_indexes"
+            columns:
+              - name: "schema"
+                type: "tag"
+              - name: "table"
+                type: "tag"
+              - name: "index"
+                type: "tag"
+              - name: "vibecode.postgres.index.tuples_read"
+                type: "gauge"
+              - name: "vibecode.postgres.index.tuples_fetched"
+                type: "gauge"
+            tags: ["env:kind", "service:vibecode", "database:vibecode"]
+        tags:
+          - "env:kind"
+          - "service:vibecode-webgui"
+          - "application:vibecode-platform"
+          - "version:1.0.0"
+          - "database:vibecode"
+          - "component:postgres"
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: datadog-agent
+  namespace: datadog
+  labels:
+    app: datadog-agent
+spec:
+  selector:
+    matchLabels:
+      app: datadog-agent
+  template:
+    metadata:
+      labels:
+        app: datadog-agent
+      name: datadog-agent
+    spec:
+      serviceAccountName: datadog-agent
+      containers:
+      - image: gcr.io/datadoghq/agent:7
+        imagePullPolicy: Always
+        name: datadog-agent
+        ports:
+        - containerPort: 8125
+          name: dogstatsdport
+          protocol: UDP
+        - containerPort: 8126
+          name: traceport
+          protocol: TCP
+        env:
+        - name: DD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secret
+              key: api-key
+        - name: DD_APP_KEY
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secret
+              key: app-key
+        - name: DD_SITE
+          value: "datadoghq.com"
+        - name: DD_CLUSTER_NAME
+          value: "vibecode-kind-local"
+        - name: DD_KUBERNETES_KUBELET_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: DD_LOGS_ENABLED
+          value: "true"
+        - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+          value: "true"
+        - name: DD_APM_ENABLED
+          value: "true"
+        - name: DD_DBM_ENABLED
+          value: "true"
+        - name: DD_PROCESS_AGENT_ENABLED
+          value: "true"
+        - name: DD_ORCHESTRATOR_EXPLORER_ENABLED
+          value: "true"
+        - name: KUBERNETES
+          value: "yes"
+        - name: DOCKER_HOST
+          value: unix:///host/var/run/docker.sock
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: dockersocket
+          mountPath: /host/var/run/docker.sock
+        - name: procdir
+          mountPath: /host/proc
+          readOnly: true
+        - name: cgroups
+          mountPath: /host/sys/fs/cgroup
+          readOnly: true
+        - name: postgres-config
+          mountPath: /etc/datadog-agent/conf.d/postgres.d/
+        livenessProbe:
+          exec:
+            command:
+            - ./probe.sh
+          initialDelaySeconds: 15
+          periodSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - ./probe.sh
+          initialDelaySeconds: 15
+          periodSeconds: 5
+      volumes:
+      - hostPath:
+          path: /var/run/docker.sock
+        name: dockersocket
+      - hostPath:
+          path: /proc
+        name: procdir
+      - hostPath:
+          path: /sys/fs/cgroup
+        name: cgroups
+      - name: postgres-config
+        configMap:
+          name: datadog-postgres-config
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: datadog-agent
+  namespace: datadog
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: datadog-agent
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - services
+  - events
+  - endpoints
+  - pods
+  - nodes
+  - componentstatuses
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - "quota.openshift.io"
+  resources:
+  - clusterresourcequotas
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - "autoscaling"
+  resources:
+  - horizontalpodautoscalers
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  resourceNames:
+  - datadogtoken
+  verbs:
+  - get
+  - update
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: datadog-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: datadog-agent
+subjects:
+- kind: ServiceAccount
+  name: datadog-agent
+  namespace: datadog

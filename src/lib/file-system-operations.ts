@@ -14,6 +14,9 @@ import * as fs from 'fs/promises'
 import crypto from 'crypto'
 import { Mutex } from 'async-mutex'
 
+// Global file locks manager - shared across all instances within a workspace
+const globalFileLocks = new Map<string, Map<string, { userId: string; timestamp: Date; lockId: string }>>()
+
 // Security constants
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const MAX_FILES_PER_WORKSPACE = 10000
@@ -75,7 +78,6 @@ export class SecureFileSystemOperations extends EventEmitter {
   private watcher: ReturnType<typeof chokidar.watch> | null = null
   private fileMetadataCache: Map<string, FileMetadata> = new Map()
   private operationQueue: Map<string, FileOperation[]> = new Map()
-  private fileLocks: Map<string, { userId: string; timestamp: Date }> = new Map()
   private operationMutex = new Mutex()
   private syncInProgress = new Set<string>()
 
@@ -83,6 +85,18 @@ export class SecureFileSystemOperations extends EventEmitter {
     super()
     this.config = this.validateConfig(config)
     this.setupFileWatcher()
+    
+    // Initialize workspace locks if not exists
+    if (!globalFileLocks.has(this.config.workspaceId)) {
+      globalFileLocks.set(this.config.workspaceId, new Map())
+    }
+  }
+
+  /**
+   * Get the file locks map for this workspace
+   */
+  private getWorkspaceLocks(): Map<string, { userId: string; timestamp: Date; lockId: string }> {
+    return globalFileLocks.get(this.config.workspaceId)!
   }
 
   /**
@@ -249,7 +263,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       } else {
         // File deleted
         this.fileMetadataCache.delete(filePath)
-        this.fileLocks.delete(filePath)
+        this.getWorkspaceLocks().delete(filePath)
       }
 
       // Create operation record
@@ -312,6 +326,10 @@ export class SecureFileSystemOperations extends EventEmitter {
    */
   private calculateChecksum(content: string): string {
     return crypto.createHash('sha256').update(content).digest('hex')
+  }
+
+  private getFullPath(filePath: string): string {
+    return path.resolve(this.config.workingDirectory, filePath)
   }
 
   /**
@@ -478,7 +496,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       const fullPath = path.resolve(this.config.workingDirectory, filePath)
 
       // Check if file is locked
-      const lock = this.fileLocks.get(filePath)
+      const lock = this.getWorkspaceLocks().get(filePath)
       if (lock && lock.userId !== this.config.userId) {
         throw new Error(`File is locked by another user: ${lock.userId}`)
       }
@@ -538,7 +556,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       const fullPath = path.resolve(this.config.workingDirectory, filePath)
 
       // Check if file is locked
-      const lock = this.fileLocks.get(filePath)
+      const lock = this.getWorkspaceLocks().get(filePath)
       if (lock && lock.userId !== this.config.userId) {
         throw new Error(`File is locked by another user: ${lock.userId}`)
       }
@@ -549,7 +567,7 @@ export class SecureFileSystemOperations extends EventEmitter {
 
         // Clean up metadata and locks
         this.fileMetadataCache.delete(filePath)
-        this.fileLocks.delete(filePath)
+        this.getWorkspaceLocks().delete(filePath)
 
         // Record operation
         const operation: FileOperation = {
@@ -618,19 +636,22 @@ export class SecureFileSystemOperations extends EventEmitter {
       throw new Error('Invalid file path')
     }
 
-    const existingLock = this.fileLocks.get(filePath)
+    const workspaceLocks = this.getWorkspaceLocks()
+    const existingLock = workspaceLocks.get(filePath)
+    
     if (existingLock) {
       // Check if lock has expired (1 hour timeout)
       if (Date.now() - existingLock.timestamp.getTime() > 3600000) {
-        this.fileLocks.delete(filePath)
+        workspaceLocks.delete(filePath)
       } else if (existingLock.userId !== this.config.userId) {
         return false
       }
     }
 
-    this.fileLocks.set(filePath, {
+    workspaceLocks.set(filePath, {
       userId: this.config.userId,
-      timestamp: new Date()
+      timestamp: new Date(),
+      lockId: crypto.randomUUID()
     })
 
     return true
@@ -644,24 +665,162 @@ export class SecureFileSystemOperations extends EventEmitter {
       throw new Error('Invalid file path')
     }
 
-    const lock = this.fileLocks.get(filePath)
+    const workspaceLocks = this.getWorkspaceLocks()
+    const lock = workspaceLocks.get(filePath)
+    
     if (!lock || lock.userId !== this.config.userId) {
       return false
     }
 
-    this.fileLocks.delete(filePath)
+    workspaceLocks.delete(filePath)
     return true
   }
 
   /**
    * Get file metadata
    */
-  getFileMetadata(filePath: string): FileMetadata | null {
+  async getFileMetadata(filePath: string): Promise<FileMetadata | null> {
     if (!this.validateFilePath(filePath)) {
       return null
     }
 
-    return this.fileMetadataCache.get(filePath) || null
+    let metadata = this.fileMetadataCache.get(filePath)
+    
+    if (!metadata) {
+      try {
+        const fullPath = this.getFullPath(filePath)
+        const stats = await fs.stat(fullPath)
+        const content = await fs.readFile(fullPath, 'utf-8')
+        const checksum = this.calculateChecksum(content)
+        
+        metadata = {
+          path: filePath,
+          size: stats.size,
+          lastModified: stats.mtime,
+          checksum,
+          version: 1
+        }
+        
+        this.fileMetadataCache.set(filePath, metadata)
+      } catch (error) {
+        return null
+      }
+    }
+
+    return metadata
+  }
+
+  /**
+   * Acquire file lock with lock ID
+   */
+  async acquireLock(filePath: string, lockType: 'shared' | 'exclusive' = 'exclusive'): Promise<{ lockId: string }> {
+    if (!this.validateFilePath(filePath)) {
+      throw new Error('Invalid file path')
+    }
+
+    const workspaceLocks = this.getWorkspaceLocks()
+    const existingLock = workspaceLocks.get(filePath)
+    
+    if (existingLock) {
+      // Check if lock has expired (1 hour timeout)
+      if (Date.now() - existingLock.timestamp.getTime() > 3600000) {
+        workspaceLocks.delete(filePath)
+      } else if (existingLock.userId !== this.config.userId) {
+        throw new Error('File is locked')
+      }
+    }
+
+    const lockId = crypto.randomUUID()
+    workspaceLocks.set(filePath, {
+      userId: this.config.userId,
+      timestamp: new Date(),
+      lockId
+    })
+
+    return { lockId }
+  }
+
+  /**
+   * Release file lock by lock ID
+   */
+  async releaseLock(filePath: string, lockId: string): Promise<boolean> {
+    if (!this.validateFilePath(filePath)) {
+      throw new Error('Invalid file path')
+    }
+
+    const workspaceLocks = this.getWorkspaceLocks()
+    const lock = workspaceLocks.get(filePath)
+    
+    if (!lock || lock.userId !== this.config.userId || lock.lockId !== lockId) {
+      return false
+    }
+
+    workspaceLocks.delete(filePath)
+    return true
+  }
+
+  /**
+   * Check for file conflicts
+   */
+  async checkForConflicts(filePath: string, expectedMetadata: FileMetadata): Promise<{ hasConflict: boolean; details?: any }> {
+    const currentMetadata = await this.getFileMetadata(filePath)
+    
+    if (!currentMetadata) {
+      return { hasConflict: false }
+    }
+
+    const hasConflict = currentMetadata.checksum !== expectedMetadata.checksum ||
+                       currentMetadata.lastModified.getTime() !== expectedMetadata.lastModified.getTime()
+
+    return {
+      hasConflict,
+      details: hasConflict ? {
+        current: currentMetadata,
+        expected: expectedMetadata
+      } : undefined
+    }
+  }
+
+  /**
+   * Resolve file conflict
+   */
+  async resolveConflict(filePath: string, content: string, strategy: 'user-choice' | 'auto-merge' | 'create-backup'): Promise<{ strategy: string }> {
+    if (!this.validateFilePath(filePath)) {
+      throw new Error('Invalid file path')
+    }
+
+    switch (strategy) {
+      case 'user-choice':
+        // User chose to overwrite - update the file
+        await this.updateFile(filePath, content)
+        break
+        
+      case 'create-backup':
+        // Create backup before overwriting
+        const backupPath = `${filePath}.backup.${Date.now()}`
+        try {
+          const currentContent = await fs.readFile(this.getFullPath(filePath), 'utf-8')
+          await fs.writeFile(this.getFullPath(backupPath), currentContent)
+        } catch (error) {
+          // Backup failed but continue with update
+        }
+        await this.updateFile(filePath, content)
+        break
+        
+      case 'auto-merge':
+        // Simple auto-merge (append new content)
+        try {
+          const currentContent = await fs.readFile(this.getFullPath(filePath), 'utf-8')
+          const mergedContent = currentContent + '\n\n' + content
+          await this.updateFile(filePath, mergedContent)
+        } catch (error) {
+          // Fallback to overwrite
+          await this.updateFile(filePath, content)
+        }
+        break
+    }
+
+    return { strategy }
   }
 
   /**
@@ -675,9 +834,22 @@ export class SecureFileSystemOperations extends EventEmitter {
 
     this.fileMetadataCache.clear()
     this.operationQueue.clear()
-    this.fileLocks.clear()
     this.syncInProgress.clear()
     this.removeAllListeners()
+    
+    // Clean up any locks held by this user
+    const workspaceLocks = this.getWorkspaceLocks()
+    const locksToRemove: string[] = []
+    
+    for (const [filePath, lock] of workspaceLocks.entries()) {
+      if (lock.userId === this.config.userId) {
+        locksToRemove.push(filePath)
+      }
+    }
+    
+    for (const filePath of locksToRemove) {
+      workspaceLocks.delete(filePath)
+    }
   }
 }
 

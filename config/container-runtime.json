@@ -1,0 +1,79 @@
+{
+  "$schema": "./container-runtime.schema.json",
+  "runtime": {
+    "version": "2.0.0",
+    "dataDirectory": "/usr/local/var/vibecode/containers",
+    "imageCacheDirectory": "/usr/local/var/vibecode/images",
+    "logDirectory": "/usr/local/var/log/vibecode"
+  },
+  "defaults": {
+    "cpuCount": 2,
+    "memorySize": 2147483648,
+    "startupTimeout": 5000,
+    "shutdownTimeout": 10000,
+    "enableRosetta": true
+  },
+  "networking": {
+    "mode": "nat",
+    "ipRange": "192.168.64.0/24",
+    "enableIPv6": false,
+    "dns": ["8.8.8.8", "8.8.4.4"]
+  },
+  "storage": {
+    "driver": "virtio",
+    "defaultSize": 10737418240,
+    "enableCompression": true,
+    "snapshotSupport": true
+  },
+  "security": {
+    "enableSecureBoot": false,
+    "allowHostAccess": true,
+    "isolationLevel": "standard"
+  },
+  "monitoring": {
+    "enableMetrics": true,
+    "metricsPort": 9090,
+    "healthCheckInterval": 30,
+    "enableCrashReports": true
+  },
+  "registry": {
+    "mirrors": [],
+    "insecureRegistries": [],
+    "credentials": {}
+  },
+  "images": {
+    "agentapi": {
+      "reference": "ghcr.io/vibecode/agentapi:latest",
+      "autoUpdate": true,
+      "updateInterval": 86400
+    },
+    "codeserver": {
+      "reference": "ghcr.io/ryanmaclean/vibecode-codeserver:latest",
+      "autoUpdate": false
+    }
+  },
+  "profiles": {
+    "minimal": {
+      "cpuCount": 1,
+      "memorySize": 1073741824,
+      "diskSize": 5368709120
+    },
+    "standard": {
+      "cpuCount": 2,
+      "memorySize": 2147483648,
+      "diskSize": 10737418240
+    },
+    "performance": {
+      "cpuCount": 4,
+      "memorySize": 4294967296,
+      "diskSize": 21474836480
+    }
+  },
+  "limits": {
+    "maxConcurrentContainers": 10,
+    "maxTotalCpus": 8,
+    "maxTotalMemory": 17179869184,
+    "perContainerCpuLimit": 4,
+    "perContainerMemoryLimit": 8589934592
+  }
+}

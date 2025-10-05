@@ -1,0 +1,450 @@
+# PostgreSQL 16 with pgvector extension for Azure Kubernetes Service
+# Production-grade StatefulSet with Azure Disk storage and encryption
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgresql-credentials
+  namespace: vibecode-platform
+type: Opaque
+data:
+  # Base64 encoded values - replace with actual values
+  postgres-password: cG9zdGdyZXNfc2VjdXJlX3Bhc3N3b3JkXzEyMw==  # postgres_secure_password_123
+  replication-password: cmVwbGljYXRpb25fc2VjdXJlX3Bhc3N3b3JkXzEyMw==  # replication_secure_password_123
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-config
+  namespace: vibecode-platform
+data:
+  postgresql.conf: |
+    # PostgreSQL 16 configuration optimized for Azure and pgvector
+    
+    # Connection settings
+    listen_addresses = '*'
+    port = 5432
+    max_connections = 200
+    
+    # Memory settings (adjust based on node size)
+    shared_buffers = 256MB
+    effective_cache_size = 1GB
+    work_mem = 4MB
+    maintenance_work_mem = 64MB
+    
+    # WAL settings for durability
+    wal_level = replica
+    max_wal_size = 1GB
+    min_wal_size = 80MB
+    checkpoint_completion_target = 0.9
+    
+    # Logging
+    logging_collector = on
+    log_directory = 'pg_log'
+    log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+    log_statement = 'all'
+    log_min_duration_statement = 1000
+    log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+    
+    # Replication settings
+    max_wal_senders = 3
+    wal_keep_size = 64MB
+    
+    # Performance tuning
+    random_page_cost = 1.1  # SSD optimization
+    effective_io_concurrency = 200
+    
+    # pgvector specific settings
+    shared_preload_libraries = 'pg_stat_statements,vector'
+    
+    # Security
+    ssl = on
+    ssl_cert_file = '/etc/ssl/certs/server.crt'
+    ssl_key_file = '/etc/ssl/private/server.key'
+    ssl_ca_file = '/etc/ssl/certs/ca.crt'
+    
+  pg_hba.conf: |
+    # PostgreSQL Client Authentication Configuration
+    
+    # TYPE  DATABASE        USER            ADDRESS                 METHOD
+    
+    # Local connections
+    local   all             postgres                                peer
+    local   all             all                                     md5
+    
+    # IPv4 local connections
+    host    all             postgres        127.0.0.1/32            md5
+    host    all             all             127.0.0.1/32            md5
+    
+    # Kubernetes pod network (adjust CIDR as needed)
+    host    all             all             10.244.0.0/16           md5
+    
+    # Replication connections
+    host    replication     replication     10.244.0.0/16           md5
+    
+  init.sql: |
+    -- Initialize database with pgvector extension
+    
+    -- Create application database
+    CREATE DATABASE vibecode;
+    
+    -- Connect to vibecode database
+    \c vibecode;
+    
+    -- Create pgvector extension
+    CREATE EXTENSION IF NOT EXISTS vector;
+    CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+    CREATE EXTENSION IF NOT EXISTS pgcrypto;
+    
+    -- Create application user
+    CREATE USER vibecode_app WITH PASSWORD 'app_secure_password_123';
+    GRANT ALL PRIVILEGES ON DATABASE vibecode TO vibecode_app;
+    GRANT ALL ON SCHEMA public TO vibecode_app;
+    
+    -- Create replication user
+    CREATE USER replication WITH REPLICATION PASSWORD 'replication_secure_password_123';
+    
+    -- Verify extensions
+    SELECT extname, extversion FROM pg_extension WHERE extname IN ('vector', 'pg_stat_statements', 'pgcrypto');
+    
+    -- Create initial tables for vector storage
+    CREATE TABLE IF NOT EXISTS embeddings (
+        id SERIAL PRIMARY KEY,
+        content TEXT NOT NULL,
+        embedding vector(1536),
+        metadata JSONB,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+    
+    -- Create indexes for vector search
+    CREATE INDEX IF NOT EXISTS embeddings_embedding_idx ON embeddings USING ivfflat (embedding vector_cosine_ops);
+    CREATE INDEX IF NOT EXISTS embeddings_metadata_idx ON embeddings USING gin (metadata);
+    
+    -- Grant permissions on tables
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO vibecode_app;
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO vibecode_app;
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql
+  namespace: vibecode-platform
+  labels:
+    app: postgresql
+    tier: database
+spec:
+  type: ClusterIP
+  ports:
+    - name: postgresql
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+  selector:
+    app: postgresql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-headless
+  namespace: vibecode-platform
+  labels:
+    app: postgresql
+    tier: database
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: postgresql
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+  selector:
+    app: postgresql
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgresql
+  namespace: vibecode-platform
+  labels:
+    app: postgresql
+    tier: database
+    version: "16"
+spec:
+  serviceName: postgresql-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgresql
+  template:
+    metadata:
+      labels:
+        app: postgresql
+        tier: database
+        version: "16"
+      annotations:
+        # Prometheus monitoring
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9187"
+        prometheus.io/path: "/metrics"
+        # Datadog monitoring
+        ad.datadoghq.com/postgresql.check_names: '["postgres"]'
+        ad.datadoghq.com/postgresql.init_configs: '[{}]'
+        ad.datadoghq.com/postgresql.instances: '[{"host":"%%host%%","port":5432,"username":"datadog","password":"%%env_DD_POSTGRES_PASSWORD%%","dbname":"vibecode","dbm":true}]'
+    spec:
+      # Security context for PostgreSQL
+      securityContext:
+        fsGroup: 999
+        runAsUser: 999
+        runAsGroup: 999
+        
+      # Node affinity for database workloads
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: "agentpool"
+                    operator: "In"
+                    values: ["database", "system"]
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: "app"
+                      operator: In
+                      values: ["postgresql"]
+                topologyKey: "kubernetes.io/hostname"
+                
+      # Tolerations for dedicated database nodes
+      tolerations:
+        - key: "database"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+        - key: "kubernetes.azure.com/scalesetpriority"
+          operator: "Equal"
+          value: "spot"
+          effect: "NoSchedule"
+          
+      containers:
+        # Main PostgreSQL container
+        - name: postgresql
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          
+          # Environment variables
+          env:
+            - name: POSTGRES_DB
+              value: "postgres"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-credentials
+                  key: postgres-password
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
+            - name: POSTGRES_INITDB_ARGS
+              value: "--auth-host=md5 --auth-local=peer"
+              
+          # Resource allocation
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+              
+          # Health checks
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec pg_isready -U postgres -h 127.0.0.1 -p 5432
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+            
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec pg_isready -U postgres -h 127.0.0.1 -p 5432
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+            
+          # Volume mounts
+          volumeMounts:
+            - name: postgresql-data
+              mountPath: /var/lib/postgresql/data
+            - name: postgresql-config
+              mountPath: /etc/postgresql/postgresql.conf
+              subPath: postgresql.conf
+            - name: postgresql-config
+              mountPath: /etc/postgresql/pg_hba.conf
+              subPath: pg_hba.conf
+            - name: postgresql-init
+              mountPath: /docker-entrypoint-initdb.d/init.sql
+              subPath: init.sql
+            - name: ssl-certs
+              mountPath: /etc/ssl/certs
+              readOnly: true
+            - name: ssl-private
+              mountPath: /etc/ssl/private
+              readOnly: true
+              
+          # Ports
+          ports:
+            - name: postgresql
+              containerPort: 5432
+              protocol: TCP
+              
+        # PostgreSQL Exporter for Prometheus monitoring
+        - name: postgres-exporter
+          image: prometheuscommunity/postgres-exporter:v0.15.0
+          imagePullPolicy: IfNotPresent
+          
+          env:
+            - name: DATA_SOURCE_NAME
+              value: "postgresql://postgres:$(POSTGRES_PASSWORD)@localhost:5432/postgres?sslmode=disable"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-credentials
+                  key: postgres-password
+                  
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+              
+          ports:
+            - name: metrics
+              containerPort: 9187
+              protocol: TCP
+              
+      # Volumes
+      volumes:
+        - name: postgresql-config
+          configMap:
+            name: postgresql-config
+        - name: postgresql-init
+          configMap:
+            name: postgresql-config
+        - name: ssl-certs
+          secret:
+            secretName: postgresql-ssl-certs
+            defaultMode: 0644
+        - name: ssl-private
+          secret:
+            secretName: postgresql-ssl-private
+            defaultMode: 0600
+            
+  # Volume claim templates for persistent storage
+  volumeClaimTemplates:
+    - metadata:
+        name: postgresql-data
+        labels:
+          app: postgresql
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: managed-csi-premium
+        resources:
+          requests:
+            storage: 100Gi
+        # Azure Disk encryption at rest
+        # This is handled automatically by Azure for managed disks
+---
+# SSL Certificate Secret (placeholder - use cert-manager or Azure Key Vault in production)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgresql-ssl-certs
+  namespace: vibecode-platform
+type: Opaque
+data:
+  server.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t  # Base64 encoded cert
+  ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t     # Base64 encoded CA cert
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgresql-ssl-private
+  namespace: vibecode-platform
+type: Opaque
+data:
+  server.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t  # Base64 encoded private key
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: postgresql-pdb
+  namespace: vibecode-platform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: postgresql
+---
+# Network Policy for PostgreSQL
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgresql-network-policy
+  namespace: vibecode-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: postgresql
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow connections from application pods
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: vibecode-platform
+        - podSelector:
+            matchLabels:
+              tier: application
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow monitoring
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: datadog
+      ports:
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 9187
+  egress:
+    # Allow DNS resolution
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow NTP
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 123

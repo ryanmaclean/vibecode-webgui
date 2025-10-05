@@ -1,0 +1,12 @@
+{
+    "typescript.preferences.includePackageJsonAutoImports": "on",
+    "typescript.suggest.autoImports": true,
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "files.exclude": {
+        "out": false
+    },
+    "search.exclude": {
+        "out": true,
+        "node_modules": true
+    }
+}

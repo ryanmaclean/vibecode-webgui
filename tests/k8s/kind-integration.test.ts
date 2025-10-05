@@ -11,13 +11,13 @@ const { describe, test, expect, beforeAll } = require('@jest/globals');
 const { execSync } = require('child_process');
 
 describe('KIND Integration Tests', () => {
-  const NAMESPACE = 'vibecode';
+  const NAMESPACE = 'vibecode-platform';
 
   beforeAll(async () => {
     // Wait for databases to be fully ready before testing
     console.log('Waiting for database pods to be ready...');
     await waitForPodsReady(['postgres', 'redis'], NAMESPACE, 60000);
-  });
+  }, 120000); // Increase timeout to 2 minutes
 
   describe('Database Integration', () => {
     test('should connect to PostgreSQL through Kubernetes service', async () => {
@@ -26,7 +26,7 @@ describe('KIND Integration Tests', () => {
         const podName = await getPodName('postgres', NAMESPACE);
 
         // Test basic connection
-        const connectionTest = execSync(;
+        const connectionTest = execSync(
           `kubectl exec -n ${NAMESPACE} ${podName} -- psql -U vibecode -d vibecode -c "SELECT 1 as health_check;"`,
           { encoding: 'utf8', timeout: 10000 }
         );
@@ -44,7 +44,7 @@ describe('KIND Integration Tests', () => {
         const podName = await getPodName('postgres', NAMESPACE);
 
         // Check that tables were created by init script
-        const tablesResult = execSync(;
+        const tablesResult = execSync(
           `kubectl exec -n ${NAMESPACE} ${podName} -- psql -U vibecode -d vibecode -c "\\dt"`,
           { encoding: 'utf8', timeout: 10000 }
         );
@@ -54,7 +54,7 @@ describe('KIND Integration Tests', () => {
         expect(tablesResult).toContain('feature_flags');
 
         // Check that test data was inserted
-        const usersResult = execSync(;
+        const usersResult = execSync(
           `kubectl exec -n ${NAMESPACE} ${podName} -- psql -U vibecode -d vibecode -c "SELECT email FROM users;"`,
           { encoding: 'utf8', timeout: 10000 }
         );
@@ -72,7 +72,7 @@ describe('KIND Integration Tests', () => {
         const podName = await getPodName('redis', NAMESPACE);
 
         // Test Redis connection and basic operations
-        const pingResult = execSync(;
+        const pingResult = execSync(
           `kubectl exec -n ${NAMESPACE} ${podName} -- redis-cli ping`,
           { encoding: 'utf8', timeout: 10000 }
         );
@@ -85,7 +85,7 @@ describe('KIND Integration Tests', () => {
           { encoding: 'utf8', timeout: 10000 }
         );
 
-        const getValue = execSync(;
+        const getValue = execSync(
           `kubectl exec -n ${NAMESPACE} ${podName} -- redis-cli get test_key`,
           { encoding: 'utf8', timeout: 10000 }
         );
@@ -105,7 +105,7 @@ describe('KIND Integration Tests', () => {
         const testPodName = `dns-test-${Date.now()}`
 
         execSync(
-          `kubectl run ${testPodName} -n ${NAMESPACE} --image=busybox --restart=Never -- sleep 300`,
+          `kubectl run ${testPodName} -n ${NAMESPACE} --image=busybox --restart=Never --overrides='{"spec":{"containers":[{"name":"${testPodName}","image":"busybox","resources":{"requests":{"cpu":"50m","memory":"64Mi"},"limits":{"cpu":"100m","memory":"128Mi"}}}]}}' -- sleep 300`,
           { encoding: 'utf8', timeout: 10000 }
         );
 
@@ -113,14 +113,14 @@ describe('KIND Integration Tests', () => {
         await waitForPodsReady([testPodName], NAMESPACE, 30000);
 
         // Test DNS resolution for services
-        const postgresLookup = execSync(;
+        const postgresLookup = execSync(
           `kubectl exec -n ${NAMESPACE} ${testPodName} -- nslookup postgres-service.vibecode.svc.cluster.local`,
           { encoding: 'utf8', timeout: 10000 }
         );
 
         expect(postgresLookup).toContain('postgres-service.vibecode.svc.cluster.local');
 
-        const redisLookup = execSync(;
+        const redisLookup = execSync(
           `kubectl exec -n ${NAMESPACE} ${testPodName} -- nslookup redis-service.vibecode.svc.cluster.local`,
           { encoding: 'utf8', timeout: 10000 }
         );
@@ -141,21 +141,21 @@ describe('KIND Integration Tests', () => {
         const testPodName = `network-test-${Date.now()}`
 
         execSync(
-          `kubectl run ${testPodName} -n ${NAMESPACE} --image=busybox --restart=Never -- sleep 300`,
+          `kubectl run ${testPodName} -n ${NAMESPACE} --image=busybox --restart=Never --overrides='{"spec":{"containers":[{"name":"${testPodName}","image":"busybox","resources":{"requests":{"cpu":"50m","memory":"64Mi"},"limits":{"cpu":"100m","memory":"128Mi"}}}]}}' -- sleep 300`,
           { encoding: 'utf8', timeout: 10000 }
         );
 
         await waitForPodsReady([testPodName], NAMESPACE, 30000);
 
         // Test PostgreSQL connectivity
-        const pgTest = execSync(;
+        const pgTest = execSync(
           `kubectl exec -n ${NAMESPACE} ${testPodName} -- nc -z postgres-service 5432`,
           { encoding: 'utf8', timeout: 10000 }
         );
         // nc returns empty output on success
 
         // Test Redis connectivity
-        const redisTest = execSync(;
+        const redisTest = execSync(
           `kubectl exec -n ${NAMESPACE} ${testPodName} -- nc -z redis-service 6379`,
           { encoding: 'utf8', timeout: 10000 }
         );
@@ -174,9 +174,9 @@ describe('KIND Integration Tests', () => {
       try {
         const originalPodName = await getPodName('postgres', NAMESPACE);
 
-        // Insert test data
+        // Insert test data (use ON CONFLICT to handle duplicates)
         execSync(
-          `kubectl exec -n ${NAMESPACE} ${originalPodName} -- psql -U vibecode -d vibecode -c "INSERT INTO users (email, name, provider, provider_id) VALUES ('persistence-test@vibecode.dev', 'Persistence Test', 'email', 'persistence-test');"`,
+          `kubectl exec -n ${NAMESPACE} ${originalPodName} -- psql -U vibecode -d vibecode -c "INSERT INTO users (email, name, provider, provider_id) VALUES ('persistence-test@vibecode.dev', 'Persistence Test', 'email', 'persistence-test') ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, provider = EXCLUDED.provider, provider_id = EXCLUDED.provider_id;"`,
           { encoding: 'utf8', timeout: 10000 }
         );
 
@@ -189,7 +189,7 @@ describe('KIND Integration Tests', () => {
         const newPodName = await getPodName('postgres', NAMESPACE);
 
         // Verify data persisted
-        const persistenceTest = execSync(;
+        const persistenceTest = execSync(
           `kubectl exec -n ${NAMESPACE} ${newPodName} -- psql -U vibecode -d vibecode -c "SELECT email FROM users WHERE email = 'persistence-test@vibecode.dev';"`,
           { encoding: 'utf8', timeout: 10000 }
         );
@@ -212,7 +212,7 @@ describe('KIND Integration Tests', () => {
         const podName = await getPodName('postgres', NAMESPACE);
 
         // Check that data directory is mounted and writable
-        const mountTest = execSync(;
+        const mountTest = execSync(
           `kubectl exec -n ${NAMESPACE} ${podName} -- ls -la /var/lib/postgresql/data`,
           { encoding: 'utf8', timeout: 10000 }
         );
@@ -220,7 +220,7 @@ describe('KIND Integration Tests', () => {
         expect(mountTest).toContain('postgres');
 
         // Check init script directory
-        const initTest = execSync(;
+        const initTest = execSync(
           `kubectl exec -n ${NAMESPACE} ${podName} -- ls -la /docker-entrypoint-initdb.d`,
           { encoding: 'utf8', timeout: 10000 }
         );
@@ -285,7 +285,7 @@ describe('KIND Integration Tests', () => {
       try {
         const podName = await getPodName('postgres', NAMESPACE);
 
-        const flagsResult = execSync(;
+        const flagsResult = execSync(
           `kubectl exec -n ${NAMESPACE} ${podName} -- psql -U vibecode -d vibecode -c "SELECT key, name, enabled FROM feature_flags;"`,
           { encoding: 'utf8', timeout: 10000 }
         );
@@ -294,7 +294,7 @@ describe('KIND Integration Tests', () => {
         expect(flagsResult).toContain('monitoring_enhanced');
 
         // Test specific flag values
-        const kindTestingFlag = execSync(;
+        const kindTestingFlag = execSync(
           `kubectl exec -n ${NAMESPACE} ${podName} -- psql -U vibecode -d vibecode -c "SELECT enabled, rollout_percentage FROM feature_flags WHERE key = 'kind_testing';"`,
           { encoding: 'utf8', timeout: 10000 }
         );
@@ -345,7 +345,7 @@ describe('KIND Integration Tests', () => {
         expect(newPodName).not.toBe(originalPodName);
 
         // Verify Redis is still functional
-        const pingResult = execSync(;
+        const pingResult = execSync(
           `kubectl exec -n ${NAMESPACE} ${newPodName} -- redis-cli ping`,
           { encoding: 'utf8', timeout: 10000 }
         );

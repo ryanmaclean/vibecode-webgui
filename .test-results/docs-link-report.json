@@ -1,0 +1,17 @@
+{
+  "timestamp": "2025-09-17T16:03:42.849Z",
+  "baseSegment": "vibecode-webgui",
+  "pagesChecked": 75,
+  "emptyLinks": 0,
+  "brokenCount": 2,
+  "brokenLinks": [
+    {
+      "from": "/Users/ryan.maclean/vibecode-webgui/docs/dist/infrastructure-fixes-august-2025/index.html",
+      "to": "/todo/"
+    },
+    {
+      "from": "/Users/ryan.maclean/vibecode-webgui/docs/dist/wiki-index/index.html",
+      "to": "./DATADOG_LOCAL_DEVELOPMENT/"
+    }
+  ]
+}

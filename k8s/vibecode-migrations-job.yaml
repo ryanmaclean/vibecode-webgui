@@ -1,0 +1,28 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vibecode-migrations
+  namespace: vibecode-platform
+spec:
+  template:
+    metadata:
+      labels:
+        app: vibecode-migrations
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: vibecode-webgui:latest
+          imagePullPolicy: Never
+          envFrom:
+            - configMapRef:
+                name: vibecode-config
+            - secretRef:
+                name: vibecode-secrets
+          command:
+            - npx
+            - prisma
+            - migrate
+            - deploy
+  backoffLimit: 0

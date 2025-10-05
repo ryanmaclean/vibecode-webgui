@@ -1,0 +1,132 @@
+name: Tauri CI - Test Builds
+
+on:
+  pull_request:
+    paths:
+      - 'src-tauri/**'
+      - 'src/**'
+      - 'package.json'
+      - 'Cargo.toml'
+      - '.github/workflows/tauri-*.yml'
+  push:
+    branches:
+      - 'feature/tauri-*'
+      - 'feature/dmg-*'
+
+env:
+  RUST_BACKTRACE: 1
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test-tauri-build:
+    name: Test Tauri Build (macOS)
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install frontend dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Check Rust formatting
+        working-directory: src-tauri
+        run: cargo fmt -- --check
+        continue-on-error: true
+
+      - name: Run Rust linter
+        working-directory: src-tauri
+        run: cargo clippy -- -D warnings
+        continue-on-error: true
+
+      - name: Run Rust tests
+        working-directory: src-tauri
+        run: cargo test --verbose
+
+      - name: Test Tauri build (debug mode)
+        run: |
+          echo "Testing Tauri build in debug mode..."
+          npm run tauri build -- --target aarch64-apple-darwin --debug
+
+      - name: Verify build artifacts
+        run: |
+          echo "Checking for build artifacts..."
+          ls -lh src-tauri/target/aarch64-apple-darwin/debug/bundle/macos/ || echo "No macOS bundle found"
+
+      - name: Upload test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-test-artifacts
+          path: |
+            src-tauri/target/aarch64-apple-darwin/debug/
+            src-tauri/Cargo.lock
+          retention-days: 7
+
+  lint-tauri-config:
+    name: Lint Tauri Configuration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate tauri.conf.json
+        run: |
+          if [ -f "src-tauri/tauri.conf.json" ]; then
+            echo "Validating tauri.conf.json..."
+            cat src-tauri/tauri.conf.json | jq empty
+            echo "✓ Valid JSON"
+          else
+            echo "⚠️  src-tauri/tauri.conf.json not found"
+            exit 1
+          fi
+
+      - name: Check Cargo.toml
+        run: |
+          if [ -f "src-tauri/Cargo.toml" ]; then
+            echo "Cargo.toml found"
+            cat src-tauri/Cargo.toml
+          else
+            echo "⚠️  src-tauri/Cargo.toml not found"
+            exit 1
+          fi
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run Rust security audit
+        working-directory: src-tauri
+        run: cargo audit --deny warnings
+        continue-on-error: true
+
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+        continue-on-error: true

@@ -1,7 +1,4 @@
-# Datadog Helm Chart Values for Kubernetes Autoscaling
 datadog:
-  apiKeyExistingSecret: "datadog-secret"
-  appKey: ""  # Add your app key here if available
   site: "datadoghq.com"
   clusterName: "vibecode-kind-test"
 
@@ -24,6 +21,7 @@ datadog:
   logs:
     enabled: true
     containerCollectAll: true
+    containerCollectUsingFiles: true
   apm:
     enabled: true
   processAgent:
@@ -46,10 +44,55 @@ datadog:
   # Orchestrator Explorer (Required for Pod collection)
   orchestratorExplorer:
     enabled: true
+  kubeStateMetricsScrape:
+    enabled: true
+  env:
+    - name: DD_LLMOBS_ENABLED
+      value: "1"
+    - name: DD_LLMOBS_AGENTLESS_ENABLED
+      value: "1"
+    - name: DD_LLMOBS_ML_APP
+      value: "vibecode-ai"
+    - name: DD_SERVICE
+      value: "vibecode-webgui"
+    - name: DD_ENV
+      value: "production"
+    - name: DD_VERSION
+      value: "1.0.0"
+    - name: DD_APPSEC_ENABLED
+      value: "true"
+    - name: DD_IAST_ENABLED
+      value: "true"
+    - name: DD_IAST_REQUEST_SAMPLING
+      value: "1.0"
+    - name: DD_PROFILING_ENABLED
+      value: "true"
+    - name: DD_TRACE_SAMPLE_RATE
+      value: "1"
+    - name: DD_TRACE_ENABLED
+      value: "true"
+    - name: DD_LOGS_ENABLED
+      value: "true"
+    - name: DD_APM_FEATURES
+      value: "appsec,profiling,ci_visibility"
+    - name: DD_DBM_PROPAGATION_MODE
+      value: "full"
+    - name: DD_DBM_TRACE_INJECTION
+      value: "true"
 
-# Cluster Agent Configuration (Required version >=1.18.0)
-clusterAgent:
-  enabled: true
+  confd:
+    redisdb.yaml: |
+      init_config:
+      instances:
+        - host: valkey-service.vibecode-platform.svc.cluster.local
+          port: 6379
+          password: ${DD_VALKEY_PASSWORD:-${DATADOG_VALKEY_PASSWORD}}
+          tags:
+            - env:production
+            - service:vibecode-valkey
+            - component:cache
+
+agents:
   image:
     tag: "1.24.0"  # Ensure we meet minimum version requirement
   
@@ -71,14 +114,20 @@ clusterAgent:
   orchestratorExplorer:
     enabled: true
 
-# Node Agent Configuration (Required version >=7.33.0)
-agents:
+clusterChecksRunner:
   enabled: true
-  image:
-    tag: "7.66.1"  # Meets minimum version requirement
-  
-  # Orchestrator Explorer for Pod collection
-  orchestratorExplorer:
+
+orchestratorExplorer:
+  enabled: true
+
+networkMonitoring:
+  enabled: true
+
+securityAgent:
+  enabled: true
+  runtime:
+    enabled: true
+  compliance:
     enabled: true
 
 # Target Allocator for advanced metrics

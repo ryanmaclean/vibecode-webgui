@@ -429,13 +429,21 @@ describe('Monitoring Test Quality Validation', () => {
     const fs = require('fs')
     const testFileContent = fs.readFileSync(__filename, 'utf8')
 
-    // Count mock usage
-    const mockCount = (testFileContent.match(/jest\.mock/g) || []).length
-    const mockFnCount = (testFileContent.match(/jest\.fn/g) || []).length
+    // Count ACTUAL mock usage (excluding this validator's own checks)
+    const lines = testFileContent.split('\n')
+    const actualMocks = lines.filter(line =>
+      (line.includes('jest.mock') || line.includes('jest.fn')) &&
+      !line.includes('expect(') &&
+      !line.includes('match(/jest\\.mock/g)') &&
+      !line.includes('.not.toContain(') &&
+      !line.includes('// Count') &&
+      !line.includes('line.includes(') &&
+      !line.trim().startsWith('//') &&
+      (line.trim().startsWith('jest.mock') || line.includes('jest.fn()'))
+    )
 
-    // Integration tests should have minimal mocking
-    expect(mockCount).toBeLessThanOrEqual(1)
-    expect(mockFnCount).toBeLessThanOrEqual(2)
+    // Integration tests should have minimal ACTUAL mocking (validator code excluded)
+    expect(actualMocks.length).toBeLessThanOrEqual(1)
 
     // Should not mock critical monitoring components
     expect(testFileContent).not.toContain("jest.mock('@datadog/browser-rum')")

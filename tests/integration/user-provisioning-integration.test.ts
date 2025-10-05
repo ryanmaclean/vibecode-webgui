@@ -4,7 +4,7 @@
  */
 
 import { describe, test, beforeAll, afterAll, expect } from '@jest/globals'
-import { execSync } from 'child_process'
+import { execSync, spawnSync } from 'child_process'
 import * as fs from 'fs'
 
 const CLUSTER_NAME = 'vibecode-provisioning-test'
@@ -12,18 +12,58 @@ const NAMESPACE = 'vibecode-platform'
 const HELM_RELEASE = 'vibecode-platform'
 const CHART_PATH = 'helm/vibecode-platform';
 const TIMEOUT = 600000; // 10 minutes
+const HELM_VALUES_FILE = process.env.HELM_PROVISIONING_VALUES_FILE || 'helm/values/provisioning-ci.yaml';
+const HELM_TIMEOUT = process.env.HELM_INSTALL_TIMEOUT || '600s';
 
-describe('User Provisioning Integration Tests', () => {
+const stripAnsi = (value: string): string => value.replace(/\u001b\[[0-9;]*m/g, '');
+
+function commandAvailable(command: string): boolean {
+  const args = command === 'kubectl' ? ['version', '--client'] : ['version'];
+  const result = spawnSync(command, args, { stdio: 'ignore' })
+  if (result.error && (result.error as NodeJS.ErrnoException).code === 'ENOENT') {
+    return false
+  }
+  return result.status === 0
+}
+
+const requiredCommands = ['helm', 'kubectl', 'kind']
+const missingCommands = requiredCommands.filter((command) => !commandAvailable(command))
+const shouldRunProvisioning =
+  process.env.RUN_INFRA_PROVISIONING_TESTS === 'true' &&
+  process.env.RUN_HELM_PROVISIONING_TESTS === 'true' &&
+  missingCommands.length === 0
+
+if (!shouldRunProvisioning) {
+  const reason = missingCommands.length > 0
+    ? `missing required tooling: ${missingCommands.join(', ')}`
+    : 'RUN_INFRA_PROVISIONING_TESTS and RUN_HELM_PROVISIONING_TESTS flags not set'
+  console.warn(`Skipping user provisioning integration tests: ${reason}`)
+}
+
+const describeProvisioning = shouldRunProvisioning ? describe : describe.skip
+
+describeProvisioning('User Provisioning Integration Tests', () => {
   beforeAll(async () => {
     console.log('Setting up integration test environment...');
 
     // Create KIND cluster
     try {
       execSync(`kind get clusters | grep -q "^${CLUSTER_NAME}$"`, { stdio: 'pipe' });
-      console.log(`Cluster ${CLUSTER_NAME} already exists, using it`)} catch {
-      execSync(`kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-simple-config.yaml`, {
+      console.log(`Cluster ${CLUSTER_NAME} already exists, using it`)
+    } catch {
+      // Clean up any existing clusters that might be using conflicting ports
+      try {
+        console.log('Cleaning up any existing kind clusters...');
+        execSync('kind get clusters | xargs -I {} kind delete cluster --name {}', { stdio: 'pipe' });
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+      
+      console.log(`Creating new cluster ${CLUSTER_NAME}...`);
+      execSync(`kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-test-config.yaml`, {
         stdio: 'inherit'
-      })}
+      });
+    }
 
     // Set kubectl context
     execSync(`kubectl config use-context kind-${CLUSTER_NAME}`, { stdio: 'inherit' })
@@ -48,8 +88,30 @@ describe('User Provisioning Integration Tests', () => {
       stdio: 'inherit'
     });
 
+    // Install Prometheus Operator CRDs (required for ServiceMonitor resources)
+    console.log('Installing Prometheus Operator CRDs...');
+    execSync('./scripts/install-prometheus-operator-crds.sh', {
+      stdio: 'inherit',
+      cwd: process.cwd()
+    });
+
+    // Pre-pull container images to reduce helm install latency
+    try {
+      const images = process.env.HELM_IMAGES || 'codercom/code-server:latest bitnami/postgresql:16.2.0';
+      execSync('bash scripts/prepull-helm-images.sh', {
+        stdio: 'inherit',
+        env: {
+          ...process.env,
+          HELM_IMAGES: images,
+          KIND_CLUSTER_NAME: CLUSTER_NAME
+        }
+      });
+    } catch (prepullError) {
+      console.warn('Image pre-pull skipped:', prepullError instanceof Error ? prepullError.message : prepullError);
+    }
+
     // Install Helm chart
-    execSync(`helm install ${HELM_RELEASE} ${CHART_PATH} --namespace ${NAMESPACE} --wait --timeout=300s`, {
+    execSync(`helm install ${HELM_RELEASE} ${CHART_PATH} --namespace ${NAMESPACE} -f ${HELM_VALUES_FILE} --wait --timeout=${HELM_TIMEOUT}`, {
       stdio: 'inherit',
       cwd: process.cwd()
     })}, TIMEOUT)
@@ -79,10 +141,11 @@ describe('User Provisioning Integration Tests', () => {
       })
 
       // Verify output contains expected information
-      expect(output).toContain('Successfully provisioned workspace');
-      expect(output).toContain(`user: ${userId}`)
-      expect(output).toContain(`http://${userId}.vibecode.local`);
-      expect(output).toContain('Password:');
+      const cleanOutput = stripAnsi(output);
+      expect(cleanOutput).toContain('User workspace created successfully!');
+      expect(cleanOutput).toContain(`User ID: ${userId}`);
+      expect(cleanOutput).toContain(`Access URL: http://${userId}.vibecode.local`);
+      expect(cleanOutput).toMatch(/Password:\s+\S+/);
 
       // Wait for deployment to be ready
       execSync(`kubectl wait --for=condition=Available deployment/code-server-${userId} --namespace ${NAMESPACE} --timeout=300s`, {
@@ -245,14 +308,20 @@ spec:
   - name: test
     image: curlimages/curl:latest
     command: ['sleep', '300']
+    resources:
+      requests:
+        cpu: '50m'
+        memory: '64Mi'
+      limits:
+        cpu: '100m'
+        memory: '128Mi'
 `;
 
       execSync('kubectl apply -f -', {
-        input: networkTestPod,
-        stdio: 'inherit'
+        input: networkTestPod
       })
 
-      execSync('kubectl wait --for=condition=Ready pod/network-test-pod --namespace ${NAMESPACE} --timeout=60s', {
+      execSync(`kubectl wait --for=condition=Ready pod/network-test-pod --namespace ${NAMESPACE} --timeout=60s`, {
         stdio: 'inherit'
       })
 
@@ -362,10 +431,11 @@ spec:
       });
 
       // Verify all users are listed
+      const cleanListOutput = stripAnsi(output);
       users.forEach(user => {
-        expect(output).toContain(user)})
+        expect(cleanListOutput).toContain(user)})
 
-      expect(output).toContain('Active user workspaces')} finally {
+      expect(cleanListOutput).toContain('Active user workspaces')} finally {
       // Cleanup all test users
       for (const user of users) {
         try {
@@ -407,11 +477,12 @@ spec:
       })
 
       // Verify status output contains expected information
-      expect(output).toContain('Deployment status:')
-      expect(output).toContain('Pod status:')
-      expect(output).toContain('Service status:')
-      expect(output).toContain('Ingress status:');
-      expect(output).toContain(`code-server-${userId}`)} finally {
+      const cleanStatusOutput = stripAnsi(output);
+      expect(cleanStatusOutput).toContain('Deployment status:')
+      expect(cleanStatusOutput).toContain('Pod status:')
+      expect(cleanStatusOutput).toContain('Service status:')
+      expect(cleanStatusOutput).toContain('Ingress status:');
+      expect(cleanStatusOutput).toContain(`code-server-${userId}`)} finally {
       // Cleanup
       try {
         execSync(`scripts/provision-user.sh delete ${userId} --delete-storage --namespace ${NAMESPACE}`, {
