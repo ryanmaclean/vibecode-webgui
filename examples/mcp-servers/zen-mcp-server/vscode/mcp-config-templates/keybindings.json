@@ -1,0 +1,32 @@
+[
+  {
+    "key": "ctrl+shift+z f",
+    "command": "workbench.action.chat.open",
+    "args": "@zen start focus --duration 25m",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+shift+z b",
+    "command": "workbench.action.chat.open",
+    "args": "@zen schedule break --in 30m",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+shift+z s",
+    "command": "workbench.action.chat.open",
+    "args": "@zen stats today",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+shift+z p",
+    "command": "workbench.action.chat.open",
+    "args": "@zen pomodoro --cycles 4",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+shift+z m",
+    "command": "workbench.action.chat.open",
+    "args": "@zen mindful-review",
+    "when": "editorTextFocus"
+  }
+]
