@@ -6,7 +6,7 @@
 set -euo pipefail
 
 ARCH="${1:-x86_64}"
-KERNEL_VERSION="${2:-6.17.14}"
+KERNEL_VERSION="${2:-6.6.52}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 WORK_DIR="${REPO_ROOT}/artifacts/minivim/work"
