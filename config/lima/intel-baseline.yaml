@@ -1,14 +1,14 @@
-# Lima VM Profile: Intel x86_64 IDE Baseline
-# Issue #558: Intel Lima IDE baseline (x86 macOS)
-# Usage: limactl start --name=vibecode-intel intel-baseline.yaml
+# Lima VM Profile: ARM64 IDE Baseline for M-Series
+# Issue #558: ARM Lima IDE baseline (M-Series macOS)
+# Usage: limactl start --name=vibecode-arm64 intel-baseline.yaml
 
 vmType: "vz"
 os: "Linux"
-arch: "x86_64"
+arch: "aarch64"
 
 images:
-  - location: "https://cloud-images.ubuntu.com/releases/22.04/release/ubuntu-22.04-server-cloudimg-amd64.img"
-    arch: "x86_64"
+  - location: "https://cloud-images.ubuntu.com/releases/22.04/release/ubuntu-22.04-server-cloudimg-arm64.img"
+    arch: "aarch64"
     digest: "sha256:..."
 
 cpus: 4
