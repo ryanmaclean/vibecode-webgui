@@ -104,8 +104,8 @@ export default function Home() {
                 onClick={logout}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
-                Template Marketplace
-              </Link>
+                Logout
+              </button>
               
               {/* User Menu */}
               <div className="relative" data-testid="user-menu">
