@@ -43,24 +43,12 @@ declare module 'next-auth/jwt' {
   }
 }
 
-// NextAuth configuration is properly loaded
+// Build providers array conditionally
+const providers: any[] = [];
 
-export const authOptions: NextAuthOptions = {
-  // adapter: PrismaAdapter(prisma), // Disabled for file-based development
-  secret: process.env.NEXTAUTH_SECRET,
-  // cookies: {
-  //   sessionToken: {
-  //     name: `__Secure-next-auth.session-token`,
-  //     options: {
-  //       httpOnly: true,
-  //       sameSite: 'lax',
-  //       path: '/',
-  //       secure: process.env.NODE_ENV === 'production',
-  //       domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined
-  //     }
-  //   }
-  // },
-  providers: [
+// GitHub Provider
+if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
+  providers.push(
     GithubProvider({
       clientId: process.env.GITHUB_ID,
       clientSecret: process.env.GITHUB_SECRET,
@@ -70,16 +58,17 @@ export const authOptions: NextAuthOptions = {
           name: profile.name || profile.login,
           email: profile.email,
           image: profile.avatar_url,
-          role: 'user', // Default role
+          role: 'user',
           githubId: profile.id.toString(),
         }
       },
     })
-  )
+  );
 } else if (process.env.NODE_ENV !== 'production') {
-  console.warn('GitHub OAuth provider disabled: missing GITHUB_ID/GITHUB_SECRET env vars')
+  console.warn('GitHub OAuth provider disabled: missing GITHUB_ID/GITHUB_SECRET env vars');
 }
 
+// Google Provider
 if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   providers.push(
     GoogleProvider({
@@ -91,56 +80,49 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           name: profile.name,
           email: profile.email,
           image: profile.picture,
-          role: 'user', // Default role
+          role: 'user',
           googleId: profile.sub,
         }
       },
-    }),
-    CredentialsProvider({
-      name: 'Credentials',
-      credentials: {
-        email: { label: 'Email', type: 'text' },
-        password: { label: 'Password', type: 'password' },
-      },
-      async authorize(credentials) {
-        console.log('🔐 NextAuth authorize called with:', credentials);
-        if (!credentials) {
-          console.log('❌ No credentials provided');
-          return null;
-        }
-
-        // Simple validation for testing
-        if (credentials.email === 'developer@vibecode.dev' && credentials.password === 'dev123') {
-          console.log('✅ User authenticated successfully:', credentials.email);
-          return { 
-            id: '2', 
-            name: 'Developer User', 
-            email: 'developer@vibecode.dev', 
-            role: 'developer' 
-          }
-        } else {
-          console.log('❌ Authentication failed for:', credentials.email);
-          return null
-        }
-      },
     })
-)
+  );
+}
 
+// Credentials Provider (for testing)
+providers.push(
+  CredentialsProvider({
+    name: 'Credentials',
+    credentials: {
+      email: { label: 'Email', type: 'text' },
+      password: { label: 'Password', type: 'password' },
+    },
+    async authorize(credentials) {
+      console.log('🔐 NextAuth authorize called with:', credentials);
+      if (!credentials) {
+        console.log('❌ No credentials provided');
+        return null;
+      }
+
+      // Simple validation for testing
+      if (credentials.email === 'developer@vibecode.dev' && credentials.password === 'dev123') {
+        console.log('✅ User authenticated successfully:', credentials.email);
+        return { 
+          id: '2', 
+          name: 'Developer User', 
+          email: 'developer@vibecode.dev', 
+          role: 'developer' 
+        }
+      } else {
+        console.log('❌ Authentication failed for:', credentials.email);
+        return null;
+      }
+    },
+  })
+);
+
+// NextAuth configuration
 export const authOptions: NextAuthOptions = {
-  // adapter: PrismaAdapter(prisma), // Disabled for file-based development
   secret: process.env.NEXTAUTH_SECRET,
-  // cookies: {
-  //   sessionToken: {
-  //     name: `__Secure-next-auth.session-token`,
-  //     options: {
-  //       httpOnly: true,
-  //       sameSite: 'lax',
-  //       path: '/',
-  //       secure: process.env.NODE_ENV === 'production',
-  //       domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined
-  //     }
-  //   }
-  // },
   providers,
   session: {
     strategy: 'jwt',
