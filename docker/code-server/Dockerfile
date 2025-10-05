@@ -36,10 +36,13 @@ RUN npm install -g \
     eslint \
     ts-node
 
-# Install Go
-RUN wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz \
-    && tar -C /usr/local -xzf go1.22.4.linux-amd64.tar.gz \
-    && rm go1.22.4.linux-amd64.tar.gz \
+# Install Go (multi-arch support)
+ARG TARGETARCH
+ARG GO_VERSION=1.25.1
+RUN ARCH="${TARGETARCH:-amd64}" && \
+    wget "https://go.dev/dl/go${GO_VERSION}.linux-${ARCH}.tar.gz" \
+    && tar -C /usr/local -xzf "go${GO_VERSION}.linux-${ARCH}.tar.gz" \
+    && rm "go${GO_VERSION}.linux-${ARCH}.tar.gz" \
     && ln -s /usr/local/go/bin/go /usr/local/bin/go
 
 # Install Goose for database migrations

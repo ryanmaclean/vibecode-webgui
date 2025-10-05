@@ -70,7 +70,7 @@ jobs:
         tags: |
           type=ref,event=branch
           type=ref,event=pr
-          type=sha,prefix={{branch}}-
+          type=sha,format=short
           type=raw,value=latest,enable={{is_default_branch}}
 
     - name: Build and push Docker image
@@ -79,7 +79,7 @@ jobs:
       with:
         context: .
         file: ./Dockerfile.production
-        push: true
+        push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
@@ -94,16 +94,19 @@ jobs:
         image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
         format: spdx-json
         output-file: sbom.spdx.json
+      if: github.event_name != 'pull_request'
 
     - name: Upload SBOM
       uses: actions/upload-artifact@v4
       with:
         name: sbom-${{ github.sha }}
         path: sbom.spdx.json
+      if: github.event_name != 'pull_request'
 
   security-scan:
     needs: build-and-push
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
     permissions:
       contents: read
       security-events: write
@@ -112,14 +115,18 @@ jobs:
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: ${{ needs.build-and-push.outputs.image-tag }}
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build-and-push.outputs.image-digest }}
         format: 'sarif'
         output: 'trivy-results.sarif'
+      env:
+        REGISTRY: ghcr.io
+        IMAGE_NAME: ${{ github.repository }}
 
     - name: Upload Trivy scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: 'trivy-results.sarif'
+      if: always()
 
   deploy-to-aks:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
