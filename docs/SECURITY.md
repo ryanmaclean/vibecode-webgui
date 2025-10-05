@@ -1,8 +1,69 @@
+# Security Policy
+
+## Vulnerability Reporting
+
+### How to Report a Security Vulnerability
+
+If you discover a security vulnerability in VibeCode WebGUI, please report it responsibly:
+
+1. **DO NOT** create a public GitHub issue
+2. **Email**: security@vibecode.dev with details:
+   - Description of the vulnerability
+   - Steps to reproduce
+   - Potential impact
+   - Suggested fix (if available)
+3. **Response Time**: We aim to respond within 48 hours
+4. **Disclosure Timeline**: We follow coordinated disclosure (90 days)
+
+### Supported Versions
+
+| Version | Supported          |
+| ------- | ------------------ |
+| main    | :white_check_mark: |
+| < 0.1.0 | :x:                |
+
+### Security Best Practices
+
+#### For Developers
+
+1. **Authentication & Authorization**
+   - Never hardcode credentials or API keys
+   - Use environment variables for secrets
+   - Implement proper session management
+   - Always use HTTPS in production
+
+2. **Cryptography**
+   - Use `crypto.randomBytes()` for security-critical random values
+   - Never use `Math.random()` for passwords, tokens, or session IDs
+   - Use bcrypt/argon2 for password hashing (cost factor >= 12)
+   - Implement proper key rotation policies
+
+3. **Input Validation**
+   - Validate and sanitize all user inputs
+   - Use parameterized queries to prevent SQL injection
+   - Implement proper CORS policies
+   - Escape output to prevent XSS attacks
+
+4. **Dependencies**
+   - Keep dependencies up to date
+   - Review Dependabot PRs promptly
+   - Run `npm audit` regularly
+   - Verify checksums for downloaded binaries
+
+5. **Code Review**
+   - All security-related changes require review
+   - Use ESLint security plugins
+   - Run SAST tools in CI/CD pipeline
+   - Document security decisions in ADRs
+
+---
+
 # Supply Chain Security Checklist (Issue #416)
 
 Sloane (Documentation) captured Maya's supply-chain verification plan in this checklist so the engineering and release teams can execute repeatable, auditable verification before promoting CLI tooling into any environment. Owners must keep this document current with every release cycle.
 
 - [2025-10-02] Issue #445: Legacy WebGUI credentials now hashed with bcrypt; database-backed auth still pending for full migration.
+- [2025-10-04] Issue #529: Replaced Math.random() with crypto.randomBytes() for password and session ID generation.
 
 ## Supply Chain Verification Overview
 
