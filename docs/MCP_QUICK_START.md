@@ -73,6 +73,18 @@ Or manually update `~/.codeium/windsurf/mcp_config.json`:
         "DD_TRACE_AGENT_PORT": "8126",
         "DD_ENV": "development"
       }
+    },
+    "zen": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@beehiveinnovations/zen-mcp-server"
+      ],
+      "env": {
+        "DD_AGENT_HOST": "localhost",
+        "DD_TRACE_AGENT_PORT": "8126",
+        "DD_ENV": "development"
+      }
     }
   }
 }
@@ -100,6 +112,7 @@ Datadog tracing enabled for <service> MCP server
    - `mcp-puppeteer`
    - `mcp-sequential-thinking`
    - `mcp-roundtable-ai`
+   - `mcp-zen`
 
 ### Test Trace Agent
 

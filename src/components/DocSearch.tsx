@@ -236,7 +236,7 @@ export default function DocSearch() {
         
         {query && !loading && results.length === 0 && (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            No results found for "{query}". Try different keywords or check spelling.
+            No results found for &quot;{query}&quot;. Try different keywords or check spelling.
           </div>
         )}
       </div>
@@ -252,8 +252,8 @@ export default function DocSearch() {
               Search Techniques
             </h3>
             <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-              <li>• Use specific keywords like "deployment", "testing", "kubernetes"</li>
-              <li>• Combine terms: "production deployment guide"</li>
+              <li>• Use specific keywords like &quot;deployment&quot;, &quot;testing&quot;, &quot;kubernetes&quot;</li>
+              <li>• Combine terms: &quot;production deployment guide&quot;</li>
               <li>• Filter by category for focused results</li>
               <li>• Search headings and content are both indexed</li>
             </ul>
