@@ -1,0 +1,42 @@
+# Lima VM Profile: Slim vi Micro-Guest
+# Issue #560: Slim vi micro-guest for Lima
+# Ultra-minimal VM for vi editing only - sub-10s boot target
+
+vmType: "vz"
+os: "Linux" 
+arch: "x86_64"
+
+# Use minimal Alpine Linux
+images:
+  - location: "https://dl-cdn.alpinelinux.org/alpine/v3.18/releases/x86_64/alpine-virt-3.18.4-x86_64.iso"
+    arch: "x86_64"
+
+# Minimal resources
+cpus: 1
+memory: "512MiB"
+disk: "2GiB"
+
+# Minimal mounts
+mounts:
+  - location: "~/Documents"
+    writable: true
+
+networks:
+  - lima: shared
+
+# Install only vi
+provision:
+  - mode: system
+    script: |
+      #!/bin/sh
+      apk add --no-cache vim-tiny
+      
+# No port forwards (no services running)
+portForwards: []
+
+# Quick boot probe
+probes:
+  - script: |
+      #!/bin/sh
+      command -v vi
+    hint: vi not installed
