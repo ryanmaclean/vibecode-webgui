@@ -1,0 +1,117 @@
+/**
+ * Container Management API
+ * 
+ * Endpoints for managing Apple Container instances
+ */
+
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { appleContainer } from '@/lib/container/apple-container'
+import type { ContainerOptions } from '@/lib/container/types'
+
+/**
+ * GET /api/containers
+ * List all containers
+ */
+export async function GET() {
+  try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Check if Apple Container is available
+    const isAvailable = await appleContainer.isAvailable()
+    if (!isAvailable) {
+      return NextResponse.json(
+        { error: 'Apple Container CLI not available' },
+        { status: 503 }
+      )
+    }
+
+    // List containers
+    const result = await appleContainer.list()
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error || 'Failed to list containers' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      containers: result.containers,
+      count: result.containers.length,
+    })
+  } catch (error) {
+    console.error('Error listing containers:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * POST /api/containers
+ * Start a new container
+ */
+export async function POST(req: NextRequest) {
+  try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Parse request body
+    const body = await req.json()
+    const { image, options } = body as {
+      image: string
+      options?: ContainerOptions
+    }
+
+    if (!image) {
+      return NextResponse.json(
+        { error: 'Image name is required' },
+        { status: 400 }
+      )
+    }
+
+    // Check if Apple Container is available
+    const isAvailable = await appleContainer.isAvailable()
+    if (!isAvailable) {
+      return NextResponse.json(
+        { error: 'Apple Container CLI not available' },
+        { status: 503 }
+      )
+    }
+
+    // Start container
+    const result = await appleContainer.start(image, options)
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error || 'Failed to start container' },
+        { status: 500 }
+      )
+    }
+
+    // Get container details
+    const containerInfo = await appleContainer.inspect(result.id)
+
+    return NextResponse.json({
+      id: result.id,
+      name: result.name,
+      info: containerInfo,
+    })
+  } catch (error) {
+    console.error('Error starting container:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

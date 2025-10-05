@@ -1,0 +1,17 @@
+{{- if .Values.sidecar.datadog.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "code-server-cloud.fullname" . }}-datadog
+  labels:
+    {{- include "code-server-cloud.labels" . | nindent 4 }}
+data:
+  datadog.yaml: |
+{{- with .Values.sidecar.datadog.config }}
+{{ . | indent 4 }}
+{{- else }}
+    api_key: ${DD_API_KEY}
+    site: datadoghq.com
+    logs_enabled: true
+{{- end }}
+{{- end }}

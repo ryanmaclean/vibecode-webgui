@@ -1,0 +1,206 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app.name }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.app.name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Values.app.version }}
+    app.kubernetes.io/component: application
+    {{- range $key, $value := .Values.labels }}
+    {{ $key }}: {{ $value }}
+    {{- end }}
+  annotations:
+    {{- range $key, $value := .Values.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  replicas: {{ .Values.deployment.replicaCount }}
+  strategy:
+    type: {{ .Values.deployment.strategy.type }}
+    {{- if eq .Values.deployment.strategy.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.deployment.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.deployment.strategy.rollingUpdate.maxUnavailable }}
+    {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.app.name }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.app.name }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/version: {{ .Values.app.version }}
+        app.kubernetes.io/component: application
+        {{- range $key, $value := .Values.labels }}
+        {{ $key }}: {{ $value }}
+        {{- end }}
+      annotations:
+        {{- if .Values.monitoring.datadog.enabled }}
+        {{- range $key, $value := .Values.monitoring.datadog.annotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+        # Restart pods when config changes
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- range $key, $value := .Values.annotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.image.pullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: {{ .Values.app.name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.service.targetPort }}
+          protocol: TCP
+        {{- if .Values.monitoring.prometheus.enabled }}
+        - name: metrics
+          containerPort: {{ .Values.monitoring.prometheus.port }}
+          protocol: TCP
+        {{- end }}
+        env:
+        - name: NODE_ENV
+          value: {{ .Values.env.NODE_ENV }}
+        - name: NEXT_TELEMETRY_DISABLED
+          value: {{ .Values.env.NEXT_TELEMETRY_DISABLED | quote }}
+        - name: PORT
+          value: {{ .Values.service.targetPort | quote }}
+        # Database configuration from secret
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.name }}
+              key: DATABASE_URL
+        # Authentication configuration
+        - name: NEXTAUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.name }}
+              key: NEXTAUTH_SECRET
+        - name: NEXTAUTH_URL
+          value: "https://{{ (index .Values.ingress.hosts 0).host }}"
+        # Datadog configuration
+        - name: DD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.name }}
+              key: DD_API_KEY
+        - name: DD_APP_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.name }}
+              key: DD_APP_KEY
+        - name: DD_SITE
+          value: {{ .Values.env.DD_SITE | default "datadoghq.com" | quote }}
+        - name: DD_ENV
+          value: {{ .Values.env.NODE_ENV }}
+        - name: DD_SERVICE
+          value: vibecode-webgui
+        - name: DD_VERSION
+          value: {{ .Values.app.version }}
+        - name: DD_DYNAMIC_INSTRUMENTATION_ENABLED
+          value: "true"
+        - name: DD_IAST_ENABLED
+          value: "true"
+        - name: DD_LLMOBS_ENABLED
+          value: {{ .Values.env.DD_LLMOBS_ENABLED | default "0" | quote }}
+        - name: DD_LLMOBS_AGENTLESS_ENABLED
+          value: {{ .Values.env.DD_LLMOBS_AGENTLESS_ENABLED | default "0" | quote }}
+        - name: DD_LLMOBS_ML_APP
+          value: {{ .Values.env.DD_LLMOBS_ML_APP | default "vibecode-ai" | quote }}
+        # AI service configuration
+        - name: OPENROUTER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.name }}
+              key: OPENROUTER_API_KEY
+              optional: true
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.name }}
+              key: OPENAI_API_KEY
+              optional: true
+        - name: AZURE_OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.name }}
+              key: AZURE_OPENAI_API_KEY
+              optional: true
+        - name: AZURE_OPENAI_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.secrets.name }}
+              key: AZURE_OPENAI_ENDPOINT
+              optional: true
+        # Kubernetes configuration for workspace provisioning
+        - name: KUBECONFIG
+          value: ""
+        - name: KUBERNETES_SERVICE_HOST
+          value: "kubernetes.default.svc"
+        - name: WORKSPACE_NAMESPACE
+          value: "vibecode-workspaces"
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+        {{- if .Values.persistence.enabled }}
+        - name: data
+          mountPath: {{ .Values.persistence.mountPath }}
+        {{- end }}
+        {{- if .Values.healthChecks.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.healthChecks.livenessProbe.path }}
+            port: http
+          initialDelaySeconds: {{ .Values.healthChecks.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.healthChecks.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.healthChecks.livenessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.healthChecks.livenessProbe.failureThreshold }}
+        {{- end }}
+        {{- if .Values.healthChecks.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.healthChecks.readinessProbe.path }}
+            port: http
+          initialDelaySeconds: {{ .Values.healthChecks.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.healthChecks.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.healthChecks.readinessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.healthChecks.readinessProbe.failureThreshold }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ .Values.configMap.name }}
+      {{- if .Values.persistence.enabled }}
+      - name: data
+        persistentVolumeClaim:
+          claimName: {{ .Values.app.name }}-data
+      {{- end }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Values.affinity }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,195 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openai-agents
+  namespace: openai-agents
+  labels:
+    app: openai-agents
+    component: runtime
+    version: v1
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    description: "OpenAI Agents runtime deployment"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: openai-agents
+      component: runtime
+  template:
+    metadata:
+      labels:
+        app: openai-agents
+        component: runtime
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+        sidecar.istio.io/inject: "true"
+    spec:
+      serviceAccountName: openai-agents
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      initContainers:
+      - name: init-config
+        image: busybox:1.36
+        command: ['sh', '-c']
+        args:
+        - |
+          echo "Initializing agent configuration..."
+          mkdir -p /data/sessions /data/cache /var/log/agents
+          chmod 755 /data/sessions /data/cache /var/log/agents
+          echo "Configuration initialized successfully"
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: logs
+          mountPath: /var/log/agents
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+
+      containers:
+      - name: agent-runtime
+        image: ghcr.io/ryanmaclean/vibecode-openai-agents:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        - name: health
+          containerPort: 8081
+          protocol: TCP
+
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openai-agents-secrets
+              key: openai-api-key
+        - name: AGENT_CONFIG_PATH
+          value: /config/agent.yaml
+        - name: LOGGING_CONFIG_PATH
+          value: /config/logging.yaml
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2
+            memory: 4Gi
+
+        volumeMounts:
+        - name: config
+          mountPath: /config
+          readOnly: true
+        - name: data
+          mountPath: /data
+        - name: logs
+          mountPath: /var/log/agents
+        - name: tmp
+          mountPath: /tmp
+
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: health
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: health
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        startupProbe:
+          httpGet:
+            path: /health/startup
+            port: health
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop: ["ALL"]
+
+      volumes:
+      - name: config
+        configMap:
+          name: openai-agents-config
+      - name: data
+        persistentVolumeClaim:
+          claimName: openai-agents-data
+      - name: logs
+        emptyDir:
+          sizeLimit: 1Gi
+      - name: tmp
+        emptyDir:
+          sizeLimit: 500Mi
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - openai-agents
+              topologyKey: kubernetes.io/hostname
+
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app: openai-agents
+
+      terminationGracePeriodSeconds: 60

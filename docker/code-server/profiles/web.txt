@@ -1,0 +1,22 @@
+# Web Profile - 14 extensions (~600MB)
+# Optimized for web development
+
+# AI Assistants (3)
+anthropic.claude-code
+codeium.codeium
+continue.continue
+
+# Web Development (4)
+ms-vscode.vscode-typescript-next
+bradlc.vscode-tailwindcss
+humao.rest-client
+mikestead.dotenv
+
+# Essential Tools (7)
+dbaeumer.vscode-eslint
+esbenp.prettier-vscode
+mhutchie.git-graph
+pkief.material-icon-theme
+usernamehw.errorlens
+redhat.vscode-yaml
+yzhang.markdown-all-in-one

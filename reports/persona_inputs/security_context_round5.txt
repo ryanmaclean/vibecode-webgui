@@ -1,0 +1,3 @@
+- SHA256 validation for kubectl/helm/kubectx/kubens landed 2025-10-01.
+- Outstanding: docs/SECURITY checklist (due 2025-10-05), kubectl cosign (2025-10-08), helm cosign (2025-10-10), kubectx/kubens verification (2025-10-11).
+- Dockerfile still installs Node via curl|bash and Go via unchecked wget; KubeHound installer script unverified.

@@ -1,0 +1,238 @@
+name: Deploy Next Docs
+
+on:
+  # Disabled push trigger until Azure secrets are configured
+  # Re-enable by uncommenting when secrets are available:
+  # AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID,
+  # ACR_NAME, AZURE_RESOURCE_GROUP, AZURE_WEBAPP_NAME
+  # push:
+  #   branches: [ main ]
+  #   paths:
+  #     - 'src/app/wiki/**'
+  #     - 'content/wiki/**'
+  #     - '.github/workflows/deploy-next-docs.yml'
+  #     - '.github/workflows/deploy-docs.yml'
+  #     - 'docker/Dockerfile.docs-next'
+  #     - 'next.config.js'
+  #     - 'package.json'
+  #     - 'package-lock.json'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment (e.g. docs-next-staging, docs-next-production)'
+        required: false
+        default: 'docs-next-production'
+      image_tag:
+        description: 'Optional image tag override'
+        required: false
+        default: ''
+  schedule:
+    - cron: '0 6 * * *'
+
+concurrency:
+  group: deploy-next-docs-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  IMAGE_REPOSITORY: ${{ vars.DOCS_NEXT_IMAGE_REPOSITORY || 'vibecode/docs-next' }}
+  NODE_VERSION: '20'
+
+jobs:
+  build-artifact:
+    name: Build Next.js Standalone Artifact
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build Next.js app
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: npm run build
+
+      - name: Prepare standalone bundle
+        run: |
+          set -euo pipefail
+          mkdir -p ./next-standalone/.next
+          rsync -a --delete ./.next/standalone/ ./next-standalone/
+          if [ -d "./.next/static" ]; then
+            rsync -a ./.next/static/ ./next-standalone/.next/static/
+          fi
+          if [ -d "./public" ]; then
+            rsync -a ./public/ ./next-standalone/public/
+          fi
+          if [ -d "./content/wiki" ]; then
+            rsync -a ./content/wiki/ ./next-standalone/content/wiki/
+          fi
+
+      - name: Archive standalone bundle
+        run: tar -czf next-standalone.tar.gz next-standalone
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-docs-standalone
+          path: next-standalone.tar.gz
+          retention-days: 7
+
+  deploy:
+    name: Build Image & Deploy
+    runs-on: ubuntu-latest
+    needs: build-artifact
+    environment: ${{ github.event.inputs.environment || 'docs-next-production' }}
+    env:
+      IMAGE_TAG: ${{ github.event.inputs.image_tag || github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download standalone artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: next-docs-standalone
+          path: .
+
+      - name: Extract artifact
+        run: tar -xzf next-standalone.tar.gz
+
+      - name: Check required secrets
+        id: secrets
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ACR_NAME: ${{ secrets.ACR_NAME }}
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for var in AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID ACR_NAME AZURE_RESOURCE_GROUP AZURE_WEBAPP_NAME; do
+            value="${!var:-}"
+            if [ -z "$value" ]; then
+              echo "::warning::Missing required secret $var"
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 0 ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Next docs deployment skipped because one or more secrets are missing." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Azure login
+        if: steps.secrets.outputs.ready == 'true'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve ACR login server
+        if: steps.secrets.outputs.ready == 'true'
+        id: acr
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            set -euo pipefail
+            az account show -o none
+            LOGIN_SERVER=$(az acr show -n ${{ secrets.ACR_NAME }} -g ${{ secrets.AZURE_RESOURCE_GROUP }} --query loginServer -o tsv)
+            echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
+
+      - name: Docker login to ACR
+        if: steps.secrets.outputs.ready == 'true'
+        run: az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Build container image
+        if: steps.secrets.outputs.ready == 'true'
+        run: |
+          IMAGE="${{ steps.acr.outputs.login_server }}/${{ env.IMAGE_REPOSITORY }}:${{ env.IMAGE_TAG }}"
+          echo "Building image ${IMAGE}"
+          docker build \
+            --file docker/Dockerfile.docs-next \
+            --tag "$IMAGE" \
+            .
+
+      - name: Push container image
+        if: steps.secrets.outputs.ready == 'true'
+        run: |
+          IMAGE="${{ steps.acr.outputs.login_server }}/${{ env.IMAGE_REPOSITORY }}:${{ env.IMAGE_TAG }}"
+          docker push "$IMAGE"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+        id: push
+
+      - name: Update App Service container
+        if: steps.secrets.outputs.ready == 'true'
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            set -euo pipefail
+            IMAGE="${{ steps.push.outputs.image }}"
+            echo "Deploying image ${IMAGE} to ${{ secrets.AZURE_WEBAPP_NAME }}"
+            az webapp config container set \
+              -g ${{ secrets.AZURE_RESOURCE_GROUP }} \
+              -n ${{ secrets.AZURE_WEBAPP_NAME }} \
+              --docker-custom-image-name "$IMAGE" \
+              --enable-app-service-storage false
+            az webapp restart -g ${{ secrets.AZURE_RESOURCE_GROUP }} -n ${{ secrets.AZURE_WEBAPP_NAME }}
+
+      - name: Resolve Application URL
+        if: steps.secrets.outputs.ready == 'true'
+        id: app
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            HOST=$(az webapp show -g ${{ secrets.AZURE_RESOURCE_GROUP }} -n ${{ secrets.AZURE_WEBAPP_NAME }} --query defaultHostName -o tsv)
+            echo "url=https://${HOST}" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test with retries
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          DOCS_NEXT_HEALTHCHECK_URL: ${{ secrets.DOCS_NEXT_HEALTHCHECK_URL || '' }}
+          APP_URL: ${{ steps.app.outputs.url }}
+        run: |
+          set -euo pipefail
+          URL="$DOCS_NEXT_HEALTHCHECK_URL"
+          if [ -z "$URL" ]; then
+            URL="${APP_URL}/api/readyz"
+          fi
+          echo "Polling ${URL} for readiness"
+          for attempt in 1 2 3 4 5; do
+            if curl -fsS -o /dev/null --max-time 15 "$URL"; then
+              echo "✅ Health check succeeded for ${URL} on attempt ${attempt}"
+              exit 0
+            fi
+            sleep_seconds=$((attempt * 15))
+            echo "Attempt ${attempt} failed; sleeping ${sleep_seconds}s before retry" >&2
+            sleep "${sleep_seconds}"
+          done
+          echo "::error::Health check failed after 5 attempts" >&2
+          exit 1
+
+      - name: Summary
+        if: steps.secrets.outputs.ready == 'true'
+        run: |
+          cat <<'SUMMARY' >> "$GITHUB_STEP_SUMMARY"
+### Next Docs Deployment
+- Image: ${{ steps.push.outputs.image }}
+- App URL: ${{ steps.app.outputs.url }}
+SUMMARY
+
+      - name: Missing secrets notice
+        if: steps.secrets.outputs.ready != 'true'
+        run: echo 'Deployment skipped due to missing secrets.'

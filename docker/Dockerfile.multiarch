@@ -1,0 +1,115 @@
+# Multi-architecture optimized Dockerfile for VibeCode
+# Supports AMD64 and ARM64 with optimized build process
+
+# =====================================
+# Build Arguments
+# =====================================
+ARG NODE_VERSION=20.11.0
+ARG ALPINE_VERSION=3.19
+
+# =====================================
+# Base Stage - Platform-agnostic
+# =====================================
+FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS base
+
+# Install essential build dependencies
+RUN apk add --no-cache \
+    libc6-compat \
+    python3 \
+    make \
+    g++ \
+    git \
+    curl
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files for dependency installation
+COPY package*.json ./
+COPY .npmrc* ./
+
+# =====================================
+# Dependencies Stage - Cached layer
+# =====================================
+FROM base AS deps
+
+# Platform-specific optimization
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --only=production --legacy-peer-deps && \
+    npm cache clean --force
+
+# =====================================
+# Builder Stage - Application build
+# =====================================
+FROM base AS builder
+
+# Copy all dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code
+COPY . .
+
+# Platform-specific package.json cleanup
+RUN sed -i '/@next\/swc-darwin-arm64/d' package.json && \
+    sed -i '/@next\/swc-linux-arm64/d' package.json && \
+    sed -i '/@next\/swc-win32-x64/d' package.json
+
+# Install all dependencies (including dev)
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --legacy-peer-deps
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Set build environment
+ENV NODE_ENV=production
+ENV SKIP_MONITORING=true
+ENV DOCKER_BUILD=true
+
+# Build application
+RUN npm run build
+
+# =====================================
+# Production Stage - Minimal runtime
+# =====================================
+FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS runtime
+
+# Security: Create non-root user
+RUN addgroup --system --gid 1001 nextjs && \
+    adduser --system --uid 1001 nextjs
+
+# Install minimal runtime dependencies
+RUN apk add --no-cache \
+    dumb-init \
+    curl
+
+WORKDIR /app
+
+# Copy built application from builder
+COPY --from=builder --chown=nextjs:nextjs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nextjs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nextjs /app/public ./public
+
+# Copy Prisma schema and generated client
+COPY --from=builder --chown=nextjs:nextjs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nextjs /app/node_modules/.prisma ./node_modules/.prisma
+
+# Security: Switch to non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
+
+# Environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+ENV DD_IAST_ENABLED=true
+
+# Start application with dumb-init
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "server.js"]

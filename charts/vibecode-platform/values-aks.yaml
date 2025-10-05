@@ -1,0 +1,39 @@
+# AKS overrides for vibecode-platform
+
+global:
+  domain: "example.cloudapp.azure.com"
+  storageClass: managed-csi-premium
+  imagePullSecrets:
+    - name: acr-pull
+
+web:
+  image:
+    repository: "<ACR>.azurecr.io/vibecode-webgui"
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  nodeEnv: "production"
+
+postgresql:
+  enabled: false
+
+redis:
+  enabled: true
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+
+# RAG ingestion CronJob for AKS
+ragIngest:
+  enabled: true
+  image:
+    repository: vibecodecr6c3db0e6.azurecr.io/vibecode/ingest
+    tag: latest
+    pullPolicy: IfNotPresent
+  # Override to empty to avoid requiring a named pull secret; AKS managed identity has AcrPull
+  imagePullSecrets: []
+  useLocalEmbeddings: true
+  docsPath: "/app/docs/src/content/docs"

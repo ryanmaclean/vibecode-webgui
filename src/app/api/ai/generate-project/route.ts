@@ -1,26 +1,18 @@
 /**
- * AI Project Generation API
- * Generates complete projects from AI prompts and creates live workspaces
- * This is the core integration that makes VibeCode function like Lovable/Replit/Bolt.diy
+ * AI Project Generation API Route
+ * Core API endpoint for Lovable.ai clone functionality
  */
 
-import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { z } from 'zod';
-import { llmObservability } from '@/lib/datadog-llm';
+import { NextRequest, NextResponse } from 'next/server'
+import { AIProjectGenerator } from '@/lib/services/ai-project-generator'
+import { z } from 'zod'
 
-import type { Span } from 'dd-trace';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
-import { spawn } from 'child_process';
-
-const generateProjectSchema = z.object({
-  prompt: z.string().min(1, 'Project prompt is required'),
-  projectName: z.string().optional(),
-  language: z.enum(['javascript', 'typescript', 'python', 'react', 'nextjs', 'vue', 'node']).optional(),
+const ProjectGenerationRequestSchema = z.object({
+  prompt: z.string().min(10, 'Prompt must be at least 10 characters'),
   framework: z.string().optional(),
   features: z.array(z.string()).optional(),
+  complexity: z.enum(['simple', 'moderate', 'complex']).default('moderate'),
+  userId: z.string().optional()
 })
 
 interface GeneratedFile {
@@ -352,39 +344,11 @@ export async function POST(request: NextRequest) {
       }
       const userId = session.user.id;
 
-      const body = await request.json();
-      const validatedData = generateProjectSchema.parse(body);
-      
-      // Generate unique workspace ID
-      const workspaceId = `ai-project-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-      
-      // Send initial progress
-      sendProgress('initializing', { 
-        message: 'Starting project generation...',
-        workspaceId,
-        timestamp: new Date().toISOString()
-      });
+    // Parse and validate request
+    const body = await request.json()
+    const validatedRequest = ProjectGenerationRequestSchema.parse(body)
 
-      // Track timing for performance metrics
-      const startTime = Date.now();
-      
-      // Step 1: Generate project structure with AI
-      sendProgress('generating', { 
-        message: 'Generating project structure...',
-        progress: 20
-      });
-      
-      const projectStructure = await generateProjectWithAI(validatedData.prompt, {
-        language: validatedData.language,
-        framework: validatedData.framework,
-        features: validatedData.features,
-        onProgress: (progress: number, message: string) => {
-          sendProgress('generating', { 
-            message,
-            progress: 20 + Math.floor(progress * 0.6) // 20-80% for generation
-          });
-        }
-      });
+    console.log(`📝 Generating project for prompt: "${validatedRequest.prompt}"`)
 
       // Override project name if provided
       if (validatedData.projectName) {
@@ -500,15 +464,112 @@ export async function POST(request: NextRequest) {
         console.warn('WritableStream close error (expected in tests):', error.message);
       }
     }
-  })();
-  
-  // Return the streaming response
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-      'X-Content-Type-Options': 'nosniff',
-    },
-  });
+
+    // Initialize AI project generator
+    const generator = new AIProjectGenerator(openaiApiKey)
+
+    // Generate project
+    const startTime = Date.now()
+    const generatedProject = await generator.generateProject(validatedRequest)
+    const generationTime = Date.now() - startTime
+
+    console.log(`✅ Project generated successfully in ${generationTime}ms`)
+    console.log(`📊 Generated project: ${generatedProject.name} (${generatedProject.framework})`)
+    console.log(`📁 Files generated: ${Object.keys(generatedProject.structure).length}`)
+
+    // Return generated project
+    return NextResponse.json({
+      success: true,
+      project: generatedProject,
+      metadata: {
+        generationTime,
+        filesGenerated: Object.keys(generatedProject.structure).length,
+        framework: generatedProject.framework,
+        features: generatedProject.features
+      }
+    })
+
+  } catch (error) {
+    console.error('❌ Project generation failed:', error)
+
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid request format',
+          details: error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+        },
+        { status: 400 }
+      )
+    }
+
+    // Handle AI service errors
+    if (error instanceof Error) {
+      if (error.message.includes('API key')) {
+        return NextResponse.json(
+          { error: 'AI service authentication failed' },
+          { status: 401 }
+        )
+      }
+
+      if (error.message.includes('rate limit') || error.message.includes('quota')) {
+        return NextResponse.json(
+          { error: 'AI service rate limit exceeded. Please try again later.' },
+          { status: 429 }
+        )
+      }
+
+      if (error.message.includes('timeout')) {
+        return NextResponse.json(
+          { error: 'Project generation timed out. Please try a simpler prompt.' },
+          { status: 408 }
+        )
+      }
+    }
+
+    // Generic error response
+    return NextResponse.json(
+      { 
+        error: 'Project generation failed',
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
+      },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET() {
+  try {
+    const openaiApiKey = process.env.OPENAI_API_KEY || process.env.AZURE_OPENAI_API_KEY
+    if (!openaiApiKey) {
+      return NextResponse.json({
+        available: false,
+        reason: 'No AI API key configured'
+      })
+    }
+
+    // Initialize generator to get available templates
+    const generator = new AIProjectGenerator(openaiApiKey)
+    const templates = generator.getAvailableTemplates()
+
+    return NextResponse.json({
+      available: true,
+      service: 'AI Project Generator',
+      templates: templates.map(t => ({
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        framework: t.framework,
+        features: t.features
+      })),
+      supportedFrameworks: ['react', 'nextjs', 'vue', 'angular', 'svelte', 'node', 'python', 'go'],
+      complexityLevels: ['simple', 'moderate', 'complex']
+    })
+  } catch (error) {
+    console.error('❌ Failed to get project generation info:', error)
+    return NextResponse.json({
+      available: false,
+      reason: 'Service initialization failed'
+    })
+  }
 }

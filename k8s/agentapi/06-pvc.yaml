@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: code-server-workspace-pvc
+  namespace: vibecode-platform
+  labels:
+    app.kubernetes.io/name: vibecode
+    app.kubernetes.io/component: workspace
+spec:
+  accessModes:
+    - ReadWriteOnce
+
+  storageClassName: vibecode-ssd-storage
+
+  resources:
+    requests:
+      storage: 50Gi
+
+  volumeMode: Filesystem

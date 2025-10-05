@@ -1,0 +1,130 @@
+API ROUTE CONSOLIDATION - EXECUTIVE SUMMARY
+============================================
+
+Issue: #499
+Priority: HIGH
+Status: Planning Complete
+Date: 2025-10-01
+
+CURRENT STATE
+-------------
+Total Routes: 74
+Organization: Scattered across domains
+Issues: Duplicates, inconsistent naming, test endpoints in production
+
+KEY PROBLEMS
+------------
+1. Naming Inconsistencies
+   - Mixed singular/plural: /workspace vs /workspaces
+   - Inconsistent verb placement: generate-project vs model-selection
+
+2. Functional Duplication
+   - 4 chat endpoint implementations
+   - 2 identical health/database routes
+   - Duplicate template management routes
+
+3. Domain Boundaries
+   - AI, Claude, and Chat domains overlap
+   - Health checks mixed with monitoring
+   - 23 AI-related routes scattered
+
+4. Security Concerns
+   - Test endpoints (/mongodb-test, /test-db) in production
+
+PROPOSED SOLUTION
+-----------------
+Total Routes: ~45 (40% reduction)
+Organization: 13 clear domains
+Changes: Consolidation + standardization
+Migration: Backward compatible with 8-week deprecation
+
+DOMAIN STRUCTURE
+----------------
+auth/           - 6 routes (no changes)
+ai/             - 11 routes (consolidated from 23)
+workspaces/     - 4 routes (standardized)
+files/          - 3 routes (organized)
+storage/        - 2 routes (NEW - vector/embeddings)
+health/         - 4 routes (consolidated from 10)
+monitoring/     - 8 routes (organized from 13)
+terminal/       - 2 routes (standardized)
+projects/       - 2 routes (templates merged)
+users/          - 1 route (standardized)
+integrations/   - 5 routes (NEW - external services)
+docs/           - 1 route (no changes)
+experiments/    - 1 route (no changes)
+
+IMPACT ANALYSIS
+---------------
+High Impact (Immediate Updates Required):
+  - K8s deployment configs (health probes)
+  - Chat interface components
+  - Health monitoring dashboards
+  - Connection pool monitoring UI
+
+Medium Impact (Proxy Compatible):
+  - AI feature implementations
+  - Workspace management UI
+  - File operation components
+
+Low Impact (No Changes):
+  - Authentication flows
+  - Documentation search
+  - Experiment/feature flags
+
+TIMELINE
+--------
+Week 1:     Delete test endpoints, consolidate health checks
+Weeks 2-3:  Domain reorganization (AI, workspaces, files)
+Week 4:     Naming standardization, REST conventions
+Week 5:     Middleware, error handling, final testing
+Weeks 6-12: Deprecation period with backward compatibility
+Week 13+:   Final cleanup and post-mortem
+
+Total Duration: 13 weeks (5 active + 8 monitoring)
+
+BREAKING CHANGES
+----------------
+Minimal: Most routes maintain backward compatibility via proxies
+
+Immediate Updates Required:
+  /api/healthz → /api/health/live (K8s liveness probe)
+  /api/readyz  → /api/health/ready (K8s readiness probe)
+
+All other routes: 8-week deprecation period with proxies
+
+SUCCESS METRICS
+---------------
+Route Reduction:      40% (74 → 45 routes)
+Test Coverage:        100% on new routes
+Proxy Latency:        <100ms overhead
+Migration Rate:       95%+ consumer adoption
+Breaking Changes:     Zero for critical endpoints
+
+RESOURCES REQUIRED
+------------------
+Engineers:    2-3 backend developers
+Duration:     13 weeks total
+Timeline:     Start date TBD after approval
+
+DOCUMENTATION
+-------------
+Master Plan:    docs/api/CONSOLIDATION_PLAN.md
+Route Mapping:  docs/api/ROUTE_MAPPING.md
+Visual Guide:   docs/api/CONSOLIDATION_VISUAL.md
+Getting Started: docs/api/CONSOLIDATION_README.md
+
+NEXT STEPS
+----------
+1. Team review of consolidation plan
+2. Stakeholder approval on timeline
+3. Resource allocation (2-3 engineers)
+4. Feature branch creation
+5. Begin Phase 1 implementation
+
+CONTACT
+-------
+Owner: Backend Architecture Team
+Issue: https://github.com/ryanmaclean/vibecode-webgui/issues/499
+
+Status: READY FOR IMPLEMENTATION APPROVAL

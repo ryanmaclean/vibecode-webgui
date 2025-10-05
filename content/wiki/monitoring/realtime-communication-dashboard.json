@@ -1,0 +1,362 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "realtime-comm",
+    "title": "Real-Time Communication Metrics",
+    "tags": ["streaming", "sse", "websocket", "performance"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "5s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Active Connections",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sse_client_connections_active",
+            "legendFormat": "SSE Connections",
+            "refId": "A"
+          },
+          {
+            "expr": "websocket_connections_active",
+            "legendFormat": "WebSocket Connections",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          { "format": "short", "label": "Connections" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Message Latency (P95)",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "sse_client_latency_p95_ms",
+            "legendFormat": "SSE P95",
+            "refId": "A"
+          },
+          {
+            "expr": "websocket_send_latency_p95_ms",
+            "legendFormat": "WebSocket Send P95",
+            "refId": "B"
+          },
+          {
+            "expr": "websocket_rtt_p95_ms",
+            "legendFormat": "WebSocket RTT P95",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          { "format": "ms", "label": "Latency" },
+          { "format": "short" }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": { "params": [100], "type": "gt" },
+              "operator": { "type": "and" },
+              "query": { "params": ["A", "5m", "now"] },
+              "reducer": { "params": [], "type": "avg" },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "High P95 Latency",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 3,
+        "title": "Throughput (Messages/sec)",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(sse_client_messages_total[1m])",
+            "legendFormat": "SSE Messages/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(websocket_messages_sent[1m])",
+            "legendFormat": "WebSocket Sent/sec",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(websocket_messages_received[1m])",
+            "legendFormat": "WebSocket Received/sec",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          { "format": "ops", "label": "Messages/sec" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Bandwidth (Bytes/sec)",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(sse_client_bytes_total[1m])",
+            "legendFormat": "SSE Bytes/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(websocket_bytes_sent[1m])",
+            "legendFormat": "WebSocket Sent/sec",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(websocket_bytes_received[1m])",
+            "legendFormat": "WebSocket Received/sec",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          { "format": "Bps", "label": "Bandwidth" },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Compression Ratio",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 16, "w": 8, "h": 6 },
+        "targets": [
+          {
+            "expr": "sse_client_compression_ratio",
+            "legendFormat": "SSE Compression",
+            "refId": "A"
+          },
+          {
+            "expr": "websocket_compression_ratio",
+            "legendFormat": "WebSocket Compression",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          { "format": "percentunit", "label": "Ratio", "max": 1, "min": 0 },
+          { "format": "short" }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Batch Efficiency",
+        "type": "stat",
+        "gridPos": { "x": 8, "y": 16, "w": 8, "h": 6 },
+        "targets": [
+          {
+            "expr": "sse_client_batch_size_avg",
+            "legendFormat": "Avg Batch Size",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto"
+        }
+      },
+      {
+        "id": 7,
+        "title": "Backpressure Events",
+        "type": "graph",
+        "gridPos": { "x": 16, "y": 16, "w": 8, "h": 6 },
+        "targets": [
+          {
+            "expr": "rate(sse_client_pause_count[5m])",
+            "legendFormat": "SSE Pauses/min",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(websocket_backpressure_events[5m])",
+            "legendFormat": "WebSocket Backpressure/min",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          { "format": "ops", "label": "Events/min" },
+          { "format": "short" }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": { "params": [10], "type": "gt" },
+              "operator": { "type": "and" },
+              "query": { "params": ["A", "5m", "now"] },
+              "reducer": { "params": [], "type": "avg" },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "Frequent Backpressure",
+          "noDataState": "no_data"
+        }
+      },
+      {
+        "id": 8,
+        "title": "Connection Failures",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 22, "w": 12, "h": 6 },
+        "targets": [
+          {
+            "expr": "rate(sse_client_connection_failures[5m])",
+            "legendFormat": "SSE Failures/min",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(websocket_connection_failures[5m])",
+            "legendFormat": "WebSocket Failures/min",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          { "format": "ops", "label": "Failures/min" },
+          { "format": "short" }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": { "params": [5], "type": "gt" },
+              "operator": { "type": "and" },
+              "query": { "params": ["A", "5m", "now"] },
+              "reducer": { "params": [], "type": "avg" },
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "1m",
+          "handler": 1,
+          "name": "High Connection Failure Rate",
+          "noDataState": "no_data"
+        }
+      },
+      {
+        "id": 9,
+        "title": "Message Loss",
+        "type": "stat",
+        "gridPos": { "x": 12, "y": 22, "w": 12, "h": 6 },
+        "targets": [
+          {
+            "expr": "sse_client_messages_dropped",
+            "legendFormat": "SSE Dropped",
+            "refId": "A"
+          },
+          {
+            "expr": "websocket_dropped_messages",
+            "legendFormat": "WebSocket Dropped",
+            "refId": "B"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "textMode": "auto",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Latency Histogram",
+        "type": "heatmap",
+        "gridPos": { "x": 0, "y": 28, "w": 24, "h": 8 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(sse_client_latency_p50_ms[5m]))",
+            "legendFormat": "P50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(sse_client_latency_p95_ms[5m]))",
+            "legendFormat": "P95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(sse_client_latency_p99_ms[5m]))",
+            "legendFormat": "P99",
+            "refId": "C"
+          }
+        ],
+        "options": {
+          "calculate": false,
+          "cellGap": 2,
+          "cellValues": {},
+          "color": {
+            "exponent": 0.5,
+            "fill": "dark-orange",
+            "mode": "scheme",
+            "reverse": false,
+            "scale": "exponential",
+            "scheme": "Oranges",
+            "steps": 128
+          },
+          "exemplars": { "color": "rgba(255,0,255,0.7)" },
+          "filterValues": { "le": 1e-9 },
+          "legend": { "show": true },
+          "rowsFrame": { "layout": "auto" },
+          "showValue": "never",
+          "tooltip": { "show": true, "yHistogram": false },
+          "yAxis": {
+            "axisPlacement": "left",
+            "reverse": false,
+            "unit": "ms"
+          }
+        }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h"]
+    },
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    }
+  }
+}

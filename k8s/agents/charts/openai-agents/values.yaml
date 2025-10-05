@@ -1,0 +1,355 @@
+# Default values for openai-agents Helm chart
+
+# Global settings
+global:
+  environment: production
+  clusterDomain: cluster.local
+
+# Image configuration
+image:
+  repository: ghcr.io/ryanmaclean/vibecode-openai-agents
+  tag: latest
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+# Deployment configuration
+replicaCount: 3
+revisionHistoryLimit: 3
+
+# Update strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Resource requests and limits
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: 2
+    memory: 4Gi
+
+# Autoscaling configuration
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+  customMetrics:
+    - type: Pods
+      pods:
+        metric:
+          name: agent_active_sessions
+        target:
+          type: AverageValue
+          averageValue: "8"
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+      - type: Pods
+        value: 4
+        periodSeconds: 30
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+  sessionAffinity: ClientIP
+  sessionAffinityTimeout: 10800
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  hosts:
+  - host: agents.vibecode.io
+    paths:
+    - path: /
+      pathType: Prefix
+  tls:
+  - secretName: openai-agents-tls
+    hosts:
+    - agents.vibecode.io
+
+# Service Account
+serviceAccount:
+  create: true
+  name: openai-agents
+  annotations: {}
+
+# Security Context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop: ["ALL"]
+
+# Probes
+livenessProbe:
+  httpGet:
+    path: /health/live
+    port: health
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: health
+  initialDelaySeconds: 15
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+startupProbe:
+  httpGet:
+    path: /health/startup
+    port: health
+  initialDelaySeconds: 0
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 30
+
+# Persistent Storage
+persistence:
+  enabled: true
+  storageClass: azure-file-premium
+  accessMode: ReadWriteMany
+  size: 50Gi
+  annotations: {}
+
+cache:
+  enabled: true
+  storageClass: azure-file-standard
+  accessMode: ReadWriteMany
+  size: 20Gi
+
+# Environment variables
+env:
+  AGENT_CONFIG_PATH: /config/agent.yaml
+  LOGGING_CONFIG_PATH: /config/logging.yaml
+
+# Secrets (use external-secrets operator in production)
+secrets:
+  openaiApiKey: ""
+  openaiOrgId: ""
+  databaseUrl: ""
+  redisUrl: ""
+  jwtSecret: ""
+  datadogApiKey: ""
+
+# External Secrets
+externalSecrets:
+  enabled: false
+  backend: azure-keyvault
+  refreshInterval: 1h
+  keys:
+  - openai-api-key
+  - openai-org-id
+  - database-url
+  - redis-url
+  - jwt-secret
+  - datadog-api-key
+
+# Agent Configuration
+agentConfig:
+  runtime:
+    host: "0.0.0.0"
+    port: 8080
+    workers: 4
+    timeout: 300
+    maxConcurrentSessions: 10
+  openai:
+    apiVersion: "2024-10-01-preview"
+    maxTokens: 4096
+    temperature: 0.7
+    retryAttempts: 3
+    retryDelay: 1
+  session:
+    idleTimeout: 1800
+    maxSessionDuration: 7200
+    cleanupInterval: 300
+  storage:
+    type: persistent
+    path: /data/sessions
+    retentionDays: 7
+  monitoring:
+    enabled: true
+    metricsPort: 9090
+    healthPort: 8081
+    logLevel: info
+  security:
+    enableAuth: true
+    tokenValidation: true
+    rateLimitRequests: 100
+    rateLimitWindow: 60
+
+# Monitoring
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 15s
+    scrapeTimeout: 10s
+  prometheusRules:
+    enabled: true
+
+# Network Policy
+networkPolicy:
+  enabled: true
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+  egress:
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+
+# Pod Affinity
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - openai-agents
+        topologyKey: kubernetes.io/hostname
+
+# Topology Spread
+topologySpreadConstraints:
+- maxSkew: 1
+  topologyKey: topology.kubernetes.io/zone
+  whenUnsatisfiable: ScheduleAnyway
+  labelSelector:
+    matchLabels:
+      app: openai-agents
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Priority Class
+priorityClassName: ""
+
+# Termination grace period
+terminationGracePeriodSeconds: 60
+
+# Extra volumes
+extraVolumes: []
+
+# Extra volume mounts
+extraVolumeMounts: []
+
+# Init containers
+initContainers: []
+
+# Sidecar containers
+sidecars: []
+
+# Pod annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9090"
+  prometheus.io/path: "/metrics"
+  sidecar.istio.io/inject: "true"
+
+# Pod labels
+podLabels: {}
+
+# Service mesh (Istio)
+istio:
+  enabled: true
+  virtualService:
+    enabled: true
+    gateways:
+    - istio-system/vibecode-gateway
+    timeout: 300s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+  destinationRule:
+    enabled: true
+    trafficPolicy:
+      connectionPool:
+        tcp:
+          maxConnections: 100
+        http:
+          http1MaxPendingRequests: 50
+          http2MaxRequests: 100
+      outlierDetection:
+        consecutiveErrors: 5
+        interval: 30s
+        baseEjectionTime: 30s
+
+# Backup configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+  retention: 7
+  storageClass: azure-file-standard
+  size: 100Gi
+
+# Datadog integration
+datadog:
+  enabled: true
+  logs:
+    enabled: true
+  apm:
+    enabled: true
+  profiling:
+    enabled: true

@@ -1,0 +1,15 @@
+# Sample overrides for the litellm-pgvector chart
+image:
+  repository: ghcr.io/berriai/litellm-pgvector
+  tag: latest
+
+envSecretName: litellm-openrouter
+extraEnv:
+  - name: ENVIRONMENT
+    value: development
+
+postgresql:
+  auth:
+    username: litellm
+    database: litellm
+    existingSecret: litellm-postgresql

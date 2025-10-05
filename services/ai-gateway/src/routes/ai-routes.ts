@@ -12,7 +12,7 @@ const aiController = new AIController();
 router.post('/chat/completions',
     requirePermission('ai:access'),
     [
-        body('model').isString().notEmpty().withMessage('Model is required'),
+        body('model').optional().isString().withMessage('Model must be a string'),
         body('messages').isArray({ min: 1 }).withMessage('Messages array is required'),
         body('messages.*.role').isIn(['system', 'user', 'assistant']).withMessage('Invalid message role'),
         body('messages.*.content').isString().notEmpty().withMessage('Message content is required'),
@@ -33,7 +33,7 @@ router.post('/chat/completions',
 router.post('/chat/completions/stream',
     requirePermission('ai:access'),
     [
-        body('model').isString().notEmpty().withMessage('Model is required'),
+        body('model').optional().isString().withMessage('Model must be a string'),
         body('messages').isArray({ min: 1 }).withMessage('Messages array is required'),
         body('messages.*.role').isIn(['system', 'user', 'assistant']).withMessage('Invalid message role'),
         body('messages.*.content').isString().notEmpty().withMessage('Message content is required'),
@@ -84,6 +84,17 @@ router.post('/models/recommend',
     ],
     validationMiddleware,
     asyncHandler(aiController.getModelRecommendations.bind(aiController))
+);
+
+// Select best model for a given prompt (preview auto-selection)
+router.post('/models/select',
+    requirePermission('ai:access'),
+    [
+        body('messages').isArray({ min: 1 }).withMessage('Messages array is required'),
+        body('model').optional().isString().withMessage('Model must be a string')
+    ],
+    validationMiddleware,
+    asyncHandler(aiController.selectModel.bind(aiController))
 );
 
 // Get model performance metrics

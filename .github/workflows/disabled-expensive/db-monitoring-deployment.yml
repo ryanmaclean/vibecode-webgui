@@ -1,0 +1,507 @@
+name: PostgreSQL Vector Monitoring Deployment
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/lib/vector-db/**'
+      - 'src/lib/datadog-database.ts'
+      - 'monitoring/**'
+      - 'database/**'
+      - '.github/workflows/db-monitoring-deployment.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/lib/vector-db/**'
+      - 'src/lib/datadog-database.ts'
+      - 'monitoring/**'
+      - 'database/**'
+      - '.github/workflows/db-monitoring-deployment.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-monitoring-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DD_SITE: "datadoghq.com"
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
+
+jobs:
+  validate-ci-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY || secrets.DATADOG_APP_KEY || '' }}
+      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
+    steps:
+      - name: Check required secrets
+        run: |
+          missing=0
+          for key in DD_API_KEY DD_APP_KEY POSTGRES_CONNECTION; do
+            if [ -z "${!key}" ]; then
+              echo "::warning::Missing secret for $key; related steps will be skipped."
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 0 ]; then
+            echo "All required secrets present."
+          fi
+
+  validate-database-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Validate PostgreSQL schema
+        if: ${{ env.POSTGRES_CONNECTION != '' }}
+        run: |
+          npm run db:validate-schema
+          
+      - name: Check for pgvector extension
+        if: ${{ env.POSTGRES_CONNECTION != '' }}
+        run: |
+          node -e "
+          const { Pool } = require('pg');
+          const pool = new Pool({
+            connectionString: process.env.POSTGRES_CONNECTION,
+          });
+          
+          async function checkPgVector() {
+            try {
+              const client = await pool.connect();
+              const result = await client.query(\"SELECT * FROM pg_extension WHERE extname = 'vector'\");
+              client.release();
+              
+              if (result.rows.length === 0) {
+                console.error('pgvector extension is not installed!');
+                process.exit(1);
+              } else {
+                console.log('pgvector extension is properly installed');
+              }
+            } catch (err) {
+              console.error('Error checking pgvector extension:', err);
+              process.exit(1);
+            } finally {
+              await pool.end();
+            }
+          }
+          
+          checkPgVector();
+          "
+
+  validate-vector-index:
+    runs-on: ubuntu-latest
+    needs: validate-database-schema
+    timeout-minutes: 10
+    env:
+      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Check vector indexes
+        if: ${{ env.POSTGRES_CONNECTION != '' }}
+        run: |
+          node -e "
+          const { Pool } = require('pg');
+          const pool = new Pool({
+            connectionString: process.env.POSTGRES_CONNECTION,
+          });
+          
+          async function checkVectorIndexes() {
+            try {
+              const client = await pool.connect();
+              const result = await client.query(\"SELECT indexname, indexdef FROM pg_indexes WHERE indexdef LIKE '%vector%'\");
+              client.release();
+              
+              if (result.rows.length === 0) {
+                console.error('No vector indexes found!');
+                process.exit(1);
+              } else {
+                console.log('Found the following vector indexes:');
+                result.rows.forEach(row => {
+                  console.log(`${row.indexname}: ${row.indexdef}`);
+                });
+              }
+            } catch (err) {
+              console.error('Error checking vector indexes:', err);
+              process.exit(1);
+            } finally {
+              await pool.end();
+            }
+          }
+          
+          checkVectorIndexes();
+          "
+      
+      - name: Validate monitoring dashboards
+        run: |
+          echo "Validating Datadog dashboard definitions..."
+          for file in monitoring/dashboards/*.json; do
+            echo "Validating $file"
+            cat "$file" | jq empty || (echo "Invalid JSON in $file" && exit 1)
+          done
+          echo "All dashboard definitions are valid JSON"
+
+  benchmark-vector-performance:
+    runs-on: ubuntu-latest
+    needs: validate-vector-index
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run vector search benchmark
+        run: |
+          node scripts/benchmark-vector-search.js
+      
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: vector-benchmark-results
+          path: benchmark-results.json
+
+  verify-monitoring-prerequisites:
+    runs-on: ubuntu-latest
+    needs: benchmark-vector-performance
+    timeout-minutes: 10
+    env:
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS || '' }}
+      RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP || '' }}
+      SERVER_NAME: ${{ secrets.AZURE_POSTGRES_SERVER_NAME || '' }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY || secrets.DATADOG_APP_KEY || '' }}
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Azure CLI
+        if: ${{ env.AZURE_CREDENTIALS != '' }}
+        uses: azure/login@v1
+        with:
+          creds: ${{ env.AZURE_CREDENTIALS }}
+      
+      - name: Verify Azure PostgreSQL server
+        if: ${{ env.RESOURCE_GROUP != '' && env.SERVER_NAME != '' }}
+        run: |
+          echo "Verifying Azure PostgreSQL server configuration..."
+          
+          # Check if server exists
+          az postgres flexible-server show \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --name ${{ env.SERVER_NAME }} \
+            --output none || (echo "PostgreSQL server not found" && exit 1)
+          
+          # Check if pg_stat_statements is enabled
+          SHARED_PRELOAD_LIBRARIES=$(az postgres flexible-server parameter show \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --server-name ${{ env.SERVER_NAME }} \
+            --name shared_preload_libraries \
+            --query value -o tsv)
+          
+          if [[ $SHARED_PRELOAD_LIBRARIES != *"pg_stat_statements"* ]]; then
+            echo "Warning: pg_stat_statements is not enabled in shared_preload_libraries"
+          else
+            echo "pg_stat_statements is properly configured"
+          fi
+          
+          echo "Azure PostgreSQL server verification completed"
+      
+      - name: Verify Datadog API access
+        if: ${{ env.DD_API_KEY != '' }}
+        run: |
+          echo "Verifying Datadog API key via Datadog /validate endpoint..."
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://api.${{ env.DD_SITE }}/api/v1/validate" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${DD_API_KEY}")
+          if [ "$CODE" != "200" ]; then
+            echo "::warning::Datadog API key validation failed with HTTP $CODE"
+            exit 1
+          fi
+          echo "Datadog API key validated"
+
+  deploy-monitoring:
+    runs-on: ubuntu-latest
+    needs: verify-monitoring-prerequisites
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 30
+    env:
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS || '' }}
+      RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP || '' }}
+      SERVER_NAME: ${{ secrets.AZURE_POSTGRES_SERVER_NAME || '' }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY || secrets.DATADOG_APP_KEY || '' }}
+      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+          
+      - name: Datadog CLI usage
+        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
+        run: echo "Using npx for @datadog/datadog-ci (no global install)"
+      
+      - name: Download benchmark results
+        uses: actions/download-artifact@v3
+        with:
+          name: vector-benchmark-results
+          
+      - name: Update baseline metrics
+        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
+        run: |
+          node scripts/update-datadog-baselines.js
+      
+      - name: Configure PostgreSQL server for monitoring
+        uses: azure/login@v1
+        with:
+          creds: ${{ env.AZURE_CREDENTIALS }}
+        if: ${{ (env.ENVIRONMENT == 'staging' || env.ENVIRONMENT == 'production') && env.AZURE_CREDENTIALS != '' }}
+      
+      - name: Setup PostgreSQL monitoring parameters
+        if: ${{ (env.ENVIRONMENT == 'staging' || env.ENVIRONMENT == 'production') && env.AZURE_CREDENTIALS != '' && env.RESOURCE_GROUP != '' && env.SERVER_NAME != '' }}
+        run: |
+          echo "Configuring PostgreSQL server for monitoring..."
+          
+          # Set up PostgreSQL parameters for monitoring
+          az postgres flexible-server parameter set \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --server-name ${{ env.SERVER_NAME }} \
+            --name shared_preload_libraries \
+            --value 'pg_stat_statements'
+          
+          az postgres flexible-server parameter set \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --server-name ${{ env.SERVER_NAME }} \
+            --name pg_stat_statements.track \
+            --value 'all'
+          
+          az postgres flexible-server parameter set \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --server-name ${{ env.SERVER_NAME }} \
+            --name track_io_timing \
+            --value 'on'
+          
+          az postgres flexible-server parameter set \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --server-name ${{ env.SERVER_NAME }} \
+            --name track_activity_query_size \
+            --value 4096
+          
+          # Check if restart is needed
+          RESTART_PENDING=$(az postgres flexible-server parameter list \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --server-name ${{ env.SERVER_NAME }} \
+            --query "[?pending_restart==\`true\`].{Name:name}" -o tsv)
+          
+          if [ -n "$RESTART_PENDING" ]; then
+            echo "Changes require a server restart, restarting server..."
+            az postgres flexible-server restart \
+              --resource-group ${{ env.RESOURCE_GROUP }} \
+              --name ${{ env.SERVER_NAME }}
+            echo "Server restarted successfully"
+          else
+            echo "No restart required"
+          fi
+          
+          echo "PostgreSQL server configured for monitoring"
+      
+      - name: Deploy Datadog dashboards
+        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
+        run: |
+          export ENVIRONMENT=${{ env.ENVIRONMENT }}
+          
+          # Deploy all dashboards in the monitoring/dashboards directory
+          for dashboard_file in monitoring/dashboards/*.json; do
+            echo "Deploying dashboard: $dashboard_file"
+            npx --yes @datadog/datadog-ci dashboards push "$dashboard_file" --env $ENVIRONMENT
+          done
+        env:
+          DATADOG_API_KEY: ${{ env.DD_API_KEY }}
+          DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
+          DATADOG_SITE: ${{ env.DD_SITE }}
+            
+      - name: Deploy Datadog monitors
+        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
+        run: |
+          export ENVIRONMENT=${{ env.ENVIRONMENT }}
+          
+          # Deploy vector database monitors
+          npx --yes @datadog/datadog-ci monitors push monitoring/alerts/ --env $ENVIRONMENT
+        env:
+          DATADOG_API_KEY: ${{ env.DD_API_KEY }}
+          DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
+          DATADOG_SITE: ${{ env.DD_SITE }}
+            
+      - name: Set up database monitoring
+        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
+        run: |
+          export ENVIRONMENT=${{ env.ENVIRONMENT }}
+          
+          # Install Database Monitoring agent
+          node scripts/setup-datadog-dbm.js \
+            --environment $ENVIRONMENT \
+            --connection-string "$POSTGRES_CONNECTION"
+        env:
+          DATADOG_API_KEY: ${{ env.DD_API_KEY }}
+          DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
+          DATADOG_SITE: ${{ env.DD_SITE }}
+      
+      - name: Verify monitoring deployment
+        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
+        run: |
+          node scripts/verify-datadog-integration.js \
+            --environment $ENVIRONMENT \
+            --timeout 300
+        env:
+          DATADOG_API_KEY: ${{ env.DD_API_KEY }}
+          DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
+          DATADOG_SITE: ${{ env.DD_SITE }}
+
+  generate-monitoring-report:
+    runs-on: ubuntu-latest
+    needs: deploy-monitoring
+    if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download benchmark results
+        uses: actions/download-artifact@v3
+        with:
+          name: vector-benchmark-results
+      
+      - name: Generate monitoring report
+        run: |
+          echo "Generating monitoring setup report..."
+          
+          # Create report file
+          cat > monitoring-report.md << EOF
+          # PostgreSQL Monitoring Deployment Report
+          
+          ## Deployment Information
+          - Environment: ${{ env.ENVIRONMENT }}
+          - Deployment Date: $(date)
+          - Triggered By: ${{ github.actor }}
+          - Commit: ${{ github.sha }}
+          
+          ## Deployed Resources
+          - Datadog Dashboards:
+            - GenAI PostgreSQL Dashboard
+            - RAG Query Dashboard
+            - Vector DB Error Monitoring Dashboard
+          
+          - PostgreSQL Monitoring Configuration:
+            - pg_stat_statements enabled
+            - Query tracking enabled
+            - I/O timing enabled
+            - Query size tracking increased
+          
+          ## Vector Search Benchmark Results
+          $(cat benchmark-results.json | jq -r '
+          "- Average Query Time: \(.averageQueryTimeMs) ms\n- p95 Query Time: \(.p95QueryTimeMs) ms\n- Throughput: \(.queriesPerSecond) queries/sec\n- Vector Index Type: \(.indexType)\n- Test Date: \(.testDate)"
+          ')
+          
+          ## Next Steps
+          - Review dashboards in Datadog
+          - Set up additional alerts as needed
+          - Schedule regular monitoring reviews
+          EOF
+          
+          echo "Monitoring report generated"
+      
+      - name: Upload monitoring report
+        uses: actions/upload-artifact@v3
+        with:
+          name: monitoring-report
+          path: monitoring-report.md
+
+  notify-deployment:
+    runs-on: ubuntu-latest
+    needs: [deploy-monitoring, generate-monitoring-report]
+    if: always()
+    timeout-minutes: 5
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+    steps:
+      - name: Notify deployment status
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+              "text": "PostgreSQL Vector Monitoring Deployment ${{ needs.deploy-monitoring.result == 'success' && 'Succeeded ✅' || 'Failed ❌' }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "PostgreSQL Vector Monitoring Deployment Status"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Environment:* ${{ env.ENVIRONMENT }}\n*Status:* ${{ needs.deploy-monitoring.result == 'success' && 'Succeeded ✅' || 'Failed ❌' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "See the <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|workflow run> for more details."
+                  }
+                }
+              ]
+            }

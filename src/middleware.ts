@@ -58,9 +58,9 @@ function logToDatadog(
 
 function detectBot(request: NextRequest): {
   isBot: boolean;
+  allowlisted: boolean;
   confidence: number;
   reasons: string[];
-  allowedBot: boolean;
 } {
   const userAgent = request.headers.get('user-agent') || '';
   let confidence = 0;
@@ -69,14 +69,12 @@ function detectBot(request: NextRequest): {
 
   for (const pattern of BOT_PROTECTION_CONFIG.allowedBots) {
     if (pattern.test(userAgent)) {
-      allowedBot = true;
-      break;
+      return { isBot: true, allowlisted: true, confidence: 0, reasons: ['allowlisted'] };
     }
   }
 
-  if (allowedBot) {
-    return { isBot: true, confidence: 0, reasons: ['Allowed bot'], allowedBot: true };
-  }
+  const reasons: string[] = [];
+  let confidence = 0;
 
   for (const pattern of BOT_PROTECTION_CONFIG.suspiciousPatterns) {
     if (pattern.test(userAgent)) {

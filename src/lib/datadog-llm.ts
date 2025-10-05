@@ -34,8 +34,8 @@ class LLMObservability {
   private constructor() {
     const { service, env } = getServiceEnvVersion()
     this.config = {
-      enabled: process.env.DD_LLMOBS_ENABLED === '1' || false,
-      agentlessEnabled: process.env.DD_LLMOBS_AGENTLESS_ENABLED === '1' || true,
+      enabled: parseFlag(process.env.DD_LLMOBS_ENABLED, false),
+      agentlessEnabled: parseFlag(process.env.DD_LLMOBS_AGENTLESS_ENABLED, true),
       mlApp: process.env.DD_LLMOBS_ML_APP || 'vibecode-ai',
       site: getDatadogSite(),
       apiKey: getDatadogApiKey(),

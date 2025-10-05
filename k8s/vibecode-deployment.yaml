@@ -119,6 +119,26 @@ spec:
             configMapKeyRef:
               name: vibecode-config
               key: DD_ENV
+        - name: DD_LLMOBS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: DD_LLMOBS_ENABLED
+        - name: DD_LLMOBS_AGENTLESS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: DD_LLMOBS_AGENTLESS_ENABLED
+        - name: DD_LLMOBS_ML_APP
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: DD_LLMOBS_ML_APP
+        - name: DD_IAST_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: DD_IAST_ENABLED
         # vibecode-secrets-based variables (including dev login)
 
         - name: DD_API_KEY
@@ -204,7 +224,7 @@ spec:
               key: NEXTAUTH_SECRET
         startupProbe:
           httpGet:
-            path: /
+            path: /vibecode-webgui/api/health/simple
             port: 3000
             scheme: HTTP
           failureThreshold: 30  # Allow up to 5 minutes for startup (30 * 10s)
@@ -212,7 +232,7 @@ spec:
           timeoutSeconds: 5
         readinessProbe:
           httpGet:
-            path: /api/health/simple
+            path: /vibecode-webgui/api/health/simple
             port: 3000
             scheme: HTTP
           initialDelaySeconds: 5
@@ -222,7 +242,7 @@ spec:
           failureThreshold: 3
         livenessProbe:
           httpGet:
-            path: /api/health/simple
+            path: /vibecode-webgui/api/health/simple
             port: 3000
             scheme: HTTP
           initialDelaySeconds: 30

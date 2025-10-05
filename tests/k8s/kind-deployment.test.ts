@@ -11,13 +11,13 @@ const { describe, test, expect, beforeAll, afterAll } = require('@jest/globals')
 const { execSync } = require('child_process');
 
 describe('KIND Deployment Tests', () => {
-  const NAMESPACE = 'vibecode';
+  const NAMESPACE = 'vibecode-platform';
   const TIMEOUT = 30000;
 
   beforeAll(async () => {
     // Ensure we're using the correct kubectl context
     try {
-      execSync('kubectl config use-context kind-vibecode-test', { stdio: 'pipe' });
+      execSync('kubectl config use-context kind-vibecode-test-validation', { stdio: 'pipe' });
     } catch (error) {
       console.warn('Could not set kubectl context - may already be set');
     }
@@ -26,14 +26,14 @@ describe('KIND Deployment Tests', () => {
   describe('Cluster Validation', () => {
     test('should have KIND cluster running', () => {
       const output = execSync('kind get clusters', { encoding: 'utf8' });
-      expect(output).toContain('vibecode-test');
+      expect(output).toContain('vibecode-test-validation');
     });
 
     test('should have cluster nodes ready', () => {
       const output = execSync('kubectl get nodes -o json', { encoding: 'utf8' });
       const nodes = JSON.parse(output);
 
-      expect(nodes.items).toHaveLength(1);
+      expect(nodes.items).toHaveLength(1); // Single-node KIND cluster
 
       const node = nodes.items[0];
       expect(node.metadata.name).toContain('vibecode-test');
@@ -55,11 +55,11 @@ describe('KIND Deployment Tests', () => {
   });
 
   describe('Namespace and Resources', () => {
-    test('should have vibecode namespace created', () => {
-      const output = execSync('kubectl get namespace vibecode -o json', { encoding: 'utf8' });
+    test('should have vibecode-platform namespace created', () => {
+      const output = execSync('kubectl get namespace vibecode-platform -o json', { encoding: 'utf8' });
       const namespace = JSON.parse(output);
 
-      expect(namespace.metadata.name).toBe('vibecode');
+      expect(namespace.metadata.name).toBe('vibecode-platform');
       expect(namespace.status.phase).toBe('Active');
     });
 
@@ -76,7 +76,7 @@ describe('KIND Deployment Tests', () => {
       const output = execSync(`kubectl get pvc -n ${NAMESPACE} -o json`, { encoding: 'utf8' });
       const pvcs = JSON.parse(output);
 
-      expect(pvcs.items).toHaveLength(1);
+      expect(pvcs.items).toHaveLength(2); // postgres-pvc and redis-pvc
 
       const pvc = pvcs.items[0];
       expect(pvc.metadata.name).toBe('postgres-pvc');
@@ -118,7 +118,7 @@ describe('KIND Deployment Tests', () => {
 
       const redisService = services.items.find(function(svc) { return svc.metadata.name === 'redis-service' });
       expect(redisService.spec.ports[0].port).toBe(6379);
-      expect(redisService.spec.ports[0].nodePort).toBe(30002);
+      // ClusterIP service doesn't have nodePort
     });
   });
 
@@ -223,9 +223,9 @@ describe('KIND Deployment Tests', () => {
       const redisDeployment = JSON.parse(redisOutput);
 
       const redisContainer = redisDeployment.spec.template.spec.containers[0];
-      expect(redisContainer.resources.requests.memory).toBe('64Mi');
+      expect(redisContainer.resources.requests.memory).toBe('128Mi');
       expect(redisContainer.resources.requests.cpu).toBe('100m');
-      expect(redisContainer.resources.limits.memory).toBe('128Mi');
+      expect(redisContainer.resources.limits.memory).toBe('256Mi');
       expect(redisContainer.resources.limits.cpu).toBe('200m');
     });
 
@@ -289,9 +289,11 @@ describe('KIND Deployment Tests', () => {
       const services = JSON.parse(servicesOutput);
 
       services.items.forEach(function(service) {
-        expect(service.spec.type).toBe('NodePort');
-        expect(service.spec.ports[0].nodePort).toBeGreaterThan(30000);
-        expect(service.spec.ports[0].nodePort).toBeLessThan(32768);
+        expect(['ClusterIP', 'NodePort']).toContain(service.spec.type);
+        if (service.spec.type === 'NodePort') {
+          expect(service.spec.ports[0].nodePort).toBeGreaterThan(30000);
+          expect(service.spec.ports[0].nodePort).toBeLessThan(32768);
+        }
       });
     });
 

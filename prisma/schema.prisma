@@ -1,5 +1,5 @@
-// VibeCode Database Schema
-// Complete data model for the AI-powered development platform
+// VibeCode Database Schema - Test Version (without pgvector)
+// Simplified schema for testing without vector extensions
 
 generator client {
   provider = "prisma-client-js"
@@ -29,6 +29,7 @@ model User {
   files       File[]
   uploads     Upload[]
   ai_requests AIRequest[]
+  rag_chunks  RAGChunk[]
 
   @@map("users")
 }
@@ -57,14 +58,16 @@ model Workspace {
   status       String   @default("active") // active, archived, deleting
   workspace_id String   @unique // External workspace identifier
   url          String?  // code-server URL
+  dbm_last_sample_at DateTime? // Tracks last time DBM sample was recorded
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
 
   // Relations
-  user     User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  projects Project[]
-  files    File[]
-  uploads  Upload[]
+  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  projects   Project[]
+  files      File[]
+  uploads    Upload[]
+  rag_chunks RAGChunk[]
 
   @@index([user_id])
   @@index([workspace_id])
@@ -86,10 +89,11 @@ model Project {
   updated_at   DateTime @updatedAt
 
   // Relations
-  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  workspace Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
-  files     File[]
+  user        User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace   Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  files       File[]
   ai_requests AIRequest[]
+  rag_chunks  RAGChunk[]
 
   @@index([user_id])
   @@index([workspace_id])
@@ -144,6 +148,64 @@ model File {
   @@map("files")
 }
 
+// RAG Chunks for vector search (simplified without pgvector)
+model RAGChunk {
+  id          Int      @id @default(autoincrement())
+  content     String   // Chunk text content
+  metadata    Json?    // Additional metadata
+  file_id     Int?
+  user_id     Int
+  workspace_id Int?
+  project_id  Int?
+  chunk_index Int?     // Position within file
+  token_count Int?     // Number of tokens
+  start_line  Int?     // Start line in file
+  end_line    Int?     // End line in file
+  tokens      Int?     // Token count (alias for token_count)
+  chunk_id    String?  // External chunk identifier
+  embedding   Unsupported("vector(1536)")?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  file      File?      @relation(fields: [file_id], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  project   Project?   @relation(fields: [project_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([file_id])
+  @@index([workspace_id])
+  @@index([project_id])
+  @@map("rag_chunks")
+}
+
+model RAGIngestJob {
+  id          String   @id @default(uuid())
+  uploadId    Int?     @map("upload_id")
+  upload      Upload?  @relation(fields: [uploadId], references: [id], onDelete: SetNull)
+  blobName    String   @map("blob_name")
+  storageContainer String @map("storage_container")
+  originalFileName String @map("original_file_name")
+  size        Int
+  status      String   @default("queued")
+  queueName   String?  @map("queue_name")
+  userIdentifier      String? @map("user_identifier")
+  workspaceIdentifier String? @map("workspace_identifier")
+  projectIdentifier   String? @map("project_identifier")
+  chunkCount Int      @default(0) @map("chunk_count")
+  error       String?
+  requestedAt DateTime @default(now()) @map("requested_at")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([requestedAt])
+  @@map("rag_ingest_jobs")
+}
+
 model Upload {
   id           Int      @id @default(autoincrement())
   original_name String
@@ -158,34 +220,14 @@ model Upload {
   created_at   DateTime @default(now())
 
   // Relations
-  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  workspace Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  user        User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace   Workspace?     @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  ingestJobs  RAGIngestJob[]
 
   @@index([user_id])
   @@index([workspace_id])
   @@index([stored_name])
   @@map("uploads")
-}
-
-// RAG and Vector Search with pgvector
-model RAGChunk {
-  id         Int                          @id @default(autoincrement())
-  file_id    Int
-  chunk_id   String                       @unique // file_id + chunk index
-  content    String
-  start_line Int?
-  end_line   Int?
-  tokens     Int?
-  embedding  Unsupported("vector(1536)")? // pgvector embedding for semantic search
-  metadata   Json?                        // Additional chunk metadata
-  created_at DateTime                     @default(now())
-
-  // Relations
-  file File @relation(fields: [file_id], references: [id], onDelete: Cascade)
-
-  @@index([file_id])
-  @@index([chunk_id])
-  @@map("rag_chunks")
 }
 
 // AI Integration and Requests

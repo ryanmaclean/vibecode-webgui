@@ -1,0 +1,56 @@
+{
+  "name": "vibecode-codebase-chat",
+  "displayName": "VibeCode Codebase Chat",
+  "description": "Chat with your codebase using AI",
+  "version": "0.1.0",
+  "publisher": "vibecode",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:vibecodeChatView"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "vibecode-chat",
+          "title": "VibeCode Chat",
+          "icon": "resources/chat-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "vibecode-chat": [
+        {
+          "id": "vibecodeChatView",
+          "name": "Codebase Chat"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "vibecode.askCodebase",
+        "title": "VibeCode: Ask About Codebase"
+      },
+      {
+        "command": "vibecode.indexCodebase",
+        "title": "VibeCode: Index Codebase"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "watch": "npm run build -- --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "name": "vibecode-inline-edit",
+  "displayName": "VibeCode Inline AI Edit",
+  "description": "Cmd+K inline AI editing like Cursor",
+  "version": "0.1.0",
+  "publisher": "vibecode",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:vibecode.inlineEdit"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vibecode.inlineEdit",
+        "title": "VibeCode: Inline AI Edit",
+        "key": "cmd+k"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "vibecode.inlineEdit",
+        "key": "cmd+k",
+        "mac": "cmd+k",
+        "when": "editorTextFocus"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "watch": "npm run build -- --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,263 @@
+name: Dependency Compatibility Testing
+
+on:
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+  schedule:
+    # Run weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+
+jobs:
+  dependency-compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies with clean cache
+        run: |
+          npm ci --cache .npm --prefer-offline
+
+      - name: Check for dependency conflicts
+        run: |
+          echo "🔍 Checking for dependency conflicts..."
+          npm ls --depth=0 || echo "⚠️  Dependency conflicts detected"
+          
+      - name: Audit dependencies for security vulnerabilities
+        run: |
+          echo "🔒 Running security audit..."
+          npm audit --audit-level=moderate
+          
+      - name: Check for outdated dependencies
+        run: |
+          echo "📦 Checking for outdated dependencies..."
+          npx npm-check-updates --target minor --format group
+          
+      - name: Validate peer dependencies
+        run: |
+          echo "🔗 Validating peer dependencies..."
+          npm ls --depth=1 2>&1 | grep -E "(UNMET|missing|invalid)" || echo "✅ All peer dependencies satisfied"
+          
+      - name: Test build with current dependencies
+        run: |
+          echo "🏗️  Testing build compatibility..."
+          npm run build
+          
+      - name: Run dependency-specific tests
+        run: |
+          echo "🧪 Running dependency compatibility tests..."
+          npm run test:unit -- --testNamePattern="dependency|import|require" --passWithNoTests
+          
+      - name: Check TypeScript compatibility
+        run: |
+          echo "📝 Checking TypeScript compatibility..."
+          npm run type-check
+          
+      - name: Generate dependency report
+        run: |
+          echo "📊 Generating dependency report..."
+          mkdir -p reports
+          npm ls --json > reports/dependency-tree.json
+          npm audit --json > reports/security-audit.json || true
+          npx npm-check-updates --format json > reports/outdated-deps.json || true
+          
+      - name: Upload dependency reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-reports-node-${{ matrix.node-version }}
+          path: reports/
+          retention-days: 30
+
+  dependency-update-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install npm-check-updates
+        run: npm install -g npm-check-updates
+
+      - name: Check for safe updates
+        id: check-updates
+        run: |
+          echo "🔍 Checking for safe dependency updates..."
+          
+          # Check for patch updates (safe)
+          PATCH_UPDATES=$(ncu --target patch --format json | jq -r 'keys[]' | wc -l)
+          
+          # Check for minor updates (usually safe)
+          MINOR_UPDATES=$(ncu --target minor --format json | jq -r 'keys[]' | wc -l)
+          
+          # Check for major updates (potentially breaking)
+          MAJOR_UPDATES=$(ncu --target major --format json | jq -r 'keys[]' | wc -l)
+          
+          echo "patch_updates=$PATCH_UPDATES" >> $GITHUB_OUTPUT
+          echo "minor_updates=$MINOR_UPDATES" >> $GITHUB_OUTPUT
+          echo "major_updates=$MAJOR_UPDATES" >> $GITHUB_OUTPUT
+          
+          if [ "$PATCH_UPDATES" -gt 0 ] || [ "$MINOR_UPDATES" -gt 0 ]; then
+            echo "updates_available=true" >> $GITHUB_OUTPUT
+          else
+            echo "updates_available=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create dependency update issue
+        if: steps.check-updates.outputs.updates_available == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            
+            // Get detailed update information
+            const patchUpdates = execSync('ncu --target patch --format json', { encoding: 'utf8' });
+            const minorUpdates = execSync('ncu --target minor --format json', { encoding: 'utf8' });
+            const majorUpdates = execSync('ncu --target major --format json', { encoding: 'utf8' });
+            
+            const patch = JSON.parse(patchUpdates || '{}');
+            const minor = JSON.parse(minorUpdates || '{}');
+            const major = JSON.parse(majorUpdates || '{}');
+            
+            let body = `## 📦 Dependency Update Report\n\n`;
+            body += `**Generated:** ${new Date().toISOString()}\n\n`;
+            
+            if (Object.keys(patch).length > 0) {
+              body += `### 🟢 Patch Updates (Safe)\n\n`;
+              Object.entries(patch).forEach(([pkg, version]) => {
+                body += `- \`${pkg}\`: ${version}\n`;
+              });
+              body += `\n`;
+            }
+            
+            if (Object.keys(minor).length > 0) {
+              body += `### 🟡 Minor Updates (Usually Safe)\n\n`;
+              Object.entries(minor).forEach(([pkg, version]) => {
+                body += `- \`${pkg}\`: ${version}\n`;
+              });
+              body += `\n`;
+            }
+            
+            if (Object.keys(major).length > 0) {
+              body += `### 🔴 Major Updates (Review Required)\n\n`;
+              Object.entries(major).forEach(([pkg, version]) => {
+                body += `- \`${pkg}\`: ${version}\n`;
+              });
+              body += `\n`;
+            }
+            
+            body += `### 🔧 Recommended Actions\n\n`;
+            body += `1. **Patch Updates**: Can be applied immediately\n`;
+            body += `2. **Minor Updates**: Review changelog, test thoroughly\n`;
+            body += `3. **Major Updates**: Requires careful review and testing\n\n`;
+            body += `### 🚀 Next Steps\n\n`;
+            body += `Run the following commands to apply safe updates:\n\n`;
+            body += `\`\`\`bash\n`;
+            body += `# Apply patch updates\n`;
+            body += `ncu --target patch -u\n`;
+            body += `npm install\n\n`;
+            body += `# Test the application\n`;
+            body += `npm run test\n`;
+            body += `npm run build\n`;
+            body += `\`\`\`\n\n`;
+            body += `> **Note**: This issue was automatically generated by the dependency compatibility workflow.`;
+            
+            // Check if an issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['dependencies', 'automated'],
+              state: 'open'
+            });
+            
+            const existingIssue = issues.data.find(issue => 
+              issue.title.includes('Dependency Updates Available')
+            );
+            
+            if (existingIssue) {
+              // Update existing issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: body
+              });
+              console.log(`Updated existing issue #${existingIssue.number}`);
+            } else {
+              // Create new issue
+              const issue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '📦 Dependency Updates Available',
+                body: body,
+                labels: ['dependencies', 'automated', 'enhancement']
+              });
+              console.log(`Created new issue #${issue.data.number}`);
+            }
+
+  validate-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Validate package-lock.json
+        run: |
+          echo "🔒 Validating package-lock.json integrity..."
+          
+          # Check if package-lock.json is in sync with package.json
+          npm ci --dry-run
+          
+          # Verify lockfile format version
+          LOCKFILE_VERSION=$(jq -r '.lockfileVersion' package-lock.json)
+          echo "Lockfile version: $LOCKFILE_VERSION"
+          
+          if [ "$LOCKFILE_VERSION" != "3" ]; then
+            echo "⚠️  Warning: Lockfile version is not 3. Consider updating npm."
+          fi
+          
+      - name: Check for phantom dependencies
+        run: |
+          echo "👻 Checking for phantom dependencies..."
+          
+          # Install only production dependencies
+          npm ci --omit=dev --omit=optional
+          
+          # Try to build (this will fail if there are phantom deps)
+          npm run build || {
+            echo "❌ Build failed - possible phantom dependencies detected"
+            echo "Phantom dependencies are packages used in code but not declared in package.json"
+            exit 1
+          }

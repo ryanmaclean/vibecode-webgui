@@ -102,28 +102,13 @@ export class AIAnalytics extends EventEmitter {
     this.logEvent('error', errorEvent);
     this.emit('error_occurred', errorEvent);
     
-    // Also send to error tracking service if configured
-    if (process.env.ERROR_TRACKING_DSN) {
-      this.sendToErrorTracking(errorEvent);
-    }
+    // Send to Datadog Error Tracking
+    trackError(error, {
+      component: 'ai-analytics',
+      metadata: context
+    });
     
     return errorEvent;
-  }
-
-  private async sendToErrorTracking(event: any) {
-    try {
-      // Integrate with error tracking service (e.g., Sentry, Datadog)
-      // This is a simplified example
-      if (process.env.ERROR_TRACKING_DSN) {
-        await fetch(process.env.ERROR_TRACKING_DSN, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(event),
-        });
-      }
-    } catch (error) {
-      console.error('Failed to send error to tracking service:', error);
-    }
   }
 }
 

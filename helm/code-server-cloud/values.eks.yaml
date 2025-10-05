@@ -1,0 +1,7 @@
+workspace:
+  persistentVolume:
+    enabled: true
+    storageClass: efs-sc
+
+nodeSelector:
+  lifecycle: Ec2Spot

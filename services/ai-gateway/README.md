@@ -74,8 +74,22 @@ The gateway will be available at `http://localhost:3001`
 | `JWT_SECRET` | JWT signing secret (required) | - |
 | `RATE_LIMIT_REQUESTS` | Requests per window | `100` |
 | `DEFAULT_MODEL` | Default AI model | `anthropic/claude-3-sonnet-20240229` |
+| `PROVIDERS_ENABLED` | Comma-separated list of enabled providers | `openrouter,openai,azure,hf,ollama` |
 
 See `.env.example` for complete configuration options.
+
+### Providers (Unified Abstraction)
+
+The gateway supports multiple providers behind a unified API. Enable providers via `PROVIDERS_ENABLED` (comma-separated): `azure,openai,hf,openrouter,ollama`.
+
+- Azure OpenAI
+  - `AZURE_OPENAI_ENDPOINT` (e.g., https://<resource>.openai.azure.com)
+  - `AZURE_OPENAI_API_KEY`
+  - `AZURE_OPENAI_DEPLOYMENTS` JSON map of friendly names to deployment names, e.g. `{ "gpt4o": "gpt-4o" }`
+OPENROUTER_TITLE=Your App Name
+```
+
+If you see `401 Unauthorized` with message `User not found.`, set these to match your OpenRouter account’s allowed referrer/site and title.
 
 ### Authentication
 
@@ -208,6 +222,90 @@ Available at `/metrics` endpoint:
 - **Detailed**: `/health/detailed` - Component status
 - **Readiness**: `/health/ready` - Kubernetes readiness probe
 - **Liveness**: `/health/live` - Kubernetes liveness probe
+
+### Datadog OTLP Trace Export
+
+Enable OpenTelemetry tracing and export spans either directly to Datadog SaaS intake or to a local OTEL collector/Datadog Agent.
+
+1) Direct to Datadog SaaS (no agent required)
+
+```bash
+# .env.local
+ENABLE_TRACING=true
+DD_ENV=production            # or your env (e.g., staging, dev)
+DD_SERVICE=vibecode-ai-gateway
+OTEL_SERVICE_NAME=${DD_SERVICE}               # optional; service name for traces
+OTEL_RESOURCE_ATTRIBUTES=deployment.environment=${DD_ENV}
+
+# Choose your site (datadoghq.com, us3.datadoghq.com, datadoghq.eu, etc.)
+OTEL_EXPORTER_OTLP_ENDPOINT=https://otel-intake.datadoghq.com
+
+# IMPORTANT: provide your Datadog API key via OTLP headers
+OTEL_EXPORTER_OTLP_HEADERS=DD-API-KEY=YOUR_DD_API_KEY
+
+# Sampling rate between 0 and 1 (0.1 = 10%)
+TRACE_SAMPLE_RATE=0.1
+```
+
+2) Local OTEL Collector or Datadog Agent (OTLP HTTP)
+
+```bash
+# .env.local
+ENABLE_TRACING=true
+DD_ENV=development
+DD_SERVICE=vibecode-ai-gateway
+OTEL_SERVICE_NAME=${DD_SERVICE}
+OTEL_RESOURCE_ATTRIBUTES=deployment.environment=${DD_ENV}
+
+# Default OTLP HTTP receiver port
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+
+# No headers needed for local collector/agent
+OTEL_EXPORTER_OTLP_HEADERS=
+
+TRACE_SAMPLE_RATE=0.1
+```
+
+Notes
+- Never hardcode secrets (Datadog API key) in source control. Use secret managers or CI secrets.
+- The gateway boots the OTEL SDK via `src/tracing.ts` only when `ENABLE_TRACING=true`.
+- You can also set `OTEL_TRACES_SAMPLER_ARG` to control sampling if using standard OTEL variables.
+- The server returns `X-Request-ID` and `traceparent` headers for client correlation.
+
+#### Verification (Datadog APM)
+
+1. Create/update `services/ai-gateway/.env.local` with OTLP envs (choose one of the methods above). For SaaS, for example:
+
+```bash
+ENABLE_TRACING=true
+DD_ENV=dev
+DD_SERVICE=vibecode-ai-gateway
+OTEL_SERVICE_NAME=${DD_SERVICE}
+OTEL_RESOURCE_ATTRIBUTES=deployment.environment=${DD_ENV}
+OTEL_EXPORTER_OTLP_ENDPOINT=https://otel-intake.datadoghq.com
+OTEL_EXPORTER_OTLP_HEADERS=DD-API-KEY=<YOUR_DD_API_KEY>
+TRACE_SAMPLE_RATE=0.5
+```
+
+2. Start the gateway locally:
+
+```bash
+npm --prefix services/ai-gateway run build
+npm --prefix services/ai-gateway run start
+```
+
+3. Generate a few requests (these also set correlation headers):
+
+```bash
+curl -s http://localhost:3001/health -H "X-API-Key: vbai_dev_key_1" -i | head -n 20
+curl -s http://localhost:3001/api/v1/models -H "X-API-Key: vbai_dev_key_1" -i | head -n 20
+```
+
+4. In Datadog, go to APM > Services and locate `vibecode-ai-gateway` (env: `dev`). You should see inbound HTTP spans, child spans for OpenRouter calls when used, and correlation with `traceparent` seen in responses.
+
+Troubleshooting
+- If no traces arrive, verify `OTEL_EXPORTER_OTLP_ENDPOINT`/`OTEL_EXPORTER_OTLP_HEADERS` and that the API key is valid.
+- If behind a firewall, ensure egress to `otel-intake.datadoghq.com` is allowed for OTLP HTTP (443).
 
 ## Performance Optimization
 

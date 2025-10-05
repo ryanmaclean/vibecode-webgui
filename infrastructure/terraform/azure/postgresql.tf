@@ -124,7 +124,7 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "aks_subnet" {
 # Store PostgreSQL connection string in Key Vault
 resource "azurerm_key_vault_secret" "postgres_connection_string" {
   name         = "postgres-connection-string"
-  value        = "postgresql://${var.postgresql_admin_username}:${random_password.postgres_admin_password.result}@${azurerm_postgresql_flexible_server.main.fqdn}:5432/${azurerm_postgresql_flexible_server_database.vibecode.name}?sslmode=require"
+  value        = "postgresql://${var.postgresql_admin_username}:${local.postgres_admin_password}@${azurerm_postgresql_flexible_server.main.fqdn}:5432/${azurerm_postgresql_flexible_server_database.vibecode.name}?sslmode=require"
   key_vault_id = azurerm_key_vault.main.id
   depends_on   = [azurerm_key_vault.main]
 }
@@ -167,7 +167,7 @@ resource "null_resource" "setup_postgresql_extensions" {
       echo "Enabling PostgreSQL extensions..."
       
       # Connect and enable extensions
-      PGPASSWORD='${random_password.postgres_admin_password.result}' psql \
+      PGPASSWORD='${local.postgres_admin_password}' psql \
         "host=${azurerm_postgresql_flexible_server.main.fqdn} port=5432 dbname=${azurerm_postgresql_flexible_server_database.vibecode.name} user=${var.postgresql_admin_username} sslmode=require" \
         -c "CREATE EXTENSION IF NOT EXISTS vector;" \
         -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";" \
@@ -177,7 +177,7 @@ resource "null_resource" "setup_postgresql_extensions" {
       
       # Create Datadog monitoring user
       echo "Setting up Datadog monitoring user..."
-      PGPASSWORD='${random_password.postgres_admin_password.result}' psql \
+      PGPASSWORD='${local.postgres_admin_password}' psql \
         "host=${azurerm_postgresql_flexible_server.main.fqdn} port=5432 dbname=${azurerm_postgresql_flexible_server_database.vibecode.name} user=${var.postgresql_admin_username} sslmode=require" \
         -c "CREATE USER datadog WITH password 'dd-monitoring-password-${random_id.datadog_user.hex}';" \
         -c "GRANT SELECT ON pg_stat_database TO datadog;" \

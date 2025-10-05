@@ -45,9 +45,9 @@ resource "azurerm_cognitive_deployment" "openai_models" {
     version = each.value.model_version
   }
 
-  sku {
-    name     = each.value.scale_type
-    capacity = each.value.capacity
+  scale {
+    type     = each.value.scale_type
+    capacity = lookup(each.value, "capacity", 30)
   }
 
   # Prevent accidental deletion of production models
@@ -233,4 +233,4 @@ output "ai_services_identity_client_id" {
   description = "Client ID of the managed identity for AI services"
   value       = azurerm_user_assigned_identity.ai_services.client_id
   sensitive   = false
-} 
+}
