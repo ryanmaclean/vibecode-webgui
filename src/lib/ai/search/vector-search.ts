@@ -278,7 +278,7 @@ export class VectorSearch {
     }
   }
 
-  async listCollections(): Promise<Array<{name: string; id: string; metadata: Record<string, unknown>}>> {
+  async listCollections(): Promise<{ name: string; id: string; metadata: Record<string, unknown> }[]> {
     try {
       const collections = await this.chroma.listCollections();
       return collections.map((collection: { name: string; id: string; metadata?: Record<string, unknown> }) => ({
@@ -286,8 +286,8 @@ export class VectorSearch {
         id: collection.id,
         metadata: collection.metadata || {}
       }));
-    } catch (error) {
-      console.error('Error listing collections:', error);
+    } catch (_error) {
+      // Suppress console output in production; return empty list on failure
       return [];
     }
   }

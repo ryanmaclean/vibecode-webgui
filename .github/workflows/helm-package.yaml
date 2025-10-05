@@ -1,0 +1,50 @@
+name: Helm Package
+
+on:
+  push:
+    paths:
+      - 'charts/**'
+      - 'helm/**'
+      - '.github/workflows/helm-package.yaml'
+  pull_request:
+    paths:
+      - 'charts/**'
+      - 'helm/**'
+
+jobs:
+  lint-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python for ddtrace
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --user ddtrace
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo add coder-vscode https://coder-vscode.github.io/helm
+
+      - name: Helm lint
+        run: |
+          helm lint charts/litellm-pgvector
+
+      - name: Helm package
+        run: |
+          mkdir -p _packages
+          helm dependency update charts/litellm-pgvector
+          helm package charts/litellm-pgvector --destination _packages
+
+      - name: Upload chart artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-charts
+          path: _packages

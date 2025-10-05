@@ -12,8 +12,9 @@ data:
     -- Initialize VibeCode WebGUI database schema
     -- This script sets up the core tables for the AI-powered development platform
 
-    -- Enable UUID and pgvector extensions
+    -- Enable UUID, pg_stat_statements and pgvector extensions
     CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
     CREATE EXTENSION IF NOT EXISTS "vector";
 
     -- Users table for authentication and user management
@@ -76,6 +77,32 @@ data:
         ip_address INET,
         user_agent TEXT
     );
+
+    -- Vector embeddings storage (pgvector)
+    -- Used by scripts/ingest-docs-to-rag.ts via src/lib/db/vector.ts
+    CREATE TABLE IF NOT EXISTS document_embeddings (
+        id BIGSERIAL PRIMARY KEY,
+        document_id TEXT UNIQUE NOT NULL,
+        content TEXT NOT NULL,
+        embedding VECTOR(1536) NOT NULL,
+        metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+        embedding_generation_time_ms INTEGER,
+        search_count INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    -- HNSW index for fast cosine similarity search
+    DO $$ BEGIN
+        BEGIN
+          CREATE INDEX IF NOT EXISTS document_embeddings_embedding_hnsw
+          ON document_embeddings USING hnsw (embedding vector_cosine_ops);
+        EXCEPTION WHEN undefined_object THEN
+          -- Fallback to IVFFLAT if HNSW is unavailable on this version
+          CREATE INDEX IF NOT EXISTS document_embeddings_embedding_ivfflat
+          ON document_embeddings USING ivfflat (embedding vector_cosine_ops);
+        END;
+      END $$;
 
     -- Feature flags table for A/B testing and feature management
     CREATE TABLE feature_flags (

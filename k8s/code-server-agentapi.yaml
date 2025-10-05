@@ -1,0 +1,300 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agentapi-config
+  namespace: vibecode-platform
+data:
+  config.yaml: |
+    host: 127.0.0.1
+    port: 3284
+    terminal_dir: /tmp/terminals
+    allowed_origins:
+      - http://localhost:8765
+      - http://127.0.0.1:8765
+    agents:
+      - name: aider
+        command: aider
+        args: []
+      - name: goose
+        command: goose
+        args: []
+      - name: cline
+        command: npx
+        args: ["-y", "@cline/cli"]
+    max_concurrent_agents: 5
+    agent_timeout: 300
+    log_level: info
+
+  health-check.sh: |
+    #!/bin/bash
+    set -e
+
+    # Check if agentapi HTTP server is responding
+    response=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3284/health || echo "000")
+
+    if [ "$response" != "200" ]; then
+      echo "AgentAPI health check failed: HTTP $response"
+      exit 1
+    fi
+
+    # Check if terminal emulator is accessible
+    if [ ! -d "/tmp/terminals" ]; then
+      echo "Terminal directory not accessible"
+      exit 1
+    fi
+
+    # Check agent process count
+    agent_count=$(ps aux | grep -E 'aider|goose|cline' | grep -v grep | wc -l)
+    max_agents=${AGENTAPI_MAX_CONCURRENT_AGENTS:-5}
+
+    if [ "$agent_count" -gt "$max_agents" ]; then
+      echo "Too many agent processes: $agent_count (max: $max_agents)"
+      exit 1
+    fi
+
+    echo "AgentAPI healthy: $agent_count active agents"
+    exit 0
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-server-agentapi
+  namespace: vibecode-platform
+  labels:
+    app: code-server
+    component: workspace
+spec:
+  type: ClusterIP
+  selector:
+    app: code-server
+    component: workspace
+  ports:
+    - name: ide
+      port: 8765
+      targetPort: 8765
+      protocol: TCP
+    - name: agentapi
+      port: 3284
+      targetPort: 3284
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-server-workspace
+  namespace: vibecode-platform
+  labels:
+    app: code-server
+    component: workspace
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: code-server
+      component: workspace
+  template:
+    metadata:
+      labels:
+        app: code-server
+        component: workspace
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      # Init container to set up shared terminal directory
+      initContainers:
+        - name: init-terminal-dir
+          image: busybox:latest
+          command: ['sh', '-c']
+          args:
+            - |
+              mkdir -p /tmp/terminals
+              chmod 755 /tmp/terminals
+              chown 1000:1000 /tmp/terminals
+          volumeMounts:
+            - name: terminal-data
+              mountPath: /tmp/terminals
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+
+      containers:
+        # Main container: code-server IDE
+        - name: code-server
+          image: ghcr.io/ryanmaclean/vibecode-codeserver:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - --bind-addr
+            - 0.0.0.0:8765
+            - --auth
+            - password
+            - /home/coder/workspace
+          ports:
+            - name: ide
+              containerPort: 8765
+              protocol: TCP
+          env:
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: code-server-config
+                  key: password
+            - name: SHELL
+              value: /bin/bash
+            - name: AGENTAPI_HOST
+              value: "127.0.0.1"
+            - name: AGENTAPI_PORT
+              value: "3284"
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /home/coder/workspace
+            - name: terminal-data
+              mountPath: /tmp/terminals
+            - name: config
+              mountPath: /home/coder/.config
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8765
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8765
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+
+        # Sidecar: AgentAPI for agent control
+        - name: agentapi
+          image: ghcr.io/ryanmaclean/vibecode-agentapi:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - --config
+            - /etc/agentapi/config.yaml
+          ports:
+            - name: api
+              containerPort: 3284
+              protocol: TCP
+          env:
+            - name: AGENTAPI_HOST
+              value: "127.0.0.1"
+            - name: AGENTAPI_PORT
+              value: "3284"
+            - name: AGENTAPI_LOG_LEVEL
+              value: info
+            - name: AGENTAPI_MAX_CONCURRENT_AGENTS
+              value: "5"
+            - name: AGENTAPI_AGENT_TIMEOUT
+              value: "300"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /home/coder/workspace
+              readOnly: true
+            - name: terminal-data
+              mountPath: /tmp/terminals
+            - name: agentapi-config
+              mountPath: /etc/agentapi
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - /etc/agentapi/health-check.sh
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3284
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: code-server-workspace-pvc
+        - name: terminal-data
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: config
+          emptyDir: {}
+        - name: agentapi-config
+          configMap:
+            name: agentapi-config
+            defaultMode: 0755
+
+      # Node affinity and tolerations
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - code-server
+                topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: code-server-workspace-pvc
+  namespace: vibecode-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: vibecode-local-storage
+  resources:
+    requests:
+      storage: 50Gi

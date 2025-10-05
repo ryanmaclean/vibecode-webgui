@@ -71,6 +71,8 @@ locals {
     CreatedAt   = timestamp()
   })
 
+  postgres_admin_password = var.postgres_admin_password_override != "" ? var.postgres_admin_password_override : random_password.postgres_admin_password[0].result
+
   # AKS system node pool configuration
   system_node_pool = {
     name                = "system"
@@ -100,6 +102,7 @@ locals {
 
 # Random password for PostgreSQL
 resource "random_password" "postgres_admin_password" {
+  count   = var.postgres_admin_password_override == "" ? 1 : 0
   length  = 32
   special = true
   upper   = true
@@ -161,7 +164,7 @@ resource "azurerm_key_vault" "main" {
 # Store secrets in Key Vault
 resource "azurerm_key_vault_secret" "postgres_password" {
   name         = "postgres-admin-password"
-  value        = random_password.postgres_admin_password.result
+  value        = local.postgres_admin_password
   key_vault_id = azurerm_key_vault.main.id
   depends_on   = [azurerm_key_vault.main]
 }

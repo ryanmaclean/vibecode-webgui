@@ -23,6 +23,8 @@ aks_user_node_min_count   = 1
 aks_user_node_max_count   = 10
 
 # PostgreSQL Configuration
+# Optional: set postgres_admin_password_override to match an existing rotated credential
+# postgres_admin_password_override           = "<paste-from-key-vault>"
 postgresql_sku_name                        = "GP_Standard_D4s_v3"
 postgresql_storage_mb                      = 65536  # 64GB
 postgresql_backup_retention_days           = 35

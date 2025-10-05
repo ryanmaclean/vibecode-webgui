@@ -1,0 +1,926 @@
+name: AgentAPI CI/CD Pipeline
+
+# Complete CI/CD for agentapi integration with multi-arch builds, comprehensive testing, and staged deployments
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'docker/agentapi/**'
+      - 'src/lib/agent-framework.ts'
+      - 'src/app/api/agents/**'
+      - 'k8s/code-server-agentapi.yaml'
+      - 'tests/**/*agent*.test.ts'
+      - '.github/workflows/agentapi-cicd.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'docker/agentapi/**'
+      - 'src/lib/agent-framework.ts'
+      - 'src/app/api/agents/**'
+      - 'k8s/code-server-agentapi.yaml'
+      - 'tests/**/*agent*.test.ts'
+  workflow_dispatch:
+    inputs:
+      deploy_env:
+        description: 'Deploy environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      skip_tests:
+        description: 'Skip tests (emergency deployments only)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-agentapi
+  NODE_VERSION: '22.11.0'
+  DOCKER_BUILDKIT: 1
+
+concurrency:
+  group: agentapi-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Job 1: Code Quality & Fast Checks
+  lint-and-typecheck:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run ESLint
+        run: npm run lint -- --max-warnings 0
+
+      - name: Run TypeScript type check
+        run: npm run type-check
+
+      - name: Check for TODO/FIXME in critical files
+        run: |
+          if grep -r "TODO\|FIXME" src/lib/agent-framework.ts src/app/api/agents/; then
+            echo "::warning::Found TODO/FIXME comments in agent code"
+          fi
+
+  # Job 2: Unit Tests with Coverage
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: lint-and-typecheck
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run unit tests with coverage
+        run: npm run test:unit -- --coverage --testPathPattern="agent"
+        env:
+          NODE_ENV: test
+          CI: true
+
+      - name: Check coverage thresholds
+        run: |
+          COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+          echo "Line coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "::error::Coverage below 80% threshold: $COVERAGE%"
+            exit 1
+          fi
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/coverage-final.json
+          flags: unit,agentapi
+          name: agentapi-unit-coverage
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: coverage/
+          retention-days: 7
+
+  # Job 3: Integration Tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: lint-and-typecheck
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: vibecode_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Setup test database
+        run: |
+          npm run prisma:generate
+          npm run prisma:migrate:deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vibecode_test
+
+      - name: Run integration tests
+        run: npm run test:integration -- --testPathPattern="agent" --runInBand
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vibecode_test
+          REDIS_URL: redis://localhost:6379
+          CI: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: test-results/
+          retention-days: 7
+
+  # Job 4: Build Multi-Arch Docker Images
+  build-images:
+    name: Build Multi-Arch Images
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [unit-tests, integration-tests]
+    if: github.event.inputs.skip_tests != 'true'
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    outputs:
+      image-tag: ${{ steps.meta.outputs.version }}
+      image-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=VibeCode AgentAPI
+            org.opencontainers.image.description=HTTP API for AI agent coordination
+            org.opencontainers.image.vendor=VibeCode
+            org.opencontainers.image.licenses=MIT
+
+      - name: Build and push multi-arch image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./docker/agentapi
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            AGENTAPI_VERSION=${{ steps.meta.outputs.version }}
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).created }}
+            GIT_COMMIT=${{ github.sha }}
+
+      - name: Generate build provenance
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+  # Job 5: Security Scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build-images
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-images.outputs.image-tag }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Snyk container scan
+        uses: snyk/actions/docker@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-images.outputs.image-tag }}
+          args: --severity-threshold=high
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-images.outputs.image-tag }}
+          format: spdx-json
+          output-file: agentapi-sbom.spdx.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentapi-sbom
+          path: agentapi-sbom.spdx.json
+          retention-days: 90
+
+  # Job 6: Container Structure Tests
+  container-tests:
+    name: Container Structure Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build-images
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install container-structure-test
+        run: |
+          curl -LO https://storage.googleapis.com/container-structure-test/latest/container-structure-test-linux-amd64
+          chmod +x container-structure-test-linux-amd64
+          sudo mv container-structure-test-linux-amd64 /usr/local/bin/container-structure-test
+
+      - name: Create structure test config
+        run: |
+          cat > container-test.yaml <<'EOF'
+          schemaVersion: '2.0.0'
+
+          commandTests:
+            - name: 'agentapi help'
+              command: '/usr/local/bin/agentapi'
+              args: ['--help']
+              exitCode: 0
+
+            - name: 'python3 available'
+              command: 'python3'
+              args: ['--version']
+              exitCode: 0
+
+            - name: 'aider installed'
+              command: 'aider'
+              args: ['--version']
+              exitCode: 0
+
+            - name: 'goose installed'
+              command: 'goose'
+              args: ['version']
+              exitCode: 0
+
+          fileExistenceTests:
+            - name: 'agentapi binary'
+              path: '/usr/local/bin/agentapi'
+              shouldExist: true
+              permissions: '-rwxr-xr-x'
+
+            - name: 'health check script'
+              path: '/home/coder/.agentapi/health-check.sh'
+              shouldExist: true
+              permissions: '-rwxr-xr-x'
+
+            - name: 'config file'
+              path: '/home/coder/.agentapi/config.yaml'
+              shouldExist: true
+
+          metadataTest:
+            exposedPorts: ["3284"]
+            workdir: '/home/coder'
+            user: 'coder'
+            env:
+              - key: 'AGENTAPI_PORT'
+                value: '3284'
+          EOF
+
+      - name: Run structure tests
+        run: |
+          container-structure-test test \
+            --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-images.outputs.image-tag }} \
+            --config container-test.yaml
+
+  # Job 7: Functional Tests
+  functional-tests:
+    name: Functional Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build-images
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start AgentAPI container
+        run: |
+          docker run -d \
+            --name agentapi-test \
+            -p 3284:3284 \
+            -e AGENTAPI_HOST=0.0.0.0 \
+            -e AGENTAPI_PORT=3284 \
+            -e AGENTAPI_LOG_LEVEL=debug \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-images.outputs.image-tag }}
+
+      - name: Wait for startup
+        run: |
+          timeout 60 sh -c 'until curl -f http://localhost:3284/health; do sleep 2; done'
+
+      - name: Test health endpoint
+        run: |
+          response=$(curl -s http://localhost:3284/health)
+          echo "Health response: $response"
+          if ! echo "$response" | jq -e '.status == "healthy"' > /dev/null; then
+            echo "::error::Health check failed"
+            exit 1
+          fi
+
+      - name: Test metrics endpoint
+        run: |
+          curl -f http://localhost:3284/metrics
+
+      - name: Test agents list endpoint
+        run: |
+          response=$(curl -s http://localhost:3284/v1/agents)
+          echo "Agents response: $response"
+          if ! echo "$response" | jq -e '.agents | length > 0' > /dev/null; then
+            echo "::error::No agents found"
+            exit 1
+          fi
+
+      - name: Test agent execution (mock)
+        run: |
+          response=$(curl -s -X POST http://localhost:3284/v1/agents/aider/execute \
+            -H "Content-Type: application/json" \
+            -d '{"command": "aider --help", "workspace": "/tmp/test"}')
+          echo "Execution response: $response"
+
+      - name: Check container logs
+        if: always()
+        run: |
+          docker logs agentapi-test
+
+      - name: Stop container
+        if: always()
+        run: |
+          docker stop agentapi-test
+          docker rm agentapi-test
+
+  # Job 8: E2E Tests with Playwright
+  e2e-tests:
+    name: E2E Tests (Agent Workflows)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build-images
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Start AgentAPI in Docker
+        run: |
+          docker run -d \
+            --name agentapi-e2e \
+            -p 3284:3284 \
+            -e AGENTAPI_HOST=0.0.0.0 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-images.outputs.image-tag }}
+          sleep 10
+
+      - name: Build Next.js app
+        run: npm run build
+        env:
+          SKIP_ENV_VALIDATION: true
+
+      - name: Run E2E tests
+        run: npm run test:e2e -- --grep="agent"
+        env:
+          BASE_URL: http://localhost:3000
+          AGENTAPI_URL: http://localhost:3284
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Stop AgentAPI
+        if: always()
+        run: |
+          docker stop agentapi-e2e
+          docker rm agentapi-e2e
+
+  # Job 9: Performance Tests
+  performance-tests:
+    name: Performance Tests (Latency & Throughput)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build-images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start AgentAPI
+        run: |
+          docker run -d \
+            --name agentapi-perf \
+            -p 3284:3284 \
+            -e AGENTAPI_HOST=0.0.0.0 \
+            -e AGENTAPI_MAX_CONCURRENT_AGENTS=10 \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-images.outputs.image-tag }}
+          sleep 10
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Create k6 load test script
+        run: |
+          cat > load-test.js <<'EOF'
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+
+          export const options = {
+            stages: [
+              { duration: '2m', target: 20 },  // Ramp up to 20 users
+              { duration: '5m', target: 20 },  // Stay at 20 users
+              { duration: '2m', target: 50 },  // Ramp up to 50 users
+              { duration: '5m', target: 50 },  // Stay at 50 users
+              { duration: '2m', target: 100 }, // Spike to 100 users
+              { duration: '2m', target: 0 },   // Ramp down
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<2000'], // 95% of requests < 2s
+              http_req_failed: ['rate<0.01'],    // < 1% error rate
+            },
+          };
+
+          export default function () {
+            const res = http.get('http://localhost:3284/health');
+            check(res, {
+              'status is 200': (r) => r.status === 200,
+              'response time < 500ms': (r) => r.timings.duration < 500,
+            });
+            sleep(1);
+          }
+          EOF
+
+      - name: Run load test
+        run: k6 run --out json=performance-results.json load-test.js
+
+      - name: Analyze results
+        run: |
+          cat performance-results.json | jq '
+            .metrics | {
+              "avg_response_time": .http_req_duration.values.avg,
+              "p95_response_time": .http_req_duration.values["p(95)"],
+              "p99_response_time": .http_req_duration.values["p(99)"],
+              "error_rate": .http_req_failed.values.rate,
+              "requests_per_sec": .http_reqs.values.rate
+            }
+          '
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: performance-results.json
+          retention-days: 30
+
+      - name: Stop AgentAPI
+        if: always()
+        run: |
+          docker stop agentapi-perf
+          docker rm agentapi-perf
+
+  # Job 10: Deploy to Dev Environment
+  deploy-dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [security-scan, container-tests, functional-tests]
+    if: github.ref == 'refs/heads/develop' || github.event.inputs.deploy_env == 'dev'
+    environment:
+      name: dev
+      url: https://dev.vibecode.io
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_DEV }}" | base64 -d > $HOME/.kube/config
+
+      - name: Deploy to dev namespace
+        run: |
+          kubectl set image deployment/code-server-workspace \
+            agentapi=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-images.outputs.image-tag }} \
+            -n vibecode-dev
+
+          kubectl rollout status deployment/code-server-workspace -n vibecode-dev --timeout=5m
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n vibecode-dev -l app=code-server
+          kubectl logs -n vibecode-dev -l app=code-server -c agentapi --tail=50
+
+  # Job 11: Deploy to Staging Environment
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [deploy-dev, e2e-tests]
+    if: github.ref == 'refs/heads/main' || github.event.inputs.deploy_env == 'staging'
+    environment:
+      name: staging
+      url: https://staging.vibecode.io
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > $HOME/.kube/config
+
+      - name: Blue-Green deployment preparation
+        run: |
+          # Create green deployment
+          kubectl apply -f k8s/code-server-agentapi.yaml -n vibecode-staging
+
+          # Update green deployment with new image
+          kubectl set image deployment/code-server-workspace-green \
+            agentapi=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-images.outputs.image-tag }} \
+            -n vibecode-staging
+
+          # Wait for green to be ready
+          kubectl rollout status deployment/code-server-workspace-green -n vibecode-staging --timeout=10m
+
+      - name: Run smoke tests on green
+        run: |
+          GREEN_IP=$(kubectl get svc code-server-agentapi-green -n vibecode-staging -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          curl -f http://$GREEN_IP:3284/health
+
+      - name: Switch traffic to green
+        run: |
+          kubectl patch svc code-server-agentapi -n vibecode-staging \
+            -p '{"spec":{"selector":{"version":"green"}}}'
+
+          echo "Traffic switched to green deployment"
+          sleep 30
+
+      - name: Monitor for errors
+        run: |
+          ERROR_RATE=$(kubectl logs -n vibecode-staging -l version=green --tail=100 | grep -c "ERROR" || echo "0")
+          if [ "$ERROR_RATE" -gt 5 ]; then
+            echo "::error::High error rate detected: $ERROR_RATE errors"
+            exit 1
+          fi
+
+      - name: Scale down blue deployment
+        run: |
+          kubectl scale deployment/code-server-workspace-blue --replicas=0 -n vibecode-staging
+
+  # Job 12: Deploy to Production (Canary)
+  deploy-production:
+    name: Deploy to Production (Canary)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [deploy-staging, performance-tests]
+    if: github.ref == 'refs/heads/main' || github.event.inputs.deploy_env == 'prod'
+    environment:
+      name: production
+      url: https://vibecode.io
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_PROD }}" | base64 -d > $HOME/.kube/config
+
+      - name: Deploy canary (10% traffic)
+        run: |
+          kubectl apply -f k8s/code-server-agentapi-canary.yaml -n vibecode-prod
+
+          kubectl set image deployment/code-server-workspace-canary \
+            agentapi=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-images.outputs.image-tag }} \
+            -n vibecode-prod
+
+          kubectl rollout status deployment/code-server-workspace-canary -n vibecode-prod --timeout=10m
+
+      - name: Monitor canary metrics (5 minutes)
+        run: |
+          echo "Monitoring canary for 5 minutes..."
+          for i in {1..10}; do
+            ERROR_RATE=$(kubectl logs -n vibecode-prod -l version=canary --tail=100 --since=30s | grep -c "ERROR" || echo "0")
+            echo "Check $i/10: Error count = $ERROR_RATE"
+
+            if [ "$ERROR_RATE" -gt 10 ]; then
+              echo "::error::Canary failure detected"
+              kubectl scale deployment/code-server-workspace-canary --replicas=0 -n vibecode-prod
+              exit 1
+            fi
+
+            sleep 30
+          done
+
+      - name: Increase canary to 50% traffic
+        run: |
+          kubectl scale deployment/code-server-workspace-canary --replicas=5 -n vibecode-prod
+          echo "Canary scaled to 50% traffic"
+          sleep 60
+
+      - name: Monitor 50% canary (5 minutes)
+        run: |
+          for i in {1..10}; do
+            ERROR_RATE=$(kubectl logs -n vibecode-prod -l version=canary --tail=100 --since=30s | grep -c "ERROR" || echo "0")
+            if [ "$ERROR_RATE" -gt 10 ]; then
+              echo "::error::Canary failure at 50%"
+              kubectl rollout undo deployment/code-server-workspace-canary -n vibecode-prod
+              exit 1
+            fi
+            sleep 30
+          done
+
+      - name: Promote canary to 100%
+        run: |
+          kubectl set image deployment/code-server-workspace \
+            agentapi=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-images.outputs.image-tag }} \
+            -n vibecode-prod
+
+          kubectl rollout status deployment/code-server-workspace -n vibecode-prod --timeout=10m
+
+      - name: Scale down canary
+        run: |
+          kubectl scale deployment/code-server-workspace-canary --replicas=0 -n vibecode-prod
+
+      - name: Post-deployment verification
+        run: |
+          kubectl get pods -n vibecode-prod -l app=code-server
+          kubectl top pods -n vibecode-prod -l app=code-server
+
+  # Job 13: Rollback Mechanism
+  rollback:
+    name: Automated Rollback
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: failure() && (needs.deploy-dev.result == 'failure' || needs.deploy-staging.result == 'failure' || needs.deploy-production.result == 'failure')
+    needs: [deploy-dev, deploy-staging, deploy-production]
+    steps:
+      - name: Determine rollback target
+        id: target
+        run: |
+          if [ "${{ needs.deploy-production.result }}" == "failure" ]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "namespace=vibecode-prod" >> $GITHUB_OUTPUT
+          elif [ "${{ needs.deploy-staging.result }}" == "failure" ]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "namespace=vibecode-staging" >> $GITHUB_OUTPUT
+          else
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "namespace=vibecode-dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          if [ "${{ steps.target.outputs.environment }}" == "production" ]; then
+            echo "${{ secrets.KUBECONFIG_PROD }}" | base64 -d > $HOME/.kube/config
+          elif [ "${{ steps.target.outputs.environment }}" == "staging" ]; then
+            echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > $HOME/.kube/config
+          else
+            echo "${{ secrets.KUBECONFIG_DEV }}" | base64 -d > $HOME/.kube/config
+          fi
+
+      - name: Rollback deployment
+        run: |
+          kubectl rollout undo deployment/code-server-workspace -n ${{ steps.target.outputs.namespace }}
+          kubectl rollout status deployment/code-server-workspace -n ${{ steps.target.outputs.namespace }} --timeout=5m
+
+          echo "::warning::Rolled back ${{ steps.target.outputs.environment }} deployment"
+
+      - name: Notify team
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: |
+            Automated rollback executed for ${{ steps.target.outputs.environment }}
+            Workflow: ${{ github.workflow }}
+            Commit: ${{ github.sha }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  # Job 14: Summary and Notifications
+  summary:
+    name: Pipeline Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [
+      lint-and-typecheck,
+      unit-tests,
+      integration-tests,
+      build-images,
+      security-scan,
+      container-tests,
+      functional-tests,
+      e2e-tests,
+      performance-tests,
+      deploy-dev,
+      deploy-staging,
+      deploy-production
+    ]
+    steps:
+      - name: Generate summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          # AgentAPI CI/CD Pipeline Summary
+
+          ## Build Information
+          - **Commit**: \`${{ github.sha }}\`
+          - **Branch**: \`${{ github.ref_name }}\`
+          - **Triggered by**: ${{ github.actor }}
+          - **Image tag**: ${{ needs.build-images.outputs.image-tag }}
+
+          ## Test Results
+          | Stage | Status |
+          |-------|--------|
+          | Code Quality | ${{ needs.lint-and-typecheck.result }} |
+          | Unit Tests | ${{ needs.unit-tests.result }} |
+          | Integration Tests | ${{ needs.integration-tests.result }} |
+          | E2E Tests | ${{ needs.e2e-tests.result }} |
+          | Security Scan | ${{ needs.security-scan.result }} |
+          | Container Tests | ${{ needs.container-tests.result }} |
+          | Functional Tests | ${{ needs.functional-tests.result }} |
+          | Performance Tests | ${{ needs.performance-tests.result }} |
+
+          ## Deployment Status
+          | Environment | Status |
+          |-------------|--------|
+          | Dev | ${{ needs.deploy-dev.result }} |
+          | Staging | ${{ needs.deploy-staging.result }} |
+          | Production | ${{ needs.deploy-production.result }} |
+
+          ## Pipeline Metrics
+          - **Total duration**: ${{ github.event.workflow_run.duration }} seconds
+          - **Build time**: See build-images job logs
+          - **Test time**: See test job logs
+
+          ## Next Steps
+          - Review test coverage reports
+          - Check performance metrics
+          - Verify deployment health in production
+          EOF
+
+      - name: Notify Slack on success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: |
+            AgentAPI deployment successful!
+            Environment: Production
+            Image: ${{ needs.build-images.outputs.image-tag }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          text: |
+            AgentAPI pipeline failed
+            Check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}

@@ -42,7 +42,7 @@ describe('KIND Cluster Validation (Complete)', () => {
       stdio: 'pipe'
     });
 
-    expect(result).toContain('vibecode');
+    expect(result).toContain('vibecode-platform');
     expect(result).toContain('datadog');
   });
 

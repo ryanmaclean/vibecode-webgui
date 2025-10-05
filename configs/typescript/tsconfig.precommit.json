@@ -1,0 +1,28 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/app/api/health/**/*",
+    "src/app/api/monitoring/**/*",
+    "src/lib/monitoring/**/*",
+    "src/lib/server-monitoring.ts",
+    "src/lib/monitoring.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next",
+    "tests/**/*",
+    "web-dashboard/**/*",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
+  ],
+  "compilerOptions": {
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  }
+}

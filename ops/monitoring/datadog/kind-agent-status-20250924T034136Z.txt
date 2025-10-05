@@ -1,0 +1,685 @@
+Getting the status from the agent.
+
+2025-09-24 03:41:37 UTC | CORE | INFO | (pkg/util/log/log.go:845 in func1) | Using '/opt/datadog-agent/embedded' as Python home
+2025-09-24 03:41:37 UTC | CORE | INFO | (pkg/util/log/log.go:840 in func1) | Starting to load the configuration
+2025-09-24 03:41:37 UTC | CORE | WARN | (pkg/util/log/log.go:885 in func1) | Unknown environment variable: DD_TRACE_SAMPLE_RATE
+2025-09-24 03:41:37 UTC | CORE | WARN | (pkg/util/log/log.go:885 in func1) | Unknown environment variable: DD_IAST_REQUEST_SAMPLING
+2025-09-24 03:41:37 UTC | CORE | WARN | (pkg/util/log/log.go:885 in func1) | Unknown environment variable: DD_PROFILING_ENABLED
+2025-09-24 03:41:37 UTC | CORE | WARN | (pkg/util/log/log.go:885 in func1) | Unknown environment variable: DD_IAST_ENABLED
+2025-09-24 03:41:37 UTC | CORE | INFO | (pkg/util/log/log.go:840 in func1) | Loading proxy settings
+2025-09-24 03:41:37 UTC | CORE | INFO | (pkg/util/log/log.go:840 in func1) | Starting to resolve secrets
+2025-09-24 03:41:37 UTC | CORE | INFO | (pkg/util/log/log.go:840 in func1) | Finished resolving secrets
+2025-09-24 03:41:37 UTC | CORE | WARN | (pkg/util/log/log.go:885 in func1) | Deactivating Autoconfig will disable most components. It's recommended to use autoconfig_exclude_features and autoconfig_include_features to activate/deactivate features selectively
+2025-09-24 03:41:37 UTC | CORE | INFO | (pkg/config/setup/config.go:2119 in LoadCustom) | Starting to load the configuration
+2025-09-24 03:41:37 UTC | CORE | WARN | (pkg/system-probe/config/adjust_npm.go:97 in adjustNetwork) | disabling process event monitoring as it is not supported for this kernel version
+2025-09-24 03:41:37 UTC | CORE | WARN | (pkg/system-probe/config/adjust_usm.go:65 in adjustUSM) | disabling USM event stream as it is not supported for this kernel version
+2025-09-24 03:41:37 UTC | CORE | WARN | (pkg/api/security/cert/cert_getter.go:32 in getCertFilepath) | IPC cert/key created or retrieved next to auth_token_file_path location: /etc/datadog-agent/auth/ipc_cert.pem
+2025-09-24 03:41:37 UTC | CORE | INFO | (pkg/api/util/util.go:313 in printAuthSignature) | successfully loaded the IPC auth primitives (fingerprint: 746b965b529ceacb)
+===============
+Agent (v7.66.1)
+===============
+  Status date: 2025-09-24 03:41:37.284 UTC (1758685297284)
+  Agent start: 2025-09-24 03:39:37.338 UTC (1758685177338)
+  Pid: 110937
+  Go Version: go1.23.8
+  Python Version: 3.12.9
+  Build arch: arm64
+  Agent flavor: agent
+  FIPS Mode: not available
+  Log Level: INFO
+
+  Paths
+  =====
+    Config File: /etc/datadog-agent/datadog.yaml
+    conf.d: /etc/datadog-agent/conf.d
+    checks.d: /etc/datadog-agent/checks.d
+
+========
+Hostname
+========
+
+  cluster-name: vibecode-kind-local
+  hostname: vibecode-kind-local
+  hostname-resolution-version: 1
+  socket-fqdn: vibecode-cluster-worker
+  socket-hostname: vibecode-cluster-worker
+  host tags:
+    cluster:kind
+    cluster_name:vibecode-kind-local
+    env:kind
+    kube_cluster_name:vibecode-kind-local
+    project:vibecode
+  hostname provider: configuration
+
+
+Host Info
+=========
+  bootTime: 2025-09-23 10:46:32 UTC (1758624392000)
+  hostId: dc0b8d87-1fe4-4dd8-b006-c21f647bbfe9
+  kernelArch: aarch64
+  kernelVersion: 6.15.11-orbstack-00539-g9885ebd8e3f4
+  os: linux
+  platform: debian
+  platformFamily: debian
+  platformVersion: 12
+  procs: 63
+  uptime: 16h53m6s
+
+
+======
+Clocks
+======
+
+NTP offset: 43.857ms
+
+=============
+OTel metadata
+=============
+
+
+=================
+HA Agent Metadata
+=================
+
+
+========
+Metadata
+========
+
+  agent_startup_time_ms: 1758685177338
+  agent_version: 7.66.1
+  config_apm_dd_url: 
+  config_dd_url: 
+  config_eks_fargate: false
+  config_id: 
+  config_logs_dd_url: 
+  config_logs_socks5_proxy_address: 
+  config_no_proxy: [169.254.169.254 100.100.100.200]
+  config_process_dd_url: 
+  config_proxy_http: 
+  config_proxy_https: 
+  config_site: datadoghq.com
+  feature_apm_enabled: true
+  feature_container_images_enabled: true
+  feature_csm_vm_containers_enabled: false
+  feature_csm_vm_hosts_enabled: false
+  feature_cspm_enabled: false
+  feature_cspm_host_benchmarks_enabled: false
+  feature_cws_enabled: false
+  feature_cws_network_enabled: true
+  feature_cws_remote_config_enabled: true
+  feature_cws_security_profiles_enabled: false
+  feature_discovery_enabled: false
+  feature_dynamic_instrumentation_enabled: false
+  feature_imdsv2_enabled: false
+  feature_logs_enabled: true
+  feature_networks_enabled: false
+  feature_networks_http_enabled: true
+  feature_networks_https_enabled: true
+  feature_oom_kill_enabled: false
+  feature_otlp_enabled: false
+  feature_process_enabled: false
+  feature_process_language_detection_enabled: false
+  feature_processes_container_enabled: true
+  feature_remote_configuration_enabled: true
+  feature_tcp_queue_length_enabled: false
+  feature_usm_enabled: false
+  feature_usm_go_tls_enabled: true
+  feature_usm_http2_enabled: false
+  feature_usm_istio_enabled: true
+  feature_usm_kafka_enabled: false
+  feature_usm_postgres_enabled: false
+  feature_usm_redis_enabled: false
+  feature_windows_crash_detection_enabled: false
+  fips_mode: false
+  flavor: agent
+  fleet_policies_applied: []
+  hostname_source: configuration
+  install_method_installer_version: datadog-3.135.1
+  install_method_tool: helm
+  install_method_tool_version: Helm
+  logs_transport: HTTP
+  system_probe_core_enabled: true
+  system_probe_gateway_lookup_enabled: true
+  system_probe_kernel_headers_download_enabled: false
+  system_probe_max_connections_per_message: 600
+  system_probe_prebuilt_fallback_enabled: false
+  system_probe_protocol_classification_enabled: true
+  system_probe_root_namespace_enabled: true
+  system_probe_runtime_compilation_enabled: false
+  system_probe_telemetry_enabled: false
+  system_probe_track_tcp_4_connections: true
+  system_probe_track_tcp_6_connections: true
+  system_probe_track_udp_4_connections: true
+  system_probe_track_udp_6_connections: true
+
+=========
+Collector
+=========
+
+
+  Running Checks
+  ==============
+
+    container
+    ---------
+      Instance ID: container [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/container.d/conf.yaml.default
+      Total Runs: 6
+      Metric Samples: Last Run: 340, Total: 2,040
+      Events: Last Run: 0, Total: 0
+      Service Checks: Last Run: 0, Total: 0
+      Average Execution Time : 11ms
+      Last Execution Date : 2025-09-24 03:41:22 UTC (1758685282000)
+      Last Successful Execution Date : 2025-09-24 03:41:22 UTC (1758685282000)
+
+
+    container_image
+    ---------------
+      Instance ID: container_image [OK]
+      Long Running Check: true
+      Configuration Source: file:/etc/datadog-agent/conf.d/container_image.d/conf.yaml.default
+      Total Metric Samples: 0
+      Total Events: 0
+      Total container-images: 3
+      Total Service Checks: 0
+
+
+    container_lifecycle
+    -------------------
+      Instance ID: container_lifecycle [OK]
+      Long Running Check: true
+      Configuration Source: file:/etc/datadog-agent/conf.d/container_lifecycle.d/conf.yaml.default
+      Total Metric Samples: 0
+      Total Events: 0
+      Total Service Checks: 0
+
+
+    containerd
+    ----------
+      Instance ID: containerd [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/containerd.d/conf.yaml.default
+      Total Runs: 7
+      Metric Samples: Last Run: 50, Total: 350
+      Events: Last Run: 0, Total: 0
+      Service Checks: Last Run: 0, Total: 0
+      Average Execution Time : 2ms
+      Last Execution Date : 2025-09-24 03:41:28 UTC (1758685288000)
+      Last Successful Execution Date : 2025-09-24 03:41:28 UTC (1758685288000)
+
+
+    cpu
+    ---
+      Instance ID: cpu [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/cpu.d/conf.yaml.default
+      Total Runs: 7
+      Metric Samples: Last Run: 19, Total: 126
+      Events: Last Run: 0, Total: 0
+      Service Checks: Last Run: 0, Total: 0
+      Average Execution Time : 2ms
+      Last Execution Date : 2025-09-24 03:41:35 UTC (1758685295000)
+      Last Successful Execution Date : 2025-09-24 03:41:35 UTC (1758685295000)
+
+
+    cri
+    ---
+      Instance ID: cri [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/cri.d/conf.yaml.default
+      Total Runs: 7
+      Metric Samples: Last Run: 0, Total: 0
+      Events: Last Run: 0, Total: 0
+      Service Checks: Last Run: 0, Total: 0
+      Average Execution Time : 11ms
+      Last Execution Date : 2025-09-24 03:41:27 UTC (1758685287000)
+      Last Successful Execution Date : 2025-09-24 03:41:27 UTC (1758685287000)
+
+
+    disk (7.1.0)
+    ------------
+      Instance ID: disk:67cc0574430a16ba [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/disk.d/conf.yaml.default
+      Total Runs: 7
+      Metric Samples: Last Run: 527, Total: 3,689
+      Events: Last Run: 0, Total: 0
+      Service Checks: Last Run: 0, Total: 0
+      Average Execution Time : 170ms
+      Last Execution Date : 2025-09-24 03:41:34 UTC (1758685294000)
+      Last Successful Execution Date : 2025-09-24 03:41:34 UTC (1758685294000)
+
+
+    file_handle
+    -----------
+      Instance ID: file_handle [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/file_handle.d/conf.yaml.default
+      Total Runs: 7
+      Metric Samples: Last Run: 5, Total: 35
+      Events: Last Run: 0, Total: 0
+      Service Checks: Last Run: 0, Total: 0
+      Average Execution Time : 0s
+      Last Execution Date : 2025-09-24 03:41:26 UTC (1758685286000)
+      Last Successful Execution Date : 2025-09-24 03:41:26 UTC (1758685286000)
+
+
+    io
+    --
+      Instance ID: io [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/io.d/conf.yaml.default
+      Total Runs: 7
+      Metric Samples: Last Run: 67, Total: 424
+      Events: Last Run: 0, Total: 0
+      Service Checks: Last Run: 0, Total: 0
+      Average Execution Time : 0s
+      Last Execution Date : 2025-09-24 03:41:33 UTC (1758685293000)
+      Last Successful Execution Date : 2025-09-24 03:41:33 UTC (1758685293000)
+
+
+    kubelet
+    -------
+      Instance ID: kubelet [ERROR]
+      Configuration Source: file:/etc/datadog-agent/conf.d/kubelet.d/conf.yaml.default
+      Total Runs: 6
+      Metric Samples: Last Run: 0, Total: 0
+      Events: Last Run: 0, Total: 0
+      Service Checks: Last Run: 0, Total: 0
+      Average Execution Time : 2ms
+      Last Execution Date : 2025-09-24 03:41:34 UTC (1758685294000)
+      Last Successful Execution Date : Never
+      Error: temporary failure in kubeutil, will retry later: impossible to reach Kubelet with host: 192.168.97.2. Please check if your setup requires kubelet_tls_verify = false. Activate debug logs to see all attempts made
+      No traceback
+      Warning: Error initialising check: temporary failure in kubeutil, will retry later: impossible to reach Kubelet with host: 192.168.97.2. Please check if your setup requires kubelet_tls_verify = false. Activate debug logs to see all attempts made
+
+
+    kubernetes_apiserver
+    --------------------
+      Instance ID: kubernetes_apiserver [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/kubernetes_apiserver.d/conf.yaml.default
+      Total Runs: 7
+      Metric Samples: Last Run: 0, Total: 0
+      Events: Last Run: 1, Total: 4
+      Service Checks: Last Run: 3, Total: 12
+      Average Execution Time : 1.346s
+      Last Execution Date : 2025-09-24 03:41:27 UTC (1758685287000)
+      Last Successful Execution Date : 2025-09-24 03:41:27 UTC (1758685287000)
+
+
+    load
+    ----
+      Instance ID: load [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/load.d/conf.yaml.default
+      Total Runs: 7
+      Metric Samples: Last Run: 6, Total: 42
+      Events: Last Run: 0, Total: 0
+      Service Checks: Last Run: 0, Total: 0
+      Average Execution Time : 0s
+      Last Execution Date : 2025-09-24 03:41:32 UTC (1758685292000)
+      Last Successful Execution Date : 2025-09-24 03:41:32 UTC (1758685292000)
+
+
+    memory
+    ------
+      Instance ID: memory [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/memory.d/conf.yaml.default
+      Total Runs: 7
+      Metric Samples: Last Run: 20, Total: 140
+      Events: Last Run: 0, Total: 0
+      Service Checks: Last Run: 0, Total: 0
+      Average Execution Time : 0s
+      Last Execution Date : 2025-09-24 03:41:24 UTC (1758685284000)
+      Last Successful Execution Date : 2025-09-24 03:41:24 UTC (1758685284000)
+
+
+    network (5.2.0)
+    ---------------
+      Instance ID: network:4b0649b7e11f0772 [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/network.d/conf.yaml.default
+      Total Runs: 7
+      Metric Samples: Last Run: 204, Total: 1,428
+      Events: Last Run: 0, Total: 0
+      Service Checks: Last Run: 0, Total: 0
+      Average Execution Time : 67ms
+      Last Execution Date : 2025-09-24 03:41:32 UTC (1758685292000)
+      Last Successful Execution Date : 2025-09-24 03:41:32 UTC (1758685292000)
+
+
+    ntp
+    ---
+      Instance ID: ntp:3c427a42a70bbf8 [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/ntp.d/conf.yaml.default
+      Total Runs: 1
+      Metric Samples: Last Run: 1, Total: 1
+      Events: Last Run: 0, Total: 0
+      Service Checks: Last Run: 1, Total: 1
+      Average Execution Time : 5.732s
+      Last Execution Date : 2025-09-24 03:40:03 UTC (1758685203000)
+      Last Successful Execution Date : 2025-09-24 03:40:03 UTC (1758685203000)
+
+
+    postgres (22.12.1)
+    ------------------
+      Instance ID: postgres:e6034fa7fed95628 [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/postgres.yaml
+      Total Runs: 7
+      Metric Samples: Last Run: 588, Total: 4,010
+      Events: Last Run: 0, Total: 0
+      Database Monitoring Activity Samples: Last Run: 1, Total: 9
+      Database Monitoring Metadata Samples: Last Run: 1, Total: 3
+      Database Monitoring Query Metrics: Last Run: 1, Total: 9
+      Database Monitoring Query Samples: Last Run: 8, Total: 46
+      Service Checks: Last Run: 1, Total: 7
+      Average Execution Time : 185ms
+      Last Execution Date : 2025-09-24 03:41:23 UTC (1758685283000)
+      Last Successful Execution Date : 2025-09-24 03:41:23 UTC (1758685283000)
+      metadata:
+        resolved_hostname: postgres-service.vibecode-platform.svc.cluster.local
+        version.major: 16
+        version.minor: 10
+        version.patch: 0
+        version.raw: 16.10 (Debian 16.10-1.pgdg12+1)
+        version.scheme: semver
+
+
+    redisdb (7.2.0)
+    ---------------
+      Instance ID: redisdb:c8071d309f1ce7a0 [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/redisdb.yaml
+      Total Runs: 7
+      Metric Samples: Last Run: 63, Total: 443
+      Events: Last Run: 0, Total: 0
+      Service Checks: Last Run: 1, Total: 7
+      Average Execution Time : 17ms
+      Last Execution Date : 2025-09-24 03:41:30 UTC (1758685290000)
+      Last Successful Execution Date : 2025-09-24 03:41:30 UTC (1758685290000)
+      metadata:
+        version.major: 7
+        version.minor: 2
+        version.patch: 4
+        version.raw: 7.2.4
+        version.scheme: semver
+
+
+    telemetry
+    ---------
+      Instance ID: telemetry [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/telemetry.d/conf.yaml.default
+      Total Runs: 6
+      Metric Samples: Last Run: 6, Total: 36
+      Events: Last Run: 0, Total: 0
+      Service Checks: Last Run: 0, Total: 0
+      Average Execution Time : 0s
+      Last Execution Date : 2025-09-24 03:41:23 UTC (1758685283000)
+      Last Successful Execution Date : 2025-09-24 03:41:23 UTC (1758685283000)
+
+
+    uptime
+    ------
+      Instance ID: uptime [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/uptime.d/conf.yaml.default
+      Total Runs: 7
+      Metric Samples: Last Run: 1, Total: 7
+      Events: Last Run: 0, Total: 0
+      Service Checks: Last Run: 0, Total: 0
+      Average Execution Time : 0s
+      Last Execution Date : 2025-09-24 03:41:30 UTC (1758685290000)
+      Last Successful Execution Date : 2025-09-24 03:41:30 UTC (1758685290000)
+
+
+==========
+Aggregator
+==========
+
+  Checks Metric Sample: 14,871
+  Dogstatsd Metric Sample: 849
+  Event: 5
+  Events Flushed: 5
+  Number Of Flushes: 7
+  Series Flushed: 9,537
+  Service Check: 34
+  Service Checks Flushed: 35
+  Database Monitoring Activity Samples: 11
+  Database Monitoring Metadata Samples: 3
+  Database Monitoring Query Metrics: 11
+  Database Monitoring Query Samples: 46
+  container-images: 3
+
+=========
+APM Agent
+=========
+
+  Status: Running
+  Pid: 111003
+  Uptime: 119 seconds
+  Mem alloc: 15,000,176 bytes
+  Hostname: vibecode-kind-local
+  Receiver: 0.0.0.0:8126
+  Endpoints:
+    https://trace.agent.datadoghq.com
+
+  Receiver (previous minute)
+  ==========================
+    No traces received in the previous minute.
+
+
+
+  Writer (previous minute)
+  ========================
+    Traces: 0 payloads, 0 traces, 0 events, 0 bytes
+    Stats: 0 payloads, 0 stats buckets, 0 bytes
+
+=============
+Autodiscovery
+=============
+
+  Enabled Features
+  ================
+    containerd
+    cri
+    kubernetes
+
+=========
+DogStatsD
+=========
+
+  Event Packets: 0
+  Event Parse Errors: 0
+  Metric Packets: 836
+  Metric Parse Errors: 0
+  Service Check Packets: 0
+  Service Check Parse Errors: 0
+  Udp Bytes: 134,269
+  Udp Packet Reading Errors: 0
+  Udp Packets: 422
+  Uds Bytes: 0
+  Uds Origin Detection Errors: 0
+  Uds Packet Reading Errors: 0
+  Uds Packets: 1
+  Unterminated Metric Errors: 0
+
+Tip: For troubleshooting, enable 'dogstatsd_metrics_stats_enable' in the main datadog.yaml file to generate Dogstatsd logs. Once 'dogstatsd_metrics_stats_enable' is enabled, users can also use 'dogstatsd-stats' command to get visibility of the latest collected metrics.
+
+=========
+Endpoints
+=========
+
+  https://app.datadoghq.com - API Key ending with:
+      - dc2a8
+
+=========
+Forwarder
+=========
+
+  Transactions
+  ============
+    Cluster: 0
+    ClusterRole: 0
+    ClusterRoleBinding: 0
+    CronJob: 0
+    CustomResource: 0
+    CustomResourceDefinition: 0
+    DaemonSet: 0
+    Deployment: 0
+    Dropped: 0
+    ECSTask: 0
+    EndpointSlice: 0
+    HighPriorityQueueFull: 0
+    HorizontalPodAutoscaler: 0
+    Ingress: 0
+    Job: 0
+    LimitRange: 0
+    Namespace: 0
+    NetworkPolicy: 0
+    Node: 0
+    OrchestratorManifest: 0
+    PersistentVolume: 0
+    PersistentVolumeClaim: 0
+    Pod: 0
+    PodDisruptionBudget: 0
+    ReplicaSet: 0
+    Requeued: 0
+    Retried: 0
+    RetryQueueSize: 0
+    Role: 0
+    RoleBinding: 0
+    Service: 0
+    ServiceAccount: 0
+    StatefulSet: 0
+    StorageClass: 0
+    VerticalPodAutoscaler: 0
+
+  Transaction Successes
+  =====================
+    Total number: 40
+    Successes By Endpoint:
+      check_run_v1: 7
+      container: 12
+      intake: 6
+      metadata_v1: 7
+      process_discovery: 1
+      series_v2: 7
+
+  On-disk storage
+  ===============
+    On-disk storage is disabled. Configure `forwarder_storage_max_size_in_bytes` to enable it.
+
+  API Keys status
+  ===============
+    API key ending with dc2a8: API Key valid
+
+=========
+JMX Fetch
+=========
+
+  Information
+  ==================
+  Initialized checks
+  ==================
+    no checks
+
+  Failed checks
+  =============
+    no checks
+
+
+==========
+Logs Agent
+==========
+
+    Reliable: Sending compressed logs in HTTPS to agent-http-intake.logs.datadoghq.com on port 443
+    BytesSent: 412810
+    EncodedBytesSent: 70822
+    LogsProcessed: 0
+    LogsSent: 72
+    RetryCount: 0
+    RetryTimeSpent: 0s
+    CoreAgentProcessOpenFiles: 33
+    OSFileLimit: 1073741816
+
+==========
+OTel Agent
+==========
+
+
+  Status: Not running or unreachable on https://localhost:7777.
+  Error: OTel Agent is not enabled.
+
+====
+OTLP
+====
+
+  Status: Not enabled
+  Collector status: Not running
+
+
+
+=============
+Process Agent
+=============
+
+  Status: Not running or unreachable
+
+=================
+Process Component
+=================
+
+
+  Enabled Checks: [process_discovery rtcontainer container]
+  System Probe Process Module Status: Not running
+  Process Language Detection Enabled: False
+
+  =================
+  Process Endpoints
+  =================
+    https://process.datadoghq.com - API Key ending with:
+        - dc2a8
+
+  =========
+  Collector
+  =========
+    Last collection time: 2025-09-24 03:41:35
+    Docker socket: 
+    Number of processes: 0
+    Number of containers: 10
+    Process Queue length: 0
+    RTProcess Queue length: 0
+    Connections Queue length: 0
+    Event Queue length: 0
+    Pod Queue length: 0
+    Process Bytes enqueued: 0
+    RTProcess Bytes enqueued: 0
+    Connections Bytes enqueued: 0
+    Event Bytes enqueued: 0
+    Pod Bytes enqueued: 0
+    Drop Check Payloads: []
+    Number of submission errors: 0
+
+  ==========
+  Extractors
+  ==========
+
+    Workloadmeta
+    ============
+      Cache size: 0
+      Stale diffs discarded: 0
+      Diffs dropped: 0
+
+====================
+Remote Configuration
+====================
+
+
+Organization enabled: True
+API Key: Authorized
+Last error: None
+
+
+
+=======
+Secrets
+=======
+No secret_backend_command set: secrets feature is not enabled
+
+========================
+Transport Proxy Warnings
+========================
+
+  No Transport Proxy Warnings
+

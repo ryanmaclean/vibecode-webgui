@@ -1,22 +1,30 @@
 import { Response } from 'express';
 import { OpenRouterClient, ChatCompletionRequest } from '../services/openrouter-client';
+import { ProviderRouter } from '../services/provider-router';
+import { ChatRequest as UnifiedChatRequest, ChatResponse as UnifiedChatResponse } from '../providers/provider';
 import { ModelRegistry, ModelSelectionCriteria } from '../services/model-registry';
 import { RedisService } from '../services/redis-service';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { logger, performanceLogger } from '../utils/logger';
 import { ValidationError, ExternalServiceError, NotFoundError } from '../middleware/error-handler';
-// import { config } from '../config/environment';
+import { config } from '../config/environment';
+import { PromptAnalyzer } from '../services/prompt-analyzer';
+import { datadogMetrics } from '../services/datadog-metrics';
 import crypto from 'crypto';
 
 export class AIController {
     private openRouterClient: OpenRouterClient;
     private modelRegistry: ModelRegistry;
     private redisService: RedisService;
+    private promptAnalyzer: PromptAnalyzer;
+    private providerRouter: ProviderRouter;
 
     constructor() {
         this.openRouterClient = new OpenRouterClient();
         this.modelRegistry = new ModelRegistry();
         this.redisService = new RedisService();
+        this.promptAnalyzer = new PromptAnalyzer();
+        this.providerRouter = new ProviderRouter();
     }
 
     public async chatCompletion(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -25,7 +33,28 @@ export class AIController {
         const requestData: ChatCompletionRequest = req.body;
 
         try {
+            // Ensure model registry has data for auto-selection and validation
+            await this.ensureModelsReady();
+
             // Validate model exists
+            if (!requestData.model || requestData.model.toLowerCase() === 'auto') {
+                const inferred = this.promptAnalyzer.analyze(requestData);
+                const recommendation = this.modelRegistry.getBestModelForTask({
+                    task: inferred.task
+                } as ModelSelectionCriteria);
+
+                requestData.model = recommendation?.model || config.models.defaultModel;
+
+                logger.info('Auto-selected model', {
+                    selectedModel: requestData.model,
+                    task: inferred.task,
+                    userId
+                });
+
+                // Emit Datadog metric (best-effort)
+                datadogMetrics.submitSelectionMetric(inferred.task, requestData.model, userId).catch(() => {});
+            }
+
             const model = this.modelRegistry.getModel(requestData.model);
             if (!model) {
                 throw new ValidationError(`Model '${requestData.model}' not found`);
@@ -68,15 +97,47 @@ export class AIController {
                 }
             }
 
-            // Make API request
-            const response = await this.openRouterClient.chatCompletion(requestData, userId);
+            // Route: use provider router if provider is indicated via model prefix or req.provider
+            const providerHint = (req.body?.provider as string | undefined)?.toLowerCase();
+            const modelHasPrefix = typeof requestData.model === 'string' && requestData.model.includes(':');
+            let response: UnifiedChatResponse;
+
+            if (providerHint || modelHasPrefix) {
+                const unifiedReq: UnifiedChatRequest = {
+                    model: requestData.model,
+                    messages: requestData.messages.map(m => ({ role: m.role as any, content: (m as any).content })),
+                    max_tokens: requestData.max_tokens,
+                    temperature: requestData.temperature,
+                    top_p: requestData.top_p,
+                    stream: requestData.stream,
+                    stop: requestData.stop,
+                    user: userId,
+                    provider: providerHint as any
+                };
+                response = await this.providerRouter.chatCompletion(unifiedReq, userId);
+            } else {
+                // Fallback to existing OpenRouter path
+                const orResp = await this.openRouterClient.chatCompletion(requestData, userId);
+                response = {
+                    id: (orResp as any).id,
+                    model: orResp.model,
+                    choices: orResp.choices as any,
+                    usage: orResp.usage as any
+                };
+            }
 
             // Calculate cost
-            const cost = this.openRouterClient.calculateCost(
-                response.model,
-                response.usage.prompt_tokens,
-                response.usage.completion_tokens
-            );
+            // Cost calculation is exact for OpenRouter models. For other providers, this may be approximate or 0 for now.
+            let cost = 0;
+            try {
+                cost = this.openRouterClient.calculateCost(
+                    response.model,
+                    response.usage.prompt_tokens,
+                    response.usage.completion_tokens
+                );
+            } catch {
+                // Best-effort: skip cost if model/pricing unknown
+            }
 
             // Track usage
             await this.redisService.trackUsage(
@@ -101,13 +162,67 @@ export class AIController {
                 cost: cost.toFixed(6)
             });
 
-            res.json(response);
+            // Emit Datadog operational metrics (best-effort)
+            const latencyMs = Date.now() - startTime;
+            datadogMetrics.submitMetric('vibecode.ai_gateway.latency_ms', latencyMs, [
+                `model:${response.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => {});
+            datadogMetrics.submitMetric('vibecode.ai_gateway.tokens_total', response.usage.total_tokens, [
+                `model:${response.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => {});
+            datadogMetrics.submitMetric('vibecode.ai_gateway.cost_usd', cost, [
+                `model:${response.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => {});
+
+            res.json(response as any);
         } catch (error) {
             performanceLogger.logError('chat_completion', startTime, error, {
                 model: requestData.model,
                 userId
             });
+            // Emit error counter metric (best-effort)
+            const errorClass = error instanceof Error ? error.name : typeof error;
+            const httpStatus = (error instanceof ValidationError) ? 400
+                : (error instanceof NotFoundError) ? 404
+                : (error instanceof ExternalServiceError) ? 502
+                : 500;
+            const modelTag = `model:${String(requestData.model || 'unknown').replace(/[:/]/g, '_')}`;
+            datadogMetrics.submitMetric('vibecode.ai_gateway.error', 1, [
+                `error_class:${errorClass}`,
+                `http_status:${httpStatus}`,
+                modelTag
+            ], 'count').catch(() => {});
             throw error;
+        }
+    }
+
+    public async selectModel(req: AuthenticatedRequest, res: Response): Promise<void> {
+        try {
+            const requestData: ChatCompletionRequest = req.body;
+            await this.ensureModelsReady();
+
+            const inferred = this.promptAnalyzer.analyze(requestData);
+            const recommendation = this.modelRegistry.getBestModelForTask({
+                task: inferred.task
+            } as ModelSelectionCriteria);
+
+            const top = this.modelRegistry.getModelRecommendations({ task: inferred.task } as ModelSelectionCriteria, 3);
+
+            // Emit Datadog metric (best-effort) for preview as well
+            const selectedModel = recommendation?.model || config.models.defaultModel;
+            datadogMetrics.submitSelectionMetric(inferred.task, selectedModel, req.user?.id).catch(() => {});
+
+            res.json({
+                selected: selectedModel,
+                reason: recommendation?.reason,
+                confidence: recommendation?.confidence,
+                task: inferred.task,
+                top,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            logger.error('Failed to select model', { error: error instanceof Error ? error.message : String(error) });
+            throw new ExternalServiceError('Failed to select model');
         }
     }
 
@@ -121,6 +236,27 @@ export class AIController {
             const model = this.modelRegistry.getModel(requestData.model);
             if (!model) {
                 throw new ValidationError(`Model '${requestData.model}' not found`);
+            }
+
+            // Ensure model registry has data for auto-selection and validation
+            await this.ensureModelsReady();
+
+            if (!requestData.model || requestData.model.toLowerCase() === 'auto') {
+                const inferred = this.promptAnalyzer.analyze(requestData);
+                const recommendation = this.modelRegistry.getBestModelForTask({
+                    task: inferred.task
+                } as ModelSelectionCriteria);
+
+                requestData.model = recommendation?.model || config.models.defaultModel;
+
+                logger.info('Auto-selected model (stream)', {
+                    selectedModel: requestData.model,
+                    task: inferred.task,
+                    userId
+                });
+
+                // Emit Datadog metric (best-effort)
+                datadogMetrics.submitSelectionMetric(inferred.task, requestData.model, userId).catch(() => {});
             }
 
             // Set up SSE headers
@@ -177,11 +313,36 @@ export class AIController {
                 estimatedTokens: promptTokens + totalTokens,
                 estimatedCost: cost.toFixed(6)
             });
+
+            // Emit Datadog operational metrics (best-effort)
+            const latencyMs = Date.now() - startTime;
+            datadogMetrics.submitMetric('vibecode.ai_gateway.latency_ms', latencyMs, [
+                `model:${requestData.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => {});
+            datadogMetrics.submitMetric('vibecode.ai_gateway.tokens_total', promptTokens + totalTokens, [
+                `model:${requestData.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => {});
+            datadogMetrics.submitMetric('vibecode.ai_gateway.cost_usd', cost, [
+                `model:${requestData.model.replace(/[:/]/g, '_')}`
+            ]).catch(() => {});
         } catch (error) {
             performanceLogger.logError('stream_chat_completion', startTime, error, {
                 model: requestData.model,
                 userId
             });
+
+            // Emit error counter metric (best-effort)
+            const errorClass = error instanceof Error ? error.name : typeof error;
+            const httpStatus = (error instanceof ValidationError) ? 400
+                : (error instanceof NotFoundError) ? 404
+                : (error instanceof ExternalServiceError) ? 502
+                : 500;
+            const modelTag = `model:${String(requestData.model || 'unknown').replace(/[:/]/g, '_')}`;
+            datadogMetrics.submitMetric('vibecode.ai_gateway.error', 1, [
+                `error_class:${errorClass}`,
+                `http_status:${httpStatus}`,
+                modelTag
+            ], 'count').catch(() => {});
 
             if (!res.headersSent) {
                 res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
@@ -434,5 +595,20 @@ export class AIController {
             .digest('hex');
 
         return `cache:completion:${hash}`;
+    }
+
+    private async ensureModelsReady(): Promise<void> {
+        // If registry is empty or due for refresh, attempt to refresh
+        const models = this.modelRegistry.getModels();
+        if (!models || models.length === 0 || this.modelRegistry.shouldRefresh()) {
+            try {
+                await this.modelRegistry.refreshModels();
+            } catch (err) {
+                // Best-effort: proceed; callers will fallback to config defaultModel
+                logger.warn('Model registry refresh failed, proceeding with defaults', {
+                    error: err instanceof Error ? err.message : String(err)
+                });
+            }
+        }
     }
 }

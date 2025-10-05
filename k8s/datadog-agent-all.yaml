@@ -15,7 +15,7 @@ spec:
         keyName: app-key
     site: datadoghq.com
     tags:
-      - env:development
+      - env:developement
       - platform:vibecode
       - cluster:kind
   features:

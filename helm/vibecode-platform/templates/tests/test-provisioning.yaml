@@ -114,6 +114,23 @@ spec:
       try3 ${KCTL} get --raw "/apis/storage.k8s.io/v1/storageclasses/{{ default .Values.global.storageClass .Values.codeServer.persistence.storageClass }}" || echo "WARN: StorageClass read failed (continuing)"
       {{- end }}
 
+      # RFC1123-safe random suffix generator (avoids $RANDOM which may be empty in POSIX sh)
+      gen_suffix() {
+        if command -v uuidgen >/dev/null 2>&1; then
+          uuidgen | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9' | cut -c1-6
+          return
+        fi
+        if [ -r /proc/sys/kernel/random/uuid ]; then
+          cat /proc/sys/kernel/random/uuid | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9' | cut -c1-6
+          return
+        fi
+        if [ -r /dev/urandom ]; then
+          LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c6
+          return
+        fi
+        date +%s | tr -cd '0-9' | tail -c6
+      }
+
       # Test that we can create a test PVC
       echo "Testing PVC creation..."
       PVC_NAME="test-pvc-$RANDOM"

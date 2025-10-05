@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OpenRouterClient = void 0;
 const axios_1 = __importDefault(require("axios"));
+const api_1 = require("@opentelemetry/api");
 const environment_1 = require("../config/environment");
 const logger_1 = require("../utils/logger");
 class OpenRouterClient {
@@ -16,8 +17,8 @@ class OpenRouterClient {
             timeout: environment_1.config.openrouter.timeout,
             headers: {
                 'Authorization': `Bearer ${environment_1.config.openrouter.apiKey}`,
-                'HTTP-Referer': 'https://vibecode.dev',
-                'X-Title': 'VibeCode AI Gateway',
+                'HTTP-Referer': environment_1.config.openrouter.referrer || 'https://vibecode.dev',
+                'X-Title': environment_1.config.openrouter.title || 'VibeCode AI Gateway',
                 'Content-Type': 'application/json'
             }
         });
@@ -51,8 +52,23 @@ class OpenRouterClient {
     }
     async getModels() {
         const startTime = Date.now();
+        const tracer = api_1.trace.getTracer('ai-gateway');
         try {
-            const response = await this.client.get('/models');
+            const response = await tracer.startActiveSpan('openrouter.getModels', async (span) => {
+                try {
+                    const resp = await this.client.get('/models', { headers: this.injectTraceHeaders({}) });
+                    span.setAttribute('http.status_code', resp.status);
+                    return resp;
+                }
+                catch (err) {
+                    span.recordException(err);
+                    span.setStatus({ code: 2, message: 'openrouter.getModels failed' });
+                    throw err;
+                }
+                finally {
+                    span.end();
+                }
+            });
             this.models = response.data.data;
             logger_1.performanceLogger.logRequest('get_models', startTime, {
                 modelCount: this.models.length
@@ -67,12 +83,30 @@ class OpenRouterClient {
     async chatCompletion(request, userId) {
         const startTime = Date.now();
         const model = request.model;
+        const tracer = api_1.trace.getTracer('ai-gateway');
         try {
             const requestData = {
                 ...request,
                 user: userId || request.user
             };
-            const response = await this.client.post('/chat/completions', requestData);
+            const response = await tracer.startActiveSpan('openrouter.chatCompletion', async (span) => {
+                span.setAttribute('model', model || 'auto');
+                if (userId)
+                    span.setAttribute('user.id', userId);
+                try {
+                    const resp = await this.client.post('/chat/completions', requestData, { headers: this.injectTraceHeaders({}) });
+                    span.setAttribute('http.status_code', resp.status);
+                    return resp;
+                }
+                catch (err) {
+                    span.recordException(err);
+                    span.setStatus({ code: 2, message: 'openrouter.chatCompletion failed' });
+                    throw err;
+                }
+                finally {
+                    span.end();
+                }
+            });
             const result = response.data;
             this.updatePerformanceMetrics(model, Date.now() - startTime, true);
             logger_1.performanceLogger.logRequest('chat_completion', startTime, {
@@ -99,8 +133,17 @@ class OpenRouterClient {
                 stream: true,
                 user: userId || request.user
             };
-            const response = await this.client.post('/chat/completions', requestData, {
-                responseType: 'stream'
+            const tracer = api_1.trace.getTracer('ai-gateway');
+            const response = await tracer.startActiveSpan('openrouter.streamChatCompletion', async (span) => {
+                span.setAttribute('model', model || 'auto');
+                if (userId)
+                    span.setAttribute('user.id', userId);
+                const resp = await this.client.post('/chat/completions', requestData, {
+                    responseType: 'stream',
+                    headers: this.injectTraceHeaders({ 'Accept': 'text/event-stream' })
+                });
+                span.setAttribute('http.status_code', resp.status);
+                return resp;
             });
             return new Promise((resolve, reject) => {
                 let totalTokens = 0;
@@ -234,6 +277,22 @@ class OpenRouterClient {
         }
         else {
             return new Error(`${defaultMessage}: ${error.message}`);
+        }
+    }
+    injectTraceHeaders(base) {
+        try {
+            const span = api_1.trace.getActiveSpan();
+            if (!span)
+                return base;
+            const ctx = span.spanContext();
+            if (!ctx || !ctx.traceId || !ctx.spanId)
+                return base;
+            const sampled = (ctx.traceFlags & 0x01) === 0x01 ? '01' : '00';
+            const traceparent = `00-${ctx.traceId}-${ctx.spanId}-${sampled}`;
+            return { ...base, traceparent };
+        }
+        catch {
+            return base;
         }
     }
 }

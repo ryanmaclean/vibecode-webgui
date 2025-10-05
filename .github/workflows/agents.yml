@@ -1,0 +1,455 @@
+name: OpenAI Agents CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'src/agents/**'
+      - 'k8s/agents/**'
+      - 'docker/agents/**'
+      - '.github/workflows/agents.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'src/agents/**'
+      - 'k8s/agents/**'
+      - 'docker/agents/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - dev
+        - staging
+        - production
+      skip_tests:
+        description: 'Skip tests'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/vibecode-openai-agents
+  HELM_VERSION: v3.13.0
+  KUBECTL_VERSION: v1.28.0
+
+jobs:
+  lint-and-validate:
+    name: Lint and Validate
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install linting tools
+      run: |
+        pip install pylint black flake8 mypy
+        curl -sSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        helm plugin install https://github.com/instrumenta/helm-kubeval
+
+    - name: Lint Python code
+      run: |
+        black --check src/agents/
+        flake8 src/agents/ --max-line-length=100
+        pylint src/agents/ --disable=C0111,R0913
+
+    - name: Type check
+      run: |
+        mypy src/agents/ --ignore-missing-imports
+
+    - name: Validate Kubernetes manifests
+      run: |
+        kubectl kustomize k8s/agents/base > /tmp/manifest.yaml
+        kubectl apply --dry-run=client -f /tmp/manifest.yaml
+
+    - name: Validate Helm chart
+      run: |
+        helm lint k8s/agents/charts/openai-agents
+        helm template openai-agents k8s/agents/charts/openai-agents | kubectl apply --dry-run=client -f -
+
+    - name: Run Kubescape security scan
+      uses: kubescape/github-action@main
+      with:
+        files: k8s/agents/base/*.yaml
+        frameworks: nsa,mitre
+
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    needs: lint-and-validate
+    if: ${{ !inputs.skip_tests }}
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        pip install -r src/agents/requirements.txt
+        pip install pytest pytest-cov pytest-asyncio
+
+    - name: Run unit tests
+      run: |
+        pytest tests/agents/unit/ -v --cov=src/agents --cov-report=xml
+
+    - name: Upload coverage
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./coverage.xml
+        flags: agents-${{ matrix.python-version }}
+
+  build-image:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name != 'pull_request'
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: docker/agents
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILD_DATE=${{ github.event.head_commit.timestamp }}
+          VCS_REF=${{ github.sha }}
+          VERSION=${{ steps.meta.outputs.version }}
+
+    - name: Sign image with cosign
+      uses: sigstore/cosign-installer@v3
+    - run: |
+        echo "${{ steps.meta.outputs.tags }}" | xargs -I {} cosign sign --yes {}@${{ steps.build.outputs.digest }}
+
+    - name: Scan image for vulnerabilities
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: build-image
+    if: ${{ !inputs.skip_tests }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create Kind cluster
+      uses: helm/kind-action@v1
+      with:
+        cluster_name: agents-test
+        config: k8s/kind-test-config.yaml
+
+    - name: Install Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: ${{ env.HELM_VERSION }}
+
+    - name: Deploy agents to Kind
+      run: |
+        helm install openai-agents k8s/agents/charts/openai-agents \
+          --set image.tag=${{ github.sha }} \
+          --set persistence.enabled=false \
+          --wait --timeout=5m
+
+    - name: Run integration tests
+      run: |
+        pytest tests/agents/integration/ -v --maxfail=3
+
+    - name: Collect logs on failure
+      if: failure()
+      run: |
+        kubectl logs -n openai-agents -l app=openai-agents --tail=100
+
+  deploy-dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: dev
+      url: https://agents-dev.vibecode.io
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Azure login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Set AKS context
+      uses: azure/aks-set-context@v3
+      with:
+        resource-group: vibecode-dev-rg
+        cluster-name: vibecode-dev-aks
+
+    - name: Install Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: ${{ env.HELM_VERSION }}
+
+    - name: Deploy with Helm
+      run: |
+        helm upgrade --install openai-agents k8s/agents/charts/openai-agents \
+          --namespace openai-agents \
+          --create-namespace \
+          --set image.tag=${{ github.sha }} \
+          --values k8s/agents/overlays/dev/values.yaml \
+          --wait --timeout=10m
+
+    - name: Run smoke tests
+      run: |
+        kubectl wait --for=condition=available --timeout=300s \
+          deployment/openai-agents -n openai-agents
+        curl -f https://agents-dev.vibecode.io/health || exit 1
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: github.ref == 'refs/heads/main' || inputs.environment == 'staging'
+    environment:
+      name: staging
+      url: https://agents-staging.vibecode.io
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Azure login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Set AKS context
+      uses: azure/aks-set-context@v3
+      with:
+        resource-group: vibecode-staging-rg
+        cluster-name: vibecode-staging-aks
+
+    - name: Install Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: ${{ env.HELM_VERSION }}
+
+    - name: Deploy with Helm
+      run: |
+        helm upgrade --install openai-agents k8s/agents/charts/openai-agents \
+          --namespace openai-agents \
+          --create-namespace \
+          --set image.tag=${{ github.sha }} \
+          --values k8s/agents/overlays/staging/values.yaml \
+          --wait --timeout=10m
+
+    - name: Run smoke tests
+      run: |
+        kubectl wait --for=condition=available --timeout=300s \
+          deployment/openai-agents -n openai-agents
+        curl -f https://agents-staging.vibecode.io/health || exit 1
+
+    - name: Notify Datadog
+      run: |
+        curl -X POST "https://api.datadoghq.com/api/v1/events" \
+          -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "title": "OpenAI Agents deployed to staging",
+            "text": "Version ${{ github.sha }} deployed successfully",
+            "tags": ["environment:staging", "service:openai-agents"]
+          }'
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main' || inputs.environment == 'production'
+    environment:
+      name: production
+      url: https://agents.vibecode.io
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Azure login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Set AKS context
+      uses: azure/aks-set-context@v3
+      with:
+        resource-group: vibecode-prod-rg
+        cluster-name: vibecode-prod-aks
+
+    - name: Install Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: ${{ env.HELM_VERSION }}
+
+    - name: Backup current state
+      run: |
+        kubectl get all -n openai-agents -o yaml > backup-$(date +%Y%m%d-%H%M%S).yaml
+
+    - name: Deploy with Helm (Canary)
+      run: |
+        helm upgrade --install openai-agents k8s/agents/charts/openai-agents \
+          --namespace openai-agents \
+          --create-namespace \
+          --set image.tag=${{ github.sha }} \
+          --set replicaCount=1 \
+          --values k8s/agents/overlays/production/values.yaml \
+          --wait --timeout=10m
+
+    - name: Run production smoke tests
+      run: |
+        sleep 30
+        curl -f https://agents.vibecode.io/health || exit 1
+
+    - name: Monitor canary metrics
+      run: |
+        sleep 60
+        ERROR_RATE=$(curl -s "https://agents.vibecode.io/metrics" | grep agent_errors_total | awk '{print $2}')
+        if (( $(echo "$ERROR_RATE > 0.01" | bc -l) )); then
+          echo "High error rate detected, rolling back"
+          helm rollback openai-agents -n openai-agents
+          exit 1
+        fi
+
+    - name: Scale to full deployment
+      run: |
+        helm upgrade openai-agents k8s/agents/charts/openai-agents \
+          --namespace openai-agents \
+          --reuse-values \
+          --set replicaCount=3 \
+          --wait --timeout=10m
+
+    - name: Notify Datadog
+      run: |
+        curl -X POST "https://api.datadoghq.com/api/v1/events" \
+          -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "title": "OpenAI Agents deployed to production",
+            "text": "Version ${{ github.sha }} deployed successfully",
+            "tags": ["environment:production", "service:openai-agents"],
+            "alert_type": "success"
+          }'
+
+    - name: Create GitHub release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: agents-v${{ github.run_number }}
+        release_name: OpenAI Agents v${{ github.run_number }}
+        body: |
+          Deployed to production
+          Commit: ${{ github.sha }}
+          Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        draft: false
+        prerelease: false
+
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: failure() && github.event_name != 'pull_request'
+    needs: [deploy-dev, deploy-staging, deploy-production]
+    steps:
+    - name: Azure login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Set AKS context
+      uses: azure/aks-set-context@v3
+      with:
+        resource-group: ${{ github.ref == 'refs/heads/main' && 'vibecode-prod-rg' || 'vibecode-staging-rg' }}
+        cluster-name: ${{ github.ref == 'refs/heads/main' && 'vibecode-prod-aks' || 'vibecode-staging-aks' }}
+
+    - name: Rollback Helm release
+      run: |
+        helm rollback openai-agents -n openai-agents
+
+    - name: Notify failure
+      run: |
+        curl -X POST "https://api.datadoghq.com/api/v1/events" \
+          -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "title": "OpenAI Agents deployment failed",
+            "text": "Deployment failed and was rolled back",
+            "tags": ["service:openai-agents"],
+            "alert_type": "error"
+          }'

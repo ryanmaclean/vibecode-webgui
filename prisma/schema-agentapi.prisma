@@ -1,0 +1,255 @@
+// AgentAPI Integration Schema Extension
+// Extends existing VibeCode schema with agent session management
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================
+// Agent Session Management
+// =====================================================
+
+model AgentSession {
+  id               String   @id @db.VarChar(64)
+  workspaceId      Int      @map("workspace_id")
+  userId           Int      @map("user_id")
+  agentType        String   @map("agent_type") @db.VarChar(32)
+  agentConfig      Json     @default("{}") @map("agent_config") @db.JsonB
+  status           String   @default("initializing") @db.VarChar(32)
+  agentapiUrl      String   @map("agentapi_url") @db.VarChar(512)
+  agentapiPort     Int      @default(8766) @map("agentapi_port")
+
+  // Connection tracking
+  activeConnections Int      @default(0) @map("active_connections")
+  lastActivityAt    DateTime? @map("last_activity_at") @db.Timestamptz
+  lastMessageAt     DateTime? @map("last_message_at") @db.Timestamptz
+
+  // Resource limits
+  maxMemoryMb      Int?     @default(1024) @map("max_memory_mb")
+  maxCpuCores      Decimal? @default(0.5) @map("max_cpu_cores") @db.Decimal(4, 2)
+
+  // Metadata
+  environmentVars  Json     @default("{}") @map("environment_vars") @db.JsonB
+  capabilities     Json     @default("[]") @map("capabilities") @db.JsonB
+  metadata         Json     @default("{}") @db.JsonB
+
+  // Audit timestamps
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  startedAt        DateTime? @map("started_at") @db.Timestamptz
+  stoppedAt        DateTime? @map("stopped_at") @db.Timestamptz
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz
+
+  // Relations
+  workspace      Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations  AgentConversation[]
+  healthMetrics  AgentHealthMetric[]
+  events         AgentEvent[]
+
+  @@index([workspaceId, deletedAt], name: "idx_agent_sessions_workspace")
+  @@index([userId, deletedAt], name: "idx_agent_sessions_user")
+  @@index([status, deletedAt], name: "idx_agent_sessions_status")
+  @@index([lastActivityAt(sort: Desc)], name: "idx_agent_sessions_last_activity")
+  @@index([workspaceId, status, deletedAt], name: "idx_agent_sessions_workspace_active")
+  @@map("agent_sessions")
+}
+
+// =====================================================
+// Conversation History
+// =====================================================
+
+model AgentConversation {
+  id               BigInt   @id @default(autoincrement())
+  agentSessionId   String   @map("agent_session_id") @db.VarChar(64)
+  conversationId   String   @map("conversation_id") @db.VarChar(64)
+
+  // Message details
+  direction        String   @db.VarChar(16)
+  role             String   @db.VarChar(16)
+  content          String   @db.Text
+  contentType      String   @default("text") @map("content_type") @db.VarChar(32)
+
+  // Token tracking
+  inputTokens      Int?     @map("input_tokens")
+  outputTokens     Int?     @map("output_tokens")
+  totalTokens      Int?     @map("total_tokens")
+
+  // Context and metadata
+  contextFiles     Json     @default("[]") @map("context_files") @db.JsonB
+  fileSelections   Json     @default("{}") @map("file_selections") @db.JsonB
+  toolCalls        Json     @default("[]") @map("tool_calls") @db.JsonB
+  metadata         Json     @default("{}") @db.JsonB
+
+  // Performance tracking
+  latencyMs        Int?     @map("latency_ms")
+  modelUsed        String?  @map("model_used") @db.VarChar(128)
+  temperature      Decimal? @db.Decimal(3, 2)
+
+  // Status and errors
+  status           String   @default("pending") @db.VarChar(32)
+  errorMessage     String?  @map("error_message") @db.Text
+  errorCode        String?  @map("error_code") @db.VarChar(64)
+
+  // Timestamps
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  completedAt      DateTime? @map("completed_at") @db.Timestamptz
+
+  // Relations
+  agentSession AgentSession @relation(fields: [agentSessionId], references: [id], onDelete: Cascade)
+
+  @@index([agentSessionId, createdAt(sort: Desc)], name: "idx_agent_conversations_session")
+  @@index([conversationId, createdAt(sort: Asc)], name: "idx_agent_conversations_conversation")
+  @@index([createdAt(sort: Desc)], name: "idx_agent_conversations_created_at")
+  @@index([status], name: "idx_agent_conversations_status")
+  @@index([agentSessionId, createdAt(sort: Desc)], name: "idx_agent_conversations_recent")
+  @@map("agent_conversations")
+}
+
+// =====================================================
+// Health Metrics
+// =====================================================
+
+model AgentHealthMetric {
+  id               BigInt   @id @default(autoincrement())
+  agentSessionId   String   @map("agent_session_id") @db.VarChar(64)
+  metricTimestamp  DateTime @default(now()) @map("metric_timestamp") @db.Timestamptz
+
+  // System metrics
+  cpuUsagePercent  Decimal? @map("cpu_usage_percent") @db.Decimal(5, 2)
+  memoryUsageMb    Int?     @map("memory_usage_mb")
+  memoryPercent    Decimal? @map("memory_percent") @db.Decimal(5, 2)
+
+  // Performance metrics
+  uptimeSeconds    Int?     @map("uptime_seconds")
+  messageCount     Int      @default(0) @map("message_count")
+  errorCount       Int      @default(0) @map("error_count")
+  avgLatencyMs     Int?     @map("avg_latency_ms")
+  p95LatencyMs     Int?     @map("p95_latency_ms")
+  p99LatencyMs     Int?     @map("p99_latency_ms")
+
+  // Token metrics
+  totalInputTokens  BigInt   @default(0) @map("total_input_tokens")
+  totalOutputTokens BigInt   @default(0) @map("total_output_tokens")
+  tokensPerMinute   Decimal? @map("tokens_per_minute") @db.Decimal(10, 2)
+
+  // Connection metrics
+  activeConnections  Int     @default(0) @map("active_connections")
+  totalConnections   Int     @default(0) @map("total_connections")
+  failedConnections  Int     @default(0) @map("failed_connections")
+
+  // Health status
+  healthStatus     String   @default("healthy") @map("health_status") @db.VarChar(32)
+  healthScore      Decimal? @map("health_score") @db.Decimal(5, 2)
+
+  // Metadata
+  metadata         Json     @default("{}") @db.JsonB
+
+  // Relations
+  agentSession AgentSession @relation(fields: [agentSessionId], references: [id], onDelete: Cascade)
+
+  @@index([agentSessionId, metricTimestamp(sort: Desc)], name: "idx_agent_health_metrics_session")
+  @@index([metricTimestamp(sort: Desc)], name: "idx_agent_health_metrics_timestamp")
+  @@index([healthStatus, metricTimestamp(sort: Desc)], name: "idx_agent_health_metrics_health_status")
+  @@index([agentSessionId, metricTimestamp(sort: Desc)], name: "idx_agent_health_metrics_recent")
+  @@map("agent_health_metrics")
+}
+
+// =====================================================
+// Agent Events (Lifecycle & Audit)
+// =====================================================
+
+model AgentEvent {
+  id               BigInt   @id @default(autoincrement())
+  agentSessionId   String   @map("agent_session_id") @db.VarChar(64)
+
+  // Event details
+  eventType        String   @map("event_type") @db.VarChar(64)
+  eventCategory    String   @map("event_category") @db.VarChar(32)
+  eventSeverity    String   @default("info") @map("event_severity") @db.VarChar(16)
+
+  // Event data
+  eventMessage     String?  @map("event_message") @db.Text
+  eventData        Json     @default("{}") @map("event_data") @db.JsonB
+
+  // Context
+  userId           Int?     @map("user_id")
+  workspaceId      Int?     @map("workspace_id")
+  triggeredBy      String?  @map("triggered_by") @db.VarChar(128)
+
+  // Timestamp
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  agentSession AgentSession @relation(fields: [agentSessionId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id])
+  workspace    Workspace?   @relation(fields: [workspaceId], references: [id])
+
+  @@index([agentSessionId, createdAt(sort: Desc)], name: "idx_agent_events_session")
+  @@index([eventType, createdAt(sort: Desc)], name: "idx_agent_events_type")
+  @@index([eventSeverity, createdAt(sort: Desc)], name: "idx_agent_events_severity")
+  @@index([eventCategory, createdAt(sort: Desc)], name: "idx_agent_events_category")
+  @@index([createdAt(sort: Desc)], name: "idx_agent_events_created_at")
+  @@map("agent_events")
+}
+
+// =====================================================
+// Rate Limiting
+// =====================================================
+
+model AgentRateLimit {
+  id                    BigInt   @id @default(autoincrement())
+
+  // Identifier
+  identifierType        String   @map("identifier_type") @db.VarChar(32)
+  identifierValue       String   @map("identifier_value") @db.VarChar(256)
+
+  // Rate limit tracking
+  windowStart           DateTime @map("window_start") @db.Timestamptz
+  windowDurationSeconds Int      @map("window_duration_seconds")
+  requestCount          Int      @default(0) @map("request_count")
+
+  // Limits
+  limitType             String   @map("limit_type") @db.VarChar(64)
+  limitValue            Int      @map("limit_value")
+
+  // Status
+  isBlocked             Boolean  @default(false) @map("is_blocked")
+  blockedUntil          DateTime? @map("blocked_until") @db.Timestamptz
+
+  // Metadata
+  metadata              Json     @default("{}") @db.JsonB
+
+  // Timestamps
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([identifierType, identifierValue, limitType, windowStart])
+  @@index([identifierType, identifierValue, windowStart(sort: Desc)], name: "idx_agent_rate_limits_identifier")
+  @@index([isBlocked, blockedUntil], name: "idx_agent_rate_limits_blocked")
+  @@index([windowStart, windowDurationSeconds], name: "idx_agent_rate_limits_window")
+  @@map("agent_rate_limits")
+}
+
+// =====================================================
+// Extend Existing Models with Relations
+// =====================================================
+
+// These relations should be added to existing models:
+//
+// model User {
+//   ...
+//   agentSessions AgentSession[]
+//   agentEvents   AgentEvent[]
+// }
+//
+// model Workspace {
+//   ...
+//   agentSessions AgentSession[]
+//   agentEvents   AgentEvent[]
+// }

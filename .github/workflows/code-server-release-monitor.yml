@@ -1,0 +1,128 @@
+name: Code-Server Release Monitor
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Daily at 00:00 UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine current code-server version
+        id: current
+        run: |
+          TAG=$(grep -oE 'codercom/code-server:[^ ]+' docker/code-server/Dockerfile | head -n1 | cut -d: -f2)
+          VERSION=${TAG%%-*}
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Current version: $VERSION (tag: $TAG)"
+
+      - name: Fetch latest upstream release
+        id: latest
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.repos.getLatestRelease({ owner: 'coder', repo: 'code-server' })
+            const tag = data.tag_name.replace(/^v/, '')
+            const releaseNotes = data.body || 'No release notes provided'
+            const releaseUrl = data.html_url
+            const publishedAt = data.published_at
+
+            core.setOutput('tag', tag)
+            core.setOutput('release_notes', releaseNotes)
+            core.setOutput('release_url', releaseUrl)
+            core.setOutput('published_at', publishedAt)
+
+            console.log(`Latest version: ${tag}`)
+            console.log(`Release URL: ${releaseUrl}`)
+
+      - name: Create issue for new release
+        if: steps.current.outputs.version != steps.latest.outputs.tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const latest = process.env.LATEST_TAG
+            const currentTag = process.env.CURRENT_TAG
+            const releaseUrl = process.env.RELEASE_URL
+            const releaseNotes = process.env.RELEASE_NOTES
+            const publishedAt = process.env.PUBLISHED_AT
+
+            const title = `Update code-server to ${latest}`
+
+            // Truncate release notes if too long
+            const maxNotesLength = 2000
+            let notesSection = releaseNotes
+            if (notesSection.length > maxNotesLength) {
+              notesSection = notesSection.substring(0, maxNotesLength) + `\n\n... (truncated)\n\n[View full release notes](${releaseUrl})`
+            }
+
+            const body = `## Summary
+Upstream code-server **${latest}** has been released. Our Dockerfiles currently reference \`${currentTag}\`.
+
+**Release Date:** ${publishedAt}
+**Release URL:** ${releaseUrl}
+
+## Release Notes
+
+${notesSection}
+
+## Changelog
+View the full changelog: https://github.com/coder/code-server/releases/tag/v${latest}
+
+## Update Actions
+- [ ] Update \`docker/code-server/Dockerfile\` to use \`codercom/code-server:${latest}\`
+- [ ] Update \`docker/code-server/Dockerfile.optimized\` to use \`codercom/code-server:${latest}\`
+- [ ] Update \`docker/code-server/Dockerfile.kind\` to use \`codercom/code-server:${latest}\`
+- [ ] Test changes locally with \`docker build\`
+- [ ] Rebuild and push the multi-arch image via \`scripts/build-codeserver-multiarch.sh\`
+- [ ] Run KinD + Helm smoke tests (\`scripts/test-code-server-kind.sh\`, \`helm/code-server-cloud\`)
+- [ ] Update version references in documentation
+- [ ] Document the rollout in \`docs/logs/issues/code-server-cloud-deployment.md\`
+
+## Testing Checklist
+- [ ] Extensions load correctly
+- [ ] AI assistants (Claude, ChatGPT) work properly
+- [ ] Terminal functionality verified
+- [ ] File operations work as expected
+- [ ] Multi-arch builds successful (amd64, arm64)
+
+---
+*This issue was created automatically by the [Code-Server Release Monitor](.github/workflows/code-server-release-monitor.yml) workflow.*
+*Triggered: ${new Date().toISOString()}*`
+
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            })
+
+            const alreadyOpen = existing.data.some(issue => issue.title === title)
+            if (alreadyOpen) {
+              core.info(`Issue already exists: ${title}`)
+              return
+            }
+
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['enhancement', 'dependencies', 'automated']
+            })
+
+            core.info(`Created issue #${issue.data.number}: ${title}`)
+        env:
+          LATEST_TAG: ${{ steps.latest.outputs.tag }}
+          CURRENT_TAG: ${{ steps.current.outputs.tag }}
+          RELEASE_URL: ${{ steps.latest.outputs.release_url }}
+          RELEASE_NOTES: ${{ steps.latest.outputs.release_notes }}
+          PUBLISHED_AT: ${{ steps.latest.outputs.published_at }}

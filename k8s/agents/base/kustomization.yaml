@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: openai-agents
+
+resources:
+- namespace.yaml
+- configmap.yaml
+- secrets.yaml
+- rbac.yaml
+- pvc.yaml
+- deployment.yaml
+- service.yaml
+- hpa.yaml
+- pdb.yaml
+- networkpolicy.yaml
+- servicemonitor.yaml
+
+commonLabels:
+  app.kubernetes.io/name: openai-agents
+  app.kubernetes.io/component: runtime
+  app.kubernetes.io/part-of: vibecode
+  app.kubernetes.io/managed-by: kustomize
+
+commonAnnotations:
+  owner: devops-team
+  documentation: https://github.com/ryanmaclean/vibecode-webgui/tree/main/k8s/agents
+
+images:
+- name: ghcr.io/ryanmaclean/vibecode-openai-agents
+  newTag: latest
+
+configMapGenerator:
+- name: openai-agents-version
+  literals:
+  - version=1.0.0
+  - build-date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')

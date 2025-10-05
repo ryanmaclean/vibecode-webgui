@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Check if package.json or package-lock.json was modified
+if git diff --cached --name-only | grep -E "package(-lock)?\.json"; then
+  echo "📦 Dependency files changed, running compatibility check..."
+  
+  # Run dependency compatibility check (CI mode - skip phantom check)
+  npm run deps:check:ci
+  
+  if [ $? -ne 0 ]; then
+    echo "❌ Dependency compatibility check failed!"
+    echo "   Run 'npm run deps:check' locally to see detailed issues."
+    echo "   Fix the issues before committing."
+    exit 1
+  fi
+  
+  echo "✅ Dependency compatibility check passed!"
+fi
