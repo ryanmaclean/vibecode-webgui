@@ -532,7 +532,7 @@ export class AzureEmbeddingService {
       };
       
       // Set up headers based on authentication method
-      // eslint-disable-next-line prefer-const
+       
       let headers: Record<string, string> = {
         'Content-Type': 'application/json'
       };
