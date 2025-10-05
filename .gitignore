@@ -203,8 +203,73 @@ venv*/
 
 code-server/
 
+<<<<<<< HEAD
 # Web dashboard
 web-dashboard/node_modules/
 web-dashboard/dist/
 web-dashboard/.vite/
 web-dashboard/package-lock.json
+=======
+# Docker
+.dockerignore
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+
+# Terraform/OpenTofu
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfplan
+*.tfvars
+
+# Helm
+charts/*.tgz
+
+# Local development
+.local/
+.cache/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Certificates
+*.pem
+*.key
+*.crt
+*.p12
+
+# Secrets
+secrets/
+*.secret
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Editor files
+*.sublime-*
+.atom/
+
+docs/node_modules/
+!docs/node_modules/.keep
+**/.venv/
+templates/python/zenml-basic-pipeline/.venv/
+
+# Large VM build artifacts
+fast-openvscode-vm/
+src-tauri/target/
+
+# MiniVim kernel build artifacts
+artifacts/minivim/work/
+bench-images/minivim/bzImage-*
+bench-images/minivim/Image-*
+bench-images/minivim/zImage-*
+bench-images/minivim/cpuinfo-*.txt
+bench-images/minivim/*.tar.xz
+>>>>>>> origin/minivim-refresh
