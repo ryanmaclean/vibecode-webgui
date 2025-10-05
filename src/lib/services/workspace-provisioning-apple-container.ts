@@ -293,10 +293,11 @@ export class AppleContainerWorkspaceService {
   }
 
   /**
-   * Generate a random password
+   * Generate a cryptographically secure random password
    */
   private generatePassword(): string {
-    return Math.random().toString(36).substring(2, 15) +
-           Math.random().toString(36).substring(2, 15)
+    // Use crypto.randomBytes for cryptographically secure password generation
+    const crypto = require('crypto');
+    return crypto.randomBytes(16).toString('base64').slice(0, 24);
   }
 }
