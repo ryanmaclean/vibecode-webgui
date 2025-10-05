@@ -4,62 +4,77 @@ client:
 tools: {}
 targets:
   "PackageStructure": ["<PackageStructure>"]
-  "VibeCodeVM-arm64-apple-macosx15.0-release.module": ["<VibeCodeVM-arm64-apple-macosx15.0-release.module>"]
-  "main": ["<VibeCodeVM-arm64-apple-macosx15.0-release.module>","<vibecode-vm-arm64-apple-macosx15.0-release.exe>"]
-  "test": ["<VibeCodeVM-arm64-apple-macosx15.0-release.module>","<vibecode-vm-arm64-apple-macosx15.0-release.exe>"]
-  "vibecode-vm-arm64-apple-macosx15.0-release.exe": ["<vibecode-vm-arm64-apple-macosx15.0-release.exe>"]
+  "VibeCodeVM-arm64-apple-macosx15.0-debug.module": ["<VibeCodeVM-arm64-apple-macosx15.0-debug.module>"]
+  "main": ["<VibeCodeVM-arm64-apple-macosx15.0-debug.module>","<vibecode-vm-arm64-apple-macosx15.0-debug.exe>"]
+  "test": ["<VibeCodeVM-arm64-apple-macosx15.0-debug.module>","<vibecode-vm-arm64-apple-macosx15.0-debug.exe>"]
+  "vibecode-vm-arm64-apple-macosx15.0-debug.exe": ["<vibecode-vm-arm64-apple-macosx15.0-debug.exe>"]
 default: "main"
 nodes:
-  "/Users/ryan.maclean/vibecode-webgui/macos-vm/Sources/":
+  "/Users/studio/Documents/vibecode-webgui/macos-vm/Sources/":
     is-directory-structure: true
     content-exclusion-patterns: [".git",".build"]
+  "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm":
+    is-mutated: true
 commands:
-  "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/VibeCodeVM.build/sources":
+  "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources":
     tool: write-auxiliary-file
-    inputs: ["<sources-file-list>","/Users/ryan.maclean/vibecode-webgui/macos-vm/Sources/main.swift"]
-    outputs: ["/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/VibeCodeVM.build/sources"]
-    description: "Write auxiliary file /Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/VibeCodeVM.build/sources"
+    inputs: ["<sources-file-list>","/Users/studio/Documents/vibecode-webgui/macos-vm/Sources/main.swift"]
+    outputs: ["/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources"]
+    description: "Write auxiliary file /Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources"
 
-  "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/swift-version--1AB21518FC5DEDBE.txt":
+  "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt":
     tool: write-auxiliary-file
     inputs: ["<swift-get-version>","/Library/Developer/CommandLineTools/usr/bin/swiftc"]
-    outputs: ["/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/swift-version--1AB21518FC5DEDBE.txt"]
+    outputs: ["/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"]
     always-out-of-date: "true"
-    description: "Write auxiliary file /Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/swift-version--1AB21518FC5DEDBE.txt"
+    description: "Write auxiliary file /Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
 
-  "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/vibecode-vm.product/Objects.LinkFileList":
+  "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm-entitlement.plist":
     tool: write-auxiliary-file
-    inputs: ["<link-file-list>","/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/VibeCodeVM.build/main.swift.o"]
-    outputs: ["/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/vibecode-vm.product/Objects.LinkFileList"]
-    description: "Write auxiliary file /Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/vibecode-vm.product/Objects.LinkFileList"
+    inputs: ["<entitlement-plist>","<com.apple.security.get-task-allow>"]
+    outputs: ["/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm-entitlement.plist"]
+    description: "Write auxiliary file /Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm-entitlement.plist"
 
-  "<VibeCodeVM-arm64-apple-macosx15.0-release.module>":
+  "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o"]
+    outputs: ["/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm.product/Objects.LinkFileList"
+
+  "<VibeCodeVM-arm64-apple-macosx15.0-debug.module>":
     tool: phony
-    inputs: ["/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/VibeCodeVM.build/main.swift.o","/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/Modules/VibeCodeVM.swiftmodule"]
-    outputs: ["<VibeCodeVM-arm64-apple-macosx15.0-release.module>"]
+    inputs: ["/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules/VibeCodeVM.swiftmodule"]
+    outputs: ["<VibeCodeVM-arm64-apple-macosx15.0-debug.module>"]
 
-  "<vibecode-vm-arm64-apple-macosx15.0-release.exe>":
+  "<vibecode-vm-arm64-apple-macosx15.0-debug.exe>":
     tool: phony
-    inputs: ["/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/vibecode-vm"]
-    outputs: ["<vibecode-vm-arm64-apple-macosx15.0-release.exe>"]
+    inputs: ["<vibecode-vm-arm64-apple-macosx15.0-debug.exe-CodeSigning>"]
+    outputs: ["<vibecode-vm-arm64-apple-macosx15.0-debug.exe>"]
 
-  "C.VibeCodeVM-arm64-apple-macosx15.0-release.module":
+  "C.VibeCodeVM-arm64-apple-macosx15.0-debug.module":
     tool: shell
-    inputs: ["/Users/ryan.maclean/vibecode-webgui/macos-vm/Sources/main.swift","/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/swift-version--1AB21518FC5DEDBE.txt","/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/VibeCodeVM.build/sources"]
-    outputs: ["/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/VibeCodeVM.build/main.swift.o","/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/Modules/VibeCodeVM.swiftmodule"]
+    inputs: ["/Users/studio/Documents/vibecode-webgui/macos-vm/Sources/main.swift","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources"]
+    outputs: ["/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules/VibeCodeVM.swiftmodule"]
     description: "Compiling Swift Module 'VibeCodeVM' (1 sources)"
-    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","VibeCodeVM","-emit-dependencies","-emit-module","-emit-module-path","/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/Modules/VibeCodeVM.swiftmodule","-output-file-map","/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/VibeCodeVM.build/output-file-map.json","-whole-module-optimization","-num-threads","10","-c","@/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/VibeCodeVM.build/sources","-I","/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/Modules","-target","arm64-apple-macosx13.0","-whole-module-optimization","-num-threads","10","-serialize-diagnostics","-O","-j10","-DSWIFT_PACKAGE","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/ModuleCache","-parseable-output","-Xfrontend","-entry-point-function-name","-Xfrontend","VibeCodeVM_main","-parse-as-library","-color-diagnostics","-swift-version","5","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","macos_vm"]
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","VibeCodeVM","-emit-dependencies","-emit-module","-emit-module-path","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules/VibeCodeVM.swiftmodule","-output-file-map","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/output-file-map.json","-incremental","-c","@/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources","-I","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx13.0","-enable-batch-mode","-index-store-path","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j24","-DSWIFT_PACKAGE","-DDEBUG","-module-cache-path","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-Xfrontend","-entry-point-function-name","-Xfrontend","VibeCodeVM_main","-parse-as-library","-swift-version","5","-F","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","macos_vm"]
 
-  "C.vibecode-vm-arm64-apple-macosx15.0-release.exe":
+  "C.vibecode-vm-arm64-apple-macosx15.0-debug.exe":
     tool: shell
-    inputs: ["/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/VibeCodeVM.build/main.swift.o","/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/vibecode-vm.product/Objects.LinkFileList"]
-    outputs: ["/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/vibecode-vm"]
-    description: "Linking ./.build/arm64-apple-macosx/release/vibecode-vm"
-    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-L","/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release","-o","/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/vibecode-vm","-module-name","vibecode_vm","-Xlinker","-no_warn_duplicate_libraries","-emit-executable","-Xlinker","-dead_strip","-Xlinker","-alias","-Xlinker","_VibeCodeVM_main","-Xlinker","_main","-Xlinker","-rpath","-Xlinker","@loader_path","@/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/release/vibecode-vm.product/Objects.LinkFileList","-target","arm64-apple-macosx13.0","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g"]
+    inputs: ["/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm.product/Objects.LinkFileList"]
+    outputs: ["/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm"]
+    description: "Linking ./.build/arm64-apple-macosx/debug/vibecode-vm"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-L","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug","-o","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm","-module-name","vibecode_vm","-Xlinker","-no_warn_duplicate_libraries","-emit-executable","-Xlinker","-alias","-Xlinker","_VibeCodeVM_main","-Xlinker","_main","-Xlinker","-rpath","-Xlinker","@loader_path","@/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm.product/Objects.LinkFileList","-target","arm64-apple-macosx13.0","-Xlinker","-add_ast_path","-Xlinker","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules/VibeCodeVM.swiftmodule","-F","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xlinker","-rpath","-Xlinker","/Library/Developer/CommandLineTools/Library/Developer/Frameworks"]
+
+  "C.vibecode-vm-arm64-apple-macosx15.0-debug.exe-entitlements":
+    tool: shell
+    inputs: ["/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm-entitlement.plist"]
+    outputs: ["<vibecode-vm-arm64-apple-macosx15.0-debug.exe-CodeSigning>"]
+    description: "Applying debug entitlements to ./.build/arm64-apple-macosx/debug/vibecode-vm"
+    args: ["codesign","--force","--sign","-","--entitlements","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm-entitlement.plist","/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm"]
 
   "PackageStructure":
     tool: package-structure-tool
-    inputs: ["/Users/ryan.maclean/vibecode-webgui/macos-vm/Sources/","/Users/ryan.maclean/vibecode-webgui/macos-vm/Package.swift","/Users/ryan.maclean/vibecode-webgui/macos-vm/Package.resolved"]
+    inputs: ["/Users/studio/Documents/vibecode-webgui/macos-vm/Sources/","/Users/studio/Documents/vibecode-webgui/macos-vm/Package.swift","/Users/studio/Documents/vibecode-webgui/macos-vm/Package.resolved"]
     outputs: ["<PackageStructure>"]
     description: "Planning build"
     allow-missing-inputs: true
