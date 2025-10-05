@@ -19,59 +19,51 @@
   "swiftCommands" : {
     "C.VibeCodeVM-arm64-apple-macosx15.0-debug.module" : {
       "executable" : "/Library/Developer/CommandLineTools/usr/bin/swiftc",
-      "fileList" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources",
-      "importPath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules",
+      "fileList" : "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources",
+      "importPath" : "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules",
       "inputs" : [
         {
           "kind" : "file",
-          "name" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/Sources/main.swift"
+          "name" : "/Users/studio/Documents/vibecode-webgui/macos-vm/Sources/main.swift"
         },
         {
           "kind" : "file",
-          "name" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+          "name" : "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
         },
         {
           "kind" : "file",
-          "name" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources"
+          "name" : "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources"
         }
       ],
       "isLibrary" : false,
       "moduleName" : "VibeCodeVM",
-      "moduleOutputPath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules/VibeCodeVM.swiftmodule",
+      "moduleOutputPath" : "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules/VibeCodeVM.swiftmodule",
       "objects" : [
-        "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o"
+        "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o"
       ],
       "otherArguments" : [
         "-target",
         "arm64-apple-macosx13.0",
-        "-incremental",
         "-enable-batch-mode",
-        "-serialize-diagnostics",
         "-index-store-path",
-        "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/index/store",
+        "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/index/store",
         "-Onone",
         "-enable-testing",
-        "-j10",
+        "-j24",
         "-DSWIFT_PACKAGE",
         "-DDEBUG",
-        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
         "-module-cache-path",
-        "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/ModuleCache",
+        "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/ModuleCache",
         "-parseable-output",
         "-Xfrontend",
         "-entry-point-function-name",
         "-Xfrontend",
         "VibeCodeVM_main",
         "-parse-as-library",
-        "-color-diagnostics",
         "-swift-version",
         "5",
-        "-I",
+        "-F",
         "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
-        "-L",
-        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
-        "-plugin-path",
-        "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
         "-sdk",
         "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
         "-g",
@@ -86,22 +78,22 @@
         "-package-name",
         "macos_vm"
       ],
-      "outputFileMapPath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/output-file-map.json",
+      "outputFileMapPath" : "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/output-file-map.json",
       "outputs" : [
         {
           "kind" : "file",
-          "name" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o"
+          "name" : "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules/VibeCodeVM.swiftmodule"
+          "name" : "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules/VibeCodeVM.swiftmodule"
         }
       ],
       "prepareForIndexing" : false,
       "sources" : [
-        "/Users/ryan.maclean/vibecode-webgui/macos-vm/Sources/main.swift"
+        "/Users/studio/Documents/vibecode-webgui/macos-vm/Sources/main.swift"
       ],
-      "tempsPath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build",
+      "tempsPath" : "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build",
       "wholeModuleOptimization" : false
     }
   },
@@ -115,40 +107,33 @@
       "VibeCodeVM",
       "-package-name",
       "macos_vm",
+      "-incremental",
       "-c",
-      "/Users/ryan.maclean/vibecode-webgui/macos-vm/Sources/main.swift",
+      "/Users/studio/Documents/vibecode-webgui/macos-vm/Sources/main.swift",
       "-I",
-      "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules",
+      "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/Modules",
       "-target",
       "arm64-apple-macosx13.0",
-      "-incremental",
       "-enable-batch-mode",
-      "-serialize-diagnostics",
       "-index-store-path",
-      "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/index/store",
+      "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/index/store",
       "-Onone",
       "-enable-testing",
-      "-j10",
+      "-j24",
       "-DSWIFT_PACKAGE",
       "-DDEBUG",
-      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
       "-module-cache-path",
-      "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/ModuleCache",
+      "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/ModuleCache",
       "-parseable-output",
       "-Xfrontend",
       "-entry-point-function-name",
       "-Xfrontend",
       "VibeCodeVM_main",
       "-parse-as-library",
-      "-color-diagnostics",
       "-swift-version",
       "5",
-      "-I",
+      "-F",
       "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
-      "-L",
-      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
-      "-plugin-path",
-      "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
       "-sdk",
       "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
       "-g",
@@ -178,12 +163,10 @@
 
   },
   "traitConfiguration" : {
-    "default" : {
-
-    }
+    "enableAllTraits" : false
   },
   "writeCommands" : {
-    "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources" : {
+    "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources" : {
       "alwaysOutOfDate" : false,
       "inputs" : [
         {
@@ -192,12 +175,12 @@
         },
         {
           "kind" : "file",
-          "name" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/Sources/main.swift"
+          "name" : "/Users/studio/Documents/vibecode-webgui/macos-vm/Sources/main.swift"
         }
       ],
-      "outputFilePath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources"
+      "outputFilePath" : "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/sources"
     },
-    "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt" : {
+    "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt" : {
       "alwaysOutOfDate" : true,
       "inputs" : [
         {
@@ -209,9 +192,9 @@
           "name" : "/Library/Developer/CommandLineTools/usr/bin/swiftc"
         }
       ],
-      "outputFilePath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+      "outputFilePath" : "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
     },
-    "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm-entitlement.plist" : {
+    "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm-entitlement.plist" : {
       "alwaysOutOfDate" : false,
       "inputs" : [
         {
@@ -223,9 +206,9 @@
           "name" : "<com.apple.security.get-task-allow>"
         }
       ],
-      "outputFilePath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm-entitlement.plist"
+      "outputFilePath" : "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm-entitlement.plist"
     },
-    "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm.product/Objects.LinkFileList" : {
+    "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm.product/Objects.LinkFileList" : {
       "alwaysOutOfDate" : false,
       "inputs" : [
         {
@@ -234,10 +217,10 @@
         },
         {
           "kind" : "file",
-          "name" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o"
+          "name" : "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o"
         }
       ],
-      "outputFilePath" : "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm.product/Objects.LinkFileList"
+      "outputFilePath" : "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/vibecode-vm.product/Objects.LinkFileList"
     }
   }
 }

@@ -1,12 +1,11 @@
 {
   "": {
-    "swift-dependencies": "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/master.swiftdeps"
+    "swift-dependencies": "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/master.swiftdeps"
   },
-  "/Users/ryan.maclean/vibecode-webgui/macos-vm/Sources/main.swift": {
-    "dependencies": "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.d",
-    "object": "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o",
-    "swiftmodule": "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main~partial.swiftmodule",
-    "swift-dependencies": "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swiftdeps",
-    "diagnostics": "/Users/ryan.maclean/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.dia"
+  "/Users/studio/Documents/vibecode-webgui/macos-vm/Sources/main.swift": {
+    "dependencies": "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.d",
+    "object": "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o",
+    "swiftmodule": "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main~partial.swiftmodule",
+    "swift-dependencies": "/Users/studio/Documents/vibecode-webgui/macos-vm/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swiftdeps"
   }
 }
