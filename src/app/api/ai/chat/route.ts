@@ -187,20 +187,8 @@ export async function POST(request: NextRequest) {
           input: ragContext ? `Context:\n${ragContext}\n\nPrompt:\n${userPrompt}` : userPrompt,
           temperature,
           maxTokens: max_tokens
-        },
-      ],
-      usage: {
-        prompt_tokens: messages.reduce((sum: number, msg: ChatMessage) => sum + (msg.content?.length || 0), 0) / 4,
-        completion_tokens: response.length / 4,
-        total_tokens: (messages.reduce((sum: number, msg: ChatMessage) => sum + (msg.content?.length || 0), 0) + response.length) / 4,
-      },
-      processing_time_ms: processingTime,
-    }, {
-      headers: {
-        'X-Processing-Time': processingTime.toString(),
-        'X-Model': model,
-      },
-    });
+        }
+      );
 
       type LiteLLMResponse = ChatCompletionResponse & {
         cost?: { total_cost?: number };
