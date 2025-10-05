@@ -120,7 +120,7 @@
     "@langchain/community": "^0.3.49",
     "@langchain/core": "^0.3.66",
     "@langchain/openai": "^0.2.1",
-    "@langchain/weaviate": "^0.2.1",
+    "@langchain/weaviate": "^0.2.3",
     "@monaco-editor/react": "4.7.0",
     "@mui/material": "^7.3.4",
     "@mui/x-charts": "^8.9.0",
