@@ -617,6 +617,7 @@ class DocumentationRAGIngester {
 }
 
 // Main execution
+import { pathToFileURL } from 'url'
 async function main() {
   const ingester = new DocumentationRAGIngester();
   
@@ -633,8 +634,17 @@ async function main() {
   }
 }
 
-if (require.main === module) {
-  main();
+// ESM-friendly entrypoint detection
+try {
+  const isMain = import.meta && import.meta.url && process.argv && process.argv[1]
+    ? import.meta.url === pathToFileURL(process.argv[1]).href
+    : false
+  if (isMain) {
+    await main()
+  }
+} catch {
+  // Fallback: just run
+  await main()
 }
 
 export { DocumentationRAGIngester };
