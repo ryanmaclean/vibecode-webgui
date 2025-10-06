@@ -143,7 +143,7 @@
     "@radix-ui/react-select": "2.2.5",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "1.2.5",
-    "@radix-ui/react-tabs": "1.1.12",
+    "@radix-ui/react-tabs": "1.1.13",
     "@tremor/react": "^3.18.7",
     "@types/mongodb": "4.0.6",
     "@types/qrcode": "1.5.5",
