@@ -36,6 +36,7 @@ export class LLMTracer {
   ): Promise<T> {
     const span = tracer.startSpan('llm.completion', {
       tags: {
+        // Existing tags
         'llm.request.model': options.model,
         'llm.request.provider': options.provider,
         'llm.operation': operation,
@@ -45,6 +46,12 @@ export class LLMTracer {
         'session.id': options.sessionId,
         'service.name': 'vibecode-ai',
         'env': process.env.DD_ENV || 'development',
+
+        // Datadog LLM Observability standard tags
+        'span.type': 'ai',
+        'ai.operation.name': operation,
+        'ai.request.provider': options.provider,
+        'ai.request.model': options.model,
       }
     });
 
@@ -53,10 +60,14 @@ export class LLMTracer {
     try {
       // Add input to span if provided
       if (options.input) {
-        span.setTag('llm.request.input', options.input.substring(0, 1000)); // Limit to 1000 chars
+        const trimmed = options.input.substring(0, 1000);
+        span.setTag('llm.request.input', trimmed); // Limit to 1000 chars
+        span.setTag('ai.input', trimmed);
       }
       if (options.prompt) {
-        span.setTag('llm.request.prompt', options.prompt.substring(0, 1000));
+        const trimmed = options.prompt.substring(0, 1000);
+        span.setTag('llm.request.prompt', trimmed);
+        span.setTag('ai.prompt', trimmed);
       }
 
       // Execute the LLM call
@@ -74,7 +85,9 @@ export class LLMTracer {
         
         if (response.output || response.text || response.content) {
           const output = response.output || response.text || response.content;
-          span.setTag('llm.response.output', output.substring(0, 1000));
+          const trimmed = String(output).substring(0, 1000);
+          span.setTag('llm.response.output', trimmed);
+          span.setTag('ai.output', trimmed);
         }
         
         if (response.usage || response.tokenUsage) {
@@ -82,6 +95,9 @@ export class LLMTracer {
           span.setTag('llm.usage.prompt_tokens', usage.promptTokens || usage.prompt_tokens);
           span.setTag('llm.usage.completion_tokens', usage.completionTokens || usage.completion_tokens);
           span.setTag('llm.usage.total_tokens', usage.totalTokens || usage.total_tokens);
+          if (usage.total_tokens) {
+            span.setTag('ai.response.total_tokens', usage.total_tokens);
+          }
         }
         
         if (response.cost) {
