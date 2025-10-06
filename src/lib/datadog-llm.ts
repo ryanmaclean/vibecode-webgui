@@ -72,10 +72,18 @@ class LLMObservability {
     try {
       const span = tracer.startSpan(`llm.workflow.${name}`, {
         tags: {
+          // Legacy/custom tags we already used
           'llm.operation': 'workflow',
           'llm.name': name,
           'service.name': this.config.service,
           'ml.app': this.config.mlApp,
+
+          // Datadog LLM Observability standard tags
+          'span.type': 'ai',
+          'ai.operation.name': 'workflow',
+          'ai.application.name': this.config.mlApp,
+          'ai.request.provider': 'openai',
+          // model is set by callers via annotate() or options, defaults
           ...(Array.isArray(metadata?.tags)
             ? metadata.tags.reduce((acc: Record<string, boolean>, tag: string) => ({ ...acc, [`tag.${tag}`]: true }), {})
             : {}),
@@ -86,6 +94,7 @@ class LLMObservability {
         try {
           if (metadata?.input) {
             span.setTag('llm.input.data', JSON.stringify(metadata.input));
+            span.setTag('ai.input', JSON.stringify(metadata.input));
           }
 
           if (metadata?.context) {
@@ -98,12 +107,14 @@ class LLMObservability {
 
           if (metadata?.output !== undefined) {
             span.setTag('llm.output.data', JSON.stringify(metadata.output));
+            span.setTag('ai.output', JSON.stringify(metadata.output));
           }
 
           span.setTag('llm.status', 'success');
           return result;
         } catch (error) {
           span.setTag('llm.status', 'error');
+          span.setTag('error', true);
           span.setTag('error.message', error instanceof Error ? error.message : String(error));
           throw error;
         } finally {
@@ -181,7 +192,9 @@ class LLMObservability {
     if (!this.config.enabled) return;
 
     try {
-      const activeSpan = tracer.scope().active();
+      // Use dd-trace scope manager to read the active span
+      const dd = require('dd-trace');
+      const activeSpan = dd.scope().active();
       if (!activeSpan) {
         console.warn('No active span to annotate for LLM Observability');
         return;
