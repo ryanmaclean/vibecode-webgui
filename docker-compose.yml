@@ -74,7 +74,7 @@ services:
       # Tags for better organization
       - DD_TAGS=env:local,service:vibecode-app,component:web
     depends_on:
-      - postgres
+      - db
       - redis
       - datadog-agent
     networks:
@@ -96,10 +96,10 @@ services:
     image: pgvector/pgvector:pg15
     container_name: vibecode-db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       - POSTGRES_DB=vibecode
-      - POSTGRES_USER=postgres
+      - POSTGRES_USER=vibecode
       - POSTGRES_PASSWORD=password
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -191,8 +191,6 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - ./ssl:/etc/nginx/ssl
-    depends_on:
-      - webgui
     restart: unless-stopped
 
   # MCP Server with Model Runner Integration
@@ -231,6 +229,7 @@ services:
     volumes:
       - ./docker/voice-processor:/app
       - voice-uploads:/app/uploads
+      - free-llm-models:/app/runtime/free-llm-models
     ports:
       - "3004:3004"
     networks:
@@ -255,10 +254,6 @@ services:
       - DD_SERVICE=vibecode-webgui
       - DD_VERSION=0.1.0-staging
       - DATADOG_METRIC_TAGS=environment:staging
-    volumes:
-      - free-llm-models:/app/runtime/free-llm-models
-    depends_on:
-      - webgui
     restart: unless-stopped
 
   # Datadog Agent for Local Development
@@ -345,6 +340,8 @@ volumes:
   voice-uploads:
     driver: local
   datadog-apm:
+    driver: local
+  free-llm-models:
     driver: local
 
 networks:
