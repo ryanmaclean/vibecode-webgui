@@ -5,10 +5,19 @@
 
 // Import ddtrace for LLM observability
 // NOTE: This must be imported before any other modules that use AI services
-// Using CommonJS require because '../instrument' exports via module.exports
+// Use createRequire for compatibility in ESM context
+import { createRequire } from 'module'
+const require = createRequire(import.meta.url)
 const tracer = require('../instrument')
 import { Span } from 'dd-trace'
 import { getDatadogSite, getDatadogApiKey, getServiceEnvVersion } from '@/lib/monitoring/datadog-env'
+
+// Small helper to parse boolean-like env flags safely
+function parseFlag(value: string | undefined, defaultValue: boolean): boolean {
+  if (value === undefined) return defaultValue
+  const normalized = String(value).trim().toLowerCase()
+  return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on'
+}
 
 interface LLMSpanMetadata {
   tags?: string[];
