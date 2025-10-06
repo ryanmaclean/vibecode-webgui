@@ -231,9 +231,6 @@ services:
     volumes:
       - ./docker/voice-processor:/app
       - voice-uploads:/app/uploads
-    environment:
-      - MODEL_RUNNER_URL=http://model-runner.docker.internal/engines/v1
-      - SPEECH_MODEL=ai/whisper:base-Q4_K_M
     ports:
       - "3004:3004"
     networks:
@@ -241,6 +238,8 @@ services:
     command: >
       sh -c "mkdir -p /app/runtime/free-llm-models && while true; do node -r dd-trace/init scripts/jobs/update-openrouter-free-models.js && sleep 43200; done"
     environment:
+      - MODEL_RUNNER_URL=http://model-runner.docker.internal/engines/v1
+      - SPEECH_MODEL=ai/whisper:base-Q4_K_M
       - OUTPUT_JSON_PATH=/app/runtime/free-llm-models/models.json
       - OUTPUT_TEXT_PATH=/app/runtime/free-llm-models/models.txt
       - ENABLE_CONFIGMAP_SYNC=false
