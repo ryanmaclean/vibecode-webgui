@@ -1,0 +1,21 @@
+#!/bin/bash
+set -euo pipefail
+
+if [[ ${MOCK_TIMEOUT_EXIT:-} == "1" ]]; then
+  echo "timeout: command timed out" >&2
+  exit 124
+fi
+
+# Drop duration argument if present
+if [[ $# -gt 0 ]]; then
+  case $1 in
+    [0-9]*s|[0-9]*m|[0-9]*h)
+      shift
+      ;;
+    --*)
+      shift
+      ;;
+  esac
+fi
+
+exec "$@"
