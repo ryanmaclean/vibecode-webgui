@@ -169,7 +169,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "codemirror": "^6.0.2",
-    "dd-trace": "5.61.1",
+    "dd-trace": "5.70.0",
     "framer-motion": "12.23.12",
     "gray-matter": "^4.0.3",
     "ioredis": "5.7.0",
