@@ -17,7 +17,7 @@ spec:
         - operator: Exists
       containers:
         - name: datadog-agent
-          image: gcr.io/datadoghq/agent:7
+          image: datadog/docker-dd-agent:latest-alpine
           imagePullPolicy: Always
           env:
             - name: DD_API_KEY

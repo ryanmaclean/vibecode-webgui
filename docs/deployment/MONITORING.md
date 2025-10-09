@@ -101,8 +101,8 @@ datadog:
 
 agents:
   image:
-    repository: gcr.io/datadoghq/agent
-    tag: 7
+    repository: datadog/docker-dd-agent
+    tag: latest-alpine
     pullPolicy: IfNotPresent
 
   useHostNetwork: true
@@ -148,7 +148,7 @@ version: '3.8'
 
 services:
   datadog-agent:
-    image: gcr.io/datadoghq/agent:7
+    image: datadog/docker-dd-agent:latest-alpine
     container_name: datadog-agent
     restart: unless-stopped
 
