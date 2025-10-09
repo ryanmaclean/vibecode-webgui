@@ -36,7 +36,7 @@ services:
 
   # Datadog Agent - Full-stack observability
   datadog-agent:
-    image: gcr.io/datadoghq/agent:7
+    image: datadog/docker-dd-agent:latest-alpine
     container_name: vibecode-datadog-agent
     restart: unless-stopped
     environment:
@@ -282,7 +282,7 @@ services:
 
   # Datadog Agent - APM and metrics
   datadog-agent-apm:
-    image: gcr.io/datadoghq/agent:7.48.0
+    image: datadog/docker-dd-agent:latest-alpine
     container_name: vibecode-datadog-agent-apm
     restart: unless-stopped
     ports:

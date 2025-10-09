@@ -15,9 +15,9 @@ services:
     environment:
       - NODE_ENV=production
       - DD_SERVICE=vibecode-docs
-      - DD_ENV=${ENVIRONMENT:-local}
+      - DD_ENV=${ENVIRONMENT:-dev}
       - DD_VERSION=1.0.0
-      - DD_TAGS=env:local,service:vibecode-docs,component:docs
+      - DD_TAGS=env:${ENVIRONMENT:-dev},service:vibecode-docs,component:docs
     depends_on:
       - datadog-agent
     networks:
@@ -61,7 +61,7 @@ services:
       - DD_AGENT_HOST=datadog-agent
       - DD_TRACE_AGENT_PORT=8126
       - DD_SERVICE=vibecode-app
-      - DD_ENV=${ENVIRONMENT:-local}
+      - DD_ENV=${ENVIRONMENT:-dev}
       - DD_VERSION=1.0.0
       - DD_PROFILING_ENABLED=true
       - DD_LOGS_INJECTION=true
@@ -72,7 +72,7 @@ services:
       - DD_DBM_PROPAGATION_MODE=full
       
       # Tags for better organization
-      - DD_TAGS=env:local,service:vibecode-app,component:web
+      - DD_TAGS=env:${ENVIRONMENT:-dev},service:vibecode-app,component:web
     depends_on:
       - db
       - redis
@@ -249,24 +249,24 @@ services:
       - OPENROUTER_APP_TITLE=${OPENROUTER_APP_TITLE:-}
       - DD_API_KEY=${DD_API_KEY:-}
       - DD_SITE=${DD_SITE:-datadoghq.com}
-      - DD_ENV=${DD_ENV:-staging}
+      - DD_ENV=${DD_ENV:-dev}
       - DD_DBM_PROPAGATION_MODE=full
       - DD_SERVICE=vibecode-webgui
-      - DD_VERSION=0.1.0-staging
-      - DATADOG_METRIC_TAGS=environment:staging
+      - DD_VERSION=0.1.0-dev
+      - DATADOG_METRIC_TAGS=environment:dev
     restart: unless-stopped
 
   # Datadog Agent for Local Development
   # Provides dev/stg/prd parity for monitoring
   datadog-agent:
-    image: gcr.io/datadoghq/agent:7.66.1
+    image: datadog/docker-dd-agent:latest-alpine
     container_name: vibecode-datadog-agent
     environment:
       - DD_API_KEY=${DD_API_KEY:-${DATADOG_API_KEY:-dummy-key-for-local-dev}}
-      - DD_APP_KEY=${DD_APP_KEY:-${DATADOG_APP_KEY:-dummy-app-key-for-local-dev}}
+      - DD_APP_KEY=${DD_APP_KEY}
       - DD_SITE=${DD_SITE:-${DATADOG_SITE:-datadoghq.com}}
       - DD_HOSTNAME=vibecode-docker-compose
-      - DD_ENV=${ENVIRONMENT:-local}
+      - DD_ENV=${ENVIRONMENT:-dev}
       - DD_SERVICE=vibecode-webgui
       - DD_VERSION=1.0.0
       
@@ -290,7 +290,7 @@ services:
       - DD_CONTAINER_EXCLUDE=name:datadog.*
       
       # Tags for local environment
-      - DD_TAGS=env:local,cluster:docker-compose,project:vibecode
+      - DD_TAGS=env:${ENVIRONMENT:-dev},cluster:docker-compose,project:vibecode
     volumes:
       # Essential Docker socket for container monitoring
       - /var/run/docker.sock:/var/run/docker.sock:ro

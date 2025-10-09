@@ -32,6 +32,15 @@ vim .env
 
 # OR manual setup
 docker-compose up -d
+
+# Run Datadog agent standalone (optional)
+docker run -d --name dd-agent \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  -v /proc/:/host/proc/:ro \
+  -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro \
+  -e DD_API_KEY={YOUR API KEY} \
+  --restart=unless-stopped \
+  datadog/docker-dd-agent:latest-alpine
 ```
 
 ### 3. Verify Monitoring
@@ -53,11 +62,11 @@ docker-compose up -d
 #### Datadog Agent Service
 ```yaml
 datadog-agent:
-  image: gcr.io/datadoghq/agent:7.66.1
+  image: datadog/docker-dd-agent:latest-alpine
   environment:
     - DD_API_KEY=${DD_API_KEY:-${DATADOG_API_KEY:-dummy-key-for-local-dev}}
     - DD_SITE=datadoghq.com
-    - DD_ENV=local
+    - DD_ENV=dev
     - DD_LOGS_ENABLED=true
     - DD_APM_ENABLED=true
   ports:

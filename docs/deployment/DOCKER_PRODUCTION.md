@@ -248,7 +248,7 @@ services:
 
   # Datadog Agent
   datadog-agent:
-    image: gcr.io/datadoghq/agent:7
+    image: datadog/docker-dd-agent:latest-alpine
     container_name: datadog-agent
     restart: unless-stopped
 
