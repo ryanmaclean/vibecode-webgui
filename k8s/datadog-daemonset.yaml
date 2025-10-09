@@ -97,7 +97,7 @@ spec:
           value: datadoghq.com
         - name: DD_AUTH_TOKEN_FILE_PATH
           value: /etc/datadog-agent/auth/token
-        image: gcr.io/datadoghq/agent:7.66.1
+        image: datadog/docker-dd-agent:latest-alpine
         imagePullPolicy: IfNotPresent
         name: agent
         ports:
@@ -176,7 +176,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: status.hostIP
-        image: gcr.io/datadoghq/agent:7.66.1
+        image: datadog/docker-dd-agent:latest-alpine
         imagePullPolicy: IfNotPresent
         name: trace-agent
         ports:
@@ -225,7 +225,7 @@ spec:
               name: datadog-agent-cluster-agent
         - name: DD_CLUSTER_AGENT_KUBERNETES_SERVICE_NAME
           value: datadog-agent-cluster-agent
-        image: gcr.io/datadoghq/agent:7.66.1
+        image: datadog/docker-dd-agent:latest-alpine
         imagePullPolicy: IfNotPresent
         name: process-agent
         resources: {}
@@ -283,7 +283,7 @@ spec:
           value: /var/run/sysprobe/sysprobe.sock
         - name: DD_SYSTEM_PROBE_DEBUG_PORT
           value: "6060"
-        image: gcr.io/datadoghq/agent:7.66.1
+        image: datadog/docker-dd-agent:latest-alpine
         imagePullPolicy: IfNotPresent
         name: system-probe
         resources: {}
@@ -410,7 +410,7 @@ spec:
               name: datadog-agent-cluster-agent
         - name: DD_CLUSTER_AGENT_KUBERNETES_SERVICE_NAME
           value: datadog-agent-cluster-agent
-        image: gcr.io/datadoghq/agent:7.66.1
+        image: datadog/docker-dd-agent:latest-alpine
         imagePullPolicy: IfNotPresent
         name: security-agent
         resources: {}
@@ -451,7 +451,7 @@ spec:
         command:
         - bash
         - -c
-        image: gcr.io/datadoghq/agent:7.66.1
+        image: datadog/docker-dd-agent:latest-alpine
         imagePullPolicy: IfNotPresent
         name: init-volume
         resources: {}
@@ -495,7 +495,7 @@ spec:
           value: "false"
         - name: DD_OTLP_CONFIG_LOGS_ENABLED
           value: "false"
-        image: gcr.io/datadoghq/agent:7.66.1
+        image: datadog/docker-dd-agent:latest-alpine
         imagePullPolicy: IfNotPresent
         name: init-config
         resources: {}
@@ -522,7 +522,7 @@ spec:
         - cp
         - /etc/config/system-probe-seccomp.json
         - /host/var/lib/kubelet/seccomp/system-probe
-        image: gcr.io/datadoghq/agent:7.66.1
+        image: datadog/docker-dd-agent:latest-alpine
         imagePullPolicy: IfNotPresent
         name: seccomp-setup
         resources: {}

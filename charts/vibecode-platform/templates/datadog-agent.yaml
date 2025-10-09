@@ -155,7 +155,7 @@ spec:
       hostPID: true
       containers:
       - name: agent
-        image: gcr.io/datadoghq/agent:7
+        image: datadog/docker-dd-agent:latest-alpine
         imagePullPolicy: Always
         resources:
           requests:
