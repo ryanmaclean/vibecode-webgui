@@ -80,7 +80,7 @@ spec:
             - name: workspace
               mountPath: /home/coder/project
         - name: datadog-agent
-          image: gcr.io/datadoghq/agent:7
+          image: datadog/docker-dd-agent:latest-alpine
           imagePullPolicy: IfNotPresent
           env:
             - name: DD_API_KEY
