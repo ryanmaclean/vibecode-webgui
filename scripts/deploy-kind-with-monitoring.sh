@@ -136,7 +136,7 @@ spec:
     spec:
       serviceAccountName: datadog-agent
       containers:
-      - image: gcr.io/datadoghq/agent:7.66.1
+      - image: datadog/docker-dd-agent:latest-alpine
         imagePullPolicy: Always
         name: datadog-agent
         ports:
