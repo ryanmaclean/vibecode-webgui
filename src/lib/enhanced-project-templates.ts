@@ -4,7 +4,7 @@
  */
 
 import { GeneratedProject } from './templates/generator';
-import { ProjectTemplate, TemplateFile } from './templates/index';
+import { TemplateFile } from './templates/index';
 
 /**
  * Enhanced template configuration
@@ -50,10 +50,7 @@ export class EnhancedProjectTemplates {
       aiProvider = 'openai',
       database = 'postgresql',
       authentication = 'nextauth',
-      vectorDb = 'pinecone',
-      deployment = 'vercel',
-      includePayments = false,
-      includeAnalytics = false
+      deployment = 'vercel'
     } = options;
 
     const files: TemplateFile[] = [
@@ -150,11 +147,8 @@ export class EnhancedProjectTemplates {
     const {
       framework = 'fastapi',
       mlFramework = 'pytorch',
-      database = 'postgresql',
       vectorDb = 'chroma',
-      deployment = 'docker',
-      includeMLflow = true,
-      includeJupyter = true
+      deployment = 'docker'
     } = options;
 
     const files: TemplateFile[] = [
@@ -219,9 +213,7 @@ export class EnhancedProjectTemplates {
       framework = 'axum',
       database = 'postgresql',
       auth = 'jwt',
-      deployment = 'docker',
-      includeGraphQL = false,
-      includeMetrics = true
+      deployment = 'docker'
     } = options;
 
     const files: TemplateFile[] = [
@@ -710,7 +702,7 @@ reqwest = { version = "0.11", features = ["json"] }
 testcontainers = "0.15"`;
   }
 
-  private generateRustMain(framework: string): string {
+  private generateRustMain(_framework: string): string {
     return `use axum::{
     routing::get,
     Router,
@@ -786,7 +778,7 @@ async fn health_check() -> StatusCode {
     ];
   }
 
-  private getRustDeploymentGuide(deployment: string): string[] {
+  private getRustDeploymentGuide(_deployment: string): string[] {
     return [
       '1. Build release binary: cargo build --release',
       '2. Create Docker image: docker build -t rust-api .',

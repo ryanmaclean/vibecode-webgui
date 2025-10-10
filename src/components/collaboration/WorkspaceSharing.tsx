@@ -10,29 +10,22 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Share2,
   Users,
   Shield,
   Globe,
-  Lock,
   UserPlus,
   UserMinus,
   Settings,
   Copy,
-  QrCode,
   Mail,
-  MessageSquare,
   Calendar,
   Clock,
-  Eye,
-  Edit,
   Trash2,
   Crown,
-  AlertTriangle,
-  CheckCircle,
-  ExternalLink
+  CheckCircle
 } from 'lucide-react'
 
 export interface WorkspacePermission {
@@ -101,7 +94,6 @@ export interface WorkspaceTeam {
 export interface WorkspaceSharingProps {
   workspaceId: string
   workspaceName: string
-  workspaceOwner: string
   currentUserId: string
   members: WorkspaceMember[]
   teams: WorkspaceTeam[]
@@ -109,19 +101,8 @@ export interface WorkspaceSharingProps {
   onMemberAdd: (email: string, role: WorkspaceMember['role']) => void
   onMemberRemove: (userId: string) => void
   onMemberRoleChange: (userId: string, newRole: WorkspaceMember['role']) => void
-  onSettingsUpdate: (settings: Partial<ShareSettings>) => void
-  onTeamCreate: (team: Omit<WorkspaceTeam, 'teamId' | 'createdAt' | 'createdBy'>) => void
-  onTeamUpdate: (teamId: string, updates: Partial<WorkspaceTeam>) => void
   onTeamDelete: (teamId: string) => void
   className?: string
-}
-
-const ROLE_PERMISSIONS = {
-  owner: ['read', 'write', 'delete', 'share', 'manage', 'viewHistory'],
-  admin: ['read', 'write', 'delete', 'share', 'manage', 'viewHistory'],
-  editor: ['read', 'write', 'share', 'viewHistory'],
-  viewer: ['read', 'viewHistory'],
-  guest: ['read']
 }
 
 const ROLE_COLORS = {
@@ -135,7 +116,6 @@ const ROLE_COLORS = {
 export default function WorkspaceSharing({
   workspaceId,
   workspaceName,
-  workspaceOwner,
   currentUserId,
   members,
   teams,
@@ -143,25 +123,14 @@ export default function WorkspaceSharing({
   onMemberAdd,
   onMemberRemove,
   onMemberRoleChange,
-  onSettingsUpdate,
-  onTeamCreate,
-  onTeamUpdate,
   onTeamDelete,
   className = ''
 }: WorkspaceSharingProps) {
   const [activeTab, setActiveTab] = useState<'members' | 'teams' | 'settings'>('members')
   const [showInviteModal, setShowInviteModal] = useState(false)
-  const [showTeamModal, setShowTeamModal] = useState(false)
-  const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<WorkspaceMember['role']>('viewer')
   const [shareLink, setShareLink] = useState('')
-  const [selectedMember, setSelectedMember] = useState<WorkspaceMember | null>(null)
-  const [newTeam, setNewTeam] = useState({
-    teamName: '',
-    description: '',
-    members: [] as string[]
-  })
 
   /**
    * Generate workspace share link
@@ -255,12 +224,14 @@ export default function WorkspaceSharing({
         <div className="flex items-center gap-3">
           {/* Avatar */}
           <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium overflow-hidden">
               {member.userAvatar ? (
-                <img
+                <Image
                   src={member.userAvatar}
                   alt={member.userName}
-                  className="w-full h-full rounded-full object-cover"
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
                 />
               ) : (
                 member.userName.charAt(0).toUpperCase()
@@ -334,21 +305,11 @@ export default function WorkspaceSharing({
               onClick={() => onMemberRemove(member.userId)}
               className="p-1 text-red-500 hover:text-red-700 transition-colors"
               title="Remove member"
-              aria-label="Remove member"
             >
               <UserMinus className="w-4 h-4" />
             </button>
           )}
 
-          {/* Member details */}
-          <button
-            onClick={() => setSelectedMember(member)}
-            className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-            title="View details"
-            aria-label="View member details"
-          >
-            <Eye className="w-4 h-4" />
-          </button>
         </div>
       </motion.div>
     )
@@ -379,23 +340,8 @@ export default function WorkspaceSharing({
           {canManageWorkspace && (
             <div className="flex items-center gap-2">
               <button
-                onClick={() => {
-                  setNewTeam({
-                    teamName: team.teamName,
-                    description: team.description,
-                    members: team.members
-                  })
-                  setShowTeamModal(true)
-                }}
-                className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                aria-label="Edit team"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
-              <button
                 onClick={() => onTeamDelete(team.teamId)}
                 className="p-1 text-red-500 hover:text-red-700 transition-colors"
-                aria-label="Delete team"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -419,10 +365,12 @@ export default function WorkspaceSharing({
                 title={member.userName}
               >
                 {member.userAvatar ? (
-                  <img
+                  <Image
                     src={member.userAvatar}
                     alt={member.userName}
-                    className="w-full h-full rounded-full object-cover"
+                    width={24}
+                    height={24}
+                    className="w-full h-full object-cover"
                   />
                 ) : (
                   member.userName.charAt(0).toUpperCase()
