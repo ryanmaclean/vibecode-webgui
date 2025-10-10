@@ -6,10 +6,20 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import CodeServerIDE from '@/components/ide/CodeServerIDE'
 import CodeAssistant from '@/components/ai/CodeAssistant'
-import EnhancedTerminal from '@/components/terminal/EnhancedTerminal'
+import { TerminalSkeleton } from '@/components/terminal/TerminalSkeleton'
 import { useAuth } from '@/hooks/useAuth'
+
+// Lazy load terminal component with custom loading fallback
+const EnhancedTerminal = dynamic(
+  () => import('@/components/terminal/EnhancedTerminal'),
+  {
+    loading: () => <TerminalSkeleton />,
+    ssr: false,
+  }
+)
 
 interface WorkspaceLayoutProps {
   workspaceId: string
@@ -167,7 +177,7 @@ export default function WorkspaceLayout({
               className="h-full"
               onReady={(iframe) => {
                 console.log('Code-server IDE ready (terminal disabled):', iframe)
-                
+
                 // Hide the built-in terminal since we use our enhanced terminal
                 try {
                   iframe.contentWindow?.postMessage({
@@ -189,8 +199,8 @@ export default function WorkspaceLayout({
             onMouseDown={() => handleMouseDown('terminal')}
           />
 
-                     {/* Enhanced Terminal with AI Integration */}
-           <div className="min-h-40" style={{ height: `${terminalHeight}px` }}>
+          {/* Enhanced Terminal with AI Integration - Lazy Loaded */}
+          <div className="min-h-40" style={{ height: `${terminalHeight}px` }}>
             <EnhancedTerminal
               workspaceId={workspaceId}
               className="h-full border-t border-gray-700"
