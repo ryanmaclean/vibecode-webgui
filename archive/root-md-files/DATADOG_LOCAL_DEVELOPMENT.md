@@ -42,7 +42,7 @@ docker-compose up -d
 #### Datadog Agent Service
 ```yaml
 datadog-agent:
-  image: gcr.io/datadoghq/agent:7.66.1
+  image: datadog/docker-dd-agent:latest-alpine
   environment:
     - DD_API_KEY=${DD_API_KEY:-${DATADOG_API_KEY:-dummy-key-for-local-dev}} # Prefer DD_API_KEY; legacy DATADOG_API_KEY supported
     - DD_SITE=${DD_SITE:-${DATADOG_SITE:-datadoghq.com}}

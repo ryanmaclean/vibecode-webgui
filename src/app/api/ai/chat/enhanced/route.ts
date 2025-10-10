@@ -6,7 +6,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'
 import { prisma } from '@/lib/prisma'
-import { OpenAI } from 'openai'
+import OpenAI from 'openai'
 // import { z } from 'zod' // TODO: Add request validation schema
 
 // Force dynamic rendering to prevent static analysis during build

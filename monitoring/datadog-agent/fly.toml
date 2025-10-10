@@ -4,7 +4,7 @@ app = 'vibecode-datadog-agent' # A unique name for your Datadog agent app
 primary_region = 'sjc'
 
 [build]
-  image = 'gcr.io/datadoghq/agent:7' # Use the official Datadog Agent image
+  image = 'datadog/docker-dd-agent:latest-alpine' # Use the official Datadog Agent image
 
 # The [files] block copies your local configuration into the Docker image.
 # This ensures the agent starts with the correct settings for the fly_io check.
