@@ -233,6 +233,7 @@ kubens --help > artifacts/supply-chain/kubens-${KUBENS_VERSION}-postinstall.txt
 
 - **Dockerfile updates status:** Draft PR `docker/verify-base-images` adds `scripts/security` checks to every multi-stage build. Awaiting image build time benchmarking (ETA 2025-09-20).
 - **CI smoke job status:** The `ci/supply-chain-smoke.yml` workflow stub is merged with dry-run logging; enable `verify-*` scripts once signatures are live (target sprint 2025-09-4).
+- **Bcrypt migration status:** Issue #445 introduced shared bcrypt helpers for legacy credentials; production rollout waits on database-backed user storage from Issue #438.
 - **Quarterly review schedule:** Run end-to-end verification the first Tuesday of January, April, July, and October. Maya chairs the review; SRE logs minutes in `reports/supply-chain/<year>-Q<q>.md`.
 
 ## Policy & Evidence Requirements
