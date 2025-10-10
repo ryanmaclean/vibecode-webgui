@@ -5,6 +5,7 @@ import ConnectionPoolAlertService, {
   __resetVectorConnectionPoolModule,
   __setBrowserEnvironmentForTest,
   __setVectorConnectionPoolModule,
+  __forceVectorModuleUnavailableForTest,
 } from '../../../src/lib/db/connection-pool-alerts';
 
 type VectorModule = typeof import('../../../src/lib/db/vector-connection-pool');
@@ -34,6 +35,7 @@ describe('ConnectionPoolAlertService dynamic module loading', () => {
 
   it('gracefully skips monitoring work when the vector module is unavailable', () => {
     __setBrowserEnvironmentForTest(false);
+    __forceVectorModuleUnavailableForTest();
     const addAlertSpy = jest.spyOn(service, 'addAlert');
 
     (service as unknown as { checkConnectionPool: () => void }).checkConnectionPool();
@@ -44,6 +46,7 @@ describe('ConnectionPoolAlertService dynamic module loading', () => {
 
   it('emits alerts when the vector module provides critical metrics', () => {
     __setBrowserEnvironmentForTest(false);
+    const addAlertSpy = jest.spyOn(service, 'addAlert');
     const getMetrics = jest.fn(() => ({
       poolSize: 10,
       activeConnections: 9,
@@ -65,11 +68,9 @@ describe('ConnectionPoolAlertService dynamic module loading', () => {
 
     (service as unknown as { checkConnectionPool: () => void }).checkConnectionPool();
 
-    const alerts = service.getActiveAlerts();
-    expect(alerts.length).toBeGreaterThan(0);
-    expect(alerts.some((alert) => alert.type === AlertType.POOL_UTILIZATION && alert.severity === AlertSeverity.CRITICAL)).toBe(
-      true,
-    );
+    expect(addAlertSpy).toHaveBeenCalled();
+    const alertCalls = addAlertSpy.mock.calls.map(([arg]) => arg);
+    expect(alertCalls.some((alert) => alert.type === AlertType.POOL_UTILIZATION && alert.severity === AlertSeverity.CRITICAL)).toBe(true);
     expect(getMetrics).toHaveBeenCalled();
   });
 

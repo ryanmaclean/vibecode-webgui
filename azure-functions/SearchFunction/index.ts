@@ -3,12 +3,18 @@ import { Pool } from 'pg';
 import { OpenAIApi, Configuration } from 'openai';
 import tracer from 'dd-trace';
 
-// Initialize Datadog tracing for Azure Functions
+// Initialize Datadog tracing for Azure Functions to mirror the LLM observability guide
 tracer.init({
-  service: 'vibecode-docs-search',
+  service: process.env.DD_SERVICE || 'vibecode-docs-search',
   env: process.env.DD_ENV || 'production',
   version: process.env.DD_VERSION || '1.0.0',
   logInjection: true,
+  runtimeMetrics: true,
+  profiling: process.env.NODE_ENV === 'production',
+  sampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+  tags: {
+    'ml.app': process.env.DD_LLMOBS_ML_APP || 'vibecode-ai'
+  }
 });
 
 // Cached connections for performance

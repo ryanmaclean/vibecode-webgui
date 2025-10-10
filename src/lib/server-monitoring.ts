@@ -2,23 +2,8 @@
  * Server-side monitoring and logging for VibeCode WebGUI
  * Integrates Datadog APM tracing, Winston logging, and custom metrics
  */
-
-
 import { createLogger, format, transports } from 'winston';
-
-// Import tracer from instrument.ts to avoid double initialization
-let tracer: any;
-try {
-  tracer = require('dd-trace');
-} catch (e) {
-  console.log('⚠️ Datadog tracer not available, using mock');
-  tracer = {
-    init: () => {},
-    setTag: () => {},
-    addTags: () => {},
-    span: () => ({ finish: () => {} })
-  };
-}
+import tracer from '../instrument';
 
 // Custom Winston formatter for structured logging
 // Define different formats for production and development

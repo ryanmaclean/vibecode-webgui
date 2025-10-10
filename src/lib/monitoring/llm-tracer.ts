@@ -1,4 +1,4 @@
-import tracer from 'dd-trace';
+import tracer from '../../instrument';
 
 export interface LLMSpanOptions {
   model: string;

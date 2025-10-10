@@ -168,7 +168,7 @@ spec:
         # Optional Sidecar: Datadog monitoring
         {{- if .Values.monitoring.datadog.enabled }}
         - name: datadog-agent
-          image: gcr.io/datadoghq/agent:7
+          image: datadog/docker-dd-agent:latest-alpine
           imagePullPolicy: IfNotPresent
           env:
             - name: DD_API_KEY

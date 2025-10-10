@@ -31,7 +31,7 @@ describe('DatadogIntegration', () => {
     ;(dgram.createSocket as jest.Mock).mockReturnValue(mockSocket)
     
     // Import the class after mocking
-    const { DatadogIntegration } = require('../datadog-integration')
+    const { DatadogIntegration } = require('@/lib/monitoring/datadog-integration')
     datadogIntegration = new DatadogIntegration()
   })
 
@@ -54,7 +54,7 @@ describe('DatadogIntegration', () => {
         globalTags: ['custom:tag']
       }
       
-      const { DatadogIntegration } = require('../datadog-integration')
+      const { DatadogIntegration } = require('@/lib/monitoring/datadog-integration')
       const customIntegration = new DatadogIntegration(customConfig)
       
       expect(customIntegration).toBeDefined()

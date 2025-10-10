@@ -344,7 +344,7 @@ resource "kubernetes_daemonset" "datadog_agent" {
 
         container {
           name  = "agent"
-          image = "gcr.io/datadoghq/agent:7.49.1"
+          image = "datadog/docker-dd-agent:latest-alpine"
 
           env {
             name = "DD_API_KEY"

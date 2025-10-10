@@ -203,7 +203,7 @@ data:
       # Infrastructure containers
       - name: "datadog-agent-container"
         type: "docker"
-        source: "gcr.io/datadoghq/agent:7"
+        source: "datadog/docker-dd-agent:latest-alpine"
         description: "Datadog monitoring agent"
         
       - name: "vector-container"

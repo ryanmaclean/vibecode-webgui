@@ -4,20 +4,27 @@
  */
 
 import { createLogger, format, transports } from 'winston';
-import tracer from '@/instrument';
+import tracer from '../../instrument';
 
-// Initialize Datadog tracer (should be done before importing other modules)
+// Initialize Datadog tracer for health monitoring if credentials are present.
 if (process.env.DD_API_KEY) {
-  tracer.init({
-    service: 'vibecode-webgui',
-    env: process.env.NODE_ENV || 'development',
-    version: process.env.APP_VERSION || '1.0.0',
-    logInjection: true,
-    runtimeMetrics: true,
-    profiling: true,
-    appsec: true, // Application Security Management
-  })
-  console.log('🔍 Datadog APM tracer initialized')
+  const alreadyInitialized = (tracer as any).__healthMonitoringInitialized === true
+
+  if (!alreadyInitialized && typeof tracer.init === 'function') {
+    tracer.init({
+      service: 'vibecode-webgui',
+      env: process.env.NODE_ENV || 'development',
+      version: process.env.APP_VERSION || '1.0.0',
+      logInjection: true,
+      runtimeMetrics: true,
+      profiling: true,
+      appsec: true
+    })
+    ;(tracer as any).__healthMonitoringInitialized = true
+  }
+
+  tracer.addTags?.({ 'service.component': 'health-monitoring' })
+  console.log('🔍 Datadog APM tracer initialized for health monitoring')
 } else {
   console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }

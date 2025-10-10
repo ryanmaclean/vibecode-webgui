@@ -1,7 +1,7 @@
 // Unified AI Client - LiteLLM-inspired interface for VibeCode
 // Provides seamless switching between providers while maintaining compatibility
 
-import { OpenAI } from 'openai'
+import OpenAI from 'openai'
 
 export interface UnifiedAIProvider {
   id: string

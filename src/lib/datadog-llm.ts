@@ -193,8 +193,18 @@ class LLMObservability {
 
     try {
       // Use dd-trace scope manager to read the active span
-      const dd = require('dd-trace');
-      const activeSpan = dd.scope().active();
+      const scopeProvider =
+        typeof tracer.scope === 'function'
+          ? tracer.scope()
+          : typeof (tracer as any).scope === 'object'
+            ? (tracer as any).scope
+            : typeof (tracer as any).scopeManager === 'function'
+              ? (tracer as any).scopeManager()
+              : null;
+
+      const activeSpan = scopeProvider && typeof scopeProvider.active === 'function'
+        ? scopeProvider.active()
+        : null;
       if (!activeSpan) {
         console.warn('No active span to annotate for LLM Observability');
         return;

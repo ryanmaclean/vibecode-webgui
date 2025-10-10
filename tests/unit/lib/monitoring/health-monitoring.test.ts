@@ -4,6 +4,7 @@
  */
 
 import { jest } from '@jest/globals'
+import path from 'path'
 
 // Define SpyInstance type directly since it's not properly exported
 type SpyInstance = jest.SpiedFunction<any>
@@ -34,14 +35,29 @@ jest.mock('winston', () => ({
 
 // Mock tracer - create a simple mock that doesn't require the actual module
 const mockTracer = {
-  init: jest.fn()
+  init: jest.fn(),
+  addTags: jest.fn()
 }
 
-// Mock the instrument module by creating a virtual module
-jest.mock('@/instrument', () => ({
-  __esModule: true,
-  default: mockTracer
-}), { virtual: true })
+const instrumentModulePath = path.join(process.cwd(), 'src/instrument')
+
+const loadHealthMonitoring = () => {
+  let module: any
+  jest.isolateModules(() => {
+    jest.doMock('../../instrument', () => ({
+      __esModule: true,
+      default: mockTracer
+    }), { virtual: true })
+
+    jest.doMock(instrumentModulePath, () => ({
+      __esModule: true,
+      default: mockTracer
+    }), { virtual: true })
+
+    module = require('@/lib/monitoring/health-monitoring')
+  })
+  return module
+}
 
 describe('Health Monitoring Module', () => {
   let consoleSpy: SpyInstance
@@ -75,6 +91,7 @@ describe('Health Monitoring Module', () => {
 
   afterEach(() => {
     jest.restoreAllMocks()
+    delete (mockTracer as any).__healthMonitoringInitialized
   })
 
   describe('MetricsCollector', () => {
@@ -83,8 +100,7 @@ describe('Health Monitoring Module', () => {
 
     beforeEach(() => {
       // Reset modules to get fresh instance
-      jest.resetModules()
-      const healthMonitoring = require('../health-monitoring')
+      const healthMonitoring = loadHealthMonitoring()
       MetricsCollector = healthMonitoring.MetricsCollector
       metrics = new MetricsCollector()
     })
@@ -205,9 +221,7 @@ describe('Health Monitoring Module', () => {
     let metrics: any
 
     beforeEach(() => {
-      // Reset modules to get fresh instances
-      jest.resetModules()
-      const healthMonitoring = require('../health-monitoring')
+      const healthMonitoring = loadHealthMonitoring()
       ApplicationLogger = healthMonitoring.ApplicationLogger
       appLogger = new ApplicationLogger()
       metrics = healthMonitoring.metrics
@@ -412,9 +426,7 @@ describe('Health Monitoring Module', () => {
     let mockNext: any
 
     beforeEach(() => {
-      // Reset modules to get fresh instance
-      jest.resetModules()
-      const healthMonitoring = require('../health-monitoring')
+      const healthMonitoring = loadHealthMonitoring()
       performanceMiddleware = healthMonitoring.performanceMiddleware
 
       mockReq = {
@@ -526,9 +538,7 @@ describe('Health Monitoring Module', () => {
     let metrics: any
 
     beforeEach(() => {
-      // Reset modules to get fresh instance
-      jest.resetModules()
-      const healthMonitoring = require('../health-monitoring')
+      const healthMonitoring = loadHealthMonitoring()
       getHealthCheck = healthMonitoring.getHealthCheck
       metrics = healthMonitoring.metrics
     })
@@ -598,8 +608,7 @@ describe('Health Monitoring Module', () => {
       process.env.DD_API_KEY = 'test-key'
       
       // Reset modules to trigger initialization
-      jest.resetModules()
-      require('../health-monitoring')
+      loadHealthMonitoring()
       
       expect(mockTracer.init).toHaveBeenCalledWith({
         service: 'vibecode-webgui',
@@ -610,14 +619,14 @@ describe('Health Monitoring Module', () => {
         profiling: true,
         appsec: true
       })
+      expect(mockTracer.addTags).toHaveBeenCalledWith({ 'service.component': 'health-monitoring' })
     })
 
     it('should warn when DD_API_KEY is missing', () => {
       delete process.env.DD_API_KEY
       
       // Reset modules to trigger initialization
-      jest.resetModules()
-      require('../health-monitoring')
+      loadHealthMonitoring()
       
       expect(console.warn).toHaveBeenCalledWith(
         '⚠️ Datadog APM not configured (DD_API_KEY missing)'
@@ -626,8 +635,7 @@ describe('Health Monitoring Module', () => {
 
     it('should initialize logger', () => {
       // Reset modules to trigger initialization
-      jest.resetModules()
-      require('../health-monitoring')
+      loadHealthMonitoring()
       
       expect(mockLogger.info).toHaveBeenCalledWith('Winston logger initialized')
     })
