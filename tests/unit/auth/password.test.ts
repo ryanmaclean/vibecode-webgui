@@ -22,9 +22,11 @@ describe('auth password utilities', () => {
     await expect(verifyPassword('wrong battery staple', hash)).resolves.toBe(false)
   })
 
-  it('verifyPassword rejects when the hash is not a bcrypt hash', async () => {
-    await expect(verifyPassword('anything', 'not-a-bcrypt-hash'))
-      .rejects.toThrow('Invalid bcrypt hash format')
+  it('verifyPassword rejects when the hash is not a valid bcrypt hash', async () => {
+    await expect(verifyPassword('anything', 'not-a-bcrypt-hash')).rejects.toThrow('Invalid bcrypt hash format')
+    await expect(
+      verifyPassword('anything', '$2b$03$tooLowRoundsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+    ).rejects.toThrow('Invalid bcrypt hash format')
   })
 
   it('isValidBcryptHash accurately validates hashes', async () => {

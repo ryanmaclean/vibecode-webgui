@@ -99,6 +99,15 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: false,
   output: outputMode,
+
+  // Compiler optimizations (SWC minification is default in Next.js 15)
+  compiler: {
+    // Remove console logs in production except errors and warnings
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -110,11 +119,25 @@ const nextConfig = {
     formats: ['image/webp', 'image/avif'],
     unoptimized: false,
   },
+  // Enable compression for production builds
   compress: true,
   skipTrailingSlashRedirect: true,
   skipMiddlewareUrlNormalize: true,
   experimental: {
     isrFlushToDisk: false,
+    // Enable optimized package imports for better tree shaking
+    optimizePackageImports: [
+      '@heroicons/react',
+      '@radix-ui/react-label',
+      '@radix-ui/react-progress',
+      '@radix-ui/react-scroll-area',
+      '@radix-ui/react-select',
+      '@radix-ui/react-slot',
+      '@radix-ui/react-switch',
+      '@radix-ui/react-tabs',
+      'lucide-react',
+      'framer-motion',
+    ],
   },
   trailingSlash: false,
   env: {
@@ -268,23 +291,6 @@ const nextConfig = {
       'pg-connection-string': 'commonjs pg-connection-string',
     })
     config.externals = externals
-
-    config.optimization = {
-      ...config.optimization,
-      minimize: !dev,
-    }
-
-    if (!dev && !isServer && Array.isArray(config.optimization?.minimizer)) {
-      config.optimization.minimizer.forEach((minimizer) => {
-        if (minimizer?.constructor?.name === 'TerserPlugin') {
-          minimizer.options = minimizer.options || {}
-          minimizer.options.terserOptions = {
-            ...(minimizer.options.terserOptions || {}),
-            keep_fnames: true,
-          }
-        }
-      })
-    }
 
     config.module = config.module || {}
     config.module.rules = config.module.rules || []

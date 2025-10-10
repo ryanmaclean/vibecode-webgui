@@ -3,30 +3,63 @@
  * Tests NextAuth configuration and providers
  */
 
-import { authOptions } from '../auth'
+// Type definitions for NextAuth providers and callbacks
+type CredentialsProvider = {
+  id: string;
+  name: string;
+  options?: {
+    authorize?: (credentials: unknown) => Promise<unknown>;
+  };
+  authorize?: (credentials: unknown) => Promise<unknown>;
+};
+
+type JWTCallback = (params: {
+  token: Record<string, unknown>;
+  user?: Record<string, unknown>;
+  account?: Record<string, unknown>;
+}) => Promise<Record<string, unknown>>;
+
+type SessionCallback = (params: {
+  session: Record<string, unknown>;
+  token?: Record<string, unknown>;
+  user: Record<string, unknown>;
+}) => Promise<Record<string, unknown>>;
+
+type SignInCallback = (params: {
+  user: Record<string, unknown>;
+  account: Record<string, unknown>;
+  profile?: Record<string, unknown>;
+  email?: Record<string, unknown>;
+  credentials?: Record<string, unknown>;
+}) => Promise<boolean>;
+
+type EventCallback = (params: Record<string, unknown>) => Promise<void>;
 
 // Mock environment variables
-const originalEnv = process.env
+const originalEnv = { ...process.env }
+const TEST_NEXTAUTH_SECRET = 'unit-test-nextauth-secret-value-with-32-chars'
+
+let authOptions: typeof import('../auth')['authOptions']
 
 describe('auth.ts Configuration', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.resetModules()
+
     process.env = {
       ...originalEnv,
-      NEXTAUTH_SECRET: 'test-secret',
+      NEXTAUTH_SECRET: TEST_NEXTAUTH_SECRET,
       GITHUB_ID: 'test-github-id',
       GITHUB_SECRET: 'test-github-secret',
       GOOGLE_CLIENT_ID: 'test-google-id',
       GOOGLE_CLIENT_SECRET: 'test-google-secret',
       NODE_ENV: 'test',
     }
-    
-    // Clear the module cache to ensure fresh import
-    delete require.cache[require.resolve('../auth')]
+
+    authOptions = (await import('../auth')).authOptions
   })
 
   afterEach(() => {
-    process.env = originalEnv
+    process.env = { ...originalEnv }
   })
 
   describe('Configuration Structure', () => {
@@ -107,7 +140,7 @@ describe('auth.ts Configuration', () => {
       const result = await authorizeFunction(credentials)
 
       expect(result).toEqual({
-        id: '2',
+        id: 'legacy-developer',
         name: 'Developer User',
         email: 'developer@vibecode.dev',
         role: 'developer',
