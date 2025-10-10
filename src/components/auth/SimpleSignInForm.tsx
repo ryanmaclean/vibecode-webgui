@@ -50,13 +50,33 @@ export default function SimpleSignInForm() {
     setIsSubmitting(true)
 
     try {
-      // Use redirect: true to let NextAuth handle the redirect
-      await signIn('credentials', {
+      // Use redirect: false to handle the response manually
+      const result = await signIn('credentials', {
         email,
         password,
-        redirect: true,
+        redirect: false,
         callbackUrl: '/'
       })
+
+      console.log('🔐 SignIn result:', result)
+
+      if (result?.error) {
+        console.log('❌ Authentication failed:', result.error)
+        if (result.error === 'CredentialsSignin') {
+          setError('Invalid credentials')
+        } else {
+          setError('Authentication failed')
+        }
+        setIsSubmitting(false)
+      } else if (result?.ok) {
+        console.log('✅ Authentication successful')
+        // Redirect manually after successful login
+        window.location.href = '/'
+      } else {
+        console.log('❌ Unexpected result:', result)
+        setError('An unexpected error occurred')
+        setIsSubmitting(false)
+      }
     } catch (err) {
       console.log('❌ Unexpected error:', err)
       setError('An unexpected error occurred')
@@ -97,7 +117,13 @@ export default function SimpleSignInForm() {
           onSubmit={handleSubmit}
         >
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <div
+              id="simple-signin-error"
+              className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+              role="alert"
+              aria-live="polite"
+              data-testid="error-message"
+            >
               <strong className="font-bold">Error: </strong>
               <span className="block sm:inline">{error}</span>
             </div>
@@ -120,6 +146,8 @@ export default function SimpleSignInForm() {
                 data-testid="email-input"
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
+                aria-invalid={error ? "true" : "false"}
+                aria-describedby={error ? "simple-signin-error" : undefined}
               />
             </div>
             <div>
@@ -137,6 +165,8 @@ export default function SimpleSignInForm() {
                 data-testid="password-input"
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
+                aria-invalid={error ? "true" : "false"}
+                aria-describedby={error ? "simple-signin-error" : undefined}
               />
             </div>
           </div>
