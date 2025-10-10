@@ -5,43 +5,23 @@
  */
 
 import { StatsD } from 'node-statsd'
-import tracer from 'dd-trace'
+import tracer from '../../instrument'
 
-// Initialize Datadog tracer with minimal configuration
-tracer.init({
-  service: 'vibecode-enhanced-platform',
-  version: process.env.DD_VERSION || '2.0.0',
-  env: process.env.NODE_ENV || 'development',
-  profiling: true,
-  runtimeMetrics: true,
-  // Enable all plugins
-  plugins: true
-});
-
-// Configure Express plugin after initialization
-tracer.use('express', {
-  enabled: true,
-  hooks: {
-    request: (span: any, req: any) => {
-      if (req && req.headers) {
-        span.setTag('user.workspace', req.headers['x-workspace-id']);
-        span.setTag('user.session', req.headers['x-session-id']);
-      }
-    }
+const expressRequestHook = (span: any, req: any) => {
+  if (span && req && req.headers) {
+    span.setTag('user.workspace', req.headers['x-workspace-id'])
+    span.setTag('user.session', req.headers['x-session-id'])
   }
-});
+}
 
-// Configure custom tags for Express requests
-tracer.use('express', {
-  hooks: {
-    request: (span: any, req: any) => {
-      if (req && req.headers) {
-        span.setTag('user.workspace', req.headers['x-workspace-id']);
-        span.setTag('user.session', req.headers['x-session-id']);
-      }
-    }
-  }
-});
+if (typeof tracer.use === 'function') {
+  tracer.use('express', {
+    enabled: true,
+    hooks: { request: expressRequestHook }
+  })
+} else {
+  console.warn('⚠️ Datadog tracer does not expose use(); Express hooks not registered')
+}
 
 // Custom span for WebSocket events
 const createWebSocketSpan = (eventName: string, metadata: Record<string, any> = {}) => {

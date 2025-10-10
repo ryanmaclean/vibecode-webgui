@@ -5,6 +5,29 @@
 
 import { jest } from '@jest/globals'
 
+// eslint-disable-next-line no-var
+var mockTracer: any;
+
+jest.mock('../../src/instrument', () => {
+  mockTracer = {
+    init: jest.fn(),
+    startSpan: jest.fn(() => ({ setTag: jest.fn(), finish: jest.fn() })),
+    scope: () => ({ activate: (_: unknown, fn: () => unknown) => fn(), active: () => null }),
+    dogstatsd: {
+      gauge: jest.fn(),
+      increment: jest.fn(),
+      histogram: jest.fn(),
+      event: jest.fn(),
+    },
+    addTags: jest.fn(),
+  };
+
+  return {
+    __esModule: true,
+    default: mockTracer,
+  };
+});
+
 // Mock dd-trace
 jest.mock('dd-trace', () => ({
   init: jest.fn(() => ({
@@ -46,7 +69,7 @@ jest.mock('winston', () => {
   };
 });
 
-import tracer from 'dd-trace'
+import tracer from '../../src/instrument'
 import { ApplicationLogger, MetricsCollector, getHealthCheck } from '../../src/lib/server-monitoring'
 
 describe('Server Monitoring', () => {

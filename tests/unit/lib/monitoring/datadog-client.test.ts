@@ -9,10 +9,12 @@ import { jest } from '@jest/globals'
 const mockGetDatadogApiKey = jest.fn()
 const mockGetDatadogSite = jest.fn()
 
-jest.mock('../datadog-env', () => ({
+jest.mock('@/lib/monitoring/datadog-env', () => ({
   getDatadogApiKey: mockGetDatadogApiKey,
   getDatadogSite: mockGetDatadogSite
 }))
+
+const loadClient = () => require('@/lib/monitoring/datadog-client')
 
 describe('MonitoringService', () => {
   let mockFetch: jest.MockedFunction<typeof fetch>
@@ -63,14 +65,14 @@ describe('MonitoringService', () => {
   describe('Constructor', () => {
     it('should initialize with server-side configuration', () => {
       // Import the singleton instance
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       expect(monitoring).toBeDefined()
       expect(monitoring.isConfigured()).toBe(true)
     })
 
     it('should have proper configuration methods', () => {
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       expect(typeof monitoring.submitMetric).toBe('function')
       expect(typeof monitoring.submitEvent).toBe('function')
@@ -84,7 +86,7 @@ describe('MonitoringService', () => {
 
   describe('submitMetric', () => {
     it('should submit metric successfully', async () => {
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       const testMetric = {
         metric: 'test.metric',
@@ -112,7 +114,7 @@ describe('MonitoringService', () => {
     it('should skip submission when API key is not configured', async () => {
       mockGetDatadogApiKey.mockReturnValue(undefined)
       
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       const result = await monitoring.submitMetric({
         metric: 'test.metric',
@@ -126,7 +128,7 @@ describe('MonitoringService', () => {
     it('should skip submission when API key is placeholder', async () => {
       mockGetDatadogApiKey.mockReturnValue('placeholder-set-real-key')
       
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       const result = await monitoring.submitMetric({
         metric: 'test.metric',
@@ -144,7 +146,7 @@ describe('MonitoringService', () => {
         statusText: 'Bad Request'
       } as Response)
 
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
 
       const result = await monitoring.submitMetric({
         metric: 'test.metric',
@@ -161,7 +163,7 @@ describe('MonitoringService', () => {
     it('should handle network errors gracefully', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Network error'))
 
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
 
       const result = await monitoring.submitMetric({
         metric: 'test.metric',
@@ -176,7 +178,7 @@ describe('MonitoringService', () => {
     })
 
     it('should use default timestamp when not provided', async () => {
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       const testMetric = {
         metric: 'test.metric',
@@ -194,7 +196,7 @@ describe('MonitoringService', () => {
 
   describe('submitEvent', () => {
     it('should submit event successfully', async () => {
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       const result = await monitoring.submitEvent('Test Event', 'Test description', ['tag1'])
       
@@ -215,7 +217,7 @@ describe('MonitoringService', () => {
     it('should skip submission when API key is not configured', async () => {
       mockGetDatadogApiKey.mockReturnValue(undefined)
       
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       const result = await monitoring.submitEvent('Test Event', 'Test description')
       
@@ -230,7 +232,7 @@ describe('MonitoringService', () => {
         statusText: 'Bad Request'
       } as Response)
 
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
 
       const result = await monitoring.submitEvent('Test Event', 'Test description')
       
@@ -246,7 +248,7 @@ describe('MonitoringService', () => {
     it('should return healthy when DATABASE_URL is not configured', async () => {
       delete process.env.DATABASE_URL
       
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       const result = await monitoring.checkDatabase()
       
@@ -259,7 +261,7 @@ describe('MonitoringService', () => {
     it('should handle non-PostgreSQL URLs', async () => {
       process.env.DATABASE_URL = 'mysql://user:pass@localhost:3306/testdb'
       
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       const result = await monitoring.checkDatabase()
       
@@ -273,7 +275,7 @@ describe('MonitoringService', () => {
     it('should handle invalid DATABASE_URL', async () => {
       process.env.DATABASE_URL = 'invalid-url'
       
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       const result = await monitoring.checkDatabase()
       
@@ -286,7 +288,7 @@ describe('MonitoringService', () => {
     it('should return healthy when REDIS_URL is not configured', async () => {
       delete process.env.REDIS_URL
       
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       const result = await monitoring.checkValkey()
       
@@ -301,7 +303,7 @@ describe('MonitoringService', () => {
     it('should return warning when OpenRouter API key is not configured', async () => {
       delete process.env.OPENROUTER_API_KEY
       
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       const result = await monitoring.checkAIService()
       
@@ -312,7 +314,7 @@ describe('MonitoringService', () => {
     it('should return warning when OpenRouter API key is placeholder', async () => {
       process.env.OPENROUTER_API_KEY = 'test-key-placeholder'
       
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       const result = await monitoring.checkAIService()
       
@@ -329,7 +331,7 @@ describe('MonitoringService', () => {
         json: () => Promise.resolve({ data: ['model1', 'model2'] })
       } as any)
 
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
 
       const result = await monitoring.checkAIService()
       
@@ -350,7 +352,7 @@ describe('MonitoringService', () => {
         statusText: 'Unauthorized'
       } as Response)
 
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
 
       const result = await monitoring.checkAIService()
       
@@ -363,7 +365,7 @@ describe('MonitoringService', () => {
       
       mockFetch.mockRejectedValueOnce(new Error('Network error'))
 
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
 
       const result = await monitoring.checkAIService()
       
@@ -374,7 +376,7 @@ describe('MonitoringService', () => {
 
   describe('trackMetrics', () => {
     it('should submit memory and uptime metrics', async () => {
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       await monitoring.trackMetrics()
       
@@ -401,7 +403,7 @@ describe('MonitoringService', () => {
     it('should include environment tags in metrics', async () => {
       const currentEnv = process.env.NODE_ENV || 'development'
       
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       await monitoring.trackMetrics()
       
@@ -415,7 +417,7 @@ describe('MonitoringService', () => {
 
   describe('isConfigured', () => {
     it('should return true when API key is configured', () => {
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       expect(monitoring.isConfigured()).toBe(true)
     })
@@ -423,7 +425,7 @@ describe('MonitoringService', () => {
     it('should return false when API key is not configured', () => {
       mockGetDatadogApiKey.mockReturnValue(undefined)
       
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       expect(monitoring.isConfigured()).toBe(false)
     })
@@ -431,7 +433,7 @@ describe('MonitoringService', () => {
     it('should return false when API key is placeholder', () => {
       mockGetDatadogApiKey.mockReturnValue('placeholder-set-real-key')
       
-      const { monitoring } = require('../datadog-client')
+      const { monitoring } = loadClient()
       
       expect(monitoring.isConfigured()).toBe(false)
     })

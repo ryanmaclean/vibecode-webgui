@@ -32,7 +32,7 @@ affinity: {}
 sidecar:
   datadog:
     enabled: false
-    image: gcr.io/datadoghq/agent:7
+    image: datadog/docker-dd-agent:latest-alpine
     site: datadoghq.com
     env: development
     apiKeySecretName: datadog-secret

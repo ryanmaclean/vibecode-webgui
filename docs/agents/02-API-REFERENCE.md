@@ -933,6 +933,50 @@ async function createAgentWithRetry(config, maxRetries = 3) {
 
 ---
 
+## Agent Builder Workflows
+
+### POST /api/agent-builder/session
+
+Creates a ChatKit session for a published Agent Builder workflow. Sessions return a short-lived `clientSecret` used by the `/agent-builder` UI to embed ChatKit. Requires an authenticated user session.
+
+#### Request Body
+```jsonc
+{
+  "workflowId": "wf_12345",
+  "version": "2024-10-06",
+  "stateVariables": {
+    "tenant": "acme",
+    "region": "us-east-1"
+  },
+  "expiresInSeconds": 900,
+  "rateLimitPerMinute": 20,
+  "chatkit": {
+    "automaticThreadTitling": { "enabled": false },
+    "uploads": { "enabled": true, "maxFiles": 5, "maxFileSizeMB": 50 },
+    "history": { "enabled": true, "recentThreads": 10 }
+  }
+}
+```
+
+#### Response
+```json
+{
+  "sessionId": "cksess_xxx",
+  "clientSecret": "chatkit-ephemeral-secret",
+  "expiresAt": 1759853618,
+  "status": "active",
+  "workflow": {
+    "id": "wf_12345",
+    "version": "2024-10-06"
+  },
+  "maxRequestsPerMinute": 20
+}
+```
+
+Errors follow the standard RFC 7807 structure documented earlier in this reference.
+
+---
+
 ## Next Steps
 
 - [User Guide](./01-USER-GUIDE.md) - Getting started guide
