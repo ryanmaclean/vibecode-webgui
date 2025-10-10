@@ -3,7 +3,7 @@
  * Provides a single interface to multiple AI models through LiteLLM proxy
  */
 
-import { cache, CacheKeys, CacheTTL } from '../cache/valkey-client';
+import { cache, CacheKeys, CacheTTL } from '../cache/unified-cache-client';
 import { trackAIOperation } from '../performance/metrics-collector';
 import { logAIRequest } from '../prisma';
 
