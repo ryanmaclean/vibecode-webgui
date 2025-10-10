@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { litellmClient } from '../../../../lib/ai/litellm-client';
 import { prisma } from '../../../../lib/prisma';
-import { cache, CacheKeys, CacheTTL } from '../../../../lib/cache/valkey-client';
+import { cache, CacheKeys, CacheTTL } from '../../../../lib/cache/unified-cache-client';
 
 export async function GET(request: NextRequest) {
   try {

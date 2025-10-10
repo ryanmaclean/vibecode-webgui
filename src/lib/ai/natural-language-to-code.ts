@@ -9,6 +9,8 @@ import { StringOutputParser } from '@langchain/core/output_parsers';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { z } from 'zod';
 import { FunctionDefinition } from '../services/function-calling';
+import { logger } from '../logger';
+
 
 export interface CodeGenerationRequest {
   description: string;
@@ -97,7 +99,7 @@ router.{{method}}('{{path}}', {{middleware}}, async (req, res) => {
     {{logic}}
     res.status({{statusCode}}).json({{response}});
   } catch (error) {
-    console.error('Error:', error);
+    logger.error('Error:', { error: error });
     res.status(500).json({ error: 'Internal server error' });
   }
 });
