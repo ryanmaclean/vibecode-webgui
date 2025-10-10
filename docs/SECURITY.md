@@ -78,6 +78,10 @@ All downloads must be verified prior to installation or baking into container im
 
 > **Note:** If upstream publishes an official cosign identity, update the table and runbooks immediately, then notify Maya for risk review.
 
+### Application Authentication Hardening (Issue #445)
+
+- ✅ 2025-10-02: Legacy development credentials migrated to bcrypt (12-round) hashes with timing-safe comparisons. Plaintext passwords retained only in migration notes pending full database-backed auth rollout.
+
 ## Step-by-Step Runbooks
 
 The steps below assume a Unix-like workstation or CI runner with `curl`, `sha256sum`, `cosign`, and `jq` available. Replace `<VERSION>` placeholders before running.
