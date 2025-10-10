@@ -16,6 +16,7 @@ Comprehensive troubleshooting guide for common development, deployment, and oper
 - [Security and Authentication](#security-and-authentication)
 - [AI Provider and Completion Issues](#ai-provider-and-completion-issues)
 - [Code-Server Deployment](#code-server-deployment)
+- [Tauri Desktop Application](#tauri-desktop-application)
 - [Log File Locations](#log-file-locations)
 
 ## Quick Diagnostics
@@ -1525,6 +1526,195 @@ docker cp vibecode-codeserver:/tmp/workspace-backup.tar.gz ./backup/
 docker exec vibecode-codeserver ls -la /home/coder/project
 ```
 
+## Tauri Desktop Application
+
+### Issue: Tauri App Won't Build
+
+**Symptoms**:
+- `cargo tauri build` fails
+- Rust compilation errors
+- Frontend not bundling correctly
+
+**Diagnosis**:
+```bash
+# Check Tauri CLI version
+cargo tauri --version
+
+# Test components separately
+npm run build:export  # Frontend
+cd src-tauri && cargo build  # Backend
+
+# Check for errors
+cargo tauri build 2>&1 | tee build.log
+```
+
+**Solutions**:
+
+1. **Missing Next.js Static Export**
+   ```bash
+   # Ensure out/ directory exists and has content
+   npm run build:export
+   ls -la out/
+
+   # Should contain index.html, _next/, etc.
+   ```
+
+2. **Rust Dependencies Issues**
+   ```bash
+   cd src-tauri
+
+   # Update dependencies
+   cargo update
+
+   # Clean and rebuild
+   cargo clean
+   cargo build --release
+   ```
+
+3. **Xcode Command Line Tools (macOS)**
+   ```bash
+   # Install or update
+   xcode-select --install
+
+   # If already installed, reset
+   sudo rm -rf /Library/Developer/CommandLineTools
+   xcode-select --install
+   ```
+
+### Issue: Docker Integration Not Working in App
+
+**Symptoms**:
+- App reports Docker not available
+- Docker commands timeout
+- Cannot connect to Docker daemon
+
+**Diagnosis**:
+```bash
+# Verify Docker is running
+docker ps
+
+# Test Docker connection from Rust
+cd src-tauri
+cargo test -- test_docker_check --nocapture
+
+# Check Docker socket permissions
+ls -la /var/run/docker.sock
+```
+
+**Solutions**:
+
+1. **Docker Not Running**
+   ```bash
+   # Start Docker Desktop (macOS)
+   open -a Docker
+
+   # Wait for startup
+   until docker ps; do sleep 1; done
+
+   # Restart Tauri app
+   ```
+
+2. **Permission Issues**
+   ```bash
+   # Ensure user has Docker access
+   docker ps  # Should work without sudo
+
+   # macOS: Usually works out of the box with Docker Desktop
+   # Linux: Add user to docker group
+   sudo usermod -aG docker $USER
+   ```
+
+3. **Test from App**
+   ```typescript
+   // In frontend DevTools console
+   import { invoke } from '@tauri-apps/api/core';
+
+   // Test Docker status
+   const status = await invoke('get_docker_status');
+   console.log('Docker:', status);
+   ```
+
+### Issue: App Shows White Screen
+
+**Symptoms**:
+- Window opens but no content
+- Blank white screen
+- DevTools shows 404 errors
+
+**Solutions**:
+
+1. **Frontend Not Bundled**
+   ```bash
+   # Rebuild frontend
+   npm run build:export
+
+   # Verify output
+   ls -la out/index.html
+
+   # Rebuild Tauri
+   cargo tauri build
+   ```
+
+2. **Incorrect Path Configuration**
+   ```json
+   // Check src-tauri/tauri.conf.json
+   {
+     "build": {
+       "frontendDist": "../out"  // Must point to Next.js output
+     }
+   }
+   ```
+
+3. **CSP Blocking Resources**
+   ```json
+   // Check Content Security Policy in tauri.conf.json
+   {
+     "security": {
+       "csp": "default-src 'self'; script-src 'self' 'unsafe-eval'; ..."
+     }
+   }
+   ```
+
+### Issue: Development Mode Not Working
+
+**Symptoms**:
+- `cargo tauri dev` fails
+- Window doesn't appear
+- Frontend not loading
+
+**Solutions**:
+
+1. **Start Next.js First**
+   ```bash
+   # Terminal 1: Start Next.js
+   npm run dev
+
+   # Wait for "Ready" message
+
+   # Terminal 2: Start Tauri
+   cargo tauri dev
+   ```
+
+2. **Port Configuration**
+   ```json
+   // Ensure devUrl matches Next.js port
+   // src-tauri/tauri.conf.json
+   {
+     "build": {
+       "devUrl": "http://localhost:3000"
+     }
+   }
+   ```
+
+3. **Firewall Blocking**
+   ```bash
+   # Allow local connections
+   # macOS: System Preferences → Security & Privacy → Firewall
+   # Allow incoming connections for "vibecode"
+   ```
+
+For comprehensive Tauri troubleshooting, see the [Tauri Troubleshooting Guide](tauri/TROUBLESHOOTING.md).
+
 ## Log File Locations
 
 ### Application Logs
@@ -1703,6 +1893,8 @@ kubectl logs -f deployment/vibecode
 - [Docker Deployment](DOCKER_DEPLOYMENT.md) - Container deployment
 - [Security Guide](SECURITY.md) - Security best practices
 - [Architecture](../ARCHITECTURE.md) - System design overview
+- [Tauri Documentation](tauri/README.md) - Desktop application documentation
+- [Tauri Troubleshooting](tauri/TROUBLESHOOTING.md) - Comprehensive Tauri issues
 
 ### Support Channels
 
@@ -1715,4 +1907,4 @@ kubectl logs -f deployment/vibecode
 **Note**: This troubleshooting guide is based on real issues encountered in the VibeCode project. If you encounter an issue not covered here, please open a GitHub issue to help us improve this guide.
 
 **Last Updated**: 2025-10-01
-**Enhanced**: 2025-10-01 - Added AI provider, code-server deployment, and log location sections
+**Enhanced**: 2025-10-01 - Added AI provider, code-server deployment, Tauri desktop app, and log location sections

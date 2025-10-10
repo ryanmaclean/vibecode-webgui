@@ -19,11 +19,19 @@ services:
       - DD_VERSION=0.1.0-staging
       - FREE_LLM_MODELS_FILE=/app/runtime/free-llm-models/models.txt
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     volumes:
       - free-llm-models:/app/runtime/free-llm-models
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # PostgreSQL Database
   postgres:
@@ -38,6 +46,12 @@ services:
     ports:
       - "5432:5432"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vibecode"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # Redis for caching and sessions
   redis:
@@ -47,6 +61,12 @@ services:
     volumes:
       - redis_data:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
   # Nginx reverse proxy
   nginx:
@@ -58,8 +78,15 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - ./ssl:/etc/nginx/ssl
     depends_on:
-      - webgui
+      webgui:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # Periodic updater for OpenRouter free model catalogue
   free-llm-model-updater:
@@ -86,8 +113,15 @@ services:
     volumes:
       - free-llm-models:/app/runtime/free-llm-models
     depends_on:
-      - webgui
+      webgui:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "test -f /app/runtime/free-llm-models/models.txt"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
 volumes:
   postgres_data:

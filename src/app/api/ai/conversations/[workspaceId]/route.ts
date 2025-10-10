@@ -49,7 +49,7 @@ async function ensureConversationsDir() {
 
 // GET - Load conversation history
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ workspaceId: string }> }
 ) {
   try {
@@ -173,7 +173,7 @@ export async function POST(
 
 // DELETE - Clear conversation history
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ workspaceId: string }> }
 ) {
   try {

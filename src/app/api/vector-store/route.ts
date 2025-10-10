@@ -5,50 +5,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '../../../lib/auth'
 // import { enhancedVectorStore } from '../../../lib/vector-stores/enhanced-vector-store'
-import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
-
-// Request schemas
-const searchSchema = z.object({
-  query: z.string().min(1),
-  workspaceId: z.number().optional(),
-  fileIds: z.array(z.number()).optional(),
-  limit: z.number().min(1).max(100).default(10),
-  threshold: z.number().min(0).max(1).default(0.7),
-  provider: z.enum(['pgvector', 'weaviate', 'auto']).default('auto'),
-  searchType: z.enum(['semantic', 'hybrid', 'generative']).default('semantic'),
-  generativePrompt: z.string().optional()
-})
-
-const storeSchema = z.object({
-  workspaceId: z.number(),
-  documents: z.array(z.object({
-    content: z.string(),
-    fileName: z.string(),
-    filePath: z.string(),
-    language: z.string().optional(),
-    fileId: z.number(),
-    startLine: z.number().optional(),
-    endLine: z.number().optional(),
-    tokens: z.number()
-  }))
-})
-
-const deleteSchema = z.object({
-  workspaceId: z.number().optional(),
-  fileIds: z.array(z.number()).optional()
-}).refine(data => data.workspaceId || data.fileIds?.length, {
-  message: "Either workspaceId or fileIds must be provided"
-})
 
 /**
  * GET /api/vector-store - Health check and statistics
  */
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   return NextResponse.json({ status: 'unavailable', message: 'Vector store temporarily unavailable' })
   
   // Original function below (disabled)
