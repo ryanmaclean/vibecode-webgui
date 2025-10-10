@@ -3,7 +3,7 @@
  * Core functionality for Lovable.ai clone - generates projects from natural language prompts
  */
 
-import { OpenAI } from 'openai'
+import OpenAI from 'openai'
 import { z } from 'zod'
 
 // Project template schema

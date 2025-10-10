@@ -4,7 +4,6 @@
  */
 
 import { PrismaClient, Prisma } from '@prisma/client'
-import tracer from 'dd-trace'
 import { metrics } from './server-monitoring'
 
 const globalForPrisma = globalThis as unknown as {

@@ -795,7 +795,7 @@ resource "kubernetes_deployment" "app" {
           for_each = local.datadog_enabled ? [1] : []
           content {
             name  = "datadog-agent"
-            image = "gcr.io/datadoghq/agent:7"
+            image = "datadog/docker-dd-agent:latest-alpine"
 
             env {
               name = "DD_API_KEY"

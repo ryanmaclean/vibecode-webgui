@@ -3,7 +3,7 @@
  * Provides database performance monitoring, connection pool alerts, and query analysis
  */
 
-import tracer from 'dd-trace';
+import tracer from '../../instrument';
 
 export interface DatadogDBMConfig {
   enabled: boolean;

@@ -38,7 +38,7 @@ const mockTracer = {
 }
 
 // Mock the instrument module by creating a virtual module
-jest.mock('@/instrument', () => ({
+jest.mock('../../instrument', () => ({
   __esModule: true,
   default: mockTracer
 }), { virtual: true })

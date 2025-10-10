@@ -11,7 +11,7 @@
  * - AWS Bedrock
  */
 
-import { OpenAI } from 'openai';
+import OpenAI from 'openai';
 
 export type AIProvider = 'openrouter' | 'azure-openai' | 'anthropic' | 'ollama' | 'gemini' | 'bedrock';
 

@@ -26,7 +26,7 @@ describe('DatadogMetricsService', () => {
     delete process.env.DATADOG_API_KEY
     
     // Import the singleton instance
-    const { datadogMetrics: metrics } = require('../datadog-metrics')
+    const { datadogMetrics: metrics } = require('@/lib/monitoring/datadog-metrics')
     datadogMetrics = metrics
   })
 
@@ -49,7 +49,7 @@ describe('DatadogMetricsService', () => {
       
       // Reset modules to get fresh instance
       jest.resetModules()
-      const { datadogMetrics: freshInstance } = require('../datadog-metrics')
+      const { datadogMetrics: freshInstance } = require('@/lib/monitoring/datadog-metrics')
       
       expect(freshInstance.isEnabled).toBe(true)
     })
@@ -61,7 +61,7 @@ describe('DatadogMetricsService', () => {
       
       // Reset modules to get fresh instance
       jest.resetModules()
-      const { datadogMetrics: freshInstance } = require('../datadog-metrics')
+      const { datadogMetrics: freshInstance } = require('@/lib/monitoring/datadog-metrics')
       
       expect(freshInstance.isEnabled).toBe(false)
     })
@@ -414,7 +414,7 @@ describe('DatadogMetricsService', () => {
 
       // Reset modules to get fresh instance with production config
       jest.resetModules()
-      const { datadogMetrics: productionInstance } = require('../datadog-metrics')
+      const { datadogMetrics: productionInstance } = require('@/lib/monitoring/datadog-metrics')
 
       productionInstance.recordResponseTime(150, '/api/test', 'GET', 200)
 
@@ -445,7 +445,7 @@ describe('DatadogMetricsService', () => {
 
       // Reset modules to get fresh instance with production config
       jest.resetModules()
-      const { datadogMetrics: productionInstance } = require('../datadog-metrics')
+      const { datadogMetrics: productionInstance } = require('@/lib/monitoring/datadog-metrics')
 
       productionInstance.recordResponseTime(150, '/api/test', 'GET', 200)
 

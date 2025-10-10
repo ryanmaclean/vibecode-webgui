@@ -1,116 +1,143 @@
-// Complete monitoring bypass during Docker build to prevent ERR_INVALID_URL
-// This file is imported during Next.js build, so we need to completely bypass monitoring
+let tracerInstance = null;
+let tracerInitialized = false;
 
-// Hard-coded Docker build detection - most aggressive approach
-const isDockerBuild = (
-  process.env.DOCKER_BUILD === 'true' || 
-  process.env.SKIP_MONITORING === 'true' ||
-  process.env.CI === 'true' ||
-  process.env.GITHUB_ACTIONS === 'true' ||
-  process.env.OTEL_ENABLED === 'false' ||
-  process.env.DD_ENABLED === 'false'
-);
+const bypassReasons = [
+  { key: 'DOCKER_BUILD', expected: 'true', message: 'Docker build detected' },
+  { key: 'SKIP_MONITORING', expected: 'true', message: 'SKIP_MONITORING flag set' },
+  { key: 'DD_ENABLED', expected: 'false', message: 'Datadog explicitly disabled' },
+  { key: 'CI', expected: 'true', message: 'CI environment detected' },
+  { key: 'GITHUB_ACTIONS', expected: 'true', message: 'GitHub Actions environment detected' }
+];
 
-// Function to get the appropriate tracer based on environment
-function getTracer() {
-  if (isDockerBuild) {
-    // Mock tracer for Docker build - completely bypass monitoring
-    console.log('🚫 Monitoring disabled by environment flags/bypass conditions');
-    return {
-      init: () => console.log('Mock tracer initialized'),
-      // Add other tracer methods as needed
-    };
+const noop = () => {};
+
+function createMockTracer(reason) {
+  if (reason) {
+    console.log(`🟡 Datadog tracer mock: ${reason}`);
   }
 
-  // Normal monitoring initialization for development/production
+  const mockSpan = () => ({
+    setTag: noop,
+    finish: noop
+  });
+
+  return {
+    init: noop,
+    startSpan: mockSpan,
+    scope: () => ({
+      activate: (_, fn) => fn(),
+      active: () => null
+    }),
+    dogstatsd: {
+      gauge: noop,
+      increment: noop,
+      histogram: noop,
+      event: noop
+    },
+    use: noop,
+    addTags: noop,
+    setTag: noop
+  };
+}
+
+function shouldBypassMonitoring() {
+  for (const reason of bypassReasons) {
+    if (process.env[reason.key] === reason.expected) {
+      return reason.message;
+    }
+  }
+  return null;
+}
+
+function resolveServiceEnvVersion() {
   try {
-    // Import dd-trace normally in CommonJS
-    const tracer = require('dd-trace');
-    
-    // Only import monitoring modules if not in Docker build
-    let initializeOpenTelemetry, getServiceEnvVersion;
-    
-    try {
-      const opentelemetryModule = require('./lib/monitoring/opentelemetry');
-      initializeOpenTelemetry = opentelemetryModule.initializeOpenTelemetry;
-    } catch (e) {
-      console.log('⚠️ OpenTelemetry module not available');
-      initializeOpenTelemetry = () => {};
-    }
-    
-    try {
-      const datadogEnvModule = require('./lib/monitoring/datadog-env');
-      getServiceEnvVersion = datadogEnvModule.getServiceEnvVersion;
-    } catch (e) {
-      console.log('⚠️ Datadog env module not available');
-      getServiceEnvVersion = () => ({ env: 'development', service: 'vibecode-webgui', version: '0.1.0' });
-    }
-
-    // Initialize OpenTelemetry first for auto-instrumentation (if enabled)
-    if (process.env.OTEL_ENABLED === 'true' && process.env.NODE_ENV !== 'test') {
-      initializeOpenTelemetry();
-    }
-
-    // Resolve standardized env/service/version
-    const { env, service, version } = getServiceEnvVersion();
-
-    // Initialize the tracer with Next.js 15 compatible config
-    tracer.init({
-      // Docs: https://docs.datadoghq.com/tracing/trace_collection/library_config/nodejs/
-      logInjection: false, // Disabled to avoid stack trace issues
-      profiling: false, // Disabled to avoid compatibility issues
-      runtimeMetrics: false, // Disabled to avoid Next.js compatibility issues
-      startupLogs: false, // Reduce startup noise
-      env,
-      service,
-      version,
-      
-      // Conservative sampling for development
-      sampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 0.5,
-      
-      // Enable database monitoring with minimal plugin set for Next.js 15
-      plugins: {
-        // Database monitoring for PostgreSQL
-        pg: {
-          enabled: true,
-          dbmPropagationMode: 'disabled', // Disable DBM propagation for compatibility
-          service: 'vibecode-postgres'
-        },
-        // Disable all other plugins that might cause issues
-        http: false,
-        dns: false,
-        fs: false,
-        winston: false,
-        express: false,
-        'next': false
-      },
-      
-      // Tag all traces with deployment info
-      tags: {
-        'deployment.environment': env,
-        'service.name': service,
-        'service.version': version,
-        'git.commit.sha': process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || 'unknown',
-        'git.repository.url': 'https://github.com/vibecode/vibecode-webgui',
-      }
-    });
-
-    return tracer;
+    const { getServiceEnvVersion } = require('./lib/monitoring/datadog-env');
+    return getServiceEnvVersion();
   } catch (error) {
-    // Log the actual error to understand why tracer failed
-    console.error('🚨 Datadog tracer initialization failed:', error);
-    console.log('⚠️ Monitoring failed to initialize, using mock tracer');
+    console.warn('⚠️ Unable to resolve Datadog service/env/version via helper:', error);
     return {
-      init: () => console.log('Mock tracer initialized'),
-      dogstatsd: {
-        gauge: () => {},
-        increment: () => {},
-        histogram: () => {},
-        event: () => {}
-      }
+      env: process.env.DD_ENV || process.env.NODE_ENV || 'development',
+      service: process.env.DD_SERVICE || 'vibecode-webgui',
+      version:
+        process.env.DD_VERSION ||
+        process.env.VERCEL_GIT_COMMIT_SHA ||
+        process.env.GITHUB_SHA ||
+        '0.1.0'
     };
   }
 }
 
-// Export the tracer using CommonJS syntax
+function initializeOpenTelemetryIfEnabled() {
+  if (process.env.OTEL_ENABLED !== 'true' || process.env.NODE_ENV === 'test') {
+    return;
+  }
+
+  try {
+    const { initializeOpenTelemetry } = require('./lib/monitoring/opentelemetry');
+    initializeOpenTelemetry();
+  } catch (error) {
+    console.warn('⚠️ Failed to initialize OpenTelemetry before Datadog tracer:', error);
+  }
+}
+
+function buildTracerConfig(service, env, version) {
+  return {
+    logInjection: true,
+    profiling: process.env.NODE_ENV === 'production',
+    runtimeMetrics: true,
+    env,
+    service,
+    version,
+    sampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    plugins: true,
+    experimental: {
+      enableGetRumData: ['1', 'true'].includes(String(process.env.DD_ENABLE_GET_RUM_DATA || '').toLowerCase())
+    },
+    tags: {
+      'deployment.environment': env,
+      'service.name': service,
+      'service.version': version,
+      'git.commit.sha': process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || 'unknown',
+      'git.repository.url': process.env.DD_GIT_REPOSITORY_URL || 'https://github.com/vibecode/vibecode-webgui',
+      'ml.app': process.env.DD_LLMOBS_ML_APP || 'vibecode-ai'
+    }
+  };
+}
+
+function getTracer() {
+  if (tracerInstance) {
+    return tracerInstance;
+  }
+
+  const bypassReason = shouldBypassMonitoring();
+  if (bypassReason) {
+    tracerInstance = createMockTracer(bypassReason);
+    return tracerInstance;
+  }
+
+  try {
+    const tracer = require('dd-trace');
+
+    if (!tracerInitialized) {
+      initializeOpenTelemetryIfEnabled();
+      const { env, service, version } = resolveServiceEnvVersion();
+      tracer.init(buildTracerConfig(service, env, version));
+      tracerInitialized = true;
+
+      const llmEnabled = process.env.DD_LLMOBS_ENABLED;
+      const agentless = process.env.DD_LLMOBS_AGENTLESS_ENABLED;
+      console.log(
+        `✅ Datadog tracer initialized (service=${service}, env=${env}, version=${version}, llmobs=${llmEnabled}, agentless=${agentless})`
+      );
+    }
+
+    tracerInstance = tracer;
+    return tracerInstance;
+  } catch (error) {
+    console.error('⚠️ Datadog tracer initialization failed, using mock tracer:', error);
+    tracerInstance = createMockTracer('Initialization error');
+    return tracerInstance;
+  }
+}
+
 module.exports = getTracer();

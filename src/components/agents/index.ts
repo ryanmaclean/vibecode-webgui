@@ -15,6 +15,7 @@ export { CodeInterpreterOutput } from './CodeInterpreterOutput'
 export { CreateAgentWizard } from './CreateAgentWizard'
 export { AgentMarketplace } from './AgentMarketplace'
 export { AgentMonitoringDashboard } from './AgentMonitoringDashboard'
+export { AgentBuilderWorkflowEmbed } from './AgentBuilderWorkflowEmbed'
 
 // Type exports
 export type {
@@ -61,3 +62,5 @@ export type {
   SystemMetrics,
   AgentMonitoringDashboardProps
 } from './AgentMonitoringDashboard'
+
+export type { AgentBuilderWorkflowEmbedProps } from './AgentBuilderWorkflowEmbed'
