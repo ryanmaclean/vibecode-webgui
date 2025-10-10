@@ -7,9 +7,110 @@ import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'
 import { prisma } from '@/lib/prisma'
 import { UnifiedAIClient, type UnifiedChatMessage } from '@/lib/unified-ai-client'
+import { z } from 'zod'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
+
+// Zod validation schemas for unified chat API
+
+// Workspace ID validation
+const WorkspaceIdSchema = z.string()
+  .min(1, 'Workspace ID cannot be empty')
+  .max(64, 'Workspace ID exceeds maximum length')
+  .regex(
+    /^[a-zA-Z0-9_-]+$/,
+    'Workspace ID must contain only alphanumeric characters, hyphens, and underscores'
+  )
+
+// File path validation (for context files)
+const FilePathSchema = z.string()
+  .min(1, 'File path cannot be empty')
+  .max(1024, 'File path exceeds maximum length')
+  .refine(
+    (path) => !path.includes('..') && !path.startsWith('/') && !path.includes('\0'),
+    'File path contains invalid or unsafe patterns'
+  )
+
+// Message validation
+const ChatMessageSchema = z.object({
+  role: z.enum(['user', 'assistant'], {
+    errorMap: () => ({ message: 'Message role must be "user" or "assistant"' })
+  }),
+  content: z.string()
+    .min(1, 'Message content cannot be empty')
+    .max(50000, 'Message content exceeds 50KB limit')
+    .refine(
+      (content) => !content.includes('\0'),
+      'Message content contains null bytes'
+    )
+}).strict()
+
+// AI model validation
+const ModelNameSchema = z.string()
+  .min(1, 'Model name cannot be empty')
+  .max(128, 'Model name exceeds maximum length')
+  .regex(
+    /^[a-zA-Z0-9_\-\/.]+$/,
+    'Model name must contain only alphanumeric characters, hyphens, underscores, slashes, and dots'
+  )
+  .refine(
+    (model) => {
+      // Block attempts to access system models or paths
+      const blocked = ['../../../', '..\\..\\', '/etc/', '/proc/', '/sys/', 'file://']
+      return !blocked.some(pattern => model.includes(pattern))
+    },
+    'Model name contains invalid path patterns'
+  )
+
+// API key validation (basic structure check, no secrets logging)
+const ApiKeySchema = z.string()
+  .min(20, 'API key too short')
+  .max(256, 'API key exceeds maximum length')
+  .regex(
+    /^[a-zA-Z0-9_\-\.]+$/,
+    'API key contains invalid characters'
+  )
+  .optional()
+
+// Request body validation
+const UnifiedChatRequestSchema = z.object({
+  message: z.string()
+    .min(1, 'Message cannot be empty')
+    .max(50000, 'Message exceeds 50KB limit')
+    .refine(
+      (msg) => !msg.includes('\0'),
+      'Message contains null bytes'
+    ),
+  model: ModelNameSchema,
+  context: z.object({
+    workspaceId: WorkspaceIdSchema,
+    files: z.array(FilePathSchema)
+      .max(100, 'Too many context files (max 100)')
+      .default([]),
+    previousMessages: z.array(ChatMessageSchema)
+      .max(50, 'Too many previous messages (max 50)')
+      .default([])
+  }).strict(),
+  enableTools: z.boolean().default(true),
+  userApiKeys: z.object({
+    openai: ApiKeySchema,
+    anthropic: ApiKeySchema,
+    google: ApiKeySchema
+  }).partial().strict().optional(),
+  preferences: z.object({
+    temperature: z.number()
+      .min(0, 'Temperature must be >= 0')
+      .max(2, 'Temperature must be <= 2')
+      .optional(),
+    maxTokens: z.number()
+      .int('Max tokens must be an integer')
+      .min(1, 'Max tokens must be >= 1')
+      .max(32000, 'Max tokens exceeds limit (32000)')
+      .optional(),
+    enableFallback: z.boolean().optional()
+  }).strict().optional()
+}).strict()
 
 interface UnifiedChatRequest {
   message: string
@@ -60,7 +161,7 @@ async function buildAdvancedRAGContext(workspaceId: string, userQuery: string, u
     ])
 
     const contexts = strategies
-      .filter((result): result is PromiseFulfilledResult<string> => 
+      .filter((result): result is PromiseFulfilledResult<string> =>
         result.status === 'fulfilled' && Boolean(result.value))
       .map(result => result.value)
 
@@ -88,18 +189,18 @@ async function buildAdvancedRAGContext(workspaceId: string, userQuery: string, u
 // Tool capabilities for enhanced AI responses
 function generateToolCapabilities(enableTools: boolean, availableProviders: string[]): string {
   if (!enableTools) return ''
-  
+
   return `
 
-**🛠️ Available AI Tools & Capabilities:**
+**Available AI Tools & Capabilities:**
 - **Code Analysis**: Deep analysis of project structure, dependencies, and patterns
-- **File Operations**: Read, write, and modify files within workspace boundaries  
+- **File Operations**: Read, write, and modify files within workspace boundaries
 - **Vector Search**: Semantic search across codebase with relevance scoring
 - **Multi-Model Access**: ${availableProviders.join(', ')} providers available
 - **Fallback Chains**: Automatic failover between providers for reliability
 - **Context Enhancement**: Multi-strategy RAG with adaptive context building
 
-**🔄 Provider Status:**
+**Provider Status:**
 ${availableProviders.map(p => `- ${p}: Available`).join('\n')}
 
 When you need specific capabilities, I'll automatically use the most appropriate tools and providers.`
@@ -116,45 +217,93 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body: UnifiedChatRequest = await request.json()
-    const { 
-      message, 
-      model, 
-      context, 
-      enableTools = true, 
+    // Parse request body
+    let body
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body' },
+        { status: 400 }
+      )
+    }
+
+    // Validate request body with comprehensive security checks
+    const validation = UnifiedChatRequestSchema.safeParse(body)
+
+    if (!validation.success) {
+      console.warn('[UNIFIED_CHAT] Invalid request body', {
+        errors: validation.error.errors,
+        ip: request.headers.get('x-forwarded-for') || 'unknown',
+        userId: session.user.id
+      })
+      return NextResponse.json(
+        {
+          error: 'Invalid request body',
+          details: validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+        },
+        { status: 400 }
+      )
+    }
+
+    const {
+      message,
+      model,
+      context,
+      enableTools = true,
       userApiKeys = {},
       preferences = {}
-    } = body
+    } = validation.data
+
+    // Additional security check: Rate limiting by message size
+    const messageSize = message.length + context.previousMessages.reduce((sum, msg) => sum + msg.content.length, 0)
+    const MAX_TOTAL_MESSAGE_SIZE = 100000 // 100KB total for DoS protection
+
+    if (messageSize > MAX_TOTAL_MESSAGE_SIZE) {
+      console.warn('[UNIFIED_CHAT] Total message size exceeds limit', {
+        messageSize,
+        maxSize: MAX_TOTAL_MESSAGE_SIZE,
+        userId: session.user.id
+      })
+      return NextResponse.json(
+        { error: 'Total message size exceeds limit' },
+        { status: 413 }
+      )
+    }
 
     // Initialize unified AI client with user's API keys
     const aiClient = new UnifiedAIClient(userApiKeys)
-    
+
     // Get available providers and models
     const availableProviders = aiClient.getAvailableProviders().map(p => p.name)
     const providerHealth = await aiClient.getProviderHealth()
-    
-    console.log('Provider health check:', providerHealth)
+
+    console.log('[UNIFIED_CHAT] Provider health check', {
+      providers: availableProviders,
+      health: providerHealth,
+      userId: session.user.id
+    })
 
     // Build advanced RAG context
     const ragResult = await buildAdvancedRAGContext(
-      context.workspaceId, 
-      message, 
+      context.workspaceId,
+      message,
       session.user.id
     )
 
     // Prepare system message with enhanced context
     const systemMessage = `You are an expert AI coding assistant integrated into VibeCode, an open-source development platform.
 
-**🎯 Current Session Context:**
+**Current Session Context:**
 - User: ${session.user.email}
 - Workspace: ${context.workspaceId}
 - Model: ${model}
 - RAG Status: ${ragResult ? `Active (${ragResult.relevanceScore} relevance, ${ragResult.strategiesUsed} strategies)` : 'Disabled'}
 - Providers Available: ${availableProviders.join(', ')}
 
-${ragResult ? `**📋 Relevant Code Context (${ragResult.totalLength} chars):**\n${ragResult.context}\n` : ''}
+${ragResult ? `**Relevant Code Context (${ragResult.totalLength} chars):**\n${ragResult.context}\n` : ''}
 
-**🚀 Platform Capabilities:**
+**Platform Capabilities:**
 - Multi-provider AI access with automatic fallbacks
 - Advanced RAG with semantic search and context ranking
 - Local model support (Ollama, LocalAI) for privacy and cost savings
@@ -164,7 +313,7 @@ ${ragResult ? `**📋 Relevant Code Context (${ragResult.totalLength} chars):**\
 
 ${generateToolCapabilities(enableTools, availableProviders)}
 
-**📐 Guidelines:**
+**Guidelines:**
 - Provide production-ready, secure code solutions
 - Reference specific code from context when available
 - Explain reasoning, trade-offs, and alternatives
@@ -173,7 +322,7 @@ ${generateToolCapabilities(enableTools, availableProviders)}
 - If a provider fails, I'll automatically try fallbacks
 - Ask clarifying questions when requirements are unclear
 
-**🔐 Privacy & Security:**
+**Privacy & Security:**
 - User API keys are handled securely and never logged
 - Local models available for sensitive code
 - All responses respect workspace boundaries`
@@ -210,7 +359,7 @@ ${generateToolCapabilities(enableTools, availableProviders)}
             if (chunk.content) {
               fullContent += chunk.content
               tokenCount = chunk.usage?.totalTokens || Math.ceil(fullContent.length / 4)
-              
+
               const data = JSON.stringify({
                 content: chunk.content,
                 model: chunk.model,
@@ -253,11 +402,15 @@ ${generateToolCapabilities(enableTools, availableProviders)}
           controller.close()
 
           // Enhanced completion analytics
-          console.log(`Unified AI completion: ${model}, tokens: ${tokenCount}, providers: ${availableProviders.length}, RAG: ${ragResult?.relevanceScore || 'none'}`)
+          console.log(`[UNIFIED_CHAT] Completion: ${model}, tokens: ${tokenCount}, providers: ${availableProviders.length}, RAG: ${ragResult?.relevanceScore || 'none'}`)
 
         } catch (error) {
-          console.error('Unified streaming error:', error)
-          
+          console.error('[UNIFIED_CHAT] Streaming error', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            userId: session.user.id,
+            model
+          })
+
           // Send error with fallback suggestions
           const errorData = JSON.stringify({
             error: true,
@@ -271,7 +424,7 @@ ${generateToolCapabilities(enableTools, availableProviders)}
             ],
             availableFallbacks: availableProviders.filter(p => providerHealth[p.toLowerCase()])
           })
-          
+
           controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
           controller.error(error)
         }
@@ -295,7 +448,9 @@ ${generateToolCapabilities(enableTools, availableProviders)}
     })
 
   } catch (error) {
-    console.error('Unified chat API error:', error)
+    console.error('[UNIFIED_CHAT] API error', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    })
 
     return NextResponse.json(
       {

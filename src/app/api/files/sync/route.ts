@@ -12,16 +12,124 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { WebSocketServer, WebSocket } from 'ws'
 import { getFileSystemInstance } from '@/lib/file-system-operations'
+<<<<<<< Updated upstream
 import type { FileSystemConfig, FileSyncEvent } from '@/lib/file-system-operations'
 import { prisma } from '@/lib/prisma'
 import { vectorStore } from '@/lib/vector-store'
+=======
+import type { FileSystemConfig, FileSyncEvent, SecureFileSystemOperations } from '@/lib/file-system-operations'
+import { parseFileSyncMessage } from '@/lib/file-sync/websocket'
+import { subscriptionManager } from '@/lib/file-sync/subscription-manager'
+import { z } from 'zod'
+
+type StatsdClient = {
+  increment: (metric: string, value?: number, tags?: Record<string, string>) => void
+  histogram: (metric: string, value: number, tags?: Record<string, string>) => void
+}
+
+const statsd = tracer?.dogstatsd as StatsdClient | undefined
+>>>>>>> Stashed changes
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
+<<<<<<< Updated upstream
 interface WebSocketMessage {
   type: string;
   payload?: any; // To be refined in future implementations
+=======
+// Zod validation schemas for file sync operations
+
+// Workspace ID validation with security controls
+const WorkspaceIdSchema = z.string()
+  .min(1, 'Workspace ID cannot be empty')
+  .max(64, 'Workspace ID exceeds maximum length')
+  .regex(
+    /^[a-zA-Z0-9_-]+$/,
+    'Workspace ID must contain only alphanumeric characters, hyphens, and underscores'
+  )
+  .refine(
+    (id) => !id.includes('..') && !id.startsWith('.') && !id.endsWith('.'),
+    'Workspace ID contains invalid path traversal patterns'
+  )
+
+// File path validation - prevents path traversal attacks
+const FilePathSchema = z.string()
+  .min(1, 'File path cannot be empty')
+  .max(1024, 'File path exceeds maximum length')
+  .refine(
+    (path) => {
+      // Prevent path traversal
+      if (path.includes('..')) return false
+      // Prevent absolute paths
+      if (path.startsWith('/') || path.startsWith('\\')) return false
+      // Prevent drive letters (Windows)
+      if (/^[a-zA-Z]:/.test(path)) return false
+      // Prevent null bytes
+      if (path.includes('\0')) return false
+      return true
+    },
+    'File path contains invalid or unsafe patterns'
+  )
+  .refine(
+    (path) => {
+      // Block access to sensitive system files
+      const blockedPatterns = [
+        /\/etc\//i,
+        /\/proc\//i,
+        /\/sys\//i,
+        /\/dev\//i,
+        /\.ssh\//i,
+        /\.git\//i,
+        /node_modules\//i,
+        /\.env/i,
+        /\.key/i,
+        /\.pem/i,
+        /\.crt/i,
+        /id_rsa/i,
+        /id_dsa/i,
+        /authorized_keys/i
+      ]
+      return !blockedPatterns.some(pattern => pattern.test(path))
+    },
+    'File path accesses restricted system or sensitive files'
+  )
+
+// File content validation with size limits
+const FileContentSchema = z.string()
+  .max(10 * 1024 * 1024, 'File content exceeds 10MB limit') // DoS protection
+
+// File type validation
+const FileTypeSchema = z.enum(['file', 'directory'], {
+  errorMap: () => ({ message: 'File type must be either "file" or "directory"' })
+})
+
+// Individual file validation schema
+const FileSyncItemSchema = z.object({
+  path: FilePathSchema,
+  content: FileContentSchema,
+  type: FileTypeSchema
+}).strict()
+
+// GET query parameters validation
+const GetQuerySchema = z.object({
+  workspaceId: WorkspaceIdSchema
+})
+
+// POST body validation with array size limit (DoS protection)
+const PostBodySchema = z.object({
+  workspaceId: WorkspaceIdSchema,
+  files: z.array(FileSyncItemSchema)
+    .min(1, 'Files array cannot be empty')
+    .max(1000, 'Files array exceeds maximum of 1000 items') // DoS protection
+}).strict()
+
+// WebSocket connections per workspace (used for wide broadcasts)
+const workspaceConnections = new Map<string, Set<WebSocket>>()
+
+type RealtimeFileSystem = SecureFileSystemOperations & {
+  handleFileUpdate?: (payload: unknown) => void
+>>>>>>> Stashed changes
 }
 
 // WebSocket connections per workspace
@@ -39,17 +147,37 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const workspaceId = searchParams.get('workspaceId')
+    const workspaceIdParam = searchParams.get('workspaceId')
 
-    if (!workspaceId) {
+    // Validate query parameters
+    const queryValidation = GetQuerySchema.safeParse({
+      workspaceId: workspaceIdParam
+    })
+
+    if (!queryValidation.success) {
+      console.warn('[FILE_SYNC] Invalid GET query parameters', {
+        errors: queryValidation.error.errors,
+        ip: request.headers.get('x-forwarded-for') || 'unknown',
+        userId: session.user.id
+      })
       return NextResponse.json(
-        { error: 'Workspace ID is required' },
+        {
+          error: 'Invalid request parameters',
+          details: queryValidation.error.errors.map(e => e.message)
+        },
         { status: 400 }
       )
     }
 
+    const workspaceId = queryValidation.data.workspaceId
+
     // Validate workspace access
     if (!await hasWorkspaceAccess(session.user.id, workspaceId)) {
+      console.warn('[FILE_SYNC] Access denied to workspace', {
+        workspaceId,
+        userId: session.user.id,
+        ip: request.headers.get('x-forwarded-for') || 'unknown'
+      })
       return NextResponse.json(
         { error: 'Access denied to workspace' },
         { status: 403 }
@@ -86,21 +214,66 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
-    const { workspaceId, files } = body
-
-    if (!workspaceId || !files || !Array.isArray(files)) {
+    // Parse request body
+    let body
+    try {
+      body = await request.json()
+    } catch {
       return NextResponse.json(
-        { error: 'Workspace ID and files array are required' },
+        { error: 'Invalid JSON in request body' },
         { status: 400 }
       )
     }
 
+    // Validate request body with comprehensive security checks
+    const bodyValidation = PostBodySchema.safeParse(body)
+
+    if (!bodyValidation.success) {
+      console.warn('[FILE_SYNC] Invalid POST body', {
+        errors: bodyValidation.error.errors,
+        ip: request.headers.get('x-forwarded-for') || 'unknown',
+        userId: session.user.id,
+        fileCount: Array.isArray(body?.files) ? body.files.length : 'invalid'
+      })
+      return NextResponse.json(
+        {
+          error: 'Invalid request body',
+          details: bodyValidation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+        },
+        { status: 400 }
+      )
+    }
+
+    const { workspaceId, files } = bodyValidation.data
+
     // Validate workspace access
     if (!await hasWorkspaceAccess(session.user.id, workspaceId)) {
+      console.warn('[FILE_SYNC] Access denied to workspace in POST', {
+        workspaceId,
+        userId: session.user.id,
+        ip: request.headers.get('x-forwarded-for') || 'unknown'
+      })
       return NextResponse.json(
         { error: 'Access denied to workspace' },
         { status: 403 }
+      )
+    }
+
+    // Additional validation: Check total content size (DoS protection)
+    const totalContentSize = files.reduce((sum, file) => sum + file.content.length, 0)
+    const MAX_TOTAL_SIZE = 50 * 1024 * 1024 // 50MB total limit
+
+    if (totalContentSize > MAX_TOTAL_SIZE) {
+      console.warn('[FILE_SYNC] Total content size exceeds limit', {
+        workspaceId,
+        userId: session.user.id,
+        totalContentSize,
+        maxSize: MAX_TOTAL_SIZE,
+        fileCount: files.length
+      })
+      return NextResponse.json(
+        { error: 'Total content size exceeds 50MB limit' },
+        { status: 413 }
       )
     }
 
@@ -108,9 +281,21 @@ export async function POST(request: NextRequest) {
     // Real-time sync is handled via WebSocket
     try {
       await createFilesInWorkspace(workspaceId, files)
-      return NextResponse.json({ success: true, message: 'Sync initiated' })
+
+      console.info('[FILE_SYNC] Bulk sync completed', {
+        workspaceId,
+        userId: session.user.id,
+        fileCount: files.length,
+        totalSize: totalContentSize
+      })
+
+      return NextResponse.json({
+        success: true,
+        message: 'Sync initiated',
+        fileCount: files.length
+      })
     } catch (error) {
-      console.error('File creation error:', error)
+      console.error('[FILE_SYNC] File creation error:', error)
       return NextResponse.json(
         { error: 'Failed to create files in workspace' },
         { status: 500 }
@@ -153,7 +338,7 @@ async function createFilesInWorkspace(workspaceId: string, files: Array<{path: s
                 path=$(echo "$file" | jq -r .path)
                 content=$(echo "$file" | jq -r .content)
                 type=$(echo "$file" | jq -r .type)
-                
+
                 if [ "$type" = "directory" ]; then
                   mkdir -p "/workspace/${workspaceId}/$path"
                 else
@@ -225,9 +410,19 @@ if (!global.wss) {
     const userId = searchParams.get('userId') || ''
 
     try {
-      // Validate connection parameters
-      if (!workspaceId || !userId) {
-        ws.close(1008, 'Workspace ID and User ID are required')
+      // Validate connection parameters with Zod
+      const wsParamsValidation = z.object({
+        workspaceId: WorkspaceIdSchema,
+        userId: z.string().min(1).max(64).regex(/^[a-zA-Z0-9_-]+$/)
+      }).safeParse({ workspaceId, userId })
+
+      if (!wsParamsValidation.success) {
+        console.warn('[FILE_SYNC_WS] Invalid WebSocket parameters', {
+          errors: wsParamsValidation.error.errors,
+          workspaceId,
+          userId
+        })
+        ws.close(1008, 'Invalid connection parameters')
         return
       }
 
@@ -319,6 +514,54 @@ if (!global.wss) {
   })
 }
 
+<<<<<<< Updated upstream
+=======
+function handleSubscription(socket: WebSocket, workspaceId: string, rawPath: string) {
+  // Validate file path before subscribing
+  const pathValidation = FilePathSchema.safeParse(rawPath)
+
+  if (!pathValidation.success) {
+    console.warn('[FILE_SYNC_WS] Invalid subscription path', {
+      workspaceId,
+      rawPath,
+      errors: pathValidation.error.errors
+    })
+    socket.send(
+      JSON.stringify({
+        type: 'error',
+        reason: 'Invalid file path for subscription',
+        timestamp: new Date(),
+      }),
+    )
+    return
+  }
+
+  const outcome = subscriptionManager.subscribe(workspaceId, pathValidation.data, socket)
+
+  if (!outcome.ok) {
+    recordSubscriptionError(workspaceId, outcome.reason)
+    socket.send(
+      JSON.stringify({
+        type: 'error',
+        reason: outcome.reason,
+        timestamp: new Date(),
+      }),
+    )
+    return
+  }
+
+  recordSubscriptionSuccess(workspaceId, outcome.path)
+  socket.send(
+    JSON.stringify({
+      type: 'subscribed',
+      workspaceId,
+      path: outcome.path,
+      timestamp: new Date(),
+    }),
+  )
+}
+
+>>>>>>> Stashed changes
 /**
  * Validate user access to workspace
  */
@@ -328,11 +571,12 @@ async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<
     return false
   }
 
-  if (!/^[a-zA-Z0-9_-]+$/.test(workspaceId) || workspaceId.length > 50) {
+  // Validate formats
+  if (!/^[a-zA-Z0-9_-]+$/.test(workspaceId) || workspaceId.length > 64) {
     return false
   }
 
-  if (!/^[a-zA-Z0-9_-]+$/.test(userId) || userId.length > 50) {
+  if (!/^[a-zA-Z0-9_-]+$/.test(userId) || userId.length > 64) {
     return false
   }
 

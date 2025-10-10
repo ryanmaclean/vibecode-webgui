@@ -378,7 +378,7 @@ export const authOptions: NextAuthOptions = {
         hasToken: !!token,
         provider: account?.provider,
         tokenId: token?.id,
-        userId: user?.id
+        userId: user?.id,
       })
 
       if (user) {

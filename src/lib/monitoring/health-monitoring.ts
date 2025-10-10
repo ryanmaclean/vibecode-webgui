@@ -4,6 +4,7 @@
  */
 
 import { createLogger, format, transports } from 'winston';
+<<<<<<< Updated upstream
 import tracer from '../../instrument';
 
 // Initialize Datadog tracer for health monitoring if credentials are present.
@@ -28,6 +29,12 @@ if (process.env.DD_API_KEY) {
 } else {
   console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }
+=======
+import tracer from 'dd-trace';
+
+// Datadog tracer is initialized in src/instrumentation.ts (Next.js 15 instrumentation hook)
+// This file only imports the tracer for use in logging and metrics
+>>>>>>> Stashed changes
 
 // Custom Winston formatter for structured logging
 const structuredFormat = format.combine(

@@ -64,7 +64,7 @@ async function buildRAGContext(workspaceId: string, userQuery: string, userId: s
 }
 
 // Helper to build basic workspace context (fallback)
-async function buildWorkspaceContext(workspaceId: string, files: string[]) {
+async function buildWorkspaceContext(_workspaceId: string, files: string[]) {
   try {
     // Get file contents for context (limit to recent/relevant files)
     const contextFiles = files.slice(0, 5) // Limit context to prevent token overflow

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { VectorConnectionPoolFactory } from '@/lib/db/vector-connection-pool';
-import { ConnectionPoolMonitor, AlertLevel, AlertType } from '@/lib/db/connection-pool-monitor';
+import { ConnectionPoolMonitor, AlertLevel } from '@/lib/db/connection-pool-monitor';
 
 // Create a singleton monitor instance
 let monitor: ConnectionPoolMonitor | null = null;
