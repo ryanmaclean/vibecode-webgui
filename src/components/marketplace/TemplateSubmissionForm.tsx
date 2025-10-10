@@ -194,9 +194,14 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
         <form onSubmit={handleSubmit} className="p-6 space-y-8">
           {/* Errors */}
           {errors.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <div
+              id="template-submission-errors"
+              className="bg-red-50 border border-red-200 rounded-md p-4"
+              role="alert"
+              aria-live="polite"
+            >
               <div className="flex">
-                <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+                <ExclamationTriangleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-red-800">
                     Please fix the following errors:
@@ -230,6 +235,8 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="e.g., React TypeScript Starter"
                   required
+                  aria-invalid={errors.length > 0 ? "true" : "false"}
+                  aria-describedby={errors.length > 0 ? "template-submission-errors" : undefined}
                 />
               </div>
 
@@ -261,6 +268,8 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Describe what your template does and what problems it solves..."
                 required
+                aria-invalid={errors.length > 0 ? "true" : "false"}
+                aria-describedby={errors.length > 0 ? "template-submission-errors" : undefined}
               />
             </div>
 
@@ -322,6 +331,8 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
                   onChange={(e) => setAuthor(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
+                  aria-invalid={errors.length > 0 ? "true" : "false"}
+                  aria-describedby={errors.length > 0 ? "template-submission-errors" : undefined}
                 />
               </div>
 
@@ -335,6 +346,8 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
                   onChange={(e) => setAuthor(prev => ({ ...prev, email: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
+                  aria-invalid={errors.length > 0 ? "true" : "false"}
+                  aria-describedby={errors.length > 0 ? "template-submission-errors" : undefined}
                 />
               </div>
             </div>
