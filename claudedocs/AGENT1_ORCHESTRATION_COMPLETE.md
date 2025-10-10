@@ -241,7 +241,7 @@ services:
 
   # Optional: Datadog monitoring
   datadog-agent:
-    image: gcr.io/datadoghq/agent:7
+    image: datadog/docker-dd-agent:latest-alpine
     container_name: vibecode-datadog
     restart: unless-stopped
 

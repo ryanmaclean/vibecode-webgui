@@ -2,7 +2,7 @@
 // Powers the AIChatInterface with real-time streaming responses and vector search context
 
 import { NextRequest, NextResponse } from 'next/server'
-import { OpenAI } from 'openai'
+import OpenAI from 'openai'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'

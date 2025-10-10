@@ -200,7 +200,7 @@ services:
 
   # Optional: Datadog monitoring sidecar
   datadog-agent:
-    image: gcr.io/datadoghq/agent:7
+    image: datadog/docker-dd-agent:latest-alpine
     container_name: vibecode-datadog
     restart: unless-stopped
     environment:
@@ -559,7 +559,7 @@ spec:
 
         # Optional Sidecar: Datadog monitoring
         - name: datadog-agent
-          image: gcr.io/datadoghq/agent:7
+          image: datadog/docker-dd-agent:latest-alpine
           imagePullPolicy: IfNotPresent
           env:
             - name: DD_API_KEY

@@ -92,6 +92,12 @@ export default function Home() {
             
             <div className="flex items-center gap-4">
               <Link
+                href="/agent-builder"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Agent Builder
+              </Link>
+              <Link
                 href="/marketplace"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >

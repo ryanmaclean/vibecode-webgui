@@ -53,6 +53,7 @@ npm run type-check   # TypeScript check
 ## Key Features
 
 - **AI Development**: 20+ templates, multi-model orchestration
+- **Agent Builder**: Live ChatKit embed backed by OpenAI Agent Builder workflows with secure session provisioning
 - **Cloud Deployment**: One-click deployment, GitHub integration  
 - **Security**: WCAG 2.1 AA compliance, security middleware
 - **Modern Stack**: Next.js 15, React 19, TypeScript

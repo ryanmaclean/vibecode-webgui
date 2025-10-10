@@ -5,6 +5,14 @@
  */
 import { VectorConnectionPoolFactory } from './vector-connection-pool';
 
+type VectorModule = typeof import('./vector-connection-pool');
+
+let testVectorModule: VectorModule | null = null;
+let forcedBrowserEnvironment: boolean | null = null;
+let cachedVectorModule: VectorModule | null = null;
+let overrideFactory: typeof VectorConnectionPoolFactory | null = null;
+let forceNoVectorModule = false;
+
 // Alert severity levels
 export enum AlertSeverity {
   INFO = 'info',
@@ -190,10 +198,16 @@ export default class ConnectionPoolAlertService {
    */
   private checkConnectionPool(): void {
     try {
+      if (forceNoVectorModule && !overrideFactory) {
+        return;
+      }
+
       // Use pool factory to avoid circular deps and ensure availability
-      let pool = VectorConnectionPoolFactory.getPool('default');
+      const factory = overrideFactory ?? VectorConnectionPoolFactory;
+
+      let pool = factory.getPool('default');
       if (!pool) {
-        pool = VectorConnectionPoolFactory.createPool({
+        pool = factory.createPool({
           host: process.env.DATABASE_HOST || 'localhost',
           port: parseInt(process.env.DATABASE_PORT || '5432', 10),
           database: process.env.DATABASE_NAME || 'vibecode',
@@ -350,7 +364,7 @@ export default class ConnectionPoolAlertService {
     
     // Update last alert time
     this.lastAlertTimes.set(suppressionKey, now);
-    
+
     // Create alert object
     const alert: Alert = {
       id: alertId,
@@ -358,7 +372,6 @@ export default class ConnectionPoolAlertService {
       acknowledged: false,
       ...alertData
     };
-    
     // Add to active alerts
     this.activeAlerts.set(alertId, alert);
     
@@ -470,4 +483,48 @@ export default class ConnectionPoolAlertService {
   public setAlertSuppression(milliseconds: number): void {
     this.alertSuppression = milliseconds;
   }
+}
+
+async function loadVectorModule(): Promise<VectorModule | null> {
+  if (forcedBrowserEnvironment === true) {
+    return null;
+  }
+
+  if (testVectorModule) {
+    return testVectorModule;
+  }
+
+  if (forcedBrowserEnvironment === false || typeof window === 'undefined') {
+    if (!cachedVectorModule) {
+      cachedVectorModule = await import('./vector-connection-pool');
+    }
+    return cachedVectorModule;
+  }
+
+  return null;
+}
+
+export async function __loadVectorConnectionPoolModuleForTest(): Promise<VectorModule | null> {
+  return loadVectorModule();
+}
+
+export function __setVectorConnectionPoolModule(module: VectorModule | null): void {
+  testVectorModule = module;
+  overrideFactory = module ? module.VectorConnectionPoolFactory : null;
+  forceNoVectorModule = false;
+}
+
+export function __resetVectorConnectionPoolModule(): void {
+  testVectorModule = null;
+  cachedVectorModule = null;
+  overrideFactory = null;
+  forceNoVectorModule = false;
+}
+
+export function __setBrowserEnvironmentForTest(value: boolean | null): void {
+  forcedBrowserEnvironment = value;
+}
+
+export function __forceVectorModuleUnavailableForTest(): void {
+  forceNoVectorModule = true;
 }

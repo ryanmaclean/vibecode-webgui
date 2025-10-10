@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Agent Builder ChatKit integration with a dedicated `/agent-builder` workspace and secure session provisioning via the new `POST /api/agent-builder/session` endpoint.
+
 ### Planned Features
 - VS Code extension for agent management
 - Inline agent suggestions in editor
