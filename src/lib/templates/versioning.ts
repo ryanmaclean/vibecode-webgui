@@ -284,7 +284,7 @@ export class TemplateRegistry {
   /**
    * Check if automated migration is available
    */
-  private hasAutomatedMigration(templateId: string, fromVersion: string, toVersion: string): boolean {
+  private hasAutomatedMigration(_templateId: string, fromVersion: string, toVersion: string): boolean {
     // In a real implementation, this would check for available migration scripts
     const updateType = this.getUpdateType(fromVersion, toVersion)
     return updateType === 'patch' || updateType === 'minor'
@@ -338,7 +338,7 @@ export class TemplateRegistry {
   /**
    * Increment download count
    */
-  async recordDownload(templateId: string, version?: string): Promise<void> {
+  async recordDownload(templateId: string, _version?: string): Promise<void> {
     const metadata = this.templates.get(templateId)
     if (!metadata) return
 
@@ -451,7 +451,6 @@ export class TemplateRegistry {
     const issues: string[] = []
     const recommendations: string[] = []
 
-    const updateType = this.getUpdateType(fromVersion, toVersion)
     const metadata = this.templates.get(templateId)
     
     if (!metadata) {
@@ -553,20 +552,20 @@ export class TemplateMigrator {
   }
 
   private static async performMinorMigration(
-    templateId: string,
-    fromVersion: string,
-    toVersion: string,
-    files: any[]
+    _templateId: string,
+    _fromVersion: string,
+    _toVersion: string,
+    _files: any[]
   ): Promise<void> {
     // Implement minor version migration logic
     // This might include updating dependencies, adding new config files, etc.
   }
 
   private static async performMajorMigration(
-    templateId: string,
-    fromVersion: string,
-    toVersion: string,
-    files: any[]
+    _templateId: string,
+    _fromVersion: string,
+    _toVersion: string,
+    _files: any[]
   ): Promise<void> {
     // Implement major version migration logic
     // This might include restructuring files, updating APIs, etc.
