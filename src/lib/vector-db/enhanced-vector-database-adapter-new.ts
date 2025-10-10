@@ -6,7 +6,7 @@
 import { VectorDatabaseInterface } from './vector-database-interface';
 import { VectorDatabaseConfig, SearchOptions, SearchResult } from './vector-types';
 import { RetryHandler, RetryConfig } from './vector-retry-handler';
-import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler-new';
+import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
 import { logger } from '../logger';
 
 /**

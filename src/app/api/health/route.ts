@@ -1,13 +1,13 @@
-import { NextResponse } from 'next/server'
+import { createHealthResponse, createErrorResponseFromError, getErrorMessage } from '@/lib/api-utils'
 
 export async function GET() {
   const startTime = Date.now();
-  
+
   try {
     // Get system metrics
     const memoryUsage = process.memoryUsage();
     const uptime = process.uptime();
-    
+
     // Basic health checks
     const checks = {
       memory: {
@@ -30,7 +30,7 @@ export async function GET() {
         status: 'healthy' // Would check actual DB connection in production
       },
       valkey: {
-        status: 'healthy' // Would check actual Redis/Valkey connection in production  
+        status: 'healthy' // Would check actual Redis/Valkey connection in production
       },
       ai: {
         status: 'healthy' // Would check AI service endpoints in production
@@ -38,10 +38,8 @@ export async function GET() {
     };
 
     const responseTime = Date.now() - startTime;
-    
-    return NextResponse.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
+
+    return createHealthResponse('healthy', {
       uptime: Math.round(uptime),
       version: '1.0.0',
       environment: process.env.NODE_ENV || 'development',
@@ -52,15 +50,8 @@ export async function GET() {
         valkey: await monitoring.checkValkey(),
         ai: await monitoring.checkAIService()
       }
-    });
+    })
   } catch (error) {
-    return NextResponse.json({
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
-      uptime: Math.round(process.uptime()),
-      version: '1.0.0',
-      environment: process.env.NODE_ENV || 'development'
-    }, { status: 500 });
+    return createErrorResponseFromError(error, 500, getErrorMessage(error))
   }
 }

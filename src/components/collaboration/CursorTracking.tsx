@@ -280,7 +280,7 @@ export default function CursorTracking({
     // Add event listener with null check
     if (collaboration.socket) {
       collaboration.socket.on('cursor_position', handleCursorUpdate)
-      
+
       return () => {
         // Check again inside cleanup function
         if (collaboration.socket) {
@@ -288,6 +288,8 @@ export default function CursorTracking({
         }
       }
     }
+    // No cleanup needed if socket not available
+    return undefined
   }, [collaboration, currentUserId, cursorFadeTimeout])
 
   /**

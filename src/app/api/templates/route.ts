@@ -4,6 +4,17 @@
  */
 
 import { NextResponse } from 'next/server'
+import { createErrorResponse } from '@/lib/api-utils'
+import { NextRequest } from "next/server"
+import { z } from "zod"
+
+// Security: Input validation schema for template retrieval
+const TemplateQuerySchema = z.object({
+  id: z.string().optional(),
+  language: z.string().optional(),
+  framework: z.string().optional(),
+  difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional()
+})
 
 interface ProjectTemplate {
   id: string
@@ -594,11 +605,50 @@ Happy coding! 🐍`
   }
 ]
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const queryParams = Object.fromEntries(searchParams.entries())
+
+    // Validate query parameters
+    const validationResult = TemplateQuerySchema.safeParse(queryParams)
+
+    if (!validationResult.success) {
+      return createErrorResponse(
+        'Invalid query parameters',
+        400,
+        {
+          details: validationResult.error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        }
+      )
+    }
+
+    const { id, language, framework, difficulty } = validationResult.data
+
+    let filteredTemplates = templates
+
+    // Filter by ID
+    if (id) {
+      filteredTemplates = templates.filter(t => t.id === id)
+    } else {
+      // Apply other filters
+      if (language) {
+        filteredTemplates = filteredTemplates.filter(t => t.language === language)
+      }
+      if (framework) {
+        filteredTemplates = filteredTemplates.filter(t => t.framework === framework)
+      }
+      if (difficulty) {
+        filteredTemplates = filteredTemplates.filter(t => t.difficulty === difficulty)
+      }
+    }
+
     return NextResponse.json({
-      templates,
-      count: templates.length,
+      templates: filteredTemplates,
+      count: filteredTemplates.length,
       categories: {
         languages: [...new Set(templates.map(t => t.language))],
         frameworks: [...new Set(templates.map(t => t.framework))],
@@ -607,16 +657,10 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Templates API error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch templates' },
-      { status: 500 }
-    )
+    return createErrorResponse('Failed to fetch templates', 500)
   }
 }
 
 export async function POST() {
-  return NextResponse.json(
-    { error: 'Template creation not implemented yet' },
-    { status: 501 }
-  )
+  return createErrorResponse('Template creation not implemented yet', 501)
 }

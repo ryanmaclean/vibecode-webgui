@@ -1,17 +1,10 @@
-import { NextResponse } from 'next/server'
+import { createHealthResponse, createErrorResponseFromError } from '@/lib/api-utils'
 
 export async function GET() {
   try {
     // Simple health check for Kubernetes liveness probe
-    return NextResponse.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString()
-    });
+    return createHealthResponse('healthy')
   } catch (error) {
-    return NextResponse.json({
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return createErrorResponseFromError(error, 500, 'Health check failed')
   }
 }

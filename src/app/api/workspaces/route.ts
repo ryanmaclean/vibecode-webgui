@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 import { z } from 'zod'
+import { createErrorResponse, getErrorMessage } from '@/lib/api-utils'
 
 const CreateWorkspaceRequestSchema = z.object({
   projectId: z.string(),
@@ -67,47 +68,32 @@ export async function POST(request: NextRequest) {
 
     // Handle validation errors
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { 
-          error: 'Invalid request format',
-          details: error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
-        },
-        { status: 400 }
+      return createErrorResponse(
+        'Invalid request format',
+        400,
+        { details: error.errors.map(e => `${e.path.join('.')}: ${e.message}`) }
       )
     }
 
     // Handle Kubernetes errors
     if (error instanceof Error) {
       if (error.message.includes('Unauthorized') || error.message.includes('Forbidden')) {
-        return NextResponse.json(
-          { error: 'Insufficient permissions to create workspace' },
-          { status: 403 }
-        )
+        return createErrorResponse('Insufficient permissions to create workspace', 403)
       }
 
       if (error.message.includes('timeout')) {
-        return NextResponse.json(
-          { error: 'Workspace creation timed out. Please try again.' },
-          { status: 408 }
-        )
+        return createErrorResponse('Workspace creation timed out. Please try again.', 408)
       }
 
       if (error.message.includes('quota') || error.message.includes('resource')) {
-        return NextResponse.json(
-          { error: 'Insufficient cluster resources. Please try again later.' },
-          { status: 507 }
-        )
+        return createErrorResponse('Insufficient cluster resources. Please try again later.', 507)
       }
     }
 
     // Generic error response
-    return NextResponse.json(
-      { 
-        error: 'Workspace creation failed',
-        message: error instanceof Error ? error.message : 'Unknown error occurred'
-      },
-      { status: 500 }
-    )
+    return createErrorResponse('Workspace creation failed', 500, {
+      message: getErrorMessage(error)
+    })
   }
 }
 
@@ -129,12 +115,9 @@ export async function GET(request: NextRequest) {
     if (workspaceId) {
       // Get specific workspace
       const workspace = await workspaceService.getWorkspaceStatus(workspaceId)
-      
+
       if (!workspace) {
-        return NextResponse.json(
-          { error: 'Workspace not found' },
-          { status: 404 }
-        )
+        return createErrorResponse('Workspace not found', 404)
       }
 
       return NextResponse.json({
@@ -156,10 +139,10 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Failed to get workspace info:', error)
-    return NextResponse.json({
+    return createErrorResponse('Service error', 500, {
       available: false,
       reason: 'Service error',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+      details: getErrorMessage(error)
+    })
   }
 }

@@ -52,7 +52,7 @@ export default function WorkspaceLayout({
   }, [])
 
   // Mouse event listeners
-  useState(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       window.addEventListener('mousemove', handleMouseMove)
       window.addEventListener('mouseup', handleMouseUp)
@@ -62,7 +62,9 @@ export default function WorkspaceLayout({
         window.removeEventListener('mouseup', handleMouseUp)
       }
     }
-  })
+    // No cleanup needed if window is undefined (SSR)
+    return undefined
+  }, [handleMouseMove, handleMouseUp])
 
   return (
     <div ref={layoutRef} className={`flex flex-col h-screen bg-gray-900 ${className}`}>
