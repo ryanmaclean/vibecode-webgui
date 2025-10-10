@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import CodeServerIDE from '@/components/ide/CodeServerIDE'
 import CodeAssistant from '@/components/ai/CodeAssistant'
@@ -61,7 +61,11 @@ export default function WorkspaceLayout({
     setIsResizing(null)
   }, [])
 
+<<<<<<< Updated upstream
   // Mouse event listeners
+=======
+  // Mouse event listeners - use useEffect for proper cleanup
+>>>>>>> Stashed changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.addEventListener('mousemove', handleMouseMove)
@@ -72,8 +76,11 @@ export default function WorkspaceLayout({
         window.removeEventListener('mouseup', handleMouseUp)
       }
     }
+<<<<<<< Updated upstream
     // No cleanup needed if window is undefined (SSR)
     return undefined
+=======
+>>>>>>> Stashed changes
   }, [handleMouseMove, handleMouseUp])
 
   return (

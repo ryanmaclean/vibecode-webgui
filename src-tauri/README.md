@@ -20,9 +20,35 @@ src-tauri/
 
 ### Implemented Commands
 
-- **greet(name: string)**: Simple greeting command for testing
-- **check_docker()**: Verifies if Docker is running and accessible
-- **get_docker_version()**: Returns Docker daemon version
+1. **ping()** - Health check command (Issue #491)
+   - Returns: `"pong"`
+   - Usage: `await invoke('ping')`
+
+2. **launch_browser(url: string)** - Auto-launch system default browser (Issue #491 - P0)
+   - Parameters: `url: String`
+   - Returns: `Result<(), String>`
+   - Usage: `await invoke('launch_browser', { url: 'http://localhost:3000' })`
+   - Platform support: macOS, Windows, Linux
+
+3. **greet(name: string)** - Simple greeting command for testing
+   - Returns: `String`
+   - Usage: `await invoke('greet', { name: 'Developer' })`
+
+4. **check_docker()** - Verifies if Docker is running and accessible
+   - Returns: `Result<bool, String>`
+   - Usage: `await invoke('check_docker')`
+
+5. **get_docker_version()** - Returns Docker daemon version
+   - Returns: `Result<String, String>`
+   - Usage: `await invoke('get_docker_version')`
+
+6. **get_docker_status()** - Get Docker availability and version
+   - Returns: `Result<{ available: bool, version?: string }, String>`
+   - Usage: `await invoke('get_docker_status')`
+
+7. **get_docker_info()** - Get detailed Docker system information
+   - Returns: `Result<{ containers, images, memory_total, cpus, os_type, architecture }, String>`
+   - Usage: `await invoke('get_docker_info')`
 
 ### Dependencies
 
@@ -114,17 +140,38 @@ The `tauri.conf.json` includes Content Security Policy (CSP) settings aligned wi
 
 ## Next Steps
 
-### Issue #489 - Current Phase
+### Issue #489 - Tauri Backend Scaffolding - ✅ COMPLETE
 
 - [x] Initialize Tauri project structure
 - [x] Configure Next.js integration
 - [x] Add Docker detection commands
-- [x] Rust compilation successful
-- [ ] Create proper application icons
-- [ ] Test development workflow (`npm run tauri:dev`)
-- [ ] Test Docker commands with running Docker Desktop
-- [ ] Add mDNS service discovery
-- [ ] Implement menu bar integration (#490)
+- [x] Rust compilation successful (cargo build --release)
+- [x] 7 functional IPC commands implemented
+- [x] Error handling and Result types
+- [x] Docker API integration via Bollard
+- [x] Cross-platform command support
+- [ ] Create proper application icons (deferred)
+- [ ] Test development workflow (`npm run tauri:dev`) - needs Next.js dev server
+- [ ] Add mDNS service discovery (future enhancement)
+
+### Issue #491 - Browser Auto-Launch - ✅ COMPLETE
+
+- [x] launch_browser command with cross-platform support
+- [x] macOS: `open` command
+- [x] Windows: `cmd /C start` command
+- [x] Linux: `xdg-open` command
+- [x] ping command for health checks
+- [x] Error handling with descriptive messages
+- [ ] Integration testing with frontend
+
+### Issue #488 - Menu Bar Integration - 🔄 IN PROGRESS
+
+- [ ] Basic menu structure in Tauri
+- [ ] File menu (New, Open, Save, Quit)
+- [ ] Edit menu (Undo, Redo, Cut, Copy, Paste)
+- [ ] View menu (Toggle DevTools, Zoom)
+- [ ] Help menu (Documentation, About)
+- [ ] macOS-specific menu bar behavior
 
 ### Future Enhancements
 

@@ -7,6 +7,7 @@
 import { StatsD } from 'node-statsd'
 import tracer from '../../instrument'
 
+<<<<<<< Updated upstream
 const expressRequestHook = (span: any, req: any) => {
   if (span && req && req.headers) {
     span.setTag('user.workspace', req.headers['x-workspace-id'])
@@ -22,6 +23,10 @@ if (typeof tracer.use === 'function') {
 } else {
   console.warn('⚠️ Datadog tracer does not expose use(); Express hooks not registered')
 }
+=======
+// Datadog tracer is initialized in src/instrumentation.ts (Next.js 15 instrumentation hook)
+// This file only imports the tracer for creating custom spans and metrics
+>>>>>>> Stashed changes
 
 // Custom span for WebSocket events
 const createWebSocketSpan = (eventName: string, metadata: Record<string, any> = {}) => {

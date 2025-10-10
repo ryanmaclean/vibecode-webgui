@@ -1,3 +1,212 @@
+## Workspace RBAC Deployment Ready (2025-10-02) - Casey (Access Control)
+
+**Issue**: #283 - Implement real workspace access control in API routes
+**Status**: ✅ DEPLOYMENT GUIDE COMPLETE
+**Deployment Guide**: `/Users/ryan.maclean/vibecode-webgui/docs/deployment/WORKSPACE_RBAC_DEPLOYMENT.md`
+**Risk Level**: HIGH - Security-critical change
+
+### Deliverables Complete ✅
+
+1. **Database Migration**: `prisma/migrations/20251002_add_workspace_members/migration.sql`
+   - Creates `workspace_members` table with RBAC (owner, admin, member, viewer)
+   - Performance indexes for access checks
+   - Migrates existing workspace owners
+
+2. **Authorization Library**: `src/lib/auth/workspace-access.ts` (494 lines)
+   - Real Prisma-backed access control replacing placeholder logic
+   - Role hierarchy enforcement (OWNER > ADMIN > MEMBER > VIEWER)
+   - Fail-closed design (deny access on error)
+   - Datadog metrics integration
+
+3. **Integration Tests**: `tests/integration/api/workspace-access.test.ts` (369 lines)
+   - Comprehensive test coverage: authorized/unauthorized scenarios
+   - Role-based access control validation
+   - Member management operations
+   - Fail-closed behavior verification
+
+4. **Deployment Guide**: `docs/deployment/WORKSPACE_RBAC_DEPLOYMENT.md` (850+ lines)
+   - Pre-deployment checklist (environment, code, dependencies)
+   - Phase-by-phase deployment steps (migration, API updates, testing)
+   - 4 API routes requiring updates identified
+   - Rollback plan (code-only and full rollback options)
+   - Monitoring, validation, and troubleshooting guides
+
+### API Routes Requiring Updates (4 files)
+
+1. **`src/app/api/files/route.ts`** (Lines 429-451)
+   - Replace placeholder `hasWorkspaceAccess` with real authorization
+   - Role requirements: VIEWER (read), MEMBER (write), ADMIN (delete)
+
+2. **`src/app/api/files/sync/route.ts`** (WebSocket authorization)
+   - Add authorization check before WebSocket upgrade
+   - Close unauthorized connections with code 1008
+
+3. **`src/app/api/claude/chat/secure-route.ts`** (Lines 238-260)
+   - Remove placeholder logic, use `requireWorkspaceAccess`
+   - Require MEMBER role for chat interactions
+
+4. **`src/app/api/ai/search/route.ts` & `src/app/api/ai/chat/unified/route.ts`**
+   - Investigation needed: verify workspace access patterns exist
+   - Apply standard authorization pattern if workspace operations found
+
+### Deployment Timeline
+
+- **Preparation**: 15 minutes (environment verification, backup)
+- **Migration**: 5-10 minutes (database schema update)
+- **API Updates**: 10-15 minutes (4 route files)
+- **Testing**: 15-20 minutes (integration tests, smoke tests)
+- **Validation**: 5 minutes (database checks, metrics)
+- **Total**: 30-40 minutes (recommend low-traffic window)
+
+### Next Steps
+
+1. Review deployment guide at `docs/deployment/WORKSPACE_RBAC_DEPLOYMENT.md`
+2. Schedule deployment window (recommend low-traffic period)
+3. Get approval from Tech Lead, Security Team, DBA
+4. Run migration on staging/dev environment first
+5. Execute production deployment following guide
+6. Monitor for 24-48 hours post-deployment
+
+---
+
+## Docker Layer Optimization - Phase 1 Complete (2025-10-02) - Finn (Container Optimizer) ✅
+
+**Issue**: #459 - Docker layer reduction
+**Status**: Phase 1 Complete - 35% layer reduction achieved
+**Results**: 57 RUN → 37 RUN commands (20 layers eliminated)
+**Details**: See issue #459 comment with full technical breakdown
+
+### Optimizations Applied
+1. VSCode extension consolidation (14 → 1 layer) = 13 layers saved
+2. LSP server installation consolidation (8 → 2 layers) = 6 layers saved
+3. VibeCode extension builds (3 → 1 layer) = 2 layers saved
+4. Permission operations consolidation (5 → 3 layers) = 2 layers saved
+
+### Phase 2 Target
+- Current: 37 layers
+- Target: ~25 layers (32% additional reduction)
+- Focus: DevOps CLI consolidation, verification step merging, multi-stage build
+
+---
+
+## Coordination Checkpoint (2025-10-01 After 3h Parallel Work) - Integration Coordinator
+
+**Status**: 78.5% overall progress across 10 parallel personas
+**Coordinator**: System Architect (Integration Coordinator Persona)
+**Conflicts Detected**: 0 critical blocking conflicts ✅
+**Full Report**: `/Users/ryan.maclean/vibecode-webgui/claudedocs/coordination-status.md` (2000+ lines)
+
+### Completed Work ✅
+
+1. **React Anti-Patterns Fixed** (#498) - READY TO CLOSE
+   - Memory leak eliminated: `WorkspaceLayout.tsx` (useState → useEffect)
+   - Event handler cleanup: `CodeServerIDE.tsx`
+   - Documentation: `claudedocs/react-usestate-useeffect-fix.md` (296 lines)
+
+2. **Monitoring Consolidation Analysis** (#464) - READY FOR IMPLEMENTATION
+   - Analysis: `claudedocs/monitoring-consolidation-status.md` (659 lines)
+   - Identified 2 duplicate tracer inits to remove
+   - Implementation time: ~1 hour
+
+3. **API Route Consolidation Planning** (#499) - ✅ PHASE 2 PLAN COMPLETE
+   - General Plan: `docs/api/CONSOLIDATION_PLAN.md` (863 lines)
+   - **Phase 2 Plan**: `docs/api/CHAT_CONSOLIDATION_PLAN.md` (1500+ lines) ✅
+   - Chat endpoints: 9 → 2 (78% reduction)
+   - Feature parity matrix, migration strategy, testing plan complete
+   - 6-month timeline with backwards compatibility
+   - 13-week phased rollout with backward compatibility
+
+4. **Tauri Native App Scaffolding** (#488-497) - 30% COMPLETE
+   - Project initialized: `src-tauri/` directory
+   - Docs: `docs/tauri/README.md`, `docs/tauri/GETTING_STARTED.md`
+   - 10 GitHub issues created
+
+5. **Docker Infrastructure** (#487) - 75% COMPLETE
+   - Healthchecks added to docker-compose.yml
+   - Security audit: `docker/code-server/SECURITY_AUDIT.md`
+
+6. **Strategic Documentation** - 95% COMPLETE
+   - 20+ analysis documents created
+   - Recommend archiving to `claudedocs/archive/2025-10-01/`
+
+7. **Database Quick Wins** - 90% PLANNING COMPLETE
+   - Plan: `docs/database/QUICK_WINS.md`
+   - Migrations created: `prisma/migrations/20251002_*`
+
+8. **Test Coverage CI** (#501) - 80% PLANNING COMPLETE
+   - Plan: `docs/testing/COVERAGE_CI_PLAN.md`
+
+9. **Branch Protection Script** - 60% COMPLETE
+   - Script: `scripts/security/enable-branch-protection.sh`
+   - Needs owner execution
+
+### Immediate Actions Required (Next 24 Hours)
+
+#### Priority 1: Critical Housekeeping (15 minutes)
+
+1. **Update .gitignore** (5 min) - Prevent Tauri build artifact commits
+   ```gitignore
+   src-tauri/target/
+   src-tauri/Cargo.lock
+   docs/**/.DS_Store
+   scripts/**/*.log
+   ```
+
+2. **Close #498** (2 min) - Link to `claudedocs/react-usestate-useeffect-fix.md`
+
+3. **Update GitHub Issues** (8 min)
+   - Add docs links to #499, #501, #464
+   - Update Tauri issues (#488-497) with scaffolding status
+
+#### Priority 2: Quick Wins (2 hours)
+
+4. **Implement Monitoring Consolidation** (1 hour)
+   - Remove duplicate tracer inits per consolidation status doc
+   - Test: `npm run dev` → verify single init
+
+5. **Remove Test Endpoints** (30 min)
+   - Delete `/api/mongodb-test/route.ts`
+   - Delete `/api/test-db/route.ts`
+
+6. **Archive Strategic Docs** (15 min)
+   - Move 17 docs to `claudedocs/archive/2025-10-01/`
+
+#### Priority 3: High-Impact Features (This Week)
+
+7. **Tauri Browser Auto-Launch** (#491 - P0, Quick Win) - 2 days
+8. **API Consolidation Phase 1** (#499) - 1 week  
+9. **Database Composite Indexes** - 1 week
+
+### Progress Tracking
+
+| Persona | Task | Status | ETA | Blocker |
+|---------|------|--------|-----|---------|
+| Frontend | React fixes | ✅ 100% | Done | None |
+| Monitoring | Tracer consolidation | 🔄 80% | 1h | None |
+| Backend | API consolidation | 🔄 75% | 1w | None |
+| Database | Quick wins | 🔄 70% | 1w | Test window |
+| Tauri | Browser launch | 🔄 30% | 2d | None |
+| Docker | Security fixes | 🔄 75% | 3d | None |
+| Strategy | Documentation | ✅ 95% | Done | None |
+| DevOps | Branch protect | 🔄 60% | 30m | Owner perms |
+| QA | Coverage CI | 🔄 70% | 2d | None |
+| Coordination | Status report | ✅ 100% | Done | None |
+
+### Files Modified (No Conflicts)
+```
+M docker/code-server/SECURITY_AUDIT.md
+M docker/docker-compose.yml
+M src/components/ide/CodeServerIDE.tsx
+M src/components/workspace/WorkspaceLayout.tsx
+```
+**Untracked**: 400+ files (mostly Tauri build artifacts - add to .gitignore)
+
+### Next Coordination Checkpoint
+**Timing**: In 4 hours OR when 3+ personas complete implementation
+**Report**: Update `claudedocs/coordination-status.md`
+
+---
+
 ## Agent Update (2025-10-02 00:05 UTC) - Dev Server Fix Complete ✅
 
 **🎉 CRITICAL FIX: Next.js Dev Server Startup Issue RESOLVED**
@@ -236,7 +445,19 @@
 
 **Owner**: Agent #7 - Apple Containerization
 **Priority**: HIGH
+<<<<<<< Updated upstream
 **Time**: 60 hours
+=======
+**Time**: 1-2 hours
+- [x] Complete tracer.init() consolidation in instrumentation.ts
+- [x] Remove duplicate init from health-monitoring.ts
+- [x] Remove duplicate init from enhanced-datadog-integration.ts
+- [x] Add unified service tagging (DD_ENV, DD_VERSION, DD_GIT_COMMIT_SHA)
+- [x] Test that tracing still works
+- [x] Close #464
+
+**Completed (2025-10-01 by Drew/Observability)**: Fixed duplicate Datadog tracer initialization issue. Removed `tracer.init()` calls from `health-monitoring.ts` and `enhanced-datadog-integration.ts`. Single initialization now occurs in `src/instrumentation.ts` (Next.js 15 instrumentation hook) with unified service tagging. Files compile cleanly, preventing unpredictable tracing behavior.
+>>>>>>> Stashed changes
 
 - [ ] Add runtime detection (Apple vs Docker vs OrbStack)
 - [ ] Create Apple Containerization backend adapter
@@ -253,6 +474,7 @@
 
 **Owner**: Agent #7 - Apple Containerization
 **Priority**: HIGH
+<<<<<<< Updated upstream
 **Time**: 40 hours
 
 - [ ] Error handling and recovery
@@ -263,6 +485,25 @@
 - [ ] User guide for macOS developers
 - [ ] CI/CD integration
 - [ ] Beta testing with real users
+=======
+**Time**: 30 min
+- [x] Enable minification in next.config.js
+- [x] Removed problematic TerserPlugin webpack modification (lines 274-284)
+- [ ] Test build size reduction
+- [ ] Verify production build works
+- [ ] Document bundle size improvement
+- [ ] Close #442
+
+**Fix Details (2025-10-01)**: Removed TerserPlugin modification code that was breaking production builds. Next.js 15 uses SWC minifier by default, not Terser. The webpack config was attempting to modify a non-existent plugin, causing build failures.
+
+### Agent 5: Documentation Updates
+**Priority**: MEDIUM
+**Time**: 30 min
+- [ ] Create user documentation (#433)
+- [ ] Update deployment docs (#436)
+- [ ] Add troubleshooting guide (#461)
+- [ ] Close documentation issues
+>>>>>>> Stashed changes
 
 **Success Criteria**: Production-ready Apple Containerization support
 

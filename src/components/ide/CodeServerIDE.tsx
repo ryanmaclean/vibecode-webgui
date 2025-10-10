@@ -97,21 +97,8 @@ export default function CodeServerIDE({
       // Configure iframe security and communication
       iframe.style.opacity = '1'
 
-      // Set up message handling for VS Code extension communication
-      const handleMessage = (event: MessageEvent) => {
-        if (event.origin !== new URL(session.url).origin) return
-
-        // Handle VS Code messages
-        if (event.data.type === 'vscode-ready') {
-          onReady?.(iframe)
-        }
-      }
-
-      window.addEventListener('message', handleMessage)
-
-      return () => {
-        window.removeEventListener('message', handleMessage)
-      }
+      // Notify that iframe is ready
+      onReady?.(iframe)
     } catch (err) {
       console.error('Error setting up iframe communication:', err)
       // Return undefined on error (no cleanup needed)
@@ -131,6 +118,26 @@ export default function CodeServerIDE({
       startCodeServerSession()
     }
   }, [isAuthenticated, user, startCodeServerSession])
+
+  // Set up message handling for VS Code extension communication
+  useEffect(() => {
+    if (!session) return
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== new URL(session.url).origin) return
+
+      // Handle VS Code messages
+      if (event.data.type === 'vscode-ready' && iframeRef.current) {
+        onReady?.(iframeRef.current)
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+
+    return () => {
+      window.removeEventListener('message', handleMessage)
+    }
+  }, [session, onReady])
 
   // Cleanup on unmount
   useEffect(() => {
