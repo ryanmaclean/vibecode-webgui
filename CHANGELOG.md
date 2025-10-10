@@ -1,122 +1,59 @@
 # Changelog
 
-All notable changes to the VibeCode project are documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Added
-- Serena MCP integration for code-server
-- VectorShardingManager with consistent hash ring
-- KIND testing infrastructure deployment
+## [v1.1.1] - 2025-10-01
 
 ### Changed
-- Consolidated multiple TODO files into single comprehensive TODO.md
+
+- **Code-Server Images**: License compliance improvements for all profiles (minimal, standard, ai, web, full)
+- **Documentation**: Updated all references to use v1.1.1 tags
+- **Verification**: Enhanced verification guide with comprehensive profile testing
+
+### Security
+
+- **License Compliance**: All tools verified to use permissive licenses only (MIT, Apache 2.0, BSD, Vim License)
+
+## [v1.2.0] - 2025-10-01
+
+### Added
+
+- **PocketBase v0.24.4**: Lightweight, embedded database with admin UI and REST API (MIT License)
+- **Devbox**: Portable, reproducible development environments powered by Nix (Apache 2.0)
+- **OpenAI Cookbook**: Comprehensive reference examples cloned to `/opt/openai-cookbook`
+- **Enhanced tool verification**: Automated validation of all installed tools during build
+
+### Changed
+
+- Updated to v1.2.0 with expanded tooling ecosystem
+- All dependencies remain permissively licensed (Apache 2.0/MIT)
+- Improved build-time verification for tool availability
+
+### Added
+
+- **MCP Server Datadog Integration**: All Model Context Protocol servers now support Datadog APM tracing
+  - Python wrapper (`scripts/roundtable-mcp-wrapper.py`) for `roundtable-ai` server
+  - Universal Node.js wrapper (`scripts/mcp-wrapper.js`) for `puppeteer` and `sequential-thinking` servers
+  - Automatic instrumentation with `dd-trace` (Node.js) and `ddtrace` (Python)
+  - Service names: `mcp-puppeteer`, `mcp-sequential-thinking`, `mcp-roundtable-ai`
+  - Runtime metrics, error tracking, and distributed tracing support
+  - Setup script (`scripts/setup-mcp-tracing.sh`) for dependency installation
+  - Comprehensive documentation in `docs/MCP_DATADOG_INTEGRATION.md`
+  - Reference configuration in `config/mcp_config.json`
+- **Reduced-motion Playwright coverage**: Added `tests/e2e/enhanced-chat/reduced-motion.spec.ts` with chunked SSE stub and accessibility assertions; updated `EnhancedChatInterface` streaming indicator and live region to support motion-sensitive users; documented coverage in testing guides.
 
 ### Fixed
-- Git repository state - cleaned up 10,000+ untracked files
-- TypeScript errors in web-dashboard pages
-- ESLint configuration for web-dashboard
 
-## [2025-09-10] - September 2025
+- **roundtable_mcp_server log file error**: Wrapper changes working directory to `~/vibecode-webgui` before importing server, preventing "Read-only file system" errors when writing logs
+- **ddtrace API compatibility**: Updated Python wrapper to use environment variables (`DD_AGENT_HOST`, `DD_TRACE_AGENT_PORT`) instead of deprecated `tracer.configure()` parameters
 
-### Added
-- Comprehensive ESLint configuration for web-dashboard
-- Updated lint script in web-dashboard/package.json
-- Fixed TypeScript errors in multiple test files
+### Changed
 
-### Fixed
-- TypeScript errors in src/lib/services/__tests__/chat-mongodb.test.ts
-- TypeScript errors in src/lib/security/__tests__/input-validator.test.ts
-- Git repository hygiene by adding web-dashboard to .gitignore
+- MCP server logs now written to project directory instead of root filesystem
+- Added `roundtable_mcp_server.log` to `.gitignore`
 
-## [2025-08-31] - August 2025
+## Previous Releases
 
-### Added
-- **20+ Production Templates** - AI/ML, Enterprise SaaS, Collaboration, Infrastructure
-- **Template Versioning System** - Semantic versioning with migration utilities
-- **Template Registry** - Community scoring, download tracking, compatibility validation
-- **Advanced Project Generator** - Customizable configurations with real-time preview
-- **Intelligent Model Selection** - Automatic task detection and model routing
-- **Multi-Provider Support** - OpenAI, Anthropic, Google, Mistral integration
-- **Performance Monitoring** - Real-time metrics, cost optimization, fallback strategies
-- **Model Orchestration Dashboard** - Complete management interface with analytics
-- **Multi-Cloud Support** - Vercel, Netlify, AWS, Railway deployment
-- **Intelligent Provider Recommendations** - Cost optimization and feature matching
-- **Deployment Monitoring** - Real-time status tracking and deployment history
-- **Deployment Management** - History tracking, rollback capabilities, cost analysis
-- **Direct Repository Creation** - Automated repository creation from templates
-- **CI/CD Workflow Generation** - Automatic GitHub Actions setup
-- **Repository Management** - Comprehensive settings, licensing, collaboration
-- **WCAG 2.1 AA Compliance** - Automated accessibility testing with axe-core
-- **Comprehensive Test Suite** - Unit, integration, E2E, and performance tests
-- **Accessibility Dashboard** - Real-time compliance monitoring and reporting
-- **Performance Testing** - AI workflow optimization and benchmarking
-- **Advanced Monitoring** - Datadog integration with custom dashboards
-- **Security Middleware** - Input validation, rate limiting, threat detection
-- **Performance Optimization** - Caching, query optimization, real-time metrics
-- **Enterprise Features** - User management, audit logging, compliance tracking
-- **Comprehensive Test Coverage** - Build system working, core tests passing
-- **Datadog Database Monitoring** - PostgreSQL performance tracking
-- **Resource Management System** - Quotas, namespacing, user isolation
-- **Console Mode Enhancement** - VS Code extensions pre-installed in Docker
-- **Security & API Key Protection** - Multi-layer scanning and protection
-- **Comprehensive Library Gap Analysis** - Identified 20+ missing production-ready AI tools
-- **Implementation Roadmap** - 3-phase plan for LangChain, Pinecone, MLflow integration
-- **Cost-Benefit Assessment** - ROI analysis for enterprise AI infrastructure
-
-### Enhanced
-- **VectorShardingManager** - Consistent hash ring for horizontal scaling
-- **Enhanced Connection Pooling** - Dynamic sizing with comprehensive metrics
-- **Advanced Query Caching** - LFU eviction with hit/miss analytics
-- **Provider Performance Scoring** - Intelligent routing between pgvector and Weaviate
-- **Real-time Monitoring Integration** - Database metrics connected to EnhancedVectorStore
-- **Custom VectorDatabase Operator** - CRD for automated database management
-- **Database Backup CronJobs** - Automated backup with retention policies
-- **ServiceMonitor Integration** - Prometheus metrics collection
-- **HPA with Custom Metrics** - Intelligent autoscaling based on vector operations
-- **Node Affinity Rules** - Optimal pod placement for performance
-- **Vector Database Dashboard** - Comprehensive performance visualization
-- **Critical Alerting Rules** - Latency, errors, and resource exhaustion alerts
-- **VectorMetricsCollector** - Detailed performance tracking
-- **Provider Insights** - Performance comparison and optimization recommendations
-- **Docker Compose Test Environment** - Isolated testing with PostgreSQL and Redis
-- **KIND Kubernetes Manifests** - Production-like deployment testing
-- **Performance Validation Scripts** - Comprehensive testing framework
-- **Optimization Validation** - 100% pass rate on all components
-
-## [2025-07-31] - July 2025
-
-### Added
-- AI-powered project generation (45s avg, 95% success)
-- Kubernetes-native workspace provisioning (8s avg)
-- VS Code in browser with code-server
-- Enterprise-grade authentication (2FA, SSO)
-- WCAG 2.1 AA accessibility compliance
-
-### Performance Achievements
-- Project Generation: < 30s (Achieved: 45s)
-- Workspace Provisioning: < 5s (Achieved: 8s)
-- Page Load: < 3s (Achieved: 2.1s)
-- Test Suite: < 60s (Achieved: 45s)
-
-## [2025-06-30] - June 2025
-
-### Added
-- Initial project setup and architecture
-- Core platform foundation
-- Basic AI integration
-- Development environment setup
-
----
-
-## Legend
-
-- **Added** for new features
-- **Changed** for changes in existing functionality
-- **Deprecated** for soon-to-be removed features
-- **Removed** for now removed features
-- **Fixed** for any bug fixes
-- **Security** for vulnerability fixes
+See git history for changes prior to this version.
