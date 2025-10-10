@@ -97,7 +97,6 @@ const addUniqueStrings = (target, values) => {
 const nextConfig = {
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
-  swcMinify: false,
   output: outputMode,
 
   // Compiler optimizations (SWC minification is default in Next.js 15)
@@ -192,8 +191,6 @@ const nextConfig = {
   webpack: (config, { dev, isServer }) => {
     if (!dev) {
       config.devtool = 'source-map'
-      config.optimization = config.optimization || {}
-      config.optimization.minimize = false
     }
 
     config.plugins = config.plugins || []
@@ -291,6 +288,9 @@ const nextConfig = {
       'pg-connection-string': 'commonjs pg-connection-string',
     })
     config.externals = externals
+
+    // Note: Removed webpack minimize configuration - Next.js 15 uses SWC minification by default
+    // which provides better performance. The previous webpack minimizer was causing build errors.
 
     config.module = config.module || {}
     config.module.rules = config.module.rules || []
