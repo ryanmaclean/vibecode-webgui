@@ -19,7 +19,7 @@ const alertVariants = cva(
   }
 )
 
-const Alert = React.forwardRef<
+const Alert = React.memo(React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof alertVariants>
 >(({ className, variant, ...props }, ref) => (
@@ -29,10 +29,10 @@ const Alert = React.forwardRef<
     className={cn(alertVariants({ variant }), className)}
     {...props}
   />
-))
+)))
 Alert.displayName = "Alert"
 
-const AlertTitle = React.forwardRef<
+const AlertTitle = React.memo(React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLHeadingElement>
 >(({ className, ...props }, ref) => (
@@ -41,10 +41,10 @@ const AlertTitle = React.forwardRef<
     className={cn("mb-1 font-medium leading-none tracking-tight", className)}
     {...props}
   />
-))
+)))
 AlertTitle.displayName = "AlertTitle"
 
-const AlertDescription = React.forwardRef<
+const AlertDescription = React.memo(React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
@@ -53,7 +53,7 @@ const AlertDescription = React.forwardRef<
     className={cn("text-sm [&_p]:leading-relaxed", className)}
     {...props}
   />
-))
+)))
 AlertDescription.displayName = "AlertDescription"
 
 export { Alert, AlertTitle, AlertDescription }

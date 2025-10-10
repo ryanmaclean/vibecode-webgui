@@ -1,5 +1,11 @@
 /**
  * Enhanced Vector Database Error Handler
+ *
+ * @deprecated This file is deprecated and will be removed in a future version.
+ * All functionality has been consolidated into vector-db-error-handler.ts
+ * Please update imports to use './vector-db-error-handler' instead.
+ *
+ * Migration: Simply change import from './vector-db-error-handler-new' to './vector-db-error-handler'
  */
 
 import { 

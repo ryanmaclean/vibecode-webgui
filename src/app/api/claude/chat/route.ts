@@ -10,7 +10,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { getClaudeCliInstance } from '@/lib/claude-cli-integration'
-// import type { ClaudeCliRequest } from '@/lib/claude-cli-integration'
+import { z } from 'zod'
+
+// Security: Input validation schema
+const ClaudeChatRequestSchema = z.object({
+  message: z.string().min(1, 'Message cannot be empty').max(10000, 'Message too long'),
+  workspaceId: z.string()
+    .min(1, 'Workspace ID required')
+    .max(100, 'Workspace ID too long')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid workspace ID format'),
+  contextFiles: z.array(z.string()).optional().default([])
+    .refine((files) => files.every(f => !f.includes('..')), {
+      message: 'Path traversal detected in context files'
+    })
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,23 +36,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse request body
+    // Parse and validate request body
     const body = await request.json()
-    const { message, workspaceId, contextFiles } = body
+    const validationResult = ClaudeChatRequestSchema.safeParse(body)
 
-    if (!message || typeof message !== 'string') {
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'Message is required' },
+        {
+          error: 'Invalid request data',
+          details: validationResult.error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        },
         { status: 400 }
       )
     }
 
-    if (!workspaceId || typeof workspaceId !== 'string') {
-      return NextResponse.json(
-        { error: 'Workspace ID is required' },
-        { status: 400 }
-      )
-    }
+    const { message, workspaceId, contextFiles } = validationResult.data
 
     // Get workspace directory
     const workspaceDir = `/workspaces/${workspaceId}`
