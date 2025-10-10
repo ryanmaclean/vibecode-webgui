@@ -457,6 +457,7 @@ export default function MultimodalPromptInterface({
               variant="ghost"
               size="sm"
               onClick={() => setShowCapabilities(!showCapabilities)}
+              aria-label="Toggle capabilities"
             >
               <Settings className="w-4 h-4" />
             </Button>
@@ -527,6 +528,7 @@ export default function MultimodalPromptInterface({
                     onClick={toggleVoiceInput}
                     disabled={!recognitionRef.current}
                     className={isListening ? "bg-red-500 hover:bg-red-600" : ""}
+                    aria-label={isListening ? "Stop voice input" : "Start voice input"}
                   >
                     {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                   </Button>
@@ -537,6 +539,7 @@ export default function MultimodalPromptInterface({
                     size="sm"
                     onClick={toggleAudioRecording}
                     className={isRecording ? "bg-red-500 hover:bg-red-600" : ""}
+                    aria-label={isRecording ? "Stop audio recording" : "Start audio recording"}
                   >
                     <div className="w-4 h-4 rounded-full bg-current animate-pulse" />
                   </Button>
@@ -546,15 +549,17 @@ export default function MultimodalPromptInterface({
                     variant="outline"
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
+                    aria-label="Upload files"
                   >
                     <Upload className="w-4 h-4" />
                   </Button>
-                  
+
                   {/* Image Upload */}
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => imageInputRef.current?.click()}
+                    aria-label="Upload images"
                   >
                     <Camera className="w-4 h-4" />
                   </Button>
@@ -572,6 +577,7 @@ export default function MultimodalPromptInterface({
                   <Button
                     onClick={handleSendMessage}
                     disabled={isProcessing || (!input.trim() && attachedFiles.length === 0 && attachedImages.length === 0)}
+                    aria-label="Send message"
                   >
                     {isProcessing ? (
                       <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

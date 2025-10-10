@@ -5,11 +5,12 @@
  * Shows user avatars, cursor positions, and activity indicators
  *
  * Staff Engineer Implementation - Production-ready user presence UI
+ * Optimized with React.memo and useMemo for better performance
  */
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { CollaborationUser } from '@/lib/collaboration'
 
 interface UserPresenceProps {
@@ -31,7 +32,70 @@ interface UserActivityStatus {
   }
 }
 
-export const UserPresence: React.FC<UserPresenceProps> = ({
+const UserAvatar = React.memo(({
+  user,
+  isActive,
+  isTyping,
+  cursorPosition,
+  showCursors,
+  getUserInitials,
+  getDisplayName,
+  getCursorText
+}: {
+  user: CollaborationUser
+  isActive: boolean
+  isTyping?: boolean
+  cursorPosition?: { line: number; column: number }
+  showCursors: boolean
+  getUserInitials: (user: CollaborationUser) => string
+  getDisplayName: (user: CollaborationUser) => string
+  getCursorText: (position?: { line: number; column: number }) => string
+}) => {
+  return (
+    <div className="relative group">
+      {/* User Avatar */}
+      <div
+        className={`
+          w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium
+          border-2 border-white shadow-sm cursor-pointer transition-transform hover:scale-110
+          ${isActive ? 'ring-2 ring-green-400 ring-offset-1' : ''}
+          ${isTyping ? 'animate-pulse' : ''}
+        `}
+        style={{ backgroundColor: user.color }}
+        title={`${getDisplayName(user)} (${user.email})`}
+      >
+        {getUserInitials(user)}
+
+        {/* Activity Indicator */}
+        {isActive && (
+          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-white" />
+        )}
+
+        {/* Typing Indicator */}
+        {isTyping && (
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border border-white animate-bounce" />
+        )}
+      </div>
+
+      {/* Tooltip */}
+      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+        <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap">
+          <div className="font-medium">{getDisplayName(user)}</div>
+          <div className="text-gray-300">{user.email}</div>
+          {showCursors && cursorPosition && (
+            <div className="text-gray-400 text-xs mt-1">
+              {getCursorText(cursorPosition)}
+            </div>
+          )}
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+        </div>
+      </div>
+    </div>
+  );
+});
+UserAvatar.displayName = 'UserAvatar';
+
+export const UserPresence: React.FC<UserPresenceProps> = React.memo(({
   users,
   currentUserId,
   maxVisible = 5,
@@ -42,33 +106,16 @@ export const UserPresence: React.FC<UserPresenceProps> = ({
   const [showAllUsers, setShowAllUsers] = useState(false)
 
   /**
-   * Update user activity statuses
-   */
-  useEffect(() => {
-    const statuses: UserActivityStatus[] = users
-      .filter(user => user.id !== currentUserId)
-      .map(user => ({
-        user,
-        isActive: true, // Assume active if in the list
-        lastSeen: new Date(),
-        isTyping: false, // This would be updated via awareness events
-        cursorPosition: user.cursor
-      }))
-
-    setUserStatuses(statuses)
-  }, [users, currentUserId])
-
-  /**
    * Get display name for user
    */
-  const getDisplayName = (user: CollaborationUser): string => {
+  const getDisplayName = useCallback((user: CollaborationUser): string => {
     return user.name || user.email.split('@')[0]
-  }
+  }, [])
 
   /**
    * Get user initials for avatar
    */
-  const getUserInitials = (user: CollaborationUser): string => {
+  const getUserInitials = useCallback((user: CollaborationUser): string => {
     const name = getDisplayName(user)
     return name
       .split(' ')
@@ -76,12 +123,12 @@ export const UserPresence: React.FC<UserPresenceProps> = ({
       .join('')
       .toUpperCase()
       .slice(0, 2)
-  }
+  }, [getDisplayName])
 
   /**
    * Format time since last activity
    */
-  const getTimeSince = (date: Date): string => {
+  const getTimeSince = useCallback((date: Date): string => {
     const now = new Date()
     const diff = now.getTime() - date.getTime()
     const minutes = Math.floor(diff / 60000)
@@ -94,18 +141,45 @@ export const UserPresence: React.FC<UserPresenceProps> = ({
 
     const days = Math.floor(hours / 24)
     return `${days}d ago`
-  }
+  }, [])
 
   /**
    * Get cursor position text
    */
-  const getCursorText = (position?: { line: number; column: number }): string => {
+  const getCursorText = useCallback((position?: { line: number; column: number }): string => {
     if (!position) return ''
     return `Line ${position.line + 1}, Col ${position.column + 1}`
-  }
+  }, [])
 
-  const visibleUsers = showAllUsers ? userStatuses : userStatuses.slice(0, maxVisible)
-  const remainingCount = userStatuses.length - maxVisible
+  /**
+   * Update user activity statuses
+   */
+  useEffect(() => {
+    const statuses: UserActivityStatus[] = users
+      .filter(user => user.id !== currentUserId)
+      .map(user => ({
+        user,
+        isActive: true,
+        lastSeen: new Date(),
+        isTyping: false,
+        cursorPosition: user.cursor
+      }))
+
+    setUserStatuses(statuses)
+  }, [users, currentUserId])
+
+  const visibleUsers = useMemo(() =>
+    showAllUsers ? userStatuses : userStatuses.slice(0, maxVisible),
+    [showAllUsers, userStatuses, maxVisible]
+  )
+
+  const remainingCount = useMemo(() =>
+    userStatuses.length - maxVisible,
+    [userStatuses.length, maxVisible]
+  )
+
+  const handleShowAll = useCallback(() => setShowAllUsers(true), [])
+  const handleShowLess = useCallback(() => setShowAllUsers(false), [])
 
   if (userStatuses.length === 0) {
     return (
@@ -132,54 +206,23 @@ export const UserPresence: React.FC<UserPresenceProps> = ({
         {/* User Avatars */}
         <div className="flex items-center -space-x-2">
           {visibleUsers.map(({ user, isActive, isTyping, cursorPosition }) => (
-            <div
+            <UserAvatar
               key={user.id}
-              className="relative group"
-            >
-              {/* User Avatar */}
-              <div
-                className={`
-                  w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium
-                  border-2 border-white shadow-sm cursor-pointer transition-transform hover:scale-110
-                  ${isActive ? 'ring-2 ring-green-400 ring-offset-1' : ''}
-                  ${isTyping ? 'animate-pulse' : ''}
-                `}
-                style={{ backgroundColor: user.color }}
-                title={`${getDisplayName(user)} (${user.email})`}
-              >
-                {getUserInitials(user)}
-
-                {/* Activity Indicator */}
-                {isActive && (
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-white" />
-                )}
-
-                {/* Typing Indicator */}
-                {isTyping && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border border-white animate-bounce" />
-                )}
-              </div>
-
-              {/* Tooltip */}
-              <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                <div className="bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap">
-                  <div className="font-medium">{getDisplayName(user)}</div>
-                  <div className="text-gray-300">{user.email}</div>
-                  {showCursors && cursorPosition && (
-                    <div className="text-gray-400 text-xs mt-1">
-                      {getCursorText(cursorPosition)}
-                    </div>
-                  )}
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
-                </div>
-              </div>
-            </div>
+              user={user}
+              isActive={isActive}
+              isTyping={isTyping}
+              cursorPosition={cursorPosition}
+              showCursors={showCursors}
+              getUserInitials={getUserInitials}
+              getDisplayName={getDisplayName}
+              getCursorText={getCursorText}
+            />
           ))}
 
           {/* Show More Button */}
           {remainingCount > 0 && !showAllUsers && (
             <button
-              onClick={() => setShowAllUsers(true)}
+              onClick={handleShowAll}
               className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white shadow-sm flex items-center justify-center text-xs font-medium text-gray-600 hover:bg-gray-300 transition-colors"
               title={`Show ${remainingCount} more collaborator${remainingCount !== 1 ? 's' : ''}`}
             >
@@ -190,7 +233,7 @@ export const UserPresence: React.FC<UserPresenceProps> = ({
           {/* Show Less Button */}
           {showAllUsers && userStatuses.length > maxVisible && (
             <button
-              onClick={() => setShowAllUsers(false)}
+              onClick={handleShowLess}
               className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white shadow-sm flex items-center justify-center text-xs font-medium text-gray-600 hover:bg-gray-300 transition-colors"
               title="Show less"
             >
@@ -248,7 +291,9 @@ export const UserPresence: React.FC<UserPresenceProps> = ({
       )}
     </div>
   )
-}
+})
+
+UserPresence.displayName = 'UserPresence';
 
 export default UserPresence
 

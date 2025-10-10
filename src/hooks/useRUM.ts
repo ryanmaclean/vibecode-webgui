@@ -136,6 +136,8 @@ export function useRUM(): UseRUMReturn {
         window.history.replaceState = originalReplaceState
       }
     }
+    // No cleanup needed if window is undefined (SSR)
+    return undefined
   }, [])
 
   const trackAuth = useCallback((event: 'login' | 'logout' | 'signup' | 'password_reset', context?: Record<string, any>) => {

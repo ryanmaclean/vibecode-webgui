@@ -334,6 +334,7 @@ export default function WorkspaceSharing({
               onClick={() => onMemberRemove(member.userId)}
               className="p-1 text-red-500 hover:text-red-700 transition-colors"
               title="Remove member"
+              aria-label="Remove member"
             >
               <UserMinus className="w-4 h-4" />
             </button>
@@ -344,6 +345,7 @@ export default function WorkspaceSharing({
             onClick={() => setSelectedMember(member)}
             className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
             title="View details"
+            aria-label="View member details"
           >
             <Eye className="w-4 h-4" />
           </button>
@@ -386,12 +388,14 @@ export default function WorkspaceSharing({
                   setShowTeamModal(true)
                 }}
                 className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                aria-label="Edit team"
               >
                 <Edit className="w-4 h-4" />
               </button>
               <button
                 onClick={() => onTeamDelete(team.teamId)}
                 className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                aria-label="Delete team"
               >
                 <Trash2 className="w-4 h-4" />
               </button>

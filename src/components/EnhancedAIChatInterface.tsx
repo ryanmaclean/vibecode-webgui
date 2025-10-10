@@ -204,6 +204,7 @@ export function EnhancedAIChatInterface({
               variant="ghost"
               size="sm"
               onClick={() => setShowSettings(!showSettings)}
+              aria-label="Toggle settings"
             >
               <Settings className="h-4 w-4" />
             </Button>
@@ -415,6 +416,7 @@ export function EnhancedAIChatInterface({
           disabled={!input.trim() || isLoading}
           size="lg"
           className="px-4"
+          aria-label="Send message"
         >
           <Send className="h-4 w-4" />
         </Button>

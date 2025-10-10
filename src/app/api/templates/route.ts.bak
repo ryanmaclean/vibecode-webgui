@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { createErrorResponse } from '@/lib/api-utils'
 
 interface ProjectTemplate {
   id: string
@@ -607,16 +608,10 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Templates API error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch templates' },
-      { status: 500 }
-    )
+    return createErrorResponse('Failed to fetch templates', 500)
   }
 }
 
 export async function POST() {
-  return NextResponse.json(
-    { error: 'Template creation not implemented yet' },
-    { status: 501 }
-  )
+  return createErrorResponse('Template creation not implemented yet', 501)
 }

@@ -4,7 +4,7 @@ export interface SeparatorProps extends React.HTMLAttributes<HTMLHRElement> {
   orientation?: 'horizontal' | 'vertical'
 }
 
-export const Separator = React.forwardRef<HTMLHRElement, SeparatorProps>(
+export const Separator = React.memo(React.forwardRef<HTMLHRElement, SeparatorProps>(
   ({ className = '', orientation = 'horizontal', ...props }, ref) => {
     const isVertical = orientation === 'vertical'
     return (
@@ -18,5 +18,5 @@ export const Separator = React.forwardRef<HTMLHRElement, SeparatorProps>(
       />
     )
   }
-)
+))
 Separator.displayName = 'Separator'
