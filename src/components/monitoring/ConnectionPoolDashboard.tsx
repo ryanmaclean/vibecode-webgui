@@ -110,11 +110,13 @@ export default function ConnectionPoolDashboard() {
   // Auto-refresh effect
   useEffect(() => {
     fetchDashboardData()
-    
+
     if (autoRefresh) {
       const interval = setInterval(fetchDashboardData, 30000) // Refresh every 30 seconds
       return () => clearInterval(interval)
     }
+    // No cleanup needed if autoRefresh is false
+    return undefined
   }, [autoRefresh])
 
   const getHealthStatusColor = (status: string) => {
