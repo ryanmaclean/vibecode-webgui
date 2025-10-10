@@ -4,7 +4,7 @@
  */
 
 import { metrics } from '../server-monitoring';
-import { cache, CacheKeys, CacheTTL } from '../cache/valkey-client';
+import { cache, CacheKeys, CacheTTL } from '../cache/unified-cache-client';
 
 export interface PerformanceMetric {
   timestamp: number;
