@@ -76,13 +76,18 @@ export default function SignInForm() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div
+            className="bg-red-50 border border-red-200 rounded-md p-4"
+            role="alert"
+            aria-live="polite"
+          >
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg
                   className="h-5 w-5 text-red-400"
                   viewBox="0 0 20 20"
                   fill="currentColor"
+                  aria-hidden="true"
                 >
                   <path
                     fillRule="evenodd"
@@ -95,7 +100,7 @@ export default function SignInForm() {
                 <h3 className="text-sm font-medium text-red-800">
                   Authentication Error
                 </h3>
-                <div className="mt-2 text-sm text-red-700">
+                <div id="signin-error" className="mt-2 text-sm text-red-700">
                   <p>{error}</p>
                 </div>
               </div>
@@ -121,6 +126,8 @@ export default function SignInForm() {
                 }
                 className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
+                aria-invalid={error ? "true" : "false"}
+                aria-describedby={error ? "signin-error" : undefined}
               />
             </div>
             <div>
@@ -139,6 +146,8 @@ export default function SignInForm() {
                 }
                 className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
+                aria-invalid={error ? "true" : "false"}
+                aria-describedby={error ? "signin-error" : undefined}
               />
             </div>
           </div>
