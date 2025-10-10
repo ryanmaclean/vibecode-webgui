@@ -1,6 +1,6 @@
 # VibeCode WebGUI System Architecture
 
-**Version:** 1.0
+**Version:** 1.1
 **Last Updated:** 2025-10-01
 **Status:** Production-Ready
 
@@ -177,6 +177,7 @@ graph TB
         WorkspaceService[Workspace Management]
         FileService[File Operations]
         MCPService[MCP Integration]
+        AgentFramework[Agent Framework]
     end
 
     subgraph "Data Access Layer"
@@ -202,6 +203,7 @@ graph TB
     Routes --> WorkspaceService
     Routes --> FileService
     Routes --> MCPService
+    Routes --> AgentFramework
 
     AIService --> PrismaClient
     VectorService --> VectorDB
@@ -224,7 +226,7 @@ graph TB
 
 #### 2. Application Layer (`/src/app/api`, `/src/middleware`)
 - **API Routes:** RESTful endpoints following Next.js conventions
-- **Middleware:** Authentication, rate limiting, CORS, security headers
+- **Middleware:** Authentication, rate limiting, CORS, security headers, bot detection
 - **Request Validation:** Input sanitization and type checking
 - **Error Handling:** Centralized error tracking with Datadog
 
@@ -234,6 +236,7 @@ graph TB
 - **Workspace Management:** Project isolation and resource allocation
 - **File Operations:** CRUD operations with Azure Blob storage
 - **MCP Integration:** Model Context Protocol server implementations
+- **Agent Framework:** Multi-agent orchestration system
 
 #### 4. Data Access Layer (`/src/lib/db`, `/src/lib/cache`)
 - **Prisma Client:** Type-safe database queries with connection pooling
@@ -289,19 +292,68 @@ graph LR
 /src
 ├── app/                          # Next.js App Router
 │   ├── api/                      # API route handlers
+│   │   ├── ai/                   # AI endpoints
+│   │   ├── ai-cli-tools/         # CLI tool integrations
 │   │   ├── auth/                 # Authentication endpoints
 │   │   ├── chat/                 # Chat API with AI providers
 │   │   ├── claude/               # Claude-specific endpoints
 │   │   ├── code-completion/      # Code completion API
+│   │   ├── code-server/          # Code-server integration
+│   │   ├── experiments/          # Feature experiments
+│   │   ├── files/                # File management API
+│   │   ├── gradio/               # Gradio integration
 │   │   ├── health/               # Health check endpoints
+│   │   ├── healthz/              # Kubernetes health probes
+│   │   ├── readyz/               # Readiness probes
 │   │   ├── monitoring/           # Monitoring dashboards
+│   │   ├── ollama/               # Ollama model API
 │   │   ├── projects/             # Project management
+│   │   ├── templates/            # Template API
 │   │   ├── terminal/             # Terminal API
+│   │   ├── uploads/              # File upload handling
+│   │   ├── user/                 # User profile API
 │   │   ├── vector-store/         # Vector search API
-│   │   └── workspace/            # Workspace API
+│   │   ├── workspace/            # Workspace API
+│   │   └── workspaces/           # Multi-workspace management
+│   ├── admin/                    # Admin dashboard
+│   │   └── database/             # Database admin tools
+│   ├── ai-advanced-features-demo/ # AI feature demos
+│   ├── ai-code-review-demo/     # Code review demo
 │   ├── auth/                     # Auth pages (signin, logout)
+│   │   ├── debug/                # Auth debugging
+│   │   ├── e2e-test/             # Auth E2E tests
+│   │   ├── error/                # Auth error pages
+│   │   ├── logout/               # Logout handler
+│   │   ├── signin/               # Sign-in page
+│   │   ├── test/                 # Auth tests
+│   │   └── test-simple/          # Simple auth test
 │   ├── chat/                     # Chat UI pages
+│   │   ├── collaborative/        # Collaborative chat
+│   │   ├── enhanced/             # Enhanced chat features
+│   │   └── huggingface/          # HuggingFace integration
+│   ├── dashboard/                # Main dashboard
+│   │   └── pool-monitor/         # Connection pool monitor
+│   ├── demo/                     # Feature demos
+│   │   └── monacopilot/          # Monacopilot demo
+│   ├── deploy/                   # Deployment pages
+│   ├── docs-search/              # Documentation search
+│   ├── generate/                 # Project generation
+│   ├── gradio-editor/            # Gradio editor
+│   ├── marketplace/              # Extension marketplace
+│   ├── playwright/               # Playwright demos
+│   │   └── enhanced-chat/        # Enhanced chat test
+│   ├── projects/                 # Project management UI
+│   ├── tailwind-test/            # Tailwind testing
+│   ├── tools/                    # Tool integrations
+│   │   └── codeium/              # Codeium integration
+│   ├── voice-test/               # Voice feature test
+│   ├── wiki/                     # Wiki pages
+│   │   └── [slug]/               # Dynamic wiki routes
 │   ├── workspace/                # Workspace UI
+│   │   ├── collaborative/        # Collaborative workspace
+│   │   └── [id]/                 # Dynamic workspace routes
+│   ├── workspaces/               # Workspaces list
+│   │   └── [id]/                 # Dynamic workspace detail
 │   └── layout.tsx                # Root layout with providers
 │
 ├── components/                   # React components
@@ -313,25 +365,63 @@ graph LR
 │   └── workspace/                # Workspace management
 │
 ├── lib/                          # Business logic & utilities
+│   ├── agent-framework/          # Multi-agent orchestration
+│   │   ├── agents/               # Agent implementations
+│   │   ├── examples/             # Usage examples
+│   │   └── tools/                # Agent tools
 │   ├── ai/                       # AI service implementations
 │   │   ├── agents/               # AI agents (code review, generation)
+│   │   ├── analytics/            # AI usage analytics
+│   │   ├── documentation/        # AI documentation generation
+│   │   ├── local/                # Local model support
 │   │   ├── prompts/              # Prompt templates
+│   │   ├── search/               # AI-powered search
+│   │   ├── stubs/                # Test stubs
+│   │   ├── utils/                # AI utilities
 │   │   └── vector-stores/        # Vector DB integrations
+│   ├── ai-cli-tools/             # CLI tool integrations
+│   ├── ai-clients/               # AI provider clients
 │   ├── auth/                     # Auth configuration
+│   ├── automation/               # Automation scripts
+│   ├── azure/                    # Azure service clients
+│   ├── cache/                    # Caching layer
+│   │   └── vector/               # Vector cache
+│   ├── collaboration/            # Real-time collaboration
+│   ├── container/                # Container management
 │   ├── database/                 # Database utilities
+│   ├── db/                       # Database access layer
+│   ├── deployment/               # Deployment utilities
+│   ├── file-sync/                # File synchronization
+│   ├── github/                   # GitHub integration
+│   ├── marketplace/              # Extension marketplace
 │   ├── mcp/                      # MCP server implementations
 │   │   ├── context7/             # Documentation lookup
+│   │   ├── playwright/           # Browser automation
 │   │   ├── sequential/           # Multi-step reasoning
-│   │   ├── serena/               # Project memory
-│   │   └── playwright/           # Browser automation
+│   │   └── serena/               # Project memory
+│   ├── mlflow/                   # MLflow integration
+│   ├── models/                   # Data models
+│   ├── monaco/                   # Monaco editor utilities
+│   ├── monitoring/               # Monitoring utilities
+│   ├── ollama/                   # Ollama integration
+│   ├── performance/              # Performance utilities
 │   ├── security/                 # Security utilities
+│   ├── server/                   # Server utilities
+│   ├── server-only/              # Server-only code
+│   ├── services/                 # Shared services
+│   ├── templates/                # Project templates
 │   ├── terminal/                 # Terminal service
+│   ├── tools/                    # Utility tools
+│   ├── utils/                    # General utilities
+│   ├── vector-db/                # Vector database
+│   │   ├── cache/                # Vector cache layer
+│   │   └── scaling/              # Scaling strategies
+│   ├── vector-stores/            # Vector store clients
+│   ├── weaviate/                 # Weaviate client
 │   └── workspace/                # Workspace management
 │
 ├── middleware/                   # Next.js middleware
-│   ├── middleware.ts             # Global middleware (auth, rate limit)
-│   ├── security-middleware.ts    # Security headers
-│   └── quota-middleware.ts       # API quota enforcement
+│   └── middleware.ts             # Global middleware (auth, rate limit, bot detection)
 │
 └── types/                        # TypeScript type definitions
 ```
@@ -353,6 +443,7 @@ sequenceDiagram
 
     Client->>Middleware: HTTP Request
     Middleware->>Middleware: Auth Check
+    Middleware->>Middleware: Bot Detection
     Middleware->>Middleware: Rate Limit
     Middleware->>Middleware: Security Headers
 
@@ -615,7 +706,7 @@ graph TB
 
 ### Security Headers
 
-**Configured in `next.config.mjs` and `middleware.ts`:**
+**Configured in `src/middleware.ts`:**
 
 ```javascript
 // Security headers applied to all responses
@@ -624,37 +715,30 @@ graph TB
   'X-Content-Type-Options': 'nosniff',
   'X-XSS-Protection': '1; mode=block',
   'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-  'Content-Security-Policy': [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "connect-src 'self' https://api.openai.com wss:",
-    "img-src 'self' data: https: blob:",
-    "worker-src 'self' blob:"
-  ].join('; ')
+  'Referrer-Policy': 'strict-origin-when-cross-origin'
 }
 ```
 
-### CORS Configuration
+### Bot Detection
 
-**Dynamic Origin Validation:**
+**Middleware Bot Protection:**
 ```typescript
-// Development: Localhost only
-const devOrigins = ['http://localhost:3000', 'http://localhost:8080'];
+// Bot detection rules
+BOT_RULES = {
+  suspicious: [
+    /bot/i, /crawler/i, /spider/i, /scraper/i,
+    /automated/i, /python-requests/i, /curl/i, /wget/i
+  ],
+  allowlisted: [
+    /googlebot/i, /bingbot/i, /slackbot/i, /twitterbot/i,
+    /facebookexternalhit/i, /linkedinbot/i, /whatsapp/i
+  ]
+}
 
-// Production: Main domain + subdomains
-const prodOrigins = [
-  'https://vibecode.dev',
-  'https://www.vibecode.dev',
-  'https://*.vibecode.dev' // Regex validated in middleware
-];
-
-// Middleware validates origin and sets specific header (not wildcard)
-if (isOriginAllowed(origin)) {
-  response.headers.set('Access-Control-Allow-Origin', origin);
-  response.headers.set('Access-Control-Allow-Credentials', 'true');
+// Confidence-based blocking with monitoring
+if (confidence > 0 && !allowlisted && !isBrowserAgent) {
+  logEvent('bot_detected', { confidence, action: 'blocked' });
+  return new NextResponse('Bot detected', { status: 403 });
 }
 ```
 
@@ -664,11 +748,11 @@ if (isOriginAllowed(origin)) {
 ```typescript
 // Middleware rate limiting configuration
 {
-  enabled: true,
-  maxRequests: 100,        // Requests per window
-  windowMs: 60000,         // 1-minute sliding window
-  skipStatic: true,        // Skip /_next/* assets
-  keyGenerator: (req) => getClientIP(req) // IP-based limiting
+  enabled: process.env.MIDDLEWARE_RATE_LIMIT_ENABLED !== 'false',
+  maxRequests: Number(process.env.MIDDLEWARE_RATE_LIMIT_MAX ?? '100'),
+  windowMs: Number(process.env.MIDDLEWARE_RATE_LIMIT_WINDOW_MS ?? '60000'),
+  skipStatic: true,  // Skip /_next/* assets
+  keyGenerator: (req) => deriveClientIp(req)  // IP-based limiting
 }
 ```
 
@@ -681,6 +765,7 @@ if (isOriginAllowed(origin)) {
 - **SQL Injection Prevention:** Prisma parameterized queries
 - **XSS Protection:** CSP headers + input sanitization
 - **CSRF Protection:** SameSite cookies + origin validation
+- **Bot Protection:** Pattern-based detection with confidence scoring
 
 ---
 
@@ -695,6 +780,8 @@ graph TB
         DB[PostgreSQL 16<br/>+ pgvector<br/>Port 5432]
         Redis[Redis/Valkey<br/>Port 6379]
         CodeServer[code-server<br/>Port 8080]
+        Nginx[Nginx Proxy<br/>Port 80/443]
+        ModelUpdater[Free LLM Model Updater<br/>Periodic Job]
     end
 
     subgraph "Persistent Storage"
@@ -702,11 +789,15 @@ graph TB
         DBData[/postgres-data]
         RedisData[/redis-data]
         Workspace[/workspace]
+        FreeLLMModels[/free-llm-models]
     end
 
     App --> DB
     App --> Redis
     App --> CodeServer
+    Nginx --> App
+    ModelUpdater --> FreeLLMModels
+    App --> FreeLLMModels
 
     App -.-> AppData
     DB -.-> DBData
@@ -717,26 +808,50 @@ graph TB
 **Docker Compose Configuration:**
 ```yaml
 services:
-  app:
-    image: vibecode/webgui:latest
+  webgui:
+    image: vibecode-webgui-local
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgresql://postgres:password@db:5432/vibecode
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/vibecode
       REDIS_URL: redis://redis:6379
+      DD_DBM_PROPAGATION_MODE: full
     depends_on:
-      - db
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
-  db:
-    image: pgvector/pgvector:pg16
+  postgres:
+    image: postgres:16
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vibecode"]
 
   redis:
-    image: valkey/valkey:7-alpine
+    image: redis:7-alpine
     volumes:
-      - redis-data:/data
+      - redis_data:/data
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+
+  free-llm-model-updater:
+    image: vibecode-webgui-local
+    command: >
+      sh -c "mkdir -p /app/runtime/free-llm-models &&
+             while true; do
+               node -r dd-trace/init scripts/jobs/update-openrouter-free-models.js &&
+               sleep 43200;
+             done"
+    volumes:
+      - free-llm-models:/app/runtime/free-llm-models
 ```
 
 ### Kubernetes Deployment
@@ -843,6 +958,10 @@ spec:
 | **AWS EKS** | Fargate or managed nodes | EKS with RDS PostgreSQL |
 | **KinD (Local)** | Single-node development cluster | For local testing and development |
 
+**Kubernetes Configuration Files:**
+- 63 YAML configuration files in `/k8s` directory
+- Includes: deployments, services, ingress, RBAC, monitoring, secrets
+
 ---
 
 ## AI/ML Integration
@@ -866,6 +985,8 @@ graph TB
         OpenAI[OpenAI<br/>GPT-4, GPT-3.5]
         Anthropic[Anthropic<br/>Claude 3.5]
         Google[Google<br/>Gemini]
+        Groq[Groq<br/>Llama, Mixtral]
+        DeepSeek[DeepSeek<br/>Coder Models]
         Local[Local Models<br/>Ollama]
     end
 
@@ -883,6 +1004,8 @@ graph TB
     Cache --> OpenAI
     Cache --> Anthropic
     Cache --> Google
+    Cache --> Groq
+    Cache --> DeepSeek
     Cache --> Local
 
     Chat --> Embedding
@@ -941,6 +1064,11 @@ const mcpServers: MCPServer[] = [
     name: 'serena',
     capabilities: ['memory', 'session-persistence'],
     transport: 'stdio'
+  },
+  {
+    name: 'playwright',
+    capabilities: ['browser-automation', 'e2e-testing'],
+    transport: 'stdio'
   }
 ];
 ```
@@ -965,6 +1093,7 @@ graph TB
         RUM[RUM<br/>Real User Monitoring]
         Logs[Logs<br/>Centralized Logging]
         Metrics[Metrics<br/>Custom Metrics]
+        LLMOBS[LLM Observability<br/>AI Model Monitoring]
     end
 
     subgraph "Datadog Agent"
@@ -975,6 +1104,7 @@ graph TB
     API --> APM
     App --> RUM
     App --> Logs
+    App --> LLMOBS
     DB --> DBM
     App --> Metrics
 
@@ -983,6 +1113,7 @@ graph TB
     RUM -.-> Agent
     Logs --> Agent
     Metrics --> Agent
+    LLMOBS --> Agent
 
     Agent --> DatadogCloud[Datadog Cloud]
 ```
@@ -991,7 +1122,7 @@ graph TB
 
 **APM (Application Performance Monitoring):**
 ```typescript
-// dd-trace initialization
+// dd-trace initialization (src/instrument.ts)
 import tracer from 'dd-trace';
 
 tracer.init({
@@ -1000,14 +1131,20 @@ tracer.init({
   version: process.env.DD_VERSION || '1.0.0',
   logInjection: true,
   profiling: true,
-  runtimeMetrics: true
+  runtimeMetrics: true,
+  dbmPropagationMode: 'full',  // Correlate DBM and APM
+  llmobs: {
+    enabled: true,
+    agentlessEnabled: true,
+    mlApp: 'vibecode-ai'
+  }
 });
 
-// Automatic instrumentation for:
-// - HTTP requests (fetch, axios)
-// - Database queries (Prisma, pg)
-// - Redis operations
-// - WebSocket connections
+// OpenAI instrumentation
+tracer.use('openai', {
+  service: 'vibecode-webgui-openai',
+  mlApp: 'vibecode-ai'
+});
 ```
 
 **DBM (Database Monitoring):**
@@ -1016,6 +1153,11 @@ tracer.init({
 -- Tracks slow queries, execution plans, and resource usage
 -- Configured via Datadog Agent with PostgreSQL integration
 
+-- Workspace DBM tracking
+UPDATE workspaces
+SET dbm_last_sample_at = NOW()
+WHERE workspace_id = $1;
+
 -- Sample queries tracked:
 -- - Slow queries (>100ms)
 -- - Lock contention
@@ -1023,21 +1165,12 @@ tracer.init({
 -- - Vector search performance
 ```
 
-**RUM (Real User Monitoring):**
+**LLM Observability:**
 ```typescript
-// Browser-side instrumentation
-if (window.DD_RUM) {
-  DD_RUM.init({
-    applicationId: process.env.NEXT_PUBLIC_DD_APPLICATION_ID,
-    clientToken: process.env.NEXT_PUBLIC_DD_CLIENT_TOKEN,
-    site: 'datadoghq.com',
-    service: 'vibecode-webgui',
-    sampleRate: 100,
-    trackInteractions: true,
-    trackResources: true,
-    trackLongTasks: true
-  });
-}
+// Automatic AI model monitoring
+// Tracks: token usage, latency, cost, error rates
+// Providers: OpenAI, Anthropic, Google, Groq, DeepSeek
+// Configuration in src/instrument.ts
 ```
 
 ### Key Metrics
@@ -1051,6 +1184,7 @@ if (window.DD_RUM) {
 | **Memory Usage** | <80% | >90% |
 | **CPU Usage** | <70% | >85% |
 | **Apdex Score** | >0.9 | <0.7 |
+| **AI Token Usage** | - | Cost alerts |
 
 ### Health Checks
 
@@ -1169,6 +1303,7 @@ npx prisma generate
 
 # Development server
 npm run dev  # Runs on http://localhost:3000
+npm run dev:simple  # Without monitoring overhead
 ```
 
 ### CI/CD Pipeline
@@ -1195,6 +1330,7 @@ graph LR
 | **E2E Tests** | Playwright | Critical paths | <10 min |
 | **Performance Tests** | Lighthouse | Score >90 | <5 min |
 | **Security Tests** | npm audit, Snyk | Zero high/critical | <2 min |
+| **Cloud Infrastructure** | Python + Bats | Offline validation | <5 min |
 
 ### Code Quality Gates
 
@@ -1246,11 +1382,25 @@ REDIS_URL="redis://localhost:6379"
 # Monitoring
 DD_API_KEY="<datadog-api-key>"
 DD_SITE="datadoghq.com"
+DD_ENV="production"
+DD_VERSION="1.0.0"
+DD_DBM_PROPAGATION_MODE="full"
+DD_LLMOBS_ENABLED="true"
+DD_LLMOBS_AGENTLESS_ENABLED="true"
+DD_LLMOBS_ML_APP="vibecode-ai"
 NEXT_PUBLIC_DD_APPLICATION_ID="<rum-app-id>"
 NEXT_PUBLIC_DD_CLIENT_TOKEN="<rum-client-token>"
 
+# Middleware
+MIDDLEWARE_RATE_LIMIT_ENABLED="true"
+MIDDLEWARE_RATE_LIMIT_MAX="100"
+MIDDLEWARE_RATE_LIMIT_WINDOW_MS="60000"
+
 # Azure (if using Azure services)
 AZURE_STORAGE_CONNECTION_STRING="<connection-string>"
+
+# OpenTelemetry (alternative monitoring)
+OTEL_ENABLED="false"
 ```
 
 ### API Endpoints Summary
@@ -1258,14 +1408,20 @@ AZURE_STORAGE_CONNECTION_STRING="<connection-string>"
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/api/health` | GET | System health check |
+| `/api/healthz` | GET | Kubernetes liveness probe |
+| `/api/readyz` | GET | Kubernetes readiness probe |
 | `/api/auth/[...nextauth]` | ALL | NextAuth.js authentication |
 | `/api/code-completion` | POST | AI code completion |
 | `/api/chat/stream` | POST | Streaming chat with AI |
 | `/api/vector-store` | POST | Semantic code search |
 | `/api/projects` | GET/POST | Project management |
 | `/api/workspace` | GET/POST/PUT | Workspace operations |
+| `/api/workspaces` | GET/POST | Multi-workspace management |
 | `/api/terminal` | WebSocket | Terminal emulation |
 | `/api/monitoring/dashboard` | GET | Monitoring metrics |
+| `/api/ai` | POST | AI service endpoints |
+| `/api/ai-cli-tools` | GET/POST | CLI tool integrations |
+| `/api/uploads` | POST | File upload handling |
 
 ### Resource Requirements
 
@@ -1281,15 +1437,34 @@ AZURE_STORAGE_CONNECTION_STRING="<connection-string>"
 - PostgreSQL: 8 vCPU, 32GB RAM
 - Redis: 2 vCPU, 4GB RAM
 
+### Architectural Decisions
+
+**Key Design Choices:**
+
+1. **Monolithic Architecture:** Chose monolith over microservices for faster development and simpler deployment, with clear internal boundaries for future extraction if needed.
+
+2. **Next.js 15 App Router:** Server-side rendering for performance, built-in API routes for simplicity, and excellent TypeScript support.
+
+3. **pgvector for Vector Search:** Native PostgreSQL extension avoids separate vector database, HNSW indexes provide sub-10ms search, and unified data model simplifies architecture.
+
+4. **Monaco Editor:** Industry-standard VS Code engine, extensive language support, and proven reliability in production environments.
+
+5. **Datadog Monitoring:** Unified observability platform (APM + DBM + RUM + Logs), LLM observability for AI features, and DBM-APM correlation for full-stack insights.
+
+6. **Kubernetes-First:** Container orchestration for production, supports multi-cloud deployment, and enables horizontal scaling with HPA.
+
+7. **Bot Protection:** Middleware-level detection prevents abuse, confidence-based scoring allows legitimate bots, and monitoring tracks patterns over time.
+
 ### Support & Documentation
 
 - **Repository:** https://github.com/ryanmaclean/vibecode-webgui
-- **Documentation:** `/docs` directory
+- **Documentation:** `/docs` directory (101 files)
+- **Architecture Decisions:** `/docs/ADR` directory
 - **Issues:** GitHub Issues
 - **License:** MIT
 
 ---
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Last Updated:** 2025-10-01
 **Maintainer:** VibeCode Development Team
