@@ -1,5 +1,20 @@
 # Agent Activity Log
 
+## 2025-10-02 00:05 UTC – Dev Server Fix Complete
+- Conflicting Next.js configs (`next.config.js` vs `next.config.mjs`) blocked the dev server; consolidating settings restored startup.
+- Key changes:
+  - Unified configuration in `next.config.mjs`.
+  - Removed the legacy Babel config so Next.js uses SWC.
+  - Added OpenTelemetry stub modules to satisfy instrumentation imports safely.
+- Verification:
+  - `npm run dev` runs without middleware compilation errors.
+  - Hot reload works against http://localhost:3002.
+  - Security headers and Datadog instrumentation remain intact.
+- Follow-ups:
+  - Document SSE helper usage patterns.
+  - Rerun the Playwright reduced-motion spec.
+  - Add troubleshooting notes for the reduced-motion scenario.
+
 ## 2025-10-01
 
 ### Agent Codex (Observability & Release Automation) - 2025-10-01
@@ -355,3 +370,5 @@ This log captures completed agent activities to keep TODO.md focused on current 
 - Updated `scripts/test-code-server-editors.sh` to propagate `kubectl wait` failures, refresh Ready pod lists, mask pod identifiers in logs, and sanitize secret-like tokens.
 - Hardened `docker/code-server/Dockerfile` so helm/kubectl/kubectx/kubens installs verify upstream SHA-256 sums before copying binaries into the image.
 
+### Backlog Queue (2025-10-02)
+- [ ] Theo – archive Planning Documents Created + infrastructure metrics into docs/logs/AGENT_ACTIVITY_LOG.md

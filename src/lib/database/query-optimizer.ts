@@ -4,7 +4,7 @@
  */
 
 import { Prisma } from '@prisma/client';
-import { cache, CacheKeys, CacheTTL, withCache } from '../cache/valkey-client';
+import { cache, CacheKeys, CacheTTL, withCache } from '../cache/unified-cache-client';
 import { trackDBQuery } from '../performance/metrics-collector';
 
 /**

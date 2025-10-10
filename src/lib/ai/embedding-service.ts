@@ -139,6 +139,8 @@ export abstract class BaseEmbeddingService implements EmbeddingService {
     // Process in batches to avoid overwhelming the API
     const batchSize = this.config.maxBatchSize || 20;
     const batches: string[][] = [];
+import { logger } from '../logger';
+
     
     // Split texts into batches
     for (let i = 0; i < texts.length; i += batchSize) {
@@ -172,7 +174,7 @@ export abstract class BaseEmbeddingService implements EmbeddingService {
       // Check if the embedding has the expected dimensions
       return Array.isArray(embedding) && embedding.length === this.dimensions;
     } catch (error) {
-      console.error("Embedding service health check failed:", error);
+      logger.error("Embedding service health check failed:", { error: error });
       return false;
     }
   }

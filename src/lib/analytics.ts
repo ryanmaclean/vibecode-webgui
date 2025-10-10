@@ -17,6 +17,8 @@ export interface AnalyticsEvent<T extends NestedObject = NestedObject> {
 
 // In-memory store for development (can be replaced with a real analytics service)
 const eventBuffer: Array<AnalyticsEvent> = [];
+import { logger } from './logger';
+
 
 // Configuration
 interface AnalyticsConfig {
@@ -51,12 +53,12 @@ export function logEvent<T extends NestedObject = NestedObject>(
   // In production, send to your analytics service
   if (config.enabled) {
     // Example: sendToAnalyticsService(event);
-    console.log('[Analytics]', event);
+    logger.info('[Analytics]', { data: event });
   }
 
   // In development, log to console and buffer
   if (config.debug) {
-    console.log(`[Analytics] ${name}`, properties);
+    logger.info(`[Analytics] ${name}`, { data: properties });
     
     // Add to buffer (useful for debugging)
     eventBuffer.push(event);
@@ -154,7 +156,7 @@ export function initAnalytics(options: {
   }
   
   if (config.enabled || config.debug) {
-    console.log('[Analytics] Initialized', { config });
+    logger.info('[Analytics] Initialized', { config });
   }
 }
 
