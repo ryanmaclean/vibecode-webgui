@@ -253,19 +253,13 @@ RUN set -eux && \
     # Cleanup
     rm -rf /tmp/*
 
-# Layer 6: Install npm packages, Go tools, Python packages, and LSP servers
+# Layer 6: Install npm packages, Go tools, and Python packages in one layer
 RUN set -eux && \
     case "$TARGETPLATFORM" in \
       "linux/amd64") GO_ARCH=amd64 ;; \
       "linux/arm64") GO_ARCH=arm64 ;; \
       *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
     esac && \
-    # Install npm global packages
-    npm install -g \
-      yarn pnpm typescript @types/node prettier eslint ts-node \
-      @datadog/datadog-ci typescript-language-server \
-      vscode-langservers-extracted bash-language-server \
-      dockerfile-language-server-nodejs && \
     # Install goose
     CGO_ENABLED=0 GOOS=linux GOARCH="${GO_ARCH}" GOBIN=/usr/local/bin go install github.com/pressly/goose/v3/cmd/goose@latest && \
     chmod 755 /usr/local/bin/goose && \
@@ -286,6 +280,15 @@ RUN set -eux && \
     # Clone OpenAI Cookbook
     git clone --depth=1 https://github.com/openai/openai-cookbook /opt/openai-cookbook && \
     chmod -R a+rX /opt/openai-cookbook && \
+    # Verify tools
+    echo "Verifying tools..." && \
+    vim --version | head -1 && nvim --version | head -1 && \
+    aider --version && goose -version 2>&1 | grep -i goose && \
+    pocketbase --version && devbox version && \
+    echo "All required tools verified"
+
+# Layer 8: Setup rust-analyzer and shell completions
+RUN set -eux && \
     # Install rust-analyzer
     curl -L https://github.com/rust-analyzer/rust-analyzer/releases/latest/download/rust-analyzer-x86_64-unknown-linux-gnu.gz | gunzip -c - > /usr/local/bin/rust-analyzer && \
     chmod +x /usr/local/bin/rust-analyzer && \
@@ -302,13 +305,7 @@ RUN set -eux && \
       helm completion zsh > /usr/share/zsh/site-functions/_helm && \
       helm completion fish > /etc/fish/completions/helm.fish && \
       chmod 644 /etc/bash_completion.d/helm /usr/share/zsh/site-functions/_helm /etc/fish/completions/helm.fish; \
-    fi && \
-    # Verify tools
-    echo "Verifying tools..." && \
-    vim --version | head -1 && nvim --version | head -1 && \
-    aider --version && goose -version 2>&1 | grep -i goose && \
-    pocketbase --version && devbox version && \
-    echo "All required tools verified"
+    fi
 
 # Layer 9: Setup workspace and Datadog configuration
 RUN mkdir -p /home/coder/workspace/.datadog/templates && \
@@ -371,38 +368,46 @@ RUN --mount=type=cache,target=/home/coder/.cache/code-server \
     /usr/bin/code-server --install-extension yzhang.markdown-all-in-one || echo "Markdown failed" && \
     echo "Extension installation complete"
 
+# Switch to root for final setup
+USER root
+RUN rm -rf /tmp/extensions
+USER coder
+
+# Layer 11: Install Go LSP and Java LSP
+RUN go install golang.org/x/tools/gopls@latest || echo "gopls installation failed, skipping" && \
+    mkdir -p /home/coder/.local/share/jdtls && \
+    curl -L https://download.eclipse.org/jdtls/milestones/1.9.0/jdt-language-server-1.9.0-202203031534.tar.gz | tar xz -C /home/coder/.local/share/jdtls
+
 # Switch to root for AI extensions script
 USER root
 COPY docker/code-server/configure-ai-extensions.sh /tmp/configure-ai-extensions.sh
-RUN rm -rf /tmp/extensions && \
-    chmod +x /tmp/configure-ai-extensions.sh && \
+RUN chmod +x /tmp/configure-ai-extensions.sh && \
     /tmp/configure-ai-extensions.sh && \
     rm /tmp/configure-ai-extensions.sh && \
     chown -R coder:coder /home/coder/.local/share/code-server/ && \
     chown -R coder:coder /home/coder/.vscode/
-
-# Layer 11: Copy VibeCode extensions, configure VS Code, and build extensions
 USER coder
+
+# Layer 12: Copy VibeCode extensions and configure VS Code
 COPY --chown=coder:coder extensions/vibecode-ai-assistant /home/coder/.vscode/extensions/vibecode-ai-assistant
 COPY --chown=coder:coder extensions/vibecode-inline-edit /home/coder/.vscode/extensions/vibecode-inline-edit
 COPY --chown=coder:coder extensions/vibecode-codebase-chat /home/coder/.vscode/extensions/vibecode-codebase-chat
 COPY --chown=coder:coder extensions/claude-code-vscode /home/coder/.vscode/extensions/claude-code-vscode
+
+# Copy VS Code configuration
 COPY --chown=coder:coder docker/code-server/settings.json /home/coder/.local/share/code-server/User/settings.json
 COPY --chown=coder:coder docker/code-server/keybindings.json /home/coder/.local/share/code-server/User/keybindings.json
 
-RUN set -e && \
-    # Install Go LSP and Java LSP
-    go install golang.org/x/tools/gopls@latest || echo "gopls installation failed, skipping" && \
-    mkdir -p /home/coder/.local/share/jdtls && \
-    curl -L https://download.eclipse.org/jdtls/milestones/1.9.0/jdt-language-server-1.9.0-202203031534.tar.gz | tar xz -C /home/coder/.local/share/jdtls && \
-    # Build VibeCode extensions
-    cd /home/coder/.vscode/extensions/vibecode-ai-assistant && \
+# Build VibeCode extensions
+RUN cd /home/coder/.vscode/extensions/vibecode-ai-assistant && \
     npm install && (npm run compile || npm run build || echo "No build script") && \
     cd /home/coder/.vscode/extensions/vibecode-inline-edit && \
     npm install && (npm run build || npm run compile || echo "No build script") && \
     cd /home/coder/.vscode/extensions/vibecode-codebase-chat && \
-    npm install && (npm run build || npm run compile || echo "No build script") && \
-    # Verify ALL required CLI tools
+    npm install && (npm run build || npm run compile || echo "No build script")
+
+# Verify ALL required CLI tools
+RUN set -e && \
     echo "Verifying ALL required tools..." && \
     for tool in vim nvim nu delta chezmoi just stern helmfile helm kubectl kubectx kubens k9s sops glab; do \
       command -v "$tool" >/dev/null && echo "$tool OK" || { echo "$tool MISSING"; exit 1; }; \
