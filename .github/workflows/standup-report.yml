@@ -5,6 +5,26 @@ on:
     # Run every weekday at 9:00 AM UTC
     - cron: '0 9 * * 1-5'
   workflow_dispatch:
+<<<<<<< Updated upstream
+=======
+    inputs:
+      create_issue:
+        description: 'Create standup GitHub issue'
+        required: false
+        default: 'true'
+      post_to_slack:
+        description: 'Post report to Slack'
+        required: false
+        default: 'true'
+      slack_channel:
+        description: 'Slack channel to post to'
+        required: false
+        default: '#standup'
+
+concurrency:
+  group: standup-report
+  cancel-in-progress: true
+>>>>>>> Stashed changes
 
 jobs:
   generate-standup:

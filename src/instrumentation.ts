@@ -21,15 +21,93 @@ function isMissingDdTrace(error: unknown): boolean {
     return true;
   }
 
+<<<<<<< Updated upstream
   if (candidate.cause) {
     return isMissingDdTrace(candidate.cause);
+=======
+  const message = 'message' in error ? String((error as { message: unknown }).message) : ''
+  return message.includes(`Cannot find module '${moduleName}'`) || message.includes(`Cannot find module "${moduleName}"`)
+}
+
+type RequireWithResolve = NodeJS.Require & { resolve: NodeJS.RequireResolve }
+
+const getNativeRequire = (): RequireWithResolve | null => {
+  const globalWithRequire = globalThis as typeof globalThis & { __non_webpack_require__?: RequireWithResolve }
+
+  if (typeof globalWithRequire.__non_webpack_require__ === 'function') {
+    return globalWithRequire.__non_webpack_require__
+  }
+
+  try {
+    return eval('require') as RequireWithResolve
+  } catch {
+    return null
+  }
+}
+
+const ensureModuleAvailable = (moduleName: string): boolean => {
+  const nativeRequire = getNativeRequire()
+
+  if (!nativeRequire) {
+    console.warn(`⚠️ ${moduleName} availability could not be determined; skipping Datadog instrumentation`)
+    return false
+  }
+
+  const moduleApi = nativeRequire('module') as typeof import('module')
+  const resolveRequire = moduleApi.createRequire(import.meta.url)
+
+  try {
+    resolveRequire.resolve(moduleName)
+    return true
+  } catch (error) {
+    if (isModuleNotFoundError(error, moduleName)) {
+      console.warn(`⚠️ ${moduleName} not installed; skipping Datadog instrumentation`)
+      return false
+    }
+
+    throw error
+  }
+}
+
+async function initializeDatadogTracer() {
+  if (!isNodeRuntime()) {
+    return
+>>>>>>> Stashed changes
   }
 
   if (typeof AggregateError !== 'undefined' && error instanceof AggregateError) {
     return error.errors.some(isMissingDdTrace);
   }
 
+<<<<<<< Updated upstream
   return false;
+=======
+  try {
+    if (!ensureModuleAvailable('dd-trace')) {
+      return
+    }
+
+    const tracerModule = await import('dd-trace')
+    const tracer = tracerModule.default
+
+    tracer.init({
+      service: 'vibecode-webgui',
+      env: process.env.DD_ENV || process.env.NODE_ENV || 'development',
+      version: process.env.DD_VERSION || process.env.VERCEL_GIT_COMMIT_SHA || 'dev',
+      runtimeMetrics: true,
+      profiling: process.env.NODE_ENV === 'production',
+      logInjection: true,
+      tags: {
+        'git.commit.sha': process.env.DD_GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA,
+        'git.repository_url': 'https://github.com/ryanmaclean/vibecode-webgui',
+      },
+    })
+
+    console.log('✅ Datadog tracer initialized in instrumentation.ts')
+  } catch (error) {
+    console.error('❌ Datadog tracer initialization failed', error)
+  }
+>>>>>>> Stashed changes
 }
 
 export async function register() {

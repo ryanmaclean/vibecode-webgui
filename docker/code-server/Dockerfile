@@ -43,6 +43,7 @@ RUN set -ex && \
     mkdir -p /tmp && chmod 1777 /tmp && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
+<<<<<<< Updated upstream
         ca-certificates curl bash-completion fish exa git zsh openssh-client \
         hyperfine ripgrep vim neovim elvish xonsh yash busybox age gh kubectx \
         sudo wget gnupg build-essential python3-pip python3-venv jq fzf bat \
@@ -50,6 +51,45 @@ RUN set -ex && \
     rm -rf /var/lib/apt/lists/* && \
     # Permissions and symlinks
     chmod 755 /usr/bin/code-server /usr/lib/code-server/bin/code-server && \
+=======
+    ca-certificates \
+    curl \
+    bash-completion \
+    fish \
+    exa \
+    git \
+    zsh \
+    openssh-client \
+    hyperfine \
+    ripgrep \
+    vim \
+    neovim \
+    elvish \
+    xonsh \
+    yash \
+    busybox \
+    age \
+    gh \
+    kubectx \
+    sudo \
+    wget \
+    gnupg \
+    build-essential \
+    python3-pip \
+    python3-venv \
+    jq \
+    fzf \
+    bat \
+    fd-find \
+    unzip \
+    xz-utils \
+    apt-transport-https \
+    software-properties-common; \
+    rm -rf /var/lib/apt/lists/*
+
+# Layer Optimization: Consolidated permissions and symlinks (Phase 1 - Issue #459)
+RUN chmod 755 /usr/bin/code-server /usr/lib/code-server/bin/code-server && \
+>>>>>>> Stashed changes
     ln -sf /usr/bin/fdfind /usr/local/bin/fd && \
     ln -sf /usr/bin/exa /usr/local/bin/eza
 
@@ -57,6 +97,303 @@ RUN set -ex && \
 RUN set -eux && \
     # Determine platform architectures
     case "$TARGETPLATFORM" in \
+<<<<<<< Updated upstream
+=======
+      "linux/amd64") ARCH=Linux_x86_64 ;; \
+      "linux/arm64") ARCH=Linux_arm64 ;; \
+      *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    LAZYGIT_ARCHIVE="lazygit_${LAZYGIT_VERSION}_${ARCH}.tar.gz"; \
+    curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/${LAZYGIT_ARCHIVE}" -o /tmp/lazygit.tar.gz; \
+    curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/checksums.txt" -o /tmp/lazygit.checksums.txt; \
+    grep "${LAZYGIT_ARCHIVE}" /tmp/lazygit.checksums.txt | awk '{print $1 "  /tmp/lazygit.tar.gz"}' > /tmp/lazygit.sha256; \
+    sha256sum --check --strict /tmp/lazygit.sha256; \
+    tar -xf /tmp/lazygit.tar.gz -C /tmp lazygit; \
+    install -m755 /tmp/lazygit /usr/local/bin/lazygit; \
+    rm -rf /tmp/lazygit.tar.gz /tmp/lazygit /tmp/lazygit.checksums.txt /tmp/lazygit.sha256
+
+RUN set -eux; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") ARCH=x86_64-unknown-linux-musl ;; \
+      "linux/arm64") ARCH=aarch64-unknown-linux-musl ;; \
+      *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    curl -fsSL "https://github.com/starship/starship/releases/download/v${STARSHIP_VERSION}/starship-${ARCH}.tar.gz" -o /tmp/starship.tar.gz; \
+    tar -xf /tmp/starship.tar.gz -C /tmp; \
+    install -m755 /tmp/starship /usr/local/bin/starship; \
+    rm -rf /tmp/starship.tar.gz /tmp/starship
+
+RUN set -eux; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") DEB_ARCH=amd64 ;; \
+      "linux/arm64") DEB_ARCH=arm64 ;; \
+      *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    curl -fsSL "https://github.com/ajeetdsouza/zoxide/releases/download/v${ZOXIDE_VERSION}/zoxide_${ZOXIDE_VERSION}-1_${DEB_ARCH}.deb" -o /tmp/zoxide.deb; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends /tmp/zoxide.deb; \
+    rm -rf /tmp/zoxide.deb /var/lib/apt/lists/*
+
+# Install Node.js 18 LTS (verified download)
+RUN set -eux; \
+    NODE_VERSION="18.18.0"; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") NODE_ARCH=x64 ;; \
+      "linux/arm64") NODE_ARCH=arm64 ;; \
+      *) echo "Unsupported platform for Node.js: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    NODE_TARBALL="node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"; \
+    cd /tmp; \
+    curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/${NODE_TARBALL}"; \
+    curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt"; \
+    grep "${NODE_TARBALL}" SHASUMS256.txt | sha256sum --check --strict -; \
+    mkdir -p /usr/local/lib/nodejs; \
+    tar -xJf "${NODE_TARBALL}" -C /usr/local/lib/nodejs --strip-components=1; \
+    ln -sf /usr/local/lib/nodejs/bin/node /usr/local/bin/node; \
+    ln -sf /usr/local/lib/nodejs/bin/npm /usr/local/bin/npm; \
+    ln -sf /usr/local/lib/nodejs/bin/npx /usr/local/bin/npx; \
+    rm -rf /tmp/*; \
+    node --version; npm --version
+
+# Install global npm packages
+RUN npm install -g \
+    yarn \
+    pnpm \
+    typescript \
+    @types/node \
+    prettier \
+    eslint \
+    ts-node
+
+# Install cosign for binary verification
+ARG COSIGN_VERSION=2.2.4
+RUN set -eux; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") COSIGN_ARCH=amd64 ;; \
+      "linux/arm64") COSIGN_ARCH=arm64 ;; \
+      *) echo "Unsupported platform for cosign: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    COSIGN_BINARY="cosign-linux-${COSIGN_ARCH}"; \
+    cd /tmp; \
+    curl -fsSLO "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/${COSIGN_BINARY}"; \
+    curl -fsSLO "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign_checksums.txt"; \
+    awk -v target="${COSIGN_BINARY}" '$2 == target {print $0}' cosign_checksums.txt > cosign.sha256; \
+    if [ ! -s cosign.sha256 ]; then echo "Checksum for ${COSIGN_BINARY} not found"; exit 1; fi; \
+    sha256sum --check --strict cosign.sha256; \
+    chmod +x "${COSIGN_BINARY}"; \
+    mv "${COSIGN_BINARY}" /usr/local/bin/cosign; \
+    rm -f cosign_checksums.txt cosign.sha256; \
+    cosign version
+
+# Install Go (match architecture for multi-arch builds)
+ARG GO_VERSION=1.22.4
+RUN set -eux; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") GO_ARCH=amd64 ;; \
+      "linux/arm64") GO_ARCH=arm64 ;; \
+      *) echo "Unsupported platform for Go install: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    GO_TARBALL="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz"; \
+    cd /tmp; \
+    wget "https://go.dev/dl/${GO_TARBALL}"; \
+    wget "https://go.dev/dl/${GO_TARBALL}.sha256"; \
+    sha256sum --check --strict "${GO_TARBALL}.sha256"; \
+    tar -C /usr/local -xzf "${GO_TARBALL}"; \
+    rm -f "${GO_TARBALL}" "${GO_TARBALL}.sha256"; \
+    ln -sf /usr/local/go/bin/go /usr/local/bin/go
+
+# Install AI CLI tools and database tools
+# 1. Goose for database migrations (install as root, make globally accessible)
+RUN set -eux; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") GO_ARCH=amd64 ;; \
+      "linux/arm64") GO_ARCH=arm64 ;; \
+      *) echo "Unsupported platform for goose install: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    CGO_ENABLED=0 GOOS=linux GOARCH="${GO_ARCH}" GOBIN=/usr/local/bin go install github.com/pressly/goose/v3/cmd/goose@latest && \
+    chmod 755 /usr/local/bin/goose && \
+    mkdir -p /home/coder/.vscode/extensions/goose-integration && \
+    echo 'alias goose="goose -dir /home/coder/workspace/migrations"' >> /home/coder/.bashrc && \
+    chown -R coder:coder /home/coder/.vscode
+
+# 2. Aider - AI pair programming CLI
+RUN pip3 install --break-system-packages --no-cache-dir aider-chat
+
+# 3. PocketBase - Lightweight database (MIT License)
+ARG POCKETBASE_VERSION=0.24.4
+RUN set -eux; \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") PB_ARCH=amd64 ;; \
+      "linux/arm64") PB_ARCH=arm64 ;; \
+      *) echo "Unsupported platform for PocketBase: $TARGETPLATFORM"; exit 1 ;; \
+    esac; \
+    curl -fsSL "https://github.com/pocketbase/pocketbase/releases/download/v${POCKETBASE_VERSION}/pocketbase_${POCKETBASE_VERSION}_linux_${PB_ARCH}.zip" -o /tmp/pocketbase.zip; \
+    unzip /tmp/pocketbase.zip -d /tmp; \
+    install -m755 /tmp/pocketbase /usr/local/bin/pocketbase; \
+    rm -rf /tmp/pocketbase.zip /tmp/pocketbase
+
+# 4. Devbox - Portable development environments (Apache 2.0)
+RUN set -eux; \
+    curl -fsSL https://get.jetify.com/devbox | bash -s -- -f
+
+# 5. Clone OpenAI Cookbook for reference examples
+RUN git clone --depth=1 https://github.com/openai/openai-cookbook /opt/openai-cookbook && \
+    chmod -R a+rX /opt/openai-cookbook
+
+# 6. Verify all required tools are installed (MUST succeed or build fails)
+RUN set -e && \
+    echo "🔍 Verifying installed tools..." && \
+    echo "Testing vim..." && vim --version | head -1 && \
+    echo "Testing nvim..." && nvim --version | head -1 && \
+    echo "Testing aider..." && aider --version && \
+    echo "Testing goose..." && goose -version 2>&1 | grep -i goose && \
+    echo "Testing pocketbase..." && pocketbase --version && \
+    echo "Testing devbox..." && devbox version && \
+    echo "✅ All required tools verified!"
+
+# Install Datadog tools
+# 1. Datadog Agent - SKIPPED in build (configure at runtime with DD_API_KEY env var)
+# The agent should be configured when the container runs, not baked into the image
+# RUN if [ -n "$DD_API_KEY" ]; then \
+#     DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=$DD_API_KEY bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)" && \
+#     systemctl disable datadog-agent; \
+#     fi
+
+# 2. Datadog CLI
+RUN npm install -g @datadog/datadog-ci
+
+# 3. Vector (for log collection)
+RUN echo "Skipping vector agent install for local build"
+
+# 4. KubeHound (Kubernetes security) - optional
+RUN set -eux; \
+    case "${TARGETARCH:-amd64}" in \
+      amd64) \
+        curl -sSfL https://raw.githubusercontent.com/DataDog/kubehound/main/install.sh | sh || echo "KubeHound not available, skipping" \
+        ;; \
+      arm64) \
+        echo "KubeHound install skipped for arm64" \
+        ;; \
+      *) \
+        echo "KubeHound install skipped for ${TARGETARCH:-unknown}" \
+        ;; \
+    esac
+
+# 5. Stratus Red Team (security testing) - optional
+RUN set -eux; \
+    case "${TARGETARCH:-amd64}" in \
+      amd64) \
+        pip3 install --break-system-packages stratus-red-team || echo "Stratus Red Team not available, skipping" \
+        ;; \
+      arm64) \
+        echo "Stratus Red Team skipped for arm64" \
+        ;; \
+      *) \
+        echo "Stratus Red Team skipped for ${TARGETARCH:-unknown}" \
+        ;; \
+    esac
+
+# 6. Eppo (feature flagging) - REMOVED due to unverified curl|bash security issue
+# See: docker/code-server/SECURITY_AUDIT.md - Issue #3
+# Alternative: Use environment variables for feature flags or install manually if needed
+RUN echo "Eppo agent removed - use environment-based feature flags or manual installation"
+
+# 7. Toto (test observability) - optional
+RUN set -eux; \
+    case "${TARGETARCH:-amd64}" in \
+      amd64) \
+        pip3 install --break-system-packages datadog-toto || echo "Datadog Toto not available, skipping" \
+        ;; \
+      arm64) \
+        echo "Datadog Toto skipped for arm64" \
+        ;; \
+      *) \
+        echo "Datadog Toto skipped for ${TARGETARCH:-unknown}" \
+        ;; \
+    esac
+
+# Layer Optimization: Consolidated workspace setup and permissions (Phase 1 - Issue #459)
+WORKDIR /home/coder/workspace
+RUN mkdir -p /home/coder/workspace/.datadog/templates && \
+    chown -R coder:coder /home/coder
+
+# Copy Datadog configuration script
+COPY docker/code-server/configure-datadog.sh /tmp/configure-datadog.sh
+RUN chmod +x /tmp/configure-datadog.sh && \
+    /tmp/configure-datadog.sh && \
+    chown -R coder:coder /home/coder/workspace/.datadog && \
+    chown -R coder:coder /home/coder/workspace/verify-datadog-tools.sh
+
+# Switch to coder user for extension installation
+USER coder
+
+ENV PATH="/home/coder/.local/bin:${PATH}"
+
+# Layer Optimization: Create VSCode directories (consolidated - Phase 1 - Issue #459)
+RUN mkdir -p /home/coder/.local/share/code-server/User/ /home/coder/.vscode/extensions/
+
+# Install Extensions Based on Profile
+# Profile-based installation reduces image size and build time
+# Profiles: minimal, standard, ai, web, full
+
+# Copy profile file
+COPY --chown=coder:coder docker/code-server/profiles/${PROFILE}.txt /tmp/extensions-list.txt
+
+# Install extensions from profile (combined into single layer for efficiency)
+# Use BuildKit cache mount for faster rebuilds
+RUN --mount=type=cache,target=/home/coder/.cache/code-server \
+    echo "📦 Installing extensions for profile: ${PROFILE}" && \
+    grep -v '^#' /tmp/extensions-list.txt | grep -v '^$' | while read -r extension; do \
+        if [ -n "$extension" ]; then \
+            echo "Installing: $extension" && \
+            /usr/bin/code-server --install-extension "$extension" --force || \
+            echo "⚠️  Failed to install $extension, skipping"; \
+        fi; \
+    done && \
+    rm -f /tmp/extensions-list.txt && \
+    echo "✅ Extension installation complete for profile: ${PROFILE}"
+
+# Patch extensions to work in code-server (remove desktop-only restrictions)
+RUN for ext_dir in /home/coder/.local/share/code-server/extensions/anthropic.claude-code* \
+                   /home/coder/.local/share/code-server/extensions/openai.chatgpt*; do \
+    if [ -d "$ext_dir" ]; then \
+        sed -i 's/"extensionKind":\s*\["ui"\]/"extensionKind": ["ui", "workspace"]/g' "$ext_dir/package.json" 2>/dev/null || true; \
+        echo "Patched $(basename $ext_dir) for code-server compatibility"; \
+    fi; \
+done
+
+# Clean up (as root)
+USER root
+RUN rm -rf /tmp/extensions
+USER coder
+
+# 5. Continue - Open-source autopilot (Apache 2.0) - SKIPPED (hangs during install)
+# RUN code-server --install-extension Continue.continue
+
+# 6. Aider - AI pair programming (Apache 2.0) - SKIPPED (not essential)
+# RUN code-server --install-extension aider.aider-vscode
+
+# Install Language Server Protocol (LSP) Servers
+# Switch to root for system-level installations
+USER root
+
+# 1. Python LSP (pylsp) - installed as coder user
+USER coder
+RUN pip3 install --break-system-packages 'python-lsp-server[all]' pylsp-mypy python-lsp-black
+
+# Install AI pair-programming CLIs for parity with KinD image
+RUN python3 -m pip install --break-system-packages --no-cache-dir 'aider-chat==0.84.0' 'goose-ai==0.9.11' 'langfuse<3'
+
+# Install additional permissively licensed shells and DevOps CLIs
+USER root
+RUN set -eux; \
+    PLATFORM="${TARGETPLATFORM:-linux/$(uname -m)}"; \
+    case "$PLATFORM" in \
+      linux/aarch64) PLATFORM="linux/arm64" ;; \
+      linux/x86_64) PLATFORM="linux/amd64" ;; \
+    esac; \
+    case "$PLATFORM" in \
+>>>>>>> Stashed changes
       "linux/amd64") \
         LAZYGIT_ARCH=Linux_x86_64; \
         STARSHIP_ARCH=x86_64-unknown-linux-musl; \
@@ -307,6 +644,7 @@ RUN set -eux && \
       chmod 644 /etc/bash_completion.d/helm /usr/share/zsh/site-functions/_helm /etc/fish/completions/helm.fish; \
     fi
 
+<<<<<<< Updated upstream
 # Layer 9: Setup workspace and Datadog configuration
 RUN mkdir -p /home/coder/workspace/.datadog/templates && \
     chown -R coder:coder /home/coder && \
@@ -324,6 +662,32 @@ RUN chmod +x /tmp/configure-datadog.sh && \
 # Switch to coder user
 USER coder
 ENV PATH="/home/coder/.local/bin:/home/coder/go/bin:${PATH}"
+=======
+# Layer Optimization: Consolidated LSP server installations (Phase 1 - Issue #459)
+# Reduces 8 separate RUN commands (with USER switches) into optimized layers
+# Group 1: Root-level npm and apt installations
+RUN set -eux; \
+    echo "📦 Installing LSP servers (root)..."; \
+    npm install -g typescript-language-server vscode-langservers-extracted bash-language-server dockerfile-language-server-nodejs; \
+    curl -L https://github.com/rust-analyzer/rust-analyzer/releases/latest/download/rust-analyzer-x86_64-unknown-linux-gnu.gz | gunzip -c - > /usr/local/bin/rust-analyzer; \
+    chmod +x /usr/local/bin/rust-analyzer; \
+    apt-get update; \
+    apt-get install -y clangd; \
+    rm -rf /var/lib/apt/lists/*; \
+    echo "✅ Root LSP installations complete"
+
+# Group 2: User-level LSP installations (as coder)
+USER coder
+RUN set -eux; \
+    echo "📦 Installing user LSP servers..."; \
+    go install golang.org/x/tools/gopls@latest || echo "⚠️  gopls installation failed, skipping"; \
+    mkdir -p /home/coder/.local/share/jdtls; \
+    curl -L https://download.eclipse.org/jdtls/milestones/1.9.0/jdt-language-server-1.9.0-202203031534.tar.gz | tar xz -C /home/coder/.local/share/jdtls; \
+    echo "✅ User LSP installations complete"
+
+# Configure environment for LSP servers
+ENV PATH="/home/coder/go/bin:${PATH}"
+>>>>>>> Stashed changes
 ENV NODE_PATH=/usr/local/lib/node_modules
 
 # Create directories for VSCode
@@ -394,6 +758,7 @@ COPY --chown=coder:coder extensions/vibecode-inline-edit /home/coder/.vscode/ext
 COPY --chown=coder:coder extensions/vibecode-codebase-chat /home/coder/.vscode/extensions/vibecode-codebase-chat
 COPY --chown=coder:coder extensions/claude-code-vscode /home/coder/.vscode/extensions/claude-code-vscode
 
+<<<<<<< Updated upstream
 # Copy VS Code configuration
 COPY --chown=coder:coder docker/code-server/settings.json /home/coder/.local/share/code-server/User/settings.json
 COPY --chown=coder:coder docker/code-server/keybindings.json /home/coder/.local/share/code-server/User/keybindings.json
@@ -416,6 +781,67 @@ RUN set -e && \
     /usr/local/bin/goose -version >/dev/null 2>&1 && echo "goose OK" || { echo "goose MISSING"; exit 1; } && \
     echo "All tools verified successfully"
 
+=======
+# Layer Optimization: Consolidated VSCode extension installation (Phase 1 - Issue #459)
+# Reduces 14 separate RUN commands into 1 multi-line layer
+# Extensions grouped by category for maintainability
+RUN set -eux; \
+    echo "📦 Installing VSCode extensions (consolidated layer)..."; \
+    # Official Microsoft Extensions (MIT Licensed)
+    /usr/bin/code-server --install-extension ms-vscode.vscode-typescript-next || echo "⚠️  TypeScript extension failed"; \
+    /usr/bin/code-server --install-extension dbaeumer.vscode-eslint || echo "⚠️  ESLint extension failed"; \
+    # Productivity and Developer Tools (MIT/BSD/Apache)
+    /usr/bin/code-server --install-extension usernamehw.errorlens || echo "⚠️  ErrorLens failed"; \
+    /usr/bin/code-server --install-extension PKief.material-icon-theme || echo "⚠️  Material icons failed"; \
+    # Code Quality and Formatting (MIT)
+    /usr/bin/code-server --install-extension esbenp.prettier-vscode || echo "⚠️  Prettier failed"; \
+    # Git Tools (MIT)
+    /usr/bin/code-server --install-extension mhutchie.git-graph || echo "⚠️  Git graph failed"; \
+    # Testing and Debugging (MIT)
+    /usr/bin/code-server --install-extension orta.vscode-jest || echo "⚠️  Jest extension failed"; \
+    # Language Support (MIT/Apache)
+    /usr/bin/code-server --install-extension redhat.vscode-yaml || echo "⚠️  YAML failed"; \
+    /usr/bin/code-server --install-extension bradlc.vscode-tailwindcss || echo "⚠️  Tailwind failed"; \
+    # Utilities (MIT)
+    /usr/bin/code-server --install-extension mikestead.dotenv || echo "⚠️  dotenv failed"; \
+    # Datadog Official Extension (Apache 2.0)
+    /usr/bin/code-server --install-extension datadog.datadog-vscode || echo "⚠️  Datadog extension failed"; \
+    # Database Tools (MIT/Apache)
+    /usr/bin/code-server --install-extension mtxr.sqltools || echo "⚠️  SQLTools failed"; \
+    # Docker and Kubernetes (Microsoft - MIT)
+    /usr/bin/code-server --install-extension ms-azuretools.vscode-docker || echo "⚠️  Docker extension failed"; \
+    # REST API Testing (MIT)
+    /usr/bin/code-server --install-extension humao.rest-client || echo "⚠️  REST client failed"; \
+    # Markdown and Documentation (MIT)
+    /usr/bin/code-server --install-extension yzhang.markdown-all-in-one || echo "⚠️  Markdown failed"; \
+    echo "✅ VSCode extension installation complete"
+
+# Configure VS Code settings
+COPY --chown=coder:coder docker/code-server/settings.json /home/coder/.local/share/code-server/User/settings.json
+COPY --chown=coder:coder docker/code-server/keybindings.json /home/coder/.local/share/code-server/User/keybindings.json
+
+# Layer Optimization: Consolidated VibeCode extension builds (Phase 1 - Issue #459)
+# Reduces 3 separate RUN commands into 1 multi-line layer
+RUN set -eux; \
+    echo "🔨 Building VibeCode extensions..."; \
+    cd /home/coder/.vscode/extensions/vibecode-ai-assistant && \
+    npm install && \
+    (npm run compile || npm run build || echo "⚠️  No build script, extension will load from source"); \
+    cd /home/coder/.vscode/extensions/vibecode-inline-edit && \
+    npm install && \
+    (npm run build || npm run compile || echo "⚠️  No build script, extension will load from source"); \
+    cd /home/coder/.vscode/extensions/vibecode-codebase-chat && \
+    npm install && \
+    (npm run build || npm run compile || echo "⚠️  No build script, extension will load from source"); \
+    echo "✅ VibeCode extension builds complete"
+
+# Claude Code extension - placeholder for future implementation
+# RUN cd /home/coder/.vscode/extensions/claude-code-vscode \
+#     && npm install \
+#     && (npm run compile || npm run build || echo "No build script, extension will load from source")
+
+# Set default shell to bash
+>>>>>>> Stashed changes
 ENV SHELL=/bin/bash
 WORKDIR /home/coder/workspace
 

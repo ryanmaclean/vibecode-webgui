@@ -4383,8 +4383,11 @@ name = "vibecode"
 version = "0.1.0"
 dependencies = [
  "bollard",
+<<<<<<< Updated upstream
  "chrono",
  "filetime",
+=======
+>>>>>>> Stashed changes
  "hostname",
  "mdns-sd",
  "once_cell",

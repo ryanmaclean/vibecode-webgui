@@ -37,7 +37,7 @@
       "subtype": "http",
       "request": {
         "method": "GET",
-        "url": "{{$env.BASE_URL}}/api/test-db",
+        "url": "{{$env.BASE_URL}}/api/health/database",
         "timeout": 10000
       },
       "assertions": [
@@ -54,7 +54,7 @@
         {
           "type": "body",
           "operator": "contains",
-          "target": "Database connection working"
+          "target": "healthy"
         }
       ],
       "locations": ["aws:us-east-1", "aws:us-west-2"],
@@ -233,5 +233,3 @@
     }
   ]
 }
-
-
