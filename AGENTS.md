@@ -1,5 +1,44 @@
 # Agent Quick Reference
 
+## Three-Tier VM Strategy (2025-10-02)
+
+VibeCode now supports **three complementary VM runtimes** optimized for different platforms:
+
+| Platform | Runtime | Boot Time | Status | Issues |
+|----------|---------|-----------|--------|--------|
+| **Linux** | Cloud Hypervisor | <2s | ✅ Released | #542-#546 |
+| **macOS** | Virtualization.framework | <2s | ✅ Implemented | #547 |
+| **Portable** | OpenVSCode microVM | 0.5s | ✅ Prototyped | #552-#553 |
+
+**Key Documents**:
+- `MERGE_SUMMARY_2025-10-02.md` - Complete merge analysis
+- `archive/agents/2025-10-02-macos-vm-handoff.md` - macOS VM coordination
+- `archive/agents/2025-10-02-firecracker-bench-hand-off.md` - Benchmarking
+- `archive/agents/2025-10-02-openvscode-microvm.md` - OpenVSCode prototype
+
+---
+
+## macOS Native VM Workflow (NEW - Issue #547)
+
+1. **Installation** (One command)
+   - Run `./scripts/macos-vm/install.sh` to download kernel, build binary, and configure service
+   - Binary: `bin/vibecode-vm` (85KB ARM64)
+   - Kernel: Reuses cloud-hypervisor release (34MB vmlinuz + 8.3MB initramfs)
+
+2. **Usage**
+   - Manual: `./bin/vibecode-vm`
+   - Service: `launchctl load ~/Library/LaunchAgents/com.vibecode.vm.plist`
+   - Access: http://localhost:8080
+
+3. **Documentation**
+   - `macos-vm/README.md` - Complete user guide
+   - `macos-vm/VERIFIED.md` - Build verification
+   - `macos-vm/RELATED_ISSUES.md` - Issue cross-references
+
+4. **Status**: Implementation complete, needs boot testing
+
+---
+
 ## Fast OpenVSCode MicroVM Workflow
 
 1. **Stable release available**
