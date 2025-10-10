@@ -2,21 +2,26 @@ import { Terminal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
 import { useConsoleMode } from '@/hooks/useConsoleMode';
+import * as React from 'react';
 
 interface ConsoleButtonProps {
   workspaceId: string;
   className?: string;
 }
 
-export function ConsoleButton({ workspaceId, className }: ConsoleButtonProps) {
+export const ConsoleButton = React.memo(({ workspaceId, className }: ConsoleButtonProps) => {
   const { openConsole, isLoading } = useConsoleMode();
+
+  const handleClick = React.useCallback(() => {
+    openConsole(workspaceId);
+  }, [openConsole, workspaceId]);
 
   return (
     <Tooltip content="Open Terminal with Goose">
       <Button
         variant="ghost"
         size="icon"
-        onClick={() => openConsole(workspaceId)}
+        onClick={handleClick}
         disabled={isLoading}
         className={className}
         aria-label="Open terminal"
@@ -25,4 +30,6 @@ export function ConsoleButton({ workspaceId, className }: ConsoleButtonProps) {
       </Button>
     </Tooltip>
   );
-}
+});
+
+ConsoleButton.displayName = 'ConsoleButton';

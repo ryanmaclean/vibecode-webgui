@@ -49,11 +49,11 @@ export const CollaborativeChatInterface = ({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!chatContainerRef.current) return
-      
+
       const rect = chatContainerRef.current.getBoundingClientRect()
       const x = ((e.clientX - rect.left) / rect.width) * 100 // Percentage
       const y = ((e.clientY - rect.top) / rect.height) * 100 // Percentage
-      
+
       setMousePosition({ x, y })
       updateCursor(x, y)
     }
@@ -63,6 +63,8 @@ export const CollaborativeChatInterface = ({
       container.addEventListener('mousemove', handleMouseMove)
       return () => container.removeEventListener('mousemove', handleMouseMove)
     }
+    // No cleanup needed if container not found
+    return undefined
   }, [updateCursor])
 
   // Handle typing indicators

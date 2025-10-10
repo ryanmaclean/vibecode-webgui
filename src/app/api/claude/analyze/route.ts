@@ -10,6 +10,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { getClaudeCliInstance } from '@/lib/claude-cli-integration'
+import { z } from 'zod'
+
+// Security: Input validation schema
+const ClaudeAnalyzeRequestSchema = z.object({
+  code: z.string().min(1, 'Code cannot be empty').max(50000, 'Code too long'),
+  language: z.string().optional(),
+  workspaceId: z.string()
+    .min(1, 'Workspace ID required')
+    .max(100, 'Workspace ID too long')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid workspace ID format'),
+  analysisType: z.enum(['analyze', 'explain', 'optimize', 'debug', 'test'], {
+    errorMap: () => ({ message: 'Invalid analysis type. Must be one of: analyze, explain, optimize, debug, test' })
+  }).default('analyze')
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,32 +36,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse request body
+    // Parse and validate request body
     const body = await request.json()
-    const { code, language, workspaceId, analysisType = 'analyze' } = body
+    const validationResult = ClaudeAnalyzeRequestSchema.safeParse(body)
 
-    if (!code || typeof code !== 'string') {
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'Code is required' },
+        {
+          error: 'Invalid request data',
+          details: validationResult.error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        },
         { status: 400 }
       )
     }
 
-    if (!workspaceId || typeof workspaceId !== 'string') {
-      return NextResponse.json(
-        { error: 'Workspace ID is required' },
-        { status: 400 }
-      )
-    }
-
-    // Validate analysis type
-    const validTypes = ['analyze', 'explain', 'optimize', 'debug', 'test']
-    if (!validTypes.includes(analysisType)) {
-      return NextResponse.json(
-        { error: `Invalid analysis type. Must be one of: ${validTypes.join(', ')}` },
-        { status: 400 }
-      )
-    }
+    const { code, language, workspaceId, analysisType } = validationResult.data
 
     // Get workspace directory
     const workspaceDir = `/workspaces/${workspaceId}`

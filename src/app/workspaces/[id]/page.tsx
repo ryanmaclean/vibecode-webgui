@@ -59,22 +59,24 @@ export default function WorkspacePage() {
   useEffect(() => {
     if (isTestEnvironment && typeof window !== 'undefined') {
       document.body.setAttribute('data-ai-chat-open', aiChatOpen.toString())
-      
+
       const button = document.querySelector('[data-testid="ai-chat-toggle"]')
       if (button) {
         const webkitClickHandler = () => {
           const currentState = document.body.getAttribute('data-ai-chat-open') === 'true'
           const newState = !currentState
-          
+
           document.body.setAttribute('data-ai-chat-open', newState.toString())
           button.textContent = newState ? 'Close AI Chat' : 'Open AI Chat'
           setAiChatOpen(newState)
         }
-        
+
         button.addEventListener('click', webkitClickHandler)
         return () => button.removeEventListener('click', webkitClickHandler)
       }
     }
+    // No cleanup needed if button not found
+    return undefined
   }, [isTestEnvironment])
 
   const handleCreateFile = () => {

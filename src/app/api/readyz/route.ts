@@ -1,18 +1,11 @@
-import { NextResponse } from 'next/server'
+import { createHealthResponse, createErrorResponseFromError } from '@/lib/api-utils'
 
 export async function GET() {
   try {
     // Readiness check for Kubernetes readiness probe
     // In production, this would check database connectivity, external services, etc.
-    return NextResponse.json({
-      status: 'ready',
-      timestamp: new Date().toISOString()
-    });
+    return createHealthResponse('ready')
   } catch (error) {
-    return NextResponse.json({
-      status: 'not ready',
-      timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 503 });
+    return createErrorResponseFromError(error, 503, 'Readiness check failed')
   }
 }
