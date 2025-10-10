@@ -121,9 +121,14 @@
    - Commands: `for id in ...; do gh api -X DELETE "/users/ryanmaclean/packages/container/vibecode-codeserver/versions/$id"; done` (needs `delete:packages`).
    - Docker Hub: `curl -X DELETE https://hub.docker.com/v2/repositories/ryanmaclean/vibecode-codeserver/tags/<tag>/ -H "Authorization: Bearer $DOCKERHUB_TOKEN"` (fallback PATCH to inactive).
 2. **Rebuild & publish updated profiles**
-   - Run `scripts/build-profiles.sh 1.1.1-devinfra <profile>` for `minimal`, `standard`, `ai`, `web`, `full` after cleanup.
-   - Append digests to `deployments/devinfra-manifests.log` via `docker buildx imagetools inspect ... >> deployments/devinfra-manifests.log`.
-   - Apply tag format `1.1.1-devinfra-$(date +%Y%m%d)` for audit clarity.
+ - Run `scripts/build-profiles.sh 1.1.1-devinfra <profile>` for `minimal`, `standard`, `ai`, `web`, `full` after cleanup.
+  - Append digests to `deployments/devinfra-manifests.log` via `docker buildx imagetools inspect ... >> deployments/devinfra-manifests.log`.
+  - Apply tag format `1.1.1-devinfra-$(date +%Y%m%d)` for audit clarity.
+  - [ ] [2025-10-02 01:03 UTC] Run #18180120072 failed (cosign `.sha256` assets missing). Evidence: `logs/codeserver-profiles/18180120072-*`; issue #404 comment logged.
+  - [ ] [2025-10-02 01:17 UTC] Run #18180349503 failed (workflow built remote `main` without cosign fix). Logs: `logs/codeserver-profiles/18180349503-*`; TODO updated post-merge.
+  - [ ] [2025-10-02 02:14 UTC] Run #18181280962 failed (Go checksum download returned HTML landing page). Logs: `logs/codeserver-profiles/18181280962-*`; Dockerfile updated to source checksums from `https://dl.google.com/go/`.
+  - [ ] Re-dispatch `codeserver-profiles.yml -f version=1.1.1-devinfra -f profiles=all` after merging the Go checksum change; track new run ID, capture artifacts in `logs/codeserver-profiles/<run>/`.
+  - [ ] After a successful run: append GHCR digests to `deployments/devinfra-manifests.log`, upload SBOM/manifests to issue #404, and unblock validation suite.
 3. **Validation suite**
    - `npm run test:scripts`, Docker-in-Docker smoke (`docker run --privileged ... docker version`).
    - Dev Containers check (`devcontainer up`), Jetify Devbox check (`devbox shell --config devbox.json`).
