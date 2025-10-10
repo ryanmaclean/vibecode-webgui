@@ -198,7 +198,7 @@ DD_SITE="datadoghq.com"
 └─────────────────────────────────────────┘
 ```
 
-## Code-Server v1.1.1 - Multi-Profile Images
+## Code-Server v1.1.1 - GPL-Free Multi-Profile Images
 
 **NEW**: 5 optimized profiles for different use cases, all with essential CLI tools included!
 
@@ -227,7 +227,6 @@ docker pull ryanmaclean/vibecode-codeserver:1.1.1-standard
 
 **Terminal Editors:**
 - vim 9.0, neovim 0.7.2
-- Note: Emacs removed in v1.1.1 for GPL license compliance
 
 **AI Coding Assistants:**
 - aider 0.84.0, goose (latest)
