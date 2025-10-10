@@ -17,23 +17,26 @@ describe.skip('Feature Flag Persistence (Real Database) - Temporarily Disabled',
 
   beforeAll(async () => {
     if (!process.env.DATABASE_URL) {
-      throw new Error('DATABASE_URL must be set for real database tests')}
+      throw new Error('DATABASE_URL must be set for real database tests');
+    }
     const { Client } = require('pg');
     client = new Client({
       connectionString: process.env.DATABASE_URL,
       connectionTimeoutMillis: 10000,
     });
 
-    await client.connect()});
+    await client.connect();
+  });
 
   afterAll(async () => {
     if (client) {
-      await client.end()}
+      await client.end();
+    }
   })
 
   describe('Feature Flag Schema', () => {
     test('should have feature_flags table in database', async () => {
-      const result = await client.query(`;
+      const result = await client.query(`
         SELECT table_name
         FROM information_schema.tables
         WHERE table_schema = 'public'
@@ -41,10 +44,11 @@ describe.skip('Feature Flag Persistence (Real Database) - Temporarily Disabled',
       `);
 
       expect(result.rows).toHaveLength(1);
-      expect(result.rows[0].table_name).toBe('feature_flags')})
+      expect(result.rows[0].table_name).toBe('feature_flags');
+    });
 
     test('should have proper feature flag columns', async () => {
-      const result = await client.query(`;
+      const result = await client.query(`
         SELECT column_name, data_type, is_nullable
         FROM information_schema.columns
         WHERE table_schema = 'public'
@@ -69,9 +73,8 @@ describe.skip('Feature Flag Persistence (Real Database) - Temporarily Disabled',
         expect(actualCol).toBeTruthy();
         expect(actualCol.data_type).toContain(expectedCol.type.split(' ')[0]);
         expect(actualCol.is_nullable).toBe(expectedCol.nullable);
-  });
-});
-});
+      });
+    });
 
     test('should have unique constraint on feature flag key', async () => {
       const result = await client.query(`
@@ -98,6 +101,7 @@ describe.skip('Feature Flag Persistence (Real Database) - Temporarily Disabled',
 
       expect(keyConstraint.rows).toHaveLength(1);
     });
+  });
 
   describe('CRUD Operations', () => {
     let testFlagId: string
@@ -111,7 +115,8 @@ describe.skip('Feature Flag Persistence (Real Database) - Temporarily Disabled',
           user_targeting, created_at, updated_at
         )
         VALUES (
-          gen_random_uuid(), $1, $2, $3, $4, $5, $6, NOW(), NOW())
+          gen_random_uuid(), $1, $2, $3, $4, $5, $6, NOW(), NOW()
+        )
         RETURNING id, key, name, enabled
       `, [
         flagKey,
@@ -127,7 +132,7 @@ describe.skip('Feature Flag Persistence (Real Database) - Temporarily Disabled',
       expect(result.rows[0].enabled).toBe(true);
 
       testFlagId = result.rows[0].id;
-    })
+    });
 
     test('should read feature flag from database', async () => {
       const result = await client.query(`
@@ -164,7 +169,8 @@ describe.skip('Feature Flag Persistence (Real Database) - Temporarily Disabled',
 
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].enabled).toBe(false);
-      expect(result.rows[0].rollout_percentage).toBe(0)});
+      expect(result.rows[0].rollout_percentage).toBe(0);
+    });
 
     test('should enforce unique key constraint', async () => {
       const duplicateKey = `duplicate-${Date.now()}`
@@ -173,7 +179,7 @@ describe.skip('Feature Flag Persistence (Real Database) - Temporarily Disabled',
       await client.query(`
         INSERT INTO feature_flags (
           id, key, name, enabled, created_at, updated_at
-        );
+        )
         VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW())
       `, [duplicateKey, 'First Flag', true]);
 
@@ -182,18 +188,22 @@ describe.skip('Feature Flag Persistence (Real Database) - Temporarily Disabled',
         client.query(`
           INSERT INTO feature_flags (
             id, key, name, enabled, created_at, updated_at
-          );
+          )
           VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW())
-        `, [duplicateKey, 'Second Flag', true])).rejects.toThrow(/unique constraint|duplicate key/)
+        `, [duplicateKey, 'Second Flag', true])
+      ).rejects.toThrow(/unique constraint|duplicate key/);
 
       // Cleanup
-      await client.query('DELETE FROM feature_flags WHERE key = $1', [duplicateKey])})
+      await client.query('DELETE FROM feature_flags WHERE key = $1', [duplicateKey]);
+    });
 
     afterAll(async () => {
       // Cleanup test data
       if (testFlagId) {
-        await client.query('DELETE FROM feature_flags WHERE id = $1', [testFlagId])}
-    })})
+        await client.query('DELETE FROM feature_flags WHERE id = $1', [testFlagId]);
+      }
+    });
+  });
 
   describe('API Integration with Real Database', () => {
     test('should persist feature flags through API calls', async () => {
@@ -212,10 +222,11 @@ describe.skip('Feature Flag Persistence (Real Database) - Temporarily Disabled',
             enabled: true,
             rolloutPercentage: 75
           }
-        })});
+        })
+      });
 
       if (createResponse.ok) {
-        // Verify flag exists in database (not just in-memory);
+        // Verify flag exists in database (not just in-memory)
         const dbResult = await client.query(`
           SELECT key, name, enabled, rollout_percentage
           FROM feature_flags
@@ -228,8 +239,9 @@ describe.skip('Feature Flag Persistence (Real Database) - Temporarily Disabled',
         expect(dbResult.rows[0].rollout_percentage).toBe(75);
 
         // Cleanup
-        await client.query('DELETE FROM feature_flags WHERE key = $1', [flagKey])}
-    })
+        await client.query('DELETE FROM feature_flags WHERE key = $1', [flagKey]);
+      }
+    });
 
     test('should handle feature flag evaluation with database lookup', async () => {
       const evalKey = `eval-test-${Date.now()}`
@@ -238,7 +250,7 @@ describe.skip('Feature Flag Persistence (Real Database) - Temporarily Disabled',
       await client.query(`
         INSERT INTO feature_flags (
           id, key, name, enabled, rollout_percentage, created_at, updated_at
-        );
+        )
         VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW(), NOW())
       `, [evalKey, 'Evaluation Test', true, 100]);
 
@@ -249,11 +261,14 @@ describe.skip('Feature Flag Persistence (Real Database) - Temporarily Disabled',
         const evalData = await evalResponse.json();
 
         // Should return enabled state from database
-        expect(evalData).toHaveProperty('enabled')
-        expect(evalData.enabled).toBe(true)}
+        expect(evalData).toHaveProperty('enabled');
+        expect(evalData.enabled).toBe(true);
+      }
 
       // Cleanup
-      await client.query('DELETE FROM feature_flags WHERE key = $1', [evalKey])})})
+      await client.query('DELETE FROM feature_flags WHERE key = $1', [evalKey]);
+    });
+  });
 
   describe('Performance and Concurrency', () => {
     test('should handle concurrent feature flag operations', async () => {
@@ -264,55 +279,60 @@ describe.skip('Feature Flag Persistence (Real Database) - Temporarily Disabled',
         client.query(`
           INSERT INTO feature_flags (
             id, key, name, enabled, created_at, updated_at
-          );
+          )
           VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW())
           RETURNING id
-        `, [`${baseKey}-${i}`, `Concurrent Flag ${i}`, i % 2 === 0]));
+        `, [`${baseKey}-${i}`, `Concurrent Flag ${i}`, i % 2 === 0])
+      );
 
       const results = await Promise.all(promises);
 
       // All inserts should succeed
       results.forEach(result => {
         expect(result.rows).toHaveLength(1);
-        expect(result.rows[0].id).toBeTruthy()})
+        expect(result.rows[0].id).toBeTruthy();
+      });
 
       // Verify all flags exist in database
-      const countResult = await client.query(`;
+      const countResult = await client.query(`
         SELECT COUNT(*) as count
         FROM feature_flags
         WHERE key LIKE $1
       `, [`${baseKey}-%`]);
 
-      expect(parseInt(countResult.rows[0].count)).toBe(10)
+      expect(parseInt(countResult.rows[0].count)).toBe(10);
 
       // Cleanup
       await client.query(`
         DELETE FROM feature_flags
         WHERE key LIKE $1
-      `, [`${baseKey}-%`])});
+      `, [`${baseKey}-%`]);
+    });
 
     test('should efficiently query feature flags with indexes', async () => {
       // Test that key queries use index
-      const result = await client.query(`;
+      const result = await client.query(`
         EXPLAIN (ANALYZE, BUFFERS)
         SELECT * FROM feature_flags WHERE key = 'nonexistent-flag'
       `);
 
-      const queryPlan = result.rows.map((row: any) => row['QUERY PLAN']).join('\n')
+      const queryPlan = result.rows.map((row: any) => row['QUERY PLAN']).join('\n');
 
       // Should use index scan on key, not sequential scan
-      expect(queryPlan).toContain('Index')
-      expect(queryPlan).not.toContain('Seq Scan on feature_flags')})})
+      expect(queryPlan).toContain('Index');
+      expect(queryPlan).not.toContain('Seq Scan on feature_flags');
+    });
+  });
 
   describe('Data Integrity', () => {
     test('should maintain audit trail with timestamps', async () => {
       const auditKey = `audit-${Date.now()}`
 
       // Create flag
-      const createResult = await client.query(`;
+      const createResult = await client.query(`
         INSERT INTO feature_flags (
           id, key, name, enabled, created_at, updated_at
-        );
+        )
         VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW())
         RETURNING id, created_at, updated_at
       `, [auditKey, 'Audit Test', true]);
@@ -396,10 +416,10 @@ describe('Feature Flag Anti-Fake Implementation Tests', () => {
         if (Array.isArray(data.flags) && data.flags.length > 0) {
           // Check if all flags have realistic IDs (UUIDs, not sequential numbers)
           const hasRealisticIds = data.flags.every((flag: any) => {
-                          return flag.id && (
-                flag.id.length >= 32 || // UUID without dashes
-                (flag.id.includes('-') && flag.id.length >= 36) // UUID with dashes
-              );
+            return flag.id && (
+              flag.id.length >= 32 || // UUID without dashes
+              (flag.id.includes('-') && flag.id.length >= 36) // UUID with dashes
+            );
           });
 
           expect(hasRealisticIds).toBe(true);
