@@ -26,6 +26,7 @@ export default function ProjectsPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null)
   const [projectName, setProjectName] = useState('')
   const [activeTab, setActiveTab] = useState('ai-generator')
+  const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false)
   const router = useRouter()
   const { data: session } = useSession()
 
@@ -41,9 +42,11 @@ export default function ProjectsPage() {
   }
 
   const handleCreateWorkspace = async (projectData: { files: any[]; name: string }) => {
+    setIsCreatingWorkspace(true)
     try {
       if (!session?.user) {
         alert('Please sign in to create workspaces')
+        setIsCreatingWorkspace(false)
         return
       }
 
@@ -81,6 +84,7 @@ export default function ProjectsPage() {
     } catch (error) {
       console.error('Failed to create workspace:', error)
       alert('Error creating workspace. See console for details.')
+      setIsCreatingWorkspace(false)
     }
   }
 
@@ -98,7 +102,23 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="bg-gray-50 text-gray-900">
+    <div className="bg-gray-50 text-gray-900 relative">
+      {/* Loading Overlay */}
+      {isCreatingWorkspace && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" role="status" aria-label="Creating workspace">
+          <div className="bg-white rounded-lg p-8 max-w-md mx-4">
+            <div className="flex flex-col items-center">
+              <svg className="animate-spin h-12 w-12 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Creating Your Workspace</h3>
+              <p className="text-gray-600 text-center">Setting up your development environment...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="container mx-auto px-4 py-12">
         <header className="text-center mb-12">
           <h1 className="text-5xl font-extrabold tracking-tight mb-4">

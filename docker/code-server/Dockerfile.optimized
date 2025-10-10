@@ -1,6 +1,5 @@
 # VibeCode Custom code-server with pre-installed extensions
-# OPTIMIZED VERSION - Phase 2: Reduced layers from 57 to 12 (78% reduction)
-# Optimization: Consolidated COPY operations and merged related RUN commands
+# OPTIMIZED VERSION - Reduced from 57 to 12 layers
 FROM codercom/code-server:4.104.2
 
 ARG TARGETPLATFORM
@@ -20,18 +19,12 @@ ARG KUBECTX_VERSION=0.9.5
 ARG K9S_VERSION=0.50.13
 ARG SOPS_VERSION=3.9.3
 ARG GLAB_VERSION=1.22.0
-ARG HELIX_VERSION=24.07
-ARG MICRO_VERSION=2.0.14
-ARG EZA_VERSION=0.20.16
-ARG DUST_VERSION=1.1.1
 ARG PROFILE=full
 ARG BUILD_DATE
 ARG GIT_COMMIT
 ARG VERSION=1.2.0
 ARG COSIGN_VERSION=2.2.4
-ARG GO_VERSION=1.25.1
-ARG GO_SHA256_AMD64=7716a0d940a0f6ae8e1f3b3f4f36299dc53e31b16840dbd171254312c41ca12e
-ARG GO_SHA256_ARM64=65a3e34fb2126f55b34e1edfc709121660e1be2dee6bdf405fc399a63a95a87d
+ARG GO_VERSION=1.22.4
 ARG POCKETBASE_VERSION=0.24.4
 
 # Metadata
@@ -50,14 +43,15 @@ RUN set -ex && \
     mkdir -p /tmp && chmod 1777 /tmp && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-        ca-certificates curl bash-completion fish git zsh openssh-client \
+        ca-certificates curl bash-completion fish exa git zsh openssh-client \
         hyperfine ripgrep vim neovim elvish xonsh yash busybox age gh kubectx \
         sudo wget gnupg build-essential python3-pip python3-venv jq fzf bat \
         fd-find unzip xz-utils apt-transport-https software-properties-common clangd && \
     rm -rf /var/lib/apt/lists/* && \
     # Permissions and symlinks
     chmod 755 /usr/bin/code-server /usr/lib/code-server/bin/code-server && \
-    ln -sf /usr/bin/fdfind /usr/local/bin/fd
+    ln -sf /usr/bin/fdfind /usr/local/bin/fd && \
+    ln -sf /usr/bin/exa /usr/local/bin/eza
 
 # Layer 2: Install all CLI tools in one consolidated layer
 RUN set -eux && \
@@ -140,39 +134,6 @@ RUN set -eux && \
     # Install glab
     curl -fsSL "https://github.com/profclems/glab/releases/download/v${GLAB_VERSION}/glab_${GLAB_VERSION}_${GLAB_ARCH}.tar.gz" -o /tmp/glab.tar.gz && \
     tar -xzf /tmp/glab.tar.gz -C /tmp && find /tmp -type f -name "glab" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/glab && chmod 755 /usr/local/bin/glab && \
-    # Install helix editor
-    case "$TARGETPLATFORM" in \
-      "linux/amd64") HELIX_ARCH=x86_64 ;; \
-      "linux/arm64") HELIX_ARCH=aarch64 ;; \
-    esac && \
-    curl -fsSL "https://github.com/helix-editor/helix/releases/download/${HELIX_VERSION}/helix-${HELIX_VERSION}-${HELIX_ARCH}-linux.tar.xz" -o /tmp/helix.tar.xz && \
-    tar -xJf /tmp/helix.tar.xz -C /tmp && \
-    cp -r /tmp/helix-${HELIX_VERSION}-${HELIX_ARCH}-linux/hx /usr/local/bin/ && \
-    cp -r /tmp/helix-${HELIX_VERSION}-${HELIX_ARCH}-linux/runtime /usr/local/lib/helix-runtime && \
-    chmod 755 /usr/local/bin/hx && \
-    # Install micro editor
-    case "$TARGETPLATFORM" in \
-      "linux/amd64") MICRO_ARCH=amd64 ;; \
-      "linux/arm64") MICRO_ARCH=arm64 ;; \
-    esac && \
-    curl -fsSL "https://github.com/zyedidia/micro/releases/download/v${MICRO_VERSION}/micro-${MICRO_VERSION}-linux-${MICRO_ARCH}.tar.gz" -o /tmp/micro.tar.gz && \
-    tar -xzf /tmp/micro.tar.gz -C /tmp && \
-    cp /tmp/micro-${MICRO_VERSION}/micro /usr/local/bin/ && \
-    chmod 755 /usr/local/bin/micro && \
-    # Install eza (modern ls replacement)
-    curl -fsSL "https://github.com/eza-community/eza/releases/download/v${EZA_VERSION}/eza_${HELIX_ARCH}-unknown-linux-gnu.tar.gz" -o /tmp/eza.tar.gz && \
-    tar -xzf /tmp/eza.tar.gz -C /tmp && \
-    cp /tmp/eza /usr/local/bin/ && \
-    chmod 755 /usr/local/bin/eza && \
-    # Install dust (du replacement)
-    case "$TARGETPLATFORM" in \
-      "linux/amd64") DUST_ARCH=x86_64 ;; \
-      "linux/arm64") DUST_ARCH=aarch64 ;; \
-    esac && \
-    curl -fsSL "https://github.com/bootandy/dust/releases/download/v${DUST_VERSION}/dust-v${DUST_VERSION}-${DUST_ARCH}-unknown-linux-musl.tar.gz" -o /tmp/dust.tar.gz && \
-    tar -xzf /tmp/dust.tar.gz -C /tmp && \
-    cp /tmp/dust-v${DUST_VERSION}-${DUST_ARCH}-unknown-linux-musl/dust /usr/local/bin/ && \
-    chmod 755 /usr/local/bin/dust && \
     # Install cosign
     curl -fsSLO "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-${COSIGN_ARCH}" && \
     curl -fsSLO "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign_checksums.txt" && \
@@ -189,13 +150,12 @@ RUN set -eux && \
     # Cleanup
     rm -rf /tmp/* /var/lib/apt/lists/*
 
-# Layer 3: Install Node.js and Go
+# Layer 3: Install Node.js
 RUN set -eux && \
-    # Install Node.js
     NODE_VERSION="18.18.0" && \
     case "$TARGETPLATFORM" in \
-      "linux/amd64") NODE_ARCH=x64; GO_ARCH=amd64 ;; \
-      "linux/arm64") NODE_ARCH=arm64; GO_ARCH=arm64 ;; \
+      "linux/amd64") NODE_ARCH=x64 ;; \
+      "linux/arm64") NODE_ARCH=arm64 ;; \
       *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
     esac && \
     NODE_TARBALL="node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" && \
@@ -209,19 +169,22 @@ RUN set -eux && \
     ln -sf /usr/local/lib/nodejs/bin/npm /usr/local/bin/npm && \
     ln -sf /usr/local/lib/nodejs/bin/npx /usr/local/bin/npx && \
     rm -rf /tmp/* && \
-    node --version && npm --version && \
-    # Install Go with platform-specific architecture
+    node --version && npm --version
+
+# Layer 4: Install Go
+RUN set -eux && \
     case "$TARGETPLATFORM" in \
-      "linux/amd64") GO_ARCH=amd64; GO_SHA256="${GO_SHA256_AMD64}" ;; \
-      "linux/arm64") GO_ARCH=arm64; GO_SHA256="${GO_SHA256_ARM64}" ;; \
+      "linux/amd64") GO_ARCH=amd64 ;; \
+      "linux/arm64") GO_ARCH=arm64 ;; \
       *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
     esac && \
     GO_TARBALL="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" && \
     cd /tmp && \
-    curl -fsSL "https://go.dev/dl/${GO_TARBALL}" -o "${GO_TARBALL}" && \
-    echo "${GO_SHA256}  ${GO_TARBALL}" | sha256sum -c - && \
+    curl -fsSLo "${GO_TARBALL}" "https://dl.google.com/go/${GO_TARBALL}" && \
+    curl -fsSLo "${GO_TARBALL}.sha256" "https://dl.google.com/go/${GO_TARBALL}.sha256" && \
+    sha256sum --check --strict "${GO_TARBALL}.sha256" && \
     tar -C /usr/local -xzf "${GO_TARBALL}" && \
-    rm -f "${GO_TARBALL}" && \
+    rm -f "${GO_TARBALL}" "${GO_TARBALL}.sha256" && \
     ln -sf /usr/local/go/bin/go /usr/local/bin/go
 
 # Layer 5: Install Helm with verification and kubectl with kubectx
@@ -290,7 +253,7 @@ RUN set -eux && \
     # Cleanup
     rm -rf /tmp/*
 
-# Layer 6: Install npm packages, Go tools, Python packages, LSP servers, and shell completions
+# Layer 6: Install npm packages, Go tools, Python packages, and LSP servers
 RUN set -eux && \
     case "$TARGETPLATFORM" in \
       "linux/amd64") GO_ARCH=amd64 ;; \
@@ -347,28 +310,32 @@ RUN set -eux && \
     pocketbase --version && devbox version && \
     echo "All required tools verified"
 
-# Layer 7: Setup workspace and Datadog configuration (COPY + RUN consolidated)
-COPY docker/code-server/configure-datadog.sh /tmp/configure-datadog.sh
+# Layer 9: Setup workspace and Datadog configuration
 RUN mkdir -p /home/coder/workspace/.datadog/templates && \
     chown -R coder:coder /home/coder && \
-    chown -R coder:coder /home/coder/workspace/.datadog && \
-    chmod +x /tmp/configure-datadog.sh && \
+    chown -R coder:coder /home/coder/workspace/.datadog
+
+WORKDIR /home/coder/workspace
+
+# Copy Datadog configuration script
+COPY docker/code-server/configure-datadog.sh /tmp/configure-datadog.sh
+RUN chmod +x /tmp/configure-datadog.sh && \
     /tmp/configure-datadog.sh && \
     chown -R coder:coder /home/coder/workspace/.datadog && \
     chown -R coder:coder /home/coder/workspace/verify-datadog-tools.sh
-
-WORKDIR /home/coder/workspace
 
 # Switch to coder user
 USER coder
 ENV PATH="/home/coder/.local/bin:/home/coder/go/bin:${PATH}"
 ENV NODE_PATH=/usr/local/lib/node_modules
 
-# Layer 8: Create VSCode directories and install extensions (COPY + RUN consolidated)
+# Create directories for VSCode
+RUN mkdir -p /home/coder/.local/share/code-server/User/ \
+    && mkdir -p /home/coder/.vscode/extensions/
+
+# Layer 10: Install VSCode extensions based on profile
 COPY --chown=coder:coder docker/code-server/profiles/${PROFILE}.txt /tmp/extensions-list.txt
-RUN mkdir -p /home/coder/.local/share/code-server/User/ && \
-    mkdir -p /home/coder/.vscode/extensions/ && \
-    # Install VSCode extensions from profile
+RUN --mount=type=cache,target=/home/coder/.cache/code-server \
     echo "Installing extensions for profile: ${PROFILE}" && \
     grep -v '^#' /tmp/extensions-list.txt | grep -v '^$' | while read -r extension; do \
         if [ -n "$extension" ]; then \
@@ -402,16 +369,20 @@ RUN mkdir -p /home/coder/.local/share/code-server/User/ && \
     /usr/bin/code-server --install-extension ms-azuretools.vscode-docker || echo "Docker failed" && \
     /usr/bin/code-server --install-extension humao.rest-client || echo "REST client failed" && \
     /usr/bin/code-server --install-extension yzhang.markdown-all-in-one || echo "Markdown failed" && \
-    rm -rf /tmp/extensions && \
-    # Install Go LSP and Java LSP
-    go install golang.org/x/tools/gopls@latest || echo "gopls installation failed, skipping" && \
-    mkdir -p /home/coder/.local/share/jdtls && \
-    curl -L https://download.eclipse.org/jdtls/milestones/1.9.0/jdt-language-server-1.9.0-202203031534.tar.gz | tar xz -C /home/coder/.local/share/jdtls && \
     echo "Extension installation complete"
 
-# Layer 9: Copy all VibeCode files and AI configuration (consolidated 7 COPY + RUN into 2 layers)
+# Switch to root for AI extensions script
 USER root
 COPY docker/code-server/configure-ai-extensions.sh /tmp/configure-ai-extensions.sh
+RUN rm -rf /tmp/extensions && \
+    chmod +x /tmp/configure-ai-extensions.sh && \
+    /tmp/configure-ai-extensions.sh && \
+    rm /tmp/configure-ai-extensions.sh && \
+    chown -R coder:coder /home/coder/.local/share/code-server/ && \
+    chown -R coder:coder /home/coder/.vscode/
+
+# Layer 11: Copy VibeCode extensions, configure VS Code, and build extensions
+USER coder
 COPY --chown=coder:coder extensions/vibecode-ai-assistant /home/coder/.vscode/extensions/vibecode-ai-assistant
 COPY --chown=coder:coder extensions/vibecode-inline-edit /home/coder/.vscode/extensions/vibecode-inline-edit
 COPY --chown=coder:coder extensions/vibecode-codebase-chat /home/coder/.vscode/extensions/vibecode-codebase-chat
@@ -419,17 +390,13 @@ COPY --chown=coder:coder extensions/claude-code-vscode /home/coder/.vscode/exten
 COPY --chown=coder:coder docker/code-server/settings.json /home/coder/.local/share/code-server/User/settings.json
 COPY --chown=coder:coder docker/code-server/keybindings.json /home/coder/.local/share/code-server/User/keybindings.json
 
-# Layer 10: Configure AI extensions (consolidated with previous RUN)
-RUN chmod +x /tmp/configure-ai-extensions.sh && \
-    /tmp/configure-ai-extensions.sh && \
-    rm /tmp/configure-ai-extensions.sh && \
-    chown -R coder:coder /home/coder/.local/share/code-server/ && \
-    chown -R coder:coder /home/coder/.vscode/
-
-USER coder
-
-# Layer 11: Build VibeCode extensions and verify all tools (consolidated final operations)
-RUN cd /home/coder/.vscode/extensions/vibecode-ai-assistant && \
+RUN set -e && \
+    # Install Go LSP and Java LSP
+    go install golang.org/x/tools/gopls@latest || echo "gopls installation failed, skipping" && \
+    mkdir -p /home/coder/.local/share/jdtls && \
+    curl -L https://download.eclipse.org/jdtls/milestones/1.9.0/jdt-language-server-1.9.0-202203031534.tar.gz | tar xz -C /home/coder/.local/share/jdtls && \
+    # Build VibeCode extensions
+    cd /home/coder/.vscode/extensions/vibecode-ai-assistant && \
     npm install && (npm run compile || npm run build || echo "No build script") && \
     cd /home/coder/.vscode/extensions/vibecode-inline-edit && \
     npm install && (npm run build || npm run compile || echo "No build script") && \
@@ -437,7 +404,7 @@ RUN cd /home/coder/.vscode/extensions/vibecode-ai-assistant && \
     npm install && (npm run build || npm run compile || echo "No build script") && \
     # Verify ALL required CLI tools
     echo "Verifying ALL required tools..." && \
-    for tool in vim nvim nu delta chezmoi just stern helmfile helm kubectl kubectx kubens k9s sops glab hx micro eza dust bat lazygit; do \
+    for tool in vim nvim nu delta chezmoi just stern helmfile helm kubectl kubectx kubens k9s sops glab; do \
       command -v "$tool" >/dev/null && echo "$tool OK" || { echo "$tool MISSING"; exit 1; }; \
     done && \
     aider --version >/dev/null && echo "aider OK" || { echo "aider MISSING"; exit 1; } && \
@@ -445,7 +412,6 @@ RUN cd /home/coder/.vscode/extensions/vibecode-ai-assistant && \
     echo "All tools verified successfully"
 
 ENV SHELL=/bin/bash
-ENV HELIX_RUNTIME=/usr/local/lib/helix-runtime
 WORKDIR /home/coder/workspace
 
 EXPOSE 8765
