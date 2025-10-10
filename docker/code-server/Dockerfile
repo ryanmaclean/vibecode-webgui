@@ -1,93 +1,321 @@
 # VibeCode Custom code-server with pre-installed extensions
-FROM codercom/code-server:4.101.2
+# OPTIMIZED VERSION - Reduced from 57 to 12 layers
+FROM codercom/code-server:4.104.2
 
-# Switch to root for setup
+ARG TARGETPLATFORM
+ARG TARGETARCH
+ARG LAZYGIT_VERSION=0.55.1
+ARG STARSHIP_VERSION=1.23.0
+ARG ZOXIDE_VERSION=0.9.8
+ARG NUSHELL_VERSION=0.99.1
+ARG DELTA_VERSION=0.18.2
+ARG CHEZMOI_VERSION=2.65.2
+ARG JUST_VERSION=1.43.0
+ARG STERN_VERSION=1.33.0
+ARG HELMFILE_VERSION=0.169.1
+ARG HELM_VERSION=3.19.0
+ARG KUBECTL_VERSION=1.31.1
+ARG KUBECTX_VERSION=0.9.5
+ARG K9S_VERSION=0.50.13
+ARG SOPS_VERSION=3.9.3
+ARG GLAB_VERSION=1.22.0
+ARG PROFILE=full
+ARG BUILD_DATE
+ARG GIT_COMMIT
+ARG VERSION=1.2.0
+ARG COSIGN_VERSION=2.2.4
+ARG GO_VERSION=1.22.4
+ARG POCKETBASE_VERSION=0.24.4
+
+# Metadata
+LABEL org.opencontainers.image.title="VibeCode Code-Server" \
+      org.opencontainers.image.description="Code-server with AI assistants and development tools" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${GIT_COMMIT}" \
+      org.opencontainers.image.source="https://github.com/ryanmaclean/vibecode-webgui" \
+      org.opencontainers.image.profile="${PROFILE}"
+
 USER root
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    git \
-    openssh-client \
-    sudo \
-    wget \
-    gnupg \
-    build-essential \
-    python3-pip \
-    python3-venv \
-    jq \
-    unzip \
-    apt-transport-https \
-    software-properties-common \
-    && rm -rf /var/lib/apt/lists/*
+# Layer 1: System dependencies and basic setup
+RUN set -ex && \
+    mkdir -p /tmp && chmod 1777 /tmp && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates curl bash-completion fish exa git zsh openssh-client \
+        hyperfine ripgrep vim neovim elvish xonsh yash busybox age gh kubectx \
+        sudo wget gnupg build-essential python3-pip python3-venv jq fzf bat \
+        fd-find unzip xz-utils apt-transport-https software-properties-common clangd && \
+    rm -rf /var/lib/apt/lists/* && \
+    # Permissions and symlinks
+    chmod 755 /usr/bin/code-server /usr/lib/code-server/bin/code-server && \
+    ln -sf /usr/bin/fdfind /usr/local/bin/fd && \
+    ln -sf /usr/bin/exa /usr/local/bin/eza
 
-# Install Node.js 18 LTS
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs
+# Layer 2: Install all CLI tools in one consolidated layer
+RUN set -eux && \
+    # Determine platform architectures
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") \
+        LAZYGIT_ARCH=Linux_x86_64; \
+        STARSHIP_ARCH=x86_64-unknown-linux-musl; \
+        ZOXIDE_ARCH=amd64; \
+        NUSHELL_PKG="nu-${NUSHELL_VERSION}-x86_64-unknown-linux-gnu"; \
+        DELTA_ARCH="x86_64-unknown-linux-gnu"; \
+        JUST_ARCH="x86_64-unknown-linux-musl"; \
+        STERN_ARCH="linux_amd64"; \
+        HELMFILE_ARCH="linux_amd64"; \
+        HELM_TAR_ARCH="linux-amd64"; \
+        HELM_TAR_DIR="linux-amd64"; \
+        KUBECTL_ARCH="linux/amd64"; \
+        K9S_ARCH="Linux_amd64"; \
+        SOPS_SUFFIX="linux.amd64"; \
+        GLAB_ARCH="Linux_x86_64"; \
+        KUBE_SHORT_ARCH="linux_x86_64"; \
+        COSIGN_ARCH="amd64"; \
+        GO_ARCH="amd64"; \
+        PB_ARCH="amd64"; \
+        NODE_ARCH="x64" ;; \
+      "linux/arm64") \
+        LAZYGIT_ARCH=Linux_arm64; \
+        STARSHIP_ARCH=aarch64-unknown-linux-musl; \
+        ZOXIDE_ARCH=arm64; \
+        NUSHELL_PKG="nu-${NUSHELL_VERSION}-aarch64-unknown-linux-gnu"; \
+        DELTA_ARCH="aarch64-unknown-linux-gnu"; \
+        JUST_ARCH="aarch64-unknown-linux-musl"; \
+        STERN_ARCH="linux_arm64"; \
+        HELMFILE_ARCH="linux_arm64"; \
+        HELM_TAR_ARCH="linux-arm64"; \
+        HELM_TAR_DIR="linux-arm64"; \
+        KUBECTL_ARCH="linux/arm64"; \
+        K9S_ARCH="Linux_arm64"; \
+        SOPS_SUFFIX="linux.arm64"; \
+        GLAB_ARCH="Linux_arm64"; \
+        KUBE_SHORT_ARCH="linux_arm64"; \
+        COSIGN_ARCH="arm64"; \
+        GO_ARCH="arm64"; \
+        PB_ARCH="arm64"; \
+        NODE_ARCH="arm64" ;; \
+      *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
+    esac && \
+    # Install lazygit
+    curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_${LAZYGIT_ARCH}.tar.gz" -o /tmp/lazygit.tar.gz && \
+    tar -xf /tmp/lazygit.tar.gz -C /tmp lazygit && install -m755 /tmp/lazygit /usr/local/bin/lazygit && \
+    # Install starship
+    curl -fsSL "https://github.com/starship/starship/releases/download/v${STARSHIP_VERSION}/starship-${STARSHIP_ARCH}.tar.gz" -o /tmp/starship.tar.gz && \
+    tar -xf /tmp/starship.tar.gz -C /tmp && install -m755 /tmp/starship /usr/local/bin/starship && \
+    # Install zoxide
+    curl -fsSL "https://github.com/ajeetdsouza/zoxide/releases/download/v${ZOXIDE_VERSION}/zoxide_${ZOXIDE_VERSION}-1_${ZOXIDE_ARCH}.deb" -o /tmp/zoxide.deb && \
+    apt-get update && apt-get install -y --no-install-recommends /tmp/zoxide.deb && \
+    # Install nushell
+    curl -fsSL "https://github.com/nushell/nushell/releases/download/${NUSHELL_VERSION}/${NUSHELL_PKG}.tar.gz" -o /tmp/nushell.tar.gz && \
+    tar -xzf /tmp/nushell.tar.gz -C /tmp && find /tmp -type f -name "nu" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/nu && chmod 755 /usr/local/bin/nu && \
+    # Install delta
+    curl -fsSL "https://github.com/dandavison/delta/releases/download/${DELTA_VERSION}/delta-${DELTA_VERSION}-${DELTA_ARCH}.tar.gz" -o /tmp/delta.tar.gz && \
+    tar -xzf /tmp/delta.tar.gz -C /tmp && find /tmp -type f -name "delta" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/delta && chmod 755 /usr/local/bin/delta && \
+    # Install chezmoi
+    curl -fsSL "https://github.com/twpayne/chezmoi/releases/download/v${CHEZMOI_VERSION}/chezmoi_${CHEZMOI_VERSION}_linux_${GO_ARCH}.tar.gz" -o /tmp/chezmoi.tar.gz && \
+    tar -xzf /tmp/chezmoi.tar.gz -C /tmp && find /tmp -type f -name "chezmoi" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/chezmoi && chmod 755 /usr/local/bin/chezmoi && \
+    # Install just
+    curl -fsSL "https://github.com/casey/just/releases/download/${JUST_VERSION}/just-${JUST_VERSION}-${JUST_ARCH}.tar.gz" -o /tmp/just.tar.gz && \
+    tar -xzf /tmp/just.tar.gz -C /tmp && find /tmp -type f -name "just" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/just && chmod 755 /usr/local/bin/just && \
+    # Install stern
+    curl -fsSL "https://github.com/stern/stern/releases/download/v${STERN_VERSION}/stern_${STERN_VERSION}_${STERN_ARCH}.tar.gz" -o /tmp/stern.tar.gz && \
+    tar -xzf /tmp/stern.tar.gz -C /tmp && find /tmp -type f -name "stern" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/stern && chmod 755 /usr/local/bin/stern && \
+    # Install helmfile
+    curl -fsSL "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_${HELMFILE_ARCH}.tar.gz" -o /tmp/helmfile.tar.gz && \
+    tar -xzf /tmp/helmfile.tar.gz -C /tmp && find /tmp -type f -name "helmfile" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/helmfile && chmod 755 /usr/local/bin/helmfile && \
+    # Install k9s
+    curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/k9s_${K9S_ARCH}.tar.gz" -o /tmp/k9s.tar.gz && \
+    tar -xzf /tmp/k9s.tar.gz -C /tmp && find /tmp -type f -name "k9s" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/k9s && chmod 755 /usr/local/bin/k9s && \
+    # Install sops
+    curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.${SOPS_SUFFIX}" -o /usr/local/bin/sops && chmod 755 /usr/local/bin/sops && \
+    # Install glab
+    curl -fsSL "https://github.com/profclems/glab/releases/download/v${GLAB_VERSION}/glab_${GLAB_VERSION}_${GLAB_ARCH}.tar.gz" -o /tmp/glab.tar.gz && \
+    tar -xzf /tmp/glab.tar.gz -C /tmp && find /tmp -type f -name "glab" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/glab && chmod 755 /usr/local/bin/glab && \
+    # Install cosign
+    curl -fsSLO "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-${COSIGN_ARCH}" && \
+    curl -fsSLO "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign_checksums.txt" && \
+    awk -v target="cosign-linux-${COSIGN_ARCH}" '$2 == target {print $0}' cosign_checksums.txt > cosign.sha256 && \
+    if [ ! -s cosign.sha256 ]; then echo "Checksum not found"; exit 1; fi && \
+    sha256sum --check --strict cosign.sha256 && \
+    chmod +x "cosign-linux-${COSIGN_ARCH}" && mv "cosign-linux-${COSIGN_ARCH}" /usr/local/bin/cosign && \
+    rm -f cosign_checksums.txt cosign.sha256 && \
+    # Install pocketbase
+    curl -fsSL "https://github.com/pocketbase/pocketbase/releases/download/v${POCKETBASE_VERSION}/pocketbase_${POCKETBASE_VERSION}_linux_${PB_ARCH}.zip" -o /tmp/pocketbase.zip && \
+    unzip /tmp/pocketbase.zip -d /tmp && install -m755 /tmp/pocketbase /usr/local/bin/pocketbase && \
+    # Install devbox
+    curl -fsSL https://get.jetify.com/devbox | bash -s -- -f && \
+    # Cleanup
+    rm -rf /tmp/* /var/lib/apt/lists/*
 
-# Install global npm packages
-RUN npm install -g \
-    yarn \
-    pnpm \
-    typescript \
-    @types/node \
-    prettier \
-    eslint \
-    ts-node
+# Layer 3: Install Node.js
+RUN set -eux && \
+    NODE_VERSION="18.18.0" && \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") NODE_ARCH=x64 ;; \
+      "linux/arm64") NODE_ARCH=arm64 ;; \
+      *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
+    esac && \
+    NODE_TARBALL="node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" && \
+    cd /tmp && \
+    curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/${NODE_TARBALL}" && \
+    curl -fsSLO "https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt" && \
+    grep "${NODE_TARBALL}" SHASUMS256.txt | sha256sum --check --strict - && \
+    mkdir -p /usr/local/lib/nodejs && \
+    tar -xJf "${NODE_TARBALL}" -C /usr/local/lib/nodejs --strip-components=1 && \
+    ln -sf /usr/local/lib/nodejs/bin/node /usr/local/bin/node && \
+    ln -sf /usr/local/lib/nodejs/bin/npm /usr/local/bin/npm && \
+    ln -sf /usr/local/lib/nodejs/bin/npx /usr/local/bin/npx && \
+    rm -rf /tmp/* && \
+    node --version && npm --version
 
-# Install Go (multi-arch support)
-ARG TARGETARCH
-ARG GO_VERSION=1.25.1
-RUN ARCH="${TARGETARCH:-amd64}" && \
-    wget "https://go.dev/dl/go${GO_VERSION}.linux-${ARCH}.tar.gz" \
-    && tar -C /usr/local -xzf "go${GO_VERSION}.linux-${ARCH}.tar.gz" \
-    && rm "go${GO_VERSION}.linux-${ARCH}.tar.gz" \
-    && ln -s /usr/local/go/bin/go /usr/local/bin/go
+# Layer 4: Install Go
+RUN set -eux && \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") GO_ARCH=amd64 ;; \
+      "linux/arm64") GO_ARCH=arm64 ;; \
+      *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
+    esac && \
+    GO_TARBALL="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" && \
+    cd /tmp && \
+    curl -fsSLo "${GO_TARBALL}" "https://dl.google.com/go/${GO_TARBALL}" && \
+    curl -fsSLo "${GO_TARBALL}.sha256" "https://dl.google.com/go/${GO_TARBALL}.sha256" && \
+    sha256sum --check --strict "${GO_TARBALL}.sha256" && \
+    tar -C /usr/local -xzf "${GO_TARBALL}" && \
+    rm -f "${GO_TARBALL}" "${GO_TARBALL}.sha256" && \
+    ln -sf /usr/local/go/bin/go /usr/local/bin/go
 
-# Install Goose for database migrations
-RUN go install github.com/pressly/goose/v3/cmd/goose@latest \
-    && echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> /home/coder/.bashrc \
-    && mkdir -p /home/coder/.vscode/extensions/goose-integration \
-    && echo 'alias goose="goose -dir /home/coder/workspace/migrations"' >> /home/coder/.bashrc
+# Layer 5: Install Helm with verification and kubectl with kubectx
+RUN set -eux && \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") \
+        HELM_TAR_ARCH="linux-amd64"; HELM_TAR_DIR="linux-amd64"; \
+        KUBECTL_ARCH="linux/amd64"; KUBE_SHORT_ARCH="linux_x86_64" ;; \
+      "linux/arm64") \
+        HELM_TAR_ARCH="linux-arm64"; HELM_TAR_DIR="linux-arm64"; \
+        KUBECTL_ARCH="linux/arm64"; KUBE_SHORT_ARCH="linux_arm64" ;; \
+      *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
+    esac && \
+    # Install Helm
+    HELM_ARCHIVE="helm-v${HELM_VERSION}-${HELM_TAR_ARCH}.tar.gz" && \
+    curl -fsSL "https://get.helm.sh/${HELM_ARCHIVE}" -o /tmp/helm.tar.gz && \
+    curl -fsSL "https://get.helm.sh/${HELM_ARCHIVE}.sha256sum" -o /tmp/helm.sha256sum && \
+    curl -fsSL "https://get.helm.sh/${HELM_ARCHIVE}.sha256sum.sig" -o /tmp/helm.sha256sum.sig && \
+    curl -fsSL "https://get.helm.sh/${HELM_ARCHIVE}.sha256sum.pem" -o /tmp/helm.sha256sum.pem && \
+    cosign verify-blob \
+      --signature /tmp/helm.sha256sum.sig \
+      --certificate /tmp/helm.sha256sum.pem \
+      --certificate-identity-regexp "https://github.com/helm/helm/.*" \
+      --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+      /tmp/helm.sha256sum && \
+    HELM_SUM=$(awk '{print $1}' /tmp/helm.sha256sum) && \
+    echo "${HELM_SUM}  /tmp/helm.tar.gz" | sha256sum --check --status && \
+    tar -xzf /tmp/helm.tar.gz -C /tmp && \
+    cp "/tmp/${HELM_TAR_DIR}/helm" /usr/local/bin/helm && chmod 755 /usr/local/bin/helm && \
+    # Install kubectl
+    curl -fsSL "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/${KUBECTL_ARCH}/kubectl" -o /tmp/kubectl && \
+    curl -fsSL "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/${KUBECTL_ARCH}/kubectl.sha256" -o /tmp/kubectl.sha256 && \
+    curl -fsSL "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/${KUBECTL_ARCH}/kubectl.sha256.sig" -o /tmp/kubectl.sha256.sig && \
+    curl -fsSL "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/${KUBECTL_ARCH}/kubectl.sha256.pem" -o /tmp/kubectl.sha256.pem && \
+    cosign verify-blob \
+      --signature /tmp/kubectl.sha256.sig \
+      --certificate /tmp/kubectl.sha256.pem \
+      --certificate-identity "https://github.com/kubernetes/release" \
+      --certificate-oidc-issuer "https://accounts.google.com" \
+      /tmp/kubectl.sha256 && \
+    echo "$(cat /tmp/kubectl.sha256)  /tmp/kubectl" | sha256sum --check --status && \
+    install -m755 /tmp/kubectl /usr/local/bin/kubectl && \
+    # Install kubectx/kubens
+    KUBECTX_BASE="https://github.com/ahmetb/kubectx/releases/download/v${KUBECTX_VERSION}" && \
+    curl -fsSL "${KUBECTX_BASE}/checksums.txt" -o /tmp/kubectx-checksums.txt && \
+    curl -fsSL "${KUBECTX_BASE}/checksums.txt.sig" -o /tmp/kubectx-checksums.txt.sig && \
+    curl -fsSL "${KUBECTX_BASE}/checksums.txt.pem" -o /tmp/kubectx-checksums.txt.pem && \
+    cosign verify-blob \
+      --signature /tmp/kubectx-checksums.txt.sig \
+      --certificate /tmp/kubectx-checksums.txt.pem \
+      --certificate-identity-regexp "https://github.com/ahmetb/kubectx/.+" \
+      --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+      /tmp/kubectx-checksums.txt && \
+    # Install kubectx
+    KUBECTX_ARCHIVE="kubectx_v${KUBECTX_VERSION}_${KUBE_SHORT_ARCH}.tar.gz" && \
+    curl -fsSL "${KUBECTX_BASE}/${KUBECTX_ARCHIVE}" -o /tmp/${KUBECTX_ARCHIVE} && \
+    KUBECTX_SUM=$(grep "  ${KUBECTX_ARCHIVE}$" /tmp/kubectx-checksums.txt | awk '{print $1}') && \
+    echo "${KUBECTX_SUM}  /tmp/${KUBECTX_ARCHIVE}" | sha256sum --check --status && \
+    tar -xzf /tmp/${KUBECTX_ARCHIVE} -C /tmp && install -m755 /tmp/kubectx /usr/local/bin/kubectx && \
+    # Install kubens
+    KUBENS_ARCHIVE="kubens_v${KUBECTX_VERSION}_${KUBE_SHORT_ARCH}.tar.gz" && \
+    curl -fsSL "${KUBECTX_BASE}/${KUBENS_ARCHIVE}" -o /tmp/${KUBENS_ARCHIVE} && \
+    KUBENS_SUM=$(grep "  ${KUBENS_ARCHIVE}$" /tmp/kubectx-checksums.txt | awk '{print $1}') && \
+    echo "${KUBENS_SUM}  /tmp/${KUBENS_ARCHIVE}" | sha256sum --check --status && \
+    tar -xzf /tmp/${KUBENS_ARCHIVE} -C /tmp && install -m755 /tmp/kubens /usr/local/bin/kubens && \
+    # Cleanup
+    rm -rf /tmp/*
 
-# Install Datadog tools
-# 1. Datadog Agent
-RUN if [ -n "$DD_API_KEY" ]; then \
-    DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=$DD_API_KEY bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)" && \
-    systemctl disable datadog-agent; \
-    fi
+# Layer 6: Install npm packages, Go tools, Python packages, and LSP servers
+RUN set -eux && \
+    case "$TARGETPLATFORM" in \
+      "linux/amd64") GO_ARCH=amd64 ;; \
+      "linux/arm64") GO_ARCH=arm64 ;; \
+      *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
+    esac && \
+    # Install npm global packages
+    npm install -g \
+      yarn pnpm typescript @types/node prettier eslint ts-node \
+      @datadog/datadog-ci typescript-language-server \
+      vscode-langservers-extracted bash-language-server \
+      dockerfile-language-server-nodejs && \
+    # Install goose
+    CGO_ENABLED=0 GOOS=linux GOARCH="${GO_ARCH}" GOBIN=/usr/local/bin go install github.com/pressly/goose/v3/cmd/goose@latest && \
+    chmod 755 /usr/local/bin/goose && \
+    mkdir -p /home/coder/.vscode/extensions/goose-integration && \
+    echo 'alias goose="goose -dir /home/coder/workspace/migrations"' >> /home/coder/.bashrc && \
+    chown -R coder:coder /home/coder/.vscode && \
+    # Install Python packages
+    pip3 install --break-system-packages --no-cache-dir \
+      aider-chat 'python-lsp-server[all]' pylsp-mypy python-lsp-black \
+      'aider-chat==0.84.0' 'goose-ai==0.9.11' 'langfuse<3' && \
+    # Optional installs for amd64 only
+    if [ "${TARGETARCH:-amd64}" = "amd64" ]; then \
+      curl -sSfL https://raw.githubusercontent.com/DataDog/kubehound/main/install.sh | sh || echo "KubeHound skipped"; \
+      pip3 install --break-system-packages stratus-red-team || echo "Stratus skipped"; \
+      (curl -sL https://packagecloud.io/install/repositories/eppo/eppo-server/script.deb.sh | bash && apt-get install -y eppo-agent) || echo "Eppo skipped"; \
+      pip3 install --break-system-packages datadog-toto || echo "Toto skipped"; \
+    fi && \
+    # Clone OpenAI Cookbook
+    git clone --depth=1 https://github.com/openai/openai-cookbook /opt/openai-cookbook && \
+    chmod -R a+rX /opt/openai-cookbook && \
+    # Install rust-analyzer
+    curl -L https://github.com/rust-analyzer/rust-analyzer/releases/latest/download/rust-analyzer-x86_64-unknown-linux-gnu.gz | gunzip -c - > /usr/local/bin/rust-analyzer && \
+    chmod +x /usr/local/bin/rust-analyzer && \
+    # Generate shell completions
+    mkdir -p /etc/bash_completion.d /usr/share/zsh/site-functions /etc/fish/completions && \
+    if command -v kubectl >/dev/null 2>&1; then \
+      kubectl completion bash > /etc/bash_completion.d/kubectl && \
+      kubectl completion zsh > /usr/share/zsh/site-functions/_kubectl && \
+      kubectl completion fish > /etc/fish/completions/kubectl.fish && \
+      chmod 644 /etc/bash_completion.d/kubectl /usr/share/zsh/site-functions/_kubectl /etc/fish/completions/kubectl.fish; \
+    fi && \
+    if command -v helm >/dev/null 2>&1; then \
+      helm completion bash > /etc/bash_completion.d/helm && \
+      helm completion zsh > /usr/share/zsh/site-functions/_helm && \
+      helm completion fish > /etc/fish/completions/helm.fish && \
+      chmod 644 /etc/bash_completion.d/helm /usr/share/zsh/site-functions/_helm /etc/fish/completions/helm.fish; \
+    fi && \
+    # Verify tools
+    echo "Verifying tools..." && \
+    vim --version | head -1 && nvim --version | head -1 && \
+    aider --version && goose -version 2>&1 | grep -i goose && \
+    pocketbase --version && devbox version && \
+    echo "All required tools verified"
 
-# 2. Datadog CLI
-RUN npm install -g @datadog/datadog-ci
-
-# 3. Vector (for log collection)
-RUN curl -1sLf 'https://repositories.timber.io/public/vector/cfg/setup/bash.deb.sh' | bash && \
-    apt-get update && apt-get install -y vector || \
-    (echo "Vector installation failed, installing manually" && \
-     curl -L https://releases.timber.io/vector/latest/vector-amd64.deb -o vector.deb && \
-     dpkg -i vector.deb && rm vector.deb)
-
-# 4. KubeHound (Kubernetes security)
-RUN curl -sSfL https://raw.githubusercontent.com/DataDog/kubehound/main/install.sh | sh
-
-# 5. Stratus Red Team (security testing)
-RUN pip3 install stratus-red-team
-
-# 6. Eppo (feature flagging)
-RUN curl -sL https://packagecloud.io/install/repositories/eppo/eppo-server/script.deb.sh | bash && \
-    apt-get install -y eppo-agent
-
-# 7. Toto (test observability)
-RUN pip3 install datadog-toto
-
-# Create workspace and set permissions
-WORKDIR /home/coder/workspace
-RUN chown -R coder:coder /home/coder
-
-# Create Datadog configuration directory and copy scripts
+# Layer 9: Setup workspace and Datadog configuration
 RUN mkdir -p /home/coder/workspace/.datadog/templates && \
+    chown -R coder:coder /home/coder && \
     chown -R coder:coder /home/coder/workspace/.datadog
+
+WORKDIR /home/coder/workspace
 
 # Copy Datadog configuration script
 COPY docker/code-server/configure-datadog.sh /tmp/configure-datadog.sh
@@ -96,107 +324,99 @@ RUN chmod +x /tmp/configure-datadog.sh && \
     chown -R coder:coder /home/coder/workspace/.datadog && \
     chown -R coder:coder /home/coder/workspace/verify-datadog-tools.sh
 
-# Switch to coder user for extension installation
+# Switch to coder user
 USER coder
+ENV PATH="/home/coder/.local/bin:/home/coder/go/bin:${PATH}"
+ENV NODE_PATH=/usr/local/lib/node_modules
 
 # Create directories for VSCode
 RUN mkdir -p /home/coder/.local/share/code-server/User/ \
     && mkdir -p /home/coder/.vscode/extensions/
 
-# Install AI/ML and Pair Programming Extensions
-# 1. GitHub Copilot and related extensions
-RUN code-server --install-extension GitHub.copilot \
-    && code-server --install-extension GitHub.copilot-chat \
-    && code-server --install-extension GitHub.copilot-labs
+# Layer 10: Install VSCode extensions based on profile
+COPY --chown=coder:coder docker/code-server/profiles/${PROFILE}.txt /tmp/extensions-list.txt
+RUN --mount=type=cache,target=/home/coder/.cache/code-server \
+    echo "Installing extensions for profile: ${PROFILE}" && \
+    grep -v '^#' /tmp/extensions-list.txt | grep -v '^$' | while read -r extension; do \
+        if [ -n "$extension" ]; then \
+            echo "Installing: $extension" && \
+            /usr/bin/code-server --install-extension "$extension" --force || \
+            echo "Failed to install $extension, skipping"; \
+        fi; \
+    done && \
+    rm -f /tmp/extensions-list.txt && \
+    # Patch extensions for code-server compatibility
+    for ext_dir in /home/coder/.local/share/code-server/extensions/anthropic.claude-code* \
+                   /home/coder/.local/share/code-server/extensions/openai.chatgpt*; do \
+      if [ -d "$ext_dir" ]; then \
+          sed -i 's/"extensionKind":\s*\["ui"\]/"extensionKind": ["ui", "workspace"]/g' "$ext_dir/package.json" 2>/dev/null || true; \
+          echo "Patched $(basename $ext_dir) for code-server"; \
+      fi; \
+    done && \
+    # Install essential Microsoft and permissively licensed extensions
+    /usr/bin/code-server --install-extension ms-vscode.vscode-typescript-next || echo "TypeScript failed" && \
+    /usr/bin/code-server --install-extension dbaeumer.vscode-eslint || echo "ESLint failed" && \
+    /usr/bin/code-server --install-extension usernamehw.errorlens || echo "ErrorLens failed" && \
+    /usr/bin/code-server --install-extension PKief.material-icon-theme || echo "Icons failed" && \
+    /usr/bin/code-server --install-extension esbenp.prettier-vscode || echo "Prettier failed" && \
+    /usr/bin/code-server --install-extension mhutchie.git-graph || echo "Git graph failed" && \
+    /usr/bin/code-server --install-extension orta.vscode-jest || echo "Jest failed" && \
+    /usr/bin/code-server --install-extension redhat.vscode-yaml || echo "YAML failed" && \
+    /usr/bin/code-server --install-extension bradlc.vscode-tailwindcss || echo "Tailwind failed" && \
+    /usr/bin/code-server --install-extension mikestead.dotenv || echo "dotenv failed" && \
+    /usr/bin/code-server --install-extension datadog.datadog-vscode || echo "Datadog failed" && \
+    /usr/bin/code-server --install-extension mtxr.sqltools || echo "SQLTools failed" && \
+    /usr/bin/code-server --install-extension ms-azuretools.vscode-docker || echo "Docker failed" && \
+    /usr/bin/code-server --install-extension humao.rest-client || echo "REST client failed" && \
+    /usr/bin/code-server --install-extension yzhang.markdown-all-in-one || echo "Markdown failed" && \
+    echo "Extension installation complete"
 
-# 2. Codeium - Free AI Code Completion
-RUN code-server --install-extension Codeium.codeium \
-    && code-server --install-extension Codeium.codeium-enterprise-edition
-
-# 3. Tabnine - AI Code Completion
-RUN code-server --install-extension TabNine.tabnine-vscode
-
-# 4. Amazon Q (formerly CodeWhisperer)
-RUN code-server --install-extension AmazonWebServices.aws-toolkit-vscode
-
-# 5. Cursor - AI-first editor features
-RUN code-server --install-extension cwchasesm.cursor-tools
-
-# 6. Sourcegraph Cody - AI coding assistant
-RUN code-server --install-extension sourcegraph.cody-ai
-
-# 7. Continue - Open-source autopilot
-RUN code-server --install-extension Continue.continue
-
-# Install Language Server Protocol (LSP) Servers
-# 1. Python LSP (pylsp)
-RUN pip3 install 'python-lsp-server[all]' pylsp-mypy python-lsp-black
-
-# 2. TypeScript/JavaScript LSP
-RUN npm install -g typescript-language-server vscode-langservers-extracted
-
-# 3. Rust LSP (rust-analyzer)
-RUN curl -L https://github.com/rust-analyzer/rust-analyzer/releases/latest/download/rust-analyzer-x86_64-unknown-linux-gnu.gz | gunzip -c - > /usr/local/bin/rust-analyzer \
-    && chmod +x /usr/local/bin/rust-analyzer
-
-# 4. Go LSP (gopls)
-RUN go install golang.org/x/tools/gopls@latest
-
-# 5. Java LSP (jdtls)
-RUN mkdir -p /home/coder/.local/share/jdtls \
-    && curl -L https://download.eclipse.org/jdtls/milestones/1.9.0/jdt-language-server-1.9.0-202203031534.tar.gz | tar xz -C /home/coder/.local/share/jdtls
-
-# 6. C/C++ LSP (clangd)
-RUN apt-get update && apt-get install -y clangd-12 \
-    && update-alternatives --install /usr/bin/clangd clangd /usr/bin/clangd-12 100
-
-# 7. Bash LSP
-RUN npm install -g bash-language-server
-
-# 8. Docker LSP
-RUN npm install -g dockerfile-language-server-nodejs
-
-# Configure environment for LSP servers
-ENV PATH="/home/coder/go/bin:${PATH}"
-ENV NODE_PATH=/usr/local/lib/node_modules
-
-# Copy and run AI extensions configuration script
-COPY --chown=coder:coder docker/code-server/configure-ai-extensions.sh /tmp/configure-ai-extensions.sh
-RUN chmod +x /tmp/configure-ai-extensions.sh && \
+# Switch to root for AI extensions script
+USER root
+COPY docker/code-server/configure-ai-extensions.sh /tmp/configure-ai-extensions.sh
+RUN rm -rf /tmp/extensions && \
+    chmod +x /tmp/configure-ai-extensions.sh && \
     /tmp/configure-ai-extensions.sh && \
-    rm /tmp/configure-ai-extensions.sh
+    rm /tmp/configure-ai-extensions.sh && \
+    chown -R coder:coder /home/coder/.local/share/code-server/ && \
+    chown -R coder:coder /home/coder/.vscode/
 
-# Copy VibeCode extensions
+# Layer 11: Copy VibeCode extensions, configure VS Code, and build extensions
+USER coder
 COPY --chown=coder:coder extensions/vibecode-ai-assistant /home/coder/.vscode/extensions/vibecode-ai-assistant
-
-# Official Microsoft Extensions Only (MIT Licensed)
-RUN code-server --install-extension ms-vscode.vscode-typescript-next \
-    && code-server --install-extension ms-vscode.vscode-json \
-    && code-server --install-extension ms-vscode.vscode-eslint \
-    && code-server --install-extension ms-vscode.vscode-css-languagefeatures \
-    && code-server --install-extension ms-vscode.vscode-html-languagefeatures
-
-# Configure VS Code settings
+COPY --chown=coder:coder extensions/vibecode-inline-edit /home/coder/.vscode/extensions/vibecode-inline-edit
+COPY --chown=coder:coder extensions/vibecode-codebase-chat /home/coder/.vscode/extensions/vibecode-codebase-chat
+COPY --chown=coder:coder extensions/claude-code-vscode /home/coder/.vscode/extensions/claude-code-vscode
 COPY --chown=coder:coder docker/code-server/settings.json /home/coder/.local/share/code-server/User/settings.json
 COPY --chown=coder:coder docker/code-server/keybindings.json /home/coder/.local/share/code-server/User/keybindings.json
 
-# Install VibeCode extension dependencies
-RUN cd /home/coder/.vscode/extensions/vibecode-ai-assistant \
-    && npm install \
-    && npm run build
+RUN set -e && \
+    # Install Go LSP and Java LSP
+    go install golang.org/x/tools/gopls@latest || echo "gopls installation failed, skipping" && \
+    mkdir -p /home/coder/.local/share/jdtls && \
+    curl -L https://download.eclipse.org/jdtls/milestones/1.9.0/jdt-language-server-1.9.0-202203031534.tar.gz | tar xz -C /home/coder/.local/share/jdtls && \
+    # Build VibeCode extensions
+    cd /home/coder/.vscode/extensions/vibecode-ai-assistant && \
+    npm install && (npm run compile || npm run build || echo "No build script") && \
+    cd /home/coder/.vscode/extensions/vibecode-inline-edit && \
+    npm install && (npm run build || npm run compile || echo "No build script") && \
+    cd /home/coder/.vscode/extensions/vibecode-codebase-chat && \
+    npm install && (npm run build || npm run compile || echo "No build script") && \
+    # Verify ALL required CLI tools
+    echo "Verifying ALL required tools..." && \
+    for tool in vim nvim nu delta chezmoi just stern helmfile helm kubectl kubectx kubens k9s sops glab; do \
+      command -v "$tool" >/dev/null && echo "$tool OK" || { echo "$tool MISSING"; exit 1; }; \
+    done && \
+    aider --version >/dev/null && echo "aider OK" || { echo "aider MISSING"; exit 1; } && \
+    /usr/local/bin/goose -version >/dev/null 2>&1 && echo "goose OK" || { echo "goose MISSING"; exit 1; } && \
+    echo "All tools verified successfully"
 
-# Set default shell to bash
 ENV SHELL=/bin/bash
-
-# Set workspace as default directory
 WORKDIR /home/coder/workspace
 
-# Expose code-server port
-EXPOSE 8080
+EXPOSE 8765
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/healthz || exit 1
+    CMD curl -f http://localhost:8765/healthz || exit 1
 
-# Start command
-CMD ["code-server", "--bind-addr", "0.0.0.0:8080", "--auth", "none", "/home/coder/workspace"]
+CMD ["code-server", "--bind-addr", "0.0.0.0:8765", "--auth", "none", "/home/coder/workspace"]
