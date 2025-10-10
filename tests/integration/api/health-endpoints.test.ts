@@ -310,21 +310,20 @@ describe('API Health Endpoints Integration', () => {
   });
 
   describe('Endpoint comparison', () => {
-    it('should have different response sizes', async () => {
+    it('should have different response sizes (healthz < readyz < health)', async () => {
       const healthzResponse = await healthzHandler();
       const healthzData = await healthzResponse.json();
+      const healthzSize = JSON.stringify(healthzData).length;
 
       const readyzResponse = await readyzHandler();
       const readyzData = await readyzResponse.json();
+      const readyzSize = JSON.stringify(readyzData).length;
 
       const healthResponse = await healthHandler();
       const healthData = await healthResponse.json();
+      const healthSize = JSON.stringify(healthData).length;
 
       // Health should be largest (most detailed)
-      const healthSize = JSON.stringify(healthData).length;
-      const readyzSize = JSON.stringify(readyzData).length;
-      const healthzSize = JSON.stringify(healthzData).length;
-
       expect(healthSize).toBeGreaterThan(readyzSize);
 
       // Healthz and readyz should be similar (both minimal)
@@ -349,20 +348,17 @@ describe('API Health Endpoints Integration', () => {
     });
 
     it('should all return timestamps within the same timeframe', async () => {
-      const healthResponse = await healthHandler();
-      const healthData = await healthResponse.json();
+      const responses = await Promise.all([
+        healthHandler(),
+        healthzHandler(),
+        readyzHandler()
+      ]);
 
-      const healthzResponse = await healthzHandler();
-      const healthzData = await healthzResponse.json();
-
-      const readyzResponse = await readyzHandler();
-      const readyzData = await readyzResponse.json();
-
-      const timestamps = [
-        new Date(healthData.timestamp).getTime(),
-        new Date(healthzData.timestamp).getTime(),
-        new Date(readyzData.timestamp).getTime()
-      ];
+      const timestamps: number[] = [];
+      for (const r of responses) {
+        const data = await r.json();
+        timestamps.push(new Date(data.timestamp).getTime());
+      }
 
       // All timestamps should be within 1 second of each other
       const maxDiff = Math.max(...timestamps) - Math.min(...timestamps);

@@ -5,7 +5,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -16,32 +16,18 @@ import { TemplateMarketplace } from '@/components/marketplace/TemplateMarketplac
 import { type MarketplaceTemplate } from '@/lib/marketplace/template-marketplace'
 import { GitHubDeploymentWorkflow } from '@/components/deployment/GitHubDeploymentWorkflow'
 import CollaborativeChatInterface from '@/components/chat/CollaborativeChatInterface'
-import { 
-  generateFromTemplate, 
-  type GeneratedProject,
-  type GenerateFromTemplateOptions
+import {
+  generateFromTemplate,
+  type GeneratedProject
 } from '@/lib/templates/generator'
 import {
   UsersIcon,
   ChatBubbleLeftRightIcon,
   RocketLaunchIcon,
   CodeBracketIcon,
-  ShareIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  EyeIcon,
-  Cog6ToothIcon,
   FolderOpenIcon,
   CommandLineIcon,
-  BugAntIcon,
-  PhoneIcon,
-  PhoneXMarkIcon,
-  VideoCameraIcon,
-  VideoCameraSlashIcon,
-  MicrophoneIcon,
-  UserPlusIcon,
-  PencilIcon
+  BugAntIcon
 } from '@heroicons/react/24/outline'
 
 interface CollaborativeWorkspaceProps {
@@ -49,7 +35,6 @@ interface CollaborativeWorkspaceProps {
   userId?: string
   userName?: string
   initialProject?: GeneratedProject
-  onUserInvite?: () => void
   onCreateTerminal?: () => void
   onCreateDebugSession?: () => void
   className?: string
@@ -95,7 +80,6 @@ export function CollaborativeWorkspace({
   userId: initialUserId,
   userName: initialUserName,
   initialProject,
-  onUserInvite,
   onCreateTerminal,
   onCreateDebugSession
 }: CollaborativeWorkspaceProps) {
@@ -109,7 +93,6 @@ export function CollaborativeWorkspace({
   const [activeTab, setActiveTab] = useState('templates')
   const [showDeployment, setShowDeployment] = useState(false)
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
-  const [workspaceActivity, setWorkspaceActivity] = useState<WorkspaceActivity[]>([])
   const [conversationId, setConversationId] = useState<string | null>(null)
 
   const {
@@ -172,17 +155,6 @@ Generated in collaborative workspace`,
           data: { template, userId }
         })
       }
-
-      // Add to activity feed
-      const newActivity: WorkspaceActivity = {
-        id: `activity-${Date.now()}`,
-        type: 'template_selected',
-        userId,
-        userName,
-        timestamp: new Date(),
-        data: { templateId, projectName: workspaceProject.name }
-      }
-      setWorkspaceActivity(prev => [newActivity, ...prev])
 
       // Auto-switch to chat tab for collaboration
       setActiveTab('chat')

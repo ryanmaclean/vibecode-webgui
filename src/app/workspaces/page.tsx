@@ -186,7 +186,13 @@ export default function WorkspacesPage() {
               <h3 className="text-lg font-medium text-gray-900 mb-4">Create New Workspace</h3>
               
               {formError && (
-                <div data-testid="error-message" className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                <div
+                  id="workspace-error"
+                  data-testid="error-message"
+                  className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded"
+                  role="alert"
+                  aria-live="polite"
+                >
                   {formError}
                 </div>
               )}
@@ -204,6 +210,8 @@ export default function WorkspacesPage() {
                     onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter workspace name"
+                    aria-invalid={formError ? "true" : "false"}
+                    aria-describedby={formError ? "workspace-error" : undefined}
                   />
                 </div>
                 
