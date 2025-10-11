@@ -1,391 +1,50 @@
 # GitHub Actions Workflows
 
-Comprehensive documentation for all GitHub Actions workflows in the VibeCode project.
+This directory contains automated CI/CD workflows for the VibeCode WebGUI project.
 
-## Automated Monitoring Workflows
+## Changelog Generation
 
-### Code-Server Release Monitor
-**File:** `code-server-release-monitor.yml`
-**Purpose:** Automatically monitors upstream code-server releases and creates GitHub issues when updates are available.
+The `changelog.yml` workflow automates changelog generation using git-cliff:
 
-**Trigger:**
-- Schedule: Daily at 00:00 UTC (`cron: '0 0 * * *'`)
-- Manual: `workflow_dispatch` trigger available
+### Automatic Triggers
+- **On Release**: Automatically generates and updates changelog when a new release is created
+- **Manual Dispatch**: Can be triggered manually via GitHub Actions UI
 
-**Behavior:**
-1. Checks current code-server version in `docker/code-server/Dockerfile`
-2. Fetches latest release from [coder/code-server](https://github.com/coder/code-server) GitHub repository
-3. Compares versions and creates detailed GitHub issue if update is available
-4. Includes release notes, changelog link, and comprehensive update checklist
-5. Automatically labels issues: `enhancement`, `dependencies`, `automated`
+### Features
+- Parses conventional commits to generate structured changelog
+- Categorizes changes: Features, Bug Fixes, Performance, Security, Breaking Changes
+- Automatically detects version increments based on commit types
+- Updates CHANGELOG.md and release notes
+- Creates PR if direct push to main fails
 
-**Issue Content Includes:**
-- Release date and version information
-- Full release notes (truncated if > 2000 chars with link to full notes)
-- Changelog URL
-- Comprehensive update action checklist:
-  - All Dockerfile updates required
-  - Build and test procedures
-  - Documentation requirements
-- Testing checklist for validation
+### Usage
 
-**Permissions Required:**
-- `issues: write` - Create and manage GitHub issues
-- `contents: read` - Read repository content
+**Automatic (Recommended):**
+```bash
+# Create and push tag
+git tag v1.2.0
+git push origin v1.2.0
+
+# Create release
+gh release create v1.2.0 --generate-notes
+```
 
 **Manual Trigger:**
+1. Go to Actions → Changelog Generation
+2. Click "Run workflow"
+3. Configure options as needed
+
+**Local Generation:**
 ```bash
-gh workflow run code-server-release-monitor.yml
+./scripts/generate-changelog.sh --preview
 ```
 
-**Configuration:**
-- Monitors: `docker/code-server/Dockerfile`
-- Update targets: `Dockerfile`, `Dockerfile.optimized`, `Dockerfile.kind`
-- No authentication required (uses public GitHub API)
-
----
-
-## CI/CD Workflows
-
-### Main Branch CI
-**File:** `main-branch-ci.yml`
-**Purpose:** Continuous integration for main branch commits
-
-**Triggers:**
-- Push to `main` branch
-- Pull requests to `main` branch
-
-**Jobs:**
-- Lint and format checking
-- Unit tests
-- Integration tests
-- Build validation
-
-### Release Branch CI
-**File:** `release-branch-ci.yml`
-**Purpose:** Pre-release validation and testing
-
-**Triggers:**
-- Push to `release/*` branches
-- Tags matching version patterns
-
-**Jobs:**
-- Full test suite
-- Security scanning
-- Build artifacts
-- Release preparation
-
----
-
-## Container Workflows
-
-### Code-Server Multi-Architecture Build
-**File:** `codeserver-multiarch.yml`
-**Purpose:** Build and push multi-architecture code-server images
-
-**Triggers:**
-- Manual dispatch
-- Release tags
-
-**Platforms:**
-- linux/amd64
-- linux/arm64
-
-**Profiles:**
-- minimal
-- standard
-- ai
-- web
-- full
-
-### Code-Server Profiles
-**File:** `codeserver-profiles.yml`
-**Purpose:** Build profile-specific code-server images
-
-**Profiles:**
-- `minimal`: Essential tools only
-- `standard`: Common development tools
-- `ai`: AI assistant integrations
-- `web`: Web development stack
-- `full`: Complete toolset
-
----
-
-## Deployment Workflows
-
-### Azure App Service Deploy
-**File:** `azure-appservice-deploy.yml`
-**Purpose:** Deploy application to Azure App Service
-
-### Azure WebGUI Deploy
-**File:** `azure-webgui-deploy.yml`
-**Purpose:** Deploy web interface to Azure
-
-### Deploy AKS Monitoring
-**File:** `deploy-aks-monitoring.yml`
-**Purpose:** Deploy monitoring stack to Azure Kubernetes Service
-
----
-
-## Security Workflows
-
-### Security Audit
-**File:** `security-audit.yml`
-**Purpose:** Automated security scanning and vulnerability detection
-
-**Scans:**
-- Dependency vulnerabilities
-- Container image scanning
-- SAST (Static Application Security Testing)
-- Secret scanning
-
-**Triggers:**
-- Schedule: Weekly
-- Pull requests
-- Manual dispatch
-
-### Secret Scanning
-**File:** `secret-scanning.yml`
-**Purpose:** Detect accidentally committed secrets
-
-**Detection:**
-- API keys
-- Passwords
-- Tokens
-- Certificates
-
----
-
-## Testing Workflows
-
-### Test Coverage
-**File:** `test-coverage.yml`
-**Purpose:** Generate and report code coverage metrics
-
-**Metrics:**
-- Line coverage
-- Branch coverage
-- Function coverage
-
-### Kind Code-Server Smoke Test
-**File:** `kind-code-server-smoke.yml`
-**Purpose:** End-to-end testing in Kind (Kubernetes in Docker)
-
-**Tests:**
-- Pod deployment
-- Service accessibility
-- Extension loading
-- Persistent volumes
-
----
-
-## Documentation Workflows
-
-### Deploy Docs
-**File:** `deploy-docs.yml`
-**Purpose:** Build and deploy project documentation
-
-**Targets:**
-- GitHub Pages
-- Documentation site
-
-### Deploy Next.js Docs
-**File:** `deploy-next-docs.yml`
-**Purpose:** Build and deploy Next.js documentation site
-
----
-
-## Monitoring Workflows
-
-### Cost Monitor
-**File:** `cost-monitor.yml`
-**Purpose:** Track and report cloud resource costs
-
-**Reports:**
-- Daily cost summary
-- Resource usage trends
-- Budget alerts
-
-### Datadog Service Catalog
-**File:** `datadog-service-catalog.yml`
-**Purpose:** Sync service metadata to Datadog
-
----
-
-## Maintenance Workflows
-
-### Stale Issue Management
-**File:** `stale.yml`
-**Purpose:** Automatically manage stale issues and PRs to keep repository healthy
-
-**Schedule:**
-- Runs daily at 04:30 UTC
-- Manual trigger available via `workflow_dispatch`
-
-**Timing Configuration:**
-- **Mark as stale:** After 30 days of inactivity
-- **Auto-close:** 14 days after being marked stale (44 days total)
-
-**Exempt Labels:**
-Issues and PRs with any of these labels will never be marked stale:
-- `pinned` - Permanently active issues/PRs that should never be marked stale
-- `security` - Security-related items requiring ongoing attention
-- `triaged` - Reviewed and categorized items exempt from automation
-- `never-stale` - Explicit exemption from stale automation for long-term tracking
-- `priority: p0` - Critical priority items
-- `priority: p1` - High priority items
-
-**Behavior:**
-1. Scans all issues and PRs for activity
-2. Marks items with no activity for 30+ days with `stale` label
-3. Posts comment with instructions on how to keep item open
-4. Automatically closes items that remain stale for 14 days
-5. Removes stale label if activity resumes on marked items
-6. Processes up to 200 items per run for efficiency
-
-**Stale Message Content:**
-- Clear explanation of why item was marked stale
-- Timeline until auto-close (14 days)
-- Instructions to keep item open (comment or apply exempt label)
-- Encouragement to provide updates if still relevant
-
-**Manual Trigger:**
-```bash
-gh workflow run stale.yml
-```
-
-**Label Management:**
-Create required labels if missing:
-```bash
-gh label create "pinned" --description "Never mark as stale - permanently active issue/PR" --color "0366d6"
-gh label create "triaged" --description "Reviewed and categorized - exempt from stale automation" --color "fbca04"
-gh label create "never-stale" --description "Exempt from stale automation - long-term tracking" --color "d4c5f9"
-```
-
-### Dependency Compatibility
-**File:** `dependency-compatibility.yml`
-**Purpose:** Verify dependency updates don't break compatibility
-
----
-
-## Best Practices
-
-### Workflow Development
-1. Test workflows in feature branches before merging
-2. Use `workflow_dispatch` for manual testing
-3. Add comprehensive job descriptions
-4. Include proper error handling
-5. Set appropriate timeouts
-
-### Security
-1. Use minimal permissions (`permissions:` block)
-2. Pin action versions to specific commits or tags
-3. Never commit secrets to workflow files
-4. Use GitHub secrets for sensitive data
-5. Audit third-party actions before use
-
-### Performance
-1. Use caching for dependencies (`actions/cache`)
-2. Parallelize independent jobs
-3. Set appropriate timeouts
-4. Use matrix strategies for multi-platform builds
-5. Cache Docker layers with BuildKit
-
-### Monitoring
-1. Set up workflow status notifications
-2. Monitor workflow run times
-3. Track failure rates
-4. Review workflow logs regularly
-5. Use workflow badges in README
-
----
-
-## Workflow Naming Conventions
-
-- **CI/CD:** `*-ci.yml`, `*-deploy.yml`
-- **Testing:** `test-*.yml`, `*-test.yml`
-- **Security:** `security-*.yml`, `*-audit.yml`
-- **Automation:** `*-monitor.yml`, `*-automation.yml`
-- **Documentation:** `deploy-docs.yml`, `docs-*.yml`
-
----
-
-## Manual Workflow Execution
-
-Execute workflows manually using GitHub CLI:
-
-```bash
-# List all workflows
-gh workflow list
-
-# Run specific workflow
-gh workflow run code-server-release-monitor.yml
-
-# View workflow runs
-gh run list --workflow=code-server-release-monitor.yml
-
-# View run details
-gh run view <run-id>
-
-# Watch workflow execution
-gh run watch
-```
-
----
-
-## Troubleshooting
-
-### Common Issues
-
-**Workflow not triggering:**
-- Check branch filters in `on:` section
-- Verify path filters if specified
-- Check if workflow is disabled
-
-**Permission denied:**
-- Review `permissions:` block
-- Check repository settings
-- Verify GitHub token has required scopes
-
-**Action version conflicts:**
-- Pin to specific action versions
-- Review breaking changes in action updates
-- Test in isolated branch
-
-**Timeout errors:**
-- Increase job/step timeout
-- Optimize long-running operations
-- Split into smaller jobs
-
-**Stale workflow issues:**
-- Verify required labels exist in repository
-- Check exempt label configuration matches repository labels
-- Review timing configuration for project needs
-- Monitor workflow logs for processing statistics
-
----
-
-## Related Documentation
-
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [Workflow Syntax Reference](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions)
-- [Security Hardening](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)
-- [VibeCode Deployment Guide](../../docs/deployment.md)
-
----
-
-## Contributing
-
-When adding new workflows:
-
-1. Create workflow in feature branch
-2. Test with `workflow_dispatch` trigger
-3. Add documentation to this README
-4. Include inline comments in workflow file
-5. Update related documentation
-6. Submit PR with workflow description
-
----
-
-*Last Updated: 2025-10-03*
-*Maintained by: VibeCode DevOps Team*
+For detailed information, see [docs/CHANGELOG_GUIDE.md](../../docs/CHANGELOG_GUIDE.md)
+
+## Other Workflows
+
+See individual workflow files for documentation on:
+- CI/CD pipelines
+- Deployment automation
+- Testing and validation
+- Documentation generation
