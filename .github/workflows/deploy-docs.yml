@@ -51,46 +51,51 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: './docs/package-lock.json'
+          cache-dependency-path: 'docs/package-lock.json'
 
       - name: Install Astro dependencies
         if: ${{ github.event_name == 'push' || github.event.inputs.docs_system == 'astro' }}
-        run: npm ci
-        working-directory: ./docs
+        run: npm ci --legacy-peer-deps
+        working-directory: docs
 
       - name: Build Astro site
         if: ${{ github.event_name == 'push' || github.event.inputs.docs_system == 'astro' }}
         run: npm run build
-        working-directory: ./docs
+        working-directory: docs
+        env:
+          NODE_ENV: production
 
       - name: Upload Astro artifact
         if: ${{ github.event_name == 'push' || github.event.inputs.docs_system == 'astro' }}
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./docs/dist
+          path: docs/dist
 
       # --- Next.js Build Steps ---
       - name: Setup Node.js for Next.js
         if: ${{ github.event.inputs.docs_system == 'nextjs' }}
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
-          cache-dependency-path: './package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install Next.js dependencies
         if: ${{ github.event.inputs.docs_system == 'nextjs' }}
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Build Next.js site
         if: ${{ github.event.inputs.docs_system == 'nextjs' }}
         run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_TELEMETRY_DISABLED: '1'
 
       - name: Upload Next.js artifact
         if: ${{ github.event.inputs.docs_system == 'nextjs' }}
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./out
+          path: .next/standalone
 
   deploy:
     environment:

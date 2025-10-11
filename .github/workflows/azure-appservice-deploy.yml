@@ -21,12 +21,48 @@ env:
   IMAGE_REPOSITORY: ${{ vars.IMAGE_REPOSITORY || 'vibecode/ai-gateway' }}
   IMAGE_TAG: ${{ github.event.inputs.image_tag || github.sha }}
 
+# Required secrets for Azure deployment:
+# - AZURE_CLIENT_ID: Azure AD application client ID for OIDC authentication
+# - AZURE_TENANT_ID: Azure AD tenant ID
+# - AZURE_SUBSCRIPTION_ID: Azure subscription ID
+# - ACR_NAME: Azure Container Registry name
+# - AZURE_RESOURCE_GROUP: Azure resource group name
+# - APP_NAME: Azure App Service name for AI Gateway
+# - GATEWAY_API_KEY: (Optional) API key for testing gateway endpoints
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    # Skip if Azure secrets are not configured
+    if: ${{ secrets.AZURE_CLIENT_ID != '' && secrets.AZURE_TENANT_ID != '' && secrets.AZURE_SUBSCRIPTION_ID != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate Azure Configuration
+        run: |
+          echo "Validating Azure secrets configuration..."
+          if [ -z "${{ secrets.AZURE_CLIENT_ID }}" ]; then
+            echo "::error::AZURE_CLIENT_ID secret is not configured"
+            exit 1
+          fi
+          if [ -z "${{ secrets.AZURE_TENANT_ID }}" ]; then
+            echo "::error::AZURE_TENANT_ID secret is not configured"
+            exit 1
+          fi
+          if [ -z "${{ secrets.AZURE_SUBSCRIPTION_ID }}" ]; then
+            echo "::error::AZURE_SUBSCRIPTION_ID secret is not configured"
+            exit 1
+          fi
+          if [ -z "${{ secrets.ACR_NAME }}" ]; then
+            echo "::error::ACR_NAME secret is not configured"
+            exit 1
+          fi
+          if [ -z "${{ secrets.AZURE_RESOURCE_GROUP }}" ]; then
+            echo "::error::AZURE_RESOURCE_GROUP secret is not configured"
+            exit 1
+          fi
+          echo "All required Azure secrets are configured"
 
       - name: Azure Login (OIDC)
         uses: azure/login@v2
@@ -63,6 +99,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
+    # Skip if Azure secrets are not configured
+    if: ${{ secrets.AZURE_CLIENT_ID != '' && secrets.AZURE_TENANT_ID != '' && secrets.AZURE_SUBSCRIPTION_ID != '' }}
     steps:
       - name: Azure Login (OIDC)
         uses: azure/login@v2
