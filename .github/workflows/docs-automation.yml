@@ -41,15 +41,15 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci --legacy-peer-deps --legacy-peer-deps
 
       - name: Validate documentation
         run: npm run docs:validate
 
       - name: Check for broken links
-        uses: lycheeverse/lychee-action@v2.5.0
+        uses: lycheeverse/lychee-action@v1.9.0
         with:
-          args: --verbose --no-progress --exclude-loopback --exclude-private --exclude-mail --max-concurrency 5 --timeout 10 --exclude-path "node_modules|dist|.git" "docs/**/*.md" "*.md"
+          args: --verbose --no-progress --exclude-loopback --exclude-private --exclude-mail docs/**/*.md README.md
           fail: true
 
       - name: Upload validation report
@@ -77,7 +77,10 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci --legacy-peer-deps --legacy-peer-deps
+
+      - name: Install additional tools
+        run: npm install -g glob
 
       - name: Generate API documentation
         run: npx tsx scripts/generate-api-docs.ts
@@ -131,42 +134,33 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci --legacy-peer-deps --legacy-peer-deps
 
       - name: Extract and validate TypeScript examples
         run: |
           # Extract TypeScript code blocks from documentation
-          find docs -name "*.md" -type f -exec grep -l "^\`\`\`typescript" {} \; 2>/dev/null | while read file; do
+          find docs -name "*.md" -exec grep -l "```typescript" {} \; | while read file; do
             echo "Validating TypeScript examples in $file"
-
+            
             # Extract code blocks and create temporary files for validation
-            awk '/^```typescript/{flag=1; next} /^```$/{flag=0} flag' "$file" > temp_example.ts
-
+            awk '/```typescript/{flag=1; next} /```/{flag=0} flag' "$file" > temp_example.ts
+            
             if [ -s temp_example.ts ]; then
-              # Basic TypeScript syntax check with minimal configuration
-              echo '{"compilerOptions": {"target": "ES2020", "module": "commonjs", "strict": false, "skipLibCheck": true, "noEmit": true}}' > temp_tsconfig.json
-              npx tsc --project temp_tsconfig.json temp_example.ts 2>&1 | head -20 || echo "⚠️ Warning: TypeScript errors in $file"
-              rm -f temp_tsconfig.json
-            else
-              echo "No TypeScript code found in $file"
+              # Basic TypeScript syntax check
+              npx tsc --noEmit --skipLibCheck temp_example.ts || echo "Warning: TypeScript errors in $file"
             fi
-
+            
             rm -f temp_example.ts
           done
 
       - name: Validate npm scripts in documentation
         run: |
           # Extract npm run commands from documentation and verify they exist
-          echo "Checking npm scripts referenced in documentation..."
-
-          # Get all documented npm scripts
-          find . -maxdepth 1 -name "*.md" -o -path "./docs/*.md" | xargs grep -oh "npm run [a-zA-Z0-9:_-]*" 2>/dev/null | \
+          find docs README.md -name "*.md" -exec grep -o "npm run [a-zA-Z0-9:-]*" {} \; | \
           sort -u | while read cmd; do
-            script_name=$(echo "$cmd" | sed 's/npm run //')
-            if ! npm run 2>&1 | grep -q "  $script_name$"; then
-              echo "⚠️ Warning: Script '$script_name' not found in package.json"
-            else
-              echo "✅ Script '$script_name' exists"
+            script_name=$(echo "$cmd" | cut -d' ' -f3)
+            if ! npm run | grep -q "^  $script_name$"; then
+              echo "Warning: Script '$script_name' not found in package.json"
             fi
           done
 
@@ -207,48 +201,34 @@ jobs:
 
       - name: Check documentation accessibility
         run: |
-          echo "Checking heading structure and accessibility..."
-
-          find docs -name "*.md" -type f 2>/dev/null | while read file; do
+          # Check for proper heading structure
+          echo "Checking heading structure..."
+          find docs README.md -name "*.md" | while read file; do
             echo "Analyzing $file..."
-
+            
             # Check for missing alt text in images
-            if grep -n "!\[.*\](" "$file" 2>/dev/null | grep -q "!\[\]"; then
+            if grep -n "!\[.*\](" "$file" | grep -q "!\[\]"; then
               echo "Warning: Missing alt text for images in $file"
             fi
-<<<<<<< HEAD
-
-            # Check heading hierarchy - simplified bash approach
-            awk '/^#+ / {
-              match($0, /^#+/);
-              level = RLENGTH;
-              if (prev_level > 0 && level > prev_level + 1) {
-                printf "Warning: Heading level jump in %s (line %d)\n", FILENAME, NR
-              }
-              prev_level = level
-            }' "$file"
-=======
             
             # Check for proper heading hierarchy
-            echo "Checking heading structure in $file"
-            grep -n "^#" "$file" | awk -F':' '{print $1,$2}' | awk '{print $1,length($2),$0}' | 
-            awk 'BEGIN {prev=0} {
-              curr=int($2);
-              if (curr > prev+1) {
-                print "Warning: Heading level jump in '$file' at line " $1;
-              }
-              prev=curr;
-            }'
->>>>>>> ai-sdk-openai-v2-test
-          done
+            python3 -c "
+import re
+import sys
 
-          # Check main README
-          if [ -f "README.md" ]; then
-            echo "Analyzing README.md..."
-            if grep -n "!\[.*\](" "README.md" 2>/dev/null | grep -q "!\[\]"; then
-              echo "Warning: Missing alt text for images in README.md"
-            fi
-          fi
+with open('$file', 'r') as f:
+    content = f.read()
+
+headings = re.findall(r'^(#{1,6})\s+(.+)$', content, re.MULTILINE)
+prev_level = 0
+
+for heading_markup, heading_text in headings:
+    level = len(heading_markup)
+    if level > prev_level + 1:
+        print(f'Warning: Heading level jump in $file: {heading_text}')
+    prev_level = level
+            "
+          done
 
   performance-check:
     name: Documentation Performance
@@ -261,33 +241,25 @@ jobs:
       - name: Check documentation size and performance
         run: |
           echo "Checking documentation performance..."
-
-          # Check for overly large documentation files (>1MB)
-          find docs -name "*.md" -type f -size +1M 2>/dev/null | while read file; do
+          
+          # Check for overly large documentation files
+          find docs README.md -name "*.md" -size +1M | while read file; do
             size=$(du -h "$file" | cut -f1)
-            echo "⚠️ Warning: Large documentation file detected: $file ($size)"
+            echo "Warning: Large documentation file detected: $file ($size)"
           done
-
-          # Check README separately
-          if [ -f "README.md" ]; then
-            readme_size=$(stat -f%z "README.md" 2>/dev/null || stat -c%s "README.md" 2>/dev/null)
-            if [ "$readme_size" -gt 1048576 ]; then
-              echo "⚠️ Warning: README.md is larger than 1MB"
-            fi
-          fi
-
+          
           # Check for overly long lines that might impact readability
-          find docs -name "*.md" -type f 2>/dev/null | while read file; do
-            long_lines=$(awk 'length > 120' "$file" 2>/dev/null | wc -l | tr -d ' ')
+          find docs README.md -name "*.md" | while read file; do
+            long_lines=$(awk 'length > 120' "$file" | wc -l)
             if [ "$long_lines" -gt 10 ]; then
-              echo "⚠️ Warning: Many long lines (>120 chars) in $file: $long_lines lines"
+              echo "Warning: Many long lines (>120 chars) in $file: $long_lines lines"
             fi
           done
-
+          
           # Count total documentation
-          total_files=$(find docs -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')
-          total_size=$(du -sh docs 2>/dev/null | cut -f1)
-          echo "📊 Documentation summary: $total_files files, ${total_size:-0} total"
+          total_files=$(find docs README.md -name "*.md" | wc -l)
+          total_size=$(du -sh docs README.md 2>/dev/null | tail -1 | cut -f1)
+          echo "📊 Documentation summary: $total_files files, $total_size total"
 
   notify-on-failure:
     name: Notify on Documentation Issues

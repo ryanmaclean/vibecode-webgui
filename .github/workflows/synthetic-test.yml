@@ -5,51 +5,12 @@ on:
 
 permissions:
   contents: read
-<<<<<<< HEAD
-
-concurrency:
-  group: synthetics-${{ github.ref }}
-  cancel-in-progress: true
-=======
   id-token: write        # For OIDC authentication
   checks: write          # For posting test results
->>>>>>> ai-sdk-openai-v2-test
 
 jobs:
-  validate-ci-config:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    env:
-      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
-      DD_APP_KEY: ${{ secrets.DD_APP_KEY || '' }}
-      DD_SYNTHETIC_TEST_IDS: ${{ vars.DD_SYNTHETIC_TEST_IDS || '' }}
-    steps:
-      - name: Validate CI config (Datadog secrets)
-        run: |
-          MISSING=0
-          if [ -z "${DD_API_KEY}" ]; then
-            echo "::warning::Missing secret DD_API_KEY; Datadog Synthetic Tests will be skipped."
-            MISSING=1
-          fi
-          if [ -z "${DD_APP_KEY}" ]; then
-            echo "::warning::Missing secret DD_APP_KEY; Datadog Synthetic Tests will be skipped."
-            MISSING=1
-          fi
-          if [ -z "${DD_SYNTHETIC_TEST_IDS}" ]; then
-            echo "Note: DD_SYNTHETIC_TEST_IDS not set; will fallback to search query."
-          fi
-          if [ $MISSING -eq 0 ]; then
-            echo "All required Datadog secrets present."
-          fi
-
   run-synthetic-tests:
-    needs: [validate-ci-config]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
-      DD_APP_KEY: ${{ secrets.DD_APP_KEY || '' }}
-      DD_SYNTHETIC_TEST_IDS: ${{ vars.DD_SYNTHETIC_TEST_IDS || '' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -57,14 +18,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-<<<<<<< HEAD
-          node-version: '20'
-=======
           node-version: '18'
           cache: 'npm'
 
       - name: Cache npm dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v3
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -72,29 +30,16 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: Install dependencies with retry
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v2
         with:
           timeout_minutes: 10
           max_attempts: 3
           command: npm ci --legacy-peer-deps
->>>>>>> ai-sdk-openai-v2-test
 
       - name: Run Datadog Synthetic Tests
-        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
         run: |
-          set -euo pipefail
-          if [ -n "${DD_SYNTHETIC_TEST_IDS}" ]; then
-            echo "Running Datadog Synthetic tests by public IDs..."
-            npx @datadog/datadog-ci synthetics run-tests \
-              --publicIds "${DD_SYNTHETIC_TEST_IDS}" \
-              --failOnCriticalErrors
-          else
-            echo "Running Datadog Synthetic tests by search query..."
-            npx @datadog/datadog-ci synthetics run-tests \
-              --search "VibeCode Critical User Journey" \
-              --failOnCriticalErrors
-          fi
+          datadog-ci synthetics run-tests --search "VibeCode Critical User Journey" --failOnCriticalErrors
         env:
-          DATADOG_API_KEY: ${{ env.DD_API_KEY }}
-          DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
+          DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
+          DATADOG_APP_KEY: ${{ secrets.DD_APP_KEY }}
           DATADOG_SITE: datadoghq.com
