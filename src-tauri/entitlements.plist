@@ -2,28 +2,30 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- Required for hardened runtime -->
-    <key>com.apple.security.cs.allow-jit</key>
-    <true/>
-    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
-    <true/>
-    <key>com.apple.security.cs.disable-library-validation</key>
-    <true/>
+  <!-- Allow JIT compilation (required for JavaScript engines) -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
 
-    <!-- Network access -->
-    <key>com.apple.security.network.client</key>
-    <true/>
-    <key>com.apple.security.network.server</key>
-    <true/>
+  <!-- Allow unsigned executable memory -->
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
 
-    <!-- File system access -->
-    <key>com.apple.security.files.user-selected.read-write</key>
-    <true/>
-    <key>com.apple.security.files.downloads.read-write</key>
-    <true/>
+  <!-- Disable library validation -->
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
 
-    <!-- Device access (if needed for Docker interaction) -->
-    <key>com.apple.security.device.usb</key>
-    <true/>
+  <!-- Network access -->
+  <key>com.apple.security.network.client</key>
+  <true/>
+  <key>com.apple.security.network.server</key>
+  <true/>
+
+  <!-- File access -->
+  <key>com.apple.security.files.user-selected.read-only</key>
+  <true/>
+  <key>com.apple.security.files.user-selected.read-write</key>
+  <true/>
+  <key>com.apple.security.files.downloads.read-write</key>
+  <true/>
 </dict>
 </plist>
