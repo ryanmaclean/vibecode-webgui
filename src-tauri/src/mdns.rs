@@ -120,8 +120,7 @@ impl VibeCodeService {
 
     /// Shutdown the mDNS daemon
     pub fn shutdown(&self) -> Result<(), MdnsError> {
-        let _receiver = self
-            .daemon
+        let _receiver = self.daemon
             .shutdown()
             .map_err(|e| MdnsError::DaemonCreation(format!("Shutdown failed: {}", e)))?;
         Ok(())
