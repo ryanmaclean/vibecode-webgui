@@ -309,7 +309,6 @@ npm run lint               # ESLint
 - [Docker Deployment](docs/DOCKER_DEPLOYMENT.md)
 - [Test Coverage](docs/TEST_COVERAGE_AUDIT.md)
 - [Kubernetes Guide](docs/azure-aks-deployment.md)
-- [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
 
 ## Contributing
 

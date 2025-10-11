@@ -1,5 +1,6 @@
 # VibeCode Custom code-server with pre-installed extensions
-# OPTIMIZED VERSION - Reduced from 57 to 12 layers
+# OPTIMIZED VERSION - Reduced layers from 57 to 14 (maximum practical optimization)
+# Note: Further reduction would require restructuring source directories
 FROM codercom/code-server:4.104.2
 
 ARG TARGETPLATFORM
@@ -150,12 +151,13 @@ RUN set -eux && \
     # Cleanup
     rm -rf /tmp/* /var/lib/apt/lists/*
 
-# Layer 3: Install Node.js
+# Layer 3: Install Node.js and Go
 RUN set -eux && \
+    # Install Node.js
     NODE_VERSION="18.18.0" && \
     case "$TARGETPLATFORM" in \
-      "linux/amd64") NODE_ARCH=x64 ;; \
-      "linux/arm64") NODE_ARCH=arm64 ;; \
+      "linux/amd64") NODE_ARCH=x64; GO_ARCH=amd64 ;; \
+      "linux/arm64") NODE_ARCH=arm64; GO_ARCH=arm64 ;; \
       *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
     esac && \
     NODE_TARBALL="node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" && \
@@ -169,15 +171,8 @@ RUN set -eux && \
     ln -sf /usr/local/lib/nodejs/bin/npm /usr/local/bin/npm && \
     ln -sf /usr/local/lib/nodejs/bin/npx /usr/local/bin/npx && \
     rm -rf /tmp/* && \
-    node --version && npm --version
-
-# Layer 4: Install Go
-RUN set -eux && \
-    case "$TARGETPLATFORM" in \
-      "linux/amd64") GO_ARCH=amd64 ;; \
-      "linux/arm64") GO_ARCH=arm64 ;; \
-      *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
-    esac && \
+    node --version && npm --version && \
+    # Install Go
     GO_TARBALL="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" && \
     cd /tmp && \
     curl -fsSLo "${GO_TARBALL}" "https://dl.google.com/go/${GO_TARBALL}" && \
@@ -253,7 +248,7 @@ RUN set -eux && \
     # Cleanup
     rm -rf /tmp/*
 
-# Layer 6: Install npm packages, Go tools, Python packages, and LSP servers
+# Layer 6: Install npm packages, Go tools, Python packages, LSP servers, and shell completions
 RUN set -eux && \
     case "$TARGETPLATFORM" in \
       "linux/amd64") GO_ARCH=amd64 ;; \
@@ -310,32 +305,28 @@ RUN set -eux && \
     pocketbase --version && devbox version && \
     echo "All required tools verified"
 
-# Layer 9: Setup workspace and Datadog configuration
+# Layer 7: Setup workspace, Datadog configuration, and VSCode directories
+COPY docker/code-server/configure-datadog.sh /tmp/configure-datadog.sh
 RUN mkdir -p /home/coder/workspace/.datadog/templates && \
     chown -R coder:coder /home/coder && \
-    chown -R coder:coder /home/coder/workspace/.datadog
-
-WORKDIR /home/coder/workspace
-
-# Copy Datadog configuration script
-COPY docker/code-server/configure-datadog.sh /tmp/configure-datadog.sh
-RUN chmod +x /tmp/configure-datadog.sh && \
+    chown -R coder:coder /home/coder/workspace/.datadog && \
+    chmod +x /tmp/configure-datadog.sh && \
     /tmp/configure-datadog.sh && \
     chown -R coder:coder /home/coder/workspace/.datadog && \
     chown -R coder:coder /home/coder/workspace/verify-datadog-tools.sh
+
+WORKDIR /home/coder/workspace
 
 # Switch to coder user
 USER coder
 ENV PATH="/home/coder/.local/bin:/home/coder/go/bin:${PATH}"
 ENV NODE_PATH=/usr/local/lib/node_modules
 
-# Create directories for VSCode
-RUN mkdir -p /home/coder/.local/share/code-server/User/ \
-    && mkdir -p /home/coder/.vscode/extensions/
-
-# Layer 10: Install VSCode extensions based on profile
+# Layer 8: Create VSCode directories and install extensions
 COPY --chown=coder:coder docker/code-server/profiles/${PROFILE}.txt /tmp/extensions-list.txt
-RUN --mount=type=cache,target=/home/coder/.cache/code-server \
+RUN mkdir -p /home/coder/.local/share/code-server/User/ && \
+    mkdir -p /home/coder/.vscode/extensions/ && \
+    # Install VSCode extensions from profile
     echo "Installing extensions for profile: ${PROFILE}" && \
     grep -v '^#' /tmp/extensions-list.txt | grep -v '^$' | while read -r extension; do \
         if [ -n "$extension" ]; then \
@@ -369,34 +360,32 @@ RUN --mount=type=cache,target=/home/coder/.cache/code-server \
     /usr/bin/code-server --install-extension ms-azuretools.vscode-docker || echo "Docker failed" && \
     /usr/bin/code-server --install-extension humao.rest-client || echo "REST client failed" && \
     /usr/bin/code-server --install-extension yzhang.markdown-all-in-one || echo "Markdown failed" && \
+    rm -rf /tmp/extensions && \
+    # Install Go LSP and Java LSP
+    go install golang.org/x/tools/gopls@latest || echo "gopls installation failed, skipping" && \
+    mkdir -p /home/coder/.local/share/jdtls && \
+    curl -L https://download.eclipse.org/jdtls/milestones/1.9.0/jdt-language-server-1.9.0-202203031534.tar.gz | tar xz -C /home/coder/.local/share/jdtls && \
     echo "Extension installation complete"
 
-# Switch to root for AI extensions script
+# Layer 9: Configure AI extensions and copy VibeCode files
 USER root
 COPY docker/code-server/configure-ai-extensions.sh /tmp/configure-ai-extensions.sh
-RUN rm -rf /tmp/extensions && \
-    chmod +x /tmp/configure-ai-extensions.sh && \
-    /tmp/configure-ai-extensions.sh && \
-    rm /tmp/configure-ai-extensions.sh && \
-    chown -R coder:coder /home/coder/.local/share/code-server/ && \
-    chown -R coder:coder /home/coder/.vscode/
-
-# Layer 11: Copy VibeCode extensions, configure VS Code, and build extensions
-USER coder
 COPY --chown=coder:coder extensions/vibecode-ai-assistant /home/coder/.vscode/extensions/vibecode-ai-assistant
 COPY --chown=coder:coder extensions/vibecode-inline-edit /home/coder/.vscode/extensions/vibecode-inline-edit
 COPY --chown=coder:coder extensions/vibecode-codebase-chat /home/coder/.vscode/extensions/vibecode-codebase-chat
 COPY --chown=coder:coder extensions/claude-code-vscode /home/coder/.vscode/extensions/claude-code-vscode
 COPY --chown=coder:coder docker/code-server/settings.json /home/coder/.local/share/code-server/User/settings.json
 COPY --chown=coder:coder docker/code-server/keybindings.json /home/coder/.local/share/code-server/User/keybindings.json
+RUN chmod +x /tmp/configure-ai-extensions.sh && \
+    /tmp/configure-ai-extensions.sh && \
+    rm /tmp/configure-ai-extensions.sh && \
+    chown -R coder:coder /home/coder/.local/share/code-server/ && \
+    chown -R coder:coder /home/coder/.vscode/
 
-RUN set -e && \
-    # Install Go LSP and Java LSP
-    go install golang.org/x/tools/gopls@latest || echo "gopls installation failed, skipping" && \
-    mkdir -p /home/coder/.local/share/jdtls && \
-    curl -L https://download.eclipse.org/jdtls/milestones/1.9.0/jdt-language-server-1.9.0-202203031534.tar.gz | tar xz -C /home/coder/.local/share/jdtls && \
-    # Build VibeCode extensions
-    cd /home/coder/.vscode/extensions/vibecode-ai-assistant && \
+USER coder
+
+# Layer 10: Build VibeCode extensions and verify all tools
+RUN cd /home/coder/.vscode/extensions/vibecode-ai-assistant && \
     npm install && (npm run compile || npm run build || echo "No build script") && \
     cd /home/coder/.vscode/extensions/vibecode-inline-edit && \
     npm install && (npm run build || npm run compile || echo "No build script") && \
