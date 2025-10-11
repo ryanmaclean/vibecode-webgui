@@ -66,17 +66,39 @@ jobs:
       - name: Prepare standalone bundle
         run: |
           set -euo pipefail
+
+          # Verify .next/standalone exists
+          if [ ! -d ".next/standalone" ]; then
+            echo "Error: .next/standalone directory not found. Build may have failed."
+            exit 1
+          fi
+
           mkdir -p ./next-standalone/.next
-          rsync -a --delete ./.next/standalone/ ./next-standalone/
-          if [ -d "./.next/static" ]; then
-            rsync -a ./.next/static/ ./next-standalone/.next/static/
+          rsync -av --delete ./.next/standalone/ ./next-standalone/
+
+          # Copy static assets if they exist
+          if [ -d ".next/static" ]; then
+            echo "Copying static assets..."
+            rsync -av ./.next/static/ ./next-standalone/.next/static/
+          else
+            echo "Warning: .next/static not found"
           fi
-          if [ -d "./public" ]; then
-            rsync -a ./public/ ./next-standalone/public/
+
+          # Copy public directory if exists
+          if [ -d "public" ]; then
+            echo "Copying public directory..."
+            rsync -av ./public/ ./next-standalone/public/
           fi
-          if [ -d "./content/wiki" ]; then
-            rsync -a ./content/wiki/ ./next-standalone/content/wiki/
+
+          # Copy wiki content if exists
+          if [ -d "content/wiki" ]; then
+            echo "Copying wiki content..."
+            rsync -av ./content/wiki/ ./next-standalone/content/wiki/
           fi
+
+          # Verify standalone structure
+          ls -la ./next-standalone/
+          echo "Standalone bundle prepared successfully"
 
       - name: Archive standalone bundle
         run: tar -czf next-standalone.tar.gz next-standalone
@@ -163,10 +185,26 @@ jobs:
         run: |
           IMAGE="${{ steps.acr.outputs.login_server }}/${{ env.IMAGE_REPOSITORY }}:${{ env.IMAGE_TAG }}"
           echo "Building image ${IMAGE}"
+
+          # Verify Dockerfile exists
+          if [ ! -f "docker/Dockerfile.docs-next" ]; then
+            echo "Error: docker/Dockerfile.docs-next not found"
+            exit 1
+          fi
+
+          # Verify standalone bundle exists
+          if [ ! -d "next-standalone" ]; then
+            echo "Error: next-standalone directory not found"
+            exit 1
+          fi
+
           docker build \
             --file docker/Dockerfile.docs-next \
             --tag "$IMAGE" \
+            --build-arg NODE_ENV=production \
             .
+
+          echo "Image built successfully: ${IMAGE}"
 
       - name: Push container image
         if: steps.secrets.outputs.ready == 'true'

@@ -1,6 +1,6 @@
 /**
  * Apple Container Workspace Provisioning Service
- * 
+ *
  * Provisions code-server workspaces using Apple's native containerization
  * instead of Kubernetes pods.
  */
@@ -10,6 +10,7 @@ import type { ContainerOptions } from '@/lib/container/types'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { tmpdir } from 'os'
+import { randomBytes } from 'crypto'
 
 interface WorkspaceRequest {
   projectId: string
@@ -59,7 +60,7 @@ export class AppleContainerWorkspaceService {
     // 4. Prepare workspace directory
     const workspaceId = `workspace-${request.projectId}`
     const workspacePath = join(this.workspaceDir, workspaceId)
-    
+
     await mkdir(workspacePath, { recursive: true })
     console.log(`📁 Created workspace directory: ${workspacePath}`)
 
@@ -148,7 +149,7 @@ export class AppleContainerWorkspaceService {
    */
   async listWorkspaces(): Promise<Array<{ id: string; status: string; url: string }>> {
     const result = await appleContainer.list()
-    
+
     if (!result.success) {
       return []
     }
@@ -171,7 +172,7 @@ export class AppleContainerWorkspaceService {
     url: string
   } | null> {
     const result = await appleContainer.list()
-    
+
     if (!result.success) {
       return null
     }
@@ -201,7 +202,7 @@ export class AppleContainerWorkspaceService {
     for (const [filePath, content] of Object.entries(files)) {
       const fullPath = join(workspacePath, filePath)
       const dir = join(fullPath, '..')
-      
+
       await mkdir(dir, { recursive: true })
       await writeFile(fullPath, content, 'utf-8')
     }
@@ -240,7 +241,7 @@ export class AppleContainerWorkspaceService {
    */
   private async installDependencies(containerId: string): Promise<void> {
     console.log(`📦 Installing dependencies...`)
-    
+
     // Execute npm install in the container
     // Note: This requires the container CLI to support exec command
     // For now, we'll skip this and let the user install manually
@@ -260,10 +261,10 @@ export class AppleContainerWorkspaceService {
       } catch {
         // Server not ready yet
       }
-      
+
       await new Promise((resolve) => setTimeout(resolve, 1000))
     }
-    
+
     throw new Error('Code-server failed to start within timeout')
   }
 
@@ -275,7 +276,7 @@ export class AppleContainerWorkspaceService {
     // In production, should check if port is actually available
     const containers = await appleContainer.list()
     const usedPorts = new Set<number>()
-    
+
     for (const container of containers.containers) {
       if (container.ports) {
         for (const port of Object.values(container.ports)) {
@@ -283,21 +284,21 @@ export class AppleContainerWorkspaceService {
         }
       }
     }
-    
+
     let port = this.basePort
     while (usedPorts.has(port)) {
       port++
     }
-    
+
     return port
   }
 
   /**
-   * Generate a cryptographically secure random password
+   * Generate cryptographically secure random password
+   * SECURITY: Uses crypto.randomBytes() instead of Math.random()
    */
   private generatePassword(): string {
-    // Use crypto.randomBytes for cryptographically secure password generation
-    const crypto = require('crypto');
-    return crypto.randomBytes(16).toString('base64').slice(0, 24);
+    // Generate 32-character password using base64url encoding
+    return randomBytes(32).toString('base64url').substring(0, 32);
   }
 }

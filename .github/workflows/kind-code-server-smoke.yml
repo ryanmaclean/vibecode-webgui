@@ -52,11 +52,6 @@ jobs:
             exit 1
           fi
 
-          # Check if editor test script exists
-          if [ ! -f "scripts/test-code-server-editors.sh" ]; then
-            echo "::warning::Editor test script not found at scripts/test-code-server-editors.sh"
-          fi
-
           # Check if Dockerfile exists for local build
           if [ ! -f "docker/code-server/Dockerfile.kind" ]; then
             echo "::warning::Dockerfile.kind not found, skipping local build"

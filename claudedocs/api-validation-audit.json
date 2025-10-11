@@ -1,0 +1,1719 @@
+{
+  "totalRoutes": 78,
+  "validatedRoutes": 11,
+  "unvalidatedRoutes": 67,
+  "highRiskUnvalidated": 52,
+  "mediumRiskUnvalidated": 0,
+  "lowRiskUnvalidated": 15,
+  "routesByCategory": {
+    "workspace": [
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/workspaces/route.ts",
+        "relativePath": "src/app/api/workspaces/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": true,
+        "hasValidation": true,
+        "riskLevel": "HIGH",
+        "category": "workspace",
+        "lineCount": 166
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/workspaces/[id]/route.ts",
+        "relativePath": "src/app/api/workspaces/[id]/route.ts",
+        "methods": [
+          "GET",
+          "DELETE",
+          "PATCH"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "workspace",
+        "lineCount": 128
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/workspace/auto-scaling/route.ts",
+        "relativePath": "src/app/api/workspace/auto-scaling/route.ts",
+        "methods": [
+          "GET",
+          "POST",
+          "PUT",
+          "PATCH",
+          "DELETE"
+        ],
+        "hasZodImport": true,
+        "hasValidation": true,
+        "riskLevel": "HIGH",
+        "category": "workspace",
+        "lineCount": 346
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/workspace/[id]/init-goose/route.ts",
+        "relativePath": "src/app/api/workspace/[id]/init-goose/route.ts",
+        "methods": [
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "workspace",
+        "lineCount": 66
+      }
+    ],
+    "other": [
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/vector-store/route.ts",
+        "relativePath": "src/app/api/vector-store/route.ts",
+        "methods": [
+          "GET",
+          "POST",
+          "PUT",
+          "DELETE",
+          "OPTIONS"
+        ],
+        "hasZodImport": true,
+        "hasValidation": true,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 304
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/test-db/route.ts",
+        "relativePath": "src/app/api/test-db/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "LOW",
+        "category": "other",
+        "lineCount": 40
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/templates/route.ts",
+        "relativePath": "src/app/api/templates/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 622
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/readyz/route.ts",
+        "relativePath": "src/app/api/readyz/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "LOW",
+        "category": "other",
+        "lineCount": 19
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/mongodb-test/route.ts",
+        "relativePath": "src/app/api/mongodb-test/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "LOW",
+        "category": "other",
+        "lineCount": 45
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/experiments/route.ts",
+        "relativePath": "src/app/api/experiments/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 215
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/code-completion/route.ts",
+        "relativePath": "src/app/api/code-completion/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 872
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/uploads/pdf/route.ts",
+        "relativePath": "src/app/api/uploads/pdf/route.ts",
+        "methods": [
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 161
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/terminal/ws/route.ts",
+        "relativePath": "src/app/api/terminal/ws/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "LOW",
+        "category": "other",
+        "lineCount": 378
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/terminal/session/route.ts",
+        "relativePath": "src/app/api/terminal/session/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "LOW",
+        "category": "other",
+        "lineCount": 108
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/projects/template/route.ts",
+        "relativePath": "src/app/api/projects/template/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": true,
+        "hasValidation": true,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 293
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ollama/models/route.ts",
+        "relativePath": "src/app/api/ollama/models/route.ts",
+        "methods": [
+          "GET",
+          "POST",
+          "OPTIONS"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 310
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/gradio/run/route.ts",
+        "relativePath": "src/app/api/gradio/run/route.ts",
+        "methods": [
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 84
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/docs/search/route.ts",
+        "relativePath": "src/app/api/docs/search/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 150
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/docker/status/route.ts",
+        "relativePath": "src/app/api/docker/status/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 123
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/code-server/session/route.ts",
+        "relativePath": "src/app/api/code-server/session/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": true,
+        "hasValidation": true,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 212
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/chat/stream/route.ts",
+        "relativePath": "src/app/api/chat/stream/route.ts",
+        "methods": [
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 291
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/chat/mongodb-simple/route.ts",
+        "relativePath": "src/app/api/chat/mongodb-simple/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 176
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/chat/mongodb/route.ts",
+        "relativePath": "src/app/api/chat/mongodb/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 228
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/agents/[...path]/route.ts",
+        "relativePath": "src/app/api/agents/[...path]/route.ts",
+        "methods": [
+          "GET",
+          "POST",
+          "DELETE"
+        ],
+        "hasZodImport": true,
+        "hasValidation": true,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 510
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/code-server/session/[sessionId]/route.ts",
+        "relativePath": "src/app/api/code-server/session/[sessionId]/route.ts",
+        "methods": [
+          "GET",
+          "DELETE",
+          "PATCH"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "other",
+        "lineCount": 151
+      }
+    ],
+    "health": [
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/healthz/route.ts",
+        "relativePath": "src/app/api/healthz/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "LOW",
+        "category": "health",
+        "lineCount": 18
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/health/route.ts",
+        "relativePath": "src/app/api/health/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "LOW",
+        "category": "health",
+        "lineCount": 70
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/health/vector-metrics/route.ts",
+        "relativePath": "src/app/api/health/vector-metrics/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "LOW",
+        "category": "health",
+        "lineCount": 106
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/health/vector-db/route.ts",
+        "relativePath": "src/app/api/health/vector-db/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "LOW",
+        "category": "health",
+        "lineCount": 62
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/health/db/route.ts",
+        "relativePath": "src/app/api/health/db/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "LOW",
+        "category": "health",
+        "lineCount": 355
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/health/database/route.ts",
+        "relativePath": "src/app/api/health/database/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "LOW",
+        "category": "health",
+        "lineCount": 40
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/health/simple/route.ts",
+        "relativePath": "src/app/api/health/simple/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "LOW",
+        "category": "health",
+        "lineCount": 24
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/health/connection-pool/route.ts",
+        "relativePath": "src/app/api/health/connection-pool/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "health",
+        "lineCount": 42
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/health/database/metrics/route.ts",
+        "relativePath": "src/app/api/health/database/metrics/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "LOW",
+        "category": "health",
+        "lineCount": 262
+      }
+    ],
+    "files": [
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/files/route.ts",
+        "relativePath": "src/app/api/files/route.ts",
+        "methods": [
+          "GET",
+          "POST",
+          "PUT",
+          "DELETE",
+          "OPTIONS"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "files",
+        "lineCount": 435
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/files/sync/route.ts",
+        "relativePath": "src/app/api/files/sync/route.ts",
+        "methods": [
+          "GET",
+          "POST",
+          "OPTIONS"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "files",
+        "lineCount": 352
+      }
+    ],
+    "containers": [
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/containers/route.ts",
+        "relativePath": "src/app/api/containers/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "containers",
+        "lineCount": 114
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/containers/[id]/route.ts",
+        "relativePath": "src/app/api/containers/[id]/route.ts",
+        "methods": [
+          "GET",
+          "DELETE"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "containers",
+        "lineCount": 132
+      }
+    ],
+    "user-management": [
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/user/preferences/route.ts",
+        "relativePath": "src/app/api/user/preferences/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "user-management",
+        "lineCount": 101
+      }
+    ],
+    "monitoring": [
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/traces/route.ts",
+        "relativePath": "src/app/api/monitoring/traces/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "monitoring",
+        "lineCount": 120
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/security/route.ts",
+        "relativePath": "src/app/api/monitoring/security/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "monitoring",
+        "lineCount": 235
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/rum/route.ts",
+        "relativePath": "src/app/api/monitoring/rum/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "monitoring",
+        "lineCount": 212
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/pool/route.ts",
+        "relativePath": "src/app/api/monitoring/pool/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "monitoring",
+        "lineCount": 225
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/pool-alerts/route.ts",
+        "relativePath": "src/app/api/monitoring/pool-alerts/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "monitoring",
+        "lineCount": 282
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/performance/route.ts",
+        "relativePath": "src/app/api/monitoring/performance/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "monitoring",
+        "lineCount": 199
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/otel-config/route.ts",
+        "relativePath": "src/app/api/monitoring/otel-config/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "monitoring",
+        "lineCount": 231
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/metrics/route.ts",
+        "relativePath": "src/app/api/monitoring/metrics/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "monitoring",
+        "lineCount": 194
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/dashboard/route.ts",
+        "relativePath": "src/app/api/monitoring/dashboard/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "LOW",
+        "category": "monitoring",
+        "lineCount": 136
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/embeddings/route.ts",
+        "relativePath": "src/app/api/monitoring/embeddings/route.ts",
+        "methods": [
+          "GET",
+          "POST",
+          "DELETE"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "monitoring",
+        "lineCount": 248
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/cache/route.ts",
+        "relativePath": "src/app/api/monitoring/cache/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "monitoring",
+        "lineCount": 310
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/azure-embedding/route.ts",
+        "relativePath": "src/app/api/monitoring/azure-embedding/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "LOW",
+        "category": "monitoring",
+        "lineCount": 147
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/connection-pool/dashboard/route.ts",
+        "relativePath": "src/app/api/monitoring/connection-pool/dashboard/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "monitoring",
+        "lineCount": 236
+      }
+    ],
+    "ai-services": [
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/claude/generate/route.ts",
+        "relativePath": "src/app/api/claude/generate/route.ts",
+        "methods": [
+          "POST",
+          "OPTIONS"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 87
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/claude/session/route.ts",
+        "relativePath": "src/app/api/claude/session/route.ts",
+        "methods": [
+          "POST",
+          "GET",
+          "OPTIONS"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 201
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/claude/analyze/route.ts",
+        "relativePath": "src/app/api/claude/analyze/route.ts",
+        "methods": [
+          "POST",
+          "OPTIONS"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 116
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/claude/chat/route.ts",
+        "relativePath": "src/app/api/claude/chat/route.ts",
+        "methods": [
+          "POST",
+          "OPTIONS"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 88
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/web-search/route.ts",
+        "relativePath": "src/app/api/ai/web-search/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 140
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/upload/route.ts",
+        "relativePath": "src/app/api/ai/upload/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 406
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/provider-health/route.ts",
+        "relativePath": "src/app/api/ai/provider-health/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 105
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/management/route.ts",
+        "relativePath": "src/app/api/ai/management/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 567
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/model-selection/route.ts",
+        "relativePath": "src/app/api/ai/model-selection/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 163
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/search/route.ts",
+        "relativePath": "src/app/api/ai/search/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": true,
+        "hasValidation": true,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 172
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/huggingface-init/route.ts",
+        "relativePath": "src/app/api/ai/huggingface-init/route.ts",
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 54
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/litellm/route.ts",
+        "relativePath": "src/app/api/ai/litellm/route.ts",
+        "methods": [
+          "GET",
+          "POST",
+          "PUT"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 338
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/huggingface-chat/route.ts",
+        "relativePath": "src/app/api/ai/huggingface-chat/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 145
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/generate-project/route.ts",
+        "relativePath": "src/app/api/ai/generate-project/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": true,
+        "hasValidation": true,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 145
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/chat/route.ts",
+        "relativePath": "src/app/api/ai/chat/route.ts",
+        "methods": [
+          "POST"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 359
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/function-call/route.ts",
+        "relativePath": "src/app/api/ai/function-call/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 84
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/conversations/[workspaceId]/route.ts",
+        "relativePath": "src/app/api/ai/conversations/[workspaceId]/route.ts",
+        "methods": [
+          "GET",
+          "POST",
+          "DELETE"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 213
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/chat/unified/route.ts",
+        "relativePath": "src/app/api/ai/chat/unified/route.ts",
+        "methods": [
+          "POST",
+          "OPTIONS"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 326
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/chat/stream/route.ts",
+        "relativePath": "src/app/api/ai/chat/stream/route.ts",
+        "methods": [
+          "POST",
+          "OPTIONS"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 208
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/chat/enhanced/route.ts",
+        "relativePath": "src/app/api/ai/chat/enhanced/route.ts",
+        "methods": [
+          "POST",
+          "OPTIONS"
+        ],
+        "hasZodImport": true,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "ai-services",
+        "lineCount": 269
+      }
+    ],
+    "authentication": [
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/auth/login-tracking/route.ts",
+        "relativePath": "src/app/api/auth/login-tracking/route.ts",
+        "methods": [
+          "POST",
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "authentication",
+        "lineCount": 176
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/auth/[...nextauth]/route.ts",
+        "relativePath": "src/app/api/auth/[...nextauth]/route.ts",
+        "methods": [],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "authentication",
+        "lineCount": 12
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/auth/saml/sso/route.ts",
+        "relativePath": "src/app/api/auth/saml/sso/route.ts",
+        "methods": [
+          "POST",
+          "PUT",
+          "GET"
+        ],
+        "hasZodImport": true,
+        "hasValidation": true,
+        "riskLevel": "HIGH",
+        "category": "authentication",
+        "lineCount": 177
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/auth/saml/metadata/route.ts",
+        "relativePath": "src/app/api/auth/saml/metadata/route.ts",
+        "methods": [
+          "GET"
+        ],
+        "hasZodImport": false,
+        "hasValidation": false,
+        "riskLevel": "HIGH",
+        "category": "authentication",
+        "lineCount": 43
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/auth/mfa/verify/route.ts",
+        "relativePath": "src/app/api/auth/mfa/verify/route.ts",
+        "methods": [
+          "POST",
+          "PUT",
+          "GET",
+          "DELETE"
+        ],
+        "hasZodImport": true,
+        "hasValidation": true,
+        "riskLevel": "HIGH",
+        "category": "authentication",
+        "lineCount": 189
+      },
+      {
+        "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/auth/mfa/setup/route.ts",
+        "relativePath": "src/app/api/auth/mfa/setup/route.ts",
+        "methods": [
+          "POST",
+          "PUT"
+        ],
+        "hasZodImport": true,
+        "hasValidation": true,
+        "riskLevel": "HIGH",
+        "category": "authentication",
+        "lineCount": 129
+      }
+    ]
+  },
+  "highPriorityRoutes": [
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/auth/login-tracking/route.ts",
+      "relativePath": "src/app/api/auth/login-tracking/route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "authentication",
+      "lineCount": 176
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/auth/[...nextauth]/route.ts",
+      "relativePath": "src/app/api/auth/[...nextauth]/route.ts",
+      "methods": [],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "authentication",
+      "lineCount": 12
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/auth/saml/metadata/route.ts",
+      "relativePath": "src/app/api/auth/saml/metadata/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "authentication",
+      "lineCount": 43
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/user/preferences/route.ts",
+      "relativePath": "src/app/api/user/preferences/route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "user-management",
+      "lineCount": 101
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/workspaces/[id]/route.ts",
+      "relativePath": "src/app/api/workspaces/[id]/route.ts",
+      "methods": [
+        "GET",
+        "DELETE",
+        "PATCH"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "workspace",
+      "lineCount": 128
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/workspace/[id]/init-goose/route.ts",
+      "relativePath": "src/app/api/workspace/[id]/init-goose/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "workspace",
+      "lineCount": 66
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/claude/generate/route.ts",
+      "relativePath": "src/app/api/claude/generate/route.ts",
+      "methods": [
+        "POST",
+        "OPTIONS"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 87
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/claude/session/route.ts",
+      "relativePath": "src/app/api/claude/session/route.ts",
+      "methods": [
+        "POST",
+        "GET",
+        "OPTIONS"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 201
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/claude/analyze/route.ts",
+      "relativePath": "src/app/api/claude/analyze/route.ts",
+      "methods": [
+        "POST",
+        "OPTIONS"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 116
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/claude/chat/route.ts",
+      "relativePath": "src/app/api/claude/chat/route.ts",
+      "methods": [
+        "POST",
+        "OPTIONS"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 88
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/web-search/route.ts",
+      "relativePath": "src/app/api/ai/web-search/route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 140
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/upload/route.ts",
+      "relativePath": "src/app/api/ai/upload/route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 406
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/provider-health/route.ts",
+      "relativePath": "src/app/api/ai/provider-health/route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 105
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/management/route.ts",
+      "relativePath": "src/app/api/ai/management/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 567
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/model-selection/route.ts",
+      "relativePath": "src/app/api/ai/model-selection/route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 163
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/huggingface-init/route.ts",
+      "relativePath": "src/app/api/ai/huggingface-init/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 54
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/litellm/route.ts",
+      "relativePath": "src/app/api/ai/litellm/route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "PUT"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 338
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/huggingface-chat/route.ts",
+      "relativePath": "src/app/api/ai/huggingface-chat/route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 145
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/chat/route.ts",
+      "relativePath": "src/app/api/ai/chat/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 359
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/function-call/route.ts",
+      "relativePath": "src/app/api/ai/function-call/route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 84
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/conversations/[workspaceId]/route.ts",
+      "relativePath": "src/app/api/ai/conversations/[workspaceId]/route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 213
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/chat/unified/route.ts",
+      "relativePath": "src/app/api/ai/chat/unified/route.ts",
+      "methods": [
+        "POST",
+        "OPTIONS"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 326
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/chat/stream/route.ts",
+      "relativePath": "src/app/api/ai/chat/stream/route.ts",
+      "methods": [
+        "POST",
+        "OPTIONS"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 208
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ai/chat/enhanced/route.ts",
+      "relativePath": "src/app/api/ai/chat/enhanced/route.ts",
+      "methods": [
+        "POST",
+        "OPTIONS"
+      ],
+      "hasZodImport": true,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "ai-services",
+      "lineCount": 269
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/templates/route.ts",
+      "relativePath": "src/app/api/templates/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "other",
+      "lineCount": 622
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/files/route.ts",
+      "relativePath": "src/app/api/files/route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "OPTIONS"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "files",
+      "lineCount": 435
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/experiments/route.ts",
+      "relativePath": "src/app/api/experiments/route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "other",
+      "lineCount": 215
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/containers/route.ts",
+      "relativePath": "src/app/api/containers/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "containers",
+      "lineCount": 114
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/code-completion/route.ts",
+      "relativePath": "src/app/api/code-completion/route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "other",
+      "lineCount": 872
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/uploads/pdf/route.ts",
+      "relativePath": "src/app/api/uploads/pdf/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "other",
+      "lineCount": 161
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/ollama/models/route.ts",
+      "relativePath": "src/app/api/ollama/models/route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "OPTIONS"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "other",
+      "lineCount": 310
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/traces/route.ts",
+      "relativePath": "src/app/api/monitoring/traces/route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "monitoring",
+      "lineCount": 120
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/security/route.ts",
+      "relativePath": "src/app/api/monitoring/security/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "monitoring",
+      "lineCount": 235
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/rum/route.ts",
+      "relativePath": "src/app/api/monitoring/rum/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "monitoring",
+      "lineCount": 212
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/pool/route.ts",
+      "relativePath": "src/app/api/monitoring/pool/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "monitoring",
+      "lineCount": 225
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/pool-alerts/route.ts",
+      "relativePath": "src/app/api/monitoring/pool-alerts/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "monitoring",
+      "lineCount": 282
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/performance/route.ts",
+      "relativePath": "src/app/api/monitoring/performance/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "monitoring",
+      "lineCount": 199
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/otel-config/route.ts",
+      "relativePath": "src/app/api/monitoring/otel-config/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "monitoring",
+      "lineCount": 231
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/metrics/route.ts",
+      "relativePath": "src/app/api/monitoring/metrics/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "monitoring",
+      "lineCount": 194
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/embeddings/route.ts",
+      "relativePath": "src/app/api/monitoring/embeddings/route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "monitoring",
+      "lineCount": 248
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/cache/route.ts",
+      "relativePath": "src/app/api/monitoring/cache/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "monitoring",
+      "lineCount": 310
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/health/connection-pool/route.ts",
+      "relativePath": "src/app/api/health/connection-pool/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "health",
+      "lineCount": 42
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/gradio/run/route.ts",
+      "relativePath": "src/app/api/gradio/run/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "other",
+      "lineCount": 84
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/files/sync/route.ts",
+      "relativePath": "src/app/api/files/sync/route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "OPTIONS"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "files",
+      "lineCount": 352
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/docs/search/route.ts",
+      "relativePath": "src/app/api/docs/search/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "other",
+      "lineCount": 150
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/containers/[id]/route.ts",
+      "relativePath": "src/app/api/containers/[id]/route.ts",
+      "methods": [
+        "GET",
+        "DELETE"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "containers",
+      "lineCount": 132
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/docker/status/route.ts",
+      "relativePath": "src/app/api/docker/status/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "other",
+      "lineCount": 123
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/chat/stream/route.ts",
+      "relativePath": "src/app/api/chat/stream/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "other",
+      "lineCount": 291
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/chat/mongodb-simple/route.ts",
+      "relativePath": "src/app/api/chat/mongodb-simple/route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "other",
+      "lineCount": 176
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/chat/mongodb/route.ts",
+      "relativePath": "src/app/api/chat/mongodb/route.ts",
+      "methods": [
+        "POST",
+        "GET"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "other",
+      "lineCount": 228
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/monitoring/connection-pool/dashboard/route.ts",
+      "relativePath": "src/app/api/monitoring/connection-pool/dashboard/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "monitoring",
+      "lineCount": 236
+    },
+    {
+      "path": "/Users/ryan.maclean/vibecode-webgui/src/app/api/code-server/session/[sessionId]/route.ts",
+      "relativePath": "src/app/api/code-server/session/[sessionId]/route.ts",
+      "methods": [
+        "GET",
+        "DELETE",
+        "PATCH"
+      ],
+      "hasZodImport": false,
+      "hasValidation": false,
+      "riskLevel": "HIGH",
+      "category": "other",
+      "lineCount": 151
+    }
+  ]
+}

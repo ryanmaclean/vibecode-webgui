@@ -30,7 +30,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install AI CLI tools with compatible dependency resolution
-# Install Aider first, then Goose with fallback for conflicts
+# Install Aider first, then Goose with --no-deps for conflicting packages
 RUN pip3 install --no-cache-dir --break-system-packages \
       aider-chat==0.84.0 && \
     pip3 install --no-cache-dir --break-system-packages \
