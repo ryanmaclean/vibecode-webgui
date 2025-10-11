@@ -5,13 +5,13 @@
   "identifier": "com.vibecode.app",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build:export",
+    "beforeBuildCommand": "npm run build",
     "frontendDist": "../out",
     "devUrl": "http://localhost:3000"
   },
   "bundle": {
     "active": true,
-    "targets": ["dmg", "app"],
+    "targets": ["app", "dmg"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -21,12 +21,12 @@
     ],
     "resources": [],
     "externalBin": [],
-    "copyright": "Copyright (c) 2025 VibeCode",
+    "copyright": "",
     "category": "DeveloperTool",
     "shortDescription": "AI-Powered Development Environment",
     "longDescription": "VibeCode provides an AI-powered development environment with Docker container management and intelligent code assistance.",
     "macOS": {
-      "entitlements": "entitlements.plist",
+      "entitlements": null,
       "exceptionDomain": "",
       "frameworks": [],
       "providerShortName": null,
@@ -47,7 +47,8 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.datadoghq-browser-agent.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://api.openrouter.ai https://api.openai.com https://api.anthropic.com https://browser-intake-datadoghq.com wss: ws: http://localhost:*"
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.datadoghq-browser-agent.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://api.openrouter.ai https://api.openai.com https://api.anthropic.com https://browser-intake-datadoghq.com wss: ws: http://localhost:*",
+      "dangerousRemoteDomainIpcAccess": []
     },
     "withGlobalTauri": true
   },
