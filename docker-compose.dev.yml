@@ -17,18 +17,8 @@ services:
     environment:
       - NODE_ENV=development
       - DOCKER=true
-      - DD_TRACE_ENABLED=true
-      - DD_ENV=dev
-      - DD_SERVICE=vibecode-agent-builder
-      - DD_TRACE_GLOBAL_TAGS=workflow:agent-builder,scenario:dev-compose
-      - DD_SITE=datadoghq.com
-      - DD_AGENT_HOST=host.docker.internal
-      - DD_DYNAMIC_INSTRUMENTATION_ENABLED=true
-      - DD_CODE_ORIGIN_FOR_SPANS_ENABLED=true
-      - DD_LLMOBS_ENABLED=true
-      - DD_LLMOBS_ML_APP=vibecode-ai-dev
-      - DD_TRACE_ANALYTICS_ENABLED=true
-      - DD_APM_ENABLE_TRACE_SEARCH=true
+      - REDIS_URL=valkey://valkey:6379
+      - VALKEY_URL=valkey://valkey:6379
     stdin_open: true
     tty: true
     networks:
@@ -46,9 +36,26 @@ services:
     networks:
       - vibecode-network
 
+  # PostgreSQL database with pgvector extension
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: vibecode-postgres-dev
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=vibecode
+      - POSTGRES_PASSWORD=vibecode
+      - POSTGRES_DB=vibecode
+    volumes:
+      - postgres-data-dev:/var/lib/postgresql/data
+      - ./init-pgvector.sql:/docker-entrypoint-initdb.d/init-pgvector.sql
+    networks:
+      - vibecode-network
+
 networks:
   vibecode-network:
     driver: bridge
 
 volumes:
   valkey-data-dev:
+  postgres-data-dev:
