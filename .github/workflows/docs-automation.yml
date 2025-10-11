@@ -47,7 +47,7 @@ jobs:
         run: npm run docs:validate
 
       - name: Check for broken links
-        uses: lycheeverse/lychee-action@v1.9.0
+        uses: lycheeverse/lychee-action@v2.5.0
         with:
           args: --verbose --no-progress --exclude-loopback --exclude-private --exclude-mail --max-concurrency 5 --timeout 10 --exclude-path "node_modules|dist|.git" "docs/**/*.md" "*.md"
           fail: true
