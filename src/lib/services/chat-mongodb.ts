@@ -359,8 +359,12 @@ export class MongoDBChatService {
       }
     ]).toArray()
 
+<<<<<<< HEAD
     return (stats[0] as ChatStats) || {
       totalConversations: 0,
+=======
+    return (stats[0] as ChatStats) || {      totalConversations: 0,
+>>>>>>> fix/consolidated-dependency-updates
       totalMessages: 0,
       averageMessagesPerConversation: 0,
       modelsUsed: []

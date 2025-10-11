@@ -269,7 +269,10 @@ export class IntegrationTesting {
       });
 
       const response = await this.llm.invoke(formattedPrompt);
+<<<<<<< HEAD
 
+=======
+>>>>>>> fix/consolidated-dependency-updates
       // Parse AI response and create test suite
       const testSuite = this.parseTestSuiteResponse(response.content as string, systemDescription);
       return testSuite;

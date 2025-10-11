@@ -9,6 +9,7 @@ import { StringOutputParser } from '@langchain/core/output_parsers';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { z } from 'zod';
 import { FunctionDefinition } from '../services/function-calling';
+<<<<<<< HEAD
 import { logger } from '../logger';
 
 
@@ -47,6 +48,8 @@ export interface CodeAnalysis {
   bestPractices: string[];
   complexity: 'low' | 'medium' | 'high';
 }
+=======
+>>>>>>> fix/consolidated-dependency-updates
 
 export class NaturalLanguageToCode {
   private llm: ChatOpenAI;
@@ -239,8 +242,12 @@ Focus on creating a clear technical specification that can be used for code gene
 
     const chain = RunnableSequence.from([
       prompt,
+<<<<<<< HEAD
       this.llm as any,
       new StringOutputParser(),
+=======
+      this.llm as any,      new StringOutputParser(),
+>>>>>>> fix/consolidated-dependency-updates
     ]);
 
     const result = await chain.invoke({
@@ -301,8 +308,12 @@ Return only the code and explanations, no markdown formatting.
 
     const chain = RunnableSequence.from([
       prompt,
+<<<<<<< HEAD
       this.llm as any,
       new StringOutputParser(),
+=======
+      this.llm as any,      new StringOutputParser(),
+>>>>>>> fix/consolidated-dependency-updates
     ]);
 
     const result = await chain.invoke({
@@ -350,8 +361,12 @@ Make tests readable and maintainable.
 
     const chain = RunnableSequence.from([
       prompt,
+<<<<<<< HEAD
       this.llm as any,
       new StringOutputParser(),
+=======
+      this.llm as any,      new StringOutputParser(),
+>>>>>>> fix/consolidated-dependency-updates
     ]);
 
     const result = await chain.invoke({
@@ -397,8 +412,12 @@ Follow documentation best practices for the language.
 
     const chain = RunnableSequence.from([
       prompt,
+<<<<<<< HEAD
       this.llm as any,
       new StringOutputParser(),
+=======
+      this.llm as any,      new StringOutputParser(),
+>>>>>>> fix/consolidated-dependency-updates
     ]);
 
     const result = await chain.invoke({
@@ -450,6 +469,7 @@ Follow documentation best practices for the language.
     } else if (potentialChallenges.length <= 1 && requirements.length <= 2) {
       complexity = 'low';
     }
+<<<<<<< HEAD
     
     return {
       intent,
@@ -460,6 +480,8 @@ Follow documentation best practices for the language.
       bestPractices,
       complexity
     };
+=======
+>>>>>>> fix/consolidated-dependency-updates
   }
 
   /**
@@ -575,8 +597,12 @@ Return the refactored code and explanations.
 
     const chain = RunnableSequence.from([
       prompt,
+<<<<<<< HEAD
       this.llm as any,
       new StringOutputParser(),
+=======
+      this.llm as any,      new StringOutputParser(),
+>>>>>>> fix/consolidated-dependency-updates
     ]);
 
     const result = await chain.invoke({

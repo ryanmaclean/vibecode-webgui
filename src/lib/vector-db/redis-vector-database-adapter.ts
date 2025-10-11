@@ -6,9 +6,13 @@
 import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { metrics } from '../server-monitoring';
+<<<<<<< HEAD
+=======
+import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
+>>>>>>> fix/consolidated-dependency-updates
 
 /**
- * Redis specific configuration options
+ * Redis-specific configuration options
  */
 export interface RedisVectorDatabaseConfig extends VectorDatabaseConfig {
   provider: VectorDatabaseProvider.REDIS;
@@ -23,11 +27,15 @@ export interface RedisVectorDatabaseConfig extends VectorDatabaseConfig {
 }
 
 /**
- * Redis Vector Database Adapter
- * Implements vector database operations using Redis/ValKey with vector similarity
+ * Redis/ValKey Vector Database Adapter
+ * Implements vector database operations using Redis with RedisSearch and vector similarity
  */
 export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   private redis: any = null; // Redis client
+<<<<<<< HEAD
+=======
+  private errorHandler: VectorDbErrorHandler;
+>>>>>>> fix/consolidated-dependency-updates
   protected redisConfig: RedisVectorDatabaseConfig;
 
   /**
@@ -36,6 +44,10 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   constructor(config: RedisVectorDatabaseConfig) {
     super(config);
+<<<<<<< HEAD
+=======
+    this.errorHandler = new VectorDbErrorHandler('redis', this.config.enableLogging || false, this.config.enableMetrics || false);
+>>>>>>> fix/consolidated-dependency-updates
     this.redisConfig = {
       redisHost: process.env.REDIS_HOST || 'localhost',
       redisPort: parseInt(process.env.REDIS_PORT || '6379'),
@@ -74,8 +86,12 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         console.info('Redis vector database adapter initialized successfully');
       }
       
+<<<<<<< HEAD
       throw new Error('Redis adapter not yet implemented');
     } catch (error) {
+=======
+      throw this.errorHandler.handleError(new Error('Redis adapter not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);    } catch (error) {
+>>>>>>> fix/consolidated-dependency-updates
       if (this.config.enableLogging) {
         console.error('Failed to initialize Redis vector database adapter:', error);
       }
@@ -93,8 +109,12 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     tokens: number;
   }>): Promise<void> {
     if (!this.redis) {
+<<<<<<< HEAD
       throw new Error('Redis adapter not initialized');
     }
+=======
+      throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
+>>>>>>> fix/consolidated-dependency-updates
 
     try {
       // TODO: Implement Redis store chunks functionality
@@ -129,8 +149,12 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       //
       // await pipeline.exec();
       
+<<<<<<< HEAD
       throw new Error('Redis store chunks not yet implemented');
     } catch (error) {
+=======
+      throw this.errorHandler.handleError(new Error('Redis store chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);    } catch (error) {
+>>>>>>> fix/consolidated-dependency-updates
       if (this.config.enableMetrics) {
         metrics.increment('redis_vector_db.store_chunks.error');
       }
@@ -148,8 +172,12 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   public async search(embedding: number[], options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.redis) {
+<<<<<<< HEAD
       throw new Error('Redis adapter not initialized');
     }
+=======
+      throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
+>>>>>>> fix/consolidated-dependency-updates
 
     try {
       // TODO: Implement Redis vector similarity search
@@ -180,8 +208,12 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       //   'LIMIT', 0, limit
       // );
       
+<<<<<<< HEAD
       throw new Error('Redis vector search not yet implemented');
     } catch (error) {
+=======
+      throw this.errorHandler.handleError(new Error('Redis vector search not yet implemented'), 'unknown', VectorDbErrorType.SEARCH, false);    } catch (error) {
+>>>>>>> fix/consolidated-dependency-updates
       if (this.config.enableMetrics) {
         metrics.increment('redis_vector_db.search.error');
       }
@@ -199,8 +231,12 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   public async deleteFileChunks(fileId: number): Promise<void> {
     if (!this.redis) {
+<<<<<<< HEAD
       throw new Error('Redis adapter not initialized');
     }
+=======
+      throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
+>>>>>>> fix/consolidated-dependency-updates
 
     try {
       // TODO: Implement Redis delete chunks
@@ -211,8 +247,12 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       //   await this.redis.del(...chunkKeys);
       // }
       
+<<<<<<< HEAD
       throw new Error('Redis delete chunks not yet implemented');
     } catch (error) {
+=======
+      throw this.errorHandler.handleError(new Error('Redis delete chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);    } catch (error) {
+>>>>>>> fix/consolidated-dependency-updates
       if (this.config.enableMetrics) {
         metrics.increment('redis_vector_db.delete_chunks.error');
       }
@@ -234,8 +274,12 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     averageChunkSize: number;
   }> {
     if (!this.redis) {
+<<<<<<< HEAD
       throw new Error('Redis adapter not initialized');
     }
+=======
+      throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
+>>>>>>> fix/consolidated-dependency-updates
 
     try {
       // TODO: Implement Redis stats collection
@@ -256,8 +300,12 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       //   'REDUCE', 'COUNT', 0, 'AS', 'count'
       // );
       
+<<<<<<< HEAD
       throw new Error('Redis stats not yet implemented');
     } catch (error) {
+=======
+      throw this.errorHandler.handleError(new Error('Redis stats not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);    } catch (error) {
+>>>>>>> fix/consolidated-dependency-updates
       if (this.config.enableMetrics) {
         metrics.increment('redis_vector_db.get_stats.error');
       }
@@ -319,8 +367,12 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   protected async fallbackTextSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.redis) {
+<<<<<<< HEAD
       throw new Error('Redis adapter not initialized');
     }
+=======
+      throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
+>>>>>>> fix/consolidated-dependency-updates
 
     try {
       // TODO: Implement Redis text search fallback

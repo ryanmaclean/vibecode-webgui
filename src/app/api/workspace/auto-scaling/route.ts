@@ -214,10 +214,14 @@ export async function PUT(req: NextRequest) {
     await workspaceAutoScaler.registerWorkspace(
       registration.workspaceId, 
 <<<<<<< HEAD
+<<<<<<< HEAD
       registration.resources as any || {}
 =======
       workspaceResources
 >>>>>>> ai-sdk-openai-v2-test
+=======
+      registration.resources || {}
+>>>>>>> fix/consolidated-dependency-updates
     )
 
     // Initialize metrics for the workspace
@@ -286,6 +290,7 @@ export async function PATCH(req: NextRequest) {
     const config = configSchema.parse(body)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     workspaceAutoScaler.updateConfig(config as any)
 =======
     // Transform config to match AutoScalingConfig interface
@@ -308,6 +313,9 @@ export async function PATCH(req: NextRequest) {
 
     workspaceAutoScaler.updateConfig(autoScalingConfig)
 >>>>>>> ai-sdk-openai-v2-test
+=======
+    workspaceAutoScaler.updateConfig(config)
+>>>>>>> fix/consolidated-dependency-updates
 
     return NextResponse.json({
       status: 'success',

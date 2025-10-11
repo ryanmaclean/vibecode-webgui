@@ -1,7 +1,10 @@
 import { MultiAgentWorkflow, WorkflowStep, WorkflowResult } from './agents/multi-agent-workflow';
 import { PGVectorClient, COLLECTION_SCHEMAS } from './vector-stores/pgvector-client';
 import { OllamaClient, createOllamaClient, OLLAMA_MODELS } from './local/ollama-client';
+<<<<<<< HEAD
 // Temporarily disabled to fix build issues - TODO: Fix LangChain compatibility
+=======
+>>>>>>> fix/consolidated-dependency-updates
 // import { ChatOpenAI } from '@langchain/openai';
 // import { PromptTemplate } from '@langchain/core/prompts';
 // import { RunnableSequence } from '@langchain/core/runnables';
@@ -15,6 +18,10 @@ export interface ModelRecommendation {
   suitability: number; // 0-1
 }
 import { FunctionDefinition } from '../services/function-calling';
+<<<<<<< HEAD
+=======
+// import { SystemMessage, HumanMessage } from '@langchain/core/messages';
+>>>>>>> fix/consolidated-dependency-updates
 
 export interface AIProviderConfig {
   openai?: {
@@ -303,10 +310,17 @@ export class EnhancedAIManager {
       if (this.openaiClient) {
         const enhancedPrompt = `Generate ${language} code${framework ? ` using ${framework}` : ''} for the following requirements:\n\n${prompt}\n\nProvide complete, production-ready code with proper error handling and documentation.`;
         
+<<<<<<< HEAD
         const response = await this.openaiClient.invoke([
           { role: "system", content: `You are a senior ${language} developer. Generate clean, maintainable, and well-documented code.` },
           { role: "user", content: enhancedPrompt }
         ]);
+=======
+        // @ts-ignore - Direct message format for ChatOpenAI
+        const response = await this.openaiClient.invoke([
+          { role: "system", content: `You are a senior ${language} developer. Generate clean, maintainable, and well-documented code.` },
+          { role: "user", content: enhancedPrompt }        ]);
+>>>>>>> fix/consolidated-dependency-updates
 
         return {
           code: response.content,
@@ -328,9 +342,37 @@ export class EnhancedAIManager {
   createSimpleChain(
     systemPrompt: string,
     useLocalAI: boolean = false
+<<<<<<< HEAD
   ): any {
     throw new Error('createSimpleChain temporarily disabled due to build issues');
   }
+=======
+  ): RunnableSequence<any, any> {
+    const prompt = PromptTemplate.fromTemplate('{input}');
+    const outputParser = new StringOutputParser();
+
+    let model: ChatOpenAI;
+
+    if (useLocalAI && this.ollamaClient) {
+      model = this.ollamaClient.createLangChainClient();
+    } else if (this.openaiClient) {
+      model = this.openaiClient;
+    } else {
+      throw new Error('No AI provider available');
+    }
+
+    try {
+      // @ts-ignore - Type issue with RunnableSequence in current LangChain version
+      return RunnableSequence.from([
+        prompt,
+        model,
+        outputParser,
+      ]);
+    } catch (error) {
+      console.error('Failed to create chain:', error);
+      throw new Error('Failed to create AI chain');
+    }  }
+>>>>>>> fix/consolidated-dependency-updates
 
   /**
    * Get system status and health
@@ -422,8 +464,12 @@ export class EnhancedAIManager {
 
      // Sort by suitability
      return recommendations.sort((a, b) => b.suitability - a.suitability);
+<<<<<<< HEAD
    }
 }
+=======
+   }}
+>>>>>>> fix/consolidated-dependency-updates
 
 // Factory function to create enhanced AI manager
 export function createEnhancedAIManager(config: AIProviderConfig): EnhancedAIManager {

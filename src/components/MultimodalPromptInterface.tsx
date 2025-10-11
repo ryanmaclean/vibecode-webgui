@@ -98,6 +98,9 @@ export default function MultimodalPromptInterface({
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fix/consolidated-dependency-updates
       const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognitionAPI) {
         recognitionRef.current = new SpeechRecognitionAPI();
@@ -124,6 +127,7 @@ export default function MultimodalPromptInterface({
           setIsListening(false);
         };
       }
+<<<<<<< HEAD
 =======
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
@@ -150,6 +154,8 @@ export default function MultimodalPromptInterface({
         setIsListening(false);
       };
 >>>>>>> ai-sdk-openai-v2-test
+=======
+>>>>>>> fix/consolidated-dependency-updates
     }
   }, []);
 

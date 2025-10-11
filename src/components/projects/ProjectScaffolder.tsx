@@ -28,8 +28,12 @@ import { ProjectTemplate, FileTemplate } from '@/lib/project-templates'
 interface ProjectScaffolderProps {
   template: ProjectTemplate
   projectName: string
+<<<<<<< HEAD
   onGenerate?: (projectData: { files: GeneratedFile[]; name: string }) => void,
   onDownload?: (projectData: ProjectData) => void
+=======
+  onGenerate?: (projectData: { files: GeneratedFile[]; name: string }) => void,  onDownload?: (projectData: ProjectData) => void
+>>>>>>> fix/consolidated-dependency-updates
 }
 
 interface GeneratedFile {

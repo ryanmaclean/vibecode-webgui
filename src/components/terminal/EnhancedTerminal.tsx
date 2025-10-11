@@ -114,7 +114,10 @@ export default function EnhancedTerminal({
     terminal.current.loadAddon(addons.current.fit)
 
     // WebGL addon not available - using canvas renderer
+<<<<<<< HEAD
     // WebGL addon not available - using canvas renderer
+=======
+>>>>>>> fix/consolidated-dependency-updates
 
     addons.current.webLinks = new WebLinksAddon()
     terminal.current.loadAddon(addons.current.webLinks)
