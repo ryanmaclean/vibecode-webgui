@@ -52,11 +52,15 @@ const config = getValkeyConfig();
 
 // Create Valkey client with optimized settings (using Redis-compatible ioredis client)
 let valkeyClient: any = null;
+<<<<<<< HEAD
 
+=======
+>>>>>>> fix/consolidated-dependency-updates
 try {
   if (config.type === 'standard') {
     if ('url' in config) {
       // @ts-expect-error - ioredis constructor typing issue
+<<<<<<< HEAD
       valkeyClient = new Redis(config.url, {
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
@@ -71,6 +75,8 @@ try {
       });
     } else {
       // @ts-expect-error - ioredis constructor typing issue
+=======
+>>>>>>> fix/consolidated-dependency-updates
       valkeyClient = new Redis({
         host: config.host,
         port: config.port,
@@ -139,7 +145,10 @@ export const CacheTTL = {
  */
 export class ValkeyManager {
   private client: any;
+<<<<<<< HEAD
 
+=======
+>>>>>>> fix/consolidated-dependency-updates
   constructor() {
     this.client = valkeyClient;
   }
@@ -206,8 +215,12 @@ export class ValkeyManager {
       const keys = Array.isArray(key) ? key : [key];
       await this.client.del(...keys);
       
+<<<<<<< HEAD
       metrics.increment('cache.delete', { count: keys.length as any });
       return true;
+=======
+      metrics.increment('cache.delete', { count: keys.length as any });      return true;
+>>>>>>> fix/consolidated-dependency-updates
     } catch (error) {
       metrics.increment('cache.delete.error');
       console.error('Valkey delete error:', error);
@@ -260,8 +273,12 @@ export class ValkeyManager {
       }
       
       await pipeline.exec();
+<<<<<<< HEAD
       metrics.increment('cache.mset.success', { count: pairs.length as any });
       return true;
+=======
+      metrics.increment('cache.mset.success', { count: pairs.length as any });      return true;
+>>>>>>> fix/consolidated-dependency-updates
     } catch (error) {
       metrics.increment('cache.mset.error');
       console.error('Valkey mset error:', error);

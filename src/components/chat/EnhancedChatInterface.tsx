@@ -545,6 +545,9 @@ export const EnhancedChatInterface = ({
               />
               
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fix/consolidated-dependency-updates
               <Tooltip content="Attach files">
                 <Button
                   variant="outline"
@@ -564,6 +567,7 @@ export const EnhancedChatInterface = ({
                   disabled={isStreaming || (!input.trim() && attachedFiles.length === 0)}
                 >
                   <Send className="w-4 h-4" />
+<<<<<<< HEAD
                 </Button>
               </Tooltip>
 =======
@@ -587,6 +591,9 @@ export const EnhancedChatInterface = ({
                 <Send className="w-4 h-4" />
               </Button>
 >>>>>>> ai-sdk-openai-v2-test
+=======
+                </Button>              </Tooltip>
+>>>>>>> fix/consolidated-dependency-updates
             </div>
           </div>
         </CardContent>

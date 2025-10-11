@@ -5,9 +5,13 @@
 
 // Import ddtrace for LLM observability
 // NOTE: This must be imported before any other modules that use AI services
+<<<<<<< HEAD
 // Use createRequire for compatibility in ESM context
 import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
+=======
+// Using CommonJS require because '../instrument' exports via module.exports
+>>>>>>> fix/consolidated-dependency-updates
 const tracer = require('../instrument')
 import { Span } from 'dd-trace'
 import { getDatadogSite, getDatadogApiKey, getServiceEnvVersion } from '@/lib/monitoring/datadog-env'

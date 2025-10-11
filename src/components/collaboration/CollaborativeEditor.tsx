@@ -546,7 +546,11 @@ const CollaborativeEditor = forwardRef<EditorHandle, CollaborativeEditorProps>((
   )
 });
 
+<<<<<<< HEAD
 // Add display name for React DevTools
+=======
+// Add display name for the forwardRef component
+>>>>>>> fix/consolidated-dependency-updates
 CollaborativeEditor.displayName = 'CollaborativeEditor';
 
 // Export the component as the default export

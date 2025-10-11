@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+<<<<<<< HEAD
 import { logger } from '../../../../lib/logger';
+=======
+import { prismaPoolOptimizer } from '@/lib/db/connection-pool'
+>>>>>>> fix/consolidated-dependency-updates
 
 // import { prismaPoolOptimizer } from '@/lib/db/prisma-pool-optimizer'
 
