@@ -5,40 +5,42 @@ on:
     # Run every weekday at 9:00 AM UTC
     - cron: '0 9 * * 1-5'
   workflow_dispatch:
-<<<<<<< Updated upstream
-=======
     inputs:
       create_issue:
-        description: 'Create standup GitHub issue'
+        description: 'Create GitHub issue'
         required: false
-        default: 'true'
+        default: true
+        type: boolean
       post_to_slack:
-        description: 'Post report to Slack'
+        description: 'Post to Slack'
         required: false
-        default: 'true'
-      slack_channel:
-        description: 'Slack channel to post to'
-        required: false
-        default: '#standup'
+        default: false
+        type: boolean
 
 concurrency:
   group: standup-report
-  cancel-in-progress: true
->>>>>>> Stashed changes
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
 
 jobs:
   generate-standup:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Needed for git log
 
-      - name: Setup GitHub CLI
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
+      - name: Verify script exists
+        run: |
+          if [ ! -f scripts/standup-report.sh ]; then
+            echo "Error: scripts/standup-report.sh not found"
+            exit 1
+          fi
+          chmod +x scripts/standup-report.sh
 
       - name: Install GitHub CLI
         run: |
@@ -49,23 +51,101 @@ jobs:
           && sudo apt update \
           && sudo apt install gh -y
 
+      - name: Verify GitHub token permissions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Checking token permissions..."
+          gh auth status || (echo "GitHub authentication failed" && exit 1)
+
       - name: Generate Standup Report
         id: standup
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Create report
+          # Generate report content
           REPORT=$(./scripts/standup-report.sh)
-          
-          # Create a GitHub issue with the standup report
-          gh issue create \
-            --title "Standup Report $(date +'%Y-%m-%d')" \
+
+          if [ -z "$REPORT" ]; then
+            echo "Error: Report generation failed or returned empty content"
+            exit 1
+          fi
+
+          # Save report for later steps
+          echo "$REPORT" > /tmp/standup-report.md
+          echo "report-path=/tmp/standup-report.md" >> $GITHUB_OUTPUT
+
+          # Output summary
+          echo "### Standup Report Generated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "$REPORT" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create GitHub Issue
+        if: ${{ (github.event_name == 'schedule' || inputs.create_issue == true) }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPORT=$(cat /tmp/standup-report.md)
+          DATE=$(date +'%Y-%m-%d')
+
+          ISSUE_URL=$(gh issue create \
+            --title "Standup Report ${DATE}" \
             --body "$REPORT" \
-            --label "standup"
-          
-          # Post to Slack (if configured)
-          if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
-            echo "$REPORT" | jq -Rs --arg channel "#standup" '{channel: $channel, text: .}' | \
-            curl -X POST -H 'Content-type: application/json' \
-            --data @- "${{ secrets.SLACK_WEBHOOK_URL }}"
+            --label "standup,automated" \
+            --repo $GITHUB_REPOSITORY)
+
+          echo "issue-url=${ISSUE_URL}" >> $GITHUB_OUTPUT
+          echo "Created issue: ${ISSUE_URL}"
+          echo "### GitHub Issue Created" >> $GITHUB_STEP_SUMMARY
+          echo "Issue URL: ${ISSUE_URL}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Post to Slack
+        if: ${{ inputs.post_to_slack == true && secrets.SLACK_WEBHOOK_URL != '' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          REPORT=$(cat /tmp/standup-report.md)
+
+          # Convert markdown to Slack format (basic conversion)
+          SLACK_MESSAGE=$(echo "$REPORT" | sed 's/^## /*/' | sed 's/^### /_/')
+
+          # Post to Slack
+          RESPONSE=$(curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"${SLACK_MESSAGE}\"}" \
+            "${SLACK_WEBHOOK_URL}" \
+            -w "\n%{http_code}" -s)
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            echo "Successfully posted to Slack"
+            echo "### Slack Notification Sent" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Failed to post to Slack (HTTP ${HTTP_CODE})"
+            echo "### Slack Notification Failed" >> $GITHUB_STEP_SUMMARY
+            echo "HTTP Status: ${HTTP_CODE}" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Standup Report Workflow Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Report generated: ✅" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ inputs.create_issue }}" == "true" ] || [ "${{ github.event_name }}" == "schedule" ]; then
+            echo "- GitHub issue created: ✅" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- GitHub issue: skipped" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ inputs.post_to_slack }}" == "true" ]; then
+            if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+              echo "- Slack notification: ✅" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- Slack notification: ⚠️ skipped (webhook not configured)" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "- Slack notification: skipped" >> $GITHUB_STEP_SUMMARY
           fi

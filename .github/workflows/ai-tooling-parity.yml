@@ -53,14 +53,15 @@ jobs:
             arch: amd64
             runner: ubuntu-24.04
             platform_tag: linux_amd64
-          - os: ubuntu
-            arch: arm64
-            runner: ubuntu-24.04-arm64
-            platform_tag: linux_arm64
-          # Windows runner
+          # Note: ubuntu-24.04-arm64 requires GitHub Enterprise
+          # - os: ubuntu
+          #   arch: arm64
+          #   runner: ubuntu-24.04-arm64
+          #   platform_tag: linux_arm64
+          # Windows runner - using windows-2022 (windows-2025 not yet available)
           - os: windows
             arch: x64
-            runner: windows-2025
+            runner: windows-2022
             platform_tag: windows_x64
 
     outputs:
@@ -82,14 +83,16 @@ jobs:
 
       - name: Probe runtime environment (Unix)
         if: matrix.os != 'windows'
+        shell: bash
         run: |
           mkdir -p probe-results
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           cat > probe-results/${{ matrix.platform_tag }}.json <<EOF
           {
             "platform": "${{ matrix.os }}",
             "arch": "${{ matrix.arch }}",
             "runner": "${{ matrix.runner }}",
-            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "timestamp": "${TIMESTAMP}",
             "versions": {
               "node": "$(node --version)",
               "npm": "$(npm --version)",
@@ -158,8 +161,8 @@ jobs:
     name: CLI Smoke (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
     if: |
-      github.event_name == 'schedule' ||
-      (github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'smoke')
+      (github.event_name == 'schedule' && github.event.inputs.skip_windows != 'true') ||
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'smoke') && (matrix.os != 'windows' || github.event.inputs.skip_windows != 'true'))
     strategy:
       fail-fast: false
       matrix:
@@ -176,13 +179,14 @@ jobs:
             arch: amd64
             runner: ubuntu-24.04
             platform_tag: linux_amd64
-          - os: ubuntu
-            arch: arm64
-            runner: ubuntu-24.04-arm64
-            platform_tag: linux_arm64
+          # Note: ubuntu-24.04-arm64 requires GitHub Enterprise
+          # - os: ubuntu
+          #   arch: arm64
+          #   runner: ubuntu-24.04-arm64
+          #   platform_tag: linux_arm64
           - os: windows
             arch: x64
-            runner: windows-2025
+            runner: windows-2022
             platform_tag: windows_x64
 
     steps:
@@ -201,6 +205,7 @@ jobs:
 
       - name: Install aider (Unix)
         if: matrix.os != 'windows'
+        shell: bash
         run: |
           pip3 install --user aider-chat==${{ env.AIDER_VERSION }}
           echo "$HOME/.local/bin" >> $GITHUB_PATH
@@ -213,6 +218,7 @@ jobs:
 
       - name: Install goose (Unix)
         if: matrix.os != 'windows'
+        shell: bash
         run: |
           go install github.com/pressly/goose/v3/cmd/goose@latest
           echo "$HOME/go/bin" >> $GITHUB_PATH
@@ -225,22 +231,27 @@ jobs:
           echo "$env:USERPROFILE\go\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Smoke test - aider version
+        shell: bash
         run: aider --version
 
       - name: Smoke test - goose version
+        shell: bash
         run: goose -version
 
       - name: Save smoke test results
         shell: bash
         run: |
           mkdir -p test-results/smoke
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          AIDER_VER=$(aider --version)
+          GOOSE_VER=$(goose -version)
           cat > test-results/smoke/${{ matrix.platform_tag }}.txt <<EOF
           Platform: ${{ matrix.platform_tag }}
           Runner: ${{ matrix.runner }}
-          Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          Timestamp: ${TIMESTAMP}
 
-          AIDER_VERSION: $(aider --version)
-          GOOSE_VERSION: $(goose -version)
+          AIDER_VERSION: ${AIDER_VER}
+          GOOSE_VERSION: ${GOOSE_VER}
 
           Status: PASSED
           EOF
@@ -259,8 +270,8 @@ jobs:
     name: CLI Functional (${{ matrix.os }}-${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
     if: |
-      github.event_name == 'schedule' ||
-      (github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'functional')
+      (github.event_name == 'schedule' && github.event.inputs.skip_windows != 'true') ||
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'functional') && (matrix.os != 'windows' || github.event.inputs.skip_windows != 'true'))
     strategy:
       fail-fast: false
       matrix:
@@ -277,13 +288,14 @@ jobs:
             arch: amd64
             runner: ubuntu-24.04
             platform_tag: linux_amd64
-          - os: ubuntu
-            arch: arm64
-            runner: ubuntu-24.04-arm64
-            platform_tag: linux_arm64
+          # Note: ubuntu-24.04-arm64 requires GitHub Enterprise
+          # - os: ubuntu
+          #   arch: arm64
+          #   runner: ubuntu-24.04-arm64
+          #   platform_tag: linux_arm64
           - os: windows
             arch: x64
-            runner: windows-2025
+            runner: windows-2022
             platform_tag: windows_x64
 
     steps:
@@ -302,6 +314,7 @@ jobs:
 
       - name: Install tools (Unix)
         if: matrix.os != 'windows'
+        shell: bash
         run: |
           pip3 install --user aider-chat==${{ env.AIDER_VERSION }}
           go install github.com/pressly/goose/v3/cmd/goose@latest
@@ -351,18 +364,21 @@ jobs:
         shell: bash
         run: |
           mkdir -p test-results/functional
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          AIDER_LINES=$(wc -l < aider-help.txt | tr -d ' ')
+          GOOSE_LINES=$(wc -l < goose-status.txt | tr -d ' ')
           cat > test-results/functional/${{ matrix.platform_tag }}.txt <<EOF
           Platform: ${{ matrix.platform_tag }}
           Runner: ${{ matrix.runner }}
-          Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          Timestamp: ${TIMESTAMP}
 
           Test: aider --help
           Status: PASSED
-          Output Lines: $(wc -l < aider-help.txt)
+          Output Lines: ${AIDER_LINES}
 
           Test: goose status
           Status: PASSED
-          Output Lines: $(wc -l < goose-status.txt)
+          Output Lines: ${GOOSE_LINES}
 
           Overall Status: PASSED
           EOF
@@ -391,10 +407,11 @@ jobs:
             arch: amd64
             runner: ubuntu-24.04
             platform_tag: linux_amd64
-          - os: ubuntu
-            arch: arm64
-            runner: ubuntu-24.04-arm64
-            platform_tag: linux_arm64
+          # Note: ubuntu-24.04-arm64 requires GitHub Enterprise
+          # - os: ubuntu
+          #   arch: arm64
+          #   runner: ubuntu-24.04-arm64
+          #   platform_tag: linux_arm64
 
     steps:
       - name: Checkout repository
@@ -421,15 +438,18 @@ jobs:
 
       - name: Collect HAR files and latency metrics
         if: always()
+        shell: bash
         run: |
           mkdir -p test-results/har-${{ matrix.platform_tag }}
-          find test-results/playwright-${{ matrix.platform_tag }} -name "*.har" -exec cp {} test-results/har-${{ matrix.platform_tag }}/ \; || true
+          find test-results/playwright-${{ matrix.platform_tag }} -name "*.har" -exec cp {} test-results/har-${{ matrix.platform_tag }}/ \; 2>/dev/null || true
 
           # Extract latency metrics from test results
           if [ -f test-results/playwright-${{ matrix.platform_tag }}/results.json ]; then
             cat test-results/playwright-${{ matrix.platform_tag }}/results.json | \
               jq -r '.suites[].specs[].tests[] | "\(.title): \(.results[].duration)ms"' > \
-              test-results/latency-${{ matrix.platform_tag }}.txt || true
+              test-results/latency-${{ matrix.platform_tag }}.txt 2>/dev/null || echo "No latency data" > test-results/latency-${{ matrix.platform_tag }}.txt
+          else
+            echo "No test results found" > test-results/latency-${{ matrix.platform_tag }}.txt
           fi
 
       - name: Upload Playwright results
@@ -471,6 +491,7 @@ jobs:
 
       - name: Analyze parity
         id: parity
+        shell: bash
         run: |
           npm install --no-save js-yaml
           node scripts/ci/analyze-tooling-parity.js all-results > parity-report.md
@@ -483,16 +504,18 @@ jobs:
           fi
 
           # Count platforms tested
-          platform_count=$(find all-results -name "*.json" -o -name "*.txt" | wc -l)
+          platform_count=$(find all-results -name "*.json" -o -name "*.txt" | wc -l | tr -d ' ')
           echo "platform_count=$platform_count" >> $GITHUB_OUTPUT
 
       - name: Update minimum runtime documentation
+        shell: bash
         run: |
           mkdir -p docs/tooling
-          cat > docs/tooling/min-runtime.md <<'EOF'
+          TIMESTAMP=$(date -u +%Y-%m-%d)
+          cat > docs/tooling/min-runtime.md <<EOF
           # Minimum Runtime Requirements
 
-          _Last updated: $(date -u +%Y-%m-%d)_
+          _Last updated: ${TIMESTAMP}_
           _Generated from CI run: ${{ github.run_id }}_
 
           ## Verified Platforms
@@ -500,14 +523,14 @@ jobs:
           EOF
 
           # Append probe results
-          find all-results/probe-* -name "*.json" | while read probe; do
+          find all-results/probe-* -name "*.json" 2>/dev/null | while read probe; do
             platform=$(basename "$probe" .json)
             echo "### $platform" >> docs/tooling/min-runtime.md
             echo '```json' >> docs/tooling/min-runtime.md
             cat "$probe" >> docs/tooling/min-runtime.md
             echo '```' >> docs/tooling/min-runtime.md
             echo "" >> docs/tooling/min-runtime.md
-          done
+          done || echo "No probe results found" >> docs/tooling/min-runtime.md
 
       - name: Create GitHub issue on parity failure
         if: steps.parity.outputs.has_failures == 'true'
@@ -542,6 +565,7 @@ jobs:
 
       - name: Generate summary
         if: always()
+        shell: bash
         run: |
           cat parity-report.md >> $GITHUB_STEP_SUMMARY
 
@@ -559,18 +583,19 @@ jobs:
         env:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: ${{ secrets.DD_SITE }}
+        shell: bash
         run: |
           npm install -g @datadog/datadog-ci
 
           # Emit success/failure metrics per platform
-          find all-results -type d -name "smoke-*" | while read dir; do
+          find all-results -type d -name "smoke-*" 2>/dev/null | while read dir; do
             platform=$(basename "$dir" | sed 's/smoke-//' | sed "s/-${{ github.run_id }}//")
             if grep -q "Status: PASSED" "$dir"/*.txt 2>/dev/null; then
               datadog-ci metric --level info --name "ai_tooling.parity.smoke.success" --value 1 --tags "platform:$platform,repo:${{ github.repository }}"
             else
               datadog-ci metric --level error --name "ai_tooling.parity.smoke.failure" --value 1 --tags "platform:$platform,repo:${{ github.repository }}"
             fi
-          done
+          done || echo "No smoke test results found"
 
           # Overall parity status
           if [ "${{ steps.parity.outputs.has_failures }}" = "true" ]; then
@@ -599,15 +624,17 @@ jobs:
           path: reports
 
       - name: Generate nightly digest
+        shell: bash
         run: |
           mkdir -p docs/logs/ai-tooling-parity
           date_tag=$(date -u +%Y-%m-%d)
+          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
           cat > docs/logs/ai-tooling-parity/${date_tag}.md <<EOF
           # AI Tooling Parity Report - ${date_tag}
 
           **Workflow Run:** ${{ github.run_id }}
-          **Timestamp:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          **Timestamp:** ${TIMESTAMP}
 
           ## Summary
 
@@ -621,9 +648,11 @@ jobs:
 
       - name: Commit and push report (if on main)
         if: github.ref == 'refs/heads/main'
+        shell: bash
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add docs/logs/ai-tooling-parity/ docs/tooling/min-runtime.md
-          git commit -m "chore: add AI tooling parity report for $(date -u +%Y-%m-%d)" || echo "No changes to commit"
+          COMMIT_DATE=$(date -u +%Y-%m-%d)
+          git commit -m "chore: add AI tooling parity report for ${COMMIT_DATE}" || echo "No changes to commit"
           git push || echo "Push failed, report will be available in artifacts"
