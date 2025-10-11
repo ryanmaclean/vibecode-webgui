@@ -1,183 +1,186 @@
 /** @type {import('next').NextConfig} */
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const nextConfig = {
-  reactStrictMode: true,
-  output: 'standalone',
-  eslint: {
-    ignoreDuringBuilds: true, // Temporarily disable during builds
-    dirs: ['src'], // Only lint src directory for faster builds
-  },
-  typescript: {
-    ignoreBuildErrors: false, // Re-enable to check specific issues
-  },
-  images: {
-    unoptimized: true,
-  },
-
-  // Skip static analysis of API routes to prevent ERR_INVALID_URL during build
-  skipTrailingSlashRedirect: true,
-  skipMiddlewareUrlNormalize: true,
+  // Enable source maps in production for Datadog Dynamic Instrumentation
+  productionBrowserSourceMaps: true,
   
+  // Webpack configuration for source maps
+  webpack: (config, { dev, isServer }) => {
+    // Enable source maps in production
+    if (!dev) {
+      config.devtool = 'source-map'
+    }
 
+    config.resolve = config.resolve || {}
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      '@langchain/openai': require.resolve('./src/lib/ai/stubs/langchain-openai.ts'),
+      '@langchain/core/prompts': require.resolve('./src/lib/ai/stubs/langchain-prompts.ts'),
+      '@langchain/core/output_parsers': require.resolve('./src/lib/ai/stubs/langchain-output-parsers.ts'),
+      '@langchain/core/runnables': require.resolve('./src/lib/ai/stubs/langchain-runnables.ts'),
+      '@langchain/core/messages': require.resolve('./src/lib/ai/stubs/langchain-messages.ts'),
+      '@langchain/core/documents': require.resolve('./src/lib/ai/stubs/langchain-documents.ts'),
+    }
 
-  // Force app router and disable problematic features
-  experimental: {
-    // Disable ISR completely
-    isrFlushToDisk: false,
-  },
-  
-  trailingSlash: false,
-  generateBuildId: () => 'build',
-
-  // Remove basePath during build to avoid static generation conflicts  
-  basePath: process.env.BUILDING === 'true' ? '' : (process.env.NODE_ENV === 'production' ? '/vibecode-webgui' : ''),
-
-  // Security headers configuration
-  async headers() {
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    
-    // Base security headers
-    const securityHeaders = [
-      {
-        key: 'X-DNS-Prefetch-Control',
-        value: 'on'
-      },
-      {
-        key: 'Strict-Transport-Security',
-        value: 'max-age=63072000; includeSubDomains; preload'
-      },
-      {
-        key: 'X-XSS-Protection',
-        value: '1; mode=block'
-      },
-      {
-        key: 'X-Frame-Options',
-        value: 'SAMEORIGIN'
-      },
-      {
-        key: 'X-Content-Type-Options',
-        value: 'nosniff'
-      },
-      {
-        key: 'Referrer-Policy',
-        value: 'origin-when-cross-origin'
-      },
-      {
-        key: 'Permissions-Policy',
-        value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
-      },
-      {
-        key: 'Content-Security-Policy',
-        value: isDevelopment ? [
-          "default-src 'self'",
-          "script-src 'self' 'unsafe-eval' https://www.datadoghq-browser-agent.com https://cdn.jsdelivr.net",
-          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-          "font-src 'self' https://fonts.gstatic.com",
-          "img-src 'self' data: https: blob:",
-          "connect-src 'self' https://api.openrouter.ai https://api.openai.com https://api.anthropic.com https://browser-intake-datadoghq.com wss: ws: http://localhost:*",
-          "worker-src 'self' blob:",
-          "frame-src 'self'",
-          "object-src 'none'",
-          "base-uri 'self'",
-          "form-action 'self'",
-          "frame-ancestors 'self'"
-        ].join('; ') : [
-          "default-src 'self'",
-          "script-src 'self' https://www.datadoghq-browser-agent.com https://cdn.jsdelivr.net",
-          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-          "font-src 'self' https://fonts.gstatic.com",
-          "img-src 'self' data: https: blob:",
-          "connect-src 'self' https://api.openrouter.ai https://api.openai.com https://api.anthropic.com https://browser-intake-datadoghq.com wss: ws:",
-          "worker-src 'self' blob:",
-          "frame-src 'self'",
-          "object-src 'none'",
-          "base-uri 'self'",
-          "form-action 'self'",
-          "frame-ancestors 'self'",
-          "upgrade-insecure-requests",
-          "report-uri /api/security/csp-report"
-        ].join('; ')
+    // Configure fallbacks for client-side bundle
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...(config.resolve.fallback || {}),
+        fs: false,
+        tls: false,
+        net: false,
+        dns: false,
+        child_process: false,
+        os: false,
+        path: false,
+        crypto: false,
+        monacopilot: false,
       }
-    ];
+    }
 
+    // Optimize for production
+    if (!dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        // Keep source maps readable
+        minimize: true,
+      }
+      
+      // Preserve function names for better debugging via minimizer
+      if (config.optimization.minimizer) {
+        config.optimization.minimizer.forEach((minimizer) => {
+          if (minimizer.constructor.name === 'TerserPlugin') {
+            minimizer.options.terserOptions = {
+              ...minimizer.options.terserOptions,
+              keep_fnames: true,
+            }
+          }
+        })
+      }
+    }
+
+    // Exclude monaco-editor from Babel transpilation (it has complex regex that Babel can't process)
+    if (!dev && !isServer) {
+      const oneOfRule = config.module.rules.find((rule) => typeof rule.oneOf === 'object');
+
+      if (oneOfRule) {
+        const babelRule = oneOfRule.oneOf.find((rule) => {
+          return rule.use && rule.use.loader && rule.use.loader.includes('babel-loader');
+        });
+
+        if (babelRule) {
+          babelRule.exclude = [
+            /node_modules\/monaco-editor/,
+            ...(Array.isArray(babelRule.exclude) ? babelRule.exclude : [babelRule.exclude]).filter(Boolean)
+          ];
+        }
+      }
+    }
+
+    config.externals = config.externals || []
+
+    if (isServer) {
+      // Server-only externals
+      config.externals.push({
+        pg: 'commonjs pg',
+        'pg-native': 'commonjs pg-native',
+        'pg-connection-string': 'commonjs pg-connection-string',
+        'dd-trace': 'commonjs dd-trace',
+        '@datadog/libdatadog': 'commonjs @datadog/libdatadog',
+      })
+    }
+
+    return config
+  },
+
+  // Server external packages (moved from experimental)
+  serverExternalPackages: [
+    '@datadog/browser-rum',
+    'dd-trace',
+    '@datadog/libdatadog',
+  ],
+
+  // Environment variables for Datadog
+  env: {
+    DD_DYNAMIC_INSTRUMENTATION_ENABLED: process.env.DD_DYNAMIC_INSTRUMENTATION_ENABLED || 'false',
+    DD_PROFILING_ENABLED: process.env.DD_PROFILING_ENABLED || 'false',
+    DD_LOGS_INJECTION: process.env.DD_LOGS_INJECTION || 'false',
+    DD_TRACE_ENABLED: process.env.DD_TRACE_ENABLED || 'false',
+    DD_ENV: process.env.DD_ENV || 'development',
+    DD_SERVICE: process.env.DD_SERVICE || 'vibecode-webgui',
+    DD_VERSION: process.env.DD_VERSION || '1.0.0',
+  },
+
+  // Output configuration for standalone deployment
+  output: 'standalone',
+  
+  // Security headers
+  async headers() {
     return [
       {
         source: '/(.*)',
-        headers: securityHeaders
-      },
-      {
-        source: '/api/(.*)',
         headers: [
-          ...securityHeaders,
           {
-            key: 'Access-Control-Allow-Origin',
-            value: isDevelopment ? '*' : 'https://vibecode.dev'
+            key: 'X-Frame-Options',
+            value: 'DENY'
           },
           {
-            key: 'Access-Control-Allow-Methods',
-            value: 'GET, POST, PUT, DELETE, OPTIONS'
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
           },
           {
-            key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization, X-Requested-With, X-CSP-Nonce'
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
           },
           {
-            key: 'Access-Control-Max-Age',
-            value: '86400'
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
           }
         ]
       }
-    ];
+    ]
   },
-  async rewrites() {
+
+  // Redirect configuration
+  async redirects() {
     return [
       {
-        source: '/api/code-server/:path*',
-        destination:
-          process.env.NODE_ENV === 'development' && process.env.DOCKER === 'true'
-            ? 'http://code-server:8080/:path*'
-            : 'http://localhost:8080/:path*',
-      },
-    ];
+        source: '/health',
+        destination: '/api/health',
+        permanent: true
+      }
+    ]
   },
-  webpack: (config, { isServer }) => {
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      net: false,
-      tls: false,
-      fsevents: false,
-    };
 
-    // Explicitly handle path aliases
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': path.join(__dirname, 'src'),
-      pg: false,
-      redis: false,
-    };
+  // Image optimization
+  images: {
+    domains: ['localhost'],
+    formats: ['image/webp', 'image/avif'],
+  },
 
-    if (!isServer) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        pg: false,
-        redis: false,
-      };
+  // Compression
+  compress: true,
+  
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  
+  // Power-ups for production (swcMinify is now default)
+  
+  // Disable x-powered-by header
+  poweredByHeader: false,
+
+  // Custom build ID for better caching
+  generateBuildId: async () => {
+    // Use git commit hash if available, otherwise timestamp
+    if (process.env.GIT_COMMIT) {
+      return process.env.GIT_COMMIT
     }
-
-    // Fix for camelcase module causing webpack errors
-    config.module.rules.push({
-      test: /node_modules\/camelcase/,
-      use: 'null-loader'
-    });
-
-    return config;
+    return `build-${Date.now()}`
   },
-};
+}
 
-export default nextConfig;
+module.exports = nextConfig
