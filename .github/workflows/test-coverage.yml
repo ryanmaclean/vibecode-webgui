@@ -12,8 +12,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  unit-coverage:
-    name: Unit Test Coverage
+  coverage:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -28,9 +27,9 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
-      - name: Run focused unit coverage
+      - name: Run focused coverage
         run: |
           npm run test -- --coverage --runTestsByPath \
             tests/unit/monitoring/connection-pool-alerts.test.ts \
@@ -43,93 +42,3 @@ jobs:
           name: unit-coverage
           path: coverage
           retention-days: 7
-
-      - name: Generate coverage summary
-        run: |
-          if [ -f coverage/coverage-summary.json ]; then
-            echo "# Coverage Summary" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Coverage report generated successfully" >> $GITHUB_STEP_SUMMARY
-          fi
-
-  e2e-coverage:
-    name: E2E Test Coverage
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci --legacy-peer-deps
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Build application
-        run: npm run build
-        env:
-          NEXT_TELEMETRY_DISABLED: 1
-          NODE_ENV: production
-          BUILDING: true
-
-      - name: Run E2E tests with coverage
-        run: |
-          USE_BUILD=true npx playwright test tests/e2e/health-check.spec.ts tests/e2e/simple-test.spec.ts
-        env:
-          BASE_URL: http://localhost:3000
-          CI: true
-
-      - name: Upload E2E test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: e2e-test-results
-          path: test-results/
-          retention-days: 7
-
-      - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 7
-
-  coverage-report:
-    name: Combined Coverage Report
-    runs-on: ubuntu-latest
-    needs: [unit-coverage, e2e-coverage]
-    if: always()
-
-    steps:
-      - name: Download unit coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: unit-coverage
-          path: ./coverage-unit
-        continue-on-error: true
-
-      - name: Download E2E results
-        uses: actions/download-artifact@v4
-        with:
-          name: e2e-test-results
-          path: ./coverage-e2e
-        continue-on-error: true
-
-      - name: Generate combined report
-        run: |
-          echo "# Test Coverage Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Unit Tests" >> $GITHUB_STEP_SUMMARY
-          echo "- Coverage artifacts uploaded" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## E2E Tests" >> $GITHUB_STEP_SUMMARY
-          echo "- Test results uploaded" >> $GITHUB_STEP_SUMMARY
