@@ -63,7 +63,7 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
+            type=sha,format=short
             type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.title=VibeCode AgentAPI

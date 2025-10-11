@@ -97,17 +97,33 @@ spec:
               value: code-server
             - name: KUBERNETES
               value: "true"
+            - name: DD_SKIP_SSL_VALIDATION
+              value: "true"
           volumeMounts:
             - name: datadog-config
               mountPath: /etc/datadog-agent/datadog.yaml
               subPath: datadog.yaml
           resources:
             requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
               cpu: 200m
               memory: 256Mi
-            limits:
-              cpu: 500m
-              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5555
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 5555
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
       volumes:
         - name: workspace
           emptyDir: {}
