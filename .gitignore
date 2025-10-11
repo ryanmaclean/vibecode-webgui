@@ -1,299 +1,109 @@
-<<<<<<< HEAD
-# Dependencies
-node_modules/
-=======
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
-/node_modules
-/.pnp
+# Dependency directories
+node_modules/
+docs/node_modules/
+extensions/vibecode-ai-assistant/node_modules/
+.pnp
 .pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+.yarn/
+.npm/
+jspm_packages/
+bower_components/
 
-# testing
-/coverage
-/playwright-report/
-/test-results/
-/.test-results/
-/blob/
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
->>>>>>> merge-conflict-cleanup
-npm-debug.log*
-yarn-debug.log*
+# Package manager artefacts
+package-lock.json.merge
 yarn-error.log*
+npm-debug.log*
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-runtime/
-
-# Coverage directory used by tools like istanbul
+# Build outputs
+.next/
+out/
+dist/
+build/
+public/
+.nuxt/
+.vuepress/dist/
+.serverless/
+playwright-report/
+playwright-output/
 coverage/
 *.lcov
 
-# Archive directory for old test scripts and results
-archive/
+# Generated docs and assets
+docs/dist/
+.github/workflows.backup.*/
 
-# nyc test coverage
-.nyc_output
-
-# Grunt intermediate storage
-.grunt
-
-# Bower dependency directory
-bower_components
-
-# node-waf configuration
-.lock-wscript
-
-# Compiled binary addons
-build/Release
-
-# Dependency directories
-jspm_packages/
-
-# TypeScript cache
-*.tsbuildinfo
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Microbundle cache
+# Temporary or cached data
+.cache/
+.parcel-cache/
 .rpt2_cache/
 .rts2_cache_cjs/
 .rts2_cache_es/
 .rts2_cache_umd/
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# dotenv environment variables file
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.ab-testing
-
-# parcel-bundler cache
-.cache
-.parcel-cache
-
-# Next.js build output
-.next
-out/
-playwright-output/
-playwright-report/
-
-# Nuxt.js build / generate output
-.nuxt
-dist
-
-# Gatsby files
-.cache/
-public
-
-# Vuepress build output
-.vuepress/dist
-
-# Serverless directories
-.serverless/
-
-# FuseBox cache
-.fusebox/
-
-# DynamoDB Local files
+.eslintcache
+.nyc_output
 .dynamodb/
-
-# TernJS port file
+.fusebox/
 .tern-port
-
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
-
-# yarn v2
+.node_repl_history
 .yarn/cache
 .yarn/unplugged
 .yarn/build-state.yml
 .yarn/install-state.gz
-.pnp.*
 
-# IDE
+# Local tooling artefacts
+tmp/
+temp/
+.pre-commit-cache/
+.test-results/
+logs/
+!docs/logs/
+runtime/
+*.pid
+*.pid.lock
+.vscode-test/
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
+_tools/
 
-# OS
+# OS generated files
 .DS_Store
 .DS_Store?
-
-# Repo-local tooling installs
-_tools/
-datadog/trace-search/
 ._*
 .Spotlight-V100
 .Trashes
 ehthumbs.db
 Thumbs.db
 
-# Logs
-logs
-!docs/logs
-*.log
-
-# Temporary files
-tmp/
-temp/
-
-# Build artifacts
-bin/
-build/
-dist/
-<<<<<<< HEAD
-
-# Go specific
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
-go.work
-
-# Test artifacts
-coverage.xml
-test-results/
-tests/e2e/test-results/
-junit.xml
-
-# Performance test results
-tests/performance/results/
-
-# Docker
-.dockerignore
-
-# Kubernetes
-kubeconfig
-*.kubeconfig
-
-# Terraform/OpenTofu
-*.tfstate
-*.tfstate.*
-.terraform/
-.terraform.lock.hcl
-*.tfplan
-*.tfvars
-
-# Helm
-charts/*.tgz
-
-# Local development
-.local/
-.cache/
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Certificates
-*.pem
-*.key
-*.crt
-*.p12
-
-# Secrets
-secrets/
-*.secret
-
-# Backup files
-*.bak
-*.backup
-*.orig
-
-# Editor files
-*.sublime-*
-.atom/
-
-# MCP Server logs
-mcp-server.log
-*.mcp.log
-roundtable_mcp_server.log
-
-# Pydantic AI
-examples/pydantic-ai-cli-agent/workspace/
-examples/pydantic-ai-cli-agent/.env
-
-# Agent checkpoints
-.agent-state/
-*.checkpoint
-
-# Tauri
-src-tauri/target/
-src-tauri/Cargo.lock
-src-tauri/WixTools/
-
-=======
-downloads/
-eggs/
-.eggs/
-/lib/
-/lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# Virtual Environment
-venv/
-ENV/
+# Environment files
 .env
-.venv
-env/
-venv.bak/
-venv*/
+.env.*
 
-code-server/
+# Extension build outputs
+extensions/vibecode-ai-assistant/out/
+extensions/vibecode-ai-assistant/*.vsix
 
-# Web dashboard
-web-dashboard/node_modules/
-web-dashboard/dist/
-web-dashboard/.vite/
-web-dashboard/package-lock.json
-test-workspace/
->>>>>>> merge-conflict-cleanup
+# Repo specific temp data
+.temp/
+# Backup / logs / archives
+*.bak
+*.log
+!docs/logs/*.log
+.archive/
+*.tgz
+macos-vm/.build/
+src-tauri/swift/.build/
+infrastructure/**/secrets/
+k8s/secrets/
+
+# Terraform and IaC artefacts
+*.tfvars
+*.tfplan
+*.terraform.lock.hcl
+.terraform/
+**/.terraform/
+
+# Build metadata
+*.tsbuildinfo
+typecheck.log
