@@ -1,6 +1,6 @@
 ---
 title: VibeCode Testing Strategy
-description: Comprehensive testing strategy and workflows
+description: Comprehensive testing approach and methodology for VibeCode platform
 ---
 
 # VibeCode Testing Strategy
