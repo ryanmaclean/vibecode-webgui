@@ -60,7 +60,6 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: docs/package-lock.json
 
       - name: Install dependencies
         working-directory: ./docs
@@ -101,7 +100,6 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: docs/package-lock.json
 
       - name: Install dependencies
         working-directory: ./docs
@@ -109,7 +107,8 @@ jobs:
 
       - name: Lint documentation
         working-directory: ./docs
-        run: npm run astro check || true
+        run: npm run astro check
+        continue-on-error: true
 
       - name: Build documentation
         working-directory: ./docs
@@ -374,8 +373,8 @@ jobs:
   update-wiki:
     name: Update Documentation Wiki
     runs-on: ubuntu-latest
-    needs: [deploy-staging]
-    if: github.ref == 'refs/heads/main'
+    needs: [deploy-production]
+    if: github.ref == 'refs/heads/main' && needs.deploy-production.result == 'success'
     timeout-minutes: 5
     permissions:
       contents: write
@@ -385,20 +384,55 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create wiki files if needed
+        run: |
+          # Create WIKI_INDEX.md if it doesn't exist
+          if [ ! -f "docs/WIKI_INDEX.md" ]; then
+            {
+              echo "# VibeCode Documentation Wiki"
+              echo ""
+              echo "Last Updated: $(date +'%B %d, %Y')"
+              echo ""
+              echo "## Documentation Structure"
+              echo ""
+              echo "- [API Documentation](API.md)"
+              echo "- [Architecture](ARCHITECTURE.md)"
+              echo "- [Deployment Guide](DEPLOYMENT_GUIDE.md)"
+              echo "- [Development Guide](DEVELOPMENT.md)"
+              echo ""
+              echo "## Recent Updates"
+              echo ""
+              echo "See [DEPLOYMENT_LOG.md](DEPLOYMENT_LOG.md) for deployment history."
+            } > docs/WIKI_INDEX.md
+          fi
+
+          # Create DEPLOYMENT_LOG.md if it doesn't exist
+          if [ ! -f "docs/DEPLOYMENT_LOG.md" ]; then
+            echo "# Documentation Deployment Log" > docs/DEPLOYMENT_LOG.md
+            echo "" >> docs/DEPLOYMENT_LOG.md
+          fi
+
       - name: Update wiki index
         run: |
           # Update last modified date in wiki index
-          sed -i "s/\*\*Last Updated:\*\* .*/\*\*Last Updated:\*\* $(date +'%B %d, %Y')/g" WIKI_INDEX.md
-          
-          # Update documentation links if needed
-          echo "📚 Documentation updated on $(date)" >> docs/DEPLOYMENT_LOG.md
+          if [ -f "docs/WIKI_INDEX.md" ]; then
+            if grep -q "Last Updated:" docs/WIKI_INDEX.md; then
+              sed -i.bak "s/Last Updated: .*/Last Updated: $(date +'%B %d, %Y')/g" docs/WIKI_INDEX.md
+              rm -f docs/WIKI_INDEX.md.bak
+            fi
+          fi
+
+          # Update documentation deployment log
+          if [ -f "docs/DEPLOYMENT_LOG.md" ]; then
+            echo "Documentation deployed on $(date +'%Y-%m-%d %H:%M:%S UTC') - Commit: ${GITHUB_SHA:0:7}" >> docs/DEPLOYMENT_LOG.md
+          fi
 
       - name: Commit changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add .
-          git diff --staged --quiet || git commit -m "docs: Update documentation wiki [skip ci]"
+          git add docs/WIKI_INDEX.md docs/DEPLOYMENT_LOG.md
+          git diff --staged --quiet || git commit -m "docs: update documentation wiki [skip ci]"
           git push
 
   # Performance and accessibility testing
