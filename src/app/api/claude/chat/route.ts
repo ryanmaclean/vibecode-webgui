@@ -10,20 +10,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { getClaudeCliInstance } from '@/lib/claude-cli-integration'
-import { z } from 'zod'
+import { logger } from '../../../../lib/logger';
 
-// Security: Input validation schema
-const ClaudeChatRequestSchema = z.object({
-  message: z.string().min(1, 'Message cannot be empty').max(10000, 'Message too long'),
-  workspaceId: z.string()
-    .min(1, 'Workspace ID required')
-    .max(100, 'Workspace ID too long')
-    .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid workspace ID format'),
-  contextFiles: z.array(z.string()).optional().default([])
-    .refine((files) => files.every(f => !f.includes('..')), {
-      message: 'Path traversal detected in context files'
-    })
-})
+// import type { ClaudeCliRequest } from '@/lib/claude-cli-integration'
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,24 +25,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse and validate request body
+    // Parse request body
     const body = await request.json()
-    const validationResult = ClaudeChatRequestSchema.safeParse(body)
+    const { message, workspaceId, contextFiles } = body
 
-    if (!validationResult.success) {
+    if (!message || typeof message !== 'string') {
       return NextResponse.json(
-        {
-          error: 'Invalid request data',
-          details: validationResult.error.errors.map(e => ({
-            field: e.path.join('.'),
-            message: e.message
-          }))
-        },
+        { error: 'Message is required' },
         { status: 400 }
       )
     }
 
-    const { message, workspaceId, contextFiles } = validationResult.data
+    if (!workspaceId || typeof workspaceId !== 'string') {
+      return NextResponse.json(
+        { error: 'Workspace ID is required' },
+        { status: 400 }
+      )
+    }
 
     // Get workspace directory
     const workspaceDir = `/workspaces/${workspaceId}`
@@ -77,7 +65,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    // Server error logged
+    logger.error('Claude chat API error:', { error: error })
 
     return NextResponse.json(
       {
