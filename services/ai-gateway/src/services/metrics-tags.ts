@@ -1,45 +1,26 @@
-import { config } from '../config/environment';
-
 export function sanitizeTagValue(value: string | number | undefined | null): string {
-  const raw = String(value ?? 'unknown');
-  // Replace problematic characters and trim length to avoid cardinality explosions
-  return raw
-    .trim()
-    .replace(/[\s]+/g, '_')
-    .replace(/[:/|,=]/g, '_')
-    .slice(0, 128);
+  if (value === undefined || value === null) return 'unknown';
+  const s = String(value);
+  // Replace characters that often break tag cardinality or query semantics
+  return s.replace(/[^a-zA-Z0-9_.-]/g, '_');
 }
 
 export function kvTag(key: string, value: string | number | undefined | null): string {
-  return `${key}:${sanitizeTagValue(value as any)}`;
+  return `${key}:${sanitizeTagValue(value)}`;
 }
 
-function normalizeModel(input: string | undefined): { provider: string; family: string; full: string } {
-  const model = input || config.models.defaultModel || 'unknown/unknown';
-  const sanitized = model.replace(/[:/]/g, '_');
-  const [providerRaw, modelRaw] = model.split('/', 2);
-  const provider = (providerRaw || 'unknown').toLowerCase();
-  const modelId = modelRaw || providerRaw || 'unknown';
-  const parts = modelId.split('-');
-  const family = (parts.length >= 2 ? `${parts[0]}-${parts[1]}` : parts[0]).toLowerCase();
-  return { provider, family, full: sanitized };
-}
-
-/**
- * Build standardized tags for metrics emitted by controllers/services.
- * Note: env/service/version are automatically added by the Datadog client.
- */
-export function buildMetricTags(
-  base: { model?: string; operation?: string },
-  extra: string[] = []
-): string[] {
+export function buildMetricTags(opts: {
+  model?: string;
+  task?: string;
+  user?: string | number;
+  component?: string;
+  operation?: string;
+} = {}, extra: string[] = []): string[] {
   const tags: string[] = [];
-  if (base.operation) tags.push(kvTag('operation', base.operation));
-  if (base.model) {
-    const { provider, family } = normalizeModel(base.model);
-    tags.push(kvTag('model_provider', provider));
-    tags.push(kvTag('model_family', family));
-  }
-  if (extra.length) tags.push(...extra);
-  return tags;
+  if (opts.model) tags.push(kvTag('model', opts.model));
+  if (opts.task) tags.push(kvTag('task', opts.task));
+  if (opts.user) tags.push(kvTag('user', opts.user));
+  if (opts.component) tags.push(kvTag('component', opts.component));
+  if (opts.operation) tags.push(kvTag('operation', opts.operation));
+  return [...tags, ...extra];
 }
