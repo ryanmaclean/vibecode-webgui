@@ -339,6 +339,45 @@ export async function POST(request: NextRequest) {
           return close();
         } catch (error) {
           console.warn('WritableStream close error (expected in tests):', error.message);
+<<<<<<< HEAD
+=======
+        }
+        return; // Stop processing
+      }
+      const userId = session.user.id;
+
+      const body = await request.json();
+      const validatedData = generateProjectSchema.parse(body);
+      
+      // Generate unique workspace ID
+      const workspaceId = `ai-project-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+      
+      // Send initial progress
+      sendProgress('initializing', { 
+        message: 'Starting project generation...',
+        workspaceId,
+        timestamp: new Date().toISOString()
+      });
+
+      // Track timing for performance metrics
+      const startTime = Date.now();
+      
+      // Step 1: Generate project structure with AI
+      sendProgress('generating', { 
+        message: 'Generating project structure...',
+        progress: 20
+      });
+      
+      const projectStructure = await generateProjectWithAI(validatedData.prompt, {
+        language: validatedData.language,
+        framework: validatedData.framework,
+        features: validatedData.features,
+        onProgress: (progress: number, message: string) => {
+          sendProgress('generating', { 
+            message,
+            progress: 20 + Math.floor(progress * 0.6) // 20-80% for generation
+          });
+>>>>>>> merge-conflict-cleanup
         }
         return; // Stop processing
       }

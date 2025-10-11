@@ -87,7 +87,15 @@ export function TemplateMarketplace({ onSelectTemplate, selectedCategory }: Temp
 
   const handleSortChange = (sortBy: string) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
     setSearchOptions(prev => ({ ...prev, sortBy: sortBy as MarketplaceSearchOptions['sortBy'], offset: 0 }))
+=======
+    setSearchOptions(prev => ({ ...prev, sortBy: sortBy as MarketplaceSearchOptions['sortBy'], offset: 0 }))
+<<<<<<< HEAD
+    setSearchOptions(prev => ({ ...prev, sortBy: sortBy as any, offset: 0 }))
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
   }
 =======
     setSearchOptions(prev => ({ ...prev, sortBy: sortBy as MarketplaceSearchOptions['sortBy'], offset: 0 }))  }
@@ -113,6 +121,15 @@ export function TemplateMarketplace({ onSelectTemplate, selectedCategory }: Temp
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+  const renderStars = (rating: number, size = 4) => {
+    const stars = []
+    const fullStars = Math.floor(rating)
+    const hasHalfStar = rating % 1 >= 0.5
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
 =======
 >>>>>>> fix/consolidated-dependency-updates
@@ -121,6 +138,13 @@ export function TemplateMarketplace({ onSelectTemplate, selectedCategory }: Temp
         stars.push(
           <StarIconSolid key={i} className={`h-${size} w-${size} text-yellow-400`} />
         );
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        )
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       } else if (i === fullStars && hasHalfStar) {
         stars.push(
           <div key={i} className="relative">
@@ -136,6 +160,21 @@ export function TemplateMarketplace({ onSelectTemplate, selectedCategory }: Temp
     }
 
     return stars;
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        )
+      } else {
+        stars.push(
+          <StarIcon key={i} className={`h-${size} w-${size} text-gray-300`} />
+        )
+      }
+    }
+
+    return stars
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
   }
 
   const TemplateCard = ({ template }: { template: MarketplaceTemplate }) => (
@@ -313,7 +352,15 @@ export function TemplateMarketplace({ onSelectTemplate, selectedCategory }: Temp
               <select
                 value={searchOptions.pricing || 'all'}
 <<<<<<< HEAD
+<<<<<<< HEAD
                 onChange={(e) => setSearchOptions(prev => ({ ...prev, pricing: e.target.value as 'free' | 'paid' | 'all' | undefined }))}
+=======
+                onChange={(e) => setSearchOptions(prev => ({ ...prev, pricing: e.target.value as 'free' | 'paid' | 'all' | undefined }))}
+<<<<<<< HEAD
+                onChange={(e) => setSearchOptions(prev => ({ ...prev, pricing: e.target.value as any }))}
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
 =======
                 onChange={(e) => setSearchOptions(prev => ({ ...prev, pricing: e.target.value as 'free' | 'paid' | 'all' | undefined }))}                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"

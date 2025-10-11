@@ -6,8 +6,13 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+<<<<<<< HEAD
 import { useChat } from '../../hooks/useAI'
 import { useAuth } from '../../hooks/useAuth'
+=======
+import { useChat } from '@ai-sdk/react'
+import { useAuth } from '@/hooks/useAuth'
+>>>>>>> merge-conflict-cleanup
 
 interface CodeAssistantProps {
   workspaceId: string

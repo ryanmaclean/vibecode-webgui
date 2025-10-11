@@ -29,7 +29,14 @@ interface ProjectScaffolderProps {
   template: ProjectTemplate
   projectName: string
 <<<<<<< HEAD
+<<<<<<< HEAD
   onGenerate?: (projectData: { files: GeneratedFile[]; name: string }) => void,
+=======
+  onGenerate?: (projectData: { files: GeneratedFile[]; name: string }) => void
+=======
+  onGenerate?: (projectData: { files: GeneratedFile[]; name: string }) => void,
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
   onDownload?: (projectData: ProjectData) => void
 =======
   onGenerate?: (projectData: { files: GeneratedFile[]; name: string }) => void,  onDownload?: (projectData: ProjectData) => void
@@ -182,7 +189,19 @@ export function ProjectScaffolder({
     }
 
     setGeneratedFiles(files)
+<<<<<<< HEAD
     onGenerate?.({ files, name: projectName })
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+    onGenerate?.({ files: generatedFiles, name: projectName });
+    onGenerate?.({ files, name: projectName })
+    onGenerate?.({ files, name: projectName })
+=======
+    onGenerate?.({ files, name: projectName })
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
     setTimeout(() => {
       setIsGenerating(false)

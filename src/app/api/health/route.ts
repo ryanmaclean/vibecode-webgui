@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { createHealthResponse, createErrorResponseFromError, getErrorMessage } from '@/lib/api-utils'
 
 export async function GET() {
@@ -65,4 +66,14 @@ export async function GET() {
     }, { status: 503 })
 >>>>>>> ai-sdk-openai-v2-test
   }
+=======
+import { NextResponse } from 'next/server'
+
+export async function GET() {
+  return NextResponse.json({ 
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    service: 'vibecode-webgui'
+  })
+>>>>>>> merge-conflict-cleanup
 }

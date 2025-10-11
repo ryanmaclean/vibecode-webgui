@@ -117,6 +117,7 @@ export default function SimpleSignInForm() {
           onSubmit={handleSubmit}
         >
           {error && (
+<<<<<<< HEAD
             <div
               id="simple-signin-error"
               className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
@@ -124,6 +125,9 @@ export default function SimpleSignInForm() {
               aria-live="polite"
               data-testid="error-message"
             >
+=======
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert" data-testid="error-message">
+>>>>>>> merge-conflict-cleanup
               <strong className="font-bold">Error: </strong>
               <span className="block sm:inline">{error}</span>
             </div>

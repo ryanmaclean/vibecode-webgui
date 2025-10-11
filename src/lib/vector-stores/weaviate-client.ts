@@ -86,7 +86,15 @@ export class WeaviateVectorStore {
 <<<<<<< HEAD
         apiKey: apiKey,
 <<<<<<< HEAD
+<<<<<<< HEAD
         ...(openaiApiKey ? { additionalHeaders: { 'X-OpenAI-Api-Key': openaiApiKey } } : {})
+=======
+        ...(openaiApiKey ? { additionalHeaders: { 'X-OpenAI-Api-Key': openaiApiKey } } : {})
+<<<<<<< HEAD
+        headers: openaiApiKey ? { 'X-OpenAI-Api-Key': openaiApiKey } : undefined
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       })
 =======
         apiKey: apiKey

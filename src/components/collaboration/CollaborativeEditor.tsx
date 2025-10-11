@@ -16,6 +16,7 @@ import { EditorState, type Extension } from '@codemirror/state'
 import { javascript } from '@codemirror/lang-javascript'
 // TODO: Import real collaboration manager once TypeScript issues are resolved
 // import { collaborationManager, type CollaborationSession, type CollaborationUser } from '../../../lib/collaboration'
+<<<<<<< HEAD
 =======
 import { EditorState, Extension } from '@codemirror/state'
 // @ts-ignore - Missing dependency will be added later
@@ -30,6 +31,8 @@ import { css } from '@codemirror/lang-css'
 import { yCollab } from 'y-codemirror.next'
 // @ts-ignore - Missing dependency will be added later
 >>>>>>> ai-sdk-openai-v2-test
+=======
+>>>>>>> merge-conflict-cleanup
 import * as Y from 'yjs'
 
 type AwarenessState = {
@@ -547,10 +550,14 @@ const CollaborativeEditor = forwardRef<EditorHandle, CollaborativeEditorProps>((
 });
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Add display name for React DevTools
 =======
 // Add display name for the forwardRef component
 >>>>>>> fix/consolidated-dependency-updates
+=======
+// Add display name for React DevTools
+>>>>>>> merge-conflict-cleanup
 CollaborativeEditor.displayName = 'CollaborativeEditor';
 
 // Export the component as the default export

@@ -103,6 +103,7 @@ export default function Home() {
               >
                 Template Marketplace
               </Link>
+<<<<<<< HEAD
               <span className="text-sm text-muted-foreground">
                 Welcome, {user?.name || user?.email}
               </span>
@@ -112,6 +113,8 @@ export default function Home() {
               >
                 Logout
               </button>
+=======
+>>>>>>> merge-conflict-cleanup
               
               {/* User Menu */}
               <div className="relative" data-testid="user-menu">

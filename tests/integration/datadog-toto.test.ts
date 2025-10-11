@@ -7,6 +7,7 @@
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 
 // Mock datadog-toto since it's not available
+<<<<<<< HEAD
 jest.mock('datadog-toto', () => ({
   TotoTest: jest.fn().mockImplementation(() => ({
     startTest: jest.fn(),
@@ -17,6 +18,17 @@ jest.mock('datadog-toto', () => ({
 }));
 
 import { TotoTest } from 'datadog-toto';
+=======
+const mockTotoTest = {
+  startTest: jest.fn(),
+  endTest: jest.fn(),
+  addMetric: jest.fn(),
+  addTag: jest.fn()
+};
+
+// Create a mock TotoTest class
+const TotoTest = jest.fn().mockImplementation(() => mockTotoTest);
+>>>>>>> merge-conflict-cleanup
 
 // Only run these tests when explicitly enabled with real API key
 const shouldRunTests = 

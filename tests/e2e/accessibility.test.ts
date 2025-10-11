@@ -4,7 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { createTestHelpers } from './utils/test-helpers';
+import { createTestHelpers, TestHelpers } from './utils/test-helpers';
 
 test.describe('Accessibility Compliance', () => {
   
@@ -34,7 +34,7 @@ test.describe('Accessibility Compliance', () => {
     test('should maintain accessibility after user login', async ({ page }) => {
       const helpers = createTestHelpers(page);
       
-      await helpers.login();
+      await TestHelpers.loginAsTestUser(page, 'user');
       await helpers.waitForPageReady();
       
       // Check authenticated state accessibility
@@ -96,7 +96,7 @@ test.describe('Accessibility Compliance', () => {
     test('should support keyboard shortcuts and interactions', async ({ page }) => {
       const helpers = createTestHelpers(page);
       
-      await helpers.login();
+      await TestHelpers.loginAsTestUser(page, 'user');
       
       // Test common keyboard shortcuts
       const shortcuts = [
@@ -185,7 +185,7 @@ test.describe('Accessibility Compliance', () => {
     test('should have proper ARIA labels and descriptions', async ({ page }) => {
       const helpers = createTestHelpers(page);
       
-      await helpers.login();
+      await TestHelpers.loginAsTestUser(page, 'user');
       
       // Check for ARIA attributes
       const ariaElements = [
@@ -303,7 +303,7 @@ test.describe('Accessibility Compliance', () => {
     test('should manage focus properly in dynamic content', async ({ page }) => {
       const helpers = createTestHelpers(page);
       
-      await helpers.login();
+      await TestHelpers.loginAsTestUser(page, 'user');
       
       // Submit an AI prompt to create dynamic content
       await helpers.submitAIPrompt('Create a simple component');

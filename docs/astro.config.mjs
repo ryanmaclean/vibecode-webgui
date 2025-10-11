@@ -23,15 +23,17 @@ export default defineConfig({
           link: '/'
         },
         {
-          label: 'Getting Started',
-          link: '/getting-started/',
+          label: 'Latest Features',
+          link: '/new-features/',
           badge: 'New'
         },
         {
-          label: 'Quick Start',
+          label: 'Documentation',
           items: [
+            { label: 'Complete Wiki Index', link: '/wiki-index/' },
             { label: 'Getting Started', link: '/getting-started/' },
             { label: 'Developer Guide', link: '/developer-guide/' },
+            { label: 'Consolidated Docs', link: '/consolidated-documentation/' },
           ]
         },
         {
@@ -70,8 +72,13 @@ export default defineConfig({
         },
         {
           label: 'AI Integration',
-          collapsed: true,
-          autogenerate: { directory: 'ai-integration' }
+          collapsed: false,
+          items: [
+            { label: 'Enhanced AI Features', link: '/enhanced-ai-features/' },
+            { label: 'AI CLI Tools', link: '/ai-cli-tools/' },
+            { label: 'GenAI Integration', link: '/genai-integration/' },
+            { label: 'Missing AI Libraries', link: '/missing-ai-libraries/' },
+          ]
         },
         {
           label: 'Deployment',

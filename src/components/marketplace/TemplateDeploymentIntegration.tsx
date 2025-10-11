@@ -49,22 +49,44 @@ export function TemplateDeploymentIntegration({
       language: template.language || [],
       frameworks: template.frameworks || [],
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> merge-conflict-cleanup
       files: template.files || [],
       dependencies: template.dependencies || {},
       devDependencies: {},
       scripts: template.scripts || {},
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      envVars: template.envVars?.map(v => ({ name: v.name, value: v.defaultValue || '', description: v.description })) || [],
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       envVars: (template.envVars || []).map(env => ({
         name: env.name,
         value: env.defaultValue || '',
         description: env.description
       })),
+<<<<<<< HEAD
 =======
 >>>>>>> fix/consolidated-dependency-updates
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+      envVars: template.envVars || [],
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       setupInstructions: [
         'npm install',
         'npm run dev'
       ],
       documentation: {
+<<<<<<< HEAD
 <<<<<<< HEAD
         readme: `# ${template.name}
 
@@ -72,6 +94,13 @@ ${template.description}`,
         setup: Array.isArray(template.documentation?.setup) ? template.documentation.setup.join('\n') : 'Setup instructions',
         deployment: Array.isArray(template.documentation?.deployment) ? template.documentation.deployment.join('\n') : 'Deployment guide'
 =======
+=======
+<<<<<<< Updated upstream
+        readme: 'Template documentation',
+        setup: template.documentation?.setup?.join('\n') || 'Setup instructions',
+        deployment: template.documentation?.deployment?.join('\n') || 'Deployment guide'
+      documentation: {
+>>>>>>> merge-conflict-cleanup
         readme: (template.documentation as any)?.readme || `# ${template.name}\n\n${template.description}`,
         setup: Array.isArray(template.documentation?.setup) 
           ? template.documentation.setup.join('\n') 
@@ -79,7 +108,22 @@ ${template.description}`,
         deployment: Array.isArray(template.documentation?.deployment)
           ? template.documentation.deployment.join('\n')
           : template.documentation?.deployment || 'Deployment guide'
+<<<<<<< HEAD
 >>>>>>> fix/consolidated-dependency-updates
+=======
+<<<<<<< Updated upstream
+      documentation: template.documentation || {
+        readme: 'Template documentation',
+        setup: 'Setup instructions',
+        deployment: 'Deployment guide'
+=======
+        readme: `# ${template.name}
+
+${template.description}`,
+        setup: Array.isArray(template.documentation?.setup) ? template.documentation.setup.join('\n') : 'Setup instructions',
+        deployment: Array.isArray(template.documentation?.deployment) ? template.documentation.deployment.join('\n') : 'Deployment guide'
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       },
       createdAt: new Date(),
       estimatedTime: 15,
@@ -105,6 +149,13 @@ ${template.description}`,
 
   const renderStars = (rating: number, size = 4) => {
     const stars: React.ReactNode[] = []
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    const stars = []
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     const fullStars = Math.floor(rating)
     const hasHalfStar = rating % 1 >= 0.5
 
@@ -416,7 +467,15 @@ ${template.description}`,
     </div>
   )
 <<<<<<< HEAD
+<<<<<<< HEAD
 }
 =======
 }
 >>>>>>> fix/consolidated-dependency-updates
+=======
+}
+<<<<<<< HEAD
+}
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup

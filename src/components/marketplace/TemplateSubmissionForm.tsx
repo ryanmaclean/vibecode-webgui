@@ -26,7 +26,17 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
     name: '',
     description: '',
 <<<<<<< HEAD
+<<<<<<< HEAD
     category: 'frontend',
+=======
+    category: 'frontend',
+<<<<<<< HEAD
+    category: 'fullstack',
+    category: 'frontend',
+    category: 'fullstack',
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     complexity: 'beginner',
 =======
     category: 'frontend',    complexity: 'beginner',
@@ -124,6 +134,7 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           name: template.name || '',
           description: template.description || '',
           category: template.category || 'frontend',
+<<<<<<< HEAD
           complexity: template.complexity || 'beginner',
           tags: template.tags || [],
 <<<<<<< HEAD
@@ -133,10 +144,29 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           features: ['modern-setup', 'production-ready'],
           estimatedSetupTime: '15 minutes',
 >>>>>>> fix/consolidated-dependency-updates
+=======
+<<<<<<< HEAD
+          category: template.category || 'fullstack',
+          category: template.category || 'frontend',
+          category: template.category || 'fullstack',
+=======
+>>>>>>> main
+          complexity: template.complexity || 'beginner',
+          tags: template.tags || [],
+>>>>>>> merge-conflict-cleanup
           files: template.files || [],
           dependencies: template.dependencies || {},
           scripts: template.scripts || {},
           envVars: template.envVars || [],
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
           documentation: {
             setup: Array.isArray(template.documentation?.setup) ? template.documentation.setup : ['Setup instructions'],
             usage: Array.isArray(template.documentation?.usage) ? template.documentation.usage : ['Usage instructions'],
@@ -147,11 +177,37 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           frameworks: ['react', 'nextjs'],
           features: ['modern-setup', 'production-ready'],
           estimatedSetupTime: '15 minutes',
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
           dockerSupport: false,
           kubernetesSupport: false,
           cicdTemplate: false,
           testingSetup: false,
+<<<<<<< HEAD
           monitoringSetup: false
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+          monitoringSetup: false,
+          documentation: template.documentation || {
+            setup: [],
+            usage: [],
+            deployment: []
+          }
+<<<<<<< Updated upstream
+          monitoringSetup: false
+          monitoringSetup: false
+=======
+          monitoringSetup: false
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
         },
 =======
           dockerSupport: false,

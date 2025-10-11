@@ -4,7 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { createTestHelpers } from './utils/test-helpers';
+import { createTestHelpers, TestHelpers } from './utils/test-helpers';
 
 // Define test credentials
 const testCredentials = {
@@ -15,12 +15,12 @@ const testCredentials = {
 test.describe('Critical User Journeys', () => {
   // Define a setup function to create a fresh workspace
   async function setupWorkspace(page) {
-    const helpers = createTestHelpers(page);
-    await helpers.login();
-    
+    // Use systematic E2E authentication bypass (same as AI tests)
+    await TestHelpers.loginAsTestUser(page, 'user');
+
     // Create a new workspace for testing
     await page.goto('/workspaces');
-    await helpers.waitForPageReady();
+    await TestHelpers.waitForPageLoad(page);
     
     await page.click('[data-testid="create-workspace-button"]');
     
@@ -55,7 +55,7 @@ test.describe('Critical User Journeys', () => {
       // Login if not already authenticated
       const loginButton = page.locator('[href="/auth/login"]').first();
       if (await loginButton.isVisible()) {
-        await helpers.login();
+        await TestHelpers.loginAsTestUser(page, 'user');
       }
       
       await helpers.takeScreenshot('journey-1-authenticated');
@@ -179,7 +179,7 @@ test.describe('Critical User Journeys', () => {
       await helpers.checkAccessibility();
       
       // Complete login
-      await helpers.login();
+      await TestHelpers.loginAsTestUser(page, 'user');
       
       // Should reach main interface
       await expect(page).toHaveURL('/');
@@ -331,7 +331,7 @@ console.log(calculateTotal(products));`;
     test('should handle and recover from network failures gracefully', async ({ page }) => {
       const helpers = createTestHelpers(page);
       
-      await helpers.login();
+      await TestHelpers.loginAsTestUser(page, 'user');
       
       // Start normal operation
       await helpers.submitAIPrompt('Create a simple React button component');

@@ -35,6 +35,13 @@ interface CursorPosition {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+import { CollaborativeUser } from '@/lib/services/collaboration'
+
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 interface UseCollaborationProps {
   workspaceId: string
   conversationId?: string
@@ -56,8 +63,11 @@ interface CursorPosition {
   timestamp: Date
 }
 
+<<<<<<< HEAD
 =======
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
 export function useCollaboration({
   workspaceId,
   conversationId,
@@ -73,11 +83,22 @@ export function useCollaboration({
   const [connectionError, setConnectionError] = useState<string | null>(null)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   const socketRef = useRef<Socket | null>(null)
 =======
 >>>>>>> fix/consolidated-dependency-updates
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const cursorThrottleRef = useRef<NodeJS.Timeout | null>(null)
+=======
+  const socketRef = useRef<Socket | null>(null)
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const cursorThrottleRef = useRef<NodeJS.Timeout | null>(null)
+<<<<<<< HEAD
+  const typingTimeoutRef = useRef<NodeJS.Timeout>()
+  const cursorThrottleRef = useRef<NodeJS.Timeout>()
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
   // Initialize socket connection
   useEffect(() => {
@@ -193,11 +214,26 @@ export function useCollaboration({
     if (typingTimeoutRef.current !== null) {
       clearTimeout(typingTimeoutRef.current)
       typingTimeoutRef.current = null
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current)
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     }
     
     typingTimeoutRef.current = setTimeout(() => {
       stopTyping(conversationId)
     }, 3000) as NodeJS.Timeout
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    }, 3000)
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
   }, [socket, isConnected])
 
   const stopTyping = useCallback((conversationId: string) => {
@@ -208,6 +244,14 @@ export function useCollaboration({
     if (typingTimeoutRef.current !== null) {
       clearTimeout(typingTimeoutRef.current)
       typingTimeoutRef.current = null
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current)
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     }
   }, [socket, isConnected])
 
@@ -223,6 +267,14 @@ export function useCollaboration({
     cursorThrottleRef.current = setTimeout(() => {
       cursorThrottleRef.current = null
     }, 100) as NodeJS.Timeout // 10 FPS max
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+      cursorThrottleRef.current = undefined
+    }, 100) // 10 FPS max
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
   }, [socket, isConnected])
 
   // Get user info by ID
@@ -253,6 +305,13 @@ export function useCollaboration({
         current.filter(c => now.getTime() - c.timestamp.getTime() < 5000)
       )
     }, 5000) as NodeJS.Timeout
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    }, 5000)
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
     return () => clearInterval(cleanup)
   }, [])

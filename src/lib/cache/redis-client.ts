@@ -4,11 +4,17 @@
  */
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { metrics } from '../server-monitoring';
 import { RedisError } from './redis-error';
 import { LocalFallbackCache } from './local-fallback-cache';
 import { redisConnection, RedisClientType } from './redis-connection';
 =======
+=======
+/**
+ * Redis/Valkey client with enhanced type safety
+ */
+>>>>>>> merge-conflict-cleanup
 import { Redis } from 'ioredis';
 import { metrics } from '../server-monitoring';
 
@@ -57,8 +63,11 @@ interface RedisConnectionOptions {
 // Valkey configuration based on environment 
 // Note: Using Redis-compatible client libraries (ioredis) to connect to Valkey server
 const getValkeyConfig = () => {
+<<<<<<< HEAD
   const isProduction = process.env.NODE_ENV === 'production';
   
+=======
+>>>>>>> merge-conflict-cleanup
   // Upstash provides Redis-compatible API (acceptable for managed service)
   if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
     return {
@@ -89,11 +98,19 @@ const getValkeyConfig = () => {
 const config = getValkeyConfig();
 
 // Create Valkey client with optimized settings (using Redis-compatible ioredis client)
+<<<<<<< HEAD
 let redisClient: Redis | null = null;
+=======
+let redisClient: any = null;
+>>>>>>> merge-conflict-cleanup
 
 try {
   if (config.type === 'standard') {
     if ('url' in config) {
+<<<<<<< HEAD
+=======
+      // @ts-expect-error - ioredis constructor typing issue
+>>>>>>> merge-conflict-cleanup
       redisClient = new Redis(config.url, {
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
@@ -107,6 +124,10 @@ try {
         connectTimeout: 10000,
       });
     } else {
+<<<<<<< HEAD
+=======
+      // @ts-expect-error - ioredis constructor typing issue
+>>>>>>> merge-conflict-cleanup
       redisClient = new Redis({
         host: config.host,
         port: config.port,
@@ -125,16 +146,37 @@ try {
 
     // Event listeners for monitoring
     redisClient.on('connect', () => {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    redis.on('connect', () => {
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       console.log('Redis connected successfully');
       metrics.increment('redis.connection.success');
     });
 
     redisClient.on('error', (error) => {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    redis.on('error', (error) => {
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       console.error('Redis connection error:', error);
       metrics.increment('redis.connection.error');
     });
 
     redisClient.on('ready', () => {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    redis.on('ready', () => {
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       console.log('Redis client ready');
       metrics.increment('redis.ready');
     });
@@ -142,6 +184,13 @@ try {
 } catch (error) {
   console.warn('Redis client initialization failed:', error);
   redisClient = null;
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+  redis = null;
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 }
 >>>>>>> fix/consolidated-dependency-updates
 
@@ -176,6 +225,7 @@ export const CacheTTL = {
  */
 export class CacheManager {
 <<<<<<< HEAD
+<<<<<<< HEAD
   private redis: RedisClientType | null = null;
   private readonly localCache: LocalFallbackCache;
   private readonly useLocalFallback: boolean;
@@ -185,10 +235,22 @@ export class CacheManager {
     this.useLocalFallback = options.useLocalFallback;
     this.localCache = new LocalFallbackCache();
 =======
+=======
+>>>>>>> merge-conflict-cleanup
   private redis: any;
 
   constructor() {
     this.redis = redisClient;
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+  private redis: Redis | null;
+
+  constructor() {
+    this.redis = redis;
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
   }
 
   /**
@@ -238,9 +300,23 @@ export class CacheManager {
     if (!this.redis) return 0;
 
     try {
+<<<<<<< HEAD
       const result = await this.redis.del(...keys);
       metrics.increment('cache.delete');
       return result;
+=======
+      const keys = Array.isArray(key) ? key : [key];
+      await this.redis.del(...keys);
+      
+      metrics.increment('cache.delete', { count: keys.length as any });
+<<<<<<< HEAD
+      await this.redis.del(...keys);
+      
+      metrics.increment('cache.delete', { count: keys.length });
+=======
+>>>>>>> main
+      return true;
+>>>>>>> merge-conflict-cleanup
     } catch (error) {
       console.error('Cache delete error:', error);
       metrics.increment('cache.error');
@@ -279,7 +355,65 @@ export class CacheManager {
   }
 
   /**
+<<<<<<< HEAD
    * Get cache keys matching pattern
+=======
+   * Set multiple keys at once
+   */
+  async mset(pairs: Array<{ key: string; value: any; ttl?: number }>): Promise<boolean> {
+    if (!this.redis || pairs.length === 0) return false;
+
+    try {
+      const pipeline = this.redis.pipeline();
+      
+      for (const { key, value, ttl = CacheTTL.MEDIUM } of pairs) {
+        const serialized = JSON.stringify(value);
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+        // @ts-ignore - Type mismatch issue
+=======
+>>>>>>> main
+        pipeline.setex(key, ttl, serialized);
+      }
+      
+      await pipeline.exec();
+      metrics.increment('cache.mset.success', { count: pairs.length as any });
+<<<<<<< HEAD
+      metrics.increment('cache.mset.success', { count: pairs.length });
+=======
+>>>>>>> main
+      return true;
+    } catch (error) {
+      metrics.increment('cache.mset.error');
+      console.error('Cache mset error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Increment counter (useful for rate limiting, metrics)
+   */
+  async incr(key: string, ttl?: number): Promise<number> {
+    if (!this.redis) return 0;
+
+    try {
+      const value = await this.redis.incr(key);
+      
+      if (ttl && value === 1) {
+        // Set TTL only on first increment
+        await this.redis.expire(key, ttl);
+      }
+      
+      return value;
+    } catch (error) {
+      console.error('Cache incr error:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Get keys matching pattern
+>>>>>>> merge-conflict-cleanup
    */
   async keys(pattern: string): Promise<string[]> {
     if (!this.redis) return [];

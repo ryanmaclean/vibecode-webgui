@@ -12,8 +12,12 @@ import { VectorCacheInvalidator } from '../cache/vector-cache-invalidator';
 import { PgVectorSearch } from '../cache/pgvector-search';
 <<<<<<< HEAD
 =======
+<<<<<<< HEAD
 import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
 /**
  * PostgreSQL-specific configuration options
@@ -36,11 +40,15 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   protected postgresConfig: PostgresVectorDatabaseConfig;
   private cacheInvalidator: VectorCacheInvalidator | null = null;
 =======
+<<<<<<< HEAD
   private postgresConfig: PostgresVectorDatabaseConfig;
   private errorHandler: VectorDbErrorHandler;
   private cacheInvalidator: VectorCacheInvalidator | null = null;
   private pgVectorSearch: PgVectorSearch | null = null;
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
   /**
    * Constructor for PostgreSQL adapter
@@ -50,8 +58,12 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     super(config);
 <<<<<<< HEAD
 =======
+<<<<<<< HEAD
     this.errorHandler = new VectorDbErrorHandler('postgres', config.enableLogging || false, config.enableMetrics || false);
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     this.postgresConfig = {
       pgPoolSize: 10,
       pgSchemaName: 'public',
@@ -106,6 +118,12 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   private async verifyPgVectorExtension(): Promise<void> {
     if (!this.prisma) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('Prisma client not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('Prisma client not initialized');
     }
 =======
@@ -120,6 +138,12 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
 
       if (!Array.isArray(extensionResult) || extensionResult.length === 0) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+        throw this.errorHandler.handleError(new Error('pgVector extension is not installed in the database'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
         throw new Error('pgVector extension is not installed in the database');
       }
 =======
@@ -133,6 +157,12 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
 
       if (!Array.isArray(typeResult) || typeResult.length === 0) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+        throw this.errorHandler.handleError(new Error('Vector data type not found, pgVector extension may be incorrectly installed'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
         throw new Error('Vector data type not found, pgVector extension may be incorrectly installed');
       }
 =======
@@ -147,6 +177,12 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         console.error('pgVector extension verification failed:', error);
       }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error(`pgVector extension verification failed: ${error instanceof Error ? error.message : String(error)}`), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error(`pgVector extension verification failed: ${error instanceof Error ? error.message : String(error)}`);
     }
 =======
@@ -165,6 +201,12 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   }>): Promise<void> {
     if (!this.prisma) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('PostgreSQL adapter not initialized');
     }
 =======
@@ -241,6 +283,12 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   public async search(embedding: number[], options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.prisma) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('PostgreSQL adapter not initialized');
     }
 =======
@@ -544,6 +592,12 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   protected async fallbackTextSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.prisma) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('PostgreSQL adapter not initialized');
     }
 =======
@@ -615,6 +669,12 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   public async deleteFileChunks(fileId: number): Promise<void> {
     if (!this.prisma) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('PostgreSQL adapter not initialized');
     }
 =======
@@ -660,6 +720,12 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   }> {
     if (!this.prisma) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('PostgreSQL adapter not initialized');
     }
 =======
