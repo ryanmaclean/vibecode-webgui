@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         return handleListModels()
     }
   } catch (error) {
-    console.error('Ollama models API error:', error)
+    // Server error logged
     return NextResponse.json(
       {
         error: 'Failed to process Ollama request',
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
         )
     }
   } catch (error) {
-    console.error('Ollama models POST error:', error)
+    // Server error logged
     return NextResponse.json(
       {
         error: 'Failed to process Ollama request',

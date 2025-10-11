@@ -100,7 +100,7 @@ describe('ProjectGenerator', () => {
         status: 'error',
         progress: 0,
         message: 'Failed to generate project',
-        error: 'Network error',
+        error: 'Link error',
       },
       generateProject: mockGenerateProject,
       cancelGeneration: mockCancelGeneration,

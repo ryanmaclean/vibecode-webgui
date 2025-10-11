@@ -1,11 +1,16 @@
 /**
  * AI Chat API endpoint for VibeCode WebGUI
+<<<<<<< HEAD
  * Handles AI-powered assistance with optional RAG context and Datadog observability
+=======
+ * Handles AI-powered code assistance using Vercel AI SDK
+ * Now with proper authentication and security measures
+>>>>>>> ai-sdk-openai-v2-test
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-// import { getServerSession } from 'next-auth'
-// import { authOptions } from '@/lib/auth' // TODO: Add authentication when ready
+import { withAIAuth, AuthenticatedRequest } from '@/lib/auth/middleware'
+import { validateAIQuery } from '@/lib/security/input-validator'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -49,6 +54,7 @@ function logAIInteraction(
     }
   }
 
+<<<<<<< HEAD
   console.log(JSON.stringify(payload))
 }
 
@@ -84,6 +90,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(body, { status, ...(init || {}) })
   }
 
+=======
+  // Debug log removed);
+}
+
+async function handlePOST(request: AuthenticatedRequest) {
+  const startTime = Date.now();
+  
+>>>>>>> ai-sdk-openai-v2-test
   try {
     return await scope.activate(span, async () => {
       const allowTestBypass = process.env.ALLOW_UNAUTHENTICATED_AI_TESTS === 'true'
@@ -91,10 +105,41 @@ export async function POST(request: NextRequest) {
         ? { user: { id: 1, email: 'test-bypass@local' } }
         : null)
 
+<<<<<<< HEAD
       if (!session?.user) {
         logAIInteraction(request, 'chat_error', { error: 'Unauthorized' })
         return respond(401, { error: 'Unauthorized' })
       }
+=======
+    // Validate input using security validator
+    try {
+      validateAIQuery({
+        query: messages?.[messages.length - 1]?.content || '',
+        context: messages?.slice(0, -1).map((m: any) => m.content).join('\n'),
+        metadata: { model, stream, userId: request.user?.id }
+      });
+    } catch (validationError) {
+      logAIInteraction(request, 'chat_error', {
+        error: 'Input validation failed',
+        validationError: validationError instanceof Error ? validationError.message : 'Unknown validation error',
+        userId: request.user?.id,
+        model,
+      });
+
+      return NextResponse.json(
+        { error: 'Invalid input format or content' },
+        { status: 400 }
+      );
+    }
+
+    // Validate messages structure
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      logAIInteraction(request, 'chat_error', {
+        error: 'Invalid messages format',
+        userId: request.user?.id,
+        model,
+      });
+>>>>>>> ai-sdk-openai-v2-test
 
       const userId = parseUserId(session.user)
       if (!allowTestBypass && !userId) {
@@ -102,6 +147,7 @@ export async function POST(request: NextRequest) {
         return respond(401, { error: 'Invalid user session' })
       }
 
+<<<<<<< HEAD
       const body = (await request.json()) as ChatRequestBody
       const {
         messages,
@@ -112,6 +158,17 @@ export async function POST(request: NextRequest) {
         workspaceId,
         includeRag = true
       } = body
+=======
+    // Log the chat request
+    logAIInteraction(request, 'chat_request', {
+      model,
+      message_count: messages.length,
+      stream,
+      last_message_length: messages[messages.length - 1]?.content?.length || 0,
+      userId: request.user?.id,
+      userRole: request.user?.role,
+    });
+>>>>>>> ai-sdk-openai-v2-test
 
       const model = requestedModel || pickFreeModel()
 
@@ -120,11 +177,23 @@ export async function POST(request: NextRequest) {
         return respond(400, { error: 'Messages array is required' })
       }
 
+<<<<<<< HEAD
       if (stream) {
         return respond(400, {
           error: 'Streaming is not supported on this endpoint. Use /api/ai/litellm for streaming responses.'
         })
       }
+=======
+    // Log successful response
+    logAIInteraction(request, 'chat_response', {
+      model,
+      response_length: response.length,
+      processing_time_ms: processingTime,
+      stream,
+      userId: request.user?.id,
+      userRole: request.user?.role,
+    });
+>>>>>>> ai-sdk-openai-v2-test
 
       const lastUserMessage = [...messages].reverse().find(msg => msg.role === 'user')
       const userPrompt = lastUserMessage?.content ?? ''
@@ -215,7 +284,28 @@ export async function POST(request: NextRequest) {
           completion_tokens: 0,
           total_tokens: 0,
         },
+<<<<<<< HEAD
       };
+=======
+      ],
+      usage: {
+        prompt_tokens: messages.reduce((sum: number, msg: any) => sum + (msg.content?.length || 0), 0) / 4,
+        completion_tokens: response.length / 4,
+        total_tokens: (messages.reduce((sum: number, msg: any) => sum + (msg.content?.length || 0), 0) + response.length) / 4,
+      },
+      processing_time_ms: processingTime,
+      user: {
+        id: request.user?.id,
+        role: request.user?.role,
+      },
+    }, {
+      headers: {
+        'X-Processing-Time': processingTime.toString(),
+        'X-Model': model,
+        'X-User-ID': request.user?.id || 'anonymous',
+      },
+    });
+>>>>>>> ai-sdk-openai-v2-test
 
       const llmResponse: LiteLLMResponse = (fallbackResult && typeof fallbackResult === 'object' && 'response' in fallbackResult)
         ? (fallbackResult.response as LiteLLMResponse)
@@ -299,8 +389,19 @@ export async function POST(request: NextRequest) {
       })
     })
   } catch (error) {
+<<<<<<< HEAD
     const processingTime = Date.now() - startTime
     const message = error instanceof Error ? error.message : 'Unknown error'
+=======
+    const processingTime = Date.now() - startTime;
+    
+    logAIInteraction(request, 'chat_error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      processing_time_ms: processingTime,
+      userId: request.user?.id,
+      userRole: request.user?.role,
+    });
+>>>>>>> ai-sdk-openai-v2-test
 
     logAIInteraction(request, 'chat_error', {
       error: message,
@@ -319,3 +420,52 @@ export async function POST(request: NextRequest) {
     span.finish()
   }
 }
+<<<<<<< HEAD
+=======
+
+// Health check endpoint (authenticated)
+async function handleGET(request: AuthenticatedRequest) {
+  logAIInteraction(request, 'chat_request', {
+    type: 'health_check',
+    userId: request.user?.id,
+    userRole: request.user?.role,
+  });
+
+  return NextResponse.json({
+    status: 'healthy',
+    service: 'ai-chat-api',
+    timestamp: new Date().toISOString(),
+    user: {
+      id: request.user?.id,
+      role: request.user?.role,
+      email: request.user?.email,
+    },
+    available_models: [
+      'ai/smollm2:360M-Q4_K_M',
+      'ai/llama3.2:1b-Q4_K_M', 
+      'ai/qwen2.5-coder:1.5b-Q4_K_M',
+      'anthropic/claude-3.5-sonnet',
+      'openai/gpt-4-vision',
+      'google/gemini-2.0-flash',
+    ],
+    features: [
+      'authentication',
+      'authorization',
+      'input_validation',
+      'rate_limiting', 
+      'datadog_monitoring',
+      'security_logging',
+    ],
+    security: {
+      authenticated: true,
+      user_role: request.user?.role,
+      rate_limited: true,
+      input_validated: true,
+    },
+  });
+}
+
+// Export authenticated handlers
+export const POST = withAIAuth(handlePOST);
+export const GET = withAIAuth(handleGET);
+>>>>>>> ai-sdk-openai-v2-test

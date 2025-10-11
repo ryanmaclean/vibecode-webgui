@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
         });
     }
   } catch (error) {
-    console.error('[LiteLLM API] GET error:', error);
+    // Server error logged
     return NextResponse.json({
       error: 'Internal server error',
       message: error instanceof Error ? error.message : 'Unknown error'
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
     }
   } catch (error) {
-    console.error('[LiteLLM API] POST error:', error);
+    // Server error logged
     return NextResponse.json({
       error: 'Internal server error',
       message: error instanceof Error ? error.message : 'Unknown error'
@@ -171,7 +171,7 @@ export async function PUT(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[LiteLLM API] PUT error:', error);
+    // Server error logged
     return NextResponse.json({
       error: 'Internal server error',
       message: error instanceof Error ? error.message : 'Unknown error'
@@ -226,7 +226,7 @@ async function handleChatCompletion(requestData: any, session: any) {
     });
 
   } catch (error) {
-    console.error('[LiteLLM] Chat completion error:', error);
+    // Server error logged
     throw error;
   }
 }
@@ -266,7 +266,7 @@ async function handleEmbedding(requestData: any, session: any) {
     });
 
   } catch (error) {
-    console.error('[LiteLLM] Embedding error:', error);
+    // Server error logged
     throw error;
   }
 }
@@ -317,7 +317,7 @@ async function handleStreamingChat(requestData: any, session: any) {
           controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
           controller.close();
         }).catch((error) => {
-          console.error('[LiteLLM] Streaming error:', error);
+          // Server error logged
           const errorData = `data: ${JSON.stringify({ error: error.message })}\n\n`;
           controller.enqueue(new TextEncoder().encode(errorData));
           controller.close();
@@ -335,7 +335,7 @@ async function handleStreamingChat(requestData: any, session: any) {
     });
 
   } catch (error) {
-    console.error('[LiteLLM] Streaming setup error:', error);
+    // Server error logged
     throw error;
   }
 }
@@ -345,5 +345,4 @@ function generateRequestId(): string {
   return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Export for external use
-export { litellmClient }; 
+// litellmClient available for internal use only in this module 

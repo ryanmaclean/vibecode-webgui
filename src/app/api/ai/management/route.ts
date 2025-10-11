@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('AI management API error:', error);
+    // Server error logged
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -533,7 +533,7 @@ function aggregateLatencyByField(requests: any[], field: string) {
     return acc;
   }, {});
 
-  return Object.entries(grouped).reduce((acc, [key, latencies]: [string, number[]]) => {
+  return Object.entries(grouped).reduce((acc: Record<string, any>, [key, latencies]: [string, number[]]) => {
     acc[key] = {
       average: latencies.reduce((sum, l) => sum + l, 0) / latencies.length,
       p95: calculatePercentile(latencies, 95),

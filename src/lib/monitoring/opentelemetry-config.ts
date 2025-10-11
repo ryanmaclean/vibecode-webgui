@@ -131,7 +131,7 @@ function createMetricReaders(): any[] {
         port: Number(process.env.PROMETHEUS_PORT) || 9090,
         endpoint: '/metrics',
       }));
-      console.log('✅ Prometheus metrics exporter enabled on port 9090');
+      // Debug log removed
     } catch (error) {
       console.warn('⚠️ Failed to create Prometheus exporter:', (error as Error).message);
     }
@@ -148,7 +148,7 @@ function createMetricReaders(): any[] {
         }),
         exportIntervalMillis: 30000, // 30 seconds
       }));
-      console.log('✅ OTLP metrics exporter enabled');
+      // Debug log removed
     } catch (error) {
       console.warn('⚠️ Failed to create OTLP metrics exporter:', (error as Error).message);
     }
@@ -193,11 +193,11 @@ export function initializeOpenTelemetry(): boolean {
     process.env.OTEL_ENABLED === 'false' ||
     process.env.SKIP_MONITORING === 'true'
   ) {
-    console.log('⏭️ OpenTelemetry initialization skipped');
+    // Debug log removed
     return false;
   }
   
-  console.log('🔧 Initializing OpenTelemetry...');
+  // Debug log removed
   
   // Initialize imports
   if (!initializeOtelImports()) {
@@ -238,12 +238,14 @@ export function initializeOpenTelemetry(): boolean {
     // Start the SDK
     sdk.start();
     
-    console.log('✅ OpenTelemetry initialized successfully');
+    // Debug log removed
     
     // Register shutdown handlers
     process.on('SIGTERM', () => {
       sdk.shutdown()
-        .then(() => console.log('🛑 OpenTelemetry terminated'))
+        .then(() => {
+          // OpenTelemetry terminated  
+        })
         .catch((error) => console.error('❌ Error terminating OpenTelemetry', error))
         .finally(() => process.exit(0));
     });

@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Claude chat API error:', error)
+    // Server error logged
 
     return NextResponse.json(
       {

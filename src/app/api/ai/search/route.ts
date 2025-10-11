@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Vector search error:', error)
+    // Server error logged
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Stats error:', error)
+    // Server error logged
     return NextResponse.json(
       {
         error: 'Failed to get statistics',

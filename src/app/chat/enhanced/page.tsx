@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { MessageSquare, Bot, Zap, FileText, Globe, Terminal, Code, Package, Search, Sparkles } from 'lucide-react'
+import { MessageSquare, Bot, Zap, FileText, Link, Terminal, Code, Package, Search, Sparkles } from 'lucide-react'
 
 export default function EnhancedChatPage() {
   const [conversationId, setConversationId] = useState<string>()
@@ -35,15 +35,15 @@ export default function EnhancedChatPage() {
       if (data.success && data.conversation) {
         setConversationId(data.conversation.id)
       } else {
-        console.error('Failed to create conversation:', data.error)
+        // Failed to create conversation
       }
     } catch (error) {
-      console.error('Error creating conversation:', error)
+      // Error creating conversation
     }
   }
 
   const handleFileUpload = (files: FileList) => {
-    console.log('Files uploaded to enhanced chat:', Array.from(files).map(f => f.name))
+    // Files uploaded to enhanced chat
   }
 
   const demoQueries = {
@@ -54,7 +54,7 @@ export default function EnhancedChatPage() {
     ],
     functions: [
       "Can you create a new file called 'utils.ts' with some helper functions?",
-      "Execute this JavaScript code: console.log('Hello, World!')",
+      "Execute this JavaScript code: // Debug log removed",
       "Install the lodash package using npm",
       "List all files in my workspace"
     ],
@@ -113,7 +113,7 @@ export default function EnhancedChatPage() {
                 </div>
               </div>
               <div className="flex items-center space-x-2 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                <Globe className="w-6 h-6 text-purple-600" />
+                <Link className="w-6 h-6 text-purple-600" />
                 <div>
                   <div className="font-semibold text-sm">Web Search</div>
                   <div className="text-xs text-gray-600">Real-time Info</div>
@@ -137,7 +137,7 @@ export default function EnhancedChatPage() {
                   <span>RAG</span>
                 </TabsTrigger>
                 <TabsTrigger value="web" className="flex items-center space-x-1">
-                  <Globe className="w-4 h-4" />
+                  <Link className="w-4 h-4" />
                   <span>Web Search</span>
                 </TabsTrigger>
               </TabsList>

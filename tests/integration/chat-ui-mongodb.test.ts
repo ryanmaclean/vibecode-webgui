@@ -55,27 +55,41 @@ describeIf('Chat-UI MongoDB Integration', () => {
   let testWorkspaceId: string
 
   beforeAll(async () => {
-    // Connect to test MongoDB instance
-    mongoClient = new MongoClient(MONGO_URL)
-    await mongoClient.connect()
-    db = mongoClient.db(TEST_DB_NAME)
-    
-    // Get collections
-    conversationsCollection = db.collection('conversations')
-    sessionsCollection = db.collection('sessions')
-    assistantsCollection = db.collection('assistants')
+    try {
+      mongoClient = new MongoClient(MONGO_URL)
+      await mongoClient.connect()
+      db = mongoClient.db(TEST_DB_NAME)
+      
+      // Get collections
+      conversationsCollection = db.collection('conversations')
+      sessionsCollection = db.collection('sessions')
+      assistantsCollection = db.collection('assistants')
 
-    console.log('✅ Connected to test MongoDB instance')
-  })
+      console.log('✅ Connected to test MongoDB instance')
+    } catch (error) {
+      console.log('⚠️ MongoDB not available, skipping integration tests')
+      // Skip all tests in this suite
+      throw new Error('SKIP_TESTS')
+    }
+  }, 5000)
 
   afterAll(async () => {
-    // Clean up test database
-    await db.dropDatabase()
-    await mongoClient.close()
-    console.log('🧹 Cleaned up test database')
+    // Clean up test database if connected
+    if (mongoClient && db) {
+      try {
+        await db.dropDatabase()
+        await mongoClient.close()
+        console.log('🧹 Cleaned up test database')
+      } catch (error) {
+        console.log('⚠️ Error cleaning up test database:', error)
+      }
+    }
   })
 
   beforeEach(async () => {
+    // Skip if MongoDB not available
+    if (!sessionsCollection) return
+    
     // Generate unique test identifiers
     testSessionId = `session-${uuidv4()}`
     testUserId = `user-${uuidv4()}`
@@ -93,9 +107,15 @@ describeIf('Chat-UI MongoDB Integration', () => {
   })
 
   afterEach(async () => {
-    // Clean up test data after each test
-    await conversationsCollection.deleteMany({ sessionId: testSessionId })
-    await sessionsCollection.deleteMany({ sessionId: testSessionId })
+    // Clean up test data after each test if collections exist
+    if (conversationsCollection && sessionsCollection) {
+      try {
+        await conversationsCollection.deleteMany({ sessionId: testSessionId })
+        await sessionsCollection.deleteMany({ sessionId: testSessionId })
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+    }
   })
 
   describe('Session Management', () => {

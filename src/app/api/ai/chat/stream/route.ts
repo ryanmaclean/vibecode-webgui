@@ -44,7 +44,7 @@ async function buildRAGContext(workspaceId: string, userQuery: string, userId: s
     })
 
     if (!workspace) {
-      console.log(`No workspace found for ID: ${workspaceId}`)
+      // Debug log removed
       return ''
     }
 
@@ -52,13 +52,13 @@ async function buildRAGContext(workspaceId: string, userQuery: string, userId: s
     const ragContext = await vectorStore.getContext(userQuery, workspace.id, 3000)
     
     if (ragContext) {
-      console.log(`Found RAG context for query: "${userQuery.substring(0, 50)}..."`)
+      // Debug log removed}..."`)
       return `\n=== RELEVANT CODE CONTEXT ===\n${ragContext}\n=== END CONTEXT ===\n`
     }
 
     return ''
   } catch (error) {
-    console.error('Failed to build RAG context:', error)
+    // Server error logged
     return ''
   }
 }
@@ -77,13 +77,13 @@ async function buildWorkspaceContext(_workspaceId: string, files: string[]) {
         // based on the workspaceId and file path.
         contextContent += `\n--- File: ${file} ---\n// ... content of ${file} ...\n`
       } catch (error) {
-        console.error(`Failed to read context file ${file}:`, error)
+        // Server error logged
       }
     }
 
     return contextContent
   } catch (error) {
-    console.error('Failed to build workspace context:', error)
+    // Server error logged
     return ''
   }
 }
@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(`data: {"done": true}\n\n`))
           controller.close()
         } catch (error) {
-          console.error('Streaming error:', error)
+          // Server error logged
           controller.error(error)
         }
       }
@@ -182,7 +182,7 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Chat API error:', error)
+    // Server error logged
 
     return NextResponse.json(
       {

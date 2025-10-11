@@ -10,9 +10,9 @@ import dynamic from 'next/dynamic'
 import { useSession } from 'next-auth/react'
 import { BarChart, LineChart, PieChart, XAxis, YAxis, Tooltip, Legend, Line, Bar, Pie, Cell, ResponsiveContainer } from 'recharts'
 
-// Dynamically import the NetworkDiagnostics component with no SSR
-const NetworkDiagnostics = dynamic(
-  () => import('@/components/NetworkDiagnostics/NetworkDiagnostics').then(mod => mod.default),
+// Dynamically import the LinkDiagnostics component with no SSR
+const LinkDiagnostics = dynamic(
+  () => import('@/components/LinkDiagnostics/LinkDiagnostics').then(mod => mod.default),
   { ssr: false }
 );
 
@@ -253,7 +253,7 @@ export default function MonitoringDashboard() {
                 </ResponsiveContainer>
               </div>
               <div className="bg-white p-4 rounded-lg shadow">
-                <h4 className="font-medium mb-4">Network I/O</h4>
+                <h4 className="font-medium mb-4">Link I/O</h4>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={metrics.network.history}>
                     <XAxis dataKey="time" fontSize={12} />
@@ -337,8 +337,12 @@ export default function MonitoringDashboard() {
       case 'security':
         return <div className="text-center p-8 bg-white rounded-lg shadow">Security monitoring coming soon.</div>;
       case 'network':
+<<<<<<< HEAD
         return <NetworkDiagnostics />;
         return <div className="text-center p-8 bg-white rounded-lg shadow">Network diagnostics coming soon.</div>;
+=======
+        return <LinkDiagnostics />;
+>>>>>>> ai-sdk-openai-v2-test
       case 'health':
         return enhancedData && (
           <div className="space-y-6">

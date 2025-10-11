@@ -183,7 +183,7 @@ build_application() {
     
     # Install dependencies
     log "Installing dependencies..."
-    npm ci --production=false
+    npm ci --legacy-peer-deps --omit=optional
     
     # Run tests
     log "Running critical tests..."

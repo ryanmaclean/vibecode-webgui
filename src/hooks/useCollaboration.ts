@@ -88,7 +88,7 @@ export function useCollaboration({
         })
 
         socketInstance.on('connect', () => {
-          console.log('🔌 Connected to collaboration server')
+          // Debug log removed
           setIsConnected(true)
           setConnectionError(null)
 
@@ -102,7 +102,7 @@ export function useCollaboration({
         })
 
         socketInstance.on('disconnect', () => {
-          console.log('🔌 Disconnected from collaboration server')
+          // Debug log removed
           setIsConnected(false)
           setActiveUsers([])
           setTypingUsers([])
@@ -122,12 +122,12 @@ export function useCollaboration({
 
         socketInstance.on('user_joined', (data) => {
           setActiveUsers(data.activeUsers || [])
-          console.log(`👥 User joined: ${data.user.name}`)
+          // Debug log removed
         })
 
         socketInstance.on('user_left', (data) => {
           setActiveUsers(data.activeUsers || [])
-          console.log(`👥 User left: ${data.userId}`)
+          // Debug log removed
         })
 
         socketInstance.on('user_typing', (data) => {

@@ -83,6 +83,7 @@ export async function generateFromTemplate(
   const setupInstructions = generateSetupInstructions(template, projectName)
 
   return {
+<<<<<<< HEAD
     id: template.id,
     name: projectName,
     description: options.customizations?.description || template.description,
@@ -92,6 +93,14 @@ export async function generateFromTemplate(
     frameworks: template.frameworks,
     complexity: template.complexity,
     features: options.features || template.features,  // Use features from options if provided, otherwise from template
+=======
+    id: `${template.id}-${Date.now()}`,
+    name: projectName,
+    description: options.customizations?.description || template.description,
+    category: template.category,
+    complexity: template.complexity,
+    tags: template.tags,
+>>>>>>> ai-sdk-openai-v2-test
     files,
     scripts: { ...template.scripts },
     dependencies: { ...template.dependencies },

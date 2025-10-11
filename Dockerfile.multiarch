@@ -1,114 +1,110 @@
-# Multi-architecture optimized Dockerfile for VibeCode
-# Supports AMD64 and ARM64 with optimized build process
+# Multi-architecture Dockerfile optimized for ARM64 and AMD64
+# syntax=docker/dockerfile:1.4
 
-# =====================================
-# Build Arguments
-# =====================================
-ARG NODE_VERSION=20.11.0
-ARG ALPINE_VERSION=3.19
+# Use ARG for flexible base image selection
+ARG NODE_VERSION=20
+ARG BASE_OS=alpine
 
-# =====================================
-# Base Stage - Platform-agnostic
-# =====================================
-FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS base
+# Build stage - optimized for both architectures
+FROM node:${NODE_VERSION}-${BASE_OS} AS builder
 
-# Install essential build dependencies
-RUN apk add --no-cache \
-    libc6-compat \
-    python3 \
-    make \
-    g++ \
-    git \
-    curl
+# Add build arguments for target platform detection
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
 
 # Set working directory
 WORKDIR /app
 
+# Display build information
+RUN echo "Building on: $BUILDPLATFORM, targeting: $TARGETPLATFORM"
+
+# Install architecture-specific dependencies
+RUN case "${TARGETARCH}" in \
+    "amd64") \
+        echo "Installing AMD64 specific packages" && \
+        apk add --no-cache python3 make g++ && \
+        ln -sf python3 /usr/bin/python \
+        ;; \
+    "arm64") \
+        echo "Installing ARM64 specific packages" && \
+        apk add --no-cache python3 make g++ && \
+        ln -sf python3 /usr/bin/python \
+        ;; \
+    *) \
+        echo "Installing default packages for ${TARGETARCH}" && \
+        apk add --no-cache python3 make g++ && \
+        ln -sf python3 /usr/bin/python \
+        ;; \
+    esac
+
 # Copy package files for dependency installation
-COPY package*.json ./
-COPY .npmrc* ./
+COPY package.json package-lock.json* ./
 
-# =====================================
-# Dependencies Stage - Cached layer
-# =====================================
-FROM base AS deps
+# Architecture-aware npm install with caching
+RUN --mount=type=cache,target=/root/.npm,id=npm-cache-${TARGETARCH} \
+    --mount=type=cache,target=node_modules,id=node_modules-${TARGETARCH} \
+    npm ci --only=production --no-audit --prefer-offline --progress=false
 
-# Platform-specific optimization
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --only=production --legacy-peer-deps && \
-    npm cache clean --force
-
-# =====================================
-# Builder Stage - Application build
-# =====================================
-FROM base AS builder
-
-# Copy all dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-
-# Copy source code
+# Copy application source
 COPY . .
 
-# Platform-specific package.json cleanup
-RUN sed -i '/@next\/swc-darwin-arm64/d' package.json && \
-    sed -i '/@next\/swc-linux-arm64/d' package.json && \
-    sed -i '/@next\/swc-win32-x64/d' package.json
+# Build application (skip if no build step needed)
+RUN npm run build || echo "No build step configured"
 
-# Install all dependencies (including dev)
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --legacy-peer-deps
-
-# Generate Prisma client
-RUN npx prisma generate
-
-# Set build environment
-ENV NODE_ENV=production
-ENV SKIP_MONITORING=true
-ENV DOCKER_BUILD=true
-
-# Build application
-RUN npm run build
-
-# =====================================
-# Production Stage - Minimal runtime
-# =====================================
-FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS runtime
+# Production stage - minimal runtime
+FROM node:${NODE_VERSION}-${BASE_OS} AS runtime
 
 # Security: Create non-root user
-RUN addgroup --system --gid 1001 nextjs && \
-    adduser --system --uid 1001 nextjs
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
 
-# Install minimal runtime dependencies
-RUN apk add --no-cache \
-    dumb-init \
-    curl
-
+# Set working directory
 WORKDIR /app
 
-# Copy built application from builder
-COPY --from=builder --chown=nextjs:nextjs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nextjs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nextjs /app/public ./public
+# Copy built application and dependencies from builder stage
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/package*.json ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/next.config.js ./
 
-# Copy Prisma schema and generated client
-COPY --from=builder --chown=nextjs:nextjs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nextjs /app/node_modules/.prisma ./node_modules/.prisma
-
-# Security: Switch to non-root user
+# Switch to non-root user
 USER nextjs
 
 # Expose port
 EXPOSE 3000
 
+# Set production environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3000/api/health || exit 1
 
-# Environment variables
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
+# Start the application
+CMD ["npm", "start"]
 
-# Start application with dumb-init
-ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "server.js"]
+# Development stage for dev container
+FROM builder AS development
+
+# Install development dependencies
+RUN --mount=type=cache,target=/root/.npm,id=npm-dev-cache-${TARGETARCH} \
+    npm ci --include=dev --no-audit --prefer-offline --progress=false
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Create development user
+USER node
+
+# Expose development ports
+EXPOSE 3000 9229
+
+# Development environment
+ENV NODE_ENV=development
+
+# Start in development mode with debugging
+CMD ["npm", "run", "dev"]

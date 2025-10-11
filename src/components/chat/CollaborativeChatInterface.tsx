@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Users, Wifi, WifiOff, Eye, MessageCircle, UserCircle } from 'lucide-react'
+import { Users, Wifi, WifiOff, Eye, MessageCircle, User } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -63,8 +63,12 @@ export const CollaborativeChatInterface = ({
       container.addEventListener('mousemove', handleMouseMove)
       return () => container.removeEventListener('mousemove', handleMouseMove)
     }
+<<<<<<< HEAD
     // No cleanup needed if container not found
     return undefined
+=======
+    return () => {}
+>>>>>>> ai-sdk-openai-v2-test
   }, [updateCursor])
 
   // Handle typing indicators

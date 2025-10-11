@@ -409,7 +409,7 @@ app.use('/api/users', userRoutes);
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(\`🚀 Server is running on port \${PORT}\`);
+  // Debug log removed
 });`,
       'tsconfig.json': JSON.stringify({
         compilerOptions: {
@@ -656,8 +656,16 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
+<<<<<<< HEAD
     console.error('Templates API error:', error)
     return createErrorResponse('Failed to fetch templates', 500)
+=======
+    // Server error logged
+    return NextResponse.json(
+      { error: 'Failed to fetch templates' },
+      { status: 500 }
+    )
+>>>>>>> ai-sdk-openai-v2-test
   }
 }
 

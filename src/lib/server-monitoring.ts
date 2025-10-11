@@ -3,7 +3,27 @@
  * Integrates Datadog APM tracing, Winston logging, and custom metrics
  */
 import { createLogger, format, transports } from 'winston';
+<<<<<<< HEAD
 import tracer from '../instrument';
+=======
+import tracer from 'dd-trace';
+
+// Initialize Datadog tracer (should be done before importing other modules)
+if (process.env.DD_API_KEY) {
+  tracer.init({
+    service: 'vibecode-webgui',
+    env: process.env.NODE_ENV || 'development',
+    version: process.env.APP_VERSION || '1.0.0',
+    logInjection: true,
+    runtimeMetrics: true,
+    profiling: true,
+    appsec: true, // Application Security Management
+  })
+  // Debug log removed
+} else {
+  console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
+}
+>>>>>>> ai-sdk-openai-v2-test
 
 // Custom Winston formatter for structured logging
 // Define different formats for production and development
