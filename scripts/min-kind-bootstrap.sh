@@ -133,30 +133,19 @@ ensure_datadog() {
     log "warning: unable to source kube-root-ca bundle for datadog namespace"
   fi
 
-  patch_and_apply() {
-    local file="$1"
-    local ns="$2"
-    local tmp_file
-    tmp_file=$(mktemp)
-    sed "s/namespace: datadog/namespace: ${ns}/g" "$file" > "$tmp_file"
-    kubectl apply -f "$tmp_file"
-    rm -f "$tmp_file"
-  }
+  log "installing Datadog via Helm"
+  helm repo add datadog https://helm.datadoghq.com >/dev/null 2>&1 || true
+  helm repo update datadog >/dev/null 2>&1 || true
+  helm upgrade --install datadog datadog/datadog \
+    --namespace "$dd_namespace" \
+    --create-namespace \
+    --wait \
+    --timeout 15m \
+    -f k8s/datadog-values-kind.yaml
 
-  log "applying Datadog RBAC"
-  patch_and_apply k8s/datadog-rbac-complete.yaml "$dd_namespace"
-
-  log "deploying Datadog agent DaemonSet"
-  patch_and_apply k8s/datadog-agent-fixed.yaml "$dd_namespace"
-
-  log "deploying Datadog Cluster Agent"
-  patch_and_apply k8s/datadog-cluster-agent.yaml "$dd_namespace"
-
-  log "waiting for Datadog agent to become ready"
-  kubectl -n "$dd_namespace" rollout status daemonset/datadog-agent --timeout=600s
+  log "waiting for Datadog agent pods"
   kubectl -n "$dd_namespace" wait --for=condition=Ready pod -l app=datadog-agent --timeout=600s
-  log "waiting for Datadog Cluster Agent to become ready"
-  kubectl -n "$dd_namespace" rollout status deployment/datadog-cluster-agent --timeout=600s
+  log "waiting for Datadog Cluster Agent pods"
   kubectl -n "$dd_namespace" wait --for=condition=Ready pod -l app=datadog-cluster-agent --timeout=600s
 }
 
