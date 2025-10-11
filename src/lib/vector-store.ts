@@ -6,6 +6,7 @@
 import OpenAI from 'openai'
 import { prisma } from './prisma'
 import { Prisma } from '@prisma/client'
+import { PgVectorSearch } from './cache/pgvector-search'
 
 // Check if we're in build mode
 const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' || 
@@ -119,34 +120,6 @@ class VectorStore {
       // Fallback: return zero vector
       return new Array(1536).fill(0) // text-embedding-3-small returns 1536-dimensional vectors
     }
-  }
-
-  /**
-   * Calculate cosine similarity between two vectors
-   */
-  private cosineSimilarity(a: number[], b: number[]): number {
-    if (a.length !== b.length) {
-      throw new Error('Vectors must have the same length')
-    }
-
-    let dotProduct = 0
-    let magnitudeA = 0
-    let magnitudeB = 0
-
-    for (let i = 0; i < a.length; i++) {
-      dotProduct += a[i] * b[i]
-      magnitudeA += a[i] * a[i]
-      magnitudeB += b[i] * b[i]
-    }
-
-    magnitudeA = Math.sqrt(magnitudeA)
-    magnitudeB = Math.sqrt(magnitudeB)
-
-    if (magnitudeA === 0 || magnitudeB === 0) {
-      return 0
-    }
-
-    return dotProduct / (magnitudeA * magnitudeB)
   }
 
   /**
@@ -274,7 +247,7 @@ class VectorStore {
   }
 
   /**
-   * Search for similar content using pgvector similarity
+   * Search for similar content using pgvector similarity with ValKey caching
    */
   async search(
     query: string, 
@@ -283,6 +256,7 @@ class VectorStore {
       fileIds?: number[]
       limit?: number
       threshold?: number
+      useCache?: boolean
     } = {}
   ): Promise<SearchResult[]> {
     if (isBuilding || !prisma) {
@@ -291,10 +265,50 @@ class VectorStore {
     }
     
     try {
-      const { workspaceId, fileIds, limit = 10, threshold = 0.7 } = options
+      const { workspaceId, fileIds, limit = 10, threshold = 0.7, useCache = true } = options
 
       // Generate embedding for the query
       const queryEmbedding = await this.generateEmbedding(query)
+      
+      // First try to get results from cached PgVectorSearch
+      if (useCache) {
+        try {
+          const workspace = workspaceId ? workspaceId.toString() : undefined;
+          
+          // Use our optimized PgVectorSearch with caching
+          const cachedResults = await PgVectorSearch.findSimilarCode(queryEmbedding, {
+            limit,
+            minSimilarity: threshold,
+            workspace,
+            useCache: true
+          });
+          
+          if (cachedResults && cachedResults.length > 0) {
+            // Transform to match our expected SearchResult format
+            return cachedResults.map(item => ({
+              chunk: {
+                id: item.metadata?.chunk_id?.toString() || item.id.toString(),
+                content: item.content || '',
+                embedding: [], // Don't return embedding in response for performance
+                metadata: {
+                  fileId: item.metadata?.file_id || 0,
+                  fileName: item.metadata?.path || '',
+                  startLine: item.metadata?.start_line,
+                  endLine: item.metadata?.end_line,
+                  language: item.metadata?.language,
+                  tokens: item.metadata?.tokens || 0
+                }
+              },
+              similarity: item.similarity
+            }));
+          }
+        } catch (cacheError) {
+          console.warn('Cache retrieval failed, falling back to direct query:', cacheError);
+          // Continue with direct query if cache fails
+        }
+      }
+
+      // If cache miss or caching disabled, perform direct query
       const embeddingString = `[${queryEmbedding.join(',')}]`
 
       // Build WHERE clause for filtering
@@ -378,9 +392,27 @@ class VectorStore {
           similarity: row.similarity
         }))
 
-      // Debug log removed}..."`)
+      // Cache the results for future queries if caching is enabled
+      if (useCache && results.length > 0) {
+        try {
+          // Store the formatted results in our cache system
+          // We do this asynchronously to not block the response
+          const workspace = workspaceId ? workspaceId.toString() : undefined;
+          
+          // Use PgVectorSearch to store in cache without waiting for completion
+          PgVectorSearch.findSimilarCode(queryEmbedding, {
+            limit,
+            minSimilarity: threshold,
+            workspace,
+            useCache: true
+          }).catch(err => console.warn('Background cache storage failed:', err));
+        } catch (cacheError) {
+          console.warn('Failed to cache results:', cacheError);
+          // Continue without caching if it fails
+        }
+      }
       
-      return results
+      return results;
     } catch (error) {
       console.error('Error in vector search:', error)
       // Fallback to simple text search if vector search fails
@@ -397,6 +429,7 @@ class VectorStore {
       workspaceId?: number
       fileIds?: number[]
       limit?: number
+      useCache?: boolean
     }
   ): Promise<SearchResult[]> {
     if (isBuilding || !prisma) {
@@ -461,39 +494,45 @@ class VectorStore {
   }
 
   /**
-   * Get relevant context for AI prompts
+   * Get relevant context for AI prompts with caching
    */
   async getContext(
     query: string,
     workspaceId?: number,
     maxTokens: number = 4000,
-    threshold?: number
+    threshold?: number,
+    useCache: boolean = true
   ): Promise<string> {
     try {
-      const results = await this.search(query, { workspaceId, limit: 20, threshold })
+      const results = await this.search(query, { 
+        workspaceId, 
+        limit: 20, 
+        threshold,
+        useCache 
+      });
       
       if (results.length === 0) {
-        return ''
+        return '';
       }
 
-      let context = ''
-      let tokenCount = 0
+      let context = '';
+      let tokenCount = 0;
 
       for (const result of results) {
-        const chunkText = `\n--- ${result.chunk.metadata.fileName} (lines ${result.chunk.metadata.startLine}-${result.chunk.metadata.endLine}) ---\n${result.chunk.content}\n`
+        const chunkText = `\n--- ${result.chunk.metadata.fileName} (lines ${result.chunk.metadata.startLine}-${result.chunk.metadata.endLine}) ---\n${result.chunk.content}\n`;
         
         if (tokenCount + result.chunk.metadata.tokens > maxTokens) {
-          break
+          break;
         }
 
-        context += chunkText
-        tokenCount += result.chunk.metadata.tokens
+        context += chunkText;
+        tokenCount += result.chunk.metadata.tokens;
       }
 
-      return context
+      return context;
     } catch (error) {
-      console.error('Error getting context:', error)
-      return ''
+      console.error('Error getting context:', error);
+      return '';
     }
   }
 
