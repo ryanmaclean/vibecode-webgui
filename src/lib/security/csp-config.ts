@@ -3,13 +3,20 @@
  * Provides secure CSP headers with nonce support for inline scripts
  */
 
-import { randomBytes } from 'crypto'
-
 /**
  * Generate a cryptographically secure nonce for CSP
+ * Uses Web Crypto API for Edge runtime compatibility
  */
 export function generateNonce(): string {
-  return randomBytes(16).toString('base64')
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    // Use Web Crypto API (Edge runtime compatible)
+    const array = new Uint8Array(16)
+    crypto.getRandomValues(array)
+    return btoa(String.fromCharCode(...array))
+  } else {
+    // Fallback for environments without crypto
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  }
 }
 
 /**
