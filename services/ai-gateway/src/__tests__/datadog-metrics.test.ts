@@ -99,4 +99,33 @@ describe('DatadogMetricsService', () => {
     const ok = await svc.submitMetric('vibecode.ai_gateway.fail', 1, []);
     expect(ok).toBe(false);
   });
+
+  it('submits error counter metric with error_class and http_status', async () => {
+    const svc = new DatadogMetricsService();
+
+    const scope = nock(API_BASE)
+      .post('/api/v1/series', (body: any) => {
+        const series = body?.series?.[0];
+        const tags = series?.tags || [];
+        return (
+          series?.metric === 'vibecode.ai_gateway.error' &&
+          series?.type === 'count' &&
+          tags.includes('error_class:ValidationError') &&
+          tags.includes('http_status:400') &&
+          tags.includes('model:test_model') &&
+          tags.includes('env:development')
+        );
+      })
+      .reply(202, { status: 'ok' });
+
+    const ok = await svc.submitMetric(
+      'vibecode.ai_gateway.error',
+      1,
+      ['error_class:ValidationError', 'http_status:400', 'model:test_model'],
+      'count'
+    );
+
+    expect(ok).toBe(true);
+    expect(scope.isDone()).toBe(true);
+  });
 });

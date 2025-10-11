@@ -7,6 +7,7 @@ import pkg from '../../package.json';
 =======
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import pkg from '../../package.json';
+import { sanitizeTagValue } from './metrics-tags';
 
 // Optional DogStatsD client via hot-shots
 let HotShotsStatsD: any;
@@ -144,7 +145,7 @@ export class DatadogMetricsService {
   public async submitSelectionMetric(task: string, model: string, userId?: string): Promise<boolean> {
     const tags = [
       `task:${task}`,
-      `model:${model.replace(/[:/]/g, '_')}`,
+      `model:${sanitizeTagValue(model)}`,
       ...(userId ? [`user:${userId}`] : [])
     ];
 =======
