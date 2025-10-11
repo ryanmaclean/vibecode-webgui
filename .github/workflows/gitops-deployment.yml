@@ -226,7 +226,7 @@ jobs:
           terraform_version: 1.6.6
 
       - name: Configure kubectl
-        uses: azure/setup-kubectl@v3
+        uses: azure/setup-kubectl@v4
         with:
           version: 'latest'
 
@@ -334,7 +334,7 @@ jobs:
           terraform_version: 1.6.6
 
       - name: Configure kubectl
-        uses: azure/setup-kubectl@v3
+        uses: azure/setup-kubectl@v4
 
       - name: Setup kubeconfig
         run: |
@@ -426,7 +426,7 @@ jobs:
           terraform_version: 1.6.6
 
       - name: Configure kubectl
-        uses: azure/setup-kubectl@v3
+        uses: azure/setup-kubectl@v4
 
       - name: Setup kubeconfig
         run: |
@@ -608,7 +608,7 @@ jobs:
     
     steps:
       - name: Configure kubectl
-        uses: azure/setup-kubectl@v3
+        uses: azure/setup-kubectl@v4
 
       - name: Setup kubeconfig
         run: |
