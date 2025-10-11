@@ -1,42 +1,76 @@
-# Repository Guidelines
+# Agent Quick Reference
 
-## Project Structure & Module Organization
-- Next.js 15 code lives in `src`; routes sit in `src/app`, shared UI in `src/components`, utilities in `src/lib`.
-- Backend helpers and automation live in `server`, `services`, `scripts`, and the supporting `packages/*` modules.
-- Infrastructure resides in `k8s`, `helm`, `azure`, `tofu`; static content in `public`/`docs`; the `tests` tree mirrors product scopes (unit, integration, e2e, k8s, monitoring).
+## Three-Tier VM Strategy (2025-10-02)
 
-## Build, Test, and Development Commands
-- `npm run setup` provisions local prerequisites via `scripts/setup-development.js`.
-- `npm run dev` enables instrumentation; use `npm run dev:simple` to skip Datadog tracing.
-- Run `npm run build && npm run start` for production bundles and verify `npm run lint`, `npm run type-check`, `npm run test:unit` before any PR.
-- `npm run test:e2e` or `npm run test:production:smoke` covers Playwright suites; `npm run test:integration` exercises API and database paths.
+VibeCode now supports **three complementary VM runtimes** optimized for different platforms:
 
-## Coding Style & Naming Conventions
-- Write in TypeScript; components follow PascalCase filenames, hooks start with `use`, and route folders stay kebab-case for Next routing.
-- ESLint (`eslint.config.mjs`) dictates style; keep the prevailing two-space indentation, single quotes, and trailing commas.
-- Store primitives in `src/components/ui`, feature modules alongside their assets, and Jest mocks in nearby `__mocks__` folders.
+| Platform | Runtime | Boot Time | Status | Issues |
+|----------|---------|-----------|--------|--------|
+| **Linux** | Cloud Hypervisor | <2s | ✅ Released | #542-#546 |
+| **macOS** | Virtualization.framework | <2s | ✅ Implemented | #547 |
+| **Portable** | OpenVSCode microVM | 0.5s | ✅ Prototyped | #552-#553 |
 
-## Testing Guidelines
-- Jest (`jest.config.js`) loads shared setup via `tests/setupTests.ts` and enforces 80% coverage across branches, functions, lines, and statements.
-- Name specs `*.test.ts` or `.tsx` within the appropriate `tests/<scope>` folder and reuse fixtures from `tests/__mocks__`.
-- Playwright cases live in `tests/e2e`; set `BASE_URL` for staging or production targets and archive artifacts in `playwright-report/`.
+**Key Documents**:
+- `MERGE_SUMMARY_2025-10-02.md` - Complete merge analysis
+- `archive/agents/2025-10-02-macos-vm-handoff.md` - macOS VM coordination
+- `archive/agents/2025-10-02-firecracker-bench-hand-off.md` - Benchmarking
+- `archive/agents/2025-10-02-openvscode-microvm.md` - OpenVSCode prototype
 
-## Commit & Pull Request Guidelines
-- Stick to Conventional Commits (`feat:`, `fix:`, `chore:`) and keep subjects imperative and scoped.
-- PRs must summarise the change, reference related issues, flag risk or rollout notes, and list verification commands.
-- Request review per `CONTRIBUTING.md`, attach screenshots or logs for UX/monitoring changes, and merge only after CI succeeds.
+---
 
-## Environment & Security Notes
-- Copy `.env.local.example` to `.env.local`; keep secrets out of git and tailor extra `.env` files per environment.
-- Datadog requires `DD_API_KEY` and `DD_SITE`; validate telemetry with the `npm run monitoring:*` scripts before shipping.
-- Adjust Kubernetes or Terraform defaults in `k8s/` and `tofu/terraform.tfvars` rather than editing live manifests; document credential handling in the PR.
+## macOS Native VM Workflow (NEW - Issue #547)
 
-## Micro-VM Prototype Notes (2025-10-02)
-- Working tree lives in `fast-openvscode-vm/` (ignored); only docs and agent logs get checked in.
-- Boot recipe, measurements, and follow-up work are documented in `docs/virtualization/openvscode-microvm.md` and `archive/agents/2025-10-02-openvscode-microvm.md`.
-- Fix the HTTP reset on `/` first ([issue #552](https://github.com/ryanmaclean/vibecode-webgui/issues/552)) before chasing additional boot-time wins.
-- Automate the timing harness and build the arm64 variant via [issue #553](https://github.com/ryanmaclean/vibecode-webgui/issues/553).
-- When you add new findings, log them under `archive/agents/` so other agents can pick up the thread quickly.
-- Keep the upstream OpenVSCode tarballs out of git; if you need a fresh build, download into `fast-openvscode-vm/downloads/` and regenerate the initramfs following the doc.
-- The temporary harness uses `nc` to spot when the port is live (~0.5 s). Once HTTP is fixed, promote that into `scripts/benchmarks/vscode_microvm.sh` and emit metrics to Datadog (same flags as other benchmark scripts).
-- Consider snapshot/resume or pre-warmed guests for the “feels-native” experience after the cold-start handshake is reliable.
+1. **Installation** (One command)
+   - Run `./scripts/macos-vm/install.sh` to download kernel, build binary, and configure service
+   - Binary: `bin/vibecode-vm` (85KB ARM64)
+   - Kernel: Reuses cloud-hypervisor release (34MB vmlinuz + 8.3MB initramfs)
+
+2. **Usage**
+   - Manual: `./bin/vibecode-vm`
+   - Service: `launchctl load ~/Library/LaunchAgents/com.vibecode.vm.plist`
+   - Access: http://localhost:8080
+
+3. **Documentation**
+   - `macos-vm/README.md` - Complete user guide
+   - `macos-vm/VERIFIED.md` - Build verification
+   - `macos-vm/RELATED_ISSUES.md` - Issue cross-references
+
+4. **Status**: Implementation complete, needs boot testing
+
+---
+
+## Fast OpenVSCode MicroVM Workflow
+
+1. **Stable release available**
+   - Fetch the packaged image from GitHub release `fast-openvscode-vm-v0.1.0`.
+   - Rebuild locally with `scripts/release/package-fast-openvscode-vm.sh`; the script generates `<timestamp>.tar.gz` + `.sha256` in `dist/`.
+
+2. **Nightly/insiders build**
+   - `fast-openvscode-vm-insiders/` mirrors the stable tree and is ready for the latest `openvscode-server-insiders` tarball.
+   - Issue #554 tracks replacing the contents and releasing a prerelease (e.g., `fast-openvscode-vm-v0.2.0-pre`).
+
+3. **Keep large assets out of git**
+   - `.gitignore` excludes both VM directories. Package with the script and upload artifacts to releases; do not commit binaries.
+
+4. **Documentation links**
+   - `demos/README.md` explains where to download releases and how to rebuild/upload.
+   - `archive/agents/2025-10-02-firecracker-bench-hand-off.md` summarizes completed work and outstanding tasks.
+
+5. **Open issues to monitor**
+   - #555 Automate the VM release pipeline in CI.
+   - #556 Document the stable + insiders workflow.
+   - #557 Define nightly VM verification checklist.
+   - #554 Prep insiders prerelease (nightly build).
+   - #552 / #553 cover HTTP handshake fixes and automated benchmarking.
+
+6. **Benchmark tooling**
+   - `scripts/benchmarks/boot_latency_bench.py` and `firecracker_bench.py` emit DogStatsD metrics via `--dogstatsd`.
+   - `scripts/benchmarks/emit_to_datadog.py` forwards JSON outputs (with dry-run support). Dashboards/monitors are tracked in #550 and noisy-neighbor tests in #551.
+
+7. **Nightly build checklist (once defined)**
+   - Swap in new insiders bits under `fast-openvscode-vm-insiders/`.
+   - Run `scripts/release/package-fast-openvscode-vm.sh`.
+   - Execute the verification checklist (issue #557 once complete).
+   - Publish release artifacts and update docs with download link + SHA256.
+
+Keep this file updated when major workflow changes land so new agents can hit the ground running.
