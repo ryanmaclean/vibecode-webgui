@@ -43,8 +43,8 @@ export class VectorDatabaseFactory {
         case VectorDatabaseProvider.REDIS:
           adapter = new RedisVectorDatabaseAdapter(config as RedisVectorDatabaseConfig);
           break;
-
-        case VectorDatabaseProvider.COGNITIVE_SEARCH:
+          
+        case VectorDatabaseProvider.AZURE_SEARCH:
           adapter = new CognitiveSearchVectorDatabaseAdapter(config as CognitiveSearchVectorDatabaseConfig);
           break;
 
@@ -103,10 +103,10 @@ export class VectorDatabaseFactory {
         case 'valkey':
           provider = VectorDatabaseProvider.REDIS;
           break;
-        case 'cognitive_search':
-        case 'azure_search':
-        case 'azure_cognitive_search':
-          provider = VectorDatabaseProvider.COGNITIVE_SEARCH;
+        case 'azure-search':
+        case 'azure-cognitive-search':
+        case 'cognitive-search':
+          provider = VectorDatabaseProvider.AZURE_SEARCH;
           break;
         default:
           provider = VectorDatabaseProvider.POSTGRES;
