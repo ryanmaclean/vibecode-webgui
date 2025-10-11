@@ -354,8 +354,12 @@ export class GitHubIntegration {
         htmlUrl: repo.html_url,
         private: repo.private,
         createdAt: repo.created_at || new Date().toISOString(),
+<<<<<<< HEAD
         updatedAt: repo.updated_at || new Date().toISOString(),
         language: repo.language,
+=======
+        updatedAt: repo.updated_at || new Date().toISOString(),        language: repo.language,
+>>>>>>> fix/consolidated-dependency-updates
         stargazersCount: repo.stargazers_count,
         forksCount: repo.forks_count,
       }))

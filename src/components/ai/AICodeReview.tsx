@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle, AlertTriangle, Info, Code, Shield, Zap, BookOpen } from 'lucide-react';
-import { EnhancedAIManager } from '@/lib/ai/enhanced-ai-manager';
+// import { EnhancedAIManager } from '@/lib/ai/enhanced-ai-manager';
 
 interface CodeReviewResult {
   stepId: string;
@@ -43,13 +43,13 @@ export default function AICodeReview({
   const [selectedTab, setSelectedTab] = useState('security');
 
   // Initialize AI Manager
-  const aiManager = new EnhancedAIManager({
-    openai: {
-      apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY || '',
-      model: 'gpt-4',
-      temperature: 0.1
-    }
-  });
+  // const aiManager = new EnhancedAIManager({
+  //   openai: {
+  //     apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY || '',
+  //     model: 'gpt-4',
+  //     temperature: 0.1
+  //   }
+  // });
 
   const handleCodeReview = useCallback(async () => {
     if (!code.trim()) return;
@@ -59,42 +59,63 @@ export default function AICodeReview({
     setResults([]);
 
     try {
-      const request = {
-        type: 'code-review' as const,
-        requirements: `Review this ${language} code${framework ? ` using ${framework}` : ''} for security, performance, and quality issues`,
-        language,
-        framework
-      };
+      // const request = {
+      //   type: 'code-review' as const,
+      //   requirements: `Review this ${language} code${framework ? ` using ${framework}` : ''} for security, performance, and quality issues`,
+      //   language,
+      //   framework
+      // };
 
-      const response = await aiManager.executeWorkflow(request);
+      // const response = await aiManager.executeWorkflow(request);
       
-      if (response.success) {
-        setResults(response.results);
-        onReviewComplete?.(response.results);
-      } else {
-        throw new Error(response.error || 'Code review failed');
-      }
+      // if (response.success) {
+      //   setResults(response.results);
+      //   onReviewComplete?.(response.results);
+      // } else {
+      //   throw new Error(response.error || 'Code review failed');
+      // }
+      
+      // Temporary mock response for testing
+      setResults([{
+        stepId: 'security',
+        agentRole: 'Security Analyst',
+        input: code,
+        output: 'Mock security review - LangChain temporarily disabled',
+        metadata: {
+          model: 'mock',
+          duration: 100,
+          timestamp: new Date().toISOString()
+        }
+      }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during code review');
       console.error('Code review error:', err);
     } finally {
       setIsReviewing(false);
     }
-  }, [code, language, framework, aiManager, onReviewComplete]);
+  }, [code, language, framework, onReviewComplete]);
 
   const getReviewSection = (stepId: string) => {
     return results.find(result => result.stepId === stepId);
   };
 
+<<<<<<< HEAD
   const getSeverityColor = (stepId: string): 'default' | 'destructive' | 'outline' | 'secondary' => {
     const result = getReviewSection(stepId);
+=======
+  const getSeverityColor = (stepId: string): 'default' | 'destructive' | 'outline' | 'secondary' => {    const result = getReviewSection(stepId);
+>>>>>>> fix/consolidated-dependency-updates
     if (!result) return 'default';
     
     const output = result.output.toLowerCase();
     if (output.includes('critical') || output.includes('high risk')) return 'destructive';
     if (output.includes('warning') || output.includes('medium risk')) return 'secondary';
+<<<<<<< HEAD
     if (output.includes('suggestion') || output.includes('low risk')) return 'outline';
     return 'default';
+=======
+    if (output.includes('suggestion') || output.includes('low risk')) return 'outline';    return 'default';
+>>>>>>> fix/consolidated-dependency-updates
   };
 
   const getSeverityIcon = (stepId: string) => {

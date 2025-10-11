@@ -130,6 +130,7 @@ Focus on:
     `);
 
     // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+<<<<<<< HEAD
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -188,6 +189,8 @@ Format the output as structured test code that can be directly executed.
     `);
 
     // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+=======
+>>>>>>> fix/consolidated-dependency-updates
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -239,6 +242,7 @@ Return only the test case code, no explanations.
     `);
 
     // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+<<<<<<< HEAD
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -294,6 +298,8 @@ Ensure the data is realistic and covers various scenarios.
     `);
 
     // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+=======
+>>>>>>> fix/consolidated-dependency-updates
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -302,8 +308,10 @@ Ensure the data is realistic and covers various scenarios.
 
     const result = await chain.invoke({
       sourceCode,
-      dataType,
+      testDescription,
+      framework: options.framework,
       language: options.language,
+      testType: options.testType,
     });
 
     return this.parseTestDataResult(result);
@@ -417,16 +425,15 @@ Focus on critical paths, edge cases, and error handling.
     return match ? match[1] : 'Generated Test';
   }
 
-  private parseTestDataResult(result: string): {
-    fixtures: any[];
-    factories: string[];
-    mockData: any;
-  } {
+  private parseTestDataResult(result: string): GeneratedTest {
     // Parse test data generation result
     return {
-      fixtures: [],
-      factories: [],
-      mockData: {},
+      testName: 'Generated Test',
+      testCode: result,
+      description: 'Generated test case',
+      testCategory: 'unit',
+      priority: 'medium',
+      estimatedTime: 5,
     };
   }
 

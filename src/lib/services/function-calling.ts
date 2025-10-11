@@ -373,7 +373,10 @@ export class FunctionCallingService {
         size: number;
         modified: Date;
       }> = [];
+<<<<<<< HEAD
 
+=======
+>>>>>>> fix/consolidated-dependency-updates
       for (const file of files) {
         const stat = await fs.stat(path.join(targetDir, file.name))
         
@@ -490,8 +493,12 @@ export class FunctionCallingService {
 export const functionCallingService = new FunctionCallingService()
 
 // Store function definitions separately for registration
+<<<<<<< HEAD
 const functionDefinitions: FunctionDefinition[] = [
   {
+=======
+const functionDefinitions: FunctionDefinition[] = [  {
+>>>>>>> fix/consolidated-dependency-updates
     name: 'web_search',
     description: 'Search the web for current information on a given topic',
     parameters: {

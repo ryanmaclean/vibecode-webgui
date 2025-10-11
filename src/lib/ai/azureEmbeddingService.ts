@@ -7,6 +7,7 @@
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { DefaultAzureCredential } from '@azure/identity';
+<<<<<<< HEAD
 // Removed nonexistent withVectorConnection; use VectorConnectionPoolFactory directly
 import { azureEmbeddingMetrics } from '../monitoring/azure-embedding-metrics';
 import { VectorConnectionPool, VectorConnectionPoolFactory } from '../db/vector-connection-pool';
@@ -43,6 +44,10 @@ interface ApiUsageAlert {
   message: string;
 }
 
+=======
+import { withVectorConnection } from '../db/vector-connection-pool';
+import { azureEmbeddingMetrics } from '../monitoring/azure-embedding-metrics';
+>>>>>>> fix/consolidated-dependency-updates
 // Interface for embedding generation options
 interface EmbeddingOptions {
   dimensions?: number;
@@ -158,6 +163,7 @@ export class AzureEmbeddingService {
     this.useManagedIdentity = useManagedIdentity;
     this.useConnectionPool = useConnectionPool;
     
+<<<<<<< HEAD
     // Initialize vector service for database operations
     // Initialize monitoring
     this.initializeMonitoring(alertThresholds);
@@ -167,6 +173,9 @@ export class AzureEmbeddingService {
     
     // Create vector service for database operations
     this.vectorService = this.createVectorService();
+=======
+    // Initialize vector service for database operations    this.vectorService = this.createVectorService();
+>>>>>>> fix/consolidated-dependency-updates
   }
   
   /**
@@ -516,9 +525,15 @@ export class AzureEmbeddingService {
    */
   public async generateEmbedding(text: string, options: EmbeddingOptions = {}): Promise<number[]> {
     const startTime = Date.now();
+<<<<<<< HEAD
     let success = false;
     let errorType: string | undefined;
     let tokens = 0;
+=======
+    const success = false;
+    const errorType: string | undefined = undefined;
+    const tokens = 0;
+>>>>>>> fix/consolidated-dependency-updates
     
     try {
       // Construct the Azure OpenAI API URL
@@ -532,8 +547,12 @@ export class AzureEmbeddingService {
       };
       
       // Set up headers based on authentication method
+<<<<<<< HEAD
        
       let headers: Record<string, string> = {
+=======
+      const headers: Record<string, string> = {
+>>>>>>> fix/consolidated-dependency-updates
         'Content-Type': 'application/json'
       };
       
@@ -582,6 +601,7 @@ export class AzureEmbeddingService {
           console.warn('Error recording embedding metrics:', metricError);
         }
         
+<<<<<<< HEAD
         return embedding;
         success = true;
         tokens = response.data.usage?.total_tokens || this.estimateTokens(text);
@@ -610,6 +630,9 @@ export class AzureEmbeddingService {
 
         return response.data.data[0].embedding;
       } else {
+=======
+        return embedding;      } else {
+>>>>>>> fix/consolidated-dependency-updates
         throw new Error('No embedding data returned from Azure OpenAI API');
       }
     } catch (error: any) {
@@ -624,6 +647,7 @@ export class AzureEmbeddingService {
       } catch (metricError) {
         console.warn('Error recording error metrics:', metricError);
       }
+<<<<<<< HEAD
       
       errorType = this.categorizeError(error);
       
@@ -652,6 +676,9 @@ export class AzureEmbeddingService {
       });
 
       console.error('Error generating embedding:', error.message);
+=======
+            console.error('Error generating embedding:', error.message);
+>>>>>>> fix/consolidated-dependency-updates
       if (error.response) {
         console.error('Azure API response:', error.response.data);
       }

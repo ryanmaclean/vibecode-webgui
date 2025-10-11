@@ -93,15 +93,18 @@ const config = {
   
   // Watch Plugins
   watchPlugins: [
-    'jest-watch-typeahead/filename',
-    'jest-watch-typeahead/testname',
+    // Removed jest-watch-typeahead as it's not installed
   ],
   
   // Reporters
   reporters: [
     'default',
+<<<<<<< HEAD
     // Write JUnit to a hidden, ignored folder to avoid accidental commits
     ['jest-junit', { outputDirectory: '.test-results', outputName: 'junit.xml' }],
+=======
+    // Removed jest-junit as it might not be installed
+>>>>>>> fix/consolidated-dependency-updates
   ],
   
   // Coverage

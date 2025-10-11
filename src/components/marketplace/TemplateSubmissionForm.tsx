@@ -25,8 +25,12 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
   const [template, setTemplate] = useState<Partial<ProjectTemplate>>({
     name: '',
     description: '',
+<<<<<<< HEAD
     category: 'frontend',
     complexity: 'beginner',
+=======
+    category: 'frontend',    complexity: 'beginner',
+>>>>>>> fix/consolidated-dependency-updates
     tags: [],
     files: [],
     dependencies: {},
@@ -122,6 +126,13 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           category: template.category || 'frontend',
           complexity: template.complexity || 'beginner',
           tags: template.tags || [],
+<<<<<<< HEAD
+=======
+          language: ['typescript'],
+          frameworks: ['react', 'nextjs'],
+          features: ['modern-setup', 'production-ready'],
+          estimatedSetupTime: '15 minutes',
+>>>>>>> fix/consolidated-dependency-updates
           files: template.files || [],
           dependencies: template.dependencies || {},
           scripts: template.scripts || {},
@@ -131,6 +142,7 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
             usage: Array.isArray(template.documentation?.usage) ? template.documentation.usage : ['Usage instructions'],
             deployment: Array.isArray(template.documentation?.deployment) ? template.documentation.deployment : ['Deployment guide']
           },
+<<<<<<< HEAD
           language: ['typescript'],
           frameworks: ['react', 'nextjs'],
           features: ['modern-setup', 'production-ready'],
@@ -141,6 +153,12 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
           testingSetup: false,
           monitoringSetup: false
         },
+=======
+          dockerSupport: false,
+          kubernetesSupport: false,
+          cicdTemplate: false,
+          testingSetup: false,        },
+>>>>>>> fix/consolidated-dependency-updates
         author,
         marketplace,
         submission

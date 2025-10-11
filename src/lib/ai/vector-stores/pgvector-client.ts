@@ -4,7 +4,10 @@
  */
 
 import { Pool } from 'pg';
+<<<<<<< HEAD
 
+=======
+>>>>>>> fix/consolidated-dependency-updates
 export interface PGVectorConfig {
   host: string;
   port: number;
@@ -45,8 +48,12 @@ export interface PGVectorCollectionSchema {
 export class PGVectorClient {
   private pool: Pool;
 
+<<<<<<< HEAD
   constructor(config: PGVectorConfig) {
     this.pool = new Pool(config);
+=======
+  constructor(config: PGVectorConfig) {    this.pool = new Pool(config);
+>>>>>>> fix/consolidated-dependency-updates
   }
 
   /**
@@ -307,8 +314,12 @@ export class PGVectorClient {
       `;
 
       const result = await client.query(query, values);
+<<<<<<< HEAD
       return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;
     } finally {
+=======
+      return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;    } finally {
+>>>>>>> fix/consolidated-dependency-updates
       client.release();
     }
   }
@@ -324,8 +335,12 @@ export class PGVectorClient {
         WHERE id = $1
       `, [id]);
 
+<<<<<<< HEAD
       return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;
     } finally {
+=======
+      return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;    } finally {
+>>>>>>> fix/consolidated-dependency-updates
       client.release();
     }
   }
@@ -341,8 +356,12 @@ export class PGVectorClient {
         WHERE name = $1
       `, [name]);
 
+<<<<<<< HEAD
       return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;
     } finally {
+=======
+      return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;    } finally {
+>>>>>>> fix/consolidated-dependency-updates
       client.release();
     }
   }

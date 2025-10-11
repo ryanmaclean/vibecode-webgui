@@ -20,6 +20,7 @@ export interface VectorDBErrorDetails {
 /**
  * Type guard for objects with code property
  */
+<<<<<<< HEAD
 function hasCode(e: unknown): e is { code: string | number } {
   return typeof e === 'object' && e !== null && 'code' in e;
 }
@@ -47,6 +48,10 @@ export enum VectorDBErrorType {
 
 export class VectorDBError extends Error {
   type: VectorDBErrorType;
+=======
+export class VectorDbError extends Error {
+  type: VectorDbErrorType;
+>>>>>>> fix/consolidated-dependency-updates
   operation: string;
   provider: string;
   details: VectorDBErrorDetails | null;
@@ -56,13 +61,21 @@ export class VectorDBError extends Error {
 
   constructor(
     message: string,
+<<<<<<< HEAD
     type: VectorDBErrorType = VectorDBErrorType.UNKNOWN_ERROR,
+=======
+    type: VectorDbErrorType = VectorDbErrorType.UNKNOWN_ERROR,
+>>>>>>> fix/consolidated-dependency-updates
     operation: string = 'unknown',
     provider: string = 'unknown',
     details: VectorDBErrorDetails | null = null
   ) {
     super(message);
+<<<<<<< HEAD
     this.name = 'VectorDBError';
+=======
+        this.name = 'VectorDbError';
+>>>>>>> fix/consolidated-dependency-updates
     this.type = type;
     this.operation = operation;
     this.provider = provider;
@@ -119,6 +132,7 @@ export class VectorDBError extends Error {
   }
 }
 
+<<<<<<< HEAD
 export const handleVectorDBError = (
   error: unknown,
   operation: string,
@@ -126,6 +140,109 @@ export const handleVectorDBError = (
 ): VectorDBError => {
   // If already a VectorDBError, return it
   if (error instanceof VectorDBError) {
+=======
+// Legacy alias for backward compatibility
+export const VectorDBError = VectorDbError;
+
+/**
+ * Helper function to determine the error type based on error properties
+ * @param error Any error object to analyze
+ * @returns The appropriate VectorDbErrorType
+ */
+export function getErrorType(error: any): VectorDbErrorType {
+  const message = error?.message?.toLowerCase() || '';
+  const code = error?.code?.toString() || '';
+  const status = error?.status || error?.statusCode || 0;
+  
+  // Connection errors
+  if (
+    code === 'ECONNREFUSED' ||
+    code === 'ECONNRESET' ||
+    code === 'ENOTFOUND' ||
+    code === 'ETIMEDOUT' ||
+    error.name === 'ConnectionError' ||
+    message.includes('connect') ||
+    message.includes('connection')
+  ) {
+    return VectorDbErrorType.CONNECTION;
+  }
+  
+  // Authentication/Authorization errors
+  if (
+    code === 'EAUTH' ||
+    status === 401 ||
+    status === 403 ||
+    message.includes('unauthorized') ||
+    message.includes('authentication') ||
+    message.includes('auth') ||
+    message.includes('permission') ||
+    message.includes('credentials')
+  ) {
+    return VectorDbErrorType.AUTHORIZATION_ERROR;
+  }
+  
+  // Timeout errors
+  if (
+    code === 'ETIMEDOUT' ||
+    code === 'ESOCKETTIMEDOUT' ||
+    message.includes('timeout') ||
+    message.includes('timed out')
+  ) {
+    return VectorDbErrorType.TIMEOUT;
+  }
+  
+  // Query errors
+  if (
+    code === 'EQUERY' ||
+    message.includes('query') ||
+    message.includes('sql')
+  ) {
+    return VectorDbErrorType.QUERY_FAILED;
+  }
+  
+  // Initialization errors
+  if (
+    message.includes('initialize') ||
+    message.includes('init') ||
+    message.includes('not initialized')
+  ) {
+    return VectorDbErrorType.INITIALIZATION;
+  }
+  
+  // Vector operation errors
+  if (message.includes('embedding')) {
+    return VectorDbErrorType.EMBEDDING_GENERATION_FAILED;
+  }
+  
+  if (message.includes('search')) {
+    return VectorDbErrorType.SEARCH;
+  }
+  
+  if (message.includes('index')) {
+    return VectorDbErrorType.INDEX_OPERATION_FAILED;
+  }
+  
+  if (message.includes('not implemented') || message.includes('unsupported')) {
+    return VectorDbErrorType.UNSUPPORTED_OPERATION;
+  }
+  
+  // Default case
+  return VectorDbErrorType.UNKNOWN_ERROR;
+}
+
+/**
+ * Legacy function-based error handler
+ * @deprecated Use VectorDbErrorHandler class instead
+ */
+export function handleVectorDbError(
+  error: any,
+  operation: string,
+  provider: string,
+  shouldRetry: boolean = false
+): VectorDbError {
+  // If it's already a VectorDbError, return it
+  if (error instanceof VectorDbError) {
+>>>>>>> fix/consolidated-dependency-updates
     return error;
   }
 
@@ -153,6 +270,7 @@ export const handleVectorDBError = (
   }
 
   // Map common database errors to appropriate types
+<<<<<<< HEAD
   let errorType = VectorDBErrorType.UNKNOWN_ERROR;
   const errorMessage = baseError.message || 'Unknown vector database error';
   const errorDetails: VectorDBErrorDetails = {};
@@ -203,13 +321,30 @@ export const handleVectorDBError = (
   }
 
   return new VectorDBError(
+=======
+  const errorType = getErrorType(error);
+  const errorMessage = error.message || 'Unknown vector database error';
+  const errorDetails: Record<string, any> = {};
+
+  // Extract useful information from the error
+  if (error.code) errorDetails.code = error.code;
+  if (error.errno) errorDetails.errno = error.errno;
+  if (error.sqlMessage) errorDetails.sqlMessage = error.sqlMessage;
+  if (error.stack) errorDetails.stack = error.stack;
+
+  return new VectorDbError(
+>>>>>>> fix/consolidated-dependency-updates
     errorMessage,
     errorType,
     operation,
     provider,
     errorDetails
   );
+<<<<<<< HEAD
 };
+=======
+}
+>>>>>>> fix/consolidated-dependency-updates
 
 /**
  * Backward/alternate naming compatibility for imports expecting VectorDb* symbols
@@ -326,6 +461,7 @@ export class VectorDbErrorHandler {
       t === VectorDBErrorType.UNKNOWN_ERROR
     );
   }
+<<<<<<< HEAD
 
   /**
    * Check if error is authentication related
@@ -446,3 +582,6 @@ export class VectorDbErrorHandler {
     return VectorDBErrorType.UNKNOWN_ERROR;
   }
 }
+=======
+}
+>>>>>>> fix/consolidated-dependency-updates

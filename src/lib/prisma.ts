@@ -46,7 +46,10 @@ export const prisma = prismaClient
 
 // Note: Prisma middleware for monitoring is disabled to avoid compatibility issues
 // Monitoring can be added at the application level if needed
+<<<<<<< HEAD
 
+=======
+>>>>>>> fix/consolidated-dependency-updates
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 export default prisma

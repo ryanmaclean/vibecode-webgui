@@ -261,8 +261,12 @@ export class CachedQueries {
       });
     },
     (workspaceId: number, query: string, limit: number = 20) => 
+<<<<<<< HEAD
       `search:files:${workspaceId}:${Buffer.from ? Buffer.from(query).toString('base64') : btoa(query)}:${limit}`,
     CacheTTL.SHORT
+=======
+      `search:files:${workspaceId}:${Buffer.from ? Buffer.from(query).toString('base64') : btoa(query)}:${limit}`,    CacheTTL.SHORT
+>>>>>>> fix/consolidated-dependency-updates
   );
 }
 
@@ -280,8 +284,12 @@ export class BulkOperations {
   ): Promise<void> {
     if (data.length === 0) return;
 
+<<<<<<< HEAD
     const batches: T[][] = [];
     for (let i = 0; i < data.length; i += batchSize) {
+=======
+    const batches: T[][] = [];    for (let i = 0; i < data.length; i += batchSize) {
+>>>>>>> fix/consolidated-dependency-updates
       batches.push(data.slice(i, i + batchSize));
     }
 
@@ -303,15 +311,23 @@ export class BulkOperations {
   ): Promise<void> {
     if (updates.length === 0) return;
 
+<<<<<<< HEAD
     const batches: T[][] = [];
     for (let i = 0; i < updates.length; i += batchSize) {
+=======
+    const batches: T[][] = [];    for (let i = 0; i < updates.length; i += batchSize) {
+>>>>>>> fix/consolidated-dependency-updates
       batches.push(updates.slice(i, i + batchSize));
     }
 
     for (const batch of batches) {
       const { prisma } = await import('../prisma');
+<<<<<<< HEAD
       const transaction = batch.map((update: T) => 
         model.update({
+=======
+      const transaction = batch.map((update: T) =>         model.update({
+>>>>>>> fix/consolidated-dependency-updates
           where: { id: update.id },
           data: update
         })
@@ -331,8 +347,12 @@ export class BulkOperations {
   ): Promise<void> {
     if (ids.length === 0) return;
 
+<<<<<<< HEAD
     const batches: number[][] = [];
     for (let i = 0; i < ids.length; i += batchSize) {
+=======
+    const batches: number[][] = [];    for (let i = 0; i < ids.length; i += batchSize) {
+>>>>>>> fix/consolidated-dependency-updates
       batches.push(ids.slice(i, i + batchSize));
     }
 
@@ -353,8 +373,12 @@ export class BulkOperations {
  */
 export class QueryAnalyzer {
   // Changed from private to protected static to allow access via bracket notation
+<<<<<<< HEAD
   protected static queryLog: Array<{
     query: string;
+=======
+  protected static queryLog: Array<{    query: string;
+>>>>>>> fix/consolidated-dependency-updates
     duration: number;
     timestamp: number;
     model: string;
@@ -430,6 +454,7 @@ export class QueryAnalyzer {
   }
 
   /**
+<<<<<<< HEAD
    * Clear query log
    */
   static clearLog() {
@@ -513,6 +538,8 @@ export class QueryAnalyzer {
       }
     }
 
+=======
+>>>>>>> fix/consolidated-dependency-updates
   /**
    * Get database performance metrics
    */

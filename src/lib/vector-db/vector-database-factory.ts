@@ -43,11 +43,18 @@ export class VectorDatabaseFactory {
         case VectorDatabaseProvider.REDIS:
           adapter = new RedisVectorDatabaseAdapter(config as RedisVectorDatabaseConfig);
           break;
+<<<<<<< HEAD
           
         case VectorDatabaseProvider.AZURE_SEARCH:
           adapter = new CognitiveSearchVectorDatabaseAdapter(config as CognitiveSearchVectorDatabaseConfig);
           break;
 
+=======
+
+        case VectorDatabaseProvider.COGNITIVE_SEARCH:
+          adapter = new CognitiveSearchVectorDatabaseAdapter(config as CognitiveSearchVectorDatabaseConfig);
+          break;
+>>>>>>> fix/consolidated-dependency-updates
         default:
           throw new Error(`Unsupported vector database provider: ${config.provider}`);
       }
@@ -103,10 +110,17 @@ export class VectorDatabaseFactory {
         case 'valkey':
           provider = VectorDatabaseProvider.REDIS;
           break;
+<<<<<<< HEAD
         case 'azure-search':
         case 'azure-cognitive-search':
         case 'cognitive-search':
           provider = VectorDatabaseProvider.AZURE_SEARCH;
+=======
+        case 'cognitive_search':
+        case 'azure_search':
+        case 'azure_cognitive_search':
+          provider = VectorDatabaseProvider.COGNITIVE_SEARCH;
+>>>>>>> fix/consolidated-dependency-updates
           break;
         default:
           provider = VectorDatabaseProvider.POSTGRES;
