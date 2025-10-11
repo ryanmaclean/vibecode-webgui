@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-<<<<<<< HEAD
-<<<<<<< HEAD
 import { logger } from '../../../../lib/logger';
 
 // import { vectorDBService } from '@/lib/vector-db/VectorDBService';
-=======
-import { vectorDBService } from '@/lib/vector-db/vector-store-service';
->>>>>>> fix/consolidated-dependency-updates
-=======
-// import { vectorDBService } from '@/lib/vector-db/VectorDBService';
->>>>>>> merge-conflict-cleanup
 
 export async function GET(request: NextRequest) {
     const format = request.nextUrl.searchParams.get('format') || 'json';
