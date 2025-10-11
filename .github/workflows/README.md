@@ -216,12 +216,51 @@ gh workflow run code-server-release-monitor.yml
 
 ### Stale Issue Management
 **File:** `stale.yml`
-**Purpose:** Automatically manage stale issues and PRs
+**Purpose:** Automatically manage stale issues and PRs to keep repository healthy
 
-**Actions:**
-- Label stale items after 60 days
-- Close after 14 days of staleness
-- Exempt labeled items
+**Schedule:**
+- Runs daily at 04:30 UTC
+- Manual trigger available via `workflow_dispatch`
+
+**Timing Configuration:**
+- **Mark as stale:** After 30 days of inactivity
+- **Auto-close:** 14 days after being marked stale (44 days total)
+
+**Exempt Labels:**
+Issues and PRs with any of these labels will never be marked stale:
+- `pinned` - Permanently active issues/PRs that should never be marked stale
+- `security` - Security-related items requiring ongoing attention
+- `triaged` - Reviewed and categorized items exempt from automation
+- `never-stale` - Explicit exemption from stale automation for long-term tracking
+- `priority: p0` - Critical priority items
+- `priority: p1` - High priority items
+
+**Behavior:**
+1. Scans all issues and PRs for activity
+2. Marks items with no activity for 30+ days with `stale` label
+3. Posts comment with instructions on how to keep item open
+4. Automatically closes items that remain stale for 14 days
+5. Removes stale label if activity resumes on marked items
+6. Processes up to 200 items per run for efficiency
+
+**Stale Message Content:**
+- Clear explanation of why item was marked stale
+- Timeline until auto-close (14 days)
+- Instructions to keep item open (comment or apply exempt label)
+- Encouragement to provide updates if still relevant
+
+**Manual Trigger:**
+```bash
+gh workflow run stale.yml
+```
+
+**Label Management:**
+Create required labels if missing:
+```bash
+gh label create "pinned" --description "Never mark as stale - permanently active issue/PR" --color "0366d6"
+gh label create "triaged" --description "Reviewed and categorized - exempt from stale automation" --color "fbca04"
+gh label create "never-stale" --description "Exempt from stale automation - long-term tracking" --color "d4c5f9"
+```
 
 ### Dependency Compatibility
 **File:** `dependency-compatibility.yml`
@@ -318,6 +357,12 @@ gh run watch
 - Optimize long-running operations
 - Split into smaller jobs
 
+**Stale workflow issues:**
+- Verify required labels exist in repository
+- Check exempt label configuration matches repository labels
+- Review timing configuration for project needs
+- Monitor workflow logs for processing statistics
+
 ---
 
 ## Related Documentation
@@ -342,5 +387,5 @@ When adding new workflows:
 
 ---
 
-*Last Updated: 2025-10-01*
+*Last Updated: 2025-10-03*
 *Maintained by: VibeCode DevOps Team*

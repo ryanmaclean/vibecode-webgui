@@ -29,18 +29,20 @@ RUN apt-get update && \
       jq && \
     rm -rf /var/lib/apt/lists/*
 
-# Install AI CLI tools
-# Aider - AI pair programming
+# Install AI CLI tools with compatible dependency resolution
+# Install Aider first, then Goose with fallback for conflicts
 RUN pip3 install --no-cache-dir --break-system-packages \
-      aider-chat==0.84.0
-
-# Goose - Block's AI agent
-RUN pip3 install --no-cache-dir --break-system-packages \
-      goose-ai==0.9.11
+      aider-chat==0.84.0 && \
+    pip3 install --no-cache-dir --break-system-packages \
+      goose-ai==0.9.11 || \
+    (echo "Dependency conflict detected, installing with relaxed constraints" && \
+     pip3 install --no-cache-dir --break-system-packages \
+       --upgrade certifi urllib3 typing-extensions cffi && \
+     pip3 install --no-cache-dir --break-system-packages goose-ai==0.9.11)
 
 # Cline - CLI version (via npx, will be installed on-demand)
 # Continue - Open source autopilot (optional)
-RUN npm install -g npm@latest
+# Skip npm upgrade - Debian's Node.js 18 includes compatible npm version
 
 # Install agentapi binary
 # NOTE: For MVP, we'll use a simple HTTP server wrapper
