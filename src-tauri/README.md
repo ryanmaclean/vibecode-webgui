@@ -1,216 +1,209 @@
-# VibeCode Tauri Backend
+# Tauri Backend Setup
 
-This directory contains the Rust backend for the VibeCode desktop application, built with Tauri 2.x.
+This directory will contain the Rust backend for the VibeCode desktop application.
+
+## Prerequisites
+
+Ensure you have the following installed:
+- Rust (via rustup): https://rustup.rs/
+- Tauri CLI: `npm install -g @tauri-apps/cli`
+
+## Quick Start
+
+### Initialize Tauri Project
+
+```bash
+# From project root
+npx tauri init
+
+# Follow the prompts:
+# - App name: VibeCode
+# - Window title: VibeCode
+# - Web assets location: ../out (for Next.js static export)
+# - Dev server URL: http://localhost:3000
+# - Frontend dev command: npm run dev
+# - Frontend build command: npm run build && npm run export
+```
+
+### Development Workflow
+
+```bash
+# Run in development mode (hot reload)
+npm run tauri:dev
+
+# Build for production
+npm run tauri:build
+
+# Build in debug mode (faster, for testing)
+npm run tauri:build:debug
+```
 
 ## Project Structure
 
 ```
 src-tauri/
-├── src/
-│   ├── main.rs           # Application entry point
-│   ├── commands.rs       # Tauri command handlers (exposed to frontend)
-│   └── docker.rs         # Docker integration via Bollard
-├── icons/                # Application icons (placeholder - needs proper assets)
-├── Cargo.toml            # Rust dependencies
-├── tauri.conf.json       # Tauri configuration
-└── build.rs              # Build script
+├── Cargo.toml           # Rust dependencies and metadata
+├── tauri.conf.json      # Tauri configuration
+├── entitlements.plist   # macOS entitlements (already created)
+├── build.rs             # Build script (optional)
+├── icons/               # Application icons
+│   ├── icon.icns       # macOS icon
+│   ├── icon.ico        # Windows icon
+│   └── icon.png        # Linux icon
+└── src/
+    └── main.rs         # Rust entry point
 ```
 
-## Features
+## Required Dependencies
 
-### Implemented Commands
+Add these to `Cargo.toml`:
 
-1. **ping()** - Health check command (Issue #491)
-   - Returns: `"pong"`
-   - Usage: `await invoke('ping')`
+```toml
+[package]
+name = "vibecode"
+version = "0.1.0"
+description = "VibeCode Desktop Application"
+authors = ["VibeCode Team"]
+license = "MIT"
+repository = "https://github.com/vibecode/vibecode-webgui"
+edition = "2021"
 
-2. **launch_browser(url: string)** - Auto-launch system default browser (Issue #491 - P0)
-   - Parameters: `url: String`
-   - Returns: `Result<(), String>`
-   - Usage: `await invoke('launch_browser', { url: 'http://localhost:3000' })`
-   - Platform support: macOS, Windows, Linux
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
 
-3. **greet(name: string)** - Simple greeting command for testing
-   - Returns: `String`
-   - Usage: `await invoke('greet', { name: 'Developer' })`
+[dependencies]
+tauri = { version = "2.0", features = ["shell-open"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
 
-4. **check_docker()** - Verifies if Docker is running and accessible
-   - Returns: `Result<bool, String>`
-   - Usage: `await invoke('check_docker')`
+# Docker integration
+bollard = "0.15"
 
-5. **get_docker_version()** - Returns Docker daemon version
-   - Returns: `Result<String, String>`
-   - Usage: `await invoke('get_docker_version')`
+# Bonjour/mDNS for network discovery
+mdns-sd = "0.7"
 
-6. **get_docker_status()** - Get Docker availability and version
-   - Returns: `Result<{ available: bool, version?: string }, String>`
-   - Usage: `await invoke('get_docker_status')`
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
 
-7. **get_docker_info()** - Get detailed Docker system information
-   - Returns: `Result<{ containers, images, memory_total, cpus, os_type, architecture }, String>`
-   - Usage: `await invoke('get_docker_info')`
-
-### Dependencies
-
-- **tauri**: Desktop application framework
-- **tauri-plugin-shell**: Shell command execution
-- **bollard**: Docker API client for Rust
-- **mdns-sd**: mDNS/Bonjour service discovery
-- **tokio**: Async runtime
-- **serde/serde_json**: Serialization
-
-## Development
-
-### Prerequisites
-
-- Rust (latest stable)
-- Node.js 18+
-- Docker Desktop (for Docker features)
-
-### Commands
-
-```bash
-# Run in development mode (from project root)
-npm run tauri:dev
-
-# Build production bundle
-npm run tauri:build
-
-# Build debug bundle
-npm run tauri:build:debug
-
-# Check Rust compilation
-cd src-tauri && cargo check
-
-# Run Rust tests
-cd src-tauri && cargo test
+[target.'cfg(target_os = "macos")'.dependencies]
+cocoa = "0.25"
+objc = "0.2"
 ```
 
-## Frontend Integration
+## Tauri Configuration
 
-### Using Tauri Commands
+Key settings in `tauri.conf.json`:
 
-```typescript
-import { tauriCommands } from '@/lib/tauri';
-
-// Check if running in Tauri
-if (isTauri()) {
-  // Call Tauri backend
-  const greeting = await tauriCommands.greet('Developer');
-  const dockerAvailable = await tauriCommands.checkDocker();
-  const dockerVersion = await tauriCommands.getDockerVersion();
-}
-```
-
-### React Hook
-
-```typescript
-import { useTauri } from '@/lib/tauri';
-
-function MyComponent() {
-  const { isTauri, commands } = useTauri();
-
-  if (!isTauri) {
-    return <div>Web version</div>;
+```json
+{
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:3000",
+    "distDir": "../out",
+    "withGlobalTauri": false
+  },
+  "package": {
+    "productName": "VibeCode",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": false,
+        "open": true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "targets": "all",
+      "identifier": "com.vibecode.app",
+      "icon": [
+        "icons/icon.icns",
+        "icons/icon.ico",
+        "icons/icon.png"
+      ],
+      "macOS": {
+        "entitlements": "entitlements.plist",
+        "exceptionDomain": "",
+        "frameworks": [],
+        "providerShortName": null,
+        "signingIdentity": null,
+        "minimumSystemVersion": "11.0"
+      }
+    },
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "resizable": true,
+        "title": "VibeCode",
+        "width": 1200,
+        "height": 800
+      }
+    ]
   }
-
-  // Use commands...
 }
 ```
 
-## Configuration
+## CI/CD Integration
 
-### Next.js Export Mode
+The GitHub Actions workflows are already configured:
 
-Tauri requires static HTML/JS/CSS. The configuration uses `NEXT_OUTPUT_MODE=export`:
+- `.github/workflows/tauri-release.yml` - Production builds and releases
+- `.github/workflows/tauri-test.yml` - CI testing
 
-```bash
-npm run build:export
-```
-
-This generates static files in the `out/` directory, which Tauri serves.
-
-### Security
-
-The `tauri.conf.json` includes Content Security Policy (CSP) settings aligned with the Next.js configuration:
-
-- Allows required external services (Datadog, OpenRouter, OpenAI, Anthropic)
-- Permits WebSocket connections for development
-- Restricts script sources to trusted domains
+See `.github/TAURI_CI_GUIDE.md` for complete documentation.
 
 ## Next Steps
 
-### Issue #489 - Tauri Backend Scaffolding - ✅ COMPLETE
+1. **Initialize Tauri** (Issue #489)
+   ```bash
+   npx tauri init
+   ```
 
-- [x] Initialize Tauri project structure
-- [x] Configure Next.js integration
-- [x] Add Docker detection commands
-- [x] Rust compilation successful (cargo build --release)
-- [x] 7 functional IPC commands implemented
-- [x] Error handling and Result types
-- [x] Docker API integration via Bollard
-- [x] Cross-platform command support
-- [ ] Create proper application icons (deferred)
-- [ ] Test development workflow (`npm run tauri:dev`) - needs Next.js dev server
-- [ ] Add mDNS service discovery (future enhancement)
+2. **Configure Next.js for Tauri**
+   - Enable static export in `next.config.js`
+   - Set `output: 'export'`
 
-### Issue #491 - Browser Auto-Launch - ✅ COMPLETE
+3. **Create Basic Rust Commands**
+   - Docker API integration
+   - Bonjour/mDNS discovery
+   - File system operations
 
-- [x] launch_browser command with cross-platform support
-- [x] macOS: `open` command
-- [x] Windows: `cmd /C start` command
-- [x] Linux: `xdg-open` command
-- [x] ping command for health checks
-- [x] Error handling with descriptive messages
-- [ ] Integration testing with frontend
+4. **Test Development Workflow**
+   ```bash
+   npm run tauri:dev
+   ```
 
-### Issue #488 - Menu Bar Integration - 🔄 IN PROGRESS
+5. **Configure Secrets** (Issue #492)
+   - Follow `.github/TAURI_SECRETS.md`
+   - Add Apple Developer credentials to GitHub
 
-- [ ] Basic menu structure in Tauri
-- [ ] File menu (New, Open, Save, Quit)
-- [ ] Edit menu (Undo, Redo, Cut, Copy, Paste)
-- [ ] View menu (Toggle DevTools, Zoom)
-- [ ] Help menu (Documentation, About)
-- [ ] macOS-specific menu bar behavior
-
-### Future Enhancements
-
-- Container lifecycle management
-- File system operations
-- System tray integration
-- Auto-updater
-- Deep linking support
-- Native notifications
-
-## Troubleshooting
-
-### Tauri CLI Issues
-
-If you encounter "Cannot find native binding" errors:
-
-```bash
-rm -rf node_modules package-lock.json
-npm install
-```
-
-### Rust Compilation Errors
-
-```bash
-cd src-tauri
-cargo clean
-cargo check
-```
-
-### Docker Connection Issues
-
-Ensure Docker Desktop is running:
-
-```bash
-docker ps
-```
+6. **Test CI Pipeline**
+   ```bash
+   git checkout -b feature/tauri-scaffolding-489
+   git add .
+   git commit -m "feat: initialize Tauri project"
+   git push origin feature/tauri-scaffolding-489
+   gh pr create
+   ```
 
 ## Resources
 
-- [Tauri Documentation](https://tauri.app/v2/)
-- [Bollard (Docker) Docs](https://docs.rs/bollard/)
-- [Next.js Static Export](https://nextjs.org/docs/app/building-your-application/deploying/static-exports)
+- [Tauri Documentation](https://tauri.app/)
+- [Tauri + Next.js Guide](https://tauri.app/v1/guides/getting-started/setup/next-js)
+- [Rust Book](https://doc.rust-lang.org/book/)
+- [CI/CD Guide](.github/TAURI_CI_GUIDE.md)
+- [Secrets Configuration](.github/TAURI_SECRETS.md)
+
+## Related Issues
+
+- #488 - VibeCode.app Design (Parent Epic)
+- #489 - Tauri Scaffolding & Project Setup
+- #492 - DMG Packaging Pipeline (this issue)

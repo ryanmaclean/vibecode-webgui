@@ -4,10 +4,9 @@
  */
 
 import { NextAuthOptions } from 'next-auth'
-import GitHubProvider from 'next-auth/providers/github'
+import GithubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
-<<<<<<< HEAD
 import { isValidBcryptHash, verifyPassword } from './auth/password'
 
 /**
@@ -22,25 +21,6 @@ import { isValidBcryptHash, verifyPassword } from './auth/password'
  * - Should be randomly generated (use: openssl rand -base64 32)
  */
 const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET
-=======
-import { authenticateUser, initializeDefaultUsers, logSecurityEvent } from './auth/user-manager'
-// import { PrismaAdapter } from '@next-auth/prisma-adapter'
-// import { prisma } from './prisma'
-
-// Initialize default users on startup
-initializeDefaultUsers().catch(console.error)
-
-declare module 'next-auth' {
-  interface Session {
-    user: {
-      id: string
-      email: string
-      name: string
-      image?: string
-      role: string
-    }
-  }
->>>>>>> ai-sdk-openai-v2-test
 
 if (!NEXTAUTH_SECRET) {
   throw new Error(
@@ -85,9 +65,7 @@ const performTimingSafeCompare = async (password: string | undefined): Promise<v
   try {
     await verifyPassword(password ?? '', DUMMY_HASH)
   } catch (error) {
-    credentialsLogger.warn('Timing-safe bcrypt comparison failed', {
-      error: error instanceof Error ? error.message : error,
-    })
+    console.warn('Timing-safe bcrypt comparison failed', { error })
   }
 }
 
@@ -111,7 +89,6 @@ const RAW_LEGACY_CREDENTIALS: LegacyCredential[] = [
     name: 'Admin User',
     role: 'admin'
   },
-<<<<<<< HEAD
   {
     email: 'lead@vibecode.dev',
     passwordHash: '$2b$12$8s/hbVhcb/mddOBDmQbrou/bEZYO.ZAkyEacFBzrctq7Y/4VJeVCW',
@@ -185,7 +162,7 @@ RAW_LEGACY_CREDENTIALS.forEach((credential) => {
   const passwordHash = credential.passwordHash.trim()
 
   if (!isValidBcryptHash(passwordHash)) {
-    credentialsLogger.warn('Legacy credential misconfigured with invalid bcrypt hash', {
+    console.warn('⚠️ Legacy credential misconfigured with invalid bcrypt hash', {
       email: trimmedEmail,
       credentialId: credential.id,
     })
@@ -193,7 +170,7 @@ RAW_LEGACY_CREDENTIALS.forEach((credential) => {
   }
 
   if (LEGACY_CREDENTIALS_BY_EMAIL.has(normalizedEmail)) {
-    credentialsLogger.warn('Duplicate legacy credential detected; later entry ignored', {
+    console.warn('⚠️ Duplicate legacy credential detected; later entry ignored', {
       email: trimmedEmail,
       credentialId: credential.id,
     })
@@ -205,7 +182,7 @@ RAW_LEGACY_CREDENTIALS.forEach((credential) => {
     email: trimmedEmail,
     passwordHash,
   })
-  credentialsLogger.debug('Stored legacy credential', { email: trimmedEmail })
+  console.debug('[auth] stored legacy credential', { email: trimmedEmail })
 })
 
 // Build providers dynamically so missing OAuth credentials do not break local auth flows.
@@ -216,12 +193,6 @@ if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
     GithubProvider({
       clientId: process.env.GITHUB_ID,
       clientSecret: process.env.GITHUB_SECRET,
-=======
-  providers: [
-    GitHubProvider({
-      clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!,
->>>>>>> ai-sdk-openai-v2-test
       profile(profile) {
         return {
           id: profile.id.toString(),
@@ -288,7 +259,6 @@ providers.push(
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-<<<<<<< HEAD
         const emailInput = credentials?.email
         const passwordInput = typeof credentials?.password === 'string' ? credentials.password : ''
 
@@ -358,48 +328,6 @@ providers.push(
             email: normalizedEmail,
             credentialId: user.id,
             error: error instanceof Error ? error.message : 'unknown-error',
-=======
-        if (!credentials?.email || !credentials?.password) {
-          logSecurityEvent('login_failure', undefined, { 
-            reason: 'Missing credentials',
-            email: credentials?.email 
-          })
-          return null
-        }
-
-        try {
-          // Authenticate user with secure password hashing
-          const user = await authenticateUser({
-            email: credentials.email,
-            password: credentials.password,
-          })
-
-          if (user) {
-            logSecurityEvent('login_success', user.id, { 
-              email: user.email,
-              role: user.role 
-            })
-            
-            return {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              role: user.role,
-            }
-          } else {
-            logSecurityEvent('login_failure', undefined, { 
-              email: credentials.email,
-              reason: 'Invalid credentials' 
-            })
-            return null
-          }
-        } catch (error) {
-          console.error('Authentication error:', error)
-          logSecurityEvent('login_failure', undefined, { 
-            email: credentials.email,
-            reason: 'Authentication system error',
-            error: error instanceof Error ? error.message : 'Unknown error'
->>>>>>> ai-sdk-openai-v2-test
           })
           return null
         }
@@ -443,17 +371,13 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-<<<<<<< HEAD
       console.log('🔄 JWT callback:', {
         hasUser: !!user,
         hasToken: !!token,
         provider: account?.provider,
         tokenId: token?.id,
-        userId: user?.id,
+        userId: user?.id
       })
-=======
-      // Debug log removed
->>>>>>> ai-sdk-openai-v2-test
 
       if (user) {
         token.id = user.id
@@ -466,12 +390,17 @@ export const authOptions: NextAuthOptions = {
         if (account?.provider === 'google') {
           token.googleId = user.googleId
         }
-        // Debug log removed
+        console.log('✅ JWT token updated with user:', { id: token.id, role: token.role })
       }
       return token
     },
     async session({ session, token }) {
-      // Debug log removed
+      console.log('📋 Session callback:', {
+        hasSession: !!session,
+        hasToken: !!token,
+        tokenId: token?.id,
+        sessionUserId: session?.user?.id
+      })
 
       if (!session.user) {
         session.user = {
@@ -487,7 +416,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string
         session.user.email = token.email as string
         session.user.name = token.name as string
-        // Debug log removed
+        console.log('✅ Session updated with token:', { id: session.user.id, role: session.user.role })
       }
       return session
     },
@@ -505,10 +434,10 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signIn({ user, account }) {
-      // Debug log removed
+      console.log(`User ${user.email} signed in via ${account?.provider}`)
     },
     async signOut({ token }) {
-      // Debug log removed
+      console.log(`User ${token?.email} signed out`)
     },
   },
   debug: process.env.NODE_ENV === 'development',
