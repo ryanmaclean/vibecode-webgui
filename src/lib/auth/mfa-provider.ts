@@ -7,6 +7,7 @@
 import { z } from 'zod'
 import * as speakeasy from 'speakeasy'
 import * as QRCode from 'qrcode'
+import { createChildLogger } from '@/lib/logger'
 
 export interface MFADevice {
   id: string
@@ -69,6 +70,7 @@ export class MFAProvider {
   private challenges: Map<string, MFAChallenge> = new Map()
   private backupCodes: Map<string, string[]> = new Map() // userId -> codes
   private failedAttempts: Map<string, { count: number, lockedUntil?: Date }> = new Map()
+  private readonly logger = createChildLogger({ module: 'auth', scope: 'mfa' })
 
   constructor() {
     // Cleanup expired challenges every 5 minutes
@@ -111,7 +113,7 @@ export class MFAProvider {
 
     this.devices.set(deviceId, device)
 
-    // Debug log removed
+    this.logger.info('TOTP setup initiated', { userId, deviceName })
 
     return {
       deviceId,
@@ -146,7 +148,11 @@ export class MFAProvider {
     // Send verification SMS
     await this.sendSMSVerification(phoneNumber, deviceId)
 
-    // Debug log removed/g, '*')}`)
+    this.logger.info('SMS MFA setup initiated', {
+      userId,
+      deviceName,
+      phoneNumber: phoneNumber.replace(/\d(?=\d{4})/g, '*'),
+    })
 
     return {
       deviceId,
@@ -179,7 +185,11 @@ export class MFAProvider {
     // Send verification email
     await this.sendEmailVerification(email, deviceId)
 
-    // Debug log removed.*@/, '$1***@')}`)
+    this.logger.info('Email MFA setup initiated', {
+      userId,
+      deviceName,
+      email: email.replace(/(.{2}).*@/, '$1***@'),
+    })
 
     return {
       deviceId,
@@ -225,11 +235,19 @@ export class MFAProvider {
       device.lastUsed = new Date()
       this.devices.set(deviceId, device)
       
-      // Debug log removed`)
+      this.logger.info('MFA device activated', {
+        userId: device.userId,
+        deviceName: device.name,
+        deviceType: device.type,
+      })
       return true
     }
 
-    // Debug log removed
+    this.logger.warn('MFA setup verification failed', {
+      userId: device.userId,
+      deviceName: device.name,
+      deviceType: device.type,
+    })
     return false
   }
 
@@ -283,7 +301,7 @@ export class MFAProvider {
               d.email ? this.maskEmail(d.email) : undefined
     }))
 
-    // Debug log removed
+    this.logger.info('MFA challenge created', { userId, challengeId, challengeType })
 
     return {
       challengeId,
@@ -324,7 +342,10 @@ export class MFAProvider {
         this.challenges.delete(challengeId)
         const remainingBackupCodes = this.backupCodes.get(challenge.userId)?.length || 0
         
-        // Debug log removed
+        this.logger.info('MFA verification successful via backup code', {
+          userId: challenge.userId,
+          challengeId,
+        })
         
         return {
           success: true,
@@ -361,7 +382,12 @@ export class MFAProvider {
       this.challenges.delete(challengeId)
       this.clearRateLimit(challenge.userId)
       
-      // Debug log removed
+      this.logger.info('MFA verification successful', {
+        userId: challenge.userId,
+        challengeId,
+        deviceId,
+        deviceType: device.type,
+      })
       
       return {
         success: true,
@@ -371,7 +397,12 @@ export class MFAProvider {
     } else {
       this.recordFailedAttempt(challenge.userId)
       
-      // Debug log removed
+      this.logger.warn('MFA verification failed', {
+        userId: challenge.userId,
+        challengeId,
+        attempts: challenge.attempts,
+        maxAttempts: challenge.maxAttempts,
+      })
       
       return {
         success: false,
@@ -402,7 +433,11 @@ export class MFAProvider {
     }
 
     this.devices.delete(deviceId)
-    // Debug log removed`)
+    this.logger.info('MFA device removed', {
+      userId: device.userId,
+      deviceName: device.name,
+      deviceType: device.type,
+    })
     return true
   }
 
@@ -413,7 +448,7 @@ export class MFAProvider {
     const backupCodes = this.generateBackupCodes()
     this.backupCodes.set(userId, backupCodes)
     
-    // Debug log removed
+    this.logger.info('MFA backup codes regenerated', { userId })
     return backupCodes
   }
 
@@ -436,7 +471,9 @@ export class MFAProvider {
     // Store the code temporarily (in real app, use Redis or database)
     this.storeTempCode(deviceId, code, 'sms')
     
-    // Debug log removed}: ${code}`)
+    this.logger.info('SMS verification code sent', {
+      phoneNumber: this.maskPhoneNumber(phoneNumber),
+    })
   }
 
   private async sendEmailVerification(email: string, deviceId: string): Promise<void> {
@@ -446,7 +483,9 @@ export class MFAProvider {
     // Store the code temporarily
     this.storeTempCode(deviceId, code, 'email')
     
-    // Debug log removed}: ${code}`)
+    this.logger.info('Email verification code sent', {
+      email: this.maskEmail(email),
+    })
   }
 
   private async verifySMSToken(deviceId: string, token: string): Promise<boolean> {

@@ -8,13 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './ui/resizable';
-import { 
-  Send, 
-  Sparkles, 
-  Code, 
-  Eye, 
-  Link,
+import {
+  Send,
+  Sparkles,
+  Code,
+  Eye,
+  Globe,
   Download,
+  Github,
   Monitor,
   Smartphone,
   Tablet,
@@ -22,22 +23,22 @@ import {
   Play,
   Bot,
   User,
-  Link as Paperclip,
+  Paperclip,
   Image,
   FileText,
   Zap,
   Settings,
-  Circle as DollarSign,
+  DollarSign,
   Clock,
   Database,
   Cpu,
   AlertCircle,
   CheckCircle,
-  File,
+  FileCode,
   Upload,
   Mic,
   MicOff,
-  Volume,
+  Volume2,
   Headphones,
   Radio
 } from 'lucide-react';
@@ -73,17 +74,17 @@ interface SpeechRecognition extends EventTarget {
   interimResults: boolean;
   lang: string;
   maxAlternatives: number;
-  onaudioend: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onaudiostart: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => any) | null;
-  onnomatch: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
-  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => any) | null;
-  onsoundend: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onsoundstart: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onspeechend: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onspeechstart: ((this: SpeechRecognition, ev: Event) => any) | null;
-  onstart: ((this: SpeechRecognition, ev: Event) => any) | null;
+  onaudioend: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onaudiostart: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => void) | null;
+  onnomatch: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
+  onsoundend: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onsoundstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onspeechend: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onspeechstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
   serviceURI: string;
   start(): void;
   stop(): void;
@@ -323,6 +324,9 @@ export default function PromptInterface() {
   
   // Template marketplace integration
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [selectedDemoPromptId, setSelectedDemoPromptId] = useState<string>('');
+  const [workspaceId, setWorkspaceId] = useState('lovable-demo');
+  const [ragEnabled, setRagEnabled] = useState(true);
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -366,7 +370,7 @@ export default function PromptInterface() {
       try {
         setApiKeys(JSON.parse(savedKeys));
       } catch (error) {
-        // Error loading saved API keys
+        console.error('Error loading saved API keys:', error);
       }
     }
   }, []);
@@ -383,7 +387,7 @@ export default function PromptInterface() {
         // Pre-populate the input with template context
         setInput(`Generate a project using the "${template.name}" template. This template is described as: ${template.description}`);
       } catch (error) {
-        // Error loading selected template
+        console.error('Error loading selected template:', error);
       }
     }
   }, []);
@@ -428,7 +432,7 @@ export default function PromptInterface() {
         };
         
         recognitionRef.current.onerror = (event) => {
-          // Speech recognition error handled
+          console.error('Speech recognition error:', event.error);
           setIsListening(false);
           setInterimTranscript("");
         };
@@ -546,7 +550,7 @@ export default function PromptInterface() {
       mediaRecorder.start();
       setIsRecording(true);
     } catch (error) {
-      // Error starting audio recording
+      console.error('Error starting audio recording:', error);
     }
   }, [isRecording]);
 
@@ -759,7 +763,7 @@ Would you like to set up your API keys now?`,
       setMessages(welcomeMessages);
       
     } catch (error) {
-      // Auth error handled
+      console.error('Auth error:', error);
       
       // Track failed login
       await fetch('/api/auth/login-tracking', {
@@ -1009,7 +1013,7 @@ export default function LandingPage() {
                 AI Assistant
                 {voiceSupported && (
                   <Badge variant="outline" className="text-xs">
-                    <Volume className="w-3 h-3 mr-1" />
+                    <Volume2 className="w-3 h-3 mr-1" />
                     Voice Enabled
                   </Badge>
                 )}
@@ -1101,9 +1105,6 @@ export default function LandingPage() {
             
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-<<<<<<< HEAD
-              <MessageList messages={messages} isTyping={isTyping} />
-=======
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -1150,7 +1151,7 @@ export default function LandingPage() {
                             {message.attachments.map((attachment) => (
                               <div key={attachment.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
                                 {attachment.type === 'image' && <Image className="w-4 h-4" />}
-                                {attachment.type === 'code' && <File className="w-4 h-4" />}
+                                {attachment.type === 'code' && <FileCode className="w-4 h-4" />}
                                 {attachment.type === 'document' && <FileText className="w-4 h-4" />}
                                 {attachment.type === 'audio' && <Headphones className="w-4 h-4" />}
                                 <span className="text-xs">{attachment.name}</span>
@@ -1179,7 +1180,7 @@ export default function LandingPage() {
                               )}
                               {message.metadata.deploymentUrl && (
                                 <Badge variant="secondary" className="text-xs">
-                                  <Link className="w-3 h-3 mr-1" />
+                                  <Globe className="w-3 h-3 mr-1" />
                                   Deployed
                                 </Badge>
                               )}
@@ -1249,7 +1250,6 @@ export default function LandingPage() {
                   </div>
                 </div>
               )}
->>>>>>> ai-sdk-openai-v2-test
               <div ref={messagesEndRef} />
             </div>
             
@@ -1283,7 +1283,7 @@ export default function LandingPage() {
                   {attachments.map((attachment) => (
                     <div key={attachment.id} className="flex items-center gap-2 p-2 bg-muted rounded border group">
                       {attachment.type === 'image' && <Image className="w-4 h-4" />}
-                      {attachment.type === 'code' && <File className="w-4 h-4" />}
+                      {attachment.type === 'code' && <FileCode className="w-4 h-4" />}
                       {attachment.type === 'document' && <FileText className="w-4 h-4" />}
                       {attachment.type === 'audio' && <Headphones className="w-4 h-4" />}
                       <span className="text-sm truncate max-w-24">{attachment.name}</span>
@@ -1325,8 +1325,9 @@ export default function LandingPage() {
                           isListening && "bg-green-100 text-green-600"
                         )}
                         disabled={isRecording}
+                        aria-label={isListening ? "Stop voice recognition" : "Start voice recognition"}
                       >
-                        {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                        {isListening ? <MicOff className="w-4 h-4" aria-hidden="true" /> : <Mic className="w-4 h-4" aria-hidden="true" />}
                       </Button>
                     )}
 
@@ -1341,11 +1342,12 @@ export default function LandingPage() {
                           isRecording && "bg-red-100 text-red-600"
                         )}
                         disabled={isListening}
+                        aria-label={isRecording ? "Stop audio recording" : "Start audio recording"}
                       >
-                        <Radio className="w-4 h-4" />
+                        <Radio className="w-4 h-4" aria-hidden="true" />
                       </Button>
                     )}
-                    
+
                     {/* File Upload */}
                     {currentModel?.supportsFiles && (
                       <Button
@@ -1353,11 +1355,12 @@ export default function LandingPage() {
                         size="sm"
                         onClick={() => fileInputRef.current?.click()}
                         className="p-1 h-8 w-8"
+                        aria-label="Attach file"
                       >
-                        <Paperclip className="w-4 h-4" />
+                        <Paperclip className="w-4 h-4" aria-hidden="true" />
                       </Button>
                     )}
-                    
+
                     {/* Prompt Enhancement */}
                     <Button
                       variant="ghost"
@@ -1365,8 +1368,9 @@ export default function LandingPage() {
                       onClick={enhancePrompt}
                       disabled={!input.trim() || isTyping}
                       className="p-1 h-8 w-8"
+                      aria-label="Enhance prompt with AI suggestions"
                     >
-                      <Zap className="w-4 h-4" />
+                      <Zap className="w-4 h-4" aria-hidden="true" />
                     </Button>
                   </div>
                 </div>
@@ -1451,7 +1455,7 @@ export default function LandingPage() {
                   <RefreshCw className="w-4 h-4" />
                 </Button>
                 <Button variant="ghost" size="sm">
-                  <Link className="w-4 h-4" />
+                  <Globe className="w-4 h-4" />
                 </Button>
               </div>
             </div>
@@ -1498,7 +1502,7 @@ export default function LandingPage() {
                         Export
                       </Button>
                       <Button variant="outline" size="sm">
-                        <Code className="w-4 h-4 mr-2" />
+                        <Github className="w-4 h-4 mr-2" />
                         Push to GitHub
                       </Button>
                     </div>

@@ -36,12 +36,11 @@ export const hashPassword = async (plain: string, saltRounds: number = DEFAULT_S
 }
 
 export const verifyPassword = async (plain: string, hash: string): Promise<boolean> => {
-  if (!isNonEmptyString(plain) || !isNonEmptyString(hash)) {
+  if (!isNonEmptyString(plain) || typeof hash !== 'string') {
     return false
   }
 
   const normalizedHash = normalizeHash(hash)
-
   if (!isValidBcryptHash(normalizedHash)) {
     return false
   }
@@ -54,4 +53,3 @@ export const verifyPassword = async (plain: string, hash: string): Promise<boole
 }
 
 export { DEFAULT_SALT_ROUNDS as PASSWORD_HASH_ROUNDS }
-export default verifyPassword
