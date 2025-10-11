@@ -53,6 +53,10 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // await sql.connect(this.sqlServerConfig.connectionString);
       // this.connection = sql;
 
+      if (this.config.enableLogging) {
+        console.info('SQL Server vector database adapter initialized successfully');
+      }
+      
       throw new Error('SQL Server adapter not yet implemented');
     } catch (error) {
       if (this.config.enableLogging) {

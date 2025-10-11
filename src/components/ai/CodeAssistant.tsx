@@ -6,8 +6,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useChat } from '@ai-sdk/react'
-import { useAuth } from '@/hooks/useAuth'
+import { useChat } from '../../hooks/useAI'
+import { useAuth } from '../../hooks/useAuth'
 
 interface CodeAssistantProps {
   workspaceId: string
@@ -195,7 +195,7 @@ Feel free to share your code or ask any development questions!`,
 
           {/* Messages */}
           <div className="h-64 overflow-y-auto p-4 space-y-3">
-            {messages.map((message) => (
+            {messages.map((message: { id: string; role: string; content: string }) => (
               <div
                 key={message.id}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}

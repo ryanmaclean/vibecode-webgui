@@ -1,22 +1,16 @@
 /**
- * Valkey Client Configuration with Performance Optimization
- * 
- * IMPORTANT: This uses Valkey (https://valkey.io/), the open-source fork of Redis
- * that maintains BSD licensing, avoiding Redis' restrictive RSAL/SSPL dual license.
- * Valkey is 100% Redis-compatible, so we use ioredis client for connection.
- * 
+ * Redis Client Configuration with Performance Optimization
  * Handles caching, session storage, and real-time features
  */
 
-import { Redis } from 'ioredis';
+import Redis from 'ioredis';
 import { metrics } from '../server-monitoring';
 
-// Valkey configuration based on environment 
-// Note: Using Redis-compatible client libraries (ioredis) to connect to Valkey server
-const getValkeyConfig = () => {
+// Redis configuration based on environment
+const getRedisConfig = () => {
   const isProduction = process.env.NODE_ENV === 'production';
   
-  // Upstash provides Redis-compatible API (acceptable for managed service)
+  // Upstash Redis for production rate limiting
   if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
     return {
       type: 'upstash' as const,
@@ -25,44 +19,33 @@ const getValkeyConfig = () => {
     };
   }
   
-  // Standard Valkey for development/self-hosted (Redis-compatible protocol)  
-  if (process.env.VALKEY_URL || process.env.REDIS_URL) {
+  // Standard Redis for development/self-hosted
+  if (process.env.REDIS_URL) {
     return {
       type: 'standard' as const,
-      url: process.env.VALKEY_URL || process.env.REDIS_URL // Prefer VALKEY_URL
+      url: process.env.REDIS_URL
     };
   }
   
-  // Fallback configuration for Valkey
+  // Fallback configuration
   return {
     type: 'standard' as const,
-    host: process.env.VALKEY_HOST || process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.VALKEY_PORT || process.env.REDIS_PORT || '6379'),
-    password: process.env.VALKEY_PASSWORD || process.env.REDIS_PASSWORD,
-    db: parseInt(process.env.VALKEY_DB || process.env.REDIS_DB || '0')
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD,
+    db: parseInt(process.env.REDIS_DB || '0')
   };
 };
 
-const config = getValkeyConfig();
+const config = getRedisConfig();
 
-// Create Valkey client with optimized settings (using Redis-compatible ioredis client)
-let valkeyClient: Redis | null = null;
+// Create Redis client with optimized settings
+let redis: Redis | null = null;
 
 try {
   if (config.type === 'standard') {
     if ('url' in config) {
-      redis = new Redis(config.url, {
-        retryDelayOnFailover: 100,
-        enableReadyCheck: false,
-        maxRetriesPerRequest: 3,
-        lazyConnect: true,
-        keepAlive: 30000,
-        // Connection pool settings
-        family: 4,
-        // Performance optimizations
-        commandTimeout: 5000,
-        connectTimeout: 10000,
-      });
+      redis = new Redis(config.url);
     } else {
       redis = new Redis({
         host: config.host,
@@ -82,7 +65,7 @@ try {
 
     // Event listeners for monitoring
     redis.on('connect', () => {
-      console.log('Redis connected successfully');
+      // Debug log removed
       metrics.increment('redis.connection.success');
     });
 
@@ -92,7 +75,72 @@ try {
     });
 
     redis.on('ready', () => {
-      console.log('Redis client ready');
+      // Debug log removed
+      metrics.increment('redis.ready');
+    });
+  }
+} catch (error) {
+  console.warn('Redis client initialization failed:', error);
+  redis = null;
+}
+  
+  // Standard Redis for development/self-hosted
+  if (process.env.REDIS_URL) {
+    return {
+      type: 'standard' as const,
+      url: process.env.REDIS_URL
+    };
+  }
+  
+  // Fallback configuration
+  return {
+    type: 'standard' as const,
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD,
+    db: parseInt(process.env.REDIS_DB || '0')
+  };
+};
+
+const config = getRedisConfig();
+
+// Create Redis client with optimized settings
+let redis: Redis | null = null;
+
+try {
+  if (config.type === 'standard') {
+    if ('url' in config) {
+      redis = new Redis(config.url);
+    } else {
+      redis = new Redis({
+        host: config.host,
+        port: config.port,
+        password: config.password,
+        db: config.db,
+        retryDelayOnFailover: 100,
+        enableReadyCheck: false,
+        maxRetriesPerRequest: 3,
+        lazyConnect: true,
+        keepAlive: 30000,
+        family: 4,
+        commandTimeout: 5000,
+        connectTimeout: 10000,
+      });
+    }
+
+    // Event listeners for monitoring
+    redis.on('connect', () => {
+      // Debug log removed
+      metrics.increment('redis.connection.success');
+    });
+
+    redis.on('error', (error) => {
+      console.error('Redis connection error:', error);
+      metrics.increment('redis.connection.error');
+    });
+
+    redis.on('ready', () => {
+      // Debug log removed
       metrics.increment('redis.ready');
     });
   }

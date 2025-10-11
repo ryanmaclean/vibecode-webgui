@@ -149,11 +149,11 @@ export default function EnhancedChatPage() {
                     Try these {demoMode} examples:
                   </h4>
                   <div className="grid grid-cols-1 gap-2">
-                    {demoQueries[demoMode].map((query, index) => (
-                      <div key={index} className="text-sm bg-white p-2 rounded border italic text-gray-700">
+                     {demoQueries[demoMode].map((query, index) => (
+                       <div key={index} className="text-sm bg-white p-2 rounded border italic text-gray-700">
                          &quot;{query}&quot;
-                      </div>
-                    ))}
+                       </div>
+                     ))}
                   </div>
                 </div>
               </TabsContent>

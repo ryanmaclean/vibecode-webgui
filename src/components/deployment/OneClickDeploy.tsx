@@ -136,7 +136,7 @@ export default function OneClickDeploy({ className = '' }: OneClickDeployProps) 
   const handleDeploy = (platform: any) => {
     // Track deployment initiation
     if (typeof window !== 'undefined') {
-      window.gtag?.('event', 'deploy_initiated', {
+      (window as any).gtag?.('event', 'deploy_initiated', {
         platform: platform.id,
         complexity: platform.complexity
       })
@@ -166,7 +166,7 @@ export default function OneClickDeploy({ className = '' }: OneClickDeployProps) 
 3. Generate a secure NextAuth secret
 
 ## Environment Variables
-${platform.envVars.map(env => `- ${env}`).join('\n')}
+${platform.envVars.map((env: string) => `- ${env}`).join('\n')}
 
 ## Deployment Steps
 1. Click the "Deploy to ${platform.name}" button
