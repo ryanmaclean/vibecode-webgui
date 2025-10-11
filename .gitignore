@@ -137,6 +137,14 @@ public
 .yarn/install-state.gz
 .pnp.*
 
+# Temporary and backup files
+*.bak
+*.backup
+*.tmp
+.backup/
+**/temp-files/
+cookies.txt
+
 # IDE
 .vscode/
 .idea/
