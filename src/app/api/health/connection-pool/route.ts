@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { logger } from '../../../../lib/logger';
 =======
 import { prismaPoolOptimizer } from '@/lib/db/connection-pool'
@@ -7,6 +8,10 @@ import { prismaPoolOptimizer } from '@/lib/db/connection-pool'
 
 // import { prismaPoolOptimizer } from '@/lib/db/prisma-pool-optimizer'
 
+=======
+// import { prismaPoolOptimizer } from '@/lib/db/prisma-pool-optimizer'
+
+>>>>>>> merge-conflict-cleanup
 export async function GET(_request: NextRequest) {
   try {
     // Mock response for missing module

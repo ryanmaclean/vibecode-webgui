@@ -100,7 +100,14 @@ export default function AICodeReview({
   };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   const getSeverityColor = (stepId: string): 'default' | 'destructive' | 'outline' | 'secondary' => {
+=======
+  const getSeverityColor = (stepId: string) => {
+=======
+  const getSeverityColor = (stepId: string): 'default' | 'destructive' | 'outline' | 'secondary' => {
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     const result = getReviewSection(stepId);
 =======
   const getSeverityColor = (stepId: string): 'default' | 'destructive' | 'outline' | 'secondary' => {    const result = getReviewSection(stepId);

@@ -261,7 +261,7 @@ export default function PromptTemplates({ onUseTemplate }: PromptTemplatesProps)
                   <selectedTemplate.icon className="h-6 w-6 mr-2" />
                   {selectedTemplate.name}
                 </CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(getPreviewTemplate())}>
+                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(getPreviewTemplate())} aria-label="Copy template to clipboard">
                   <Copy className="h-5 w-5" />
                 </Button>
               </div>

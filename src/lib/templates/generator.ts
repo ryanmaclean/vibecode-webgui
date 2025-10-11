@@ -29,6 +29,15 @@ export interface GeneratedProject {
   language: string[] // matches ProjectTemplate
   frameworks: string[] // matches ProjectTemplate
   features: string[]
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+  category: string
+  complexity: 'beginner' | 'intermediate' | 'advanced'
+  tags: string[]
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
   files: TemplateFile[]
   scripts: Record<string, string>
   dependencies: Record<string, string>
@@ -46,6 +55,14 @@ export interface GeneratedProject {
   }
   createdAt: Date
   estimatedTime: number
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+  features: string[]
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 }
 
 /**
@@ -85,8 +102,11 @@ export async function generateFromTemplate(
   return {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
     id: template.id,
     name: projectName,
     description: options.customizations?.description || template.description,
@@ -97,6 +117,7 @@ export async function generateFromTemplate(
     complexity: template.complexity,
 <<<<<<< HEAD
     features: options.features || template.features,  // Use features from options if provided, otherwise from template
+<<<<<<< HEAD
 =======
     id: `${template.id}-${Date.now()}`,
     name: projectName,
@@ -108,12 +129,22 @@ export async function generateFromTemplate(
 =======
     features: options.features || template.features,
 >>>>>>> fix/consolidated-dependency-updates
+=======
+<<<<<<< HEAD
+    name: projectName,
+    description: options.customizations?.description || template.description,
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     files,
     scripts: { ...template.scripts },
     dependencies: { ...template.dependencies },
     devDependencies: template.devDependencies ? { ...template.devDependencies } : undefined,
     envVars,
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> merge-conflict-cleanup
     documentation: {
       readme: `# ${projectName}\n\n${template.description}`,
       setup: template.documentation.setup.join('\n'),
@@ -121,8 +152,13 @@ export async function generateFromTemplate(
     },
     createdAt: new Date(),
     estimatedTime: 30,
+<<<<<<< HEAD
     setupInstructions,
 =======
+=======
+<<<<<<< HEAD
+    setupInstructions
+>>>>>>> merge-conflict-cleanup
     setupInstructions,
     documentation: {
       readme: `# ${projectName}\n\n${template.description}`,
@@ -130,8 +166,18 @@ export async function generateFromTemplate(
       deployment: 'Follow the deployment instructions in the README'
     },
     createdAt: new Date(),
+<<<<<<< HEAD
     estimatedTime: 30
 >>>>>>> fix/consolidated-dependency-updates
+=======
+    estimatedTime: 30,
+    features: template.features || []
+<<<<<<< Updated upstream
+    setupInstructions
+=======
+    setupInstructions,
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
   }
 }
 

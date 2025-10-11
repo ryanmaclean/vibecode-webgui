@@ -270,6 +270,18 @@ export class IntegrationTesting {
 
       const response = await this.llm.invoke(formattedPrompt);
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      const response = await this.llm.invoke(
+        prompt.format({
+          systemDescription,
+          components: components.join(', '),
+          endpoints: endpoints?.join(', ') || 'N/A',
+        })
+      );
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
 =======
 >>>>>>> fix/consolidated-dependency-updates

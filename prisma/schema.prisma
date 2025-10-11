@@ -100,25 +100,7 @@ model Project {
   @@map("projects")
 }
 
-// Document Embeddings for AI/ML
-model DocumentEmbedding {
-  id                      Int       @id @default(autoincrement())
-  documentId              String    @unique @map("document_id")
-  content                 String    @db.Text
-  embedding               String?   @db.Text // Vector stored as text for pgvector compatibility
-  metadata                Json?     @default("{}")
-  embeddingGenerationTime Int?      @map("embedding_generation_time_ms")
-  searchCount             Int       @default(0) @map("search_count")
-  lastAccessedAt          DateTime? @map("last_accessed_at")
-  createdAt               DateTime  @default(now()) @map("created_at")
-  updatedAt               DateTime  @updatedAt @map("updated_at")
-
-  @@map("document_embeddings")
-  @@index([documentId])
-  @@index([embedding], map: "embedding_l2_idx")
-}
-
-// Files and RAG System
+// Files and RAG System (simplified without vector embeddings)
 model File {
   id           Int      @id @default(autoincrement())
   name         String
@@ -139,7 +121,6 @@ model File {
   user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
   workspace  Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
   project    Project?   @relation(fields: [project_id], references: [id], onDelete: SetNull)
-  rag_chunks RAGChunk[]
 
   @@index([user_id])
   @@index([workspace_id])

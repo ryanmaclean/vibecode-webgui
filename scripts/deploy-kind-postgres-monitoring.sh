@@ -319,6 +319,10 @@ spec:
             "port": 5432,
             "username": "datadog",
             "password": "datadog_monitoring_password",
+<<<<<<< HEAD
+=======
+            "dbname": "vibecode",
+>>>>>>> merge-conflict-cleanup
             "dbm": true,
             "collect_schemas": {"enabled": true, "collection_interval": 600},
             "collect_activity": {"enabled": true, "collection_interval": 10},

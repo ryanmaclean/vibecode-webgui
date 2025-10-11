@@ -68,6 +68,9 @@ export async function GET(request: NextRequest) {
         await serviceFactory.disconnect()
       }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> merge-conflict-cleanup
     } catch (e) {
       console.error('Service factory import/init failed (non-fatal):', e)
     }
@@ -87,6 +90,17 @@ export async function GET(request: NextRequest) {
         // Use total user+system time in milliseconds as a proxy; tests only assert presence
         usage: Math.round((cpuUsageRaw.user + cpuUsageRaw.system) / 1000),
       },
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+      business: {
+        user_sessions: Math.floor(Math.random() * 500),
+        api_calls: Math.floor(Math.random() * 2000),
+        database_queries: Math.floor(Math.random() * 5000),
+        cache_hit_rate: Math.random() * 0.9
+      }
+=======
+>>>>>>> merge-conflict-cleanup
       memory: {
         used: Math.round(mem.heapUsed / 1024 / 1024),
         total: Math.round(mem.heapTotal / 1024 / 1024),
@@ -106,6 +120,7 @@ export async function GET(request: NextRequest) {
       avgResponseTime,
       errorRate,
       uptime: uptimeSeconds,
+<<<<<<< HEAD
     }
 
     return new Response(JSON.stringify(response), {
@@ -164,6 +179,13 @@ export async function GET(request: NextRequest) {
         }
       }
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> main
+    }
+
+    return new Response(JSON.stringify(response), {
+      headers: { 'Content-Type': 'application/json' },
+>>>>>>> merge-conflict-cleanup
     })
 
   } catch (error) {
@@ -174,6 +196,7 @@ export async function GET(request: NextRequest) {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     })
+<<<<<<< HEAD
 =======
     // Server error logged
     
@@ -187,6 +210,8 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
 >>>>>>> ai-sdk-openai-v2-test
+=======
+>>>>>>> merge-conflict-cleanup
   }
 }
 
@@ -254,6 +279,7 @@ export async function POST(request: NextRequest) {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     })
+<<<<<<< HEAD
 =======
     // Server error logged
     
@@ -267,5 +293,7 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
 >>>>>>> ai-sdk-openai-v2-test
+=======
+>>>>>>> merge-conflict-cleanup
   }
 }

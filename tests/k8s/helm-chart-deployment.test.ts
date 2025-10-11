@@ -20,6 +20,36 @@ const ensureHelmRepos = () => {
   try { run('helm repo add bitnami https://charts.bitnami.com/bitnami'); } catch {}
   run('helm repo update');
 };
+<<<<<<< HEAD
+=======
+
+// Ensure a dynamic storage provisioner exists (local-path) for KIND environments
+const ensureStorageProvisioner = () => {
+  // Check if any StorageClass exists; if not, install Rancher's local-path-provisioner
+  let scList = '';
+  try {
+    scList = execSync('kubectl get storageclass -o name', { encoding: 'utf8' }).trim();
+  } catch {
+    scList = '';
+  }
+  if (!scList) {
+    // Install local-path-provisioner
+    try {
+      execSync('kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml', { stdio: 'inherit' });
+    } catch {
+      // Best effort; continue to wait below
+    }
+    // Wait for controller to be available
+    try {
+      waitForDeploymentAvailable('kube-system', 'local-path-provisioner', 180000);
+    } catch {}
+    // Mark local-path as default
+    try {
+      execSync(`kubectl patch storageclass local-path -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'`, { stdio: 'inherit' });
+    } catch {}
+  }
+};
+>>>>>>> merge-conflict-cleanup
 const ensureHelmDeps = () => {
   run(`helm dependency update ${CHART_PATH}`);
 };
@@ -82,7 +112,11 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
         console.log(`Cluster ${CLUSTER_NAME} already exists, switching context`);
       } else {
         // Create KIND cluster using our configuration
+<<<<<<< HEAD
         execSync(`kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-simple-config.yaml`, { stdio: 'inherit' });
+=======
+        execSync(`kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-test-config.yaml`, { stdio: 'inherit' });
+>>>>>>> merge-conflict-cleanup
       }
       // Set kubectl context
       execSync(`kubectl config use-context kind-${CLUSTER_NAME}`, { stdio: 'inherit' });
@@ -95,6 +129,12 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
     execSync(`kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml`, { stdio: 'inherit' });
     // Wait for ingress controller deployment to have available replicas
     waitForDeploymentAvailable('ingress-nginx', 'ingress-nginx-controller', 300000);
+<<<<<<< HEAD
+=======
+
+    // Ensure a dynamic storage provisioner exists (local-path) before we detect StorageClass
+    ensureStorageProvisioner();
+>>>>>>> merge-conflict-cleanup
 
     // Create namespace
     execSync(`kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -`, {
@@ -108,8 +148,18 @@ describe('VibeCode Platform Helm Chart Deployment', () => {
     // Prepare KIND-specific values overrides
     let storageClass = 'local-path';
     try {
+<<<<<<< HEAD
       const sc = execSync('kubectl get storageclass -o jsonpath={.items[0].metadata.name}', { encoding: 'utf8' }).trim();
       if (sc) storageClass = sc;
+=======
+      const sc = execSync('kubectl get storageclass -o jsonpath={.items[?(@.metadata.annotations.storageclass\\.kubernetes\\.io/is-default-class=="true")].metadata.name}', { encoding: 'utf8' }).trim();
+      if (sc) {
+        storageClass = sc;
+      } else {
+        const scAny = execSync('kubectl get storageclass -o jsonpath={.items[0].metadata.name}', { encoding: 'utf8' }).trim();
+        if (scAny) storageClass = scAny;
+      }
+>>>>>>> merge-conflict-cleanup
     } catch {}
 
     const kindValues = `global:\n  storageClass: ${storageClass}\ncodeServer:\n  persistence:\n    storageClass: ${storageClass}\nuserManagement:\n  workspace:\n    storageClass: ${storageClass}\nmonitoring:\n  enabled: false\nmongodb:\n  enabled: false\ndatadog:\n  enabled: false\nsecurity:\n  networkPolicies:\n    enabled: false\n`;

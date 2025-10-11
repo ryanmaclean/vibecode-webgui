@@ -17,7 +17,7 @@ jest.mock('swr', () => ({
   })),
 }));
 
-jest.mock('ai/react', () => ({
+jest.mock('@ai-sdk/react', () => ({
   useChat: jest.fn().mockImplementation(() => ({
     messages: [
       { id: '1', role: 'user', content: 'Hello' },

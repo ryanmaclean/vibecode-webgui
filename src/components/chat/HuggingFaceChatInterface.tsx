@@ -113,6 +113,7 @@ export const HuggingFaceChatInterface = ({
     { id: 'microsoft/GODEL-v1_1-large-seq2seq', name: 'GODEL Large', provider: 'Microsoft', context: '1K', type: 'conversational' },
     { id: 'google/flan-t5-large', name: 'FLAN-T5 Large', provider: 'Google', context: '512', type: 'text-generation' },
 <<<<<<< HEAD
+<<<<<<< HEAD
     { id: 'bigscience/bloom-560m', name: 'BLOOM 560M', provider: 'BigScience', context: '1K', type: 'text-generation' }
 =======
     { id: 'facebook/blenderbot-400M-distill', name: 'BlenderBot 400M', provider: 'Facebook', context: '512', type: 'conversational' },
@@ -120,6 +121,12 @@ export const HuggingFaceChatInterface = ({
     { id: 'google/flan-t5-large', name: 'FLAN-T5 Large', provider: 'Google', context: '512', type: 'text-generation' },
     { id: 'bigscience/bloom-560m', name: 'BLOOM 560M', provider: 'BigScience', context: '2K', type: 'text-generation' }
 >>>>>>> ai-sdk-openai-v2-test
+=======
+    { id: 'bigscience/bloom-560m', name: 'BLOOM 560M', provider: 'BigScience', context: '2K', type: 'text-generation' }
+=======
+    { id: 'bigscience/bloom-560m', name: 'BLOOM 560M', provider: 'BigScience', context: '1K', type: 'text-generation' }
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
   ]
 =======
     { id: 'bigscience/bloom-560m', name: 'BLOOM 560M', provider: 'BigScience', context: '2K', type: 'text-generation' }  ]
@@ -651,6 +658,7 @@ export const HuggingFaceChatInterface = ({
                   size="sm"
                   onClick={() => setLastModelSuggestion(null)}
                   className="text-amber-600 hover:bg-amber-100"
+                  aria-label="Dismiss model suggestion"
                 >
                   ×
                 </Button>
@@ -851,8 +859,11 @@ export const HuggingFaceChatInterface = ({
               
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
               <Tooltip content="Attach files">
                 <Button
                   variant="outline"
@@ -875,6 +886,7 @@ export const HuggingFaceChatInterface = ({
 <<<<<<< HEAD
                 </Button>
               </Tooltip>
+<<<<<<< HEAD
 =======
               <Button
                 variant="outline"
@@ -899,6 +911,8 @@ export const HuggingFaceChatInterface = ({
 =======
                 </Button>              </Tooltip>
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
             </div>
           </div>
         </CardContent>

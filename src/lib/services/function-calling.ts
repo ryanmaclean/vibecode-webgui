@@ -3,6 +3,13 @@ export interface FunctionDefinition {
   description: string
   parameters: {
     type: string  // Changed from string literal 'object' to string to allow more flexibility
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    type: 'object'
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     properties: Record<string, {
       type: string
       description: string
@@ -374,6 +381,12 @@ export class FunctionCallingService {
         modified: Date;
       }> = [];
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      const fileList = []
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
 =======
 >>>>>>> fix/consolidated-dependency-updates
@@ -494,7 +507,15 @@ export const functionCallingService = new FunctionCallingService()
 
 // Store function definitions separately for registration
 <<<<<<< HEAD
+<<<<<<< HEAD
 const functionDefinitions: FunctionDefinition[] = [
+=======
+const functionDefinitions: FunctionDefinition[] = [
+<<<<<<< HEAD
+const functionDefinitions = [
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
   {
 =======
 const functionDefinitions: FunctionDefinition[] = [  {

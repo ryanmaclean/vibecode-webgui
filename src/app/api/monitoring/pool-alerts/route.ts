@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 // import { datadogDBM, DBMAlert } from '@/lib/monitoring/datadog-dbm';
 import { createRobustConnection } from '@/lib/db/robust-db-connection';
 import { DatadogIntegration } from '@/lib/monitoring/datadog-integration';
+<<<<<<< HEAD
 =======
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
@@ -12,6 +13,8 @@ import { authOptions } from "@/lib/auth";
 import { datadogMetrics } from "@/lib/monitoring/datadog-metrics";
 import { createRobustConnection } from "@/lib/db/robust-db-connection";
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
 
 // Alert thresholds for connection pool monitoring
 interface PoolAlertThresholds {
@@ -135,6 +138,9 @@ export async function GET(request: NextRequest) {
 
     // Check if Datadog DBM is enabled
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> merge-conflict-cleanup
     if (true) { // datadogDBM not available
       return NextResponse.json({
         error: 'Datadog Database Monitoring is not enabled. Set DD_DBM_ENABLED=true in environment.',
@@ -179,6 +185,9 @@ export async function GET(request: NextRequest) {
       const prisma = connection.prisma!;
       // Query actual PostgreSQL connection stats
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> merge-conflict-cleanup
       const connectionStatsResult = await prisma.$queryRaw`
         SELECT 
 =======
@@ -204,6 +213,9 @@ export async function GET(request: NextRequest) {
       const utilizationPercent = (activeConnections / maxConnections) * 100;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> merge-conflict-cleanup
       // Create a pseudo pool status and generate alerts using checkPoolAlerts
       const poolStatus = {
         pools: [
@@ -216,6 +228,7 @@ export async function GET(request: NextRequest) {
         ]
       } as any;
       const alerts = checkPoolAlerts(poolStatus);
+<<<<<<< HEAD
 =======
       // Record metrics with Datadog DBM
       datadogDBM.recordConnectionMetrics({
@@ -238,6 +251,8 @@ export async function GET(request: NextRequest) {
 
       const alerts = datadogDBM.generatePoolAlerts(dbmMetrics);
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
 
       return NextResponse.json({
         alerts,

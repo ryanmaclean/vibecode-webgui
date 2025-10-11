@@ -4,6 +4,7 @@ import { jest } from '@jest/globals';
 const mockQuery = jest.fn();
 const mockConnect = jest.fn();
 const mockEnd = jest.fn();
+<<<<<<< HEAD
 
 // Mock pg module with proper Client implementation
 jest.doMock('pg', () => {
@@ -26,23 +27,53 @@ jest.doMock('pg', () => {
     PoolClient: jest.fn()
   };
 });
+=======
+>>>>>>> merge-conflict-cleanup
 
-jest.mock('@azure/identity', () => {
-  return {
-    DefaultAzureCredential: jest.fn().mockImplementation(() => ({
-      getToken: jest.fn().mockResolvedValue({ token: 'mock-token' })
-    }))
+// Mock pg module with proper Client implementation
+jest.doMock('pg', () => {
+  const MockClient = function(config) {
+    // Store the config for verification
+    MockClient.lastConfig = config;
+    return {
+      query: mockQuery,
+      connect: mockConnect,
+      end: mockEnd
+    };
+  };
+  
+  // Reset config tracking on each test
+  MockClient.lastConfig = null;
+  
+  return { 
+    Client: MockClient,
+    Pool: jest.fn(),
+    PoolClient: jest.fn()
   };
 });
 
+<<<<<<< HEAD
 // Mock Azure identity
 const mockDefaultAzureCredential = jest.fn();
+=======
+// Mock Azure identity with proper getToken implementation
+const mockGetToken = jest.fn().mockResolvedValue({ token: 'mock-token' });
+const mockDefaultAzureCredential = jest.fn().mockImplementation(() => ({
+  getToken: mockGetToken
+}));
+
+>>>>>>> merge-conflict-cleanup
 jest.doMock('@azure/identity', () => ({
   DefaultAzureCredential: mockDefaultAzureCredential
 }));
 
+<<<<<<< HEAD
 // Import after mocking
 import { Client } from 'pg';
+=======
+// Import after mocking - use CommonJS to match migration script
+const { Client } = require('pg');
+>>>>>>> merge-conflict-cleanup
 
 // Import the migration scripts
 // Note: We'll need to use require() since they're CommonJS modules
@@ -132,6 +163,7 @@ describe('Zero Downtime Schema Migration', () => {
   });
   
   test('getClient returns PostgreSQL client with correct configuration', async () => {
+<<<<<<< HEAD
     // Set up environment variables for testing
     process.env.POSTGRES_HOST = 'test-host';
     process.env.POSTGRES_DATABASE = 'test-db';
@@ -144,19 +176,49 @@ describe('Zero Downtime Schema Migration', () => {
     
     // Verify client was created with correct config
     expect(Client.lastConfig).toEqual(expect.objectContaining({
+=======
+    // Mock the config object directly to avoid environment variable issues
+    const originalConfig = { ...zeroDowntimeMigration.config };
+    Object.assign(zeroDowntimeMigration.config, {
+>>>>>>> merge-conflict-cleanup
       host: 'test-host',
       database: 'test-db',
       port: 5433,
       user: 'test-user',
-      password: 'test-password'
-    }));
+      password: 'test-password',
+      useManagedIdentity: false
+    });
+    
+    try {
+      // Call getClient function from the module
+      const client = await zeroDowntimeMigration.getClient();
+      
+      // Verify client was created with correct config
+      expect(Client.lastConfig).toEqual(expect.objectContaining({
+        host: 'test-host',
+        database: 'test-db',
+        port: 5433,
+        user: 'test-user',
+        password: 'test-password'
+      }));
+    } finally {
+      // Restore original config
+      Object.assign(zeroDowntimeMigration.config, originalConfig);
+    }
   });
   
   test('getClient uses Azure managed identity when configured', async () => {
-    // Set up environment variables for testing
-    process.env.USE_MANAGED_IDENTITY = 'true';
-    process.env.POSTGRES_HOST = 'test-host.postgres.database.azure.com';
+    // Mock the config object directly for Azure managed identity
+    const originalConfig = { ...zeroDowntimeMigration.config };
+    Object.assign(zeroDowntimeMigration.config, {
+      host: 'test-host.postgres.database.azure.com',
+      database: 'test-db',
+      port: 5432,
+      user: 'test-user',
+      useManagedIdentity: true
+    });
     
+<<<<<<< HEAD
     // Call getClient function from the module
     const client = await zeroDowntimeMigration.getClient();
     
@@ -167,6 +229,23 @@ describe('Zero Downtime Schema Migration', () => {
         rejectUnauthorized: true
       })
     }));
+=======
+    try {
+      // Call getClient function from the module  
+      const client = await zeroDowntimeMigration.getClient();
+      
+      // Verify Azure credential was used
+      expect(mockDefaultAzureCredential).toHaveBeenCalled();
+      expect(Client.lastConfig).toEqual(expect.objectContaining({
+        ssl: expect.objectContaining({
+          rejectUnauthorized: true
+        })
+      }));
+    } finally {
+      // Restore original config
+      Object.assign(zeroDowntimeMigration.config, originalConfig);
+    }
+>>>>>>> merge-conflict-cleanup
   });
   
   test('checkPgVectorExtension returns true when extension is installed', async () => {

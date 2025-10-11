@@ -304,6 +304,17 @@ export class CodeReviewAutomation {
 
       const response = await this.llm.invoke(formattedPrompt);
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      const response = await this.llm.invoke(
+        prompt.format({
+          language,
+          code: content.substring(0, 4000), // Limit content length
+        })
+      );
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
 =======
 >>>>>>> fix/consolidated-dependency-updates
