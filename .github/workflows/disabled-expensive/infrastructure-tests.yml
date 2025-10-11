@@ -15,6 +15,21 @@ on:
       - 'scripts/deploy-aks.py'
       - 'tests/**'
       - '.github/workflows/infrastructure-tests.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Test environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+      cleanup:
+        description: 'Clean up resources after testing'
+        required: true
+        default: true
+        type: boolean
 
 env:
   # Test configuration
@@ -324,20 +339,3 @@ jobs:
               repo: context.repo.repo,
               body: comment
             });
-
-# Manual workflow dispatch for deployment testing
-workflow_dispatch:
-  inputs:
-    environment:
-      description: 'Test environment'
-      required: true
-      default: 'dev'
-      type: choice
-      options:
-        - dev
-        - staging
-    cleanup:
-      description: 'Clean up resources after testing'
-      required: true
-      default: true
-      type: boolean
