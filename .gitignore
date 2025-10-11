@@ -57,9 +57,18 @@ tmp/
 temp/
 .pre-commit-cache/
 .test-results/
+# Logs & diagnostics
 logs/
 !docs/logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 runtime/
+pids
 *.pid
 *.pid.lock
 .vscode-test/
@@ -79,6 +88,25 @@ Thumbs.db
 # Environment files
 .env
 .env.*
+
+# Node.js dependencies & build artefacts
+lib-cov
+coverage/
+*.lcov
+.nyc_output
+.grunt
+bower_components/
+web_modules/
+build/Release
+.npm
+.eslintcache
+.parcel-cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+.pnpm-store/
+.yarn-integrity
 
 # Extension build outputs
 extensions/vibecode-ai-assistant/out/
@@ -107,3 +135,61 @@ k8s/secrets/
 # Build metadata
 *.tsbuildinfo
 typecheck.log
+
+# Python artefacts
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.ipynb_checkpoints
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+.envrc
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Visual Studio artefacts
+.vs/
+[Bb]in/
+[Oo]bj/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.vcxproj.user
+*.pdb
+*.cache
+*.aps
+*.ncb
+*.opendb
+.VC.db
