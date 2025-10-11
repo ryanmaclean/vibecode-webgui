@@ -331,8 +331,12 @@ export class CollaborationService {
     this.io.to(`conversation:${conversationId}`).emit('new_message', {
       ...messageData,
       _excludeUserId: excludeUserId // Include this so clients can filter
+<<<<<<< HEAD
     });
   }
+=======
+    });  }
+>>>>>>> fix/consolidated-dependency-updates
 
   // Broadcast workspace events
   async broadcastWorkspaceEvent(workspaceId: string, event: CollaborationEvent) {

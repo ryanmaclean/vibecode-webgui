@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
       } finally {
         await serviceFactory.disconnect()
       }
+<<<<<<< HEAD
     } catch (e) {
       console.error('Service factory import/init failed (non-fatal):', e)
     }
@@ -109,6 +110,60 @@ export async function GET(request: NextRequest) {
 
     return new Response(JSON.stringify(response), {
       headers: { 'Content-Type': 'application/json' },
+=======
+      
+      await serviceFactory.disconnect()
+      
+      const metricsData: any = realMetrics
+    } catch (serviceError) {
+      console.error('Failed to get production metrics, falling back to basic system metrics:', serviceError)
+      
+      // Fallback to basic system metrics if service factory fails
+      const fallbackMetrics = {
+        system: {
+          memory_used_mb: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+          memory_total_mb: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+          memory_usage_percent: Math.round((process.memoryUsage().heapUsed / process.memoryUsage().heapTotal) * 100),
+          uptime_seconds: Math.floor(process.uptime()),
+          node_version: process.version,
+          platform: process.platform
+        },
+        application: {
+          status: 'degraded',
+          error: 'Unable to fetch production service metrics'
+        },
+        services: []
+      }
+      
+      await serviceFactory.disconnect()
+      metricsData = fallbackMetrics
+    }
+
+    let filteredMetrics: Record<string, unknown> = {}
+
+    if (metricType === 'all') {
+      filteredMetrics = metricsData
+    } else if (metricType === 'system') {
+      filteredMetrics = { system: metricsData.system }
+    } else if (metricType === 'application') {
+      filteredMetrics = { application: metricsData.application }
+    } else if (metricType === 'business') {
+      filteredMetrics = { business: (metricsData as any).business }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        metrics: filteredMetrics,
+        metadata: {
+          type: metricType,
+          time_range: timeRange,
+          limit,
+          timestamp: new Date().toISOString(),
+          source: 'production_services'
+        }
+      }
+>>>>>>> fix/consolidated-dependency-updates
     })
 
   } catch (error) {

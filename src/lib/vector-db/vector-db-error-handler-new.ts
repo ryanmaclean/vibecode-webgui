@@ -87,12 +87,23 @@ export class VectorDbErrorHandler {
         requiresAdminAction: true,
         ...(typeof retryable === 'boolean' ? { retryable } : {}),
       };
+<<<<<<< HEAD
       const enriched = new VectorDBError(
+=======
+      // @ts-expect-error - Accessing private property from parent class
+      return new VectorDbError(
+>>>>>>> fix/consolidated-dependency-updates
         message,
         VectorDBErrorType.INITIALIZATION,
         operation,
+<<<<<<< HEAD
         this.provider,
         ctx
+=======
+        // @ts-expect-error - Accessing private property from parent class
+        this.provider as string,
+        additionalContext
+>>>>>>> fix/consolidated-dependency-updates
       );
       if (typeof retryable === 'boolean') {
         (enriched as ErrorLike).retryable = retryable;
@@ -175,6 +186,7 @@ export class VectorDbErrorHandler {
   /**
    * Use provider-specific error categorization 
    */
+<<<<<<< HEAD
   private getProviderSpecificErrorType(error: unknown): VectorDBErrorType {
     return categorizeErrorWithProvider(error, this.provider);
   }
@@ -204,6 +216,13 @@ export class VectorDbErrorHandler {
       errorType === VectorDBErrorType.TIMEOUT ||
       errorType === VectorDBErrorType.SERVICE
     );
+=======
+  private getProviderSpecificErrorType(error: any): VectorDbErrorType {
+    // Access provider property through "this"
+    // @ts-expect-error - Accessing private property from parent class
+    const provider = this.provider as string;
+    return categorizeErrorWithProvider(error, provider);
+>>>>>>> fix/consolidated-dependency-updates
   }
   
   /**

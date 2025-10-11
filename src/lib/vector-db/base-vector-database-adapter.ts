@@ -7,18 +7,25 @@ import OpenAI from 'openai';
 import { VectorDatabaseInterface } from './vector-database-interface';
 import { VectorChunk, SearchResult, SearchOptions, VectorDatabaseConfig } from './vector-types';
 import { metrics } from '../server-monitoring';
+<<<<<<< HEAD
+=======
+import { logger } from '../logger';
+import { ConnectionPool, ConnectionPoolConfig } from './connection-pool';
+import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
+>>>>>>> fix/consolidated-dependency-updates
 
-/**
- * Abstract base class for vector database adapters
- * Implements common functionality that can be shared across providers
- */
 export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterface {
   protected config: VectorDatabaseConfig;
-  protected openai: OpenAI | null = null;
   protected isInitialized = false;
+<<<<<<< HEAD
   protected connectionStatus = false;
   protected retryCount = 0;
   protected lastError: Error | null = null;
+=======
+  protected openai: OpenAI | null = null;
+  protected connectionPool: ConnectionPool | null = null;
+  protected errorHandler: VectorDbErrorHandler;
+>>>>>>> fix/consolidated-dependency-updates
 
   /**
    * Constructor for the base adapter
@@ -58,30 +65,31 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       // Call provider-specific initialization
       await this.initializeProvider();
       
-      this.isInitialized = true;
-      this.connectionStatus = true;
-      this.retryCount = 0;
-      
-      if (this.config.enableMetrics) {
-        metrics.histogram('vector_db.initialize.duration', Date.now() - startTime);
-        metrics.increment('vector_db.initialize.success');
+<<<<<<< HEAD
+=======
+      // Initialize connection pool if enabled
+      if (this.config.connectionPooling) {
+        await this.initializeConnectionPool();
       }
       
+>>>>>>> fix/consolidated-dependency-updates
+      this.isInitialized = true;
+      
       if (this.config.enableLogging) {
+<<<<<<< HEAD
         console.info(`Vector database adapter (${this.config.provider}) initialized successfully`);
+=======
+        console.info(`Vector database adapter initialized in ${Date.now() - startTime}ms`);
+>>>>>>> fix/consolidated-dependency-updates
       }
     } catch (error) {
-      this.connectionStatus = false;
-      this.lastError = error instanceof Error ? error : new Error(String(error));
-      
-      if (this.config.enableMetrics) {
-        metrics.increment('vector_db.initialize.error');
-      }
-      
       if (this.config.enableLogging) {
+<<<<<<< HEAD
         console.error(`Failed to initialize vector database adapter (${this.config.provider}):`, error);
+=======
+        console.error('Failed to initialize vector database adapter:', error);
+>>>>>>> fix/consolidated-dependency-updates
       }
-      
       throw error;
     }
   }
@@ -251,6 +259,15 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
     try {
       const startTime = Date.now();
       
+<<<<<<< HEAD
+=======
+      // Close connection pool if it exists
+      if (this.connectionPool) {
+        await this.connectionPool.close();
+        this.connectionPool = null;
+      }
+      
+>>>>>>> fix/consolidated-dependency-updates
       // Call provider-specific close method
       await this.closeProvider();
       
@@ -263,16 +280,24 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
       
       if (this.config.enableLogging) {
+<<<<<<< HEAD
         console.info(`Vector database adapter (${this.config.provider}) closed successfully`);
       }
+=======
+        logger.info(`Vector database adapter (${this.config.provider}) closed successfully`);      }
+>>>>>>> fix/consolidated-dependency-updates
     } catch (error) {
       if (this.config.enableMetrics) {
         metrics.increment('vector_db.close.error');
       }
       
       if (this.config.enableLogging) {
+<<<<<<< HEAD
         console.error(`Error closing vector database adapter (${this.config.provider}):`, error);
       }
+=======
+        logger.error(`Error closing vector database adapter (${this.config.provider}):`, error);      }
+>>>>>>> fix/consolidated-dependency-updates
       
       throw error;
     }

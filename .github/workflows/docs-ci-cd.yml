@@ -16,19 +16,45 @@ on:
 
 permissions:
   contents: read
+<<<<<<< HEAD
   packages: write        # For Docker image publishing
   security-events: write  # For security scan results
   id-token: write        # For OIDC authentication
+=======
+
+concurrency:
+  group: docs-ci-${{ github.ref }}
+  cancel-in-progress: true
+>>>>>>> fix/consolidated-dependency-updates
 
 env:
   REGISTRY: vibecodecr.azurecr.io
   IMAGE_NAME: vibecode-docs
 
 jobs:
+  validate-ci-config:
+    name: Validate CI configuration (secrets/vars)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
+    steps:
+      - name: Validate Datadog keys
+        run: |
+          if [ -z "${DD_API_KEY}" ]; then
+            echo '::warning::Missing DATADOG_API_KEY; Datadog notifications will be skipped.'
+          else
+            echo 'DATADOG_API_KEY present.'
+          fi
+
   # Security and code quality scanning
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -68,6 +94,10 @@ jobs:
     name: Build & Test
     runs-on: ubuntu-latest
     needs: security-scan
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -116,9 +146,16 @@ jobs:
     name: Container Build & Scan
     runs-on: ubuntu-latest
     needs: build-test
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      security-events: write
     outputs:
       image-digest: ${{ steps.build.outputs.digest }}
-      image-url: ${{ steps.build.outputs.image-url }}
+    env:
+      ACR_USERNAME: ${{ secrets.ACR_USERNAME || '' }}
+      ACR_PASSWORD: ${{ secrets.ACR_PASSWORD || '' }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -128,10 +165,11 @@ jobs:
 
       - name: Log in to Azure Container Registry
         uses: docker/login-action@v3
+        if: ${{ env.ACR_USERNAME != '' && env.ACR_PASSWORD != '' }}
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+          username: ${{ env.ACR_USERNAME }}
+          password: ${{ env.ACR_PASSWORD }}
 
       - name: Extract metadata
         id: meta
@@ -147,6 +185,7 @@ jobs:
 
       - name: Build and push container image
         id: build
+        if: ${{ env.ACR_USERNAME != '' && env.ACR_PASSWORD != '' }}
         uses: docker/build-push-action@v5
         with:
           context: ./docs
@@ -158,19 +197,17 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Setup Datadog CLI
+      - name: Build image (no push) for validation when ACR creds missing
+        if: ${{ env.ACR_USERNAME == '' || env.ACR_PASSWORD == '' }}
         run: |
-          echo "Setting up Datadog CLI for docs container security scanning..."
-          # Install Datadog CLI if not available
-          if ! command -v datadog-ci &> /dev/null; then
-            npm install -g @datadog/datadog-ci
-          fi
+          echo "ACR credentials not set; building image locally for validation only."
+          docker build -f ./docs/Dockerfile ./docs
 
       - name: Datadog Container Security Scanning
         run: |
           echo "Running Datadog container security scan for docs..."
-          # Run container security scan using Datadog CLI
-          if command -v datadog-ci &> /dev/null; then
+          # Use npx to run Datadog CLI without global install
+          if [ -n "${DD_API_KEY}" ]; then
             # Generate SARIF report for GitHub Security tab
             echo '{
               "version": "2.1.0",
@@ -178,7 +215,7 @@ jobs:
                 {
                   "tool": {
                     "driver": {
-                      "name": "Datadog Container Security Scanner",
+                      "name": "Datadog Security",
                       "version": "1.0.0",
                       "informationUri": "https://docs.datadoghq.com/security/"
                     }
@@ -189,21 +226,21 @@ jobs:
             }' > datadog-docs-security-results.sarif
             
             # Run actual container scan and append results
-            datadog-ci security scan container --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --format sarif --output temp-docs-scan.sarif || true
+            npx --yes @datadog/datadog-ci security scan container --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --format sarif --output temp-docs-scan.sarif || true
             
             # If scan produced results, merge them
             if [ -f temp-docs-scan.sarif ] && [ -s temp-docs-scan.sarif ]; then
               cat temp-docs-scan.sarif >> datadog-docs-security-results.sarif
             fi
           else
-            echo "Datadog CLI not available, creating placeholder report"
+            echo "DD_API_KEY not set; creating placeholder report"
             echo '{
               "version": "2.1.0",
               "runs": [
                 {
                   "tool": {
                     "driver": {
-                      "name": "Datadog Container Security Scanner",
+                      "name": "Datadog Security",
                       "version": "1.0.0",
                       "informationUri": "https://docs.datadoghq.com/security/"
                     }
@@ -228,7 +265,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: container-build
     if: github.ref == 'refs/heads/develop' || github.event_name == 'pull_request'
-    environment: staging
+    environment:
+      name: staging
+    timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -262,6 +301,7 @@ jobs:
           # Test docs service
           kubectl port-forward -n vibecode svc/vibecode-docs-service 8080:80 &
           PF_PID=$!
+          trap "kill $PF_PID || true" EXIT
           sleep 10
           
           if curl -f http://localhost:8080/ > /dev/null; then
@@ -289,7 +329,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: container-build
     if: github.ref == 'refs/heads/main'
-    environment: production
+    environment:
+      name: production
+    timeout-minutes: 30
+    env:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG || '' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -300,11 +344,13 @@ jobs:
           version: 'latest'
 
       - name: Configure kubectl
+        if: ${{ env.KUBE_CONFIG != '' }}
         run: |
           mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          echo "${KUBE_CONFIG}" | base64 -d > ~/.kube/config
 
       - name: Deploy to production
+        if: ${{ env.KUBE_CONFIG != '' }}
         run: |
           # Update image in deployment
           sed -i "s|vibecode-docs:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}|g" k8s/docs-deployment.yaml
@@ -313,11 +359,13 @@ jobs:
           kubectl rollout status deployment/vibecode-docs -n vibecode --timeout=600s
 
       - name: Verify deployment
+        if: ${{ env.KUBE_CONFIG != '' }}
         run: |
           kubectl get pods -l app=vibecode-docs -n vibecode
           kubectl get ingress vibecode-docs-ingress -n vibecode
 
       - name: Test production endpoint
+        if: ${{ env.KUBE_CONFIG != '' }}
         run: |
           sleep 30
           if curl -f https://docs.vibecode.dev/ > /dev/null; then
@@ -334,6 +382,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-staging]
     if: github.ref == 'refs/heads/main'
+    timeout-minutes: 5
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -362,6 +413,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy-staging
     if: github.event_name == 'pull_request'
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -376,6 +428,8 @@ jobs:
           kubectl create namespace vibecode --dry-run=client -o yaml | kubectl apply -f -
           kubectl apply -f k8s/docs-deployment.yaml
           kubectl port-forward -n vibecode svc/vibecode-docs-service 8080:80 &
+          PF_PID=$!
+          trap "kill $PF_PID || true" EXIT
           sleep 30
 
       - name: Run Lighthouse CI
@@ -398,13 +452,16 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-production]
     if: always()
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
+      DD_SITE: datadoghq.com
     steps:
       - name: Notify Datadog
-        if: needs.deploy-production.result == 'success'
+        if: ${{ needs.deploy-production.result == 'success' && env.DD_API_KEY != '' }}
         run: |
-          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+          curl -X POST "https://api.${DD_SITE}/api/v1/events" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+            -H "DD-API-KEY: $DD_API_KEY" \
             -d '{
               "title": "Documentation Deployed",
               "text": "VibeCode documentation successfully deployed to production",
@@ -413,11 +470,11 @@ jobs:
             }'
 
       - name: Notify on failure
-        if: failure()
+        if: ${{ failure() && env.DD_API_KEY != '' }}
         run: |
-          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+          curl -X POST "https://api.${DD_SITE}/api/v1/events" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+            -H "DD-API-KEY: $DD_API_KEY" \
             -d '{
               "title": "Documentation Deployment Failed",
               "text": "VibeCode documentation deployment failed",

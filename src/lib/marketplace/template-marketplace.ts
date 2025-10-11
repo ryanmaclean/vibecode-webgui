@@ -195,8 +195,12 @@ export class TemplateMarketplace {
         tags: [],
         language: [],
         frameworks: [],
+<<<<<<< HEAD
         features: [],
         files: [],
+=======
+        features: [],        files: [],
+>>>>>>> fix/consolidated-dependency-updates
         dependencies: {},
         scripts: {},
         envVars: [],
@@ -209,8 +213,12 @@ export class TemplateMarketplace {
         documentation: {
           setup: ['Setup instructions'],
           usage: ['Usage instructions', 'Template documentation'],
+<<<<<<< HEAD
           deployment: ['Deployment guide']
         },
+=======
+          deployment: ['Deployment guide']        },
+>>>>>>> fix/consolidated-dependency-updates
         ...template,
         marketplaceId: template.marketplaceId || `mp-${index}`,
         author: template.author!,

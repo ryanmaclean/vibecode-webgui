@@ -8,6 +8,7 @@ import { vectorStore as pgVectorStore } from '../vector-store'
 import { weaviateStore } from './weaviate-client'
 import type { WeaviateSearchOptions } from './weaviate-client'
 import { mlflowClient } from '../mlflow/mlflow-client'
+<<<<<<< HEAD
 import { vectorQueryCache } from './query-cache'
 import { getMetricsCollector } from '../db/database-metrics'
 
@@ -67,16 +68,30 @@ export interface VectorStoreStats {
     errorRate: number
   }
 }
+=======
+import { VectorMetricsCollector } from '../vector-db/VectorMetricsCollector'
+import { vectorQueryCache } from './query-cache'
+import { getMetricsCollector } from '../db/database-metrics'
+>>>>>>> fix/consolidated-dependency-updates
 
+/**
+ * Enhanced Vector Store
+ * Provides unified interface for multiple vector database providers
+ */
 export class EnhancedVectorStore {
-  private providers: Map<'pgvector' | 'weaviate', boolean> = new Map()
-  private performanceMetrics: Map<string, number[]> = new Map()
+  private providers: Map<string, boolean> = new Map()
   private lastHealthCheck: number = 0
+<<<<<<< HEAD
   private healthCheckInterval: number = 300000 // 5 minutes
   private dbMetricsCollector = getMetricsCollector()
 
   constructor() {
     this.initializeProviders()
+=======
+  private healthCheckInterval: number = 30000 // 30 seconds
+
+  constructor() {
+>>>>>>> fix/consolidated-dependency-updates
   }
 
   /**
@@ -217,8 +232,12 @@ export class EnhancedVectorStore {
   }
 
   /**
+<<<<<<< HEAD
    * Enhanced intelligent provider selection with advanced performance analysis
    */
+=======
+   * Enhanced intelligent provider selection with advanced performance analysis   */
+>>>>>>> fix/consolidated-dependency-updates
   private selectProvider(options: UnifiedSearchOptions): 'pgvector' | 'weaviate' {
     if (options.provider && options.provider !== 'auto') {
       return options.provider
@@ -351,12 +370,15 @@ export class EnhancedVectorStore {
     let results: UnifiedSearchResult[] = []
 
     try {
+<<<<<<< HEAD
       // Ensure providers are initialized at first use
       if (!this.providers.has('pgvector') && !this.providers.has('weaviate')) {
         await this.initializeProviders()
         this.lastHealthCheck = Date.now()
       }
 
+=======
+>>>>>>> fix/consolidated-dependency-updates
       // Check cache first
       const cachedResults = vectorQueryCache.getCachedResults(options.query, options)
       if (cachedResults) {
@@ -365,16 +387,23 @@ export class EnhancedVectorStore {
         return cachedResults
       }
 
+<<<<<<< HEAD
+=======
+      // Select provider based on options and performance
+>>>>>>> fix/consolidated-dependency-updates
       provider = this.selectProvider(options)
 
-      if (provider === 'weaviate') {
+      // Execute search with selected provider
+      if (provider === 'pgvector') {
+        results = await this.searchPgVector(options)
+      } else if (provider === 'weaviate') {
         results = await this.searchWeaviate(options)
       } else {
-        results = await this.searchPgVector(options)
+        throw new Error(`Unknown provider: ${provider}`)
       }
 
       // Cache results for future queries
-      vectorQueryCache.cacheResults(options.query, options, results, provider)
+      vectorQueryCache.cacheResults(options.query, options, results)
 
       // Track performance metrics
       const queryTime = Date.now() - startTime
@@ -384,6 +413,7 @@ export class EnhancedVectorStore {
       // Record vector search metrics for database monitoring
       this.dbMetricsCollector.recordVectorSearch(provider, queryTime, results.length, false)
       
+<<<<<<< HEAD
       // Optional external metrics collector removed to simplify dependencies
 
       // Track with MLflow if available
@@ -405,14 +435,24 @@ export class EnhancedVectorStore {
         })
       } catch {
         // MLflow tracking is optional
+=======
+      // Collect metrics for monitoring
+      try {
+        this.metricsCollector.updateStorageMetrics(results.length, 0)
+      } catch (e) {
+        // Metrics collection is optional
+>>>>>>> fix/consolidated-dependency-updates
       }
 
       return results
     } catch (error) {
+<<<<<<< HEAD
       this.recordMetric('error_rate', 1)
       this.recordMetric(`${provider}_errors`, 1)
       this.dbMetricsCollector.recordVectorError('search')
       
+=======
+>>>>>>> fix/consolidated-dependency-updates
       // Try fallback provider
       const fallbackProvider = provider === 'weaviate' ? 'pgvector' : 'weaviate'
       if (this.providers.get(fallbackProvider)) {
@@ -422,11 +462,12 @@ export class EnhancedVectorStore {
         this.dbMetricsCollector.recordProviderSwitch(provider || 'pgvector', fallbackProvider)
         
         try {
-          if (fallbackProvider === 'weaviate') {
-            results = await this.searchWeaviate(options)
-          } else {
-            results = await this.searchPgVector(options)
+          if (fallbackProvider === 'pgvector') {
+            return await this.searchPgVector(options)
+          } else if (fallbackProvider === 'weaviate') {
+            return await this.searchWeaviate(options)
           }
+<<<<<<< HEAD
 
           const queryTime = Date.now() - startTime
           this.recordMetric(`${fallbackProvider}_query_time`, queryTime)
@@ -436,6 +477,10 @@ export class EnhancedVectorStore {
           console.error('Fallback search also failed:', fallbackError)
           this.recordMetric(`${fallbackProvider}_errors`, 1)
           this.dbMetricsCollector.recordVectorError('search')
+=======
+        } catch (fallbackError) {
+          console.error('Fallback provider also failed:', fallbackError)
+>>>>>>> fix/consolidated-dependency-updates
         }
       }
 
@@ -499,8 +544,12 @@ export class EnhancedVectorStore {
   }
 
   /**
+<<<<<<< HEAD
    * Store documents with intelligent distribution and connection pool optimization
    */
+=======
+   * Store documents with intelligent distribution and connection pool optimization   */
+>>>>>>> fix/consolidated-dependency-updates
   async storeDocuments(
     workspaceId: number, 
     documents: Array<{
@@ -517,11 +566,16 @@ export class EnhancedVectorStore {
     pgvector: boolean
     weaviate: boolean
     totalStored: number
+<<<<<<< HEAD
     poolMetrics?: Record<string, unknown> | null
+=======
+    poolMetrics?: any
+>>>>>>> fix/consolidated-dependency-updates
   }> {
     const results = {
       pgvector: false,
       weaviate: false,
+<<<<<<< HEAD
       totalStored: 0,
       poolMetrics: null as Record<string, unknown> | null
     }
@@ -563,8 +617,30 @@ export class EnhancedVectorStore {
         console.error('Failed to store in pgvector:', error)
         this.dbMetricsCollector.recordVectorError('store')
         results.poolMetrics = { error: (error as Error).message, operation: 'store' }
+=======
+      totalStored: 0
+    }
+
+    // Store in PostgreSQL pgvector (for basic vector search)
+    if (this.providers.get('pgvector')) {
+      try {
+        const pgvectorStartTime = Date.now()
+        await pgVectorStore.storeChunks(workspaceId, documents)
+        const pgvectorDuration = Date.now() - pgvectorStartTime
+        
+        results.pgvector = true
+        results.totalStored += documents.length
+        
+        // Record pgvector store metrics
+        this.dbMetricsCollector.recordVectorStore(documents.length, 'pgvector', pgvectorDuration)
+      } catch (error) {
+        console.error('Failed to store in pgvector:', error)
+        this.dbMetricsCollector.recordVectorError('store')
+>>>>>>> fix/consolidated-dependency-updates
       }
     }
+
+    // Store in Weaviate (for advanced search capabilities)
 
     // Store in Weaviate (for advanced search capabilities)
     if (this.providers.get('weaviate')) {
@@ -589,8 +665,12 @@ export class EnhancedVectorStore {
         const weaviateStartTime = Date.now()
         await weaviateStore.storeDocuments(weaviateDocuments)
         const weaviateDuration = Date.now() - weaviateStartTime
+<<<<<<< HEAD
         
         results.weaviate = true
+=======
+                results.weaviate = true
+>>>>>>> fix/consolidated-dependency-updates
         if (!results.pgvector) {
           results.totalStored += documents.length
         }
@@ -715,6 +795,7 @@ export class EnhancedVectorStore {
       recommendation
     }
   }
+<<<<<<< HEAD
 
   /**
    * Format file size
@@ -731,6 +812,8 @@ export class EnhancedVectorStore {
 
     return `${size.toFixed(1)} ${units[unitIndex]}`
   }
+=======
+>>>>>>> fix/consolidated-dependency-updates
 }
 
 // Export singleton instance
