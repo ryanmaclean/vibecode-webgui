@@ -2,6 +2,7 @@ import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
 
+<<<<<<< HEAD
 type TracerLike = {
   init: (...args: any[]) => void;
   startSpan: (...args: any[]) => { setTag: (key: string, value: unknown) => void; finish: () => void } | undefined;
@@ -41,6 +42,19 @@ function createMockTracer(reason: string): TracerLike {
   const logPrefix = '🟡 Datadog tracer mock:';
   if (reason) {
     console.log(`${logPrefix} ${reason}`);
+=======
+// Function to get the appropriate tracer based on environment
+function getTracer() {
+  if (isDockerBuild) {
+    // Mock tracer for Docker build - completely bypass monitoring
+    // Debug log removed
+    return {
+      init: () => {
+        // Mock tracer initialized
+      },
+      // Add other tracer methods as needed
+    };
+>>>>>>> ai-sdk-openai-v2-test
   }
 
   const noop = () => {};
@@ -70,6 +84,7 @@ function createMockTracer(reason: string): TracerLike {
 
 function resolveServiceEnvVersion(): { env: string; service: string; version: string } {
   try {
+<<<<<<< HEAD
     const { getServiceEnvVersion } = require('./lib/monitoring/datadog-env');
     return getServiceEnvVersion();
   } catch (error) {
@@ -82,6 +97,83 @@ function resolveServiceEnvVersion(): { env: string; service: string; version: st
         process.env.VERCEL_GIT_COMMIT_SHA ||
         process.env.GITHUB_SHA ||
         '0.1.0'
+=======
+    // Dynamic imports to prevent static analysis issues
+    const tracer = require('dd-trace');
+    
+    // Only import monitoring modules if not in Docker build
+    let initializeOpenTelemetry, getServiceEnvVersion;
+    
+    try {
+      const opentelemetryModule = require('./lib/monitoring/opentelemetry');
+      initializeOpenTelemetry = opentelemetryModule.initializeOpenTelemetry;
+    } catch (e) {
+      // Debug log removed
+      initializeOpenTelemetry = () => {};
+    }
+    
+    try {
+      const datadogEnvModule = require('./lib/monitoring/datadog-env');
+      getServiceEnvVersion = datadogEnvModule.getServiceEnvVersion;
+    } catch (e) {
+      // Debug log removed
+      getServiceEnvVersion = () => ({ env: 'development', service: 'vibecode-webgui', version: '0.1.0' });
+    }
+
+    // Initialize OpenTelemetry first for auto-instrumentation (if enabled)
+    if (process.env.OTEL_ENABLED === 'true' && process.env.NODE_ENV !== 'test') {
+      initializeOpenTelemetry();
+    }
+
+    // Resolve standardized env/service/version
+    const { env, service, version } = getServiceEnvVersion();
+
+    // Initialize the tracer with LLM observability support
+    tracer.init({
+      // Docs: https://docs.datadoghq.com/tracing/trace_collection/library_config/nodejs/
+      logInjection: true,
+      profiling: true,
+      runtimeMetrics: true,
+      env,
+      service,
+      version,
+      
+      // Enhanced sampling for better observability
+      sampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+      
+      // Experimental, typed flags only. LLM Observability is controlled via env vars
+      // (e.g., DD_LLMOBS_ENABLED, DD_API_KEY, DD_SITE) and is not configured here
+      experimental: {
+        enableGetRumData: process.env.DD_ENABLE_GET_RUM_DATA === '1' || process.env.DD_ENABLE_GET_RUM_DATA === 'true'
+      },
+      
+      // Database monitoring - using type assertion for plugins config
+      plugins: true, // Enable all plugins by default
+      
+      // Plugin-specific configuration
+      // Note: These will be applied on top of the default configuration
+      // when the plugins are required
+      
+      // Tag all traces with deployment info
+      tags: {
+        'deployment.environment': env,
+        'service.name': service,
+        'service.version': version,
+        'git.commit.sha': process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || 'unknown',
+        'git.repository.url': 'https://github.com/vibecode/vibecode-webgui',
+      }
+    });
+
+    return tracer;
+  } catch (error) {
+    // Fallback to mock tracer if monitoring fails
+    // Debug log removed
+    return {
+      init: () => {
+        // Mock tracer initialized
+      },
+      // Add other tracer methods as needed
+>>>>>>> ai-sdk-openai-v2-test
     };
   }
 }

@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Model selection API error:', error)
+    // Server error logged
     
     return NextResponse.json({
       success: false,

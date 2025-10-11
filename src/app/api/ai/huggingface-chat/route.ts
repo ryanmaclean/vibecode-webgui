@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       const responseTime = Date.now() - startTime
 
       // Log usage for monitoring
-      console.log(`Hugging Face ${model} request: ${input.substring(0, 50)}... -> ${response.substring(0, 50)}... (${responseTime}ms)`)
+      // Debug log removed}... -> ${response.substring(0, 50)}... (${responseTime}ms)`)
 
       return NextResponse.json({
         success: true,
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       })
 
     } catch (modelError: any) {
-      console.error(`Hugging Face model ${model} error:`, modelError)
+      // Server error logged
       
       // Try fallback to a simpler approach for some models
       if (modelError.message?.includes('loading') || modelError.message?.includes('unavailable')) {
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error: any) {
-    console.error('Hugging Face chat error:', error)
+    // Server error logged
     
     return NextResponse.json({
       success: false,

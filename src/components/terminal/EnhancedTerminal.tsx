@@ -147,7 +147,7 @@ export default function EnhancedTerminal({
     const websocket = new WebSocket(wsUrl)
     
     websocket.onopen = () => {
-      console.log('Terminal WebSocket connected')
+      // Debug log removed
       terminal.current?.write('\r\n\x1b[32m✓ Terminal connected\x1b[0m\r\n')
       
       // Request new terminal session
@@ -175,7 +175,7 @@ export default function EnhancedTerminal({
     }
 
     websocket.onclose = () => {
-      console.log('Terminal WebSocket disconnected')
+      // Debug log removed
       terminal.current?.write('\r\n\x1b[33m⚠ Terminal disconnected\x1b[0m\r\n')
     }
 

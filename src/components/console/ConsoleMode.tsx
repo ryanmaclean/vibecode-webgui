@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Toast } from '@/components/ui/toast';
 import { codeServerClient } from '@/lib/code-server-client';
@@ -102,7 +102,7 @@ export function ConsoleMode({ workspaceId, onClose }: ConsoleModeProps) {
       case 'loading':
         return (
           <div className="flex flex-col items-center justify-center h-full space-y-4">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+            <Loader className="h-8 w-8 animate-spin text-blue-500" />
             <p className="text-gray-400">Initializing console...</p>
           </div>
         );
@@ -110,7 +110,7 @@ export function ConsoleMode({ workspaceId, onClose }: ConsoleModeProps) {
       case 'starting':
         return (
           <div className="flex flex-col items-center justify-center h-full space-y-4">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+            <Loader className="h-8 w-8 animate-spin text-blue-500" />
             <p className="text-gray-400">Starting development environment...</p>
             <p className="text-sm text-gray-500">This may take a moment</p>
           </div>

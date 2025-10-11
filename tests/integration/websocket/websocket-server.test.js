@@ -84,21 +84,35 @@ describe('WebSocket Server Integration', () => {
 
   describe('Error Handling', () => {
     it('should handle malformed data gracefully', (done) => {
+<<<<<<< HEAD
       clientSocket.once('error', (error) => {
+=======
+      const errorHandler = (error) => {
+>>>>>>> ai-sdk-openai-v2-test
         expect(error.message).toBe('Invalid input format');
+        clientSocket.off('error', errorHandler);
         done();
-      });
-
+      };
+      
+      clientSocket.on('error', errorHandler);
+      
       // Send malformed data
       clientSocket.emit('terminal-input', null);
     });
 
     it('should handle invalid cursor position', (done) => {
+<<<<<<< HEAD
       clientSocket.once('error', (error) => {
+=======
+      const errorHandler = (error) => {
+>>>>>>> ai-sdk-openai-v2-test
         expect(error.message).toBe('Invalid cursor position');
+        clientSocket.off('error', errorHandler);
         done();
-      });
-
+      };
+      
+      clientSocket.on('error', errorHandler);
+      
       // Send invalid cursor position
       clientSocket.emit('cursor-position', { x: 'invalid', y: 'data' });
     });

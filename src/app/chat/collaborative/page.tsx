@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Users, MessageSquare, Share2, Zap, Wifi, Eye, Globe } from 'lucide-react'
+import { Users, MessageSquare, Share, Zap, Wifi, Eye, Link } from 'lucide-react'
 
 export default function CollaborativeChatPage() {
   const [conversationId, setConversationId] = useState<string>()
@@ -47,15 +47,15 @@ export default function CollaborativeChatPage() {
         setConversationId(data.conversation.id)
         setShowDemo(true)
       } else {
-        console.error('Failed to create conversation:', data.error)
+        // Error handled
       }
     } catch (error) {
-      console.error('Error creating conversation:', error)
+      // Error handled
     }
   }
 
   const handleFileUpload = (files: FileList) => {
-    console.log('Files uploaded to collaborative chat:', Array.from(files).map(f => f.name))
+    // Debug log removed.map(f => f.name))
   }
 
   const shareWorkspaceLink = () => {
@@ -100,7 +100,7 @@ export default function CollaborativeChatPage() {
                 </div>
               </div>
               <div className="flex items-center space-x-3 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                <Share2 className="w-6 h-6 text-purple-600" />
+                <Share className="w-6 h-6 text-purple-600" />
                 <div>
                   <div className="font-semibold text-sm">Easy Sharing</div>
                   <div className="text-xs text-gray-600">Shareable links</div>
@@ -208,12 +208,12 @@ export default function CollaborativeChatPage() {
                   size="sm"
                   className="text-blue-600 border-blue-300"
                 >
-                  <Share2 className="w-4 h-4 mr-2" />
+                  <Share className="w-4 h-4 mr-2" />
                   Share Workspace
                 </Button>
                 
                 <div className="flex items-center space-x-2 text-sm">
-                  <Globe className="w-4 h-4 text-gray-500" />
+                  <Link className="w-4 h-4 text-gray-500" />
                   <span className="text-gray-600">Connected as: </span>
                   <Badge variant="secondary">{userName}</Badge>
                 </div>

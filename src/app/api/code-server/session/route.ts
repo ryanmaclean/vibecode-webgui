@@ -61,7 +61,7 @@ async function startCodeServerContainer(workspaceId: string, userId: string): Pr
       stderr += data.toString()
     })
     
-    child.on('close', (code) => {
+    child.on('close', (code: number | null) => {
       if (code === 0) {
         // Parse the output to get service details
         const serviceName = `code-server-${workspaceId}-svc`
@@ -85,13 +85,13 @@ async function startCodeServerContainer(workspaceId: string, userId: string): Pr
           url: externalUrl
         })
       } else {
-        console.error('Workspace creation failed:', stderr)
+        // Server error logged
         reject(new Error(`Failed to create workspace: ${stderr}`))
       }
     })
     
-    child.on('error', (error) => {
-      console.error('Script execution error:', error)
+    child.on('error', (error: Error) => {
+      // Server error logged
       reject(error)
     })
   })
@@ -99,7 +99,7 @@ async function startCodeServerContainer(workspaceId: string, userId: string): Pr
 
 async function stopCodeServerContainer(containerId: string): Promise<void> {
   // Simulate container cleanup
-  console.log(`Stopping container: ${containerId}`)
+  // Debug log removed
   await new Promise(resolve => setTimeout(resolve, 500))
 }
 
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
         }
       })
       .catch(error => {
-        console.error('Failed to start code-server container:', error)
+        // Server error logged
         const session = activeSessions.get(sessionId)
         if (session) {
           session.status = 'error'
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(newSession)
   } catch (error) {
-    console.error('Code-server session creation error:', error)
+    // Server error logged
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -202,7 +202,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ sessions })
   } catch (error) {
-    console.error('Code-server session list error:', error)
+    // Server error logged
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

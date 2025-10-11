@@ -263,7 +263,14 @@ RUN set -e && \
 RUN npm install -g @datadog/datadog-ci
 
 # 3. Vector (for log collection)
+<<<<<<< HEAD
 RUN echo "Skipping vector agent install for local build"
+=======
+RUN apt-get update && \
+    curl -L https://packages.timber.io/vector/0.32.1/vector-0.32.1-amd64.deb -o vector.deb && \
+    apt-get install -y ./vector.deb && \
+    rm vector.deb
+>>>>>>> ai-sdk-openai-v2-test
 
 # 4. KubeHound (Kubernetes security) - optional
 RUN set -eux; \

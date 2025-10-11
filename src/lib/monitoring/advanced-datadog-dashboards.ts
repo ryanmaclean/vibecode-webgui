@@ -223,7 +223,7 @@ export class DatadogDashboardManager {
       }
 
       const result = await response.json()
-      console.log('✅ AI Features Dashboard created:', result.url)
+      // Debug log removed
       return result.id
 
     } catch (error) {
@@ -336,7 +336,7 @@ export class DatadogDashboardManager {
       }
 
       const result = await response.json()
-      console.log('✅ User Experience Dashboard created:', result.url)
+      // Debug log removed
       return result.id
 
     } catch (error) {
@@ -443,7 +443,7 @@ export class DatadogDashboardManager {
       }
 
       const result = await response.json()
-      console.log('✅ Infrastructure Health Dashboard created:', result.url)
+      // Debug log removed
       return result.id
 
     } catch (error) {
@@ -460,7 +460,7 @@ export class DatadogDashboardManager {
     userExperience?: string
     infrastructure?: string
   }> {
-    console.log('🚀 Setting up Datadog dashboards...')
+    // Debug log removed
     
     const results = await Promise.allSettled([
       this.createAIFeaturesDashboard(),
@@ -482,7 +482,7 @@ export class DatadogDashboardManager {
       dashboardIds.infrastructure = results[2].value
     }
 
-    console.log('✅ Dashboard setup complete:', dashboardIds)
+    // Debug log removed
     return dashboardIds
   }
 

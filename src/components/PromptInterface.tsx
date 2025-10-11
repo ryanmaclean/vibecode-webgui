@@ -13,9 +13,8 @@ import {
   Sparkles, 
   Code, 
   Eye, 
-  Globe,
+  Link,
   Download,
-  Github,
   Monitor,
   Smartphone,
   Tablet,
@@ -23,22 +22,22 @@ import {
   Play,
   Bot,
   User,
-  Paperclip,
+  Link as Paperclip,
   Image,
   FileText,
   Zap,
   Settings,
-  DollarSign,
+  Circle as DollarSign,
   Clock,
   Database,
   Cpu,
   AlertCircle,
   CheckCircle,
-  FileCode,
+  File,
   Upload,
   Mic,
   MicOff,
-  Volume2,
+  Volume,
   Headphones,
   Radio
 } from 'lucide-react';
@@ -367,7 +366,7 @@ export default function PromptInterface() {
       try {
         setApiKeys(JSON.parse(savedKeys));
       } catch (error) {
-        console.error('Error loading saved API keys:', error);
+        // Error loading saved API keys
       }
     }
   }, []);
@@ -384,7 +383,7 @@ export default function PromptInterface() {
         // Pre-populate the input with template context
         setInput(`Generate a project using the "${template.name}" template. This template is described as: ${template.description}`);
       } catch (error) {
-        console.error('Error loading selected template:', error);
+        // Error loading selected template
       }
     }
   }, []);
@@ -429,7 +428,7 @@ export default function PromptInterface() {
         };
         
         recognitionRef.current.onerror = (event) => {
-          console.error('Speech recognition error:', event.error);
+          // Speech recognition error handled
           setIsListening(false);
           setInterimTranscript("");
         };
@@ -547,7 +546,7 @@ export default function PromptInterface() {
       mediaRecorder.start();
       setIsRecording(true);
     } catch (error) {
-      console.error('Error starting audio recording:', error);
+      // Error starting audio recording
     }
   }, [isRecording]);
 
@@ -760,7 +759,7 @@ Would you like to set up your API keys now?`,
       setMessages(welcomeMessages);
       
     } catch (error) {
-      console.error('Auth error:', error);
+      // Auth error handled
       
       // Track failed login
       await fetch('/api/auth/login-tracking', {
@@ -1010,7 +1009,7 @@ export default function LandingPage() {
                 AI Assistant
                 {voiceSupported && (
                   <Badge variant="outline" className="text-xs">
-                    <Volume2 className="w-3 h-3 mr-1" />
+                    <Volume className="w-3 h-3 mr-1" />
                     Voice Enabled
                   </Badge>
                 )}
@@ -1102,7 +1101,155 @@ export default function LandingPage() {
             
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
+<<<<<<< HEAD
               <MessageList messages={messages} isTyping={isTyping} />
+=======
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn(
+                    "flex w-full",
+                    message.type === "user" ? "justify-end" : "justify-start"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "max-w-[80%] rounded-lg p-4",
+                      message.type === "user"
+                        ? "bg-gradient-to-r from-purple-500 to-blue-600 text-white ml-12"
+                        : "bg-card border mr-12"
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      {message.type === "assistant" && (
+                        <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Sparkles className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <p className="text-sm leading-relaxed">{message.content}</p>
+                        
+                        {/* Audio Message */}
+                        {message.audioUrl && (
+                          <div className="mt-3">
+                            <audio controls className="w-full max-w-sm">
+                              <source src={message.audioUrl} type="audio/wav" />
+                              Your browser does not support audio playback.
+                            </audio>
+                            {message.transcription && (
+                              <p className="text-xs text-muted-foreground mt-1 italic">
+                                &quot;{message.transcription}&quot;
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* File Attachments */}
+                        {message.attachments && message.attachments.length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            {message.attachments.map((attachment) => (
+                              <div key={attachment.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
+                                {attachment.type === 'image' && <Image className="w-4 h-4" />}
+                                {attachment.type === 'code' && <File className="w-4 h-4" />}
+                                {attachment.type === 'document' && <FileText className="w-4 h-4" />}
+                                {attachment.type === 'audio' && <Headphones className="w-4 h-4" />}
+                                <span className="text-xs">{attachment.name}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  ({(attachment.size / 1024).toFixed(1)}KB)
+                                </span>
+                                {attachment.type === 'audio' && attachment.url && (
+                                  <audio controls className="ml-2" style={{ height: '24px', fontSize: '12px' }}>
+                                    <source src={attachment.url} type={attachment.mimeType || 'audio/wav'} />
+                                  </audio>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Metadata */}
+                        {message.metadata && (
+                          <div className="mt-3 space-y-2">
+                            <div className="flex flex-wrap gap-1">
+                              {message.metadata.codeGenerated && (
+                                <Badge variant="secondary" className="text-xs">
+                                  <Code className="w-3 h-3 mr-1" />
+                                  Code Generated
+                                </Badge>
+                              )}
+                              {message.metadata.deploymentUrl && (
+                                <Badge variant="secondary" className="text-xs">
+                                  <Link className="w-3 h-3 mr-1" />
+                                  Deployed
+                                </Badge>
+                              )}
+                              {message.metadata.audioInputMethod && (
+                                <Badge variant="secondary" className="text-xs">
+                                  <Mic className="w-3 h-3 mr-1" />
+                                  Voice Input
+                                </Badge>
+                              )}
+                              {message.metadata.framework && (
+                                <Badge variant="outline" className="text-xs">
+                                  {message.metadata.framework}
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            {/* Token and Cost Info */}
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              {message.metadata.tokens && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {message.metadata.tokens} tokens
+                                </span>
+                              )}
+                              {message.metadata.cost && (
+                                <span className="flex items-center gap-1">
+                                  <DollarSign className="w-3 h-3" />
+                                  ${message.metadata.cost.toFixed(4)}
+                                </span>
+                              )}
+                              {message.metadata.duration && (
+                                <span>{(message.metadata.duration / 1000).toFixed(1)}s</span>
+                              )}
+                            </div>
+                            
+                            {/* Components */}
+                            {message.metadata.components && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {message.metadata.components.map((comp, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {comp}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-card border rounded-lg p-4 mr-12">
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-600 rounded-full flex items-center justify-center">
+                        <Sparkles className="w-3 h-3 text-white" />
+                      </div>
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse delay-75"></div>
+                        <div className="w-2 h-2 bg-muted-foreground rounded-full animate-pulse delay-150"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+>>>>>>> ai-sdk-openai-v2-test
               <div ref={messagesEndRef} />
             </div>
             
@@ -1136,7 +1283,7 @@ export default function LandingPage() {
                   {attachments.map((attachment) => (
                     <div key={attachment.id} className="flex items-center gap-2 p-2 bg-muted rounded border group">
                       {attachment.type === 'image' && <Image className="w-4 h-4" />}
-                      {attachment.type === 'code' && <FileCode className="w-4 h-4" />}
+                      {attachment.type === 'code' && <File className="w-4 h-4" />}
                       {attachment.type === 'document' && <FileText className="w-4 h-4" />}
                       {attachment.type === 'audio' && <Headphones className="w-4 h-4" />}
                       <span className="text-sm truncate max-w-24">{attachment.name}</span>
@@ -1304,7 +1451,7 @@ export default function LandingPage() {
                   <RefreshCw className="w-4 h-4" />
                 </Button>
                 <Button variant="ghost" size="sm">
-                  <Globe className="w-4 h-4" />
+                  <Link className="w-4 h-4" />
                 </Button>
               </div>
             </div>
@@ -1351,7 +1498,7 @@ export default function LandingPage() {
                         Export
                       </Button>
                       <Button variant="outline" size="sm">
-                        <Github className="w-4 h-4 mr-2" />
+                        <Code className="w-4 h-4 mr-2" />
                         Push to GitHub
                       </Button>
                     </div>

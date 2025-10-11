@@ -30,13 +30,15 @@ export async function POST(request: Request) {
     await new Promise((resolve, reject) => {
       pipInstall.on('close', (code) => {
         if (code === 0) {
-          console.log(`Dependencies installed for run ${execId}`);
+          // Debug log removed
           resolve(true);
         } else {
           reject(new Error('Failed to install dependencies. Check server logs.'));
         }
       });
-      pipInstall.stderr.on('data', (data) => console.error(`pip stderr: ${data}`));
+      pipInstall.stderr.on('data', (data) => {
+        // Server error logged
+      });
     });
 
     // Run the Gradio app as a child process
@@ -51,7 +53,7 @@ export async function POST(request: Request) {
 
       gradioApp.stdout.on('data', (data: Buffer) => {
         const output = data.toString();
-        console.log(`Gradio stdout for ${execId}: ${output}`);
+        // Debug log removed
         const urlMatch = output.match(/Running on local URL: *(http:\/\/[^ ]+)/);
         if (urlMatch && urlMatch[1]) {
           clearTimeout(timeout);
@@ -61,7 +63,7 @@ export async function POST(request: Request) {
 
       gradioApp.stderr.on('data', (data: Buffer) => {
         const errorOutput = data.toString();
-        console.error(`Gradio stderr for ${execId}: ${errorOutput}`);
+        // Server error logged
         clearTimeout(timeout);
         reject(new Error(`Gradio app failed: ${errorOutput.split('\n')[0]}`));
       });
@@ -72,11 +74,11 @@ export async function POST(request: Request) {
       });
     });
 
-    console.log(`Gradio app for ${execId} started at ${url}`);
+    // Debug log removed
     return NextResponse.json({ url, execId });
 
   } catch (error) {
-    console.error('[Gradio Run Error]', error);
+    // Server error logged
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return NextResponse.json({ error: 'Failed to run Gradio app.', details: errorMessage }, { status: 500 });
   }

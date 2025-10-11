@@ -8,6 +8,12 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write     # For publishing Docker images
+  id-token: write     # For OIDC token
+  security-events: write  # For uploading security scan results
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -61,6 +67,15 @@ jobs:
         uses: docker/setup-buildx-action@v3
         with:
           platforms: linux/amd64,linux/arm64
+          
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}-${{ matrix.image }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-${{ matrix.image }}-
+            ${{ runner.os }}-buildx-
 
       - name: Log in to Container Registry
         if: github.event_name != 'pull_request'
@@ -101,7 +116,7 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build and push Docker image
+      - name: Build and push ${{ matrix.image }}
         if: steps.dockerfile-check.outputs.exists == 'true'
         id: build
         uses: docker/build-push-action@v5
@@ -112,6 +127,15 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+          
+      # This step is necessary to prevent cache from growing indefinitely
+      - name: Move cache
+        if: always() && steps.dockerfile-check.outputs.exists == 'true'
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: true
@@ -132,7 +156,7 @@ jobs:
     if: github.event_name != 'pull_request'
     strategy:
       matrix:
-        image: [vibecode-webgui, vibecode-ai-gateway, vibecode-code-server, vibecode-docs]
+        image: [vibecode-webgui, vibecode-ai-gateway, vibecode-code-server, vibecode-docs, vibecode-mcp-servers]
 
     steps:
       - name: Setup Datadog CLI

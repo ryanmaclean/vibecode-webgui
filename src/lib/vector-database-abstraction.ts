@@ -488,7 +488,7 @@ export class UnifiedVectorStore {
       const provider = this.providers.get(fallbackProvider)
       if (provider && await provider.isConnected()) {
         try {
-          console.log(`Using fallback provider: ${fallbackProvider}`)
+          // Debug log removed
           return await provider.search(query, options)
         } catch (error) {
           console.warn(`Fallback provider ${fallbackProvider} failed:`, error)

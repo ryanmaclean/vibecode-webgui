@@ -20,13 +20,20 @@ on:
         default: 'staging'
         type: choice
         options:
-        - staging
-        - production
+          - staging
+          - production
       force_deploy:
-        description: 'Force deployment even if tests fail'
+        description: 'Force deployment'
         required: false
-        default: false
+        default: 'false'
         type: boolean
+
+permissions:
+  contents: read
+  id-token: write        # For OIDC authentication
+  pull-requests: write   # For commenting on PRs
+  issues: write          # For updating issues
+  deployments: write     # For deployment statuses
 
 env:
   REGISTRY: ghcr.io
@@ -67,7 +74,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.20.0
         with:
           scan-type: 'fs'
           format: 'sarif'
@@ -80,7 +87,7 @@ jobs:
           sarif_file: 'trivy-results.sarif'
 
       - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@master
+        uses: snyk/actions/node@0.3.0
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
@@ -395,8 +402,13 @@ jobs:
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
+<<<<<<< HEAD
     needs: [infrastructure-plan, build-and-test, e2e-tests, validate-ci-config]
     if: github.ref == 'refs/heads/main' && (needs.e2e-tests.result == 'success' || github.event.inputs.force_deploy == 'true')
+=======
+    needs: [infrastructure-plan, build-and-test]
+    if: github.ref == 'refs/heads/main' && (needs.build-and-test.result == 'success' || github.event.inputs.force_deploy == 'true')
+>>>>>>> ai-sdk-openai-v2-test
     environment:
       name: production
       url: https://vibecode-webgui.yourdomain.com

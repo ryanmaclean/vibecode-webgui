@@ -404,11 +404,7 @@ export class TemplateMarketplace {
       const submissionId = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
       // In a real implementation, this would save to database
-      console.log('Template submission received:', {
-        submissionId,
-        templateName: submission.template.name,
-        author: submission.author.name
-      })
+      // Debug log removed
 
       return {
         success: true,

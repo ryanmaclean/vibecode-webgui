@@ -53,12 +53,20 @@ export function logEvent<T extends NestedObject = NestedObject>(
   // In production, send to your analytics service
   if (config.enabled) {
     // Example: sendToAnalyticsService(event);
+<<<<<<< HEAD
     logger.info('[Analytics]', { data: event });
+=======
+    // Debug log removed
+>>>>>>> ai-sdk-openai-v2-test
   }
 
   // In development, log to console and buffer
   if (config.debug) {
+<<<<<<< HEAD
     logger.info(`[Analytics] ${name}`, { data: properties });
+=======
+    // Debug log removed
+>>>>>>> ai-sdk-openai-v2-test
     
     // Add to buffer (useful for debugging)
     eventBuffer.push(event);
@@ -156,7 +164,11 @@ export function initAnalytics(options: {
   }
   
   if (config.enabled || config.debug) {
+<<<<<<< HEAD
     logger.info('[Analytics] Initialized', { config });
+=======
+    // Debug log removed
+>>>>>>> ai-sdk-openai-v2-test
   }
 }
 

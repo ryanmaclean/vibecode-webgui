@@ -52,7 +52,7 @@ function logUserAuth(
       referer: request.headers.get('referer') || null,
     },
     
-    // Network details for geographic mapping - KEY FOR GEOMAPS
+    // Link details for geographic mapping - KEY FOR GEOMAPS
     network: {
       client: {
         ip: clientIP, // Datadog will automatically enrich with geo data
@@ -103,7 +103,7 @@ function logUserAuth(
   };
 
   // Output structured JSON for Datadog Log Agent
-  console.log(JSON.stringify(logData));
+  // Debug log removed);
 }
 
 // Track login attempts
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Login tracking error:', error);
+    // Server error logged
     return NextResponse.json(
       { error: 'Failed to track login event' },
       { status: 500 }

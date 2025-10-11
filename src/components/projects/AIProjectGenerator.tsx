@@ -44,7 +44,7 @@ export function AIProjectGenerator({
    * @param data The generated project data
    */
   const handleProjectComplete = (data: { workspaceId: string; projectName: string }) => {
-    console.log('Project generation complete:', data)
+    // Debug log removed
     
     // Call the onProjectGenerated callback if provided
     if (onProjectGenerated) {

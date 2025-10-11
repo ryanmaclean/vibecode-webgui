@@ -8,10 +8,16 @@ on:
 
 permissions:
   contents: read
+<<<<<<< HEAD
 
 concurrency:
   group: prod-${{ github.ref }}
   cancel-in-progress: false
+=======
+  id-token: write        # For OIDC authentication
+  deployments: write     # For deployment statuses
+  packages: write        # For Docker image publishing
+>>>>>>> ai-sdk-openai-v2-test
 
 jobs:
   validate-ci-config:

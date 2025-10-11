@@ -266,7 +266,7 @@ class VectorStore {
         await new Promise(resolve => setTimeout(resolve, 100))
       }
 
-      console.log(`Stored ${chunks.length} vector chunks for file ${fileId}`)
+      // Debug log removed
     } catch (error) {
       console.error('Error storing vector chunks:', error)
       throw error
@@ -378,7 +378,7 @@ class VectorStore {
           similarity: row.similarity
         }))
 
-      console.log(`Vector search found ${results.length} relevant chunks for query: "${query.substring(0, 100)}..."`)
+      // Debug log removed}..."`)
       
       return results
     } catch (error) {
@@ -510,7 +510,7 @@ class VectorStore {
       await prisma.rAGChunk.deleteMany({
         where: { file_id: fileId }
       })
-      console.log(`Deleted vector chunks for file ${fileId}`)
+      // Debug log removed
     } catch (error) {
       console.error('Error deleting file chunks:', error)
       throw error

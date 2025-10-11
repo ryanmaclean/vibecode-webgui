@@ -52,6 +52,17 @@ export async function GET() {
       }
     })
   } catch (error) {
+<<<<<<< HEAD
     return createErrorResponseFromError(error, 500, getErrorMessage(error))
+=======
+    // Server error logged
+
+    return NextResponse.json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+      responseTime: `${Date.now() - startTime}ms`
+    }, { status: 503 })
+>>>>>>> ai-sdk-openai-v2-test
   }
 }

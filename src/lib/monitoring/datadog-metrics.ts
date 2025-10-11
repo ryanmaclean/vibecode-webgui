@@ -245,8 +245,13 @@ export class DatadogMetricsService {
         tags: Object.entries(tags).map(([key, value]) => `${key}:${value}`)
       }
 
+<<<<<<< HEAD
       if (process.env.NODE_ENV !== 'production') {
         console.log('📊 Datadog Metric:', JSON.stringify(metric, null, 2))
+=======
+      if (process.env.NODE_ENV === 'development') {
+        // Debug log removed)
+>>>>>>> ai-sdk-openai-v2-test
       }
 
       // In production, send to Datadog (prefer DD_API_KEY with DATADOG_API_KEY fallback)
@@ -281,8 +286,13 @@ export class DatadogMetricsService {
       tags: Object.entries(this.mergeTags(metric.tags)).map(([key, value]) => `${key}:${value}`)
     }))
 
+<<<<<<< HEAD
     if (process.env.NODE_ENV !== 'production') {
       console.log('📊 Datadog Batch Metrics:', JSON.stringify(formattedMetrics, null, 2))
+=======
+    if (process.env.NODE_ENV === 'development') {
+      // Debug log removed)
+>>>>>>> ai-sdk-openai-v2-test
       return
     }
 
