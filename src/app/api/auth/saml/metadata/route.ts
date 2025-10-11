@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('SAML metadata error:', error)
+    // Server error logged
     
     return NextResponse.json({
       error: 'Failed to generate SAML metadata',

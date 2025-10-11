@@ -9,10 +9,11 @@ const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true, // Temporarily disable during builds
+    dirs: ['src'], // Only lint src directory for faster builds
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false, // Re-enable to check specific issues
   },
   images: {
     unoptimized: true,
@@ -38,6 +39,9 @@ const nextConfig = {
 
   // Security headers configuration
   async headers() {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    // Base security headers
     const securityHeaders = [
       {
         key: 'X-DNS-Prefetch-Control',
@@ -69,9 +73,22 @@ const nextConfig = {
       },
       {
         key: 'Content-Security-Policy',
-        value: [
+        value: isDevelopment ? [
           "default-src 'self'",
-          "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.datadoghq-browser-agent.com https://cdn.jsdelivr.net https://unpkg.com",
+          "script-src 'self' 'unsafe-eval' https://www.datadoghq-browser-agent.com https://cdn.jsdelivr.net",
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+          "font-src 'self' https://fonts.gstatic.com",
+          "img-src 'self' data: https: blob:",
+          "connect-src 'self' https://api.openrouter.ai https://api.openai.com https://api.anthropic.com https://browser-intake-datadoghq.com wss: ws: http://localhost:*",
+          "worker-src 'self' blob:",
+          "frame-src 'self'",
+          "object-src 'none'",
+          "base-uri 'self'",
+          "form-action 'self'",
+          "frame-ancestors 'self'"
+        ].join('; ') : [
+          "default-src 'self'",
+          "script-src 'self' https://www.datadoghq-browser-agent.com https://cdn.jsdelivr.net",
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
           "font-src 'self' https://fonts.gstatic.com",
           "img-src 'self' data: https: blob:",
@@ -82,7 +99,8 @@ const nextConfig = {
           "base-uri 'self'",
           "form-action 'self'",
           "frame-ancestors 'self'",
-          "upgrade-insecure-requests"
+          "upgrade-insecure-requests",
+          "report-uri /api/security/csp-report"
         ].join('; ')
       }
     ];
@@ -98,7 +116,7 @@ const nextConfig = {
           ...securityHeaders,
           {
             key: 'Access-Control-Allow-Origin',
-            value: process.env.NODE_ENV === 'development' ? '*' : 'https://vibecode.dev'
+            value: isDevelopment ? '*' : 'https://vibecode.dev'
           },
           {
             key: 'Access-Control-Allow-Methods',
@@ -106,7 +124,7 @@ const nextConfig = {
           },
           {
             key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization, X-Requested-With'
+            value: 'Content-Type, Authorization, X-Requested-With, X-CSP-Nonce'
           },
           {
             key: 'Access-Control-Max-Age',

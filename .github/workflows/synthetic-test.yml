@@ -5,10 +5,15 @@ on:
 
 permissions:
   contents: read
+<<<<<<< HEAD
 
 concurrency:
   group: synthetics-${{ github.ref }}
   cancel-in-progress: true
+=======
+  id-token: write        # For OIDC authentication
+  checks: write          # For posting test results
+>>>>>>> ai-sdk-openai-v2-test
 
 jobs:
   validate-ci-config:
@@ -52,7 +57,27 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
+<<<<<<< HEAD
           node-version: '20'
+=======
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies with retry
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: npm ci --legacy-peer-deps
+>>>>>>> ai-sdk-openai-v2-test
 
       - name: Run Datadog Synthetic Tests
         if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}

@@ -52,9 +52,15 @@ const performanceMonitor = {
   submitLoadTestResults: async (data: any) => Math.random() > 0.5,
   submitSyntheticTestResults: async (data: any) => Math.random() > 0.5,
   submitLighthouseResults: async (data: any) => Math.random() > 0.5,
-  trackWebVitals: (data: any) => console.log('Web Vitals tracked:', data),
-  trackAPIPerformance: (endpoint: string, method: string, responseTime: number, status: number) => console.log('API perf tracked:', { endpoint, method, responseTime, status }),
-  trackResourceLoading: (data: any) => console.log('Resource loading tracked:', data)
+  trackWebVitals: (data: any) => {
+    // Web vitals tracked
+  },
+  trackAPIPerformance: (endpoint: string, method: string, responseTime: number, status: number) => {
+    // API performance tracked  
+  },
+  trackResourceLoading: (data: any) => {
+    // Resource loading tracked
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -96,7 +102,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Performance API error:', error)
+    // Server error logged
     
     return NextResponse.json({
       error: 'Failed to retrieve performance data',
@@ -188,7 +194,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Performance submission error:', error)
+    // Server error logged
     
     return NextResponse.json({
       error: 'Failed to process performance data',

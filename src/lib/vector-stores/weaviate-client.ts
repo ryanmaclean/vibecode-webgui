@@ -80,12 +80,24 @@ export class WeaviateVectorStore {
 
     // Initialize Weaviate client with proper configuration
     try {
-      this.client = weaviate.client({
+      const clientConfig: any = {
         scheme: host.startsWith('https') ? 'https' : 'http',
         host: host.replace(/^https?:\/\//, ''),
+<<<<<<< HEAD
         apiKey: apiKey,
         ...(openaiApiKey ? { additionalHeaders: { 'X-OpenAI-Api-Key': openaiApiKey } } : {})
       })
+=======
+        apiKey: apiKey
+      }
+      
+      // Add OpenAI API key if provided
+      if (openaiApiKey) {
+        clientConfig.additionalHeaders = { 'X-OpenAI-Api-Key': openaiApiKey }
+      }
+      
+      this.client = weaviate.client(clientConfig)
+>>>>>>> ai-sdk-openai-v2-test
     } catch (error) {
       console.warn('Failed to initialize Weaviate client:', error)
       // Use a mock client that will fail gracefully
@@ -151,14 +163,14 @@ export class WeaviateVectorStore {
 
       // Check if schema exists
       const schema = await this.client.schema.getter().do()
-      const classExists = schema.classes?.some(c => c.class === this.className)
+      const classExists = schema.classes?.some((c: any) => c.class === this.className)
 
       if (!classExists) {
         await this.createSchema()
       }
 
       this.isConnected = true
-      console.log('✅ Weaviate connected and schema ready')
+      // Debug log removed
       return true
     } catch (error) {
       console.error('Failed to initialize Weaviate:', error)
@@ -260,7 +272,7 @@ export class WeaviateVectorStore {
     }
 
     await this.client.schema.classCreator().withClass(classDefinition).do()
-    console.log(`✅ Created Weaviate schema for class: ${this.className}`)
+    // Debug log removed
   }
 
   /**
@@ -324,7 +336,7 @@ export class WeaviateVectorStore {
         await batch.do()
       }
 
-      console.log(`✅ Stored ${documents.length} documents in Weaviate`)
+      // Debug log removed
       return true
     } catch (error) {
       console.error('Failed to store documents in Weaviate:', error)
@@ -488,7 +500,7 @@ export class WeaviateVectorStore {
         .do()
 
       const deletedCount = result.results?.successful || 0
-      console.log(`🗑️  Deleted ${deletedCount} documents from Weaviate`)
+      // Debug log removed
       return deletedCount
     } catch (error) {
       console.error('Failed to delete documents from Weaviate:', error)
@@ -508,10 +520,10 @@ export class WeaviateVectorStore {
       const schema = await this.client.schema.getter().do()
       const meta = await this.client.misc.metaGetter().do()
       
-      const indexes = schema.classes?.map(cls => ({
+      const indexes = schema.classes?.map((cls: any) => ({
         className: cls.class || 'Unknown',
         objectCount: 0, // Would need aggregate query to get actual count
-        properties: cls.properties?.map(prop => prop.name) || []
+        properties: cls.properties?.map((prop: any) => prop.name) || []
       })) || []
 
       // Get object count for our class
@@ -526,7 +538,7 @@ export class WeaviateVectorStore {
       return {
         totalObjects: objectCount,
         totalVectors: objectCount,
-        indexes: indexes.map(idx => 
+        indexes: indexes.map((idx: any) => 
           idx.className === this.className 
             ? { ...idx, objectCount } 
             : idx

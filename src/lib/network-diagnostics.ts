@@ -6,7 +6,7 @@ import type { HopStat } from '../types/network';
 
 const execAsync = promisify(exec);
 
-class NetworkDiagnostics {
+class LinkDiagnostics {
   private static readonly PACKET_COUNT = 10;
   private static readonly MAX_HOPS = 30;
   private static readonly TIMEOUT = 2; // seconds
@@ -39,7 +39,7 @@ class NetworkDiagnostics {
       span?.setTag('error', true);
       span?.setTag('error.msg', errorMessage);
       metrics.increment('network.diagnostics.error', { host, error: errorMessage });
-      throw new Error(`Network diagnostics failed: ${errorMessage}`);
+      throw new Error(`Link diagnostics failed: ${errorMessage}`);
     }
   }
 
@@ -156,4 +156,4 @@ class NetworkDiagnostics {
   }
 }
 
-export default NetworkDiagnostics;
+export default LinkDiagnostics;

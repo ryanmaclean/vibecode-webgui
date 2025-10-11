@@ -406,7 +406,7 @@ export class GeminiCLI {
         throw new Error(stderr)
       }
 
-      console.log('Gemini CLI installed successfully')
+      // Debug log removed
     } catch (error) {
       throw new Error(`Failed to install Gemini CLI: ${error}`)
     }
@@ -425,7 +425,7 @@ export class GeminiCLI {
         throw new Error(stderr)
       }
 
-      console.log('Gemini CLI uninstalled successfully')
+      // Debug log removed
     } catch (error) {
       throw new Error(`Failed to uninstall Gemini CLI: ${error}`)
     }

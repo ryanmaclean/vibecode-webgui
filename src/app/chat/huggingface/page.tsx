@@ -5,7 +5,7 @@ import HuggingFaceChatInterface from '@/components/chat/HuggingFaceChatInterface
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { MessageSquare, Bot, Zap, FileText, Globe } from 'lucide-react'
+import { MessageSquare, Bot, Zap, FileText, Link } from 'lucide-react'
 
 export default function HuggingFaceChatPage() {
   const [conversationId, setConversationId] = useState<string>()
@@ -33,15 +33,15 @@ export default function HuggingFaceChatPage() {
       if (data.success && data.conversation) {
         setConversationId(data.conversation.id)
       } else {
-        console.error('Failed to create conversation:', data.error)
+        // Error handled
       }
     } catch (error) {
-      console.error('Error creating conversation:', error)
+      // Error handled
     }
   }
 
   const handleFileUpload = (files: FileList) => {
-    console.log('Files uploaded to Hugging Face chat:', Array.from(files).map(f => f.name))
+    // Debug log removed.map(f => f.name))
   }
 
   return (
@@ -79,7 +79,7 @@ export default function HuggingFaceChatPage() {
                 </div>
               </div>
               <div className="flex items-center space-x-2 p-3 bg-purple-50 rounded-lg">
-                <Globe className="w-5 h-5 text-purple-500" />
+                <Link className="w-5 h-5 text-purple-500" />
                 <div>
                   <div className="font-medium text-sm">RAG Integration</div>
                   <div className="text-xs text-gray-500">Context-Aware Chat</div>

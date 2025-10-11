@@ -72,7 +72,7 @@ export class MongoDBChatService {
       const result = await sessions.insertOne(session)
       session._id = result.insertedId
       
-      console.log('Chat session created:', session.sessionId, userId)
+      // Debug log removed
       
       return session
     } catch (error) {
@@ -117,7 +117,7 @@ export class MongoDBChatService {
       const result = await conversations.insertOne(conversation)
       conversation._id = result.insertedId
       
-      console.log('Conversation created:', conversation.id, userId, workspaceId)
+      // Debug log removed
       
       return conversation
     } catch (error) {
@@ -171,7 +171,7 @@ export class MongoDBChatService {
         throw new Error('Conversation not found')
       }
 
-      console.log('Message added to conversation:', conversationId, newMessage.id, newMessage.from)
+      // Debug log removed
 
       return newMessage
     } catch (error) {

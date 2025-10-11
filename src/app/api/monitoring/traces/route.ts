@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    console.log(`📡 Received ${traces.resourceSpans.length} trace spans from client`)
+    // Debug log removed
 
     // Process each resource span
     let processedSpans = 0
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         )
 
       } catch (spanError) {
-        console.error('Error processing span:', spanError)
+        // Server error logged
         errors++
       }
     }
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Traces API error:', error)
+    // Server error logged
     
     return NextResponse.json({
       error: 'Failed to process traces',

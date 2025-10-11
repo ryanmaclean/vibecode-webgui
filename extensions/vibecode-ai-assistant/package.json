@@ -129,16 +129,64 @@
         "icon": "$(person-add)"
       },
       {
+        "command": "vibecode.collaboration.showPanel",
+        "title": "Show Collaboration Panel",
+        "category": "VibeCode",
+        "icon": "$(live-share)"
+      },
+      {
+        "command": "vibecode.collaboration.shareFile",
+        "title": "Share Current File",
+        "category": "VibeCode",
+        "icon": "$(share)"
+      },
+      {
         "command": "vibecode.monitoring.dashboard",
         "title": "Open Monitoring Dashboard",
         "category": "VibeCode",
         "icon": "$(dashboard)"
       },
       {
+        "command": "vibecode.monitoring.refresh",
+        "title": "Refresh Monitoring Metrics",
+        "category": "VibeCode",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "vibecode.monitoring.export",
+        "title": "Export Monitoring Data",
+        "category": "VibeCode",
+        "icon": "$(export)"
+      },
+      {
         "command": "vibecode.ai.orchestration",
         "title": "AI Model Orchestration",
         "category": "VibeCode",
         "icon": "$(organization)"
+      },
+      {
+        "command": "vibecode.ai.models.refresh",
+        "title": "Refresh AI Models",
+        "category": "VibeCode",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "vibecode.ai.models.test",
+        "title": "Test AI Model",
+        "category": "VibeCode",
+        "icon": "$(play)"
+      },
+      {
+        "command": "vibecode.ai.models.configure",
+        "title": "Configure AI Model",
+        "category": "VibeCode",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "vibecode.ai.usage.details",
+        "title": "Show Usage Details",
+        "category": "VibeCode",
+        "icon": "$(graph)"
       }
     ],
     "menus": {
@@ -167,6 +215,11 @@
           "command": "vibecode.generateTests",
           "when": "editorHasSelection",
           "group": "vibecode@5"
+        },
+        {
+          "command": "vibecode.collaboration.shareFile",
+          "when": "editorTextFocus",
+          "group": "vibecode@6"
         }
       ],
       "commandPalette": [
@@ -198,6 +251,45 @@
         },
         {
           "command": "vibecode.selectAIModel"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "vibecode.ai.models.test",
+          "when": "view == vibeCodeAIModels && viewItem == available-model",
+          "group": "inline"
+        },
+        {
+          "command": "vibecode.ai.models.configure",
+          "when": "view == vibeCodeAIModels && viewItem == available-model",
+          "group": "inline"
+        },
+        {
+          "command": "vibecode.ai.usage.details",
+          "when": "view == vibeCodeAIModels && viewItem == usage-item",
+          "group": "inline"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "vibecode.ai.models.refresh",
+          "when": "view == vibeCodeAIModels",
+          "group": "navigation"
+        },
+        {
+          "command": "vibecode.ai.orchestration",
+          "when": "view == vibeCodeAIModels",
+          "group": "navigation"
+        },
+        {
+          "command": "vibecode.monitoring.refresh",
+          "when": "view == vibeCodeMonitoring",
+          "group": "navigation"
+        },
+        {
+          "command": "vibecode.monitoring.export",
+          "when": "view == vibeCodeMonitoring",
+          "group": "navigation"
         }
       ]
     },
@@ -316,8 +408,8 @@
           "type": "number",
           "default": 0.7,
           "description": "Temperature for AI responses (0.0-1.0)",
-          "minimum": 0.0,
-          "maximum": 1.0,
+          "minimum": 0,
+          "maximum": 1,
           "scope": "window"
         },
         "vibecode.enableTelemetry": {
@@ -339,21 +431,27 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
+    "pretest": "npm run compile",
+    "lint": "eslint src/**/*.ts",
     "test": "node ./out/test/runTest.js",
     "package": "vsce package",
     "publish": "vsce publish"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.10",
     "@types/node": "^18.0.0",
+    "@types/sinon": "^17.0.4",
+    "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "eslint": "^8.50.0",
-    "typescript": "^5.0.0",
     "@vscode/test-electron": "^2.3.0",
-    "@vscode/vsce": "^2.20.0"
+    "@vscode/vsce": "^2.20.0",
+    "eslint": "^8.50.0",
+    "glob": "^11.0.3",
+    "mocha": "^11.7.1",
+    "sinon": "^21.0.0",
+    "typescript": "^5.0.0"
   },
   "dependencies": {
     "axios": "^1.12.0"

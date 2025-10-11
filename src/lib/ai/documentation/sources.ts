@@ -86,14 +86,14 @@ export class DocumentationSources {
           );
         }
         
-        // Finally, try GitHub README
+        // Finally, try FolderHub README
         await this.loadFromUrl(
           `${framework.name} README`,
           `https://raw.githubusercontent.com/${framework.url.split('github.com/')[1]}/main/README.md`,
           { type: 'readme', framework: framework.name, source: 'github' }
         );
         
-        console.log(`Successfully loaded documentation for ${framework.name}`);
+        // Debug log removed
       } catch (error) {
         console.error(`Failed to load ${framework.name}:`, error.message);
       }

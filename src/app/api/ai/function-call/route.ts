@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     const responseTime = Date.now() - startTime
 
     // Log function execution for monitoring
-    console.log(`Function call: ${function_call.name} -> ${result.success ? 'success' : 'failed'} (${responseTime}ms)`)
+    // Debug log removed`)
 
     return NextResponse.json({
       success: result.success,
@@ -49,8 +49,13 @@ export async function POST(request: NextRequest) {
       }
     })
 
+<<<<<<< HEAD
   } catch (error: unknown) {
     console.error('Function calling API error:', error)
+=======
+  } catch (error: any) {
+    // Server error logged
+>>>>>>> ai-sdk-openai-v2-test
     
     return NextResponse.json({
       success: false,

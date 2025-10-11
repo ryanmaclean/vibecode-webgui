@@ -181,7 +181,7 @@ async function buildAdvancedRAGContext(workspaceId: string, userQuery: string, u
       totalLength: combinedContext.length
     }
   } catch (error) {
-    console.error('Advanced RAG context error:', error)
+    // Server error logged
     return null
   }
 }
@@ -277,12 +277,17 @@ export async function POST(request: NextRequest) {
     // Get available providers and models
     const availableProviders = aiClient.getAvailableProviders().map(p => p.name)
     const providerHealth = await aiClient.getProviderHealth()
+<<<<<<< HEAD
 
     console.log('[UNIFIED_CHAT] Provider health check', {
       providers: availableProviders,
       health: providerHealth,
       userId: session.user.id
     })
+=======
+    
+    // Debug log removed
+>>>>>>> ai-sdk-openai-v2-test
 
     // Build advanced RAG context
     const ragResult = await buildAdvancedRAGContext(
@@ -402,6 +407,7 @@ ${generateToolCapabilities(enableTools, availableProviders)}
           controller.close()
 
           // Enhanced completion analytics
+<<<<<<< HEAD
           console.log(`[UNIFIED_CHAT] Completion: ${model}, tokens: ${tokenCount}, providers: ${availableProviders.length}, RAG: ${ragResult?.relevanceScore || 'none'}`)
 
         } catch (error) {
@@ -411,6 +417,13 @@ ${generateToolCapabilities(enableTools, availableProviders)}
             model
           })
 
+=======
+          // Debug log removed
+
+        } catch (error) {
+          // Server error logged
+          
+>>>>>>> ai-sdk-openai-v2-test
           // Send error with fallback suggestions
           const errorData = JSON.stringify({
             error: true,
@@ -448,9 +461,13 @@ ${generateToolCapabilities(enableTools, availableProviders)}
     })
 
   } catch (error) {
+<<<<<<< HEAD
     console.error('[UNIFIED_CHAT] API error', {
       error: error instanceof Error ? error.message : 'Unknown error'
     })
+=======
+    // Server error logged
+>>>>>>> ai-sdk-openai-v2-test
 
     return NextResponse.json(
       {

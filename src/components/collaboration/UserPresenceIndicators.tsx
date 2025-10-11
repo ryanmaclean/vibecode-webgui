@@ -11,7 +11,11 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+<<<<<<< HEAD
 import { User, Activity, Clock, Wifi, WifiOff } from 'lucide-react'
+=======
+import { User, ArrowRight as Cursor, Activity, Clock, Wifi, WifiOff } from 'lucide-react'
+>>>>>>> ai-sdk-openai-v2-test
 import { useCollaboration } from '../../hooks/useCollaboration'
 
 export interface UserPresence {
@@ -74,12 +78,19 @@ export default function UserPresenceIndicators({
   className = '',
   onUserClick
 }: UserPresenceIndicatorsProps) {
+<<<<<<< HEAD
   const collaboration = useCollaboration({
     workspaceId: sessionId,
     userId: currentUserId,
     userName: 'Anonymous',
     enabled: true
   })
+=======
+  // Mock collaboration data for now - this component needs redesign for current useCollaboration hook
+  const isConnected = true
+  const collaborationManager: any = null
+  const awareness: any = null
+>>>>>>> ai-sdk-openai-v2-test
   const [presenceData, setPresenceData] = useState<Map<string, UserPresence>>(new Map())
   const [isExpanded, setIsExpanded] = useState(false)
   const [hoveredUser, setHoveredUser] = useState<string | null>(null)
@@ -161,6 +172,7 @@ export default function UserPresenceIndicators({
     const handlePresenceUpdate = (data: any) => {
       const newPresenceData = new Map<string, UserPresence>()
 
+<<<<<<< HEAD
       // Process presence data from socket event
       if (data.userId && data.userId !== currentUserId) {
         const user = data.user || {}
@@ -177,6 +189,26 @@ export default function UserPresenceIndicators({
           connectionStatus: data.connectionStatus || 'connected',
           viewport: data.viewport,
           metadata: data.metadata
+=======
+      states.forEach((state: any, clientId: any) => {
+        if (state.presence && state.presence.userId !== currentUserId) {
+          const user = state.user || {}
+          const presence: UserPresence = {
+            userId: state.presence.userId,
+            userName: user.name || `User ${state.presence.userId.slice(0, 8)}`,
+            userAvatar: user.avatar,
+            userColor: getUserColor(state.presence.userId),
+            position: state.presence.position || { line: 0, column: 0 },
+            selection: state.presence.selection,
+            isTyping: state.presence.isTyping || false,
+            isActive: Date.now() - (state.presence.lastActivity || 0) < ACTIVITY_THRESHOLD,
+            lastActivity: state.presence.lastActivity || 0,
+            connectionStatus: state.presence.connectionStatus || 'connected',
+            viewport: state.presence.viewport,
+            metadata: state.presence.metadata
+          }
+          newPresenceData.set(state.presence.userId, presence)
+>>>>>>> ai-sdk-openai-v2-test
         }
         newPresenceData.set(data.userId, presence)
       }

@@ -43,7 +43,7 @@ if (!isDockerBuild) {
     BatchSpanProcessor = sdkTraceBase.BatchSpanProcessor;
     OTLPTraceExporter = otlpExporter.OTLPTraceExporter;
   } catch (error) {
-    console.log('⚠️ OpenTelemetry client modules not available, monitoring disabled');
+    // Debug log removed
   }
 }
 
@@ -59,18 +59,18 @@ let webTracerProvider: any = null
 export function initializeClientOpenTelemetry() {
   if (!isBrowser || webTracerProvider || isDockerBuild) {
     if (isDockerBuild) {
-      console.log('🚫 Client-side OpenTelemetry disabled during Docker build');
+      // Debug log removed
     }
     return webTracerProvider
   }
 
   // Check if all required modules are available
   if (!WebTracerProvider || !Resource || !ATTR_SERVICE_NAME || !ATTR_SERVICE_VERSION || !getWebAutoInstrumentations || !registerInstrumentations || !BatchSpanProcessor || !OTLPTraceExporter) {
-    console.log('⚠️ OpenTelemetry client modules not available, monitoring disabled');
+    // Debug log removed
     return null;
   }
 
-  console.log('🔧 Initializing client-side OpenTelemetry...')
+  // Debug log removed
 
   try {
     // Configure resource for browser
@@ -134,7 +134,7 @@ export function initializeClientOpenTelemetry() {
       ]
     })
 
-    console.log('✅ Client-side OpenTelemetry initialized successfully')
+    // Debug log removed
     return webTracerProvider
 
   } catch (error) {

@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { AlertCircle, CheckCircle, Clock, DollarSign, Zap, Server, Cloud, Home } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Zap, Server, Cloud, Home } from 'lucide-react';
 import { AIProvider, AIModelConfig } from '@/lib/ai/enhanced-model-client';
 
 interface ProviderInfo {
@@ -306,7 +306,7 @@ export default function AIModelSelector({ onConfigChange, currentConfig, classNa
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Estimated Cost</span>
-                  <DollarSign className="h-4 w-4 text-gray-500" />
+                  <Clock className="h-4 w-4 text-gray-500" />
                 </div>
                 <div className="text-sm text-gray-600">
                   <div>Per request ({maxTokens} tokens): ${calculateEstimatedCost(maxTokens, providers[selectedProvider].costPer1kTokens)}</div>

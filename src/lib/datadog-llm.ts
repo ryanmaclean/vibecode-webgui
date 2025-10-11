@@ -242,7 +242,7 @@ class LLMObservability {
       return new Promise(resolve => {
         if (ddTracer.tracer?._writer?.flush) {
           ddTracer.tracer._writer.flush(() => {
-            console.log('LLM observability data flushed to Datadog');
+            // Debug log removed
             resolve();
           });
         } else {

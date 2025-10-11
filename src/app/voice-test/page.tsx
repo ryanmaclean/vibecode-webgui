@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Mic, MicOff, Radio, Volume2, Play, Square } from 'lucide-react';
+import { Mic, MicOff, Radio, Volume, Play, Square } from 'lucide-react';
 
 // Voice recognition interfaces (same as in PromptInterface)
 interface SpeechRecognitionEvent extends Event {
@@ -212,7 +212,7 @@ export default function VoiceTestPage() {
         };
         
         recognitionRef.current.onerror = (event) => {
-          console.error('Speech recognition error:', event.error);
+          // Error handled
           setIsListening(false);
           setInterimTranscript('');
         };
@@ -287,7 +287,7 @@ export default function VoiceTestPage() {
       mediaRecorder.start();
       setIsRecording(true);
     } catch (error) {
-      console.error('Error starting recording:', error);
+      // Error handled
     }
   }, [isRecording, recordings.length]);
 
@@ -341,7 +341,7 @@ export default function VoiceTestPage() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Volume2 className="w-5 h-5" />
+            <Volume className="w-5 h-5" />
             Speech Recognition Test
           </CardTitle>
         </CardHeader>

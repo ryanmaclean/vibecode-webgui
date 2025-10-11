@@ -17,7 +17,7 @@ export default async function GradioEditorPage() {
     const templatePath = getTemplatePath();
     initialCode = await fs.readFile(templatePath, 'utf-8');
   } catch (error) {
-    console.error('Failed to load Gradio template:', error);
+    // Error handled
     initialCode = `# Failed to load template.\n# Please check the server logs.\n\nimport gradio as gr\n\ndef greet(name):\n    return "Hello, " + name + "!"\n\niface = gr.Interface(fn=greet, inputs=\"text\", outputs=\"text\")\niface.launch()`;
   }
 

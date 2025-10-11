@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare, Wand2, FileText, Image, Paperclip, Search, Zap, Globe } from 'lucide-react'
+import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare, Wand2, FileText, Image, Search, Zap, Link } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
@@ -348,7 +348,7 @@ export const EnhancedChatInterface = ({
             <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Globe className="w-4 h-4" />
+                  <Link className="w-4 h-4" />
                   <span className="text-sm">Web Search</span>
                 </div>
                 <Button
@@ -544,6 +544,7 @@ export const EnhancedChatInterface = ({
                 className="hidden"
               />
               
+<<<<<<< HEAD
               <Tooltip content="Attach files">
                 <Button
                   variant="outline"
@@ -565,6 +566,27 @@ export const EnhancedChatInterface = ({
                   <Send className="w-4 h-4" />
                 </Button>
               </Tooltip>
+=======
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isStreaming}
+                title="Attach files"
+              >
+                <Link className="w-4 h-4" />
+              </Button>
+
+              <Button
+                variant="default"
+                size="sm"
+                onClick={sendMessage}
+                disabled={isStreaming || (!input.trim() && attachedFiles.length === 0)}
+                title="Send message"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+>>>>>>> ai-sdk-openai-v2-test
             </div>
           </div>
         </CardContent>

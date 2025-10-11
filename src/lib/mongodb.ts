@@ -28,7 +28,7 @@ export async function connectToMongoDB(): Promise<MongoConnection> {
     
     cachedConnection = { client, db }
     
-    console.log('Connected to MongoDB:', dbName)
+    // Debug log removed
     
     return cachedConnection
   } catch (error) {

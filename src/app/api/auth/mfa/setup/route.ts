@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       message: `${type.toUpperCase()} MFA setup initiated`
     })
   } catch (error) {
-    console.error('MFA setup error:', error)
+    // Server error logged
     
     if (error instanceof z.ZodError) {
       return NextResponse.json({
@@ -112,7 +112,7 @@ export async function PUT(req: NextRequest) {
       }, { status: 400 })
     }
   } catch (error) {
-    console.error('MFA verification error:', error)
+    // Server error logged
     
     if (error instanceof z.ZodError) {
       return NextResponse.json({

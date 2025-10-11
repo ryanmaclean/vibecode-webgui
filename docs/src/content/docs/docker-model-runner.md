@@ -62,8 +62,8 @@ Once running, you'll have:
 
 - **VibeCode Main App**: http://localhost:3000
 - **Docker Model Runner**: http://localhost:12434 
-- **MCP Servers**: http://localhost:3001-3003
-- **Voice Processor**: http://localhost:3004
+- **MCP Servers**: http://localhost:3001-3004
+- **Voice Processor**: http://localhost:3005
 - **Code Server**: http://localhost:8080
 
 ## Features
@@ -89,6 +89,7 @@ Model Context Protocol servers provide:
 - **File System**: Read/write workspace files
 - **Database**: Query and modify data
 - **Web Search**: Search and extract web content
+- **Sequential Thinking**: Break down complex problems into steps
 - **Voice Processing**: Audio transcription and analysis
 
 ## Voice Interface Testing

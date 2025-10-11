@@ -1,6 +1,15 @@
 # VibeCode
 
+<<<<<<< HEAD
 AI-powered development platform. Next.js 15 + Monaco 0.53.0 + pgvector + Kubernetes.
+=======
+![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Node](https://img.shields.io/badge/node-25.0.0-brightgreen.svg)
+![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)
+![React](https://img.shields.io/badge/React-19-blue.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)
+>>>>>>> ai-sdk-openai-v2-test
 
 ## Tech Stack
 

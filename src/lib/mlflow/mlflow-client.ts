@@ -137,7 +137,7 @@ export class MLflowClient {
       this.isConnected = response.ok
       
       if (this.isConnected) {
-        console.log('✅ MLflow connected successfully')
+        // Debug log removed
       } else {
         console.warn(`❌ MLflow connection failed: ${response.status} ${response.statusText}`)
       }
@@ -184,7 +184,7 @@ export class MLflowClient {
       }
 
       const data = await response.json()
-      console.log(`✅ Created MLflow experiment: ${config.name} (${data.experiment_id})`)
+      // Debug log removed`)
       return data.experiment_id
     } catch (error) {
       console.error('Failed to create MLflow experiment:', error)
@@ -270,7 +270,7 @@ export class MLflowClient {
         await this.logParams(runId, config.params)
       }
 
-      console.log(`🚀 Started MLflow run: ${runId}`)
+      // Debug log removed
       return runId
     } catch (error) {
       console.error('Failed to start MLflow run:', error)
@@ -361,7 +361,7 @@ export class MLflowClient {
         throw new Error(`Failed to finish run: ${response.status} ${response.statusText}`)
       }
 
-      console.log(`✅ Finished MLflow run: ${runId} (${status})`)
+      // Debug log removed`)
     } catch (error) {
       console.error('Failed to finish MLflow run:', error)
       throw error
