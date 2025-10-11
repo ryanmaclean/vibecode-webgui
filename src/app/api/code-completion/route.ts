@@ -1,6 +1,8 @@
 import { createHmac, createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
+import { logger } from '../../../lib/logger';
+
 
 type CompletionMetadata = {
   language?: string
@@ -849,7 +851,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(completion)
   } catch (error) {
-    console.error('[Code Completion] Error:', error)
+    logger.error('[Code Completion] Error:', { error: error })
 
     return NextResponse.json(
       {
