@@ -33,7 +33,7 @@ Branch protection rules enforce security and quality standards by preventing dir
 ### 1. Pull Request Reviews (CRITICAL)
 
 **Configuration:**
-\`\`\`json
+```json
 {
   "required_pull_request_reviews": {
     "dismiss_stale_reviews": true,
@@ -47,7 +47,7 @@ Branch protection rules enforce security and quality standards by preventing dir
     }
   }
 }
-\`\`\`
+```
 
 **Rationale:**
 - Minimum 1 approval ensures code review before merge
@@ -63,7 +63,7 @@ Branch protection rules enforce security and quality standards by preventing dir
 Based on current CI/CD workflows, the following checks must pass:
 
 **Configuration:**
-\`\`\`json
+```json
 {
   "required_status_checks": {
     "strict": true,
@@ -78,19 +78,19 @@ Based on current CI/CD workflows, the following checks must pass:
     ]
   }
 }
-\`\`\`
+```
 
 **Status Check Details:**
 
 | Check Name | Workflow | Purpose | Timeout |
 |------------|----------|---------|---------|
-| \`validate-ci-config\` | main-branch-ci.yml | Verify secrets/vars configured | 2 min |
-| \`quick-validation\` | main-branch-ci.yml | Lint, typecheck, unit tests | 10 min |
-| \`security-check\` | main-branch-ci.yml | npm audit, TruffleHog secrets scan | 5 min |
-| \`build-check\` | main-branch-ci.yml | Production build validation | 10 min |
-| \`code-quality\` | ci-simplified.yml | Lint, security audit, secret scan | 20 min |
-| \`root-tests\` | ci-simplified.yml | Integration tests with DB/Redis | 25 min |
-| \`build-test\` | ci-simplified.yml | Full build with artifacts | 20 min |
+| `validate-ci-config` | main-branch-ci.yml | Verify secrets/vars configured | 2 min |
+| `quick-validation` | main-branch-ci.yml | Lint, typecheck, unit tests | 10 min |
+| `security-check` | main-branch-ci.yml | npm audit, TruffleHog secrets scan | 5 min |
+| `build-check` | main-branch-ci.yml | Production build validation | 10 min |
+| `code-quality` | ci-simplified.yml | Lint, security audit, secret scan | 20 min |
+| `root-tests` | ci-simplified.yml | Integration tests with DB/Redis | 25 min |
+| `build-test` | ci-simplified.yml | Full build with artifacts | 20 min |
 
 **Strict Mode:**
 - Requires branches be up-to-date with base before merging
@@ -105,11 +105,11 @@ Based on current CI/CD workflows, the following checks must pass:
 ### 3. Restrict Force Pushes (CRITICAL)
 
 **Configuration:**
-\`\`\`json
+```json
 {
   "allow_force_pushes": false
 }
-\`\`\`
+```
 
 **Rationale:**
 - Preserves git history and audit trail
@@ -123,11 +123,11 @@ Based on current CI/CD workflows, the following checks must pass:
 ### 4. Restrict Branch Deletions (CRITICAL)
 
 **Configuration:**
-\`\`\`json
+```json
 {
   "allow_deletions": false
 }
-\`\`\`
+```
 
 **Rationale:**
 - Prevents accidental deletion of primary integration branch
@@ -137,11 +137,11 @@ Based on current CI/CD workflows, the following checks must pass:
 ### 5. Require Signed Commits (RECOMMENDED)
 
 **Configuration:**
-\`\`\`json
+```json
 {
   "required_signatures": true
 }
-\`\`\`
+```
 
 **Rationale:**
 - Cryptographic verification of commit author identity
@@ -150,7 +150,7 @@ Based on current CI/CD workflows, the following checks must pass:
 
 **Setup Required:**
 1. Developers must configure GPG keys: https://docs.github.com/en/authentication/managing-commit-signature-verification
-2. Git client configured with \`git config --global commit.gpgsign true\`
+2. Git client configured with `git config --global commit.gpgsign true`
 3. Team training on key management
 
 **Trade-offs:**
@@ -163,11 +163,51 @@ Based on current CI/CD workflows, the following checks must pass:
 - Consider optional for internal/experimental projects
 - Enforce organization-wide via GitHub org settings
 
+### 6. Require Linear History (OPTIONAL)
+
+**Configuration:**
+```json
+{
+  "required_linear_history": true
+}
+```
+
+**Rationale:**
+- Prevents merge commits, enforces rebase or squash-merge
+- Cleaner git history for auditing and debugging
+- Easier to revert specific features
+
+**Trade-offs:**
+- Developers must be comfortable with rebase workflows
+- May complicate feature branch collaboration
+- Not recommended for teams new to git
+
+**Recommendation:** Optional - enable only if team is experienced with rebase
+
+### 7. Conversation Resolution (OPTIONAL)
+
+**Configuration:**
+```json
+{
+  "required_conversation_resolution": true
+}
+```
+
+**Rationale:**
+- Ensures all PR review comments addressed before merge
+- Prevents overlooked feedback or unresolved questions
+
+**Trade-offs:**
+- May slow PR velocity if reviewers don't actively resolve threads
+- Can be bypassed by resolving without addressing feedback
+
+**Recommendation:** Enable for thorough review processes
+
 ## Complete Configuration
 
 ### Minimal Security Profile (Recommended for Most Projects)
 
-\`\`\`json
+```json
 {
   "required_pull_request_reviews": {
     "dismiss_stale_reviews": true,
@@ -187,11 +227,11 @@ Based on current CI/CD workflows, the following checks must pass:
   "required_signatures": false,
   "enforce_admins": true
 }
-\`\`\`
+```
 
 ### High Security Profile (Production-Critical Systems)
 
-\`\`\`json
+```json
 {
   "required_pull_request_reviews": {
     "dismiss_stale_reviews": true,
@@ -218,7 +258,7 @@ Based on current CI/CD workflows, the following checks must pass:
   "required_conversation_resolution": true,
   "enforce_admins": true
 }
-\`\`\`
+```
 
 ## Implementation Guide
 
@@ -230,13 +270,17 @@ Based on current CI/CD workflows, the following checks must pass:
 2. Go to **Settings** → **Branches**
 3. Under "Branch protection rules", click **Add rule**
 4. Configure:
-   - Branch name pattern: \`main\`
+   - Branch name pattern: `main`
    - Check: **Require a pull request before merging**
-     - Required approvals: \`1\`
+     - Required approvals: `1`
      - Check: **Dismiss stale pull request approvals when new commits are pushed**
    - Check: **Require status checks to pass before merging**
      - Check: **Require branches to be up to date before merging**
-     - Search and add status checks: \`validate-ci-config\`, \`quick-validation\`, \`security-check\`, \`build-check\`
+     - Search and add status checks:
+       - `validate-ci-config`
+       - `quick-validation`
+       - `security-check`
+       - `build-check`
    - Check: **Require conversation resolution before merging** (optional)
    - Check: **Require signed commits** (recommended)
    - Check: **Do not allow bypassing the above settings**
@@ -245,48 +289,114 @@ Based on current CI/CD workflows, the following checks must pass:
 5. Click **Create** or **Save changes**
 
 **Validation:**
-- Run: \`./scripts/security/check-branch-protection.sh\`
+- Run: `/Users/ryan.maclean/vibecode-webgui/scripts/security/check-branch-protection.sh`
 - Attempt direct push to main (should fail)
 - Create test PR without approval (merge should be blocked)
 
-### Method 2: Automated Script
+### Method 2: GitHub CLI (Automated)
 
 **Prerequisites:**
-\`\`\`bash
+```bash
 # Install GitHub CLI
 brew install gh
 
 # Authenticate
 gh auth login
-\`\`\`
+```
+
+**Script:**
+```bash
+#!/usr/bin/env bash
+# File: scripts/security/enable-branch-protection.sh
+
+set -euo pipefail
+
+OWNER="ryanmaclean"
+REPO="vibecode-webgui"
+BRANCH="main"
+
+echo "Enabling branch protection for ${OWNER}/${REPO}:${BRANCH}..."
+
+gh api \
+  --method PUT \
+  -H "Accept: application/vnd.github+json" \
+  "/repos/${OWNER}/${REPO}/branches/${BRANCH}/protection" \
+  -f required_status_checks[strict]=true \
+  -f required_status_checks[contexts][]=validate-ci-config \
+  -f required_status_checks[contexts][]=quick-validation \
+  -f required_status_checks[contexts][]=security-check \
+  -f required_status_checks[contexts][]=build-check \
+  -f required_pull_request_reviews[dismiss_stale_reviews]=true \
+  -f required_pull_request_reviews[required_approving_review_count]=1 \
+  -f enforce_admins=true \
+  -f allow_force_pushes=false \
+  -f allow_deletions=false \
+  -f required_signatures=false
+
+echo "✅ Branch protection enabled successfully"
+```
 
 **Usage:**
-\`\`\`bash
-# Apply recommended profile
-./scripts/security/enable-branch-protection.sh main recommended
+```bash
+chmod +x scripts/security/enable-branch-protection.sh
+./scripts/security/enable-branch-protection.sh
+```
 
-# Apply minimal profile
-./scripts/security/enable-branch-protection.sh main minimal
+### Method 3: GitHub REST API (Programmatic)
 
-# Apply high security profile
-./scripts/security/enable-branch-protection.sh main high-security
-\`\`\`
+**Prerequisites:**
+- GitHub Personal Access Token with `repo` scope
+- Export as `GITHUB_TOKEN` environment variable
 
-See \`scripts/security/enable-branch-protection.sh\` for implementation details.
+**cURL Example:**
+```bash
+#!/usr/bin/env bash
+
+OWNER="ryanmaclean"
+REPO="vibecode-webgui"
+BRANCH="main"
+API_URL="https://api.github.com/repos/${OWNER}/${REPO}/branches/${BRANCH}/protection"
+
+curl -X PUT "${API_URL}" \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  -d '{
+    "required_status_checks": {
+      "strict": true,
+      "contexts": [
+        "validate-ci-config",
+        "quick-validation",
+        "security-check",
+        "build-check"
+      ]
+    },
+    "enforce_admins": true,
+    "required_pull_request_reviews": {
+      "dismiss_stale_reviews": true,
+      "require_code_owner_reviews": false,
+      "required_approving_review_count": 1
+    },
+    "restrictions": null,
+    "allow_force_pushes": false,
+    "allow_deletions": false,
+    "required_signatures": false
+  }'
+```
 
 ## Validation
 
 ### Automated Validation Script
 
-**Location:** \`scripts/security/check-branch-protection.sh\`
+**Location:** `/Users/ryan.maclean/vibecode-webgui/scripts/security/check-branch-protection.sh`
 
 **Usage:**
-\`\`\`bash
+```bash
 ./scripts/security/check-branch-protection.sh
-\`\`\`
+```
 
 **Expected Output:**
-\`\`\`
+```
 🔍 Checking branch protection for ryanmaclean/vibecode-webgui:main
 
 ✅ Branch protection enabled
@@ -301,29 +411,36 @@ See \`scripts/security/enable-branch-protection.sh\` for implementation details.
 ✅ Admin enforcement enabled
 
 Branch Protection Score: 9/10 (STRONG)
-\`\`\`
+```
 
 ### Manual Validation Tests
 
 **Test 1: Direct Push Protection**
-\`\`\`bash
+```bash
 # Should fail with protection error
 git checkout main
 echo "test" >> README.md
 git commit -am "test: direct push"
 git push origin main
 # Expected: ERROR: Branch protection prevents direct push
-\`\`\`
+```
 
 **Test 2: PR Without Approval**
-\`\`\`bash
+```bash
 # Create test PR
 gh pr create --base main --head feature/test --title "Test PR"
 
 # Attempt merge without approval
 gh pr merge --auto
 # Expected: ERROR: Pull request requires 1 approval
-\`\`\`
+```
+
+**Test 3: Failed Status Checks**
+```bash
+# Create PR with failing tests
+# Push code that breaks lint/tests
+# Expected: Merge button disabled until checks pass
+```
 
 ## Maintenance
 
@@ -348,6 +465,11 @@ gh pr merge --auto
 - Risk profile increases (2+ approvals)
 - Velocity bottlenecks require reduction
 
+**Enable/Disable Features:**
+- Signed commits: Enable when team trained on GPG
+- Linear history: Enable when team comfortable with rebase
+- Conversation resolution: Enable for formal review processes
+
 ## Troubleshooting
 
 ### Issue: Merge Button Disabled
@@ -361,12 +483,14 @@ gh pr merge --auto
 4. Check for admin enforcement blocking admins
 
 **Resolution:**
-\`\`\`bash
+```bash
 # Update branch with main
 git checkout feature-branch
 git pull origin main
 git push origin feature-branch
-\`\`\`
+
+# Or use GitHub UI "Update branch" button
+```
 
 ### Issue: Status Check Not Required
 
@@ -375,10 +499,10 @@ git push origin feature-branch
 **Diagnosis:**
 - Check job name in workflow matches protection rule
 - Verify workflow runs on PR events
-- Confirm job doesn't use \`continue-on-error: true\`
+- Confirm job doesn't use `continue-on-error: true`
 
 **Resolution:**
-\`\`\`bash
+```bash
 # Get current required checks
 gh api repos/ryanmaclean/vibecode-webgui/branches/main/protection/required_status_checks
 
@@ -386,9 +510,33 @@ gh api repos/ryanmaclean/vibecode-webgui/branches/main/protection/required_statu
 gh api --method PATCH \
   repos/ryanmaclean/vibecode-webgui/branches/main/protection/required_status_checks \
   -f contexts[]=missing-check-name
-\`\`\`
+```
+
+### Issue: Admin Bypass Not Working
+
+**Symptom:** Repository admin cannot bypass protections
+
+**Diagnosis:**
+- Check if "Do not allow bypassing" is enabled
+- Verify user has admin role, not just write access
+
+**Resolution:**
+- Temporarily disable admin enforcement for emergency fixes
+- Re-enable immediately after fix merged
 
 ## Compliance & Audit
+
+### Audit Log Queries
+
+**View Protection Changes:**
+```bash
+gh api /repos/ryanmaclean/vibecode-webgui/events \
+  --jq '.[] | select(.type == "ProtectionEvent")'
+```
+
+**Track Failed Push Attempts:**
+- GitHub UI: Settings → Security → Push protections → View logs
+- Webhook events: Configure webhook for `push` events with protected branch filters
 
 ### Compliance Mappings
 
@@ -404,6 +552,7 @@ gh api --method PATCH \
 - [GitHub Branch Protection Documentation](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
 - [GitHub REST API - Branch Protection](https://docs.github.com/en/rest/branches/branch-protection)
 - [Signed Commits Guide](https://docs.github.com/en/authentication/managing-commit-signature-verification)
+- [OWASP Secure Development Lifecycle](https://owasp.org/www-project-secure-software-development-lifecycle/)
 - Issue #455: GitHub Actions Secrets and Branch Protection Hardening
 
 ## Changelog
