@@ -1,6 +1,9 @@
 /**
  * Interface for embedding service implementations
  */
+
+import { logger } from '../logger';
+
 export interface EmbeddingService {
   /**
    * Generates embeddings for a single text input
@@ -139,9 +142,7 @@ export abstract class BaseEmbeddingService implements EmbeddingService {
     // Process in batches to avoid overwhelming the API
     const batchSize = this.config.maxBatchSize || 20;
     const batches: string[][] = [];
-import { logger } from '../logger';
 
-    
     // Split texts into batches
     for (let i = 0; i < texts.length; i += batchSize) {
       batches.push(texts.slice(i, i + batchSize));

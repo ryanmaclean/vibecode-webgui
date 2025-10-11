@@ -7,14 +7,11 @@ import { ChatOpenAI } from '@langchain/openai';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { RunnableSequence } from '@langchain/core/runnables';
+import { extractText } from './utils/langchain';
 import { z } from 'zod';
 import { FunctionDefinition } from '../services/function-calling';
-<<<<<<< HEAD
-<<<<<<< HEAD
 import { logger } from '../logger';
 
-=======
->>>>>>> merge-conflict-cleanup
 
 export interface CodeGenerationRequest {
   description: string;
@@ -51,8 +48,6 @@ export interface CodeAnalysis {
   bestPractices: string[];
   complexity: 'low' | 'medium' | 'high';
 }
-=======
->>>>>>> fix/consolidated-dependency-updates
 
 export class NaturalLanguageToCode {
   private llm: ChatOpenAI;
@@ -245,29 +240,19 @@ Focus on creating a clear technical specification that can be used for code gene
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< HEAD
-<<<<<<< HEAD
       this.llm as any,
-=======
-      this.llm as any,
-<<<<<<< HEAD
-      this.llm,
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
       new StringOutputParser(),
-=======
-      this.llm as any,      new StringOutputParser(),
->>>>>>> fix/consolidated-dependency-updates
     ]);
 
-    const result = await chain.invoke({
+    const rawResult = await chain.invoke({
       description: request.description,
       language: request.language,
       framework: request.framework || 'none',
       style: request.style || 'production',
       complexity: request.complexity || 'moderate',
     });
+
+    const result = extractText(rawResult);
 
     return this.parseAnalysisResult(result);
   }
@@ -319,23 +304,11 @@ Return only the code and explanations, no markdown formatting.
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< HEAD
-<<<<<<< HEAD
       this.llm as any,
-=======
-      this.llm as any,
-<<<<<<< HEAD
-      this.llm,
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
       new StringOutputParser(),
-=======
-      this.llm as any,      new StringOutputParser(),
->>>>>>> fix/consolidated-dependency-updates
     ]);
 
-    const result = await chain.invoke({
+    const rawResult = await chain.invoke({
       intent: analysis.intent,
       requirements: analysis.requirements.join(', '),
       technicalApproach: analysis.technicalApproach,
@@ -346,7 +319,7 @@ Return only the code and explanations, no markdown formatting.
       complexity: request.complexity || 'moderate',
     });
 
-    return this.parseCodeResult(result);
+    return this.parseCodeResult(extractText(rawResult));
   }
 
   /**
@@ -380,30 +353,18 @@ Make tests readable and maintainable.
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< HEAD
-<<<<<<< HEAD
       this.llm as any,
-=======
-      this.llm as any,
-<<<<<<< HEAD
-      this.llm,
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
       new StringOutputParser(),
-=======
-      this.llm as any,      new StringOutputParser(),
->>>>>>> fix/consolidated-dependency-updates
     ]);
 
-    const result = await chain.invoke({
+    const rawResult = await chain.invoke({
       code: code.code,
       explanation: code.explanation,
       language: request.language,
       framework: request.framework || 'none',
     });
 
-    return result;
+    return extractText(rawResult);
   }
 
   /**
@@ -439,30 +400,18 @@ Follow documentation best practices for the language.
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< HEAD
-<<<<<<< HEAD
       this.llm as any,
-=======
-      this.llm as any,
-<<<<<<< HEAD
-      this.llm,
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
       new StringOutputParser(),
-=======
-      this.llm as any,      new StringOutputParser(),
->>>>>>> fix/consolidated-dependency-updates
     ]);
 
-    const result = await chain.invoke({
+    const rawResult = await chain.invoke({
       code: code.code,
       explanation: code.explanation,
       language: request.language,
       framework: request.framework || 'none',
     });
 
-    return result;
+    return extractText(rawResult);
   }
 
   /**
@@ -504,7 +453,6 @@ Follow documentation best practices for the language.
     } else if (potentialChallenges.length <= 1 && requirements.length <= 2) {
       complexity = 'low';
     }
-<<<<<<< HEAD
     
     return {
       intent,
@@ -515,8 +463,6 @@ Follow documentation best practices for the language.
       bestPractices,
       complexity
     };
-=======
->>>>>>> fix/consolidated-dependency-updates
   }
 
   /**
@@ -587,20 +533,15 @@ Return only the suggestions, one per line.
     const chain = RunnableSequence.from([
       prompt,
       this.llm as any,
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-      this.llm,
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
       new StringOutputParser(),
     ]);
 
-    const result = await chain.invoke({
+    const rawResult = await chain.invoke({
       partialDescription,
       language,
     });
+
+    const result = extractText(rawResult);
 
     return result.split('\n').filter(line => line.trim().length > 0);
   }
@@ -639,29 +580,17 @@ Return the refactored code and explanations.
 
     const chain = RunnableSequence.from([
       prompt,
-<<<<<<< HEAD
-<<<<<<< HEAD
       this.llm as any,
-=======
-      this.llm as any,
-<<<<<<< HEAD
-      this.llm,
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
       new StringOutputParser(),
-=======
-      this.llm as any,      new StringOutputParser(),
->>>>>>> fix/consolidated-dependency-updates
     ]);
 
-    const result = await chain.invoke({
+    const rawResult = await chain.invoke({
       existingCode,
       refactorRequest,
       language,
     });
 
-    return this.parseRefactorResult(result);
+    return this.parseRefactorResult(extractText(rawResult));
   }
 
   /**
