@@ -338,8 +338,11 @@ export class AgentWorkflow {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
         // @ts-expect-error - Accessing private property is fine in this context
         console.log(`Executing task ${task.id} with agent ${agent.name}`)
 =======

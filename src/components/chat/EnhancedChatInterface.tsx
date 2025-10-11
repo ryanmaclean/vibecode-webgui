@@ -546,8 +546,11 @@ export const EnhancedChatInterface = ({
               
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
               <Tooltip content="Attach files">
                 <Button
                   variant="outline"
@@ -570,6 +573,7 @@ export const EnhancedChatInterface = ({
 <<<<<<< HEAD
                 </Button>
               </Tooltip>
+<<<<<<< HEAD
 =======
               <Button
                 variant="outline"
@@ -594,6 +598,8 @@ export const EnhancedChatInterface = ({
 =======
                 </Button>              </Tooltip>
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
             </div>
           </div>
         </CardContent>

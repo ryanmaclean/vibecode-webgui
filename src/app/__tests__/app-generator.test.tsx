@@ -19,6 +19,7 @@ jest.mock('@/lib/analytics', () => ({
 }));
 
 // Mock the ProjectGenerator component to test the integration
+<<<<<<< HEAD
 jest.mock('@/components/ProjectGenerator', () => {
   const mockReact = require('react');
   
@@ -69,6 +70,38 @@ jest.mock('@/components/ProjectGenerator', () => {
   
   return { ProjectGenerator: MockProjectGenerator };
 });
+=======
+// Mock UI components that may have import issues in test environment  
+jest.mock('@/components/ui/button', () => ({
+  Button: ({ children, onClick, ...props }) => (
+    <button onClick={onClick} {...props}>{children}</button>
+  )
+}));
+
+jest.mock('@/components/ui/progress', () => ({
+  Progress: ({ value, ...props }) => (
+    <div data-testid="progress" data-value={value} {...props} />
+  )
+}));
+
+jest.mock('@/components/ui/alert', () => ({
+  Alert: ({ children, ...props }) => <div data-testid="alert" {...props}>{children}</div>,
+  AlertDescription: ({ children, ...props }) => <div {...props}>{children}</div>,
+  AlertTitle: ({ children, ...props }) => <div {...props}>{children}</div>
+}));
+
+// Mock the useProjectGenerator hook to control behavior in tests
+const mockGenerateProject = jest.fn();
+const mockCancelGeneration = jest.fn();
+let mockOnComplete: ((data: any) => void) | undefined;
+
+jest.mock('@/hooks/useProjectGenerator', () => ({
+  useProjectGenerator: jest.fn()
+}));
+
+// Get the mocked hook to control its behavior in tests
+const mockUseProjectGenerator = require('@/hooks/useProjectGenerator').useProjectGenerator;
+>>>>>>> merge-conflict-cleanup
 
 describe('App Generator Integration', () => {
   const mockPush = jest.fn();

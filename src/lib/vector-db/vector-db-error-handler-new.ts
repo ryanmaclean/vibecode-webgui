@@ -9,8 +9,13 @@
  * with './vector-db-error-handler'
  */
 
+<<<<<<< HEAD
 import {
   VectorDBErrorType,
+=======
+import { 
+  VectorDBErrorType, 
+>>>>>>> merge-conflict-cleanup
   VectorDBError
 } from './vector-db-error-handler';
 import { categorizeErrorWithProvider } from './database-error-patterns';
@@ -66,19 +71,31 @@ export class VectorDbErrorHandler {
         this.provider,
         mergedDetails
       );
+<<<<<<< HEAD
       const errorLike = error as ErrorLike;
       if (typeof retryable === 'boolean') {
         (enriched as ErrorLike).retryable = retryable;
       } else if (typeof errorLike.retryable === 'boolean') {
         (enriched as ErrorLike).retryable = errorLike.retryable;
+=======
+      if (typeof retryable === 'boolean') {
+        (enriched as any).retryable = retryable;
+      } else if (typeof (error as any).retryable === 'boolean') {
+        (enriched as any).retryable = (error as any).retryable;
+>>>>>>> merge-conflict-cleanup
       }
       return enriched;
     }
     // Check for Azure PostgreSQL specific pgvector errors (guard against non-objects)
     if (this.isAzurePgVectorError(error)) {
+<<<<<<< HEAD
       const errorLike = error as ErrorLike;
       const message = (typeof errorLike?.message === 'string')
         ? errorLike.message
+=======
+      const message = (typeof (error as any)?.message === 'string')
+        ? (error as any).message
+>>>>>>> merge-conflict-cleanup
         : 'Azure PostgreSQL pgvector extension error';
       const ctx = {
         ...additionalContext,
@@ -87,6 +104,7 @@ export class VectorDbErrorHandler {
         requiresAdminAction: true,
         ...(typeof retryable === 'boolean' ? { retryable } : {}),
       };
+<<<<<<< HEAD
 <<<<<<< HEAD
       const enriched = new VectorDBError(
 =======
@@ -107,6 +125,17 @@ export class VectorDbErrorHandler {
       );
       if (typeof retryable === 'boolean') {
         (enriched as ErrorLike).retryable = retryable;
+=======
+      const enriched = new VectorDBError(
+        message,
+        VectorDBErrorType.INITIALIZATION,
+        operation,
+        this.provider,
+        ctx
+      );
+      if (typeof retryable === 'boolean') {
+        (enriched as any).retryable = retryable;
+>>>>>>> merge-conflict-cleanup
       }
       return enriched;
     }
@@ -122,6 +151,7 @@ export class VectorDbErrorHandler {
       message = error.message || 'Unknown error';
     } else if (typeof error === 'string') {
       message = error;
+<<<<<<< HEAD
     } else {
       const errorLike = error as ErrorLike;
       if (error && typeof errorLike.message === 'string') {
@@ -132,11 +162,23 @@ export class VectorDbErrorHandler {
       } else {
         message = 'Unknown error';
       }
+=======
+    } else if (error && typeof (error as any).message === 'string') {
+      message = (error as any).message as string;
+    } else if ((error as any)?.message && typeof (error as any).message !== 'string') {
+      message = String((error as any).message?.text || 'Unknown error');
+    } else {
+      message = 'Unknown error';
+>>>>>>> merge-conflict-cleanup
     }
 
     // Prepare details including stack and original error if non-Error
     const details: Record<string, unknown> = {};
+<<<<<<< HEAD
     const stack = (error instanceof Error ? error.stack : (error as ErrorLike)?.stack);
+=======
+    const stack = (error instanceof Error ? error.stack : (error as any)?.stack);
+>>>>>>> merge-conflict-cleanup
     if (typeof stack === 'string') details.stack = stack;
     if (!(error instanceof Error)) details.originalError = error as unknown;
 
@@ -160,9 +202,14 @@ export class VectorDbErrorHandler {
     if (
       resolvedErrorType === VectorDBErrorType.UNKNOWN_ERROR
     ) {
+<<<<<<< HEAD
       const errorLike = error as ErrorLike;
       const m = String(errorLike?.message ?? '').toLowerCase();
       const c = String(errorLike?.code ?? '').toLowerCase();
+=======
+      const m = String((error as any)?.message ?? '').toLowerCase();
+      const c = String((error as any)?.code ?? '').toLowerCase();
+>>>>>>> merge-conflict-cleanup
       if (
         m.includes('does not exist') || c.startsWith('42') ||
         m.includes('wrongtype') || m.includes('unknown command') || m.includes('operation against a key') || c === 'wrongtype'
@@ -179,7 +226,11 @@ export class VectorDbErrorHandler {
       this.provider,
       mergedDetails
     );
+<<<<<<< HEAD
     (enriched as ErrorLike).retryable = effectiveRetryable;
+=======
+    (enriched as any).retryable = effectiveRetryable;
+>>>>>>> merge-conflict-cleanup
     return enriched;
   }
 
@@ -187,6 +238,9 @@ export class VectorDbErrorHandler {
    * Use provider-specific error categorization 
    */
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> merge-conflict-cleanup
   private getProviderSpecificErrorType(error: unknown): VectorDBErrorType {
     return categorizeErrorWithProvider(error, this.provider);
   }
@@ -196,11 +250,16 @@ export class VectorDbErrorHandler {
    */
   public isRetryableError(error: unknown): boolean {
     // Respect explicit retryable flag on VectorDBError
+<<<<<<< HEAD
     if (error instanceof VectorDBError) {
       const errorLike = error as ErrorLike;
       if (typeof errorLike.retryable === 'boolean') {
         return errorLike.retryable as boolean;
       }
+=======
+    if (error instanceof VectorDBError && typeof (error as any).retryable === 'boolean') {
+      return (error as any).retryable as boolean;
+>>>>>>> merge-conflict-cleanup
     }
 
     // Prefer using VectorDBError.type when available
@@ -216,6 +275,7 @@ export class VectorDbErrorHandler {
       errorType === VectorDBErrorType.TIMEOUT ||
       errorType === VectorDBErrorType.SERVICE
     );
+<<<<<<< HEAD
 =======
   private getProviderSpecificErrorType(error: any): VectorDbErrorType {
     // Access provider property through "this"
@@ -223,6 +283,8 @@ export class VectorDbErrorHandler {
     const provider = this.provider as string;
     return categorizeErrorWithProvider(error, provider);
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
   }
   
   /**
@@ -230,9 +292,14 @@ export class VectorDbErrorHandler {
    */
   private isAzurePgVectorError(error: unknown): boolean {
     if (!error) return false;
+<<<<<<< HEAD
     const errorLike = error as ErrorLike;
     const message = String(errorLike?.message ?? '').toLowerCase();
 
+=======
+    const message = String((error as any)?.message ?? '').toLowerCase();
+    
+>>>>>>> merge-conflict-cleanup
     // Check for Azure PostgreSQL specific pgvector errors
     return (
       message.includes('vector') &&
@@ -254,10 +321,16 @@ export class VectorDbErrorHandler {
    */
   private getGenericFallbackType(error: unknown): VectorDBErrorType {
     if (!error) return VectorDBErrorType.UNKNOWN_ERROR;
+<<<<<<< HEAD
     const errorLike = error as ErrorLike;
     const msg = String(errorLike?.message ?? '').toLowerCase();
     const code = String(errorLike?.code ?? '');
     const status = errorLike?.status ?? errorLike?.statusCode ?? 0;
+=======
+    const msg = String((error as any)?.message ?? '').toLowerCase();
+    const code = String((error as any)?.code ?? '');
+    const status = (error as any)?.status ?? (error as any)?.statusCode ?? 0;
+>>>>>>> merge-conflict-cleanup
 
     if (
       code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ETIMEDOUT' ||

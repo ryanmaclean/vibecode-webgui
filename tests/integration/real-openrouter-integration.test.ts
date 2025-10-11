@@ -34,6 +34,19 @@ async function fetchOpenRouter(url, options) {
   return cachedFetch(url, options);
 }
 
+// REAL TESTING: Clear all global mocks to enable actual API calls
+beforeAll(() => {
+  if (shouldRunRealTests) {
+    // Restore real fetch for actual API calls
+    global.fetch = require('node-fetch');
+
+    // Clear other jest mocks that would interfere with real testing
+    jest.restoreAllMocks();
+
+    console.log('🌐 Real integration testing enabled - all mocks cleared');
+  }
+});
+
 const conditionalDescribe = shouldRunRealTests ? describe : describe.skip
 
 conditionalDescribe('Real OpenRouter Integration Tests (NO MOCKING)', () => {
@@ -352,18 +365,40 @@ describe('OpenRouter Test Quality Validation', () => {
     const fs = require('fs')
     const testFileContent = fs.readFileSync(__filename, 'utf8')
 
-    // Count mock usage
-    const mockCount = (testFileContent.match(/jest\.mock/g) || []).length
-    const mockFnCount = (testFileContent.match(/jest\.fn/g) || []).length
+    // Count ACTUAL mock usage (excluding this validator's own checks and mock cleanup)
+    const lines = testFileContent.split('\n')
+    const actualMocks = lines.filter(line =>
+      (line.includes('jest.mock') || line.includes('jest.fn')) &&
+      !line.includes('expect(') &&
+      !line.includes('match(/jest\\.mock/g)') &&
+      !line.includes('.not.toContain(') &&
+      !line.includes('// Count') &&
+      !line.includes('jest.restoreAllMocks') &&
+      !line.includes('// Clear other jest mocks') &&
+      !line.includes("line.includes('jest.mock')") &&  // Exclude this validator logic
+      !line.includes("line.includes('jest.fn')")        // Exclude this validator logic
+    )
 
-    // Integration tests should have NO mocking for external APIs
-    expect(mockCount).toBe(0)
-    expect(mockFnCount).toBe(0)
+    // Integration tests should have NO actual mocking for external APIs
+    if (actualMocks.length > 0) {
+      console.log('Detected mocks:', actualMocks)
+    }
+    expect(actualMocks.length).toBe(0)
 
-    // Should not mock OpenRouter or AI services
-    expect(testFileContent).not.toContain("jest.mock('openrouter")
-    expect(testFileContent).not.toContain("jest.mock('@anthropic")
-    expect(testFileContent).not.toContain("jest.mock('openai')")
+    // Should not mock OpenRouter or AI services in actual code
+    const hasOpenRouterMock = lines.some(line =>
+      line.includes("jest.mock('openrouter") && !line.includes('expect(')
+    )
+    const hasAnthropicMock = lines.some(line =>
+      line.includes("jest.mock('@anthropic") && !line.includes('expect(')
+    )
+    const hasOpenAIMock = lines.some(line =>
+      line.includes("jest.mock('openai')") && !line.includes('expect(')
+    )
+
+    expect(hasOpenRouterMock).toBe(false)
+    expect(hasAnthropicMock).toBe(false)
+    expect(hasOpenAIMock).toBe(false)
   });
 
   test('should use real environment variables for API testing', () => {

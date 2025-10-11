@@ -262,7 +262,15 @@ export class CachedQueries {
     },
     (workspaceId: number, query: string, limit: number = 20) => 
 <<<<<<< HEAD
+<<<<<<< HEAD
       `search:files:${workspaceId}:${Buffer.from ? Buffer.from(query).toString('base64') : btoa(query)}:${limit}`,
+=======
+      `search:files:${workspaceId}:${Buffer.from ? Buffer.from(query).toString('base64') : btoa(query)}:${limit}`,
+<<<<<<< HEAD
+      `search:files:${workspaceId}:${Buffer.from(query).toString('base64')}:${limit}`,
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     CacheTTL.SHORT
 =======
       `search:files:${workspaceId}:${Buffer.from ? Buffer.from(query).toString('base64') : btoa(query)}:${limit}`,    CacheTTL.SHORT
@@ -285,7 +293,15 @@ export class BulkOperations {
     if (data.length === 0) return;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     const batches: T[][] = [];
+=======
+    const batches: T[][] = [];
+<<<<<<< HEAD
+    const batches = [];
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     for (let i = 0; i < data.length; i += batchSize) {
 =======
     const batches: T[][] = [];    for (let i = 0; i < data.length; i += batchSize) {
@@ -312,7 +328,15 @@ export class BulkOperations {
     if (updates.length === 0) return;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     const batches: T[][] = [];
+=======
+    const batches: T[][] = [];
+<<<<<<< HEAD
+    const batches = [];
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     for (let i = 0; i < updates.length; i += batchSize) {
 =======
     const batches: T[][] = [];    for (let i = 0; i < updates.length; i += batchSize) {
@@ -323,7 +347,15 @@ export class BulkOperations {
     for (const batch of batches) {
       const { prisma } = await import('../prisma');
 <<<<<<< HEAD
+<<<<<<< HEAD
       const transaction = batch.map((update: T) => 
+=======
+      const transaction = batch.map((update: T) => 
+<<<<<<< HEAD
+      const transaction = batch.map(update => 
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
         model.update({
 =======
       const transaction = batch.map((update: T) =>         model.update({
@@ -348,7 +380,15 @@ export class BulkOperations {
     if (ids.length === 0) return;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     const batches: number[][] = [];
+=======
+    const batches: number[][] = [];
+<<<<<<< HEAD
+    const batches = [];
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     for (let i = 0; i < ids.length; i += batchSize) {
 =======
     const batches: number[][] = [];    for (let i = 0; i < ids.length; i += batchSize) {
@@ -375,6 +415,13 @@ export class QueryAnalyzer {
   // Changed from private to protected static to allow access via bracket notation
 <<<<<<< HEAD
   protected static queryLog: Array<{
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+  private static queryLog: Array<{
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     query: string;
 =======
   protected static queryLog: Array<{    query: string;
@@ -455,6 +502,9 @@ export class QueryAnalyzer {
 
   /**
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> merge-conflict-cleanup
    * Clear query log
    */
   static clearLog() {
@@ -537,9 +587,91 @@ export class QueryAnalyzer {
         };
       }
     }
+<<<<<<< HEAD
 
 =======
 >>>>>>> fix/consolidated-dependency-updates
+=======
+<<<<<<< HEAD
+/**
+ * Database health monitor
+ */
+export class DatabaseHealthMonitor {
+  /**
+   * Check database connectivity and performance
+   */
+  static async healthCheck(): Promise<{
+    connected: boolean;
+    responseTime: number;
+    activeConnections?: number;
+    errorRate: number;
+    recommendations: string[];
+  }> {
+    const startTime = Date.now();
+    const recommendations: string[] = [];
+
+    try {
+      const { prisma } = await import('../prisma');
+      
+      // Simple connectivity test
+      await prisma.$queryRaw`SELECT 1`;
+      const responseTime = Date.now() - startTime;
+
+      // Get connection info if available
+      let activeConnections: number | undefined;
+      try {
+        const result = await prisma.$queryRaw<Array<{ count: bigint }>>`
+          SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()
+        `;
+        activeConnections = Number(result[0]?.count || 0);
+      } catch {
+        // Connection info not available
+      }
+
+      // Calculate error rate from recent queries
+      const recentQueries = QueryAnalyzer.queryLog.slice(-100);
+      const errors = recentQueries.filter(q => q.duration < 0); // Assuming negative duration indicates error
+      const errorRate = recentQueries.length > 0 ? (errors.length / recentQueries.length) * 100 : 0;
+
+      // Generate recommendations
+      if (responseTime > 500) {
+        recommendations.push('Database response time is slow - consider optimizing queries');
+      }
+
+      if (activeConnections && activeConnections > 80) {
+        recommendations.push('High number of database connections - consider connection pooling');
+      }
+
+      if (errorRate > 5) {
+        recommendations.push('High database error rate - check logs for issues');
+      }
+
+      const slowQueries = QueryAnalyzer.getSlowQueries(1000, 5);
+      if (slowQueries.length > 0) {
+        recommendations.push(`${slowQueries.length} slow queries detected - consider adding indexes`);
+      }
+
+      return {
+        connected: true,
+        responseTime,
+        activeConnections,
+        errorRate,
+        recommendations
+      };
+
+    } catch (error) {
+      return {
+        connected: false,
+        responseTime: Date.now() - startTime,
+        errorRate: 100,
+        recommendations: ['Database connection failed - check connection string and database status']
+      };
+    }
+  }
+=======
+>>>>>>> main
+
+>>>>>>> merge-conflict-cleanup
   /**
    * Get database performance metrics
    */

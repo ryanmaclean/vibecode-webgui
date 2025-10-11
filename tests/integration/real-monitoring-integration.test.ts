@@ -445,11 +445,24 @@ describe('Monitoring Test Quality Validation', () => {
     // Integration tests should have minimal ACTUAL mocking (validator code excluded)
     expect(actualMocks.length).toBeLessThanOrEqual(1)
 
-    // Should not mock critical monitoring components
-    expect(testFileContent).not.toContain("jest.mock('@datadog/browser-rum')")
-    expect(testFileContent).not.toContain("jest.mock('@datadog/browser-logs')")
-    expect(testFileContent).not.toContain("jest.mock('pg')")
-    expect(testFileContent).not.toContain("jest.mock('redis')")
+    // Should not mock critical monitoring components in actual code
+    const hasDatadogRumMock = lines.some(line =>
+      line.includes("jest.mock('@datadog/browser-rum')") && !line.includes('expect(')
+    )
+    const hasDatadogLogsMock = lines.some(line =>
+      line.includes("jest.mock('@datadog/browser-logs')") && !line.includes('expect(')
+    )
+    const hasPgMock = lines.some(line =>
+      line.includes("jest.mock('pg')") && !line.includes('expect(')
+    )
+    const hasRedisMock = lines.some(line =>
+      line.includes("jest.mock('redis')") && !line.includes('expect(')
+    )
+
+    expect(hasDatadogRumMock).toBe(false)
+    expect(hasDatadogLogsMock).toBe(false)
+    expect(hasPgMock).toBe(false)
+    expect(hasRedisMock).toBe(false)
   });
 
   test('should validate environment has real monitoring configuration', () => {

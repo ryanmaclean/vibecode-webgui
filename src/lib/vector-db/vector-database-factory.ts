@@ -10,6 +10,11 @@ import { SqlServerVectorDatabaseAdapter, SqlServerVectorDatabaseConfig } from '.
 import { CosmosDbVectorDatabaseAdapter, CosmosDbVectorDatabaseConfig } from './cosmosdb-vector-database-adapter';
 import { RedisVectorDatabaseAdapter, RedisVectorDatabaseConfig } from './redis-vector-database-adapter';
 import { CognitiveSearchVectorDatabaseAdapter, CognitiveSearchVectorDatabaseConfig } from './cognitive-search-vector-database-adapter';
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
 /**
  * Factory class for creating vector database adapters
@@ -50,11 +55,15 @@ export class VectorDatabaseFactory {
           break;
 
 =======
+<<<<<<< HEAD
 
         case VectorDatabaseProvider.COGNITIVE_SEARCH:
           adapter = new CognitiveSearchVectorDatabaseAdapter(config as CognitiveSearchVectorDatabaseConfig);
           break;
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
         default:
           throw new Error(`Unsupported vector database provider: ${config.provider}`);
       }
@@ -122,6 +131,11 @@ export class VectorDatabaseFactory {
           provider = VectorDatabaseProvider.COGNITIVE_SEARCH;
 >>>>>>> fix/consolidated-dependency-updates
           break;
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
         default:
           provider = VectorDatabaseProvider.POSTGRES;
       }

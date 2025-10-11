@@ -2,6 +2,7 @@ import { ChatCompletionRequest } from './openrouter-client';
 
 export type InferredTask = 'chat' | 'code' | 'analysis' | 'creative' | 'general';
 
+<<<<<<< HEAD
 export interface PromptAnalysisResult {
   task: InferredTask;
   maxCost?: number;
@@ -64,5 +65,18 @@ export class PromptAnalyzer {
   private isAnalysis(lowered: string): boolean {
     const analysisHints = ['analyze', 'analysis', 'explain', 'compare', 'evaluate', 'summarize'];
     return analysisHints.some(h => lowered.includes(h));
+=======
+export class PromptAnalyzer {
+  analyze(request: ChatCompletionRequest): { task: InferredTask } {
+    try {
+      const text = JSON.stringify(request.messages || []).toLowerCase();
+      if (/function|class|typescript|javascript|code|refactor|bugfix/.test(text)) return { task: 'code' };
+      if (/analyz(e|is)|investigate|compare|summarize|explain/.test(text)) return { task: 'analysis' };
+      if (/story|poem|creative|lyrics|imagine|design/.test(text)) return { task: 'creative' };
+      return { task: 'chat' };
+    } catch {
+      return { task: 'general' };
+    }
+>>>>>>> merge-conflict-cleanup
   }
 }

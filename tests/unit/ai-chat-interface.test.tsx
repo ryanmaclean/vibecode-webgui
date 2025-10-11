@@ -327,7 +327,7 @@ describe('AIChatInterface', () => {
       const user = userEvent.setup();
       render(<AIChatInterface {...defaultProps} />);
 
-      const file = new File(['hello'], 'hello.png', { type: 'image/png' });
+      const file = new File(['hello'], 'hello.txt', { type: 'text/plain' });
       const uploadButton = screen.getByLabelText('Upload files');
 
       // The upload button is visually hidden, but accessible. We need to target the underlying input.
@@ -336,7 +336,7 @@ describe('AIChatInterface', () => {
       await user.upload(fileInput, file);
 
       await waitFor(() => {
-        expect(screen.getByText('hello.png')).toBeInTheDocument();
+        expect(screen.getByText('hello.txt')).toBeInTheDocument();
       });
     });
   });

@@ -11,7 +11,10 @@ import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
 =======
 // Using CommonJS require because '../instrument' exports via module.exports
+<<<<<<< HEAD
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
 const tracer = require('../instrument')
 import { Span } from 'dd-trace'
 import { getDatadogSite, getDatadogApiKey, getServiceEnvVersion } from '@/lib/monitoring/datadog-env'

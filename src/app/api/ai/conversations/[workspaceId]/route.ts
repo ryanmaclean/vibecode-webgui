@@ -177,7 +177,10 @@ export async function DELETE(
   _request: NextRequest,
 =======
   request: NextRequest,
+<<<<<<< HEAD
 >>>>>>> ai-sdk-openai-v2-test
+=======
+>>>>>>> merge-conflict-cleanup
   { params }: { params: Promise<{ workspaceId: string }> }
 ) {
   try {

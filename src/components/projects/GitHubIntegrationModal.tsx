@@ -53,6 +53,7 @@ export function FolderHubIntegrationModal({
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   const githubIntegration = React.useRef<GitHubIntegration | null>(null)
   const [integration, setIntegration] = useState<GitHubIntegration | null>(null)
 =======
@@ -61,6 +62,10 @@ export function FolderHubIntegrationModal({
 =======
   const githubIntegration = React.useRef<GitHubIntegration | null>(null)
 >>>>>>> fix/consolidated-dependency-updates
+=======
+  const githubIntegration = React.useRef<GitHubIntegration | null>(null)
+  const [integration, setIntegration] = useState<GitHubIntegration | null>(null)
+>>>>>>> merge-conflict-cleanup
 
   useEffect(() => {
     if (!isOpen) {
@@ -73,6 +78,14 @@ export function FolderHubIntegrationModal({
       setIsCreating(false)
       setShowToken(false)
       setIntegration(null)
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+      githubIntegration.current = null
+      setIntegration(null)
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     }
   }, [isOpen])
 
@@ -88,6 +101,7 @@ export function FolderHubIntegrationModal({
     try {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
       const integrationInstance = new GitHubIntegration(accessToken.trim())
       const user = await integrationInstance.initialize()
       
@@ -97,8 +111,19 @@ export function FolderHubIntegrationModal({
       setIntegration(integrationInstance)
 =======
       const integration = new FolderHubIntegration(accessToken.trim())
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+      const integration = new GitHubIntegration(accessToken.trim())
+>>>>>>> merge-conflict-cleanup
       const user = await integration.initialize()
+=======
+      const integrationInstance = new GitHubIntegration(accessToken.trim())
+      const user = await integrationInstance.initialize()
+>>>>>>> main
       
+<<<<<<< HEAD
       githubIntegration.current = integration
       setFolderHubUser(user)
       setSuccess('Successfully connected to FolderHub!')
@@ -111,6 +136,25 @@ export function FolderHubIntegrationModal({
       setGitHubUser(user)
       setSuccess('Successfully connected to GitHub!')
 >>>>>>> fix/consolidated-dependency-updates
+=======
+      githubIntegration.current = integrationInstance
+      setGitHubUser(user)
+      setSuccess('Successfully connected to GitHub!')
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+      const newIntegration = new GitHubIntegration(accessToken, 'owner')
+      const user = await newIntegration.initialize()
+      
+      const newIntegration = new GitHubIntegration(accessToken, 'owner')
+      const user = await newIntegration.initialize()
+      
+      setIntegration(newIntegration)
+      setFolderHubUser(user)
+      setSuccess('Successfully connected to FolderHub!')
+=======
+      setIntegration(integrationInstance)
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to connect to FolderHub')
     } finally {
@@ -119,6 +163,7 @@ export function FolderHubIntegrationModal({
   }
 
   const handleCreateRepository = async () => {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
     if (!integration) {
@@ -131,6 +176,20 @@ export function FolderHubIntegrationModal({
     if (!integration) {
       setError('Not connected to GitHub')
 >>>>>>> fix/consolidated-dependency-updates
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+    if (!githubIntegration.current) {
+      setError('Not connected to GitHub')
+    if (!integration) {
+      setError('Not connected to FolderHub')
+    if (!githubIntegration.current) {
+=======
+    if (!integration) {
+>>>>>>> main
+      setError('Not connected to GitHub')
+>>>>>>> merge-conflict-cleanup
       return
     }
 
@@ -140,6 +199,14 @@ export function FolderHubIntegrationModal({
     try {
       // Check if repository name is available
       const isAvailable = await integration.isRepositoryNameAvailable(repoSettings.name)
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+      const isAvailable = await githubIntegration.current.isRepositoryNameAvailable(repoSettings.name)
+      const isAvailable = await integration.isRepositoryNameAvailable(repoSettings.name)
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       if (!isAvailable) {
         setError(`Repository name "${repoSettings.name}" is already taken`)
         setIsCreating(false)
@@ -148,6 +215,14 @@ export function FolderHubIntegrationModal({
 
       // Create repository from generated project
       const result = await integration.createRepositoryFromProject(
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+      const result = await githubIntegration.current.createRepositoryFromProject(
+      const result = await integration.createRepositoryFromProject(
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
         generatedProject,
         {
           private: repoSettings.private,
@@ -160,6 +235,7 @@ export function FolderHubIntegrationModal({
       if (repoSettings.addWorkflow) {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         const { generateGitHubActionsWorkflow } = await import('@/lib/github/integration');
         const workflow = generateGitHubActionsWorkflow(
 =======
@@ -167,13 +243,26 @@ export function FolderHubIntegrationModal({
         const workflowContent = generateFolderHubActionsWorkflow(
 >>>>>>> ai-sdk-openai-v2-test
 =======
+=======
+>>>>>>> merge-conflict-cleanup
         const { generateGitHubActionsWorkflow } = await import('@/lib/github/integration')
         const workflowContent = generateGitHubActionsWorkflow(
+<<<<<<< HEAD
 >>>>>>> fix/consolidated-dependency-updates
+=======
+        const workflow = generateGitHubActionsWorkflow(
+        const workflowContent = generateGitHubActionsWorkflow(
+        const workflow = generateGitHubActionsWorkflow(
+=======
+        const { generateGitHubActionsWorkflow } = await import('@/lib/github/integration');
+        const workflow = generateGitHubActionsWorkflow(
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
           'node', // Default to node for most projects
           'typescript' // Default to TypeScript
         );
         
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
         await integration.addGitHubActionsWorkflow(
@@ -191,6 +280,31 @@ export function FolderHubIntegrationModal({
           workflowContent
         )
 >>>>>>> fix/consolidated-dependency-updates
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+        await githubIntegration.current.addGitHubActionsWorkflow(
+        await integration.addGitHubActionsWorkflow(
+          result.repository.name,
+          'ci',
+          workflow
+        await githubIntegration.current.addGitHubActionsWorkflow(
+          result.repository.name,
+          'ci',
+          workflowContent
+=======
+>>>>>>> main
+        await integration.addGitHubActionsWorkflow(
+          result.repository.name,
+          'ci',
+          workflow
+<<<<<<< HEAD
+        )
+=======
+        );
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       }
 
       setSuccess(`Repository created successfully! View it at ${result.repository.htmlUrl}`)

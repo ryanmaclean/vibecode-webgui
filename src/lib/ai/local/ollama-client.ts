@@ -353,10 +353,18 @@ export class OllamaClient {
     const outputParser = new StringOutputParser();
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
 =======
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
 >>>>>>> fix/consolidated-dependency-updates
+=======
+<<<<<<< Updated upstream
+    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     return RunnableSequence.from([
       prompt,
       model,

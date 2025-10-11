@@ -5,6 +5,9 @@ import { generateNonce } from './lib/security/csp-config';
 // Skip Redis/ValKey initialization in test environment
 const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.CI === 'true' || process.env.PLAYWRIGHT_TEST === 'true';
 
+// Skip Redis/ValKey initialization in test environment
+const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.CI === 'true' || process.env.PLAYWRIGHT_TEST === 'true';
+
 const BOT_PROTECTION_CONFIG = {
   suspiciousPatterns: [
     /bot/i, /crawler/i, /spider/i, /scraper/i, /automated/i,
@@ -239,12 +242,20 @@ function detectBot(request: NextRequest): {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+<<<<<<< HEAD
   // Skip ALL middleware logic in test environment
+=======
+  // Skip authentication and ALL middleware logic in E2E test environment FIRST
+>>>>>>> merge-conflict-cleanup
   if (isTestEnvironment) {
     return NextResponse.next();
   }
 
+<<<<<<< HEAD
   // Handle authentication redirects for all environments
+=======
+  // Handle authentication redirects for production environments only
+>>>>>>> merge-conflict-cleanup
   const isAuthPage = pathname.startsWith('/auth/');
   const isApiRoute = pathname.startsWith('/api/');
   const isPublicRoute = pathname.startsWith('/_next/') || 

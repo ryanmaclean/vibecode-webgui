@@ -6,14 +6,20 @@ on:
 permissions:
   contents: read
 <<<<<<< HEAD
+<<<<<<< HEAD
   id-token: write        # For OIDC authentication
   checks: write          # For posting test results
 =======
+=======
+>>>>>>> merge-conflict-cleanup
 
 concurrency:
   group: synthetics-${{ github.ref }}
   cancel-in-progress: true
+<<<<<<< HEAD
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
 
 jobs:
   validate-ci-config:
@@ -58,6 +64,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
 <<<<<<< HEAD
+<<<<<<< HEAD
           node-version: '18'
           cache: 'npm'
 
@@ -78,6 +85,9 @@ jobs:
 =======
           node-version: '20'
 >>>>>>> fix/consolidated-dependency-updates
+=======
+          node-version: '20'
+>>>>>>> merge-conflict-cleanup
 
       - name: Run Datadog Synthetic Tests
         if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}

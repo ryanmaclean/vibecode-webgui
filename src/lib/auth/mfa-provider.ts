@@ -69,7 +69,15 @@ export class MFAProvider {
   private devices: Map<string, MFADevice> = new Map()
   private challenges: Map<string, MFAChallenge> = new Map()
 <<<<<<< HEAD
+<<<<<<< HEAD
   private backupCodes: Map<string, string[]> = new Map() // userId -> codes
+=======
+  private backupCodes: Map<string, string[]> = new Map() // userId -> codes
+<<<<<<< HEAD
+  private backupCodes: Map<string, Set<string>> = new Map() // userId -> codes
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
   private failedAttempts: Map<string, { count: number, lockedUntil?: Date }> = new Map()
 =======
   private backupCodes: Map<string, string[]> = new Map() // userId -> codes  private failedAttempts: Map<string, { count: number, lockedUntil?: Date }> = new Map()
@@ -102,6 +110,12 @@ export class MFAProvider {
     const backupCodes = this.generateBackupCodes()
     this.backupCodes.set(userId, backupCodes)
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+    this.backupCodes.set(userId, new Set(backupCodes))
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
 =======
 >>>>>>> fix/consolidated-dependency-updates
@@ -331,11 +345,20 @@ export class MFAProvider {
       if (isValidBackup) {
         this.challenges.delete(challengeId)
 <<<<<<< HEAD
+<<<<<<< HEAD
         const remainingBackupCodes = this.backupCodes.get(challenge.userId)?.length || 0
 
 =======
         const remainingBackupCodes = this.backupCodes.get(challenge.userId)?.length || 0        
 >>>>>>> fix/consolidated-dependency-updates
+=======
+        const remainingBackupCodes = this.backupCodes.get(challenge.userId)?.length || 0
+<<<<<<< HEAD
+        const remainingBackupCodes = this.backupCodes.get(challenge.userId)?.size || 0
+=======
+>>>>>>> main
+        
+>>>>>>> merge-conflict-cleanup
         console.log(`✅ MFA verification successful with backup code for user ${challenge.userId}`)
 
         return {
@@ -424,11 +447,20 @@ export class MFAProvider {
   generateNewBackupCodes(userId: string): string[] {
     const backupCodes = this.generateBackupCodes()
 <<<<<<< HEAD
+<<<<<<< HEAD
     this.backupCodes.set(userId, backupCodes)
 
 =======
     this.backupCodes.set(userId, backupCodes)    
 >>>>>>> fix/consolidated-dependency-updates
+=======
+    this.backupCodes.set(userId, backupCodes)
+<<<<<<< HEAD
+    this.backupCodes.set(userId, new Set(backupCodes))
+=======
+>>>>>>> main
+    
+>>>>>>> merge-conflict-cleanup
     console.log(`🔑 New backup codes generated for user ${userId}`)
     return backupCodes
   }
@@ -506,6 +538,17 @@ export class MFAProvider {
     // Remove the used code from the array
     const index = userCodes.indexOf(code)
     userCodes.splice(index, 1)
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    if (!userCodes || !userCodes.has(code)) {
+      return false
+    }
+
+    userCodes.delete(code) // Use once
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     return true
   }
 
@@ -547,12 +590,37 @@ export class MFAProvider {
    */
   private generateSetupToken(): string {
 <<<<<<< HEAD
+<<<<<<< HEAD
     const randomHex = randomBytes(16).toString('hex');
     return `setup_${Date.now()}_${randomHex}`;
   }
 =======
     return `setup_${Date.now()}_${Math.random().toString(36).slice(2, 18)}`  }
 >>>>>>> fix/consolidated-dependency-updates
+=======
+    return `setup_${Date.now()}_${Math.random().toString(36).slice(2, 18)}`
+<<<<<<< HEAD
+    const codes = []
+    for (let i = 0; i < 10; i++) {
+      codes.push(Math.random().toString(36).substring(2, 10).toUpperCase())
+    }
+    return codes
+  }
+
+  private generateDeviceId(): string {
+    return `mfa_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  }
+
+  private generateChallengeId(): string {
+    return `challenge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  }
+
+  private generateSetupToken(): string {
+    return `setup_${Date.now()}_${Math.random().toString(36).substr(2, 16)}`
+=======
+>>>>>>> main
+  }
+>>>>>>> merge-conflict-cleanup
 
   /**
    * Generate cryptographically secure 6-digit SMS code

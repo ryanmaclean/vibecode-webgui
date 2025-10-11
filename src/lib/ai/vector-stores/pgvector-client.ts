@@ -5,6 +5,12 @@
 
 import { Pool } from 'pg';
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+import { Pool, PoolClient } from 'pg';
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
 =======
 >>>>>>> fix/consolidated-dependency-updates
@@ -50,6 +56,16 @@ export class PGVectorClient {
 
 <<<<<<< HEAD
   constructor(config: PGVectorConfig) {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+  private config: PGVectorConfig;
+
+  constructor(config: PGVectorConfig) {
+    this.config = config;
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     this.pool = new Pool(config);
 =======
   constructor(config: PGVectorConfig) {    this.pool = new Pool(config);
@@ -315,7 +331,15 @@ export class PGVectorClient {
 
       const result = await client.query(query, values);
 <<<<<<< HEAD
+<<<<<<< HEAD
       return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;
+=======
+      return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;
+<<<<<<< HEAD
+      return result.rowCount > 0;
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     } finally {
 =======
       return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;    } finally {
@@ -336,7 +360,15 @@ export class PGVectorClient {
       `, [id]);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
       return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;
+=======
+      return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;
+<<<<<<< HEAD
+      return result.rowCount > 0;
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     } finally {
 =======
       return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;    } finally {
@@ -357,7 +389,15 @@ export class PGVectorClient {
       `, [name]);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
       return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;
+=======
+      return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;
+<<<<<<< HEAD
+      return result.rowCount > 0;
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     } finally {
 =======
       return result.rowCount !== null && result.rowCount !== undefined && result.rowCount > 0;    } finally {
@@ -432,8 +472,22 @@ export class PGVectorClient {
    * Close the connection pool
    */
   async close(): Promise<void> {
-    await this.pool.end();
+    try {
+      if (this.pool && typeof this.pool.end === 'function') {
+        await this.pool.end();
+      }
+    } catch (error) {
+      // Ignore errors during cleanup
+      console.warn('Error closing PGVector client pool:', error);
+    }
   }
+}
+
+/**
+ * Factory function to create a PGVector client instance
+ */
+export function createPGVectorClient(config: PGVectorConfig): PGVectorClient {
+  return new PGVectorClient(config);
 }
 
 /**
@@ -482,9 +536,3 @@ export const COLLECTION_SCHEMAS: Record<string, PGVectorCollectionSchema> = {
   },
 };
 
-/**
- * Factory function to create PGVector client
- */
-export function createPGVectorClient(config: PGVectorConfig): PGVectorClient {
-  return new PGVectorClient(config);
-}

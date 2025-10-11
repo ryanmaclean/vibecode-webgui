@@ -10,8 +10,11 @@ import { RunnableSequence } from '@langchain/core/runnables';
 import { z } from 'zod';
 import { FunctionDefinition } from '../services/function-calling';
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { logger } from '../logger';
 
+=======
+>>>>>>> merge-conflict-cleanup
 
 export interface CodeGenerationRequest {
   description: string;
@@ -243,7 +246,15 @@ Focus on creating a clear technical specification that can be used for code gene
     const chain = RunnableSequence.from([
       prompt,
 <<<<<<< HEAD
+<<<<<<< HEAD
       this.llm as any,
+=======
+      this.llm as any,
+<<<<<<< HEAD
+      this.llm,
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       new StringOutputParser(),
 =======
       this.llm as any,      new StringOutputParser(),
@@ -309,7 +320,15 @@ Return only the code and explanations, no markdown formatting.
     const chain = RunnableSequence.from([
       prompt,
 <<<<<<< HEAD
+<<<<<<< HEAD
       this.llm as any,
+=======
+      this.llm as any,
+<<<<<<< HEAD
+      this.llm,
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       new StringOutputParser(),
 =======
       this.llm as any,      new StringOutputParser(),
@@ -362,7 +381,15 @@ Make tests readable and maintainable.
     const chain = RunnableSequence.from([
       prompt,
 <<<<<<< HEAD
+<<<<<<< HEAD
       this.llm as any,
+=======
+      this.llm as any,
+<<<<<<< HEAD
+      this.llm,
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       new StringOutputParser(),
 =======
       this.llm as any,      new StringOutputParser(),
@@ -413,7 +440,15 @@ Follow documentation best practices for the language.
     const chain = RunnableSequence.from([
       prompt,
 <<<<<<< HEAD
+<<<<<<< HEAD
       this.llm as any,
+=======
+      this.llm as any,
+<<<<<<< HEAD
+      this.llm,
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       new StringOutputParser(),
 =======
       this.llm as any,      new StringOutputParser(),
@@ -552,6 +587,13 @@ Return only the suggestions, one per line.
     const chain = RunnableSequence.from([
       prompt,
       this.llm as any,
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+      this.llm,
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       new StringOutputParser(),
     ]);
 
@@ -598,7 +640,15 @@ Return the refactored code and explanations.
     const chain = RunnableSequence.from([
       prompt,
 <<<<<<< HEAD
+<<<<<<< HEAD
       this.llm as any,
+=======
+      this.llm as any,
+<<<<<<< HEAD
+      this.llm,
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       new StringOutputParser(),
 =======
       this.llm as any,      new StringOutputParser(),
