@@ -34,40 +34,27 @@ permissions:
   pull-requests: write   # For commenting on PRs
   issues: write          # For updating issues
   deployments: write     # For deployment statuses
+        type: choice
+        options:
+        - staging
+        - production
+      force_deploy:
+        description: 'Force deployment even if tests fail'
+        required: false
+        default: false
+        type: boolean
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
- 
+  DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
   
 jobs:
-  # Early validation of required secrets/vars (non-fatal)
-  validate-ci-config:
-    name: Validate CI configuration (secrets/vars)
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Check required secrets and variables
-        shell: bash
-        continue-on-error: true
-        run: |
-          missing=0
-          if [ -z "${{ secrets.DD_API_KEY }}" ]; then echo " Missing secret: DD_API_KEY"; missing=1; else echo " Found secret: DD_API_KEY"; fi
-          if [ -z "${{ secrets.DD_APP_KEY }}" ]; then echo " Missing secret: DD_APP_KEY"; missing=1; else echo " Found secret: DD_APP_KEY"; fi
-          if [ "$missing" -eq 0 ]; then
-            echo " All required Datadog secrets are present."
-          else
-            echo " One or more secrets are missing. Datadog-dependent steps will be skipped."
-          fi
-
   # Security and Quality Gates
   security-scan:
     name: Security Analysis
     runs-on: ubuntu-latest
     if: github.event_name != 'workflow_dispatch' || inputs.force_deploy == false
-    env:
-      DD_API_KEY: ${{ secrets.DD_API_KEY }}
-      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
     
     steps:
       - name: Checkout code
@@ -87,18 +74,18 @@ jobs:
           sarif_file: 'trivy-results.sarif'
 
       - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@0.4.0
+        uses: snyk/actions/node@0.3.0
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high
 
       - name: Notify Datadog of security scan
-        if: always() && env.DD_API_KEY != ''
+        if: always()
         run: |
           curl -X POST "https://api.datadoghq.com/api/v1/events" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
+            -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
             -d @- << 'EOF'
           {
             "title": "Security Scan Completed",
@@ -114,11 +101,8 @@ jobs:
   build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
-    needs: [security-scan, validate-ci-config]
+    needs: [security-scan]
     if: always() && (needs.security-scan.result == 'success' || github.event.inputs.force_deploy == 'true')
-    env:
-      DD_API_KEY: ${{ secrets.DD_API_KEY }}
-      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
     
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
@@ -182,7 +166,6 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run Datadog CI Test Visibility
-        if: ${{ env.DD_API_KEY != '' }}
         run: |
           npm install -g @datadog/datadog-ci
           datadog-ci junit upload --service vibecode-webgui test-results.xml
@@ -195,12 +178,11 @@ jobs:
           output-file: sbom.spdx.json
 
       - name: Upload SBOM to Datadog
-        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
         run: |
           curl -X POST "https://api.datadoghq.com/api/v2/software_composition_analysis/sboms" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
-            -H "DD-APPLICATION-KEY: ${{ env.DD_APP_KEY }}" \
+            -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+            -H "DD-APPLICATION-KEY: ${{ secrets.DD_APP_KEY }}" \
             -d @sbom.spdx.json
 
   # Infrastructure Validation
@@ -209,9 +191,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-and-test]
     if: always() && needs.build-and-test.result == 'success'
-    env:
-      DD_API_KEY: ${{ secrets.DD_API_KEY }}
-      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
     
     outputs:
       plan-file: terraform.tfplan
@@ -226,7 +205,7 @@ jobs:
           terraform_version: 1.6.6
 
       - name: Configure kubectl
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@v3
         with:
           version: 'latest'
 
@@ -254,8 +233,8 @@ jobs:
             -var="nextauth_secret=${{ secrets.NEXTAUTH_SECRET }}" \
             -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
             -var="anthropic_api_key=${{ secrets.ANTHROPIC_API_KEY }}" \
-            -var="datadog_api_key=${{ env.DD_API_KEY }}" \
-            -var="datadog_app_key=${{ env.DD_APP_KEY }}" \
+            -var="datadog_api_key=${{ secrets.DD_API_KEY }}" \
+            -var="datadog_app_key=${{ secrets.DD_APP_KEY }}" \
             -out=terraform.tfplan
 
       - name: Upload Terraform Plan
@@ -271,8 +250,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [infrastructure-plan]
     if: github.ref != 'refs/heads/main' && needs.infrastructure-plan.result == 'success'
-    env:
-      DD_API_KEY: ${{ secrets.DD_API_KEY }}
     
     steps:
       - name: Checkout code
@@ -307,7 +284,7 @@ jobs:
           retention-days: 10
 
       - name: Send E2E results to Datadog
-        if: always() && env.DD_API_KEY != ''
+        if: always()
         run: |
           datadog-ci junit upload --service vibecode-webgui-e2e test-results/junit.xml
 
@@ -315,14 +292,11 @@ jobs:
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
-    needs: [infrastructure-plan, build-and-test, validate-ci-config]
+    needs: [infrastructure-plan, build-and-test]
     if: github.ref == 'refs/heads/develop' && needs.build-and-test.result == 'success'
     environment:
       name: staging
       url: https://vibecode-webgui-staging.yourdomain.com
-    env:
-      DD_API_KEY: ${{ secrets.DD_API_KEY }}
-      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
     
     steps:
       - name: Checkout code
@@ -334,7 +308,7 @@ jobs:
           terraform_version: 1.6.6
 
       - name: Configure kubectl
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@v3
 
       - name: Setup kubeconfig
         run: |
@@ -360,8 +334,8 @@ jobs:
             -var="nextauth_secret=${{ secrets.NEXTAUTH_SECRET_STAGING }}" \
             -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
             -var="anthropic_api_key=${{ secrets.ANTHROPIC_API_KEY }}" \
-            -var="datadog_api_key=${{ env.DD_API_KEY }}" \
-            -var="datadog_app_key=${{ env.DD_APP_KEY }}" \
+            -var="datadog_api_key=${{ secrets.DD_API_KEY }}" \
+            -var="datadog_app_key=${{ secrets.DD_APP_KEY }}" \
             -auto-approve
 
       - name: Wait for deployment
@@ -382,11 +356,10 @@ jobs:
           curl -f https://vibecode-webgui-staging.yourdomain.com/api/health || exit 1
 
       - name: Create Datadog deployment marker
-        if: ${{ env.DD_API_KEY != '' }}
         run: |
           curl -X POST "https://api.datadoghq.com/api/v1/events" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
+            -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
             -d @- << 'EOF'
           {
             "title": "Staging Deployment",
@@ -402,19 +375,11 @@ jobs:
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
-<<<<<<< HEAD
-    needs: [infrastructure-plan, build-and-test, e2e-tests, validate-ci-config]
+    needs: [infrastructure-plan, build-and-test, e2e-tests]
     if: github.ref == 'refs/heads/main' && (needs.e2e-tests.result == 'success' || github.event.inputs.force_deploy == 'true')
-=======
-    needs: [infrastructure-plan, build-and-test]
-    if: github.ref == 'refs/heads/main' && (needs.build-and-test.result == 'success' || github.event.inputs.force_deploy == 'true')
->>>>>>> ai-sdk-openai-v2-test
     environment:
       name: production
       url: https://vibecode-webgui.yourdomain.com
-    env:
-      DD_API_KEY: ${{ secrets.DD_API_KEY }}
-      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
     
     steps:
       - name: Checkout code
@@ -426,7 +391,7 @@ jobs:
           terraform_version: 1.6.6
 
       - name: Configure kubectl
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@v3
 
       - name: Setup kubeconfig
         run: |
@@ -454,8 +419,8 @@ jobs:
             -var="nextauth_secret=${{ secrets.NEXTAUTH_SECRET_PRODUCTION }}" \
             -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
             -var="anthropic_api_key=${{ secrets.ANTHROPIC_API_KEY }}" \
-            -var="datadog_api_key=${{ env.DD_API_KEY }}" \
-            -var="datadog_app_key=${{ env.DD_APP_KEY }}" \
+            -var="datadog_api_key=${{ secrets.DD_API_KEY }}" \
+            -var="datadog_app_key=${{ secrets.DD_APP_KEY }}" \
             -auto-approve
 
       - name: Blue-Green Deployment Strategy
@@ -500,11 +465,10 @@ jobs:
           curl -f https://vibecode-webgui.yourdomain.com/api/monitoring/performance?action=health
 
       - name: Create Datadog deployment marker
-        if: ${{ env.DD_API_KEY != '' }}
         run: |
           curl -X POST "https://api.datadoghq.com/api/v1/events" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
+            -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
             -d @- << 'EOF'
           {
             "title": "Production Deployment",
@@ -522,18 +486,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-production]
     if: always() && needs.deploy-production.result == 'success'
-    env:
-      DD_API_KEY: ${{ secrets.DD_API_KEY }}
-      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
     
     steps:
       - name: Setup Datadog monitors
-        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
         run: |
           curl -X POST "https://api.datadoghq.com/api/v1/monitor" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
-            -H "DD-APPLICATION-KEY: ${{ env.DD_APP_KEY }}" \
+            -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+            -H "DD-APPLICATION-KEY: ${{ secrets.DD_APP_KEY }}" \
             -d @- << 'EOF'
           {
             "type": "metric alert",
@@ -546,12 +506,11 @@ jobs:
           EOF
 
       - name: Setup synthetic tests
-        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
         run: |
           curl -X POST "https://api.datadoghq.com/api/v1/synthetics/tests" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
-            -H "DD-APPLICATION-KEY: ${{ env.DD_APP_KEY }}" \
+            -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+            -H "DD-APPLICATION-KEY: ${{ secrets.DD_APP_KEY }}" \
             -d @- << 'EOF'
           {
             "type": "api",
@@ -586,15 +545,14 @@ jobs:
           EOF
 
       - name: Wait and verify metrics
-        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
         run: |
           sleep 300  # Wait 5 minutes for metrics to populate
           
           # Check deployment metrics
           curl -X POST "https://api.datadoghq.com/api/v1/query" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
-            -H "DD-APPLICATION-KEY: ${{ env.DD_APP_KEY }}" \
+            -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+            -H "DD-APPLICATION-KEY: ${{ secrets.DD_APP_KEY }}" \
             -d '{"query":"avg:kubernetes.pods.running{service:vibecode-webgui,environment:production}"}'
 
   # Rollback capability
@@ -603,12 +561,10 @@ jobs:
     runs-on: ubuntu-latest
     if: failure() && github.ref == 'refs/heads/main'
     needs: [deploy-production]
-    env:
-      DD_API_KEY: ${{ secrets.DD_API_KEY }}
     
     steps:
       - name: Configure kubectl
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@v3
 
       - name: Setup kubeconfig
         run: |
@@ -632,11 +588,10 @@ jobs:
           curl -f https://vibecode-webgui.yourdomain.com/api/health
 
       - name: Notify Datadog of rollback
-        if: ${{ env.DD_API_KEY != '' }}
         run: |
           curl -X POST "https://api.datadoghq.com/api/v1/events" \
             -H "Content-Type: application/json" \
-            -H "DD-API-KEY: ${{ env.DD_API_KEY }}" \
+            -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
             -d @- << 'EOF'
           {
             "title": "Production Rollback",
