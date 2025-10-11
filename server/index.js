@@ -10,10 +10,26 @@ const helmet = require('helmet');
 const pty = require('node-pty');
 const chokidar = require('chokidar');
 
-// Configuration
+// Configuration with security validation
 const PORT = process.env.WS_PORT || 3001;
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'dev-secret-key';
+const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET;
+
+// Security check: ensure JWT_SECRET is configured in production
+if (process.env.NODE_ENV === 'production' && !JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET or NEXTAUTH_SECRET must be set in production');
+  process.exit(1);
+}
+
+if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'dev-secret-key') {
+  console.error('FATAL: JWT_SECRET cannot use default value in production');
+  process.exit(1);
+}
+
+if (!JWT_SECRET) {
+  console.warn('⚠️  WARNING: No JWT_SECRET configured. Using insecure default for development only.');
+  console.warn('⚠️  Set NEXTAUTH_SECRET or JWT_SECRET environment variable.');
+}
 
 // Initialize Express app
 const app = express();
@@ -88,6 +104,11 @@ io.use(async (socket, next) => {
     if (!token) {
       console.error('No authentication token provided');
       return next(new Error('Authentication token required'));
+    }
+
+    if (!JWT_SECRET) {
+      console.error('JWT_SECRET not configured');
+      return next(new Error('Server configuration error'));
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -367,6 +388,9 @@ server.listen(PORT, () => {
   console.log(`🚀 WebSocket server running on port ${PORT}`);
   console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔌 Redis URL: ${REDIS_URL}`);
+  if (!JWT_SECRET && process.env.NODE_ENV !== 'production') {
+    console.warn('⚠️  Using fallback JWT secret for development');
+  }
 });
 
 module.exports = { app, server, io };

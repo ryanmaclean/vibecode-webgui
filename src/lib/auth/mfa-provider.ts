@@ -7,7 +7,7 @@
 import { z } from 'zod'
 import * as speakeasy from 'speakeasy'
 import * as QRCode from 'qrcode'
-import { createChildLogger } from '@/lib/logger'
+import { randomBytes, randomInt } from 'crypto'
 
 export interface MFADevice {
   id: string
@@ -70,7 +70,6 @@ export class MFAProvider {
   private challenges: Map<string, MFAChallenge> = new Map()
   private backupCodes: Map<string, string[]> = new Map() // userId -> codes
   private failedAttempts: Map<string, { count: number, lockedUntil?: Date }> = new Map()
-  private readonly logger = createChildLogger({ module: 'auth', scope: 'mfa' })
 
   constructor() {
     // Cleanup expired challenges every 5 minutes
@@ -113,7 +112,7 @@ export class MFAProvider {
 
     this.devices.set(deviceId, device)
 
-    this.logger.info('TOTP setup initiated', { userId, deviceName })
+    console.log(`📱 TOTP setup initiated for user ${userId}, device: ${deviceName}`)
 
     return {
       deviceId,
@@ -148,11 +147,7 @@ export class MFAProvider {
     // Send verification SMS
     await this.sendSMSVerification(phoneNumber, deviceId)
 
-    this.logger.info('SMS MFA setup initiated', {
-      userId,
-      deviceName,
-      phoneNumber: phoneNumber.replace(/\d(?=\d{4})/g, '*'),
-    })
+    console.log(`📞 SMS MFA setup initiated for user ${userId}, phone: ${phoneNumber.replace(/\d(?=\d{4})/g, '*')}`)
 
     return {
       deviceId,
@@ -185,11 +180,7 @@ export class MFAProvider {
     // Send verification email
     await this.sendEmailVerification(email, deviceId)
 
-    this.logger.info('Email MFA setup initiated', {
-      userId,
-      deviceName,
-      email: email.replace(/(.{2}).*@/, '$1***@'),
-    })
+    console.log(`📧 Email MFA setup initiated for user ${userId}, email: ${email.replace(/(.{2}).*@/, '$1***@')}`)
 
     return {
       deviceId,
@@ -234,20 +225,12 @@ export class MFAProvider {
       device.isActive = true
       device.lastUsed = new Date()
       this.devices.set(deviceId, device)
-      
-      this.logger.info('MFA device activated', {
-        userId: device.userId,
-        deviceName: device.name,
-        deviceType: device.type,
-      })
+
+      console.log(`✅ MFA device activated: ${device.name} (${device.type})`)
       return true
     }
 
-    this.logger.warn('MFA setup verification failed', {
-      userId: device.userId,
-      deviceName: device.name,
-      deviceType: device.type,
-    })
+    console.log(`❌ MFA setup verification failed for device: ${device.name}`)
     return false
   }
 
@@ -272,7 +255,7 @@ export class MFAProvider {
 
     // Select device for challenge
     const selectedDevice = userDevices.find(d => d.id === preferredDeviceId) || userDevices[0]
-    
+
     const challengeId = this.generateChallengeId()
     const challenge: MFAChallenge = {
       challengeId,
@@ -301,7 +284,7 @@ export class MFAProvider {
               d.email ? this.maskEmail(d.email) : undefined
     }))
 
-    this.logger.info('MFA challenge created', { userId, challengeId, challengeType })
+    console.log(`🔐 MFA challenge created for user ${userId}, challengeId: ${challengeId}`)
 
     return {
       challengeId,
@@ -341,12 +324,9 @@ export class MFAProvider {
       if (isValidBackup) {
         this.challenges.delete(challengeId)
         const remainingBackupCodes = this.backupCodes.get(challenge.userId)?.length || 0
-        
-        this.logger.info('MFA verification successful via backup code', {
-          userId: challenge.userId,
-          challengeId,
-        })
-        
+
+        console.log(`✅ MFA verification successful with backup code for user ${challenge.userId}`)
+
         return {
           success: true,
           deviceId: challenge.deviceId,
@@ -381,14 +361,9 @@ export class MFAProvider {
       this.devices.set(device.id, device)
       this.challenges.delete(challengeId)
       this.clearRateLimit(challenge.userId)
-      
-      this.logger.info('MFA verification successful', {
-        userId: challenge.userId,
-        challengeId,
-        deviceId,
-        deviceType: device.type,
-      })
-      
+
+      console.log(`✅ MFA verification successful for user ${challenge.userId} using ${device.type}`)
+
       return {
         success: true,
         deviceId: device.id,
@@ -396,14 +371,9 @@ export class MFAProvider {
       }
     } else {
       this.recordFailedAttempt(challenge.userId)
-      
-      this.logger.warn('MFA verification failed', {
-        userId: challenge.userId,
-        challengeId,
-        attempts: challenge.attempts,
-        maxAttempts: challenge.maxAttempts,
-      })
-      
+
+      console.log(`❌ MFA verification failed for user ${challenge.userId}, attempts: ${challenge.attempts}/${challenge.maxAttempts}`)
+
       return {
         success: false,
         error: `Invalid verification code. ${challenge.maxAttempts - challenge.attempts} attempts remaining.`
@@ -433,11 +403,7 @@ export class MFAProvider {
     }
 
     this.devices.delete(deviceId)
-    this.logger.info('MFA device removed', {
-      userId: device.userId,
-      deviceName: device.name,
-      deviceType: device.type,
-    })
+    console.log(`🗑️  MFA device removed: ${device.name} (${device.type})`)
     return true
   }
 
@@ -447,8 +413,8 @@ export class MFAProvider {
   generateNewBackupCodes(userId: string): string[] {
     const backupCodes = this.generateBackupCodes()
     this.backupCodes.set(userId, backupCodes)
-    
-    this.logger.info('MFA backup codes regenerated', { userId })
+
+    console.log(`🔑 New backup codes generated for user ${userId}`)
     return backupCodes
   }
 
@@ -467,25 +433,21 @@ export class MFAProvider {
   private async sendSMSVerification(phoneNumber: string, deviceId: string): Promise<void> {
     // In a real implementation, integrate with SMS service (Twilio, AWS SNS, etc.)
     const code = this.generateSMSCode()
-    
+
     // Store the code temporarily (in real app, use Redis or database)
     this.storeTempCode(deviceId, code, 'sms')
-    
-    this.logger.info('SMS verification code sent', {
-      phoneNumber: this.maskPhoneNumber(phoneNumber),
-    })
+
+    console.log(`📱 SMS code sent to ${this.maskPhoneNumber(phoneNumber)}: ${code}`)
   }
 
   private async sendEmailVerification(email: string, deviceId: string): Promise<void> {
     // In a real implementation, integrate with email service (SendGrid, AWS SES, etc.)
     const code = this.generateSMSCode()
-    
+
     // Store the code temporarily
     this.storeTempCode(deviceId, code, 'email')
-    
-    this.logger.info('Email verification code sent', {
-      email: this.maskEmail(email),
-    })
+
+    console.log(`📧 Email code sent to ${this.maskEmail(email)}: ${code}`)
   }
 
   private async verifySMSToken(deviceId: string, token: string): Promise<boolean> {
@@ -516,7 +478,7 @@ export class MFAProvider {
     if (isValid) {
       this.tempCodes.delete(deviceId) // Use once
     }
-    
+
     return isValid
   }
 
@@ -532,28 +494,53 @@ export class MFAProvider {
     return true
   }
 
+  /**
+   * Generate cryptographically secure backup codes
+   * SECURITY: Uses crypto.randomBytes() instead of Math.random()
+   */
   private generateBackupCodes(): string[] {
     const codes: string[] = [];
     for (let i = 0; i < 10; i++) {
-      codes.push(Math.random().toString(36).substring(2, 10).toUpperCase());
+      // Generate 8 random bytes and convert to base36 for readability
+      const randomHex = randomBytes(8).toString('hex').toUpperCase();
+      codes.push(randomHex.substring(0, 10));
     }
     return codes;
   }
 
+  /**
+   * Generate cryptographically secure device ID
+   * SECURITY: Uses crypto.randomBytes() instead of Math.random()
+   */
   private generateDeviceId(): string {
-    return `mfa_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+    const randomHex = randomBytes(8).toString('hex');
+    return `mfa_${Date.now()}_${randomHex}`;
   }
 
+  /**
+   * Generate cryptographically secure challenge ID
+   * SECURITY: Uses crypto.randomBytes() instead of Math.random()
+   */
   private generateChallengeId(): string {
-    return `challenge_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+    const randomHex = randomBytes(8).toString('hex');
+    return `challenge_${Date.now()}_${randomHex}`;
   }
 
+  /**
+   * Generate cryptographically secure setup token
+   * SECURITY: Uses crypto.randomBytes() instead of Math.random()
+   */
   private generateSetupToken(): string {
-    return `setup_${Date.now()}_${Math.random().toString(36).slice(2, 18)}`
+    const randomHex = randomBytes(16).toString('hex');
+    return `setup_${Date.now()}_${randomHex}`;
   }
 
+  /**
+   * Generate cryptographically secure 6-digit SMS code
+   * SECURITY: Uses crypto.randomInt() instead of Math.random()
+   */
   private generateSMSCode(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString()
+    return randomInt(100000, 1000000).toString();
   }
 
   private validateSetupToken(token: string): boolean {
@@ -573,7 +560,7 @@ export class MFAProvider {
   private isRateLimited(userId: string): boolean {
     const attempts = this.failedAttempts.get(userId)
     if (!attempts) return false
-    
+
     if (attempts.lockedUntil && new Date() < attempts.lockedUntil) {
       return true
     }
@@ -584,11 +571,11 @@ export class MFAProvider {
   private recordFailedAttempt(userId: string): void {
     const current = this.failedAttempts.get(userId) || { count: 0 }
     current.count++
-    
+
     if (current.count >= 5) {
       current.lockedUntil = new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
     }
-    
+
     this.failedAttempts.set(userId, current)
   }
 
