@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkDatabaseHealth, quickDatabaseHealthCheck } from '../../../../lib/db/health-check';
 import { getMetricsCollector } from '../../../../lib/db/database-metrics';
-<<<<<<< HEAD
 import { logger } from '../../../../lib/logger';
 
-=======
->>>>>>> merge-conflict-cleanup
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
