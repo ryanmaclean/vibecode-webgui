@@ -20,7 +20,7 @@ import {
   Settings,
   Copy,
   ExternalLink,
-  AlertTriangle,
+  AlertCircle as AlertTriangle,
   CheckCircle,
   XCircle,
   RefreshCw
@@ -115,11 +115,19 @@ export default function CollaborativeEditingSessions({
   onInviteUsers,
   className = ''
 }: CollaborativeEditingSessionsProps) {
+<<<<<<< HEAD
   const { isConnected, socket, activeUsers } = useCollaboration({
     workspaceId: 'default',
     conversationId: 'default', 
     userId: 'default',
     userName: 'User'
+=======
+  const { isConnected, activeUsers, socket } = useCollaboration({
+    workspaceId: 'default',
+    userId: 'current-user',
+    userName: 'Current User',
+    enabled: true
+>>>>>>> ai-sdk-openai-v2-test
   })
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
@@ -219,7 +227,11 @@ export default function CollaborativeEditingSessions({
    */
   const canManageSession = useCallback((session: CollaborativeSession, userId: string): boolean => {
     const role = getUserRole(session, userId)
+<<<<<<< HEAD
     return role === 'owner' || (role === 'editor' && (session.participants.find(p => p.userId === userId)?.permissions.canManage || false))
+=======
+    return role === 'owner' || (role === 'editor' && (session.participants.find(p => p.userId === userId)?.permissions.canManage ?? false))
+>>>>>>> ai-sdk-openai-v2-test
   }, [getUserRole])
 
   /**

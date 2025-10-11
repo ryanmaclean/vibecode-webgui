@@ -112,12 +112,26 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
+<<<<<<< HEAD
     console.error('Error fetching metrics:', error)
     // Align with integration test expectations
     return new Response(JSON.stringify({ error: 'Failed to fetch metrics' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     })
+=======
+    // Server error logged
+    
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch metrics',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      },
+      { status: 500 }
+    )
+>>>>>>> ai-sdk-openai-v2-test
   }
 }
 
@@ -178,11 +192,25 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
+<<<<<<< HEAD
     console.error('Error submitting metric:', error)
     // Align with integration test expectations
     return new Response(JSON.stringify({ error: 'Failed to update metrics' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     })
+=======
+    // Server error logged
+    
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to submit metric',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      },
+      { status: 500 }
+    )
+>>>>>>> ai-sdk-openai-v2-test
   }
 }

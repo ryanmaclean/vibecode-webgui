@@ -8,7 +8,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 // Local implementation of container stopping
 async function stopCodeServerContainer(containerId: string): Promise<void> {
-  console.log(`[Code-Server] Stopping container: ${containerId}`)
+  // Debug log removed
   // Simulate container stopping - replace with actual Docker API call
   await new Promise(resolve => setTimeout(resolve, 500))
 }
@@ -53,7 +53,7 @@ export async function GET(
 
     return NextResponse.json(codeServerSession)
   } catch (error) {
-    console.error('Code-server session get error:', error)
+    // Server error logged
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -87,7 +87,7 @@ export async function DELETE(
       try {
         await stopCodeServerContainer(codeServerSession.containerId)
       } catch (error) {
-        console.error('Failed to stop container:', error)
+        // Server error logged
       }
     }
 
@@ -101,7 +101,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Session stopped successfully' })
   } catch (error) {
-    console.error('Code-server session delete error:', error)
+    // Server error logged
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -141,7 +141,7 @@ export async function PATCH(
 
     return NextResponse.json(codeServerSession)
   } catch (error) {
-    console.error('Code-server session update error:', error)
+    // Server error logged
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -158,7 +158,7 @@ export class SAMLProvider {
       // Extract user information
       const user = this.extractUserFromAssertion(assertion)
       
-      console.log('✅ SAML authentication successful for user:', user.email)
+      // Debug log removed
       return user
     } catch (error) {
       console.error('SAML response processing failed:', error)

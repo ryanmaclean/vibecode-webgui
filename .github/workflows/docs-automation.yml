@@ -20,6 +20,11 @@ on:
     - cron: '0 2 * * 0'
   workflow_dispatch:
 
+permissions:
+  contents: write        # Needs write to update docs
+  pull-requests: write   # For commenting on PRs
+  issues: write          # For creating issues when doc issues found
+
 jobs:
   validate-docs:
     name: Validate Documentation
@@ -42,7 +47,7 @@ jobs:
         run: npm run docs:validate
 
       - name: Check for broken links
-        uses: lycheeverse/lychee-action@v1
+        uses: lycheeverse/lychee-action@v1.9.0
         with:
           args: --verbose --no-progress --exclude-loopback --exclude-private --exclude-mail --max-concurrency 5 --timeout 10 --exclude-path "node_modules|dist|.git" "docs/**/*.md" "*.md"
           fail: true
@@ -211,6 +216,7 @@ jobs:
             if grep -n "!\[.*\](" "$file" 2>/dev/null | grep -q "!\[\]"; then
               echo "Warning: Missing alt text for images in $file"
             fi
+<<<<<<< HEAD
 
             # Check heading hierarchy - simplified bash approach
             awk '/^#+ / {
@@ -221,6 +227,19 @@ jobs:
               }
               prev_level = level
             }' "$file"
+=======
+            
+            # Check for proper heading hierarchy
+            echo "Checking heading structure in $file"
+            grep -n "^#" "$file" | awk -F':' '{print $1,$2}' | awk '{print $1,length($2),$0}' | 
+            awk 'BEGIN {prev=0} {
+              curr=int($2);
+              if (curr > prev+1) {
+                print "Warning: Heading level jump in '$file' at line " $1;
+              }
+              prev=curr;
+            }'
+>>>>>>> ai-sdk-openai-v2-test
           done
 
           # Check main README

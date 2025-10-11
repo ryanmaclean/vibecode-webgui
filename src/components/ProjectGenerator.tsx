@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle, Terminal, FileCode, Wrench, Rocket } from 'lucide-react';
+import { AlertCircle, CheckCircle, Terminal, File, Wrench, Send } from 'lucide-react';
 import { useProjectGenerator } from '@/hooks/useProjectGenerator';
 
 // Re-export types for external use
@@ -13,10 +13,10 @@ export type { GenerationStatus, ProgressData } from '@/hooks/useProjectGenerator
 const statusIcons = {
   idle: <Terminal className="h-4 w-4" />,
   initializing: <Wrench className="h-4 w-4 animate-spin" />,
-  generating: <FileCode className="h-4 w-4 animate-pulse" />,
-  seeding: <FileCode className="h-4 w-4 animate-pulse" />,
+  generating: <File className="h-4 w-4 animate-pulse" />,
+  seeding: <File className="h-4 w-4 animate-pulse" />,
   installing: <Wrench className="h-4 w-4 animate-spin" />,
-  finalizing: <Rocket className="h-4 w-4 animate-pulse" />,
+  finalizing: <Send className="h-4 w-4 animate-pulse" />,
   completed: <CheckCircle className="h-4 w-4 text-green-500" />,
   error: <AlertCircle className="h-4 w-4 text-red-500" />,
 };
@@ -50,10 +50,10 @@ export function ProjectGenerator({
       }, 1500);
     },
     onProgress: (data) => {
-      console.log('Generation progress:', data);
+      // Debug log removed
     },
     onError: (error) => {
-      console.error('Generation error:', error);
+      // Generation error handled
     }
   });
 
@@ -72,7 +72,7 @@ export function ProjectGenerator({
     generateProject(trimmedPrompt, {
       // Add any generation options here
     }).catch(error => {
-      console.error('Failed to start project generation:', error);
+      // Failed to start project generation
       updateProgress({
         status: 'error',
         message: error.message || 'Failed to start project generation',
@@ -92,7 +92,7 @@ export function ProjectGenerator({
         generateProject(trimmedPrompt, {
           // Add any generation options here
         }).catch(error => {
-          console.error('Failed to start project generation:', error);
+          // Failed to start project generation
           updateProgress({
             status: 'error',
             message: error.message || 'Failed to start project generation',
@@ -176,7 +176,7 @@ export function ProjectGenerator({
                               generateProject(prompt, {
                                 // Add any generation options here
                               }).catch(error => {
-                                console.error('Failed to retry project generation:', error);
+                                // Failed to retry project generation
                                 updateProgress({
                                   status: 'error',
                                   message: error.message || 'Failed to retry project generation',

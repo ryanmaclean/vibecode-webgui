@@ -22,8 +22,8 @@ import {
   Code2,
   Settings,
   X,
-  Maximize2,
-  Minimize2
+  Maximize,
+  Minimize
 } from 'lucide-react'
 import AIChatPanel from './AIChatPanel'
 import AICodeAssistant from './AICodeAssistant'
@@ -120,11 +120,11 @@ export default function CodeServerIntegration({
 
         case 'settings-updated':
           // Handle settings changes
-          console.log('Settings updated:', message.data)
+          // Debug log removed
           break
 
         default:
-          console.log('Unknown message type:', message.type)
+          // Debug log removed
       }
     }
 
@@ -280,7 +280,7 @@ export default function CodeServerIntegration({
                     className="p-2 rounded text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     title={isMaximized ? 'Minimize AI Panel' : 'Maximize AI Panel'}
                   >
-                    {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                    {isMaximized ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
                   </button>
 
                   <button
@@ -335,7 +335,7 @@ export default function CodeServerIntegration({
                     selectedText={codeServerState.selectedText || undefined}
                     onCodeGenerated={handleCodeInsert}
                     onAnalysisComplete={(analysis) => {
-                      console.log('Analysis complete:', analysis)
+                      // Debug log removed
                       // Could send results back to code-server for inline display
                       sendToCodeServer({
                         type: 'analysis-complete',

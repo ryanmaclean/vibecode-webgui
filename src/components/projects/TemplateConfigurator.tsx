@@ -365,10 +365,10 @@ export function TemplateConfigurator({
                   </select>
                 </div>
 
-                {/* Git Repository */}
+                {/* Folder Repository */}
                 <div>
                   <label htmlFor="git-repo" className="block text-sm font-medium text-gray-700 mb-1">
-                    Git Repository
+                    Folder Repository
                   </label>
                   <input
                     id="git-repo"

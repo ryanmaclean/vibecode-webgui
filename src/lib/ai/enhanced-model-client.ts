@@ -217,7 +217,7 @@ export class EnhancedAIClient {
       
       for (const fallbackProvider of fallbackProviders) {
         try {
-          console.log(`Trying fallback provider: ${fallbackProvider}`);
+          // Debug log removed
           const fallbackConfig = { ...finalConfig, provider: fallbackProvider };
           return await this.createChatCompletionWithProvider(messages, fallbackConfig);
         } catch (fallbackError) {

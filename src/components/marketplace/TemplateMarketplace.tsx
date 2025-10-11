@@ -204,7 +204,7 @@ export function TemplateMarketplace({ onSelectTemplate, selectedCategory }: Temp
           <button
             onClick={() => handleDeploy(template)}
             className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
-            title="Deploy to GitHub & Cloud"
+            title="Deploy to FolderHub & Cloud"
           >
             <RocketLaunchIcon className="h-4 w-4" />
           </button>
@@ -377,7 +377,7 @@ export function TemplateMarketplace({ onSelectTemplate, selectedCategory }: Temp
           template={selectedTemplateForDeploy}
           onClose={() => setSelectedTemplateForDeploy(null)}
           onDeploymentComplete={(result) => {
-            console.log('Template deployed successfully:', result)
+            // Debug log removed
             setSelectedTemplateForDeploy(null)
           }}
         />

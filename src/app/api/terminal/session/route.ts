@@ -106,7 +106,20 @@ const handler = async (req: Request, _res: unknown) => {
     return new NextResponse('Expected Upgrade: WebSocket', { status: 426 })
   }
 
+<<<<<<< HEAD
   const server = ensureWebSocketServer()
+=======
+  const wss = ensureWebSocketServer();
+  
+  // @ts-expect-error - Next.js specific handling for WebSocket upgrade
+  wss.handleUpgrade(req, (req as any).socket, Buffer.alloc(0), (ws) => {
+    wss.emit('connection', ws, req);
+  });
+  
+  // Return a response indicating WebSocket upgrade is handled
+  return new NextResponse(null, { status: 101 });
+};
+>>>>>>> ai-sdk-openai-v2-test
 
   if (!spawn) {
     return new NextResponse('Interactive terminal disabled', { status: 503 })

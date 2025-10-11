@@ -42,6 +42,7 @@ jest.mock('@/components/ProjectGenerator', () => {
         }, 100);
         return () => clearTimeout(timer);
       }
+      return undefined;
     }, [autoStart, initialPrompt, onComplete]);
 
     return (

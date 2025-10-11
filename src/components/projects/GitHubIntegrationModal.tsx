@@ -1,11 +1,11 @@
 /**
- * GitHub integration modal for creating repositories from generated projects
+ * FolderHub integration modal for creating repositories from generated projects
  */
 
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { GitHubIntegration } from '@/lib/github/integration'
+import { FolderHubIntegration } from '@/lib/github/integration'
 import type { GeneratedProject } from '@/lib/templates/generator'
 import { 
   XMarkIcon, 
@@ -17,29 +17,29 @@ import {
   EyeSlashIcon
 } from '@heroicons/react/24/outline'
 
-interface GitHubIntegrationModalProps {
+interface FolderHubIntegrationModalProps {
   isOpen: boolean
   onClose: () => void
   generatedProject: GeneratedProject
   onSuccess: (repoUrl: string) => void
 }
 
-interface GitHubUser {
+interface FolderHubUser {
   login: string
   name: string
   email: string
 }
 
-export function GitHubIntegrationModal({ 
+export function FolderHubIntegrationModal({ 
   isOpen, 
   onClose, 
   generatedProject, 
   onSuccess 
-}: GitHubIntegrationModalProps) {
+}: FolderHubIntegrationModalProps) {
   const [accessToken, setAccessToken] = useState('')
   const [isConnecting, setIsConnecting] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
-  const [githubUser, setGitHubUser] = useState<GitHubUser | null>(null)
+  const [githubUser, setFolderHubUser] = useState<FolderHubUser | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [showToken, setShowToken] = useState(false)
@@ -51,14 +51,18 @@ export function GitHubIntegrationModal({
     licenseTemplate: 'mit' as string | undefined
   })
 
+<<<<<<< HEAD
   const githubIntegration = React.useRef<GitHubIntegration | null>(null)
   const [integration, setIntegration] = useState<GitHubIntegration | null>(null)
+=======
+  const githubIntegration = React.useRef<FolderHubIntegration | null>(null)
+>>>>>>> ai-sdk-openai-v2-test
 
   useEffect(() => {
     if (!isOpen) {
       // Reset state when modal closes
       setAccessToken('')
-      setGitHubUser(null)
+      setFolderHubUser(null)
       setError(null)
       setSuccess(null)
       setIsConnecting(false)
@@ -70,7 +74,7 @@ export function GitHubIntegrationModal({
 
   const handleConnect = async () => {
     if (!accessToken.trim()) {
-      setError('Please enter your GitHub access token')
+      setError('Please enter your FolderHub access token')
       return
     }
 
@@ -78,6 +82,7 @@ export function GitHubIntegrationModal({
     setError(null)
 
     try {
+<<<<<<< HEAD
       const integrationInstance = new GitHubIntegration(accessToken.trim())
       const user = await integrationInstance.initialize()
       
@@ -85,16 +90,29 @@ export function GitHubIntegrationModal({
       setGitHubUser(user)
       setSuccess('Successfully connected to GitHub!')
       setIntegration(integrationInstance)
+=======
+      const integration = new FolderHubIntegration(accessToken.trim())
+      const user = await integration.initialize()
+      
+      githubIntegration.current = integration
+      setFolderHubUser(user)
+      setSuccess('Successfully connected to FolderHub!')
+>>>>>>> ai-sdk-openai-v2-test
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to connect to GitHub')
+      setError(error instanceof Error ? error.message : 'Failed to connect to FolderHub')
     } finally {
       setIsConnecting(false)
     }
   }
 
   const handleCreateRepository = async () => {
+<<<<<<< HEAD
     if (!integration) {
       setError('Not connected to GitHub')
+=======
+    if (!githubIntegration.current) {
+      setError('Not connected to FolderHub')
+>>>>>>> ai-sdk-openai-v2-test
       return
     }
 
@@ -120,15 +138,24 @@ export function GitHubIntegrationModal({
         }
       );
 
-      // Add GitHub Actions workflow if requested
+      // Add FolderHub Actions workflow if requested
       if (repoSettings.addWorkflow) {
+<<<<<<< HEAD
         const { generateGitHubActionsWorkflow } = await import('@/lib/github/integration');
         const workflow = generateGitHubActionsWorkflow(
+=======
+        const { generateFolderHubActionsWorkflow } = await import('@/lib/github/integration')
+        const workflowContent = generateFolderHubActionsWorkflow(
+>>>>>>> ai-sdk-openai-v2-test
           'node', // Default to node for most projects
           'typescript' // Default to TypeScript
         );
         
+<<<<<<< HEAD
         await integration.addGitHubActionsWorkflow(
+=======
+        await githubIntegration.current.addFolderHubActionsWorkflow(
+>>>>>>> ai-sdk-openai-v2-test
           result.repository.name,
           'ci',
           workflow
@@ -166,8 +193,8 @@ export function GitHubIntegrationModal({
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Create GitHub Repository</h2>
-              <p className="text-sm text-gray-600">Push your generated project to GitHub</p>
+              <h2 className="text-xl font-semibold text-gray-900">Create FolderHub Repository</h2>
+              <p className="text-sm text-gray-600">Push your generated project to FolderHub</p>
             </div>
           </div>
           <button
@@ -181,20 +208,20 @@ export function GitHubIntegrationModal({
 
         {/* Content */}
         <div className="p-6">
-          {/* Step 1: Connect to GitHub */}
+          {/* Step 1: Connect to FolderHub */}
           {!githubUser && (
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-medium">
                   1
                 </div>
-                <h3 className="text-lg font-medium text-gray-900">Connect to GitHub</h3>
+                <h3 className="text-lg font-medium text-gray-900">Connect to FolderHub</h3>
               </div>
               
               <div className="space-y-4">
                 <div>
                   <label htmlFor="access-token" className="block text-sm font-medium text-gray-700 mb-2">
-                    GitHub Personal Access Token
+                    FolderHub Personal Access Token
                   </label>
                   <div className="relative">
                     <input
@@ -222,7 +249,7 @@ export function GitHubIntegrationModal({
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-800"
                     >
-                      GitHub Settings → Developer settings → Personal access tokens
+                      FolderHub Settings → Developer settings → Personal access tokens
                       <ArrowTopRightOnSquareIcon className="inline h-3 w-3 ml-1" />
                     </a>
                   </p>
@@ -250,7 +277,7 @@ export function GitHubIntegrationModal({
                   }`}
                   data-testid="connect-button"
                 >
-                  {isConnecting ? 'Connecting...' : 'Connect to GitHub'}
+                  {isConnecting ? 'Connecting...' : 'Connect to FolderHub'}
                 </button>
               </div>
             </div>
@@ -324,7 +351,7 @@ export function GitHubIntegrationModal({
                 <div className="flex items-center justify-between">
                   <div>
                     <label htmlFor="add-workflow" className="text-sm font-medium text-gray-700">
-                      Add GitHub Actions Workflow
+                      Add FolderHub Actions Workflow
                     </label>
                     <p className="text-xs text-gray-500">Automatic CI/CD pipeline for testing and deployment</p>
                   </div>

@@ -126,8 +126,13 @@ try {
     }
 
     // Event listeners for monitoring
+<<<<<<< HEAD
     redisClient.on('connect', () => {
       console.log('Redis connected successfully');
+=======
+    redis.on('connect', () => {
+      // Debug log removed
+>>>>>>> ai-sdk-openai-v2-test
       metrics.increment('redis.connection.success');
     });
 
@@ -136,8 +141,13 @@ try {
       metrics.increment('redis.connection.error');
     });
 
+<<<<<<< HEAD
     redisClient.on('ready', () => {
       console.log('Redis client ready');
+=======
+    redis.on('ready', () => {
+      // Debug log removed
+>>>>>>> ai-sdk-openai-v2-test
       metrics.increment('redis.ready');
     });
   }

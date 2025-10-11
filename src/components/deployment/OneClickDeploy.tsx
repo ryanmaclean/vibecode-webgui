@@ -16,9 +16,9 @@ import {
   Copy,
   Check,
   AlertCircle,
-  Globe,
+  Link,
   Server,
-  Rocket,
+  Send,
   Settings
 } from 'lucide-react'
 
@@ -161,7 +161,7 @@ export default function OneClickDeploy({ className = '' }: OneClickDeployProps) 
 # Deploy VibeCode to ${platform.name}
 
 ## Prerequisites
-1. Fork the repository to your GitHub account
+1. Fork the repository to your FolderHub account
 2. Get your OpenRouter API key from https://openrouter.ai/
 3. Generate a secure NextAuth secret
 
@@ -170,7 +170,7 @@ ${platform.envVars.map(env => `- ${env}`).join('\n')}
 
 ## Deployment Steps
 1. Click the "Deploy to ${platform.name}" button
-2. Connect your GitHub account
+2. Connect your FolderHub account
 3. Select the forked repository
 4. Add environment variables
 5. Deploy!
@@ -190,7 +190,7 @@ Complexity: ${platform.complexity}
       {/* Header */}
       <div className="text-center">
         <div className="flex items-center justify-center space-x-2 mb-4">
-          <Rocket className="h-8 w-8 text-blue-600" />
+          <Send className="h-8 w-8 text-blue-600" />
           <h2 className="text-2xl font-bold">One-Click Deployment</h2>
         </div>
         <p className="text-gray-600 max-w-2xl mx-auto">
@@ -446,7 +446,7 @@ Complexity: ${platform.complexity}
             <div>
               <h4 className="font-medium mb-2">Recommended Setup</h4>
               <ul className="text-sm space-y-1">
-                <li>• Fork the repository to your GitHub account</li>
+                <li>• Fork the repository to your FolderHub account</li>
                 <li>• Set up your API keys beforehand</li>
                 <li>• Test locally with <code className="bg-gray-100 px-1 rounded">npm run dev</code></li>
                 <li>• Choose a platform based on your technical requirements</li>

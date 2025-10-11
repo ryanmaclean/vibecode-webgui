@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Monaco } from '@/components/editors/monaco';
 import { Button } from '@/components/ui/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import { PlayIcon } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 interface GradioEditorProps {
@@ -57,7 +57,7 @@ export function GradioEditor({ initialCode }: GradioEditorProps) {
     <div className="flex h-full w-full flex-col">
       <div className="flex items-center justify-end p-2 border-b">
         <Button onClick={handleRunCode} disabled={isLoading}>
-          <PlayIcon className="mr-2 h-4 w-4" />
+          <Play className="mr-2 h-4 w-4" />
           {isLoading ? 'Running...' : 'Run'}
         </Button>
       </div>

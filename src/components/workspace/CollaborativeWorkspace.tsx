@@ -143,7 +143,7 @@ export function CollaborativeWorkspace({
 
 Generated in collaborative workspace`,
           setup: 'Run npm install && npm run dev',
-          deployment: 'Deploy using the integrated GitHub workflow'
+          deployment: 'Deploy using the integrated FolderHub workflow'
         }
       }
       setSelectedProject(workspaceProject)
@@ -296,7 +296,7 @@ Generated in collaborative workspace`,
               <GitHubDeploymentWorkflow
                 project={selectedProject}
                 onDeploymentComplete={(result) => {
-                  console.log('Deployment completed:', result)
+                  // Debug log removed
                   setShowDeployment(false)
                 }}
                 onClose={() => setShowDeployment(false)}
@@ -307,7 +307,7 @@ Generated in collaborative workspace`,
                   <RocketLaunchIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to Deploy</h3>
                   <p className="text-gray-600 mb-4">
-                    Deploy {selectedProject.name} to the cloud with GitHub integration
+                    Deploy {selectedProject.name} to the cloud with FolderHub integration
                   </p>
                   <Button onClick={handleDeploymentStart} className="bg-green-600 hover:bg-green-700">
                     Start Deployment

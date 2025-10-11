@@ -8,16 +8,16 @@
 import React, { useState, useEffect } from 'react'
 import {
   Download,
-  Trash2,
+  Trash,
   Settings,
   CheckCircle,
   XCircle,
   AlertCircle,
-  Loader2,
+  Loader,
   ExternalLink,
   Code,
   Bot,
-  GitBranch,
+  Folder,
   Sparkles
 } from 'lucide-react'
 
@@ -142,7 +142,7 @@ export default function AICLIToolsPanel({
       case 'codex-cli':
         return <Sparkles className="h-5 w-5 text-purple-500" />
       case 'aider':
-        return <GitBranch className="h-5 w-5 text-orange-500" />
+        return <Folder className="h-5 w-5 text-orange-500" />
       default:
         return <Code className="h-5 w-5 text-gray-500" />
     }
@@ -150,7 +150,7 @@ export default function AICLIToolsPanel({
 
   const getStatusIcon = (tool: AICLITool) => {
     if (installing === tool.id) {
-      return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+      return <Loader className="h-4 w-4 text-blue-500 animate-spin" />
     }
 
     if (tool.installation?.status === 'error') {
@@ -183,7 +183,7 @@ export default function AICLIToolsPanel({
   if (loading) {
     return (
       <div className={`flex items-center justify-center p-8 ${className}`}>
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <Loader className="h-8 w-8 animate-spin text-blue-500" />
         <span className="ml-2 text-gray-600">Loading AI CLI tools...</span>
       </div>
     )
@@ -205,7 +205,7 @@ export default function AICLIToolsPanel({
             className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
             title="Refresh tools"
           >
-            <Loader2 className="h-4 w-4" />
+            <Loader className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -292,7 +292,7 @@ export default function AICLIToolsPanel({
                       className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                       title="Uninstall"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash className="h-4 w-4" />
                     </button>
                   </>
                 ) : (
@@ -302,7 +302,7 @@ export default function AICLIToolsPanel({
                     className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {installing === tool.id ? (
-                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                      <Loader className="h-3 w-3 animate-spin mr-1" />
                     ) : (
                       <Download className="h-3 w-3 mr-1" />
                     )}
