@@ -1,34 +1,5 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-/playwright-report/
-/test-results/
-/.test-results/
-/blob/
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
+# Dependencies
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -43,6 +14,9 @@ runtime/
 # Coverage directory used by tools like istanbul
 coverage/
 *.lcov
+
+# Archive directory for old test scripts and results
+archive/
 
 # nyc test coverage
 .nyc_output
@@ -137,14 +111,6 @@ public
 .yarn/install-state.gz
 .pnp.*
 
-# Temporary and backup files
-*.bak
-*.backup
-*.tmp
-.backup/
-**/temp-files/
-cookies.txt
-
 # IDE
 .vscode/
 .idea/
@@ -167,57 +133,37 @@ Thumbs.db
 
 # Logs
 logs
+!docs/logs
 *.log
 
 # Temporary files
 tmp/
+temp/
 
-# Terraform
-**/.terraform/
-**/.terraform.lock.hcl
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
+# Build artifacts
+bin/
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-/lib/
-/lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
 
-# Virtual Environment
-venv/
-ENV/
-.env
-.venv
-env/
-venv.bak/
-venv*/
+# Go specific
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
 
-code-server/
+# Test artifacts
+coverage.xml
+test-results/
+tests/e2e/test-results/
+junit.xml
 
-<<<<<<< HEAD
-# Web dashboard
-web-dashboard/node_modules/
-web-dashboard/dist/
-web-dashboard/.vite/
-web-dashboard/package-lock.json
-=======
+# Performance test results
+tests/performance/results/
+
 # Docker
 .dockerignore
 
@@ -264,46 +210,21 @@ secrets/
 *.sublime-*
 .atom/
 
-docs/node_modules/
-!docs/node_modules/.keep
-**/.venv/
-templates/python/zenml-basic-pipeline/.venv/
+# MCP Server logs
+mcp-server.log
+*.mcp.log
+roundtable_mcp_server.log
 
-# Large VM build artifacts
-fast-openvscode-vm/
+# Pydantic AI
+examples/pydantic-ai-cli-agent/workspace/
+examples/pydantic-ai-cli-agent/.env
+
+# Agent checkpoints
+.agent-state/
+*.checkpoint
+
+# Tauri
 src-tauri/target/
+src-tauri/Cargo.lock
+src-tauri/WixTools/
 
-# MiniVim kernel build artifacts
-artifacts/minivim/work/
-bench-images/minivim/bzImage-*
-bench-images/minivim/Image-*
-bench-images/minivim/zImage-*
-bench-images/minivim/cpuinfo-*.txt
-bench-images/minivim/*.tar.xz
->>>>>>> origin/minivim-refresh
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
-**/node_modules/
