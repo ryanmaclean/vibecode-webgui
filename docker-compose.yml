@@ -1,9 +1,7 @@
-# VibeCode Platform Docker Compose
-# Enhanced with MCP Server support and Docker AI features (July 2025)
-
-
+version: '3.8'
 
 services:
+<<<<<<< HEAD
   # Documentation Service (Astro + Starlight)
   docs:
     build:
@@ -41,15 +39,20 @@ services:
       dockerfile: Dockerfile
       target: runner
     container_name: vibecode-app
+=======
+  # VibeCode WebGUI Application
+  webgui:
+    build: .
+>>>>>>> merge-conflict-cleanup
     ports:
       - "3000:3000"
     env_file:
       - .env.docker
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://vibecode:password@db:5432/vibecode
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/vibecode
+      - NEXTAUTH_SECRET=your-nextauth-secret-here
       - NEXTAUTH_URL=http://localhost:3000
+<<<<<<< HEAD
       
       # Datadog RUM (Real User Monitoring) variables
       # Prefer NEXT_PUBLIC_DD_*; map from legacy NEXT_PUBLIC_DATADOG_* if DD_* is unset
@@ -73,54 +76,45 @@ services:
       
       # Tags for better organization
       - DD_TAGS=env:${ENVIRONMENT:-dev},service:vibecode-app,component:web
+=======
+      - NODE_ENV=production
+>>>>>>> merge-conflict-cleanup
     depends_on:
-      - db
+      - postgres
       - redis
-      - datadog-agent
-    networks:
-      - vibecode-network
-    volumes:
-      - ./src:/app/src:ro
-      - node_modules:/app/node_modules
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    labels:
-      # Datadog log processing
-      - "com.datadoghq.ad.logs=[{\"source\": \"nextjs\", \"service\": \"vibecode-app\"}]"
+    restart: unless-stopped
 
+<<<<<<< HEAD
   # PostgreSQL Database with pgvector support
   db:
     image: pgvector/pgvector:pg15
     container_name: vibecode-db
     ports:
       - "5433:5432"
+=======
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16
+>>>>>>> merge-conflict-cleanup
     environment:
       - POSTGRES_DB=vibecode
-      - POSTGRES_USER=vibecode
+      - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    networks:
-      - vibecode-network
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "vibecode"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - ./prisma/schema.prisma:/docker-entrypoint-initdb.d/schema.prisma
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
 
-  # Valkey for Session Storage (Redis-compatible successor)
+  # Redis for caching and sessions
   redis:
-    image: valkey/valkey:7-alpine
-    container_name: vibecode-valkey
+    image: redis:7-alpine
     ports:
       - "6379:6379"
-    command: valkey-server --appendonly yes
     volumes:
       - redis_data:/data
+<<<<<<< HEAD
     networks:
       - vibecode-network
     healthcheck:
@@ -314,13 +308,26 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+=======
+>>>>>>> merge-conflict-cleanup
     restart: unless-stopped
-    
-    # Monitor services but don't create hard dependencies to avoid cycles
-    # depends_on omitted to prevent circular dependencies
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - webgui
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+<<<<<<< HEAD
   redis_data:
     driver: local
   authelia_data:
@@ -347,3 +354,6 @@ volumes:
 networks:
   vibecode-network:
     driver: bridge
+=======
+  redis_data:
+>>>>>>> merge-conflict-cleanup

@@ -33,6 +33,7 @@ if (!NEXTAUTH_SECRET) {
   )
 }
 
+<<<<<<< HEAD
 if (NEXTAUTH_SECRET.length < 32) {
   throw new Error(
     `🚨 CRITICAL SECURITY ERROR: NEXTAUTH_SECRET is too weak!\n\n` +
@@ -46,10 +47,22 @@ if (NEXTAUTH_SECRET.length < 32) {
     `3. Restart your application\n\n` +
     `See: https://next-auth.js.org/configuration/options#secret`
   )
+=======
+declare module 'next-auth/jwt' {
+  interface JWT {
+    id?: string | null;
+    role?: string | null;
+    githubId?: string;
+    googleId?: string;
+    email?: string | null;
+    name?: string | null;
+  }
+>>>>>>> merge-conflict-cleanup
 }
 
 console.log('✅ NEXTAUTH_SECRET validation passed: secure secret configured')
 
+<<<<<<< HEAD
 /**
  * SECURITY FIX: Hardcoded credentials removed
  * 
@@ -68,6 +81,24 @@ const providers: NextAuthOptions['providers'] = []
 
 if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
   providers.push(
+=======
+export const authOptions: NextAuthOptions = {
+  // adapter: PrismaAdapter(prisma), // Disabled for file-based development
+  secret: process.env.NEXTAUTH_SECRET,
+  // cookies: {
+  //   sessionToken: {
+  //     name: `__Secure-next-auth.session-token`,
+  //     options: {
+  //       httpOnly: true,
+  //       sameSite: 'lax',
+  //       path: '/',
+  //       secure: process.env.NODE_ENV === 'production',
+  //       domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined
+  //     }
+  //   }
+  // },
+  providers: [
+>>>>>>> merge-conflict-cleanup
     GithubProvider({
       clientId: process.env.GITHUB_ID,
       clientSecret: process.env.GITHUB_SECRET,
@@ -102,6 +133,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           googleId: profile.sub,
         }
       },
+<<<<<<< HEAD
     })
   )
 } else if (process.env.NODE_ENV !== 'production') {
@@ -138,6 +170,38 @@ export const authOptions: NextAuthOptions = {
   //   }
   // },
   providers,
+=======
+    }),
+    CredentialsProvider({
+      name: 'Credentials',
+      credentials: {
+        email: { label: 'Email', type: 'text' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials) {
+        console.log('🔐 NextAuth authorize called with:', credentials);
+        if (!credentials) {
+          console.log('❌ No credentials provided');
+          return null;
+        }
+
+        // Simple validation for testing
+        if (credentials.email === 'developer@vibecode.dev' && credentials.password === 'dev123') {
+          console.log('✅ User authenticated successfully:', credentials.email);
+          return { 
+            id: '2', 
+            name: 'Developer User', 
+            email: 'developer@vibecode.dev', 
+            role: 'developer' 
+          }
+        } else {
+          console.log('❌ Authentication failed for:', credentials.email);
+          return null
+        }
+      },
+    }),
+  ],
+>>>>>>> merge-conflict-cleanup
   session: {
     strategy: 'jwt',
   },

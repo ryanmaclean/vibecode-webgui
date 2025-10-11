@@ -5,14 +5,25 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+<<<<<<< HEAD
 // import { enhancedVectorStore } from '../../../lib/vector-stores/enhanced-vector-store'
+=======
+import { getServerSession } from 'next-auth'
+import { authOptions } from '../../../lib/auth'
+// import { enhancedVectorStore } from '../../../lib/vector-stores/enhanced-vector-store'
+import { z } from 'zod'
+>>>>>>> merge-conflict-cleanup
 
 export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/vector-store - Health check and statistics
  */
+<<<<<<< HEAD
 export async function GET(_req: NextRequest) {
+=======
+export async function GET(req: NextRequest) {
+>>>>>>> merge-conflict-cleanup
   return NextResponse.json({ status: 'unavailable', message: 'Vector store temporarily unavailable' })
   
   // Original function below (disabled)

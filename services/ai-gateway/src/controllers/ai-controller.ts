@@ -11,20 +11,27 @@ import { config } from '../config/environment';
 import { PromptAnalyzer } from '../services/prompt-analyzer';
 import { datadogMetrics } from '../services/datadog-metrics';
 import crypto from 'crypto';
+import { buildMetricTags, kvTag } from '../services/metrics-tags';
 
 export class AIController {
     private openRouterClient: OpenRouterClient;
     private modelRegistry: ModelRegistry;
     private redisService: RedisService;
     private promptAnalyzer: PromptAnalyzer;
+<<<<<<< HEAD
     private providerRouter: ProviderRouter;
+=======
+>>>>>>> merge-conflict-cleanup
 
     constructor() {
         this.openRouterClient = new OpenRouterClient();
         this.modelRegistry = new ModelRegistry();
         this.redisService = new RedisService();
         this.promptAnalyzer = new PromptAnalyzer();
+<<<<<<< HEAD
         this.providerRouter = new ProviderRouter();
+=======
+>>>>>>> merge-conflict-cleanup
     }
 
     public async chatCompletion(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -164,6 +171,7 @@ export class AIController {
 
             // Emit Datadog operational metrics (best-effort)
             const latencyMs = Date.now() - startTime;
+<<<<<<< HEAD
             datadogMetrics.submitMetric('vibecode.ai_gateway.latency_ms', latencyMs, [
                 `model:${response.model.replace(/[:/]/g, '_')}`
             ]).catch(() => {});
@@ -175,6 +183,14 @@ export class AIController {
             ]).catch(() => {});
 
             res.json(response as any);
+=======
+            const baseTags = buildMetricTags({ model: response.model, operation: 'chat_completion' });
+            datadogMetrics.submitMetric('vibecode.ai_gateway.latency_ms', latencyMs, baseTags).catch(() => {});
+            datadogMetrics.submitMetric('vibecode.ai_gateway.tokens_total', response.usage.total_tokens, baseTags).catch(() => {});
+            datadogMetrics.submitMetric('vibecode.ai_gateway.cost_usd', cost, baseTags).catch(() => {});
+
+            res.json(response);
+>>>>>>> merge-conflict-cleanup
         } catch (error) {
             performanceLogger.logError('chat_completion', startTime, error, {
                 model: requestData.model,
@@ -186,12 +202,20 @@ export class AIController {
                 : (error instanceof NotFoundError) ? 404
                 : (error instanceof ExternalServiceError) ? 502
                 : 500;
+<<<<<<< HEAD
             const modelTag = `model:${String(requestData.model || 'unknown').replace(/[:/]/g, '_')}`;
             datadogMetrics.submitMetric('vibecode.ai_gateway.error', 1, [
                 `error_class:${errorClass}`,
                 `http_status:${httpStatus}`,
                 modelTag
             ], 'count').catch(() => {});
+=======
+            const errorTags = buildMetricTags(
+                { model: requestData.model, operation: 'chat_completion' },
+                [kvTag('error_class', errorClass), kvTag('http_status', httpStatus)]
+            );
+            datadogMetrics.submitMetric('vibecode.ai_gateway.error', 1, errorTags, 'count').catch(() => {});
+>>>>>>> merge-conflict-cleanup
             throw error;
         }
     }
@@ -232,7 +256,28 @@ export class AIController {
         const requestData: ChatCompletionRequest = { ...req.body, stream: true };
 
         try {
-            // Validate model exists
+            // Ensure model registry has data for auto-selection and validation
+            await this.ensureModelsReady();
+
+            if (!requestData.model || requestData.model.toLowerCase() === 'auto') {
+                const inferred = this.promptAnalyzer.analyze(requestData);
+                const recommendation = this.modelRegistry.getBestModelForTask({
+                    task: inferred.task
+                } as ModelSelectionCriteria);
+
+                requestData.model = recommendation?.model || config.models.defaultModel;
+
+                logger.info('Auto-selected model (stream)', {
+                    selectedModel: requestData.model,
+                    task: inferred.task,
+                    userId
+                });
+
+                // Emit Datadog metric (best-effort)
+                datadogMetrics.submitSelectionMetric(inferred.task, requestData.model, userId).catch(() => {});
+            }
+
+            // Validate model exists (after potential auto-selection)
             const model = this.modelRegistry.getModel(requestData.model);
             if (!model) {
                 throw new ValidationError(`Model '${requestData.model}' not found`);
@@ -316,6 +361,7 @@ export class AIController {
 
             // Emit Datadog operational metrics (best-effort)
             const latencyMs = Date.now() - startTime;
+<<<<<<< HEAD
             datadogMetrics.submitMetric('vibecode.ai_gateway.latency_ms', latencyMs, [
                 `model:${requestData.model.replace(/[:/]/g, '_')}`
             ]).catch(() => {});
@@ -325,6 +371,12 @@ export class AIController {
             datadogMetrics.submitMetric('vibecode.ai_gateway.cost_usd', cost, [
                 `model:${requestData.model.replace(/[:/]/g, '_')}`
             ]).catch(() => {});
+=======
+            const baseTags = buildMetricTags({ model: requestData.model, operation: 'stream_chat_completion' });
+            datadogMetrics.submitMetric('vibecode.ai_gateway.latency_ms', latencyMs, baseTags).catch(() => {});
+            datadogMetrics.submitMetric('vibecode.ai_gateway.tokens_total', promptTokens + totalTokens, baseTags).catch(() => {});
+            datadogMetrics.submitMetric('vibecode.ai_gateway.cost_usd', cost, baseTags).catch(() => {});
+>>>>>>> merge-conflict-cleanup
         } catch (error) {
             performanceLogger.logError('stream_chat_completion', startTime, error, {
                 model: requestData.model,
@@ -337,12 +389,20 @@ export class AIController {
                 : (error instanceof NotFoundError) ? 404
                 : (error instanceof ExternalServiceError) ? 502
                 : 500;
+<<<<<<< HEAD
             const modelTag = `model:${String(requestData.model || 'unknown').replace(/[:/]/g, '_')}`;
             datadogMetrics.submitMetric('vibecode.ai_gateway.error', 1, [
                 `error_class:${errorClass}`,
                 `http_status:${httpStatus}`,
                 modelTag
             ], 'count').catch(() => {});
+=======
+            const errorTags = buildMetricTags(
+                { model: requestData.model, operation: 'stream_chat_completion' },
+                [kvTag('error_class', errorClass), kvTag('http_status', httpStatus)]
+            );
+            datadogMetrics.submitMetric('vibecode.ai_gateway.error', 1, errorTags, 'count').catch(() => {});
+>>>>>>> merge-conflict-cleanup
 
             if (!res.headersSent) {
                 res.status(500).json({ error: error instanceof Error ? error.message : String(error) });

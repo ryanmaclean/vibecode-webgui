@@ -4,7 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { createTestHelpers } from './utils/test-helpers';
+import { createTestHelpers, TestHelpers } from './utils/test-helpers';
 
 // Define test credentials directly since they're missing in test-data.json
 const testCredentials = {
@@ -115,6 +115,7 @@ test.describe('Authentication Flow', () => {
     // Fill the form with credentials
     await page.fill('[data-testid="email-input"]', testCredentials.email);
     await page.fill('[data-testid="password-input"]', testCredentials.password);
+<<<<<<< HEAD
     
     // Debug: Check if form exists and has event handlers
     const formInfo = await page.evaluate(() => {
@@ -183,21 +184,88 @@ test.describe('Authentication Flow', () => {
       // For now, just verify we're not on the signin page
       await expect(page).not.toHaveURL(/\/auth\/signin/);
     }
+=======
+>>>>>>> merge-conflict-cleanup
     
-    // Verify no login button is visible
-    const loginButton = page.locator('[href="/auth/login"]:visible').first();
-    await expect(loginButton).not.toBeVisible().catch(() => {
-      // Login button might not exist when authenticated, which is fine
+    // Debug: Check if form exists and has event handlers
+    const formInfo = await page.evaluate(() => {
+      const form = document.querySelector('form');
+      return {
+        formExists: !!form,
+        formAction: form?.action,
+        formMethod: form?.method,
+        hasOnSubmit: !!form?.onsubmit,
+        formHTML: form?.outerHTML.substring(0, 200)
+      };
     });
+    console.log('Form debug info:', formInfo);
     
-    await helpers.takeScreenshot('authenticated-dashboard');
+    // Submit the form by clicking the submit button
+    await page.click('[data-testid="signin-button"]');
+    
+    // Wait for the form submission to complete (no redirect expected with redirect: false)
+    await page.waitForTimeout(3000);
+    
+    // Check what URL we're on after form submission
+    const currentUrl = page.url();
+    console.log('URL after form submission:', currentUrl);
+    
+    // Since redirect: false, we should still be on signin page but check for success indicators
+    if (currentUrl.includes('/auth/signin')) {
+      // Check if there's an error message (authentication failed)
+      const errorMessage = page.locator('[data-testid="error-message"]').first();
+      const hasError = await errorMessage.isVisible().catch(() => false);
+      
+      if (hasError) {
+        const errorText = await errorMessage.textContent();
+        console.log('Login error:', errorText);
+        // Authentication failed - this is expected for invalid credentials
+        await expect(errorMessage).toBeVisible();
+        return; // Exit early since login failed
+      } else {
+        // No error message means authentication succeeded
+        console.log('Authentication successful - no error message found');
+        
+        // Navigate to homepage to verify authenticated state
+        await page.goto('/');
+        await page.waitForLoadState('networkidle');
+        
+        const homepageUrl = page.url();
+        console.log('Homepage URL after login:', homepageUrl);
+        
+        // Verify authenticated state
+        const authenticatedIndicator = page.locator('[data-testid="user-profile"], [data-testid="user-menu"], .user-menu, button:has-text("Logout"), button:has-text("Sign Out"), [data-testid="authenticated-content"]').first();
+        const isAuthenticated = await authenticatedIndicator.isVisible().catch(() => false);
+        
+        if (isAuthenticated) {
+          console.log('Authentication verified - authenticated content found');
+          await expect(authenticatedIndicator).toBeVisible();
+        } else {
+          console.log('Authentication not verified - no authenticated content found');
+          // For now, just verify we're not on the signin page
+          await expect(page).not.toHaveURL(/\/auth\/signin/);
+        }
+        
+        // Verify no login button is visible
+        const loginButton = page.locator('[href="/auth/login"]:visible').first();
+        await expect(loginButton).not.toBeVisible().catch(() => {
+          // Login button might not exist when authenticated, which is fine
+        });
+        
+        await helpers.takeScreenshot('authenticated-dashboard');
+        return; // Success case
+      }
+    } else {
+      console.log('Login appears successful - redirected away from signin page');
+      // This shouldn't happen with redirect: false, but handle it anyway
+    }
   });
 
   test('should logout successfully', async ({ page }) => {
     const helpers = createTestHelpers(page);
     
     // First login
-    await helpers.login();
+    await TestHelpers.loginAsTestUser(page, 'user');
     
     // Verify we're logged in
     expect(page.url()).not.toContain('/auth/signin');
@@ -219,7 +287,7 @@ test.describe('Authentication Flow', () => {
     const helpers = createTestHelpers(page);
     
     // Login
-    await helpers.login();
+    await TestHelpers.loginAsTestUser(page, 'user');
     
     // Refresh page
     await page.reload();
@@ -388,7 +456,7 @@ test.describe('Authentication Flow', () => {
     }
     
     // Now login
-    await helpers.login();
+    await TestHelpers.loginAsTestUser(page, 'user');
     
     // Try protected page again
     await page.goto('/projects');

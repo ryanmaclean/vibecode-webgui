@@ -100,11 +100,16 @@ const config = {
   reporters: [
     'default',
 <<<<<<< HEAD
+<<<<<<< HEAD
     // Write JUnit to a hidden, ignored folder to avoid accidental commits
     ['jest-junit', { outputDirectory: '.test-results', outputName: 'junit.xml' }],
 =======
     // Removed jest-junit as it might not be installed
 >>>>>>> fix/consolidated-dependency-updates
+=======
+    // Write JUnit to a hidden, ignored folder to avoid accidental commits
+    ['jest-junit', { outputDirectory: '.test-results', outputName: 'junit.xml' }],
+>>>>>>> merge-conflict-cleanup
   ],
   
   // Coverage

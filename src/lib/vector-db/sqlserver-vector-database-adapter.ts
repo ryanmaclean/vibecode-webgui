@@ -8,8 +8,12 @@ import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvid
 import { metrics } from '../server-monitoring';
 <<<<<<< HEAD
 =======
+<<<<<<< HEAD
 import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
 /**
  * SQL Server-specific configuration options
@@ -30,9 +34,13 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
 <<<<<<< HEAD
   private connection: any = null; // SQL Server connection object
 =======
+<<<<<<< HEAD
   private connection: any = null; // SQL Server connection
   private errorHandler: VectorDbErrorHandler;
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
   protected sqlServerConfig: SqlServerVectorDatabaseConfig;
 
   /**
@@ -43,8 +51,12 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     super(config);
 <<<<<<< HEAD
 =======
+<<<<<<< HEAD
     this.errorHandler = new VectorDbErrorHandler('sqlserver', this.config.enableLogging || false, this.config.enableMetrics || false);
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     this.sqlServerConfig = {
       sqlServerPoolSize: 10,
       sqlServerSchemaName: 'dbo',
@@ -66,11 +78,18 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // await sql.connect(this.sqlServerConfig.connectionString);
       // this.connection = sql;
 
+<<<<<<< HEAD
       if (this.config.enableLogging) {
         console.info('SQL Server vector database adapter initialized successfully');
       }
       
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('SQL Server adapter not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('SQL Server adapter not yet implemented');
     } catch (error) {
 =======
@@ -94,6 +113,12 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   }>): Promise<void> {
     if (!this.connection) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('SQL Server adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('SQL Server adapter not initialized');
     }
 =======
@@ -107,6 +132,12 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // 3. Store chunks with embeddings in SQL Server using vector type
       
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('SQL Server store chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('SQL Server store chunks not yet implemented');
     } catch (error) {
 =======
@@ -130,6 +161,12 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   public async search(embedding: number[], options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.connection) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('SQL Server adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('SQL Server adapter not initialized');
     }
 =======
@@ -143,6 +180,12 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // 3. Format results in standard format
       
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('SQL Server vector search not yet implemented'), 'unknown', VectorDbErrorType.SEARCH, false);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('SQL Server vector search not yet implemented');
     } catch (error) {
 =======
@@ -166,6 +209,12 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   public async deleteFileChunks(fileId: number): Promise<void> {
     if (!this.connection) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('SQL Server adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('SQL Server adapter not initialized');
     }
 =======
@@ -177,6 +226,12 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // Execute SQL to delete chunks for specified file ID
       
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('SQL Server delete chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('SQL Server delete chunks not yet implemented');
     } catch (error) {
 =======
@@ -204,6 +259,12 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   }> {
     if (!this.connection) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('SQL Server adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('SQL Server adapter not initialized');
     }
 =======
@@ -215,6 +276,12 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // Execute SQL queries to get statistics
       
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('SQL Server stats not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('SQL Server stats not yet implemented');
     } catch (error) {
 =======
@@ -282,6 +349,12 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   protected async fallbackTextSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.connection) {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      throw this.errorHandler.handleError(new Error('SQL Server adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       throw new Error('SQL Server adapter not initialized');
     }
 =======
@@ -300,4 +373,12 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       return [];
     }
   }
+<<<<<<< HEAD
 }
+=======
+}
+<<<<<<< HEAD
+}
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup

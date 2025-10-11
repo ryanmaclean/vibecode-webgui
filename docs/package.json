@@ -11,12 +11,20 @@
   },
   "dependencies": {
     "@astrojs/starlight": "^0.35.1",
+<<<<<<< HEAD
     "astro": "^5.13.3"
+=======
+    "astro": "^5.13.7",
+    "vite": "^6.3.6"
+>>>>>>> merge-conflict-cleanup
   },
   "devDependencies": {
     "@playwright/test": "^1.54.1",
     "@types/node": "^22.10.5",
     "playwright": "^1.54.1",
     "tailwindcss": "^4.1.11"
+  },
+  "overrides": {
+    "devalue": "^5.3.2"
   }
 }

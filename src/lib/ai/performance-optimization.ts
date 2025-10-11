@@ -351,6 +351,17 @@ export class PerformanceOptimization {
       
       const response = await this.llm.invoke(formattedPrompt);
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      const response = await this.llm.invoke(
+        prompt.format({
+          language,
+          code: content.substring(0, 4000),
+        })
+      );
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
       const aiIssues = this.parseAIResponse(extractText(response));
 =======

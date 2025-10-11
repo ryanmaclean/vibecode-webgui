@@ -1,4 +1,7 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> merge-conflict-cleanup
 import { MetricData } from './metrics-types';
 
 interface DatadogTags {
@@ -256,6 +259,9 @@ export class DatadogMetricsService {
       }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> merge-conflict-cleanup
       if (process.env.NODE_ENV !== 'production') {
         console.log('📊 Datadog Metric:', JSON.stringify(metric, null, 2))
 =======
@@ -289,6 +295,7 @@ export class DatadogMetricsService {
 
   // Batch metric sending for efficiency
   async sendBatchMetrics(metrics: MetricData[]) {
+<<<<<<< HEAD
 =======
   /**
    * Send multiple metrics in a batch to Datadog
@@ -296,6 +303,18 @@ export class DatadogMetricsService {
   public async sendBatchMetrics(metrics: MetricData[]): Promise<void> {
     if (!this.isEnabled) return;
 >>>>>>> fix/consolidated-dependency-updates
+=======
+<<<<<<< HEAD
+  async sendBatchMetrics(metrics: Array<{
+    name: string
+    value: number
+    tags: Partial<DatadogTags>
+    timestamp?: number
+  }>) {
+    if (!this.isEnabled) return
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
     const formattedMetrics = metrics.map(metric => ({
       metric: metric.name,
@@ -305,6 +324,9 @@ export class DatadogMetricsService {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> merge-conflict-cleanup
     if (process.env.NODE_ENV !== 'production') {
       console.log('📊 Datadog Batch Metrics:', JSON.stringify(formattedMetrics, null, 2))
 =======

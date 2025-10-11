@@ -18,6 +18,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { AzureEmbeddingService } from '../src/lib/ai/azureEmbeddingService';
+<<<<<<< HEAD
 import { EmbeddingService } from '../src/lib/ai/embeddingService';
 import { VectorService } from '../src/lib/db/vector';
 import { PrismaClient } from '@prisma/client';
@@ -27,6 +28,11 @@ import type { MetricData } from '../src/lib/monitoring/metrics-types';
 import OpenAI from 'openai';
 import { generateLocalEmbedding } from '../src/lib/ai/localEmbedding';
 import { llmObservability } from '../src/lib/datadog-llm';
+=======
+import { VectorService } from '../src/lib/db/vector';
+import { PrismaClient } from '@prisma/client';
+import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+>>>>>>> merge-conflict-cleanup
 
 interface DocumentChunk {
   id: string;
@@ -43,6 +49,7 @@ interface DocumentChunk {
 }
 
 class DocumentationRAGIngester {
+<<<<<<< HEAD
   private azureEmbeddingService: AzureEmbeddingService | null = null;
   private openAIEmbeddingService: EmbeddingService | null = null;
   private vectorService: VectorService;
@@ -57,10 +64,17 @@ class DocumentationRAGIngester {
   private localEmbeddingDimensions: number;
   private openAIEmbeddingModel: string;
   private maxConcurrency: number;
+=======
+  private embeddingService: AzureEmbeddingService;
+  private vectorService: VectorService;
+  private prisma: PrismaClient;
+  private textSplitter: RecursiveCharacterTextSplitter;
+>>>>>>> merge-conflict-cleanup
   
   constructor() {
     this.prisma = new PrismaClient();
     this.vectorService = new VectorService(this.prisma);
+<<<<<<< HEAD
 
     this.useOpenRouter = process.env.USE_OPENROUTER === 'true';
     this.useLocalEmbeddings = process.env.USE_LOCAL_EMBEDDINGS === 'true';
@@ -118,12 +132,21 @@ class DocumentationRAGIngester {
         false
       );
     }
+=======
+    this.embeddingService = new AzureEmbeddingService({
+      apiKey: process.env.AZURE_OPENAI_API_KEY!,
+      endpoint: process.env.AZURE_OPENAI_ENDPOINT!,
+      deploymentName: process.env.AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME || 'text-embedding-ada-002',
+      apiVersion: process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview'
+    });
+>>>>>>> merge-conflict-cleanup
     
     this.textSplitter = new RecursiveCharacterTextSplitter({
       chunkSize: 1000,
       chunkOverlap: 200,
       separators: ['\n\n', '\n', '. ', ' ', '']
     });
+<<<<<<< HEAD
 
     this.ddEnv = process.env.DD_ENV || process.env.NODE_ENV || 'development';
     const defaultConcurrency = this.useOpenAI ? '4' : this.useOpenRouter ? '3' : '2';
@@ -132,6 +155,8 @@ class DocumentationRAGIngester {
     if (this.maxConcurrency > 1) {
       console.log(`⚡ Concurrent ingestion enabled (max ${this.maxConcurrency} chunks at a time)`);
     }
+=======
+>>>>>>> merge-conflict-cleanup
   }
 
   /**
@@ -225,6 +250,7 @@ class DocumentationRAGIngester {
    * Get all markdown files from the docs directory
    */
   private async getMarkdownFiles(): Promise<string[]> {
+<<<<<<< HEAD
     const docsEnv = process.env.RAG_DOCS_PATH || '/Users/ryan.maclean/vibecode-webgui/docs/src/content/docs';
     const docsTarget = path.isAbsolute(docsEnv) ? docsEnv : path.join(process.cwd(), docsEnv);
 
@@ -259,16 +285,36 @@ class DocumentationRAGIngester {
           if (excludeRegex && excludeRegex.test(relativePath)) {
             continue;
           }
+=======
+    const docsDir = '/Users/ryan.maclean/vibecode-webgui/docs/src/content/docs';
+    const files: string[] = [];
+    
+    async function walkDir(dir: string) {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        
+        if (entry.isDirectory()) {
+          await walkDir(fullPath);
+        } else if (entry.name.endsWith('.md') || entry.name.endsWith('.mdx')) {
+>>>>>>> merge-conflict-cleanup
           files.push(fullPath);
         }
       }
     }
+<<<<<<< HEAD
 
     await walkDir(docsTarget);
+=======
+    
+    await walkDir(docsDir);
+>>>>>>> merge-conflict-cleanup
     return files;
   }
 
   /**
+<<<<<<< HEAD
    * Sanitize values so they are safe for Datadog tags
    */
   private sanitizeTagValue(value?: string): string {
@@ -522,6 +568,32 @@ class DocumentationRAGIngester {
 
       if (interChunkDelayMs > 0) {
         await this.sleep(interChunkDelayMs);
+=======
+   * Store document chunks in the vector database
+   */
+  private async storeDocumentChunks(chunks: DocumentChunk[]): Promise<void> {
+    const batchSize = 10; // Process in batches to avoid overwhelming the API
+    
+    for (let i = 0; i < chunks.length; i += batchSize) {
+      const batch = chunks.slice(i, i + batchSize);
+      
+      await Promise.all(batch.map(async (chunk) => {
+        try {
+          await this.embeddingService.storeDocument(
+            chunk.id,
+            chunk.content,
+            chunk.metadata
+          );
+          console.log(`✅ Stored chunk: ${chunk.id}`);
+        } catch (error) {
+          console.error(`❌ Failed to store chunk ${chunk.id}:`, error);
+        }
+      }));
+      
+      // Add delay between batches to respect rate limits
+      if (i + batchSize < chunks.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+>>>>>>> merge-conflict-cleanup
       }
     }
   }
@@ -534,6 +606,7 @@ class DocumentationRAGIngester {
     
     try {
       // Get all markdown files
+<<<<<<< HEAD
       let markdownFiles = await this.getMarkdownFiles();
       const maxFiles = parseInt(process.env.RAG_MAX_FILES || '0', 10);
       if (maxFiles > 0 && markdownFiles.length > maxFiles) {
@@ -542,6 +615,10 @@ class DocumentationRAGIngester {
       }
       console.log(`📚 Using ${markdownFiles.length} documentation file(s) for ingestion`);
       console.log(`🧠 Embedding model: ${this.getActiveEmbeddingModel()}`);
+=======
+      const markdownFiles = await this.getMarkdownFiles();
+      console.log(`📚 Found ${markdownFiles.length} documentation files`);
+>>>>>>> merge-conflict-cleanup
       
       // Process all files and collect chunks
       const allChunks: DocumentChunk[] = [];
@@ -553,6 +630,7 @@ class DocumentationRAGIngester {
       }
       
       console.log(`📦 Generated ${allChunks.length} document chunks`);
+<<<<<<< HEAD
 
       const maxChunks = parseInt(process.env.RAG_MAX_CHUNKS || '0', 10);
       let chunksToIngest = allChunks;
@@ -564,6 +642,12 @@ class DocumentationRAGIngester {
       // Store chunks in vector database
       console.log('💾 Storing chunks in vector database...');
       await this.storeDocumentChunks(chunksToIngest);
+=======
+      
+      // Store chunks in vector database
+      console.log('💾 Storing chunks in vector database...');
+      await this.storeDocumentChunks(allChunks);
+>>>>>>> merge-conflict-cleanup
       
       // Generate summary statistics
       const categories = [...new Set(allChunks.map(chunk => chunk.metadata.category))];
@@ -597,7 +681,11 @@ class DocumentationRAGIngester {
     console.log(`\n🔍 Testing search with query: "${query}"`);
     
     try {
+<<<<<<< HEAD
       const queryEmbedding = await this.createEmbedding(query);
+=======
+      const queryEmbedding = await this.embeddingService.generateEmbedding(query);
+>>>>>>> merge-conflict-cleanup
       const results = await this.vectorService.findSimilarDocuments({
         embedding: queryEmbedding,
         threshold: 0.7,
@@ -617,23 +705,31 @@ class DocumentationRAGIngester {
 }
 
 // Main execution
+<<<<<<< HEAD
 import { pathToFileURL } from 'url'
+=======
+>>>>>>> merge-conflict-cleanup
 async function main() {
   const ingester = new DocumentationRAGIngester();
   
   try {
     await ingester.ingestDocumentation();
+<<<<<<< HEAD
     if (process.env.RAG_SKIP_TEST_SEARCH === 'true') {
       console.log('ℹ️  Skipping post-ingestion search validation (RAG_SKIP_TEST_SEARCH=true).');
     } else {
       await ingester.testSearch();
     }
+=======
+    await ingester.testSearch();
+>>>>>>> merge-conflict-cleanup
   } catch (error) {
     console.error('Script failed:', error);
     process.exit(1);
   }
 }
 
+<<<<<<< HEAD
 // ESM-friendly entrypoint detection
 try {
   const isMain = import.meta && import.meta.url && process.argv && process.argv[1]
@@ -645,6 +741,10 @@ try {
 } catch {
   // Fallback: just run
   await main()
+=======
+if (require.main === module) {
+  main();
+>>>>>>> merge-conflict-cleanup
 }
 
 export { DocumentationRAGIngester };

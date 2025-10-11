@@ -121,6 +121,7 @@ export const AIChatInterface = ({
           context: {
             workspaceId,
             files: contextFiles,
+            previousMessages: messages
           }
         })
       })

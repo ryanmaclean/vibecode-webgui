@@ -197,6 +197,13 @@ export class TemplateMarketplace {
         frameworks: [],
 <<<<<<< HEAD
         features: [],
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        tags: template.marketplace?.category ? [template.marketplace.category] : [],
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
         files: [],
 =======
         features: [],        files: [],
@@ -215,6 +222,16 @@ export class TemplateMarketplace {
           usage: ['Usage instructions', 'Template documentation'],
 <<<<<<< HEAD
           deployment: ['Deployment guide']
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        documentation: {
+          readme: 'Template documentation',
+          setup: 'Setup instructions',
+          deployment: 'Deployment guide'
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
         },
 =======
           deployment: ['Deployment guide']        },

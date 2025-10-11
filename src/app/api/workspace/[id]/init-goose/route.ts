@@ -8,10 +8,14 @@ const execAsync = promisify(exec);
 
 export async function POST(
 <<<<<<< HEAD
+<<<<<<< HEAD
   request: NextRequest,
 =======
   request: Request,
 >>>>>>> ai-sdk-openai-v2-test
+=======
+  request: NextRequest,
+>>>>>>> merge-conflict-cleanup
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);

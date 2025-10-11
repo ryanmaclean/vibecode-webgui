@@ -1,4 +1,4 @@
-import { Pool, PoolClient, QueryResult } from 'pg';
+import type { DatabasePool } from './connection-router';
 
 /**
  * Defines the shard information for a vector database shard
@@ -12,7 +12,7 @@ export interface ShardInfo {
   database: string;
   weight: number;
   status: ShardStatus;
-  connectionPool?: Pool;
+  connectionPool?: DatabasePool;
 }
 
 /**

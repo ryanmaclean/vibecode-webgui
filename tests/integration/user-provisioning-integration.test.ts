@@ -49,6 +49,7 @@ describeProvisioning('User Provisioning Integration Tests', () => {
     // Create KIND cluster
     try {
       execSync(`kind get clusters | grep -q "^${CLUSTER_NAME}$"`, { stdio: 'pipe' });
+<<<<<<< HEAD
       console.log(`Cluster ${CLUSTER_NAME} already exists, using it`)
     } catch {
       // Clean up any existing clusters that might be using conflicting ports
@@ -60,6 +61,9 @@ describeProvisioning('User Provisioning Integration Tests', () => {
       }
       
       console.log(`Creating new cluster ${CLUSTER_NAME}...`);
+=======
+      console.log(`Cluster ${CLUSTER_NAME} already exists, using it`)} catch {
+>>>>>>> merge-conflict-cleanup
       execSync(`kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-test-config.yaml`, {
         stdio: 'inherit'
       });

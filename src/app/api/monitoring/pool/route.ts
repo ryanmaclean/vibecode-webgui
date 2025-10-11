@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
     if (format === 'text') {
       const textResponse = `
 Connection Pool Monitoring Report
-================================
+=================================
 Timestamp: ${responseData.timestamp}
 
 Pool Status Summary

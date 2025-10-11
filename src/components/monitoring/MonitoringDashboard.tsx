@@ -11,9 +11,15 @@ import dynamic from 'next/dynamic'
 import { useSession } from 'next-auth/react'
 import { BarChart, LineChart, PieChart, XAxis, YAxis, Tooltip, Legend, Line, Bar, Pie, Cell, ResponsiveContainer } from 'recharts'
 
+<<<<<<< HEAD
 // Dynamically import the LinkDiagnostics component with no SSR
 const LinkDiagnostics = dynamic(
   () => import('@/components/LinkDiagnostics/LinkDiagnostics').then(mod => mod.default),
+=======
+// Dynamically import the NetworkDiagnostics component with no SSR
+const NetworkDiagnostics = dynamic(
+  () => import('@/components/NetworkDiagnostics/NetworkDiagnostics').then(mod => mod.default),
+>>>>>>> merge-conflict-cleanup
   { ssr: false }
 );
 
@@ -504,11 +510,22 @@ export default function MonitoringDashboard() {
         return <div className="text-center p-8 bg-white rounded-lg shadow">Security monitoring coming soon.</div>;
       case 'network':
 <<<<<<< HEAD
+<<<<<<< HEAD
         return <NetworkDiagnostics />;
         return <div className="text-center p-8 bg-white rounded-lg shadow">Network diagnostics coming soon.</div>;
 =======
         return <LinkDiagnostics />;
 >>>>>>> ai-sdk-openai-v2-test
+=======
+        return <NetworkDiagnostics />;
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+        return <div className="text-center p-8 bg-white rounded-lg shadow">Network diagnostics coming soon.</div>;
+        return <div className="text-center p-8 bg-white rounded-lg shadow">Network diagnostics coming soon.</div>;
+=======
+        return <div className="text-center p-8 bg-white rounded-lg shadow">Network diagnostics coming soon.</div>;
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       case 'health':
         return enhancedData && (
           <div className="space-y-6">

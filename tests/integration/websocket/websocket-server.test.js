@@ -3,11 +3,27 @@ const http = require('http');
 // Disable mocks for real integration testing
 jest.unmock('socket.io-client');
 jest.unmock('socket.io');
+<<<<<<< HEAD
 
 describe('WebSocket Server Integration', () => {
   let ioServer, httpServer, clientSocket;
 
   beforeAll((done) => {
+=======
+
+describe('WebSocket Server Integration', () => {
+  let io, Server;
+  let ioServer, httpServer, clientSocket;
+
+  beforeAll(async () => {
+    // Dynamic import to bypass mocks
+    const socketIoClient = await import('socket.io-client');
+    const socketIoServer = await import('socket.io');
+
+    io = socketIoClient.io;
+    Server = socketIoServer.Server;
+
+>>>>>>> merge-conflict-cleanup
     httpServer = http.createServer();
     ioServer = new Server(httpServer);
 
@@ -57,8 +73,11 @@ describe('WebSocket Server Integration', () => {
           reject(error);
         });
       });
+<<<<<<< HEAD
       // Ensure the client is fully connected before tests run
       clientSocket.on('connect', () => done());
+=======
+>>>>>>> merge-conflict-cleanup
     });
   }, 15000); // Increase timeout for beforeAll
 
@@ -67,6 +86,7 @@ describe('WebSocket Server Integration', () => {
     if (clientSocket) {
       clientSocket.off('error');
     }
+<<<<<<< HEAD
   });
 
   beforeEach(() => {
@@ -74,6 +94,8 @@ describe('WebSocket Server Integration', () => {
     if (clientSocket) {
       clientSocket.off('error');
     }
+=======
+>>>>>>> merge-conflict-cleanup
   });
 
   afterAll(() => {
@@ -85,10 +107,14 @@ describe('WebSocket Server Integration', () => {
   describe('Error Handling', () => {
     it('should handle malformed data gracefully', (done) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
       clientSocket.once('error', (error) => {
 =======
       const errorHandler = (error) => {
 >>>>>>> ai-sdk-openai-v2-test
+=======
+      clientSocket.once('error', (error) => {
+>>>>>>> merge-conflict-cleanup
         expect(error.message).toBe('Invalid input format');
         clientSocket.off('error', errorHandler);
         done();
@@ -102,10 +128,14 @@ describe('WebSocket Server Integration', () => {
 
     it('should handle invalid cursor position', (done) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
       clientSocket.once('error', (error) => {
 =======
       const errorHandler = (error) => {
 >>>>>>> ai-sdk-openai-v2-test
+=======
+      clientSocket.once('error', (error) => {
+>>>>>>> merge-conflict-cleanup
         expect(error.message).toBe('Invalid cursor position');
         clientSocket.off('error', errorHandler);
         done();

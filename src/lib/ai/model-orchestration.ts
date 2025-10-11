@@ -375,6 +375,13 @@ export class ModelOrchestrator {
       case TaskType.CODE_REVIEW:
 <<<<<<< HEAD
       case TaskType.DEBUGGING:
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+      case TaskType.REASONING:
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
         reasons.push(`Selected ${model.name} for superior reasoning abilities (${model.capabilities.reasoning}/10)`)
 =======
       case TaskType.DEBUGGING:        reasons.push(`Selected ${model.name} for superior reasoning abilities (${model.capabilities.reasoning}/10)`)

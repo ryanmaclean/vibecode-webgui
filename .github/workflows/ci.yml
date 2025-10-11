@@ -2,10 +2,12 @@ name: VibeCode CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
-      - develop
+    branches: ["release/*", "hotfix/*"] # Optimized: only run on release branches
+    # branches:
+    #   - main
+    #   - develop
   pull_request:
+<<<<<<< HEAD
     branches:
       - main
       - develop
@@ -15,6 +17,19 @@ permissions:
   pull-requests: write  # For adding PR comments
   checks: write         # For posting check results
   security-events: write  # For uploading security scan results
+
+permissions:
+  contents: read
+  security-events: write
+=======
+    branches: ["release/*", "hotfix/*"] # Optimized: only run on release branches
+    # branches:
+    #   - main
+    #   - develop
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+>>>>>>> merge-conflict-cleanup
 
 permissions:
   contents: read
@@ -248,7 +263,10 @@ jobs:
       DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
       LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
       DD_TRACE_PACKAGE: ${{ vars.DD_TRACE_PACKAGE || '' }}
+<<<<<<< HEAD
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
     strategy:
       matrix:
         test-type: [unit, integration]
@@ -290,6 +308,42 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps --omit=optional
 
+      - name: Detect path changes (AI Gateway)
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            ai_gateway:
+              - 'services/ai-gateway/**'
+
+      - name: AI Gateway - Install deps and run Datadog metrics tests
+        run: |
+          if [ -d "services/ai-gateway" ]; then
+            npm --prefix services/ai-gateway ci --legacy-peer-deps --omit=optional
+            npm --prefix services/ai-gateway run test:metrics
+          else
+            echo "services/ai-gateway not found; skipping metrics tests"
+          fi
+
+      - name: AI Gateway - Route-level metrics tests (conditional, non-blocking)
+        if: steps.filter.outputs.ai_gateway == 'true'
+        run: |
+          if [ -d "services/ai-gateway" ]; then
+            set -o pipefail
+            npm --prefix services/ai-gateway run test:metrics:routes 2>&1 | tee ai-gateway-route-metrics.log || true
+          else
+            echo "services/ai-gateway not found; skipping route metrics tests"
+          fi
+        continue-on-error: true
+
+      - name: Upload AI Gateway route metrics logs
+        if: steps.filter.outputs.ai_gateway == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-gateway-route-metrics
+          path: ai-gateway-route-metrics.log
+          if-no-files-found: ignore
+
       - name: Setup test environment
         run: |
           echo "DATABASE_URL=postgresql://test:test@localhost:5432/testdb" >> .env.local
@@ -297,6 +351,25 @@ jobs:
           # Disable SWC for tests to avoid binary loading issues
           echo "NEXT_DISABLE_SWC=1" >> .env.local
           echo "NEXT_TELEMETRY_DISABLED=1" >> .env.local
+          
+          # Add Git metadata for Datadog Test Visibility
+          echo "DD_GIT_REPOSITORY_URL=${{ github.server_url }}/${{ github.repository }}" >> .env.local
+          echo "DD_GIT_COMMIT_SHA=${{ github.sha }}" >> .env.local
+          echo "DD_GIT_BRANCH=${{ github.ref_name }}" >> .env.local
+          echo "DD_GIT_COMMIT_MESSAGE=$(git log -1 --pretty=%B)" >> .env.local
+          echo "DD_GIT_COMMIT_AUTHOR_NAME=$(git log -1 --pretty=%an)" >> .env.local
+          echo "DD_GIT_COMMIT_AUTHOR_EMAIL=$(git log -1 --pretty=%ae)" >> .env.local
+          echo "DD_GIT_COMMIT_AUTHOR_DATE=$(git log -1 --pretty=%aI)" >> .env.local
+          echo "DD_GIT_COMMIT_COMMITTER_NAME=$(git log -1 --pretty=%cn)" >> .env.local
+          echo "DD_GIT_COMMIT_COMMITTER_EMAIL=$(git log -1 --pretty=%ce)" >> .env.local
+          echo "DD_GIT_COMMIT_COMMITTER_DATE=$(git log -1 --pretty=%cI)" >> .env.local
+
+      - name: Configure Datadog Test Optimization
+        if: ${{ env.DD_API_KEY != '' }}
+        run: |
+          echo "Datadog Test Visibility would be configured (languages=js, site=datadoghq.com)."
+          echo "Skipping external action to avoid unresolved action lint; gating preserved."
+        shell: bash
 
       - name: Configure Datadog Test Optimization
         if: ${{ env.DD_API_KEY != '' }}
@@ -310,12 +383,28 @@ jobs:
         run: NEXT_DISABLE_SWC=1 npm run test:unit
         env:
           NODE_OPTIONS: ${{ env.DD_TRACE_PACKAGE && format('-r {0}', env.DD_TRACE_PACKAGE) || '' }}
+<<<<<<< HEAD
+=======
+          DD_GIT_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+          DD_GIT_COMMIT_SHA: ${{ github.sha }}
+          DD_GIT_BRANCH: ${{ github.ref_name }}
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+>>>>>>> merge-conflict-cleanup
 
       - name: Run integration tests
         if: matrix.test-type == 'integration'
         run: NEXT_DISABLE_SWC=1 npm run test:integration
         env:
           NODE_OPTIONS: ${{ env.DD_TRACE_PACKAGE && format('-r {0}', env.DD_TRACE_PACKAGE) || '' }}
+<<<<<<< HEAD
+=======
+          DD_GIT_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+          DD_GIT_COMMIT_SHA: ${{ github.sha }}
+          DD_GIT_BRANCH: ${{ github.ref_name }}
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+>>>>>>> merge-conflict-cleanup
 
       - name: Upload test coverage
         if: matrix.test-type == 'unit'
@@ -335,7 +424,10 @@ jobs:
     env:
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
       DD_TRACE_PACKAGE: ${{ vars.DD_TRACE_PACKAGE || '' }}
+<<<<<<< HEAD
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -370,6 +462,14 @@ jobs:
         run: |
           echo "Datadog Test Visibility would be configured (languages=js, site=datadoghq.com)."
           echo "Skipping external action to avoid unresolved action lint; gating preserved."
+<<<<<<< HEAD
+=======
+          
+          # Set Git metadata for Datadog Test Visibility
+          echo "DD_GIT_REPOSITORY_URL=${{ github.server_url }}/${{ github.repository }}" >> $GITHUB_ENV
+          echo "DD_GIT_COMMIT_SHA=${{ github.sha }}" >> $GITHUB_ENV
+          echo "DD_GIT_BRANCH=${{ github.ref_name }}" >> $GITHUB_ENV
+>>>>>>> merge-conflict-cleanup
         shell: bash
 
       - name: Run Playwright E2E tests
@@ -562,7 +662,10 @@ jobs:
       DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
       DD_SYNTHETIC_TEST_IDS: ${{ vars.DD_SYNTHETIC_TEST_IDS }}
       LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+<<<<<<< HEAD
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -649,7 +752,10 @@ jobs:
     timeout-minutes: 10
     env:
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
+<<<<<<< HEAD
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
     steps:
       - name: Check all jobs status
         run: |

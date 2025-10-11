@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+<<<<<<< HEAD
 import { logger } from '../../../../lib/logger';
 
+=======
+>>>>>>> merge-conflict-cleanup
 // Defer heavy or circular-prone imports to runtime to avoid build-time evaluation cycles
 // that caused "Cannot access 't' before initialization" during route module evaluation.
 

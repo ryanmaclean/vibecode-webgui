@@ -129,8 +129,17 @@ Focus on:
 - Performance considerations
     `);
 
+<<<<<<< HEAD
     // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
 <<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -188,9 +197,18 @@ Generate:
 Format the output as structured test code that can be directly executed.
     `);
 
+<<<<<<< HEAD
     // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
 =======
 >>>>>>> fix/consolidated-dependency-updates
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -241,8 +259,17 @@ Generate a single, focused test case that:
 Return only the test case code, no explanations.
     `);
 
+<<<<<<< HEAD
     // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
 <<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -297,9 +324,18 @@ Generate:
 Ensure the data is realistic and covers various scenarios.
     `);
 
+<<<<<<< HEAD
     // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
 =======
 >>>>>>> fix/consolidated-dependency-updates
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -348,7 +384,16 @@ Please analyze:
 Focus on critical paths, edge cases, and error handling.
     `);
 
+<<<<<<< HEAD
     // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
