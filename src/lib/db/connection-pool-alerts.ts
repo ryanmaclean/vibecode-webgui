@@ -4,6 +4,7 @@
  * Provides alerting functionality for database connection pool monitoring
  */
 import { VectorConnectionPoolFactory } from './vector-connection-pool';
+<<<<<<< HEAD
 
 type VectorModule = typeof import('./vector-connection-pool');
 
@@ -12,6 +13,8 @@ let forcedBrowserEnvironment: boolean | null = null;
 let cachedVectorModule: VectorModule | null = null;
 let overrideFactory: typeof VectorConnectionPoolFactory | null = null;
 let forceNoVectorModule = false;
+=======
+>>>>>>> merge-conflict-cleanup
 
 // Alert severity levels
 export enum AlertSeverity {
@@ -198,6 +201,7 @@ export default class ConnectionPoolAlertService {
    */
   private checkConnectionPool(): void {
     try {
+<<<<<<< HEAD
       if (forceNoVectorModule && !overrideFactory) {
         return;
       }
@@ -208,6 +212,12 @@ export default class ConnectionPoolAlertService {
       let pool = factory.getPool('default');
       if (!pool) {
         pool = factory.createPool({
+=======
+      // Use pool factory to avoid circular deps and ensure availability
+      let pool = VectorConnectionPoolFactory.getPool('default');
+      if (!pool) {
+        pool = VectorConnectionPoolFactory.createPool({
+>>>>>>> merge-conflict-cleanup
           host: process.env.DATABASE_HOST || 'localhost',
           port: parseInt(process.env.DATABASE_PORT || '5432', 10),
           database: process.env.DATABASE_NAME || 'vibecode',

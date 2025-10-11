@@ -1,4 +1,11 @@
 import { Collection } from 'mongodb'
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+import { Collection, ObjectId } from 'mongodb'
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 import { v4 as uuidv4 } from 'uuid'
 import { getDatabase } from '../mongodb'
 import { Conversation, Message, ChatSession, Assistant } from '../models/chat'
@@ -308,6 +315,13 @@ export class MongoDBChatService {
     const conversations = await this.getConversationsCollection()
     
     const searchCriteria: Record<string, unknown> = {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    const searchCriteria: any = {
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       userId,
       $text: { $search: query }
     }
@@ -332,6 +346,13 @@ export class MongoDBChatService {
     const conversations = await this.getConversationsCollection()
     
     const matchCriteria: Record<string, unknown> = { userId }
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    const matchCriteria: any = { userId }
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     if (workspaceId) {
       matchCriteria.workspaceId = workspaceId
     }
@@ -360,7 +381,15 @@ export class MongoDBChatService {
     ]).toArray()
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     return (stats[0] as ChatStats) || {
+=======
+    return (stats[0] as ChatStats) || {
+<<<<<<< HEAD
+    return stats[0] || {
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       totalConversations: 0,
 =======
     return (stats[0] as ChatStats) || {      totalConversations: 0,

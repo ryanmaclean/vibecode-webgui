@@ -1,103 +1,55 @@
-# VibeCode WebGUI Dockerfile - Optimized for Yarn & Robustness (July 2025)
+# Multi-stage Docker build for VibeCode WebGUI
+FROM node:18-alpine AS base
 
-# Stage 1: Base image with necessary tools
-FROM node:20-alpine AS base
-
-# Install essential build tools and security updates first
-RUN apk add --no-cache libc6-compat python3 make g++ jq
-
-# Set platform-specific environment variables
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_ENV=production
-ENV DOCKER_BUILD=true
-ENV SKIP_MONITORING=true
-ENV CI=true
-ENV GITHUB_ACTIONS=true
-ENV OTEL_ENABLED=false
-ENV DD_ENABLED=false
-
-# Ensure we only install production dependencies when needed
-ENV NEXT_SHARP_PATH="/tmp/node_modules/sharp"
-
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Stage 2: Install dependencies
-FROM base AS deps
+# Install dependencies based on the preferred package manager
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production
 
-# Copy package definition and lockfile
-COPY package.json yarn.lock* ./
-
-# Create a temporary package.json without monitoring dependencies and platform-specific SWC dependencies
-RUN jq 'del(.devDependencies."@next/swc-darwin-arm64") | del(.dependencies."@opentelemetry/api") | del(.dependencies."@opentelemetry/auto-instrumentations-node") | del(.dependencies."@opentelemetry/core") | del(.dependencies."@opentelemetry/exporter-otlp-http") | del(.dependencies."@opentelemetry/exporter-prometheus") | del(.dependencies."@opentelemetry/instrumentation") | del(.dependencies."@opentelemetry/instrumentation-express") | del(.dependencies."@opentelemetry/instrumentation-fs") | del(.dependencies."@opentelemetry/instrumentation-http") | del(.dependencies."@opentelemetry/sdk-node") | del(.dependencies."dd-trace") | del(.dependencies."@opentelemetry/instrumentation-winston") | del(.dependencies."@opentelemetry/winston-transport") | del(.dependencies."@opentelemetry/resources") | del(.dependencies."@opentelemetry/semantic-conventions") | del(.dependencies."@opentelemetry/context-async-hooks") | del(.dependencies."@opentelemetry/otlp-exporter-base") | del(.dependencies."@opentelemetry/otlp-transformer") | del(.dependencies."@opentelemetry/sdk-logs") | del(.dependencies."@opentelemetry/api-logs") | del(.dependencies."@opentelemetry/otlp-grpc-exporter-base")' package.json > package.tmp.json && \
-    mv package.tmp.json package.json && \
-    # Remove yarn.lock to force regeneration without OpenTelemetry dependencies
-    rm -f yarn.lock && \
-    # Clean up any existing node_modules to prevent conflicts
-    rm -rf node_modules && \
-    # Use Yarn to install dependencies with specific platform overrides (without --frozen-lockfile)
-    yarn config set target_platform linux-x64 && \
-    yarn install --network-timeout 100000 --production=false --ignore-optional && \
-    yarn cache clean && \
-    # Remove any platform-specific SWC binaries that might have been installed
-    find node_modules -name "*swc-*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
-    find node_modules -name "*darwin*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
-    find node_modules -name "*win32*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
-    # Install the correct SWC binary for Linux x64
-    yarn add @next/swc-linux-x64-gnu && \
-    # Ensure required SWC binaries are present
-    test -d node_modules/@next/swc-linux-x64-gnu || (echo "Missing required SWC binary for Linux x64" && exit 1)
-
-# Stage 3: Build the application
+# Rebuild the source code only when needed
 FROM base AS builder
-
-# Copy source code
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Copy dependencies from the previous stage for a clean build
-COPY --from=deps /app/node_modules ./node_modules
+# Build the application
+RUN npm run build
 
-# Ensure we have a clean node_modules without platform-specific artifacts
-RUN rm -rf node_modules/.bin/next-swc-* && \
-    # Remove any remaining platform-specific SWC binaries and artifacts
-    find node_modules -name "*swc-*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
-    find node_modules -name "*darwin*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
-    find node_modules -name "*win32*" -type d -prune -exec rm -rf {} + 2>/dev/null || true && \
-    find node_modules -name "*darwin*" -type f -delete 2>/dev/null || true && \
-    find node_modules -name "*win32*" -type f -delete 2>/dev/null || true && \
-    # Install the correct SWC binary for Linux x64
-    yarn add @next/swc-linux-x64-gnu && \
-    # Ensure required SWC binaries are present
-    test -d node_modules/@next/swc-linux-x64-gnu || (echo "Missing required SWC binary for Linux x64" && exit 1)
-
-# Set environment for production build
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-
-# Generate Prisma client before building
-RUN npx prisma generate
-
-# Run the build command
-RUN yarn build
-
-# Stage 4: Production runner (Distroless)
-# Using a distroless image for a smaller and more secure final image.
-FROM gcr.io/distroless/nodejs20-debian12 AS runner
-
+# Production image, copy all the files and run next
+FROM base AS runner
 WORKDIR /app
 
+<<<<<<< HEAD
 # Set environment for production
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+=======
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+>>>>>>> merge-conflict-cleanup
 
-# Copy only the necessary production artifacts from the builder stage.
-# The distroless image has a default non-root user 'nonroot' (uid: 65532).
-COPY --from=builder --chown=65532:65532 /app/public ./public
-COPY --from=builder --chown=65532:65532 /app/.next/standalone ./
-COPY --from=builder --chown=65532:65532 /app/.next/static ./.next/static
-COPY --from=builder --chown=65532:65532 /app/node_modules/@prisma ./node_modules/@prisma
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-# Expose the application port
+COPY --from=builder /app/public ./public
+
+# Set the correct permission for prerender cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+# Automatically leverage output traces to reduce image size
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
 EXPOSE 3000
 
-# Start the application using the standalone server
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
 CMD ["node", "server.js"]

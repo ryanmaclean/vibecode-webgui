@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 <<<<<<< HEAD
+<<<<<<< HEAD
 // import { enhancedVectorStore } from '@/lib/vector-stores/enhanced-vector-store'
 // import { prismaPoolOptimizer } from '@/lib/db/prisma-pool-optimizer'
 =======
 import { enhancedVectorStore } from '@/lib/vector-stores/enhanced-vector-store'
 import { prismaPoolOptimizer } from '@/lib/db/connection-pool'
 >>>>>>> fix/consolidated-dependency-updates
+=======
+// import { enhancedVectorStore } from '@/lib/vector-stores/enhanced-vector-store'
+// import { prismaPoolOptimizer } from '@/lib/db/prisma-pool-optimizer'
+>>>>>>> merge-conflict-cleanup
 import { vectorQueryCache } from '@/lib/vector-stores/query-cache'
 import { getMetricsCollector } from '@/lib/db/database-metrics'
 import { logger } from '../../../../lib/logger';

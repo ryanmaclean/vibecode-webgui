@@ -1,10 +1,14 @@
 import { useState } from 'react';
 
+<<<<<<< HEAD
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
 }
+=======
+import { useChat } from '@ai-sdk/react';
+>>>>>>> merge-conflict-cleanup
 
 export default function GenerativeUIChat() {
   const [messages, setMessages] = useState<Message[]>([

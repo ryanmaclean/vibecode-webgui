@@ -356,6 +356,14 @@ export class GitHubIntegration {
         createdAt: repo.created_at || new Date().toISOString(),
 <<<<<<< HEAD
         updatedAt: repo.updated_at || new Date().toISOString(),
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        createdAt: repo.created_at,
+        updatedAt: repo.updated_at,
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
         language: repo.language,
 =======
         updatedAt: repo.updated_at || new Date().toISOString(),        language: repo.language,

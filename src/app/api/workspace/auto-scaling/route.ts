@@ -215,6 +215,7 @@ export async function PUT(req: NextRequest) {
       registration.workspaceId, 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
       registration.resources as any || {}
 =======
       workspaceResources
@@ -222,6 +223,13 @@ export async function PUT(req: NextRequest) {
 =======
       registration.resources || {}
 >>>>>>> fix/consolidated-dependency-updates
+=======
+      registration.resources as any || {}
+<<<<<<< HEAD
+      registration.resources || {}
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     )
 
     // Initialize metrics for the workspace
@@ -291,6 +299,7 @@ export async function PATCH(req: NextRequest) {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     workspaceAutoScaler.updateConfig(config as any)
 =======
     // Transform config to match AutoScalingConfig interface
@@ -316,6 +325,13 @@ export async function PATCH(req: NextRequest) {
 =======
     workspaceAutoScaler.updateConfig(config)
 >>>>>>> fix/consolidated-dependency-updates
+=======
+    workspaceAutoScaler.updateConfig(config as any)
+<<<<<<< HEAD
+    workspaceAutoScaler.updateConfig(config)
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
     return NextResponse.json({
       status: 'success',

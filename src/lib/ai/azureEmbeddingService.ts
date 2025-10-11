@@ -8,7 +8,14 @@ import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { DefaultAzureCredential } from '@azure/identity';
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Removed nonexistent withVectorConnection; use VectorConnectionPoolFactory directly
+=======
+import { withVectorConnection } from '../db/vector-connection-pool';
+=======
+// Removed nonexistent withVectorConnection; use VectorConnectionPoolFactory directly
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 import { azureEmbeddingMetrics } from '../monitoring/azure-embedding-metrics';
 import { VectorConnectionPool, VectorConnectionPoolFactory } from '../db/vector-connection-pool';
 import { DatadogIntegration } from '../monitoring/datadog-integration';
@@ -163,7 +170,6 @@ export class AzureEmbeddingService {
     this.useManagedIdentity = useManagedIdentity;
     this.useConnectionPool = useConnectionPool;
     
-<<<<<<< HEAD
     // Initialize vector service for database operations
     // Initialize monitoring
     this.initializeMonitoring(alertThresholds);
@@ -526,6 +532,9 @@ export class AzureEmbeddingService {
   public async generateEmbedding(text: string, options: EmbeddingOptions = {}): Promise<number[]> {
     const startTime = Date.now();
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> merge-conflict-cleanup
     let success = false;
     let errorType: string | undefined;
     let tokens = 0;
@@ -548,7 +557,11 @@ export class AzureEmbeddingService {
       
       // Set up headers based on authentication method
 <<<<<<< HEAD
+<<<<<<< HEAD
        
+=======
+      // eslint-disable-next-line prefer-const
+>>>>>>> merge-conflict-cleanup
       let headers: Record<string, string> = {
 =======
       const headers: Record<string, string> = {

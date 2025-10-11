@@ -21,10 +21,17 @@ export interface VectorDBErrorDetails {
  * Type guard for objects with code property
  */
 <<<<<<< HEAD
+<<<<<<< HEAD
 function hasCode(e: unknown): e is { code: string | number } {
   return typeof e === 'object' && e !== null && 'code' in e;
 }
 
+=======
+export class VectorDbError extends Error {
+  type: VectorDbErrorType;
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 export enum VectorDBErrorType {
   CONNECTION_FAILED = 'CONNECTION_FAILED',
   QUERY_FAILED = 'QUERY_FAILED',
@@ -43,15 +50,21 @@ export enum VectorDBErrorType {
   SERVICE = 'SERVICE',
   TIMEOUT = 'TIMEOUT',
   SEARCH = 'SEARCH'
+<<<<<<< HEAD
   // Note: AUTHENTICATION and CONNECTION are aliases for AUTHORIZATION_ERROR and CONNECTION_FAILED respectively
+=======
+>>>>>>> merge-conflict-cleanup
 }
 
 export class VectorDBError extends Error {
   type: VectorDBErrorType;
+<<<<<<< HEAD
 =======
 export class VectorDbError extends Error {
   type: VectorDbErrorType;
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
   operation: string;
   provider: string;
   details: VectorDBErrorDetails | null;
@@ -62,20 +75,34 @@ export class VectorDbError extends Error {
   constructor(
     message: string,
 <<<<<<< HEAD
+<<<<<<< HEAD
     type: VectorDBErrorType = VectorDBErrorType.UNKNOWN_ERROR,
 =======
     type: VectorDbErrorType = VectorDbErrorType.UNKNOWN_ERROR,
 >>>>>>> fix/consolidated-dependency-updates
+=======
+    type: VectorDbErrorType = VectorDbErrorType.UNKNOWN_ERROR,
+=======
+>>>>>>> main
+    type: VectorDBErrorType = VectorDBErrorType.UNKNOWN_ERROR,
+>>>>>>> merge-conflict-cleanup
     operation: string = 'unknown',
     provider: string = 'unknown',
     details: VectorDBErrorDetails | null = null
   ) {
     super(message);
 <<<<<<< HEAD
+<<<<<<< HEAD
     this.name = 'VectorDBError';
 =======
         this.name = 'VectorDbError';
 >>>>>>> fix/consolidated-dependency-updates
+=======
+    this.name = 'VectorDbError';
+=======
+>>>>>>> main
+    this.name = 'VectorDBError';
+>>>>>>> merge-conflict-cleanup
     this.type = type;
     this.operation = operation;
     this.provider = provider;
@@ -234,7 +261,13 @@ export function getErrorType(error: any): VectorDbErrorType {
  * Legacy function-based error handler
  * @deprecated Use VectorDbErrorHandler class instead
  */
+<<<<<<< HEAD
 export function handleVectorDbError(
+=======
+=======
+>>>>>>> main
+export const handleVectorDBError = (
+>>>>>>> merge-conflict-cleanup
   error: any,
   operation: string,
   provider: string,
@@ -242,7 +275,15 @@ export function handleVectorDbError(
 ): VectorDbError {
   // If it's already a VectorDbError, return it
   if (error instanceof VectorDbError) {
+<<<<<<< HEAD
 >>>>>>> fix/consolidated-dependency-updates
+=======
+=======
+>>>>>>> main
+): VectorDBError => {
+  // If already a VectorDBError, return it
+  if (error instanceof VectorDBError) {
+>>>>>>> merge-conflict-cleanup
     return error;
   }
 
@@ -259,12 +300,20 @@ export function handleVectorDbError(
     baseError = new Error('Unknown error');
   } else if (typeof error === 'string') {
     baseError = new Error(error);
+<<<<<<< HEAD
   } else if (typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
     baseError = new Error(error.message);
   } else if (typeof error === 'object' && 'message' in error && error.message) {
     // Non-string message (e.g., object)
     const msg = error.message as { text?: string };
     baseError = new Error(String(msg.text || 'Unknown error'));
+=======
+  } else if (typeof (error as any).message === 'string') {
+    baseError = new Error((error as any).message);
+  } else if ((error as any).message && typeof (error as any).message !== 'string') {
+    // Non-string message (e.g., object)
+    baseError = new Error(String((error as any).message?.text || 'Unknown error'));
+>>>>>>> merge-conflict-cleanup
   } else {
     baseError = new Error('Unknown error');
   }
@@ -333,14 +382,63 @@ export function handleVectorDbError(
   if (error.stack) errorDetails.stack = error.stack;
 
   return new VectorDbError(
+<<<<<<< HEAD
 >>>>>>> fix/consolidated-dependency-updates
+=======
+=======
+>>>>>>> main
+  let errorType = VectorDBErrorType.UNKNOWN_ERROR;
+  const errorMessage = baseError.message || 'Unknown vector database error';
+  let errorDetails: Record<string, unknown> = {};
+
+  // Connection errors
+  if (
+    (error as any)?.code === 'ECONNREFUSED' ||
+    (error as any)?.code === 'ETIMEDOUT' ||
+    baseError.name === 'ConnectionError' ||
+    errorMessage.includes('connect') ||
+    errorMessage.includes('connection')
+  ) {
+    errorType = VectorDBErrorType.CONNECTION_FAILED;
+  }
+  // Authentication errors
+  else if (
+    (error as any)?.code === 'EAUTH' ||
+    (error as any)?.code === 401 ||
+    (error as any)?.code === 403 ||
+    errorMessage.includes('auth') ||
+    errorMessage.includes('credentials') ||
+    errorMessage.includes('permission')
+  ) {
+    errorType = VectorDBErrorType.AUTHORIZATION_ERROR;
+  }
+  // Query errors
+  else if (
+    (error as any)?.code === 'EQUERY' ||
+    errorMessage.includes('query') ||
+    errorMessage.includes('SQL')
+  ) {
+    errorType = VectorDBErrorType.QUERY_FAILED;
+  }
+
+  // Extract useful information from the error
+  if ((error as any)?.code) errorDetails = { ...errorDetails, code: (error as any).code };
+  if ((error as any)?.errno) errorDetails = { ...errorDetails, errno: (error as any).errno };
+  if ((error as any)?.sqlMessage) errorDetails = { ...errorDetails, sqlMessage: (error as any).sqlMessage };
+  if ((baseError as any)?.stack) errorDetails = { ...errorDetails, stack: (baseError as any).stack };
+  // Preserve original error for diagnostics (redacted later by toJSON)
+  if (!(error instanceof Error)) {
+    errorDetails = { ...errorDetails, originalError };
+  }
+
+  return new VectorDBError(
+>>>>>>> merge-conflict-cleanup
     errorMessage,
     errorType,
     operation,
     provider,
     errorDetails
   );
-<<<<<<< HEAD
 };
 =======
 }
@@ -375,6 +473,7 @@ export class VectorDbErrorHandler {
     operation: string,
     errorType?: VectorDBErrorType,
     retryable?: boolean,
+<<<<<<< HEAD
     additionalContext: VectorDBErrorDetails = {}
   ): VectorDBError {
     // Check for Azure PostgreSQL specific pgvector errors first
@@ -408,6 +507,10 @@ export class VectorDbErrorHandler {
       return azureError;
     }
 
+=======
+    additionalContext: Record<string, any> = {}
+  ): VectorDBError {
+>>>>>>> merge-conflict-cleanup
     // Categorize if no explicit type provided (use local fallback to avoid circular imports)
     const resolvedType = errorType ?? this.categorizeFallback(error);
 
@@ -422,6 +525,46 @@ export class VectorDbErrorHandler {
       error,
       operation,
       this.provider
+<<<<<<< HEAD
+=======
+    );
+
+    // Override type if we resolved a more specific one
+    if (resolvedType && normalized.type !== resolvedType) {
+      normalized.type = resolvedType;
+    }
+
+    // Merge context into details and set top-level retryable property when provided
+    normalized.details = { ...(normalized.details || {}), ...context };
+    if (typeof retryable === 'boolean') {
+      (normalized as any).retryable = retryable;
+    }
+
+    // Optional logging hook
+    if (this.enableLogging) {
+      logger.error('Vector DB operation error', {
+        provider: this.provider,
+        operation,
+        type: normalized.type,
+        message: normalized.message,
+        context,
+      });
+    }
+
+    return normalized;
+  }
+
+  /**
+   * Determine if an error is retryable using provider-aware patterns.
+   */
+  public isRetryableError(error: any): boolean {
+    const t = this.categorizeFallback(error);
+    return (
+      t === VectorDBErrorType.CONNECTION_FAILED ||
+      t === VectorDBErrorType.TIMEOUT ||
+      t === VectorDBErrorType.SERVICE ||
+      t === VectorDBErrorType.UNKNOWN_ERROR
+>>>>>>> merge-conflict-cleanup
     );
 
     // Override type if we resolved a more specific one
@@ -581,7 +724,62 @@ export class VectorDbErrorHandler {
 
     return VectorDBErrorType.UNKNOWN_ERROR;
   }
+
+  /**
+   * Fallback categorization to avoid importing database-error-patterns (prevents circular deps).
+   */
+  private categorizeFallback(error: any): VectorDBErrorType {
+    if (!error) return VectorDBErrorType.UNKNOWN_ERROR;
+    const msg = String(error.message || '').toLowerCase();
+    const code = String((error as any).code ?? '');
+    const status = (error as any).status ?? (error as any).statusCode ?? 0;
+
+    // Connection
+    if (
+      code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ETIMEDOUT' ||
+      msg.includes('connection') || msg.includes('connect') || msg.includes('network')
+    ) return VectorDBErrorType.CONNECTION_FAILED;
+
+    // Auth
+    if (
+      code === 'EAUTH' || status === 401 || status === 403 ||
+      msg.includes('auth') || msg.includes('unauthorized') || msg.includes('forbidden') || msg.includes('credentials') || msg.includes('permission')
+    ) return VectorDBErrorType.AUTHORIZATION_ERROR;
+
+    // Timeout
+    if (
+      code === 'ETIMEDOUT' || status === 408 || status === 504 ||
+      msg.includes('timeout') || msg.includes('timed out')
+    ) return VectorDBErrorType.TIMEOUT;
+
+    // Rate limiting / service
+    if (
+      status === 429 || status === 503 ||
+      msg.includes('rate limit') || msg.includes('throttl') || msg.includes('service unavailable')
+    ) return VectorDBErrorType.SERVICE;
+
+    // Query / syntax
+    if (
+      msg.includes('query') || msg.includes('syntax') || msg.includes('sql') || msg.includes('malformed')
+    ) return VectorDBErrorType.QUERY_FAILED;
+
+    // Vector specific
+    if (msg.includes('vector')) return VectorDBErrorType.VECTOR_CREATION_FAILED;
+
+    // Initialization / configuration
+    if (msg.includes('not initialized') || msg.includes('initialize') || msg.includes('configuration'))
+      return VectorDBErrorType.INITIALIZATION;
+
+    return VectorDBErrorType.UNKNOWN_ERROR;
+  }
 }
+<<<<<<< HEAD
 =======
 }
 >>>>>>> fix/consolidated-dependency-updates
+=======
+<<<<<<< HEAD
+};
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup

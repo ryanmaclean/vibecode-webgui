@@ -194,7 +194,15 @@ Focus on providing actionable insights for code completion.
     `);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+=======
+<<<<<<< Updated upstream
+    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -291,10 +299,19 @@ For each suggestion, provide:
 Format as structured suggestions that can be directly used.
     `);
 
+<<<<<<< HEAD
     // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
 =======
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
 >>>>>>> fix/consolidated-dependency-updates
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -447,7 +464,15 @@ Return only the function signatures, one per line.
     `);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+=======
+<<<<<<< Updated upstream
+    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     const chain = RunnableSequence.from([
       prompt,
       this.llm,
@@ -491,10 +516,19 @@ Consider:
 Return only the import statements, one per line.
     `);
 
+<<<<<<< HEAD
     // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
 =======
     // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
 >>>>>>> fix/consolidated-dependency-updates
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+    // @ts-ignore - Type incompatibility with LangChain's RunnableSequence
+=======
+    // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     const chain = RunnableSequence.from([
       prompt,
       this.llm,

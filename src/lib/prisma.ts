@@ -48,8 +48,104 @@ export const prisma = prismaClient
 // Monitoring can be added at the application level if needed
 <<<<<<< HEAD
 
+<<<<<<< HEAD
 =======
 >>>>>>> fix/consolidated-dependency-updates
+=======
+if (isBuilding) {
+  // Create a mock Prisma client for build time
+  prismaClient = {} as PrismaClient
+} else {
+  // Add DBM tags to the database URL
+  const dbUrl = new URL(process.env.DATABASE_URL || 'postgresql://localhost:5432/placeholder');
+  if (!dbUrl.searchParams.has('application_name')) {
+    dbUrl.searchParams.set('application_name', 'vibecode-webgui');
+  }
+  if (!dbUrl.searchParams.has('options')) {
+    dbUrl.searchParams.set('options', `-c datadog.tags=env:${process.env.NODE_ENV},service:vibecode-webgui,version:1.0.0`);
+  }
+
+  prismaClient = globalForPrisma.prisma ?? new PrismaClient({
+    log: process.env.NODE_ENV === 'development' 
+      ? ['query', 'info', 'warn', 'error']
+      : ['error'],
+    datasources: {
+      db: {
+        url: dbUrl.toString(),
+      },
+    },
+  })
+}
+
+export const prisma = prismaClient
+
+// Middleware for Datadog monitoring (only when not building)
+if (!isBuilding && prisma.$use) {
+  prisma.$use(async (params, next) => {
+    const startTime = Date.now()
+    const span = tracer?.startSpan?.('prisma.query', {
+      tags: {
+        'env': process.env.NODE_ENV || 'development',
+        'service.name': 'vibecode-webgui',
+        'version': '1.0.0',
+        'db.system': 'postgresql',
+        'db.operation': params.action,
+        'db.table': params.model || 'unknown',
+        'span.kind': 'client',
+        'resource.name': `${params.model}.${params.action}`,
+        'span.type': 'sql',
+      }
+    })
+    
+    try {
+      const result = await next(params)
+      const duration = Date.now() - startTime
+      
+      // Record metrics for Datadog
+      metrics.histogram('db.query.duration', duration, {
+        service: 'vibecode-webgui',
+        operation: params.action,
+        model: params.model || 'unknown',
+        status: 'success'
+      })
+      
+      metrics.increment('db.query.count', {
+        service: 'vibecode-webgui',
+        operation: params.action,
+        model: params.model || 'unknown',
+        status: 'success'
+      })
+      
+      if (span) {
+        span.setTag('db.rows_affected', result?.count)
+        span.finish()
+      }
+      
+      return result
+    } catch (error) {
+      // Record error metrics
+      metrics.increment('db.query.error', {
+        service: 'vibecode-webgui',
+        operation: params.action,
+        model: params.model || 'unknown',
+        error: error?.name || 'unknown_error'
+      })
+      
+      if (span) {
+        span.setTag('error', true)
+        span.setTag('error.msg', error?.message)
+        span.setTag('error.type', error?.name || 'DatabaseError')
+        span.finish()
+      }
+      
+      throw error
+    }
+  })
+}
+=======
+>>>>>>> main
+
+>>>>>>> merge-conflict-cleanup
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 export default prisma

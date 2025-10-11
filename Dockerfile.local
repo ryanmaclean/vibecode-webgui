@@ -1,30 +1,29 @@
-# Simple Dockerfile for Local Testing
-FROM node:20-alpine
+# Multi-stage Dockerfile optimized for local KIND deployments
+# Produces a lean runtime image while retaining Prisma CLI for migrations
 
-# Install dependencies needed for building
+FROM node:20-alpine AS base
 RUN apk add --no-cache libc6-compat python3 make g++
-
-# Set working directory
 WORKDIR /app
-
-# Copy package files
 COPY package.json yarn.lock* ./
-
-# Install dependencies (simplified for local testing)
 RUN yarn install --frozen-lockfile
 
-# Copy source code
+FROM base AS builder
 COPY . .
-
-# Build the application
 RUN yarn build
 
-# Set environment variables
+FROM node:20-alpine AS runner
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
-
-# Expose port
+ENV HOSTNAME=0.0.0.0
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+RUN npm install -g prisma@6.12.0
 EXPOSE 3000
-
-# Start the application
-CMD ["yarn", "start"]
+CMD ["node", "server.js"]

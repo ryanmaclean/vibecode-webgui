@@ -30,7 +30,7 @@ export interface EmbeddingServiceConfig {
   // BYOK specific
   openrouterApiKey?: string;
   openaiApiKey?: string;
-  fallbackToDirect?: boolean;
+  isFallbackToDirect?: boolean;
 }
 
 // Type to handle all embedding service types
@@ -146,7 +146,7 @@ export class EmbeddingServiceFactory {
           openrouterApiKey: config.openrouterApiKey,
           openaiApiKey: config.openaiApiKey,
           model: config.model || 'openai/text-embedding-3-small',
-          fallbackToDirect: config.fallbackToDirect
+          fallbackToDirect: config.isFallbackToDirect
         }, this.prisma);
         
       case EmbeddingProvider.MOCK:
@@ -168,7 +168,7 @@ export class EmbeddingServiceFactory {
     const openrouterApiKey = process.env.OPENROUTER_API_KEY;
     const openaiApiKey = process.env.OPENAI_API_KEY;
     const embeddingModel = process.env.OPENAI_EMBEDDING_MODEL || 'openai/text-embedding-3-small';
-    const fallbackToDirect = process.env.EMBEDDING_FALLBACK_TO_DIRECT === 'true';
+    const isFallbackToDirect = process.env.EMBEDDING_FALLBACK_TO_DIRECT === 'true';
     
     if (openrouterApiKey && openaiApiKey) {
       return this.createEmbeddingService({
@@ -176,7 +176,7 @@ export class EmbeddingServiceFactory {
         openrouterApiKey,
         openaiApiKey,
         model: embeddingModel,
-        fallbackToDirect
+        isFallbackToDirect
       });
     }
     

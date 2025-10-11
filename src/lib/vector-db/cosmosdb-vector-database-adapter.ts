@@ -7,16 +7,33 @@ import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { metrics } from '../server-monitoring';
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
+=======
+import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
+// import { 
+//   CosmosClient, 
+//   Container, 
+//   Database,
+//   SqlQuerySpec 
+// } from '@azure/cosmos';
+=======
+import { VectorDBError, VectorDBErrorType, handleVectorDBError } from './vector-db-error-handler';
+>>>>>>> merge-conflict-cleanup
 import { 
   CosmosClient, 
   Container, 
   Database,
   SqlQuerySpec 
 } from '../../types/azure-cosmos';
+<<<<<<< HEAD
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> main
+
+>>>>>>> merge-conflict-cleanup
 /**
  * Azure Cosmos DB specific configuration options
  */
@@ -41,6 +58,13 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   private database: any = null;
   private container: any = null;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+  private errorHandler: VectorDbErrorHandler;
+=======
+  // Using standalone handleVectorDBError function instead of class
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
   protected cosmosConfig: CosmosDbVectorDatabaseConfig;
 =======
   private errorHandler: VectorDbErrorHandler;
@@ -51,8 +75,13 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     super(config);
 <<<<<<< HEAD
 =======
+<<<<<<< HEAD
     this.errorHandler = new VectorDbErrorHandler();
 >>>>>>> fix/consolidated-dependency-updates
+=======
+    // Error handling is done via standalone handleVectorDBError function
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     this.cosmosConfig = {
       cosmosEndpoint: process.env.COSMOS_ENDPOINT,
       cosmosKey: process.env.COSMOS_KEY,
@@ -85,12 +114,20 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // Check if container exists, if not create it with vector index
       // Create vector index for vector search capability
 
+<<<<<<< HEAD
       if (this.config.enableLogging) {
         console.info('Cosmos DB vector database adapter initialized successfully');
       }
       
 <<<<<<< HEAD
+<<<<<<< HEAD
       throw new Error('Cosmos DB adapter not yet implemented');
+=======
+      throw this.errorHandler.handleError(new Error('Cosmos DB adapter not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+      throw handleVectorDBError(new Error('Cosmos DB adapter not yet implemented'), 'unknown', 'cosmosdb');
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     } catch (error) {
 =======
       throw this.errorHandler.handleError(new Error('Cosmos DB adapter not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);    } catch (error) {
@@ -113,7 +150,14 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   }>): Promise<void> {
     if (!this.container) {
 <<<<<<< HEAD
+<<<<<<< HEAD
       throw new Error('Cosmos DB adapter not initialized');
+=======
+      throw this.errorHandler.handleError(new Error('Cosmos DB adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+=======
+      throw handleVectorDBError(new Error('Cosmos DB adapter not initialized'), 'unknown', 'cosmosdb');
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     }
 =======
       throw this.errorHandler.handleError(new Error('Cosmos DB adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
@@ -127,7 +171,14 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // 4. Ensure vector index is leveraged for new documents
       
 <<<<<<< HEAD
+<<<<<<< HEAD
       throw new Error('Cosmos DB store chunks not yet implemented');
+=======
+      throw this.errorHandler.handleError(new Error('Cosmos DB store chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+=======
+      throw handleVectorDBError(new Error('Cosmos DB store chunks not yet implemented'), 'unknown', 'cosmosdb');
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     } catch (error) {
 =======
       throw this.errorHandler.handleError(new Error('Cosmos DB store chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);    } catch (error) {
@@ -150,7 +201,15 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   public async search(embedding: number[], options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.container) {
 <<<<<<< HEAD
+<<<<<<< HEAD
       throw new Error('Cosmos DB adapter not initialized');
+=======
+      throw this.errorHandler.handleError(new Error('Cosmos DB adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+      throw new Error('Cosmos DB adapter not initialized');
+=======
+      throw handleVectorDBError(new Error('Cosmos DB adapter not initialized'), 'unknown', 'cosmosdb');
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     }
 =======
       throw this.errorHandler.handleError(new Error('Cosmos DB adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
@@ -180,7 +239,15 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // const { resources } = await this.container.items.query(query).fetchAll();
       
 <<<<<<< HEAD
+<<<<<<< HEAD
       throw new Error('Cosmos DB vector search not yet implemented');
+=======
+      throw this.errorHandler.handleError(new Error('Cosmos DB vector search not yet implemented'), 'unknown', VectorDbErrorType.SEARCH, false);
+      throw new Error('Cosmos DB vector search not yet implemented');
+=======
+      throw handleVectorDBError(new Error('Cosmos DB vector search not yet implemented'), 'unknown', 'cosmosdb');
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     } catch (error) {
 =======
       throw this.errorHandler.handleError(new Error('Cosmos DB vector search not yet implemented'), 'unknown', VectorDbErrorType.SEARCH, false);    } catch (error) {
@@ -203,7 +270,15 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   public async deleteFileChunks(fileId: number): Promise<void> {
     if (!this.container) {
 <<<<<<< HEAD
+<<<<<<< HEAD
       throw new Error('Cosmos DB adapter not initialized');
+=======
+      throw this.errorHandler.handleError(new Error('Cosmos DB adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+      throw new Error('Cosmos DB adapter not initialized');
+=======
+      throw handleVectorDBError(new Error('Cosmos DB adapter not initialized'), 'unknown', 'cosmosdb');
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     }
 =======
       throw this.errorHandler.handleError(new Error('Cosmos DB adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
@@ -221,7 +296,15 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // For each item, delete it from the container
       
 <<<<<<< HEAD
+<<<<<<< HEAD
       throw new Error('Cosmos DB delete chunks not yet implemented');
+=======
+      throw this.errorHandler.handleError(new Error('Cosmos DB delete chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+      throw new Error('Cosmos DB delete chunks not yet implemented');
+=======
+      throw handleVectorDBError(new Error('Cosmos DB delete chunks not yet implemented'), 'unknown', 'cosmosdb');
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     } catch (error) {
 =======
       throw this.errorHandler.handleError(new Error('Cosmos DB delete chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);    } catch (error) {
@@ -248,7 +331,15 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   }> {
     if (!this.container) {
 <<<<<<< HEAD
+<<<<<<< HEAD
       throw new Error('Cosmos DB adapter not initialized');
+=======
+      throw this.errorHandler.handleError(new Error('Cosmos DB adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+      throw new Error('Cosmos DB adapter not initialized');
+=======
+      throw handleVectorDBError(new Error('Cosmos DB adapter not initialized'), 'unknown', 'cosmosdb');
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     }
 =======
       throw this.errorHandler.handleError(new Error('Cosmos DB adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
@@ -263,7 +354,15 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // 3. Average token count across all chunks
       
 <<<<<<< HEAD
+<<<<<<< HEAD
       throw new Error('Cosmos DB stats not yet implemented');
+=======
+      throw this.errorHandler.handleError(new Error('Cosmos DB stats not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
+      throw new Error('Cosmos DB stats not yet implemented');
+=======
+      throw handleVectorDBError(new Error('Cosmos DB stats not yet implemented'), 'unknown', 'cosmosdb');
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     } catch (error) {
 =======
       throw this.errorHandler.handleError(new Error('Cosmos DB stats not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);    } catch (error) {
@@ -334,7 +433,15 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   protected async fallbackTextSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
     if (!this.container) {
 <<<<<<< HEAD
+<<<<<<< HEAD
       throw new Error('Cosmos DB adapter not initialized');
+=======
+      throw this.errorHandler.handleError(new Error('Cosmos DB adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
+      throw new Error('Cosmos DB adapter not initialized');
+=======
+      throw handleVectorDBError(new Error('Cosmos DB adapter not initialized'), 'unknown', 'cosmosdb');
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     }
 =======
       throw this.errorHandler.handleError(new Error('Cosmos DB adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
@@ -358,4 +465,8 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       return [];
     }
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> merge-conflict-cleanup

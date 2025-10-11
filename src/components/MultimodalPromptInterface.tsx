@@ -87,7 +87,19 @@ export default function MultimodalPromptInterface({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+<<<<<<< HEAD
   const recognitionRef = useRef<any>(null);
+=======
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+  const recognitionRef = useRef<any | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<any>(null);
+=======
+  const recognitionRef = useRef<any>(null);
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   
   // Initialize sample generator
@@ -99,8 +111,11 @@ export default function MultimodalPromptInterface({
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
       const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognitionAPI) {
         recognitionRef.current = new SpeechRecognitionAPI();
@@ -128,7 +143,10 @@ export default function MultimodalPromptInterface({
         };
       }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> merge-conflict-cleanup
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       
@@ -153,9 +171,14 @@ export default function MultimodalPromptInterface({
       recognitionRef.current.onend = () => {
         setIsListening(false);
       };
+<<<<<<< HEAD
 >>>>>>> ai-sdk-openai-v2-test
 =======
 >>>>>>> fix/consolidated-dependency-updates
+=======
+=======
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     }
   }, []);
 

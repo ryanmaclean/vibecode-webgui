@@ -251,6 +251,7 @@ Your role is to:
 
     if (outputSchema) {
 <<<<<<< HEAD
+<<<<<<< HEAD
       // Attempt to parse JSON when a schema is provided
       try {
         const parsed = JSON.parse(content);
@@ -260,6 +261,8 @@ Your role is to:
         return content;
       }
 =======
+=======
+>>>>>>> merge-conflict-cleanup
       // Use structured output for schema-defined responses
       const parser = StructuredOutputParser.fromZodSchema(outputSchema);
       const formatInstructions = parser.getFormatInstructions();
@@ -268,7 +271,12 @@ Your role is to:
       
       // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence for agent type
       const chain = RunnableSequence.from([
+<<<<<<< HEAD
         // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+=======
+        // @ts-ignore
+      const chain = RunnableSequence.from([
+>>>>>>> merge-conflict-cleanup
         agent,
         parser
       ]);
@@ -277,10 +285,29 @@ Your role is to:
       return await chain.invoke(messages);
     } else {
       // Use simple text output
+<<<<<<< HEAD
       // @ts-expect-error - Type incompatibility with LangChain message format
       const response = await agent.invoke(messages);
       return response.content;
 >>>>>>> fix/consolidated-dependency-updates
+=======
+      // @ts-ignore - Type incompatibility with LangChain message format
+      return await chain.invoke(messages);
+    } else {
+      // Use simple text output
+      const response = await agent.invoke(messages);
+      return response.content;
+=======
+      // Attempt to parse JSON when a schema is provided
+      try {
+        const parsed = JSON.parse(content);
+        return outputSchema.parse(parsed);
+      } catch {
+        // Fallback to raw content if not valid JSON
+        return content;
+      }
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
     }
     return content;
   }

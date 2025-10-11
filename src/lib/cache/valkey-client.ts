@@ -51,16 +51,31 @@ const getValkeyConfig = () => {
 const config = getValkeyConfig();
 
 // Create Valkey client with optimized settings (using Redis-compatible ioredis client)
+<<<<<<< HEAD
 let valkeyClient: any = null;
 <<<<<<< HEAD
+=======
+<<<<<<< HEAD
+let valkeyClient: Redis | null = null;
+=======
+let valkeyClient: any = null;
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
 
 =======
 >>>>>>> fix/consolidated-dependency-updates
 try {
   if (config.type === 'standard') {
     if ('url' in config) {
+<<<<<<< HEAD
       // @ts-expect-error - ioredis constructor typing issue
 <<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+      // @ts-expect-error - ioredis constructor typing issue
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       valkeyClient = new Redis(config.url, {
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
@@ -74,9 +89,16 @@ try {
         connectTimeout: 10000,
       });
     } else {
+<<<<<<< HEAD
       // @ts-expect-error - ioredis constructor typing issue
 =======
 >>>>>>> fix/consolidated-dependency-updates
+=======
+<<<<<<< HEAD
+=======
+      // @ts-expect-error - ioredis constructor typing issue
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       valkeyClient = new Redis({
         host: config.host,
         port: config.port,
@@ -146,6 +168,9 @@ export const CacheTTL = {
 export class ValkeyManager {
   private client: any;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> merge-conflict-cleanup
 
 =======
 >>>>>>> fix/consolidated-dependency-updates
@@ -216,7 +241,14 @@ export class ValkeyManager {
       await this.client.del(...keys);
       
 <<<<<<< HEAD
+<<<<<<< HEAD
       metrics.increment('cache.delete', { count: keys.length as any });
+=======
+      metrics.increment('cache.delete', { count: keys.length.toString() });
+=======
+      metrics.increment('cache.delete', { count: keys.length as any });
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       return true;
 =======
       metrics.increment('cache.delete', { count: keys.length as any });      return true;
@@ -274,7 +306,14 @@ export class ValkeyManager {
       
       await pipeline.exec();
 <<<<<<< HEAD
+<<<<<<< HEAD
       metrics.increment('cache.mset.success', { count: pairs.length as any });
+=======
+      metrics.increment('cache.mset.success', { count: pairs.length.toString() });
+=======
+      metrics.increment('cache.mset.success', { count: pairs.length as any });
+>>>>>>> main
+>>>>>>> merge-conflict-cleanup
       return true;
 =======
       metrics.increment('cache.mset.success', { count: pairs.length as any });      return true;

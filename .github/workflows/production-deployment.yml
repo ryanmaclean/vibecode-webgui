@@ -9,15 +9,21 @@ on:
 permissions:
   contents: read
 <<<<<<< HEAD
+<<<<<<< HEAD
   id-token: write        # For OIDC authentication
   deployments: write     # For deployment statuses
   packages: write        # For Docker image publishing
 =======
+=======
+>>>>>>> merge-conflict-cleanup
 
 concurrency:
   group: prod-${{ github.ref }}
   cancel-in-progress: false
+<<<<<<< HEAD
 >>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
 
 jobs:
   validate-ci-config:

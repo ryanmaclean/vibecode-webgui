@@ -16,6 +16,10 @@ describe('DatadogMetricsService', () => {
     process.env.DD_ENV = 'development';
     process.env.DD_SERVICE = 'vibecode-ai-gateway';
     process.env.DD_VERSION = '0.0.0-test';
+<<<<<<< HEAD
+=======
+    process.env.DD_USE_DOGSTATSD = 'false';
+>>>>>>> merge-conflict-cleanup
   });
 
   afterEach(() => {
@@ -52,7 +56,11 @@ describe('DatadogMetricsService', () => {
     expect(scope.isDone()).toBe(true);
   });
 
+<<<<<<< HEAD
   it('supports submitSelectionMetric with sanitized model tag', async () => {
+=======
+  it('supports submitSelectionMetric with provider/family tags', async () => {
+>>>>>>> merge-conflict-cleanup
     const svc = new DatadogMetricsService();
 
     const scope = nock(API_BASE)
@@ -63,10 +71,19 @@ describe('DatadogMetricsService', () => {
           series?.metric === 'vibecode.ai_gateway.selection' &&
           series?.type === 'count' &&
           tags.includes('task:code') &&
+<<<<<<< HEAD
           tags.includes('model:openai_gpt-4o') &&
           tags.includes('env:development')
         );
       })
+=======
+          tags.includes('model_provider:openai') &&
+          tags.includes('model_family:gpt-4o') &&
+          tags.includes('env:development')
+        );
+      })
+      .matchHeader('DD-API-KEY', 'test_api_key')
+>>>>>>> merge-conflict-cleanup
       .reply(202, { status: 'ok' });
 
     const ok = await svc.submitSelectionMetric('code', 'openai/gpt-4o', 'user-1');
