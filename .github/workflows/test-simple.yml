@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.11.0'
+          node-version: '22.11.0'
           cache: 'npm'
 
       - name: Install dependencies
@@ -82,7 +82,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.11.0'
+          node-version: '22.11.0'
           cache: 'npm'
 
       - name: Install dependencies
@@ -95,6 +95,16 @@ jobs:
         env:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: datadoghq.com
+          # Cloud Network Monitoring for GitHub Actions
+          DD_SYSTEM_PROBE_NETWORK_ENABLED: true
+          DD_PROCESS_AGENT_ENABLED: true
+          DD_NETWORK_CONFIG_ENABLE_EBPFLESS: true
+          DD_NETWORK_CONFIG_ENABLE_EBPF: false
+          DD_SYSTEM_PROBE_ENABLED: true
+          DD_CI_VISIBILITY_ENABLED: true
+          DD_SERVICE: test-service
+          DD_ENV: test
+          DD_VERSION: test
           DATABASE_URL: postgresql://test:test@localhost:5432/testdb
           REDIS_URL: redis://localhost:6379
           NEXTAUTH_SECRET: test-secret-key
