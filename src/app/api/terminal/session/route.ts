@@ -30,6 +30,56 @@ const activeProcesses = new Map<string, PtyProcess>()
 
 let wss: WebSocketServer | null = null
 
+/**
+ * Whitelist of safe environment variables that can be passed to spawned shells.
+ * This prevents command injection through malicious environment variables.
+ */
+const SAFE_ENV_VARS = [
+  'PATH',
+  'HOME',
+  'USER',
+  'LANG',
+  'LC_ALL',
+  'LC_CTYPE',
+  'TERM',
+  'COLORTERM',
+  'SHELL',
+  'EDITOR',
+  'VISUAL',
+  'PAGER',
+  'NODE_ENV'
+] as const
+
+/**
+ * Creates a sanitized environment object with only whitelisted variables.
+ * @param workspaceId - The workspace identifier for isolation
+ * @returns Sanitized environment object
+ */
+function createSafeEnvironment(workspaceId: string): Record<string, string> {
+  const safeEnv: Record<string, string> = {
+    TERM: 'xterm-256color',
+    COLORTERM: 'truecolor',
+    PATH: process.env.PATH || '/usr/local/bin:/usr/bin:/bin',
+    WORKSPACE_ID: workspaceId
+  }
+
+  // Only copy whitelisted environment variables
+  for (const key of SAFE_ENV_VARS) {
+    if (process.env[key]) {
+      safeEnv[key] = process.env[key]
+    }
+  }
+
+  // Add workspace isolation through HOME override if possible
+  if (process.env.WORKSPACE_ROOT) {
+    const workspacePath = `${process.env.WORKSPACE_ROOT}/${workspaceId}`
+    safeEnv.HOME = workspacePath
+    safeEnv.PWD = workspacePath
+  }
+
+  return safeEnv
+}
+
 function ensureWebSocketServer() {
   if (!wss) {
     wss = new WebSocketServer({ noServer: true })
@@ -42,22 +92,26 @@ function ensureWebSocketServer() {
         return
       }
 
+      // Validate workspaceId format to prevent path traversal
+      if (!/^[a-zA-Z0-9_-]+$/.test(workspaceId)) {
+        ws.close(4001, 'Invalid workspace ID format')
+        return
+      }
+
       if (!spawn) {
         ws.close(1013, 'Interactive terminal is disabled on this environment')
         return
       }
 
-      const shell = process.env.SHELL || '/bin/bash'
+      // Use restricted shell if available, otherwise fall back to default shell
+      const shell = process.env.RESTRICTED_SHELL || process.env.SHELL || '/bin/bash'
+
       const ptyProcess = spawn(shell, [], {
         name: 'xterm-256color',
         cols: 80,
         rows: 30,
-        env: {
-          ...process.env,
-          TERM: 'xterm-256color',
-          COLORTERM: 'truecolor',
-          PATH: process.env.PATH || ''
-        }
+        cwd: process.env.WORKSPACE_ROOT ? `${process.env.WORKSPACE_ROOT}/${workspaceId}` : undefined,
+        env: createSafeEnvironment(workspaceId)
       })
 
       activeProcesses.set(workspaceId, { process: ptyProcess, ws })
