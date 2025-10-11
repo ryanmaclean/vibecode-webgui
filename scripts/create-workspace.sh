@@ -86,6 +86,8 @@ spec:
           mountPath: /home/coder/workspace
         - name: config
           mountPath: /home/coder/.config/code-server
+        - name: home-dir
+          mountPath: /home/coder/.local
         - name: vscode-settings
           mountPath: /home/coder/.local/share/code-server/User/settings.json
           subPath: settings.json
@@ -116,8 +118,9 @@ spec:
         persistentVolumeClaim:
           claimName: workspace-$WORKSPACE_ID
       - name: config
-        configMap:
-          name: code-server-config
+        emptyDir: {}
+      - name: home-dir
+        emptyDir: {}
       - name: vscode-settings
         configMap:
           name: code-server-config
