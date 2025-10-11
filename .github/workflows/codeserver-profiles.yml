@@ -98,23 +98,20 @@ jobs:
       - name: Prepare tags
         id: tags
         run: |
-          case "${{ matrix.profile }}" in
-            minimal)
-              echo "tags=ghcr.io/ryanmaclean/vibecode-codeserver:${{ needs.prepare.outputs.version }}-minimal,ghcr.io/ryanmaclean/vibecode-codeserver:minimal" >> "$GITHUB_OUTPUT"
-              ;;
-            standard)
-              echo "tags=ghcr.io/ryanmaclean/vibecode-codeserver:${{ needs.prepare.outputs.version }}-standard,ghcr.io/ryanmaclean/vibecode-codeserver:standard" >> "$GITHUB_OUTPUT"
-              ;;
-            ai)
-              echo "tags=ghcr.io/ryanmaclean/vibecode-codeserver:${{ needs.prepare.outputs.version }}-ai,ghcr.io/ryanmaclean/vibecode-codeserver:ai" >> "$GITHUB_OUTPUT"
-              ;;
-            web)
-              echo "tags=ghcr.io/ryanmaclean/vibecode-codeserver:${{ needs.prepare.outputs.version }}-web,ghcr.io/ryanmaclean/vibecode-codeserver:web" >> "$GITHUB_OUTPUT"
-              ;;
-            full)
-              echo "tags=ghcr.io/ryanmaclean/vibecode-codeserver:${{ needs.prepare.outputs.version }}-full,ghcr.io/ryanmaclean/vibecode-codeserver:full,ghcr.io/ryanmaclean/vibecode-codeserver:${{ needs.prepare.outputs.version }},ghcr.io/ryanmaclean/vibecode-codeserver:latest" >> "$GITHUB_OUTPUT"
-              ;;
-          esac
+          PROFILE="${{ matrix.profile }}"
+          VERSION="${{ needs.prepare.outputs.version }}"
+          
+          if [ "$PROFILE" = "minimal" ]; then
+            echo "tags=ghcr.io/ryanmaclean/vibecode-codeserver:${VERSION}-minimal,ghcr.io/ryanmaclean/vibecode-codeserver:minimal" >> "$GITHUB_OUTPUT"
+          elif [ "$PROFILE" = "standard" ]; then
+            echo "tags=ghcr.io/ryanmaclean/vibecode-codeserver:${VERSION}-standard,ghcr.io/ryanmaclean/vibecode-codeserver:standard" >> "$GITHUB_OUTPUT"
+          elif [ "$PROFILE" = "ai" ]; then
+            echo "tags=ghcr.io/ryanmaclean/vibecode-codeserver:${VERSION}-ai,ghcr.io/ryanmaclean/vibecode-codeserver:ai" >> "$GITHUB_OUTPUT"
+          elif [ "$PROFILE" = "web" ]; then
+            echo "tags=ghcr.io/ryanmaclean/vibecode-codeserver:${VERSION}-web,ghcr.io/ryanmaclean/vibecode-codeserver:web" >> "$GITHUB_OUTPUT"
+          elif [ "$PROFILE" = "full" ]; then
+            echo "tags=ghcr.io/ryanmaclean/vibecode-codeserver:${VERSION}-full,ghcr.io/ryanmaclean/vibecode-codeserver:full,ghcr.io/ryanmaclean/vibecode-codeserver:${VERSION},ghcr.io/ryanmaclean/vibecode-codeserver:latest" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build and push ${{ matrix.profile }} profile
         id: build
