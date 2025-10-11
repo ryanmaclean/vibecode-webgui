@@ -11,8 +11,7 @@
   },
   "dependencies": {
     "@astrojs/starlight": "^0.35.1",
-    "astro": "^5.14.1",
-    "vite": "^7.1.9"
+    "astro": "^5.13.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.1",
