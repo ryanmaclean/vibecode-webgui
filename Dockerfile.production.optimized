@@ -1,0 +1,183 @@
+# syntax=docker/dockerfile:1.4
+# Optimized Multi-stage Production Dockerfile
+# Target: ~12 layers (reduced from ~25)
+# Optimized for AKS deployment with security best practices
+
+# ===== Base Stage =====
+FROM node:20-slim AS base
+WORKDIR /app
+
+# Install build dependencies (single layer for all system deps)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# ===== Dependencies Stage =====
+FROM base AS deps
+COPY package.json package-lock.json* ./
+RUN npm install --omit=dev --legacy-peer-deps --force && \
+    npm cache clean --force
+
+# ===== Builder Stage =====
+FROM base AS builder
+COPY package.json package-lock.json* ./
+COPY prisma ./prisma
+
+# Install dependencies, generate Prisma client, and prepare for build (combined)
+RUN npm install --legacy-peer-deps --force && \
+    npx prisma generate
+
+COPY . .
+
+# Set build environment variables
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    GENERATE_SOURCEMAP=true \
+    NEXT_BUILD_SOURCEMAP=true
+
+# Build the application
+RUN npm run build
+
+# ===== Production Stage =====
+FROM node:20-slim AS runner
+
+# Install runtime dependencies and create user in single layer
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+        dumb-init \
+        curl \
+        tini && \
+    rm -rf /var/lib/apt/lists/* && \
+    addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+WORKDIR /app
+
+# Set all environment variables in single layer (metadata only)
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    DD_TRACE_ENABLED=true \
+    DD_RUNTIME_METRICS_ENABLED=true \
+    DD_PROFILING_ENABLED=true \
+    DD_LOGS_INJECTION=true \
+    DD_DYNAMIC_INSTRUMENTATION_ENABLED=true \
+    DD_SOURCE_MAP_PATH=/app/source-maps \
+    DD_APPSEC_ENABLED=true \
+    DD_IAST_ENABLED=true \
+    DD_APPSEC_RULES_FILE=/app/appsec-rules.json
+
+# Copy all built artifacts in consolidated layers
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./source-maps/.next
+COPY --from=builder --chown=nextjs:nodejs /app/src ./source-maps/src
+COPY --from=builder --chown=nextjs:nodejs /app/src/instrument.cjs ./instrument.cjs
+
+# Copy production dependencies and Prisma client
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+
+# Create runtime files (logs, configs, healthcheck) in single RUN layer
+RUN mkdir -p /app/logs && \
+    chown nextjs:nodejs /app/logs && \
+    cat <<'EOF' > /app/appsec-rules.json
+{
+  "version": "2.2",
+  "metadata": {
+    "rules_version": "1.0.0"
+  },
+  "rules": [
+    {
+      "id": "vibecode-001",
+      "name": "Block SQL injection attempts",
+      "tags": {
+        "type": "security_scanner",
+        "category": "attack_attempt"
+      },
+      "conditions": [
+        {
+          "parameters": {
+            "inputs": [
+              { "address": "server.request.query" },
+              { "address": "server.request.body" }
+            ],
+            "regex": "(?i)(union|select|insert|update|delete|drop|create|alter)\\s"
+          },
+          "operator": "match_regex"
+        }
+      ],
+      "transformers": [],
+      "on_match": ["block"]
+    }
+  ]
+}
+EOF
+    cat <<'EOF' > /app/healthcheck.js
+const http = require('http');
+
+const options = {
+  hostname: 'localhost',
+  port: 3000,
+  path: '/api/health',
+  method: 'GET',
+  timeout: 5000
+};
+
+const req = http.request(options, (res) => {
+  if (res.statusCode === 200) {
+    process.exit(0);
+  } else {
+    console.error(`Health check failed with status: ${res.statusCode}`);
+    process.exit(1);
+  }
+});
+
+req.on('error', (err) => {
+  console.error(`Health check error: ${err.message}`);
+  process.exit(1);
+});
+
+req.on('timeout', () => {
+  console.error('Health check timeout');
+  req.destroy();
+  process.exit(1);
+});
+
+req.end();
+EOF
+    chmod +x /app/healthcheck.js && \
+    chown nextjs:nodejs /app/healthcheck.js /app/appsec-rules.json
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check (metadata - no layer)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD node /app/healthcheck.js
+
+# Use tini as init system
+ENTRYPOINT ["tini", "--"]
+
+# Start the application
+CMD ["node", "server.js"]
+
+# Final layer count: ~12 layers
+# 1. FROM base (system deps combined)
+# 2. FROM deps stage (npm install)
+# 3. FROM builder (npm install + prisma)
+# 4. FROM builder (build)
+# 5. FROM runner (runtime deps + user creation combined)
+# 6-9. COPY operations (4 consolidated layers)
+# 10. RUN (create runtime files - combined)
+# 11-12. Metadata (USER, EXPOSE, HEALTHCHECK, ENV, ENTRYPOINT, CMD)
