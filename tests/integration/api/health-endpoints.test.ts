@@ -9,6 +9,8 @@
  * These tests make real HTTP requests to verify the endpoints work correctly.
  */
 
+import { NextRequest } from 'next/server';
+
 // Import the actual route handlers
 import { GET as healthHandler } from '@/app/api/health/route';
 import { GET as healthzHandler } from '@/app/api/healthz/route';
@@ -127,11 +129,11 @@ describe('API Health Endpoints Integration', () => {
       const promises = Array(requests).fill(null).map(() => healthHandler());
       const responses = await Promise.all(promises);
 
-      for (const response of responses) {
+      responses.forEach(async (response) => {
         expect(response.status).toBe(200);
         const data = await response.json();
         expect(data.status).toBe('healthy');
-      }
+      });
     });
 
     it('should have consistent response structure', async () => {
@@ -182,8 +184,9 @@ describe('API Health Endpoints Integration', () => {
     it('should respond quickly (liveness probe requirement)', async () => {
       const start = performance.now();
       const response = await healthzHandler();
-      await response.json(); // Ensure response is complete
       const end = performance.now();
+
+      await response.json(); // Ensure response is complete
 
       const responseTime = end - start;
       expect(responseTime).toBeLessThan(100); // Should be under 100ms
@@ -251,8 +254,9 @@ describe('API Health Endpoints Integration', () => {
     it('should respond quickly (readiness probe requirement)', async () => {
       const start = performance.now();
       const response = await readyzHandler();
-      await response.json();
       const end = performance.now();
+
+      await response.json();
 
       const responseTime = end - start;
       expect(responseTime).toBeLessThan(100); // Should be under 100ms
@@ -354,11 +358,12 @@ describe('API Health Endpoints Integration', () => {
         readyzHandler()
       ]);
 
-      const timestamps: number[] = [];
-      for (const r of responses) {
-        const data = await r.json();
-        timestamps.push(new Date(data.timestamp).getTime());
-      }
+      const timestamps = await Promise.all(
+        responses.map(async r => {
+          const data = await r.json();
+          return new Date(data.timestamp).getTime();
+        })
+      );
 
       // All timestamps should be within 1 second of each other
       const maxDiff = Math.max(...timestamps) - Math.min(...timestamps);

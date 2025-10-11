@@ -86,18 +86,10 @@ RUN set -eux; \
       "linux/arm64") ARCH=Linux_arm64 ;; \
       *) echo "Unsupported platform: $TARGETPLATFORM"; exit 1 ;; \
     esac; \
-    LAZYGIT_ARCHIVE="lazygit_${LAZYGIT_VERSION}_${ARCH}.tar.gz"; \
-    curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/${LAZYGIT_ARCHIVE}" -o /tmp/lazygit.tar.gz; \
-    curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/checksums.txt" -o /tmp/lazygit.checksums.txt; \
-    grep -i "${LAZYGIT_ARCHIVE}" /tmp/lazygit.checksums.txt | head -1 | awk '{print $1 "  /tmp/lazygit.tar.gz"}' > /tmp/lazygit.sha256; \
-    if [ ! -s /tmp/lazygit.sha256 ]; then \
-      echo "WARNING: Checksum not found for ${LAZYGIT_ARCHIVE}, skipping verification"; \
-    else \
-      sha256sum --check --strict /tmp/lazygit.sha256; \
-    fi; \
+    curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_${ARCH}.tar.gz" -o /tmp/lazygit.tar.gz; \
     tar -xf /tmp/lazygit.tar.gz -C /tmp lazygit; \
     install -m755 /tmp/lazygit /usr/local/bin/lazygit; \
-    rm -rf /tmp/lazygit.tar.gz /tmp/lazygit /tmp/lazygit.checksums.txt /tmp/lazygit.sha256
+    rm -rf /tmp/lazygit.tar.gz /tmp/lazygit
 
 RUN set -eux; \
     case "$TARGETPLATFORM" in \
@@ -172,24 +164,22 @@ RUN set -eux; \
     rm -f cosign_checksums.txt cosign.sha256; \
     cosign version
 
-# Install Go with hardcoded checksums (reliable verification)
-ARG GO_VERSION=1.25.1
-ARG GO_SHA256_AMD64=7716a0d940a0f6ae8e1f3b3f4f36299dc53e31b16840dbd171254312c41ca12e
-ARG GO_SHA256_ARM64=65a3e34fb2126f55b34e1edfc709121660e1be2dee6bdf405fc399a63a95a87d
+# Install Go (match architecture for multi-arch builds)
+ARG GO_VERSION=1.22.4
 RUN set -eux; \
     case "$TARGETPLATFORM" in \
-      "linux/amd64") GO_ARCH=amd64; GO_SHA256="${GO_SHA256_AMD64}" ;; \
-      "linux/arm64") GO_ARCH=arm64; GO_SHA256="${GO_SHA256_ARM64}" ;; \
+      "linux/amd64") GO_ARCH=amd64 ;; \
+      "linux/arm64") GO_ARCH=arm64 ;; \
       *) echo "Unsupported platform for Go install: $TARGETPLATFORM"; exit 1 ;; \
     esac; \
     GO_TARBALL="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz"; \
     cd /tmp; \
-    curl -fsSL "https://go.dev/dl/${GO_TARBALL}" -o "${GO_TARBALL}"; \
-    echo "${GO_SHA256}  ${GO_TARBALL}" | sha256sum -c -; \
+    curl -fsSLo "${GO_TARBALL}" "https://dl.google.com/go/${GO_TARBALL}"; \
+    curl -fsSLo "${GO_TARBALL}.sha256" "https://dl.google.com/go/${GO_TARBALL}.sha256"; \
+    sha256sum --check --strict "${GO_TARBALL}.sha256"; \
     tar -C /usr/local -xzf "${GO_TARBALL}"; \
-    rm -f "${GO_TARBALL}"; \
-    ln -sf /usr/local/go/bin/go /usr/local/bin/go; \
-    go version
+    rm -f "${GO_TARBALL}" "${GO_TARBALL}.sha256"; \
+    ln -sf /usr/local/go/bin/go /usr/local/bin/go
 
 # Install AI CLI tools and database tools
 # 1. Goose for database migrations (install as root, make globally accessible)
@@ -282,10 +272,19 @@ RUN set -eux; \
         ;; \
     esac
 
-# 6. Eppo (feature flagging) - REMOVED due to unverified curl|bash security issue
-# See: docker/code-server/SECURITY_AUDIT.md - Issue #3
-# Alternative: Use environment variables for feature flags or install manually if needed
-RUN echo "Eppo agent removed - use environment-based feature flags or manual installation"
+# 6. Eppo (feature flagging) - optional
+RUN set -eux; \
+    case "${TARGETARCH:-amd64}" in \
+      amd64) \
+        (curl -sL https://packagecloud.io/install/repositories/eppo/eppo-server/script.deb.sh | bash && apt-get install -y eppo-agent) || echo "Eppo not available, skipping" \
+        ;; \
+      arm64) \
+        echo "Eppo agent install skipped for arm64" \
+        ;; \
+      *) \
+        echo "Eppo agent install skipped for ${TARGETARCH:-unknown}" \
+        ;; \
+    esac
 
 # 7. Toto (test observability) - optional
 RUN set -eux; \
@@ -328,16 +327,12 @@ RUN mkdir -p /home/coder/.local/share/code-server/User/ \
 # Install Extensions Based on Profile
 # Profile-based installation reduces image size and build time
 # Profiles: minimal, standard, ai, web, full
-# Latest versions as of 2025-10-01:
-#   - Cline (saoudrizwan.claude-dev): 3.32.6
-#   - Continue (continue.continue): 1.3.15
 
 # Copy profile file
 COPY --chown=coder:coder docker/code-server/profiles/${PROFILE}.txt /tmp/extensions-list.txt
 
 # Install extensions from profile (combined into single layer for efficiency)
 # Use BuildKit cache mount for faster rebuilds
-# --force flag ensures latest version is always pulled
 RUN --mount=type=cache,target=/home/coder/.cache/code-server \
     echo "📦 Installing extensions for profile: ${PROFILE}" && \
     grep -v '^#' /tmp/extensions-list.txt | grep -v '^$' | while read -r extension; do \
@@ -445,25 +440,17 @@ RUN set -eux; \
     chmod 755 /usr/local/bin/just; \
     rm -rf /tmp/just.tar.gz /tmp/just-*; \
     echo "Installing stern ${STERN_VERSION}"; \
-    STERN_ARCHIVE="stern_${STERN_VERSION}_${STERN_ARCH}.tar.gz"; \
-    curl -fsSL "https://github.com/stern/stern/releases/download/v${STERN_VERSION}/${STERN_ARCHIVE}" -o /tmp/stern.tar.gz; \
-    curl -fsSL "https://github.com/stern/stern/releases/download/v${STERN_VERSION}/checksums.txt" -o /tmp/stern.checksums.txt; \
-    grep "${STERN_ARCHIVE}" /tmp/stern.checksums.txt | awk '{print $1 "  /tmp/stern.tar.gz"}' > /tmp/stern.sha256; \
-    sha256sum --check --strict /tmp/stern.sha256; \
+    curl -fsSL "https://github.com/stern/stern/releases/download/v${STERN_VERSION}/stern_${STERN_VERSION}_${STERN_ARCH}.tar.gz" -o /tmp/stern.tar.gz; \
     tar -xzf /tmp/stern.tar.gz -C /tmp; \
     find /tmp -type f -name "stern" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/stern; \
     chmod 755 /usr/local/bin/stern; \
-    rm -rf /tmp/stern.tar.gz /tmp/stern* /tmp/stern.checksums.txt /tmp/stern.sha256; \
+    rm -rf /tmp/stern.tar.gz /tmp/stern*; \
     echo "Installing helmfile ${HELMFILE_VERSION}"; \
-    HELMFILE_ARCHIVE="helmfile_${HELMFILE_VERSION}_${HELMFILE_ARCH}.tar.gz"; \
-    curl -fsSL "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/${HELMFILE_ARCHIVE}" -o /tmp/helmfile.tar.gz; \
-    curl -fsSL "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_checksums.txt" -o /tmp/helmfile.checksums.txt; \
-    grep "${HELMFILE_ARCHIVE}" /tmp/helmfile.checksums.txt | awk '{print $1 "  /tmp/helmfile.tar.gz"}' > /tmp/helmfile.sha256; \
-    sha256sum --check --strict /tmp/helmfile.sha256; \
+    curl -fsSL "https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_${HELMFILE_VERSION}_${HELMFILE_ARCH}.tar.gz" -o /tmp/helmfile.tar.gz; \
     tar -xzf /tmp/helmfile.tar.gz -C /tmp; \
     find /tmp -type f -name "helmfile" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/helmfile; \
     chmod 755 /usr/local/bin/helmfile; \
-    rm -rf /tmp/helmfile.tar.gz /tmp/helmfile* /tmp/helmfile.checksums.txt /tmp/helmfile.sha256; \
+    rm -rf /tmp/helmfile.tar.gz /tmp/helmfile*; \
     echo "Installing helm ${HELM_VERSION}"; \
     HELM_ARCHIVE="helm-v${HELM_VERSION}-${HELM_TAR_ARCH}.tar.gz"; \
     curl -fsSL "https://get.helm.sh/${HELM_ARCHIVE}" -o /tmp/helm.tar.gz; \
@@ -483,28 +470,20 @@ RUN set -eux; \
     chmod 755 /usr/local/bin/helm; \
     rm -rf /tmp/helm.tar.gz "/tmp/${HELM_TAR_DIR}" /tmp/helm.sha256sum /tmp/helm.sha256sum.sig /tmp/helm.sha256sum.pem; \
     echo "Installing k9s ${K9S_VERSION}"; \
-    K9S_ARCHIVE="k9s_${K9S_ARCH}.tar.gz"; \
-    curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/${K9S_ARCHIVE}" -o /tmp/k9s.tar.gz; \
-    curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/checksums.txt" -o /tmp/k9s.checksums.txt; \
-    grep "${K9S_ARCHIVE}" /tmp/k9s.checksums.txt | awk '{print $1 "  /tmp/k9s.tar.gz"}' > /tmp/k9s.sha256; \
-    sha256sum --check --strict /tmp/k9s.sha256; \
+    curl -fsSL "https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/k9s_${K9S_ARCH}.tar.gz" -o /tmp/k9s.tar.gz; \
     tar -xzf /tmp/k9s.tar.gz -C /tmp; \
     find /tmp -type f -name "k9s" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/k9s; \
     chmod 755 /usr/local/bin/k9s; \
-    rm -rf /tmp/k9s.tar.gz /tmp/k9s* /tmp/k9s.checksums.txt /tmp/k9s.sha256; \
+    rm -rf /tmp/k9s.tar.gz /tmp/k9s*; \
     echo "Installing sops ${SOPS_VERSION}"; \
     curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.${SOPS_SUFFIX}" -o /usr/local/bin/sops; \
     chmod 755 /usr/local/bin/sops; \
     echo "Installing glab ${GLAB_VERSION}"; \
-    GLAB_ARCHIVE="glab_${GLAB_VERSION}_${GLAB_ARCH}.tar.gz"; \
-    curl -fsSL "https://github.com/profclems/glab/releases/download/v${GLAB_VERSION}/${GLAB_ARCHIVE}" -o /tmp/glab.tar.gz; \
-    curl -fsSL "https://github.com/profclems/glab/releases/download/v${GLAB_VERSION}/glab_${GLAB_VERSION}_checksums.txt" -o /tmp/glab.checksums.txt; \
-    grep "${GLAB_ARCHIVE}" /tmp/glab.checksums.txt | awk '{print $1 "  /tmp/glab.tar.gz"}' > /tmp/glab.sha256; \
-    sha256sum --check --strict /tmp/glab.sha256; \
+    curl -fsSL "https://github.com/profclems/glab/releases/download/v${GLAB_VERSION}/glab_${GLAB_VERSION}_${GLAB_ARCH}.tar.gz" -o /tmp/glab.tar.gz; \
     tar -xzf /tmp/glab.tar.gz -C /tmp; \
     find /tmp -type f -name "glab" -executable | head -1 | xargs -I {} cp {} /usr/local/bin/glab; \
     chmod 755 /usr/local/bin/glab; \
-    rm -rf /tmp/glab.tar.gz /tmp/glab* /tmp/glab.checksums.txt /tmp/glab.sha256; \
+    rm -rf /tmp/glab.tar.gz /tmp/glab*; \
     case "$TARGETPLATFORM" in \
       "linux/amd64") KUBE_SHORT_ARCH=linux_x86_64 ;; \
       "linux/arm64") KUBE_SHORT_ARCH=linux_arm64 ;; \

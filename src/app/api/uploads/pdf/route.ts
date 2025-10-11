@@ -3,6 +3,8 @@ import { randomUUID } from 'crypto'
 import { Prisma } from '@prisma/client'
 import { getBlockBlobClient, getQueueClient, getUploadsContainerName, getQueueName } from '@/lib/azure/storage'
 import prisma from '@/lib/prisma'
+import { logger } from '../../../../lib/logger';
+
 
 export const dynamic = 'force-dynamic'
 
@@ -77,7 +79,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Failed to upload PDF to blob storage', error)
+    logger.error('Failed to upload PDF to blob storage', { error: error })
     return NextResponse.json({ error: 'Failed to store PDF. Try again later.' }, { status: 500 })
   }
 
@@ -102,7 +104,7 @@ export async function POST(request: NextRequest) {
     })
     uploadRecordId = upload.id
   } catch (error) {
-    console.error('Failed to record upload metadata', error)
+    logger.error('Failed to record upload metadata', { error: error })
     return NextResponse.json({ error: 'Failed to register upload metadata.' }, { status: 500 })
   }
 
@@ -123,7 +125,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Failed to record ingestion job in database', error)
+    logger.error('Failed to record ingestion job in database', { error: error })
     return NextResponse.json({ error: 'Failed to register ingestion job.' }, { status: 500 })
   }
 
@@ -147,7 +149,7 @@ export async function POST(request: NextRequest) {
     const queueClient = await getQueueClient()
     await queueClient.sendMessage(JSON.stringify(queuePayload))
   } catch (error) {
-    console.error('Failed to enqueue PDF ingestion job', error)
+    logger.error('Failed to enqueue PDF ingestion job', { error: error })
     return NextResponse.json({ error: 'Failed to queue ingestion job.' }, { status: 500 })
   }
 

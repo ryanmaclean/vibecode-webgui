@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMetricsCollector } from '../../../../../lib/db/database-metrics';
 import { getConnectionPoolStatus, getDetailedConnectionPoolInfo, createRobustConnection } from '../../../../../lib/db/robust-db-connection';
+import { logger } from '../../../../../lib/logger';
+
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -222,7 +224,7 @@ export async function GET(_request: NextRequest) {
             vectorIndexes
           };
         } catch (err) {
-          console.error('Error fetching vector-specific metrics:', err);
+          logger.error('Error fetching vector-specific metrics:', { error: err });
         }
       }
       
@@ -232,7 +234,7 @@ export async function GET(_request: NextRequest) {
       }
     }
   } catch (err) {
-    console.error('Error creating database connection for vector metrics:', err);
+    logger.error('Error creating database connection for vector metrics:', { error: err });
   }
   
   return NextResponse.json({
