@@ -39,7 +39,6 @@ export interface SearchOptions {
   useCache?: boolean
   language?: string
   contentTypes?: string[]
-  queryText?: string  // Original query text for fallback text search
 }
 
 /**
@@ -50,10 +49,7 @@ export enum VectorDatabaseProvider {
   SQLSERVER = 'sqlserver',
   COSMOSDB = 'cosmosdb',
   REDIS = 'redis',
-  COGNITIVE_SEARCH = 'cognitive_search',
-  FABRIC = 'fabric',
-  KUSTO = 'kusto',
-  MONGODB = 'mongodb'
+  AZURE_SEARCH = 'azure-search'
 }
 
 /**
