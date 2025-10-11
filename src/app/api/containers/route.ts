@@ -1,6 +1,6 @@
 /**
  * Container Management API
- * 
+ *
  * Endpoints for managing Apple Container instances
  */
 
@@ -9,6 +9,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { appleContainer } from '@/lib/container/apple-container'
 import type { ContainerOptions } from '@/lib/container/types'
+import { validateRequestBody } from '@/lib/api/validation/middleware'
+import { createContainerSchema } from '@/lib/api/validation/schemas'
 
 /**
  * GET /api/containers
@@ -66,19 +68,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Parse request body
-    const body = await req.json()
-    const { image, options } = body as {
-      image: string
-      options?: ContainerOptions
+    // Validate request body
+    const validation = await validateRequestBody(req, createContainerSchema)
+    if (!validation.success) {
+      return validation.error as NextResponse
     }
 
-    if (!image) {
-      return NextResponse.json(
-        { error: 'Image name is required' },
-        { status: 400 }
-      )
-    }
+    const { image, options } = validation.data
 
     // Check if Apple Container is available
     const isAvailable = await appleContainer.isAvailable()
@@ -90,7 +86,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Start container
-    const result = await appleContainer.start(image, options)
+    const result = await appleContainer.start(image, options as ContainerOptions)
 
     if (!result.success) {
       return NextResponse.json(
