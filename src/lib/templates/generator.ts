@@ -84,6 +84,9 @@ export async function generateFromTemplate(
 
   return {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fix/consolidated-dependency-updates
     id: template.id,
     name: projectName,
     description: options.customizations?.description || template.description,
@@ -92,6 +95,7 @@ export async function generateFromTemplate(
     language: template.language,
     frameworks: template.frameworks,
     complexity: template.complexity,
+<<<<<<< HEAD
     features: options.features || template.features,  // Use features from options if provided, otherwise from template
 =======
     id: `${template.id}-${Date.now()}`,
@@ -101,11 +105,15 @@ export async function generateFromTemplate(
     complexity: template.complexity,
     tags: template.tags,
 >>>>>>> ai-sdk-openai-v2-test
+=======
+    features: options.features || template.features,
+>>>>>>> fix/consolidated-dependency-updates
     files,
     scripts: { ...template.scripts },
     dependencies: { ...template.dependencies },
     devDependencies: template.devDependencies ? { ...template.devDependencies } : undefined,
     envVars,
+<<<<<<< HEAD
     documentation: {
       readme: `# ${projectName}\n\n${template.description}`,
       setup: template.documentation.setup.join('\n'),
@@ -114,6 +122,16 @@ export async function generateFromTemplate(
     createdAt: new Date(),
     estimatedTime: 30,
     setupInstructions,
+=======
+    setupInstructions,
+    documentation: {
+      readme: `# ${projectName}\n\n${template.description}`,
+      setup: setupInstructions.join('\n'),
+      deployment: 'Follow the deployment instructions in the README'
+    },
+    createdAt: new Date(),
+    estimatedTime: 30
+>>>>>>> fix/consolidated-dependency-updates
   }
 }
 

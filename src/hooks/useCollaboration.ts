@@ -34,6 +34,7 @@ interface CursorPosition {
   timestamp: Date
 }
 
+<<<<<<< HEAD
 interface UseCollaborationProps {
   workspaceId: string
   conversationId?: string
@@ -55,6 +56,8 @@ interface CursorPosition {
   timestamp: Date
 }
 
+=======
+>>>>>>> fix/consolidated-dependency-updates
 export function useCollaboration({
   workspaceId,
   conversationId,
@@ -69,7 +72,10 @@ export function useCollaboration({
   const [cursors, setCursors] = useState<CursorPosition[]>([])
   const [connectionError, setConnectionError] = useState<string | null>(null)
 
+<<<<<<< HEAD
   const socketRef = useRef<Socket | null>(null)
+=======
+>>>>>>> fix/consolidated-dependency-updates
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const cursorThrottleRef = useRef<NodeJS.Timeout | null>(null)
 

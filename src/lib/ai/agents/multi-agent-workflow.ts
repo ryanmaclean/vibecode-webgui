@@ -250,6 +250,7 @@ Your role is to:
     const content = response?.content ?? '';
 
     if (outputSchema) {
+<<<<<<< HEAD
       // Attempt to parse JSON when a schema is provided
       try {
         const parsed = JSON.parse(content);
@@ -258,6 +259,28 @@ Your role is to:
         // Fallback to raw content if not valid JSON
         return content;
       }
+=======
+      // Use structured output for schema-defined responses
+      const parser = StructuredOutputParser.fromZodSchema(outputSchema);
+      const formatInstructions = parser.getFormatInstructions();
+      
+      messages.push(new SystemMessage(`\n\n${formatInstructions}`));
+      
+      // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence for agent type
+      const chain = RunnableSequence.from([
+        // @ts-expect-error - Type incompatibility with LangChain's RunnableSequence
+        agent,
+        parser
+      ]);
+      
+      // @ts-expect-error - Type incompatibility with LangChain message format
+      return await chain.invoke(messages);
+    } else {
+      // Use simple text output
+      // @ts-expect-error - Type incompatibility with LangChain message format
+      const response = await agent.invoke(messages);
+      return response.content;
+>>>>>>> fix/consolidated-dependency-updates
     }
     return content;
   }

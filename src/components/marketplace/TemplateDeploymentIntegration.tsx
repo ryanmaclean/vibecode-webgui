@@ -48,6 +48,7 @@ export function TemplateDeploymentIntegration({
       tags: template.tags,
       language: template.language || [],
       frameworks: template.frameworks || [],
+<<<<<<< HEAD
       files: template.files || [],
       dependencies: template.dependencies || {},
       devDependencies: {},
@@ -57,16 +58,28 @@ export function TemplateDeploymentIntegration({
         value: env.defaultValue || '',
         description: env.description
       })),
+=======
+>>>>>>> fix/consolidated-dependency-updates
       setupInstructions: [
         'npm install',
         'npm run dev'
       ],
       documentation: {
+<<<<<<< HEAD
         readme: `# ${template.name}
 
 ${template.description}`,
         setup: Array.isArray(template.documentation?.setup) ? template.documentation.setup.join('\n') : 'Setup instructions',
         deployment: Array.isArray(template.documentation?.deployment) ? template.documentation.deployment.join('\n') : 'Deployment guide'
+=======
+        readme: (template.documentation as any)?.readme || `# ${template.name}\n\n${template.description}`,
+        setup: Array.isArray(template.documentation?.setup) 
+          ? template.documentation.setup.join('\n') 
+          : template.documentation?.setup || 'Setup instructions',
+        deployment: Array.isArray(template.documentation?.deployment)
+          ? template.documentation.deployment.join('\n')
+          : template.documentation?.deployment || 'Deployment guide'
+>>>>>>> fix/consolidated-dependency-updates
       },
       createdAt: new Date(),
       estimatedTime: 15,
@@ -402,4 +415,8 @@ ${template.description}`,
       </div>
     </div>
   )
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> fix/consolidated-dependency-updates

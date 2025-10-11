@@ -303,7 +303,10 @@ export class CodeReviewAutomation {
       });
 
       const response = await this.llm.invoke(formattedPrompt);
+<<<<<<< HEAD
 
+=======
+>>>>>>> fix/consolidated-dependency-updates
       // Parse AI response and convert to structured results
       const aiIssues = this.parseAIResponse(response.content as string, rules);
       results.push(...aiIssues);

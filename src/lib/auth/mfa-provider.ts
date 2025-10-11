@@ -68,8 +68,12 @@ const verificationSchema = z.object({
 export class MFAProvider {
   private devices: Map<string, MFADevice> = new Map()
   private challenges: Map<string, MFAChallenge> = new Map()
+<<<<<<< HEAD
   private backupCodes: Map<string, string[]> = new Map() // userId -> codes
   private failedAttempts: Map<string, { count: number, lockedUntil?: Date }> = new Map()
+=======
+  private backupCodes: Map<string, string[]> = new Map() // userId -> codes  private failedAttempts: Map<string, { count: number, lockedUntil?: Date }> = new Map()
+>>>>>>> fix/consolidated-dependency-updates
 
   constructor() {
     // Cleanup expired challenges every 5 minutes
@@ -97,7 +101,10 @@ export class MFAProvider {
     // Generate backup codes
     const backupCodes = this.generateBackupCodes()
     this.backupCodes.set(userId, backupCodes)
+<<<<<<< HEAD
 
+=======
+>>>>>>> fix/consolidated-dependency-updates
     // Store device (inactive until verified)
     const device: MFADevice = {
       id: deviceId,
@@ -323,8 +330,12 @@ export class MFAProvider {
       const isValidBackup = this.verifyBackupCode(challenge.userId, backupCode)
       if (isValidBackup) {
         this.challenges.delete(challengeId)
+<<<<<<< HEAD
         const remainingBackupCodes = this.backupCodes.get(challenge.userId)?.length || 0
 
+=======
+        const remainingBackupCodes = this.backupCodes.get(challenge.userId)?.length || 0        
+>>>>>>> fix/consolidated-dependency-updates
         console.log(`✅ MFA verification successful with backup code for user ${challenge.userId}`)
 
         return {
@@ -412,8 +423,12 @@ export class MFAProvider {
    */
   generateNewBackupCodes(userId: string): string[] {
     const backupCodes = this.generateBackupCodes()
+<<<<<<< HEAD
     this.backupCodes.set(userId, backupCodes)
 
+=======
+    this.backupCodes.set(userId, backupCodes)    
+>>>>>>> fix/consolidated-dependency-updates
     console.log(`🔑 New backup codes generated for user ${userId}`)
     return backupCodes
   }
@@ -531,9 +546,13 @@ export class MFAProvider {
    * SECURITY: Uses crypto.randomBytes() instead of Math.random()
    */
   private generateSetupToken(): string {
+<<<<<<< HEAD
     const randomHex = randomBytes(16).toString('hex');
     return `setup_${Date.now()}_${randomHex}`;
   }
+=======
+    return `setup_${Date.now()}_${Math.random().toString(36).slice(2, 18)}`  }
+>>>>>>> fix/consolidated-dependency-updates
 
   /**
    * Generate cryptographically secure 6-digit SMS code

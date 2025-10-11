@@ -350,8 +350,12 @@ export class PerformanceOptimization {
       });
       
       const response = await this.llm.invoke(formattedPrompt);
+<<<<<<< HEAD
 
       const aiIssues = this.parseAIResponse(extractText(response));
+=======
+      const aiIssues = this.parseAIResponse(response.content as string);
+>>>>>>> fix/consolidated-dependency-updates
       issues.push(...aiIssues);
 
     } catch (error) {

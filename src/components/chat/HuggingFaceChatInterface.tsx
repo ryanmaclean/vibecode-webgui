@@ -112,6 +112,7 @@ export const HuggingFaceChatInterface = ({
     { id: 'facebook/blenderbot-400M-distill', name: 'BlenderBot 400M', provider: 'Facebook', context: '1K', type: 'conversational' },
     { id: 'microsoft/GODEL-v1_1-large-seq2seq', name: 'GODEL Large', provider: 'Microsoft', context: '1K', type: 'conversational' },
     { id: 'google/flan-t5-large', name: 'FLAN-T5 Large', provider: 'Google', context: '512', type: 'text-generation' },
+<<<<<<< HEAD
     { id: 'bigscience/bloom-560m', name: 'BLOOM 560M', provider: 'BigScience', context: '1K', type: 'text-generation' }
 =======
     { id: 'facebook/blenderbot-400M-distill', name: 'BlenderBot 400M', provider: 'Facebook', context: '512', type: 'conversational' },
@@ -120,6 +121,9 @@ export const HuggingFaceChatInterface = ({
     { id: 'bigscience/bloom-560m', name: 'BLOOM 560M', provider: 'BigScience', context: '2K', type: 'text-generation' }
 >>>>>>> ai-sdk-openai-v2-test
   ]
+=======
+    { id: 'bigscience/bloom-560m', name: 'BLOOM 560M', provider: 'BigScience', context: '2K', type: 'text-generation' }  ]
+>>>>>>> fix/consolidated-dependency-updates
 
   useEffect(() => {
     scrollToBottom()
@@ -846,6 +850,9 @@ export const HuggingFaceChatInterface = ({
               />
               
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fix/consolidated-dependency-updates
               <Tooltip content="Attach files">
                 <Button
                   variant="outline"
@@ -865,6 +872,7 @@ export const HuggingFaceChatInterface = ({
                   disabled={isStreaming || (!input.trim() && attachedFiles.length === 0)}
                 >
                   <Send className="w-4 h-4" />
+<<<<<<< HEAD
                 </Button>
               </Tooltip>
 =======
@@ -888,6 +896,9 @@ export const HuggingFaceChatInterface = ({
                 <Send className="w-4 h-4" />
               </Button>
 >>>>>>> ai-sdk-openai-v2-test
+=======
+                </Button>              </Tooltip>
+>>>>>>> fix/consolidated-dependency-updates
             </div>
           </div>
         </CardContent>

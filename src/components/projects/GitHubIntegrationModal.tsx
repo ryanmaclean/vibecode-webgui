@@ -52,11 +52,15 @@ export function FolderHubIntegrationModal({
   })
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   const githubIntegration = React.useRef<GitHubIntegration | null>(null)
   const [integration, setIntegration] = useState<GitHubIntegration | null>(null)
 =======
   const githubIntegration = React.useRef<FolderHubIntegration | null>(null)
 >>>>>>> ai-sdk-openai-v2-test
+=======
+  const githubIntegration = React.useRef<GitHubIntegration | null>(null)
+>>>>>>> fix/consolidated-dependency-updates
 
   useEffect(() => {
     if (!isOpen) {
@@ -83,6 +87,7 @@ export function FolderHubIntegrationModal({
 
     try {
 <<<<<<< HEAD
+<<<<<<< HEAD
       const integrationInstance = new GitHubIntegration(accessToken.trim())
       const user = await integrationInstance.initialize()
       
@@ -98,6 +103,14 @@ export function FolderHubIntegrationModal({
       setFolderHubUser(user)
       setSuccess('Successfully connected to FolderHub!')
 >>>>>>> ai-sdk-openai-v2-test
+=======
+      const newIntegration = new GitHubIntegration(accessToken)
+      const user = await newIntegration.getCurrentUser()
+      
+      setIntegration(newIntegration)
+      setGitHubUser(user)
+      setSuccess('Successfully connected to GitHub!')
+>>>>>>> fix/consolidated-dependency-updates
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to connect to FolderHub')
     } finally {
@@ -107,12 +120,17 @@ export function FolderHubIntegrationModal({
 
   const handleCreateRepository = async () => {
 <<<<<<< HEAD
+<<<<<<< HEAD
     if (!integration) {
       setError('Not connected to GitHub')
 =======
     if (!githubIntegration.current) {
       setError('Not connected to FolderHub')
 >>>>>>> ai-sdk-openai-v2-test
+=======
+    if (!integration) {
+      setError('Not connected to GitHub')
+>>>>>>> fix/consolidated-dependency-updates
       return
     }
 
@@ -141,16 +159,22 @@ export function FolderHubIntegrationModal({
       // Add FolderHub Actions workflow if requested
       if (repoSettings.addWorkflow) {
 <<<<<<< HEAD
+<<<<<<< HEAD
         const { generateGitHubActionsWorkflow } = await import('@/lib/github/integration');
         const workflow = generateGitHubActionsWorkflow(
 =======
         const { generateFolderHubActionsWorkflow } = await import('@/lib/github/integration')
         const workflowContent = generateFolderHubActionsWorkflow(
 >>>>>>> ai-sdk-openai-v2-test
+=======
+        const { generateGitHubActionsWorkflow } = await import('@/lib/github/integration')
+        const workflowContent = generateGitHubActionsWorkflow(
+>>>>>>> fix/consolidated-dependency-updates
           'node', // Default to node for most projects
           'typescript' // Default to TypeScript
         );
         
+<<<<<<< HEAD
 <<<<<<< HEAD
         await integration.addGitHubActionsWorkflow(
 =======
@@ -160,6 +184,13 @@ export function FolderHubIntegrationModal({
           'ci',
           workflow
         );
+=======
+        await integration.addGitHubActionsWorkflow(
+          result.repository.name,
+          'ci',
+          workflowContent
+        )
+>>>>>>> fix/consolidated-dependency-updates
       }
 
       setSuccess(`Repository created successfully! View it at ${result.repository.htmlUrl}`)

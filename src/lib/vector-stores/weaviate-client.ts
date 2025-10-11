@@ -85,6 +85,7 @@ export class WeaviateVectorStore {
         host: host.replace(/^https?:\/\//, ''),
 <<<<<<< HEAD
         apiKey: apiKey,
+<<<<<<< HEAD
         ...(openaiApiKey ? { additionalHeaders: { 'X-OpenAI-Api-Key': openaiApiKey } } : {})
       })
 =======
@@ -98,6 +99,9 @@ export class WeaviateVectorStore {
       
       this.client = weaviate.client(clientConfig)
 >>>>>>> ai-sdk-openai-v2-test
+=======
+        ...(openaiApiKey ? { additionalHeaders: { 'X-OpenAI-Api-Key': openaiApiKey } } : {})      })
+>>>>>>> fix/consolidated-dependency-updates
     } catch (error) {
       console.warn('Failed to initialize Weaviate client:', error)
       // Use a mock client that will fail gracefully

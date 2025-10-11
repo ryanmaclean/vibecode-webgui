@@ -373,8 +373,12 @@ export class ModelOrchestrator {
         reasons.push(`Selected ${model.name} for excellent code generation capabilities (${model.capabilities.codeGeneration}/10)`)
         break
       case TaskType.CODE_REVIEW:
+<<<<<<< HEAD
       case TaskType.DEBUGGING:
         reasons.push(`Selected ${model.name} for superior reasoning abilities (${model.capabilities.reasoning}/10)`)
+=======
+      case TaskType.DEBUGGING:        reasons.push(`Selected ${model.name} for superior reasoning abilities (${model.capabilities.reasoning}/10)`)
+>>>>>>> fix/consolidated-dependency-updates
         break
       case TaskType.CREATIVE_WRITING:
         reasons.push(`Selected ${model.name} for strong creative capabilities (${model.capabilities.creativity}/10)`)
