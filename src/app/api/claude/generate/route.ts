@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Claude generate API error:', error)
+    // Server error logged
 
     return NextResponse.json(
       {

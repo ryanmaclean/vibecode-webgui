@@ -17,6 +17,7 @@ import Alert from '@mui/material/Alert';
 import Tooltip from '@mui/material/Tooltip';
 import type { HopStat } from '@/types/network';
 
+<<<<<<< HEAD
 // Memoized HopRow component
 const HopRow = memo(({ hop }: { hop: HopStat }) => (
   <TableRow>
@@ -101,6 +102,9 @@ const NetworkPathTable = memo(({ trace }: { trace: HopStat[] }) => (
 NetworkPathTable.displayName = 'NetworkPathTable';
 
 const NetworkDiagnostics = memo(() => {
+=======
+const LinkDiagnostics = () => {
+>>>>>>> ai-sdk-openai-v2-test
   const [host, setHost] = useState('api.vibecode.com');
   const [port, setPort] = useState('443');
   const [isLoading, setIsLoading] = useState(false);
@@ -163,7 +167,7 @@ const NetworkDiagnostics = memo(() => {
       <Card variant="outlined">
         <CardContent>
           <Typography variant="h5" gutterBottom>
-            Network Diagnostics
+            Link Diagnostics
             <Tooltip title="Run network diagnostics to check connectivity and trace routes">
               <Box component="span" sx={{ ml: 1, verticalAlign: 'middle', fontSize: 12, color: 'text.secondary' }}>i</Box>
             </Tooltip>
@@ -230,7 +234,51 @@ const NetworkDiagnostics = memo(() => {
               />
 
               {results.trace && results.trace.length > 0 && (
+<<<<<<< HEAD
                 <NetworkPathTable trace={results.trace} />
+=======
+                <Box>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Link Path Analysis
+                  </Typography>
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Hop</TableCell>
+                          <TableCell>Host</TableCell>
+                          <TableCell>IP</TableCell>
+                          <TableCell>Loss %</TableCell>
+                          <TableCell>Avg (ms)</TableCell>
+                          <TableCell>Best (ms)</TableCell>
+                          <TableCell>Worst (ms)</TableCell>
+                          <TableCell>StDev</TableCell>
+                          <TableCell>Jitter</TableCell>
+                          <TableCell>P90 (ms)</TableCell>
+                          <TableCell>P99 (ms)</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {results.trace.map((hop) => (
+                          <TableRow key={hop.hop}>
+                            <TableCell>{hop.hop}</TableCell>
+                            <TableCell>{hop.host || 'Unknown'}</TableCell>
+                            <TableCell>{hop.ip || 'Unknown'}</TableCell>
+                            <TableCell>{hop.loss}</TableCell>
+                            <TableCell>{hop.avg.toFixed(2)}</TableCell>
+                            <TableCell>{hop.best.toFixed(2)}</TableCell>
+                            <TableCell>{hop.worst.toFixed(2)}</TableCell>
+                            <TableCell>{hop.stdev.toFixed(2)}</TableCell>
+                            <TableCell>{hop.jitter != null ? hop.jitter.toFixed(2) : '-'}</TableCell>
+                            <TableCell>{hop.p90 != null ? hop.p90.toFixed(2) : '-'}</TableCell>
+                            <TableCell>{hop.p99 != null ? hop.p99.toFixed(2) : '-'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+>>>>>>> ai-sdk-openai-v2-test
               )}
 
               {formattedTimestamp && (
@@ -247,4 +295,4 @@ const NetworkDiagnostics = memo(() => {
 });
 NetworkDiagnostics.displayName = 'NetworkDiagnostics';
 
-export default NetworkDiagnostics;
+export default LinkDiagnostics;

@@ -11,10 +11,25 @@ import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo
 import debounce from 'lodash/debounce'
 import DOMPurify from 'dompurify'
 import { EditorView } from '@codemirror/view'
+<<<<<<< HEAD
 import { EditorState, type Extension } from '@codemirror/state'
 import { javascript } from '@codemirror/lang-javascript'
 // TODO: Import real collaboration manager once TypeScript issues are resolved
 // import { collaborationManager, type CollaborationSession, type CollaborationUser } from '../../../lib/collaboration'
+=======
+import { EditorState, Extension } from '@codemirror/state'
+// @ts-ignore - Missing dependency will be added later
+import { basicSetup } from '@codemirror/basic-setup'
+// @ts-ignore - Missing dependency will be added later
+import { javascript } from '@codemirror/lang-javascript'
+// @ts-ignore - Missing dependency will be added later
+import { html } from '@codemirror/lang-html'
+// @ts-ignore - Missing dependency will be added later
+import { css } from '@codemirror/lang-css'
+// @ts-ignore - Missing dependency will be added later
+import { yCollab } from 'y-codemirror.next'
+// @ts-ignore - Missing dependency will be added later
+>>>>>>> ai-sdk-openai-v2-test
 import * as Y from 'yjs'
 
 type AwarenessState = {
@@ -321,8 +336,25 @@ const CollaborativeEditor = forwardRef<EditorHandle, CollaborativeEditorProps>((
 
       // Set up connection status monitoring
       if (session.provider) {
+<<<<<<< HEAD
         setIsConnected(true)
         setConnectionError(null)
+=======
+        // @ts-ignore - Provider interface will be updated
+        session.provider.on('status', ({ status }: { status: string }) => {
+          setIsConnected(status === 'connected')
+          if (status === 'disconnected') {
+            setConnectionError('Connection lost. Attempting to reconnect...')
+          } else if (status === 'connected') {
+            setConnectionError(null)
+          }
+        })
+
+        // @ts-ignore - Provider interface will be updated
+        session.provider.on('connection-error', (error: Error) => {
+          setConnectionError(`Connection error: ${error.message}`)
+        })
+>>>>>>> ai-sdk-openai-v2-test
       }
 
       // Monitor user presence
@@ -399,15 +431,22 @@ const CollaborativeEditor = forwardRef<EditorHandle, CollaborativeEditorProps>((
     awareness.on('change', handleAwarenessChange);
 
     return () => {
+<<<<<<< HEAD
       // Use off method if available, otherwise rely on garbage collection
       if (awareness.off) {
         awareness.off('change', handleAwarenessChange);
       }
     };
+=======
+      // @ts-ignore - Awareness interface will be updated
+      awareness.off('change', handleAwarenessChange)
+    }
+>>>>>>> ai-sdk-openai-v2-test
   }, [users, currentUser.id, onUserJoin, onUserLeave])
 
   // Initialize collaboration on mount
   useEffect(() => {
+<<<<<<< HEAD
     initializeCollaboration().catch((error) => {
       console.error('Error initializing collaboration:', error);
       setConnectionError('Failed to initialize collaboration');
@@ -419,6 +458,13 @@ const CollaborativeEditor = forwardRef<EditorHandle, CollaborativeEditorProps>((
       });
     };
   }, [initializeCollaboration, cleanup]);
+=======
+    initializeCollaboration()
+    return () => {
+      cleanup()
+    }
+  }, [initializeCollaboration, cleanup])
+>>>>>>> ai-sdk-openai-v2-test
 
   /**
    * Get file content for saving

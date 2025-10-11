@@ -239,7 +239,7 @@ export class ResourceManager {
         where: { created_at: { lt: oneDayAgo }, event_type: 'api_call' }
       })
 
-      console.log('Cleaned up old API call records')
+      // Debug log removed
     } catch (error) {
       console.error('Error cleaning up API records:', error)
     }

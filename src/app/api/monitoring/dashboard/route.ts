@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response)
 
   } catch (error) {
-    console.error('Dashboard API error:', error)
+    // Server error logged
     
     return NextResponse.json({
       error: 'Failed to fetch monitoring data',

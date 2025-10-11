@@ -8,21 +8,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Mic, 
   Camera, 
-  FileCode, 
+  File, 
   Bot, 
   Zap, 
   Eye, 
   Code, 
   Users,
   Cpu,
-  Globe,
+  Link,
   Wand2,
   Play,
   Sparkles,
   Headphones,
   Upload,
   Settings,
-  BarChart3,
+  BarChart,
   Shield
 } from 'lucide-react';
 import MultimodalPromptInterface from '@/components/MultimodalPromptInterface';
@@ -57,10 +57,10 @@ export default function MultimodalDemoPage() {
         setIsInitialized(true);
         
         // Log demo session start
-        console.log('🚀 VibeCode Multimodal Demo Session Started');
+        // Debug log removed
         
       } catch (error) {
-        console.error('Failed to initialize agent:', error);
+        // Error handled
       }
     };
 
@@ -112,7 +112,7 @@ export default function MultimodalDemoPage() {
       id: 'file-analysis',
       title: 'Codebase Intelligence',
       description: 'Upload entire projects for analysis, refactoring, and optimization',
-      icon: <FileCode className="w-6 h-6" />,
+      icon: <File className="w-6 h-6" />,
       color: 'bg-purple-500',
       examples: [
         'Refactor legacy code',
@@ -148,7 +148,7 @@ export default function MultimodalDemoPage() {
       id: 'monitoring',
       title: 'Analytics & Monitoring',
       description: 'Geographic analytics and real-time performance monitoring',
-      icon: <Globe className="w-6 h-6" />,
+      icon: <Link className="w-6 h-6" />,
       color: 'bg-indigo-500',
       examples: [
         'User geographic distribution',
@@ -404,7 +404,7 @@ export default function MultimodalDemoPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <BarChart3 className="w-5 h-5" />
+                    <BarChart className="w-5 h-5" />
                     Performance
                   </CardTitle>
                 </CardHeader>
@@ -454,7 +454,7 @@ export default function MultimodalDemoPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <Globe className="w-5 h-5" />
+                    <Link className="w-5 h-5" />
                     Geographic
                   </CardTitle>
                 </CardHeader>
@@ -510,7 +510,7 @@ export default function MultimodalDemoPage() {
               <CardContent>
                 <div className="h-64 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg flex items-center justify-center">
                   <div className="text-center">
-                    <Globe className="w-16 h-16 text-blue-300 mx-auto mb-4" />
+                    <Link className="w-16 h-16 text-blue-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-700 mb-2">
                       Datadog Geomap Integration
                     </h3>

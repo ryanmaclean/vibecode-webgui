@@ -318,7 +318,7 @@ Token usage is {{value}} tokens in the last hour.
       }
 
       const result = await response.json()
-      console.log(`✅ Monitor created: ${alert.name} (ID: ${result.id})`)
+      // Debug log removed`)
       return result.id
 
     } catch (error) {
@@ -331,7 +331,7 @@ Token usage is {{value}} tokens in the last hour.
    * Setup all critical alerts
    */
   async setupAllAlerts(): Promise<{ [key: string]: string }> {
-    console.log('🚨 Setting up Datadog alerts...')
+    // Debug log removed
     
     const allAlerts = [
       ...this.getAIServiceAlerts(),
@@ -351,7 +351,7 @@ Token usage is {{value}} tokens in the last hour.
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
 
-    console.log(`✅ Created ${Object.keys(results).length}/${allAlerts.length} monitors`)
+    // Debug log removed.length}/${allAlerts.length} monitors`)
     return results
   }
 

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Upload, Settings, Sparkles, MessageSquare, FileText, Image, Paperclip, Globe, Zap, Terminal, Code, Package } from 'lucide-react'
+import { Send, Bot, User, Upload, Settings, Sparkles, MessageSquare, FileText, Image, Link, Zap, Terminal, Code, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
@@ -108,10 +108,17 @@ export const HuggingFaceChatInterface = ({
   const huggingFaceModels = [
     { id: 'microsoft/DialoGPT-medium', name: 'DialoGPT Medium', provider: 'Microsoft', context: '1K', type: 'conversational' },
     { id: 'microsoft/DialoGPT-large', name: 'DialoGPT Large', provider: 'Microsoft', context: '1K', type: 'conversational' },
+<<<<<<< HEAD
     { id: 'facebook/blenderbot-400M-distill', name: 'BlenderBot 400M', provider: 'Facebook', context: '1K', type: 'conversational' },
     { id: 'microsoft/GODEL-v1_1-large-seq2seq', name: 'GODEL Large', provider: 'Microsoft', context: '1K', type: 'conversational' },
     { id: 'google/flan-t5-large', name: 'FLAN-T5 Large', provider: 'Google', context: '512', type: 'text-generation' },
     { id: 'bigscience/bloom-560m', name: 'BLOOM 560M', provider: 'BigScience', context: '1K', type: 'text-generation' }
+=======
+    { id: 'facebook/blenderbot-400M-distill', name: 'BlenderBot 400M', provider: 'Facebook', context: '512', type: 'conversational' },
+    { id: 'microsoft/GODEL-v1_1-large-seq2seq', name: 'GODEL Large', provider: 'Microsoft', context: '2K', type: 'conversational' },
+    { id: 'google/flan-t5-large', name: 'FLAN-T5 Large', provider: 'Google', context: '512', type: 'text-generation' },
+    { id: 'bigscience/bloom-560m', name: 'BLOOM 560M', provider: 'BigScience', context: '2K', type: 'text-generation' }
+>>>>>>> ai-sdk-openai-v2-test
   ]
 
   useEffect(() => {
@@ -530,7 +537,7 @@ export const HuggingFaceChatInterface = ({
             <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Globe className="w-4 h-4" />
+                  <Link className="w-4 h-4" />
                   <span className="text-sm">Web Search</span>
                 </div>
                 <Button
@@ -838,6 +845,7 @@ export const HuggingFaceChatInterface = ({
                 className="hidden"
               />
               
+<<<<<<< HEAD
               <Tooltip content="Attach files">
                 <Button
                   variant="outline"
@@ -859,6 +867,27 @@ export const HuggingFaceChatInterface = ({
                   <Send className="w-4 h-4" />
                 </Button>
               </Tooltip>
+=======
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isStreaming}
+                title="Attach files"
+              >
+                <Link className="w-4 h-4" />
+              </Button>
+
+              <Button
+                variant="default"
+                size="sm"
+                onClick={sendMessage}
+                disabled={isStreaming || (!input.trim() && attachedFiles.length === 0)}
+                title="Send message"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+>>>>>>> ai-sdk-openai-v2-test
             </div>
           </div>
         </CardContent>

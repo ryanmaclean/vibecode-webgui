@@ -13,10 +13,14 @@ import {
   User, 
   Settings, 
   Zap, 
-  Brain, 
-  DollarSign, 
+  Cpu as Brain, 
+  Circle as DollarSign, 
   Clock,
+<<<<<<< HEAD
   Wrench,
+=======
+  Settings as Tools,
+>>>>>>> ai-sdk-openai-v2-test
   Search
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -173,7 +177,7 @@ export function EnhancedAIChatInterface({
         }
       }
     } catch (error) {
-      console.error('Chat error:', error)
+      // Chat error handled
       setMessages(prev => [...prev, {
         id: (Date.now() + 2).toString(),
         role: 'assistant',

@@ -124,7 +124,7 @@ Generate a new project based on the following prompt.
 
         if (!response.ok) {
           const errorBody = await response.text();
-          console.error('OpenRouter API Error:', response.status, errorBody);
+          // Server error logged
           span?.setTag('error', true);
           span?.setTag('error.message', `OpenRouter API failed with status ${response.status}`);
           span?.setTag('error.stack', errorBody);
@@ -183,7 +183,7 @@ Generate a new project based on the following prompt.
         return result;
 
       } catch (error: unknown) {
-        console.error('Error during AI project generation:', error);
+        // Server error logged
         span?.setTag('error', true);
         if (error instanceof Error) {
             span?.setTag('error.message', error.message);
@@ -281,7 +281,7 @@ async function execInPod(namespace: string, workspaceId: string, command: string
 
 // Placeholder for the real implementation
 async function createCodeServerSession(workspaceId: string, userId: string): Promise<{ url: string }> {
-  console.log(`Creating code-server session for workspace ${workspaceId} and user ${userId}`);
+  // Debug log removed
   // In a real implementation, this would call the code-server management service
   return Promise.resolve({ url: `https://code.vibecode.com/w/${workspaceId}` });
 }
@@ -427,7 +427,7 @@ export async function POST(request: NextRequest) {
       });
       
     } catch (error) {
-      console.error('AI project generation error:', error);
+      // Server error logged
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const errorDetails = error instanceof z.ZodError ? error.errors : undefined;

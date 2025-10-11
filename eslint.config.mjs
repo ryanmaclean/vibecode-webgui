@@ -20,7 +20,19 @@ const eslintConfig = [
       // Allow require imports where needed
       "@typescript-eslint/no-require-imports": "warn",
       // Allow React hooks dependencies to be handled manually
-      "react-hooks/exhaustive-deps": "warn"
+      "react-hooks/exhaustive-deps": "warn",
+      // Allow unused imports temporarily (can be cleaned up later)
+      "@typescript-eslint/no-unused-vars": ["warn", { 
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "ignoreRestSiblings": true
+      }],
+      // Prefer const assertions for better type inference
+      "prefer-const": "error",
+      // Enforce explicit return types for functions (improves maintainability)
+      "@typescript-eslint/explicit-function-return-type": "off",
+      // Allow console.log in development
+      "no-console": process.env.NODE_ENV === "production" ? "error" : "warn"
     }
   },
   {

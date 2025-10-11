@@ -23,7 +23,7 @@ const DatadogRUM = () => {
 
     // Initialize in production or when explicitly enabled for development, if the client token is available.
     if ((isProduction || enableDev) && clientToken && applicationId) {
-      console.log(`Initializing Datadog RUM for ${process.env.NODE_ENV}...`);
+      // Debug log removed
       type DatadogSite = 'datadoghq.com' | 'us3.datadoghq.com' | 'us5.datadoghq.com' | 'datadoghq.eu' | 'ddog-gov.com' | 'ap1.datadoghq.com';
       const ddSite: DatadogSite = (site as DatadogSite) || 'datadoghq.com';
       datadogRum.init({
@@ -42,7 +42,7 @@ const DatadogRUM = () => {
       });
 
       datadogRum.startSessionReplayRecording();
-      console.log('Datadog RUM initialized.');
+      // Debug log removed
     }
   }, []);
 

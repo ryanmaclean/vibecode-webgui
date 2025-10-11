@@ -16,10 +16,16 @@ on:
 
 permissions:
   contents: read
+<<<<<<< HEAD
 
 concurrency:
   group: docs-ci-${{ github.ref }}
   cancel-in-progress: true
+=======
+  packages: write        # For Docker image publishing
+  security-events: write  # For security scan results
+  id-token: write        # For OIDC authentication
+>>>>>>> ai-sdk-openai-v2-test
 
 env:
   REGISTRY: vibecodecr.azurecr.io

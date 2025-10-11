@@ -196,7 +196,7 @@ export class PerformanceMonitor {
    * Process and submit K6 load test results
    */
   async submitLoadTestResults(results: LoadTestResult) {
-    console.log(`📊 Processing load test results for: ${results.test_name}`)
+    // Debug log removed
 
     const baseTagsTest = [
       `test_name:${results.test_name}`,
@@ -242,7 +242,7 @@ export class PerformanceMonitor {
    * Process and submit Datadog Synthetic test results
    */
   async submitSyntheticTestResults(results: SyntheticTestResult) {
-    console.log(`🐕 Processing Datadog Synthetic test results for: ${results.test_name}`)
+    // Debug log removed
 
     const baseTagsTest = [
       `test_name:${results.test_name}`,
@@ -294,7 +294,7 @@ export class PerformanceMonitor {
    * Process and submit Lighthouse performance results
    */
   async submitLighthouseResults(results: LighthouseResult) {
-    console.log(`🔍 Processing Lighthouse results for: ${results.page}`)
+    // Debug log removed
 
     const baseTags = [
       `page:${results.page}`,
@@ -526,6 +526,6 @@ if (typeof window !== 'undefined') {
     onLCP((metric) => performanceMonitor.trackWebVitals(metric))
     onTTFB((metric) => performanceMonitor.trackWebVitals(metric))
   }).catch(() => {
-    console.log('Web Vitals not available, skipping client-side performance tracking')
+    // Debug log removed
   })
 }

@@ -250,6 +250,7 @@ async function validateRequestSecurity(
         email: `test-${testUserId}@vibecode.dev`,
         name: `Test User ${testUserId}`
       };
+<<<<<<< HEAD
       console.log('🧪 Development testing mode: Using mock token', {
         userId: token.id,
         role: token.role,
@@ -258,6 +259,10 @@ async function validateRequestSecurity(
       // Return valid for development testing
       return { valid: true };
     } else if (getToken) {
+=======
+      // Debug log removed
+    } else {
+>>>>>>> ai-sdk-openai-v2-test
       token = await getToken({
         req: request,
         secret: process.env.NEXTAUTH_SECRET

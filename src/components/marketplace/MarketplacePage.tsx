@@ -41,7 +41,7 @@ export function MarketplacePage({
 
   const handleSubmissionComplete = (submissionId: string) => {
     // Show success message and return to browse view
-    console.log('Template submitted with ID:', submissionId)
+    // Debug log removed
     setView('browse')
   }
 

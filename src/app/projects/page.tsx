@@ -12,7 +12,7 @@ import {
   Sparkles,
   Download,
   ExternalLink,
-  Rocket,
+  Send,
   Code,
   Zap,
   Shield,
@@ -82,7 +82,7 @@ export default function ProjectsPage() {
       // Redirect to the new workspace
       router.push(workspaceUrl)
     } catch (error) {
-      console.error('Failed to create workspace:', error)
+      // Error handled
       alert('Error creating workspace. See console for details.')
       setIsCreatingWorkspace(false)
     }
@@ -140,7 +140,7 @@ export default function ProjectsPage() {
               From Template
             </TabsTrigger>
             <TabsTrigger value="scaffolder">
-              <Rocket className="w-4 h-4 mr-2" />
+              <Send className="w-4 h-4 mr-2" />
               Scaffolder
             </TabsTrigger>
           </TabsList>

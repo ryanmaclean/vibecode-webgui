@@ -18,13 +18,13 @@ import { marked } from 'marked';
 // }
 
 // This is the main page component for a single wiki page.
-export default function WikiPage({ params }: { params: { slug: string } }) {
-  const { slug } = params;
+export default async function WikiPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const filePath = path.join(process.cwd(), 'content/wiki', `${slug}.md`);
 
   // Check if the markdown file exists.
   if (!fs.existsSync(filePath)) {
-    // If not, redirect to GitHub to create it. This is the "click to create" feature.
+    // If not, redirect to FolderHub to create it. This is the "click to create" feature.
     const githubUser = 'ryanmaclean';
     const githubRepo = 'vibecode-webgui';
     const newFileContent = `---

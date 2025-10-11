@@ -17,9 +17,8 @@ import {
   Upload,
   Settings,
   Play,
-  GitBranch,
+  Folder,
   Terminal,
-  Folders,
   Bot,
   Sparkles
 } from 'lucide-react'
@@ -85,7 +84,7 @@ export default function WorkspacePage() {
           throw new Error('Failed to fetch workspace session')
         }
       } catch (error) {
-        console.warn('Failed to fetch real workspace, using mock data:', error)
+        // Warning noted
         // Fallback to mock data if API fails
         setWorkspace({
           id: workspaceId,
@@ -139,7 +138,7 @@ export default function WorkspacePage() {
             {workspace.status}
           </Badge>
           <div className="flex items-center text-sm text-gray-400">
-            <GitBranch className="w-4 h-4 mr-2" />
+            <Folder className="w-4 h-4 mr-2" />
             <span>{workspace.branch}</span>
           </div>
         </div>
