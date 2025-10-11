@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { DEMO_PROMPTS } from '@/data/demo-prompts';
+import MessageList from './MessageList';
 
 // Voice recognition interfaces
 interface SpeechRecognitionEvent extends Event {

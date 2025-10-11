@@ -6,8 +6,6 @@
 import { NextAuthOptions } from 'next-auth'
 import GithubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
-import CredentialsProvider from 'next-auth/providers/credentials'
-import { isValidBcryptHash, verifyPassword } from './auth/password'
 
 /**
  * CRITICAL SECURITY VALIDATION: NEXTAUTH_SECRET
@@ -52,138 +50,18 @@ if (NEXTAUTH_SECRET.length < 32) {
 
 console.log('✅ NEXTAUTH_SECRET validation passed: secure secret configured')
 
-const DUMMY_HASH = '$2b$12$eUlS0dNKrMxLdkPgDJZdpuHlNCn/KkheBmEzKE2.yOrembE1ccsV.'
-
-if (!isValidBcryptHash(DUMMY_HASH)) {
-  throw new Error('Dummy password hash is misconfigured: invalid bcrypt format')
-}
-
-const isNonEmptyString = (value: unknown): value is string =>
-  typeof value === 'string' && value.trim().length > 0
-
-const performTimingSafeCompare = async (password: string | undefined): Promise<void> => {
-  try {
-    await verifyPassword(password ?? '', DUMMY_HASH)
-  } catch (error) {
-    console.warn('Timing-safe bcrypt comparison failed', { error })
-  }
-}
-
-type LegacyCredential = {
-  email: string
-  passwordHash: string
-  id: string
-  name: string
-  role: string
-}
-
 /**
- * Security: legacy dev credentials are stored as bcrypt hashes (12 rounds).
- * Hashes map to the retired local passwords tracked in issue #438.
+ * SECURITY FIX: Hardcoded credentials removed
+ * 
+ * Previous implementation had 10 hardcoded accounts with predictable passwords.
+ * This was a CRITICAL security vulnerability (CWE-798).
+ * 
+ * Credentials provider disabled until proper database-backed authentication
+ * with bcrypt password hashing is implemented.
+ * 
+ * See issue #438 for implementation plan.
+ * Use OAuth providers (GitHub, Google) for authentication.
  */
-const RAW_LEGACY_CREDENTIALS: LegacyCredential[] = [
-  {
-    email: 'admin@vibecode.dev',
-    passwordHash: '$2b$12$JXIxHKb5sd8aZDt2pQNHhujlkBoXGXvJBfdJgOZ1uo.WAXN3mKFwK',
-    id: 'legacy-admin',
-    name: 'Admin User',
-    role: 'admin'
-  },
-  {
-    email: 'lead@vibecode.dev',
-    passwordHash: '$2b$12$8s/hbVhcb/mddOBDmQbrou/bEZYO.ZAkyEacFBzrctq7Y/4VJeVCW',
-    id: 'legacy-lead',
-    name: 'Lead User',
-    role: 'admin'
-  },
-  {
-    email: 'developer@vibecode.dev',
-    passwordHash: '$2b$12$r4Xn9ELPKKmRGpxTIyOI/uB1mlJAIn7xvsWNVcvl46eJzIxDbLQmq',
-    id: 'legacy-developer',
-    name: 'Developer User',
-    role: 'developer'
-  },
-  {
-    email: 'frontend@vibecode.dev',
-    passwordHash: '$2b$12$LRBZBNR5.yxr7htTzN9YOORMf0v/p/0FSINKWZAc6Ycsqf1pvZF3a',
-    id: 'legacy-frontend',
-    name: 'Frontend User',
-    role: 'user'
-  },
-  {
-    email: 'backend@vibecode.dev',
-    passwordHash: '$2b$12$x1Sv.4HYUjhDrDl/SOMEEeupl5YkhkmLXrfQOueHd0kiiojNQiG/u',
-    id: 'legacy-backend',
-    name: 'Backend User',
-    role: 'user'
-  },
-  {
-    email: 'fullstack@vibecode.dev',
-    passwordHash: '$2b$12$Ta7FBadbTaW8Wkfho/6IS.K.QfpsxLZOBgWvMBBfuaNU/0QFK7baa',
-    id: 'legacy-fullstack',
-    name: 'Fullstack User',
-    role: 'user'
-  },
-  {
-    email: 'designer@vibecode.dev',
-    passwordHash: '$2b$12$opn030TNnwgVqH4Sx3dOOusQLNGXhAOfyrBMch3ToRkJfpBNMq9si',
-    id: 'legacy-designer',
-    name: 'Designer User',
-    role: 'user'
-  },
-  {
-    email: 'tester@vibecode.dev',
-    passwordHash: '$2b$12$U1YlGAYFkH9Wq9PK3QEfaeydHGu0JwC2DOhdxVd7H1T9xz9VQ/xke',
-    id: 'legacy-tester',
-    name: 'Tester User',
-    role: 'user'
-  },
-  {
-    email: 'devops@vibecode.dev',
-    passwordHash: '$2b$12$eF2PIhYtOTP00qhe.Fx1beFv/oN2mndValdjICgh7zoQpPq2T6F0a',
-    id: 'legacy-devops',
-    name: 'DevOps User',
-    role: 'user'
-  },
-  {
-    email: 'security@vibecode.dev',
-    passwordHash: '$2b$12$LbKqHWaLHDzcMXpi4iTAG./bQAfiZG10C9BqeLXcTe9yT1F2QR/Lm',
-    id: 'legacy-security',
-    name: 'Security User',
-    role: 'user'
-  },
-]
-
-const LEGACY_CREDENTIALS_BY_EMAIL = new Map<string, LegacyCredential>()
-
-RAW_LEGACY_CREDENTIALS.forEach((credential) => {
-  const trimmedEmail = credential.email.trim()
-  const normalizedEmail = trimmedEmail.toLowerCase()
-  const passwordHash = credential.passwordHash.trim()
-
-  if (!isValidBcryptHash(passwordHash)) {
-    console.warn('⚠️ Legacy credential misconfigured with invalid bcrypt hash', {
-      email: trimmedEmail,
-      credentialId: credential.id,
-    })
-    return
-  }
-
-  if (LEGACY_CREDENTIALS_BY_EMAIL.has(normalizedEmail)) {
-    console.warn('⚠️ Duplicate legacy credential detected; later entry ignored', {
-      email: trimmedEmail,
-      credentialId: credential.id,
-    })
-    return
-  }
-
-  LEGACY_CREDENTIALS_BY_EMAIL.set(normalizedEmail, {
-    ...credential,
-    email: trimmedEmail,
-    passwordHash,
-  })
-  console.debug('[auth] stored legacy credential', { email: trimmedEmail })
-})
 
 // Build providers dynamically so missing OAuth credentials do not break local auth flows.
 const providers: NextAuthOptions['providers'] = []
@@ -231,117 +109,18 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 }
 
 /**
- * Credentials Provider with bcrypt password verification
- *
- * SECURITY IMPROVEMENTS (Issue #445):
- * - Replaced plaintext password comparison with bcrypt verification
- * - Uses timing-safe comparison (bcrypt.compare)
- * - Validates password hashes before comparison
- * - No information leakage through error messages
- * - Timing attack prevention on user enumeration
- *
- * REMAINING VULNERABILITIES:
- * - Credentials still hardcoded in source code
- * - No rate limiting on failed attempts
- * - No password reset mechanism
- * - No account lockout
- *
- * NEXT STEPS (Issue #438):
- * - Implement database-backed user storage
- * - Add rate limiting middleware
- * - Implement password reset flow
- * - Add account lockout after failed attempts
+ * Credentials provider DISABLED for security
+ * 
+ * Previous implementation used hardcoded passwords (CRITICAL vulnerability).
+ * 
+ * TODO (#438): Implement database-backed authentication with:
+ * - bcrypt/argon2 password hashing
+ * - Proper user management
+ * - Password reset flow
+ * - Account lockout after failed attempts
+ * 
+ * Until then, use OAuth providers (GitHub, Google) for authentication.
  */
-providers.push(
-  CredentialsProvider({
-      credentials: {
-        email: { label: 'Email', type: 'text' },
-        password: { label: 'Password', type: 'password' },
-      },
-      async authorize(credentials) {
-        const emailInput = credentials?.email
-        const passwordInput = typeof credentials?.password === 'string' ? credentials.password : ''
-
-        console.debug('[auth] authorize attempt', {
-          hasEmail: typeof emailInput === 'string',
-          hasPassword: passwordInput.length > 0,
-        })
-
-        if (!isNonEmptyString(emailInput)) {
-          await performTimingSafeCompare(passwordInput)
-          console.warn('❌ Credentials login rejected: missing or invalid email')
-          return null
-        }
-
-        if (!isNonEmptyString(passwordInput)) {
-          await performTimingSafeCompare(passwordInput)
-          console.warn('❌ Credentials login rejected: missing password')
-          return null
-        }
-
-        const normalizedEmail = emailInput.trim().toLowerCase()
-        const user = LEGACY_CREDENTIALS_BY_EMAIL.get(normalizedEmail)
-
-        console.debug('[auth] legacy lookup', {
-          normalizedEmail,
-          userFound: !!user,
-        })
-
-        if (!user) {
-          await performTimingSafeCompare(passwordInput)
-          console.warn('⚠️ Credentials login rejected: user not found', { email: normalizedEmail })
-          return null
-        }
-
-        const passwordHash = user.passwordHash.trim()
-        console.debug('[auth] verifying legacy credential', { email: normalizedEmail, passwordInput })
-
-        if (!isValidBcryptHash(passwordHash)) {
-          await performTimingSafeCompare(passwordInput)
-          console.warn('❌ Credentials login rejected: stored hash invalid', {
-            credentialId: user.id,
-            email: user.email,
-          })
-          return null
-        }
-
-        try {
-          const isValid = await verifyPassword(passwordInput, passwordHash)
-          console.debug('[auth] verify result', { email: normalizedEmail, isValid })
-
-          if (!isValid) {
-            await performTimingSafeCompare(passwordInput)
-            console.warn('⚠️ Credentials login rejected: password mismatch', { email: normalizedEmail })
-            return null
-          }
-
-          console.log('✅ Credentials login succeeded', { userId: user.id })
-          return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-          }
-        } catch (error) {
-          await performTimingSafeCompare(passwordInput)
-          console.warn('❌ Credentials login rejected: verification error', {
-            email: normalizedEmail,
-            credentialId: user.id,
-            error: error instanceof Error ? error.message : 'unknown-error',
-          })
-          return null
-        }
-      },
-    })
-)
-
-const credentialsProvider = providers.find((provider) => provider.id === 'credentials')
-console.debug('[auth] credentials provider wired', {
-  hasAuthorize: typeof credentialsProvider?.authorize === 'function',
-})
-if (credentialsProvider?.authorize) {
-  console.debug('[auth] authorize fn', credentialsProvider.authorize.toString())
-}
 
 export const authOptions: NextAuthOptions = {
   // adapter: PrismaAdapter(prisma), // Disabled for file-based development

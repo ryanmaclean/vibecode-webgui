@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 // import { prismaPoolOptimizer } from '@/lib/db/prisma-pool-optimizer'
 import { vectorQueryCache } from '@/lib/vector-stores/query-cache'
 import { getMetricsCollector } from '@/lib/db/database-metrics'
+import { logger } from '../../../../lib/logger';
+
 
 export async function GET(_request: NextRequest) {
   try {
@@ -93,7 +95,7 @@ export async function GET(_request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Vector metrics error:', error)
+    logger.error('Vector metrics error:', { error: error })
     return NextResponse.json(
       { 
         status: 'error', 
