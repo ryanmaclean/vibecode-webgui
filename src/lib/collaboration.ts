@@ -136,13 +136,13 @@ export class CollaborationManager {
     try {
       session.provider?.destroy()
     } catch (error) {
-      console.warn('Error destroying provider:', error)
+      logger.warn('Error destroying provider:', error)
     }
     
     try {
       session.persistence?.destroy?.()
     } catch (error) {
-      console.warn('Error destroying persistence:', error)
+      logger.warn('Error destroying persistence:', error)
     }
 
     // Remove session
@@ -197,6 +197,7 @@ export class CollaborationManager {
     // Generate consistent color based on user ID
     let hash = 0
     for (let i = 0; i < userId.length; i++) {
+import { logger } from '@/lib/logger';
       hash = userId.charCodeAt(i) + ((hash << 5) - hash)
     }
 

@@ -3,6 +3,8 @@
  * Defines alert conditions and notification strategies
  */
 
+import { logger } from '@/lib/logger';
+
 interface AlertRule {
   name: string;
   description: string;
@@ -228,15 +230,15 @@ export async function deployAlertRules(
         const error = await response.text();
         results.failed++;
         results.errors.push(`${rule.name}: ${response.status} ${error}`);
-        console.error(`❌ Failed to create alert: ${rule.name}`, error);
+        logger.error(`❌ Failed to create alert: ${rule.name}`, error);
       } else {
         results.created++;
-        console.log(`✅ Created alert: ${rule.name}`);
+        logger.info(`✅ Created alert: ${rule.name}`);
       }
     } catch (error) {
       results.failed++;
       results.errors.push(`${rule.name}: ${error}`);
-      console.error(`❌ Error creating alert: ${rule.name}`, error);
+      logger.error(`❌ Error creating alert: ${rule.name}`, error);
     }
   }
 

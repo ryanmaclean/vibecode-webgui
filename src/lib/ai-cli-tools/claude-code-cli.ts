@@ -324,6 +324,7 @@ export class ClaudeCodeCLI {
     contextWindow: number
     maxTokens: number
     costPer1kTokens: { input: number; output: number }
+import { logger } from '@/lib/logger';
   }> {
     const models = {
       'claude-3-opus': {
@@ -411,7 +412,7 @@ export class ClaudeCodeCLI {
         throw new Error(stderr)
       }
 
-      console.log('Claude Code CLI installed successfully')
+      logger.info('Claude Code CLI installed successfully')
     } catch (error) {
       throw new Error(`Failed to install Claude Code CLI: ${error}`)
     }
@@ -430,7 +431,7 @@ export class ClaudeCodeCLI {
         throw new Error(stderr)
       }
 
-      console.log('Claude Code CLI uninstalled successfully')
+      logger.info('Claude Code CLI uninstalled successfully')
     } catch (error) {
       throw new Error(`Failed to uninstall Claude Code CLI: ${error}`)
     }

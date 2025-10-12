@@ -1,6 +1,8 @@
 // Unified AI Chat API - Next generation multi-provider chat with LiteLLM-inspired architecture
 // Supports OpenRouter, direct providers, local models, and fallback chains
 
+import { logger } from '@/lib/logger';
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -80,7 +82,7 @@ async function buildAdvancedRAGContext(workspaceId: string, userQuery: string, u
       totalLength: combinedContext.length
     }
   } catch (error) {
-    console.error('Advanced RAG context error:', error)
+    logger.error('Advanced RAG context error:', error)
     return null
   }
 }
@@ -133,7 +135,7 @@ export async function POST(request: NextRequest) {
     const availableProviders = aiClient.getAvailableProviders().map(p => p.name)
     const providerHealth = await aiClient.getProviderHealth()
     
-    console.log('Provider health check:', providerHealth)
+    logger.info('Provider health check:', providerHealth)
 
     // Build advanced RAG context
     const ragResult = await buildAdvancedRAGContext(
@@ -253,10 +255,10 @@ ${generateToolCapabilities(enableTools, availableProviders)}
           controller.close()
 
           // Enhanced completion analytics
-          console.log(`Unified AI completion: ${model}, tokens: ${tokenCount}, providers: ${availableProviders.length}, RAG: ${ragResult?.relevanceScore || 'none'}`)
+          logger.info(`Unified AI completion: ${model}, tokens: ${tokenCount}, providers: ${availableProviders.length}, RAG: ${ragResult?.relevanceScore || 'none'}`)
 
         } catch (error) {
-          console.error('Unified streaming error:', error)
+          logger.error('Unified streaming error:', error)
           
           // Send error with fallback suggestions
           const errorData = JSON.stringify({
@@ -295,7 +297,7 @@ ${generateToolCapabilities(enableTools, availableProviders)}
     })
 
   } catch (error) {
-    console.error('Unified chat API error:', error)
+    logger.error('Unified chat API error:', error)
 
     return NextResponse.json(
       {

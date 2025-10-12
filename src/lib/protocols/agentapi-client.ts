@@ -24,6 +24,7 @@ import {
   HealthResponse,
   DEFAULT_CONFIG,
 } from '@/types/agent-api';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // AgentAPI Client
@@ -228,7 +229,7 @@ export class AgentAPIClient {
             break;
         }
       } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
+        logger.error('Failed to parse WebSocket message:', error);
       }
     };
 
@@ -237,7 +238,7 @@ export class AgentAPIClient {
     };
 
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      logger.error('WebSocket error:', error);
     };
 
     return ws;
@@ -420,7 +421,7 @@ export class AgentAPIClient {
 
         // Log performance if >50ms
         if (duration > 50) {
-          console.warn(`AgentAPI request took ${duration}ms: ${options.method || 'GET'} ${path}`);
+          logger.warn(`AgentAPI request took ${duration}ms: ${options.method || 'GET'} ${path}`);
         }
 
         return {

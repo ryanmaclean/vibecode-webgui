@@ -2,6 +2,8 @@
  * Security-focused logger for Keychain operations
  */
 
+import { logger } from '@/lib/logger';
+
 export interface LoggerOptions {
   module?: string
   scope?: string
@@ -20,31 +22,31 @@ export function createChildLogger(options: LoggerOptions): Logger {
   return {
     error(message: string, metadata?: Record<string, unknown>) {
       if (metadata) {
-        console.error(prefix, 'ERROR', message, metadata)
+        logger.error(prefix, 'ERROR', message, metadata)
       } else {
-        console.error(prefix, 'ERROR', message)
+        logger.error(prefix, 'ERROR', message)
       }
     },
     warn(message: string, metadata?: Record<string, unknown>) {
       if (metadata) {
-        console.warn(prefix, 'WARN', message, metadata)
+        logger.warn(prefix, 'WARN', message, metadata)
       } else {
-        console.warn(prefix, 'WARN', message)
+        logger.warn(prefix, 'WARN', message)
       }
     },
     info(message: string, metadata?: Record<string, unknown>) {
       if (metadata) {
-        console.info(prefix, 'INFO', message, metadata)
+        logger.info(prefix, 'INFO', message, metadata)
       } else {
-        console.info(prefix, 'INFO', message)
+        logger.info(prefix, 'INFO', message)
       }
     },
     debug(message: string, metadata?: Record<string, unknown>) {
       if (process.env.NODE_ENV === 'development' || process.env.ENABLE_DEBUG_LOGGING === 'true') {
         if (metadata) {
-          console.debug(prefix, 'DEBUG', message, metadata)
+          logger.debug(prefix, 'DEBUG', message, metadata)
         } else {
-          console.debug(prefix, 'DEBUG', message)
+          logger.debug(prefix, 'DEBUG', message)
         }
       }
     },

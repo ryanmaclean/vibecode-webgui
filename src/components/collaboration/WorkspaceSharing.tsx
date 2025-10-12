@@ -183,7 +183,7 @@ export default function WorkspaceSharing({
       await navigator.clipboard.writeText(shareLink)
       // TODO: Show success toast
     } catch (error) {
-      console.error('Failed to copy share link:', error)
+      logger.error('Failed to copy share link:', error)
       // TODO: Show error toast
     }
   }, [shareLink])
@@ -576,6 +576,7 @@ export default function WorkspaceSharing({
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Manage members and teams for &quot;{workspaceName}&quot;
+import { logger } from '@/lib/logger';
           </p>
         </div>
 

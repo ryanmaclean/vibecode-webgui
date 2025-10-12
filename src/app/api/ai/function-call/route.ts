@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 import { NextRequest, NextResponse } from 'next/server'
 import { functionCallingService, FunctionCall } from '@/lib/services/function-calling'
 
@@ -35,7 +37,7 @@ export async function POST(request: NextRequest) {
     const responseTime = Date.now() - startTime
 
     // Log function execution for monitoring
-    console.log(`Function call: ${function_call.name} -> ${result.success ? 'success' : 'failed'} (${responseTime}ms)`)
+    logger.info(`Function call: ${function_call.name} -> ${result.success ? 'success' : 'failed'} (${responseTime}ms)`)
 
     return NextResponse.json({
       success: result.success,
@@ -50,7 +52,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: unknown) {
-    console.error('Function calling API error:', error)
+    logger.error('Function calling API error:', error)
     
     return NextResponse.json({
       success: false,

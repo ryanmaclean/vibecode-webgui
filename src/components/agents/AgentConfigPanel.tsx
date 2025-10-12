@@ -209,7 +209,7 @@ export function AgentConfigPanel({
       setSaveStatus('success')
       setTimeout(() => setSaveStatus('idle'), 3000)
     } catch (error) {
-      console.error('Failed to save configuration:', error)
+      logger.error('Failed to save configuration:', error)
       setSaveStatus('error')
     } finally {
       setIsSaving(false)
@@ -234,6 +234,7 @@ export function AgentConfigPanel({
             </CardTitle>
             <CardDescription>
               Configure your AI agent&apos;s behavior and capabilities
+import { logger } from '@/lib/logger';
             </CardDescription>
           </div>
           {saveStatus !== 'idle' && (

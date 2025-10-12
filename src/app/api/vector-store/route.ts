@@ -4,6 +4,8 @@
  * Supports PostgreSQL pgvector, Weaviate, and intelligent routing
  */
 
+import { logger } from '@/lib/logger';
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -90,7 +92,7 @@ export async function GET(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Vector store API error:', error)
+    logger.error('Vector store API error:', error)
     return NextResponse.json(
       {
         status: 'error',
@@ -134,7 +136,7 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Vector store search error:', error)
+    logger.error('Vector store search error:', error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -191,7 +193,7 @@ export async function PUT(req: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Vector store storage error:', error)
+    logger.error('Vector store storage error:', error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -244,7 +246,7 @@ export async function DELETE(req: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Vector store deletion error:', error)
+    logger.error('Vector store deletion error:', error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(

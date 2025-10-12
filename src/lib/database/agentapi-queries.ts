@@ -11,6 +11,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { agentSessionCache, agentHealthCache, conversationContextCache } from '../cache/agentapi-redis-strategy';
 import { metrics } from '../server-monitoring';
+import { logger } from '@/lib/logger';
 
 // =====================================================
 // Database Client Configuration
@@ -569,7 +570,7 @@ export class AgentEventQueries {
         severity: data.eventSeverity || 'info',
       });
     } catch (error) {
-      console.error('Event logging error:', error);
+      logger.error('Event logging error:', error);
       // Don't throw - event logging is non-critical
     }
   }

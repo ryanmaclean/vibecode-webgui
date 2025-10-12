@@ -18,6 +18,8 @@
 
 'use client'
 
+import { logger } from '@/lib/logger';
+
 import React, { useState, useMemo } from 'react'
 import {
   Activity,
@@ -309,7 +311,7 @@ export function AgentMonitoringDashboard({
       await onRefresh()
       setLastRefresh(new Date())
     } catch (error) {
-      console.error('Failed to refresh metrics:', error)
+      logger.error('Failed to refresh metrics:', error)
     } finally {
       setIsRefreshing(false)
     }

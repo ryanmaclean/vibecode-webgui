@@ -7,6 +7,7 @@ import OpenAI from 'openai';
 import { VectorDatabaseFactory } from './vector-database-factory';
 import { VectorDatabaseInterface } from './vector-database-interface';
 import { SearchOptions, SearchResult, VectorChunk } from './vector-types';
+import { logger } from '@/lib/logger';
 
 /**
  * Vector Store Service
@@ -43,7 +44,7 @@ export class VectorStoreService {
       this.vectorDb = await VectorDatabaseFactory.getInstance();
       this.isInitialized = true;
     } catch (error) {
-      console.error('Failed to initialize vector store service:', error);
+      logger.error('Failed to initialize vector store service:', error);
       throw error;
     }
   }
@@ -118,7 +119,7 @@ export class VectorStoreService {
 
       return context;
     } catch (error) {
-      console.error('Error getting context:', error);
+      logger.error('Error getting context:', error);
       return '';
     }
   }

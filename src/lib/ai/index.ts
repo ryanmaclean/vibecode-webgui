@@ -30,6 +30,7 @@ import { aiAnalytics } from './analytics';
 import { VectorStoreRetriever } from 'langchain/vectorstores/base';
 import { Document } from 'langchain/document';
 import { validateAIQuery, validatePrompt, aiRateLimiter, AISecurityLogger } from '../security/input-validator';
+import { logger } from '@/lib/logger';
 
 interface AIConfig {
   openAIApiKey?: string;
@@ -141,7 +142,7 @@ export class AIIntegration {
     
     // Initialize with default prompts
     this.initializeDefaultPrompts().catch(error => {
-      console.error('Failed to initialize default prompts:', error);
+      logger.error('Failed to initialize default prompts:', error);
       if (this.config.enableAnalytics) {
         aiAnalytics.trackError(error instanceof Error ? error : new Error(String(error)));
       }
@@ -184,7 +185,7 @@ export class AIIntegration {
         aiAnalytics.logEvent('default_prompts_initialized');
       }
     } catch (error) {
-      console.error('Failed to initialize default prompts:', error);
+      logger.error('Failed to initialize default prompts:', error);
       if (this.config.enableAnalytics) {
         aiAnalytics.trackError(error instanceof Error ? error : new Error(String(error)), { 
           context: 'initializeDefaultPrompts' 
@@ -214,7 +215,7 @@ export class AIIntegration {
       }
       return true;
     } catch (error) {
-      console.error('Failed to initialize AI integration:', error);
+      logger.error('Failed to initialize AI integration:', error);
       if (this.config.enableAnalytics) {
         aiAnalytics.trackError(error instanceof Error ? error : new Error(String(error)), { 
           context: 'AIIntegration.initialize' 
@@ -231,6 +232,6 @@ export const ai = AIIntegration.getInstance();
 // Initialize on import if in a Node.js environment
 if (typeof window === 'undefined') {
   ai.initialize().catch(error => {
-    console.error('Failed to initialize AI integration:', error);
+    logger.error('Failed to initialize AI integration:', error);
   });
 }

@@ -3,6 +3,8 @@
  * Centralized error handling for vector database operations
  */
 
+import { logger } from '@/lib/logger';
+
 export enum VectorDbErrorType {
   CONNECTION_ERROR = 'connection_error',
   QUERY_ERROR = 'query_error',
@@ -277,17 +279,17 @@ export class VectorDbErrorHandler {
 
     switch (error.severity) {
       case 'critical':
-        console.error('CRITICAL VectorDB Error:', logData);
+        logger.error('CRITICAL VectorDB Error:', logData);
         // In production, this would trigger alerts
         break;
       case 'high':
-        console.error('HIGH VectorDB Error:', logData);
+        logger.error('HIGH VectorDB Error:', logData);
         break;
       case 'medium':
-        console.warn('MEDIUM VectorDB Error:', logData);
+        logger.warn('MEDIUM VectorDB Error:', logData);
         break;
       case 'low':
-        console.info('LOW VectorDB Error:', logData);
+        logger.info('LOW VectorDB Error:', logData);
         break;
     }
   }

@@ -3,6 +3,8 @@
  * Protects API endpoints from resource exhaustion
  */
 
+import { logger } from '@/lib/logger';
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -47,7 +49,7 @@ export async function withQuotaCheck(
     
     if (!result.allowed) {
       // Log quota violation
-      console.warn(`Quota exceeded for user ${userId}: ${result.reason}`)
+      logger.warn(`Quota exceeded for user ${userId}: ${result.reason}`)
       
       return {
         allowed: false,
@@ -66,7 +68,7 @@ export async function withQuotaCheck(
     return { allowed: true }
 
   } catch (error) {
-    console.error('Quota check error:', error)
+    logger.error('Quota check error:', error)
     return { allowed: false, reason: 'Internal server error' }
   }
 }

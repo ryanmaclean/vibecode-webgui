@@ -3,6 +3,8 @@
  * Defines and manages critical alerts for VibeCode platform
  */
 
+import { logger } from '@/lib/logger';
+
 import { getDatadogApiKey, getDatadogAppKey, getDatadogSite } from './datadog-env'
 
 export interface AlertConfig {
@@ -276,7 +278,7 @@ Token usage is {{value}} tokens in the last hour.
    */
   async createMonitor(alert: AlertConfig): Promise<string | null> {
     if (!this.apiKey || !this.appKey) {
-      console.warn('Datadog API keys not configured')
+      logger.warn('Datadog API keys not configured')
       return null
     }
 
@@ -322,7 +324,7 @@ Token usage is {{value}} tokens in the last hour.
       return result.id
 
     } catch (error) {
-      console.error(`Failed to create monitor "${alert.name}":`, error)
+      logger.error(`Failed to create monitor "${alert.name}":`, error)
       return null
     }
   }
@@ -379,7 +381,7 @@ Token usage is {{value}} tokens in the last hour.
       )
 
     } catch (error) {
-      console.error('Failed to list monitors:', error)
+      logger.error('Failed to list monitors:', error)
       return []
     }
   }
@@ -406,7 +408,7 @@ Token usage is {{value}} tokens in the last hour.
 
       return response.ok
     } catch (error) {
-      console.error('Failed to send test alert:', error)
+      logger.error('Failed to send test alert:', error)
       return false
     }
   }

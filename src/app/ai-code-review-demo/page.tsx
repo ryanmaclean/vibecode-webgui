@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { logger } from '@/lib/logger';
 // Temporarily disabled to fix build issues - TODO: Fix LangChain compatibility
 // import AICodeReview from '@/components/ai/AICodeReview';
 
@@ -71,7 +72,7 @@ function processUserData(userData) {
   for (let i = 0; i < processedData.length; i++) {
     for (let j = 0; j < processedData[i].items.length; j++) {
       for (let k = 0; k < processedData[i].items[j].details.length; k++) {
-        console.log(processedData[i].items[j].details[k]);
+        logger.info(processedData[i].items[j].details[k]);
       }
     }
   }
@@ -91,7 +92,7 @@ var globalVar = 'I am global';
 function fetchData(url) {
   fetch(url)
     .then(response => response.json())
-    .then(data => console.log(data));
+    .then(data => logger.info(data));
 }`,
 
   python: `# Sample Python code with potential issues
@@ -262,7 +263,7 @@ export default function AICodeReviewDemo() {
             language={selectedLanguage}
             framework={selectedFramework}
             onReviewComplete={(results) => {
-              console.log('Code review completed:', results);
+              logger.info('Code review completed:', results);
             }}
           /> */}
         </div>

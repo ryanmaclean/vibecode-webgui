@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 import { MongoClient, Db } from 'mongodb'
 import { logger } from './monitoring'
 
@@ -32,7 +34,7 @@ export async function connectToMongoDB(): Promise<MongoConnection> {
     
     return cachedConnection
   } catch (error) {
-    console.error('Failed to connect to MongoDB:', error)
+    logger.error('Failed to connect to MongoDB:', error)
     throw error
   }
 }

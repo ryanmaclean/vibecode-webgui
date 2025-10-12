@@ -1,5 +1,7 @@
+import { logger } from '@/lib/logger';
+
 export function initializeOpenTelemetry() {
-  console.log('🛠️ OpenTelemetry stub active (development mode)')
+  logger.info('🛠️ OpenTelemetry stub active (development mode)')
   return null
 }
 

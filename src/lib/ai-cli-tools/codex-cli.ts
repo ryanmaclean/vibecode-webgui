@@ -324,6 +324,7 @@ export class CodexCLI {
     contextWindow: number
     maxTokens: number
     costPer1kTokens: { input: number; output: number }
+import { logger } from '@/lib/logger';
   }> {
     const models = {
       'gpt-4': {
@@ -411,7 +412,7 @@ export class CodexCLI {
         throw new Error(stderr)
       }
 
-      console.log('Codex CLI installed successfully')
+      logger.info('Codex CLI installed successfully')
     } catch (error) {
       throw new Error(`Failed to install Codex CLI: ${error}`)
     }
@@ -430,7 +431,7 @@ export class CodexCLI {
         throw new Error(stderr)
       }
 
-      console.log('Codex CLI uninstalled successfully')
+      logger.info('Codex CLI uninstalled successfully')
     } catch (error) {
       throw new Error(`Failed to uninstall Codex CLI: ${error}`)
     }

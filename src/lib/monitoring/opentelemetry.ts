@@ -67,6 +67,7 @@ export function initializeOpenTelemetry() {
   if (!NodeSDK || !getNodeAutoInstrumentations || !OTLPTraceExporter || !PrometheusExporter || !Resource || !ATTR_SERVICE_NAME || !ATTR_SERVICE_VERSION) {
     // Debug log removed
     return null;
+import { logger } from '@/lib/logger';
   }
 
   // Debug log removed
@@ -143,7 +144,7 @@ export function initializeOpenTelemetry() {
     return otelSDK
 
   } catch (error) {
-    console.error('❌ Failed to initialize OpenTelemetry:', error)
+    logger.error('❌ Failed to initialize OpenTelemetry:', error)
     return null
   }
 }
@@ -157,7 +158,7 @@ export async function shutdownOpenTelemetry() {
       await otelSDK.shutdown()
       // Debug log removed
     } catch (error) {
-      console.error('❌ Error shutting down OpenTelemetry:', error)
+      logger.error('❌ Error shutting down OpenTelemetry:', error)
     }
   }
 }

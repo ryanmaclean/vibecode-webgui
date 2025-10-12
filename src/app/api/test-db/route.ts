@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(_request: NextRequest) {
@@ -27,7 +29,7 @@ export async function GET(_request: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Database test error:', error)
+    logger.error('Database test error:', error)
     
     return NextResponse.json({
       status: 'error',

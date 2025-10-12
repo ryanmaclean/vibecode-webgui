@@ -202,6 +202,7 @@ function DetailsStep({ data, onChange }: DetailsStepProps) {
         <h3 className="text-lg font-medium">Configure Your Agent</h3>
         <p className="text-sm text-muted-foreground">
           Customize the agent&apos;s behavior and capabilities
+import { logger } from '@/lib/logger';
         </p>
       </div>
 
@@ -390,7 +391,7 @@ export function CreateAgentWizard({
     try {
       await onCreate(wizardData)
     } catch (error) {
-      console.error('Failed to create agent:', error)
+      logger.error('Failed to create agent:', error)
     } finally {
       setIsCreating(false)
     }

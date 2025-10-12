@@ -9,6 +9,7 @@ import {
   DataAnalysisAgent,
   createSpecializedAgent,
 } from '../agents';
+import { logger } from '@/lib/logger';
 
 /**
  * Example 1: Basic agent with no tools

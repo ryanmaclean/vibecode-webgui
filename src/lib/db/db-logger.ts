@@ -2,6 +2,7 @@
 // Provides structured logging for database operations
 
 import { PrismaClient } from '@prisma/client';
+import { logger } from '@/lib/logger';
 
 interface Logger {
   debug: (...args: any[]) => void;
@@ -12,10 +13,10 @@ interface Logger {
 
 // Create a default logger
 const defaultLogger: Logger = {
-  debug: (...args: any[]) => console.debug('[DB]', ...args),
-  info: (...args: any[]) => console.info('[DB]', ...args),
-  warn: (...args: any[]) => console.warn('[DB]', ...args),
-  error: (...args: any[]) => console.error('[DB]', ...args),
+  debug: (...args: any[]) => logger.debug('[DB]', ...args),
+  info: (...args: any[]) => logger.info('[DB]', ...args),
+  warn: (...args: any[]) => logger.warn('[DB]', ...args),
+  error: (...args: any[]) => logger.error('[DB]', ...args),
 };
 
 // Use default logger
@@ -47,7 +48,7 @@ function setupExternalLogger() {
       }
     })
     .catch((err) => {
-      console.warn('[DB] Could not load external logger:', err.message);
+      logger.warn('[DB] Could not load external logger:', err.message);
     });
 }
 

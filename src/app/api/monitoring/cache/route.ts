@@ -3,6 +3,8 @@
  * Provides cache statistics, management operations, and health monitoring
  */
 
+import { logger } from '@/lib/logger';
+
 import { NextRequest, NextResponse } from 'next/server'
 import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../lib/monitoring/auth'
 import { queryCache } from '../../../../lib/cache/query-cache'
@@ -111,7 +113,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Cache monitoring error:', error)
+    logger.error('Cache monitoring error:', error)
     
     return NextResponse.json(
       {
@@ -205,7 +207,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Cache operation error:', error)
+    logger.error('Cache operation error:', error)
     
     return NextResponse.json(
       {

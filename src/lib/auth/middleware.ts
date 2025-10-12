@@ -3,6 +3,8 @@
  * Provides session validation and user authentication for protected endpoints
  */
 
+import { logger } from '@/lib/logger';
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { createAuthRateLimit } from '../rate-limiting'
@@ -127,7 +129,7 @@ export function withAuth(
       return response
 
     } catch (error) {
-      console.error('Authentication middleware error:', error)
+      logger.error('Authentication middleware error:', error)
       
       return NextResponse.json(
         { 

@@ -153,7 +153,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const workspaceService = new WorkspaceProvisioningService()
     await workspaceService.deleteWorkspace(workspaceId)
 
-    console.log(`✅ Workspace deleted: ${workspaceId}`)
+    logger.info(`✅ Workspace deleted: ${workspaceId}`)
 
     return NextResponse.json({
       success: true,

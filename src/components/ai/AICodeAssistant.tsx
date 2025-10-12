@@ -9,6 +9,8 @@
 
 'use client'
 
+import { logger } from '@/lib/logger';
+
 import React, { useState, useEffect, useRef } from 'react'
 import {
   Bot,
@@ -137,7 +139,7 @@ export default function AICodeAssistant({
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
-      console.error('AI Assistant error:', err)
+      logger.error('AI Assistant error:', err)
     } finally {
       setIsLoading(false)
     }
@@ -172,7 +174,7 @@ export default function AICodeAssistant({
         })
       }, 2000)
     } catch (err) {
-      console.error('Failed to copy to clipboard:', err)
+      logger.error('Failed to copy to clipboard:', err)
     }
   }
 

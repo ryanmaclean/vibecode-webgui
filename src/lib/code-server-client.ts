@@ -1,4 +1,5 @@
 import { getSession } from 'next-auth/react';
+import { logger } from '@/lib/logger';
 
 interface CodeServerSession {
   id: string;
@@ -77,7 +78,7 @@ export class CodeServerClient {
       
       return this.createSession(workspaceId, userId);
     } catch (error) {
-      console.error('Failed to get or create session:', error);
+      logger.error('Failed to get or create session:', error);
       throw error;
     }
   }

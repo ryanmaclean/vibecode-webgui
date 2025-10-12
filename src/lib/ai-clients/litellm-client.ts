@@ -2,6 +2,7 @@
 // =====================================
 
 import { EventEmitter } from 'events';
+import { logger } from '@/lib/logger';
 
 // Types and Interfaces
 interface LiteLLMConfig {
@@ -477,11 +478,11 @@ export class LiteLLMClient extends EventEmitter {
     });
 
     this.on('error', (data) => {
-      console.error(`[LiteLLM] Error: ${data.type} - ${data.error}`);
+      logger.error(`[LiteLLM] Error: ${data.type} - ${data.error}`);
     });
 
     this.on('retry', (data) => {
-      console.warn(`[LiteLLM] Retrying request (attempt ${data.attempt}/${data.maxRetries}): ${data.error}`);
+      logger.warn(`[LiteLLM] Retrying request (attempt ${data.attempt}/${data.maxRetries}): ${data.error}`);
     });
   }
 

@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { VectorService } from '../db/vector';
 import { PrismaClient } from '@prisma/client';
+import { logger } from '@/lib/logger';
 
 export class EmbeddingService {
   private openai: OpenAI;
@@ -27,7 +28,7 @@ export class EmbeddingService {
 
       return response.data[0].embedding;
     } catch (error) {
-      console.error('Error generating embedding:', error);
+      logger.error('Error generating embedding:', error);
       throw new Error('Failed to generate embedding');
     }
   }
@@ -55,7 +56,7 @@ export class EmbeddingService {
         },
       });
     } catch (error) {
-      console.error('Error storing document:', error);
+      logger.error('Error storing document:', error);
       throw new Error('Failed to store document');
     }
   }
@@ -75,7 +76,7 @@ export class EmbeddingService {
         limit: options.limit ?? 5, // Default limit
       });
     } catch (error) {
-      console.error('Error finding similar documents:', error);
+      logger.error('Error finding similar documents:', error);
       throw new Error('Failed to find similar documents');
     }
   }
@@ -103,7 +104,7 @@ export class EmbeddingService {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Error in RAG query:', error);
+      logger.error('Error in RAG query:', error);
       throw new Error('Failed to process RAG query');
     }
   }
@@ -120,7 +121,7 @@ export class EmbeddingService {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Error getting embedding stats:', error);
+      logger.error('Error getting embedding stats:', error);
       throw new Error('Failed to retrieve embedding statistics');
     }
   }
@@ -141,7 +142,7 @@ export class EmbeddingService {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Error cleaning up old embeddings:', error);
+      logger.error('Error cleaning up old embeddings:', error);
       throw new Error('Failed to clean up old embeddings');
     }
   }

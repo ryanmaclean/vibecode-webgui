@@ -5,6 +5,7 @@
 
 import { createLogger, format, transports } from 'winston';
 import tracer from '@/instrument';
+import { logger } from '@/lib/logger';
 
 // Initialize Datadog tracer (should be done before importing other modules)
 if (process.env.DD_API_KEY) {
@@ -17,9 +18,9 @@ if (process.env.DD_API_KEY) {
     profiling: true,
     appsec: true, // Application Security Management
   })
-  console.log('🔍 Datadog APM tracer initialized')
+  logger.info('🔍 Datadog APM tracer initialized')
 } else {
-  console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
+  logger.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }
 
 // Custom Winston formatter for structured logging
@@ -75,20 +76,20 @@ class MetricsCollector {
   private metrics: Record<string, any> = {}
 
   increment(name: string, tags: Record<string, string | number> = {}): void {
-    console.log(`📊 Metric increment: ${name}`, tags)
+    logger.info(`📊 Metric increment: ${name}`, tags)
     // In a real scenario, this would send to Datadog agent
     // Example: client.increment(name, tags)
     this.metrics[name] = (this.metrics[name] || 0) + 1
   }
 
   gauge(name: string, value: number, tags: Record<string, string | number> = {}): void {
-    console.log(`📊 Metric gauge: ${name} = ${value}`, tags)
+    logger.info(`📊 Metric gauge: ${name} = ${value}`, tags)
     // Example: client.gauge(name, value, tags)
     this.metrics[name] = value
   }
 
   histogram(name: string, value: number, tags: Record<string, string | number> = {}): void {
-    console.log(`📊 Metric histogram: ${name} = ${value}`, tags)
+    logger.info(`📊 Metric histogram: ${name} = ${value}`, tags)
     // Example: client.histogram(name, value, tags)
     if (!this.metrics[name]) {
       this.metrics[name] = []

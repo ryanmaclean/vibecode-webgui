@@ -4,6 +4,8 @@
 
 'use client'
 
+import { logger } from '@/lib/logger';
+
 import React, { useState, useEffect } from 'react'
 import { modelOrchestrator, ModelConfig, TaskType, RequestContext } from '@/lib/ai/model-orchestration'
 import { 
@@ -54,7 +56,7 @@ export function ModelOrchestratorDashboard() {
       setModels(availableModels)
       setModelStats(stats)
     } catch (error) {
-      console.error('Failed to load dashboard data:', error)
+      logger.error('Failed to load dashboard data:', error)
     } finally {
       setIsLoading(false)
     }
@@ -75,7 +77,7 @@ export function ModelOrchestratorDashboard() {
       const recs = modelOrchestrator.recommendModels(context, 5)
       setRecommendations(recs)
     } catch (error) {
-      console.error('Failed to generate recommendations:', error)
+      logger.error('Failed to generate recommendations:', error)
       setRecommendations([])
     }
   }

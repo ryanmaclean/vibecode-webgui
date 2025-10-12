@@ -14,12 +14,13 @@ import {
 import { ConsistentHashRing } from './consistent-hash-ring';
 import { QueryAnalyzer } from './query-analyzer';
 import { DatabasePool, DatabasePoolClient, DatabasePoolFactory, DefaultDatabasePoolFactory } from './connection-router';
+import { logger } from '@/lib/logger';
 // Use a simple logger implementation as fallback
 const createLogger = (name: string) => ({
-  info: (message: string, ...args: any[]) => console.log(`[${name}] INFO: ${message}`, ...args),
-  error: (message: string, ...args: any[]) => console.error(`[${name}] ERROR: ${message}`, ...args),
-  warn: (message: string, ...args: any[]) => console.warn(`[${name}] WARN: ${message}`, ...args),
-  debug: (message: string, ...args: any[]) => console.debug(`[${name}] DEBUG: ${message}`, ...args),
+  info: (message: string, ...args: any[]) => logger.info(`[${name}] INFO: ${message}`, ...args),
+  error: (message: string, ...args: any[]) => logger.error(`[${name}] ERROR: ${message}`, ...args),
+  warn: (message: string, ...args: any[]) => logger.warn(`[${name}] WARN: ${message}`, ...args),
+  debug: (message: string, ...args: any[]) => logger.debug(`[${name}] DEBUG: ${message}`, ...args),
 });
 
 const DEFAULT_CONFIG: ShardingConfig = {

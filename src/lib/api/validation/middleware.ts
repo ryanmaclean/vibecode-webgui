@@ -19,6 +19,7 @@ export interface ValidationOptions {
 
 export type ValidationResult<T> =
   | { success: true; data: T; error?: never }
+import { logger } from '@/lib/logger';
   | { success: false; data?: never; error: NextResponse }
 
 /**
@@ -256,7 +257,7 @@ export function createValidatedHandler<T extends ZodSchema>(
     try {
       return await handler(validation.data, req)
     } catch (error) {
-      console.error('Handler error:', error)
+      logger.error('Handler error:', error)
       return NextResponse.json(
         {
           error: 'Internal server error',

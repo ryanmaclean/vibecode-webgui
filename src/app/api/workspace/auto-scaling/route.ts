@@ -3,6 +3,8 @@
  * Manages dynamic resource scaling for workspace instances
  */
 
+import { logger } from '@/lib/logger';
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -112,7 +114,7 @@ export async function GET(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Auto-scaling API error:', error)
+    logger.error('Auto-scaling API error:', error)
     return NextResponse.json(
       {
         status: 'error',
@@ -155,7 +157,7 @@ export async function POST(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Metrics update error:', error)
+    logger.error('Metrics update error:', error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -219,7 +221,7 @@ export async function PUT(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Workspace registration error:', error)
+    logger.error('Workspace registration error:', error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -272,7 +274,7 @@ export async function PATCH(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Config update error:', error)
+    logger.error('Config update error:', error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -321,7 +323,7 @@ export async function DELETE(req: NextRequest) {
 
     // In a real implementation, you would remove the workspace from tracking
     // For now, we'll just log it
-    console.log(`🗑️  Unregistering workspace ${workspaceId} from auto-scaling`)
+    logger.info(`🗑️  Unregistering workspace ${workspaceId} from auto-scaling`)
 
     return NextResponse.json({
       status: 'success',
@@ -332,7 +334,7 @@ export async function DELETE(req: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Workspace unregistration error:', error)
+    logger.error('Workspace unregistration error:', error)
     
     return NextResponse.json(
       {

@@ -18,6 +18,7 @@ import { html } from '@codemirror/lang-html'
 import { css } from '@codemirror/lang-css'
 import { yCollab } from 'y-codemirror.next'
 import * as Y from 'yjs'
+import { logger } from '@/lib/logger';
 
 import {
   CollaborationManager,
@@ -210,7 +211,7 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
       setIsConnected(true)
 
     } catch (error) {
-      console.error('Failed to initialize collaboration:', error)
+      logger.error('Failed to initialize collaboration:', error)
       setConnectionError(`Failed to connect: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }, [documentId, projectId, filePath, currentUser, initialContent, getLanguageExtension, onContentChange, readOnly])

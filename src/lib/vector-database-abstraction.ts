@@ -1,6 +1,8 @@
 // Vector Database Abstraction Layer
 // Unified interface for multiple vector database providers (pgvector, Chroma, Weaviate - all open source)
 
+import { logger } from '@/lib/logger';
+
 export interface VectorDocument {
   id: string
   content: string
@@ -479,7 +481,7 @@ export class UnifiedVectorStore {
       try {
         return await primary.search(query, options)
       } catch (error) {
-        console.warn(`Primary provider ${this.primaryProvider} failed:`, error)
+        logger.warn(`Primary provider ${this.primaryProvider} failed:`, error)
       }
     }
 
@@ -491,7 +493,7 @@ export class UnifiedVectorStore {
           // Debug log removed
           return await provider.search(query, options)
         } catch (error) {
-          console.warn(`Fallback provider ${fallbackProvider} failed:`, error)
+          logger.warn(`Fallback provider ${fallbackProvider} failed:`, error)
         }
       }
     }

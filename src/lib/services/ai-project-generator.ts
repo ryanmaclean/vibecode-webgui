@@ -52,7 +52,7 @@ export class AIProjectGenerator {
   async generateProject(request: ProjectGenerationRequest): Promise<ProjectTemplate> {
     const validatedRequest = ProjectGenerationRequestSchema.parse(request)
     
-    console.log(`🤖 Generating project from prompt: "${validatedRequest.prompt}"`)
+    logger.info(`🤖 Generating project from prompt: "${validatedRequest.prompt}"`)
 
     try {
       // Step 1: Analyze prompt and determine project type
@@ -72,7 +72,7 @@ export class AIProjectGenerator {
       return ProjectTemplateSchema.parse(generatedProject)
       
     } catch (error) {
-      console.error('❌ AI project generation failed:', error)
+      logger.error('❌ AI project generation failed:', error)
       throw new Error(`Project generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -117,7 +117,7 @@ Focus on understanding the core functionality and technical requirements.
     try {
       return JSON.parse(analysisText)
     } catch (error) {
-      console.error('Failed to parse project analysis:', analysisText)
+      logger.error('Failed to parse project analysis:', analysisText)
       throw new Error('Invalid project analysis response')
     }
   }
@@ -226,7 +226,7 @@ Make sure all code is production-ready and follows best practices.
         }
       }
     } catch (error) {
-      console.error('Failed to parse generated project:', projectText)
+      logger.error('Failed to parse generated project:', projectText)
       throw new Error('Invalid project generation response')
     }
   }
@@ -259,6 +259,7 @@ Make sure all code is production-ready and follows best practices.
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
+import { logger } from '@/lib/logger';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -338,13 +339,13 @@ app.get('/api/health', (req, res) => {
 })
 
 app.listen(port, () => {
-  console.log(\`🚀 Server running on port \${port}\`)
+  logger.info(\`🚀 Server running on port \${port}\`)
 })`
       },
       readme: '# Node.js API Project\n\nGenerated with VibeCode AI Project Generator'
     })
 
-    console.log(`📚 Initialized ${this.templates.size} project templates`)
+    logger.info(`📚 Initialized ${this.templates.size} project templates`)
   }
 
   /**
