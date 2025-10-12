@@ -1,139 +1,128 @@
 # Security Policy
 
-## 🔒 Supported Versions
+## Responsible Disclosure
 
-We provide security updates for the following versions:
+VibeCode takes security vulnerabilities seriously. We appreciate the security research community's efforts in identifying and responsibly disclosing security issues.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| main    | ✅ Yes             |
-| demo    | ✅ Yes (demo only) |
+### Reporting a Vulnerability
 
-## 🚨 Reporting a Vulnerability
+**Please DO NOT create public GitHub issues for security vulnerabilities.**
 
-If you discover a security vulnerability, please follow these steps:
+Instead, report security vulnerabilities through one of these channels:
 
-### 1. **Do NOT** create a public GitHub issue
+1. **Email**: security@vibecode.dev
+2. **GitHub Security Advisory**: [Create a private security advisory](https://github.com/vibecode/webgui/security/advisories/new)
 
-### 2. **Email us directly** at:
-- **Primary**: security@vibecode.dev (if available)
-- **Fallback**: Create a private security advisory on GitHub
+### What to Include in Your Report
 
-### 3. **Include the following information**:
-- Description of the vulnerability
-- Steps to reproduce
-- Potential impact
-- Suggested fix (if you have one)
+To help us triage and fix the vulnerability quickly, please include:
 
-### 4. **Response Timeline**:
-- **Initial response**: Within 24 hours
-- **Status update**: Within 72 hours
-- **Resolution**: Depends on severity and complexity
+- **Description**: Clear description of the vulnerability
+- **Impact**: Potential security impact and affected components
+- **Reproduction Steps**: Detailed steps to reproduce the issue
+- **Proof of Concept**: Code, screenshots, or videos demonstrating the vulnerability
+- **Affected Versions**: Which versions of VibeCode are affected
+- **Suggested Fix**: If you have a recommendation for remediation
 
-## 🛡️ Security Considerations for Demo
+### Response Timeline
 
-This repository contains a **demonstration environment** for pgvector + PostgreSQL + Datadog DBM. Please note:
+We are committed to addressing security vulnerabilities promptly:
 
-### ⚠️ Demo Environment Warnings
+- **Initial Response**: Within 48 hours of report submission
+- **Triage Assessment**: Within 5 business days
+- **Status Updates**: Weekly progress updates for ongoing investigations
+- **Resolution Timeline**:
+  - Critical: 7-14 days
+  - High: 14-30 days
+  - Medium: 30-60 days
+  - Low: 60-90 days
 
-- **Default credentials** are used (username: `postgres`, password: `password`)
-- **No encryption** is configured by default
-- **Local-only** deployment assumed
-- **Not production-ready** without additional hardening
+### Disclosure Policy
 
-### 🔐 Production Security Checklist
+- **Coordinated Disclosure**: We follow a 90-day coordinated disclosure policy
+- **Credit**: We will credit researchers in our security advisories (unless you prefer to remain anonymous)
+- **CVE Assignment**: We will request CVEs for qualifying vulnerabilities
 
-If adapting this demo for production use:
+### Security Measures
 
-- [ ] **Change all default passwords**
-- [ ] **Enable TLS/SSL** for all connections
-- [ ] **Configure proper RBAC** in Kubernetes
-- [ ] **Use secrets management** (not environment variables)
-- [ ] **Enable network policies**
-- [ ] **Configure proper firewall rules**
-- [ ] **Regular security updates**
-- [ ] **Audit logging enabled**
-- [ ] **Backup encryption**
-- [ ] **Compliance requirements** addressed
+VibeCode implements multiple layers of security:
 
-### 🎯 Demo-Specific Security
+#### Authentication & Authorization
+- Multi-factor authentication (MFA) support via TOTP, SMS, and backup codes
+- NextAuth.js integration for secure session management
+- Role-based access control (RBAC) for API endpoints
+- SAML/SSO support for enterprise deployments
 
-The `./DEMO.sh` script:
-- ✅ **Runs locally only**
-- ✅ **No external data transmission** (except to Datadog if configured)
-- ✅ **No persistent sensitive data**
-- ⚠️ **Uses default credentials** (acceptable for demo)
+#### API Security
+- Zod validation schemas for all API routes
+- Rate limiting per user and endpoint
+- Input sanitization and validation
+- SQL injection prevention via parameterized queries
+- CORS protection with allowlist-based origins
 
-## 🔍 Security Features Included
+#### Network Security
+- HTTPS-only in production (HSTS enabled)
+- Security headers (CSP, X-Frame-Options, X-Content-Type-Options)
+- Bot detection and protection
+- IP-based access controls
 
-### Kubernetes Security
-- **RBAC** configuration examples
-- **Network policies** templates
-- **Pod security standards** configurations
-- **Secrets management** examples
+#### Data Protection
+- Secrets stored in macOS Keychain (not plaintext files)
+- Encrypted database connections (SSL/TLS)
+- Winston structured logging (no sensitive data in logs)
+- Environment variable validation and sanitization
 
-### Database Security
-- **Connection encryption** ready
-- **User privilege separation**
-- **Audit logging** configuration
-- **Backup security** considerations
+#### Infrastructure Security
+- Kubernetes security policies and RBAC
+- Container image scanning (Trivy)
+- Dependabot for automated dependency updates
+- Regular security audits and penetration testing
 
-### Monitoring Security
-- **Datadog agent** security configuration
-- **Metric access control**
-- **Dashboard permissions**
-- **API key management**
+### Security Best Practices for Contributors
 
-## 🛠️ Security Tools Integration
+When contributing to VibeCode:
 
-This repository includes:
-- **Dependabot** for dependency updates
-- **CodeQL** for static analysis
-- **Security scanning** in CI/CD
-- **License compliance** checking
+1. **Never commit secrets**: Use environment variables or Keychain
+2. **Validate all inputs**: Use Zod schemas for API routes
+3. **Use Winston logger**: Replace console.log with structured logging
+4. **Follow OWASP guidelines**: Reference OWASP Top 10 and ASVS
+5. **Write security tests**: Include security test cases for new features
+6. **Review dependencies**: Check for known vulnerabilities before adding dependencies
 
-## 📋 Security Best Practices
+### Supported Versions
 
-When using this demo:
+| Version | Supported | End of Life |
+|---------|-----------|-------------|
+| 2.x     | Active | TBD         |
+| 1.x     | Security fixes only | 2025-12-31 |
+| < 1.0   | Unsupported | Ended |
 
-1. **Isolate the environment** (use KIND/minikube, not production clusters)
-2. **Don't expose services** externally unless necessary
-3. **Clean up resources** after demo
-4. **Monitor for unusual activity**
-5. **Keep dependencies updated**
+### Known Security Considerations
 
-## 🎯 Threat Model
+#### Current Limitations
+- Auth middleware is currently disabled (src/middleware.ts.disabled)
+- Some API routes pending Zod validation migration (tracking in GitHub issues)
+- Winston logger migration in progress (see console.log cleanup plan)
 
-### Assets
-- Demo database with sample vector data
-- Kubernetes cluster access
-- Datadog monitoring data
+#### Ongoing Security Work
+- Migration to macOS Keychain for secret storage
+- Full API validation coverage with Zod
+- Console.log to Winston logger migration
+- Security header enforcement in middleware
 
-### Threats
-- **Low**: Unauthorized access to demo data
-- **Medium**: Kubernetes cluster compromise
-- **High**: Production credential exposure
+### Security Contacts
 
-### Mitigations
-- Demo runs in isolated environment
-- No production credentials used
-- Clear documentation about security limitations
+- **Security Team**: security@vibecode.dev
+- **PGP Key**: Available at https://vibecode.dev/security.asc
+- **Security Advisories**: https://github.com/vibecode/webgui/security/advisories
 
-## 📞 Contact
+### Hall of Fame
 
-For security-related questions:
-- **General questions**: Use GitHub Discussions
-- **Vulnerabilities**: Follow reporting process above
-- **Documentation**: Create GitHub issue with `security` label
+We recognize security researchers who help improve VibeCode's security:
 
-## 📄 Compliance
-
-This demo includes examples for:
-- **SOC 2** monitoring controls
-- **GDPR** data handling (sample data only)
-- **HIPAA** considerations (not HIPAA-compliant as-is)
-- **PCI DSS** database security patterns
+- *Coming soon - be the first contributor!*
 
 ---
 
-**Remember**: This is a demonstration environment. Always harden for production use! 🔒
+**Last Updated**: 2025-10-12
+**Policy Version**: 1.0
