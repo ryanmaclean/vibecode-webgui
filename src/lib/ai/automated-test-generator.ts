@@ -3,6 +3,8 @@
  * AI-powered test generation for code quality and reliability
  */
 
+import { logger } from '@/lib/logger';
+
 export interface TestGenerationOptions {
   framework: 'jest' | 'vitest' | 'cypress' | 'playwright';
   coverage?: 'unit' | 'integration' | 'e2e';
@@ -178,7 +180,7 @@ export class AutomatedTestGenerator {
 
       return this.parseTestGenerationResponse(response.content, options);
     } catch (error) {
-      console.warn('AI test generation failed:', error);
+      logger.warn('AI test generation failed:', error);
       return this.generateTestsWithoutAI(sourceCode, analysis, options, testType);
     }
   }
@@ -514,7 +516,7 @@ Return the test code in the appropriate format for ${options.framework}.
         estimatedLines: content.split('\n').length
       }));
     } catch (error) {
-      console.warn('Failed to parse AI test generation response:', error);
+      logger.warn('Failed to parse AI test generation response:', error);
       return [];
     }
   }

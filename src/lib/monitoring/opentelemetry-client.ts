@@ -4,6 +4,8 @@
  */
 
 // Check if we're in a Docker build environment
+import { logger } from '@/lib/logger';
+
 const isDockerBuild = (
   process.env.DOCKER_BUILD === 'true' ||
   process.env.SKIP_MONITORING === 'true' ||
@@ -138,7 +140,7 @@ export function initializeClientOpenTelemetry() {
     return webTracerProvider
 
   } catch (error) {
-    console.error('❌ Failed to initialize client-side OpenTelemetry:', error)
+    logger.error('❌ Failed to initialize client-side OpenTelemetry:', error)
     return null
   }
 }

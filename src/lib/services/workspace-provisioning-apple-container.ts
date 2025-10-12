@@ -42,7 +42,7 @@ export class AppleContainerWorkspaceService {
    * Create a new workspace with code-server
    */
   async createWorkspace(request: WorkspaceRequest): Promise<WorkspaceResponse> {
-    console.log(`📦 Creating Apple Container workspace for: ${request.projectName}`)
+    logger.info(`📦 Creating Apple Container workspace for: ${request.projectName}`)
 
     // 1. Check if Apple Container is available
     const isAvailable = await appleContainer.isAvailable()
@@ -52,7 +52,7 @@ export class AppleContainerWorkspaceService {
 
     // 2. Find available port
     const port = await this.findAvailablePort()
-    console.log(`🔌 Using port: ${port}`)
+    logger.info(`🔌 Using port: ${port}`)
 
     // 3. Generate password for code-server
     const password = this.generatePassword()
@@ -62,11 +62,11 @@ export class AppleContainerWorkspaceService {
     const workspacePath = join(this.workspaceDir, workspaceId)
 
     await mkdir(workspacePath, { recursive: true })
-    console.log(`📁 Created workspace directory: ${workspacePath}`)
+    logger.info(`📁 Created workspace directory: ${workspacePath}`)
 
     // 5. Write project files to workspace
     await this.writeProjectFiles(workspacePath, request.files)
-    console.log(`📝 Wrote ${Object.keys(request.files).length} files`)
+    logger.info(`📝 Wrote ${Object.keys(request.files).length} files`)
 
     // 6. Create package.json if dependencies exist
     if (request.dependencies.length > 0) {
@@ -91,7 +91,7 @@ export class AppleContainerWorkspaceService {
       detached: true,
     }
 
-    console.log(`🚀 Starting code-server container...`)
+    logger.info(`🚀 Starting code-server container...`)
     const result = await appleContainer.start(
       'codercom/code-server:latest',
       containerOptions
@@ -101,11 +101,11 @@ export class AppleContainerWorkspaceService {
       throw new Error(`Failed to start container: ${result.error}`)
     }
 
-    console.log(`✅ Container started: ${result.id}`)
+    logger.info(`✅ Container started: ${result.id}`)
 
     // 8. Wait for code-server to be ready
     await this.waitForCodeServer(port)
-    console.log(`🌐 Code-server ready at http://localhost:${port}`)
+    logger.info(`🌐 Code-server ready at http://localhost:${port}`)
 
     // 9. Install dependencies if needed
     if (request.dependencies.length > 0) {
@@ -129,7 +129,7 @@ export class AppleContainerWorkspaceService {
    * Delete a workspace
    */
   async deleteWorkspace(workspaceId: string): Promise<void> {
-    console.log(`🗑️  Deleting workspace: ${workspaceId}`)
+    logger.info(`🗑️  Deleting workspace: ${workspaceId}`)
 
     // Stop and remove container
     const containers = await appleContainer.list()
@@ -140,7 +140,7 @@ export class AppleContainerWorkspaceService {
     if (container) {
       await appleContainer.stop(container.id)
       await appleContainer.remove(container.id)
-      console.log(`✅ Container removed: ${container.id}`)
+      logger.info(`✅ Container removed: ${container.id}`)
     }
   }
 
@@ -148,6 +148,7 @@ export class AppleContainerWorkspaceService {
    * List all workspaces
    */
   async listWorkspaces(): Promise<Array<{ id: string; status: string; url: string }>> {
+import { logger } from '@/lib/logger';
     const result = await appleContainer.list()
 
     if (!result.success) {
@@ -240,12 +241,12 @@ export class AppleContainerWorkspaceService {
    * Install dependencies in the container
    */
   private async installDependencies(containerId: string): Promise<void> {
-    console.log(`📦 Installing dependencies...`)
+    logger.info(`📦 Installing dependencies...`)
 
     // Execute npm install in the container
     // Note: This requires the container CLI to support exec command
     // For now, we'll skip this and let the user install manually
-    console.log(`⚠️  Dependencies will be installed on first access`)
+    logger.info(`⚠️  Dependencies will be installed on first access`)
   }
 
   /**

@@ -4,6 +4,7 @@
  */
 
 import { ProductionVectorCacheInvalidator } from './production-vector-cache-invalidator';
+import { logger } from '@/lib/logger';
 
 /**
  * Cache invalidation strategy configuration
@@ -99,7 +100,7 @@ export class CacheInvalidationIntegration {
       this.updateMetrics(Date.now() - startTime, false);
 
       if (this.strategy.fallbackEnabled && strategy === 'production') {
-        console.warn('Production invalidation failed, falling back to basic strategy', error);
+        logger.warn('Production invalidation failed, falling back to basic strategy', error);
         await this.basicInvalidation(keys);
       } else {
         throw error;
@@ -275,7 +276,7 @@ export class CacheInvalidationIntegration {
         await this.invalidate(testKeys, { forceStrategy: strategy });
         successCount++;
       } catch (error) {
-        console.error('Performance test iteration failed:', error);
+        logger.error('Performance test iteration failed:', error);
       }
       
       return Date.now() - startTime;

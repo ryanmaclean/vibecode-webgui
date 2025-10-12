@@ -1,5 +1,7 @@
 'use client'
 
+import { logger } from '@/lib/logger';
+
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
@@ -30,7 +32,7 @@ export function OnboardingCheck({ children }: { children: React.ReactNode }) {
           }
         }
       } catch (error) {
-        console.error('Error checking onboarding status:', error)
+        logger.error('Error checking onboarding status:', error)
       }
       
       setChecked(true)

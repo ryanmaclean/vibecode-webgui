@@ -11,6 +11,8 @@
  * @module streaming/websocket-streaming-client
  */
 
+import { logger } from '@/lib/logger';
+
 import {
   WebSocketConnectionPool,
   getPooledWebSocket,
@@ -544,7 +546,7 @@ export class WebSocketStreamingClient {
 
   private log(...args: unknown[]): void {
     if (this.config.debug) {
-      console.log('[WebSocketStreamingClient]', ...args)
+      logger.info('[WebSocketStreamingClient]', ...args)
     }
   }
 }

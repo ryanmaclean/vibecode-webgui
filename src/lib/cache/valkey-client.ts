@@ -4,6 +4,7 @@
  */
 
 import { createClient, RedisClientType } from 'redis';
+import { logger } from '@/lib/logger';
 
 export interface ValkeyConfig {
   host: string;
@@ -50,15 +51,15 @@ export class ValkeyCacheClient {
         keyPrefix: this.config.keyPrefix,
         retry_strategy: (options: any) => {
           if (options.error && options.error.code === 'ECONNREFUSED') {
-            console.error('Valkey server connection refused');
+            logger.error('Valkey server connection refused');
             return new Error('Valkey server connection refused');
           }
           if (options.total_retry_time > 1000 * 60 * 60) {
-            console.error('Valkey retry time exhausted');
+            logger.error('Valkey retry time exhausted');
             return new Error('Retry time exhausted');
           }
           if (options.attempt > 10) {
-            console.error('Valkey max retry attempts exceeded');
+            logger.error('Valkey max retry attempts exceeded');
             return new Error('Max retry attempts exceeded');
           }
           return Math.min(options.attempt * 100, 3000);
@@ -77,28 +78,28 @@ export class ValkeyCacheClient {
 
       // Event listeners for monitoring
       this.client.on('connect', () => {
-        console.log('Valkey client connected');
+        logger.info('Valkey client connected');
         this.isConnected = true;
       });
 
       this.client.on('error', (error: Error) => {
-        console.error('Valkey client error:', error);
+        logger.error('Valkey client error:', error);
         this.isConnected = false;
       });
 
       this.client.on('ready', () => {
-        console.log('Valkey client ready');
+        logger.info('Valkey client ready');
         this.isConnected = true;
       });
 
       this.client.on('end', () => {
-        console.log('Valkey client connection ended');
+        logger.info('Valkey client connection ended');
         this.isConnected = false;
       });
 
       await this.client.connect();
     } catch (error) {
-      console.warn('Valkey client initialization failed:', error);
+      logger.warn('Valkey client initialization failed:', error);
       this.client = null;
       this.isConnected = false;
       throw error;
@@ -148,7 +149,7 @@ export class ValkeyCacheClient {
 
       return parsed.value || parsed;
     } catch (error) {
-      console.warn(`Failed to get Valkey key ${key}:`, error);
+      logger.warn(`Failed to get Valkey key ${key}:`, error);
       return null;
     }
   }
@@ -182,7 +183,7 @@ export class ValkeyCacheClient {
 
       return true;
     } catch (error) {
-      console.warn(`Failed to set Valkey key ${key}:`, error);
+      logger.warn(`Failed to set Valkey key ${key}:`, error);
       return false;
     }
   }
@@ -199,7 +200,7 @@ export class ValkeyCacheClient {
       const result = await this.client.del(key);
       return result > 0;
     } catch (error) {
-      console.warn(`Failed to delete Valkey key ${key}:`, error);
+      logger.warn(`Failed to delete Valkey key ${key}:`, error);
       return false;
     }
   }
@@ -216,7 +217,7 @@ export class ValkeyCacheClient {
       const result = await this.client.del(keys);
       return result;
     } catch (error) {
-      console.warn(`Failed to delete Valkey keys:`, error);
+      logger.warn(`Failed to delete Valkey keys:`, error);
       return 0;
     }
   }
@@ -233,7 +234,7 @@ export class ValkeyCacheClient {
       const result = await this.client.exists(key);
       return result > 0;
     } catch (error) {
-      console.warn(`Failed to check Valkey key ${key}:`, error);
+      logger.warn(`Failed to check Valkey key ${key}:`, error);
       return false;
     }
   }
@@ -268,7 +269,7 @@ export class ValkeyCacheClient {
       await pipeline.exec();
       return true;
     } catch (error) {
-      console.warn('Failed to set multiple Valkey entries:', error);
+      logger.warn('Failed to set multiple Valkey entries:', error);
       return false;
     }
   }
@@ -298,12 +299,12 @@ export class ValkeyCacheClient {
 
           return parsed.value || parsed;
         } catch (parseError) {
-          console.warn('Failed to parse cached value:', parseError);
+          logger.warn('Failed to parse cached value:', parseError);
           return null;
         }
       });
     } catch (error) {
-      console.warn('Failed to get multiple Valkey entries:', error);
+      logger.warn('Failed to get multiple Valkey entries:', error);
       return keys.map(() => null);
     }
   }
@@ -320,7 +321,7 @@ export class ValkeyCacheClient {
       const result = await this.client.incrBy(key, increment);
       return result;
     } catch (error) {
-      console.warn(`Failed to increment Valkey key ${key}:`, error);
+      logger.warn(`Failed to increment Valkey key ${key}:`, error);
       return null;
     }
   }
@@ -337,7 +338,7 @@ export class ValkeyCacheClient {
       await this.client.flushAll();
       return true;
     } catch (error) {
-      console.warn('Failed to clear Valkey cache:', error);
+      logger.warn('Failed to clear Valkey cache:', error);
       return false;
     }
   }
@@ -364,7 +365,7 @@ export class ValkeyCacheClient {
         memoryUsage: this.extractMemoryUsage(info),
       };
     } catch (error) {
-      console.warn('Failed to get Valkey stats:', error);
+      logger.warn('Failed to get Valkey stats:', error);
       return { connected: this.isConnected };
     }
   }
@@ -433,7 +434,7 @@ export async function getValkeyClient(config?: ValkeyConfig): Promise<ValkeyCach
     await valkeyClient.connect();
     return valkeyClient;
   } catch (error) {
-    console.error('Failed to initialize Valkey client:', error);
+    logger.error('Failed to initialize Valkey client:', error);
     return null;
   }
 }

@@ -2,6 +2,8 @@
  * React hook for using the model orchestrator in components
  */
 
+import { logger } from '@/lib/logger';
+
 import { useState, useEffect, useCallback } from 'react'
 import { 
   modelOrchestrator, 
@@ -113,7 +115,7 @@ export function useModelOrchestrator(options: UseModelOrchestratorOptions = {}) 
     try {
       modelOrchestrator.updateUsageStats(modelId, tokens, latency, success)
     } catch (error) {
-      console.error('Failed to report model usage:', error)
+      logger.error('Failed to report model usage:', error)
     }
   }, [])
 
@@ -271,7 +273,7 @@ export function useModelPerformance() {
       const modelStats = modelOrchestrator.getModelStats()
       setStats(modelStats)
     } catch (error) {
-      console.error('Failed to load model stats:', error)
+      logger.error('Failed to load model stats:', error)
     } finally {
       setIsLoading(false)
     }

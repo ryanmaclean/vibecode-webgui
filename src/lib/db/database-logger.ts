@@ -10,6 +10,7 @@ import {
   DbOperationTimer, 
   LoggerOptions
 } from './db-types';
+import { logger } from '@/lib/logger';
 
 /**
  * Class for logging database operations
@@ -138,7 +139,7 @@ export class DatabaseLogger implements DbLogger {
       
       // Log additional details at debug level
       if (this.shouldLog(LogLevel.DEBUG) && (options.sql || options.params || options.metadata)) {
-        console.debug('Details:', {
+        logger.debug('Details:', {
           sql: options.sql,
           params: options.params,
           metadata: options.metadata

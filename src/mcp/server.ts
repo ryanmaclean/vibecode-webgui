@@ -39,6 +39,7 @@ import {
   GenerateCodeArgsSchema,
   validateToolArgs,
 } from './types.js';
+import { logger } from '@/lib/logger';
 
 // Unused exports for future implementation
 // getTestResults, getDeploymentStatus
@@ -219,16 +220,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 async function authenticateToolCall(args: Record<string, unknown>): Promise<UserContext> {
   try {
     const userContext = await authenticateRequest(args);
-    console.error(`✅ Authenticated: ${userContext.email} (${userContext.role})`);
+    logger.error(`✅ Authenticated: ${userContext.email} (${userContext.role})`);
     return userContext;
   } catch (error) {
     if (error instanceof AuthenticationError) {
-      console.error(`❌ Authentication failed: ${error.code} - ${error.message}`);
+      logger.error(`❌ Authentication failed: ${error.code} - ${error.message}`);
       if (error.details) {
-        console.error(`   Details:`, error.details);
+        logger.error(`   Details:`, error.details);
       }
     } else {
-      console.error(`❌ Authentication error:`, error);
+      logger.error(`❌ Authentication error:`, error);
     }
     throw error;
   }
@@ -438,20 +439,20 @@ VibeCode is an AI-powered development platform with live VS Code experience.
 async function main() {
   // Validate authentication configuration
   if (!process.env.NEXTAUTH_SECRET) {
-    console.error('❌ CRITICAL: NEXTAUTH_SECRET environment variable is not set');
-    console.error('   Authentication will fail without this secret');
-    console.error('   Set NEXTAUTH_SECRET before starting the MCP server');
+    logger.error('❌ CRITICAL: NEXTAUTH_SECRET environment variable is not set');
+    logger.error('   Authentication will fail without this secret');
+    logger.error('   Set NEXTAUTH_SECRET before starting the MCP server');
     process.exit(1);
   }
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('🚀 VibeCode MCP Server running on stdio');
-  console.error('🔒 Authentication: ENABLED (JWT required)');
-  console.error('💡 Set VIBECODE_TOKEN environment variable to authenticate');
+  logger.error('🚀 VibeCode MCP Server running on stdio');
+  logger.error('🔒 Authentication: ENABLED (JWT required)');
+  logger.error('💡 Set VIBECODE_TOKEN environment variable to authenticate');
 }
 
 main().catch((error) => {
-  console.error('❌ Server error:', error);
+  logger.error('❌ Server error:', error);
   process.exit(1);
 });

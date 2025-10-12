@@ -6,6 +6,7 @@
  * that can be sent to an AI model.
  */
 import { Context7AIService, Context7InitOptions } from '../interfaces';
+import { logger } from '@/lib/logger';
 
 export abstract class BaseAIService implements Context7AIService {
   /**
@@ -22,7 +23,7 @@ export abstract class BaseAIService implements Context7AIService {
     // to an AI service (e.g., OpenAI, Anthropic, etc.)
     // For this example, we will just return the formatted context.
     
-    console.log('Formatted Context for AI:', formattedContext);
+    logger.info('Formatted Context for AI:', formattedContext);
     
     // Placeholder for actual AI service call
     return Promise.resolve({

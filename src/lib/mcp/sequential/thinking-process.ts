@@ -9,6 +9,7 @@ import {
   ThinkingBranch,
   ISequentialThinkingProcess
 } from './interfaces';
+import { logger } from '@/lib/logger';
 
 /**
  * Implementation of the Sequential Thinking Process
@@ -225,7 +226,7 @@ export class SequentialThinkingProcess implements ISequentialThinkingProcess {
       
       return true;
     } catch (error) {
-      console.error('Failed to deserialize thinking process:', error);
+      logger.error('Failed to deserialize thinking process:', error);
       return false;
     }
   }

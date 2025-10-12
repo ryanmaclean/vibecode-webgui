@@ -13,6 +13,7 @@
 import { Redis } from 'ioredis';
 import { cache, CacheKeys, CacheTTL } from './redis-client';
 import { metrics } from '../server-monitoring';
+import { logger } from '@/lib/logger';
 
 // =====================================================
 // Types
@@ -126,7 +127,7 @@ export class AgentSessionCacheManager {
       return null;
     } catch (error) {
       metrics.increment('agent.session.cache.error');
-      console.error('Agent session cache get error:', error);
+      logger.error('Agent session cache get error:', error);
       return null;
     }
   }
@@ -157,7 +158,7 @@ export class AgentSessionCacheManager {
       return true;
     } catch (error) {
       metrics.increment('agent.session.cache.set_error');
-      console.error('Agent session cache set error:', error);
+      logger.error('Agent session cache set error:', error);
       return false;
     }
   }
@@ -178,7 +179,7 @@ export class AgentSessionCacheManager {
       metrics.increment('agent.session.activity_update');
       return true;
     } catch (error) {
-      console.error('Activity timestamp update error:', error);
+      logger.error('Activity timestamp update error:', error);
       return false;
     }
   }
@@ -194,7 +195,7 @@ export class AgentSessionCacheManager {
       metrics.increment('agent.session.cache.invalidate');
       return true;
     } catch (error) {
-      console.error('Session invalidation error:', error);
+      logger.error('Session invalidation error:', error);
       return false;
     }
   }
@@ -211,7 +212,7 @@ export class AgentSessionCacheManager {
       metrics.increment('agent.workspace_sessions.lookup');
       return sessions;
     } catch (error) {
-      console.error('Workspace sessions lookup error:', error);
+      logger.error('Workspace sessions lookup error:', error);
       return [];
     }
   }
@@ -232,7 +233,7 @@ export class AgentSessionCacheManager {
       metrics.increment('agent.workspace_count.cache_miss');
       return 0; // Caller should fetch from DB
     } catch (error) {
-      console.error('Workspace agent count error:', error);
+      logger.error('Workspace agent count error:', error);
       return 0;
     }
   }
@@ -268,7 +269,7 @@ export class AgentCapabilityCacheManager {
       metrics.increment('agent.capabilities.cache_miss');
       return null;
     } catch (error) {
-      console.error('Capabilities cache error:', error);
+      logger.error('Capabilities cache error:', error);
       return null;
     }
   }
@@ -284,7 +285,7 @@ export class AgentCapabilityCacheManager {
       metrics.increment('agent.capabilities.cached');
       return true;
     } catch (error) {
-      console.error('Capabilities cache set error:', error);
+      logger.error('Capabilities cache set error:', error);
       return false;
     }
   }
@@ -341,7 +342,7 @@ export class AgentRateLimitManager {
       };
     } catch (error) {
       metrics.increment('agent.ratelimit.error');
-      console.error('Rate limit check error:', error);
+      logger.error('Rate limit check error:', error);
 
       // Fail open (allow request on error)
       return {
@@ -372,7 +373,7 @@ export class AgentRateLimitManager {
       metrics.increment('agent.ratelimit.reset');
       return true;
     } catch (error) {
-      console.error('Rate limit reset error:', error);
+      logger.error('Rate limit reset error:', error);
       return false;
     }
   }
@@ -396,7 +397,7 @@ export class AgentConnectionManager {
       metrics.gauge('agent.connections.active', count, { agent_id: agentId });
       return count;
     } catch (error) {
-      console.error('Connection tracking error:', error);
+      logger.error('Connection tracking error:', error);
       return 0;
     }
   }
@@ -417,7 +418,7 @@ export class AgentConnectionManager {
       metrics.gauge('agent.connections.active', newCount, { agent_id: agentId });
       return newCount;
     } catch (error) {
-      console.error('Connection removal error:', error);
+      logger.error('Connection removal error:', error);
       return 0;
     }
   }
@@ -432,7 +433,7 @@ export class AgentConnectionManager {
       const count = await cache.get<number>(key) || 0;
       return count;
     } catch (error) {
-      console.error('Connection count error:', error);
+      logger.error('Connection count error:', error);
       return 0;
     }
   }
@@ -462,7 +463,7 @@ export class AgentHealthCacheManager {
       await cache.set(key, metrics, AgentCacheTTL.HEALTH_METRICS);
       return true;
     } catch (error) {
-      console.error('Health metrics cache error:', error);
+      logger.error('Health metrics cache error:', error);
       return false;
     }
   }
@@ -476,7 +477,7 @@ export class AgentHealthCacheManager {
     try {
       return await cache.get(key);
     } catch (error) {
-      console.error('Health metrics get error:', error);
+      logger.error('Health metrics get error:', error);
       return null;
     }
   }
@@ -503,7 +504,7 @@ export class ConversationContextCacheManager {
       metrics.increment('agent.context.cached');
       return true;
     } catch (error) {
-      console.error('Context cache error:', error);
+      logger.error('Context cache error:', error);
       return false;
     }
   }
@@ -528,7 +529,7 @@ export class ConversationContextCacheManager {
 
       return context;
     } catch (error) {
-      console.error('Context get error:', error);
+      logger.error('Context get error:', error);
       return null;
     }
   }
@@ -569,7 +570,7 @@ export async function invalidateWorkspaceAgents(workspaceId: number): Promise<vo
       session_count: sessions.length.toString(),
     });
   } catch (error) {
-    console.error('Workspace invalidation error:', error);
+    logger.error('Workspace invalidation error:', error);
   }
 }
 
@@ -582,7 +583,7 @@ export async function invalidateUserAgents(userId: number): Promise<void> {
       user_id: userId.toString(),
     });
   } catch (error) {
-    console.error('User invalidation error:', error);
+    logger.error('User invalidation error:', error);
   }
 }
 

@@ -162,7 +162,7 @@ export class TemplateGenerator {
 
       return project;
     } catch (error) {
-      console.error(`Failed to generate project from template ${templateId}:`, error);
+      logger.error(`Failed to generate project from template ${templateId}:`, error);
       throw new Error(`Project generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -357,6 +357,7 @@ jobs:
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import { logger } from '@/lib/logger';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

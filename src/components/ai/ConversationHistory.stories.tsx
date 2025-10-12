@@ -6,6 +6,8 @@
  * @module components/ai/ConversationHistory.stories
  */
 
+import { logger } from '@/lib/logger';
+
 import type { Meta, StoryObj } from '@storybook/react'
 import { ConversationHistory } from './ConversationHistory'
 
@@ -153,15 +155,15 @@ export const Default: Story = {
   args: {
     conversations: mockConversations,
     onConversationSelect: (id: string) => {
-      console.log('Selected conversation:', id)
+      logger.info('Selected conversation:', id)
       alert(`Selected: ${id}`)
     },
     onConversationDelete: (id: string) => {
-      console.log('Deleted conversation:', id)
+      logger.info('Deleted conversation:', id)
       alert(`Deleted: ${id}`)
     },
     onConversationExport: (id: string) => {
-      console.log('Exported conversation:', id)
+      logger.info('Exported conversation:', id)
       alert(`Exported: ${id}`)
     }
   }
@@ -184,7 +186,7 @@ export const Empty: Story = {
   args: {
     conversations: [],
     onConversationSelect: (id: string) => {
-      console.log('Selected conversation:', id)
+      logger.info('Selected conversation:', id)
     }
   },
   parameters: {

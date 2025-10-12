@@ -73,7 +73,7 @@ export class OpenRouter {
 
       return await response.json();
     } catch (error) {
-      console.error('OpenRouter API call failed:', error);
+      logger.error('OpenRouter API call failed:', error);
       throw error;
     }
   }
@@ -91,6 +91,7 @@ export class OpenRouter {
 
 \`\`\`typescript
 import React from 'react';
+import { logger } from '@/lib/logger';
 
 interface Props {
   title: string;
@@ -274,7 +275,7 @@ class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
+    logger.error('Uncaught error:', error, errorInfo);
   }
 
   render() {
@@ -393,7 +394,7 @@ I can help implement any of these improvements or answer specific questions abou
       const data = await response.json();
       return data.data.map((model: any) => model.id);
     } catch (error) {
-      console.error('Failed to fetch models:', error);
+      logger.error('Failed to fetch models:', error);
       return [];
     }
   }

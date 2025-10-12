@@ -4,6 +4,7 @@
  */
 
 import { metrics } from '../server-monitoring';
+import { logger } from '@/lib/logger';
 
 /**
  * Cache invalidation configuration
@@ -87,7 +88,7 @@ export class ProductionVectorCacheInvalidator {
     };
 
     if (this.config.enableLogging) {
-      console.log(`Cache invalidation requested: ${keys.length} keys, priority: ${priority}, source: ${source}`);
+      logger.info(`Cache invalidation requested: ${keys.length} keys, priority: ${priority}, source: ${source}`);
     }
 
     if (this.config.enableMetrics) {
@@ -122,7 +123,7 @@ export class ProductionVectorCacheInvalidator {
     source = 'pattern-invalidation'
   ): Promise<void> {
     if (this.config.enableLogging) {
-      console.log(`Cache invalidation by pattern requested: ${pattern}, priority: ${priority}`);
+      logger.info(`Cache invalidation by pattern requested: ${pattern}, priority: ${priority}`);
     }
 
     if (this.config.enableMetrics) {
@@ -148,7 +149,7 @@ export class ProductionVectorCacheInvalidator {
     const patterns = this.generateContentTypePatterns(contentType, workspaceId);
     
     if (this.config.enableLogging) {
-      console.log(`Cache invalidation by content type: ${contentType}, workspace: ${workspaceId}`);
+      logger.info(`Cache invalidation by content type: ${contentType}, workspace: ${workspaceId}`);
     }
 
     if (this.config.enableMetrics) {
@@ -196,7 +197,7 @@ export class ProductionVectorCacheInvalidator {
     const allKeys = [...affectedKeys, ...relatedKeys];
 
     if (this.config.enableLogging) {
-      console.log(`Vector cache invalidation: ${operation}, ${allKeys.length} keys affected`);
+      logger.info(`Vector cache invalidation: ${operation}, ${allKeys.length} keys affected`);
     }
 
     if (this.config.enableMetrics) {
@@ -286,7 +287,7 @@ export class ProductionVectorCacheInvalidator {
       const batch = this.invalidationQueue.splice(0, this.config.batchSize);
       
       if (this.config.enableLogging) {
-        console.log(`Processing invalidation batch: ${batch.length} requests`);
+        logger.info(`Processing invalidation batch: ${batch.length} requests`);
       }
 
       if (this.config.enableMetrics) {
@@ -302,7 +303,7 @@ export class ProductionVectorCacheInvalidator {
       }
 
     } catch (error) {
-      console.error('Batch invalidation failed:', error);
+      logger.error('Batch invalidation failed:', error);
       this.handleFailure(error as Error);
     } finally {
       this.isProcessing = false;
@@ -337,7 +338,7 @@ export class ProductionVectorCacheInvalidator {
         totalKeysInvalidated += uniqueKeys.length;
 
         if (this.config.enableLogging) {
-          console.log(`Invalidated ${uniqueKeys.length} cache keys (priority: ${priority})`);
+          logger.info(`Invalidated ${uniqueKeys.length} cache keys (priority: ${priority})`);
         }
       }
 
@@ -376,7 +377,7 @@ export class ProductionVectorCacheInvalidator {
     // - In-memory cache: keys.forEach(key => cache.delete(key))
     
     if (this.config.enableLogging) {
-      console.log(`Actually invalidated ${keys.length} cache keys`);
+      logger.info(`Actually invalidated ${keys.length} cache keys`);
     }
   }
 
@@ -395,7 +396,7 @@ export class ProductionVectorCacheInvalidator {
       this.circuitBreakerState = CircuitBreakerState.OPEN;
       
       if (this.config.enableLogging) {
-        console.warn(`Cache invalidation circuit breaker opened after ${this.failureCount} failures`);
+        logger.warn(`Cache invalidation circuit breaker opened after ${this.failureCount} failures`);
       }
 
       if (this.config.enableMetrics) {

@@ -5,6 +5,7 @@
 
 // Simple StatsD implementation for Datadog
 import dgram from 'dgram';
+import { logger } from '@/lib/logger';
 
 interface DatadogConfig {
   host?: string;
@@ -64,7 +65,7 @@ class SimpleStatsD {
     const buffer = Buffer.from(message);
     this.client.send(buffer, this.port, this.host, (error) => {
       if (error) {
-        console.error('Error sending metric to Datadog:', error);
+        logger.error('Error sending metric to Datadog:', error);
       }
     });
   }

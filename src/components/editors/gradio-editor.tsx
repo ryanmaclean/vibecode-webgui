@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Play } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { logger } from '@/lib/logger';
 
 interface GradioEditorProps {
   initialCode: string;
@@ -42,7 +43,7 @@ export function GradioEditor({ initialCode }: GradioEditorProps) {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-      console.error('Failed to run Gradio code:', error);
+      logger.error('Failed to run Gradio code:', error);
       toast({
         variant: 'destructive',
         title: 'Error',

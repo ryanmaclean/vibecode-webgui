@@ -6,6 +6,8 @@
  */
 
 // Conditional imports with fallbacks
+import { logger } from '@/lib/logger';
+
 let NodeSDK: any = null;
 let getNodeAutoInstrumentations: any = null;
 let PeriodicExportingMetricReader: any = null;
@@ -22,7 +24,7 @@ function safeImport(moduleName: string, exportName?: string): any {
     const moduleExports = require(moduleName);
     return exportName ? moduleExports[exportName] : moduleExports;
   } catch (error) {
-    console.warn(`⚠️ OpenTelemetry module '${moduleName}' not available:`, (error as Error).message);
+    logger.warn(`⚠️ OpenTelemetry module '${moduleName}' not available:`, (error as Error).message);
     return null;
   }
 }
@@ -49,7 +51,7 @@ function initializeOtelImports(): boolean {
     // Check if core modules are available
     return !!(NodeSDK && Resource);
   } catch (error) {
-    console.warn('⚠️ Failed to initialize OpenTelemetry imports:', (error as Error).message);
+    logger.warn('⚠️ Failed to initialize OpenTelemetry imports:', (error as Error).message);
     return false;
   }
 }
@@ -77,7 +79,7 @@ function createResource(): any {
     
     return new Resource(attributes);
   } catch (error) {
-    console.warn('⚠️ Failed to create OpenTelemetry resource:', (error as Error).message);
+    logger.warn('⚠️ Failed to create OpenTelemetry resource:', (error as Error).message);
     return null;
   }
 }
@@ -85,7 +87,7 @@ function createResource(): any {
 // Create instrumentations with fallback
 function createInstrumentations(): any[] {
   if (!getNodeAutoInstrumentations) {
-    console.warn('⚠️ Auto-instrumentations not available, using empty array');
+    logger.warn('⚠️ Auto-instrumentations not available, using empty array');
     return [];
   }
   
@@ -115,7 +117,7 @@ function createInstrumentations(): any[] {
       },
     });
   } catch (error) {
-    console.warn('⚠️ Failed to create auto-instrumentations:', (error as Error).message);
+    logger.warn('⚠️ Failed to create auto-instrumentations:', (error as Error).message);
     return [];
   }
 }
@@ -133,7 +135,7 @@ function createMetricReaders(): any[] {
       }));
       // Debug log removed
     } catch (error) {
-      console.warn('⚠️ Failed to create Prometheus exporter:', (error as Error).message);
+      logger.warn('⚠️ Failed to create Prometheus exporter:', (error as Error).message);
     }
   }
   
@@ -150,7 +152,7 @@ function createMetricReaders(): any[] {
       }));
       // Debug log removed
     } catch (error) {
-      console.warn('⚠️ Failed to create OTLP metrics exporter:', (error as Error).message);
+      logger.warn('⚠️ Failed to create OTLP metrics exporter:', (error as Error).message);
     }
   }
   
@@ -168,7 +170,7 @@ function createTraceExporter(): any {
           JSON.parse(process.env.OTEL_EXPORTER_OTLP_HEADERS) : {},
       });
     } catch (error) {
-      console.warn('⚠️ Failed to create OTLP trace exporter:', (error as Error).message);
+      logger.warn('⚠️ Failed to create OTLP trace exporter:', (error as Error).message);
     }
   }
   
@@ -178,7 +180,7 @@ function createTraceExporter(): any {
       const { ConsoleSpanExporter } = require('@opentelemetry/sdk-trace-node');
       return new ConsoleSpanExporter();
     } catch (error) {
-      console.warn('⚠️ Console span exporter not available');
+      logger.warn('⚠️ Console span exporter not available');
     }
   }
   
@@ -201,7 +203,7 @@ export function initializeOpenTelemetry(): boolean {
   
   // Initialize imports
   if (!initializeOtelImports()) {
-    console.warn('⚠️ OpenTelemetry dependencies not available, monitoring will be limited');
+    logger.warn('⚠️ OpenTelemetry dependencies not available, monitoring will be limited');
     return false;
   }
   
@@ -212,7 +214,7 @@ export function initializeOpenTelemetry(): boolean {
     const traceExporter = createTraceExporter();
     
     if (!NodeSDK) {
-      console.warn('⚠️ NodeSDK not available, cannot initialize OpenTelemetry');
+      logger.warn('⚠️ NodeSDK not available, cannot initialize OpenTelemetry');
       return false;
     }
     
@@ -246,14 +248,14 @@ export function initializeOpenTelemetry(): boolean {
         .then(() => {
           // OpenTelemetry terminated  
         })
-        .catch((error) => console.error('❌ Error terminating OpenTelemetry', error))
+        .catch((error) => logger.error('❌ Error terminating OpenTelemetry', error))
         .finally(() => process.exit(0));
     });
     
     return true;
     
   } catch (error) {
-    console.error('❌ Failed to initialize OpenTelemetry:', (error as Error).message);
+    logger.error('❌ Failed to initialize OpenTelemetry:', (error as Error).message);
     return false;
   }
 }

@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAIAuth, AuthenticatedRequest } from '@/lib/auth/middleware'
 import { validateAIQuery } from '@/lib/security/input-validator'
+import { logger } from '@/lib/logger'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -182,7 +183,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
           });
         }
       } catch (streamError) {
-        console.error('Streaming error:', streamError);
+        logger.error('Streaming error:', streamError);
         // Fall back to mock streaming for errors
       }
       
@@ -251,7 +252,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     });
 
   } catch (error) {
-    console.error('Chat API error:', error);
+    logger.error('Chat API error:', error);
     
     logAIInteraction(request, 'chat_error', {
       error: error instanceof Error ? error.message : 'Unknown error',

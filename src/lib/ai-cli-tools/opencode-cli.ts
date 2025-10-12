@@ -324,6 +324,7 @@ export class OpenCodeCLI {
     contextWindow: number
     maxTokens: number
     costPer1kTokens: { input: number; output: number }
+import { logger } from '@/lib/logger';
   }> {
     const models = {
       'gpt-4-turbo': {
@@ -403,7 +404,7 @@ export class OpenCodeCLI {
         throw new Error(stderr)
       }
 
-      console.log('OpenCode CLI installed successfully')
+      logger.info('OpenCode CLI installed successfully')
     } catch (error) {
       throw new Error(`Failed to install OpenCode CLI: ${error}`)
     }
@@ -422,7 +423,7 @@ export class OpenCodeCLI {
         throw new Error(stderr)
       }
 
-      console.log('OpenCode CLI uninstalled successfully')
+      logger.info('OpenCode CLI uninstalled successfully')
     } catch (error) {
       throw new Error(`Failed to uninstall OpenCode CLI: ${error}`)
     }

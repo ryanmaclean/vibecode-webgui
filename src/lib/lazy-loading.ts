@@ -153,6 +153,7 @@ export class LazyFileLoader extends EventEmitter {
       maxResults?: number
     } = {}
   ): Promise<Array<{ line: number; content: string; match: RegExp | null }>> {
+import { logger } from '@/lib/logger';
     if (!this.fileMetadata) {
       throw new Error('File not initialized')
     }
@@ -206,7 +207,7 @@ export class LazyFileLoader extends EventEmitter {
         })
 
       } catch (error) {
-        console.warn(`Failed to search in chunk ${chunkIndex}:`, error)
+        logger.warn(`Failed to search in chunk ${chunkIndex}:`, error)
       }
     }
 
@@ -367,7 +368,7 @@ export class LazyFileLoader extends EventEmitter {
       // Use setTimeout to avoid blocking main operations
       setTimeout(() => {
         this.loadChunk(chunkId, 'low').catch(error => {
-          console.warn(`Prefetch failed for chunk ${chunkId}:`, error)
+          logger.warn(`Prefetch failed for chunk ${chunkId}:`, error)
         })
       }, 0)
     })
@@ -508,7 +509,7 @@ export class LazyFileLoader extends EventEmitter {
       // Create compression worker (placeholder)
       // this.compressionWorker = new Worker('/workers/compression-worker.js')
     } catch (error) {
-      console.warn('Failed to initialize compression worker:', error)
+      logger.warn('Failed to initialize compression worker:', error)
       this.config.compressionEnabled = false
     }
   }

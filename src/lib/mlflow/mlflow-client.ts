@@ -4,6 +4,8 @@
  * Tracks AI model performance, experiments, and deployment metrics
  */
 
+import { logger } from '@/lib/logger';
+
 export interface MLflowExperiment {
   experimentId: string
   name: string
@@ -139,12 +141,12 @@ export class MLflowClient {
       if (this.isConnected) {
         // Debug log removed
       } else {
-        console.warn(`❌ MLflow connection failed: ${response.status} ${response.statusText}`)
+        logger.warn(`❌ MLflow connection failed: ${response.status} ${response.statusText}`)
       }
 
       return this.isConnected
     } catch (error) {
-      console.error('MLflow connection error:', error)
+      logger.error('MLflow connection error:', error)
       this.isConnected = false
       return false
     }
@@ -187,7 +189,7 @@ export class MLflowClient {
       // Debug log removed`)
       return data.experiment_id
     } catch (error) {
-      console.error('Failed to create MLflow experiment:', error)
+      logger.error('Failed to create MLflow experiment:', error)
       throw error
     }
   }
@@ -234,7 +236,7 @@ export class MLflowClient {
       const data = await response.json()
       return this.formatExperiment(data.experiment)
     } catch (error) {
-      console.error('Failed to get MLflow experiment:', error)
+      logger.error('Failed to get MLflow experiment:', error)
       return null
     }
   }
@@ -273,7 +275,7 @@ export class MLflowClient {
       // Debug log removed
       return runId
     } catch (error) {
-      console.error('Failed to start MLflow run:', error)
+      logger.error('Failed to start MLflow run:', error)
       throw error
     }
   }
@@ -300,7 +302,7 @@ export class MLflowClient {
         throw new Error(`Failed to log params: ${response.status} ${response.statusText}`)
       }
     } catch (error) {
-      console.error('Failed to log MLflow params:', error)
+      logger.error('Failed to log MLflow params:', error)
       throw error
     }
   }
@@ -333,7 +335,7 @@ export class MLflowClient {
         throw new Error(`Failed to log metrics: ${response.status} ${response.statusText}`)
       }
     } catch (error) {
-      console.error('Failed to log MLflow metrics:', error)
+      logger.error('Failed to log MLflow metrics:', error)
       throw error
     }
   }
@@ -363,7 +365,7 @@ export class MLflowClient {
 
       // Debug log removed`)
     } catch (error) {
-      console.error('Failed to finish MLflow run:', error)
+      logger.error('Failed to finish MLflow run:', error)
       throw error
     }
   }
@@ -413,7 +415,7 @@ export class MLflowClient {
       // Finish the run
       await this.finishRun(runId)
     } catch (error) {
-      console.error('Failed to track AI model metrics:', error)
+      logger.error('Failed to track AI model metrics:', error)
     }
   }
 
@@ -443,7 +445,7 @@ export class MLflowClient {
       const data = await response.json()
       return data.runs?.map((run: any) => this.formatRun(run)) || []
     } catch (error) {
-      console.error('Failed to get MLflow runs:', error)
+      logger.error('Failed to get MLflow runs:', error)
       return []
     }
   }

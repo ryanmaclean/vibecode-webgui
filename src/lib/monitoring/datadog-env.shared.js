@@ -7,6 +7,8 @@
  * instrumentation running under Node without a TypeScript transpiler).
  */
 
+import { logger } from '@/lib/logger';
+
 const VALID_KEYS = new Set(['API_KEY', 'APP_KEY', 'SITE', 'SERVICE', 'ENV', 'VERSION']);
 
 function readBooleanFlag(value, defaultValue = false) {
@@ -28,7 +30,7 @@ function readBooleanFlag(value, defaultValue = false) {
 
 function safeWarn(message) {
   if (process.env.NODE_ENV !== 'test') {
-    console.warn(`[DatadogEnv] ${message}`);
+    logger.warn(`[DatadogEnv] ${message}`);
   }
 }
 

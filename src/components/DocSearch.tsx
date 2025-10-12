@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { logger } from '@/lib/logger';
 
 interface SearchResult {
   id: string;
@@ -65,7 +66,7 @@ export default function DocSearch() {
       setCategories(data.categories);
       setTotal(data.total);
     } catch (error) {
-      console.error('Search error:', error);
+      logger.error('Search error:', error);
       setResults([]);
       setTotal(0);
     } finally {

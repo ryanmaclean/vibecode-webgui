@@ -6,6 +6,7 @@
 import OpenAI from 'openai';
 import crypto from 'crypto';
 import { VectorSearchService } from './vector-search';
+import { logger } from '@/lib/logger';
 
 interface EmbeddingRequest {
   content: string;
@@ -67,7 +68,7 @@ export class EmbeddingGenerator {
         token_count
       };
     } catch (error) {
-      console.error('Failed to generate embedding:', error);
+      logger.error('Failed to generate embedding:', error);
       throw new Error(`Embedding generation failed: ${error}`);
     }
   }
@@ -162,7 +163,7 @@ export class EmbeddingGenerator {
         const batchResults = await Promise.all(batchPromises);
         results.push(...batchResults);
       } catch (error) {
-        console.error(`Batch ${i / BATCH_SIZE + 1} failed:`, error);
+        logger.error(`Batch ${i / BATCH_SIZE + 1} failed:`, error);
         // Continue with next batch
       }
       
@@ -245,7 +246,7 @@ export class EmbeddingGenerator {
         }
       }
     } catch (error) {
-      console.warn('Cache lookup failed, generating new embedding:', error);
+      logger.warn('Cache lookup failed, generating new embedding:', error);
     }
 
     // Generate new embedding

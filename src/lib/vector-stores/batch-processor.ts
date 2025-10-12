@@ -3,6 +3,8 @@
  * Optimizes vector operations through intelligent batching
  */
 
+import { logger } from '@/lib/logger';
+
 interface BatchOperation {
   type: 'store' | 'search' | 'delete'
   payload: any
@@ -80,7 +82,7 @@ export class VectorBatchProcessor {
       this.timers.delete(queueKey)
     }
 
-    console.log(`Processing batch of ${operations.length} ${queueKey} operations`)
+    logger.info(`Processing batch of ${operations.length} ${queueKey} operations`)
 
     try {
       switch (queueKey) {
@@ -95,7 +97,7 @@ export class VectorBatchProcessor {
           break
       }
     } catch (error) {
-      console.error(`Batch ${queueKey} processing failed:`, error)
+      logger.error(`Batch ${queueKey} processing failed:`, error)
       // Call error callbacks
       operations.forEach(op => op.callback({ error: error.message }))
     }
@@ -163,7 +165,7 @@ export class VectorBatchProcessor {
    */
   private async batchStoreDocuments(documents: any[]): Promise<any> {
     // Implementation would integrate with actual vector store
-    console.log(`Batch storing ${documents.length} documents`)
+    logger.info(`Batch storing ${documents.length} documents`)
     return { stored: documents.length, success: true }
   }
 
@@ -172,7 +174,7 @@ export class VectorBatchProcessor {
    */
   private async executeSearch(payload: any): Promise<any> {
     // Implementation would integrate with actual vector search
-    console.log(`Executing search for: ${payload.query}`)
+    logger.info(`Executing search for: ${payload.query}`)
     return { results: [], query: payload.query }
   }
 
@@ -180,7 +182,7 @@ export class VectorBatchProcessor {
    * Batch delete implementation (placeholder)
    */
   private async batchDeleteDocuments(options: { fileIds: number[], workspaceIds: number[] }): Promise<any> {
-    console.log(`Batch deleting files: ${options.fileIds.length}, workspaces: ${options.workspaceIds.length}`)
+    logger.info(`Batch deleting files: ${options.fileIds.length}, workspaces: ${options.workspaceIds.length}`)
     return { deleted: options.fileIds.length + options.workspaceIds.length }
   }
 

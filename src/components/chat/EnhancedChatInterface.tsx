@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Upload, Code, Settings, Sparkles, MessageSquare, Wand2, FileText, Image, Paperclip, Search, Zap, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -116,7 +118,7 @@ export const EnhancedChatInterface = ({
         })))
       }
     } catch (error) {
-      console.error('Failed to load conversation:', error)
+      logger.error('Failed to load conversation:', error)
     }
   }
 
@@ -271,7 +273,7 @@ export const EnhancedChatInterface = ({
         }
       }
     } catch (error) {
-      console.error('Failed to send message:', error)
+      logger.error('Failed to send message:', error)
       // Add error message
       const errorMessage: Message = {
         id: `error-${Date.now()}`,

@@ -14,6 +14,7 @@
  */
 
 import bcrypt from 'bcryptjs';
+import { logger } from '@/lib/logger';
 
 /**
  * Security configuration for password operations
@@ -148,7 +149,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
  * ```typescript
  * const result = validatePasswordStrength('weak');
  * if (!result.valid) {
- *   console.log(result.errors);
+ *   logger.info(result.errors);
  *   // ['Password must be at least 8 characters', ...]
  * }
  * ```

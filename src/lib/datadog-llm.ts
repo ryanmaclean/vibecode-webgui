@@ -13,6 +13,7 @@ import { getDatadogSite, getDatadogApiKey, getServiceEnvVersion } from '@/lib/mo
 
 interface LLMSpanMetadata {
   tags?: string[];
+import { logger } from '@/lib/logger';
   input?: unknown;
   output?: unknown;
   context?: Record<string, unknown>;
@@ -103,7 +104,7 @@ class LLMObservability {
         }
       });
     } catch (error) {
-      console.error('Error in LLM workflow span:', error);
+      logger.error('Error in LLM workflow span:', error);
       return operation(undefined);
     }
   }
@@ -159,7 +160,7 @@ class LLMObservability {
         }
       });
     } catch (error) {
-      console.error('Error in LLM task span:', error);
+      logger.error('Error in LLM task span:', error);
       return operation(undefined);
     }
   }
@@ -175,7 +176,7 @@ class LLMObservability {
     try {
       const activeSpan = tracer.scope().active();
       if (!activeSpan) {
-        console.warn('No active span to annotate for LLM Observability');
+        logger.warn('No active span to annotate for LLM Observability');
         return;
       }
 
@@ -199,7 +200,7 @@ class LLMObservability {
         });
       }
     } catch (error) {
-      console.error('Error annotating LLM span:', error);
+      logger.error('Error annotating LLM span:', error);
     }
   }
 
@@ -212,7 +213,7 @@ class LLMObservability {
       return new Promise(resolve => {
         if (ddTracer.tracer?._writer?.flush) {
           ddTracer.tracer._writer.flush(() => {
-            console.log('LLM observability data flushed to Datadog');
+            logger.info('LLM observability data flushed to Datadog');
             resolve();
           });
         } else {
@@ -220,7 +221,7 @@ class LLMObservability {
         }
       });
     } catch (error) {
-      console.error('Error flushing LLM observability data:', error);
+      logger.error('Error flushing LLM observability data:', error);
       return Promise.resolve();
     }
   }

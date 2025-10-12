@@ -146,6 +146,7 @@ export class AppleContainerRuntimeV2 {
    * Stop a running container
    */
   async stop(containerId: string, timeout = 10): Promise<{ success: boolean; error?: string }> {
+import { logger } from '@/lib/logger';
     try {
       const result = await this.executeCommand([
         'stop',
@@ -298,7 +299,7 @@ export class AppleContainerRuntimeV2 {
 
       proc.stderr.on('data', (data) => {
         if (this.debug) {
-          console.error('Container logs stderr:', data.toString())
+          logger.error('Container logs stderr:', data.toString())
         }
       })
 
@@ -406,7 +407,7 @@ export class AppleContainerRuntimeV2 {
   ): Promise<{ success: boolean; stdout: string; stderr: string; error?: string }> {
     return new Promise((resolve) => {
       if (this.debug) {
-        console.log('Executing:', this.runtimePath, args.join(' '))
+        logger.info('Executing:', this.runtimePath, args.join(' '))
       }
 
       const proc = spawn(this.runtimePath, args)
@@ -424,9 +425,9 @@ export class AppleContainerRuntimeV2 {
 
       proc.on('close', (code) => {
         if (this.debug) {
-          console.log('Exit code:', code)
-          console.log('Stdout:', stdout)
-          console.log('Stderr:', stderr)
+          logger.info('Exit code:', code)
+          logger.info('Stdout:', stdout)
+          logger.info('Stderr:', stderr)
         }
 
         if (code === 0) {

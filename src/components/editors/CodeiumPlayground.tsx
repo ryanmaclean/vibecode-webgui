@@ -29,7 +29,7 @@ const LANGUAGE_OPTIONS: LanguageOption[] = [
     value: 'typescript',
     sample: `function greet(name: string) {
   const message = ` + '`Hello, ${name}!`' + `
-  console.log(message)
+  logger.info(message)
   return message
 }
 
@@ -54,6 +54,7 @@ print(fibonacci(10))
     sample: `package main
 
 import "fmt"
+import { logger } from '@/lib/logger';
 
 func fibonacci(n int) []int {
     seq := []int{0, 1}

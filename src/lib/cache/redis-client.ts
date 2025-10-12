@@ -5,6 +5,7 @@
 
 import { createClient, RedisClientType } from 'redis';
 import { CacheTTL } from './cache-constants';
+import { logger } from '@/lib/logger';
 
 export interface RedisConfig {
   host: string;
@@ -54,15 +55,15 @@ export class RedisCacheClient {
         keyPrefix: this.config.keyPrefix,
         retry_strategy: (options) => {
           if (options.error && options.error.code === 'ECONNREFUSED') {
-            console.error('Redis server connection refused');
+            logger.error('Redis server connection refused');
             return new Error('Redis server connection refused');
           }
           if (options.total_retry_time > 1000 * 60 * 60) {
-            console.error('Redis retry time exhausted');
+            logger.error('Redis retry time exhausted');
             return new Error('Retry time exhausted');
           }
           if (options.attempt > 10) {
-            console.error('Redis max retry attempts exceeded');
+            logger.error('Redis max retry attempts exceeded');
             return new Error('Max retry attempts exceeded');
           }
           return Math.min(options.attempt * 100, 3000);
@@ -71,28 +72,28 @@ export class RedisCacheClient {
 
       // Event listeners for monitoring
       this.client.on('connect', () => {
-        console.log('Redis client connected');
+        logger.info('Redis client connected');
         this.isConnected = true;
       });
 
       this.client.on('error', (error) => {
-        console.error('Redis client error:', error);
+        logger.error('Redis client error:', error);
         this.isConnected = false;
       });
 
       this.client.on('ready', () => {
-        console.log('Redis client ready');
+        logger.info('Redis client ready');
         this.isConnected = true;
       });
 
       this.client.on('end', () => {
-        console.log('Redis client connection ended');
+        logger.info('Redis client connection ended');
         this.isConnected = false;
       });
 
       await this.client.connect();
     } catch (error) {
-      console.warn('Redis client initialization failed:', error);
+      logger.warn('Redis client initialization failed:', error);
       this.client = null;
       this.isConnected = false;
       throw error;
@@ -142,7 +143,7 @@ export class RedisCacheClient {
 
       return parsed.value;
     } catch (error) {
-      console.warn(`Failed to get cache key ${key}:`, error);
+      logger.warn(`Failed to get cache key ${key}:`, error);
       return null;
     }
   }
@@ -171,7 +172,7 @@ export class RedisCacheClient {
       await this.client.setEx(key, Math.floor(ttlMs / 1000), serialized);
       return true;
     } catch (error) {
-      console.warn(`Failed to set cache key ${key}:`, error);
+      logger.warn(`Failed to set cache key ${key}:`, error);
       return false;
     }
   }
@@ -188,7 +189,7 @@ export class RedisCacheClient {
       const result = await this.client.del(key);
       return result > 0;
     } catch (error) {
-      console.warn(`Failed to delete cache key ${key}:`, error);
+      logger.warn(`Failed to delete cache key ${key}:`, error);
       return false;
     }
   }
@@ -205,7 +206,7 @@ export class RedisCacheClient {
       const result = await this.client.del(keys);
       return result;
     } catch (error) {
-      console.warn(`Failed to delete cache keys:`, error);
+      logger.warn(`Failed to delete cache keys:`, error);
       return 0;
     }
   }
@@ -222,7 +223,7 @@ export class RedisCacheClient {
       const result = await this.client.exists(key);
       return result > 0;
     } catch (error) {
-      console.warn(`Failed to check cache key ${key}:`, error);
+      logger.warn(`Failed to check cache key ${key}:`, error);
       return false;
     }
   }
@@ -253,7 +254,7 @@ export class RedisCacheClient {
       await pipeline.exec();
       return true;
     } catch (error) {
-      console.warn('Failed to set multiple cache entries:', error);
+      logger.warn('Failed to set multiple cache entries:', error);
       return false;
     }
   }
@@ -283,12 +284,12 @@ export class RedisCacheClient {
 
           return parsed.value;
         } catch (parseError) {
-          console.warn('Failed to parse cached value:', parseError);
+          logger.warn('Failed to parse cached value:', parseError);
           return null;
         }
       });
     } catch (error) {
-      console.warn('Failed to get multiple cache entries:', error);
+      logger.warn('Failed to get multiple cache entries:', error);
       return keys.map(() => null);
     }
   }
@@ -305,7 +306,7 @@ export class RedisCacheClient {
       const result = await this.client.incrBy(key, increment);
       return result;
     } catch (error) {
-      console.warn(`Failed to increment cache key ${key}:`, error);
+      logger.warn(`Failed to increment cache key ${key}:`, error);
       return null;
     }
   }
@@ -341,7 +342,7 @@ export class RedisCacheClient {
       await this.client.flushAll();
       return true;
     } catch (error) {
-      console.warn('Failed to clear cache:', error);
+      logger.warn('Failed to clear cache:', error);
       return false;
     }
   }
@@ -369,7 +370,7 @@ export class RedisCacheClient {
         memoryUsage: this.extractMemoryUsage(info),
       };
     } catch (error) {
-      console.warn('Failed to get cache stats:', error);
+      logger.warn('Failed to get cache stats:', error);
       return { connected: this.isConnected };
     }
   }
@@ -435,7 +436,7 @@ export async function getRedisClient(config?: RedisConfig): Promise<RedisCacheCl
   }
 
   if (!config) {
-    console.warn('No Redis configuration provided');
+    logger.warn('No Redis configuration provided');
     return null;
   }
 
@@ -444,7 +445,7 @@ export async function getRedisClient(config?: RedisConfig): Promise<RedisCacheCl
     await redisClient.connect();
     return redisClient;
   } catch (error) {
-    console.error('Failed to initialize Redis client:', error);
+    logger.error('Failed to initialize Redis client:', error);
     return null;
   }
 }

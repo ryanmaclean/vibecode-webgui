@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { VectorConnectionPool, PoolEvent } from './vector-connection-pool';
 import { PoolStatus } from '../vector-db/pool-status';
+import { logger } from '@/lib/logger';
 
 /**
  * Alert levels for the connection pool monitor
@@ -154,7 +155,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
       return;
     }
 
-    console.log('Starting connection pool monitor');
+    logger.info('Starting connection pool monitor');
 
     // Start regular health checks
     this.checkInterval = setInterval(() => {
@@ -183,7 +184,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
       this.capacityPlanningInterval = null;
     }
 
-    console.log('Connection pool monitor stopped');
+    logger.info('Connection pool monitor stopped');
   }
 
   /**
@@ -205,7 +206,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
     pool.on(PoolEvent.TIMEOUT, this.handlePoolEvent.bind(this));
     pool.on(PoolEvent.ERROR, this.handlePoolEvent.bind(this));
 
-    console.log(`Now monitoring connection pool: ${poolName}`);
+    logger.info(`Now monitoring connection pool: ${poolName}`);
   }
 
   /**
@@ -226,7 +227,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
     pool.removeAllListeners(PoolEvent.ERROR);
 
     this.pools.delete(poolName);
-    console.log(`Stopped monitoring connection pool: ${poolName}`);
+    logger.info(`Stopped monitoring connection pool: ${poolName}`);
   }
 
   /**

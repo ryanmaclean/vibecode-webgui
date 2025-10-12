@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 // Define required environment variables with validation rules
 const envSchema = z.object({
@@ -45,13 +46,13 @@ export type ValidatedEnv = z.infer<typeof envSchema>;
 export function validateEnvironment(): ValidatedEnv {
   try {
     const env = envSchema.parse(process.env);
-    console.log('✅ Environment validation successful');
+    logger.info('✅ Environment validation successful');
     return env;
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error('❌ Environment validation failed:');
+      logger.error('❌ Environment validation failed:');
       error.errors.forEach(err => {
-        console.error(`  - ${err.path.join('.')}: ${err.message}`);
+        logger.error(`  - ${err.path.join('.')}: ${err.message}`);
       });
       throw new Error('Invalid environment configuration. Check console for details.');
     }
@@ -130,12 +131,12 @@ if (process.env.NODE_ENV !== 'test' && typeof window === 'undefined') {
       validateEnvironment();
       const warnings = checkInsecureDefaults();
       if (warnings.length > 0) {
-        console.warn('⚠️  Security warnings:');
-        warnings.forEach(warning => console.warn(`  - ${warning}`));
+        logger.warn('⚠️  Security warnings:');
+        warnings.forEach(warning => logger.warn(`  - ${warning}`));
       }
     } catch (error) {
       // Log error but don't crash during import
-      console.error('Environment validation error:', error);
+      logger.error('Environment validation error:', error);
       if (process.env.NODE_ENV === 'production') {
         process.exit(1);
       }
