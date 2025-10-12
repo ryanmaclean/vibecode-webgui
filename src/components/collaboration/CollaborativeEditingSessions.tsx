@@ -12,7 +12,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Users,
+Users,
   Share,
   Lock,
   Unlock,
@@ -26,6 +26,7 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { useCollaboration } from '../../hooks/useCollaboration'
+import { logger } from '@/lib/logger';
 
 export interface CollaborativeSession {
   sessionId: string
@@ -584,8 +585,7 @@ export default function CollaborativeEditingSessions({
 
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   Share this link with others to invite them to collaborate on &quot;{selectedSession.sessionName}&quot;.
-import { logger } from '@/lib/logger';
-                </div>
+</div>
               </div>
 
               <div className="flex justify-end gap-3 mt-6">

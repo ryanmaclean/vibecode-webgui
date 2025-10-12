@@ -3,14 +3,12 @@
  * Manages dynamic resource scaling for workspace instances
  */
 
-import { logger } from '@/lib/logger';
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { workspaceAutoScaler } from '@/lib/workspace/auto-scaler'
 import { z } from 'zod'
-
+import { logger } from '@/lib/logger';
 export const dynamic = 'force-dynamic'
 
 const metricsSchema = z.object({

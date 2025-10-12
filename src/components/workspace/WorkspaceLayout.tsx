@@ -9,9 +9,8 @@ import { useState, useRef, useCallback } from 'react'
 import CodeServerIDE from '@/components/ide/CodeServerIDE'
 import CodeAssistant from '@/components/ai/CodeAssistant'
 import EnhancedTerminal from '@/components/terminal/EnhancedTerminal'
-import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth'
-
+import { logger } from '@/lib/logger';
 interface WorkspaceLayoutProps {
   workspaceId: string
   projectName?: string

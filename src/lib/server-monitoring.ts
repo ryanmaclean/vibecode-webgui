@@ -8,7 +8,6 @@ import winston from 'winston';
 import { createLogger, format, transports } from 'winston';
 import tracer from 'dd-trace';
 import { logger } from '@/lib/logger';
-
 // Initialize Datadog tracer (should be done before importing other modules)
 if (process.env.DD_API_KEY) {
   tracer.init({

@@ -8,7 +8,6 @@ import { VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { VectorChunk, SearchResult, SearchOptions } from './vector-types';
 import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
 import { logger } from '@/lib/logger';
-
 /**
  * CosmosDB-specific configuration options
  */

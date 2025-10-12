@@ -3,11 +3,9 @@
  * Provides application health status for monitoring and deployment
  */
 
-import { logger } from '@/lib/logger';
-
 import { NextRequest, NextResponse } from 'next/server'
 import { monitoring } from '@/lib/monitoring'
-
+import { logger } from '@/lib/logger';
 export async function GET(_request: NextRequest) {
   const startTime = Date.now()
 

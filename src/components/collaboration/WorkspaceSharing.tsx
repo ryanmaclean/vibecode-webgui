@@ -12,7 +12,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Share2,
+Share2,
   Users,
   Shield,
   Globe,
@@ -34,6 +34,7 @@ import {
   CheckCircle,
   ExternalLink
 } from 'lucide-react'
+import { logger } from '@/lib/logger';
 
 export interface WorkspacePermission {
   id: string
@@ -576,8 +577,7 @@ export default function WorkspaceSharing({
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Manage members and teams for &quot;{workspaceName}&quot;
-import { logger } from '@/lib/logger';
-          </p>
+</p>
         </div>
 
         <div className="flex items-center gap-3">

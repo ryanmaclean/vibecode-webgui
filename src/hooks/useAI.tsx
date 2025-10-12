@@ -6,7 +6,6 @@
 
 import { useState, useCallback } from 'react';
 import { logger } from '@/lib/logger';
-
 interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';

@@ -1,6 +1,5 @@
 import axios from "axios";
 import { logger } from '@/lib/logger';
-
 const WEAVIATE_URL = process.env.WEAVIATE_URL || "http://localhost:8080";
 
 /**

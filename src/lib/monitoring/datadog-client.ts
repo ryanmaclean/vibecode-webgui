@@ -3,10 +3,8 @@
  * Actual Datadog metrics submission and health checks
  */
 
-import { logger } from '@/lib/logger';
-
 import { getDatadogApiKey, getDatadogSite } from './datadog-env'
-
+import { logger } from '@/lib/logger';
 interface MetricData {
   metric: string
   value: number

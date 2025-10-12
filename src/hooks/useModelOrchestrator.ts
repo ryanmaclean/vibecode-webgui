@@ -2,17 +2,16 @@
  * React hook for using the model orchestrator in components
  */
 
-import { logger } from '@/lib/logger';
-
 import { useState, useEffect, useCallback } from 'react'
 import { 
-  modelOrchestrator, 
+modelOrchestrator, 
   ModelConfig, 
   ModelSelection, 
   TaskType, 
   RequestContext,
   TaskDetector 
 } from '@/lib/ai/model-orchestration'
+import { logger } from '@/lib/logger';
 
 interface UseModelOrchestratorOptions {
   autoDetectTaskType?: boolean

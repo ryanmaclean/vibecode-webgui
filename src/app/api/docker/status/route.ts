@@ -8,13 +8,12 @@
 
 import { NextResponse } from 'next/server';
 import {
-  detectDockerRuntime,
+detectDockerRuntime,
   getDockerStatusReport,
   startColima,
   DockerType,
 } from '@/lib/docker/detection';
 import { logger } from '@/lib/logger';
-
 export const dynamic = 'force-dynamic';
 
 /**

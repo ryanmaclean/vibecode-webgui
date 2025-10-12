@@ -8,13 +8,12 @@ import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { IVectorEmbeddingProvider } from '../interfaces/vector-embedding-provider';
 import { IVectorCacheAdapter } from '../interfaces/vector-cache-adapter';
 import { 
-  SearchResult, 
+SearchResult, 
   VectorDatabaseConfig,
   VectorSearchOptions, 
   VectorStoreStats 
 } from '../interfaces/vector-types';
 import { logger } from '@/lib/logger';
-
 export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
   private prisma: PrismaClient;
   

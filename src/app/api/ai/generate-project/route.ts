@@ -15,7 +15,6 @@ import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { spawn } from 'child_process';
 import { logger } from '@/lib/logger';
-
 const generateProjectSchema = z.object({
   prompt: z.string().min(1, 'Project prompt is required'),
   projectName: z.string().optional(),

@@ -5,7 +5,6 @@
 
 import { VectorChunk, SearchResult, SearchOptions } from '../vector-db/vector-types';
 import { logger } from '@/lib/logger';
-
 export interface WeaviateConfig {
   host: string;
   port?: number;

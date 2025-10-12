@@ -8,7 +8,6 @@
 import { datadogRum } from '@datadog/browser-rum';
 import { datadogLogs } from '@datadog/browser-logs';
 import { logger } from '@/lib/logger';
-
 export interface ErrorTrackingConfig {
   service: string;
   environment: string;

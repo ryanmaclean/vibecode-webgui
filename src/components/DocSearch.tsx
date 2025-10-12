@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { logger } from '@/lib/logger';
-
 interface SearchResult {
   id: string;
   title: string;

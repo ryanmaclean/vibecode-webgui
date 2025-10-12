@@ -6,11 +6,9 @@
  * @module components/ai/AgentSelectorPanel.stories
  */
 
-import { logger } from '@/lib/logger';
-
 import type { Meta, StoryObj } from '@storybook/react'
 import { AgentSelectorPanel } from './AgentSelectorPanel'
-
+import { logger } from '@/lib/logger';
 const meta: Meta<typeof AgentSelectorPanel> = {
   title: 'AI/AgentSelectorPanel',
   component: AgentSelectorPanel,

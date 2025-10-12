@@ -14,7 +14,7 @@
 import { create } from 'zustand';
 import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
 import type {
-  AgentType,
+AgentType,
   AgentStatus,
   AgentStatusResponse,
   ModelType,
@@ -26,7 +26,6 @@ import type {
   StartAgentRequest,
 } from '@/types/agent-api';
 import { logger } from '@/lib/logger';
-
 // ============================================================================
 // Types
 // ============================================================================

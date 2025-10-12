@@ -6,7 +6,6 @@
 import { trace, context, propagation, type Span, SpanKind, SpanStatusCode } from '@opentelemetry/api';
 import { W3CTraceContextPropagator } from '@opentelemetry/core';
 import { logger } from '@/lib/logger';
-
 const TRACER_NAME = 'agentapi-distributed-tracing';
 
 interface TraceContext {

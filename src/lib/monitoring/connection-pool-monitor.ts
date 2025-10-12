@@ -3,10 +3,8 @@
  * Provides real-time monitoring, alerting, and visualization for database connection pools
  */
 
-import { logger } from '@/lib/logger';
-
 import { EventEmitter } from 'events'
-
+import { logger } from '@/lib/logger';
 export interface ConnectionPoolMetrics {
   pool_name: string
   total_connections: number

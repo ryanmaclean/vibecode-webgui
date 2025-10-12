@@ -1,10 +1,11 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * Workspace Auto-Scaling Service
  * Dynamically scales workspace resources based on usage patterns and demand
  * Supports horizontal and vertical scaling with cost optimization
  */
-
-import { logger } from '@/lib/logger';
 
 export interface WorkspaceMetrics {
   workspaceId: string

@@ -1,3 +1,6 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * OpenRouter API Client
  * 
@@ -91,8 +94,6 @@ export class OpenRouter {
 
 \`\`\`typescript
 import React from 'react';
-import { logger } from '@/lib/logger';
-
 interface Props {
   title: string;
   onClick: () => void;

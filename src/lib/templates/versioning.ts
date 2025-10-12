@@ -4,7 +4,7 @@
 
 import { z } from 'zod'
 import type { ProjectTemplate } from './index'
-
+import { logger } from '@/lib/logger';
 export interface TemplateVersion {
   version: string
   releaseDate: string
@@ -254,8 +254,7 @@ export class TemplateRegistry {
 
     // Check for newer versions
     for (let i = 0; i < currentIndex; i++) {
-import { logger } from '@/lib/logger';
-      const version = metadata.versions[i]
+const version = metadata.versions[i]
       if (!version.deprecated) {
         const updateType = this.getUpdateType(currentVersion, version.version)
         updates.push({

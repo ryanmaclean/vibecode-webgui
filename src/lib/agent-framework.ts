@@ -1,12 +1,10 @@
 // Agent Framework Foundation - Basic multi-agent coordination system
 // Designed for future LangChain integration while providing immediate value
 
-import { logger } from '@/lib/logger';
-
 import { UnifiedAIClient, type UnifiedChatMessage } from './unified-ai-client'
 import { ollamaClient } from './ollama-client'
 import { vectorStore } from './vector-store'
-
+import { logger } from '@/lib/logger';
 export interface AgentCapability {
   name: string
   description: string

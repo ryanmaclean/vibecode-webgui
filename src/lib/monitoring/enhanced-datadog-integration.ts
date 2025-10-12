@@ -7,7 +7,6 @@
 import { StatsD } from 'node-statsd'
 import tracer from 'dd-trace'
 import { logger } from '@/lib/logger';
-
 // Initialize Datadog tracer with minimal configuration
 tracer.init({
   service: 'vibecode-enhanced-platform',

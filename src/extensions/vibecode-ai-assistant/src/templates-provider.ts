@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import axios from 'axios';
 import { logger } from '@/lib/logger';
-
 interface Template {
     id: string;
     name: string;

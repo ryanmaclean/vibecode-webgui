@@ -3,10 +3,8 @@
  * Creates and manages custom dashboards for VibeCode monitoring
  */
 
-import { logger } from '@/lib/logger';
-
 import { getDatadogApiKey, getDatadogAppKey, getDatadogSite } from './datadog-env'
-
+import { logger } from '@/lib/logger';
 export interface DashboardWidget {
   id: string
   definition: any

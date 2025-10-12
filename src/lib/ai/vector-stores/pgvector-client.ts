@@ -6,7 +6,6 @@
 import { Pool, PoolClient } from 'pg';
 import { VectorChunk, SearchResult, SearchOptions } from '../../vector-db/vector-types';
 import { logger } from '@/lib/logger';
-
 export interface PGVectorConfig {
   host: string;
   port: number;

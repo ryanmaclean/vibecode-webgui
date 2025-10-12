@@ -8,12 +8,13 @@
 import { spawn, ChildProcess } from 'child_process'
 import * as path from 'path'
 import type {
-  ContainerOptions,
+ContainerOptions,
   ContainerInfo,
   ContainerStartResult,
   ContainerListResult,
   ContainerLogsResult,
 } from './types'
+import { logger } from '@/lib/logger';
 
 export interface AppleContainerConfig {
   /** Path to Swift runtime executable */
@@ -146,8 +147,7 @@ export class AppleContainerRuntimeV2 {
    * Stop a running container
    */
   async stop(containerId: string, timeout = 10): Promise<{ success: boolean; error?: string }> {
-import { logger } from '@/lib/logger';
-    try {
+try {
       const result = await this.executeCommand([
         'stop',
         containerId,

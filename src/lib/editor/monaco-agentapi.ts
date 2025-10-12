@@ -15,7 +15,7 @@
 
 import type * as monaco from 'monaco-editor'
 import type {
-  AgentResponse,
+AgentResponse,
   AgentStatusResponse,
   StartAgentRequest,
   SSEEvent,
@@ -23,8 +23,7 @@ import type {
   ModelType,
 } from '@/types/agent-api'
 import { createWebSocketStreamingClient, type WebSocketStreamingClient } from '@/lib/streaming/websocket-streaming-client'
-import { logger } from '@/lib/logger'
-
+import { logger } from '@/lib/logger';
 // ============================================================================
 // Types
 // ============================================================================

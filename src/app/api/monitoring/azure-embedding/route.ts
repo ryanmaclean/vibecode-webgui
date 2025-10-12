@@ -9,7 +9,6 @@ import { connectionPoolMonitor } from '@/lib/monitoring/connection-pool-monitor'
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { logger } from '@/lib/logger';
-
 export const dynamic = 'force-dynamic'; // No caching for monitoring data
 
 /**

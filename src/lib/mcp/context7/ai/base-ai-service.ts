@@ -7,7 +7,6 @@
  */
 import { Context7AIService, Context7InitOptions } from '../interfaces';
 import { logger } from '@/lib/logger';
-
 export abstract class BaseAIService implements Context7AIService {
   /**
    * Processes the context by formatting it and sending it to an AI service.

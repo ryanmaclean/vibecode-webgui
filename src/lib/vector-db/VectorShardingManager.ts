@@ -2,7 +2,6 @@ import { ConsistentHashRing } from './ConsistentHashRing';
 import { ShardInfo, VectorQuery, VectorQueryResult, ShardedQueryResult } from './sharding-types';
 import VectorDBConnectionPool from './VectorDBConnectionPool';
 import { logger } from '@/lib/logger';
-
 export class VectorShardingManager {
     private shardMap: Map<string, ShardInfo>;
     private consistentHashRing: ConsistentHashRing;

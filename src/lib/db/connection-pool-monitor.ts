@@ -2,7 +2,6 @@ import { EventEmitter } from 'events';
 import { VectorConnectionPool, PoolEvent } from './vector-connection-pool';
 import { PoolStatus } from '../vector-db/pool-status';
 import { logger } from '@/lib/logger';
-
 /**
  * Alert levels for the connection pool monitor
  */

@@ -1,7 +1,5 @@
 'use client'
 
-import { logger } from '@/lib/logger';
-
 import React, { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { 
-  Send, 
+Send, 
   Bot, 
   User, 
   Settings, 
@@ -31,6 +29,7 @@ import {
   MODEL_REGISTRY,
   type SupportedModel 
 } from '@/lib/ai-providers'
+import { logger } from '@/lib/logger';
 
 interface Message {
   id: string

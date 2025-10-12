@@ -1,7 +1,6 @@
 import { Pool, PoolClient, QueryResult } from 'pg';
 import { VectorDatabaseConfig } from '@/lib/vector-db/vector-db-config';
 import { logger } from '@/lib/logger';
-
 interface PoolMetrics {
     totalConnections: number;
     idleConnections: number;

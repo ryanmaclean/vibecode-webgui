@@ -4,7 +4,7 @@
 import { PrismaClient } from '@prisma/client';
 import { getDatabaseLogger } from './database-logger';
 import { 
-  LogCategory, 
+LogCategory, 
   DatabaseConnectionOptions,
   ConnectionResult,
   LoggerOptions
@@ -14,7 +14,6 @@ import {
   connectionPool 
 } from './db-pool';
 import { logger } from '@/lib/logger';
-
 /**
  * Creates a robust database connection with retry capability
  */

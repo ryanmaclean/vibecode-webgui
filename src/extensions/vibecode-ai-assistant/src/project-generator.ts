@@ -3,7 +3,6 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { OpenRouterClient, ChatMessage } from './openrouter-client';
 import { logger } from '@/lib/logger';
-
 export interface ProjectTemplate {
     name: string;
     description: string;
