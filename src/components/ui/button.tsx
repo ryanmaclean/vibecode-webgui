@@ -32,19 +32,63 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * Enhanced Button component with comprehensive ARIA support for WCAG 2.1 AA compliance.
+ *
+ * @example
+ * // Basic button
+ * <Button>Click me</Button>
+ *
+ * @example
+ * // Button with accessible label (for icon-only buttons)
+ * <Button aria-label="Close dialog" size="icon">
+ *   <X className="h-4 w-4" />
+ * </Button>
+ *
+ * @example
+ * // Toggle button (pressed state)
+ * <Button aria-pressed={isActive} onClick={() => setIsActive(!isActive)}>
+ *   {isActive ? 'Active' : 'Inactive'}
+ * </Button>
+ *
+ * @example
+ * // Loading button
+ * <Button loading disabled>
+ *   Processing...
+ * </Button>
+ */
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  /**
+   * Loading state - sets aria-busy="true" and adds disabled state
+   */
+  loading?: boolean
+  /**
+   * Pressed state for toggle buttons - sets aria-pressed attribute
+   */
+  pressed?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, loading, pressed, disabled, type = "button", ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+
+    // Compute ARIA attributes
+    const ariaProps = {
+      "aria-busy": loading ? ("true" as const) : undefined,
+      "aria-pressed": pressed !== undefined ? pressed : undefined,
+      "aria-disabled": disabled ? ("true" as const) : undefined,
+    }
+
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        type={type}
+        disabled={disabled || loading}
+        {...ariaProps}
         {...props}
       />
     )
