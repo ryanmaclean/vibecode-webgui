@@ -10,10 +10,10 @@
 const tracer = require('../instrument')
 import { Span } from 'dd-trace'
 import { getDatadogSite, getDatadogApiKey, getServiceEnvVersion } from '@/lib/monitoring/datadog-env'
+import { logger } from '@/lib/logger'
 
 interface LLMSpanMetadata {
   tags?: string[];
-import { logger } from '@/lib/logger';
   input?: unknown;
   output?: unknown;
   context?: Record<string, unknown>;

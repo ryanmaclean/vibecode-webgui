@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z, ZodError, ZodSchema } from 'zod'
+import { logger } from '@/lib/logger'
 
 export interface ValidationOptions {
   /** Transform successful validation results */
@@ -19,7 +20,6 @@ export interface ValidationOptions {
 
 export type ValidationResult<T> =
   | { success: true; data: T; error?: never }
-import { logger } from '@/lib/logger';
   | { success: false; data?: never; error: NextResponse }
 
 /**

@@ -9,6 +9,7 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { access } from 'fs/promises'
+import { logger } from '@/lib/logger'
 
 const execAsync = promisify(exec)
 
@@ -324,7 +325,6 @@ export class OpenCodeCLI {
     contextWindow: number
     maxTokens: number
     costPer1kTokens: { input: number; output: number }
-import { logger } from '@/lib/logger';
   }> {
     const models = {
       'gpt-4-turbo': {
