@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { logger } from '@/lib/logger'
 
 interface CodeServerIDEProps {
   workspaceId: string
@@ -216,7 +217,6 @@ export default function CodeServerIDE({
         title="VS Code IDE"
         sandbox="allow-same-origin allow-scripts allow-forms allow-pointer-lock allow-popups allow-modals"
         allow="clipboard-read; clipboard-write; web-share"
-import { logger } from '@/lib/logger';
         onLoad={handleIframeLoad}
         onError={handleIframeError}
       />

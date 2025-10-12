@@ -13,6 +13,7 @@
 
 import * as vscode from 'vscode'
 import axios, { AxiosInstance } from 'axios'
+import { logger } from '@/lib/logger'
 
 // ============================================================================
 // Types
@@ -35,7 +36,6 @@ export interface CodeContext {
   languageId: string
   /** Cursor position */
   position: { line: number; character: number }
-import { logger } from '@/lib/logger';
   /** Current selection */
   selection?: {
     start: { line: number; character: number }
