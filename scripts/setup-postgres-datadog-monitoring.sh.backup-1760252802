@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #!/usr/bin/env bash
 # Configure Datadog Database Monitoring for an existing PostgreSQL deployment.
 
@@ -50,6 +51,7 @@ log_info "Using pod ${POSTGRES_POD}"
 
 log_step "Creating/refreshing monitoring user"
 cat > /tmp/datadog-monitor-user.sql <<'SQL'
+=======
 #!/bin/bash
 # Quick setup script for adding PostgreSQL Database Monitoring to existing KIND cluster
 # This script configures an existing PostgreSQL deployment for Datadog monitoring
@@ -121,20 +123,25 @@ setup_monitoring_user() {
     # Create monitoring user and grant permissions
     kubectl exec -n "$NAMESPACE" "$postgres_pod" -- psql -U vibecode -d postgres << 'EOF'
 -- Create monitoring user for Datadog Database Monitoring
+>>>>>>> merge-conflict-cleanup
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'datadog') THEN
         CREATE USER datadog WITH PASSWORD 'datadog_monitoring_password';
+<<<<<<< HEAD
     ELSE
         ALTER USER datadog WITH PASSWORD 'datadog_monitoring_password';
+=======
         RAISE NOTICE 'Created datadog user';
     ELSE
         ALTER USER datadog WITH PASSWORD 'datadog_monitoring_password';
         RAISE NOTICE 'Updated datadog user password';
+>>>>>>> merge-conflict-cleanup
     END IF;
 END
 $$;
 
+<<<<<<< HEAD
 GRANT CONNECT ON DATABASE postgres TO datadog;
 GRANT pg_monitor TO datadog;
 GRANT USAGE ON SCHEMA public TO datadog;
@@ -219,6 +226,7 @@ log_info "  • Verify metrics in Datadog Database Monitoring dashboard"
 log_info "  • Rotate 'datadog_monitoring_password' for production"
 
 log_success "PostgreSQL Datadog monitoring setup complete"
+=======
 -- Grant necessary permissions for Database Monitoring
 GRANT pg_monitor TO datadog;
 GRANT SELECT ON pg_stat_database TO datadog;
@@ -440,6 +448,7 @@ verify_monitoring() {
 # Display monitoring information
 display_monitoring_info() {
     print_status "PostgreSQL Database Monitoring Setup Complete!"
+    echo "================================================="
     echo ""
     echo "Monitoring User Details:"
     echo "  Username: datadog"
@@ -518,3 +527,4 @@ case "${1:-}" in
         main "$@"
         ;;
 esac
+>>>>>>> merge-conflict-cleanup

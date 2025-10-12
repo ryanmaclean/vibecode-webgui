@@ -8,7 +8,6 @@ set -euo pipefail
 echo "🔧 Fixing git merge conflicts..."
 
 # Find all files with merge conflict markers
-files_with_conflicts=$(grep -r "<<<<<<< HEAD" . --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude-dir=build -l || true)
 
 if [ -z "$files_with_conflicts" ]; then
     echo "✅ No merge conflicts found!"
@@ -31,13 +30,7 @@ for file in $files_with_conflicts; do
         temp_file=$(mktemp)
         
         # Remove merge conflict markers and keep main branch content
-        # This removes everything between <<<<<<< HEAD and ======= (HEAD content)
-        # And keeps everything between ======= and >>>>>>> main (main branch content)
         awk '
-        /^<<<<<<< HEAD/ { in_head=1; next }
-        /^=======/ { in_head=0; in_main=1; next }
-        /^>>>>>>> main/ { in_main=0; next }
-        /^>>>>>>> .*/ { in_main=0; next }
         !in_head { print }
         ' "$file" > "$temp_file"
         
