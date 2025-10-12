@@ -11,8 +11,12 @@
   },
   "dependencies": {
     "@astrojs/starlight": "^0.35.1",
+<<<<<<< HEAD
+    "astro": "^5.13.3"
+=======
     "astro": "^5.13.7",
     "vite": "^6.3.6"
+>>>>>>> merge-conflict-cleanup
   },
   "devDependencies": {
     "@playwright/test": "^1.54.1",

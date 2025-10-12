@@ -77,8 +77,6 @@ The platform now uses **pgvector** for semantic search capabilities:
 ```bash
 # OpenRouter API for AI Models
 OPENROUTER_API_KEY=sk-or-v1-your-openrouter-api-key
-<<<<<<< HEAD
-=======
 
 # Claude API (Primary AI Model)
 ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key
@@ -101,7 +99,6 @@ WORKSPACE_BASE_PATH=/workspaces
 # AI Model Performance Analytics
 ARTIFICIAL_ANALYSIS_API_KEY=your-artificial-analysis-key
 AI_PERFORMANCE_MONITORING=true
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 ```
 
 ## 📊 Monitoring & Observability
@@ -111,9 +108,6 @@ AI_PERFORMANCE_MONITORING=true
 # Backend Monitoring
 DATADOG_API_KEY=your-datadog-api-key
 DD_API_KEY=your-datadog-api-key  # Alternative format
-<<<<<<< HEAD
-DATADOG_SITE=datadoghq.com
-=======
 DD_APP_KEY=your-datadog-app-key
 DATADOG_SITE=datadoghq.com
 DD_SITE=datadoghq.com
@@ -127,7 +121,6 @@ DD_ENV=production
 
 # Database Monitoring (NEW)
 DD_DATABASE_MONITORING_ENABLED=true
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 
 # Frontend RUM Monitoring (Public variables)
 NEXT_PUBLIC_DD_APPLICATION_ID=your-app-id      # falls back to NEXT_PUBLIC_DATADOG_APPLICATION_ID / NEXT_PUBLIC_DATADOG_RUM_APPLICATION_ID
@@ -176,16 +169,11 @@ data:
   GOOGLE_CLIENT_SECRET: <base64-encoded-google-secret>
   DATADOG_API_KEY: <base64-encoded-datadog-key>
   OPENROUTER_API_KEY: <base64-encoded-openrouter-key>
-<<<<<<< HEAD
-  DATABASE_URL: <base64-encoded-database-url>
-  REDIS_URL: <base64-encoded-redis-url>
-=======
   ANTHROPIC_API_KEY: <base64-encoded-anthropic-key>
   DATABASE_URL: <base64-encoded-database-url>
   REDIS_URL: <base64-encoded-redis-url>
   CODE_SERVER_PASSWORD: <base64-encoded-codeserver-password>
   ARTIFICIAL_ANALYSIS_API_KEY: <base64-encoded-artificial-analysis-key>
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 ```
 
 ## 📋 Environment Variable Checklist
@@ -194,18 +182,12 @@ data:
 - [ ] NEXTAUTH_URL
 - [ ] NEXTAUTH_SECRET
 - [ ] OPENROUTER_API_KEY
-<<<<<<< HEAD
-- [ ] DATABASE_URL
-- [ ] REDIS_URL
-- [ ] DATADOG_API_KEY
-=======
 - [ ] ANTHROPIC_API_KEY
 - [ ] DATABASE_URL
 - [ ] REDIS_URL
 - [ ] DATADOG_API_KEY
 - [ ] CODE_SERVER_BASE_URL
 - [ ] WORKSPACE_BASE_PATH
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 - [ ] ADMIN_EMAIL (dev only)
 - [ ] ADMIN_PASSWORD (dev only)
 
@@ -232,8 +214,6 @@ data:
 6. **Use Kubernetes secrets for cluster deployments**
 7. **Validate all required variables at startup**
 
-<<<<<<< HEAD
-=======
 ## 🔒 API Key Protection System
 
 VibeCode implements comprehensive API key protection to prevent accidental exposure:
@@ -274,7 +254,6 @@ docker run --rm -v "$(pwd):/workspace" -w /workspace jtmotox/bfg \
 ENABLE_REAL_DATADOG_TESTS=true npm test -- tests/integration/real-datadog-integration.test.ts
 ```
 
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 ## 🔧 Environment Validation
 
 Add this to your startup script to validate required variables:
@@ -284,18 +263,12 @@ const requiredEnvVars = [
   'NEXTAUTH_URL',
   'NEXTAUTH_SECRET',
   'OPENROUTER_API_KEY',
-<<<<<<< HEAD
-  'DATABASE_URL',
-  'REDIS_URL',
-  'DATADOG_API_KEY',
-=======
   'ANTHROPIC_API_KEY',
   'DATABASE_URL',
   'REDIS_URL',
   'DATADOG_API_KEY',
   'CODE_SERVER_BASE_URL',
   'WORKSPACE_BASE_PATH',
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 ];
 
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
