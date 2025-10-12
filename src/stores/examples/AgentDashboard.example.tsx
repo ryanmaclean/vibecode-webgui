@@ -21,6 +21,7 @@ import {
   selectPanel,
   useBreakpointDetector,
 } from '@/stores';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Agent Dashboard
@@ -137,7 +138,7 @@ function AgentControls() {
         task: 'Implement new feature',
       });
     } catch (error) {
-      console.error('Failed to start agent:', error);
+      logger.error('Failed to start agent:', error);
     } finally {
       setIsStarting(false);
     }
@@ -193,7 +194,7 @@ function AgentDetails({ agent }: { agent: any }) {
     try {
       await stopAgent(agent.agent_id);
     } catch (error) {
-      console.error('Failed to stop agent:', error);
+      logger.error('Failed to stop agent:', error);
     } finally {
       setStopping(false);
     }
@@ -204,7 +205,7 @@ function AgentDetails({ agent }: { agent: any }) {
     try {
       await restartAgent(agent.agent_id);
     } catch (error) {
-      console.error('Failed to restart agent:', error);
+      logger.error('Failed to restart agent:', error);
     } finally {
       setRestarting(false);
     }
@@ -286,7 +287,7 @@ function AgentTerminal({ agentId }: { agentId: string }) {
           setOutput((prev) => [...prev, data.data.line]);
         }
       } catch (error) {
-        console.error('Failed to parse SSE event:', error);
+        logger.error('Failed to parse SSE event:', error);
       }
     };
 
@@ -411,7 +412,7 @@ function ChatInput({ agentId }: { agentId: string }) {
       await sendMessage(agentId, content);
       setContent('');
     } catch (error) {
-      console.error('Failed to send message:', error);
+      logger.error('Failed to send message:', error);
     }
   };
 

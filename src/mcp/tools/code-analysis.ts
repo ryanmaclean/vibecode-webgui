@@ -5,6 +5,7 @@
 import { vectorStore } from '../../lib/vector-db/vector-store-service.js';
 import { prisma } from '../../lib/prisma.js';
 import type { SearchCodeArgs, AnalyzeCodeArgs } from '../types.js';
+import { logger } from '@/lib/logger';
 
 /**
  * Search code semantically using vector search
@@ -88,7 +89,7 @@ export async function searchCode(args: SearchCodeArgs) {
       ],
     };
   } catch (error) {
-    console.error('Error in searchCode:', error);
+    logger.error('Error in searchCode:', error);
 
     return {
       content: [

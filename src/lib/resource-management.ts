@@ -78,7 +78,7 @@ export class ResourceManager {
       
       return quotas
     } catch (error) {
-      console.error('Error fetching user quotas:', error)
+      logger.error('Error fetching user quotas:', error)
       return DEFAULT_QUOTAS
     }
   }
@@ -139,7 +139,7 @@ export class ResourceManager {
       this.usageCache.set(userId, { usage, timestamp: Date.now() })
       return usage
     } catch (error) {
-      console.error('Error fetching resource usage:', error)
+      logger.error('Error fetching resource usage:', error)
       throw new Error('Failed to get resource usage')
     }
   }
@@ -152,6 +152,7 @@ export class ResourceManager {
     action: 'create_workspace' | 'upload_file' | 'api_call' | 'create_session',
     size?: number
   ): Promise<{ allowed: boolean; reason?: string; usage: ResourceUsage; quotas: UserQuotas }> {
+import { logger } from '@/lib/logger';
     const [quotas, usage] = await Promise.all([
       this.getUserQuotas(userId),
       this.getResourceUsage(userId)
@@ -224,7 +225,7 @@ export class ResourceManager {
       // Invalidate usage cache
       this.usageCache.delete(userId)
     } catch (error) {
-      console.error('Error recording API call:', error)
+      logger.error('Error recording API call:', error)
     }
   }
 
@@ -241,7 +242,7 @@ export class ResourceManager {
 
       // Debug log removed
     } catch (error) {
-      console.error('Error cleaning up API records:', error)
+      logger.error('Error cleaning up API records:', error)
     }
   }
 
@@ -290,7 +291,7 @@ export class ResourceManager {
         averageFilesPerUser: userCount > 0 ? fileStats._count / userCount : 0
       }
     } catch (error) {
-      console.error('Error getting global usage stats:', error)
+      logger.error('Error getting global usage stats:', error)
       throw error
     }
   }

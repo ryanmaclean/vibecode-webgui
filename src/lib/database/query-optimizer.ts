@@ -5,6 +5,7 @@
  */
 
 import { CacheTTL } from '../cache/cache-constants';
+import { logger } from '@/lib/logger';
 
 export interface QueryOptimizationMetrics {
   queryTime: number;
@@ -189,7 +190,7 @@ export class QueryOptimizer {
     // Log any failed batches for investigation
     const failures = promises.filter(p => p.status === 'rejected');
     if (failures.length > 0) {
-      console.warn(`${failures.length} out of ${batches.length} batches failed during processing`);
+      logger.warn(`${failures.length} out of ${batches.length} batches failed during processing`);
     }
   }
 

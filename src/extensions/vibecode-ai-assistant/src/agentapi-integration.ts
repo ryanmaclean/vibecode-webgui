@@ -35,6 +35,7 @@ export interface CodeContext {
   languageId: string
   /** Cursor position */
   position: { line: number; character: number }
+import { logger } from '@/lib/logger';
   /** Current selection */
   selection?: {
     start: { line: number; character: number }
@@ -206,7 +207,7 @@ export class AgentAPIClient {
 
   private log(...args: unknown[]): void {
     if (this.config.debug) {
-      console.log('[AgentAPIClient]', ...args)
+      logger.info('[AgentAPIClient]', ...args)
     }
   }
 }
@@ -625,7 +626,7 @@ export class AgentAPIExtension {
   }
 
   private log(...args: unknown[]): void {
-    console.log('[AgentAPIExtension]', ...args)
+    logger.info('[AgentAPIExtension]', ...args)
   }
 }
 

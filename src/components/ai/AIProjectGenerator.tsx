@@ -5,6 +5,8 @@
 
 'use client'
 
+import { logger } from '@/lib/logger';
+
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -56,7 +58,7 @@ export default function AIProjectGenerator() {
     setGenerationMetadata(null)
 
     try {
-      console.log('🚀 Starting AI project generation...')
+      logger.info('🚀 Starting AI project generation...')
       
       const response = await fetch('/api/ai/generate-project', {
         method: 'POST',
@@ -79,7 +81,7 @@ export default function AIProjectGenerator() {
 
       const typedResult = result as GenerationResult
 
-      console.log('✅ Project generated successfully:', typedResult.project.name)
+      logger.info('✅ Project generated successfully:', typedResult.project.name)
       
       setGeneratedProject(typedResult.project)
       setGenerationMetadata(typedResult.metadata)
@@ -89,7 +91,7 @@ export default function AIProjectGenerator() {
       })
 
     } catch (error) {
-      console.error('❌ Project generation failed:', error)
+      logger.error('❌ Project generation failed:', error)
       toast.error('Failed to generate project', {
         description: error instanceof Error ? error.message : 'Unknown error occurred'
       })
@@ -135,7 +137,7 @@ export default function AIProjectGenerator() {
         description: 'This will provision a new development environment on AKS'
       })
 
-      console.log('🚀 Creating workspace for project:', generatedProject.name)
+      logger.info('🚀 Creating workspace for project:', generatedProject.name)
 
       const response = await fetch('/api/workspaces', {
         method: 'POST',
@@ -162,7 +164,7 @@ export default function AIProjectGenerator() {
         throw new Error(result.error || 'Workspace creation failed')
       }
 
-      console.log('✅ Workspace created successfully:', result.workspace)
+      logger.info('✅ Workspace created successfully:', result.workspace)
 
       toast.success('Live workspace created!', {
         description: `Your ${generatedProject.framework} project is now running at ${result.workspace.url}`,
@@ -176,7 +178,7 @@ export default function AIProjectGenerator() {
       window.open(result.workspace.url, '_blank')
 
     } catch (error) {
-      console.error('❌ Workspace creation failed:', error)
+      logger.error('❌ Workspace creation failed:', error)
       
       if (error instanceof Error) {
         if (error.message.includes('not configured') || error.message.includes('not available')) {

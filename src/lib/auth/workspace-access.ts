@@ -10,6 +10,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { datadogMetrics } from '@/lib/monitoring/datadog-metrics';
+import { logger } from '@/lib/logger';
 
 /**
  * Workspace roles with hierarchical permissions
@@ -149,7 +150,7 @@ export async function hasWorkspaceAccess(
     return true;
 
   } catch (error) {
-    console.error('Workspace access check failed:', error);
+    logger.error('Workspace access check failed:', error);
     datadogMetrics.increment('workspace.access.error', 1);
 
     // Fail closed: deny access on error
@@ -302,7 +303,7 @@ export async function addWorkspaceMember(
     datadogMetrics.increment('workspace.member.added', 1, { role });
     return true;
   } catch (error) {
-    console.error('Failed to add workspace member:', error);
+    logger.error('Failed to add workspace member:', error);
     datadogMetrics.increment('workspace.member.add_failed', 1);
     return false;
   }
@@ -327,7 +328,7 @@ export async function removeWorkspaceMember(
     datadogMetrics.increment('workspace.member.removed', 1);
     return true;
   } catch (error) {
-    console.error('Failed to remove workspace member:', error);
+    logger.error('Failed to remove workspace member:', error);
     datadogMetrics.increment('workspace.member.remove_failed', 1);
     return false;
   }
@@ -355,7 +356,7 @@ export async function updateWorkspaceRole(
     });
     return true;
   } catch (error) {
-    console.error('Failed to update workspace role:', error);
+    logger.error('Failed to update workspace role:', error);
     datadogMetrics.increment('workspace.member.role_update_failed', 1);
     return false;
   }
@@ -397,7 +398,7 @@ export async function listWorkspaceMembers(workspaceId: number) {
 
     return members;
   } catch (error) {
-    console.error('Failed to list workspace members:', error);
+    logger.error('Failed to list workspace members:', error);
     return [];
   }
 }
@@ -470,7 +471,7 @@ export async function requireWorkspaceAccess(
     };
 
   } catch (error) {
-    console.error('Workspace access check failed:', error);
+    logger.error('Workspace access check failed:', error);
     return {
       allowed: false,
       error: {

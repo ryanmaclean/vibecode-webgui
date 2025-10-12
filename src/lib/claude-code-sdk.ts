@@ -8,6 +8,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
+import { logger } from '@/lib/logger';
 
 export interface CodeContext {
   language: string
@@ -174,7 +175,7 @@ Please provide:
         suggestions: this.extractSuggestions(content.text)
       }
     } catch (error) {
-      console.error('Claude Code generation failed:', error)
+      logger.error('Claude Code generation failed:', error)
       throw new Error(`Failed to generate code: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -215,7 +216,7 @@ You are in an interactive conversation helping the developer with their code. Pr
 
       return this.parseChatResponse(content.text)
     } catch (error) {
-      console.error('Claude Code chat failed:', error)
+      logger.error('Claude Code chat failed:', error)
       throw new Error(`Chat failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -269,7 +270,7 @@ ${request.code}
 
       return this.parseAnalysisResponse(content.text)
     } catch (error) {
-      console.error('Claude Code analysis failed:', error)
+      logger.error('Claude Code analysis failed:', error)
       throw new Error(`Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }

@@ -79,6 +79,7 @@ export default function CursorTracking({
    * Convert editor position to screen coordinates
    */
   const getScreenPosition = useCallback((position: CursorPosition): { x: number; y: number } | null => {
+import { logger } from '@/lib/logger';
     if (!editorView || !editorRect) return null
 
     try {
@@ -92,7 +93,7 @@ export default function CursorTracking({
         y: coords.top - editorRect.top
       }
     } catch (error) {
-      console.warn('Failed to get screen position:', error)
+      logger.warn('Failed to get screen position:', error)
       return null
     }
   }, [editorView, editorRect])
@@ -120,7 +121,7 @@ export default function CursorTracking({
         offset: pos
       }
     } catch (error) {
-      console.warn('Failed to get editor position:', error)
+      logger.warn('Failed to get editor position:', error)
       return null
     }
   }, [editorView, editorRect])
@@ -177,7 +178,7 @@ export default function CursorTracking({
 
       return { position, selection: selectionRange }
     } catch (error) {
-      console.warn('Failed to get current position:', error)
+      logger.warn('Failed to get current position:', error)
       return null
     }
   }, [editorView])

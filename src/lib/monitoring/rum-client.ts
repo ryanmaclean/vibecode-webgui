@@ -3,6 +3,7 @@ import { getRUMPublicConfig } from './datadog-env'
 
 // Define allowed site values according to Datadog RUM documentation
 type DatadogSite = 'datadoghq.com' | 'us3.datadoghq.com' | 'us5.datadoghq.com' | 'datadoghq.eu' | 'ddog-gov.com' | 'ap1.datadoghq.com';
+import { logger } from '@/lib/logger';
 
 interface RUMConfig {
   applicationId: string;
@@ -50,7 +51,7 @@ class RUMMonitoring {
 
     // Skip initialization if no client token
     if (!rumConfig.clientToken || rumConfig.clientToken.includes('placeholder')) {
-      console.warn('[RUM] Skipping Datadog RUM initialization - no valid client token provided');
+      logger.warn('[RUM] Skipping Datadog RUM initialization - no valid client token provided');
       return;
     }
 
@@ -99,19 +100,19 @@ class RUMMonitoring {
             this.setUser(user);
           }
         } catch (error) {
-          console.warn('[RUM] Failed to set user context:', error);
+          logger.warn('[RUM] Failed to set user context:', error);
         }
       }
 
       this.initialized = true;
-      console.info('[RUM] Datadog RUM initialized successfully', {
+      logger.info('[RUM] Datadog RUM initialized successfully', {
         service: rumConfig.service,
         env: rumConfig.env,
         version: rumConfig.version
       });
 
     } catch (error) {
-      console.error('[RUM] Failed to initialize Datadog RUM:', error);
+      logger.error('[RUM] Failed to initialize Datadog RUM:', error);
     }
   }
 
@@ -129,7 +130,7 @@ class RUMMonitoring {
         ...user
       });
     } catch (error) {
-      console.error('[RUM] Failed to set user:', error);
+      logger.error('[RUM] Failed to set user:', error);
     }
   }
 
@@ -142,7 +143,7 @@ class RUMMonitoring {
     try {
       datadogRum.setGlobalContextProperty(key, value);
     } catch (error) {
-      console.error('[RUM] Failed to add attribute:', error);
+      logger.error('[RUM] Failed to add attribute:', error);
     }
   }
 
@@ -155,7 +156,7 @@ class RUMMonitoring {
     try {
       datadogRum.addAction(name, context);
     } catch (error) {
-      console.error('[RUM] Failed to add action:', error);
+      logger.error('[RUM] Failed to add action:', error);
     }
   }
 
@@ -168,7 +169,7 @@ class RUMMonitoring {
     try {
       datadogRum.addError(error, context);
     } catch (error: any) {
-      console.error('[RUM] Failed to add error:', error);
+      logger.error('[RUM] Failed to add error:', error);
     }
   }
 
@@ -181,7 +182,7 @@ class RUMMonitoring {
     try {
       datadogRum.addFeatureFlagEvaluation(key, value);
     } catch (error) {
-      console.error('[RUM] Failed to add feature flag:', error);
+      logger.error('[RUM] Failed to add feature flag:', error);
     }
   }
 
@@ -378,7 +379,7 @@ class RUMMonitoring {
     try {
       observer.observe({ entryTypes: ['largest-contentful-paint', 'layout-shift', 'first-input'] });
     } catch (error) {
-      console.warn('[RUM] Performance observer not supported:', error);
+      logger.warn('[RUM] Performance observer not supported:', error);
     }
   }
 
@@ -442,7 +443,7 @@ class RUMMonitoring {
         initialized: this.initialized
       };
     } catch (error) {
-      console.error('[RUM] Failed to get session info:', error);
+      logger.error('[RUM] Failed to get session info:', error);
       return null;
     }
   }

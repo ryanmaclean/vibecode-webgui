@@ -5,13 +5,15 @@
  */
 
 // Keys commonly used across the codebase
+import { logger } from '@/lib/logger';
+
 export type DatadogKey = 'API_KEY' | 'APP_KEY' | 'SITE' | 'SERVICE' | 'ENV' | 'VERSION'
 
 function safeWarn(message: string) {
   // Avoid noisy logs in production if not needed
   if (process.env.NODE_ENV !== 'test') {
     // Intentionally do not include actual values for security
-    console.warn(`[DatadogEnv] ${message}`)
+    logger.warn(`[DatadogEnv] ${message}`)
   }
 }
 

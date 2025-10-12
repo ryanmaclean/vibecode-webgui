@@ -8,6 +8,7 @@ import { PostgresVectorDatabaseAdapter } from '../vector-db/postgres-vector-data
 import { RedisVectorDatabaseAdapter } from '../vector-db/redis-vector-database-adapter';
 import { SqlServerVectorDatabaseAdapter } from '../vector-db/sqlserver-vector-database-adapter';
 import { CosmosDbVectorDatabaseAdapter } from '../vector-db/cosmosdb-vector-database-adapter';
+import { logger } from '@/lib/logger';
 
 export interface VectorStoreConfig {
   primaryProvider: 'postgres' | 'redis' | 'sqlserver' | 'cosmosdb';
@@ -148,10 +149,10 @@ export class EnhancedVectorStore {
         metrics.lastHealthCheck = new Date();
 
         if (this.config.enableMetrics) {
-          console.log(`Provider ${providerName} health check: ${isHealthy ? 'healthy' : 'unhealthy'}`);
+          logger.info(`Provider ${providerName} health check: ${isHealthy ? 'healthy' : 'unhealthy'}`);
         }
       } catch (error) {
-        console.error(`Health check failed for provider ${providerName}:`, error);
+        logger.error(`Health check failed for provider ${providerName}:`, error);
         metrics.isHealthy = false;
       }
     }
@@ -350,7 +351,7 @@ export class EnhancedVectorStore {
 
       // Try fallback provider
       if (this.config.fallbackProviders.length > 0) {
-        console.warn(`Primary provider ${providerName} failed, trying fallback`);
+        logger.warn(`Primary provider ${providerName} failed, trying fallback`);
         return this.searchWithFallback(query, options, context, providerName);
       }
 
@@ -374,10 +375,10 @@ export class EnhancedVectorStore {
 
       try {
         // Attempt search with fallback provider
-        console.log(`Attempting search with fallback provider: ${providerName}`);
+        logger.info(`Attempting search with fallback provider: ${providerName}`);
         return this.search(query, options, { ...context, _useProvider: providerName });
       } catch (error) {
-        console.warn(`Fallback provider ${providerName} also failed:`, error);
+        logger.warn(`Fallback provider ${providerName} also failed:`, error);
       }
     }
 
@@ -543,9 +544,9 @@ export class EnhancedVectorStore {
     for (const [providerName, provider] of this.providers.entries()) {
       try {
         // Would call provider.close() here
-        console.log(`Closed provider: ${providerName}`);
+        logger.info(`Closed provider: ${providerName}`);
       } catch (error) {
-        console.error(`Failed to close provider ${providerName}:`, error);
+        logger.error(`Failed to close provider ${providerName}:`, error);
       }
     }
 

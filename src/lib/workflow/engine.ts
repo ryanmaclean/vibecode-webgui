@@ -32,6 +32,7 @@ import {
   DelayConfig,
   WebhookConfig,
 } from './types';
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // DAG Graph Utilities
@@ -227,7 +228,7 @@ export class WorkflowEngine extends EventEmitter {
 
     const duration = Date.now() - startTime;
     if (duration > 50) {
-      console.warn(`Workflow parsing took ${duration}ms (target: <50ms)`);
+      logger.warn(`Workflow parsing took ${duration}ms (target: <50ms)`);
     }
   }
 
@@ -282,7 +283,7 @@ export class WorkflowEngine extends EventEmitter {
 
       const overhead = Date.now() - startTime;
       if (overhead > 100) {
-        console.warn(`Workflow execution overhead: ${overhead}ms (target: <100ms per node)`);
+        logger.warn(`Workflow execution overhead: ${overhead}ms (target: <100ms per node)`);
       }
 
       return execution;

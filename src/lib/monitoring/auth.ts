@@ -3,6 +3,8 @@
  * Ensures only authorized users can access sensitive monitoring data
  */
 
+import { logger } from '@/lib/logger';
+
 import { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
@@ -74,7 +76,7 @@ export async function checkMonitoringAuth(request: NextRequest): Promise<AuthRes
     }
 
   } catch (error) {
-    console.error('Authentication error:', error)
+    logger.error('Authentication error:', error)
     return {
       isAuthorized: false,
       error: 'Authentication failed'

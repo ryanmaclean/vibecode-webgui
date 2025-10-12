@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Loader } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { logger } from '@/lib/logger';
 
 export function SequentialThinking() {
   const [prompt, setPrompt] = useState('');
@@ -31,7 +32,7 @@ export function SequentialThinking() {
       await think({ prompt, numSteps });
     } catch (err) {
       // Error is handled by the hook
-      console.error('Failed to process thinking:', err);
+      logger.error('Failed to process thinking:', err);
     }
   };
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Message } from '../types';
+import { logger } from '@/lib/logger';
 
 interface ApiKeys {
   openai: string;
@@ -55,7 +56,7 @@ export function useAuthState(): UseAuthStateReturn {
       try {
         setApiKeys(JSON.parse(savedKeys));
       } catch (error) {
-        console.error('Error loading saved API keys:', error);
+        logger.error('Error loading saved API keys:', error);
       }
     }
   }, []);
@@ -146,7 +147,7 @@ What would you like to build today?`,
       setMessages(welcomeMessages);
 
     } catch (error) {
-      console.error('Auth error:', error);
+      logger.error('Auth error:', error);
 
       // Track failed login
       await fetch('/api/auth/login-tracking', {

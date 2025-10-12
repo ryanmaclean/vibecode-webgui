@@ -8,6 +8,7 @@ import { azureEmbeddingMetrics } from '@/lib/monitoring/azure-embedding-metrics'
 import { connectionPoolMonitor } from '@/lib/monitoring/connection-pool-monitor';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic'; // No caching for monitoring data
 
@@ -135,7 +136,7 @@ Pool Details:
     return NextResponse.json(responseData);
     
   } catch (error) {
-    console.error('Azure embedding monitoring API error:', error);
+    logger.error('Azure embedding monitoring API error:', error);
     
     return NextResponse.json({
       status: 'error',

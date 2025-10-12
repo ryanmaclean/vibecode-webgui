@@ -149,13 +149,14 @@ export interface VMPoolConfig {
  *   mode: 'http',
  *   endpoint: 'http://localhost:8765'
  * });
+import { logger } from '@/lib/logger';
  *
  * // Warm the pool
  * await orchestration.warmPool();
  *
  * // Allocate a VM
  * const vm = await orchestration.allocateVM();
- * console.log(`VM ready at ${vm.agentApiUrl}`);
+ * logger.info(`VM ready at ${vm.agentApiUrl}`);
  *
  * // Use VM...
  * const response = await fetch(`${vm.agentApiUrl}/api/health`);
@@ -402,7 +403,7 @@ export async function allocateVMWithRetry(
         throw error
       }
 
-      console.warn(`VM allocation attempt ${attempt} failed, retrying in ${delay}ms...`)
+      logger.warn(`VM allocation attempt ${attempt} failed, retrying in ${delay}ms...`)
       await new Promise(resolve => setTimeout(resolve, delay))
     }
   }
@@ -420,7 +421,7 @@ export async function releaseVMSafely(vmId: string): Promise<void> {
     const orchestration = getVMOrchestration()
     await orchestration.releaseVM(vmId)
   } catch (error) {
-    console.error(`Failed to release VM ${vmId}:`, error)
+    logger.error(`Failed to release VM ${vmId}:`, error)
     // Don't throw - allow graceful degradation
   }
 }

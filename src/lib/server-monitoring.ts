@@ -7,6 +7,7 @@
 import winston from 'winston';
 import { createLogger, format, transports } from 'winston';
 import tracer from 'dd-trace';
+import { logger } from '@/lib/logger';
 
 // Initialize Datadog tracer (should be done before importing other modules)
 if (process.env.DD_API_KEY) {
@@ -19,9 +20,9 @@ if (process.env.DD_API_KEY) {
     profiling: true,
     appsec: true, // Application Security Management
   })
-  console.log('🔍 Datadog APM tracer initialized')
+  logger.info('🔍 Datadog APM tracer initialized')
 } else {
-  console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
+  logger.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }
 
 // Custom Winston formatter for structured logging

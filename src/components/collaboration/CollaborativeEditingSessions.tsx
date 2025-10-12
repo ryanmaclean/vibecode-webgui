@@ -163,7 +163,7 @@ export default function CollaborativeEditingSessions({
       await navigator.clipboard.writeText(inviteLink)
       // TODO: Show success toast
     } catch (error) {
-      console.error('Failed to copy invite link:', error)
+      logger.error('Failed to copy invite link:', error)
       // TODO: Show error toast
     }
   }, [inviteLink])
@@ -584,6 +584,7 @@ export default function CollaborativeEditingSessions({
 
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   Share this link with others to invite them to collaborate on &quot;{selectedSession.sessionName}&quot;.
+import { logger } from '@/lib/logger';
                 </div>
               </div>
 

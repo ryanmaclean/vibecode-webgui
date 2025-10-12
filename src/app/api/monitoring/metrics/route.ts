@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import * as os from 'os';
+import { logger } from '@/lib/logger';
 
 // GET - Retrieve system and application metrics
 export async function GET(request: NextRequest) {
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Failed to collect metrics:', error);
+    logger.error('Failed to collect metrics:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -169,7 +170,7 @@ async function getDiskUsage(): Promise<{
       usagePercentage: Math.round((used / total) * 100)
     };
   } catch (error) {
-    console.warn('Failed to get disk usage:', error);
+    logger.warn('Failed to get disk usage:', error);
     return {
       total: 0,
       used: 0,
@@ -193,7 +194,7 @@ export async function HEAD(request: NextRequest) {
       return new NextResponse(null, { status: 503 });
     }
   } catch (error) {
-    console.error('Health check failed:', error);
+    logger.error('Health check failed:', error);
     return new NextResponse(null, { status: 503 });
   }
 }
@@ -214,7 +215,7 @@ async function performHealthChecks(): Promise<boolean> {
     const memoryUsagePercentage = (memUsage.heapUsed + memUsage.external) / totalMemory;
 
     if (memoryUsagePercentage > 0.9) {
-      console.warn('High memory usage detected:', memoryUsagePercentage);
+      logger.warn('High memory usage detected:', memoryUsagePercentage);
       return false;
     }
 
@@ -226,7 +227,7 @@ async function performHealthChecks(): Promise<boolean> {
 
     return true;
   } catch (error) {
-    console.error('Health check failed:', error);
+    logger.error('Health check failed:', error);
     return false;
   }
 }
@@ -265,7 +266,7 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Failed to process metrics:', error);
+    logger.error('Failed to process metrics:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -278,7 +279,7 @@ export async function POST(request: NextRequest) {
  */
 async function storePerformanceMetrics(duration: number, metrics: any): Promise<void> {
   // This would integrate with your metrics storage system (Datadog, Prometheus, etc.)
-  console.log('Performance metrics:', { duration, metrics, timestamp: new Date() });
+  logger.info('Performance metrics:', { duration, metrics, timestamp: new Date() });
 }
 
 /**
@@ -286,7 +287,7 @@ async function storePerformanceMetrics(duration: number, metrics: any): Promise<
  */
 async function logErrorMetrics(metrics: any): Promise<void> {
   // This would integrate with your error tracking system
-  console.error('Error metrics:', { metrics, timestamp: new Date() });
+  logger.error('Error metrics:', { metrics, timestamp: new Date() });
 }
 
 /**
@@ -314,7 +315,7 @@ export async function PUT(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Failed to retrieve historical metrics:', error);
+    logger.error('Failed to retrieve historical metrics:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

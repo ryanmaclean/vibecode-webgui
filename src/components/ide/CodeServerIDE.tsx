@@ -85,7 +85,7 @@ export default function CodeServerIDE({
       })
       setSession(null)
     } catch (err) {
-      console.error('Failed to stop code-server session:', err)
+      logger.error('Failed to stop code-server session:', err)
     }
   }, [session])
 
@@ -113,7 +113,7 @@ export default function CodeServerIDE({
         window.removeEventListener('message', handleMessage)
       }
     } catch (err) {
-      console.error('Error setting up iframe communication:', err)
+      logger.error('Error setting up iframe communication:', err)
       return () => {} // Return empty cleanup function on error
     }
   }, [session, onReady])
@@ -216,6 +216,7 @@ export default function CodeServerIDE({
         title="VS Code IDE"
         sandbox="allow-same-origin allow-scripts allow-forms allow-pointer-lock allow-popups allow-modals"
         allow="clipboard-read; clipboard-write; web-share"
+import { logger } from '@/lib/logger';
         onLoad={handleIframeLoad}
         onError={handleIframeError}
       />

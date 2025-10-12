@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { validateAIQuery, aiRateLimiter, AISecurityLogger } from '../lib/security/input-validator';
+import { logger } from '@/lib/logger';
 
 // Security configuration
 const SECURITY_CONFIG = {
@@ -214,7 +215,7 @@ async function validateRequestSecurity(
         email: `test-${testUserId}@vibecode.dev`,
         name: `Test User ${testUserId}`
       };
-      console.log('🧪 Development testing mode: Using mock token', {
+      logger.info('🧪 Development testing mode: Using mock token', {
         userId: token.id,
         role: token.role,
         endpoint: pathname

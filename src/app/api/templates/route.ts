@@ -56,6 +56,7 @@ const templates: ProjectTemplate[] = [
       }, null, 2),
       'src/App.tsx': `import React, { useState, useEffect } from 'react';
 import './App.css';
+import { logger } from '@/lib/logger';
 
 interface Todo {
   id: number;
@@ -399,7 +400,7 @@ app.use('/api/users', userRoutes);
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(\`🚀 Server is running on port \${PORT}\`);
+  logger.info(\`🚀 Server is running on port \${PORT}\`);
 });`,
       'tsconfig.json': JSON.stringify({
         compilerOptions: {
@@ -607,7 +608,7 @@ export async function GET() {
       }
     })
   } catch (error) {
-    console.error('Templates API error:', error)
+    logger.error('Templates API error:', error)
     return createErrorResponse('Failed to fetch templates', 500)
   }
 }

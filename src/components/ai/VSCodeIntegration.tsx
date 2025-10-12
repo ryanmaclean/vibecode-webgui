@@ -6,6 +6,7 @@ import { Bot, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AIChatInterface } from './AIChatInterface'
+import { logger } from '@/lib/logger'
 
 interface VSCodeIntegrationProps {
   workspaceId: string
@@ -47,7 +48,7 @@ export default function VSCodeIntegration({
             setSelectedText(message.data.selectedText || '')
             break
           case 'error':
-            console.error('Code-server error:', message.data)
+            logger.error('Code-server error:', message.data)
             break
         }
       } catch (error) {

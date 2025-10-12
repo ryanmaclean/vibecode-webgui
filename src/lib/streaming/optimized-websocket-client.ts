@@ -343,7 +343,7 @@ export class OptimizedWebSocketClient {
 
       return messageId
     } catch (error) {
-      console.error('[OptimizedWebSocketClient] Send failed:', error)
+      logger.error('[OptimizedWebSocketClient] Send failed:', error)
       throw error
     }
   }
@@ -400,7 +400,7 @@ export class OptimizedWebSocketClient {
       // For now, we'll assume it's available if binary protocol is enabled
       this.useBinary = this.binaryConfig.enabled
     } catch (error) {
-      console.warn('[OptimizedWebSocketClient] Binary protocol not available, falling back to JSON')
+      logger.warn('[OptimizedWebSocketClient] Binary protocol not available, falling back to JSON')
       this.useBinary = false
     }
   }
@@ -516,7 +516,7 @@ export class OptimizedWebSocketClient {
       this.recordMetric('backpressure_start')
 
       if (this.config.debug) {
-        console.log('[OptimizedWebSocketClient] Backpressure triggered:', bufferedBytes, 'bytes')
+        logger.info('[OptimizedWebSocketClient] Backpressure triggered:', bufferedBytes, 'bytes')
       }
     }
 
@@ -528,7 +528,7 @@ export class OptimizedWebSocketClient {
       this.flushSendBuffer()
 
       if (this.config.debug) {
-        console.log('[OptimizedWebSocketClient] Backpressure cleared')
+        logger.info('[OptimizedWebSocketClient] Backpressure cleared')
       }
     }
   }
@@ -681,9 +681,10 @@ export async function benchmarkWebSocketClients(
 
   // Create clients
   for (let i = 0; i < clientCount; i++) {
+import { logger } from '@/lib/logger';
     const client = createOptimizedWebSocketClient(config, {
       onChunk: () => {},
-      onError: (error) => console.error(`Client ${i} error:`, error)
+      onError: (error) => logger.error(`Client ${i} error:`, error)
     })
 
     await client.connect()

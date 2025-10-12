@@ -9,6 +9,7 @@ import { createAgentAPIClient } from '../agentapi-client';
 import { createMCPClient } from '../mcp-client';
 import type { AgentConfig } from './base-adapter';
 import type { MCPClient } from '../mcp-client';
+import { logger } from '@/lib/logger';
 
 export class UniversalAdapter extends BaseAgentAdapter {
   private protocol: 'agentapi' | 'mcp' | null = null;
@@ -232,7 +233,7 @@ export class UniversalAdapter extends BaseAgentAdapter {
       undefined,
       {
         onOutput: (data) => {
-          console.log(`[Universal] ${data.line}`);
+          logger.info(`[Universal] ${data.line}`);
         },
         onStatus: (data) => {
           if (this.session) {
@@ -240,7 +241,7 @@ export class UniversalAdapter extends BaseAgentAdapter {
           }
         },
         onError: (data) => {
-          console.error(`[Universal Error] ${data.error}`);
+          logger.error(`[Universal Error] ${data.error}`);
           if (this.session) {
             this.session.status = 'failed';
           }

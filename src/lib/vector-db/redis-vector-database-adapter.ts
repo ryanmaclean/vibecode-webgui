@@ -7,6 +7,7 @@ import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { VectorChunk, SearchResult, SearchOptions } from './vector-types';
 import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
+import { logger } from '@/lib/logger';
 
 /**
  * Redis-specific configuration options
@@ -52,13 +53,13 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       });
 
       this.redis.on('error', (error: Error) => {
-        console.error('Redis client error:', error);
+        logger.error('Redis client error:', error);
       });
 
       await this.redis.connect();
 
       this.isInitialized = true;
-      console.log('Redis vector database adapter initialized successfully');
+      logger.info('Redis vector database adapter initialized successfully');
 
     } catch (error) {
       const vectorDbError = this.errorHandler.handleError(error, 'initialize');
@@ -87,7 +88,7 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       await this.redis.ping();
       return true;
     } catch (error) {
-      console.error('Redis ping failed:', error);
+      logger.error('Redis ping failed:', error);
       return false;
     }
   }
@@ -186,7 +187,7 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
               });
             }
           } catch (parseError) {
-            console.warn(`Failed to parse vector data for key ${key}:`, parseError);
+            logger.warn(`Failed to parse vector data for key ${key}:`, parseError);
           }
         }
       }
@@ -351,7 +352,7 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   async createIndex(field: string, options?: any): Promise<void> {
     // Redis doesn't have traditional indexes like SQL databases
     // This would integrate with Redisearch or similar for vector indexing
-    console.log(`Index creation requested for field: ${field}`);
+    logger.info(`Index creation requested for field: ${field}`);
   }
 
   /**
@@ -359,7 +360,7 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   async deleteIndex(field: string): Promise<void> {
     // Redis index deletion would be handled here
-    console.log(`Index deletion requested for field: ${field}`);
+    logger.info(`Index deletion requested for field: ${field}`);
   }
 
   /**

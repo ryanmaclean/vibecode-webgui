@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 import { useCallback, useRef } from 'react'
 
 /**
@@ -20,7 +22,7 @@ import { useCallback, useRef } from 'react'
  *
  * @example
  * const handleScroll = useThrottle(() => {
- *   console.log('Scroll position:', window.scrollY)
+ *   logger.info('Scroll position:', window.scrollY)
  *   updateScrollPosition()
  * }, 100)
  *

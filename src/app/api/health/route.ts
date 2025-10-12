@@ -3,6 +3,8 @@
  * Provides application health status for monitoring and deployment
  */
 
+import { logger } from '@/lib/logger';
+
 import { NextRequest, NextResponse } from 'next/server'
 import { monitoring } from '@/lib/monitoring'
 
@@ -51,7 +53,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(healthCheckResponse, { status: 200 })
 
   } catch (error) {
-    console.error('Health check error:', error)
+    logger.error('Health check error:', error)
 
     return NextResponse.json({
       status: 'unhealthy',

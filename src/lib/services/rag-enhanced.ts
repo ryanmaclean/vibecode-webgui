@@ -75,7 +75,7 @@ export class EnhancedRAGService {
       }
 
     } catch (error) {
-      console.error('RAG context building failed:', error)
+      logger.error('RAG context building failed:', error)
       return {
         sources: [],
         webResults: [],
@@ -140,7 +140,7 @@ export class EnhancedRAGService {
         .slice(0, maxResults)
 
     } catch (error) {
-      console.warn('File content search failed:', error)
+      logger.warn('File content search failed:', error)
       return []
     }
   }
@@ -189,6 +189,7 @@ export class EnhancedRAGService {
   private extractRelevantChunks(content: string, queryTerms: string[]): string[] {
     const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20)
     const relevantChunks: { chunk: string; score: number }[] = []
+import { logger } from '@/lib/logger';
 
     // Group sentences into chunks of 3-5 sentences
     for (let i = 0; i < sentences.length; i += 3) {

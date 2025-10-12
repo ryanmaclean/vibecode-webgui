@@ -3,6 +3,7 @@
 // Listens for system tray menu events and triggers Docker container management
 
 import { useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 // Type definitions for Tauri APIs
 // These will be available when running in Tauri context
@@ -43,7 +44,7 @@ export function useTauriMenuBar() {
   useEffect(() => {
     // Only run in Tauri context
     if (typeof window === 'undefined' || !window.__TAURI__) {
-      console.log('useTauriMenuBar: Not running in Tauri context, skipping menu bar integration');
+      logger.info('useTauriMenuBar: Not running in Tauri context, skipping menu bar integration');
       return;
     }
 
@@ -59,17 +60,17 @@ export function useTauriMenuBar() {
     const setupStartListener = async () => {
       try {
         const unlisten = await listen('start-services', async () => {
-          console.log('Menu bar: Start services triggered');
+          logger.info('Menu bar: Start services triggered');
           try {
             const result = await invoke('start_containers');
-            console.log('Services started:', result);
+            logger.info('Services started:', result);
           } catch (error) {
-            console.error('Failed to start services:', error);
+            logger.error('Failed to start services:', error);
           }
         });
         startUnlisten = unlisten;
       } catch (error) {
-        console.error('Failed to setup start-services listener:', error);
+        logger.error('Failed to setup start-services listener:', error);
       }
     };
 
@@ -77,17 +78,17 @@ export function useTauriMenuBar() {
     const setupStopListener = async () => {
       try {
         const unlisten = await listen('stop-services', async () => {
-          console.log('Menu bar: Stop services triggered');
+          logger.info('Menu bar: Stop services triggered');
           try {
             const result = await invoke('stop_containers');
-            console.log('Services stopped:', result);
+            logger.info('Services stopped:', result);
           } catch (error) {
-            console.error('Failed to stop services:', error);
+            logger.error('Failed to stop services:', error);
           }
         });
         stopUnlisten = unlisten;
       } catch (error) {
-        console.error('Failed to setup stop-services listener:', error);
+        logger.error('Failed to setup stop-services listener:', error);
       }
     };
 
@@ -95,25 +96,25 @@ export function useTauriMenuBar() {
     const setupRestartListener = async () => {
       try {
         const unlisten = await listen('restart-services', async () => {
-          console.log('Menu bar: Restart services triggered');
+          logger.info('Menu bar: Restart services triggered');
           try {
             // Stop containers first
             await invoke('stop_containers');
-            console.log('Services stopped, waiting before restart...');
+            logger.info('Services stopped, waiting before restart...');
 
             // Wait 2 seconds before starting
             await new Promise(resolve => setTimeout(resolve, 2000));
 
             // Start containers
             const result = await invoke('start_containers');
-            console.log('Services restarted:', result);
+            logger.info('Services restarted:', result);
           } catch (error) {
-            console.error('Failed to restart services:', error);
+            logger.error('Failed to restart services:', error);
           }
         });
         restartUnlisten = unlisten;
       } catch (error) {
-        console.error('Failed to setup restart-services listener:', error);
+        logger.error('Failed to setup restart-services listener:', error);
       }
     };
 
@@ -122,14 +123,14 @@ export function useTauriMenuBar() {
     setupStopListener();
     setupRestartListener();
 
-    console.log('useTauriMenuBar: Menu bar event listeners initialized');
+    logger.info('useTauriMenuBar: Menu bar event listeners initialized');
 
     // Cleanup listeners on unmount
     return () => {
       if (startUnlisten) startUnlisten();
       if (stopUnlisten) stopUnlisten();
       if (restartUnlisten) restartUnlisten();
-      console.log('useTauriMenuBar: Menu bar event listeners cleaned up');
+      logger.info('useTauriMenuBar: Menu bar event listeners cleaned up');
     };
   }, []);
 }
