@@ -1,639 +1,833 @@
 /**
- * Template marketplace for sharing and discovering project templates
+ * Template Marketplace Service
+ * Service layer for template marketplace operations and management
  */
 
-import { z } from 'zod'
-import type { ProjectTemplate } from '@/lib/templates/index'
-import { templateRegistry } from '@/lib/templates/versioning'
+import { VectorChunk } from '../vector-db/vector-types';
 
-// Marketplace template metadata
-export interface MarketplaceTemplate extends ProjectTemplate {
-  marketplaceId: string
-  author: {
-    id: string
-    name: string
-    email: string
-    avatar?: string
-    verified: boolean
-  }
-  stats: {
-    downloads: number
-    rating: number
-    reviewCount: number
-    forks: number
-    stars: number
-  }
-  marketplace: {
-    publishedAt: string
-    lastUpdated: string
-    featured: boolean
-    category: string[]
-    pricing: 'free' | 'paid'
-    price?: number
-    license: string
-    supportUrl?: string
-    demoUrl?: string
-  }
-  compatibility: {
-    nextjsVersion: string[]
-    nodeVersion: string[]
-    platforms: string[]
-  }
-  reviews: TemplateReview[]
+export interface MarketplaceTemplate {
+  id: string;
+  name: string;
+  description: string;
+  author: string;
+  category: 'frontend' | 'backend' | 'fullstack' | 'mobile' | 'desktop' | 'library';
+  language: string;
+  framework: string;
+  complexity: 'beginner' | 'intermediate' | 'advanced';
+  tags: string[];
+  stars: number;
+  downloads: number;
+  pricing: 'free' | 'paid';
+  previewImage?: string;
+  lastUpdated: string;
+  featured: boolean;
+  dependencies: Record<string, string>;
+  scripts: Record<string, string>;
+  envVars: Array<{
+    name: string;
+    defaultValue?: string;
+    description?: string;
+  }>;
+  documentation: {
+    setup: string[];
+    usage: string[];
+    deployment: string[];
+  };
+  dockerSupport: boolean;
+  kubernetesSupport: boolean;
+  cicdTemplate: boolean;
+  testingSetup: boolean;
+  monitoringSetup: boolean;
 }
 
-export interface TemplateReview {
-  id: string
-  userId: string
-  userName: string
-  userAvatar?: string
-  rating: number
-  title: string
-  content: string
-  createdAt: string
-  helpful: number
-  verified: boolean
+export interface MarketplaceSearchOptions {
+  query?: string;
+  category?: string;
+  language?: string;
+  framework?: string;
+  complexity?: string;
+  pricing?: 'free' | 'paid' | 'all';
+  sortBy?: 'relevance' | 'stars' | 'downloads' | 'updated' | 'name';
+  tags?: string[];
+  offset?: number;
+  limit?: number;
+}
+
+export interface MarketplaceStats {
+  totalTemplates: number;
+  totalDownloads: number;
+  totalAuthors: number;
+  categories: Record<string, number>;
+  languages: Record<string, number>;
+  topTemplates: MarketplaceTemplate[];
+  recentTemplates: MarketplaceTemplate[];
 }
 
 export interface TemplateSubmission {
-  template: ProjectTemplate
-  author: {
-    name: string
-    email: string
-    githubUrl?: string
-  }
-  marketplace: {
-    category: string[]
-    pricing: 'free' | 'paid'
-    price?: number
-    license: string
-    supportUrl?: string
-    demoUrl?: string
-  }
-  submission: {
-    notes?: string
-    requestedFeature?: boolean
-  }
+  name: string;
+  description: string;
+  category: MarketplaceTemplate['category'];
+  language: string;
+  framework: string;
+  complexity: MarketplaceTemplate['complexity'];
+  tags: string[];
+  dependencies: Record<string, string>;
+  scripts: Record<string, string>;
+  envVars: Array<{
+    name: string;
+    defaultValue?: string;
+    description?: string;
+  }>;
+  documentation: {
+    setup: string[];
+    usage: string[];
+    deployment: string[];
+  };
+  dockerSupport: boolean;
+  kubernetesSupport: boolean;
+  cicdTemplate: boolean;
+  testingSetup: boolean;
+  monitoringSetup: boolean;
+  authorId: string;
+  authorEmail: string;
 }
-
-// Search and filter options
-export interface MarketplaceSearchOptions {
-  query?: string
-  category?: string
-  tags?: string[]
-  author?: string
-  pricing?: 'free' | 'paid' | 'all'
-  rating?: number
-  sortBy?: 'popularity' | 'rating' | 'recent' | 'downloads' | 'alphabetical'
-  featured?: boolean
-  verified?: boolean
-  limit?: number
-  offset?: number
-}
-
-const templateReviewSchema = z.object({
-  rating: z.number().min(1).max(5),
-  title: z.string().min(1).max(100),
-  content: z.string().min(10).max(2000),
-  templateId: z.string()
-})
 
 /**
- * Template marketplace service
+ * Template Marketplace Service
  */
-export class TemplateMarketplace {
-  private templates: Map<string, MarketplaceTemplate> = new Map()
-  private categories: Set<string> = new Set()
-  private featuredTemplates: string[] = []
+export class TemplateMarketplaceService {
+  private templates: Map<string, MarketplaceTemplate> = new Map();
+  private searchIndex: Map<string, Set<string>> = new Map(); // For efficient searching
 
   constructor() {
-    this.initializeMarketplace()
-  }
-
-  private initializeMarketplace(): void {
-    // Initialize with sample marketplace templates
-    this.loadSampleTemplates()
-    this.setupCategories()
-  }
-
-  private loadSampleTemplates(): void {
-    const sampleTemplates: Partial<MarketplaceTemplate>[] = [
-      {
-        marketplaceId: 'mp-next-ai-saas',
-        name: 'AI SaaS Starter',
-        description: 'Complete AI-powered SaaS application with authentication, payments, and AI integration',
-        author: {
-          id: 'vibecode-team',
-          name: 'VibeCode Team',
-          email: 'team@vibecode.dev',
-          verified: true
-        },
-        stats: {
-          downloads: 15420,
-          rating: 4.8,
-          reviewCount: 127,
-          forks: 89,
-          stars: 542
-        },
-        marketplace: {
-          publishedAt: '2025-06-15T10:00:00Z',
-          lastUpdated: '2025-08-12T14:30:00Z',
-          featured: true,
-          category: ['AI/ML', 'SaaS', 'Enterprise'],
-          pricing: 'free',
-          license: 'MIT'
-        },
-        compatibility: {
-          nextjsVersion: ['14.x', '15.x'],
-          nodeVersion: ['18.x', '20.x', '22.x'],
-          platforms: ['vercel', 'netlify', 'aws']
-        },
-        reviews: []
-      },
-      {
-        marketplaceId: 'mp-react-dashboard',
-        name: 'Enterprise Dashboard',
-        description: 'Professional admin dashboard with charts, analytics, and user management',
-        author: {
-          id: 'community-dev',
-          name: 'Community Developer',
-          email: 'dev@example.com',
-          verified: false
-        },
-        stats: {
-          downloads: 8730,
-          rating: 4.6,
-          reviewCount: 64,
-          forks: 45,
-          stars: 231
-        },
-        marketplace: {
-          publishedAt: '2025-07-01T09:00:00Z',
-          lastUpdated: '2025-08-10T11:20:00Z',
-          featured: false,
-          category: ['Dashboard', 'Enterprise', 'Analytics'],
-          pricing: 'free',
-          license: 'Apache-2.0'
-        },
-        compatibility: {
-          nextjsVersion: ['14.x', '15.x'],
-          nodeVersion: ['18.x', '20.x'],
-          platforms: ['vercel', 'netlify']
-        },
-        reviews: []
-      }
-    ]
-
-    // Convert sample templates to full marketplace templates
-    sampleTemplates.forEach((template, index) => {
-      const fullTemplate: MarketplaceTemplate = {
-        id: `marketplace-${index}`,
-        name: template.name || 'Unnamed Template',
-        description: template.description || '',
-        category: 'frontend',
-        complexity: 'intermediate',
-        tags: [],
-        language: [],
-        frameworks: [],
-<<<<<<< HEAD
-        features: [],
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-        tags: template.marketplace?.category ? [template.marketplace.category] : [],
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-        files: [],
-=======
-        features: [],        files: [],
->>>>>>> fix/consolidated-dependency-updates
-        dependencies: {},
-        scripts: {},
-        envVars: [],
-        dockerSupport: false,
-        kubernetesSupport: false,
-        cicdTemplate: false,
-        testingSetup: false,
-        monitoringSetup: false,
-        estimatedSetupTime: '10 minutes',
-        documentation: {
-          setup: ['Setup instructions'],
-          usage: ['Usage instructions', 'Template documentation'],
-<<<<<<< HEAD
-          deployment: ['Deployment guide']
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-        documentation: {
-          readme: 'Template documentation',
-          setup: 'Setup instructions',
-          deployment: 'Deployment guide'
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-        },
-=======
-          deployment: ['Deployment guide']        },
->>>>>>> fix/consolidated-dependency-updates
-        ...template,
-        marketplaceId: template.marketplaceId || `mp-${index}`,
-        author: template.author!,
-        stats: template.stats!,
-        marketplace: template.marketplace!,
-        compatibility: template.compatibility!,
-        reviews: template.reviews || []
-      }
-      
-      this.templates.set(fullTemplate.marketplaceId, fullTemplate)
-    })
-  }
-
-  private setupCategories(): void {
-    const categories = [
-      'AI/ML', 'SaaS', 'Enterprise', 'Dashboard', 'Analytics',
-      'E-commerce', 'Blog', 'Portfolio', 'Landing Page', 'Mobile',
-      'Desktop', 'API', 'Microservices', 'DevOps', 'Education',
-      'Healthcare', 'Finance', 'Gaming', 'Social', 'Productivity'
-    ]
-    
-    categories.forEach(category => this.categories.add(category))
+    this.initializeTemplates();
+    this.buildSearchIndex();
   }
 
   /**
-   * Search templates in marketplace
+   * Initialize with sample templates
    */
-  searchTemplates(options: MarketplaceSearchOptions = {}): {
-    templates: MarketplaceTemplate[]
-    total: number
-    hasMore: boolean
-  } {
-    let templates = Array.from(this.templates.values())
+  private initializeTemplates(): void {
+    const sampleTemplates: MarketplaceTemplate[] = [
+      {
+        id: 'react-ts-vite',
+        name: 'React TypeScript Vite',
+        description: 'Modern React application with TypeScript and Vite build system',
+        author: 'VibeCode Team',
+        category: 'frontend',
+        language: 'typescript',
+        framework: 'react',
+        complexity: 'intermediate',
+        tags: ['react', 'typescript', 'vite', 'modern'],
+        stars: 4.8,
+        downloads: 15420,
+        pricing: 'free',
+        lastUpdated: '2024-01-15',
+        featured: true,
+        dependencies: {
+          'react': '^18.2.0',
+          'react-dom': '^18.2.0',
+          'typescript': '^4.9.5'
+        },
+        scripts: {
+          'dev': 'vite',
+          'build': 'tsc && vite build',
+          'preview': 'vite preview',
+          'test': 'vitest'
+        },
+        envVars: [
+          {
+            name: 'VITE_API_URL',
+            defaultValue: 'http://localhost:3001',
+            description: 'API server URL'
+          }
+        ],
+        documentation: {
+          setup: [
+            'Install dependencies: npm install',
+            'Start development server: npm run dev',
+            'Open http://localhost:5173 in your browser'
+          ],
+          usage: [
+            'Edit src/App.tsx to customize your application',
+            'Add new components in src/components/',
+            'Use TypeScript for type safety'
+          ],
+          deployment: [
+            'Build for production: npm run build',
+            'Deploy dist/ folder to your hosting provider',
+            'Configure environment variables in production'
+          ]
+        },
+        dockerSupport: true,
+        kubernetesSupport: false,
+        cicdTemplate: true,
+        testingSetup: true,
+        monitoringSetup: false
+      },
+      {
+        id: 'nextjs-fullstack',
+        name: 'Next.js Full Stack',
+        description: 'Complete full-stack application with Next.js, API routes, and database',
+        author: 'Community',
+        category: 'fullstack',
+        language: 'typescript',
+        framework: 'nextjs',
+        complexity: 'advanced',
+        tags: ['nextjs', 'fullstack', 'api', 'database'],
+        stars: 4.6,
+        downloads: 8930,
+        pricing: 'free',
+        lastUpdated: '2024-01-10',
+        featured: false,
+        dependencies: {
+          'next': '^14.0.0',
+          'react': '^18.2.0',
+          'react-dom': '^18.2.0',
+          'prisma': '^5.0.0',
+          '@prisma/client': '^5.0.0'
+        },
+        scripts: {
+          'dev': 'next dev',
+          'build': 'prisma generate && next build',
+          'start': 'next start',
+          'db:generate': 'prisma generate',
+          'db:push': 'prisma db push',
+          'db:studio': 'prisma studio'
+        },
+        envVars: [
+          {
+            name: 'DATABASE_URL',
+            defaultValue: 'postgresql://user:password@localhost:5432/mydb',
+            description: 'Database connection URL'
+          },
+          {
+            name: 'NEXTAUTH_SECRET',
+            description: 'NextAuth.js secret for JWT encryption'
+          }
+        ],
+        documentation: {
+          setup: [
+            'Install dependencies: npm install',
+            'Set up database: npm run db:push',
+            'Start development server: npm run dev'
+          ],
+          usage: [
+            'API routes are in pages/api/',
+            'Database models are in prisma/schema.prisma',
+            'Authentication is handled by NextAuth.js'
+          ],
+          deployment: [
+            'Build for production: npm run build',
+            'Deploy to Vercel or your preferred platform',
+            'Set DATABASE_URL in production environment'
+          ]
+        },
+        dockerSupport: true,
+        kubernetesSupport: true,
+        cicdTemplate: true,
+        testingSetup: true,
+        monitoringSetup: true
+      }
+    ];
 
-    // Apply filters
+    sampleTemplates.forEach(template => {
+      this.templates.set(template.id, template);
+    });
+  }
+
+  /**
+   * Build search index for efficient filtering
+   */
+  private buildSearchIndex(): void {
+    this.searchIndex.clear();
+
+    for (const template of this.templates.values()) {
+      // Index by category
+      if (!this.searchIndex.has(template.category)) {
+        this.searchIndex.set(template.category, new Set());
+      }
+      this.searchIndex.get(template.category)!.add(template.id);
+
+      // Index by language
+      if (!this.searchIndex.has(`lang:${template.language}`)) {
+        this.searchIndex.set(`lang:${template.language}`, new Set());
+      }
+      this.searchIndex.get(`lang:${template.language}`)!.add(template.id);
+
+      // Index by framework
+      if (!this.searchIndex.has(`framework:${template.framework}`)) {
+        this.searchIndex.set(`framework:${template.framework}`, new Set());
+      }
+      this.searchIndex.get(`framework:${template.framework}`)!.add(template.id);
+
+      // Index by tags
+      template.tags.forEach(tag => {
+        if (!this.searchIndex.has(`tag:${tag}`)) {
+          this.searchIndex.set(`tag:${tag}`, new Set());
+        }
+        this.searchIndex.get(`tag:${tag}`)!.add(template.id);
+      });
+    }
+  }
+
+  /**
+   * Search templates with advanced filtering
+   */
+  searchTemplates(options: MarketplaceSearchOptions = {}): MarketplaceTemplate[] {
+    let results = Array.from(this.templates.values());
+
+    // Apply search query filter
     if (options.query) {
-      const query = options.query.toLowerCase()
-      templates = templates.filter(template => 
+      const query = options.query.toLowerCase();
+      results = results.filter(template =>
         template.name.toLowerCase().includes(query) ||
         template.description.toLowerCase().includes(query) ||
         template.tags.some(tag => tag.toLowerCase().includes(query))
-      )
+      );
     }
 
+    // Apply category filter
     if (options.category) {
-      templates = templates.filter(template => 
-        template.marketplace.category.includes(options.category!)
-      )
+      results = results.filter(template => template.category === options.category);
     }
 
-    if (options.tags && options.tags.length > 0) {
-      templates = templates.filter(template =>
-        options.tags!.some(tag => template.tags.includes(tag))
-      )
+    // Apply language filter
+    if (options.language) {
+      results = results.filter(template => template.language === options.language);
     }
 
-    if (options.author) {
-      templates = templates.filter(template =>
-        template.author.id === options.author ||
-        template.author.name.toLowerCase().includes(options.author!.toLowerCase())
-      )
+    // Apply framework filter
+    if (options.framework) {
+      results = results.filter(template => template.framework === options.framework);
     }
 
+    // Apply complexity filter
+    if (options.complexity) {
+      results = results.filter(template => template.complexity === options.complexity);
+    }
+
+    // Apply pricing filter
     if (options.pricing && options.pricing !== 'all') {
-      templates = templates.filter(template =>
-        template.marketplace.pricing === options.pricing
-      )
+      results = results.filter(template => template.pricing === options.pricing);
     }
 
-    if (options.rating) {
-      templates = templates.filter(template =>
-        template.stats.rating >= options.rating!
-      )
-    }
-
-    if (options.featured) {
-      templates = templates.filter(template => template.marketplace.featured)
-    }
-
-    if (options.verified) {
-      templates = templates.filter(template => template.author.verified)
+    // Apply tags filter
+    if (options.tags && options.tags.length > 0) {
+      results = results.filter(template =>
+        options.tags!.some(tag => template.tags.includes(tag))
+      );
     }
 
     // Apply sorting
-    switch (options.sortBy) {
-      case 'popularity':
-        templates.sort((a, b) => b.stats.downloads - a.stats.downloads)
-        break
-      case 'rating':
-        templates.sort((a, b) => b.stats.rating - a.stats.rating)
-        break
-      case 'recent':
-        templates.sort((a, b) => 
-          new Date(b.marketplace.lastUpdated).getTime() - 
-          new Date(a.marketplace.lastUpdated).getTime()
-        )
-        break
-      case 'downloads':
-        templates.sort((a, b) => b.stats.downloads - a.stats.downloads)
-        break
-      case 'alphabetical':
-        templates.sort((a, b) => a.name.localeCompare(b.name))
-        break
-      default:
-        // Default to featured first, then by popularity
-        templates.sort((a, b) => {
-          if (a.marketplace.featured && !b.marketplace.featured) return -1
-          if (!a.marketplace.featured && b.marketplace.featured) return 1
-          return b.stats.downloads - a.stats.downloads
-        })
-    }
+    results.sort((a, b) => {
+      switch (options.sortBy) {
+        case 'stars':
+          return b.stars - a.stars;
+        case 'downloads':
+          return b.downloads - a.downloads;
+        case 'updated':
+          return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
+        case 'name':
+          return a.name.localeCompare(b.name);
+        default:
+          // Default to featured first, then by relevance
+          if (a.featured && !b.featured) return -1;
+          if (!a.featured && b.featured) return 1;
+          return b.stars - a.stars;
+      }
+    });
 
     // Apply pagination
-    const limit = options.limit || 20
-    const offset = options.offset || 0
-    const total = templates.length
-    const paginatedTemplates = templates.slice(offset, offset + limit)
-    const hasMore = offset + limit < total
+    if (options.offset) {
+      results = results.slice(options.offset);
+    }
+    if (options.limit) {
+      results = results.slice(0, options.limit);
+    }
 
-    return {
-      templates: paginatedTemplates,
-      total,
-      hasMore
+    return results;
+  }
+
+  /**
+   * Get template by ID
+   */
+  getTemplate(id: string): MarketplaceTemplate | null {
+    return this.templates.get(id) || null;
+  }
+
+  /**
+   * Submit a new template
+   */
+  async submitTemplate(submission: TemplateSubmission): Promise<MarketplaceTemplate> {
+    // Validate submission
+    if (!submission.name.trim() || !submission.description.trim()) {
+      throw new Error('Template name and description are required');
+    }
+
+    // Create new template
+    const template: MarketplaceTemplate = {
+      id: `template-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name: submission.name,
+      description: submission.description,
+      author: submission.authorEmail,
+      category: submission.category,
+      language: submission.language,
+      framework: submission.framework,
+      complexity: submission.complexity,
+      tags: submission.tags,
+      stars: 0,
+      downloads: 0,
+      pricing: 'free', // New submissions start as free
+      lastUpdated: new Date().toISOString(),
+      featured: false,
+      dependencies: submission.dependencies,
+      scripts: submission.scripts,
+      envVars: submission.envVars,
+      documentation: submission.documentation,
+      dockerSupport: submission.dockerSupport,
+      kubernetesSupport: submission.kubernetesSupport,
+      cicdTemplate: submission.cicdTemplate,
+      testingSetup: submission.testingSetup,
+      monitoringSetup: submission.monitoringSetup
+    };
+
+    // Add to templates
+    this.templates.set(template.id, template);
+
+    // Update search index
+    this.buildSearchIndex();
+
+    return template;
+  }
+
+  /**
+   * Update template metadata
+   */
+  async updateTemplate(id: string, updates: Partial<MarketplaceTemplate>): Promise<MarketplaceTemplate> {
+    const template = this.templates.get(id);
+    if (!template) {
+      throw new Error('Template not found');
+    }
+
+    const updatedTemplate = { ...template, ...updates, lastUpdated: new Date().toISOString() };
+    this.templates.set(id, updatedTemplate);
+
+    return updatedTemplate;
+  }
+
+  /**
+   * Delete a template
+   */
+  async deleteTemplate(id: string): Promise<boolean> {
+    const deleted = this.templates.delete(id);
+    if (deleted) {
+      this.buildSearchIndex();
+    }
+    return deleted;
+  }
+
+  /**
+   * Increment download count
+   */
+  async incrementDownloadCount(id: string): Promise<void> {
+    const template = this.templates.get(id);
+    if (template) {
+      template.downloads += 1;
+      template.lastUpdated = new Date().toISOString();
     }
   }
 
   /**
-   * Get template by marketplace ID
+   * Rate a template
    */
-  getTemplate(marketplaceId: string): MarketplaceTemplate | null {
-    return this.templates.get(marketplaceId) || null
+  async rateTemplate(id: string, rating: number): Promise<void> {
+    const template = this.templates.get(id);
+    if (template) {
+      // Simple rating system - in a real app, this would be more sophisticated
+      template.stars = (template.stars + rating) / 2; // Average with existing rating
+      template.lastUpdated = new Date().toISOString();
+    }
+  }
+
+  /**
+   * Get marketplace statistics
+   */
+  getStats(): MarketplaceStats {
+    const templates = Array.from(this.templates.values());
+
+    const totalDownloads = templates.reduce((sum, t) => sum + t.downloads, 0);
+
+    const categories: Record<string, number> = {};
+    const languages: Record<string, number> = {};
+
+    templates.forEach(template => {
+      categories[template.category] = (categories[template.category] || 0) + 1;
+      languages[template.language] = (languages[template.language] || 0) + 1;
+    });
+
+    const topTemplates = templates
+      .sort((a, b) => b.stars - a.stars)
+      .slice(0, 10);
+
+    const recentTemplates = templates
+      .sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
+      .slice(0, 10);
+
+    return {
+      totalTemplates: templates.length,
+      totalDownloads,
+      totalAuthors: new Set(templates.map(t => t.author)).size,
+      categories,
+      languages,
+      topTemplates,
+      recentTemplates
+    };
+  }
+
+  /**
+   * Get available categories
+   */
+  getCategories(): Array<{ id: string; name: string; count: number }> {
+    const templates = Array.from(this.templates.values());
+    const categories: Record<string, number> = {};
+
+    templates.forEach(template => {
+      categories[template.category] = (categories[template.category] || 0) + 1;
+    });
+
+    return Object.entries(categories).map(([id, count]) => ({
+      id,
+      name: id.charAt(0).toUpperCase() + id.slice(1),
+      count
+    }));
+  }
+
+  /**
+   * Get available languages
+   */
+  getLanguages(): Array<{ id: string; name: string; count: number }> {
+    const templates = Array.from(this.templates.values());
+    const languages: Record<string, number> = {};
+
+    templates.forEach(template => {
+      languages[template.language] = (languages[template.language] || 0) + 1;
+    });
+
+    return Object.entries(languages).map(([id, count]) => ({
+      id,
+      name: id.charAt(0).toUpperCase() + id.slice(1),
+      count
+    }));
+  }
+
+  /**
+   * Get available frameworks
+   */
+  getFrameworks(): Array<{ id: string; name: string; count: number }> {
+    const templates = Array.from(this.templates.values());
+    const frameworks: Record<string, number> = {};
+
+    templates.forEach(template => {
+      frameworks[template.framework] = (frameworks[template.framework] || 0) + 1;
+    });
+
+    return Object.entries(frameworks).map(([id, count]) => ({
+      id,
+      name: id.charAt(0).toUpperCase() + id.slice(1),
+      count
+    }));
+  }
+
+  /**
+   * Get trending templates
+   */
+  getTrendingTemplates(limit = 10): MarketplaceTemplate[] {
+    return Array.from(this.templates.values())
+      .sort((a, b) => {
+        // Sort by combination of stars and recent downloads
+        const aScore = a.stars * 0.7 + Math.log(a.downloads + 1) * 0.3;
+        const bScore = b.stars * 0.7 + Math.log(b.downloads + 1) * 0.3;
+        return bScore - aScore;
+      })
+      .slice(0, limit);
   }
 
   /**
    * Get featured templates
    */
-  getFeaturedTemplates(limit: number = 6): MarketplaceTemplate[] {
+  getFeaturedTemplates(limit = 10): MarketplaceTemplate[] {
     return Array.from(this.templates.values())
-      .filter(template => template.marketplace.featured)
-      .sort((a, b) => b.stats.downloads - a.stats.downloads)
-      .slice(0, limit)
+      .filter(template => template.featured)
+      .sort((a, b) => b.stars - a.stars)
+      .slice(0, limit);
   }
 
   /**
-   * Get popular templates
+   * Get templates by author
    */
-  getPopularTemplates(limit: number = 10): MarketplaceTemplate[] {
+  getTemplatesByAuthor(authorEmail: string): MarketplaceTemplate[] {
     return Array.from(this.templates.values())
-      .sort((a, b) => b.stats.downloads - a.stats.downloads)
-      .slice(0, limit)
+      .filter(template => template.author === authorEmail)
+      .sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
   }
 
   /**
-   * Get recent templates
+   * Search templates by similarity using vector search
    */
-  getRecentTemplates(limit: number = 10): MarketplaceTemplate[] {
-    return Array.from(this.templates.values())
-      .sort((a, b) => 
-        new Date(b.marketplace.publishedAt).getTime() - 
-        new Date(a.marketplace.publishedAt).getTime()
-      )
-      .slice(0, limit)
+  async searchSimilarTemplates(query: string, limit = 10): Promise<MarketplaceTemplate[]> {
+    // This would integrate with vector database for semantic search
+    // For now, return text-based search results
+    const searchOptions: MarketplaceSearchOptions = {
+      query,
+      limit,
+      sortBy: 'relevance'
+    };
+
+    return this.searchTemplates(searchOptions);
   }
 
   /**
-   * Get all categories
+   * Get template recommendations for user
    */
-  getCategories(): string[] {
-    return Array.from(this.categories).sort()
+  getRecommendations(
+    userPreferences?: {
+      preferredLanguages?: string[];
+      preferredCategories?: string[];
+      skillLevel?: 'beginner' | 'intermediate' | 'advanced';
+    },
+    limit = 10
+  ): MarketplaceTemplate[] {
+    let templates = Array.from(this.templates.values());
+
+    // Filter by user preferences
+    if (userPreferences?.preferredLanguages) {
+      templates = templates.filter(template =>
+        userPreferences.preferredLanguages!.includes(template.language)
+      );
+    }
+
+    if (userPreferences?.preferredCategories) {
+      templates = templates.filter(template =>
+        userPreferences.preferredCategories!.includes(template.category)
+      );
+    }
+
+    if (userPreferences?.skillLevel) {
+      templates = templates.filter(template =>
+        template.complexity === userPreferences.skillLevel
+      );
+    }
+
+    // Score templates based on various factors
+    templates.forEach(template => {
+      let score = 0;
+
+      // Boost score for featured templates
+      if (template.featured) score += 2;
+
+      // Boost score based on stars
+      score += template.stars * 0.5;
+
+      // Boost score based on downloads (log scale)
+      score += Math.log(template.downloads + 1) * 0.2;
+
+      // Boost score for recently updated templates
+      const daysSinceUpdate = (Date.now() - new Date(template.lastUpdated).getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceUpdate < 30) score += 1;
+
+      template.stars = score; // Temporarily use stars field for score
+    });
+
+    return templates
+      .sort((a, b) => (b.stars as number) - (a.stars as number))
+      .slice(0, limit);
   }
 
   /**
-   * Submit template for review
+   * Validate template submission
    */
-  async submitTemplate(submission: TemplateSubmission): Promise<{
-    success: boolean
-    submissionId?: string
-    error?: string
-  }> {
-    try {
-      // Validate template
-      const validation = this.validateTemplateSubmission(submission)
-      if (!validation.valid) {
-        return {
-          success: false,
-          error: validation.errors.join(', ')
-        }
-      }
+  validateTemplateSubmission(submission: TemplateSubmission): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
 
-      // Generate submission ID
-      const submissionId = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-
-      // In a real implementation, this would save to database
-      // Debug log removed
-
-      return {
-        success: true,
-        submissionId
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Submission failed'
-      }
-    }
-  }
-
-  /**
-   * Add review to template
-   */
-  async addReview(templateId: string, review: Omit<TemplateReview, 'id' | 'createdAt' | 'helpful'>): Promise<{
-    success: boolean
-    reviewId?: string
-    error?: string
-  }> {
-    try {
-      // Validate review
-      const validatedReview = templateReviewSchema.parse({
-        rating: review.rating,
-        title: review.title,
-        content: review.content,
-        templateId
-      })
-
-      const template = this.templates.get(templateId)
-      if (!template) {
-        return {
-          success: false,
-          error: 'Template not found'
-        }
-      }
-
-      const reviewId = `rev_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      const newReview: TemplateReview = {
-        id: reviewId,
-        userId: review.userId,
-        userName: review.userName,
-        userAvatar: review.userAvatar,
-        rating: review.rating,
-        title: review.title,
-        content: review.content,
-        createdAt: new Date().toISOString(),
-        helpful: 0,
-        verified: review.verified
-      }
-
-      template.reviews.push(newReview)
-      
-      // Update template rating
-      const totalRating = template.reviews.reduce((sum, r) => sum + r.rating, 0)
-      template.stats.rating = totalRating / template.reviews.length
-      template.stats.reviewCount = template.reviews.length
-
-      this.templates.set(templateId, template)
-
-      return {
-        success: true,
-        reviewId
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to add review'
-      }
-    }
-  }
-
-  /**
-   * Record template download
-   */
-  async recordDownload(marketplaceId: string): Promise<void> {
-    const template = this.templates.get(marketplaceId)
-    if (template) {
-      template.stats.downloads++
-      this.templates.set(marketplaceId, template)
-    }
-  }
-
-  /**
-   * Fork template (create new version)
-   */
-  async forkTemplate(marketplaceId: string, userId: string): Promise<{
-    success: boolean
-    forkId?: string
-    error?: string
-  }> {
-    try {
-      const originalTemplate = this.templates.get(marketplaceId)
-      if (!originalTemplate) {
-        return {
-          success: false,
-          error: 'Template not found'
-        }
-      }
-
-      // Create fork
-      const forkId = `fork_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      
-      // Update original template fork count
-      originalTemplate.stats.forks++
-      this.templates.set(marketplaceId, originalTemplate)
-
-      return {
-        success: true,
-        forkId
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to fork template'
-      }
-    }
-  }
-
-  /**
-   * Star/unstar template
-   */
-  async toggleStar(marketplaceId: string, userId: string, starred: boolean): Promise<{
-    success: boolean
-    error?: string
-  }> {
-    try {
-      const template = this.templates.get(marketplaceId)
-      if (!template) {
-        return {
-          success: false,
-          error: 'Template not found'
-        }
-      }
-
-      // Update star count (simplified - no user tracking in this implementation)
-      if (starred) {
-        template.stats.stars++
-      } else {
-        template.stats.stars = Math.max(0, template.stats.stars - 1)
-      }
-
-      this.templates.set(marketplaceId, template)
-
-      return { success: true }
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to update star'
-      }
-    }
-  }
-
-  private validateTemplateSubmission(submission: TemplateSubmission): {
-    valid: boolean
-    errors: string[]
-  } {
-    const errors: string[] = []
-
-    // Validate template
-    if (!submission.template.name || submission.template.name.trim().length === 0) {
-      errors.push('Template name is required')
+    if (!submission.name.trim()) {
+      errors.push('Template name is required');
     }
 
-    if (!submission.template.description || submission.template.description.trim().length < 20) {
-      errors.push('Template description must be at least 20 characters')
+    if (!submission.description.trim()) {
+      errors.push('Template description is required');
     }
 
-    if (!submission.template.files || submission.template.files.length === 0) {
-      errors.push('Template must include at least one file')
+    if (!submission.language) {
+      errors.push('Language is required');
     }
 
-    // Validate author
-    if (!submission.author.name || submission.author.name.trim().length === 0) {
-      errors.push('Author name is required')
+    if (!submission.framework) {
+      errors.push('Framework is required');
     }
 
-    if (!submission.author.email || !this.isValidEmail(submission.author.email)) {
-      errors.push('Valid author email is required')
+    if (submission.tags.length === 0) {
+      errors.push('At least one tag is required');
     }
 
-    // Validate marketplace info
-    if (!submission.marketplace.category || submission.marketplace.category.length === 0) {
-      errors.push('At least one category is required')
+    if (Object.keys(submission.dependencies).length === 0) {
+      errors.push('At least one dependency is required');
     }
 
-    if (submission.marketplace.pricing === 'paid' && !submission.marketplace.price) {
-      errors.push('Price is required for paid templates')
+    if (submission.documentation.setup.length === 0) {
+      errors.push('Setup documentation is required');
     }
 
     return {
       valid: errors.length === 0,
       errors
-    }
+    };
   }
 
-  private isValidEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
+  /**
+   * Generate template preview
+   */
+  generateTemplatePreview(template: MarketplaceTemplate): {
+    structure: string[];
+    packageJson: any;
+    readme: string;
+  } {
+    const structure = [
+      'src/',
+      '  components/',
+      '  pages/',
+      '  utils/',
+      'public/',
+      'package.json',
+      'README.md',
+      'tsconfig.json'
+    ];
+
+    const packageJson = {
+      name: template.name.toLowerCase().replace(/\s+/g, '-'),
+      version: '1.0.0',
+      description: template.description,
+      dependencies: template.dependencies,
+      scripts: template.scripts,
+      author: template.author,
+      license: 'MIT'
+    };
+
+    const readme = `# ${template.name}
+
+${template.description}
+
+## Installation
+
+${template.documentation.setup.join('\n')}
+
+## Usage
+
+${template.documentation.usage.join('\n')}
+
+## Features
+
+${template.features?.join('\n') || 'Modern development setup'}
+
+## Contributing
+
+Contributions are welcome!
+`;
+
+    return {
+      structure,
+      packageJson,
+      readme
+    };
+  }
+
+  /**
+   * Export template as downloadable package
+   */
+  async exportTemplate(id: string): Promise<{
+    files: Array<{ name: string; content: string; path: string }>;
+    metadata: MarketplaceTemplate;
+  }> {
+    const template = this.templates.get(id);
+    if (!template) {
+      throw new Error('Template not found');
+    }
+
+    const preview = this.generateTemplatePreview(template);
+    const files = [
+      {
+        name: 'package.json',
+        content: JSON.stringify(preview.packageJson, null, 2),
+        path: 'package.json'
+      },
+      {
+        name: 'README.md',
+        content: preview.readme,
+        path: 'README.md'
+      }
+    ];
+
+    return {
+      files,
+      metadata: template
+    };
+  }
+
+  /**
+   * Import template from external source
+   */
+  async importTemplate(templateData: Partial<MarketplaceTemplate>): Promise<MarketplaceTemplate> {
+    const template: MarketplaceTemplate = {
+      id: `imported-${Date.now()}`,
+      name: templateData.name || 'Imported Template',
+      description: templateData.description || 'Imported template',
+      author: templateData.author || 'Unknown',
+      category: templateData.category || 'frontend',
+      language: templateData.language || 'javascript',
+      framework: templateData.framework || 'react',
+      complexity: templateData.complexity || 'intermediate',
+      tags: templateData.tags || [],
+      stars: 0,
+      downloads: 0,
+      pricing: 'free',
+      lastUpdated: new Date().toISOString(),
+      featured: false,
+      dependencies: templateData.dependencies || {},
+      scripts: templateData.scripts || {},
+      envVars: templateData.envVars || [],
+      documentation: templateData.documentation || {
+        setup: ['Setup instructions'],
+        usage: ['Usage instructions'],
+        deployment: ['Deployment guide']
+      },
+      dockerSupport: templateData.dockerSupport || false,
+      kubernetesSupport: templateData.kubernetesSupport || false,
+      cicdTemplate: templateData.cicdTemplate || false,
+      testingSetup: templateData.testingSetup || false,
+      monitoringSetup: templateData.monitoringSetup || false
+    };
+
+    this.templates.set(template.id, template);
+    this.buildSearchIndex();
+
+    return template;
+  }
+
+  /**
+   * Get all templates
+   */
+  getAllTemplates(): MarketplaceTemplate[] {
+    return Array.from(this.templates.values());
+  }
+
+  /**
+   * Clear all templates (for testing)
+   */
+  clearTemplates(): void {
+    this.templates.clear();
+    this.searchIndex.clear();
   }
 }
 
 // Export singleton instance
-export const templateMarketplace = new TemplateMarketplace()
-
-// Types are already exported above with interface declarations
+export const templateMarketplace = new TemplateMarketplaceService();

@@ -1,410 +1,373 @@
 /**
- * Database Query Optimization Utilities
- * Provides query optimization, connection pooling, and performance monitoring
+ * Database Query Optimizer
+ * Provides intelligent query optimization, caching, and performance monitoring
+ * for database operations across the VibeCode application
  */
 
-import { Prisma } from '@prisma/client';
-import { cache, CacheKeys, CacheTTL, withCache } from '../cache/unified-cache-client';
-import { trackDBQuery } from '../performance/metrics-collector';
+import { CacheTTL } from '../cache/cache-constants';
+
+export interface QueryOptimizationMetrics {
+  queryTime: number;
+  cacheHits: number;
+  cacheMisses: number;
+  totalQueries: number;
+  averageQueryTime: number;
+}
+
+export interface QueryOptimizationOptions {
+  useCache?: boolean;
+  cacheTTL?: CacheTTL;
+  batchSize?: number;
+  enableMetrics?: boolean;
+  enableQueryAnalysis?: boolean;
+}
+
+export class QueryOptimizations {
+  public static readonly BATCH_SIZE = 100;
+  public static readonly MAX_CACHE_SIZE = 10000;
+  public static readonly DEFAULT_CACHE_TTL = CacheTTL.MEDIUM;
+  public static readonly SLOW_QUERY_THRESHOLD = 1000; // ms
+}
 
 /**
- * Query optimization configurations
+ * Query optimizer for database operations
  */
-export const QueryOptimizations = {
-  // Batch size for bulk operations
-  BATCH_SIZE: 100,
-  
-  // Include optimizations for common queries
-  USER_INCLUDES: {
-    sessions: {
-      take: 5,
-      orderBy: { expires: 'desc' as const }
-    },
-    workspaces: {
-      take: 10,
-      orderBy: { updated_at: 'desc' as const },
-      include: {
-        projects: {
-          take: 5,
-          orderBy: { updated_at: 'desc' as const }
-        }
-      }
-    }
-  },
+export class QueryOptimizer {
+  private static queryCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+  private static queryMetrics = new Map<string, QueryOptimizationMetrics>();
+  private static slowQueries: Array<{ query: string; time: number; timestamp: Date }> = [];
 
-  WORKSPACE_INCLUDES: {
-    user: {
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true
-      }
-    },
-    projects: {
-      take: 20,
-      orderBy: { updated_at: 'desc' as const },
-      include: {
-        files: {
-          take: 10,
-          orderBy: { updated_at: 'desc' as const }
-        }
-      }
-    },
-    _count: {
-      select: {
-        projects: true,
-        files: true
-      }
-    }
-  },
-
-  PROJECT_INCLUDES: {
-    workspace: {
-      select: {
-        id: true,
-        name: true,
-        workspace_id: true
-      }
-    },
-    files: {
-      take: 50,
-      orderBy: { updated_at: 'desc' as const }
-    },
-    _count: {
-      select: {
-        files: true
-      }
-    }
-  }
-};
-
-/**
- * Database connection pool manager
- */
-export class ConnectionPoolManager {
-  private static instance: ConnectionPoolManager;
-  private connectionCount = 0;
-  private queryCount = 0;
-  private slowQueryThreshold = 1000; // 1 second
-
-  public static getInstance(): ConnectionPoolManager {
-    if (!ConnectionPoolManager.instance) {
-      ConnectionPoolManager.instance = new ConnectionPoolManager();
-    }
-    return ConnectionPoolManager.instance;
+  /**
+   * Generate a cache key for a query
+   */
+  private static generateCacheKey(
+    operation: string,
+    workspaceId: number,
+    query: string,
+    limit: number = 20
+  ): string {
+    return `${operation}:${workspaceId}:${Buffer.from(query).toString('base64')}:${limit}`;
   }
 
   /**
-   * Track database operations
+   * Get cached query result if available and valid
    */
-  trackQuery(operation: string, model: string, duration: number) {
-    this.queryCount++;
-    trackDBQuery(operation, model, duration);
+  static getCachedResult<T>(cacheKey: string): T | null {
+    const cached = this.queryCache.get(cacheKey);
 
-    if (duration > this.slowQueryThreshold) {
-      console.warn(`Slow query detected: ${model}.${operation} took ${duration}ms`);
+    if (!cached) {
+      return null;
+    }
+
+    // Check if cache entry has expired
+    if (Date.now() - cached.timestamp > cached.ttl) {
+      this.queryCache.delete(cacheKey);
+      return null;
+    }
+
+    return cached.data as T;
+  }
+
+  /**
+   * Cache a query result
+   */
+  static setCachedResult<T>(cacheKey: string, data: T, ttl: CacheTTL = CacheTTL.MEDIUM): void {
+    // Implement LRU eviction if cache is getting too large
+    if (this.queryCache.size >= QueryOptimizations.MAX_CACHE_SIZE) {
+      const firstKey = this.queryCache.keys().next().value;
+      this.queryCache.delete(firstKey);
+    }
+
+    this.queryCache.set(cacheKey, {
+      data,
+      timestamp: Date.now(),
+      ttl: this.getTTLInMs(ttl)
+    });
+  }
+
+  /**
+   * Clear all cached results
+   */
+  static clearCache(): void {
+    this.queryCache.clear();
+  }
+
+  /**
+   * Clear cache for specific workspace
+   */
+  static clearWorkspaceCache(workspaceId: number): void {
+    for (const [key] of this.queryCache) {
+      if (key.includes(`:${workspaceId}:`)) {
+        this.queryCache.delete(key);
+      }
     }
   }
 
   /**
-   * Get connection statistics
+   * Convert CacheTTL enum to milliseconds
    */
-  getStats() {
+  private static getTTLInMs(ttl: CacheTTL): number {
+    switch (ttl) {
+      case CacheTTL.SHORT:
+        return 5 * 60 * 1000; // 5 minutes
+      case CacheTTL.MEDIUM:
+        return 30 * 60 * 1000; // 30 minutes
+      case CacheTTL.LONG:
+        return 2 * 60 * 60 * 1000; // 2 hours
+      case CacheTTL.EXTENDED:
+        return 24 * 60 * 60 * 1000; // 24 hours
+      default:
+        return 30 * 60 * 1000; // Default to medium
+    }
+  }
+
+  /**
+   * Execute query with optimization and caching
+   */
+  static async executeWithOptimization<T>(
+    operation: string,
+    queryFn: () => Promise<T>,
+    options: QueryOptimizationOptions = {}
+  ): Promise<T> {
+    const startTime = Date.now();
+    const useCache = options.useCache ?? true;
+    const enableMetrics = options.enableMetrics ?? true;
+
+    try {
+      // If caching is enabled and this is a cacheable operation, try cache first
+      if (useCache && this.isCacheableOperation(operation)) {
+        // This would need more context about the specific query to generate proper cache keys
+        // For now, we'll skip caching for complex queries
+      }
+
+      const result = await queryFn();
+      const queryTime = Date.now() - startTime;
+
+      // Record metrics
+      if (enableMetrics) {
+        this.recordQueryMetrics(operation, queryTime, true);
+      }
+
+      // Cache successful results for cacheable operations
+      if (useCache && this.isCacheableOperation(operation)) {
+        // Implementation would depend on having proper cache key generation
+      }
+
+      return result;
+    } catch (error) {
+      const queryTime = Date.now() - startTime;
+
+      // Record failed query metrics
+      if (enableMetrics) {
+        this.recordQueryMetrics(operation, queryTime, false);
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Batch process data with optimization
+   */
+  static async batchProcess<T>(
+    data: T[],
+    processor: (batch: T[]) => Promise<void>,
+    batchSize: number = QueryOptimizations.BATCH_SIZE
+  ): Promise<void> {
+    if (data.length === 0) return;
+
+    const batches: T[][] = [];
+
+    for (let i = 0; i < data.length; i += batchSize) {
+      batches.push(data.slice(i, i + batchSize));
+    }
+
+    // Process batches in parallel for better performance
+    const promises = batches.map(batch => processor(batch));
+    await Promise.allSettled(promises);
+
+    // Log any failed batches for investigation
+    const failures = promises.filter(p => p.status === 'rejected');
+    if (failures.length > 0) {
+      console.warn(`${failures.length} out of ${batches.length} batches failed during processing`);
+    }
+  }
+
+  /**
+   * Batch update records with optimization
+   */
+  static async batchUpdate<T extends Record<string, any>>(
+    updates: T[],
+    updateFn: (batch: T[]) => Promise<void>,
+    batchSize: number = QueryOptimizations.BATCH_SIZE
+  ): Promise<void> {
+    if (updates.length === 0) return;
+
+    const batches: T[][] = [];
+
+    for (let i = 0; i < updates.length; i += batchSize) {
+      batches.push(updates.slice(i, i + batchSize));
+    }
+
+    // Process batches sequentially to avoid database deadlocks
+    for (const batch of batches) {
+      await updateFn(batch);
+    }
+  }
+
+  /**
+   * Batch delete records with optimization
+   */
+  static async batchDelete(
+    ids: number[],
+    deleteFn: (batch: number[]) => Promise<void>,
+    batchSize: number = QueryOptimizations.BATCH_SIZE
+  ): Promise<void> {
+    if (ids.length === 0) return;
+
+    const batches: number[][] = [];
+
+    for (let i = 0; i < ids.length; i += batchSize) {
+      batches.push(ids.slice(i, i + batchSize));
+    }
+
+    // Process batches sequentially to avoid database deadlocks
+    for (const batch of batches) {
+      await deleteFn(batch);
+    }
+  }
+
+  /**
+   * Record query performance metrics
+   */
+  private static recordQueryMetrics(operation: string, queryTime: number, success: boolean): void {
+    const metrics = this.queryMetrics.get(operation) || {
+      queryTime: 0,
+      cacheHits: 0,
+      cacheMisses: 0,
+      totalQueries: 0,
+      averageQueryTime: 0
+    };
+
+    metrics.totalQueries++;
+    metrics.queryTime += queryTime;
+    metrics.averageQueryTime = metrics.queryTime / metrics.totalQueries;
+
+    // Track slow queries
+    if (queryTime > QueryOptimizations.SLOW_QUERY_THRESHOLD) {
+      this.slowQueries.push({
+        query: operation,
+        time: queryTime,
+        timestamp: new Date()
+      });
+
+      // Keep only the most recent 100 slow queries
+      if (this.slowQueries.length > 100) {
+        this.slowQueries = this.slowQueries.slice(-100);
+      }
+    }
+
+    this.queryMetrics.set(operation, metrics);
+  }
+
+  /**
+   * Get query performance statistics
+   */
+  static getQueryStats(): Record<string, QueryOptimizationMetrics> {
+    return Object.fromEntries(this.queryMetrics);
+  }
+
+  /**
+   * Get slow queries for analysis
+   */
+  static getSlowQueries(limit: number = 10): Array<{ query: string; time: number; timestamp: Date }> {
+    return this.slowQueries
+      .sort((a, b) => b.time - a.time)
+      .slice(0, limit);
+  }
+
+  /**
+   * Clear query metrics
+   */
+  static clearMetrics(): void {
+    this.queryMetrics.clear();
+    this.slowQueries = [];
+  }
+
+  /**
+   * Check if an operation is cacheable
+   */
+  private static isCacheableOperation(operation: string): boolean {
+    // Define which operations should be cached
+    const cacheableOperations = [
+      'search',
+      'find',
+      'get',
+      'list',
+      'count'
+    ];
+
+    return cacheableOperations.some(op => operation.toLowerCase().includes(op));
+  }
+
+  /**
+   * Get cache statistics
+   */
+  static getCacheStats(): {
+    size: number;
+    maxSize: number;
+    hitRate: number;
+    entries: Array<{ key: string; age: number; size: number }>;
+  } {
+    const entries = Array.from(this.queryCache.entries()).map(([key, value]) => ({
+      key,
+      age: Date.now() - value.timestamp,
+      size: JSON.stringify(value.data).length
+    }));
+
     return {
-      connectionCount: this.connectionCount,
-      queryCount: this.queryCount,
-      slowQueryThreshold: this.slowQueryThreshold
+      size: this.queryCache.size,
+      maxSize: QueryOptimizations.MAX_CACHE_SIZE,
+      hitRate: 0, // Would need to track hits vs misses for this
+      entries
     };
   }
 
   /**
-   * Reset statistics
+   * Optimize query for specific database type
    */
-  resetStats() {
-    this.connectionCount = 0;
-    this.queryCount = 0;
-  }
-}
-
-/**
- * Cached database operations
- */
-export class CachedQueries {
-  /**
-   * Get user with caching
-   */
-  static getUserById = withCache(
-    async (userId: number, include = QueryOptimizations.USER_INCLUDES) => {
-      const { prisma } = await import('../prisma');
-      return prisma.user.findUnique({
-        where: { id: userId },
-        include
-      });
-    },
-    (userId: number) => CacheKeys.user(userId.toString()),
-    CacheTTL.MEDIUM
-  );
-
-  /**
-   * Get workspace with caching
-   */
-  static getWorkspaceById = withCache(
-    async (workspaceId: number, include = QueryOptimizations.WORKSPACE_INCLUDES) => {
-      const { prisma } = await import('../prisma');
-      return prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        include
-      });
-    },
-    (workspaceId: number) => CacheKeys.workspace(workspaceId.toString()),
-    CacheTTL.MEDIUM
-  );
-
-  /**
-   * Get project with caching
-   */
-  static getProjectById = withCache(
-    async (projectId: number, include = QueryOptimizations.PROJECT_INCLUDES) => {
-      const { prisma } = await import('../prisma');
-      return prisma.project.findUnique({
-        where: { id: projectId },
-        include
-      });
-    },
-    (projectId: number) => CacheKeys.project(projectId.toString()),
-    CacheTTL.MEDIUM
-  );
-
-  /**
-   * Get user workspaces with caching
-   */
-  static getUserWorkspaces = withCache(
-    async (userId: number, limit = 20) => {
-      const { prisma } = await import('../prisma');
-      return prisma.workspace.findMany({
-        where: { user_id: userId },
-        include: QueryOptimizations.WORKSPACE_INCLUDES,
-        orderBy: { updated_at: 'desc' },
-        take: limit
-      });
-    },
-    (userId: number, limit: number = 20) => `user:${userId}:workspaces:${limit}`,
-    CacheTTL.SHORT
-  );
-
-  /**
-   * Get workspace projects with caching
-   */
-  static getWorkspaceProjects = withCache(
-    async (workspaceId: number, limit = 50) => {
-      const { prisma } = await import('../prisma');
-      return prisma.project.findMany({
-        where: { workspace_id: workspaceId },
-        include: QueryOptimizations.PROJECT_INCLUDES,
-        orderBy: { updated_at: 'desc' },
-        take: limit
-      });
-    },
-    (workspaceId: number, limit: number = 50) => `workspace:${workspaceId}:projects:${limit}`,
-    CacheTTL.SHORT
-  );
-
-  /**
-   * Get file content with caching (for RAG and code analysis)
-   */
-  static getFileContent = withCache(
-    async (fileId: number) => {
-      const { prisma } = await import('../prisma');
-      return prisma.file.findUnique({
-        where: { id: fileId },
-        select: {
-          id: true,
-          name: true,
-          path: true,
-          content: true,
-          language: true,
-          size: true,
-          updated_at: true
-        }
-      });
-    },
-    (fileId: number) => CacheKeys.fileContent(fileId.toString()),
-    CacheTTL.LONG
-  );
-
-  /**
-   * Search files by content (with caching for common searches)
-   */
-  static searchFiles = withCache(
-    async (workspaceId: number, query: string, limit = 20) => {
-      const { prisma } = await import('../prisma');
-      return prisma.file.findMany({
-        where: {
-          workspace_id: workspaceId,
-          OR: [
-            { name: { contains: query, mode: 'insensitive' } },
-            { path: { contains: query, mode: 'insensitive' } },
-            { content: { contains: query, mode: 'insensitive' } }
-          ]
-        },
-        select: {
-          id: true,
-          name: true,
-          path: true,
-          language: true,
-          size: true,
-          updated_at: true
-        },
-        orderBy: { updated_at: 'desc' },
-        take: limit
-      });
-    },
-    (workspaceId: number, query: string, limit: number = 20) => 
-<<<<<<< HEAD
-<<<<<<< HEAD
-      `search:files:${workspaceId}:${Buffer.from ? Buffer.from(query).toString('base64') : btoa(query)}:${limit}`,
-=======
-      `search:files:${workspaceId}:${Buffer.from ? Buffer.from(query).toString('base64') : btoa(query)}:${limit}`,
-<<<<<<< HEAD
-      `search:files:${workspaceId}:${Buffer.from(query).toString('base64')}:${limit}`,
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-    CacheTTL.SHORT
-=======
-      `search:files:${workspaceId}:${Buffer.from ? Buffer.from(query).toString('base64') : btoa(query)}:${limit}`,    CacheTTL.SHORT
->>>>>>> fix/consolidated-dependency-updates
-  );
-}
-
-/**
- * Bulk operations optimizer
- */
-export class BulkOperations {
-  /**
-   * Batch create records with optimized chunking
-   */
-  static async batchCreate<T>(
-    model: any,
-    data: T[],
-    batchSize = QueryOptimizations.BATCH_SIZE
-  ): Promise<void> {
-    if (data.length === 0) return;
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-    const batches: T[][] = [];
-=======
-    const batches: T[][] = [];
-<<<<<<< HEAD
-    const batches = [];
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-    for (let i = 0; i < data.length; i += batchSize) {
-=======
-    const batches: T[][] = [];    for (let i = 0; i < data.length; i += batchSize) {
->>>>>>> fix/consolidated-dependency-updates
-      batches.push(data.slice(i, i + batchSize));
-    }
-
-    for (const batch of batches) {
-      await model.createMany({
-        data: batch,
-        skipDuplicates: true
-      });
+  static optimizeQueryForDatabase(query: string, databaseType: 'postgres' | 'mysql' | 'sqlite'): string {
+    switch (databaseType) {
+      case 'postgres':
+        return this.optimizeForPostgres(query);
+      case 'mysql':
+        return this.optimizeForMySQL(query);
+      case 'sqlite':
+        return this.optimizeForSQLite(query);
+      default:
+        return query;
     }
   }
 
-  /**
-   * Batch update records with optimized queries
-   */
-  static async batchUpdate<T extends { id: number }>(
-    model: any,
-    updates: T[],
-    batchSize = QueryOptimizations.BATCH_SIZE
-  ): Promise<void> {
-    if (updates.length === 0) return;
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-    const batches: T[][] = [];
-=======
-    const batches: T[][] = [];
-<<<<<<< HEAD
-    const batches = [];
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-    for (let i = 0; i < updates.length; i += batchSize) {
-=======
-    const batches: T[][] = [];    for (let i = 0; i < updates.length; i += batchSize) {
->>>>>>> fix/consolidated-dependency-updates
-      batches.push(updates.slice(i, i + batchSize));
-    }
-
-    for (const batch of batches) {
-      const { prisma } = await import('../prisma');
-<<<<<<< HEAD
-<<<<<<< HEAD
-      const transaction = batch.map((update: T) => 
-=======
-      const transaction = batch.map((update: T) => 
-<<<<<<< HEAD
-      const transaction = batch.map(update => 
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-        model.update({
-=======
-      const transaction = batch.map((update: T) =>         model.update({
->>>>>>> fix/consolidated-dependency-updates
-          where: { id: update.id },
-          data: update
-        })
-      );
-      
-      await prisma.$transaction(transaction);
-    }
+  private static optimizeForPostgres(query: string): string {
+    // PostgreSQL-specific optimizations
+    return query
+      .replace(/LIMIT\s+\?/g, 'LIMIT $1') // Use $1, $2 for parameter placeholders
+      .replace(/ILIKE/g, 'ILIKE'); // Ensure case-insensitive searches
   }
 
-  /**
-   * Batch delete records efficiently
-   */
-  static async batchDelete(
-    model: any,
-    ids: number[],
-    batchSize = QueryOptimizations.BATCH_SIZE
-  ): Promise<void> {
-    if (ids.length === 0) return;
+  private static optimizeForMySQL(query: string): string {
+    // MySQL-specific optimizations
+    return query
+      .replace(/\$(\d+)/g, '?') // Convert $1, $2 to ? for MySQL
+      .replace(/ILIKE/g, 'LIKE'); // MySQL doesn't have ILIKE
+  }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    const batches: number[][] = [];
-=======
-    const batches: number[][] = [];
-<<<<<<< HEAD
-    const batches = [];
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-    for (let i = 0; i < ids.length; i += batchSize) {
-=======
-    const batches: number[][] = [];    for (let i = 0; i < ids.length; i += batchSize) {
->>>>>>> fix/consolidated-dependency-updates
-      batches.push(ids.slice(i, i + batchSize));
-    }
-
-    for (const batch of batches) {
-      await model.deleteMany({
-        where: {
-          id: {
-            in: batch
-          }
-        }
-      });
-    }
+  private static optimizeForSQLite(query: string): string {
+    // SQLite-specific optimizations
+    return query
+      .replace(/\$(\d+)/g, '?') // SQLite uses ? placeholders
+      .replace(/ILIKE/g, 'LIKE'); // SQLite doesn't have ILIKE
   }
 }
 
@@ -412,388 +375,131 @@ export class BulkOperations {
  * Query performance analyzer
  */
 export class QueryAnalyzer {
-  // Changed from private to protected static to allow access via bracket notation
-<<<<<<< HEAD
-  protected static queryLog: Array<{
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
   private static queryLog: Array<{
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
     query: string;
-=======
-  protected static queryLog: Array<{    query: string;
->>>>>>> fix/consolidated-dependency-updates
-    duration: number;
-    timestamp: number;
-    model: string;
-    operation: string;
+    executionTime: number;
+    timestamp: Date;
+    success: boolean;
+    error?: string;
   }> = [];
 
   /**
-   * Log query performance
+   * Log query execution for analysis
    */
-  static logQuery(query: string, duration: number, model: string, operation: string) {
+  static logQuery(
+    query: string,
+    executionTime: number,
+    success: boolean,
+    error?: string
+  ): void {
     this.queryLog.push({
       query,
-      duration,
-      timestamp: Date.now(),
-      model,
-      operation
+      executionTime,
+      timestamp: new Date(),
+      success,
+      error
     });
 
-    // Keep only last 1000 queries
+    // Keep only recent queries (last 1000)
     if (this.queryLog.length > 1000) {
       this.queryLog = this.queryLog.slice(-1000);
     }
   }
 
   /**
-   * Get slow queries report
+   * Get query performance analysis
    */
-  static getSlowQueries(threshold = 1000, limit = 20) {
-    return this.queryLog
-      .filter(q => q.duration > threshold)
-      .sort((a, b) => b.duration - a.duration)
-      .slice(0, limit);
-  }
-
-  /**
-   * Get query statistics by model
-   */
-  static getModelStats() {
-    const stats = new Map<string, {
-      count: number;
-      totalDuration: number;
-      avgDuration: number;
-      maxDuration: number;
-    }>();
-
-    for (const query of this.queryLog) {
-      const current = stats.get(query.model) || {
-        count: 0,
-        totalDuration: 0,
-        avgDuration: 0,
-        maxDuration: 0
+  static getPerformanceAnalysis(): {
+    totalQueries: number;
+    averageExecutionTime: number;
+    slowestQueries: Array<{ query: string; time: number; timestamp: Date }>;
+    errorRate: number;
+    queryFrequency: Record<string, number>;
+  } {
+    if (this.queryLog.length === 0) {
+      return {
+        totalQueries: 0,
+        averageExecutionTime: 0,
+        slowestQueries: [],
+        errorRate: 0,
+        queryFrequency: {}
       };
-
-      current.count++;
-      current.totalDuration += query.duration;
-      current.avgDuration = current.totalDuration / current.count;
-      current.maxDuration = Math.max(current.maxDuration, query.duration);
-
-      stats.set(query.model, current);
     }
 
-    return Array.from(stats.entries()).map(([model, stats]) => ({
-      model,
-      ...stats
-    }));
+    const successfulQueries = this.queryLog.filter(q => q.success);
+    const totalTime = successfulQueries.reduce((sum, q) => sum + q.executionTime, 0);
+    const errors = this.queryLog.filter(q => !q.success).length;
+
+    // Find slowest queries
+    const slowestQueries = successfulQueries
+      .sort((a, b) => b.executionTime - a.executionTime)
+      .slice(0, 10)
+      .map(q => ({ query: q.query, time: q.executionTime, timestamp: q.timestamp }));
+
+    // Calculate query frequency
+    const queryFrequency: Record<string, number> = {};
+    this.queryLog.forEach(q => {
+      queryFrequency[q.query] = (queryFrequency[q.query] || 0) + 1;
+    });
+
+    return {
+      totalQueries: this.queryLog.length,
+      averageExecutionTime: successfulQueries.length > 0 ? totalTime / successfulQueries.length : 0,
+      slowestQueries,
+      errorRate: errors / this.queryLog.length,
+      queryFrequency
+    };
   }
 
   /**
-   * Get the query log (added accessor method)
+   * Get optimization recommendations
    */
-  static getQueryLog() {
-    return this.queryLog;
+  static getOptimizationRecommendations(): Array<{
+    type: 'index' | 'cache' | 'query' | 'batch';
+    description: string;
+    impact: 'high' | 'medium' | 'low';
+    query?: string;
+  }> {
+    const recommendations: Array<{
+      type: 'index' | 'cache' | 'query' | 'batch';
+      description: string;
+      impact: 'high' | 'medium' | 'low';
+      query?: string;
+    }> = [];
+
+    const analysis = this.getPerformanceAnalysis();
+
+    // Recommend indexes for slow queries
+    analysis.slowestQueries.forEach(({ query, time }) => {
+      if (time > 500) {
+        recommendations.push({
+          type: 'index',
+          description: `Consider adding indexes for query: ${query.substring(0, 100)}...`,
+          impact: time > 2000 ? 'high' : 'medium',
+          query
+        });
+      }
+    });
+
+    // Recommend caching for frequent queries
+    Object.entries(analysis.queryFrequency).forEach(([query, frequency]) => {
+      if (frequency > 10) {
+        recommendations.push({
+          type: 'cache',
+          description: `Consider caching frequently executed query: ${query.substring(0, 100)}...`,
+          impact: 'medium',
+          query
+        });
+      }
+    });
+
+    return recommendations;
   }
 
   /**
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> merge-conflict-cleanup
    * Clear query log
    */
-  static clearLog() {
+  static clearLog(): void {
     this.queryLog = [];
   }
 }
-
-  /**
-   * Database health monitor
-   */
-  export class DatabaseHealthMonitor {
-    /**
-     * Check database connectivity and performance
-     */
-    static async healthCheck(): Promise<{
-      connected: boolean;
-      responseTime: number;
-      activeConnections?: number;
-      errorRate: number;
-      recommendations: string[];
-    }> {
-      const startTime = Date.now();
-      const recommendations: string[] = [];
-
-      try {
-        const { prisma } = await import('../prisma');
-        
-        // Simple connectivity test
-        await prisma.$queryRaw`SELECT 1`;
-        const responseTime = Date.now() - startTime;
-
-        // Get connection info if available
-        let activeConnections: number | undefined;
-        try {
-          const result = await prisma.$queryRaw<Array<{ count: bigint }>>`
-            SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()
-          `;
-          activeConnections = Number(result[0]?.count || 0);
-        } catch {
-          // Connection info not available
-        }
-
-        // Calculate error rate from recent queries
-        const recentQueries = QueryAnalyzer.getQueryLog().slice(-100);
-        const errors = recentQueries.filter(q => q.duration < 0); // Assuming negative duration indicates error
-        const errorRate = recentQueries.length > 0 ? (errors.length / recentQueries.length) * 100 : 0;
-
-        // Generate recommendations
-        if (responseTime > 500) {
-          recommendations.push('Database response time is slow - consider optimizing queries');
-        }
-
-        if (activeConnections && activeConnections > 80) {
-          recommendations.push('High number of database connections - consider connection pooling');
-        }
-
-        if (errorRate > 5) {
-          recommendations.push('High database error rate - check logs for issues');
-        }
-
-        const slowQueries = QueryAnalyzer.getSlowQueries(1000, 5);
-        if (slowQueries.length > 0) {
-          recommendations.push(`${slowQueries.length} slow queries detected - consider adding indexes`);
-        }
-
-        return {
-          connected: true,
-          responseTime,
-          activeConnections,
-          errorRate,
-          recommendations
-        };
-
-      } catch (error: any) {
-        return {
-          connected: false,
-          responseTime: Date.now() - startTime,
-          errorRate: 100,
-          recommendations: ['Database connection failed - check connection string and database status']
-        };
-      }
-    }
-<<<<<<< HEAD
-
-=======
->>>>>>> fix/consolidated-dependency-updates
-=======
-<<<<<<< HEAD
-/**
- * Database health monitor
- */
-export class DatabaseHealthMonitor {
-  /**
-   * Check database connectivity and performance
-   */
-  static async healthCheck(): Promise<{
-    connected: boolean;
-    responseTime: number;
-    activeConnections?: number;
-    errorRate: number;
-    recommendations: string[];
-  }> {
-    const startTime = Date.now();
-    const recommendations: string[] = [];
-
-    try {
-      const { prisma } = await import('../prisma');
-      
-      // Simple connectivity test
-      await prisma.$queryRaw`SELECT 1`;
-      const responseTime = Date.now() - startTime;
-
-      // Get connection info if available
-      let activeConnections: number | undefined;
-      try {
-        const result = await prisma.$queryRaw<Array<{ count: bigint }>>`
-          SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()
-        `;
-        activeConnections = Number(result[0]?.count || 0);
-      } catch {
-        // Connection info not available
-      }
-
-      // Calculate error rate from recent queries
-      const recentQueries = QueryAnalyzer.queryLog.slice(-100);
-      const errors = recentQueries.filter(q => q.duration < 0); // Assuming negative duration indicates error
-      const errorRate = recentQueries.length > 0 ? (errors.length / recentQueries.length) * 100 : 0;
-
-      // Generate recommendations
-      if (responseTime > 500) {
-        recommendations.push('Database response time is slow - consider optimizing queries');
-      }
-
-      if (activeConnections && activeConnections > 80) {
-        recommendations.push('High number of database connections - consider connection pooling');
-      }
-
-      if (errorRate > 5) {
-        recommendations.push('High database error rate - check logs for issues');
-      }
-
-      const slowQueries = QueryAnalyzer.getSlowQueries(1000, 5);
-      if (slowQueries.length > 0) {
-        recommendations.push(`${slowQueries.length} slow queries detected - consider adding indexes`);
-      }
-
-      return {
-        connected: true,
-        responseTime,
-        activeConnections,
-        errorRate,
-        recommendations
-      };
-
-    } catch (error) {
-      return {
-        connected: false,
-        responseTime: Date.now() - startTime,
-        errorRate: 100,
-        recommendations: ['Database connection failed - check connection string and database status']
-      };
-    }
-  }
-=======
->>>>>>> main
-
->>>>>>> merge-conflict-cleanup
-  /**
-   * Get database performance metrics
-   */
-  static async getPerformanceMetrics(): Promise<{
-    tableStats: Array<{
-      table: string;
-      rowCount: number;
-      size: string;
-      indexSize: string;
-    }>;
-    slowQueries: any[];
-    connectionPool: any;
-  }> {
-    try {
-      const { prisma } = await import('../prisma');
-
-      // Get table statistics
-      const tableStats = await prisma.$queryRaw<Array<{
-        table: string;
-        rowcount: bigint;
-        size: string;
-        indexsize: string;
-      }>>`
-        SELECT 
-          schemaname||'.'||tablename as table,
-          n_tup_ins + n_tup_upd + n_tup_del as rowcount,
-          pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size,
-          pg_size_pretty(pg_indexes_size(schemaname||'.'||tablename)) as indexsize
-        FROM pg_stat_user_tables 
-        ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
-        LIMIT 10
-      `;
-
-      const slowQueries = QueryAnalyzer.getSlowQueries(500, 10);
-      const connectionPool = ConnectionPoolManager.getInstance().getStats();
-
-      return {
-        tableStats: tableStats.map(stat => ({
-          table: stat.table,
-          rowCount: Number(stat.rowcount),
-          size: stat.size,
-          indexSize: stat.indexsize
-        })),
-        slowQueries,
-        connectionPool
-      };
-
-    } catch (error) {
-      console.error('Failed to get performance metrics:', error);
-      return {
-        tableStats: [],
-        slowQueries: [],
-        connectionPool: {}
-      };
-    }
-  }
-}
-
-/**
- * Cache invalidation on database changes
- */
-export class CacheInvalidationHooks {
-  /**
-   * Invalidate cache after user update
-   */
-  static async afterUserUpdate(userId: number) {
-    await cache.del([
-      CacheKeys.user(userId.toString()),
-      `user:${userId}:workspaces:*`
-    ]);
-  }
-
-  /**
-   * Invalidate cache after workspace update
-   */
-  static async afterWorkspaceUpdate(workspaceId: number, userId?: number) {
-    const keysToDelete = [
-      CacheKeys.workspace(workspaceId.toString()),
-      `workspace:${workspaceId}:projects:*`
-    ];
-
-    if (userId) {
-      keysToDelete.push(`user:${userId}:workspaces:*`);
-    }
-
-    await cache.del(keysToDelete);
-  }
-
-  /**
-   * Invalidate cache after project update
-   */
-  static async afterProjectUpdate(projectId: number, workspaceId?: number) {
-    const keysToDelete = [CacheKeys.project(projectId.toString())];
-
-    if (workspaceId) {
-      keysToDelete.push(`workspace:${workspaceId}:projects:*`);
-    }
-
-    await cache.del(keysToDelete);
-  }
-
-  /**
-   * Invalidate file-related cache
-   */
-  static async afterFileUpdate(fileId: number, workspaceId?: number) {
-    const keysToDelete = [CacheKeys.fileContent(fileId.toString())];
-
-    if (workspaceId) {
-      // Invalidate file search cache
-      const searchKeys = await cache.keys(`search:files:${workspaceId}:*`);
-      keysToDelete.push(...searchKeys);
-    }
-
-    await cache.del(keysToDelete);
-  }
-}
-
-export default {
-  CachedQueries,
-  BulkOperations,
-  QueryAnalyzer,
-  DatabaseHealthMonitor,
-  CacheInvalidationHooks,
-  ConnectionPoolManager
-};

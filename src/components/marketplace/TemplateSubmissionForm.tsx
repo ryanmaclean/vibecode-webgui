@@ -1,48 +1,72 @@
 /**
- * Template submission form for marketplace
+ * Template Submission Form Component
+ * Allows users to submit new templates to the marketplace
  */
 
-'use client'
+'use client';
 
-import React, { useState } from 'react'
-import { templateMarketplace, type TemplateSubmission } from '@/lib/marketplace/template-marketplace'
-import { type ProjectTemplate } from '@/lib/templates/index'
+import React, { useState } from 'react';
 import {
-  DocumentPlusIcon,
-  CodeBracketIcon,
-  TagIcon,
-  CurrencyDollarIcon,
+  PlusIcon,
+  XMarkIcon,
+  ExclamationTriangleIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon
-} from '@heroicons/react/24/outline'
+  ArrowUpTrayIcon
+} from '@heroicons/react/24/outline';
 
-interface TemplateSubmissionFormProps {
-  onSubmissionComplete: (submissionId: string) => void
-  onCancel: () => void
+interface TemplateFormData {
+  name: string;
+  description: string;
+  category: 'frontend' | 'fullstack' | 'backend' | 'mobile' | 'desktop' | 'library';
+  language: string;
+  framework: string;
+  complexity: 'beginner' | 'intermediate' | 'advanced';
+  tags: string[];
+  dependencies: Record<string, string>;
+  scripts: Record<string, string>;
+  envVars: Array<{
+    name: string;
+    defaultValue?: string;
+    description?: string;
+  }>;
+  documentation: {
+    setup: string[];
+    usage: string[];
+    deployment: string[];
+  };
+  dockerSupport: boolean;
+  kubernetesSupport: boolean;
+  cicdTemplate: boolean;
+  testingSetup: boolean;
+  monitoringSetup: boolean;
 }
 
-export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: TemplateSubmissionFormProps) {
-  const [template, setTemplate] = useState<Partial<ProjectTemplate>>({
+interface SubmissionStatus {
+  status: 'idle' | 'uploading' | 'processing' | 'success' | 'error';
+  message: string;
+  progress?: number;
+  error?: string;
+}
+
+interface TemplateSubmissionFormProps {
+  onSubmit?: (templateData: TemplateFormData) => Promise<void>;
+  onCancel?: () => void;
+  initialData?: Partial<TemplateFormData>;
+}
+
+export function TemplateSubmissionForm({
+  onSubmit,
+  onCancel,
+  initialData = {}
+}: TemplateSubmissionFormProps) {
+  const [formData, setFormData] = useState<TemplateFormData>({
     name: '',
     description: '',
-<<<<<<< HEAD
-<<<<<<< HEAD
     category: 'frontend',
-=======
-    category: 'frontend',
-<<<<<<< HEAD
-    category: 'fullstack',
-    category: 'frontend',
-    category: 'fullstack',
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-    complexity: 'beginner',
-=======
-    category: 'frontend',    complexity: 'beginner',
->>>>>>> fix/consolidated-dependency-updates
+    language: 'typescript',
+    framework: 'react',
+    complexity: 'intermediate',
     tags: [],
-    files: [],
     dependencies: {},
     scripts: {},
     envVars: [],
@@ -50,573 +74,649 @@ export function TemplateSubmissionForm({ onSubmissionComplete, onCancel }: Templ
       setup: [],
       usage: [],
       deployment: []
-    }
-  })
+    },
+    dockerSupport: false,
+    kubernetesSupport: false,
+    cicdTemplate: false,
+    testingSetup: false,
+    monitoringSetup: false,
+    ...initialData
+  });
 
-  const [author, setAuthor] = useState({
-    name: '',
-    email: '',
-    githubUrl: ''
-  })
-
-  const [marketplace, setMarketplace] = useState({
-    category: [] as string[],
-    pricing: 'free' as 'free' | 'paid',
-    price: 0,
-    license: 'MIT',
-    supportUrl: '',
-    demoUrl: ''
-  })
-
-  const [submission, setSubmission] = useState({
-    notes: '',
-    requestedFeature: false
-  })
-
-  const [newTag, setNewTag] = useState('')
-  const [newCategory, setNewCategory] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [errors, setErrors] = useState<string[]>([])
-  const [success, setSuccess] = useState(false)
+  const [newTag, setNewTag] = useState('');
+  const [newDependency, setNewDependency] = useState({ name: '', version: '' });
+  const [newScript, setNewScript] = useState({ name: '', command: '' });
+  const [newEnvVar, setNewEnvVar] = useState({ name: '', defaultValue: '', description: '' });
+  const [submissionStatus, setSubmissionStatus] = useState<SubmissionStatus>({
+    status: 'idle',
+    message: 'Ready to submit'
+  });
 
   const categories = [
-    'AI/ML', 'SaaS', 'Enterprise', 'Dashboard', 'Analytics',
-    'E-commerce', 'Blog', 'Portfolio', 'Landing Page', 'Mobile',
-    'Desktop', 'API', 'Microservices', 'DevOps', 'Education',
-    'Healthcare', 'Finance', 'Gaming', 'Social', 'Productivity'
-  ]
+    { value: 'frontend', label: 'Frontend' },
+    { value: 'fullstack', label: 'Full Stack' },
+    { value: 'backend', label: 'Backend' },
+    { value: 'mobile', label: 'Mobile' },
+    { value: 'desktop', label: 'Desktop' },
+    { value: 'library', label: 'Library' }
+  ];
 
-  const licenses = ['MIT', 'Apache-2.0', 'GPL-3.0', 'BSD-3-Clause', 'ISC', 'UNLICENSED']
+  const languages = [
+    'typescript',
+    'javascript',
+    'python',
+    'java',
+    'csharp',
+    'go',
+    'rust',
+    'php',
+    'ruby'
+  ];
 
-  const handleAddTag = () => {
-    if (newTag.trim() && !template.tags?.includes(newTag.trim())) {
-      setTemplate(prev => ({
-        ...prev,
-        tags: [...(prev.tags || []), newTag.trim()]
-      }))
-      setNewTag('')
-    }
-  }
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTemplate(prev => ({
-      ...prev,
-      tags: prev.tags?.filter(tag => tag !== tagToRemove) || []
-    }))
-  }
-
-  const handleAddCategory = () => {
-    if (newCategory && !marketplace.category.includes(newCategory)) {
-      setMarketplace(prev => ({
-        ...prev,
-        category: [...prev.category, newCategory]
-      }))
-      setNewCategory('')
-    }
-  }
-
-  const handleRemoveCategory = (categoryToRemove: string) => {
-    setMarketplace(prev => ({
-      ...prev,
-      category: prev.category.filter(cat => cat !== categoryToRemove)
-    }))
-  }
+  const frameworks = [
+    'react',
+    'vue',
+    'angular',
+    'svelte',
+    'nextjs',
+    'nuxtjs',
+    'express',
+    'fastapi',
+    'django',
+    'spring',
+    'laravel'
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSubmitting(true)
-    setErrors([])
+    e.preventDefault();
+
+    if (!formData.name.trim() || !formData.description.trim()) {
+      setSubmissionStatus({
+        status: 'error',
+        message: 'Please fill in all required fields'
+      });
+      return;
+    }
+
+    setSubmissionStatus({
+      status: 'uploading',
+      message: 'Uploading template...'
+    });
 
     try {
-      const submissionData: TemplateSubmission = {
-        template: {
-          id: `template-${Date.now()}`,
-          name: template.name || '',
-          description: template.description || '',
-          category: template.category || 'frontend',
-<<<<<<< HEAD
-          complexity: template.complexity || 'beginner',
-          tags: template.tags || [],
-<<<<<<< HEAD
-=======
-          language: ['typescript'],
-          frameworks: ['react', 'nextjs'],
-          features: ['modern-setup', 'production-ready'],
-          estimatedSetupTime: '15 minutes',
->>>>>>> fix/consolidated-dependency-updates
-=======
-<<<<<<< HEAD
-          category: template.category || 'fullstack',
-          category: template.category || 'frontend',
-          category: template.category || 'fullstack',
-=======
->>>>>>> main
-          complexity: template.complexity || 'beginner',
-          tags: template.tags || [],
->>>>>>> merge-conflict-cleanup
-          files: template.files || [],
-          dependencies: template.dependencies || {},
-          scripts: template.scripts || {},
-          envVars: template.envVars || [],
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-          documentation: {
-            setup: Array.isArray(template.documentation?.setup) ? template.documentation.setup : ['Setup instructions'],
-            usage: Array.isArray(template.documentation?.usage) ? template.documentation.usage : ['Usage instructions'],
-            deployment: Array.isArray(template.documentation?.deployment) ? template.documentation.deployment : ['Deployment guide']
-          },
-<<<<<<< HEAD
-          language: ['typescript'],
-          frameworks: ['react', 'nextjs'],
-          features: ['modern-setup', 'production-ready'],
-          estimatedSetupTime: '15 minutes',
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-          dockerSupport: false,
-          kubernetesSupport: false,
-          cicdTemplate: false,
-          testingSetup: false,
-<<<<<<< HEAD
-          monitoringSetup: false
-=======
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-          monitoringSetup: false,
-          documentation: template.documentation || {
-            setup: [],
-            usage: [],
-            deployment: []
-          }
-<<<<<<< Updated upstream
-          monitoringSetup: false
-          monitoringSetup: false
-=======
-          monitoringSetup: false
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-        },
-=======
-          dockerSupport: false,
-          kubernetesSupport: false,
-          cicdTemplate: false,
-          testingSetup: false,        },
->>>>>>> fix/consolidated-dependency-updates
-        author,
-        marketplace,
-        submission
-      }
+      await onSubmit?.(formData);
 
-      const result = await templateMarketplace.submitTemplate(submissionData)
-
-      if (result.success && result.submissionId) {
-        setSuccess(true)
-        setTimeout(() => {
-          onSubmissionComplete(result.submissionId!)
-        }, 2000)
-      } else {
-        setErrors([result.error || 'Submission failed'])
-      }
+      setSubmissionStatus({
+        status: 'success',
+        message: 'Template submitted successfully!'
+      });
     } catch (error) {
-      setErrors([error instanceof Error ? error.message : 'Submission failed'])
-    } finally {
-      setSubmitting(false)
+      setSubmissionStatus({
+        status: 'error',
+        message: 'Failed to submit template',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
-  }
+  };
 
-  if (success) {
-    return (
-      <div className="max-w-2xl mx-auto p-8 text-center">
-        <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Submission Successful!</h2>
-        <p className="text-gray-600 mb-4">
-          Your template has been submitted for review. You&apos;ll be notified when it&apos;s approved.
-        </p>
-        <div className="animate-pulse text-sm text-gray-500">
-          Redirecting...
-        </div>
-      </div>
-    )
-  }
+  const updateFormData = (updates: Partial<TemplateFormData>) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+  };
+
+  const addTag = () => {
+    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
+      updateFormData({
+        tags: [...formData.tags, newTag.trim()]
+      });
+      setNewTag('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    updateFormData({
+      tags: formData.tags.filter(tag => tag !== tagToRemove)
+    });
+  };
+
+  const addDependency = () => {
+    if (newDependency.name.trim() && newDependency.version.trim()) {
+      updateFormData({
+        dependencies: {
+          ...formData.dependencies,
+          [newDependency.name.trim()]: newDependency.version.trim()
+        }
+      });
+      setNewDependency({ name: '', version: '' });
+    }
+  };
+
+  const removeDependency = (depName: string) => {
+    const newDeps = { ...formData.dependencies };
+    delete newDeps[depName];
+    updateFormData({ dependencies: newDeps });
+  };
+
+  const addScript = () => {
+    if (newScript.name.trim() && newScript.command.trim()) {
+      updateFormData({
+        scripts: {
+          ...formData.scripts,
+          [newScript.name.trim()]: newScript.command.trim()
+        }
+      });
+      setNewScript({ name: '', command: '' });
+    }
+  };
+
+  const removeScript = (scriptName: string) => {
+    const newScripts = { ...formData.scripts };
+    delete newScripts[scriptName];
+    updateFormData({ scripts: newScripts });
+  };
+
+  const addEnvVar = () => {
+    if (newEnvVar.name.trim()) {
+      updateFormData({
+        envVars: [
+          ...formData.envVars,
+          {
+            name: newEnvVar.name.trim(),
+            defaultValue: newEnvVar.defaultValue.trim() || undefined,
+            description: newEnvVar.description.trim() || undefined
+          }
+        ]
+      });
+      setNewEnvVar({ name: '', defaultValue: '', description: '' });
+    }
+  };
+
+  const removeEnvVar = (index: number) => {
+    updateFormData({
+      envVars: formData.envVars.filter((_, i) => i !== index)
+    });
+  };
+
+  const updateDocumentation = (section: keyof TemplateFormData['documentation'], value: string) => {
+    const lines = value.split('\n').filter(line => line.trim());
+    updateFormData({
+      documentation: {
+        ...formData.documentation,
+        [section]: lines
+      }
+    });
+  };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div className="border-b border-gray-200 p-6">
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <DocumentPlusIcon className="h-8 w-8 text-blue-600" />
-            Submit Template
-          </h2>
-          <p className="text-gray-600 mt-2">
-            Share your template with the community and help other developers get started faster.
-          </p>
+    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Submit New Template
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Share your project template with the community
+            </p>
+          </div>
         </div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-8">
-          {/* Errors */}
-          {errors.length > 0 && (
-            <div
-              id="template-submission-errors"
-              className="bg-red-50 border border-red-200 rounded-md p-4"
-              role="alert"
-              aria-live="polite"
-            >
-              <div className="flex">
-                <ExclamationTriangleIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">
-                    Please fix the following errors:
-                  </h3>
-                  <ul className="mt-2 text-sm text-red-700 list-disc list-inside">
-                    {errors.map((error, index) => (
-                      <li key={index}>{error}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
+      <form onSubmit={handleSubmit} className="p-6 space-y-8">
+        {/* Basic Information */}
+        <div className="space-y-6">
+          <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+            Basic Information
+          </h3>
 
-          {/* Template Information */}
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <CodeBracketIcon className="h-5 w-5" />
-              Template Information
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Template Name *
-                </label>
-                <input
-                  type="text"
-                  value={template.name}
-                  onChange={(e) => setTemplate(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., React TypeScript Starter"
-                  required
-                  aria-invalid={errors.length > 0 ? "true" : "false"}
-                  aria-describedby={errors.length > 0 ? "template-submission-errors" : undefined}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="complexity" className="block text-sm font-medium text-gray-700 mb-2">
-                  Complexity
-                </label>
-                <select
-                  id="complexity"
-                  value={template.complexity}
-                  onChange={(e) => setTemplate(prev => ({ ...prev, complexity: e.target.value as 'beginner' | 'intermediate' | 'advanced' }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
-                </select>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Template Name *
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => updateFormData({ name: e.target.value })}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="My Awesome Template"
+                required
+              />
             </div>
 
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Description *
               </label>
               <textarea
-                value={template.description}
-                onChange={(e) => setTemplate(prev => ({ ...prev, description: e.target.value }))}
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Describe what your template does and what problems it solves..."
-                required
-                aria-invalid={errors.length > 0 ? "true" : "false"}
-                aria-describedby={errors.length > 0 ? "template-submission-errors" : undefined}
-              />
-            </div>
-
-            {/* Tags */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tags
-              </label>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  placeholder="Add a tag..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                />
-                <button
-                  type="button"
-                  onClick={handleAddTag}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Add
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {template.tags?.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center gap-1"
-                  >
-                    <TagIcon className="h-3 w-3" />
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(tag)}
-                      className="ml-1 text-blue-600 hover:text-blue-800"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Author Information */}
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">Author Information</h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Your Name *
-                </label>
-                <input
-                  type="text"
-                  value={author.name}
-                  onChange={(e) => setAuthor(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                  aria-invalid={errors.length > 0 ? "true" : "false"}
-                  aria-describedby={errors.length > 0 ? "template-submission-errors" : undefined}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  value={author.email}
-                  onChange={(e) => setAuthor(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                  aria-invalid={errors.length > 0 ? "true" : "false"}
-                  aria-describedby={errors.length > 0 ? "template-submission-errors" : undefined}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                FolderHub Profile (optional)
-              </label>
-              <input
-                type="url"
-                value={author.githubUrl}
-                onChange={(e) => setAuthor(prev => ({ ...prev, githubUrl: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="https://github.com/yourusername"
-              />
-            </div>
-          </div>
-
-          {/* Marketplace Settings */}
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">Marketplace Settings</h3>
-
-            {/* Categories */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Categories *
-              </label>
-              <div className="flex gap-2 mb-2">
-                <select
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select a category...</option>
-                  {categories.map((category) => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={handleAddCategory}
-                  disabled={!newCategory}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-300"
-                >
-                  Add
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {marketplace.category.map((category) => (
-                  <span
-                    key={category}
-                    className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm flex items-center gap-1"
-                  >
-                    {category}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveCategory(category)}
-                      className="ml-1 text-green-600 hover:text-green-800"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Pricing
-                </label>
-                <select
-                  value={marketplace.pricing}
-                  onChange={(e) => setMarketplace(prev => ({ ...prev, pricing: e.target.value as 'free' | 'paid' }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="free">Free</option>
-                  <option value="paid">Paid</option>
-                </select>
-              </div>
-
-              {marketplace.pricing === 'paid' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Price (USD)
-                  </label>
-                  <div className="relative">
-                    <CurrencyDollarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={marketplace.price}
-                      onChange={(e) => setMarketplace(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  License
-                </label>
-                <select
-                  value={marketplace.license}
-                  onChange={(e) => setMarketplace(prev => ({ ...prev, license: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  {licenses.map((license) => (
-                    <option key={license} value={license}>{license}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Support URL (optional)
-                </label>
-                <input
-                  type="url"
-                  value={marketplace.supportUrl}
-                  onChange={(e) => setMarketplace(prev => ({ ...prev, supportUrl: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Demo URL (optional)
-                </label>
-                <input
-                  type="url"
-                  value={marketplace.demoUrl}
-                  onChange={(e) => setMarketplace(prev => ({ ...prev, demoUrl: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="https://..."
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Submission Notes */}
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900">Additional Information</h3>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Notes for Reviewers (optional)
-              </label>
-              <textarea
-                value={submission.notes}
-                onChange={(e) => setSubmission(prev => ({ ...prev, notes: e.target.value }))}
+                value={formData.description}
+                onChange={(e) => updateFormData({ description: e.target.value })}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Any additional information for the review team..."
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Describe what your template does and who it's for..."
+                required
               />
             </div>
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="requestedFeature"
-                checked={submission.requestedFeature}
-                onChange={(e) => setSubmission(prev => ({ ...prev, requestedFeature: e.target.checked }))}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="requestedFeature" className="ml-2 text-sm text-gray-700">
-                This template was created based on a community feature request
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category
               </label>
+              <select
+                value={formData.category}
+                onChange={(e) => updateFormData({ category: e.target.value as any })}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {categories.map(cat => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Language
+              </label>
+              <select
+                value={formData.language}
+                onChange={(e) => updateFormData({ language: e.target.value })}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {languages.map(lang => (
+                  <option key={lang} value={lang}>
+                    {lang.charAt(0).toUpperCase() + lang.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Framework
+              </label>
+              <select
+                value={formData.framework}
+                onChange={(e) => updateFormData({ framework: e.target.value })}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                {frameworks.map(framework => (
+                  <option key={framework} value={framework}>
+                    {framework.charAt(0).toUpperCase() + framework.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Complexity
+              </label>
+              <select
+                value={formData.complexity}
+                onChange={(e) => updateFormData({ complexity: e.target.value as any })}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
             </div>
           </div>
 
-          {/* Submit Buttons */}
-          <div className="flex gap-4 pt-6 border-t border-gray-200">
+          {/* Tags */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tags
+            </label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {formData.tags.map(tag => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="ml-1 text-blue-600 hover:text-blue-800"
+                  >
+                    <XMarkIcon className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Add a tag..."
+                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+              />
+              <button
+                type="button"
+                onClick={addTag}
+                className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Dependencies */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+            Dependencies
+          </h3>
+
+          <div className="space-y-2">
+            {Object.entries(formData.dependencies).map(([name, version]) => (
+              <div key={name} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <span className="font-mono text-sm">{name}: {version}</span>
+                <button
+                  type="button"
+                  onClick={() => removeDependency(name)}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              placeholder="Package name"
+              value={newDependency.name}
+              onChange={(e) => setNewDependency(prev => ({ ...prev, name: e.target.value }))}
+              className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <input
+              type="text"
+              placeholder="Version"
+              value={newDependency.version}
+              onChange={(e) => setNewDependency(prev => ({ ...prev, version: e.target.value }))}
+              className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
             <button
               type="button"
-              onClick={onCancel}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+              onClick={addDependency}
+              className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
-            >
-              {submitting ? 'Submitting...' : 'Submit Template'}
+              Add
             </button>
           </div>
-        </form>
+        </div>
+
+        {/* Scripts */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+            Scripts
+          </h3>
+
+          <div className="space-y-2">
+            {Object.entries(formData.scripts).map(([name, command]) => (
+              <div key={name} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <span className="font-mono text-sm">{name}: {command}</span>
+                <button
+                  type="button"
+                  onClick={() => removeScript(name)}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              placeholder="Script name"
+              value={newScript.name}
+              onChange={(e) => setNewScript(prev => ({ ...prev, name: e.target.value }))}
+              className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <input
+              type="text"
+              placeholder="Command"
+              value={newScript.command}
+              onChange={(e) => setNewScript(prev => ({ ...prev, command: e.target.value }))}
+              className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <button
+              type="button"
+              onClick={addScript}
+              className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+
+        {/* Environment Variables */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+            Environment Variables
+          </h3>
+
+          <div className="space-y-2">
+            {formData.envVars.map((envVar, index) => (
+              <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div className="flex-1">
+                  <span className="font-mono text-sm font-medium">{envVar.name}</span>
+                  {envVar.description && (
+                    <p className="text-xs text-gray-600 mt-1">{envVar.description}</p>
+                  )}
+                  {envVar.defaultValue && (
+                    <p className="text-xs text-gray-500">Default: {envVar.defaultValue}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeEnvVar(index)}
+                  className="text-red-600 hover:text-red-800 ml-2"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <input
+              type="text"
+              placeholder="Variable name"
+              value={newEnvVar.name}
+              onChange={(e) => setNewEnvVar(prev => ({ ...prev, name: e.target.value }))}
+              className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <input
+              type="text"
+              placeholder="Default value"
+              value={newEnvVar.defaultValue}
+              onChange={(e) => setNewEnvVar(prev => ({ ...prev, defaultValue: e.target.value }))}
+              className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <input
+              type="text"
+              placeholder="Description"
+              value={newEnvVar.description}
+              onChange={(e) => setNewEnvVar(prev => ({ ...prev, description: e.target.value }))}
+              className="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={addEnvVar}
+            className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Add Environment Variable
+          </button>
+        </div>
+
+        {/* Documentation */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+            Documentation
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Setup Instructions
+              </label>
+              <textarea
+                value={formData.documentation.setup.join('\n')}
+                onChange={(e) => updateDocumentation('setup', e.target.value)}
+                rows={4}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Step-by-step setup instructions..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Usage Guide
+              </label>
+              <textarea
+                value={formData.documentation.usage.join('\n')}
+                onChange={(e) => updateDocumentation('usage', e.target.value)}
+                rows={4}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="How to use the template..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Deployment Guide
+              </label>
+              <textarea
+                value={formData.documentation.deployment.join('\n')}
+                onChange={(e) => updateDocumentation('deployment', e.target.value)}
+                rows={4}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Deployment instructions..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Features */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+            Features
+          </h3>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {[
+              { key: 'dockerSupport', label: 'Docker Support' },
+              { key: 'kubernetesSupport', label: 'Kubernetes Support' },
+              { key: 'cicdTemplate', label: 'CI/CD Template' },
+              { key: 'testingSetup', label: 'Testing Setup' },
+              { key: 'monitoringSetup', label: 'Monitoring Setup' }
+            ].map(({ key, label }) => (
+              <label key={key} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData[key as keyof TemplateFormData] as boolean}
+                  onChange={(e) => updateFormData({ [key]: e.target.checked })}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm text-gray-700">{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Submission Status */}
+        {submissionStatus.status !== 'idle' && (
+          <div className="border-t border-gray-200 pt-6">
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  {submissionStatus.status === 'success' && (
+                    <CheckCircleIcon className="h-6 w-6 text-green-600" />
+                  )}
+                  {submissionStatus.status === 'error' && (
+                    <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+                  )}
+                  {(submissionStatus.status === 'uploading' || submissionStatus.status === 'processing') && (
+                    <ArrowUpTrayIcon className="h-6 w-6 text-blue-600 animate-pulse" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">{submissionStatus.message}</p>
+                  {submissionStatus.progress !== undefined && (
+                    <div className="mt-2">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${submissionStatus.progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                  {submissionStatus.error && (
+                    <p className="text-sm text-red-600 mt-2">{submissionStatus.error}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </form>
+
+      {/* Footer Actions */}
+      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            {submissionStatus.status === 'success'
+              ? 'Template submitted successfully!'
+              : 'Fill in all required fields to submit your template'
+            }
+          </div>
+          <div className="flex space-x-3">
+            {onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={submissionStatus.status === 'uploading' || submissionStatus.status === 'processing'}
+              onClick={handleSubmit}
+              className={`px-4 py-2 rounded-md font-medium ${
+                submissionStatus.status === 'uploading' || submissionStatus.status === 'processing'
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {submissionStatus.status === 'uploading' || submissionStatus.status === 'processing' ? (
+                <>
+                  <ArrowUpTrayIcon className="h-4 w-4 animate-pulse mr-2 inline" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <PlusIcon className="h-4 w-4 mr-2 inline" />
+                  Submit Template
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  )
+  );
 }
