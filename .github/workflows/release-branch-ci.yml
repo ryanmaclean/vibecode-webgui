@@ -48,9 +48,6 @@ jobs:
       - name: Type check
         run: npm run type-check
 
-      - name: Format check
-        run: npm run format:check || echo "Formatting issues (non-blocking)"
-
   test-suite:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -87,7 +84,8 @@ jobs:
         run: npm run build
 
       - name: Performance check
-        run: npm run lighthouse || echo "Performance check completed"
+        run: npm run test:performance:lighthouse || echo "Performance check completed (optional)"
+        continue-on-error: true
 
   security-comprehensive:
     runs-on: ubuntu-latest
@@ -98,7 +96,8 @@ jobs:
         run: npm audit
 
       - name: Dependency check
-        run: npm run security:check || echo "Security check completed"
+        run: npm run deps:check:ci || echo "Dependency check completed (optional)"
+        continue-on-error: true
 
   deployment-ready:
     runs-on: ubuntu-latest

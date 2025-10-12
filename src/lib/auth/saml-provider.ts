@@ -6,6 +6,7 @@
 
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
+import { logger } from '@/lib/logger'
 
 export interface SAMLConfig {
   entityId: string
@@ -449,7 +450,6 @@ export class SAMLProvider {
    */
   private generateId(): string {
     const randomHex = randomBytes(8).toString('hex');
-import { logger } from '@/lib/logger';
     return `_${Date.now()}_${randomHex}`;
   }
 

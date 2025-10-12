@@ -7,6 +7,7 @@ import OpenAI from 'openai'
 import { prisma } from './prisma'
 import { Prisma } from '@prisma/client'
 import { PgVectorSearch } from './cache/pgvector-search'
+import { logger } from '@/lib/logger'
 
 // Check if we're in build mode
 const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' || 
@@ -62,7 +63,6 @@ class VectorStore {
         }
       } catch (error) {
         logger.warn('Embedding service initialization failed; falling back to OpenRouter/local', error)
-import { logger } from '@/lib/logger';
         this.embeddingService = null
       }
     }
