@@ -125,6 +125,11 @@ src-tauri/swift/.build/
 infrastructure/**/secrets/
 k8s/secrets/
 
+# VM directories - large binaries excluded from git
+# Package with scripts/release/package-fast-openvscode-vm.sh and upload to releases
+fast-openvscode-vm/
+fast-openvscode-vm-insiders/
+
 # Terraform and IaC artefacts
 *.tfvars
 *.tfplan
