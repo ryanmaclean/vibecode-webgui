@@ -5,8 +5,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
-<<<<<<< Updated upstream
-=======
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
 
@@ -41,7 +39,6 @@ const WorkspaceUpdateSchema = z.object({
     z.string().max(500, 'Metadata value too long')
   ).optional()
 }).strict()
->>>>>>> Stashed changes
 
 interface RouteParams {
   params: Promise<{
@@ -71,9 +68,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params
     const workspaceId = id
-<<<<<<< Updated upstream
-    console.log(`🔍 Getting workspace status: ${workspaceId}`)
-=======
 
     // Validate workspace ID
     const validation = validateWorkspaceId(workspaceId)
@@ -90,7 +84,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     logger.info('Getting workspace status', { workspaceId })
->>>>>>> Stashed changes
 
     // Check if Kubernetes is available
     if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
@@ -131,9 +124,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params
     const workspaceId = id
-<<<<<<< Updated upstream
-    console.log(`🗑️ Deleting workspace: ${workspaceId}`)
-=======
 
     // Validate workspace ID with enhanced logging for destructive operations
     const validation = validateWorkspaceId(workspaceId)
@@ -151,7 +141,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     logger.info('Deleting workspace', { workspaceId })
->>>>>>> Stashed changes
 
     // Check if Kubernetes is available
     if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
@@ -187,9 +176,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params
     const workspaceId = id
-<<<<<<< Updated upstream
-    console.log(`🔄 Updating workspace: ${workspaceId}`)
-=======
 
     // Validate workspace ID
     const validation = validateWorkspaceId(workspaceId)
@@ -234,7 +220,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     logger.info('Updating workspace', { workspaceId, updates: updateValidation.data })
->>>>>>> Stashed changes
 
     // For now, we'll just return the current status
     // TODO: Implement workspace updates (scaling, configuration changes)
