@@ -11,7 +11,7 @@ import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import { randomBytes } from 'crypto'
-
+import { logger } from '@/lib/logger';
 interface WorkspaceRequest {
   projectId: string
   projectName: string
@@ -148,8 +148,7 @@ export class AppleContainerWorkspaceService {
    * List all workspaces
    */
   async listWorkspaces(): Promise<Array<{ id: string; status: string; url: string }>> {
-import { logger } from '@/lib/logger';
-    const result = await appleContainer.list()
+const result = await appleContainer.list()
 
     if (!result.success) {
       return []

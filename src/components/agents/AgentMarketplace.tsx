@@ -17,11 +17,9 @@
 
 'use client'
 
-import { logger } from '@/lib/logger';
-
 import React, { useState, useMemo, useCallback } from 'react'
 import {
-  Store,
+Store,
   Search,
   Star,
   Download,
@@ -39,6 +37,7 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Type Definitions

@@ -13,11 +13,9 @@ import path from 'path'
 import * as fs from 'fs/promises'
 import crypto from 'crypto'
 import { Mutex } from 'async-mutex'
-
+import { logger } from '@/lib/logger';
 // Global file locks manager - shared across all instances within a workspace
 const globalFileLocks = new Map<string, Map<string, { userId: string; timestamp: Date; lockId: string }>>()
-import { logger } from '@/lib/logger';
-
 // Security constants
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const MAX_FILES_PER_WORKSPACE = 10000

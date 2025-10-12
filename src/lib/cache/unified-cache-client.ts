@@ -17,7 +17,6 @@
 import { Redis } from 'ioredis';
 import { metrics } from '../server-monitoring';
 import { logger } from '@/lib/logger';
-
 // Enhanced Redis interfaces for type safety
 interface RedisCommands {
   get(key: string): Promise<string | null>;

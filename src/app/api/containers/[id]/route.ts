@@ -4,15 +4,13 @@
  * Endpoints for managing a specific container
  */
 
-import { logger } from '@/lib/logger';
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { appleContainer } from '@/lib/container/apple-container'
 import { validatePathParams } from '@/lib/api/validation/middleware'
 import { containerIdSchema } from '@/lib/api/validation/schemas'
-
+import { logger } from '@/lib/logger';
 /**
  * GET /api/containers/[id]
  * Get container details or logs

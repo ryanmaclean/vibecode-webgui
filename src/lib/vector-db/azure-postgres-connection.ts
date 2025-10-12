@@ -12,7 +12,6 @@ import { DefaultAzureCredential } from '@azure/identity';
 import { metrics } from '../server-monitoring';
 import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
 import { logger } from '@/lib/logger';
-
 // Re-export for convenience
 export type { PoolClient };
 

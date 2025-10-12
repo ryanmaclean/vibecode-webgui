@@ -8,7 +8,6 @@ import { BaseAgentAdapter, AgentCapabilities, AgentSession, AgentResult } from '
 import { createAgentAPIClient } from '../agentapi-client';
 import type { AgentConfig } from './base-adapter';
 import { logger } from '@/lib/logger';
-
 export class AiderAdapter extends BaseAgentAdapter {
   private agentId: string | null = null;
   private eventSource: EventSource | null = null;

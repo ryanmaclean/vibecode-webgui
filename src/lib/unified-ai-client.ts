@@ -3,7 +3,6 @@
 
 import OpenAI from 'openai'
 import { logger } from '@/lib/logger';
-
 export interface UnifiedAIProvider {
   id: string
   name: string

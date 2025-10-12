@@ -12,15 +12,14 @@
  * @module streaming/sse-client
  */
 
-import { logger } from '@/lib/logger';
-
 import {
-  createSSEDecoder,
+createSSEDecoder,
   SSEDecoderHandlers,
   StreamContentChunk,
   StreamMetadataChunk,
   StreamChunk
 } from '@/lib/ai/utils/sse-decoder'
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Configuration Types

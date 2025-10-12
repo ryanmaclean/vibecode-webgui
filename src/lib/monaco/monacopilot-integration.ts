@@ -12,7 +12,6 @@
 
 import * as monaco from 'monaco-editor';
 import { logger } from '@/lib/logger';
-
 // Dynamic import for optional monacopilot dependency
 type RegisterCompletionOptions = {
   language: string;

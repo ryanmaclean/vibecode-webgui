@@ -1,9 +1,10 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * Alerting Rules Configuration for AgentAPI
  * Defines alert conditions and notification strategies
  */
-
-import { logger } from '@/lib/logger';
 
 interface AlertRule {
   name: string;

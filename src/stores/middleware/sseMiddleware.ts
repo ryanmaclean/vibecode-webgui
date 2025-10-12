@@ -9,7 +9,6 @@
 import type { StateCreator, StoreMutatorIdentifier } from 'zustand';
 import type { SSEEvent } from '@/types/agent-api';
 import { logger } from '@/lib/logger';
-
 // ============================================================================
 // Types
 // ============================================================================

@@ -5,7 +5,6 @@
 
 import { createClient, RedisClientType } from 'redis';
 import { logger } from '@/lib/logger';
-
 export interface ValkeyConfig {
   host: string;
   port: number;

@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server'
 import { createErrorResponse } from '@/lib/api-utils'
-
+import { logger } from '@/lib/logger';
 interface ProjectTemplate {
   id: string
   name: string
@@ -56,8 +56,6 @@ const templates: ProjectTemplate[] = [
       }, null, 2),
       'src/App.tsx': `import React, { useState, useEffect } from 'react';
 import './App.css';
-import { logger } from '@/lib/logger';
-
 interface Todo {
   id: number;
   text: string;

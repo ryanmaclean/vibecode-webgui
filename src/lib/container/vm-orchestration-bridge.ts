@@ -13,7 +13,7 @@
  */
 
 import { EventEmitter } from 'events'
-
+import { logger } from '@/lib/logger';
 /**
  * VM instance information returned from orchestration layer
  */
@@ -149,8 +149,7 @@ export interface VMPoolConfig {
  *   mode: 'http',
  *   endpoint: 'http://localhost:8765'
  * });
-import { logger } from '@/lib/logger';
- *
+*
  * // Warm the pool
  * await orchestration.warmPool();
  *

@@ -6,7 +6,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as os from 'os';
 import { logger } from '@/lib/logger';
-
 // GET - Retrieve system and application metrics
 export async function GET(request: NextRequest) {
   try {

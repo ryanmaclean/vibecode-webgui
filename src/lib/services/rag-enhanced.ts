@@ -1,6 +1,5 @@
 import { webSearchService, WebSearchResult } from './web-search'
-import { logger } from '@/lib/logger'
-
+import { logger } from '@/lib/logger';
 export interface RAGContext {
   sources: RAGSource[]
   webResults?: WebSearchResult[]

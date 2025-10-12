@@ -7,7 +7,6 @@ import { PrismaClient } from '@prisma/client';
 import { getDatabaseMetricsCollector } from './db-metrics';
 import { ConnectionPoolStatus } from './db-types';
 import { logger } from '@/lib/logger';
-
 // Connection pool configuration interface
 export interface ConnectionPoolConfig {
   min: number;

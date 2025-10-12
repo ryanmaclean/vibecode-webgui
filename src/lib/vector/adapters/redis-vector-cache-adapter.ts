@@ -8,7 +8,6 @@ import Redis from 'ioredis';
 import { BaseVectorCacheAdapter } from './base-vector-cache-adapter';
 import { VectorSimilarityQuery, VectorSimilarityResults } from '../interfaces/vector-types';
 import { logger } from '@/lib/logger';
-
 export class RedisVectorCacheAdapter extends BaseVectorCacheAdapter {
   private client: Redis | null = null;
   private keyPrefix: string;

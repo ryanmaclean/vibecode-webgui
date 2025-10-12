@@ -13,8 +13,7 @@
 
 import * as vscode from 'vscode'
 import axios, { AxiosInstance } from 'axios'
-import { logger } from '@/lib/logger'
-
+import { logger } from '@/lib/logger';
 // ============================================================================
 // Types
 // ============================================================================

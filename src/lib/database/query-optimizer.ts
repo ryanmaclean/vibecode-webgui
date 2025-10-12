@@ -6,7 +6,6 @@
 
 import { CacheTTL } from '../cache/cache-constants';
 import { logger } from '@/lib/logger';
-
 export interface QueryOptimizationMetrics {
   queryTime: number;
   cacheHits: number;

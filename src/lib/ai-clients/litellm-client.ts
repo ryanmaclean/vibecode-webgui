@@ -3,7 +3,6 @@
 
 import { EventEmitter } from 'events';
 import { logger } from '@/lib/logger';
-
 // Types and Interfaces
 interface LiteLLMConfig {
   baseUrl: string;

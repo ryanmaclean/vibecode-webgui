@@ -6,7 +6,6 @@
 import { createClient, RedisClientType } from 'redis';
 import { CacheTTL } from './cache-constants';
 import { logger } from '@/lib/logger';
-
 export interface RedisConfig {
   host: string;
   port: number;

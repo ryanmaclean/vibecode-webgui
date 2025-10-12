@@ -8,7 +8,7 @@
  */
 
 import { NextRequest } from 'next/server'
-
+import { logger } from '@/lib/logger';
 interface RateLimitConfig {
   windowMs: number // Time window in milliseconds
   max: number // Maximum requests per window
@@ -28,8 +28,6 @@ interface RateLimitResult {
 
 // In-memory store for development (use Redis in production)
 const requestStore = new Map<string, { count: number; reset: number; requests: number[] }>()
-import { logger } from '@/lib/logger';
-
 // Cleanup old entries every 5 minutes
 setInterval(() => {
   const now = Date.now()

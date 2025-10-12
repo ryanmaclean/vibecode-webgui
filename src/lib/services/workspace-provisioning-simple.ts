@@ -3,10 +3,8 @@
  * Stub implementation for initial deployment - will be replaced with full K8s integration
  */
 
-import { logger } from '@/lib/logger';
-
 import { z } from 'zod'
-
+import { logger } from '@/lib/logger';
 const WorkspaceRequestSchema = z.object({
   projectId: z.string(),
   projectName: z.string(),

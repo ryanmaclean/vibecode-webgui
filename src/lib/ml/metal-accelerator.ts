@@ -15,7 +15,6 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { logger } from '@/lib/logger';
-
 // MARK: - Types
 
 export interface InferenceOptions {

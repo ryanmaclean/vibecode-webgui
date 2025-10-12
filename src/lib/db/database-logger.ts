@@ -3,7 +3,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { 
-  LogLevel, 
+LogLevel, 
   LogCategory, 
   LogOptions,
   DbLogger, 
@@ -11,7 +11,6 @@ import {
   LoggerOptions
 } from './db-types';
 import { logger } from '@/lib/logger';
-
 /**
  * Class for logging database operations
  */

@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
-  Select,
+Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Zap, Code, FileCode, Terminal } from 'lucide-react'
+import { logger } from '@/lib/logger';
 
 const SAMPLE_CODE = {
   typescript: `import React, { useState, useEffect } from 'react'
@@ -332,8 +333,7 @@ export default function EditorPage() {
                   <p className="text-sm text-muted-foreground">
                     Get intelligent code suggestions as you type. The AI understands your context
                     and provides relevant completions with &lt;300ms latency.
-import { logger } from '@/lib/logger';
-                  </p>
+</p>
                   <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
                     <li>Context-aware suggestions based on surrounding code</li>
                     <li>Import statements and dependencies</li>

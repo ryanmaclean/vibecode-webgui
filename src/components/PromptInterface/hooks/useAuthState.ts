@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Message } from '../types';
 import { logger } from '@/lib/logger';
-
 interface ApiKeys {
   openai: string;
   anthropic: string;

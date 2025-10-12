@@ -18,7 +18,6 @@ import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Loader } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { logger } from '@/lib/logger';
-
 export function SequentialThinking() {
   const [prompt, setPrompt] = useState('');
   const [numSteps, setNumSteps] = useState(5);

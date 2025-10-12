@@ -1,9 +1,10 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * Circuit Breaker Pattern Implementation
  * Prevents cascade failures by monitoring service health and failing fast
  */
-
-import { logger } from '@/lib/logger';
 
 export enum CircuitState {
   CLOSED = 'CLOSED',     // Normal operation

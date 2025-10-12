@@ -1,3 +1,6 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * Azure Vector Embedding Provider
  * Generates embeddings using Azure OpenAI API
@@ -24,8 +27,6 @@ const OpenAIClient = function(endpoint: string, credential: any, options?: any) 
 } as any as { new(endpoint: string, credential: any, options?: any): OpenAIClient };
 
 import { BaseVectorEmbeddingProvider } from './base-vector-embedding-provider';
-import { logger } from '@/lib/logger';
-
 export class AzureEmbeddingProvider extends BaseVectorEmbeddingProvider {
   private client: OpenAIClient | null = null;
   private endpoint: string;

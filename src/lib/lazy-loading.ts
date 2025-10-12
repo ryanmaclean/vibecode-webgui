@@ -8,7 +8,7 @@
  */
 
 import { EventEmitter } from 'events'
-
+import { logger } from '@/lib/logger';
 interface LazyLoadConfig {
   chunkSize: number
   preloadChunks: number
@@ -153,8 +153,7 @@ export class LazyFileLoader extends EventEmitter {
       maxResults?: number
     } = {}
   ): Promise<Array<{ line: number; content: string; match: RegExp | null }>> {
-import { logger } from '@/lib/logger';
-    if (!this.fileMetadata) {
+if (!this.fileMetadata) {
       throw new Error('File not initialized')
     }
 

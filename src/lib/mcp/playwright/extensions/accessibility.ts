@@ -5,7 +5,6 @@
 
 import { test as baseTest, expect, Page } from '@playwright/test';
 import { logger } from '@/lib/logger';
-
 /**
  * Options for accessibility testing
  */

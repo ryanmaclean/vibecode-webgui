@@ -1,10 +1,11 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * MLflow Integration Client
  * ML experiment tracking and model versioning for VibeCode AI features
  * Tracks AI model performance, experiments, and deployment metrics
  */
-
-import { logger } from '@/lib/logger';
 
 export interface MLflowExperiment {
   experimentId: string

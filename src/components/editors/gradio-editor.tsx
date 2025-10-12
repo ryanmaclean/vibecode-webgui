@@ -7,7 +7,6 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { Play } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { logger } from '@/lib/logger';
-
 interface GradioEditorProps {
   initialCode: string;
 }

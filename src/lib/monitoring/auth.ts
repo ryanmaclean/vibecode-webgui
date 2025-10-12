@@ -3,11 +3,9 @@
  * Ensures only authorized users can access sensitive monitoring data
  */
 
-import { logger } from '@/lib/logger';
-
 import { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
-
+import { logger } from '@/lib/logger';
 // Roles that can access monitoring endpoints
 const AUTHORIZED_ROLES = ['admin', 'devops', 'lead', 'developer']
 

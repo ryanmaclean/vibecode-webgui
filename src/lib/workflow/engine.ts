@@ -10,7 +10,7 @@
 
 import { EventEmitter } from 'events';
 import {
-  WorkflowDefinition,
+WorkflowDefinition,
   WorkflowExecution,
   WorkflowNode,
   WorkflowEdge,
@@ -33,7 +33,6 @@ import {
   WebhookConfig,
 } from './types';
 import { logger } from '@/lib/logger';
-
 // ============================================================================
 // DAG Graph Utilities
 // ============================================================================

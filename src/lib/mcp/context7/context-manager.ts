@@ -3,7 +3,7 @@
  */
 
 import {
-  TemporalContext,
+TemporalContext,
   SpatialContext,
   StateContext,
   SemanticContext,
@@ -16,7 +16,6 @@ import {
   Context7AIService
 } from './interfaces';
 import { logger } from '@/lib/logger';
-
 /**
  * Context7Manager class - Manages all seven dimensions of context
  */

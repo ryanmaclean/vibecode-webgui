@@ -1,9 +1,10 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * Batch Vector Operations Processor
  * Optimizes vector operations through intelligent batching
  */
-
-import { logger } from '@/lib/logger';
 
 interface BatchOperation {
   type: 'store' | 'search' | 'delete'

@@ -3,12 +3,10 @@
  * Provides real-time connection pool metrics, alerts, and capacity planning
  */
 
-import { logger } from '@/lib/logger';
-
 import { NextRequest, NextResponse } from 'next/server'
 import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../../lib/monitoring/auth'
 import { connectionPoolMonitor } from '../../../../../lib/monitoring/connection-pool-monitor'
-
+import { logger } from '@/lib/logger';
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 

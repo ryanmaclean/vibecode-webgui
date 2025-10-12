@@ -1,7 +1,5 @@
-import { logger } from '@/lib/logger';
-
 import { NextRequest, NextResponse } from 'next/server'
-
+import { logger } from '@/lib/logger';
 export async function GET(_request: NextRequest) {
   try {
     // Simple test endpoint for E2E tests - no actual database dependency

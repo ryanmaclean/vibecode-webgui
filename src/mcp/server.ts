@@ -1,3 +1,6 @@
+import { logger } from '@/lib/logger';
+
+
 #!/usr/bin/env node
 /**
  * VibeCode MCP Server
@@ -39,8 +42,6 @@ import {
   GenerateCodeArgsSchema,
   validateToolArgs,
 } from './types.js';
-import { logger } from '@/lib/logger';
-
 // Unused exports for future implementation
 // getTestResults, getDeploymentStatus
 

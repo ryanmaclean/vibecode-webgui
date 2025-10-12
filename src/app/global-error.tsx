@@ -4,10 +4,8 @@
 
 'use client'
 
-import { logger } from '@/lib/logger';
-
 import { useEffect } from 'react'
-
+import { logger } from '@/lib/logger';
 interface GlobalErrorProps {
   error: Error & { digest?: string }
   reset: () => void

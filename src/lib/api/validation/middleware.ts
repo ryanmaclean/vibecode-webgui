@@ -7,8 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z, ZodError, ZodSchema } from 'zod'
-import { logger } from '@/lib/logger'
-
+import { logger } from '@/lib/logger';
 export interface ValidationOptions {
   /** Transform successful validation results */
   transform?: (data: unknown) => unknown
