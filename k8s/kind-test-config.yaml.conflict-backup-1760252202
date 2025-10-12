@@ -16,10 +16,17 @@ nodes:
         node-labels: "ingress-ready=true"
   extraPortMappings:
   - containerPort: 80
+<<<<<<< HEAD
+    hostPort: 0  # Use dynamic port allocation
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 0  # Use dynamic port allocation
+=======
     hostPort: 8080
     protocol: TCP
   - containerPort: 443
     hostPort: 8443
+>>>>>>> merge-conflict-cleanup
     protocol: TCP
 
 # Worker node for code-server workloads
