@@ -460,16 +460,6 @@ class MonitoringService {
   }
 }
 
-// Simple logger implementation
-export const logger = {
-  info: (message: string, ...args: any[]) => {
-    // Info logged
-  },
-  warn: (message: string, ...args: any[]) => logger.warn(`[WARN] ${message}`, ...args),
-  error: (message: string, ...args: any[]) => logger.error(`[ERROR] ${message}`, ...args),
-  debug: (message: string, ...args: any[]) => logger.debug(`[DEBUG] ${message}`, ...args)
-}
-
 // Export singleton instance
 export const monitoring = new MonitoringService()
 

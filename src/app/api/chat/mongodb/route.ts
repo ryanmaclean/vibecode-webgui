@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { mongodbChatService } from '@/lib/services/chat-mongodb'
 import { getToken } from 'next-auth/jwt'
-import { logger } from '@/lib/monitoring'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
