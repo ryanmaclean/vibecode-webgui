@@ -3,10 +3,8 @@
  * Defines and manages critical alerts for VibeCode platform
  */
 
-import { logger } from '@/lib/logger';
-
 import { getDatadogApiKey, getDatadogAppKey, getDatadogSite } from './datadog-env'
-
+import { logger } from '@/lib/logger';
 export interface AlertConfig {
   name: string
   type: 'metric alert' | 'service check' | 'event alert' | 'log alert'

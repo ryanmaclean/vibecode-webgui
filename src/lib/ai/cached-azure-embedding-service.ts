@@ -6,7 +6,7 @@
 import { AzureEmbeddingService } from './azureEmbeddingService'
 import { vectorCacheAdapter } from '../cache/vector-cache-adapter'
 import { PrismaClient } from '@prisma/client'
-
+import { logger } from '@/lib/logger';
 interface CachedEmbeddingOptions {
   dimensions?: number
   user?: string
@@ -87,8 +87,7 @@ export class CachedAzureEmbeddingService extends AzureEmbeddingService {
     texts: string[], 
     options: CachedEmbeddingOptions = {}
   ): Promise<{ text: string; embedding: number[]; cached: boolean }[]> {
-import { logger } from '@/lib/logger';
-    // Process texts in parallel for better performance
+// Process texts in parallel for better performance
     const promises = texts.map(async (text) => {
       try {
         if (!this.cacheEnabled || options.skipCache) {

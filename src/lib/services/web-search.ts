@@ -1,6 +1,5 @@
 import axios from 'axios'
 import { logger } from '@/lib/logger';
-
 export interface WebSearchResult {
   title: string
   url: string

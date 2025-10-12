@@ -24,7 +24,6 @@ import {
   XCircle
 } from 'lucide-react';
 import { logger } from '@/lib/logger';
-
 export default function AIAdvancedFeaturesDemo() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(false);

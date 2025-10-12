@@ -5,7 +5,7 @@
  */
 
 import {
-  AgentAPIConfig,
+AgentAPIConfig,
   APIResponse,
   AgentAPIError,
   StartAgentRequest,
@@ -25,7 +25,6 @@ import {
   DEFAULT_CONFIG,
 } from '@/types/agent-api';
 import { logger } from '@/lib/logger';
-
 // ============================================================================
 // AgentAPI Client
 // ============================================================================

@@ -7,7 +7,7 @@ import { setupMonacopilot } from '@/lib/monaco/monacopilot-integration'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-
+import { logger } from '@/lib/logger';
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
   loading: () => (
@@ -54,8 +54,6 @@ print(fibonacci(10))
     sample: `package main
 
 import "fmt"
-import { logger } from '@/lib/logger';
-
 func fibonacci(n int) []int {
     seq := []int{0, 1}
     for len(seq) < n {

@@ -1,9 +1,10 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * Vector Database Error Handler
  * Centralized error handling for vector database operations
  */
-
-import { logger } from '@/lib/logger';
 
 export enum VectorDbErrorType {
   CONNECTION_ERROR = 'connection_error',

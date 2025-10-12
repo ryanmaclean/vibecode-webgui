@@ -8,7 +8,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { trackApiError, trackError } from '../lib/monitoring/error-tracking';
 import { logger } from '@/lib/logger';
-
 export interface ErrorTrackingMiddlewareOptions {
   /**
    * Whether to track successful requests (for performance monitoring)

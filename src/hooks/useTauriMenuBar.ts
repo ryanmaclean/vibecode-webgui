@@ -4,7 +4,6 @@
 
 import { useEffect } from 'react';
 import { logger } from '@/lib/logger';
-
 // Type definitions for Tauri APIs
 // These will be available when running in Tauri context
 declare global {

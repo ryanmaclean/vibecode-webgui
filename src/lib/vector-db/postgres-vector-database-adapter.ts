@@ -11,7 +11,6 @@ import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handl
 import { VectorCacheInvalidator } from '../cache/vector-cache-invalidator';
 import { PgVectorSearch } from '../cache/pgvector-search';
 import { logger } from '@/lib/logger';
-
 /**
  * PostgreSQL-specific configuration options
  */

@@ -1,15 +1,13 @@
 // Unified AI Chat API - Next generation multi-provider chat with LiteLLM-inspired architecture
 // Supports OpenRouter, direct providers, local models, and fallback chains
 
-import { logger } from '@/lib/logger';
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'
 import { prisma } from '@/lib/prisma'
 import { UnifiedAIClient, type UnifiedChatMessage } from '@/lib/unified-ai-client'
-
+import { logger } from '@/lib/logger';
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 

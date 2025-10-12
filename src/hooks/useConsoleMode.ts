@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { logger } from '@/lib/logger';
-
 export function useConsoleMode() {
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

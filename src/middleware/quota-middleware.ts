@@ -3,13 +3,11 @@
  * Protects API endpoints from resource exhaustion
  */
 
-import { logger } from '@/lib/logger';
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { resourceManager } from '@/lib/resource-management'
-
+import { logger } from '@/lib/logger';
 interface QuotaCheckResult {
   allowed: boolean
   reason?: string

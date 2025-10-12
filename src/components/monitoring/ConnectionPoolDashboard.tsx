@@ -5,13 +5,11 @@
 
 'use client'
 
-import { logger } from '@/lib/logger';
-
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AlertTriangle, Database, Activity, TrendingUp, Clock, Users } from 'lucide-react'
-
+import { logger } from '@/lib/logger';
 interface PoolMetrics {
   pool_name: string
   total_connections: number

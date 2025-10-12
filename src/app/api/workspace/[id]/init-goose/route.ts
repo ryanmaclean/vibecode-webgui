@@ -4,7 +4,6 @@ import { authOptions } from '@/lib/auth';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { logger } from '@/lib/logger';
-
 const execAsync = promisify(exec);
 
 export async function POST(

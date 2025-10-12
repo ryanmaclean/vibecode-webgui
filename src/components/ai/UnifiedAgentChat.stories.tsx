@@ -6,12 +6,10 @@
  * @module components/ai/UnifiedAgentChat.stories
  */
 
-import { logger } from '@/lib/logger';
-
 import type { Meta, StoryObj } from '@storybook/react'
 import { UnifiedAgentChat } from './UnifiedAgentChat'
 import type { AgentResponse } from '@/types/agent-api'
-
+import { logger } from '@/lib/logger';
 const mockAgent: AgentResponse = {
   agent_id: 'aider-abc123',
   agent_type: 'aider',

@@ -2,7 +2,6 @@ import OpenAI from 'openai';
 import { VectorService } from '../db/vector';
 import { PrismaClient } from '@prisma/client';
 import { logger } from '@/lib/logger';
-
 export class EmbeddingService {
   private openai: OpenAI;
   private vectorService: VectorService;

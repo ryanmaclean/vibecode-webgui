@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { OpenRouterClient, AIModel } from './openrouter-client';
 import { logger } from '@/lib/logger';
-
 export class AIAssistantManager {
     private openRouterClient: OpenRouterClient;
     private outputChannel: vscode.OutputChannel;

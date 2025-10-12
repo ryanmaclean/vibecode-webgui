@@ -4,13 +4,12 @@
  */
 
 import {
-  ThinkingState,
+ThinkingState,
   Thought,
   ThinkingBranch,
   ISequentialThinkingProcess
 } from './interfaces';
 import { logger } from '@/lib/logger';
-
 /**
  * Implementation of the Sequential Thinking Process
  */

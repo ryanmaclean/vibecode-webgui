@@ -1,8 +1,9 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * Security-focused logger for Keychain operations
  */
-
-import { logger } from '@/lib/logger';
 
 export interface LoggerOptions {
   module?: string

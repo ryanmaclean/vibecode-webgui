@@ -1,11 +1,12 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * OpenTelemetry Client-Side Integration
  * Provides browser-based observability for user experience monitoring
  */
 
 // Check if we're in a Docker build environment
-import { logger } from '@/lib/logger';
-
 const isDockerBuild = (
   process.env.DOCKER_BUILD === 'true' ||
   process.env.SKIP_MONITORING === 'true' ||

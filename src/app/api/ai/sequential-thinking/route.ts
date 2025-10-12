@@ -7,7 +7,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAIAuth } from '@/lib/auth/middleware'
 import { validateAIQuery } from '@/lib/security/input-validator'
 import { logger } from '@/lib/logger';
-
 // Add type augmentation for NextRequest
 declare module 'next/server' {
   interface NextRequest {

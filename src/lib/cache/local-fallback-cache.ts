@@ -5,7 +5,6 @@
 
 import { metrics } from '../server-monitoring';
 import { logger } from '@/lib/logger';
-
 interface CacheItem<T> {
   value: T;
   expiry: number;

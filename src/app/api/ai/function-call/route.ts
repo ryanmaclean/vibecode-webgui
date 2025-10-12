@@ -1,8 +1,6 @@
-import { logger } from '@/lib/logger';
-
 import { NextRequest, NextResponse } from 'next/server'
 import { functionCallingService, FunctionCall } from '@/lib/services/function-calling'
-
+import { logger } from '@/lib/logger';
 interface FunctionCallRequest {
   function_call: FunctionCall
   workspaceId?: string

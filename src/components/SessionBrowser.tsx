@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { discoverSessions, type DiscoveredSession } from '@/lib/tauri/mdns';
 import { logger } from '@/lib/logger';
-
 interface SessionBrowserProps {
   className?: string;
 }

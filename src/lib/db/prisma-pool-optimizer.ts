@@ -1,9 +1,10 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * Prisma Connection Pool Optimizer
  * Optimizes Prisma connection pool configuration for vector operations
  */
-
-import { logger } from '@/lib/logger';
 
 interface PoolConfig {
   minConnections: number

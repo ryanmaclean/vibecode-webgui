@@ -5,7 +5,7 @@
 
 import OpenAI from 'openai'
 import { z } from 'zod'
-
+import { logger } from '@/lib/logger';
 // Project template schema
 const ProjectTemplateSchema = z.object({
   id: z.string(),
@@ -259,8 +259,6 @@ Make sure all code is production-ready and follows best practices.
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
-import { logger } from '@/lib/logger';
-
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />

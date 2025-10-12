@@ -1,5 +1,6 @@
 import { logger } from '@/lib/logger';
 
+
 interface VectorMetrics {
     searchLatency: {
         avg: number;

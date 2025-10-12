@@ -1,3 +1,6 @@
+import { logger } from '@/lib/logger';
+
+
 /*
  * Centralized Datadog environment variable resolution
  * - Prefer DD_* variables; fall back to DATADOG_* for compatibility
@@ -5,8 +8,6 @@
  */
 
 // Keys commonly used across the codebase
-import { logger } from '@/lib/logger';
-
 export type DatadogKey = 'API_KEY' | 'APP_KEY' | 'SITE' | 'SERVICE' | 'ENV' | 'VERSION'
 
 function safeWarn(message: string) {

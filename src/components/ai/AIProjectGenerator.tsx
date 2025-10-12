@@ -5,8 +5,6 @@
 
 'use client'
 
-import { logger } from '@/lib/logger';
-
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Sparkles, Code, Rocket, Download, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
-
+import { logger } from '@/lib/logger';
 interface ProjectTemplate {
   id: string
   name: string

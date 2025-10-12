@@ -18,14 +18,13 @@ import { html } from '@codemirror/lang-html'
 import { css } from '@codemirror/lang-css'
 import { yCollab } from 'y-codemirror.next'
 import * as Y from 'yjs'
-import { logger } from '@/lib/logger';
-
 import {
-  CollaborationManager,
+CollaborationManager,
   CollaborationSession,
   CollaborationUser,
   collaborationManager
 } from '@/lib/collaboration'
+import { logger } from '@/lib/logger';
 
 interface CollaborativeEditorProps {
   documentId: string

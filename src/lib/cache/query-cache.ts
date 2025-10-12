@@ -3,10 +3,8 @@
  * Intelligent caching layer for database queries, vector searches, and API responses
  */
 
-import { logger } from '@/lib/logger';
-
 import { EventEmitter } from 'events'
-
+import { logger } from '@/lib/logger';
 export interface CacheEntry<T = any> {
   key: string
   value: T

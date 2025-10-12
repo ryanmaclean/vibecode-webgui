@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import docsIndex from '@/data/docs-index.json';
 import { logger } from '@/lib/logger';
-
 interface SearchResult {
   id: string;
   title: string;

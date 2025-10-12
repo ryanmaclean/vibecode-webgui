@@ -3,7 +3,6 @@
 
 import { PrismaClient } from '@prisma/client';
 import { logger } from '@/lib/logger';
-
 interface Logger {
   debug: (...args: any[]) => void;
   info: (...args: any[]) => void;

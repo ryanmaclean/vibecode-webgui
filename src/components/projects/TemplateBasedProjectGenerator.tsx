@@ -12,14 +12,13 @@ import { GenerateFromTemplateOptions, generateFromTemplate } from '@/lib/templat
 import { TemplateSelector } from './TemplateSelector'
 import { TemplateConfigurator } from './TemplateConfigurator'
 import {
-  ArrowLeftIcon,
+ArrowLeftIcon,
   ArrowRightIcon,
   RocketLaunchIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline'
-import { logger } from '@/lib/logger'
-
+import { logger } from '@/lib/logger';
 interface TemplateBasedProjectGeneratorProps {
   onComplete?: (data: { workspaceId: string; projectName: string }) => void
   className?: string

@@ -4,8 +4,6 @@
  * Endpoints for managing Apple Container instances
  */
 
-import { logger } from '@/lib/logger';
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -13,7 +11,7 @@ import { appleContainer } from '@/lib/container/apple-container'
 import type { ContainerOptions } from '@/lib/container/types'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { createContainerSchema } from '@/lib/api/validation/schemas'
-
+import { logger } from '@/lib/logger';
 /**
  * GET /api/containers
  * List all containers

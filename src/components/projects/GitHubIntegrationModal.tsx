@@ -4,13 +4,11 @@
 
 'use client'
 
-import { logger } from '@/lib/logger';
-
 import React, { useState, useEffect } from 'react'
 import { GitHubIntegration } from '@/lib/github/integration'
 import type { GeneratedProject } from '@/lib/templates/generator'
 import { 
-  XMarkIcon, 
+XMarkIcon, 
   CheckCircleIcon, 
   ExclamationTriangleIcon,
   ArrowTopRightOnSquareIcon,
@@ -18,6 +16,7 @@ import {
   EyeIcon,
   EyeSlashIcon
 } from '@heroicons/react/24/outline'
+import { logger } from '@/lib/logger';
 
 interface GitHubIntegrationModalProps {
   isOpen: boolean

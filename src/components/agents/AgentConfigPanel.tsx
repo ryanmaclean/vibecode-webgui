@@ -19,7 +19,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react'
 import {
-  Settings,
+Settings,
   Cpu,
   FileSearch,
   Code2,
@@ -37,6 +37,7 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Type Definitions
@@ -234,8 +235,7 @@ export function AgentConfigPanel({
             </CardTitle>
             <CardDescription>
               Configure your AI agent&apos;s behavior and capabilities
-import { logger } from '@/lib/logger';
-            </CardDescription>
+</CardDescription>
           </div>
           {saveStatus !== 'idle' && (
             <Badge

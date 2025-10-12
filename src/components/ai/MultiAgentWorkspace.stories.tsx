@@ -6,12 +6,10 @@
  * @module components/ai/MultiAgentWorkspace.stories
  */
 
-import { logger } from '@/lib/logger';
-
 import type { Meta, StoryObj } from '@storybook/react'
 import { MultiAgentWorkspace } from './MultiAgentWorkspace'
 import type { AgentResponse } from '@/types/agent-api'
-
+import { logger } from '@/lib/logger';
 const mockAgents: AgentResponse[] = [
   {
     agent_id: 'aider-abc123',

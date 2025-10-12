@@ -7,7 +7,6 @@ import Redis from 'ioredis';
 import { metrics } from '../server-monitoring';
 import { RedisError } from './redis-error';
 import { logger } from '@/lib/logger';
-
 // Type for the Redis client
 export type RedisClientType = Redis;
 

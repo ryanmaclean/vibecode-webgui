@@ -9,7 +9,6 @@ import { execSync, spawn } from 'child_process';
 import { writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { logger } from '@/lib/logger';
-
 export interface ErrorTrackingConfig {
   enabled: boolean;
   service: string;

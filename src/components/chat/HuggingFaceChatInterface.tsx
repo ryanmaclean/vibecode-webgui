@@ -1,5 +1,3 @@
-import { logger } from '@/lib/logger';
-
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Upload, Settings, Sparkles, MessageSquare, FileText, Image, Paperclip, Globe, Zap, Terminal, Code, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -10,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { HfInference } from '@huggingface/inference'
-
+import { logger } from '@/lib/logger';
 interface Message {
   id: string
   from: 'user' | 'assistant'

@@ -1,7 +1,6 @@
 import { DocumentationIngester } from './ingest';
 import axios from 'axios';
 import { logger } from '@/lib/logger';
-
 type Framework = {
   name: string;
   url: string;

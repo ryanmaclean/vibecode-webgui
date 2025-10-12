@@ -5,7 +5,6 @@
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
 import { logger } from '@/lib/logger';
-
 interface VectorDatabaseOptions {
   connectionUrl?: string;
   createExtensions?: boolean;
