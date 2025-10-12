@@ -1,219 +1,256 @@
-// Conversation Persistence API - Save and load chat history per workspace
-// Enables persistent conversations across sessions
+/**
+ * AI Conversations API Route
+ * Handles AI chat conversations for workspaces
+ */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, readFile, mkdir } from 'fs/promises'
-import { existsSync } from 'fs'
-import path from 'path'
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth/auth-options';
 
-interface Message {
-  id: string
-  type: 'user' | 'assistant'
-  content: string
-  timestamp: string
-  metadata?: {
-    model?: string
-    context?: string[]
-    tokens?: number
-    responseTime?: number
-  }
-}
-
-interface Conversation {
-  workspaceId: string
-  messages: Message[]
-  lastUpdated: string
-  metadata: {
-    totalMessages: number
-    modelUsage: Record<string, number>
-    totalTokens: number
-  }
-}
-
-// Get conversations directory path
-function getConversationsDir() {
-  return path.join(process.cwd(), 'data', 'conversations')
-}
-
-function getConversationPath(workspaceId: string) {
-  return path.join(getConversationsDir(), `${workspaceId}.json`)
-}
-
-// Ensure conversations directory exists
-async function ensureConversationsDir() {
-  const dir = getConversationsDir()
-  if (!existsSync(dir)) {
-    await mkdir(dir, { recursive: true })
-  }
-}
-
-// GET - Load conversation history
+// GET - Retrieve conversation history for a workspace
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ workspaceId: string }> }
 ) {
   try {
-    const { workspaceId } = await params
-
-    if (!workspaceId) {
-      return NextResponse.json(
-        { error: 'Workspace ID is required' },
-        { status: 400 }
-      )
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await ensureConversationsDir()
-    const conversationPath = getConversationPath(workspaceId)
+    const { workspaceId } = await params;
 
-    // Check if conversation file exists
-    if (!existsSync(conversationPath)) {
-      // Return empty conversation
-      const emptyConversation: Conversation = {
-        workspaceId,
-        messages: [],
-        lastUpdated: new Date().toISOString(),
-        metadata: {
-          totalMessages: 0,
-          modelUsage: {},
-          totalTokens: 0
-        }
-      }
-      return NextResponse.json(emptyConversation)
+    // Validate workspace access
+    if (!await validateWorkspaceAccess(session.user.id, workspaceId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Read and return conversation
-    const conversationData = await readFile(conversationPath, 'utf-8')
-    const conversation: Conversation = JSON.parse(conversationData)
+    // Get conversation history from database
+    const conversations = await getWorkspaceConversations(workspaceId);
 
-    return NextResponse.json(conversation)
+    return NextResponse.json({
+      conversations,
+      workspaceId,
+      count: conversations.length
+    });
 
   } catch (error) {
-    // Server error logged
+    console.error('Failed to retrieve conversations:', error);
     return NextResponse.json(
-      {
-        error: 'Failed to load conversation',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Internal server error' },
       { status: 500 }
-    )
+    );
   }
 }
 
-// POST - Save conversation history
+// POST - Send a message and get AI response
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ workspaceId: string }> }
 ) {
   try {
-    const { workspaceId } = await params
-    const body = await request.json()
-
-    if (!workspaceId) {
-      return NextResponse.json(
-        { error: 'Workspace ID is required' },
-        { status: 400 }
-      )
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!body.messages || !Array.isArray(body.messages)) {
+    const { workspaceId } = await params;
+    const body = await request.json();
+    const { message, context, model } = body;
+
+    if (!message || typeof message !== 'string') {
       return NextResponse.json(
-        { error: 'Messages array is required' },
+        { error: 'Message is required' },
         { status: 400 }
-      )
+      );
     }
 
-    await ensureConversationsDir()
+    // Validate workspace access
+    if (!await validateWorkspaceAccess(session.user.id, workspaceId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
-    // Calculate metadata
-    const modelUsage: Record<string, number> = {}
-    let totalTokens = 0
-
-    body.messages.forEach((msg: Message) => {
-      if (msg.metadata?.model) {
-        modelUsage[msg.metadata.model] = (modelUsage[msg.metadata.model] || 0) + 1
-      }
-      if (msg.metadata?.tokens) {
-        totalTokens += msg.metadata.tokens
-      }
-    })
-
-    // Create conversation object
-    const conversation: Conversation = {
+    // Save user message
+    const userMessageId = await saveMessage({
       workspaceId,
-      messages: body.messages,
-      lastUpdated: new Date().toISOString(),
-      metadata: {
-        totalMessages: body.messages.length,
-        modelUsage,
-        totalTokens
-      }
-    }
+      userId: session.user.id,
+      role: 'user',
+      content: message,
+      timestamp: new Date()
+    });
 
-    // Save conversation
-    const conversationPath = getConversationPath(workspaceId)
-    await writeFile(conversationPath, JSON.stringify(conversation, null, 2))
+    // Get AI response
+    const aiResponse = await generateAIResponse({
+      message,
+      context,
+      workspaceId,
+      model,
+      userId: session.user.id
+    });
+
+    // Save AI response
+    const aiMessageId = await saveMessage({
+      workspaceId,
+      userId: session.user.id,
+      role: 'assistant',
+      content: aiResponse.content,
+      timestamp: new Date(),
+      metadata: {
+        model: aiResponse.model,
+        tokens: aiResponse.tokens,
+        confidence: aiResponse.confidence
+      }
+    });
 
     return NextResponse.json({
-      success: true,
-      messagesCount: body.messages.length,
-      lastUpdated: conversation.lastUpdated
-    })
+      message: {
+        id: aiMessageId,
+        role: 'assistant',
+        content: aiResponse.content,
+        timestamp: new Date(),
+        metadata: {
+          model: aiResponse.model,
+          tokens: aiResponse.tokens,
+          confidence: aiResponse.confidence
+        }
+      },
+      conversationId: `conv_${workspaceId}_${Date.now()}`
+    });
 
   } catch (error) {
-    // Server error logged
+    console.error('Failed to process conversation message:', error);
     return NextResponse.json(
-      {
-        error: 'Failed to save conversation',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Internal server error' },
       { status: 500 }
-    )
+    );
   }
 }
 
 // DELETE - Clear conversation history
 export async function DELETE(
-<<<<<<< HEAD
-  _request: NextRequest,
-=======
   request: NextRequest,
-<<<<<<< HEAD
->>>>>>> ai-sdk-openai-v2-test
-=======
->>>>>>> merge-conflict-cleanup
   { params }: { params: Promise<{ workspaceId: string }> }
 ) {
   try {
-    const { workspaceId } = await params
-
-    if (!workspaceId) {
-      return NextResponse.json(
-        { error: 'Workspace ID is required' },
-        { status: 400 }
-      )
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const conversationPath = getConversationPath(workspaceId)
+    const { workspaceId } = await params;
 
-    // Check if file exists before trying to delete
-    if (existsSync(conversationPath)) {
-      const { unlink } = await import('fs/promises')
-      await unlink(conversationPath)
+    // Validate workspace access
+    if (!await validateWorkspaceAccess(session.user.id, workspaceId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    // Clear conversation history
+    const deletedCount = await clearWorkspaceConversations(workspaceId);
 
     return NextResponse.json({
       success: true,
-      message: 'Conversation cleared'
-    })
+      deletedMessages: deletedCount,
+      workspaceId
+    });
 
   } catch (error) {
-    // Server error logged
+    console.error('Failed to clear conversations:', error);
     return NextResponse.json(
-      {
-        error: 'Failed to clear conversation',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Internal server error' },
       { status: 500 }
-    )
+    );
+  }
+}
+
+/**
+ * Validate user access to workspace
+ */
+async function validateWorkspaceAccess(userId: string, workspaceId: string): Promise<boolean> {
+  try {
+    // This would integrate with your workspace/collaboration system
+    // For now, return true as a placeholder
+    return true;
+  } catch (error) {
+    console.error('Failed to validate workspace access:', error);
+    return false;
+  }
+}
+
+/**
+ * Get conversation history for a workspace
+ */
+async function getWorkspaceConversations(workspaceId: string): Promise<any[]> {
+  try {
+    // This would integrate with your chat/conversation storage system
+    // For now, return empty array as a placeholder
+    return [];
+  } catch (error) {
+    console.error('Failed to get workspace conversations:', error);
+    return [];
+  }
+}
+
+/**
+ * Save a message to the conversation history
+ */
+async function saveMessage(message: {
+  workspaceId: string;
+  userId: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+  metadata?: Record<string, any>;
+}): Promise<string> {
+  try {
+    // This would integrate with your chat storage system
+    // For now, return a mock ID
+    return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  } catch (error) {
+    console.error('Failed to save message:', error);
+    throw error;
+  }
+}
+
+/**
+ * Generate AI response to user message
+ */
+async function generateAIResponse(options: {
+  message: string;
+  context?: any;
+  workspaceId: string;
+  model?: string;
+  userId: string;
+}): Promise<{
+  content: string;
+  model: string;
+  tokens: number;
+  confidence: number;
+}> {
+  try {
+    // This would integrate with your AI services (OpenAI, Ollama, etc.)
+    // For now, return a mock response
+    return {
+      content: `I understand you said: "${options.message}". This is a mock AI response that would be replaced with actual AI integration.`,
+      model: options.model || 'gpt-4',
+      tokens: options.message.split(' ').length * 2, // Rough estimate
+      confidence: 0.85
+    };
+  } catch (error) {
+    console.error('Failed to generate AI response:', error);
+    throw error;
+  }
+}
+
+/**
+ * Clear all conversations for a workspace
+ */
+async function clearWorkspaceConversations(workspaceId: string): Promise<number> {
+  try {
+    // This would integrate with your chat storage system
+    // For now, return 0 as a placeholder
+    return 0;
+  } catch (error) {
+    console.error('Failed to clear workspace conversations:', error);
+    throw error;
   }
 }
