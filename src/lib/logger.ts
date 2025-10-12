@@ -1,40 +1,63 @@
 /**
- * Logger module for vector database operations.
+ * Structured Logger with Winston
  *
- * The logger supports optional metadata to provide structured logs that are
- * useful for monitoring and debugging.  All log levels are exposed as functions
- * that accept a message string (or any serialisable value) and an optional
- * `metadata` object.  When metadata is provided, it is appended to the console
- * output; otherwise only the primary message is logged.
+ * Production-ready logger that:
+ * - Eliminates console.log data leakage in production
+ * - Provides structured JSON logging
+ * - Supports log levels (error, warn, info, debug)
+ * - Includes metadata for monitoring/debugging
  */
+
+import winston from 'winston';
+
+const isProduction = process.env.NODE_ENV === 'production';
+const logLevel = process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug');
+
+// Winston logger configuration
+const winstonLogger = winston.createLogger({
+  level: logLevel,
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  defaultMeta: { service: 'vibecode-webgui' },
+  transports: [
+    // Write all logs to console in structured JSON format
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.timestamp(),
+        winston.format.printf(({ timestamp, level, message, ...metadata }) => {
+          let msg = `${timestamp} [${level}]: ${message}`;
+          if (Object.keys(metadata).length > 0) {
+            msg += ` ${JSON.stringify(metadata)}`;
+          }
+          return msg;
+        })
+      ),
+    }),
+  ],
+});
+
+// If we're in production, don't allow console.log
+if (isProduction) {
+  console.log = () => {};
+  console.debug = () => {};
+  console.info = () => {};
+}
 
 export const logger = {
   error: (message: any, metadata?: Record<string, unknown>) => {
-    if (metadata) {
-      console.error("[VectorDB Error]", message, metadata);
-    } else {
-      console.error("[VectorDB Error]", message);
-    }
+    winstonLogger.error(message, metadata || {});
   },
   warn: (message: any, metadata?: Record<string, unknown>) => {
-    if (metadata) {
-      console.warn("[VectorDB Warning]", message, metadata);
-    } else {
-      console.warn("[VectorDB Warning]", message);
-    }
+    winstonLogger.warn(message, metadata || {});
   },
   info: (message: any, metadata?: Record<string, unknown>) => {
-    if (metadata) {
-      console.info("[VectorDB Info]", message, metadata);
-    } else {
-      console.info("[VectorDB Info]", message);
-    }
+    winstonLogger.info(message, metadata || {});
   },
   debug: (message: any, metadata?: Record<string, unknown>) => {
-    if (metadata) {
-      console.debug("[VectorDB Debug]", message, metadata);
-    } else {
-      console.debug("[VectorDB Debug]", message);
-    }
+    winstonLogger.debug(message, metadata || {});
   },
 };
