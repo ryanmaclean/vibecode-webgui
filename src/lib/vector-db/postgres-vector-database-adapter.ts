@@ -1,844 +1,884 @@
 /**
  * PostgreSQL Vector Database Adapter
- * Implementation of the vector database adapter for PostgreSQL with pgVector
+ * Implementation of vector database operations using PostgreSQL with pgvector extension
  */
 
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
-import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
-import { VectorCacheManager } from '../cache/vector-cache-strategy';
-import { metrics } from '../server-monitoring';
+import { VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
+import { VectorChunk, SearchResult, SearchOptions } from './vector-types';
+import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
 import { VectorCacheInvalidator } from '../cache/vector-cache-invalidator';
 import { PgVectorSearch } from '../cache/pgvector-search';
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
->>>>>>> fix/consolidated-dependency-updates
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
 
 /**
  * PostgreSQL-specific configuration options
  */
 export interface PostgresVectorDatabaseConfig extends VectorDatabaseConfig {
   provider: VectorDatabaseProvider.POSTGRES;
-  pgPoolSize?: number;
-  pgSchemaName?: string;
-  pgVectorExtensionName?: string;
-  pgSearchMethod?: 'cosine' | 'inner_product' | 'euclidean';
+  schema?: string;
+  connectionLimit?: number;
+  ssl?: boolean | object;
+  enableLogging?: boolean;
+  enableMetrics?: boolean;
 }
 
 /**
  * PostgreSQL Vector Database Adapter
- * Implements vector database operations using PostgreSQL with pgVector extension
  */
 export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   private prisma: PrismaClient | null = null;
-<<<<<<< HEAD
-  protected postgresConfig: PostgresVectorDatabaseConfig;
-  private cacheInvalidator: VectorCacheInvalidator | null = null;
-=======
-<<<<<<< HEAD
   private postgresConfig: PostgresVectorDatabaseConfig;
   private errorHandler: VectorDbErrorHandler;
   private cacheInvalidator: VectorCacheInvalidator | null = null;
   private pgVectorSearch: PgVectorSearch | null = null;
->>>>>>> fix/consolidated-dependency-updates
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
 
   /**
-   * Constructor for PostgreSQL adapter
-   * @param config PostgreSQL-specific configuration
+   * Constructor for PostgreSQL Vector Database Adapter
    */
   constructor(config: PostgresVectorDatabaseConfig) {
     super(config);
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-    this.errorHandler = new VectorDbErrorHandler('postgres', config.enableLogging || false, config.enableMetrics || false);
->>>>>>> fix/consolidated-dependency-updates
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-    this.postgresConfig = {
-      pgPoolSize: 10,
-      pgSchemaName: 'public',
-      pgVectorExtensionName: 'vector',
-      pgSearchMethod: 'cosine',
-      ...config
-    };
+    this.postgresConfig = config;
+    this.errorHandler = new VectorDbErrorHandler();
   }
 
   /**
-   * Initialize the PostgreSQL connection
+   * Initialize the PostgreSQL vector database connection
    */
-  protected async initializeProvider(): Promise<void> {
+  async initialize(): Promise<void> {
     try {
-      // Create Prisma client
+      // Initialize Prisma client
       this.prisma = new PrismaClient({
+        log: this.postgresConfig.enableLogging ? ['query', 'error', 'warn'] : ['error'],
         datasources: {
           db: {
-            url: this.postgresConfig.connectionString || process.env.DATABASE_URL
+            url: this.postgresConfig.connectionString
           }
-        },
-        log: this.config.enableLogging ? ['error', 'warn'] : [],
-        errorFormat: 'pretty'
+        }
       });
 
-      // Connect to the database
+      // Test connection
       await this.prisma.$connect();
 
-      // Verify pgVector extension is installed
-      await this.verifyPgVectorExtension();
-
       // Initialize cache invalidator if caching is enabled
-      if (this.config.cacheEnabled) {
-        this.cacheInvalidator = VectorCacheInvalidator.getInstance();
-        await this.cacheInvalidator.initialize();
+      if (this.postgresConfig.cacheEnabled) {
+        this.cacheInvalidator = new VectorCacheInvalidator();
+        this.pgVectorSearch = new PgVectorSearch(this.prisma);
       }
 
-      if (this.config.enableLogging) {
-        console.info('PostgreSQL vector database adapter initialized successfully');
-      }
+      this.isInitialized = true;
+      console.log('PostgreSQL vector database adapter initialized successfully');
+
     } catch (error) {
-      if (this.config.enableLogging) {
-        console.error('Failed to initialize PostgreSQL vector database adapter:', error);
-      }
-      throw error;
+      const vectorDbError = this.errorHandler.handleError(error, 'initialize');
+      throw vectorDbError;
     }
   }
 
   /**
-   * Verify that the pgVector extension is installed and properly configured
+   * Close the database connection
    */
-  private async verifyPgVectorExtension(): Promise<void> {
-    if (!this.prisma) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('Prisma client not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('Prisma client not initialized');
+  async close(): Promise<void> {
+    if (this.prisma) {
+      await this.prisma.$disconnect();
+      this.prisma = null;
     }
-=======
-      throw this.errorHandler.handleError(new Error('Prisma client not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
->>>>>>> fix/consolidated-dependency-updates
+    this.isInitialized = false;
+  }
+
+  /**
+   * Check if the database connection is healthy
+   */
+  async ping(): Promise<boolean> {
+    try {
+      if (!this.prisma) return false;
+
+      await this.prisma.$queryRaw`SELECT 1`;
+      return true;
+    } catch (error) {
+      console.error('PostgreSQL ping failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if connected to database
+   */
+  isConnected(): boolean {
+    return this.prisma !== null && this.isInitialized;
+  }
+
+  /**
+   * Store vector embeddings for the given chunks
+   */
+  async store(chunks: VectorChunk[]): Promise<number> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
 
     try {
-      // Check if vector extension is installed
-      const extensionResult = await this.prisma.$queryRaw`
-        SELECT extname FROM pg_extension WHERE extname = 'vector'
+      let storedCount = 0;
+
+      for (const chunk of chunks) {
+        await this.prisma.vectorChunk.upsert({
+          where: { id: chunk.id },
+          update: {
+            content: chunk.content,
+            embedding: chunk.embedding,
+            metadata: chunk.metadata,
+            updatedAt: new Date()
+          },
+          create: {
+            id: chunk.id,
+            content: chunk.content,
+            embedding: chunk.embedding,
+            metadata: chunk.metadata,
+            workspaceId: chunk.metadata.fileId || 0,
+            fileId: chunk.metadata.fileId || 0,
+            fileName: chunk.metadata.fileName || '',
+            language: chunk.metadata.language || '',
+            tokens: chunk.metadata.tokens || 0
+          }
+        });
+
+        storedCount++;
+
+        // Invalidate cache for this workspace
+        if (this.cacheInvalidator && chunk.metadata.fileId) {
+          await this.cacheInvalidator.invalidateWorkspaceCache(chunk.metadata.fileId);
+        }
+      }
+
+      return storedCount;
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'store');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Search for similar vectors using the provided query embedding
+   */
+  async searchWithVector(
+    queryEmbedding: number[],
+    options: SearchOptions
+  ): Promise<SearchResult[]> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      const limit = options.limit || 10;
+      const threshold = options.threshold || 0.1;
+
+      // Use Prisma to query with cosine similarity
+      const results = await this.prisma.$queryRaw`
+        SELECT
+          id,
+          content,
+          embedding,
+          metadata,
+          1 - (embedding <=> ${JSON.stringify(queryEmbedding)}::vector) as similarity
+        FROM "VectorChunk"
+        WHERE 1 - (embedding <=> ${JSON.stringify(queryEmbedding)}::vector) > ${threshold}
+        ORDER BY embedding <=> ${JSON.stringify(queryEmbedding)}::vector
+        LIMIT ${limit}
       `;
 
-      if (!Array.isArray(extensionResult) || extensionResult.length === 0) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-        throw this.errorHandler.handleError(new Error('pgVector extension is not installed in the database'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-        throw new Error('pgVector extension is not installed in the database');
-      }
-=======
-        throw this.errorHandler.handleError(new Error('pgVector extension is not installed in the database'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);      }
->>>>>>> fix/consolidated-dependency-updates
-
-      // Verify vector type exists by querying pg_type
-      const typeResult = await this.prisma.$queryRaw`
-        SELECT typname FROM pg_type WHERE typname = 'vector'
-      `;
-
-      if (!Array.isArray(typeResult) || typeResult.length === 0) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-        throw this.errorHandler.handleError(new Error('Vector data type not found, pgVector extension may be incorrectly installed'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-        throw new Error('Vector data type not found, pgVector extension may be incorrectly installed');
-      }
-=======
-        throw this.errorHandler.handleError(new Error('Vector data type not found, pgVector extension may be incorrectly installed'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);      }
->>>>>>> fix/consolidated-dependency-updates
-
-      if (this.config.enableLogging) {
-        console.info('pgVector extension verified successfully');
-      }
+      return (results as any[]).map((row: any) => ({
+        chunk: {
+          id: row.id,
+          content: row.content,
+          embedding: row.embedding,
+          metadata: row.metadata || {}
+        },
+        similarity: parseFloat(row.similarity)
+      }));
     } catch (error) {
-      if (this.config.enableLogging) {
-        console.error('pgVector extension verification failed:', error);
-      }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error(`pgVector extension verification failed: ${error instanceof Error ? error.message : String(error)}`), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error(`pgVector extension verification failed: ${error instanceof Error ? error.message : String(error)}`);
+      const vectorDbError = this.errorHandler.handleError(error, 'searchWithVector');
+      throw vectorDbError;
     }
-=======
-      throw this.errorHandler.handleError(new Error(`pgVector extension verification failed: ${error instanceof Error ? error.message : String(error)}`), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);    }
->>>>>>> fix/consolidated-dependency-updates
   }
 
   /**
-   * Store vector chunks in the database
+   * Search for similar vectors using text query (generates embedding internally)
    */
-  public async storeChunks(fileId: number, chunks: Array<{
-    content: string;
-    startLine?: number;
-    endLine?: number;
-    tokens: number;
-  }>): Promise<void> {
+  async searchWithText(
+    query: string,
+    options: SearchOptions
+  ): Promise<SearchResult[]> {
+    // For PostgreSQL, we'd need an embedding service to convert text to vectors
+    // For now, fall back to content-based search
     if (!this.prisma) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('PostgreSQL adapter not initialized');
+      throw new Error('Database not initialized');
     }
-=======
-      throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
->>>>>>> fix/consolidated-dependency-updates
 
     try {
-      const startTime = Date.now();
-      
-      // Delete existing chunks for this file
-      await this.prisma.rAGChunk.deleteMany({
-        where: { file_id: fileId }
-      });
+      const limit = options.limit || 10;
 
-      // Process chunks in batches to avoid rate limits
-      const batchSize = 5;
-      for (let i = 0; i < chunks.length; i += batchSize) {
-        const batch = chunks.slice(i, i + batchSize);
-        
-        // Process each chunk individually to handle pgvector embedding insertion
-        for (let j = 0; j < batch.length; j++) {
-          const chunk = batch[j];
-          const chunkId = `${fileId}-chunk-${i + j}`;
-          
-          // Generate embedding
-          const embedding = await this.generateEmbedding(chunk.content);
-          const embeddingString = `[${embedding.join(',')}]`;
-          
-          // Use raw SQL to insert with pgvector embedding
-          await this.prisma.$executeRawUnsafe(`
-            INSERT INTO rag_chunks (file_id, chunk_id, content, start_line, end_line, tokens, embedding, metadata, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7::vector, $8, NOW())
-          `, 
-            fileId,
-            chunkId,
-            chunk.content,
-            chunk.startLine || null,
-            chunk.endLine || null,
-            chunk.tokens,
-            embeddingString,
-            JSON.stringify({ generatedAt: new Date().toISOString() })
-          );
-        }
-
-        // Small delay to respect rate limits
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-
-      // Invalidate cache
-      if (this.config.cacheEnabled && this.cacheInvalidator) {
-        await this.cacheInvalidator.manuallyInvalidateCache('rag_chunks');
-      }
-
-      if (this.config.enableMetrics) {
-        metrics.histogram('postgres_vector_db.store_chunks.duration', Date.now() - startTime);
-        metrics.increment('postgres_vector_db.store_chunks.success');
-      }
-    } catch (error) {
-      if (this.config.enableMetrics) {
-        metrics.increment('postgres_vector_db.store_chunks.error');
-      }
-      
-      if (this.config.enableLogging) {
-        console.error('Error storing vector chunks:', error);
-      }
-      
-      throw error;
-    }
-  }
-
-  /**
-   * Search for similar content using vector similarity
-   */
-  public async search(embedding: number[], options: SearchOptions = {}): Promise<SearchResult[]> {
-    if (!this.prisma) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('PostgreSQL adapter not initialized');
-    }
-=======
-      throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
->>>>>>> fix/consolidated-dependency-updates
-
-    try {
-      const startTime = Date.now();
-      
-      const { workspaceId, fileIds, limit = 10, threshold = 0.7, useCache = true } = options;
-      
-      // First try to get results from cache if enabled
-      if (useCache && this.config.cacheEnabled) {
-        try {
-          const workspace = workspaceId ? workspaceId.toString() : undefined;
-          
-          // Use PgVectorSearch with caching
-          const cachedResults = await this.getCachedResults(embedding, {
-            limit,
-            minSimilarity: threshold,
-            workspace,
-            useCache: true
-          });
-          
-          if (cachedResults && cachedResults.length > 0) {
-            if (this.config.enableMetrics) {
-              metrics.increment('postgres_vector_db.search.cache_hit');
-            }
-            
-            return this.formatSearchResults(cachedResults);
-          }
-        } catch (cacheError) {
-          if (this.config.enableLogging) {
-            console.warn('Cache retrieval failed, falling back to direct query:', cacheError);
-          }
-          // Continue with direct query if cache fails
-        }
-      }
-
-      // If cache miss or caching disabled, perform direct query
-      const embeddingString = `[${embedding.join(',')}]`;
-
-      // Build WHERE clause for filtering
-      const whereConditions: string[] = [];
-      const params: (string | number | number[])[] = [];
-      let paramIndex = 1;
-
-      if (workspaceId) {
-        whereConditions.push(`f.workspace_id = $${paramIndex}`);
-        params.push(workspaceId);
-        paramIndex++;
-      }
-
-      if (fileIds && fileIds.length > 0) {
-        whereConditions.push(`rc.file_id = ANY($${paramIndex}::int[])`);
-        params.push(`{${fileIds.join(',')}}`);
-        paramIndex++;
-      }
-
-      const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-
-      // Add embedding parameter
-      const embeddingParamIndex = paramIndex++;
-      const limitParamIndex = paramIndex++;
-
-      // Use pgvector for similarity search with the configured search method
-      let distanceOperator = '<=>'; // Cosine distance by default
-      if (this.postgresConfig.pgSearchMethod === 'inner_product') {
-        distanceOperator = '<#>'; // Inner product
-      } else if (this.postgresConfig.pgSearchMethod === 'euclidean') {
-        distanceOperator = '<->'; // Euclidean distance
-      }
-      
-      // For inner product, we need to invert the similarity score calculation
-      const similarityExpression = this.postgresConfig.pgSearchMethod === 'inner_product'
-        ? `(rc.embedding <#> $${embeddingParamIndex}::vector) as similarity`
-        : `(1 - (rc.embedding ${distanceOperator} $${embeddingParamIndex}::vector)) as similarity`;
-      
-      // For inner product, we need to sort differently
-      const orderByExpression = this.postgresConfig.pgSearchMethod === 'inner_product'
-        ? `ORDER BY rc.embedding <#> $${embeddingParamIndex}::vector DESC`
-        : `ORDER BY rc.embedding ${distanceOperator} $${embeddingParamIndex}::vector`;
-
-      const sql = `
-        SELECT 
-          rc.chunk_id,
-          rc.content,
-          rc.start_line,
-          rc.end_line,
-          rc.tokens,
-          rc.file_id,
-          f.name as file_name,
-          f.language,
-          ${similarityExpression}
-        FROM rag_chunks rc
-        JOIN files f ON rc.file_id = f.id
-        ${whereClause}
-        ${orderByExpression}
-        LIMIT $${limitParamIndex}
-      `;
-
-      // Add parameters in the correct order
-      params.push(embeddingString, limit);
-
-      // Define interface for raw SQL result
-      interface RawResult {
-        chunk_id: string;
-        content: string;
-        start_line: number | null;
-        end_line: number | null;
-        tokens: number;
-        file_id: number;
-        file_name: string;
-        language: string | null;
-        similarity: number;
-      }
-
-      // Execute raw SQL query using Prisma
-      const rawResults = await this.prisma.$queryRawUnsafe<RawResult[]>(sql, ...params);
-
-      // Filter by threshold and format results
-      let results: SearchResult[] = [];
-      
-      // For inner product, we handle similarity scores differently
-      if (this.postgresConfig.pgSearchMethod === 'inner_product') {
-        // Normalize scores to 0-1 range for inner product
-        const scores = rawResults.map(row => row.similarity);
-        const maxScore = Math.max(...scores);
-        const minScore = Math.min(...scores);
-        const range = maxScore - minScore;
-        
-        results = rawResults
-          .map((row) => ({
-            chunk: {
-              id: row.chunk_id,
-              content: row.content,
-              embedding: [], // Don't return embedding in response for performance
-              metadata: {
-                fileId: row.file_id,
-                fileName: row.file_name,
-                startLine: row.start_line || undefined,
-                endLine: row.end_line || undefined,
-                language: row.language || undefined,
-                tokens: row.tokens || 0
-              }
-            },
-            // Normalize to 0-1 range
-            similarity: range > 0 ? (row.similarity - minScore) / range : 0.5
-          }))
-          .filter((result) => result.similarity >= threshold);
-      } else {
-        // For cosine and euclidean, we can use the similarity directly
-        results = rawResults
-          .filter((row) => row.similarity >= threshold)
-          .map((row) => ({
-            chunk: {
-              id: row.chunk_id,
-              content: row.content,
-              embedding: [], // Don't return embedding in response for performance
-              metadata: {
-                fileId: row.file_id,
-                fileName: row.file_name,
-                startLine: row.start_line || undefined,
-                endLine: row.end_line || undefined,
-                language: row.language || undefined,
-                tokens: row.tokens || 0
-              }
-            },
-            similarity: row.similarity
-          }));
-      }
-
-      // Cache the results for future queries if caching is enabled
-      if (useCache && this.config.cacheEnabled && results.length > 0) {
-        try {
-          // Store the formatted results in our cache system
-          const workspace = workspaceId ? workspaceId.toString() : undefined;
-          
-          // Use PgVectorSearch to store in cache without waiting for completion
-          this.cacheResults(embedding, {
-            limit,
-            minSimilarity: threshold,
-            workspace,
-            useCache: true
-          }, results).catch(err => {
-            if (this.config.enableLogging) {
-              console.warn('Background cache storage failed:', err);
-            }
-          });
-        } catch (cacheError) {
-          if (this.config.enableLogging) {
-            console.warn('Failed to cache results:', cacheError);
-          }
-          // Continue without caching if it fails
-        }
-      }
-
-      if (this.config.enableMetrics) {
-        metrics.histogram('postgres_vector_db.search.duration', Date.now() - startTime);
-        metrics.increment('postgres_vector_db.search.success');
-      }
-      
-      return results;
-    } catch (error) {
-      if (this.config.enableMetrics) {
-        metrics.increment('postgres_vector_db.search.error');
-      }
-      
-      if (this.config.enableLogging) {
-        console.error('Error in vector search:', error);
-      }
-      
-      // Fallback to simple text search if vector search fails
-      return this.fallbackTextSearch(
-        '', // We don't have the original query text here
-        options
-      );
-    }
-  }
-
-  /**
-   * Get cached results from PgVectorSearch
-   */
-  private async getCachedResults(
-    embedding: number[],
-    options: {
-      limit?: number;
-      minSimilarity?: number;
-      workspace?: string;
-      useCache?: boolean;
-    }
-  ): Promise<any[]> {
-    return await PgVectorSearch.findSimilarCode(embedding, options);
-  }
-
-  /**
-   * Cache results in PgVectorSearch
-   */
-  private async cacheResults(
-    embedding: number[],
-    options: {
-      limit?: number;
-      minSimilarity?: number;
-      workspace?: string;
-      useCache?: boolean;
-    },
-    results: SearchResult[]
-  ): Promise<void> {
-    // Convert results to the format expected by PgVectorSearch
-    const pgVectorResults = results.map(result => ({
-      id: result.chunk.id,
-      similarity: result.similarity,
-      content: result.chunk.content,
-      metadata: {
-        chunk_id: result.chunk.id,
-        file_id: result.chunk.metadata.fileId,
-        path: result.chunk.metadata.fileName,
-        start_line: result.chunk.metadata.startLine,
-        end_line: result.chunk.metadata.endLine,
-        language: result.chunk.metadata.language,
-        tokens: result.chunk.metadata.tokens
-      },
-      contentType: 'code'
-    }));
-    
-    // Cache the results
-    await VectorCacheManager.cacheResults({
-      embedding,
-      table: 'rag_chunks',
-      limit: options.limit,
-      minSimilarity: options.minSimilarity,
-      contentTypes: ['code']
-    }, pgVectorResults, options.workspace);
-  }
-
-  /**
-   * Format PgVectorSearch results to standard SearchResult format
-   */
-  private formatSearchResults(results: any[]): SearchResult[] {
-    return results.map(item => ({
-      chunk: {
-        id: item.metadata?.chunk_id?.toString() || item.id.toString(),
-        content: item.content || '',
-        embedding: [], // Don't return embedding in response for performance
-        metadata: {
-          fileId: item.metadata?.file_id || 0,
-          fileName: item.metadata?.path || '',
-          startLine: item.metadata?.start_line,
-          endLine: item.metadata?.end_line,
-          language: item.metadata?.language,
-          tokens: item.metadata?.tokens || 0
-        }
-      },
-      similarity: item.similarity
-    }));
-  }
-
-  /**
-   * Fallback text search when vector search is not available
-   */
-  protected async fallbackTextSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
-    if (!this.prisma) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('PostgreSQL adapter not initialized');
-    }
-=======
-      throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
->>>>>>> fix/consolidated-dependency-updates
-
-    try {
-      const { workspaceId, fileIds, limit = 10 } = options;
-
-      const whereClause: Prisma.RAGChunkWhereInput = {
-        content: query ? {
-          contains: query,
-          mode: Prisma.QueryMode.insensitive
-        } : undefined
-      };
-      
-      if (workspaceId) {
-        whereClause.file = { is: { workspace_id: workspaceId } };
-      }
-      
-      if (fileIds && fileIds.length > 0) {
-        whereClause.file_id = { in: fileIds };
-      }
-
-      const chunks = await this.prisma.rAGChunk.findMany({
-        where: whereClause,
-        include: {
-          file: {
-            select: {
-              id: true,
-              name: true,
-              language: true
-            }
+      const results = await this.prisma.vectorChunk.findMany({
+        where: {
+          content: {
+            contains: query,
+            mode: 'insensitive'
           }
         },
         take: limit,
         orderBy: {
-          created_at: 'desc'
+          updatedAt: 'desc'
+        }
+      });
+
+      return results.map(chunk => ({
+        chunk: {
+          id: chunk.id,
+          content: chunk.content,
+          embedding: chunk.embedding as number[],
+          metadata: chunk.metadata as any
+        },
+        similarity: 0.5 // Default similarity for text-based search
+      }));
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'searchWithText');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Delete vectors by their IDs
+   */
+  async delete(ids: string[]): Promise<number> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      const result = await this.prisma.vectorChunk.deleteMany({
+        where: {
+          id: {
+            in: ids
+          }
+        }
+      });
+
+      return result.count;
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'delete');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Get statistics about the vector database
+   */
+  async getStats(): Promise<{
+    totalVectors: number;
+    indexSize: number;
+    lastUpdated: Date;
+  }> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      const stats = await this.prisma.vectorChunk.aggregate({
+        _count: {
+          id: true
+        },
+        _max: {
+          updatedAt: true
+        }
+      });
+
+      // Get approximate index size (this is a simplified calculation)
+      const indexSize = stats._count.id * 1000; // Rough estimate
+
+      return {
+        totalVectors: stats._count.id,
+        indexSize,
+        lastUpdated: stats._max.updatedAt || new Date()
+      };
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'getStats');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Generate embeddings for the given text (placeholder implementation)
+   */
+  async generateEmbedding(text: string): Promise<number[]> {
+    // This would integrate with an embedding service (OpenAI, etc.)
+    // For now, return a placeholder embedding
+    const dimensions = 1536; // OpenAI text-embedding-ada-002 dimensions
+    return new Array(dimensions).fill(0).map(() => Math.random() * 2 - 1);
+  }
+
+  /**
+   * Get the dimensionality of vectors in this database
+   */
+  getDimensions(): number {
+    return 1536; // Standard for OpenAI embeddings
+  }
+
+  /**
+   * Clear all vectors from the database
+   */
+  async clear(): Promise<void> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      await this.prisma.vectorChunk.deleteMany({});
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'clear');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Create an index for the given field if it doesn't exist
+   */
+  async createIndex(field: string, options?: any): Promise<void> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      // For pgvector, indexes are created using SQL
+      // This is a simplified implementation
+      await this.prisma.$executeRaw`
+        CREATE INDEX IF NOT EXISTS ${field}_idx ON "VectorChunk" USING ivfflat (embedding vector_cosine_ops)
+      `;
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'createIndex');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Delete an index for the given field
+   */
+  async deleteIndex(field: string): Promise<void> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      await this.prisma.$executeRaw`DROP INDEX IF EXISTS ${field}_idx`;
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'deleteIndex');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Get all available indexes
+   */
+  async getIndexes(): Promise<string[]> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      const indexes = await this.prisma.$queryRaw`
+        SELECT indexname FROM pg_indexes WHERE tablename = 'VectorChunk'
+      `;
+
+      return (indexes as any[]).map((idx: any) => idx.indexname);
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'getIndexes');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Invalidate cache for specific table and content type
+   */
+  async invalidateCache(table: string, contentType?: string): Promise<number> {
+    if (!this.cacheInvalidator) {
+      return 0;
+    }
+
+    try {
+      return await this.cacheInvalidator.invalidateByContentType(contentType || table);
+    } catch (error) {
+      console.warn('Cache invalidation failed:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Get vector by ID
+   */
+  async getById(id: string): Promise<VectorChunk | null> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      const chunk = await this.prisma.vectorChunk.findUnique({
+        where: { id }
+      });
+
+      if (!chunk) return null;
+
+      return {
+        id: chunk.id,
+        content: chunk.content,
+        embedding: chunk.embedding as number[],
+        metadata: chunk.metadata as any
+      };
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'getById');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Update vector by ID
+   */
+  async update(id: string, chunk: Partial<VectorChunk>): Promise<boolean> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      const result = await this.prisma.vectorChunk.update({
+        where: { id },
+        data: {
+          ...(chunk.content && { content: chunk.content }),
+          ...(chunk.embedding && { embedding: chunk.embedding }),
+          ...(chunk.metadata && { metadata: chunk.metadata }),
+          updatedAt: new Date()
+        }
+      });
+
+      return true;
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'update');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Batch operation for multiple vectors
+   */
+  async batch(operations: Array<{
+    type: 'insert' | 'update' | 'delete';
+    data?: VectorChunk;
+    id?: string;
+  }>): Promise<number> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
+
+    let processedCount = 0;
+
+    try {
+      for (const operation of operations) {
+        switch (operation.type) {
+          case 'insert':
+            if (operation.data) {
+              await this.prisma.vectorChunk.create({
+                data: {
+                  id: operation.data.id,
+                  content: operation.data.content,
+                  embedding: operation.data.embedding,
+                  metadata: operation.data.metadata,
+                  workspaceId: operation.data.metadata.fileId || 0,
+                  fileId: operation.data.metadata.fileId || 0,
+                  fileName: operation.data.metadata.fileName || '',
+                  language: operation.data.metadata.language || '',
+                  tokens: operation.data.metadata.tokens || 0
+                }
+              });
+              processedCount++;
+            }
+            break;
+
+          case 'update':
+            if (operation.id && operation.data) {
+              await this.prisma.vectorChunk.update({
+                where: { id: operation.id },
+                data: {
+                  ...(operation.data.content && { content: operation.data.content }),
+                  ...(operation.data.embedding && { embedding: operation.data.embedding }),
+                  ...(operation.data.metadata && { metadata: operation.data.metadata }),
+                  updatedAt: new Date()
+                }
+              });
+              processedCount++;
+            }
+            break;
+
+          case 'delete':
+            if (operation.id) {
+              await this.prisma.vectorChunk.delete({
+                where: { id: operation.id }
+              });
+              processedCount++;
+            }
+            break;
+        }
+      }
+
+      return processedCount;
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'batch');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Get similar vectors within a specific workspace
+   */
+  async searchByWorkspace(
+    workspaceId: number,
+    queryEmbedding: number[],
+    options: SearchOptions
+  ): Promise<SearchResult[]> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      const limit = options.limit || 10;
+      const threshold = options.threshold || 0.1;
+
+      const results = await this.prisma.$queryRaw`
+        SELECT
+          id,
+          content,
+          embedding,
+          metadata,
+          1 - (embedding <=> ${JSON.stringify(queryEmbedding)}::vector) as similarity
+        FROM "VectorChunk"
+        WHERE workspaceId = ${workspaceId}
+        AND 1 - (embedding <=> ${JSON.stringify(queryEmbedding)}::vector) > ${threshold}
+        ORDER BY embedding <=> ${JSON.stringify(queryEmbedding)}::vector
+        LIMIT ${limit}
+      `;
+
+      return (results as any[]).map((row: any) => ({
+        chunk: {
+          id: row.id,
+          content: row.content,
+          embedding: row.embedding,
+          metadata: row.metadata || {}
+        },
+        similarity: parseFloat(row.similarity)
+      }));
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'searchByWorkspace');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Get vectors by file IDs
+   */
+  async getByFileIds(fileIds: number[]): Promise<VectorChunk[]> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      const chunks = await this.prisma.vectorChunk.findMany({
+        where: {
+          fileId: {
+            in: fileIds
+          }
         }
       });
 
       return chunks.map(chunk => ({
-        chunk: {
-          id: chunk.chunk_id,
-          content: chunk.content,
-          embedding: [],
-          metadata: {
-            fileId: chunk.file_id,
-            fileName: chunk.file.name,
-            startLine: chunk.start_line || undefined,
-            endLine: chunk.end_line || undefined,
-            language: chunk.file.language || undefined,
-            tokens: chunk.tokens || 0
-          }
-        },
-        similarity: 0.5 // Default similarity for text search
+        id: chunk.id,
+        content: chunk.content,
+        embedding: chunk.embedding as number[],
+        metadata: chunk.metadata as any
       }));
     } catch (error) {
-      if (this.config.enableLogging) {
-        console.error('Error in fallback text search:', error);
-      }
-      return [];
+      const vectorDbError = this.errorHandler.handleError(error, 'getByFileIds');
+      throw vectorDbError;
     }
   }
 
   /**
-   * Delete all chunks for a file
+   * Search with hybrid scoring (semantic + keyword)
    */
-  public async deleteFileChunks(fileId: number): Promise<void> {
-    if (!this.prisma) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('PostgreSQL adapter not initialized');
+  async hybridSearch(
+    query: string,
+    queryEmbedding: number[],
+    options: SearchOptions & {
+      keywordWeight?: number;
+      semanticWeight?: number;
     }
-=======
-      throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
->>>>>>> fix/consolidated-dependency-updates
+  ): Promise<SearchResult[]> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
 
     try {
-      const startTime = Date.now();
-      
-      await this.prisma.rAGChunk.deleteMany({
-        where: { file_id: fileId }
-      });
+      const limit = options.limit || 10;
+      const keywordWeight = options.keywordWeight || 0.3;
+      const semanticWeight = options.semanticWeight || 0.7;
 
-      // Invalidate cache
-      if (this.config.cacheEnabled && this.cacheInvalidator) {
-        await this.cacheInvalidator.manuallyInvalidateCache('rag_chunks');
-      }
+      const results = await this.prisma.$queryRaw`
+        SELECT
+          id,
+          content,
+          embedding,
+          metadata,
+          (${semanticWeight} * (1 - (embedding <=> ${JSON.stringify(queryEmbedding)}::vector)) +
+           ${keywordWeight} * similarity(content, ${query})) as combined_score
+        FROM "VectorChunk"
+        WHERE content % ${query}
+        ORDER BY combined_score DESC
+        LIMIT ${limit}
+      `;
 
-      if (this.config.enableMetrics) {
-        metrics.histogram('postgres_vector_db.delete_chunks.duration', Date.now() - startTime);
-        metrics.increment('postgres_vector_db.delete_chunks.success');
-      }
+      return (results as any[]).map((row: any) => ({
+        chunk: {
+          id: row.id,
+          content: row.content,
+          embedding: row.embedding,
+          metadata: row.metadata || {}
+        },
+        similarity: parseFloat(row.combined_score)
+      }));
     } catch (error) {
-      if (this.config.enableMetrics) {
-        metrics.increment('postgres_vector_db.delete_chunks.error');
-      }
-      
-      if (this.config.enableLogging) {
-        console.error('Error deleting file chunks:', error);
-      }
-      
-      throw error;
+      const vectorDbError = this.errorHandler.handleError(error, 'hybridSearch');
+      throw vectorDbError;
     }
   }
 
   /**
-   * Get statistics about the vector store
+   * Get recommendations based on user behavior
    */
-  public async getStats(): Promise<{
-    totalChunks: number;
+  async getRecommendations(
+    userId: string,
+    currentFileId: number,
+    options: {
+      limit?: number;
+      excludeCurrentFile?: boolean;
+    }
+  ): Promise<VectorChunk[]> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      const limit = options.limit || 5;
+      const whereClause = options.excludeCurrentFile
+        ? 'AND fileId != $2'
+        : '';
+
+      const results = await this.prisma.$queryRaw`
+        SELECT id, content, embedding, metadata
+        FROM "VectorChunk"
+        WHERE userId = $1 ${whereClause}
+        ORDER BY updatedAt DESC
+        LIMIT $3
+      ` as any[];
+
+      return results.map((row: any) => ({
+        id: row.id,
+        content: row.content,
+        embedding: row.embedding,
+        metadata: row.metadata || {}
+      }));
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'getRecommendations');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Get trending content based on recent activity
+   */
+  async getTrendingContent(
+    workspaceId: number,
+    options: {
+      limit?: number;
+      timeWindow?: number;
+    }
+  ): Promise<VectorChunk[]> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      const limit = options.limit || 10;
+      const timeWindow = options.timeWindow || 24; // hours
+
+      const cutoffDate = new Date();
+      cutoffDate.setHours(cutoffDate.getHours() - timeWindow);
+
+      const chunks = await this.prisma.vectorChunk.findMany({
+        where: {
+          workspaceId,
+          updatedAt: {
+            gte: cutoffDate
+          }
+        },
+        orderBy: {
+          updatedAt: 'desc'
+        },
+        take: limit
+      });
+
+      return chunks.map(chunk => ({
+        id: chunk.id,
+        content: chunk.content,
+        embedding: chunk.embedding as number[],
+        metadata: chunk.metadata as any
+      }));
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'getTrendingContent');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Search with filters
+   */
+  async searchWithFilters(
+    queryEmbedding: number[],
+    filters: {
+      language?: string;
+      fileType?: string;
+      minTokens?: number;
+      maxTokens?: number;
+      dateRange?: { start: Date; end: Date };
+    },
+    options: SearchOptions
+  ): Promise<SearchResult[]> {
+    if (!this.prisma) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      const limit = options.limit || 10;
+      const threshold = options.threshold || 0.1;
+
+      let whereClause = '1 - (embedding <=> $1::vector) > $2';
+      const values = [JSON.stringify(queryEmbedding), threshold];
+
+      if (filters.language) {
+        whereClause += ` AND language = $${values.length + 1}`;
+        values.push(filters.language);
+      }
+
+      if (filters.minTokens) {
+        whereClause += ` AND tokens >= $${values.length + 1}`;
+        values.push(filters.minTokens.toString());
+      }
+
+      if (filters.maxTokens) {
+        whereClause += ` AND tokens <= $${values.length + 1}`;
+        values.push(filters.maxTokens.toString());
+      }
+
+      if (filters.dateRange) {
+        whereClause += ` AND updatedAt >= $${values.length + 1} AND updatedAt <= $${values.length + 2}`;
+        values.push(filters.dateRange.start.toISOString(), filters.dateRange.end.toISOString());
+      }
+
+      const query = `
+        SELECT
+          id,
+          content,
+          embedding,
+          metadata,
+          1 - (embedding <=> $${JSON.stringify(queryEmbedding)}::vector) as similarity
+        FROM "VectorChunk"
+        WHERE ${whereClause}
+        ORDER BY embedding <=> $${JSON.stringify(queryEmbedding)}::vector
+        LIMIT ${limit}
+      `;
+
+      const results = await this.prisma.$queryRawUnsafe(query, ...values);
+
+      return (results as any[]).map((row: any) => ({
+        chunk: {
+          id: row.id,
+          content: row.content,
+          embedding: row.embedding,
+          metadata: row.metadata || {}
+        },
+        similarity: parseFloat(row.similarity)
+      }));
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'searchWithFilters');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Get content analytics
+   */
+  async getAnalytics(workspaceId: number): Promise<{
     totalFiles: number;
-    averageChunkSize: number;
+    totalChunks: number;
+    languageBreakdown: Record<string, number>;
+    recentActivity: Array<{
+      date: Date;
+      filesAdded: number;
+      searchesPerformed: number;
+    }>;
   }> {
     if (!this.prisma) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('PostgreSQL adapter not initialized');
+      throw new Error('Database not initialized');
     }
-=======
-      throw this.errorHandler.handleError(new Error('PostgreSQL adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
->>>>>>> fix/consolidated-dependency-updates
 
     try {
-      const startTime = Date.now();
-      
-      const totalChunks = await this.prisma.rAGChunk.count();
-      const totalFiles = await this.prisma.rAGChunk.groupBy({
-        by: ['file_id'],
-        _count: true
+      // Get total counts
+      const totalChunks = await this.prisma.vectorChunk.count({
+        where: { workspaceId }
       });
 
-      const avgTokens = await this.prisma.rAGChunk.aggregate({
-        _avg: {
-          tokens: true
+      const uniqueFiles = await this.prisma.vectorChunk.findMany({
+        where: { workspaceId },
+        select: { fileId: true },
+        distinct: ['fileId']
+      });
+
+      // Get language breakdown
+      const languageStats = await this.prisma.vectorChunk.groupBy({
+        by: ['language'],
+        where: { workspaceId },
+        _count: {
+          id: true
         }
       });
 
-      const stats = {
-        totalChunks,
-        totalFiles: totalFiles.length,
-        averageChunkSize: avgTokens._avg.tokens || 0
-      };
+      const languageBreakdown: Record<string, number> = {};
+      languageStats.forEach(stat => {
+        if (stat.language) {
+          languageBreakdown[stat.language] = stat._count.id;
+        }
+      });
 
-      if (this.config.enableMetrics) {
-        metrics.histogram('postgres_vector_db.get_stats.duration', Date.now() - startTime);
-        metrics.increment('postgres_vector_db.get_stats.success');
-      }
+      // Get recent activity (simplified)
+      const recentActivity = [
+        {
+          date: new Date(),
+          filesAdded: uniqueFiles.length,
+          searchesPerformed: 0 // Would need search tracking
+        }
+      ];
 
-      return stats;
-    } catch (error) {
-      if (this.config.enableMetrics) {
-        metrics.increment('postgres_vector_db.get_stats.error');
-      }
-      
-      if (this.config.enableLogging) {
-        console.error('Error getting vector store stats:', error);
-      }
-      
       return {
-        totalChunks: 0,
-        totalFiles: 0,
-        averageChunkSize: 0
+        totalFiles: uniqueFiles.length,
+        totalChunks,
+        languageBreakdown,
+        recentActivity
       };
-    }
-  }
-
-  /**
-   * Invalidate cache entries for a specific table or content type
-   */
-  public async invalidateCache(table: string, contentType?: string): Promise<number> {
-    if (!this.config.cacheEnabled || !this.cacheInvalidator) {
-      return 0;
-    }
-
-    try {
-      const startTime = Date.now();
-      
-      // Use the cache invalidator to invalidate cache entries
-      const invalidatedCount = await this.cacheInvalidator.manuallyInvalidateCache(
-        table as 'rag_chunks' | 'ai_embeddings',
-        contentType
-      );
-
-      if (this.config.enableMetrics) {
-        metrics.histogram('postgres_vector_db.invalidate_cache.duration', Date.now() - startTime);
-        metrics.increment('postgres_vector_db.invalidate_cache.success');
-      }
-
-      return invalidatedCount;
     } catch (error) {
-      if (this.config.enableMetrics) {
-        metrics.increment('postgres_vector_db.invalidate_cache.error');
-      }
-      
-      if (this.config.enableLogging) {
-        console.error('Error invalidating cache:', error);
-      }
-      
-      return 0;
-    }
-  }
-
-  /**
-   * Ping the PostgreSQL database to check connectivity
-   */
-  protected async pingProvider(): Promise<boolean> {
-    if (!this.prisma) {
-      return false;
-    }
-    
-    try {
-      // Simple query to check database connectivity
-      await this.prisma.$queryRaw`SELECT 1`;
-      return true;
-    } catch (error) {
-      if (this.config.enableLogging) {
-        console.error('PostgreSQL ping failed:', error);
-      }
-      return false;
-    }
-  }
-
-  /**
-   * Close the PostgreSQL connection
-   */
-  protected async closeProvider(): Promise<void> {
-    if (this.prisma) {
-      await this.prisma.$disconnect();
-      this.prisma = null;
+      const vectorDbError = this.errorHandler.handleError(error, 'getAnalytics');
+      throw vectorDbError;
     }
   }
 }

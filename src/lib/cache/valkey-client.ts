@@ -1,231 +1,188 @@
 /**
- * Valkey Client Configuration with Performance Optimization
- * 
- * IMPORTANT LICENSE COMPLIANCE:
- * This implementation uses Valkey (https://valkey.io/), the open-source fork of Redis
- * that maintains BSD licensing, avoiding Redis' restrictive RSAL/SSPL dual license.
- * 
- * Valkey is 100% Redis-compatible, so we use the ioredis client library which is MIT licensed
- * and works seamlessly with Valkey servers. This ensures legal compliance while maintaining
- * all Redis protocol features.
- * 
- * Architecture:
- * - Valkey Server (BSD licensed) 
- * - ioredis Client Library (MIT licensed)
- * - Application Code (handles caching, session storage, real-time features)
+ * Valkey Client for Caching
+ * Provides Valkey-based caching functionality as Redis-compatible alternative
  */
 
-import { Redis } from 'ioredis';
-import { metrics } from '../server-monitoring';
+import { createClient, RedisClientType } from 'redis';
 
-// Valkey configuration based on environment 
-// Note: Using Redis-compatible client libraries (ioredis) to connect to Valkey server
-const getValkeyConfig = () => {
-  // Upstash provides Redis-compatible API as managed service (acceptable for SaaS)
-  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    return {
-      type: 'upstash' as const,
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN
-    };
-  }
-  
-  // Standard Valkey for development/self-hosted (Redis-compatible protocol)  
-  if (process.env.VALKEY_URL || process.env.REDIS_URL) {
-    return {
-      type: 'standard' as const,
-      url: process.env.VALKEY_URL || process.env.REDIS_URL // Prefer VALKEY_URL
-    };
-  }
-  
-  // Fallback configuration for Valkey
-  return {
-    type: 'standard' as const,
-    host: process.env.VALKEY_HOST || process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.VALKEY_PORT || process.env.REDIS_PORT || '6379'),
-    password: process.env.VALKEY_PASSWORD || process.env.REDIS_PASSWORD,
-    db: parseInt(process.env.VALKEY_DB || process.env.REDIS_DB || '0')
-  };
-};
-
-const config = getValkeyConfig();
-
-// Create Valkey client with optimized settings (using Redis-compatible ioredis client)
-<<<<<<< HEAD
-let valkeyClient: any = null;
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-let valkeyClient: Redis | null = null;
-=======
-let valkeyClient: any = null;
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-
-=======
->>>>>>> fix/consolidated-dependency-updates
-try {
-  if (config.type === 'standard') {
-    if ('url' in config) {
-<<<<<<< HEAD
-      // @ts-expect-error - ioredis constructor typing issue
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-=======
-      // @ts-expect-error - ioredis constructor typing issue
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      valkeyClient = new Redis(config.url, {
-        retryDelayOnFailover: 100,
-        enableReadyCheck: false,
-        maxRetriesPerRequest: 3,
-        lazyConnect: true,
-        keepAlive: 30000,
-        // Connection pool settings
-        family: 4,
-        // Performance optimizations
-        commandTimeout: 5000,
-        connectTimeout: 10000,
-      });
-    } else {
-<<<<<<< HEAD
-      // @ts-expect-error - ioredis constructor typing issue
-=======
->>>>>>> fix/consolidated-dependency-updates
-=======
-<<<<<<< HEAD
-=======
-      // @ts-expect-error - ioredis constructor typing issue
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      valkeyClient = new Redis({
-        host: config.host,
-        port: config.port,
-        password: config.password,
-        db: config.db,
-        retryDelayOnFailover: 100,
-        enableReadyCheck: false,
-        maxRetriesPerRequest: 3,
-        lazyConnect: true,
-        keepAlive: 30000,
-        family: 4,
-        commandTimeout: 5000,
-        connectTimeout: 10000,
-      });
-    }
-
-    // Event listeners for monitoring
-    valkeyClient.on('connect', () => {
-      console.log('Valkey connected successfully');
-      metrics.increment('valkey.connection.success');
-    });
-
-    valkeyClient.on('error', (error) => {
-      console.error('Valkey connection error:', error);
-      metrics.increment('valkey.connection.error');
-    });
-
-    valkeyClient.on('ready', () => {
-      console.log('Valkey client ready');
-      metrics.increment('valkey.ready');
-    });
-  }
-} catch (error) {
-  console.warn('Valkey client initialization failed:', error);
-  valkeyClient = null;
+export interface ValkeyConfig {
+  host: string;
+  port: number;
+  password?: string;
+  database?: number;
+  keyPrefix?: string;
+  retryDelayOnFailover?: number;
+  maxRetriesPerRequest?: number;
+  type?: 'standard' | 'cluster' | 'sentinel';
+  url?: string;
 }
 
-// Cache key generators
-export const CacheKeys = {
-  user: (userId: string) => `user:${userId}`,
-  workspace: (workspaceId: string) => `workspace:${workspaceId}`,
-  project: (projectId: string) => `project:${projectId}`,
-  aiResponse: (hash: string) => `ai:response:${hash}`,
-  vectorSearch: (query: string, workspaceId?: string) => 
-    `vector:search:${Buffer.from(query + (workspaceId || '')).toString('base64')}`,
-  fileContent: (fileId: string) => `file:content:${fileId}`,
-  embeddings: (contentHash: string) => `embeddings:${contentHash}`,
-  rateLimit: (identifier: string) => `ratelimit:${identifier}`,
-  session: (sessionId: string) => `session:${sessionId}`,
-  apiMetrics: (endpoint: string, timeWindow: string) => `metrics:${endpoint}:${timeWindow}`,
-};
-
-// Cache TTL constants (in seconds)
-export const CacheTTL = {
-  SHORT: 60,           // 1 minute
-  MEDIUM: 300,         // 5 minutes  
-  LONG: 1800,          // 30 minutes
-  HOUR: 3600,          // 1 hour
-  DAY: 86400,          // 24 hours
-  WEEK: 604800,        // 7 days
-  EMBEDDINGS: 2592000, // 30 days (embeddings rarely change)
-};
-
 /**
- * Enhanced cache operations with performance monitoring using Valkey
+ * Valkey-based cache client (Redis-compatible)
  */
-export class ValkeyManager {
-  private client: any;
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> merge-conflict-cleanup
+export class ValkeyCacheClient {
+  private client: RedisClientType | null = null;
+  private config: ValkeyConfig;
+  private isConnected = false;
 
-=======
->>>>>>> fix/consolidated-dependency-updates
-  constructor() {
-    this.client = valkeyClient;
+  constructor(config: ValkeyConfig) {
+    this.config = {
+      keyPrefix: 'vibecode:',
+      retryDelayOnFailover: 100,
+      maxRetriesPerRequest: 3,
+      type: 'standard',
+      ...config
+    };
   }
 
   /**
-   * Get value from cache with metrics
+   * Initialize Valkey connection
    */
-  async get<T = any>(key: string): Promise<T | null> {
-    if (!this.client) return null;
+  async connect(): Promise<void> {
+    try {
+      let clientOptions: any = {
+        socket: {
+          host: this.config.host,
+          port: this.config.port,
+        },
+        password: this.config.password,
+        database: this.config.database || 0,
+        keyPrefix: this.config.keyPrefix,
+        retry_strategy: (options: any) => {
+          if (options.error && options.error.code === 'ECONNREFUSED') {
+            console.error('Valkey server connection refused');
+            return new Error('Valkey server connection refused');
+          }
+          if (options.total_retry_time > 1000 * 60 * 60) {
+            console.error('Valkey retry time exhausted');
+            return new Error('Retry time exhausted');
+          }
+          if (options.attempt > 10) {
+            console.error('Valkey max retry attempts exceeded');
+            return new Error('Max retry attempts exceeded');
+          }
+          return Math.min(options.attempt * 100, 3000);
+        }
+      };
 
-    const startTime = Date.now();
-    
+      // Handle URL-based configuration
+      if (this.config.url) {
+        clientOptions = {
+          url: this.config.url,
+          retry_strategy: clientOptions.retry_strategy
+        };
+      }
+
+      this.client = createClient(clientOptions);
+
+      // Event listeners for monitoring
+      this.client.on('connect', () => {
+        console.log('Valkey client connected');
+        this.isConnected = true;
+      });
+
+      this.client.on('error', (error: Error) => {
+        console.error('Valkey client error:', error);
+        this.isConnected = false;
+      });
+
+      this.client.on('ready', () => {
+        console.log('Valkey client ready');
+        this.isConnected = true;
+      });
+
+      this.client.on('end', () => {
+        console.log('Valkey client connection ended');
+        this.isConnected = false;
+      });
+
+      await this.client.connect();
+    } catch (error) {
+      console.warn('Valkey client initialization failed:', error);
+      this.client = null;
+      this.isConnected = false;
+      throw error;
+    }
+  }
+
+  /**
+   * Close Valkey connection
+   */
+  async disconnect(): Promise<void> {
+    if (this.client) {
+      await this.client.quit();
+      this.client = null;
+      this.isConnected = false;
+    }
+  }
+
+  /**
+   * Check if Valkey is connected
+   */
+  isHealthy(): boolean {
+    return this.isConnected && this.client !== null;
+  }
+
+  /**
+   * Get value from cache
+   */
+  async get<T>(key: string): Promise<T | null> {
+    if (!this.client || !this.isConnected) {
+      return null;
+    }
+
     try {
       const value = await this.client.get(key);
-      const duration = Date.now() - startTime;
-      
-      metrics.histogram('cache.get.duration', duration);
-      
-      if (value) {
-        metrics.increment('cache.hit');
-        return JSON.parse(value);
-      } else {
-        metrics.increment('cache.miss');
+      if (value === null) {
         return null;
       }
+
+      const parsed = JSON.parse(value);
+      const now = Date.now();
+
+      // Check if entry has expired (assuming TTL format)
+      if (parsed.expiry && now > parsed.expiry) {
+        await this.client.del(key);
+        return null;
+      }
+
+      return parsed.value || parsed;
     } catch (error) {
-      metrics.increment('cache.error');
-      console.error('Valkey get error:', error);
+      console.warn(`Failed to get Valkey key ${key}:`, error);
       return null;
     }
   }
 
   /**
-   * Set value in cache with TTL and metrics
+   * Set value in cache with TTL
    */
-  async set(key: string, value: any, ttl: number = CacheTTL.MEDIUM): Promise<boolean> {
-    if (!this.client) return false;
+  async set<T>(
+    key: string,
+    value: T,
+    ttlSeconds?: number
+  ): Promise<boolean> {
+    if (!this.client || !this.isConnected) {
+      return false;
+    }
 
-    const startTime = Date.now();
-    
     try {
-      const serialized = JSON.stringify(value);
-      await this.client.setex(key, ttl, serialized);
-      
-      const duration = Date.now() - startTime;
-      metrics.histogram('cache.set.duration', duration);
-      metrics.increment('cache.set.success');
-      
+      const data = {
+        value,
+        expiry: ttlSeconds ? Date.now() + (ttlSeconds * 1000) : null,
+        createdAt: Date.now()
+      };
+
+      const serialized = JSON.stringify(data);
+
+      if (ttlSeconds) {
+        await this.client.setEx(key, ttlSeconds, serialized);
+      } else {
+        await this.client.set(key, serialized);
+      }
+
       return true;
     } catch (error) {
-      metrics.increment('cache.set.error');
-      console.error('Valkey set error:', error);
+      console.warn(`Failed to set Valkey key ${key}:`, error);
       return false;
     }
   }
@@ -233,130 +190,155 @@ export class ValkeyManager {
   /**
    * Delete key from cache
    */
-  async del(key: string | string[]): Promise<boolean> {
-    if (!this.client) return false;
+  async delete(key: string): Promise<boolean> {
+    if (!this.client || !this.isConnected) {
+      return false;
+    }
 
     try {
-      const keys = Array.isArray(key) ? key : [key];
-      await this.client.del(...keys);
-      
-<<<<<<< HEAD
-<<<<<<< HEAD
-      metrics.increment('cache.delete', { count: keys.length as any });
-=======
-      metrics.increment('cache.delete', { count: keys.length.toString() });
-=======
-      metrics.increment('cache.delete', { count: keys.length as any });
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      return true;
-=======
-      metrics.increment('cache.delete', { count: keys.length as any });      return true;
->>>>>>> fix/consolidated-dependency-updates
+      const result = await this.client.del(key);
+      return result > 0;
     } catch (error) {
-      metrics.increment('cache.delete.error');
-      console.error('Valkey delete error:', error);
+      console.warn(`Failed to delete Valkey key ${key}:`, error);
       return false;
     }
   }
 
   /**
-   * Check if key exists
+   * Delete multiple keys from cache
    */
-  async exists(key: string): Promise<boolean> {
-    if (!this.client) return false;
-
-    try {
-      const result = await this.client.exists(key);
-      return result === 1;
-    } catch (error) {
-      console.error('Valkey exists error:', error);
-      return false;
+  async deleteMany(keys: string[]): Promise<number> {
+    if (!this.client || !this.isConnected || keys.length === 0) {
+      return 0;
     }
-  }
-
-  /**
-   * Get multiple keys at once
-   */
-  async mget<T = any>(keys: string[]): Promise<(T | null)[]> {
-    if (!this.client || keys.length === 0) return [];
 
     try {
-      const values = await this.client.mget(...keys);
-      return values.map((value: string | null) => value ? JSON.parse(value) : null);
+      const result = await this.client.del(keys);
+      return result;
     } catch (error) {
-      console.error('Valkey mget error:', error);
-      return keys.map(() => null);
-    }
-  }
-
-  /**
-   * Set multiple keys at once
-   */
-  async mset(pairs: Array<{ key: string; value: any; ttl?: number }>): Promise<boolean> {
-    if (!this.client || pairs.length === 0) return false;
-
-    try {
-      const pipeline = this.client.pipeline();
-      
-      for (const { key, value, ttl = CacheTTL.MEDIUM } of pairs) {
-        const serialized = JSON.stringify(value);
-        pipeline.setex(key, ttl, serialized);
-      }
-      
-      await pipeline.exec();
-<<<<<<< HEAD
-<<<<<<< HEAD
-      metrics.increment('cache.mset.success', { count: pairs.length as any });
-=======
-      metrics.increment('cache.mset.success', { count: pairs.length.toString() });
-=======
-      metrics.increment('cache.mset.success', { count: pairs.length as any });
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      return true;
-=======
-      metrics.increment('cache.mset.success', { count: pairs.length as any });      return true;
->>>>>>> fix/consolidated-dependency-updates
-    } catch (error) {
-      metrics.increment('cache.mset.error');
-      console.error('Valkey mset error:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Increment counter (useful for rate limiting, metrics)
-   */
-  async incr(key: string, ttl?: number): Promise<number> {
-    if (!this.client) return 0;
-
-    try {
-      const value = await this.client.incr(key);
-      
-      if (ttl && value === 1) {
-        // Set TTL only on first increment
-        await this.client.expire(key, ttl);
-      }
-      
-      return value;
-    } catch (error) {
-      console.error('Valkey incr error:', error);
+      console.warn(`Failed to delete Valkey keys:`, error);
       return 0;
     }
   }
 
   /**
-   * Get keys matching pattern
+   * Check if key exists in cache
    */
-  async keys(pattern: string): Promise<string[]> {
-    if (!this.client) return [];
+  async exists(key: string): Promise<boolean> {
+    if (!this.client || !this.isConnected) {
+      return false;
+    }
 
     try {
-      return await this.client.keys(pattern);
+      const result = await this.client.exists(key);
+      return result > 0;
     } catch (error) {
-      console.error('Valkey keys error:', error);
-      return [];
+      console.warn(`Failed to check Valkey key ${key}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Set multiple key-value pairs
+   */
+  async setMany(pairs: Array<{ key: string; value: any; ttl?: number }>): Promise<boolean> {
+    if (!this.client || !this.isConnected || pairs.length === 0) {
+      return false;
+    }
+
+    try {
+      const pipeline = this.client.multi();
+
+      for (const { key, value, ttl } of pairs) {
+        const data = {
+          value,
+          expiry: ttl ? Date.now() + (ttl * 1000) : null,
+          createdAt: Date.now()
+        };
+
+        const serialized = JSON.stringify(data);
+
+        if (ttl) {
+          pipeline.setEx(key, ttl, serialized);
+        } else {
+          pipeline.set(key, serialized);
+        }
+      }
+
+      await pipeline.exec();
+      return true;
+    } catch (error) {
+      console.warn('Failed to set multiple Valkey entries:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get multiple values from cache
+   */
+  async getMany<T>(keys: string[]): Promise<Array<T | null>> {
+    if (!this.client || !this.isConnected || keys.length === 0) {
+      return keys.map(() => null);
+    }
+
+    try {
+      const values = await this.client.mGet(keys);
+      const now = Date.now();
+
+      return values.map(value => {
+        if (value === null) return null;
+
+        try {
+          const parsed = JSON.parse(value);
+
+          // Handle both old format (direct value) and new format (with expiry)
+          if (parsed.expiry && now > parsed.expiry) {
+            return null;
+          }
+
+          return parsed.value || parsed;
+        } catch (parseError) {
+          console.warn('Failed to parse cached value:', parseError);
+          return null;
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to get multiple Valkey entries:', error);
+      return keys.map(() => null);
+    }
+  }
+
+  /**
+   * Increment numeric value in cache
+   */
+  async increment(key: string, increment: number = 1): Promise<number | null> {
+    if (!this.client || !this.isConnected) {
+      return null;
+    }
+
+    try {
+      const result = await this.client.incrBy(key, increment);
+      return result;
+    } catch (error) {
+      console.warn(`Failed to increment Valkey key ${key}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Clear all cache entries
+   */
+  async clear(): Promise<boolean> {
+    if (!this.client || !this.isConnected) {
+      return false;
+    }
+
+    try {
+      await this.client.flushAll();
+      return true;
+    } catch (error) {
+      console.warn('Failed to clear Valkey cache:', error);
+      return false;
     }
   }
 
@@ -365,144 +347,103 @@ export class ValkeyManager {
    */
   async getStats(): Promise<{
     connected: boolean;
-    keyCount: number;
-    memoryUsage: string;
-    hitRate: number;
+    keyCount?: number;
+    memoryUsage?: number;
   }> {
-    if (!this.client) {
-      return {
-        connected: false,
-        keyCount: 0,
-        memoryUsage: '0B',
-        hitRate: 0
-      };
+    if (!this.client || !this.isConnected) {
+      return { connected: false };
     }
 
     try {
       const info = await this.client.info('memory');
-      const dbSize = await this.client.dbsize();
-      
-      // Parse memory usage from info
-      const memoryMatch = info.match(/used_memory_human:(.+)/);
-      const memoryUsage = memoryMatch ? memoryMatch[1].trim() : '0B';
+      const keyspaceInfo = await this.client.info('keyspace');
 
-      // Calculate hit rate from metrics (simplified)
-      const hitRate = 0.85; // This would be calculated from actual metrics
-      
       return {
         connected: true,
-        keyCount: dbSize,
-        memoryUsage,
-        hitRate
+        keyCount: this.extractKeyCount(keyspaceInfo),
+        memoryUsage: this.extractMemoryUsage(info),
       };
     } catch (error) {
-      console.error('Valkey stats error:', error);
-      return {
-        connected: false,
-        keyCount: 0,
-        memoryUsage: '0B',
-        hitRate: 0
-      };
+      console.warn('Failed to get Valkey stats:', error);
+      return { connected: this.isConnected };
     }
   }
 
   /**
-   * Clear all cache (use with caution)
+   * Extract key count from Valkey INFO command output
    */
-  async clear(): Promise<boolean> {
-    if (!this.client) return false;
-
-    try {
-      await this.client.flushdb();
-      metrics.increment('cache.clear');
-      return true;
-    } catch (error) {
-      console.error('Valkey clear error:', error);
-      return false;
-    }
+  private extractKeyCount(infoOutput: string): number {
+    const match = infoOutput.match(/db0:keys=(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
   }
 
   /**
-   * Health check
+   * Extract memory usage from Valkey INFO command output
    */
-  async healthCheck(): Promise<boolean> {
-    if (!this.client) return false;
+  private extractMemoryUsage(infoOutput: string): number {
+    const match = infoOutput.match(/used_memory:(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+  }
 
-    try {
-      await this.client.ping();
-      return true;
-    } catch (error) {
-      return false;
-    }
+  /**
+   * Get the underlying Valkey client
+   */
+  getClient(): RedisClientType | null {
+    return this.client;
+  }
+
+  /**
+   * Get configuration
+   */
+  getConfig(): ValkeyConfig {
+    return { ...this.config };
   }
 }
 
-// Export singleton instance
-export const cache = new ValkeyManager();
-
 /**
- * Cache wrapper for functions with automatic key generation
+ * Get Valkey configuration from environment
  */
-export function withCache<T extends any[], R>(
-  fn: (...args: T) => Promise<R>,
-  keyGenerator: (...args: T) => string,
-  ttl: number = CacheTTL.MEDIUM
-) {
-  return async (...args: T): Promise<R> => {
-    const key = keyGenerator(...args);
-    
-    // Try to get from cache first
-    const cached = await cache.get<R>(key);
-    if (cached !== null) {
-      return cached;
-    }
-    
-    // Execute function and cache result
-    const result = await fn(...args);
-    await cache.set(key, result, ttl);
-    
-    return result;
+export function getValkeyConfig(): ValkeyConfig & { type: string } {
+  return {
+    type: process.env.VALKEY_TYPE || 'standard',
+    host: process.env.VALKEY_HOST || 'localhost',
+    port: parseInt(process.env.VALKEY_PORT || '6379'),
+    password: process.env.VALKEY_PASSWORD,
+    database: process.env.VALKEY_DATABASE ? parseInt(process.env.VALKEY_DATABASE) : 0,
+    keyPrefix: process.env.VALKEY_KEY_PREFIX || 'vibecode:',
+    url: process.env.VALKEY_URL,
   };
 }
 
+// Export singleton instance for global use
+let valkeyClient: ValkeyCacheClient | null = null;
+
 /**
- * Cache invalidation patterns
+ * Get or create Valkey cache client instance
  */
-export class CacheInvalidation {
-  static async invalidateUser(userId: string) {
-    const patterns = [
-      CacheKeys.user(userId),
-      `workspace:*:user:${userId}`,
-      `project:*:user:${userId}`,
-    ];
-    
-    for (const pattern of patterns) {
-      const keys = await cache.keys(pattern);
-      if (keys.length > 0) {
-        await cache.del(keys);
-      }
-    }
+export async function getValkeyClient(config?: ValkeyConfig): Promise<ValkeyCacheClient | null> {
+  if (valkeyClient && valkeyClient.isHealthy()) {
+    return valkeyClient;
   }
 
-  static async invalidateWorkspace(workspaceId: string) {
-    const patterns = [
-      CacheKeys.workspace(workspaceId),
-      `project:*:workspace:${workspaceId}`,
-      `vector:search:*:${workspaceId}`,
-    ];
-    
-    for (const pattern of patterns) {
-      const keys = await cache.keys(pattern);
-      if (keys.length > 0) {
-        await cache.del(keys);
-      }
-    }
-  }
+  const finalConfig = config || getValkeyConfig();
 
-  static async invalidateProject(projectId: string) {
-    await cache.del(CacheKeys.project(projectId));
+  try {
+    valkeyClient = new ValkeyCacheClient(finalConfig);
+    await valkeyClient.connect();
+    return valkeyClient;
+  } catch (error) {
+    console.error('Failed to initialize Valkey client:', error);
+    return null;
   }
 }
 
-// Backward compatibility export (TODO: Update imports to use valkey-client)
-export default cache;
+/**
+ * Close Valkey client connection
+ */
+export async function closeValkeyClient(): Promise<void> {
+  if (valkeyClient) {
+    await valkeyClient.disconnect();
+    valkeyClient = null;
+  }
+}
